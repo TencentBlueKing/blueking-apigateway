@@ -257,34 +257,33 @@ class ResourcesSaver:
         """
         保存resource openapi schema
         """
+        remaining_schemas: Dict[int, OpenAPIResourceSchema] = {}
+        for schema in OpenAPIResourceSchema.objects.filter(resource_id__in=resource_ids):
+            remaining_schemas[schema.resource_id] = schema
 
-        remaining_resource_schemas: Dict[int, OpenAPIResourceSchema] = {}
-        for resource_openapi_schema in OpenAPIResourceSchema.objects.filter(resource_id__in=resource_ids):
-            remaining_resource_schemas[resource_openapi_schema.resource_id] = resource_openapi_schema
-
-        add_resource_openapi_schemas = []
-        update_resource_openapi_schemas = []
-        del_resource_openapi_schema_ids = []
+        add_schemas = []
+        update_schemas = []
+        del_schema_ids = []
         for resource_data in self.resource_data_list:
             assert resource_data.resource
             no_schema = resource_data.openapi_schema == {}
 
-            if resource_data.resource.id in remaining_resource_schemas:
-                old_resource_openapi_schema = remaining_resource_schemas[resource_data.resource.id]
+            if resource_data.resource.id in remaining_schemas:
+                old_schema = remaining_schemas[resource_data.resource.id]
                 if no_schema:
-                    del_resource_openapi_schema_ids.append(old_resource_openapi_schema.id)
+                    del_schema_ids.append(old_schema.id)
                     continue
                 # 更新schema
-                old_resource_openapi_schema.schema = resource_data.openapi_schema
-                old_resource_openapi_schema.update_by = self.username
-                old_resource_openapi_schema.updated_time = now_datetime()
-                update_resource_openapi_schemas.append(old_resource_openapi_schema)
+                old_schema.schema = resource_data.openapi_schema
+                old_schema.update_by = self.username
+                old_schema.updated_time = now_datetime()
+                update_schemas.append(old_schema)
             else:
                 if no_schema:
                     continue
 
                 # 新增schema
-                add_resource_openapi_schemas.append(
+                add_schemas.append(
                     OpenAPIResourceSchema(
                         resource=resource_data.resource,
                         schema=resource_data.openapi_schema,
@@ -293,15 +292,15 @@ class ResourcesSaver:
                     )
                 )
 
-        if len(add_resource_openapi_schemas) > 0:
-            OpenAPIResourceSchema.objects.bulk_create(add_resource_openapi_schemas, batch_size=BULK_BATCH_SIZE)
+        if len(add_schemas) > 0:
+            OpenAPIResourceSchema.objects.bulk_create(add_schemas, batch_size=BULK_BATCH_SIZE)
 
-        if len(del_resource_openapi_schema_ids) > 0:
-            OpenAPIResourceSchema.objects.filter(id__in=del_resource_openapi_schema_ids).delete()
+        if len(del_schema_ids) > 0:
+            OpenAPIResourceSchema.objects.filter(id__in=del_schema_ids).delete()
 
-        if len(update_resource_openapi_schemas) > 0:
+        if len(update_schemas) > 0:
             OpenAPIResourceSchema.objects.bulk_update(
-                update_resource_openapi_schemas,
+                update_schemas,
                 fields=["schema", "updated_time", "updated_by"],
                 batch_size=BULK_BATCH_SIZE,
             )

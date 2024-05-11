@@ -563,7 +563,7 @@ class ResourceImportInputSLZ(serializers.Serializer):
         # 此部分主要使用 SLZ 做数据转换 + 单字段值有效性校验（如正则）,
         # 不做复杂的业务逻辑校验，业务逻辑校验统一放到 ResourceImportValidator 处理
         try:
-            openapi_manager = OpenAPIImportManager.load_from_openapi_content(self.context["gateway"], content)
+            openapi_manager = OpenAPIImportManager.load_from_content(self.context["gateway"], content)
         except Exception as err:
             raise serializers.ValidationError(
                 {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)}

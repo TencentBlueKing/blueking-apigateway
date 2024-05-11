@@ -29,9 +29,9 @@ from apigateway.biz.constants import OpenAPIFormatEnum
 from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData
 from apigateway.biz.resource.importer.constants import VALID_METHOD_IN_SWAGGER_PATHITEM, OpenAPIExtensionEnum
 from apigateway.biz.resource.importer.schema import (
-    convert_swagger_formdata_to_openapi,
-    convert_swagger_parameters_to_openapi,
-    convert_swagger_response_headers_to_openapi,
+    convert_openapi2_formdata_to_openapi,
+    convert_openapi2_parameters_to_openapi,
+    convert_openapi2_response_headers_to_openapi,
 )
 from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY, ProxyTypeEnum
@@ -135,7 +135,7 @@ class BaseParser:
             if parameter.get("in", "") != "body" and parameter.get("in", "") != "formData"
         ]
 
-        return convert_swagger_parameters_to_openapi(without_body_parameters)
+        return convert_openapi2_parameters_to_openapi(without_body_parameters)
 
     def _get_request_body(self, operation: Dict[str, Any]):
         """
@@ -195,7 +195,7 @@ class BaseParser:
             std_parameters["content"] = content
 
         if len(std_parameters) == 0 and len(form_data_params) > 0:
-            std_parameters = convert_swagger_formdata_to_openapi(form_data_params, content_types)
+            std_parameters = convert_openapi2_formdata_to_openapi(form_data_params, content_types)
 
         return std_parameters
 
@@ -229,7 +229,7 @@ class BaseParser:
                     "content": {produce: {"schema": content}},
                 }
                 if "headers" in response:
-                    openapi_v3_response[status_code]["headers"] = convert_swagger_response_headers_to_openapi(
+                    openapi_v3_response[status_code]["headers"] = convert_openapi2_response_headers_to_openapi(
                         response.get("headers")
                     )
                 if "examples" in response:

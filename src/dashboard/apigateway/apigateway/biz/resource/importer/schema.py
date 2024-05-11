@@ -126,7 +126,9 @@ def set_openapi_parser_schema_validator(spec_version: SpecVersion):
     SPEC2VALIDATOR[spec_version].keyword_validators["operation"] = ApigwOperationValidator
 
 
-def convert_swagger_formdata_to_openapi(formdata_params: List[Dict[str, Any]], consumers: List[str]) -> Dict[str, Any]:
+def convert_openapi2_formdata_to_openapi(
+    formdata_params: List[Dict[str, Any]], consumers: List[str]
+) -> Dict[str, Any]:
     """
     将Swagger 2.0的formData参数转换为OpenAPI 3.0的requestBody。
     """
@@ -172,7 +174,7 @@ def convert_swagger_formdata_to_openapi(formdata_params: List[Dict[str, Any]], c
     return openapi_request_body
 
 
-def convert_swagger_parameters_to_openapi(parameters):
+def convert_openapi2_parameters_to_openapi(parameters):
     """
     将 openapi parameters 转成openapi
     """
@@ -215,7 +217,7 @@ def convert_swagger_parameters_to_openapi(parameters):
     return openapi_params
 
 
-def convert_swagger_response_headers_to_openapi(headers: dict) -> dict:
+def convert_openapi2_response_headers_to_openapi(headers: dict) -> dict:
     """
     将swagger2.0 response headers 转为openapi3.0
     """
@@ -244,27 +246,27 @@ def convert_swagger_response_headers_to_openapi(headers: dict) -> dict:
     return openapi_headers
 
 
-def convert_parameters_to_swagger(openapi_parameters):
+def convert_parameters_to_openapi2(openapi_parameters):
     """
     转换 OpenAPI 3.0 的参数列表到 OpenAPI 2.0 的格式。
     """
-    parameters_swagger = []
+    parameters_openapi2 = []
     for param in openapi_parameters:
-        param2 = param.copy()  # 复制参数对象
+        v2_param = param.copy()  # 复制参数对象
         if "schema" in param:
             # OpenAPI 3.0 中的 'schema' 需要被展开到参数对象的根级别
-            param2.update(param["schema"])
-            del param2["schema"]
+            v2_param.update(param["schema"])
+            del v2_param["schema"]
         if "content" in param:
             # 对于参数的 'content'，我们只能选择一个媒体类型
             content_type, content_value = next(iter(param["content"].items()))
-            param2["type"] = content_value["schema"]["type"]
-            del param2["content"]
-        parameters_swagger.append(param2)
-    return parameters_swagger
+            v2_param["type"] = content_value["schema"]["type"]
+            del v2_param["content"]
+        parameters_openapi2.append(v2_param)
+    return parameters_openapi2
 
 
-def convert_request_body_to_swagger(request_body):
+def convert_request_body_to_openapi2(request_body):
     """
     转换 OpenAPI 3.0 的请求体到 OpenAPI 2.0 的参数格式。
     """
@@ -282,115 +284,115 @@ def convert_request_body_to_swagger(request_body):
     return parameters
 
 
-def convert_responses_to_swagger(responses):
+def convert_responses_to_openapi2(responses):
     """
     转换 OpenAPI 3.0 的响应对象到 OpenAPI 2.0 的格式。
     """
-    responses_swagger = {}
+    responses_openapi2 = {}
     for status_code, response3 in responses.items():
-        responses_swagger = {"description": response3.get("description", ""), "schema": {}}
+        responses_openapi2 = {"description": response3.get("description", ""), "schema": {}}
         # OpenAPI 2.0 不支持每个响应状态码的多媒体类型，因此我们合并所有媒体类型
         for content_type, content_value in response3.get("content", {}).items():
-            responses_swagger["schema"][content_type] = content_value["schema"]
-        responses_swagger[status_code] = responses_swagger
-    return responses_swagger
+            responses_openapi2["schema"][content_type] = content_value["schema"]
+        responses_openapi2[status_code] = responses_openapi2
+    return responses_openapi2
 
 
-def convert_openapi3_operation_to_openapi2(operation3):
+def convert_operation_v3_to_v2(v3_operation):
     """
     将 OpenAPI 3.0 的 operation 对象转换为 OpenAPI 2.0 的 operation 对象。
-    :param operation3: OpenAPI 3.0 的 operation 对象
+    :param v3_operation: OpenAPI 3.0 的 operation 对象
     :return: OpenAPI 2.0 的 operation 对象
     """
-    operation2 = {}
+    v2_operation = {}
 
     # 复制基本信息，如描述、摘要、操作ID等
     for key in ["description", "summary", "operationId", "tags"]:
-        if key in operation3:
-            operation2[key] = operation3[key]
+        if key in v3_operation:
+            v2_operation[key] = v3_operation[key]
 
     # 转换 requestBody 并获取 consumes 列表
-    if "requestBody" in operation3:
-        parameters_body2, consumes = convert_request_body(operation3["requestBody"])
-        operation2["parameters"] = parameters_body2
-        operation2["consumes"] = consumes
+    if "requestBody" in v3_operation:
+        parameters_body2, consumes = convert_request_body(v3_operation["requestBody"])
+        v2_operation["parameters"] = parameters_body2
+        v2_operation["consumes"] = consumes
 
     # 转换 parameters 并合并 requestBody 参数
-    if "parameters" in operation3:
-        parameters2 = convert_parameters(operation3["parameters"], operation2.get("consumes", []))
-        operation2["parameters"] = operation2.get("parameters", []) + parameters2
+    if "parameters" in v3_operation:
+        parameters2 = convert_parameters(v3_operation["parameters"], v2_operation.get("consumes", []))
+        v2_operation["parameters"] = v2_operation.get("parameters", []) + parameters2
 
     # 转换 responses 并获取 produces 列表
-    if "responses" in operation3:
-        responses2, produces = convert_responses(operation3["responses"])
-        operation2["responses"] = responses2
-        operation2["produces"] = produces
+    if "responses" in v3_operation:
+        responses2, produces = convert_responses(v3_operation["responses"])
+        v2_operation["responses"] = responses2
+        v2_operation["produces"] = produces
 
-    return operation2
+    return v2_operation
 
 
-def convert_parameters(parameters3, consumes):
+def convert_parameters(v3_parameters, consumes):
     """
     转换 OpenAPI 3.0 的参数列表到 OpenAPI 2.0 的格式。
-    :param parameters3: OpenAPI 3.0 的参数列表
+    :param v3_parameters: OpenAPI 3.0 的参数列表
     :param consumes: 从 requestBody 提取的 consumes 列表
     :return: OpenAPI 2.0 的参数列表
     """
-    parameters2 = []
-    for param in parameters3:
-        param2 = param.copy()  # 复制参数对象
+    v2_parameters = []
+    for param in v3_parameters:
+        v2_param = param.copy()  # 复制参数对象
         if "schema" in param:
             # OpenAPI 3.0 中的 'schema' 需要被展开到参数对象的根级别
-            param2.update(param["schema"])
-            del param2["schema"]
+            v2_param.update(param["schema"])
+            del v2_param["schema"]
         if "content" in param:
             # 对于参数的 'content'，我们只能选择一个媒体类型
             content_type, content_value = next(iter(param["content"].items()))
-            param2["type"] = content_value["schema"]["type"]
+            v2_param["type"] = content_value["schema"]["type"]
             # 如果参数的媒体类型在 consumes 中，添加到 'consumes' 字段
             if content_type in consumes:
-                param2["consumes"] = [content_type]
-            del param2["content"]
-        parameters2.append(param2)
-    return parameters2
+                v2_param["consumes"] = [content_type]
+            del v2_param["content"]
+        v2_parameters.append(v2_param)
+    return v2_parameters
 
 
-def convert_request_body(request_body3):
+def convert_request_body(v3_request_body):
     """
     转换 OpenAPI 3.0 的请求体到 OpenAPI 2.0 的参数格式。
-    :param request_body3: OpenAPI 3.0 的请求体对象
+    :param v3_request_body: OpenAPI 3.0 的请求体对象
     :return: OpenAPI 2.0 的参数列表和 consumes 列表
     """
-    parameters2 = []
+    v2_parameters = []
     consumes = []
-    for content_type, content_value in request_body3["content"].items():
+    for content_type, content_value in v3_request_body["content"].items():
         param2 = {
             "in": "body",
             "name": "body",  # OpenAPI 2.0 中请求体的名称通常是 'body'
-            "required": request_body3.get("required", False),
+            "required": v3_request_body.get("required", False),
             "schema": content_value["schema"],
         }
-        parameters2.append(param2)
+        v2_parameters.append(param2)
         consumes.append(content_type)
-    return parameters2, consumes
+    return v2_parameters, consumes
 
 
-def convert_responses(responses3):
+def convert_responses(v3_responses):
     """
     转换 OpenAPI 3.0 的响应对象到 OpenAPI 2.0 的格式。
-    :param responses3: OpenAPI 3.0 的响应对象
+    :param v3_responses: OpenAPI 3.0 的响应对象
     :return: OpenAPI 2.0 的响应对象和 produces 列表
     """
-    responses2 = {}
+    v2_responses = {}
     produces = []
-    for status_code, response3 in responses3.items():
+    for status_code, response3 in v3_responses.items():
         response2 = {"description": response3.get("description", "")}
         # OpenAPI 2.0 不支持每个响应状态码的多媒体类型，因此我们合并所有媒体类型
         for content_type, content_value in response3.get("content", {}).items():
             response2["schema"] = content_value["schema"]
             produces.append(content_type)
-        responses2[status_code] = response2
-    return responses2, list(set(produces))  # 使用 set 去重
+        v2_responses[status_code] = response2
+    return v2_responses, list(set(produces))  # 使用 set 去重
 
 
 class SchemaValidateErr:

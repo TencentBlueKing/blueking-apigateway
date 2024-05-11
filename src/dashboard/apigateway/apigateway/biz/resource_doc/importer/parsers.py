@@ -25,6 +25,8 @@ from openapi_spec_validator.versions import OPENAPIV2
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.biz.constants import OpenAPIFormatEnum
+from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
+from apigateway.biz.resource.importer.schema import convert_operation_v3_to_v2
 from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError
 from apigateway.common.exceptions import SchemaValidationError
@@ -32,8 +34,6 @@ from apigateway.core.models import Gateway, Resource
 
 from .generators import Jinja2ToMarkdownGenerator, OpenAPIToMarkdownGenerator
 from .models import ArchiveDoc, OpenAPIDoc
-from ...resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
-from ...resource.importer.schema import convert_openapi3_operation_to_openapi2
 
 
 class BaseParser:
@@ -168,7 +168,7 @@ class OpenAPIParser(BaseParser):
 
     def _parse(self, openapi: str, language: DocLanguageEnum) -> List[OpenAPIDoc]:
         gateway = Gateway.objects.get(id=self.gateway_id)
-        openapi_manager = OpenAPIImportManager.load_from_openapi_content(gateway, openapi)
+        openapi_manager = OpenAPIImportManager.load_from_content(gateway, openapi)
 
         validate_err_list = openapi_manager.validate()
         if len(validate_err_list) > 0 or not openapi_manager.parser:
@@ -178,8 +178,8 @@ class OpenAPIParser(BaseParser):
         for path, path_item in openapi_manager.parser.get_paths().items():
             for method, original_operation in path_item.items():
                 converted_operation = original_operation
-                if openapi_manager.openapi_version != OPENAPIV2:
-                    converted_operation = convert_openapi3_operation_to_openapi2(original_operation)
+                if openapi_manager.version != OPENAPIV2:
+                    converted_operation = convert_operation_v3_to_v2(original_operation)
                 openapi = OpenAPIExportManager(title=converted_operation["operationId"]).get_swagger_by_paths(
                     paths={
                         path: {method: converted_operation},

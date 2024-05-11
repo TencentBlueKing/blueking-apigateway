@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List
 
 from openapi_spec_validator.validation.exceptions import UnresolvableParameterError
 from openapi_spec_validator.versions import OPENAPIV2, get_spec_version
@@ -43,28 +43,32 @@ class OpenAPIImportManager:
     资源配置导入manager
     """
 
-    def __init__(self, gateway: Gateway, openapi_data: Dict[str, Any]):
-        self.openapi_version = None
-        self.openapi_data = openapi_data
+    def __init__(self, gateway: Gateway, data: Dict[str, Any]):
+        self.version = None
+        self.data = data
         self.gateway = gateway
         self._raw_resource_list: List[Dict[str, Any]] = []
         self._resource_list: List[ResourceData] = []
         self.parser = None
 
     @classmethod
-    def load_from_openapi_content(cls, gateway: Gateway, content: str) -> "OpenAPIImportManager":
-        openapi_format = cls.guess_openapi_format(content)
+    def load_from_content(cls, gateway: Gateway, content: str) -> "OpenAPIImportManager":
+        content_format = cls.guess_content_format(content)
+        # 显式地为 loads_func 提供一个类型注解
+        loads_func: Callable[[str], Dict[str, Any]] = yaml_loads
 
-        loads_func = yaml_loads
-        if openapi_format == OpenAPIFormatEnum.JSON:
+        if content_format == OpenAPIFormatEnum.JSON:
             loads_func = json.loads
 
-        return cls(gateway=gateway, openapi_data=loads_func(content))
+        return cls(
+            gateway=gateway,
+            data=loads_func(content),
+        )
 
     @classmethod
-    def guess_openapi_format(cls, open_api_config: str) -> OpenAPIFormatEnum:
+    def guess_content_format(cls, content: str) -> OpenAPIFormatEnum:
         # 内容以 "{" 开头，则为 json 串，否则为 yaml 串
-        if open_api_config.strip().startswith("{"):
+        if content.strip().startswith("{"):
             return OpenAPIFormatEnum.JSON
 
         return OpenAPIFormatEnum.YAML
@@ -75,14 +79,14 @@ class OpenAPIImportManager:
         """
         try:
             # 先获取 openapi版本
-            openapi_version = get_spec_version(self.openapi_data)
+            spec_version = get_spec_version(self.data)
         except OpenAPIVersionNotFound:
-            return [self._get_openapi_version_err()]
+            return [self._get_version_err()]
 
-        self.openapi_version = openapi_version
+        self.version = spec_version
 
         # 获取 openapi validator
-        spec_validator = get_apigw_schema_validator(openapi_version)
+        spec_validator = get_apigw_schema_validator(spec_version)
 
         schema_validate_result = [
             SchemaValidateErr(
@@ -90,7 +94,7 @@ class OpenAPIImportManager:
                 err.json_path,
                 list(err.absolute_path),
             )
-            for err in spec_validator.cls(self.openapi_data).iter_errors()
+            for err in spec_validator.cls(self.data).iter_errors()
             if not isinstance(err, UnresolvableParameterError)  # 需要排除路径参数校验
         ]
 
@@ -109,14 +113,14 @@ class OpenAPIImportManager:
 
         return validator.validate()
 
-    def _get_openapi_version_err(self) -> SchemaValidateErr:
+    def _get_version_err(self) -> SchemaValidateErr:
         """
         获取 openapi 版本校验失败的 SchemaValidateErr
         """
         openapi_type = OpenAPIVersionKeyEnum.OpenAPI.value
-        openapi_type_key = self.openapi_data.get(OpenAPIVersionKeyEnum.OpenAPI.value, None)
+        openapi_type_key = self.data.get(OpenAPIVersionKeyEnum.OpenAPI.value, None)
         if not openapi_type_key:
-            openapi_type_key = self.openapi_data.get(OpenAPIVersionKeyEnum.Swagger.value, None)
+            openapi_type_key = self.data.get(OpenAPIVersionKeyEnum.Swagger.value, None)
             openapi_type = OpenAPIVersionKeyEnum.Swagger.value
 
         if openapi_type_key:
@@ -127,11 +131,9 @@ class OpenAPIImportManager:
         """
         解析 openapi
         """
-        set_openapi_parser_schema_validator(self.openapi_version)
+        set_openapi_parser_schema_validator(self.version)
 
-        parse_result = ResolvingParser(
-            spec_string=str(self.openapi_data), backend="openapi-spec-validator", strict=False
-        )
+        parse_result = ResolvingParser(spec_string=str(self.data), backend="openapi-spec-validator", strict=False)
 
         # 获取对应的parser
         parser = self._get_parser(parse_result)
@@ -141,7 +143,7 @@ class OpenAPIImportManager:
         self._resource_list = ResourceDataConvertor(self.gateway, self._raw_resource_list).convert()
 
     def _get_parser(self, parse_result) -> BaseParser:
-        if self.openapi_version == OPENAPIV2:
+        if self.version == OPENAPIV2:
             return BaseParser(parse_result.specification)
 
         return OpenAPIV3Parser(parse_result.specification)

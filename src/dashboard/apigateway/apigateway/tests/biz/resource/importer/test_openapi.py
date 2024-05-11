@@ -55,12 +55,12 @@ class TestOpenAPIManger:
     )
     def test_load_from_openapi_content(self, content, expected, error):
         if not error:
-            manager = OpenAPIImportManager.load_from_openapi_content(gateway=G(Gateway), content=content)
-            assert manager.openapi_data == expected
+            manager = OpenAPIImportManager.load_from_content(gateway=G(Gateway), content=content)
+            assert manager.data == expected
             return
 
         with pytest.raises(error):
-            OpenAPIImportManager.load_from_openapi_content(gateway=G(Gateway), content=content)
+            OpenAPIImportManager.load_from_content(gateway=G(Gateway), content=content)
 
     @pytest.mark.parametrize(
         "swagger, expected",
@@ -70,7 +70,7 @@ class TestOpenAPIManger:
         ],
     )
     def test_guess_openapi_format(self, swagger, expected):
-        result = OpenAPIImportManager.guess_openapi_format(swagger)
+        result = OpenAPIImportManager.guess_content_format(swagger)
         assert result == expected
 
         @pytest.mark.parametrize(
@@ -479,7 +479,7 @@ class TestOpenAPIManger:
             ],
         )
         def test_validate(self, content, will_error):
-            manager = OpenAPIImportManager.load_from_openapi_content(gateway=G(Gateway), content=content)
+            manager = OpenAPIImportManager.load_from_content(gateway=G(Gateway), content=content)
 
             if not will_error:
                 validate_err_list = manager.validate()
@@ -668,7 +668,7 @@ class TestOpenAPIManger:
             ],
         )
         def test_get_resources(self, content, expected):
-            importer = OpenAPIImportManager.load_from_openapi_content(G(Gateway), content)
+            importer = OpenAPIImportManager.load_from_content(G(Gateway), content)
             resources = importer.get_resource_list(raw=True)
             assert resources == expected
 
