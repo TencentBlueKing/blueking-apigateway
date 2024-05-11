@@ -27,7 +27,6 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.openapi.models import OpenAPIResourceSchema, OpenAPIResourceSchemaVersion
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
@@ -38,6 +37,7 @@ from apigateway.biz.proxy import ProxyHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_label import ResourceLabelHandler
+from apigateway.biz.resource_openapi_schema import ResourceOpenAPISchemaVersionHandler
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
 from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
 from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
@@ -315,28 +315,3 @@ class ResourceDocVersionHandler:
 
         # 文档不可直接删除，资源删除导致的文档删除，在判断“是否需要创建资源版本”时校验
         return False
-
-
-class ResourceOpenAPISchemaVersionHandler:
-    @staticmethod
-    def make_new_version(resource_version: ResourceVersion):
-        """
-        创建resource schema version
-        """
-        resource_ids = [resource["id"] for resource in resource_version.data if "id" in resource]
-
-        # 查询资源所有的schema
-        resource_schemas = OpenAPIResourceSchema.objects.filter(resource_id__in=resource_ids)
-
-        schema_list = [
-            {
-                "resource_id": resource_schema.resource.id,
-                "schema": resource_schema.schema,
-            }
-            for resource_schema in resource_schemas
-        ]
-        if len(schema_list) > 0:
-            OpenAPIResourceSchemaVersion.objects.create(
-                resource_version=resource_version,
-                schema=schema_list,
-            )

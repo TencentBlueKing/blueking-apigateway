@@ -47,8 +47,8 @@ class OpenAPIImportManager:
         self.openapi_version = None
         self.openapi_data = openapi_data
         self.gateway = gateway
-        self.raw_resource_list: List[Dict[str, Any]] = []
-        self.resource_list: List[ResourceData] = []
+        self._raw_resource_list: List[Dict[str, Any]] = []
+        self._resource_list: List[ResourceData] = []
         self.parser = None
 
     @classmethod
@@ -103,7 +103,7 @@ class OpenAPIImportManager:
 
         validator = ResourceImportValidator(
             gateway=self.gateway,
-            resource_data_list=self.resource_list,
+            resource_data_list=self._resource_list,
             need_delete_unspecified_resources=False,
         )
 
@@ -137,14 +137,23 @@ class OpenAPIImportManager:
         parser = self._get_parser(parse_result)
 
         self.parser = parser
-        self.raw_resource_list = parser.get_resources()
-        self.resource_list = ResourceDataConvertor(self.gateway, self.raw_resource_list).convert()
+        self._raw_resource_list = parser.get_resources()
+        self._resource_list = ResourceDataConvertor(self.gateway, self._raw_resource_list).convert()
 
     def _get_parser(self, parse_result) -> BaseParser:
         if self.openapi_version == OPENAPIV2:
             return BaseParser(parse_result.specification)
 
         return OpenAPIV3Parser(parse_result.specification)
+
+    def get_resource_list(self, raw=False):
+        """
+        获取解析之后的resource列表。
+        raw：
+        - true -> return List[Dict[str, Any]]
+        - false -> List[ResourceData]
+        """
+        return self._raw_resource_list if raw else self._resource_list
 
 
 class OpenAPIExportManager:

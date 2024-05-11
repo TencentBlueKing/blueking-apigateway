@@ -117,7 +117,11 @@ def set_openapi_parser_schema_validator(spec_version: SpecVersion):
     """
     get_apigw_schema_content = Proxy(partial(_get_apigw_schema_content, spec_version))
 
-    SPEC2VALIDATOR[spec_version].schema_validator = Proxy(partial(Draft4Validator, get_apigw_schema_content))
+    # 修改一下spec_validator的 schema_validator
+    if spec_version == versions.OPENAPIV31:
+        SPEC2VALIDATOR[spec_version].schema_validator = Proxy(partial(Draft202012Validator, get_apigw_schema_content))
+    else:
+        SPEC2VALIDATOR[spec_version].schema_validator = Proxy(partial(Draft4Validator, get_apigw_schema_content))
 
     SPEC2VALIDATOR[spec_version].keyword_validators["operation"] = ApigwOperationValidator
 

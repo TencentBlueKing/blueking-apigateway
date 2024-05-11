@@ -578,7 +578,7 @@ class ResourceImportInputSLZ(serializers.Serializer):
             return {"validate_err_list": slz.data}
 
         slz = ResourceDataImportSLZ(
-            data=openapi_manager.raw_resource_list,
+            data=openapi_manager.get_resource_list(raw=True),
             many=True,
             context={
                 "stages": self.context["stages"],
@@ -586,7 +586,7 @@ class ResourceImportInputSLZ(serializers.Serializer):
         )
         slz.is_valid(raise_exception=True)
         return {
-            "resource_list": openapi_manager.resource_list,
+            "resource_list": openapi_manager.get_resource_list(),
         }
 
 

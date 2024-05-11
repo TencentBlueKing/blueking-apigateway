@@ -46,7 +46,7 @@ from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.constants import STAGE_VAR_PATTERN
 from apigateway.core.models import BackendConfig, Proxy, Resource, Stage
 from apigateway.utils.django import get_model_dict
-from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
+from apigateway.utils.responses import DownloadableResponse, FailJsonResponse, OKJsonResponse
 
 from .serializers import (
     BackendPathCheckInputSLZ,
@@ -384,7 +384,9 @@ class ResourceImportCheckApi(generics.CreateAPIView):
 
         validate_err_list = validate_result.get("validate_err_list", {})
         if len(validate_err_list) != 0:
-            return OKJsonResponse(status=status.HTTP_400_BAD_REQUEST, data=validate_err_list)
+            return FailJsonResponse(
+                status=status.HTTP_400_BAD_REQUEST, code="INVALID", data=validate_err_list, message="validate fail"
+            )
 
         doc_language = slz.validated_data.get("doc_language", "")
 

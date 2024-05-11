@@ -55,7 +55,7 @@ class ResourceSyncApi(generics.CreateAPIView):
             gateway=request.gateway,
             resources=slz.validated_data.get("validate_result", {}).get("resource_list", []),
             selected_resources=slz.validated_data.get("selected_resources"),
-            need_delete_unspecified_resources=False,
+            need_delete_unspecified_resources=slz.validated_data["delete"],
             username=request.user.username,
         )
         importer.import_resources()
