@@ -36,7 +36,7 @@
                 <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
                   <p class="publish-version-tips">
                     {{ t('发布的资源版本（ 当前版本：{version}', { version: currentAssets.resource_version.version || '--' }) }}
-                    <template v-if="isRollback">
+                    <template v-if="isRollback && currentAssets.resource_version.version">
                       ，<span>{{ t('发布后，将回滚至 {version} 版本', { version: resourceVersion }) }}</span>
                     </template>
                     {{ t('）') }}

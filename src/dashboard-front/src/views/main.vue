@@ -143,6 +143,7 @@ const headerTitle = ref('');
 const curLeavePageData = ref({});
 
 const handleCollapse = (v: boolean) => {
+  mitt.emit('side-toggle', v);
   collapse.value = !v;
 };
 

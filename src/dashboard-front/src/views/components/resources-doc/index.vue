@@ -1,5 +1,5 @@
 <template>
-  <div class="resources-doc-container">
+  <div :class="['resources-doc-container', docRootClass]" :style="resourcesHeight">
     <section class="content p20">
       <div class="ag-markdown-view" :class="isEdited ? '' : 'text-c'">
         <h3 v-if="isEdited"> {{ $t('文档类型') }} </h3>
@@ -61,7 +61,7 @@
         </div>
       </div>
     </section>
-    <div class="doc-btn-wrapper" v-if="!isEmpty">
+    <div :class="['doc-btn-wrapper', `${docRootClass}-btn`]" v-if="!isEmpty">
       <template v-if="isEdited">
         <bk-button
           class="mr5" theme="primary" style="width: 100px;"
@@ -88,7 +88,7 @@
         </bk-pop-confirm>
       </template>
     </div>
-    <div class="fixed-doc-btn-wrapper" v-show="isAdsorb" v-if="!isEmpty">
+    <div class="fixed-doc-btn-wrapper" v-show="isAdsorb" v-if="!isEmpty" :style="fixedBtnLeft">
       <template v-if="isEdited">
         <bk-button
           class="mr5" theme="primary" style="width: 100px;"
@@ -118,12 +118,13 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, toRefs, onMounted, onUnmounted, onBeforeUnmount, nextTick, onUpdated } from 'vue';
+import { ref, toRefs, onMounted, onUnmounted, onBeforeUnmount, nextTick, onUpdated, computed } from 'vue';
 import { getResourceDocs, updateResourceDocs, saveResourceDocs, deleteResourceDocs } from '@/http';
 import { useCommon } from '@/store';
 import { cloneDeep } from 'lodash';
 import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
+import mitt from '@/common/event-bus';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -131,6 +132,8 @@ const { apigwId } = common; // 网关id
 const props = defineProps({
   curResource: { type: Object, default: {} },   // 当前点击的资源
   height: { type: String, default: 'calc(100vh - 104px)' },
+  source: { type: String }, // side 侧边栏引用
+  docRootClass: { type: String }, // 自定义类
 });
 
 const { curResource } = toRefs(props);
@@ -185,11 +188,25 @@ const toolbars = ref<any>({
 
 const emit = defineEmits(['fetch', 'on-update']);
 
+const resourcesHeight = computed(() => {
+  if (props.source === 'side') {
+    return 'height: calc(100vh - 60px)';
+  }
+  return 'height: calc(100vh - 176px)';
+});
+
+const fixedBtnLeft = computed(() => {
+  if (props.source === 'side') {
+    return 'padding-left: 20px';
+  }
+  return 'padding-left: 30px';
+});
+
 // 编辑markdown
 const handleEditMarkdown = (type: string) => {
   isEmpty.value = false;
   isEdited.value = true;
-  console.log('isEdited.value', isEdited.value);
+
   isUpdate.value = type === 'edit';    // 是否是更新
   emit('on-update', 'update', isUpdate.value);
   const docDataItem = cloneDeep(docData.value).find((e: any) => e.language === language.value);
@@ -295,21 +312,12 @@ const isAdsorb = ref<boolean>(false);
 
 // 元素滚动判断元素是否吸顶
 const controlToggle = () => {
-  const el = document.querySelector('.doc-btn-wrapper');
+  const el = document.querySelector(`.${props.docRootClass}-btn`);
   const bottomDistance = el?.getBoundingClientRect()?.bottom;
   // 是否吸附
   if (bottomDistance > window?.innerHeight) {
     isAdsorb.value = true;
     el?.classList?.add('is-pinned');
-    nextTick(() => {
-      // 动态设置left
-      const container = document.querySelector('.resources-doc-container');
-      const fixedBtn: any = document.querySelector('.fixed-doc-btn-wrapper');
-      const rect = container.getBoundingClientRect();
-      if (fixedBtn) {
-        fixedBtn.style.left = `${rect.left - 8}px`;
-      }
-    });
   } else {
     isAdsorb.value = false;
     el?.classList?.remove('is-pinned');
@@ -318,7 +326,7 @@ const controlToggle = () => {
 
 let resizeObserver: any = null;
 const observerBtnScroll = () => {
-  const container = document.querySelector('.resources-doc-container');
+  const container = document.querySelector(`.${props.docRootClass}`);
   container?.addEventListener('scroll', controlToggle);
 
   if (resizeObserver) {
@@ -332,7 +340,7 @@ const observerBtnScroll = () => {
 };
 
 const destroyEvent = () => {
-  const container = document.querySelector('.resources-doc-container');
+  const container = document.querySelector(`.${props.docRootClass}`);
   container?.removeEventListener('scroll', controlToggle);
 
   resizeObserver.disconnect();
@@ -350,13 +358,21 @@ onMounted(() => {
   initData();
   // 初始化判断按钮组是否吸附
   controlToggle();
-  observerBtnScroll();
+  nextTick(() => {
+    observerBtnScroll();
+  });
 
   document.addEventListener('keydown', escHandler);
+
+  mitt.on('side-toggle', () => {
+    controlToggle();
+  });
 });
 
 onUnmounted(() => {
   document.removeEventListener('keydown', escHandler);
+
+  mitt.off('side-toggle');
 });
 
 onUpdated(() => {
@@ -369,7 +385,6 @@ onBeforeUnmount(() => {
 </script>
 <style scoped lang="scss">
 .resources-doc-container {
-  height: calc(100vh - 176px);
   overflow-y: auto;
 }
 .content-editor {
@@ -384,11 +399,11 @@ onBeforeUnmount(() => {
   align-items: center;
 }
 .fixed-doc-btn-wrapper {
-  position: fixed;
+  position: absolute;
   bottom: 0;
   right: 0px;
+  left: 0;
   padding: 10px 0;
-  padding-left: 30px;
   background: #fff;
   box-shadow: 0 -2px 4px 0 #0000000f;
   z-index: 1600;
