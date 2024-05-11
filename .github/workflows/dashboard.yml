@@ -2,10 +2,10 @@ name: dashboard ci
 
 on:
   push:
-    branches: [ master, pre_*, ft_*, release/* ]
+    branches: [ master, pre_*, pre/*, ft_*, release/* ]
     paths: ['src/dashboard/**']
   pull_request:
-    branches: [ master, pre_*, ft_*, release/* ]
+    branches: [ master, pre_*, pre/*, ft_*, release/* ]
     paths: ['src/dashboard/**']
 
 jobs:
