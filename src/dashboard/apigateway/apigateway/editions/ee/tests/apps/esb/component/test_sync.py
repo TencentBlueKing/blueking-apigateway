@@ -43,7 +43,18 @@ class TestComponentSynchronizer:
     def test_sync_to_resources(self, mocker, fake_gateway, fake_resource, fake_backend, fake_resource_data):
         mocker.patch(
             "apigateway.apps.esb.component.sync.ComponentSynchronizer.get_importing_resources",
-            return_value=[{"id": fake_resource.id, "name": "test", "path": "/test", "method": "GET"}],
+            return_value=[
+                {
+                    "id": fake_resource.id,
+                    "name": "test",
+                    "path": "/test",
+                    "method": "GET",
+                    "backend_config": {
+                        "method": "GET",
+                        "path": "/backend/test1",
+                    },
+                }
+            ],
         )
         mocker.patch(
             "apigateway.apps.esb.component.sync.ResourcesImporter.from_resources",
