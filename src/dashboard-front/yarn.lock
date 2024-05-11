@@ -1105,6 +1105,11 @@
     eslint-plugin-vue "^9.16.1"
     typescript "^5.1.6"
 
+"@blueking/login-modal@^1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@blueking/login-modal/-/login-modal-1.0.3.tgz#dd2cb357b38254e545b6c03523f177386f23fa2c"
+  integrity sha512-WGqIQpzSDJNH20lwjNo8OAEMmzF8wawTAEhNRodWeu+kW6QqZuTdGkp74bCU92vGdQ7CwhArmpZqizvDpXwxVQ==
+
 "@blueking/notice-component@^2.0.2":
   version "2.0.2"
   resolved "https://registry.npmjs.org/@blueking/notice-component/-/notice-component-2.0.2.tgz"

@@ -43,7 +43,7 @@
         </template>
       </bk-navigation>
 
-      <AppAuth ref="authRef" />
+      <!-- <AppAuth ref="authRef" /> -->
     </div>
   </BkConfigProvider>
 </template>
@@ -54,7 +54,7 @@ import {
   computed,
   watch,
   onMounted,
-  onBeforeMount,
+  // onBeforeMount,
 } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
@@ -71,11 +71,11 @@ import '@blueking/notice-component/dist/style.css';
 import UserInfo from '@/components/user-info.vue';
 import ProductInfo from '@/components/product-info.vue';
 import LanguageToggle from '@/components/language-toggle.vue';
-import AppAuth from '@/components/auth/index.vue';
+// import AppAuth from '@/components/auth/index.vue';
 import mitt from '@/common/event-bus';
 import { useUser } from '@/store';
 import { getUser, getFeatureFlags } from '@/http';
-import { ILoginData } from '@/common/auth';
+// import { ILoginData } from '@/common/auth';
 import { useSidebar } from '@/hooks';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
@@ -176,7 +176,7 @@ const headerList = computed(() => ([
 ]));
 
 const systemCls = ref('mac');
-const authRef = ref();
+// const authRef = ref();
 
 const apigwId = computed(() => {
   if (route.params.id !== undefined) {
@@ -307,21 +307,21 @@ onMounted(() => {
     curLeavePageData.value = payload;
     initSidebarFormData(payload);
   });
-  mitt.on('show-login-modal', (payload: ILoginData) => {
-    authRef.value.showLoginModal(payload);
-  });
-  mitt.on('close-login-modal', () => {
-    authRef.value.hideLoginModal();
-    setTimeout(() => {
-      window.location.reload();
-    }, 0);
-  });
+  // mitt.on('show-login-modal', (payload: ILoginData) => {
+  //   authRef.value.showLoginModal(payload);
+  // });
+  // mitt.on('close-login-modal', () => {
+  //   authRef.value.hideLoginModal();
+  //   setTimeout(() => {
+  //     window.location.reload();
+  //   }, 0);
+  // });
 });
 
-onBeforeMount(() => {
-  mitt.off('show-login-modal');
-  mitt.off('close-login-modal');
-});
+// onBeforeMount(() => {
+//   mitt.off('show-login-modal');
+//   mitt.off('close-login-modal');
+// });
 </script>
 
 <style>
