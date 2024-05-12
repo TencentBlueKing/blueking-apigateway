@@ -34,9 +34,16 @@
                   class="mt15 mb15" />
 
                 <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
+                  <p class="publish-version-tips">
+                    {{ t('发布的资源版本（ 当前版本：{version}', { version: currentAssets.resource_version.version || '--' }) }}
+                    <template v-if="isRollback && currentAssets.resource_version.version">
+                      ，<span>{{ t('发布后，将回滚至 {version} 版本', { version: resourceVersion }) }}</span>
+                    </template>
+                    {{ t('）') }}
+                  </p>
                   <bk-form-item
                     property="resource_version_id"
-                    :label="`发布的资源版本(当前版本: ${currentAssets.resource_version.version || '--'})`">
+                    label="">
                     <bk-select
                       ref="selectVersionRef"
                       v-model="formData.resource_version_id"
@@ -117,6 +124,7 @@
               <div class="resource-diff-main">
                 <version-diff
                   ref="diffRef"
+                  page-type="publishEnvironment"
                   :source-id="currentAssets.resource_version.id"
                   :target-id="formData.resource_version_id"
                   :source-switch="false"
@@ -131,7 +139,7 @@
               </bk-button>
               <template v-else-if="stepsConfig.curStep === 2">
                 <bk-button theme="primary" style="width: 100px" @click="showPublishDia">
-                  {{ $t('确认发布') }}
+                  {{ isRollback ? $t('确认回滚') : $t('确认发布') }}
                 </bk-button>
                 <bk-button style="margin-left: 4px; width: 100px" @click="handleBack">
                   {{ $t('上一步') }}
@@ -169,6 +177,7 @@ import versionDiff from '@/components/version-diff/index.vue';
 import logDetails from '@/components/log-details/index.vue';
 import { Message, InfoBox } from 'bkui-vue';
 import { useSidebar } from '@/hooks';
+import dayjs from 'dayjs';
 
 const route = useRoute();
 const router = useRouter();
@@ -206,6 +215,7 @@ const versionList = ref<any>([]);
 const formRef = ref(null);
 const logDetailsRef = ref(null);
 const selectVersionRef = ref(null);
+const isRollback = ref<boolean>(true);
 
 interface FormData {
   resource_version_id: number | undefined;
@@ -241,15 +251,29 @@ const rules = {
 const publishId = ref();
 
 const showPublishDia = () => {
-  InfoBox({
-    title: '确认发布资源？',
-    subTitle: `将发布资源 ${resourceVersion.value} 版本至【${props.currentAssets.name}】环境`,
-    confirmText: '确定',
-    cancelText: '取消',
-    onConfirm: () => {
-      handlePublish();
-    },
-  });
+  if (isRollback.value) {
+    InfoBox({
+      infoType: 'warning',
+      title: t('确认回滚 {version} 版本至 {stage} 环境？', { version: resourceVersion.value, stage: props.currentAssets.name }),
+      subTitle: t('发布后，将会覆盖原来的资源版本，请谨慎操作！'),
+      confirmText: t('确认回滚'),
+      cancelText: t('取消'),
+      onConfirm: () => {
+        handlePublish();
+      },
+    });
+  } else {
+    InfoBox({
+      infoType: 'warning',
+      title: t('确认发布 {version} 版本至 {stage} 环境？', { version: resourceVersion.value, stage: props.currentAssets.name }),
+      subTitle: t('发布后，将会覆盖原来的资源版本，请谨慎操作！'),
+      confirmText: t('确认发布'),
+      cancelText: t('取消'),
+      onConfirm: () => {
+        handlePublish();
+      },
+    });
+  }
 };
 
 const handlePublish = async () => {
@@ -328,6 +352,16 @@ const getResourceVersions = async () => {
 };
 
 const handleVersionChange = async (payload: Record<string, string>) => {
+  const curVersion = versionList.value?.filter((item: any) => item.id === props.currentAssets?.resource_version?.id)[0];
+  if (curVersion) {
+    const curDate = dayjs(curVersion.created_time);
+    const chooseDate = dayjs(payload.created_time);
+    if (curDate.isBefore(chooseDate)) {
+      isRollback.value = false;
+    } else {
+      isRollback.value = true;
+    }
+  }
   if (payload.disabled) {
     return;
   }
@@ -521,6 +555,15 @@ defineExpose({
         color: #979BA5;
       }
     }
+  }
+}
+.publish-version-tips {
+  font-size: 14px;
+  font-weight: 400;
+  color: #63656e;
+  margin-bottom: 8px;
+  span {
+    color: #FF9C01;
   }
 }
 </style>
