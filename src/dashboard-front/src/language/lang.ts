@@ -1416,6 +1416,14 @@ const lang: ILANG = {
   '删除标签成功': ['Label deleted successfully'],
   '--': ['--'],
   '蓝鲸应用认证，用户认证': ['BlueKing app authentication, User Verified'],
+  '确认回滚': ['Acknowledge rollback'],
+  '发布后，将回滚至 {version} 版本': ['When published, it is rolled back to the {version} version'],
+  '发布的资源版本（ 当前版本：{version}': ['Released resource version ( Current version: {version}'],
+  '）': [')'],
+  '确认回滚 {version} 版本至 {stage} 环境？': ['Are you sure you want to roll back {version} to {stage}?'],
+  '确认发布 {version} 版本至 {stage} 环境？': ['Are you sure to release {version} to the {stage} environment?'],
+  '发布后，将会覆盖原来的资源版本，请谨慎操作！': ['After the release, the original resource version will be overwritten, please exercise caution!'],
+
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

@@ -334,6 +334,7 @@
                 :cur-resource="curResource"
                 :apigw-id="apigwId"
                 height="calc(100vh - 348px)"
+                doc-root-class="doc-tab"
                 ref="componentRef"
                 @done="(v: boolean | any) => {
                   isComponentLoading = !!v
@@ -430,10 +431,15 @@
       quick-close
       :title="docSliderConf.title"
       width="780"
-      ext-cls="doc-sideslider-cls">
+      ext-cls="doc-sideslider-cls doc-sides">
       <template #default>
         <ResourcesDoc
-          :cur-resource="curResource" @fetch="handleSuccess" @on-update="handleUpdateTitle"></ResourcesDoc>
+          :cur-resource="curResource"
+          @fetch="handleSuccess"
+          source="side"
+          doc-root-class="doc-sideslider"
+          @on-update="handleUpdateTitle">
+        </ResourcesDoc>
       </template>
     </bk-sideslider>
 
@@ -1490,6 +1496,12 @@ onBeforeMount(() => {
   cursor: default;
   &:hover {
     background: #d7d9e1 !important;
+  }
+}
+.doc-sides {
+  :deep(.bk-modal-content) {
+    max-height: calc(100vh - 52px);
+    overflow: hidden;
   }
 }
 </style>
