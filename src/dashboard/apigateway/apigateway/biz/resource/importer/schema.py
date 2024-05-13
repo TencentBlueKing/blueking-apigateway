@@ -94,36 +94,20 @@ def _get_apigw_schema_content(spec_version: SpecVersion) -> Mapping[Hashable, An
     return content
 
 
-def get_apigw_schema_validator(spec_version: SpecVersion) -> SpecValidatorProxy:
+def init_validator_schema():
     """
-    根据版本获取不同的 spec_validator
+    初始化为schema_validator使用自定义schema
     """
-    spec_validator = SPEC2VALIDATOR[spec_version]
-
-    get_apigw_schema_content = Proxy(partial(_get_apigw_schema_content, spec_version))
-
-    # 修改一下spec_validator的 schema_validator
-    if spec_version == versions.OPENAPIV31:
-        spec_validator.schema_validator = Proxy(partial(Draft202012Validator, get_apigw_schema_content))
-    else:
-        spec_validator.schema_validator = Proxy(partial(Draft4Validator, get_apigw_schema_content))
-
-    return openapi_validator_mapping[spec_version]
-
-
-def set_openapi_parser_schema_validator(spec_version: SpecVersion):
-    """
-    设置openai转换器使用的schema_validator
-    """
-    get_apigw_schema_content = Proxy(partial(_get_apigw_schema_content, spec_version))
-
-    # 修改一下spec_validator的 schema_validator
-    if spec_version == versions.OPENAPIV31:
-        SPEC2VALIDATOR[spec_version].schema_validator = Proxy(partial(Draft202012Validator, get_apigw_schema_content))
-    else:
-        SPEC2VALIDATOR[spec_version].schema_validator = Proxy(partial(Draft4Validator, get_apigw_schema_content))
-
-    SPEC2VALIDATOR[spec_version].keyword_validators["operation"] = ApigwOperationValidator
+    for spec_version in openapi_validator_mapping:
+        get_apigw_schema_content = Proxy(partial(_get_apigw_schema_content, spec_version))
+        # 修改一下spec_validator的 schema_validator
+        if spec_version == versions.OPENAPIV31:
+            SPEC2VALIDATOR[spec_version].schema_validator = Proxy(
+                partial(Draft202012Validator, get_apigw_schema_content)
+            )
+        else:
+            SPEC2VALIDATOR[spec_version].schema_validator = Proxy(partial(Draft4Validator, get_apigw_schema_content))
+        SPEC2VALIDATOR[spec_version].keyword_validators["operation"] = ApigwOperationValidator
 
 
 def convert_openapi2_formdata_to_openapi(
@@ -290,11 +274,11 @@ def convert_responses_to_openapi2(responses):
     """
     responses_openapi2 = {}
     for status_code, response3 in responses.items():
-        responses_openapi2 = {"description": response3.get("description", ""), "schema": {}}
+        response2 = {"description": response3.get("description", ""), "schema": {}}
         # OpenAPI 2.0 不支持每个响应状态码的多媒体类型，因此我们合并所有媒体类型
-        for content_type, content_value in response3.get("content", {}).items():
-            responses_openapi2["schema"][content_type] = content_value["schema"]
-        responses_openapi2[status_code] = responses_openapi2
+        for content_value in response3.get("content", {}).values():
+            response2["schema"] = content_value["schema"]  # 直接取 schema，不区分媒体类型
+        responses_openapi2[status_code] = response2
     return responses_openapi2
 
 

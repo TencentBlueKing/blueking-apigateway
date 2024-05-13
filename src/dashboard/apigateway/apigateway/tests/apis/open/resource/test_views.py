@@ -20,7 +20,13 @@
 
 class TestResourceSyncApi:
     def test_sync(
-        self, request_view, fake_gateway, fake_backend, mocker, fake_resource_swagger, ignore_related_app_permission
+        self,
+        request_view,
+        fake_gateway,
+        fake_default_backend,
+        mocker,
+        fake_resource_swagger,
+        ignore_related_app_permission,
     ):
         mocker.patch(
             "apigateway.apis.open.resource.views.ResourcesImporter.from_resources",

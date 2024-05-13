@@ -29,13 +29,16 @@ from apigateway.biz.resource.importer.constants import OpenAPIVersionKeyEnum
 from apigateway.biz.resource.importer.parser import BaseExporter, BaseParser, OpenAPIV3Parser, ResourceDataConvertor
 from apigateway.biz.resource.importer.schema import (
     SchemaValidateErr,
-    get_apigw_schema_validator,
-    set_openapi_parser_schema_validator,
+    init_validator_schema,
+    openapi_validator_mapping,
 )
 from apigateway.biz.resource.importer.validate import ResourceImportValidator
 from apigateway.biz.resource.models import ResourceData
 from apigateway.core.models import Gateway
 from apigateway.utils.yaml import yaml_loads
+
+# 初始化openapi validator schema
+init_validator_schema()
 
 
 class OpenAPIImportManager:
@@ -86,7 +89,7 @@ class OpenAPIImportManager:
         self.version = spec_version
 
         # 获取 openapi validator
-        spec_validator = get_apigw_schema_validator(spec_version)
+        spec_validator = openapi_validator_mapping[spec_version]
 
         schema_validate_result = [
             SchemaValidateErr(
@@ -131,7 +134,6 @@ class OpenAPIImportManager:
         """
         解析 openapi
         """
-        set_openapi_parser_schema_validator(self.version)
 
         parse_result = ResolvingParser(spec_string=str(self.data), backend="openapi-spec-validator", strict=False)
 
@@ -174,15 +176,15 @@ class OpenAPIExportManager:
         self.include_bk_apigateway_resource = include_bk_apigateway_resource
         self.title = title
         self.description = description
-
-    def _get_exporter(self) -> BaseExporter:
-        return BaseExporter(self.api_version, self.include_bk_apigateway_resource, self.title, self.description)
+        self._exporter = BaseExporter(
+            self.api_version, self.include_bk_apigateway_resource, self.title, self.description
+        )
 
     def export_openapi(self, resources: list, file_type: str = ""):
         """
         file_type: json/yaml
         """
-        return self._get_exporter().to_openapi(resources, file_type)
+        return self._exporter.to_openapi(resources, file_type)
 
     def get_swagger_by_paths(
         self,
@@ -192,10 +194,10 @@ class OpenAPIExportManager:
         """
         获取swagger2.0的格式导出(主要用于文档生成)
         """
-        return self._get_exporter().get_swagger_by_paths(paths, openapi_format)
+        return self._exporter.get_swagger_by_paths(paths, openapi_format)
 
     def get_swagger_by_resources(self, resources: List[Dict], file_type: str = "") -> str:
         """
         获取swagger2.0的格式导出(主要用于sdk生成)
         """
-        return self._get_exporter().get_swagger_by_resource(resources, file_type)
+        return self._exporter.get_swagger_by_resource(resources, file_type)

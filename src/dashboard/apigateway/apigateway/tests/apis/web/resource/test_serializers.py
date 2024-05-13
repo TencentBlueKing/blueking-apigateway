@@ -256,7 +256,7 @@ class TestResourceDataImportSLZ:
 
 
 class TestResourceImportInputSLZ:
-    def test_validate(self, fake_gateway, fake_backend, fake_stage, fake_resource_swagger):
+    def test_validate(self, fake_gateway, fake_default_backend, fake_stage, fake_resource_swagger):
         data = {
             "content": fake_resource_swagger,
             "selected_resources": [{"name": "foo"}],

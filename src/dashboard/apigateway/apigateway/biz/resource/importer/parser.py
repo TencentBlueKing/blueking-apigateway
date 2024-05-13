@@ -520,7 +520,7 @@ class BaseExporter:
             # schema
             schema_obj = resource.get("schema", None)
             schema = schema_obj.schema if schema_obj else {}
-            self._generate_openapi_schema(operation, schema)
+            operation.update(schema)
 
             if self.include_bk_apigateway_resource:
                 self._generate_bk_apigateway_resource(operation, resource)
@@ -568,9 +568,6 @@ class BaseExporter:
 
             paths[path][method] = operation
         return paths
-
-    def _generate_openapi_schema(self, operation: Dict[str, Any], schema: Dict[str, Any]):
-        operation.update(schema)
 
     def _generate_bk_apigateway_resource(self, operation: Dict[str, Any], resource: Dict[str, Any]):
         backend = resource.get("backend", {})

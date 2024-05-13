@@ -157,7 +157,7 @@ class TestArchiveParser:
 
 
 class TestSwagger:
-    def test_parse(self, fake_gateway, fake_resource_swagger, fake_backend):
+    def test_parse(self, fake_gateway, fake_resource_swagger, fake_default_backend):
         docs = OpenAPIParser(fake_gateway.id)._parse(fake_resource_swagger, DocLanguageEnum.ZH)
 
         assert docs[0].resource_name == "http_get_mapping_user_id"
