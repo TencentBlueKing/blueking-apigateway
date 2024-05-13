@@ -1,8 +1,14 @@
 <template>
   <div class="release-sideslider">
-    <bk-sideslider v-model:isShow="isShow" :width="960" :title="t('生成资源版本')" quick-close class="scroll">
+    <bk-sideslider
+      v-model:isShow="isShow"
+      :width="960"
+      :title="t('生成资源版本')"
+      quick-close
+      @hidden="handleCancel"
+      class="scroll">
       <template #default>
-        <div class="sideslider-content">
+        <div class="sideslider-content" v-if="!dialogShow">
           <div class="top-steps">
             <bk-steps
               :controllable="stepsConfig.controllable" :cur-step="stepsConfig.curStep"
@@ -96,17 +102,74 @@
             </div>
           </div>
         </div>
+
+        <div class="version-create-status" v-else>
+
+          <div class="create-status" v-if="loading">
+            <spinner class="status-icon" fill="#3A84FF" />
+            <p class="create-status-title">
+              {{ t('版本正在生成中...') }}
+            </p>
+            <p class="create-status-subtitle">
+              {{ t('请稍等') }}
+            </p>
+          </div>
+
+          <div class="create-status" v-if="!loading && !createError">
+            <success class="status-icon large-icon" fill="#2DCB56" />
+            <p class="create-status-title">
+              {{ t('版本生成成功') }}
+            </p>
+            <p class="create-status-subtitle">
+              {{ t('接下来你可以直接发布至环境，或跳转资源版本') }}
+            </p>
+            <div class="create-status-btns">
+              <bk-button theme="primary" @click="handlePublish">
+                {{ t('立即发布') }}
+              </bk-button>
+              <bk-button class="ml8" @click="handleSkip">
+                {{ t('跳转资源版本') }}
+              </bk-button>
+            </div>
+          </div>
+
+          <div class="create-status" v-if="!loading && createError">
+            <close class="status-icon large-icon" fill="#EA3636" />
+            <p class="create-status-title">
+              {{ t('版本生成失败') }}
+            </p>
+            <p class="create-status-subtitle">
+              {{ t('接下来你可以重试或关闭弹窗') }}
+            </p>
+            <div class="create-status-btns">
+              <bk-button theme="primary" @click="handleBuildVersion">
+                {{ t('重试') }}
+              </bk-button>
+              <bk-button class="ml8" @click="handleCancel">
+                {{ t('关闭') }}
+              </bk-button>
+            </div>
+          </div>
+        </div>
       </template>
     </bk-sideslider>
 
     <!-- 确认发布弹窗 -->
-    <custom-dialog
+    <!-- <custom-dialog
       :title="t('版本生成成功')"
       :sub-title="t('接下来，可以前往 “资源发布” 发布到不同的环境')"
       :is-show="dialogShow"
-      @comfirm="handleComfirm"
+      @comfirm="handleSkip"
       @cancel="handleCancel">
-    </custom-dialog>
+    </custom-dialog> -->
+
+    <!-- 发布资源 -->
+    <release-sideslider
+      :current-assets="stageData"
+      :version="versionData"
+      ref="releaseSidesliderRef"
+      @release-success="handleSkip()"
+    />
   </div>
 </template>
 
@@ -115,8 +178,15 @@ import { useI18n } from 'vue-i18n';
 import { ref, reactive, watch, computed } from 'vue';
 import semver from 'semver';
 import { useRoute, useRouter } from 'vue-router';
-
-import { getResourceVersionsList, createResourceVersion, resourceVersionsDiff } from '@/http';
+import { Success, Spinner, Close } from 'bkui-vue/lib/icon';
+import { Message } from 'bkui-vue';
+import releaseSideslider from '@/views/stage/overview/comps/release-sideslider.vue';
+import {
+  getResourceVersionsList,
+  createResourceVersion,
+  resourceVersionsDiff,
+  getStageList,
+} from '@/http';
 import versionDiff from '@/components/version-diff/index.vue';
 import CustomDialog from '@/components/custom-dialog/index.vue';
 
@@ -147,6 +217,10 @@ const formRef = ref(null);
 const diffSourceId = ref('');
 const diffTargetId = ref('');
 const loading = ref(false);
+const createError = ref<boolean>(false);
+const releaseSidesliderRef = ref(null);
+const versionData = ref<any>();
+const stageData = ref<any>();
 
 interface FormData {
   version: string;
@@ -200,17 +274,17 @@ const rules = {
   ],
 };
 
-// 生成版本成功并弹窗
+// 生成版本
 const handleBuildVersion = async () => {
   try {
     await formRef.value?.validate();
     loading.value = true;
+    dialogShow.value = true;
     await createResourceVersion(apigwId.value, formData);
     emit('done');
-    // 弹窗并关闭侧栏
-    dialogShow.value = true;
-    isShow.value = false;
+    createError.value = false;
   } catch (e) {
+    createError.value = true;
     console.log(e);
   } finally {
     loading.value = false;
@@ -270,14 +344,34 @@ const handleCancel = () => {
   dialogShow.value = false;
 };
 
-// 版本生成成功确认
-const handleComfirm = () => {
+const handleSkip = () => {
   handleCancel();
   setTimeout(() => {
     router.push({
       name: 'apigwResourceVersion',
     });
   }, 300);
+};
+
+const handlePublish = async () => {
+  try {
+    const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 999 });
+    const { results } = res;
+    const newVersion = results?.filter((item: any) => item.version === formData.version)[0];
+    if (newVersion?.id) {
+      versionData.value = newVersion;
+    }
+    const stages = await getStageList(apigwId.value);
+    const [defaultStage] = stages;
+    stageData.value = defaultStage;
+    releaseSidesliderRef.value.showReleaseSideslider();
+    handleCancel();
+  } catch (e) {
+    Message({
+      theme: 'error',
+      message: t('系统错误，请稍后重试'),
+    });
+  }
 };
 
 watch(
@@ -349,6 +443,33 @@ defineExpose({
     &.is-error {
       margin-bottom: 12px;
     }
+  }
+
+  .version-create-status {
+    margin-top: 238px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    .create-status-title {
+      font-size: 24px;
+      color: #313238;
+      margin-bottom: 16px;
+    }
+    .create-status-subtitle {
+      font-size: 14px;
+      color: #63656E;
+      margin-bottom: 28px;
+    }
+    .status-icon {
+      font-size: 56px;
+      &.large-icon {
+        font-size: 74px;
+      }
+    }
+  }
+  .ml8 {
+    margin-left: 8px;
   }
   </style>
 

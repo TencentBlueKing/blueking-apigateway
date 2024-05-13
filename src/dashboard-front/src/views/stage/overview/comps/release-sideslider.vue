@@ -4,7 +4,7 @@
       class="release-sideslider"
       v-model:isShow="isShow"
       :width="960"
-      :title="`发布到环境【${currentAssets.name}】`"
+      :title="t('发布资源至环境【{stage}】', { stage: chooseAssets?.name })"
       quick-close
       :before-close="handleBeforeClose"
       @animation-end="handleAnimationEnd">
@@ -21,22 +21,34 @@
                 <bk-alert
                   theme="info"
                   :title="$t('尚未发布')"
-                  v-if="currentAssets.release.status === 'unreleased'"
+                  v-if="chooseAssets?.release?.status === 'unreleased'"
                   class="mt15 mb15" />
                 <bk-alert
                   v-else
                   theme="info"
                   :title="
-                    currentAssets.resource_version.version ?
-                      `当前版本号: ${currentAssets.resource_version.version},
-                  于${currentAssets.release.created_time}发布成功; 资源更新成功后, 需发布到指定的环境, 方可生效` :
-                      '资源更新成功后, 需发布到指定的环境, 方可生效'"
+                    chooseAssets?.resource_version.version ?
+                      t('当前版本号: {version},于 {created_time} 发布成功; 资源更新成功后, 需发布到指定的环境, 方可生效', {
+                        version: chooseAssets?.resource_version.version,
+                        created_time: chooseAssets?.release.created_time
+                      }) :
+                      t('资源更新成功后, 需发布到指定的环境, 方可生效')"
                   class="mt15 mb15" />
 
                 <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
+                  <bk-form-item property="stage_id" :label="$t('发布的环境')">
+                    <bk-select v-model="formData.stage_id" :clearable="false">
+                      <bk-option
+                        v-for="item in stageList"
+                        :id="item.id"
+                        :key="item.id"
+                        :name="item.name"
+                      />
+                    </bk-select>
+                  </bk-form-item>
                   <p class="publish-version-tips">
-                    {{ t('发布的资源版本（ 当前版本：{version}', { version: currentAssets.resource_version.version || '--' }) }}
-                    <template v-if="isRollback && currentAssets.resource_version.version">
+                    {{ t('发布的资源版本（ 当前版本：{version}', { version: chooseAssets?.resource_version.version || '--' }) }}
+                    <template v-if="isRollback && chooseAssets?.resource_version.version">
                       ，<span>{{ t('发布后，将回滚至 {version} 版本', { version: resourceVersion }) }}</span>
                     </template>
                     {{ t('）') }}
@@ -47,6 +59,7 @@
                     <bk-select
                       ref="selectVersionRef"
                       v-model="formData.resource_version_id"
+                      :clearable="false"
                       :input-search="false"
                       :popover-options="{
                         extCls: 'custom-version-list'
@@ -56,32 +69,25 @@
                       id-key="id"
                       display-key="version"
                     >
-                      <!-- <bk-option
-                        v-for="(item) in versionList"
-                        :key="item.id"
-                        :value="item.id"
-                        :label="item.version"
-                        :disabled="item.disabled"
-                      /> -->
                       <template #optionRender="{ item }">
                         <div
                           :class="[
                             'version-options',
-                            { 'version-options-disabled': item.disabled },
+                            { 'version-options-disabled': item.id === curVersionId },
                           ]"
                           @click.stop="handleVersionChange(item)"
                         >
                           <span class="version-name">
                             {{ item.version }}
                           </span>
-                          <span v-if="currentAssets.resource_version.version === item.version" class="cur-version">
+                          <span v-if="chooseAssets?.resource_version.version === item.version" class="cur-version">
                             <bk-tag theme="info">
                               {{ t('当前版本') }}
                             </bk-tag>
                           </span>
                           <span
                             v-if="item.isLatestVersion"
-                            :class="[{ 'cur-version': currentAssets.resource_version.version !== item.version }]">
+                            :class="[{ 'cur-version': chooseAssets?.resource_version.version !== item.version }]">
                             <bk-tag theme="success" @click.stop="handleVersionChange(item)"> {{ t('最新版本') }}</bk-tag>
                           </span>
                         </div>
@@ -114,8 +120,17 @@
                       </span>
                     </p>
                   </bk-form-item>
-                  <bk-form-item property="comment" :label="$t('发布日志')">
+                  <!-- <bk-form-item property="comment" :label="$t('发布日志')">
                     <bk-input v-model="formData.comment" type="textarea" :rows="4" :maxlength="100" />
+                  </bk-form-item> -->
+                  <bk-form-item property="comment" :label="$t('版本日志')">
+                    <bk-input
+                      v-model="chooseVersionComment"
+                      placeholder="--"
+                      type="textarea"
+                      disabled
+                      :rows="4"
+                      :maxlength="100" />
                   </bk-form-item>
                 </bk-form>
               </div>
@@ -125,7 +140,7 @@
                 <version-diff
                   ref="diffRef"
                   page-type="publishEnvironment"
-                  :source-id="currentAssets.resource_version.id"
+                  :source-id="chooseAssets?.resource_version?.id || currentAssets?.resource_version?.id"
                   :target-id="formData.resource_version_id"
                   :source-switch="false"
                   :target-switch="false"
@@ -171,7 +186,7 @@
 import { IDialog } from '@/types';
 import { useI18n } from 'vue-i18n';
 import { ref, reactive, watch, computed } from 'vue';
-import { getResourceVersionsList, resourceVersionsDiff, createReleases } from '@/http';
+import { getResourceVersionsList, resourceVersionsDiff, createReleases, getStageList } from '@/http';
 import { useRoute, useRouter } from 'vue-router';
 import versionDiff from '@/components/version-diff/index.vue';
 import logDetails from '@/components/log-details/index.vue';
@@ -210,20 +225,24 @@ const resourceVersion = computed(() => {
   return version;
 });
 
+const chooseVersionComment = ref<string>('');
+
 const isShow = ref(false);
 const versionList = ref<any>([]);
 const formRef = ref(null);
 const logDetailsRef = ref(null);
 const selectVersionRef = ref(null);
-const isRollback = ref<boolean>(true);
+const isRollback = ref<boolean>(false);
 
 interface FormData {
   resource_version_id: number | undefined;
+  stage_id: number | undefined;
   comment: string;
 };
 // 提交数据
 const formData = reactive<FormData>({
   resource_version_id: undefined,
+  stage_id: undefined,
   comment: '',
 });
 // 差异数据
@@ -234,7 +253,7 @@ const diffData = ref({
 });
 
 const stepsConfig = ref({
-  objectSteps: [{ title: '发布信息' }, { title: '差异确认' }],
+  objectSteps: [{ title: t('发布信息') }, { title: t('差异确认') }],
   curStep: 1,
   controllable: true,
 });
@@ -243,18 +262,31 @@ const rules = {
   resource_version_id: [
     {
       required: true,
-      message: '请选择',
+      message: t('请选择'),
+      trigger: 'change',
+    },
+  ],
+  stage_id: [
+    {
+      require: true,
+      message: t('请选择'),
       trigger: 'change',
     },
   ],
 };
 const publishId = ref();
+const chooseAssets = ref<any>(props.currentAssets);
+const stageList = ref<any>([]);
+
+const getStageData = async () => {
+  stageList.value = await getStageList(apigwId.value);
+};
 
 const showPublishDia = () => {
   if (isRollback.value) {
     InfoBox({
       infoType: 'warning',
-      title: t('确认回滚 {version} 版本至 {stage} 环境？', { version: resourceVersion.value, stage: props.currentAssets.name }),
+      title: t('确认回滚 {version} 版本至 {stage} 环境？', { version: resourceVersion.value, stage: chooseAssets.value?.name }),
       subTitle: t('发布后，将会覆盖原来的资源版本，请谨慎操作！'),
       confirmText: t('确认回滚'),
       cancelText: t('取消'),
@@ -265,7 +297,7 @@ const showPublishDia = () => {
   } else {
     InfoBox({
       infoType: 'warning',
-      title: t('确认发布 {version} 版本至 {stage} 环境？', { version: resourceVersion.value, stage: props.currentAssets.name }),
+      title: t('确认发布 {version} 版本至 {stage} 环境？', { version: resourceVersion.value, stage: chooseAssets.value?.name }),
       subTitle: t('发布后，将会覆盖原来的资源版本，请谨慎操作！'),
       confirmText: t('确认发布'),
       cancelText: t('取消'),
@@ -279,7 +311,7 @@ const showPublishDia = () => {
 const handlePublish = async () => {
   try {
     const params = {
-      stage_id: props.currentAssets.id,
+      stage_id: chooseAssets.value?.id,
       ...formData,
     };
     const res = await createReleases(apigwId.value, params);
@@ -335,14 +367,16 @@ const showReleaseSideslider = () => {
   isShow.value = true;
 };
 
+const curVersionId = computed(() => {
+  const version = versionList.value?.filter((item: any) => item.id === chooseAssets.value?.resource_version?.id)[0];
+  return version?.id;
+});
+
 // 获取资源版本列表
 const getResourceVersions = async () => {
   try {
     const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 1000 });
     res.results?.forEach((item: any, index: number) => {
-      if (item.id === props.currentAssets?.resource_version?.id) {
-        item.disabled = true;
-      }
       item.isLatestVersion = index === 0;
     });
     versionList.value = res.results;
@@ -351,20 +385,9 @@ const getResourceVersions = async () => {
   };
 };
 
-const handleVersionChange = async (payload: Record<string, string>) => {
-  const curVersion = versionList.value?.filter((item: any) => item.id === props.currentAssets?.resource_version?.id)[0];
-  if (curVersion) {
-    const curDate = dayjs(curVersion.created_time);
-    const chooseDate = dayjs(payload.created_time);
-    if (curDate.isBefore(chooseDate)) {
-      isRollback.value = false;
-    } else {
-      isRollback.value = true;
-    }
-  }
-  if (payload.disabled) {
-    return;
-  }
+const handleVersionChange = async (payload: any) => {
+  if (payload.id === curVersionId.value) return;
+
   if (!payload.id) {
     diffData.value = {
       add: [],
@@ -376,7 +399,7 @@ const handleVersionChange = async (payload: Record<string, string>) => {
   };
   try {
     const query = {
-      source_resource_version_id: props.currentAssets?.resource_version?.id,
+      source_resource_version_id: chooseAssets.value?.resource_version?.id,
       target_resource_version_id: payload.id,
     };
     const res: any = await resourceVersionsDiff(apigwId.value, query);
@@ -421,6 +444,7 @@ const handleCancel = () => {
 const resetSliderData = () => {
   stepsConfig.value.curStep = 1;
   formData.resource_version_id = undefined;
+  formData.stage_id = undefined;
   formData.comment = '';
   diffData.value = {
     add: [],
@@ -440,13 +464,19 @@ watch(
   () => isShow.value,
   async (val) => {
     if (val) {
+      if (props.currentAssets?.id) {
+        formData.stage_id = props.currentAssets.id;
+        chooseAssets.value = props.currentAssets;
+      }
+
       await getResourceVersions();
+      await getStageData();
+
       if (props.version?.id) {
-        const curVersion = versionList.value.find(item => item.id === props.version?.id);
+        const curVersion = versionList.value.find((item: any) => item.id === props.version?.id);
         if (curVersion) {
           formData.resource_version_id = curVersion?.id;
           handleVersionChange({
-            disabled: curVersion.disabled,
             id: props.version?.id,
           });
         }
@@ -455,6 +485,42 @@ watch(
       resetSliderData();
       emit('hidden');
     };
+  },
+);
+
+watch(
+  () => formData.stage_id,
+  (v) => {
+    if (v && stageList.value?.length) {
+      chooseAssets.value = stageList.value?.filter((item: any) => item.id === v)[0];
+    }
+  },
+);
+
+watch(
+  () => formData.resource_version_id,
+  (v) => {
+    const choVersion = versionList.value.filter((item: any) => item.id === v)[0];
+    if (choVersion) {
+      chooseVersionComment.value = choVersion.comment;
+    }
+  },
+);
+
+watch(
+  () => [formData.resource_version_id, formData.stage_id],
+  () => {
+    const curVersion = versionList.value.filter((item: any) => item.id === chooseAssets.value?.resource_version?.id)[0];
+    const choVersion = versionList.value.filter((item: any) => item.id === formData.resource_version_id)[0];
+    if (curVersion && choVersion) {
+      const curDate = dayjs(curVersion.created_time);
+      const chooseDate = dayjs(choVersion.created_time);
+      if (curDate.isBefore(chooseDate) || curDate.isSame(chooseDate)) {
+        isRollback.value = false;
+      } else {
+        isRollback.value = true;
+      }
+    }
   },
 );
 
