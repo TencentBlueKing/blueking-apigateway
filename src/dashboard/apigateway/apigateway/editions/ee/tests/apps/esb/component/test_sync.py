@@ -40,7 +40,7 @@ class TestComponentSynchronizer:
         assert result == [{"id": 1, "name": "test", "path": "/test", "method": "GET"}]
         mock_to_resources.assert_called_once()
 
-    def test_sync_to_resources(self, mocker, fake_gateway, fake_resource, fake_backend, fake_resource_data):
+    def test_sync_to_resources(self, mocker, fake_gateway, fake_resource, fake_default_backend, fake_resource_data):
         mocker.patch(
             "apigateway.apps.esb.component.sync.ComponentSynchronizer.get_importing_resources",
             return_value=[
@@ -63,7 +63,9 @@ class TestComponentSynchronizer:
                     "import_resources.return_value": None,
                     "get_deleted_resources.return_value": [],
                     "get_selected_resource_data_list.return_value": [
-                        fake_resource_data.copy(update={"resource": fake_resource, "backend": fake_backend}, deep=True)
+                        fake_resource_data.copy(
+                            update={"resource": fake_resource, "backend": fake_default_backend}, deep=True
+                        )
                     ],
                 }
             ),
