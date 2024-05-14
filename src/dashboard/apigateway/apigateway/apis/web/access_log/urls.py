@@ -18,7 +18,7 @@
 #
 from django.urls import include, path
 
-from .views import LogDetailListApi, LogLinkRetrieveApi, LogTimeChartRetrieveApi, SearchLogListApi
+from .views import LogDetailRetrieveApi, LogLinkRetrieveApi, LogTimeChartRetrieveApi, SearchLogListApi
 
 urlpatterns = [
     path("", SearchLogListApi.as_view(), name="access_log.logs"),
@@ -27,7 +27,7 @@ urlpatterns = [
         "<slug:request_id>/",
         include(
             [
-                path("", LogDetailListApi.as_view(), name="access_log.logs.detail"),
+                path("", LogDetailRetrieveApi.as_view(), name="access_log.logs.detail"),
                 path("link/", LogLinkRetrieveApi.as_view(), name="access_log.logs.link"),
             ]
         ),
