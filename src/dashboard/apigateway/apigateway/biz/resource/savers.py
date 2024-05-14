@@ -23,6 +23,7 @@ from django.utils.translation import gettext as _
 from pydantic import parse_obj_as
 
 from apigateway.apps.label.models import APILabel, ResourceLabel
+from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.biz.resource import ResourceHandler
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, ProxyTypeEnum
@@ -65,6 +66,7 @@ class ResourcesSaver:
         self._save_proxies(resource_ids)
         self._save_auth_configs(resource_ids)
         self._save_resource_labels(resource_ids)
+        self._save_resource_openapi_schema(resource_ids)
 
         return [resource_data.resource for resource_data in self.resource_data_list if resource_data.resource]
 
@@ -250,3 +252,55 @@ class ResourcesSaver:
 
         if remaining_resource_labels:
             ResourceLabel.objects.filter(id__in=remaining_resource_labels.values()).delete()
+
+    def _save_resource_openapi_schema(self, resource_ids: List[int]):
+        """
+        保存resource openapi schema
+        """
+        remaining_schemas: Dict[int, OpenAPIResourceSchema] = {}
+        for schema in OpenAPIResourceSchema.objects.filter(resource_id__in=resource_ids):
+            remaining_schemas[schema.resource_id] = schema
+
+        add_schemas = []
+        update_schemas = []
+        del_schema_ids = []
+        for resource_data in self.resource_data_list:
+            assert resource_data.resource
+            no_schema = resource_data.openapi_schema == {}
+
+            if resource_data.resource.id in remaining_schemas:
+                old_schema = remaining_schemas[resource_data.resource.id]
+                if no_schema:
+                    del_schema_ids.append(old_schema.id)
+                    continue
+                # 更新schema
+                old_schema.schema = resource_data.openapi_schema
+                old_schema.update_by = self.username
+                old_schema.updated_time = now_datetime()
+                update_schemas.append(old_schema)
+            else:
+                if no_schema:
+                    continue
+
+                # 新增schema
+                add_schemas.append(
+                    OpenAPIResourceSchema(
+                        resource=resource_data.resource,
+                        schema=resource_data.openapi_schema,
+                        created_by=self.username,
+                        updated_by=self.username,
+                    )
+                )
+
+        if len(add_schemas) > 0:
+            OpenAPIResourceSchema.objects.bulk_create(add_schemas, batch_size=BULK_BATCH_SIZE)
+
+        if len(del_schema_ids) > 0:
+            OpenAPIResourceSchema.objects.filter(id__in=del_schema_ids).delete()
+
+        if len(update_schemas) > 0:
+            OpenAPIResourceSchema.objects.bulk_update(
+                update_schemas,
+                fields=["schema", "updated_time", "updated_by"],
+                batch_size=BULK_BATCH_SIZE,
+            )

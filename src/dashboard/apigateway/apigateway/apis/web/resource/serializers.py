@@ -27,14 +27,13 @@ from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apis.web.resource.validators import BackendPathVarsValidator, PathVarsValidator
 from apigateway.apps.plugin.models import PluginConfig
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SwaggerFormatEnum
+from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, OpenAPIFormatEnum
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_label import GatewayLabelHandler
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource.importer.swagger import ResourceSwaggerImporter
+from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
-from apigateway.common.exceptions import SchemaValidationError
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES
 from apigateway.core.models import Backend, Gateway, Resource
@@ -331,6 +330,7 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
     auth_config = serializers.SerializerMethodField(help_text="认证配置")
     backend = serializers.SerializerMethodField(help_text="后端服务")
     labels = serializers.SerializerMethodField(help_text="标签列表")
+    schema = serializers.SerializerMethodField(help_text="参数协议")
 
     class Meta:
         model = Resource
@@ -347,6 +347,7 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
             "auth_config",
             "backend",
             "labels",
+            "schema",
         ]
         read_only_fields = fields
 
@@ -391,6 +392,13 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
 
     def get_labels(self, obj):
         return self.context["labels"].get(obj.id, [])
+
+    def get_schema(self, obj):
+        resource_schema = self.context["resource_id_to_schema"].get(obj.id)
+        if resource_schema:
+            return resource_schema.schema
+
+        return {}
 
 
 class ResourceBatchUpdateInputSLZ(serializers.Serializer):
@@ -533,6 +541,7 @@ class SelectedResourceSLZ(serializers.Serializer):
 
 
 class ResourceImportInputSLZ(serializers.Serializer):
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     content = serializers.CharField(allow_blank=False, required=True, help_text="导入内容，yaml/json 格式字符串")
     selected_resources = serializers.ListField(
         child=SelectedResourceSLZ(),
@@ -546,36 +555,39 @@ class ResourceImportInputSLZ(serializers.Serializer):
     )
 
     def validate(self, data):
-        data["resources"] = self._validate_content(data["content"])
+        data["validate_result"] = self._validate_content(data["content"])
         return data
 
     def _validate_content(self, content: str):
-        # 将 swagger 内容转换为内部资源数据；
+        # 将 openapi 内容转换为内部资源数据；
         # 此部分主要使用 SLZ 做数据转换 + 单字段值有效性校验（如正则）,
         # 不做复杂的业务逻辑校验，业务逻辑校验统一放到 ResourceImportValidator 处理
         try:
-            importer = ResourceSwaggerImporter(content)
+            openapi_manager = OpenAPIImportManager.load_from_content(self.context["gateway"], content)
         except Exception as err:
             raise serializers.ValidationError(
                 {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)}
             )
 
-        try:
-            importer.validate()
-        except SchemaValidationError as err:
-            raise serializers.ValidationError(
-                {"content": _("导入内容不符合 swagger 2.0 协议，{err}。").format(err=err)}
+        validate_err_list = openapi_manager.validate()
+        if len(validate_err_list) != 0:
+            slz = ResourceImportCheckFailOutputSLZ(
+                instance=validate_err_list,
+                many=True,
             )
+            return {"validate_err_list": slz.data}
 
         slz = ResourceDataImportSLZ(
-            data=importer.get_resources(),
+            data=openapi_manager.get_resource_list(raw=True),
             many=True,
             context={
                 "stages": self.context["stages"],
             },
         )
         slz.is_valid(raise_exception=True)
-        return slz.validated_data
+        return {
+            "resource_list": openapi_manager.get_resource_list(),
+        }
 
 
 class ResourceImportCheckInputSLZ(ResourceImportInputSLZ):
@@ -587,6 +599,11 @@ class ResourceImportCheckInputSLZ(ResourceImportInputSLZ):
     )
 
 
+class ResourceImportCheckFailOutputSLZ(serializers.Serializer):
+    message = serializers.CharField(read_only=True, help_text="check失败信息")
+    json_path = serializers.CharField(read_only=True, help_text="对应的path")
+
+
 class ResourceImportCheckOutputSLZ(serializers.Serializer):
     id = serializers.SerializerMethodField(help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
@@ -594,6 +611,14 @@ class ResourceImportCheckOutputSLZ(serializers.Serializer):
     method = serializers.CharField(read_only=True, help_text="请求方法")
     path = serializers.SerializerMethodField(help_text="请求路径")
     doc = serializers.SerializerMethodField(help_text="资源文档")
+    schema = serializers.SerializerMethodField(help_text="参数协议")
+    plugin_configs = serializers.ListField(
+        child=PluginConfigImportSLZ(),
+        allow_empty=True,
+        allow_null=True,
+        required=False,
+        help_text="插件配置列表",
+    )
 
     def get_id(self, obj):
         return obj.resource and obj.resource.id
@@ -605,6 +630,9 @@ class ResourceImportCheckOutputSLZ(serializers.Serializer):
         resource_id = self.get_id(obj)
         return self.context["docs"].get(resource_id, {"id": None, "language": self.context["doc_language"]})
 
+    def get_schema(self, obj):
+        return obj.openapi_schema
+
 
 class ResourceExportInputSLZ(serializers.Serializer):
     export_type = serializers.ChoiceField(
@@ -612,8 +640,8 @@ class ResourceExportInputSLZ(serializers.Serializer):
         help_text="值为 all，不需其它参数；值为 filtered，支持 query/path/method/label_name 参数；值为 selected，支持 resource_ids 参数",
     )
     file_type = serializers.ChoiceField(
-        choices=SwaggerFormatEnum.get_choices(),
-        default=SwaggerFormatEnum.YAML.value,
+        choices=OpenAPIFormatEnum.get_choices(),
+        default=OpenAPIFormatEnum.YAML.value,
         help_text="导出的文件类型，如 yaml/json",
     )
     resource_filter_condition = ResourceQueryInputSLZ(
@@ -641,6 +669,7 @@ class ResourceExportOutputSLZ(serializers.Serializer):
     backend = serializers.SerializerMethodField(help_text="后端服务")
     plugin_configs = serializers.SerializerMethodField(help_text="插件配置")
     auth_config = serializers.SerializerMethodField(help_text="认证配置")
+    schema = serializers.SerializerMethodField(help_text="参数协议")
 
     def get_labels(self, obj):
         labels = self.context["labels"].get(obj.id, [])
@@ -658,6 +687,9 @@ class ResourceExportOutputSLZ(serializers.Serializer):
 
     def get_plugin_configs(self, obj) -> List[PluginConfig]:
         return [binding.config for binding in self.context["resource_id_to_plugin_bindings"].get(obj.id, [])]
+
+    def get_schema(self, obj):
+        return self.context["resource_id_to_schema"].get(obj.id, {})
 
 
 class BackendPathCheckInputSLZ(serializers.Serializer):

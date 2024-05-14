@@ -26,15 +26,15 @@ from bkapi_client_generator import GenerateFailed, generate_client
 
 from apigateway.apps.support.api_sdk import exceptions
 from apigateway.apps.support.api_sdk.models import Generator
-from apigateway.biz.constants import SwaggerFormatEnum
-from apigateway.biz.resource.importer.swagger import ResourceSwaggerExporter
+from apigateway.biz.constants import OpenAPIFormatEnum
+from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
 from apigateway.utils.file import write_to_file
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class SwaggerTemplateGenerator(Generator):
+class OpenAPITemplateGenerator(Generator):
     template_name: ClassVar[str] = "demo"
 
     def _generate_client(self, swagger_path, output_dir):
@@ -54,14 +54,14 @@ class SwaggerTemplateGenerator(Generator):
             raise exceptions.GenerateError(f"failed to generate client package {self.context.name}") from err
 
     def generate(self, output_dir: str, resources: List[Dict[str, Any]]):
-        exporter = ResourceSwaggerExporter(
+        exporter = OpenAPIExportManager(
             api_version=self.context.version,
             title=self.context.resource_version.gateway.name,
             description=self.context.resource_version.gateway.description,
             include_bk_apigateway_resource=False,
         )
 
-        swagger = exporter.to_swagger(resources, SwaggerFormatEnum.YAML.value)
+        swagger = exporter.get_swagger_by_resources(resources, OpenAPIFormatEnum.YAML.value)
 
         with tempfile.TemporaryDirectory() as temp_dir:
             swagger_path = os.path.join(temp_dir, "swagger.yaml")
@@ -76,9 +76,9 @@ class SwaggerTemplateGenerator(Generator):
                 shutil.move(os.path.join(package_dir, name), output_dir)
 
 
-class PythonTemplateGenerator(SwaggerTemplateGenerator):
+class PythonTemplateGenerator(OpenAPITemplateGenerator):
     template_name = "bkapi_python"
 
 
-class GolangTemplateGenerator(SwaggerTemplateGenerator):
+class GolangTemplateGenerator(OpenAPITemplateGenerator):
     template_name = "bkapi_golang"

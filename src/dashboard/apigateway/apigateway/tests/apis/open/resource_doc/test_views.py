@@ -38,7 +38,7 @@ class TestDocImportByArchiveApi:
 
 class TestDocImportBySwaggerApi:
     def test_post(self, request_view, mocker, faker, ignore_related_app_permission, fake_gateway):
-        mocker.patch("apigateway.apis.web.resource_doc.views.SwaggerParser.parse", return_value=[])
+        mocker.patch("apigateway.apis.web.resource_doc.views.OpenAPIParser.parse", return_value=[])
         mocker.patch("apigateway.apis.web.resource_doc.views.DocImporter.import_docs")
 
         resp = request_view(

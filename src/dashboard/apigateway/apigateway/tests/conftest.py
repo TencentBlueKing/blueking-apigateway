@@ -30,6 +30,7 @@ from django.contrib.auth import get_user_model
 from django.urls import resolve, reverse
 from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
+from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum, PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
@@ -145,6 +146,30 @@ def fake_backend(fake_gateway, fake_stage, faker):
         Backend,
         gateway=fake_gateway,
         name=faker.pystr(),
+    )
+
+    G(
+        BackendConfig,
+        gateway=fake_gateway,
+        stage=fake_stage,
+        backend=backend,
+        config={
+            "type": "node",
+            "timeout": 30,
+            "loadbalance": "roundrobin",
+            "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 100}],
+        },
+    )
+
+    return backend
+
+
+@pytest.fixture
+def fake_default_backend(fake_gateway, fake_stage, faker):
+    backend = G(
+        Backend,
+        gateway=fake_gateway,
+        name="default",
     )
 
     G(
@@ -301,6 +326,26 @@ def fake_resource_version(faker, fake_gateway, fake_resource1, fake_resource2):
     resource_version.data = ResourceVersionHandler.make_version(fake_gateway)
     resource_version.save()
     return resource_version
+
+
+@pytest.fixture
+def fake_resource_schema(fake_gateway, fake_resource):
+    return G(
+        OpenAPIResourceSchema,
+        resource=fake_resource,
+        schema={
+            "parameters": [
+                {
+                    "name": "userId",
+                    "in": "path",
+                    "description": "ID of User",
+                    "required": True,
+                    "type": "integer",
+                    "format": "int64",
+                }
+            ],
+        },
+    )
 
 
 @pytest.fixture
@@ -792,6 +837,44 @@ def fake_resource_swagger():
             },
         }
     )
+
+
+@pytest.fixture
+def fake_openapi_content():
+    return {
+        "swagger": "2.0",
+        "basePath": "/",
+        "info": {},
+        "schemes": ["http"],
+        "paths": {},
+    }
+
+
+@pytest.fixture
+def fake_resource_dict():
+    return {
+        "method": "POST",
+        "path": "/users",
+        "match_subpath": False,
+        "name": "add_user",
+        "description": "创建新用户",
+        "description_en": "Adds a new user",
+        "labels": ["testing"],
+        "is_public": True,
+        "allow_apply_permission": True,
+        "backend": {
+            "name": "default",
+            "config": {
+                "method": "POST",
+                "path": "/users",
+                "match_subpath": False,
+                "timeout": 0,
+            },
+        },
+        "auth_config": {
+            "auth_verified_required": True,
+        },
+    }
 
 
 @pytest.fixture

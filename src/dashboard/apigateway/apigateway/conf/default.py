@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     "apigateway.apps.audit",
     "apigateway.apps.metrics",
     "apigateway.apps.support",
+    "apigateway.apps.openapi",
     "django_prometheus",
     "bkpaas_auth",
     "apigateway.account",
