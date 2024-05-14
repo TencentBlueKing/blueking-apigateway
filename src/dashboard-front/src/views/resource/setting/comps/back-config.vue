@@ -377,7 +377,7 @@ const handleServiceChange = async (backendId: number) => {
   const res = await getBackendsDetailData(common.apigwId, backendId);
   const resStorage: any = cloneDeep(res);
   const detailTimeout = props.detail?.backend?.config?.timeout;
-  if (detailTimeout !== 0) {
+  if (detailTimeout !== 0 && detailTimeout !== undefined && detailTimeout !== null) {
     res.configs.forEach((item:any) => {
       item.timeout = detailTimeout;
     });
