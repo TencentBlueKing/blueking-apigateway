@@ -14,8 +14,8 @@ export default (errorData: any, config: IFetchConfig) => {
   const loginCallbackURL = `${window.BK_DASHBOARD_FE_URL}/static/login_success.html?is_ajax=1`;
   const siteLoginUrl = BK_LOGIN_URL || '';
   const loginUrl = `${BK_LOGIN_URL}?app_code=1&c_url=${encodeURIComponent(loginCallbackURL)}`;
-  let iframeWidth = 400;
-  let iframeHeight = 380;
+  let iframeWidth = 700;
+  let iframeHeight = 500;
   switch (status) {
     // 参数错误
     case 400:

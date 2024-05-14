@@ -1106,9 +1106,9 @@
     typescript "^5.1.6"
 
 "@blueking/login-modal@^1.0.3":
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/@blueking/login-modal/-/login-modal-1.0.3.tgz#dd2cb357b38254e545b6c03523f177386f23fa2c"
-  integrity sha512-WGqIQpzSDJNH20lwjNo8OAEMmzF8wawTAEhNRodWeu+kW6QqZuTdGkp74bCU92vGdQ7CwhArmpZqizvDpXwxVQ==
+  version "1.0.4"
+  resolved "https://registry.npmjs.org/@blueking/login-modal/-/login-modal-1.0.4.tgz"
+  integrity sha512-HMSIZl4QeRAPEVcD/FV2vysnZxJiDSVeLppVw65wvQnvNwos2JwqjoCSoS46Joe/JY/H0r89RgA2WIkneOekNg==
 
 "@blueking/notice-component@^2.0.2":
   version "2.0.2"
@@ -2707,7 +2707,7 @@ binary-extensions@^2.0.0:
 
 bkui-vue@1.0.3-beta.58:
   version "1.0.3-beta.58"
-  resolved "https://registry.yarnpkg.com/bkui-vue/-/bkui-vue-1.0.3-beta.58.tgz#cbdcb53057278baa8fb80a32ed3edef6e2c01f01"
+  resolved "https://registry.npmjs.org/bkui-vue/-/bkui-vue-1.0.3-beta.58.tgz"
   integrity sha512-5ONl2Z1I0uBUmn93SUiAk+pXYBaPPyl9FNhJURB+cKaKYu/XoCv9lLphEe9ztlLD/MK44vGEOnEjcXGaMY3Y5A==
   dependencies:
     "@floating-ui/dom" "~1.5.0"
