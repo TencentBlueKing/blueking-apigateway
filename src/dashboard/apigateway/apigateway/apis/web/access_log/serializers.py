@@ -90,7 +90,6 @@ class RequestLogOutputSLZ(serializers.Serializer):
     response_body = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="响应体")
     status = serializers.IntegerField(required=False, allow_null=True, help_text="响应状态码")
 
-    # headers = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="响应头")
     request_duration = serializers.IntegerField(required=False, allow_null=True, help_text="请求耗时")
     backend_duration = serializers.IntegerField(required=False, allow_null=True, help_text="后端请求耗时")
 
