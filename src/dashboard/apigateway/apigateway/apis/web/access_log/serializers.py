@@ -50,6 +50,7 @@ class RequestLogQueryInputSLZ(serializers.Serializer):
                     continue
                 k, v = expr.split(":", 1)
                 include_conditions[k] = v
+        data["include_conditions"] = include_conditions
 
         exclude_conditions = {}
         if data.get("exclude"):
@@ -58,6 +59,7 @@ class RequestLogQueryInputSLZ(serializers.Serializer):
                     continue
                 k, v = expr.split(":", 1)
                 exclude_conditions[k] = v
+        data["exclude_conditions"] = exclude_conditions
 
         return data
 
