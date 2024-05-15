@@ -27,7 +27,8 @@ class IAMGradeManagerAdmin(admin.ModelAdmin):
         "gateway",
         "grade_manager_id",
     ]
-    search_fields = ["gateway_id", "grade_manager_id"]
+    search_fields = ["gateway__id", "gateway__name", "grade_manager_id"]
+    list_filter = ["gateway"]
 
 
 class IAMUserGroupAdmin(admin.ModelAdmin):
@@ -37,8 +38,8 @@ class IAMUserGroupAdmin(admin.ModelAdmin):
         "role",
         "user_group_id",
     ]
-    search_fields = ["gateway_id", "grade_manager_id"]
-    list_filter = ["gateway"]
+    search_fields = ["gateway__id", "gateway__name", "grade_manager_id"]
+    list_filter = ["gateway", "role"]
 
 
 admin.site.register(IAMGradeManager, IAMGradeManagerAdmin)

@@ -23,7 +23,7 @@ from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, Reso
 class ResourceDocAdmin(admin.ModelAdmin):
     list_display = ["id", "gateway", "resource_id", "language", "source", "updated_by", "updated_time"]
     search_fields = ["id", "resource_id"]
-    list_filter = ["gateway", "language"]
+    list_filter = ["gateway", "language", "source"]
 
 
 class ResourceDocVersionAdmin(admin.ModelAdmin):
