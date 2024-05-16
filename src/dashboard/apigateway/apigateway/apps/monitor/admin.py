@@ -34,8 +34,8 @@ class AlarmStrategyAdmin(admin.ModelAdmin):
         "alarm_subtype",
         "enabled",
     )
-    list_filter = ["gateway"]
-    search_fields = ("name",)
+    list_filter = ["gateway", "alarm_type", "alarm_subtype"]
+    search_fields = ("name", "gateway__id", "gateway__name")
     filter_horizontal = ["api_labels"]
 
 

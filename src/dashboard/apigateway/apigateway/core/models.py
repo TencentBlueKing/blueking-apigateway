@@ -332,6 +332,9 @@ class Backend(TimestampedModelMixin, OperatorModelMixin):
         unique_together = ("gateway", "name")
         db_table = "core_backend"
 
+    def __str__(self):
+        return f"<Backend: {self.id}/{self.name}>"
+
 
 class BackendConfig(TimestampedModelMixin, OperatorModelMixin):
     gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)

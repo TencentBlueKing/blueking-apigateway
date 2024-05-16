@@ -15,7 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import List
 
 from django.contrib import admin
 
@@ -51,12 +50,13 @@ class GatewayAdmin(admin.ModelAdmin):
         "updated_time",
     ]
     search_fields = ["id", "name"]
+    list_filter = ["status", "is_public"]
 
 
 class StageAdmin(admin.ModelAdmin):
     list_display = ["id", "name", "gateway", "status", "created_by", "updated_by", "created_time", "updated_time"]
-    search_fields = ["id", "name"]
-    list_filter = ["gateway"]
+    search_fields = ["id", "name", "gateway__id", "gateway__name"]
+    list_filter = ["gateway", "status"]
 
 
 class ResourceAdmin(admin.ModelAdmin):
@@ -72,12 +72,12 @@ class StageResourceDisabledAdmin(admin.ModelAdmin):
 
 class ProxyAdmin(admin.ModelAdmin):
     list_display = ["id", "type", "resource"]
-    search_fields = ["resource__id", "id"]
+    search_fields = ["resource__id", "resource_name", "id"]
 
 
 class ResourceVersionAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "title", "gateway", "created_by", "created_time"]
-    search_fields = ["name"]
+    list_display = ["id", "gateway", "version", "schema_version", "created_by", "created_time"]
+    search_fields = ["gateway__id", "gateway__name", "version"]
     list_filter = ["gateway"]
     exclude = ["_data"]
 
@@ -86,6 +86,7 @@ class ReleaseAdmin(admin.ModelAdmin):
     list_display = ["gateway", "stage", "resource_version"]
     list_filter = ["gateway"]
     raw_id_fields = ["resource_version"]
+    search_fields = ["gateway__id", "gateway__name"]
 
 
 class ReleasedResourceAdmin(admin.ModelAdmin):
@@ -98,20 +99,20 @@ class ReleasedResourceAdmin(admin.ModelAdmin):
         "resource_path",
     ]
     list_filter = ["gateway"]
-    search_fields = ["resource_version_id", "resource_id", "resource_name"]
+    search_fields = ["resource_version_id", "resource_id", "resource_name", "gateway_name"]
 
 
 class ReleaseHistoryAdmin(admin.ModelAdmin):
-    list_display = ["gateway", "resource_version", "status", "created_by", "created_time"]
-    list_filter = ["gateway", "created_time"]
-    search_fields = ["stage_id"]
+    list_display = ["gateway", "stage", "resource_version", "status", "created_by", "created_time"]
+    list_filter = ["gateway", "status", "created_time"]
+    search_fields = ["gateway__id", "gateway__name"]
     raw_id_fields = ["resource_version"]
 
 
 class PublishEventAdmin(admin.ModelAdmin):
-    list_display = ["gateway_id", "stage_id", "publish_id", "name", "status", "created_by", "created_time"]
-    list_filter = ["gateway_id"]
-    search_fields = ["gateway_id", "publish_id"]
+    list_display = ["gateway", "stage", "publish_id", "name", "status", "created_by", "created_time"]
+    search_fields = ["gateway__id", "gateway__name", "publish_id"]
+    list_filter = ["gateway", "status", "name"]
 
 
 class ContextAdmin(admin.ModelAdmin):
@@ -122,13 +123,13 @@ class ContextAdmin(admin.ModelAdmin):
 
 class JWTAdmin(admin.ModelAdmin):
     list_display = ["gateway"]
-    search_fields = ["gateway__id"]
+    search_fields = ["gateway__id", "gateway__name"]
     exclude = ["private_key"]
 
 
 class GatewayRelatedAppAdmin(admin.ModelAdmin):
     list_display = ["gateway", "bk_app_code"]
-    search_fields = ["gateway__id", "bk_app_code"]
+    search_fields = ["gateway__id", "gateway__name", "bk_app_code"]
     list_filter = ["gateway"]
 
 
@@ -138,19 +139,20 @@ class MicroGatewayAdmin(admin.ModelAdmin):
 
 class MicroGatewayReleaseHistoryAdmin(admin.ModelAdmin):
     list_display = ["id", "gateway", "stage", "micro_gateway", "status"]
+    search_fields = ["gateway__id", "gateway__name"]
     list_filter = ["gateway"]
     raw_id_fields = ["release_history"]
 
 
 class BackendAdmin(admin.ModelAdmin):
     list_display = ["id", "gateway", "type", "name", "description"]
-    search_fields = ["name"]
+    search_fields = ["name", "gateway__name", "gateway__id"]
     list_filter = ["gateway"]
 
 
 class BackendConfigAdmin(admin.ModelAdmin):
     list_display = ["id", "gateway", "backend", "stage", "config"]
-    search_fields: List[str] = []
+    search_fields = ["gateway__id", "gateway__name"]
     list_filter = ["gateway", "backend", "stage"]
 
 
