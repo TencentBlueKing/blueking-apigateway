@@ -1,0 +1,22 @@
+meta {
+  name: get query string
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/get?a=1&foo=bar
+  body: none
+  auth: none
+}
+
+query {
+  a: 1
+  foo: bar
+}
+
+assert {
+  res.status: eq 200
+  res.body.args.a: eq "1"
+  res.body.args.foo: eq bar
+}

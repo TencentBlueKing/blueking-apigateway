@@ -1,0 +1,15 @@
+meta {
+  name: post
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/post
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

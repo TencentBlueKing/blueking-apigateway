@@ -1,0 +1,27 @@
+meta {
+  name: headers
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/get?a=1&foo=bar
+  body: none
+  auth: none
+}
+
+query {
+  a: 1
+  foo: bar
+}
+
+headers {
+  header-1: abc
+  Header-2: def
+}
+
+assert {
+  res.status: eq 200
+  res.body.headers["Header-1"]: eq abc
+  res.body.headers["Header-2"]: eq def
+}

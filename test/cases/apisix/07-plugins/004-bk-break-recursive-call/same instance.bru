@@ -1,0 +1,21 @@
+meta {
+  name: same instance
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/get
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Instance-Id: {{instance_id}}
+}
+
+assert {
+  res.status: eq 508
+  res.body.code: eq 1650801
+  res.body.code_name: eq RECURSIVE_REQUEST_DETECTED
+}

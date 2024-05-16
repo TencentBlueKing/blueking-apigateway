@@ -1,0 +1,23 @@
+meta {
+  name: different instance
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/get?X-Bkapi-Instance-Id=abc
+  body: none
+  auth: none
+}
+
+query {
+  X-Bkapi-Instance-Id: abc
+}
+
+headers {
+  X-Bkapi-Instance-Id: abc
+}
+
+assert {
+  res.status: eq 200
+}
