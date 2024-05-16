@@ -25,13 +25,13 @@ import (
 	"sync"
 	"time"
 
-	sentry "github.com/getsentry/sentry-go"
+	"github.com/getsentry/sentry-go"
 	"github.com/tchap/zapext/v2/zapsentry"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"core/pkg/config"
 	sty "core/pkg/sentry"
-	"go.uber.org/zap/zapcore"
 )
 
 var loggerInitOnce sync.Once
