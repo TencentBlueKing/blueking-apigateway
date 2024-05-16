@@ -6,13 +6,13 @@
           v-model="searchValue"
           style="width: 520px"
           clearable
-          @clear="handleSearchClear"
           type="search"
-          :placeholder="t('请输入后端服务名称、资源名称、请求路径或选择条件搜索')"
+          :placeholder="t('请输入后端服务、资源名称、前端请求路径搜索')"
         />
         <bk-table
           class="table-layout mt15"
           :data="curPageData"
+          :key="tableDataKey"
           :pagination="pagination"
           :remote-pagination="true"
           :empty-text="emptyText"
@@ -47,7 +47,13 @@
           </bk-table-column>
           <bk-table-column
             prop="method"
-            :label="renderMethodsLabel"
+            :label="t('前端请求方法')"
+            :filter="{
+              list: customMethodsList,
+              checked: chooseMethod,
+              filterFn: handleMethodFilter,
+              btnSave: false,
+            }"
           >
             <template #default="{ row }">
               <span class="ag-tag" :class="row.method?.toLowerCase()">{{row.method}}</span>
@@ -175,6 +181,8 @@ const resourceDetailsRef = ref(null);
 const stageSidesliderRef = ref(null);
 const isReload = ref(false);
 const emptyText = ref<string>('暂无数据');
+const chooseMethod = ref<string[]>([]);
+const tableDataKey = ref(-1);
 
 // 网关标签
 const labels = ref<any[]>([]);
@@ -203,34 +211,41 @@ const getLabels = async () => {
   }
 };
 
-const tableKey =  ref(-1);
-const curSelectMethod = ref('ALL');
-const customMethodsList = shallowRef(common.methodList);
-const renderMethodsLabel = () => {
-  return h('div', { class: 'resource-setting-custom-label' }, [
-    h(
-      RenderCustomColumn,
-      {
-        key: tableKey.value,
-        hasAll: true,
-        columnLabel: t('前端请求方法'),
-        selectValue: curSelectMethod.value,
-        list: customMethodsList.value,
-        onSelected: (value: Record<string, string>) => {
-          handleSelectMethod(value);
-        },
-      },
-    ),
-  ]);
-};
+// const tableKey =  ref(-1);
+// const curSelectMethod = ref('ALL');
+// const customMethodsList = shallowRef(common.methodList);
+const customMethodsList = computed(() => {
+  return common.methodList?.map((item: any) => {
+    return {
+      text: item.name,
+      value: item.id,
+    };
+  });
+});
+// const renderMethodsLabel = () => {
+//   return h('div', { class: 'resource-setting-custom-label' }, [
+//     h(
+//       RenderCustomColumn,
+//       {
+//         key: tableKey.value,
+//         hasAll: true,
+//         columnLabel: t('前端请求方法'),
+//         selectValue: curSelectMethod.value,
+//         list: customMethodsList.value,
+//         onSelected: (value: Record<string, string>) => {
+//           handleSelectMethod(value);
+//         },
+//       },
+//     ),
+//   ]);
+// };
 
-const handleSelectMethod = (payload: Record<string, string>) => {
-  const { id } = payload;
-  searchValue.value = id === 'ALL' ? undefined : id;
+// const handleSelectMethod = (payload: Record<string, string>) => {
+//   const { id } = payload;
+//   searchValue.value = id === 'ALL' ? undefined : id;
 
-  getPageData();
-};
-
+//   getPageData();
+// };
 
 const showDetails = (row: any) => {
   setHighlight(row.name);
@@ -319,12 +334,23 @@ const getPageData = () => {
         row?.proxy?.backend?.name?.toLowerCase()?.includes(searchValue.value)
       || row?.name?.toLowerCase()?.includes(searchValue.value)
       || row?.path?.toLowerCase()?.includes(searchValue.value)
-      || row?.method?.includes(searchValue.value)
       )  {
         return true;
       }
       return false;
     });
+
+    updateTableEmptyConfig();
+  };
+
+  if (chooseMethod.value?.length) {
+    curAllData = curAllData?.filter((row: any) => {
+      if (chooseMethod.value?.includes(row?.method))  {
+        return true;
+      }
+      return false;
+    });
+
     updateTableEmptyConfig();
   }
 
@@ -350,6 +376,8 @@ const curPageData = computed(() => {
   return getPageData();
 });
 
+const handleMethodFilter = () => true;
+
 // 页码变化发生的事件
 const handlePageChange = (current: number) => {
   pagination.value.current = current;
@@ -365,11 +393,11 @@ const handlePageSizeChange = (limit: number) => {
 
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (searchValue.value || !curPageData.value.length) {
+  if (searchValue.value || chooseMethod.value?.length || !curPageData.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
   }
-  if (searchValue.value) {
+  if (searchValue.value || chooseMethod.value?.length) {
     tableEmptyConf.value.keyword = '$CONSTANT';
     return;
   }
@@ -378,7 +406,9 @@ const updateTableEmptyConfig = () => {
 
 const handleClearFilterKey = () => {
   searchValue.value = '';
-  handleSearchClear();
+  chooseMethod.value = [];
+  tableDataKey.value = +new Date();
+  // handleSearchClear();
   pagination.value = Object.assign(pagination.value, {
     current: 1,
     limit: 10,
@@ -387,10 +417,10 @@ const handleClearFilterKey = () => {
   getPageData();
 };
 
-const handleSearchClear = () => {
-  curSelectMethod.value = 'ALL';
-  tableKey.value = +new Date();
-};
+// const handleSearchClear = () => {
+//   // curSelectMethod.value = 'ALL';
+//   // tableKey.value = +new Date();
+// };
 
 const settings = {
   trigger: 'click',
@@ -505,6 +535,14 @@ onMounted(() => {
     .backend-edit {
       opacity: 1;
     }
+  }
+}
+</style>
+<style lang="scss">
+.content-footer {
+  justify-content: flex-end;
+  .btn-filter-save.disabled {
+    display: none !important;
   }
 }
 </style>
