@@ -31,7 +31,7 @@ from apigateway.biz.released_resource import get_released_resource_data
 from apigateway.core.models import Stage
 from apigateway.utils.curlify import to_curl
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
-from apigateway.utils.time import convert_second_to_epoch_millis
+from apigateway.utils.time import convert_second_to_epoch_millisecond
 
 from .prepared_request import PreparedRequestHeaders, PreparedRequestURL
 from .serializers import APITestInputSLZ, APITestOutputSLZ
@@ -110,7 +110,7 @@ class APITestApi(generics.CreateAPIView):
     def _get_response_data(self, response, headers_without_sensitive=Dict[str, Any], verify=False):
         return {
             "status_code": response.status_code,
-            "proxy_time": round(convert_second_to_epoch_millis(response.elapsed.total_seconds())),
+            "proxy_time": round(convert_second_to_epoch_millisecond(response.elapsed.total_seconds())),
             "size": "{:.2f}".format(len(response.content) / 1024),
             "body": response.text,
             "headers": dict(response.headers),
