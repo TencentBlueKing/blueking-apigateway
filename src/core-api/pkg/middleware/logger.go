@@ -20,6 +20,7 @@ package middleware
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -28,6 +29,7 @@ import (
 	"go.uber.org/zap"
 
 	"core/pkg/logging"
+	"core/pkg/sentry"
 	"core/pkg/util"
 )
 
@@ -96,14 +98,14 @@ func logContextFields(c *gin.Context) []zap.Field {
 		fields = append(fields, zap.String("response_body", stringx.Truncate(newWriter.body.String(), 1024)))
 	}
 
-	// if hasError && e != nil {
-	// 	util.ReportToSentry(
-	// 		fmt.Sprintf("%s %s error", c.Request.Method, c.Request.URL.Path),
-	// 		map[string]interface{}{
-	// 			"fields": fields,
-	// 		},
-	// 	)
-	// }
+	if hasError {
+		sentry.ReportToSentry(
+			fmt.Sprintf("%s %s ", c.Request.Method, c.Request.URL.Path),
+			map[string]interface{}{
+				"fields": fields,
+			},
+		)
+	}
 
 	return fields
 }

@@ -25,13 +25,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/getsentry/sentry-go"
+	sentry "github.com/getsentry/sentry-go"
+	"github.com/tchap/zapext/v2/zapsentry"
 	"go.uber.org/zap"
 
-	"github.com/tchap/zapext/v2/zapsentry"
-	"go.uber.org/zap/zapcore"
-
 	"core/pkg/config"
+	sty "core/pkg/sentry"
+	"go.uber.org/zap/zapcore"
 )
 
 var loggerInitOnce sync.Once
@@ -55,7 +55,7 @@ func newZapSugarLogger() *zap.SugaredLogger {
 func InitLogger(config *config.Config) {
 	loggerInitOnce.Do(func() {
 		options := make([]zap.Option, 0, 3)
-		if len(config.Sentry.DSN) != 0 {
+		if sty.Enabled() {
 			// init sentryCore
 			sentryCore, err := newSentryLogCore(config)
 			if err != nil {
