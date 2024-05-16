@@ -304,11 +304,11 @@ const editTable = () => {
 
 const cancelTableEdit = () => {
   tableIsEdit.value = false;
-  // getData();
-  tableData.value.forEach((item: Record<string, string | boolean>) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    item = Object.assign(item, { isEdit: true, isFocus: false });
-  });
+  getData();
+  // tableData.value.forEach((item: Record<string, string | boolean>) => {
+  //   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  //   item = Object.assign(item, { isEdit: true, isFocus: false });
+  // });
 };
 
 const addRow = async (index: number, columnIndex: number) => {

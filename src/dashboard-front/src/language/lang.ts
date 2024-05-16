@@ -1204,7 +1204,7 @@ const lang: ILANG = {
   '模糊查询': ['Fuzzy query'],
   '请输入资源名称，前端请求路径': ['Please enter resource name and the request path of the frontend'],
   '请输入资源名称': ['Please enter resource name'],
-
+  '请输入后端服务、资源名称、前端请求路径搜索': ['Enter the back-end service, resource name, and front-end request path search'],
   '请输入前端请求路径': ['Enter the front-end request path'],
   '前端请求方法': ['Front-end request method'],
   '请选择前端请求方法': ['Please select a front-end request method'],
@@ -1343,7 +1343,6 @@ const lang: ILANG = {
   '请输入 Cookies 中字段 bk_token 的值': ['Please enter the value of the bk_token field in Cookies'],
   '网关的唯一标识，创建后不可更改': ['The gateway\'s unique identifier, cannot be changed after creation'],
   '请输入小写字母、数字、连字符(-)，以小写字母开头': ['Please enter lowercase letters, numbers, hyphens (-), starting with a lowercase letter'],
-  '系统错误，请稍后重试': ['System error, please try again later'],
   '确认发布': ['Confirm release'],
   '不校验': ['Do not validate'],
   '进行中': ['In progress'],
