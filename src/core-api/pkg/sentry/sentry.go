@@ -28,7 +28,7 @@ import (
 	"core/pkg/config"
 )
 
-var global Sentry
+var s Sentry
 
 type Sentry struct {
 	enabled bool
@@ -48,19 +48,19 @@ func Init(config config.Sentry) error {
 		if err != nil {
 			return fmt.Errorf("init gin sentry fail: %s", err)
 		}
-		global.enabled = true
+		s.enabled = true
 	}
 	return nil
 }
 
 // Enabled  return if sentry is enabled
 func Enabled() bool {
-	return global.enabled
+	return s.enabled
 }
 
 // ReportToSentry report to sentry
 func ReportToSentry(message string, extra map[string]interface{}) {
-	if global.enabled {
+	if s.enabled {
 		// report to sentry
 		ev := sentry.NewEvent()
 		ev.Message = message

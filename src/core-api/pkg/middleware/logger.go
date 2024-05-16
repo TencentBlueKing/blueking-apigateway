@@ -76,6 +76,7 @@ func logContextFields(c *gin.Context) []zap.Field {
 	latency := float64(duration) / float64(time.Microsecond)
 
 	status := c.Writer.Status()
+
 	hasError := status != http.StatusOK
 
 	params := stringx.Truncate(c.Request.URL.RawQuery, 1024)
@@ -98,7 +99,8 @@ func logContextFields(c *gin.Context) []zap.Field {
 		fields = append(fields, zap.String("response_body", stringx.Truncate(newWriter.body.String(), 1024)))
 	}
 
-	if hasError {
+	// only send 5xx err to sentry
+	if status >= http.StatusInternalServerError {
 		sentry.ReportToSentry(
 			fmt.Sprintf("%s %s ", c.Request.Method, c.Request.URL.Path),
 			map[string]interface{}{
