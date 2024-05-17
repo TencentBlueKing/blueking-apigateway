@@ -257,6 +257,21 @@
           <bk-switcher v-model="basicInfoDetailData.is_public" theme="primary" />
           <span class="common-form-tips">{{ t('公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏') }}</span>
         </bk-form-item>
+        <bk-form-item
+          :label="t('关联蓝鲸应用')"
+          property="bk_app_codes"
+          v-if="user?.featureFlags?.GATEWAY_APP_BINDING_ENABLED"
+        >
+          <bk-tag-input
+            v-model="basicInfoDetailData.bk_app_codes"
+            :placeholder="t('请输入蓝鲸应用ID，并按enter确认')"
+            allow-create
+            has-delete-icon
+            collapse-tags
+            :list="[]"
+          />
+          <span class="common-form-tips">{{ t('仅影响 HomePage 中运维开发分数的计算') }}</span>
+        </bk-form-item>
       </bk-form>
     </bk-dialog>
   </div>
@@ -268,7 +283,7 @@ import _ from 'lodash';
 import { Message, InfoBox } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
-
+import { useUser } from '@/store';
 import {  copy } from '@/common/util';
 import { useGetGlobalProperties } from '@/hooks';
 // import { useStage } from '@/store';
@@ -281,6 +296,7 @@ import MemberSelect from '@/components/member-select';
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+const user = useUser();
 
 const rules = {
   name: [
@@ -392,6 +408,9 @@ const handleConfirmEdit = async () => {
     await formRef.value.validate();
     dialogEditData.value.loading = true;
     const params = _.cloneDeep(basicInfoDetailData.value);
+    if (!user?.featureFlags?.GATEWAY_APP_BINDING_ENABLED) {
+      params.bk_app_codes = undefined;
+    }
     await editGateWays(apigwId.value, params);
     Message({
       message: t('编辑成功'),

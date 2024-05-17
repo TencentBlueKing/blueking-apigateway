@@ -339,6 +339,8 @@ const handleInputBlur = (index: number) => {
 };
 
 const handleCellClick = async ({ event, column, rowIndex }: any) => {
+  if (!tableIsEdit.value) return;
+
   event.stopPropagation();
   const { field, index } = column;
   if (!field) {
