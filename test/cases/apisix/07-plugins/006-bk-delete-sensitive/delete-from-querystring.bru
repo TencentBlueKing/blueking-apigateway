@@ -1,0 +1,40 @@
+meta {
+  name: delete-from-querystring
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/get?a=b&access_token=1&bk_app_code=2&bk_app_secret=3&app_secret=4&bk_token=5
+  body: none
+  auth: none
+}
+
+query {
+  a: b
+  access_token: 1
+  bk_app_code: 2
+  bk_app_secret: 3
+  app_secret: 4
+  bk_token: 5
+}
+
+assert {
+  res.status: eq 200
+  res.body.args.a: eq b
+  res.body.args.bk_app_code: eq "2"
+  res.body.args.access_token: isUndefined
+  res.body.args.bk_app_secret: isUndefined
+  res.body.args.app_secret: isUndefined
+  res.body.args.bk_token: isUndefined
+}
+
+docs {
+  通过管理端新创建的网关，不需要删除敏感参数 allow_delete_sensitive_params=False
+  通过 API 同步的，allow_delete_sensitive_params=True
+  
+  =False 的时候，不会检查并删除敏感参数
+  
+  -----
+  httpbin这个网关应该是自动注册的， allow_delete_sensitive_params=True
+}

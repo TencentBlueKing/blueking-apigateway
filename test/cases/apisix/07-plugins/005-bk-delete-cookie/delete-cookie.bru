@@ -1,0 +1,20 @@
+meta {
+  name: delete-cookie
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/get
+  body: none
+  auth: none
+}
+
+headers {
+  Cookie: a=b
+}
+
+assert {
+  res.status: eq 200
+  res.body.headers.Cookie: isUndefined a=b
+}

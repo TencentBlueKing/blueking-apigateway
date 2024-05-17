@@ -1,0 +1,17 @@
+meta {
+  name: dashboard fe
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{dashboard_host}}/
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.headers["content-type"]: eq text/html
+  res.body: contains BK_APIGATEWAY_VERSION
+}

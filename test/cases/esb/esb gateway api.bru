@@ -1,0 +1,21 @@
+meta {
+  name: esb gateway api
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-esb/prod/v2/esb/get_systems/
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.code: eq 1640001
+  res.body.code_name: eq INVALID_ARGS
+}
+
+docs {
+  not 404, means the bk-esb is working
+}

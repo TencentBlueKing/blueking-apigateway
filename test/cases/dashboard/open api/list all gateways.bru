@@ -1,0 +1,20 @@
+meta {
+  name: list all gateways
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v1/apis/
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.code: eq 0
+}
