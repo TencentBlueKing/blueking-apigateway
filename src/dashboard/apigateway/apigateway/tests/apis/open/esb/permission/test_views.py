@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import math
+from unittest import mock
 
 import pytest
 from ddf import G
@@ -63,6 +64,7 @@ class TestComponentViewSet:
         }
 
         request = request_factory.get("/", data=params)
+        request.app = mock.MagicMock(app_code="test")
 
         view = views.ComponentViewSet.as_view({"get": "list"})
         response = view(request, system_id=1)
@@ -107,6 +109,7 @@ class TestAppPermissionApplyV1APIView:
         }
 
         request = request_factory.post("", data=params)
+        request.app = mock.MagicMock(app_code="test")
 
         view = views.AppPermissionApplyV1APIView.as_view({"post": "apply"})
         response = view(request, system_id=system.id)
@@ -155,6 +158,7 @@ class TestAppPermissionViewSet:
         }
 
         request = request_factory.get("/", data=params)
+        request.app = mock.MagicMock(app_code="test")
 
         view = views.AppPermissionViewSet.as_view({"get": "list"})
         response = view(request)
@@ -207,6 +211,7 @@ class TestAppPermissionApplyRecordViewSet:
         )
 
         request = request_factory.get("/backend/api/v1/", data=params)
+        request.app = mock.MagicMock(app_code="test")
 
         view = views.AppPermissionApplyRecordViewSet.as_view({"get": "list"})
         response = view(request)
@@ -247,6 +252,7 @@ class TestAppPermissionApplyRecordViewSet:
         )
 
         request = request_factory.get("/", data=params)
+        request.app = mock.MagicMock(app_code="test")
 
         view = views.AppPermissionApplyRecordViewSet.as_view({"get": "retrieve"})
         response = view(request, record.id)
