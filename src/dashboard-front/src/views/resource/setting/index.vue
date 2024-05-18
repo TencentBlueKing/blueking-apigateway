@@ -729,7 +729,7 @@ const {
   handlePageChange,
   handlePageSizeChange,
   getList,
-} = useQueryList(getResourceListData, filterData);
+} = useQueryList(getResourceListData, filterData, 0, true);
 
 // checkbox hooks
 const {
