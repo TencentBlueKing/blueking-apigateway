@@ -11,7 +11,7 @@ import {
 import { IPagination } from '@/types';
 import { useCommon } from '@/store';
 
-export function useQueryList(apiMethod: Function, filterData?: any, id?: number) {
+export function useQueryList(apiMethod: Function, filterData?: any, id?: number, filterNoResetPage?: boolean) {
   const common = useCommon();
   const { apigwId } = common;
   const initPagination: IPagination = {
@@ -70,7 +70,10 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number)
   watch(
     () => filterData,
     async () => {
-      pagination.value = { ...initPagination };
+      if (!filterNoResetPage) {
+        pagination.value = { ...initPagination };
+      }
+
       await fetchList();
     },
     { deep: true },
