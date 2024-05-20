@@ -1,0 +1,17 @@
+meta {
+  name: ip whitelist miss
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/ip_whitelist
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 403
+  res.body.code: eq 1640302
+  res.body.code_name: eq IP_NOT_ALLOWED
+}

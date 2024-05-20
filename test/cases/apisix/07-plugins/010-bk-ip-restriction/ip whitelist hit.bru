@@ -1,0 +1,15 @@
+meta {
+  name: ip whitelist hit
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/ip_whitelist
+  body: none
+  auth: none
+}
+
+headers {
+  X-test-IP: 10.0.0.1
+}
