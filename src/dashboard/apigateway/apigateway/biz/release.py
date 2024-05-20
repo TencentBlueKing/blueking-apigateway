@@ -144,7 +144,7 @@ class ReleaseHandler:
 
     @staticmethod
     def batch_get_stage_release_status(stage_ids: List[int]) -> Dict[int, Dict[str, Any]]:
-        """批量查询 stage 的当前状态 (发布状态+publish_id)"""
+        """批量查询 stage 的当前状态 (发布状态+publish_id+发布版本)"""
         """return {"stage_id":{"status"/"publish_id"}}"""
 
         # 获取多个 stage_id 对应的最新的 ReleaseHistory 记录的 id
@@ -168,7 +168,7 @@ class ReleaseHandler:
             stage_id = release_history.stage_id
             publish_id = release_history.id
 
-            state = {"publish_id": publish_id}
+            state = {"publish_id": publish_id, "resource_version": release_history.resource_version.object_display}
             # 如果没有查到任何发布事件
             if publish_id not in publish_id_to_latest_event_map:
                 # 兼容以前，使用以前的状态

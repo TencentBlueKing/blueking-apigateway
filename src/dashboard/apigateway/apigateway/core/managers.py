@@ -213,7 +213,7 @@ class ReleaseManager(models.Manager):
             obj.comment = comment
             obj.updated_by = username
             obj.updated_time = now_datetime()
-            obj.save()
+            # 需要等到发布成功才能 save 更新
 
         return obj
 

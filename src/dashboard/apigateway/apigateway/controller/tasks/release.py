@@ -16,10 +16,16 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
+import time
+from datetime import datetime
 from typing import Optional
 
 from celery import shared_task
 
+from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
+from apigateway.biz.constants import RELEASE_GATEWAY_INTERVAL_SECOND
+from apigateway.biz.release import ReleaseHandler
+from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.etcd import EtcdDistributor
@@ -27,8 +33,16 @@ from apigateway.controller.distributor.helm import HelmDistributor
 from apigateway.controller.helm.chart import ChartHelper
 from apigateway.controller.helm.release import ReleaseHelper
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
-from apigateway.core.constants import ReleaseStatusEnum
-from apigateway.core.models import MicroGateway, MicroGatewayReleaseHistory, Release
+from apigateway.core.constants import ReleaseHistoryStatusEnum, ReleaseStatusEnum, StageStatusEnum
+from apigateway.core.models import (
+    MicroGateway,
+    MicroGatewayReleaseHistory,
+    Release,
+    ReleasedResource,
+    ResourceVersion,
+    Stage,
+)
+from apigateway.utils.time import now_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -154,3 +168,65 @@ def release_gateway_by_registry(
         micro_gateway=micro_gateway,
         procedure_logger=procedure_logger,
     )
+
+
+@shared_task(ignore_result=True)
+def update_release_data_after_success(
+    publish_id: int, release_id: int, resource_version_id: int, author: str, comment: str
+):
+    """
+    发布后不断检查发布状态如果成功才更新相关数据
+    """
+
+    # 检测发布状态
+
+    doing = True
+    start_time = datetime.now().timestamp()
+    wait_times = 0
+    while doing:
+        # 如果等待时间超过10*RELEASE_GATEWAY_INTERVAL_SECOND就退出等待
+        now = datetime.now().timestamp()
+        if now - start_time > 10 * RELEASE_GATEWAY_INTERVAL_SECOND:
+            break
+
+        time.sleep(1 * wait_times)
+        wait_times += 1
+        latest_release_event_map = ReleaseHandler.get_release_history_id_to_latest_publish_event_map([publish_id])
+        latest_event = latest_release_event_map.get(publish_id)
+
+        if not latest_event:
+            return
+            # 判断状态
+        if ReleaseHandler.get_status(latest_event) == ReleaseHistoryStatusEnum.SUCCESS.value:
+            doing = False
+
+    release = Release.objects.get(id=release_id)
+
+    if not release:
+        return
+
+    resource_version = ResourceVersion.objects.get(id=resource_version_id)
+    if not resource_version:
+        return
+
+    # update release
+    release.resource_version = resource_version
+    release.comment = comment
+    release.updated_by = author
+    release.updated_time = now_datetime()
+    release.save()
+
+    # activate stages
+    Stage.objects.filter(id=release.stage.id).update(status=StageStatusEnum.ACTIVE.value)
+
+    # update_and_clear_released_resources
+    ReleasedResource.objects.save_released_resource(resource_version)
+    ReleasedResourceHandler.clear_unreleased_resource(release.gateway.id)
+
+    # update_and_clear_released_resource_docs()
+    resource_doc_version = ResourceDocVersion.objects.get_by_resource_version_id(
+        release.gateway.id,
+        resource_version.resource_version.id,
+    )
+    ReleasedResourceDoc.objects.save_released_resource_doc(resource_doc_version)
+    ReleasedResourceDoc.objects.clear_unreleased_resource_doc(release.gateway.id)
