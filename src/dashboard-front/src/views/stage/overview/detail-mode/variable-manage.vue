@@ -88,9 +88,12 @@
         </bk-table-column> -->
         <bk-table-column :label="t('操作')" :resizable="false">
           <template #default="{ index, column }">
-            <div class="normal-status">
+            <div class="normal-status" v-if="tableIsEdit">
               <i class="apigateway-icon icon-ag-plus-circle-shape" @click="addRow(index, column.index)" />
               <i class="apigateway-icon icon-ag-minus-circle-shape" @click="delRow(index)" />
+            </div>
+            <div class="normal-status" v-else>
+              --
             </div>
             <!-- <div class="normal-status" v-show="!row.isFocus">
               <i class="apigateway-icon icon-ag-plus-circle-shape" @click="addRow(index, column.index)" />
