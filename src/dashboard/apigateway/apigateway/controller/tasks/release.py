@@ -178,8 +178,7 @@ def update_release_data_after_success(
     发布后不断检查发布状态如果成功才更新相关数据
     """
 
-    # 检测发布状态
-
+    # 检测发布状态,只有最终发布成功才更新
     doing = True
     start_time = datetime.now().timestamp()
     wait_times = 0
@@ -187,7 +186,7 @@ def update_release_data_after_success(
         # 如果等待时间超过10*RELEASE_GATEWAY_INTERVAL_SECOND就退出等待
         now = datetime.now().timestamp()
         if now - start_time > 10 * RELEASE_GATEWAY_INTERVAL_SECOND:
-            break
+            return
 
         time.sleep(1 * wait_times)
         wait_times += 1
@@ -201,7 +200,6 @@ def update_release_data_after_success(
             doing = False
 
     release = Release.objects.get(id=release_id)
-
     if not release:
         return
 
