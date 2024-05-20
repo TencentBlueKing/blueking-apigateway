@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from unittest import mock
 
 import pytest
 from ddf import G
@@ -93,6 +94,7 @@ class TestAPISDKV1ViewSet:
                 "language": "python",
             },
         )
+        request.app = mock.MagicMock(app_code="test")
 
         view = views.APISDKV1ViewSet.as_view({"get": "list_latest_sdks"})
         response = view(request)

@@ -66,6 +66,7 @@ def get_permission_model(dimension: str):
 
 class ResourceViewSet(viewsets.ViewSet):
     gateway_permission_exempt = True
+    request_from_gateway_required = True
 
     @swagger_auto_schema(
         query_serializer=serializers.AppResourcePermissionInputSLZ,
@@ -97,8 +98,9 @@ class ResourceViewSet(viewsets.ViewSet):
 
 
 class AppGatewayPermissionViewSet(viewsets.GenericViewSet):
-    serializer_class = serializers.AppGatewayPermissionInputSLZ
     gateway_permission_exempt = True
+    request_from_gateway_required = True
+    serializer_class = serializers.AppGatewayPermissionInputSLZ
 
     def allow_apply_by_gateway(self, request, *args, **kwargs):
         slz = self.get_serializer(data=request.query_params)
@@ -117,7 +119,7 @@ class AppGatewayPermissionViewSet(viewsets.GenericViewSet):
         )
 
 
-class BaseAppPermissinApplyAPIView(APIView, metaclass=ABCMeta):
+class BaseAppPermissionApplyAPIView(APIView, metaclass=ABCMeta):
     @abstractmethod
     def get_serializer_class(self):
         pass
@@ -161,27 +163,28 @@ class BaseAppPermissinApplyAPIView(APIView, metaclass=ABCMeta):
         )
 
 
-class PaaSAppPermissionApplyAPIView(BaseAppPermissinApplyAPIView):
+class PaaSAppPermissionApplyAPIView(BaseAppPermissionApplyAPIView):
     """
-    PaaS中应用申请访问网关API的权限
+    PaaS 中应用申请访问网关 API 的权限
     - 提供给 paas3 开发者中心的接口
     """
 
     gateway_permission_exempt = True
+    request_from_gateway_required = True
 
     def get_serializer_class(self):
         return serializers.PaaSAppPermissionApplyInputSLZ
 
 
-class AppPermissionApplyV1APIView(BaseAppPermissinApplyAPIView):
+class AppPermissionApplyV1APIView(BaseAppPermissionApplyAPIView):
     """
-    普通应用直接申请访问网关API的权限
+    普通应用直接申请访问网关 API 的权限
     - 提供给普通应用的接口
-    - 支持应用，申请网关API的权限
+    - 支持应用，申请网关 API 的权限
     - 暂支持按网关申请，不支持按资源申请
     """
 
-    # 使用 GatewayRelatedAppPermission 中设置request.gateway 的功能，而不需要校验权限
+    # 使用 GatewayRelatedAppPermission 中设置 request.gateway 的功能，而不需要校验权限
     permission_classes = [GatewayRelatedAppPermission]
     gateway_permission_exempt = True
 
@@ -190,7 +193,7 @@ class AppPermissionApplyV1APIView(BaseAppPermissinApplyAPIView):
 
 
 class AppPermissionGrantViewSet(viewsets.ViewSet):
-    """网关关联应用，主动为应用授权访问网关API的权限"""
+    """网关关联应用，主动为应用授权访问网关 API 的权限"""
 
     permission_classes = [GatewayRelatedAppPermission]
 
@@ -219,7 +222,7 @@ class AppPermissionGrantViewSet(viewsets.ViewSet):
 
 
 class RevokeAppPermissionViewSet(viewsets.ViewSet):
-    """网关关联应用，回收应用访问网关API的权限"""
+    """网关关联应用，回收应用访问网关 API 的权限"""
 
     permission_classes = [GatewayRelatedAppPermission]
 
@@ -244,6 +247,7 @@ class AppPermissionRenewAPIView(APIView):
     """
 
     gateway_permission_exempt = True
+    request_from_gateway_required = True
 
     def post(self, request, *args, **kwargs):
         slz = serializers.AppPermissionRenewInputSLZ(
@@ -258,7 +262,7 @@ class AppPermissionRenewAPIView(APIView):
 
         for gateway_id, resource_ids in ResourceHandler.group_by_gateway_id(data["resource_ids"]).items():
             gateway = Gateway.objects.get(id=gateway_id)
-            # 如果应用-资源权限不存在，则将按网关的权限同步到应用-资源权限
+            # 如果应用 - 资源权限不存在，则将按网关的权限同步到应用 - 资源权限
             AppResourcePermission.objects.sync_from_gateway_permission(
                 gateway=gateway,
                 bk_app_code=data["target_app_code"],
@@ -277,6 +281,8 @@ class AppPermissionRenewAPIView(APIView):
 
 
 class AppPermissionViewSet(viewsets.ViewSet):
+    request_from_gateway_required = True
+
     def list(self, request, *args, **kwargs):
         """已申请权限列表"""
         slz = serializers.AppPermissionInputSLZ(data=request.query_params)
@@ -290,6 +296,7 @@ class AppPermissionViewSet(viewsets.ViewSet):
 
 
 class AppPermissionRecordViewSet(viewsets.GenericViewSet):
+    request_from_gateway_required = True
     serializer_class = serializers.AppPermissionRecordInputSLZ
 
     def list(self, request, *args, **kwargs):
