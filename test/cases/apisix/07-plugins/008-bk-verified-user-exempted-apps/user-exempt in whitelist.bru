@@ -1,0 +1,19 @@
+meta {
+  name: user-exempt in whitelist
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/app_and_user_verify
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{test_bk_app_code}}", "bk_app_secret": "{{test_bk_app_secret}}", "bk_username": "admin"}
+}
+
+assert {
+  res.status: eq 200
+}
