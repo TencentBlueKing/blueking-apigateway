@@ -404,6 +404,17 @@ def fake_publish_event(fake_release_history):
 
 
 @pytest.fixture
+def fake_publish_success_event(fake_release_history):
+    return G(
+        PublishEvent,
+        publish=fake_release_history,
+        name=PublishEventNameTypeEnum.LOAD_CONFIGURATION.value,
+        status=PublishEventStatusTypeEnum.SUCCESS.value,
+        created_time=dummy_time.time,
+    )
+
+
+@pytest.fixture
 def fake_released_resource(fake_gateway, fake_resource1, fake_resource_version, fake_release):
     resource_id_to_data = {item["id"]: item for item in fake_resource_version.data}
     return G(

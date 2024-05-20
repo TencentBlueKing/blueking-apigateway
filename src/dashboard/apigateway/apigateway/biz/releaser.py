@@ -26,9 +26,7 @@ from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
-from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.validators import PublishValidator, ReleaseValidationError
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.common.user_credentials import UserCredentials
@@ -37,13 +35,12 @@ from apigateway.controller.tasks import (
     release_gateway_by_registry,
     update_release_data_after_success,
 )
-from apigateway.core.constants import PublishSourceEnum, ReleaseStatusEnum, StageStatusEnum
+from apigateway.core.constants import PublishSourceEnum, ReleaseStatusEnum
 from apigateway.core.models import (
     Gateway,
     MicroGateway,
     MicroGatewayReleaseHistory,
     Release,
-    ReleasedResource,
     ReleaseHistory,
     ResourceVersion,
     Stage,
@@ -161,23 +158,6 @@ class BaseGatewayReleaser:
 
     def _do_release(self, releases: Release, release_history: ReleaseHistory):  # ruff: noqa: B027
         """发布资源版本"""
-
-    def _post_release(self):
-        # 发布后，将环境状态更新为可用
-        # activate stages
-        Stage.objects.filter(id=self.stage.id).update(status=StageStatusEnum.ACTIVE.value)
-
-        # update_and_clear_released_resources
-        ReleasedResource.objects.save_released_resource(self.resource_version)
-        ReleasedResourceHandler.clear_unreleased_resource(self.gateway.id)
-
-        # update_and_clear_released_resource_docs()
-        resource_doc_version = ResourceDocVersion.objects.get_by_resource_version_id(
-            self.gateway.id,
-            self.resource_version.id,
-        )
-        ReleasedResourceDoc.objects.save_released_resource_doc(resource_doc_version)
-        ReleasedResourceDoc.objects.clear_unreleased_resource_doc(self.gateway.id)
 
 
 #
