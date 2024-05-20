@@ -1,0 +1,21 @@
+meta {
+  name: app verify auth in urlencoded
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/smoke/prod/app_verify
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  bk_app_code: {{bk_app_code}}
+  bk_app_secret: {{bk_app_secret}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.headers["X-Bkapi-Jwt"]: isDefined
+}

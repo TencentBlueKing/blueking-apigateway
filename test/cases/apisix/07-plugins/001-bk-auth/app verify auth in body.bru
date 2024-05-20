@@ -1,0 +1,23 @@
+meta {
+  name: app verify auth in body
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/smoke/prod/app_verify
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "bk_app_code": "{{bk_app_code}}",
+    "bk_app_secret": "{{bk_app_secret}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.headers["X-Bkapi-Jwt"]: isDefined
+}

@@ -1,0 +1,20 @@
+meta {
+  name: user verify ok
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/user_verify
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"access_token": "{{access_token}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.headers["X-Bkapi-Jwt"]: isDefined
+}
