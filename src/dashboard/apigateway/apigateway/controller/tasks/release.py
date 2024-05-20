@@ -194,7 +194,7 @@ def update_release_data_after_success(
         latest_event = latest_release_event_map.get(publish_id)
 
         if not latest_event:
-            return
+            continue
             # 判断状态
         if ReleaseHandler.get_status(latest_event) == ReleaseHistoryStatusEnum.SUCCESS.value:
             doing = False
