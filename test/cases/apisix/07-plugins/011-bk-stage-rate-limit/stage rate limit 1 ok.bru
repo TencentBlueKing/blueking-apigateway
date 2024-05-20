@@ -1,0 +1,15 @@
+meta {
+  name: stage rate limit 1 ok
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/stage-rate-limit/get
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

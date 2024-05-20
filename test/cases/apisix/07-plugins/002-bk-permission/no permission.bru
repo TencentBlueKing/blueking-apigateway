@@ -1,0 +1,22 @@
+meta {
+  name: no permission
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/app_verify
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{test_bk_app_code}}", "bk_app_secret": "{{test_bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 403
+  res.body.code: eq 1640301
+  res.body.code_name: eq APP_NO_PERMISSION
+  res.body.message: matches no permission
+}

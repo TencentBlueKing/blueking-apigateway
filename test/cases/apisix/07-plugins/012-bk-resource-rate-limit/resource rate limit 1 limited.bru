@@ -1,0 +1,18 @@
+meta {
+  name: resource rate limit 1 limited
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/resource_rate_limit
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 429
+  res.body.code: eq 1642903
+  res.body.code_name: eq RATE_LIMIT_RESTRICTION
+  res.body.message: eq API rate limit exceeded by resource strategy
+}

@@ -1,0 +1,28 @@
+meta {
+  name: cors not hit
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/cors
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: http://abc.com
+}
+
+assert {
+  res.status: eq 200
+  res.body.headers["X-Bkapi-Jwt"]: isDefined
+  res.headers["access-control-allow-methods"]: isUndefined GET,POST,DELETE
+  res.headers["access-control-allow-headers"]: isUndefined x-request-id
+  res.headers["access-control-expose-headers"]: isUndefined x-bkapi-request-id
+  res.headers["access-control-max-age"]: isUndefined "3200"
+}
+
+docs {
+  note here `access-control-allow-origin` and `access-control-allow-credentials` are from httpbin
+}
