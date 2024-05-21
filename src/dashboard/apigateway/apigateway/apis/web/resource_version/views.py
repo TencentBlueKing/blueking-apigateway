@@ -24,6 +24,7 @@ from drf_yasg import openapi as parameters
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, serializers, status
 
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin_binding import PluginBindingHandler
@@ -155,8 +156,15 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
         if stage_id:
             backend_configs = BackendHandler.get_backend_configs_by_stage(request.gateway.id, stage_id)
             context["resource_backend_configs"] = backend_configs
+
+            stage_plugins = {}
             stage_plugin_bindings = PluginBindingHandler.get_stage_plugin_bindings(request.gateway.id, stage_id)
-            context["stage_plugin_bindings"] = stage_plugin_bindings
+            # 列表需要展示资源生效插件，此时需要返回环境绑定的插件信息
+            for plugin_type, plugin_binding in stage_plugin_bindings.items():
+                plugin_config = plugin_binding.snapshot()
+                plugin_config["binding_type"] = PluginBindingScopeEnum.STAGE.value
+                stage_plugins[plugin_type] = plugin_config
+            context["stage_plugins"] = stage_plugins
 
         slz = ResourceVersionRetrieveOutputSLZ(instance, context=context)
 
