@@ -426,6 +426,27 @@ class PluginBindingListApi(generics.ListAPIView, PluginTypeCodeValidationMixin):
 
 
 class ScopePluginConfigListApi(generics.ListAPIView, ScopeValidationMixin):
+    def get_serializer_context(self):
+        # 需要返回每个 pluginType 对应绑定的环境数量/资源数量
+        type_related_scope_count = {}
+        gateway = self.request.gateway
+        for binding in PluginBinding.objects.filter(gateway=gateway).prefetch_related("config", "config__type").all():
+            key = binding.config.type.code
+            if key not in type_related_scope_count:
+                type_related_scope_count[key] = {
+                    "stage": 0,
+                    "resource": 0,
+                }
+
+            # all
+            scope_type = binding.scope_type
+            count = type_related_scope_count[key].get(scope_type, 0)
+            type_related_scope_count[key][scope_type] = count + 1
+
+        return {
+            "type_related_scope_count": type_related_scope_count,
+        }
+
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: ScopePluginConfigListOutputSLZ(many=True)},
         operation_description="获取某个环境或资源绑定的插件列表 (插件类型 + 插件配置)",
@@ -453,5 +474,5 @@ class ScopePluginConfigListApi(generics.ListAPIView, ScopeValidationMixin):
             for binding in bindings
         ]
 
-        serializer = ScopePluginConfigListOutputSLZ(data, many=True)
+        serializer = ScopePluginConfigListOutputSLZ(data, many=True, context=self.get_serializer_context())
         return OKJsonResponse(data=serializer.data)
