@@ -35,6 +35,7 @@ from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, SwaggerP
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.core.models import Resource
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
 from .serializers import (
@@ -47,6 +48,10 @@ from .serializers import (
 
 
 class DocArchiveParseApi(generics.CreateAPIView):
+    method_permission = {
+        "post": ActionEnum.MANAGE_RESOURCE_DOC.value,
+    }
+
     @swagger_auto_schema(
         operation_description="导入资源文档前，检查归档文件是否正确",
         request_body=DocArchiveParseInputSLZ,
@@ -70,6 +75,10 @@ class DocArchiveParseApi(generics.CreateAPIView):
 
 
 class DocImportByArchiveApi(generics.CreateAPIView):
+    method_permission = {
+        "post": ActionEnum.MANAGE_RESOURCE_DOC.value,
+    }
+
     @swagger_auto_schema(
         operation_description="根据归档文件导入资源文档",
         request_body=DocImportByArchiveInputSLZ,
@@ -102,6 +111,10 @@ class DocImportByArchiveApi(generics.CreateAPIView):
 
 
 class DocImportBySwaggerApi(generics.CreateAPIView):
+    method_permission = {
+        "post": ActionEnum.MANAGE_RESOURCE_DOC.value,
+    }
+
     @swagger_auto_schema(
         operation_description="根据 swagger 描述文件导入资源文档",
         request_body=DocImportBySwaggerInputSLZ,
@@ -135,6 +148,10 @@ class DocImportBySwaggerApi(generics.CreateAPIView):
 
 
 class DocExportApi(generics.CreateAPIView):
+    method_permission = {
+        "post": ActionEnum.MANAGE_RESOURCE_DOC.value,
+    }
+
     @swagger_auto_schema(
         operation_description="导出资源文档",
         request_body=DocExportInputSLZ,

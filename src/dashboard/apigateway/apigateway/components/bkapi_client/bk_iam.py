@@ -127,6 +127,15 @@ class Group(OperationGroup):
         path="/api/v2/open/management/systems/{system_id}/groups/{id}/policies/",
     )
 
+    # bkapi resource v2_management_check_user_group_belong
+    # 检查用户是否属于用户组
+    v2_management_check_user_group_belong = bind_property(
+        Operation,
+        name="v2_management_check_user_group_belong",
+        method="GET",
+        path="/api/v2/open/management/systems//{system_id}/users/{user_id}/groups/belong/",
+    )
+
 
 class Client(APIGatewayClient):
     """Bkapi bk_iam client"""

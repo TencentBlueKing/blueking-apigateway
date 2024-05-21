@@ -29,6 +29,7 @@ from rest_framework import generics, status
 from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.released_resource import get_released_resource_data
 from apigateway.core.models import Stage
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.curlify import to_curl
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.time import convert_second_to_epoch_millis
@@ -40,6 +41,10 @@ TEST_PERMISSION_EXPIRE_DAYS = 1
 
 
 class APITestApi(generics.CreateAPIView):
+    method_permission = {
+        "post": ActionEnum.API_TEST.value,
+    }
+
     @swagger_auto_schema(
         request_body=APITestInputSLZ,
         responses={status.HTTP_200_OK: APITestOutputSLZ},

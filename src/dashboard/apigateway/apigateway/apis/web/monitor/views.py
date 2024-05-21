@@ -25,6 +25,7 @@ from rest_framework import generics, status
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
 from apigateway.biz.monitor import ResourceMonitorHandler
 from apigateway.common.factories import SchemaFactory
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.time import now_datetime
 
@@ -59,6 +60,11 @@ from .serializers import (
     ),
 )
 class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
+    method_permission = {
+        "get": ActionEnum.MANAGE_ALARM.value,
+        "post": ActionEnum.MANAGE_ALARM.value,
+    }
+
     serializer_class = AlarmStrategyInputSLZ
 
     def get_queryset(self):
@@ -122,6 +128,12 @@ class AlarmStrategyListCreateApi(generics.ListCreateAPIView):
     ),
 )
 class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
+    method_permission = {
+        "get": ActionEnum.MANAGE_ALARM.value,
+        "put": ActionEnum.MANAGE_ALARM.value,
+        "delete": ActionEnum.MANAGE_ALARM.value,
+    }
+
     serializer_class = AlarmStrategyInputSLZ
     lookup_field = "id"
 
@@ -174,6 +186,11 @@ class AlarmStrategyRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIVie
     ),
 )
 class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
+    method_permission = {
+        "put": ActionEnum.MANAGE_ALARM.value,
+        "patch": ActionEnum.MANAGE_ALARM.value,
+    }
+
     lookup_field = "id"
 
     serializer_class = AlarmStrategyUpdateStatusInputSLZ
@@ -204,6 +221,10 @@ class AlarmStrategyUpdateStatusApi(generics.UpdateAPIView):
     ),
 )
 class AlarmRecordListApi(generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.MANAGE_ALARM.value,
+    }
+
     serializer_class = AlarmRecordQueryOutputSLZ
     filter_backends = [filters.AlarmRecordFilterBackend]
 
@@ -229,6 +250,10 @@ class AlarmRecordListApi(generics.ListAPIView):
     ),
 )
 class AlarmRecordRetrieveApi(generics.RetrieveAPIView):
+    method_permission = {
+        "get": ActionEnum.MANAGE_ALARM.value,
+    }
+
     serializer_class = AlarmRecordQueryOutputSLZ
     filter_backends = [filters.AlarmRecordFilterBackend]
 
@@ -253,6 +278,10 @@ class AlarmRecordRetrieveApi(generics.RetrieveAPIView):
     ),
 )
 class AlarmRecordSummaryListApi(generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.MANAGE_ALARM.value,
+    }
+
     def get_queryset(self):
         return AlarmRecord.objects.all()
 

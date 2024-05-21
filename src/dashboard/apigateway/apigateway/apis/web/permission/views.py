@@ -40,6 +40,7 @@ from apigateway.apps.permission.tasks import send_mail_for_perm_handle
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.resource import ResourceHandler
 from apigateway.core.models import Resource
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
 from .filters import (
@@ -91,6 +92,11 @@ class AppResourcePermissionQuerySetMixin:
     ),
 )
 class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, generics.ListCreateAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_PERMISSION.value,
+        "post": ActionEnum.GRANT_PERMISSION.value,
+    }
+
     queryset = AppResourcePermission.objects.order_by("-id")
     filterset_class = AppResourcePermissionFilter
 
@@ -137,6 +143,10 @@ class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, gen
     ),
 )
 class AppResourcePermissionExportApi(AppResourcePermissionQuerySetMixin, generics.CreateAPIView):
+    method_permission = {
+        "post": ActionEnum.VIEW_PERMISSION.value,
+    }
+
     queryset = AppResourcePermission.objects.order_by("-id")
 
     def create(self, request, *args, **kwargs):
@@ -200,6 +210,10 @@ class AppResourcePermissionExportApi(AppResourcePermissionQuerySetMixin, generic
     ),
 )
 class AppResourcePermissionAppCodeListApi(generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_PERMISSION.value,
+    }
+
     @swagger_auto_schema()
     def list(self, request, *args, **kwargs):
         """获取有权限的应用列表"""
@@ -223,6 +237,10 @@ class AppResourcePermissionAppCodeListApi(generics.ListAPIView):
     ),
 )
 class AppResourcePermissionRenewApi(generics.CreateAPIView):
+    method_permission = {
+        "post": ActionEnum.GRANT_PERMISSION.value,
+    }
+
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         """
@@ -251,6 +269,10 @@ class AppResourcePermissionRenewApi(generics.CreateAPIView):
     ),
 )
 class AppResourcePermissionDeleteApi(AppResourcePermissionQuerySetMixin, generics.DestroyAPIView):
+    method_permission = {
+        "delete": ActionEnum.REVOKE_PERMISSION.value,
+    }
+
     queryset = AppResourcePermission.objects.order_by("-id")
 
     @transaction.atomic
@@ -287,6 +309,11 @@ class AppGatewayPermissionQuerySetMixin:
     ),
 )
 class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, generics.ListCreateAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_PERMISSION.value,
+        "post": ActionEnum.GRANT_PERMISSION.value,
+    }
+
     queryset = AppGatewayPermission.objects.order_by("-id")
     filterset_class = AppGatewayPermissionFilter
 
@@ -330,6 +357,10 @@ class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, gener
     ),
 )
 class AppGatewayPermissionExportApi(AppGatewayPermissionQuerySetMixin, generics.CreateAPIView):
+    method_permission = {
+        "post": ActionEnum.VIEW_PERMISSION.value,
+    }
+
     queryset = AppGatewayPermission.objects.order_by("-id")
 
     def create(self, request, *args, **kwargs):
@@ -387,6 +418,10 @@ class AppGatewayPermissionExportApi(AppGatewayPermissionQuerySetMixin, generics.
     ),
 )
 class AppGatewayPermissionAppCodeListApi(generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_PERMISSION.value,
+    }
+
     def list(self, request, *args, **kwargs):
         """获取有权限的应用列表"""
 
@@ -409,6 +444,10 @@ class AppGatewayPermissionAppCodeListApi(generics.ListAPIView):
     ),
 )
 class AppGatewayPermissionRenewApi(generics.CreateAPIView):
+    method_permission = {
+        "post": ActionEnum.GRANT_PERMISSION.value,
+    }
+
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         """
@@ -437,6 +476,10 @@ class AppGatewayPermissionRenewApi(generics.CreateAPIView):
     ),
 )
 class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.DestroyAPIView):
+    method_permission = {
+        "delete": ActionEnum.REVOKE_PERMISSION.value,
+    }
+
     queryset = AppGatewayPermission.objects.order_by("-id")
 
     @transaction.atomic
@@ -464,6 +507,10 @@ class AppPermissionApplyQuerySetMixin:
     ),
 )
 class AppPermissionApplyListApi(AppPermissionApplyQuerySetMixin, generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_PERMISSION.value,
+    }
+
     filterset_class = AppPermissionApplyFilter
 
     def list(self, request, *args, **kwargs):
@@ -486,6 +533,10 @@ class AppPermissionApplyListApi(AppPermissionApplyQuerySetMixin, generics.ListAP
     ),
 )
 class AppPermissionApplyRetrieveApi(AppPermissionApplyQuerySetMixin, generics.RetrieveAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_PERMISSION.value,
+    }
+
     lookup_field = "id"
 
     def retrieve(self, request, *args, **kwargs):
@@ -503,6 +554,10 @@ class AppPermissionApplyRetrieveApi(AppPermissionApplyQuerySetMixin, generics.Re
     ),
 )
 class AppPermissionRecordListApi(generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_PERMISSION.value,
+    }
+
     filterset_class = AppPermissionRecordFilter
 
     def get_queryset(self):
@@ -535,6 +590,10 @@ class AppPermissionRecordListApi(generics.ListAPIView):
     ),
 )
 class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_PERMISSION.value,
+    }
+
     lookup_field = "id"
 
     def get_queryset(self):
@@ -561,6 +620,10 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
     ),
 )
 class AppPermissionApplyApprovalApi(AppPermissionApplyQuerySetMixin, generics.CreateAPIView):
+    method_permission = {
+        "post": ActionEnum.APPROVE_PERMISSION.value,
+    }
+
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         """

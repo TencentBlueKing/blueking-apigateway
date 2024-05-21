@@ -22,6 +22,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.models import AuditEventLog
+from apigateway.iam.constants import ActionEnum
 
 from .serializers import AuditEventLogOutputSLZ, AuditEventLogQueryInputSLZ
 
@@ -36,6 +37,10 @@ from .serializers import AuditEventLogOutputSLZ, AuditEventLogQueryInputSLZ
     ),
 )
 class AuditEventLogListApi(generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_AUDIT.value,
+    }
+
     serializer_class = AuditEventLogOutputSLZ
     lookup_field = "id"
 

@@ -33,6 +33,7 @@ from apigateway.biz.access_log.data_scrubber import DataScrubber
 from apigateway.biz.access_log.log_search import LogSearchClient
 from apigateway.common.signature import SignatureGenerator, SignatureValidator
 from apigateway.core.models import Stage
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 
@@ -54,6 +55,10 @@ from .serializers import (
     ),
 )
 class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_LOG.value,
+    }
+
     def retrieve(self, request, *args, **kwargs):
         slz = RequestLogQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -94,6 +99,10 @@ def add_extend_fields(logs: List[Dict]):
     ),
 )
 class SearchLogListApi(generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_LOG.value,
+    }
+
     def list(self, request, *args, **kwargs):
         slz = RequestLogQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -139,6 +148,10 @@ class SearchLogListApi(generics.ListAPIView):
     ),
 )
 class LogDetailListApi(generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_LOG.value,
+    }
+
     # 打开分享日志链接的，可能不是网关负责人，因此去除权限校验
     gateway_permission_exempt = True
 
@@ -173,6 +186,10 @@ class LogDetailListApi(generics.ListAPIView):
     ),
 )
 class LogLinkRetrieveApi(generics.RetrieveAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_LOG.value,
+    }
+
     gateway_permission_exempt = False
 
     def retrieve(self, request, request_id, *args, **kwargs):

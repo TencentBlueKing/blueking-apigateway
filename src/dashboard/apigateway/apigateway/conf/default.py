@@ -125,9 +125,7 @@ INSTALLED_APPS = [
     "apigateway.controller",
     "apigateway.healthz",
     "apigateway.iam",
-    # TODO: 待启用 IAM 鉴权后，需启用以下两个 django app
-    # "apigateway.iam.apigw_iam_migration",
-    # "iam.contrib.iam_migration",
+    "iam.contrib.iam_migration",
     # 蓝鲸通知中心
     "bk_notice_sdk",
     # 开源版旧版 ESB 数据
@@ -785,9 +783,10 @@ BK_IAM_MIGRATION_APP_NAME = "apigateway.iam.apigw_iam_migration"
 BK_IAM_RESOURCE_API_HOST = env.str("BK_IAM_RESOURCE_API_HOST", DASHBOARD_URL)
 # 跳过注册权限模型到权限中心（注意：仅跳过注册权限模型，不关注权限校验是否依赖权限中心）
 BK_IAM_SKIP = env.bool("BK_IAM_SKIP", False)
-# 使用权限中心数据进行鉴权（创建网关时，会创建分级管理员、用户组，校验权限时依赖权限中心）
-# TODO: 待启用 IAM 鉴权时，将默认值改为 True
-USE_BK_IAM_PERMISSION = env.bool("USE_BK_IAM_PERMISSION", False)
+# 使用 DO_BK_IAM_MIGRATE=true python manage.py migrate apigw_iam_migration 开启 IAM 模型迁移
+DO_BK_IAM_MIGRATE = env.bool("DO_BK_IAM_MIGRATE", False)
+if DO_BK_IAM_MIGRATE:
+    INSTALLED_APPS.append("apigateway.iam.apigw_iam_migration")
 
 # 蓝鲸通知中心配置
 ENABLE_BK_NOTICE = env.bool("ENABLE_BK_NOTICE", False)

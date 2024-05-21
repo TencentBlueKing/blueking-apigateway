@@ -45,6 +45,7 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.constants import STAGE_VAR_PATTERN
 from apigateway.core.models import BackendConfig, Proxy, Resource, Stage
+from apigateway.iam.constants import ActionEnum
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
@@ -95,6 +96,11 @@ class BackendHostIsEmpty(Exception):
     ),
 )
 class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_RESOURCE.value,
+        "post": ActionEnum.CREATE_RESOURCE.value,
+    }
+
     def list(self, request, *args, **kwargs):
         slz = ResourceQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -179,6 +185,12 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
     ),
 )
 class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_RESOURCE.value,
+        "put": ActionEnum.EDIT_RESOURCE.value,
+        "delete": ActionEnum.DELETE_RESOURCE.value,
+    }
+
     serializer_class = ResourceInputSLZ
     lookup_field = "id"
 
@@ -269,6 +281,11 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
     ),
 )
 class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIView, generics.DestroyAPIView):
+    method_permission = {
+        "put": ActionEnum.EDIT_RESOURCE.value,
+        "delete": ActionEnum.DELETE_RESOURCE.value,
+    }
+
     serializer_class = ResourceBatchUpdateInputSLZ
 
     @transaction.atomic
@@ -335,6 +352,10 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
     ),
 )
 class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
+    method_permission = {
+        "put": ActionEnum.EDIT_RESOURCE.value,
+    }
+
     serializer_class = ResourceLabelUpdateInputSLZ
     lookup_url_kwarg = "resource_id"
     lookup_field = "id"
@@ -355,6 +376,10 @@ class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
 
 
 class ResourceImportCheckApi(generics.CreateAPIView):
+    method_permission = {
+        "post": ActionEnum.CREATE_RESOURCE.value,
+    }
+
     @swagger_auto_schema(
         operation_description="导入资源检查，导入资源前，检查资源配置是否正确",
         request_body=ResourceImportCheckInputSLZ,
@@ -398,6 +423,10 @@ class ResourceImportCheckApi(generics.CreateAPIView):
 
 
 class ResourceImportApi(generics.CreateAPIView):
+    method_permission = {
+        "post": ActionEnum.CREATE_RESOURCE.value,
+    }
+
     @swagger_auto_schema(
         operation_description="导入资源，支持根据 yaml、json 格式导入",
         request_body=ResourceImportInputSLZ,
@@ -427,6 +456,10 @@ class ResourceImportApi(generics.CreateAPIView):
 
 
 class ResourceExportApi(generics.CreateAPIView):
+    method_permission = {
+        "post": ActionEnum.VIEW_RESOURCE.value,
+    }
+
     @swagger_auto_schema(
         operation_description="导出资源",
         request_body=ResourceExportInputSLZ,
@@ -493,6 +526,10 @@ class ResourceExportApi(generics.CreateAPIView):
 
 
 class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_RESOURCE.value,
+    }
+
     serializer_class = BackendPathCheckInputSLZ
 
     @swagger_auto_schema(
@@ -575,6 +612,10 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
     ),
 )
 class ResourcesWithVerifiedUserRequiredApi(ResourceQuerySetMixin, generics.ListAPIView):
+    method_permission = {
+        "get": ActionEnum.VIEW_RESOURCE.value,
+    }
+
     def list(self, request, *args, **kwargs):
         """过滤出需要认证用户的资源列表"""
         resources = list(self.get_queryset().values("id", "name"))

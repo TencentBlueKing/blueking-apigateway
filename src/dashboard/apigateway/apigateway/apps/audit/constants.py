@@ -46,6 +46,7 @@ class OpObjectTypeEnum(StructuredEnum):
     MICRO_GATEWAY = EnumField("micro_gateway", label=_("微网关"))
     PLUGIN = EnumField("plugin", label=_("插件"))
     RESOURCE_DOC = EnumField("resource_doc", label=_("资源文档"))
+    GATEWAY_MEMBER = EnumField("gateway_member", label=_("网关成员"))
 
 
 # for translation only
