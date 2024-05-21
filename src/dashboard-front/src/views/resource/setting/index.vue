@@ -26,7 +26,7 @@
             theme="primary"
             v-if="versionConfigs.needNewVersion"
             @click="handleCreateResourceVersion">
-            立即生成版本
+            {{ t('立即生成版本') }}
           </bk-button>
         </template>
       </bk-alert>

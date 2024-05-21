@@ -30,18 +30,18 @@ export const createMenuData = (): IMenu[] => {
     {
       name: 'apigwStageManage',
       enabled: true,
-      title: '环境管理',
+      title: t('环境管理'),
       icon: 'resource',
       children: [
         {
           name: 'apigwStageOverview',
           enabled: true,
-          title: '环境概览',
+          title: t('环境概览'),
         },
         {
           name: 'apigwReleaseHistory',
           enabled: true,
-          title: '发布记录',
+          title: t('发布记录'),
         },
       ],
     },
