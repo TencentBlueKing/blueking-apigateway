@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from unittest import mock
+
 import pytest
 from ddf import G
 
@@ -31,6 +33,7 @@ class TestStageViewSet:
     def test_list(self, request_factory, fake_gateway):
         request = request_factory.get("/")
         request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
 
         s1 = G(Stage, name="prod", gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
         s2 = G(Stage, name="test", gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -77,6 +80,7 @@ class TestStageViewSet:
     def test_list_by_gateway_name(self, request_to_view, request_factory, fake_gateway):
         request = request_factory.get("")
         request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
 
         stage = G(Stage, name="prod", gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
 

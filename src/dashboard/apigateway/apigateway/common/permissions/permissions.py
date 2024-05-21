@@ -34,8 +34,13 @@ class GatewayPermission(permissions.BasePermission):
     message = gettext_lazy("当前用户无访问网关权限")
 
     def has_permission(self, request, view):
+        # openapi 的请求来源必须是网关，此时经过网关的中间件（所有都开启了应用认证）, 请求中会注入 app 对象
+        if getattr(view, "request_from_gateway_required", False) and not hasattr(request, "app"):
+            return False
+
         gateway_obj = self.get_gateway_object(view)
 
+        # FIXME: 可能的越权，待重构 open api 之后，确认剩下的逻辑哪里有需要这个的
         # 路径参数 gateway_id 不存在，不需要校验网关权限
         if not gateway_obj:
             return True
@@ -71,9 +76,13 @@ class GatewayRelatedAppPermission(permissions.BasePermission):
     message = gettext_lazy("应用无操作网关权限")
 
     def has_permission(self, request, view):
-        gateway_obj = self.get_gateway_object(view)
+        # openapi 的请求来源必须是网关，此时经过网关的中间件（所有都开启了应用认证）, 请求中会注入 app 对象
+        if not hasattr(request, "app"):
+            return False
 
-        # 通过 view 属性 allow_gateway_not_exist，控制是否允许网关为 None
+        gateway_obj = self.get_gateway_object(view)
+        # NOTE: only for GatewaySyncApi /<slug:gateway_name>/sync/, at that time, the gateway_obj is None
+        # should be refactored in the future 新版 openapi 不要这么设计了
         if not gateway_obj and getattr(view, "allow_gateway_not_exist", False):
             return True
 

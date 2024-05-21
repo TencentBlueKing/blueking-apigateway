@@ -22,6 +22,7 @@ stage:
 grant_permissions:
   - bk_app_code: visual-layout
   - bk_app_code: bk_lesscode
+  - bk_app_code: {{ settings.BK_APP_CODE }}
 
 resource_docs:
   basedir: "{{ settings.BASE_DIR }}/data/apidocs/"

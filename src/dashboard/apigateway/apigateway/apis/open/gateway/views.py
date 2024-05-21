@@ -55,6 +55,7 @@ from apigateway.utils.responses import V1OKJsonResponse
 )
 class GatewayListApi(generics.ListAPIView):
     serializer_class = serializers.GatewayListV1OutputSLZ
+    request_from_gateway_required = True
 
     def get_queryset(self):
         return Gateway.objects.all()
@@ -130,6 +131,7 @@ class GatewayListApi(generics.ListAPIView):
     ),
 )
 class GatewayRetrieveApi(generics.RetrieveAPIView):
+    request_from_gateway_required = True
     serializer_class = serializers.GatewayRetrieveV1OutputSLZ
     lookup_field = "id"
 
@@ -159,8 +161,8 @@ class GatewayPublicKeyRetrieveApi(generics.RetrieveAPIView):
 
 
 class GatewaySyncApi(generics.CreateAPIView):
-    serializer_class = serializers.GatewaySyncInputSLZ
     permission_classes = [GatewayRelatedAppPermission]
+    serializer_class = serializers.GatewaySyncInputSLZ
     allow_gateway_not_exist = True
 
     @swagger_auto_schema(request_body=serializers.GatewaySyncInputSLZ, tags=["OpenAPI.Gateway"])
@@ -208,8 +210,8 @@ class GatewaySyncApi(generics.CreateAPIView):
 
 
 class GatewayUpdateStatusApi(generics.CreateAPIView):
-    serializer_class = serializers.GatewayUpdateStatusInputSLZ
     permission_classes = [GatewayRelatedAppPermission]
+    serializer_class = serializers.GatewayUpdateStatusInputSLZ
 
     @swagger_auto_schema(request_body=serializers.GatewayUpdateStatusInputSLZ, tags=["OpenAPI.Gateway"])
     def post(self, request, *args, **kwargs):
@@ -234,8 +236,8 @@ class GatewayUpdateStatusApi(generics.CreateAPIView):
 
 
 class GatewayRelatedAppAddApi(generics.CreateAPIView):
-    serializer_class = serializers.GatewayRelatedAppsAddInputSLZ
     permission_classes = [GatewayRelatedAppPermission]
+    serializer_class = serializers.GatewayRelatedAppsAddInputSLZ
 
     @swagger_auto_schema(request_body=serializers.GatewayRelatedAppsAddInputSLZ, tags=["OpenAPI.Gateway"])
     @transaction.atomic
