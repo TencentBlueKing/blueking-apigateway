@@ -26,7 +26,7 @@
             theme="primary"
             v-if="versionConfigs.needNewVersion"
             @click="handleCreateResourceVersion">
-            立即生成版本
+            {{ t('立即生成版本') }}
           </bk-button>
         </template>
       </bk-alert>
@@ -514,9 +514,9 @@ const common = useCommon();
 const resourceVersionStore = useResourceVersion();
 const { t } = useI18n();
 // 批量下拉的item
-const batchDropData = ref([{ value: 'edit', label: '编辑资源' }, { value: 'delete', label: '删除资源' }]);
+const batchDropData = ref([{ value: 'edit', label: t('编辑资源') }, { value: 'delete', label: t('删除资源') }]);
 // 导入下拉
-const importDropData = ref([{ value: 'config', label: '资源配置' }, { value: 'doc', label: '资源文档' }]);
+const importDropData = ref([{ value: 'config', label: t('资源配置') }, { value: 'doc', label: t('资源文档') }]);
 interface ApigwIDropList extends IDropList {
   tooltips?: string;
 }

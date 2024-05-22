@@ -1,4 +1,18 @@
-<!-- 2024-02-21 -->
+<!-- 2024-05-22 -->
+# V1.13.1 Version Update Log
+
+### Bug Fixes
+
+- fix: stage plugins can't be edited
+- fix: menu i18n issue
+
+### Feature Enhancements
+
+- Stage resource list is too large to display
+
+---
+
+<!-- 2024-05-20 -->
 # V1.13.0 Version Update Log
 
 ### Bug Fixes

@@ -376,7 +376,7 @@ const handleClearFilterKey = () => {
 const handleEditePlugin = async (item: any) => {
   curType.value = 'edit';
   const { code, config_id } = item;
-  const curEditItem = pluginListDate.value.find((pluginItem: { code: string; }) => pluginItem.code === code);
+  const curEditItem = curBindingPlugins.value.find((pluginItem: { code: string; }) => pluginItem.code === code);
   curChoosePlugin.value = curEditItem;
   try {
     const res = await getPluginConfig(apigwId, scopeType.value, scopeId.value, code, config_id);
