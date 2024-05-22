@@ -1,0 +1,21 @@
+meta {
+  name: user_verify-invalid-access_token
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/user_verify
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"access_token": "abc"}
+}
+
+assert {
+  res.status: eq 400
+  res.body.code: eq 1640001
+  res.body.code_name: eq INVALID_ARGS
+}
