@@ -1,0 +1,15 @@
+meta {
+  name: get-with-slash
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/get/
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

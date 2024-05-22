@@ -1,0 +1,20 @@
+meta {
+  name: bodylimit-hit
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/smoke/prod/post
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  : @file(data_41M.dat)
+}
+
+assert {
+  res.status: eq 413
+  res.body: matches 413 Request Entity Too Large
+}
