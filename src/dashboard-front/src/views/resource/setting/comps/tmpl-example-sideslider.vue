@@ -41,10 +41,8 @@ watch(() => props.isShow, (val) => {
 
 </script>
 <style scoped lang="scss">
-.tmpl-example-sideslider-wrapper {
-  .tmpl-example-monaco-editor {
-    width: 100%;
-    height: calc(100vh - 52px);
-  }
+.tmpl-example-monaco-editor {
+  width: 100%;
+  height: calc(100vh - 52px);
 }
 </style>
