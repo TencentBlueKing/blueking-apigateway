@@ -91,6 +91,7 @@ class StageOutputSLZ(serializers.ModelSerializer):
         return {
             "version": self.context["stage_release"].get(obj.id, {}).get("resource_version", {}).get("version", ""),
             "id": self.context["stage_release"].get(obj.id, {}).get("resource_version_id", 0),
+            "schema_version": self.context["stage_release"].get(obj.id, {}).get("resource_version_schema_version", ""),
         }
 
     def get_publish_id(self, obj):

@@ -145,6 +145,7 @@ class TestReleasedResourceHandler:
                         "resource_version": {
                             "version": "1.0.1",
                         },
+                        "resource_version_schema_version": "1.0",
                         "release_by": "test",
                     },
                 },
