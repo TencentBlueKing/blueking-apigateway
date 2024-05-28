@@ -117,5 +117,8 @@ export default {
 
     // 调用API
     USER_API: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/use-api/use-apigw-api.md`,
+
+    // 升级到 1.13 的指引说明
+    UPGRADE_TO_113_TIP: "",
   },
 };
