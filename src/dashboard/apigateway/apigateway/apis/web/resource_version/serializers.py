@@ -115,6 +115,7 @@ class ResourceVersionListOutputSLZ(serializers.Serializer):
     released_stages = serializers.SerializerMethodField(help_text="已发布的环境列表")
     sdk_count = serializers.SerializerMethodField(help_text="生成skd数量")
     version = serializers.SerializerMethodField(help_text="版本号")
+    schema_version = serializers.CharField(help_text="资源版本协议版本：1.0/2.0")
     comment = serializers.CharField(help_text="版本日志")
     created_time = serializers.DateTimeField(help_text="创建时间")
 
