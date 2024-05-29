@@ -72,6 +72,7 @@ class TestResourceVersionListCreateApi:
             {
                 "id": resource_version.id,
                 "version": resource_version.version,
+                "schema_version": resource_version.schema_version,
                 "comment": resource_version.comment,
                 "sdk_count": 1,
                 "created_time": dummy_time.str,

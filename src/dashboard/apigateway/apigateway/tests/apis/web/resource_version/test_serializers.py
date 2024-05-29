@@ -52,7 +52,9 @@ class TestResourceVersionListOutputSLZ:
             created_time=arrow.get("2019-01-01 12:30:00").datetime,
         )
 
-        queryset = ResourceVersion.objects.filter(gateway=gateway).values("id", "version", "comment", "created_time")
+        queryset = ResourceVersion.objects.filter(gateway=gateway).values(
+            "id", "version", "schema_version", "comment", "created_time"
+        )
 
         slz = serializers.ResourceVersionListOutputSLZ(
             instance=queryset,
@@ -77,6 +79,7 @@ class TestResourceVersionListOutputSLZ:
             {
                 "id": resource_version.id,
                 "version": resource_version.version,
+                "schema_version": resource_version.schema_version,
                 "comment": resource_version.comment,
                 "sdk_count": 0,
                 "released_stages": [
