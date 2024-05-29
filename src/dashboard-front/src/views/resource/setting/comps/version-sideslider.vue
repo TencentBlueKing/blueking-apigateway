@@ -188,7 +188,6 @@ import {
   getStageList,
 } from '@/http';
 import versionDiff from '@/components/version-diff/index.vue';
-import CustomDialog from '@/components/custom-dialog/index.vue';
 
 const route = useRoute();
 const router = useRouter();

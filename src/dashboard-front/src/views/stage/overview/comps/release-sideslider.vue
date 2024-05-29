@@ -183,7 +183,6 @@
 </template>
 
 <script setup lang="ts">
-import { IDialog } from '@/types';
 import { useI18n } from 'vue-i18n';
 import { ref, reactive, watch, computed } from 'vue';
 import { getResourceVersionsList, resourceVersionsDiff, createReleases, getStageList } from '@/http';

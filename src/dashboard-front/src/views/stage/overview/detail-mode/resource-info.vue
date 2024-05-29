@@ -152,14 +152,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, h, shallowRef } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getResourceVersionsInfo, getGatewayLabels, getStageList } from '@/http';
 import { useCommon, useStage } from '@/store';
 import resourceDetails from './resource-details.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import editStageSideslider from '../comps/edit-stage-sideslider.vue';
-import RenderCustomColumn from '@/components/custom-table-header-filter';
 import { EditLine } from 'bkui-vue/lib/icon';
 import { copy } from '@/common/util';
 import { useRoute } from 'vue-router';
@@ -195,6 +194,7 @@ const pagination = ref({
   current: 1,
   limit: 10,
   count: 0,
+  abnormal: false,
 });
 
 const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
