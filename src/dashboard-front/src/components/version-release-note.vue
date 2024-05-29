@@ -119,7 +119,6 @@ defineExpose({
   padding-left: 6px;
   .stage {
     color: #E02020;
-    cursor: pointer;
   }
   .mb-32 {
     margin-bottom: 32px;
