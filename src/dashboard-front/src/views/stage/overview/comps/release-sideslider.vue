@@ -27,9 +27,9 @@
                   v-else
                   theme="info"
                   :title="
-                    chooseAssets?.resource_version.version ?
+                    chooseAssets?.resource_version?.version ?
                       t('当前版本号: {version},于 {created_time} 发布成功; 资源更新成功后, 需发布到指定的环境, 方可生效', {
-                        version: chooseAssets?.resource_version.version,
+                        version: chooseAssets?.resource_version?.version,
                         created_time: chooseAssets?.release.created_time
                       }) :
                       t('资源更新成功后, 需发布到指定的环境, 方可生效')"
@@ -47,8 +47,8 @@
                     </bk-select>
                   </bk-form-item>
                   <p class="publish-version-tips">
-                    {{ t('发布的资源版本（ 当前版本：{version}', { version: chooseAssets?.resource_version.version || '--' }) }}
-                    <template v-if="isRollback && chooseAssets?.resource_version.version">
+                    {{ t('发布的资源版本（ 当前版本：{version}', { version: chooseAssets?.resource_version?.version || '--' }) }}
+                    <template v-if="isRollback && chooseAssets?.resource_version?.version">
                       ，<span>{{ t('发布后，将回滚至 {version} 版本', { version: resourceVersion }) }}</span>
                     </template>
                     {{ t('）') }}
@@ -80,14 +80,17 @@
                           <span class="version-name">
                             {{ item.version }}
                           </span>
-                          <span v-if="chooseAssets?.resource_version.version === item.version" class="cur-version">
+                          <span class="version-tips" v-if="item.schema_version === '1.0'">
+                            ({{ t('老版本，未包含后端服务等信息，发布可能会导致数据不一致，谨慎使用') }})
+                          </span>
+                          <span v-if="chooseAssets?.resource_version?.version === item.version" class="cur-version">
                             <bk-tag theme="info">
                               {{ t('当前版本') }}
                             </bk-tag>
                           </span>
                           <span
                             v-if="item.isLatestVersion"
-                            :class="[{ 'cur-version': chooseAssets?.resource_version.version !== item.version }]">
+                            :class="[{ 'cur-version': chooseAssets?.resource_version?.version !== item.version }]">
                             <bk-tag theme="success" @click.stop="handleVersionChange(item)"> {{ t('最新版本') }}</bk-tag>
                           </span>
                         </div>
@@ -178,7 +181,13 @@
     </bk-dialog> -->
 
     <!-- 日志弹窗 -->
-    <log-details ref="logDetailsRef" :history-id="publishId" @release-success="emit('release-success')"></log-details>
+    <log-details
+      ref="logDetailsRef"
+      :history-id="publishId"
+      @release-success="handleReleaseSuccess"
+      @release-doing="handleReleaseDoing"
+    >
+    </log-details>
   </div>
 </template>
 
@@ -190,13 +199,13 @@ import { useRoute, useRouter } from 'vue-router';
 import versionDiff from '@/components/version-diff/index.vue';
 import logDetails from '@/components/log-details/index.vue';
 import { Message, InfoBox } from 'bkui-vue';
-import { useSidebar } from '@/hooks';
+import { useSidebar, useGetStageList } from '@/hooks';
 import dayjs from 'dayjs';
 
 const route = useRoute();
 const router = useRouter();
 const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
-
+const { getStagesStatus } = useGetStageList();
 const apigwId = computed(() => +route.params.id);
 
 const { t } = useI18n();
@@ -355,6 +364,17 @@ const handlePublish = async () => {
   }
 };
 
+const handleReleaseSuccess = () => {
+  emit('release-success');
+  getStagesStatus();
+};
+
+const handleReleaseDoing = () => {
+  setTimeout(() => {
+    getStagesStatus();
+  }, 3000);
+};
+
 // 显示侧边栏
 const showReleaseSideslider = () => {
   const params = {
@@ -463,13 +483,12 @@ watch(
   () => isShow.value,
   async (val) => {
     if (val) {
+      await getStageData();
+      await getResourceVersions();
       if (props.currentAssets?.id) {
         formData.stage_id = props.currentAssets.id;
         chooseAssets.value = props.currentAssets;
       }
-
-      await getResourceVersions();
-      await getStageData();
 
       if (props.version?.id) {
         const curVersion = versionList.value.find((item: any) => item.id === props.version?.id);
@@ -630,5 +649,9 @@ defineExpose({
   span {
     color: #FF9C01;
   }
+}
+.version-tips {
+  color: #979ba5;
+  margin-left: 4px;
 }
 </style>
