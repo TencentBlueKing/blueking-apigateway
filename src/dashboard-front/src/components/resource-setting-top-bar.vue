@@ -1,5 +1,5 @@
 <template>
-  <div class="resource-top-bar">
+  <div class="resource-top-bar" :style="stage.getNotUpdatedStages?.length ? 'top: 42px' : 'top: -1px'">
     <div class="top-title-wrapper">
       <div class="title">{{ t('资源配置') }}</div>
       <div class="is-latest" v-show="!latest">
@@ -55,8 +55,10 @@ import { getResourceVersionsList } from '@/http';
 import versionDiff from '@/components/version-diff/index.vue';
 import VersionSideslider from '@/views/resource/setting/comps/version-sideslider.vue';
 import mitt from '@/common/event-bus';
+import { useStage } from '@/store';
 
 const { t } = useI18n();
+const stage = useStage();
 
 const route = useRoute();
 const apigwId = computed(() => +route.params.id);
@@ -122,7 +124,8 @@ const handleCreateResourceVersion = async () => {
 <style lang="scss" scoped>
 .resource-top-bar {
   position: absolute;
-  top: 0;
+  // top: 0;
+  // top: 42px;
   width: 100%;
   height: 52px;
   box-sizing: border-box;
