@@ -13,10 +13,10 @@
             class="guide">
             {{ t('查看操作指引') }}
           </a>
-          <bk-button theme="primary" v-if="!stage.getExist2" @click="handleCreateVersion">
+          <bk-button size="small" theme="primary" v-if="!stage.getExist2" @click="handleCreateVersion">
             {{ t('生成版本并发布') }}
           </bk-button>
-          <bk-button theme="primary" v-else @click="handlePublish">
+          <bk-button size="small" theme="primary" v-else @click="handlePublish">
             {{ t('去发布') }}
           </bk-button>
         </div>
@@ -100,7 +100,7 @@ watch(
     box-sizing: border-box;
   }
   :deep(.bk-alert-wraper) {
-    padding: 4px 10px;
+    padding: 7px 10px;
     display: flex;
     align-items: center;
   }
