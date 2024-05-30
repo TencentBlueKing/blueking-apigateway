@@ -175,13 +175,16 @@ const showSideslider = () => {
   isShow.value = true;
 };
 
-const emit = defineEmits<(e: 'release-success') => void>();
+const emit = defineEmits(['release-success', 'release-doing']);
 
 watch(
   () => isShow.value,
   (v) => {
     if (!v && logDetails.value?.status === 'success') {
       emit('release-success');
+    }
+    if (!v && logDetails.value?.status !== 'success') {
+      emit('release-doing');
     }
     if (!v) {
       clearInterval(timeId);

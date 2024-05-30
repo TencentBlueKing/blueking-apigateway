@@ -187,6 +187,7 @@ import {
   resourceVersionsDiff,
   getStageList,
 } from '@/http';
+import { useGetStageList } from '@/hooks';
 import versionDiff from '@/components/version-diff/index.vue';
 
 const route = useRoute();
@@ -194,7 +195,7 @@ const router = useRouter();
 const apigwId = computed(() => +route.params.id);
 
 const { t } = useI18n();
-
+const { getStagesStatus } = useGetStageList();
 const emit  = defineEmits(['done']);
 
 // const resourceVersion = computed(() => {
@@ -281,6 +282,7 @@ const handleBuildVersion = async () => {
     dialogShow.value = true;
     await createResourceVersion(apigwId.value, formData);
     emit('done');
+    getStagesStatus();
     createError.value = false;
   } catch (e) {
     createError.value = true;
