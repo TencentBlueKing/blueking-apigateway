@@ -1,5 +1,5 @@
 <template>
-  <div class="stage-top-bar">
+  <div class="stage-top-bar" :style="stageStore.getNotUpdatedStages?.length ? 'top: 42px' : 'top: -1px'">
     <div class="top-title-wrapper">
       <div class="title">{{ t('环境概览') }}</div>
       <div class="model-type mr8">
@@ -373,7 +373,8 @@ defineExpose({
   display: flex;
   justify-content: space-between;
   align-items: center;
-  top: -1px;
+  // top: -1px;
+  // top: 42px;
   width: 100%;
   padding: 0 24px;
   box-sizing: border-box;

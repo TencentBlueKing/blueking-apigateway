@@ -9,6 +9,8 @@ export const useStage = defineStore('stage', {
     },
     curStageId: -1,
     stageMainLoading: false,
+    notUpdatedStages: [], // 当前网关下未更新的环境列表
+    exist2: false, // 当前网关下是否有schema_version = 2.0 的资源
   }),
   getters: {
     defaultStage(state) {
@@ -17,6 +19,12 @@ export const useStage = defineStore('stage', {
     realStageMainLoading(state) {
       return state.stageMainLoading;
     },
+    getNotUpdatedStages(state) {
+      return state.notUpdatedStages;
+    },
+    getExist2(state) {
+      return state.exist2;
+    },
   },
   actions: {
     setStageList(data: any[]) {
@@ -24,6 +32,12 @@ export const useStage = defineStore('stage', {
     },
     setStageMainLoading(loading: boolean) {
       this.stageMainLoading = loading;
+    },
+    setNotUpdatedStages(data: any[]) {
+      this.notUpdatedStages = data;
+    },
+    setExist2(data: boolean) {
+      this.exist2 = data;
     },
   },
 });
