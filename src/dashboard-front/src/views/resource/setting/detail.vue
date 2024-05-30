@@ -66,7 +66,7 @@
             <i @click="labelsEdit = true" class="apigateway-icon icon-ag-edit-line"></i>
             <i
               class="apigateway-icon icon-ag-copy-info"
-              @click="copy(formData?.labels?.map(item => item.name)?.join(','))">
+              @click="copy(formData?.labels?.map((item: any) => item.name)?.join(','))">
             </i>
           </span>
         </div>
@@ -731,6 +731,7 @@ const handleConfirmTime = () => {
   timeOutValue.value = '';
   handleEditSave();
 };
+
 const renderTimeOutLabel = () => {
   return (
     <div>

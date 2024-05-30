@@ -5,3 +5,4 @@ export * from './use-global';
 export * from './use-date-picker';
 export * from './user-chart-log';
 export * from './sidebar';
+export * from './use-stage-data';

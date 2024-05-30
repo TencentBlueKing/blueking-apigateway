@@ -11,3 +11,4 @@ src/views/permission/record/index.vue
 src/views/permission/apply/index.vue
 src/assets/**
 *bak*
+src/views/resource/setting/detail.vue
