@@ -22,7 +22,7 @@ export const useGetStageList = () => {
     let exist2 = false;
     for (let i = 0; i < res?.length; i++) {
       const item = res[i];
-      if (item.schema_version === '2.0') {
+      if (item.resource_version.schema_version === '2.0') {
         exist2 = true;
         break;
       }
