@@ -252,7 +252,7 @@ class ResourceImportValidator:
                 try:
                     yaml_validator.validate(
                         plugin_type.code,
-                        plugin_config_data.yaml,
+                        plugin_config_data.yaml.encode().decode("unicode_escape"),
                         plugin_type.schema and plugin_type.schema.schema,
                     )
                 except Exception as err:
