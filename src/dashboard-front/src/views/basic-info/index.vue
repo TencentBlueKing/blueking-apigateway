@@ -483,7 +483,10 @@ const handleOperate = async (type: string) => {
 
   if (['edit'].includes(type)) {
     basicInfoDetailData.value = _.cloneDeep(basicInfoData.value);
-    dialogEditData.value.isShow = true;
+    console.log('basicInfoDetailData.value', basicInfoDetailData.value);
+    setTimeout(() => {
+      dialogEditData.value.isShow = true;
+    }, 500);
     return;
   }
 
