@@ -49,6 +49,7 @@ type Event struct {
 	Status    string
 	PublishID int64
 	DetailMap map[string]interface{}
+	Ts        int64
 }
 
 var _ PublishEventService = publishEventService{}
@@ -90,6 +91,12 @@ func (p publishEventService) Report(ctx context.Context, event Event) error {
 		return fmt.Errorf("event[%+v] has been reported", event)
 	}
 
+	if event.Ts == 0 {
+		event.Ts = time.Now().Unix()
+	}
+
+	ts := time.Unix(event.Ts, 0)
+
 	// create event
 	publishEvent := dao.PublishEvent{
 		GatewayID:   releaseHistory.GatewayID,
@@ -99,8 +106,8 @@ func (p publishEventService) Report(ctx context.Context, event Event) error {
 		Status:      event.Status,
 		Detail:      event.DetailMap,
 		Step:        constant.GetStep(event.Name),
-		CreatedTime: time.Now(),
-		UpdatedTime: time.Now(),
+		CreatedTime: ts,
+		UpdatedTime: ts,
 	}
 	_, err = p.publishEventManager.Create(ctx, publishEvent)
 	if err != nil {
