@@ -68,3 +68,7 @@ sync_bk_apigateway
 sync_bk_esb
 sync_bk_apigateway_inner
 
+# delete abandoned celery tasks in 1.14(remove below code in 1.15)
+python manage.py delete_celery_task --task-name "esb.tasks.sync_legacy_esb_reusable_data"
+python manage.py delete_celery_task --task-name "apigateway.legacy_esb.tasks.sync_legacy_esb_reusable_data"
+python manage.py delete_celery_task --task-name "apigateway.controller.tasks.syncing.release_updated_check"

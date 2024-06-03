@@ -9,8 +9,6 @@ def run_migrate_command(apps, schema_editor):
     # call_command("migrate_access_strategy")
     # call_command("migrate_access_strategy_user_verified")
     # call_command("migrate_backend")
-    # delete in 1.13.x or 1.14, not in 1.13.0
-    # call_command("delete_celery_task", task_name="apigateway.controller.tasks.syncing.release_updated_check")
 
 
 class Migration(migrations.Migration):
