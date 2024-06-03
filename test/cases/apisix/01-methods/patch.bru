@@ -1,0 +1,15 @@
+meta {
+  name: patch
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/patch
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

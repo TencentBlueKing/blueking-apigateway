@@ -1,0 +1,21 @@
+meta {
+  name: ip-blacklist-hit
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/ip_blacklist
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-ip: 10.0.0.1
+}
+
+assert {
+  res.status: eq 403
+  res.body.code: eq 1640302
+  res.body.code_name: eq IP_NOT_ALLOWED
+}

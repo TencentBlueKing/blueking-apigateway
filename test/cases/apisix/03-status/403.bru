@@ -1,0 +1,15 @@
+meta {
+  name: 403
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/status/403
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 403
+}

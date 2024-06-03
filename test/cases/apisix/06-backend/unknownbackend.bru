@@ -1,0 +1,18 @@
+meta {
+  name: unknownbackend
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/unknownbackend
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 502
+  res.body.code: eq 1650200
+  res.body.code_name: eq BAD_GATEWAY
+  res.body.message: matches Bad Gateway
+}

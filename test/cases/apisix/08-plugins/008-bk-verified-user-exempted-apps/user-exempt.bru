@@ -1,0 +1,22 @@
+meta {
+  name: user-exempt
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/app_and_user_verify
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}", "bk_username": "admin"}
+}
+
+assert {
+  res.status: eq 400
+  res.body.code: eq 1640001
+  res.body.code_name: eq INVALID_ARGS
+  res.body.message: matches user authentication failed, the user indicated by bk_username is not verified
+}
