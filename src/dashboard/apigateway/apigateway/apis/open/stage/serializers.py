@@ -145,10 +145,16 @@ class StageProxyHTTPConfigSLZ(serializers.Serializer):
 class BackendConfigSLZ(UpstreamsSLZ):
     timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1)
 
+    class Meta:
+        ref_name = "apis.open.stage.BackendConfigSLZ"
+
 
 class BackendSLZ(serializers.Serializer):
     name = serializers.CharField(help_text="后端服务名称", required=True)
     config = BackendConfigSLZ(allow_empty=False)
+
+    class Meta:
+        ref_name = "apis.open.stage.BackendSLZ"
 
 
 class PluginConfigSLZ(serializers.Serializer):
