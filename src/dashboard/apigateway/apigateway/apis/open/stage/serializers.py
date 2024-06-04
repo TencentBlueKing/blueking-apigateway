@@ -142,6 +142,15 @@ class StageProxyHTTPConfigSLZ(serializers.Serializer):
     transform_headers = TransformHeadersSLZ(required=False, default=dict)
 
 
+class BackendConfigSLZ(UpstreamsSLZ):
+    timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1)
+
+
+class BackendSLZ(serializers.Serializer):
+    name = serializers.CharField(help_text="后端服务名称", required=True)
+    config = BackendConfigSLZ(allow_empty=False)
+
+
 class PluginConfigSLZ(serializers.Serializer):
     type = serializers.CharField(help_text="插件类型名称")
     yaml = serializers.CharField(help_text="插件yaml配置")
@@ -158,7 +167,9 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         child=serializers.CharField(allow_blank=True, required=True),
         default=dict,
     )
-    proxy_http = StageProxyHTTPConfigSLZ()
+    proxy_http = StageProxyHTTPConfigSLZ(required=False)
+
+    backends = serializers.ListSerializer(help_text="后端配置", child=BackendSLZ(), allow_null=True, required=False)
 
     plugin_configs = serializers.ListSerializer(
         help_text="插件配置", child=PluginConfigSLZ(), allow_null=True, required=False
@@ -181,6 +192,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "vars",
             "status",
             "proxy_http",
+            "backends",
             "plugin_configs",
             "micro_gateway_id",
         )
@@ -190,7 +202,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             }
         }
         read_only_fields = ("id", "status")
-        non_model_fields = ["proxy_http", "plugin_configs", "rate_limit"]
+        non_model_fields = ["proxy_http", "backends", "plugin_configs", "rate_limit"]
         lookup_field = "id"
 
         validators = [
@@ -216,26 +228,54 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         # 1. save stage
         instance = super().create(validated_data)
 
-        proxy_http_config = validated_data["proxy_http"]
-
         # 2. create default backend
         backend, _ = Backend.objects.get_or_create(
             gateway=instance.gateway,
             name=DEFAULT_BACKEND_NAME,
         )
 
-        config = self._get_stage_backend_config(proxy_http_config)
-        backend_config = BackendConfig(
-            gateway=instance.gateway,
-            backend=backend,
-            stage=instance,
-            config=config,
-        )
-        backend_config.save()
+        proxy_http_config = validated_data.get("proxy_http")
+        # 兼容老的配置
+        if proxy_http_config is not None and len(proxy_http_config) != 0:
+            config = self._get_stage_backend_config(proxy_http_config)
+            backend_config = BackendConfig(
+                gateway=instance.gateway,
+                backend=backend,
+                stage=instance,
+                config=config,
+            )
+            backend_config.save()
 
-        # 3. create other backend config with empty host
-        backends = Backend.objects.filter(gateway=instance.gateway).exclude(name=DEFAULT_BACKEND_NAME)
+            # create or update header rewrite plugin config
+            stage_transform_headers = proxy_http_config.get("transform_headers") or {}
+            stage_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(stage_transform_headers)
+            HeaderRewriteConvertor.sync_plugins(
+                instance.gateway_id,
+                PluginBindingScopeEnum.STAGE.value,
+                {instance.id: stage_config},
+                self.context["request"].user.username,
+            )
+
+        # 3.create config backend
         backend_configs = []
+        names = [DEFAULT_BACKEND_NAME]
+        for backend_info in validated_data.get("backends", []):
+            names.append(backend_info["name"])
+            backend, _ = Backend.objects.get_or_create(
+                gateway=instance.gateway,
+                name=backend_info["name"],
+            )
+            config = self._get_stage_backend_config_v2(backend_info)
+            backend_config = BackendConfig(
+                gateway=instance.gateway,
+                backend=backend,
+                stage=instance,
+                config=config,
+            )
+            backend_configs.append(backend_config)
+
+        # 4. create other backend config with empty host
+        backends = Backend.objects.filter(gateway=instance.gateway).exclude(name__in=names)
         config = {
             "type": "node",
             "timeout": 30,
@@ -255,16 +295,6 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         if backend_configs:
             BackendConfig.objects.bulk_create(backend_configs)
 
-        # 4. create or update header rewrite plugin config
-        stage_transform_headers = proxy_http_config.get("transform_headers") or {}
-        stage_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(stage_transform_headers)
-        HeaderRewriteConvertor.sync_plugins(
-            instance.gateway_id,
-            PluginBindingScopeEnum.STAGE.value,
-            {instance.id: stage_config},
-            self.context["request"].user.username,
-        )
-
         # 5. sync stage plugin
         self._sync_plugins(instance.gateway_id, instance.id, validated_data.get("plugin_configs", None))
 
@@ -283,6 +313,19 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "hosts": hosts,
         }
 
+    def _get_stage_backend_config_v2(self, backend: dict):
+        hosts = []
+        for host in backend["config"]["hosts"]:
+            scheme, _host = host["host"].rstrip("/").split("://")
+            hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
+
+        return {
+            "type": "node",
+            "timeout": backend["config"]["timeout"],
+            "loadbalance": backend["config"]["loadbalance"],
+            "hosts": hosts,
+        }
+
     def update(self, instance, validated_data):
         validated_data.pop("name", None)
         # 仅能通过发布更新 status，不允许直接更新 status
@@ -292,38 +335,58 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         # 1. 更新数据
         instance = super().update(instance, validated_data)
 
-        proxy_http_config = validated_data["proxy_http"]
-
         # 2. create default backend
-        backend, _ = Backend.objects.get_or_create(
-            gateway=instance.gateway,
-            name=DEFAULT_BACKEND_NAME,
-        )
-
-        backend_config = BackendConfig.objects.filter(
-            gateway=instance.gateway,
-            backend=backend,
-            stage=instance,
-        ).first()
-        if not backend_config:
-            backend_config = BackendConfig(
+        proxy_http_config = validated_data.get("proxy_http")
+        if proxy_http_config is not None and len(proxy_http_config) != 0:
+            backend, _ = Backend.objects.get_or_create(
+                gateway=instance.gateway,
+                name=DEFAULT_BACKEND_NAME,
+            )
+            backend_config = BackendConfig.objects.filter(
                 gateway=instance.gateway,
                 backend=backend,
                 stage=instance,
+            ).first()
+            if not backend_config:
+                backend_config = BackendConfig(
+                    gateway=instance.gateway,
+                    backend=backend,
+                    stage=instance,
+                )
+
+            backend_config.config = self._get_stage_backend_config(proxy_http_config)
+            backend_config.save()
+
+            # create or update header rewrite plugin config
+            stage_transform_headers = proxy_http_config.get("transform_headers") or {}
+            stage_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(stage_transform_headers)
+            HeaderRewriteConvertor.sync_plugins(
+                instance.gateway_id,
+                PluginBindingScopeEnum.STAGE.value,
+                {instance.id: stage_config},
+                self.context["request"].user.username,
             )
 
-        backend_config.config = self._get_stage_backend_config(proxy_http_config)
-        backend_config.save()
+        # 3. update backend
+        for backend_info in validated_data.get("backends", []):
+            backend, _ = Backend.objects.get_or_create(
+                gateway=instance.gateway,
+                name=backend_info["name"],
+            )
+            backend_config = BackendConfig.objects.filter(
+                gateway=instance.gateway,
+                backend=backend,
+                stage=instance,
+            ).first()
 
-        # 3. create or update header rewrite plugin config
-        stage_transform_headers = proxy_http_config.get("transform_headers") or {}
-        stage_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(stage_transform_headers)
-        HeaderRewriteConvertor.sync_plugins(
-            instance.gateway_id,
-            PluginBindingScopeEnum.STAGE.value,
-            {instance.id: stage_config},
-            self.context["request"].user.username,
-        )
+            if not backend_config:
+                backend_config = BackendConfig(
+                    gateway=instance.gateway,
+                    backend=backend,
+                    stage=instance,
+                )
+            backend_config.config = self._get_stage_backend_config_v2(backend_info)
+            backend_config.save()
 
         # 4. sync stage plugin
         self._sync_plugins(instance.gateway_id, instance.id, validated_data.get("plugin_configs", None))

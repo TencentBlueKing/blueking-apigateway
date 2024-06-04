@@ -22,9 +22,11 @@ import pytest
 from ddf import G
 
 from apigateway.apis.open.stage import views
+from apigateway.biz.plugin_binding import PluginBindingHandler
 from apigateway.core.constants import StageStatusEnum
-from apigateway.core.models import Gateway, Stage
+from apigateway.core.models import Backend, BackendConfig, Gateway, Stage
 from apigateway.tests.utils.testing import get_response_json
+from apigateway.utils.yaml import yaml_dumps
 
 pytestmark = pytest.mark.django_db
 
@@ -185,3 +187,75 @@ class TestStageSyncViewSet:
         stage = Stage.objects.get(gateway=gateway, name="prod")
         assert result["code"] == 0
         assert stage.status == 0
+
+    def test_sync_backends(self, fake_plugin_type_bk_header_rewrite, mocker, unique_gateway_name, request_factory):
+        mocker.patch(
+            "apigateway.apis.open.stage.views.GatewayRelatedAppPermission.has_permission",
+            return_value=True,
+        )
+
+        mocker.patch(
+            "apigateway.common.plugin.header_rewrite.HeaderRewriteConvertor.sync_plugins",
+            return_value=True,
+        )
+
+        gateway = G(Gateway, name=unique_gateway_name, is_public=False)
+
+        request = request_factory.post(
+            f"/api/v1/apis/{unique_gateway_name}/stages/sync/",
+            data={
+                "name": "prod",
+                "description": "desc",
+                "vars": {},
+                "backends": [
+                    {
+                        "name": "default",
+                        "config": {
+                            "timeout": 60,
+                            "loadbalance": "roundrobin",
+                            "hosts": [
+                                {
+                                    "host": "http://www.a.com",
+                                }
+                            ],
+                        },
+                    },
+                    {
+                        "name": "service1",
+                        "config": {
+                            "timeout": 60,
+                            "loadbalance": "roundrobin",
+                            "hosts": [
+                                {
+                                    "host": "http://www.a.com",
+                                }
+                            ],
+                        },
+                    },
+                ],
+                "plugin_configs": [
+                    {
+                        "type": "bk-header-rewrite",
+                        "yaml": yaml_dumps(
+                            {
+                                "set": [{"key": "foo", "value": "bar"}],
+                                "remove": [],
+                            }
+                        ),
+                    }
+                ],
+            },
+        )
+        request.gateway = gateway
+
+        view = views.StageSyncViewSet.as_view({"post": "sync"})
+        response = view(request, gateway_name=unique_gateway_name)
+
+        result = get_response_json(response)
+        stage = Stage.objects.get(gateway=gateway, name="prod")
+
+        assert result["code"] == 0
+        assert stage.status == 0
+        assert len(Backend.objects.filter(gateway=gateway, name__in=["default", "service1"])) == 2
+        assert len(BackendConfig.objects.filter(backend__name__in=["default", "service1"])) == 2
+        assert len(PluginBindingHandler.get_stage_plugin_bindings(gateway.id, stage.id)) == 1
