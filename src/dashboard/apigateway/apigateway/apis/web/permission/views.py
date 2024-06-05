@@ -70,6 +70,7 @@ class AppResourcePermissionQuerySetMixin:
 
         # 仅展示资源存在的权限
         resource_ids = Resource.objects.filter(gateway=self.request.gateway).values_list("id", flat=True)
+        resource_ids = [x for x in resource_ids if x != 'bk_apigw_test']
         return queryset.filter(gateway=self.request.gateway, resource_id__in=resource_ids)
 
 
