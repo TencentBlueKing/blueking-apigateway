@@ -73,8 +73,8 @@ class StageResourceDisabledAdmin(admin.ModelAdmin):
 
 
 class ProxyAdmin(admin.ModelAdmin):
-    list_display = ["id", "type", "resource"]
-    search_fields = ["resource__id", "id"]
+    list_display = ["id", "type", "resource", "backend"]
+    search_fields = ["resource__id", "resource__name", "id"]
 
 
 class ResourceVersionAdmin(admin.ModelAdmin):
@@ -146,13 +146,13 @@ class MicroGatewayReleaseHistoryAdmin(admin.ModelAdmin):
 
 class BackendAdmin(admin.ModelAdmin):
     list_display = ["id", "gateway", "type", "name", "description"]
-    search_fields = ["name"]
+    search_fields = ["name", "gateway__id", "gateway__name", "description"]
     list_filter = ["gateway"]
 
 
 class BackendConfigAdmin(admin.ModelAdmin):
     list_display = ["id", "gateway", "backend", "stage", "config"]
-    search_fields: List[str] = []
+    search_fields: List[str] = ["backend__id"]
     list_filter = ["gateway", "backend", "stage"]
 
 
