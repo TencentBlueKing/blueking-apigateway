@@ -258,4 +258,10 @@ class TestStageSyncViewSet:
         assert stage.status == 0
         assert len(Backend.objects.filter(gateway=gateway, name__in=["default", "service1"])) == 2
         assert len(BackendConfig.objects.filter(backend__name__in=["default", "service1"])) == 2
+        assert BackendConfig.objects.get(backend__name="default").config == {
+            "type": "node",
+            "timeout": 60,
+            "loadbalance": "roundrobin",
+            "hosts": [{"scheme": "http", "host": "www.a.com", "weight": 100}],
+        }
         assert len(PluginBindingHandler.get_stage_plugin_bindings(gateway.id, stage.id)) == 1

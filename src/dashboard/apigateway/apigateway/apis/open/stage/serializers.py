@@ -228,6 +228,9 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     def validate(self, data):
         self._validate_micro_gateway_stage_unique(data.get("micro_gateway_id"))
         self._validate_plugin_configs(data.get("plugin_configs"))
+        # validate stage backend
+        if data.get("proxy_http") is None and data.get("backends") is None:
+            raise serializers.ValidationError(_("proxy_http or backends 必须要选择p"))
         return data
 
     def create(self, validated_data):
