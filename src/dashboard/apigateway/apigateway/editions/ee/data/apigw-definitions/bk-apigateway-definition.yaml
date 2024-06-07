@@ -24,7 +24,7 @@ stage:
         timeout: 60
         loadbalance: "roundrobin"
         hosts:
-          - host: "http://bk-apigateway-core-api:80"
+          - host: "{{ environ.CORE_API_INNER_URL }}"
             weight: 100
 
 grant_permissions:
