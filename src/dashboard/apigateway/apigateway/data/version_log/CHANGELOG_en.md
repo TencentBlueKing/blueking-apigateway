@@ -1,3 +1,52 @@
+<!-- 2024-06-11 -->
+# V1.13.4 Release Log
+
+### Bug Fixes
+
+- Fixed issue where maintenance personnel were not displayed in the popup when editing basic information
+- Fixed issue with resource list page search not supporting fuzzy search
+- Fixed incorrect link in renewal email
+- Fixed issue where gateway maximum resource whitelist was ineffective
+- Fixed issue in Python SDK where package name contained an extra `-`
+- Fixed frontend issues
+
+### Feature Enhancements
+
+- Increased retry attempts for distributed lock release
+- Import now supports multiple backends
+- Updated plugin descriptions
+- Switched public_key retrieval interface to core-api
+
+---
+
+<!-- 2024-05-30 -->
+# V1.13.3 Release Log
+
+### Bug Fixes
+
+- Fixed frontend issues
+- Fixed eslint issues
+
+### Feature Enhancements
+
+- Added detection for releases before version 1.13, prompting users to upgrade to the new version
+- Added environment variables BK_APP_CODE and BK_REPO_URL to dashboard-fe
+
+---
+
+<!-- 2024-05-27 -->
+# V1.13.2 Release Log
+
+### Bug Fixes
+
+- Fixed frontend issues
+
+### Feature Enhancements
+
+- Added is_from_logout parameter to logout
+
+---
+
 <!-- 2024-05-22 -->
 # V1.13.1 Version Update Log
 

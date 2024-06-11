@@ -119,9 +119,10 @@ paths:
         allowApplyPermission: true
         matchSubpath: false
         backend:
+          name: core-api
           type: HTTP
           method: get
-          path: /backend/api/v1/apis/{api_name}/public_key/
+          path: /api/v1/open/gateways/{api_name}/public_key/
           matchSubpath: false
           timeout: 0
           upstreams: {}
