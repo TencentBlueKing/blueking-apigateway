@@ -28,7 +28,7 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.conf.default import DEFAULT_TEST_APP
+from django.conf import settings
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
@@ -71,7 +71,7 @@ class AppResourcePermissionQuerySetMixin:
 
         # 仅展示资源存在的权限
         resource_ids = Resource.objects.filter(gateway=self.request.gateway).values_list("id", flat=True)
-        return queryset.filter(gateway=self.request.gateway, resource_id__in=resource_ids).exclude(bk_app_code=DEFAULT_TEST_APP['bk_app_code'])
+        return queryset.filter(gateway=self.request.gateway, resource_id__in=resource_ids).exclude(bk_app_code=settings.DEFAULT_TEST_APP['bk_app_code'])
 
 
 @method_decorator(
