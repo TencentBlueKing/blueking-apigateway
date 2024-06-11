@@ -32,6 +32,7 @@ ignore_imports =
     apigateway.biz.esb.permissions -> apigateway.apps.esb.helpers
     apigateway.biz.esb.permissions -> apigateway.apps.esb.utils
     apigateway.controller.tasks.syncing -> apigateway.biz.release
+    apigateway.controller.tasks.release -> apigateway.biz.**
     apigateway.controller.crds.release_data.release_data -> apigateway.biz.gateway_jwt
     apigateway.common.audit.shortcuts -> apigateway.apps.audit.signals
     apigateway.common.release.publish -> apigateway.controller.tasks

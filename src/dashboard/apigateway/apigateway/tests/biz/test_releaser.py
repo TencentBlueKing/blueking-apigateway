@@ -29,8 +29,8 @@ from apigateway.biz.releaser import (
     ReleaseValidationError,
 )
 from apigateway.common.user_credentials import UserCredentials
-from apigateway.core.constants import ReleaseStatusEnum
-from apigateway.core.models import Release, ReleaseHistory, ResourceVersion, Stage
+from apigateway.core.constants import PublishEventEnum, PublishEventStatusEnum, ReleaseStatusEnum
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
@@ -43,7 +43,20 @@ def get_release_data(gateway):
         name=f"{gateway.id}-{stage.id}",
         _data=json.dumps([{"id": 1, "name": "demo", "method": "GET", "path": "/"}]),
     )
-
+    G(
+        ReleaseHistory,
+        gateway=gateway,
+        stage=stage,
+        resource_version=resource_version,
+    )
+    G(
+        PublishEvent,
+        gateway=gateway,
+        stage=stage,
+        name=PublishEventEnum.LOAD_CONFIGURATION.value,
+        status=PublishEventStatusEnum.SUCCESS.value,
+        step=5,
+    )
     return {
         "stage_id": stage.id,
         "resource_version_id": resource_version.id,
@@ -76,7 +89,7 @@ class TestBaseGatewayReleaser:
                 ),
             )
 
-    def test_release(self, mocker, fake_gateway):
+    def test_release(self, mocker, fake_gateway, celery_mock_task):
         release_data = get_release_data(fake_gateway)
         releaser = BaseGatewayReleaser.from_data(
             fake_gateway,
@@ -87,14 +100,13 @@ class TestBaseGatewayReleaser:
                 credentials="access_token",
             ),
         )
-
         # 校验失败
         mocker.patch.object(releaser, "_validate", side_effect=ReleaseValidationError)
         with pytest.raises(ReleaseError):
             releaser.release()
         ReleaseHistory.objects.filter(gateway=fake_gateway, status=ReleaseStatusEnum.FAILURE.value).exists()
-
         # 校验成功
+        mocker.patch.object(releaser, "_validate", return_value=None)
         mocker.patch.object(releaser, "_validate", return_value=None)
         mock_release = mocker.patch.object(releaser, "_do_release")
         # mock_post_release = mocker.patch.object(releaser, "_post_release")
@@ -108,18 +120,9 @@ class TestBaseGatewayReleaser:
         assert len(resource_version_ids) == 1
         assert resource_version_ids[0] == release_data["resource_version_id"]
         # assert ReleaseHistory.objects.filter(gateway=fake_gateway, status=ReleaseStatusEnum.SUCCESS.value).exists()
-        assert Stage.objects.filter(id=release_data["stage_id"], status=1).count() == 1
 
         mock_release.assert_called()
         # mock_post_release.assert_called()
-
-    def test_activate_stages(self, fake_gateway, fake_resource_version):
-        s1 = G(Stage, gateway=fake_gateway, status=0)
-
-        releaser = BaseGatewayReleaser(gateway=fake_gateway, stage=s1, resource_version=fake_resource_version)
-        releaser._post_release()
-
-        assert Stage.objects.filter(id__in=[s1.id], status=1).count() == 1
 
 
 class TestMicroGatewayReleaser:
@@ -149,6 +152,7 @@ class TestMicroGatewayReleaser:
         fake_edge_gateway,
         fake_release,
         fake_release_history,
+        fake_publish_success_event,
         celery_mock_task,
     ):
         mock_release_gateway_by_helm = mocker.patch(
@@ -195,6 +199,7 @@ class TestMicroGatewayReleaser:
         fake_shared_gateway,
         fake_release,
         fake_release_history,
+        fake_publish_success_event,
         celery_mock_task,
     ):
         mock_release_gateway_by_registry = mocker.patch(

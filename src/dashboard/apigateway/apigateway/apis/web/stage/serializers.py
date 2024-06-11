@@ -29,7 +29,7 @@ from apigateway.biz.validators import MaxCountPerGatewayValidator, PublishValida
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.core.constants import STAGE_NAME_PATTERN, ReleaseStatusEnum, StageStatusEnum
+from apigateway.core.constants import STAGE_NAME_PATTERN, PublishEventStatusEnum, ReleaseStatusEnum, StageStatusEnum
 from apigateway.core.models import Backend, Stage
 from apigateway.utils.version import is_version1_greater_than_version2
 
@@ -38,8 +38,9 @@ from .validators import StageVarsValidator
 
 class StageOutputSLZ(serializers.ModelSerializer):
     release = serializers.SerializerMethodField(help_text="发布信息")
-    resource_version = serializers.SerializerMethodField(help_text="资源版本")
+    resource_version = serializers.SerializerMethodField(help_text="当前生效资源版本")
     publish_id = serializers.SerializerMethodField(help_text="发布ID")
+    publish_version = serializers.SerializerMethodField(help_text="正在发布的版本")
     publish_validate_msg = serializers.SerializerMethodField(help_text="发布校验结果,如果有值，则不能发布")
     new_resource_version = serializers.SerializerMethodField(help_text="新资源版本")
     description = SerializerTranslatedField(
@@ -64,6 +65,7 @@ class StageOutputSLZ(serializers.ModelSerializer):
             "release",
             "resource_version",
             "publish_id",
+            "publish_version",
             "publish_validate_msg",
             "new_resource_version",
         )
@@ -92,6 +94,19 @@ class StageOutputSLZ(serializers.ModelSerializer):
             "version": self.context["stage_release"].get(obj.id, {}).get("resource_version", {}).get("version", ""),
             "id": self.context["stage_release"].get(obj.id, {}).get("resource_version_id", 0),
         }
+
+    def get_publish_version(self, obj):
+        """
+        获取正在发布版本
+        """
+        latest_publish_info = self.context["stage_publish_status"].get(obj.id)
+        if not latest_publish_info:
+            return ""
+
+        if latest_publish_info.get("status", "") != PublishEventStatusEnum.SUCCESS.value:
+            return latest_publish_info.get("resource_version_display", "")
+
+        return ""
 
     def get_publish_id(self, obj):
         return self.context["stage_publish_status"].get(obj.id, {}).get("publish_id", 0)
