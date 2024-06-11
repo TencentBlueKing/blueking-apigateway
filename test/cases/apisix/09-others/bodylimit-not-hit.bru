@@ -1,0 +1,21 @@
+meta {
+  name: bodylimit-not-hit
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/smoke/prod/post
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  : @file(data_1K.dat)
+}
+
+assert {
+  res.status: eq 200
+  res.body.headers["Content-Length"]: eq "1243"
+  res.body.files: isDefined
+}

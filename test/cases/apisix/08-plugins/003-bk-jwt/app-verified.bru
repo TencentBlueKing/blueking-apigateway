@@ -1,0 +1,45 @@
+meta {
+  name: app-verified
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/app_verify
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.headers["X-Bkapi-Jwt"]: isString
+}
+
+tests {
+  var atob = require('atob');
+  function getJwtPayloadJsonData() {
+      const data = res.getBody();
+      var jwtPayloadJson = atob(data.headers["X-Bkapi-Jwt"].split(".")[1])
+      return JSON.parse(jwtPayloadJson);
+  }
+  
+  function getJwtHeaderJsonData() {
+      const data = res.getBody();
+      var jwtHeaderJson = atob(data.headers["X-Bkapi-Jwt"].split(".")[0])
+      return JSON.parse(jwtHeaderJson);
+  }
+  
+  test("check the payload", function() {
+    const data = res.getBody();
+    var payload = getJwtPayloadJsonData();
+    expect(payload.app.app_code).to.eql("bk_apigateway");
+    expect(payload.app.verified).to.eql(true);
+    expect(payload.user.username).to.eql("");
+    expect(payload.user.verified).to.eql(false);
+  });
+  
+}

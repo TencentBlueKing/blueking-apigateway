@@ -1,0 +1,22 @@
+meta {
+  name: delete-header-request-uri
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/get
+  body: none
+  auth: none
+}
+
+headers {
+  a: b
+  X-Request-Uri: abc
+}
+
+assert {
+  res.status: eq 200
+  res.body.headers.A: eq b
+  res.body.headers["X-Request-Uri"]: isUndefined
+}

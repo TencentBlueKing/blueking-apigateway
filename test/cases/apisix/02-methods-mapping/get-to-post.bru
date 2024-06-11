@@ -1,0 +1,16 @@
+meta {
+  name: get-to-post
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/get_to_post
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.url: matches post
+}

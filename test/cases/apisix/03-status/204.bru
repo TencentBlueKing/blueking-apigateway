@@ -1,0 +1,15 @@
+meta {
+  name: 204
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/status/204
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 204
+}

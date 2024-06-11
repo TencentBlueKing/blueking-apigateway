@@ -1,0 +1,18 @@
+meta {
+  name: app_verify-no=auth-header
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/app_verify
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 400
+  res.body.code: eq 1640001
+  res.body.code_name: eq INVALID_ARGS
+  res.body.message: matches app code cannot be empty
+}

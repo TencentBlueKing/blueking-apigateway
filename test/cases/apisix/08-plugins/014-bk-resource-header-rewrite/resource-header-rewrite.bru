@@ -1,0 +1,26 @@
+meta {
+  name: resource-header-rewrite
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/resource_header_rewrite
+  body: none
+  auth: none
+}
+
+headers {
+  From-Resource-B: world
+  From-Resource-C: foo
+  from-Resource-override: bar
+}
+
+assert {
+  res.status: eq 200
+  res.body.headers["From-Resource-A"]: eq hello
+  res.body.headers["From-Resource-B"]: isUndefined
+  res.body.headers["From-Resource-C"]: eq foo
+  res.body.headers["From-Resource-Override"]: eq foo
+  res.body.headers["Priority"]: eq resource
+}

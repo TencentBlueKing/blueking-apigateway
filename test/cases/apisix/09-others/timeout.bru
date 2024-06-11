@@ -1,0 +1,18 @@
+meta {
+  name: timeout
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/timeout
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 504
+  res.body.code: eq 1650401
+  res.body.code_name: eq REQUEST_BACKEND_TIMEOUT
+  res.body.message: matches cannot read header from upstream
+}

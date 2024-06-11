@@ -1,0 +1,17 @@
+meta {
+  name: missmatch
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/put
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 404
+  res.body.code: eq 1640401
+  res.body.code_name: eq API_NOT_FOUND
+}
