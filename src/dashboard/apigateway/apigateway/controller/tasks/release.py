@@ -186,6 +186,11 @@ def update_release_data_after_success(
         # 如果等待时间超过10*RELEASE_GATEWAY_INTERVAL_SECOND就退出等待
         now = datetime.now().timestamp()
         if now - start_time > 10 * RELEASE_GATEWAY_INTERVAL_SECOND:
+            logger.error(
+                "release[publish_id=%d,resource_version_id=%d}] check publish status timeout",
+                publish_id,
+                resource_version_id,
+            )
             return
 
         time.sleep(1 * wait_times)
@@ -194,17 +199,39 @@ def update_release_data_after_success(
         latest_event = latest_release_event_map.get(publish_id)
 
         if not latest_event:
+            logger.error(
+                "release[publish_id=%d,resource_version_id=%d get latest event  fail", publish_id, resource_version_id
+            )
             continue
-            # 判断状态
-        if ReleaseHandler.get_status(latest_event) == ReleaseHistoryStatusEnum.SUCCESS.value:
+
+        # 判断状态
+        publish_status = ReleaseHandler.get_status(latest_event)
+
+        if publish_status == ReleaseHistoryStatusEnum.SUCCESS.value:
             doing = False
+        else:
+            logger.debug(
+                "release[publish_id=%d,resource_version_id=%d current status is %s",
+                publish_id,
+                resource_version_id,
+                publish_status,
+            )
 
     release = Release.objects.get(id=release_id)
     if not release:
+        logger.error(
+            "release[publish_id=%d,resource_version_id=%d get release[id=%d] fail",
+            publish_id,
+            resource_version_id,
+            release_id,
+        )
         return
 
     resource_version = ResourceVersion.objects.get(id=resource_version_id)
     if not resource_version:
+        logger.error(
+            "release[publish_id=%d,resource_version_id=%d get resource_version fail", publish_id, resource_version_id
+        )
         return
 
     # update release

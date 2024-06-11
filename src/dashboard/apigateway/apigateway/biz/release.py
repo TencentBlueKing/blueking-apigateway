@@ -168,7 +168,10 @@ class ReleaseHandler:
             stage_id = release_history.stage_id
             publish_id = release_history.id
 
-            state = {"publish_id": publish_id, "resource_version": release_history.resource_version.object_display}
+            state = {
+                "publish_id": publish_id,
+                "resource_version_display": release_history.resource_version.object_display,
+            }
             # 如果没有查到任何发布事件
             if publish_id not in publish_id_to_latest_event_map:
                 # 兼容以前，使用以前的状态

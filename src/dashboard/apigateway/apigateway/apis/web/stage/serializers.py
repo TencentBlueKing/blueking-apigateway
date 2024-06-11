@@ -104,7 +104,7 @@ class StageOutputSLZ(serializers.ModelSerializer):
             return ""
 
         if latest_publish_info.get("status", "") != PublishEventStatusEnum.SUCCESS.value:
-            return latest_publish_info.get("resource_version", "")
+            return latest_publish_info.get("resource_version_display", "")
 
         return ""
 
