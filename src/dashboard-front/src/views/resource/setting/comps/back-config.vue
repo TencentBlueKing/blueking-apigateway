@@ -9,8 +9,22 @@
       <bk-select
         :input-search="false"
         class="service"
+        :popoverOptions="{ extCls: 'service-select-popover' }"
         v-model="backConfigData.id" @change="handleServiceChange">
-        <bk-option v-for="item in servicesData" :key="item.id" :value="item.id" :label="item.name" />
+        <!-- <bk-option v-for="item in servicesData" :key="item.id" :value="item.id" :label="item.name" /> -->
+        <bk-option
+          v-for="(item, index) in servicesData"
+          :value="item.id"
+          :key="index"
+          :label="item.name"
+        >
+          <div class="service-select-item">
+            <span>{{item.name}}</span>
+            <template v-if="item.description">
+              <span class="desc" :title="item.description">（{{item.description}}）</span>
+            </template>
+          </div>
+        </bk-option>
       </bk-select>
       <bk-button theme="primary" class="ml10" v-if="isEditService" @click="editService">
         编辑服务
@@ -458,7 +472,7 @@ const handleMouseLeave = (e: Event, row: Record<string, number | string | boolea
 };
 
 const init = async () => {
-  const res = await getBackendsListData(common.apigwId);
+  const res = await getBackendsListData(common.apigwId, { offset: 0, limit: 1000 });
   servicesData.value = res.results;
 };
 
@@ -566,8 +580,23 @@ defineExpose({
       top: -2px;
       font-size: 24px;
       cursor: pointer;
-      color: #3A84FF;
+      color: #3a84ff;
     }
+  }
+}
+
+.service-select-popover {
+  .service-select-item {
+    display: flex;
+  }
+  .desc {
+    color: #979ba5;
+    margin-left: 6px;
+    width: 560px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    display: inline-block;
   }
 }
 
@@ -578,7 +607,7 @@ defineExpose({
   .refresh-icon {
     margin-left: 8px;
     font-size: 16px;
-    color: #3A84FF;
+    color: #3a84ff;
     vertical-align: middle;
     cursor: pointer;
   }
