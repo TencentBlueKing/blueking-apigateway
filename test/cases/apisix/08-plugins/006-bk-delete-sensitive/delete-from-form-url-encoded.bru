@@ -1,0 +1,60 @@
+meta {
+  name: delete-from-form-url-encoded
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/post
+  body: formUrlEncoded
+  auth: none
+}
+
+body:json {
+  {
+    "a": "b",
+    "access_token": "1",
+    "bk_app_code": "2",
+    "bk_app_secret": "3",
+    "app_secret": "4",
+    "bk_token": "5"
+  }
+}
+
+body:form-urlencoded {
+  a: b
+  access_token: 1
+  bk_app_code: 2
+  bk_app_secret: 3
+  app_secret: 4
+  bk_token: 5
+}
+
+body:multipart-form {
+  a: b
+  access_token: 1
+  bk_app_code: 2
+  bk_app_secret: 3
+  app_secret: 4
+  bk_token: 5
+}
+
+assert {
+  res.status: eq 200
+  res.body.form.a: eq b
+  res.body.form.bk_app_code: eq "2"
+  res.body.form.access_token: isUndefined
+  res.body.form.bk_app_secret: isUndefined
+  res.body.form.app_secret: isUndefined
+  res.body.form.bk_token: isUndefined
+}
+
+docs {
+  通过管理端新创建的网关，不需要删除敏感参数 allow_delete_sensitive_params=False
+  通过 API 同步的，allow_delete_sensitive_params=True
+  
+  =False 的时候，不会检查并删除敏感参数
+  
+  -----
+  httpbin这个网关应该是自动注册的， allow_delete_sensitive_params=True
+}

@@ -1,0 +1,16 @@
+meta {
+  name: apisix-healthz
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/healthz
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body: eq ok
+}

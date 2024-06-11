@@ -1,0 +1,24 @@
+meta {
+  name: post-json-body
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/post
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "foo": "bar"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: contains foo
+  res.body.json.foo: eq bar
+  res.body.headers["Content-Type"]: eq application/json
+}

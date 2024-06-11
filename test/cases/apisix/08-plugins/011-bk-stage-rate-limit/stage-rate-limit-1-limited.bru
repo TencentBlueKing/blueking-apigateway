@@ -1,0 +1,18 @@
+meta {
+  name: stage-rate-limit-1-limited
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/stage-rate-limit/get
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 429
+  res.body.code: eq 1642902
+  res.body.code_name: eq RATE_LIMIT_RESTRICTION
+  res.body.message: eq API rate limit exceeded by stage strategy
+}

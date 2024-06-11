@@ -1,0 +1,27 @@
+meta {
+  name: multipart-form
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/post
+  body: multipartForm
+  auth: none
+}
+
+body:json {
+  {
+    "foo": "bar"
+  }
+}
+
+body:multipart-form {
+  foo: bar
+}
+
+assert {
+  res.status: eq 200
+  res.body.form.foo: eq bar
+  res.body.headers["Content-Type"]: startsWith multipart/form-data; boundary=
+}

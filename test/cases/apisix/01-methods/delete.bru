@@ -1,0 +1,15 @@
+meta {
+  name: delete
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/delete
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

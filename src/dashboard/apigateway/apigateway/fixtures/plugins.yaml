@@ -109,7 +109,7 @@
     language: ''
     type:
     - bk-cors
-    notes: cors 插件可以让你轻松地为服务端启用 CORS（Cross-Origin Resource Sharing，跨域资源共享）的返回头。
+    notes: cors 插件支持为后端服务增加 CORS（Cross-Origin Resource Sharing，跨域资源共享）的返回头。
     style: dynamic
     default_value: ''
     config: |-
@@ -164,7 +164,7 @@
               ]
             },
             "expose_headers": {
-              "description": "允许跨域访问时响应方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许任意 Header 。你也可以在启用了 allow_credential 后使用 ** 强制允许任意 Header，但请注意这样存在安全隐患。",
+              "description": "允许跨域访问时响应方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许任意 Header。你也可以在启用了 allow_credential 后使用 ** 强制允许任意 Header，但请注意这样存在安全隐患。",
               "type": "string",
               "pattern": "^(|\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
               "maxLength": 4096,
@@ -340,7 +340,7 @@
     language: ''
     type:
     - bk-header-rewrite
-    notes: Header 转换插件可以让你轻松地为后端服务的请求添加或删除请求头。
+    notes: Header 转换插件支持对请求添加或删除请求头。
     style: dynamic
     default_value: ''
     config: |-
@@ -427,8 +427,7 @@
     language: en
     type:
     - bk-header-rewrite
-    notes: Header transformation plugins allow you to easily add or remove request
-      headers for backend services.
+    notes: Header transformation plugins allow you to easily add or remove request headers.
     style: dynamic
     default_value: ''
     config: |-
@@ -834,7 +833,9 @@
     language: ''
     type:
     - bk-rate-limit
-    notes: 默认频率限制，表示单个应用的默认频率限制；特殊应用频率限制，对指定应用设置单独的频率限制。频率控制插件，绑定环境时，表示应用对环境下所有资源的总频率限制；绑定资源时，表示应用对单个资源的频率限制
+    notes: |-
+      默认频率限制，表示单个应用的默认频率限制；特殊应用频率限制，对指定应用设置单独的频率限制。频率控制插件，在环境上配置表示对应用访问环境下所有资源的总访问频率进行限制，
+      在资源上配置，表示对应用访问单个资源的频率进行限制， 如果在环境和资源上都配置，两个都会生效，先校验资源的频率限制，再校验环境的频率限制。
     style: dynamic
     default_value: ''
     config: |-
