@@ -22,13 +22,13 @@ from io import StringIO
 from typing import Any, List
 
 from blue_krill.async_utils.django_utils import apply_async_on_commit
+from django.conf import settings
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from django.conf import settings
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
