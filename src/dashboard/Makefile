@@ -16,6 +16,13 @@ lint:
 	mypy --config-file=pyproject.toml .
 	cd apigateway && lint-imports --config=./.importlinter && cd ..
 
+.PHONY: lint-check
+lint-check:
+	ruff check --config=pyproject.toml --force-exclude . || (echo "ruff check fail"; exit 1)
+	mypy --config-file=pyproject.toml . || (echo "mypy check fail"; exit 1)
+	cd apigateway && lint-imports --config=./.importlinter || (echo "importlinter check fail"; exit 1) && cd ..
+
+
 
 # ====== dependencies ======
 
@@ -162,6 +169,7 @@ dev-ee-image:
 		--build-arg PYPI="${pypi}" \
 		.
 	make _clean_build_dir
+
 
 # ====== plugins ======
 
