@@ -118,6 +118,7 @@ class ResourceVersionListOutputSLZ(serializers.Serializer):
     schema_version = serializers.CharField(help_text="资源版本协议版本：1.0/2.0")
     comment = serializers.CharField(help_text="版本日志")
     created_time = serializers.DateTimeField(help_text="创建时间")
+    created_by = serializers.CharField(help_text="创建人")
 
     def get_released_stages(self, obj):
         return self.context["released_stages"].get(obj["id"], [])
