@@ -31,7 +31,7 @@ jobs:
       run: pip install -r src/dashboard/apigateway/requirements_dev.txt -i https://pypi.org/simple/
 
     - name: Lint
-      run: make edition-ee && make lint
+      run: make edition-ee && make lint-check
       working-directory: src/dashboard
 
     - name: Aqua Security Trivy
