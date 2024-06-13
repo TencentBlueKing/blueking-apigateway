@@ -54,7 +54,7 @@ class TestResourceVersionListOutputSLZ:
         )
 
         queryset = ResourceVersion.objects.filter(gateway=gateway).values(
-            "id", "version", "schema_version", "comment", "created_time", "created_by"
+            "id", "version", "schema_version", "comment", "created_time"
         )
 
         slz = serializers.ResourceVersionListOutputSLZ(
