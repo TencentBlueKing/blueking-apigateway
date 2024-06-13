@@ -37,25 +37,23 @@ stage:
           - host: "http://unknownbackend"
             weight: 100
 
-  pluginConfigs:
+  plugin_configs:
     - type: bk-header-rewrite
       yaml: |-
         set:
           - key: from-env-a
-            value: "hello"
+            value: hello
           - key: from-env-override
-            value: "foo"
+            value: foo
           - key: priority
-            value: "env"
+            value: env
         remove:
-          - from-env-b
+          - key: from-env-b
     - type: bk-verified-user-exempted-apps
       yaml: |-
         exempted_apps:
           - bk_app_code: bk_apigw_test
-            dimension: resource
-            resource_ids:
-              - 2478
+            dimension: api
 
 stage2:
   name: "stage-rate-limit"
