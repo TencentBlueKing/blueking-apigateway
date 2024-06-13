@@ -1,0 +1,95 @@
+spec_version: 1
+
+release:
+  version: 1.0.0
+  title: "smoke for testing"
+  comment: ""
+
+apigateway:
+  description: "smoke apis"
+  description_en: "smoke apis"
+  is_public: true
+  allow_auth_from_params: true
+  allow_delete_sensitive_params: true
+  maintainers:
+    - "admin"
+
+stage:
+  name: "prod"
+  description: "描述"
+  description_en: "English description"
+  vars:
+    status_500: "500"
+  backends:
+    - name: "default"
+      config:
+        timeout: 60
+        loadbalance: "roundrobin"
+        hosts:
+          - host: "http://httpbin"
+            weight: 100
+
+    - name: "unknownbackend"
+      config:
+        timeout: 60
+        loadbalance: "roundrobin"
+        hosts:
+          - host: "http://unknownbackend"
+            weight: 100
+
+  pluginConfigs:
+    - type: bk-header-rewrite
+      yaml: |-
+        set:
+          - key: from-env-a
+            value: "hello"
+          - key: from-env-override
+            value: "foo"
+          - key: priority
+            value: "env"
+        remove:
+          - from-env-b
+    - type: bk-verified-user-exempted-apps
+      yaml: |-
+        exempted_apps:
+          - bk_app_code: bk_apigw_test
+            dimension: resource
+            resource_ids:
+              - 2478
+
+stage2:
+  name: "stage-rate-limit"
+  description: "用于测试环境维度的rate-limit"
+  description_en: "for testing stage rate limit"
+  vars:
+    status_500: "500"
+  backends:
+    - name: "default"
+      config:
+        timeout: 60
+        loadbalance: "roundrobin"
+        hosts:
+          - host: "http://httpbin"
+            weight: 100
+
+    - name: "unknownbackend"
+      config:
+        timeout: 60
+        loadbalance: "roundrobin"
+        hosts:
+          - host: "http://unknownbackend"
+            weight: 100
+  plugin_configs:
+      - type: bk-rate-limit
+        yaml: |-
+          rates:
+            __default:
+            - period: 1
+              tokens: 1
+
+grant_permissions:
+  - bk_app_code: "bk_apigateway"
+    grant_dimension: "gateway"
+
+related_apps:
+  - "bk_apigateway"
