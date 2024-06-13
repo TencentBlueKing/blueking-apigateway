@@ -176,6 +176,7 @@ class TestResourceViewSet:
             data={"target_app_code": "test"},
         )
         request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
 
         view = views.ResourceViewSet.as_view({"get": "list"})
         response = view(request)
@@ -214,6 +215,7 @@ class TestAppPermissionViewSet:
         }
 
         request = request_factory.get("/", data=params)
+        request.app = mock.MagicMock(app_code="test")
 
         view = views.AppPermissionViewSet.as_view({"get": "list"})
         response = view(request)
@@ -250,6 +252,7 @@ class TestAppPermissionRecordViewSet:
         record = G(models.AppPermissionRecord, bk_app_code=unique_id, gateway=fake_gateway)
 
         request = request_factory.get("/backend/api/v1/", data=params)
+        request.app = mock.MagicMock(app_code="test")
 
         view = views.AppPermissionRecordViewSet.as_view({"get": "list"})
         response = view(request)
@@ -271,6 +274,7 @@ class TestAppPermissionRecordViewSet:
         record = G(models.AppPermissionRecord, bk_app_code=unique_id, gateway=fake_gateway)
 
         request = request_factory.get("/", data=params)
+        request.app = mock.MagicMock(app_code="test")
 
         view = views.AppPermissionRecordViewSet.as_view({"get": "retrieve"})
         response = view(request, record.id)

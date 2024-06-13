@@ -76,7 +76,7 @@ def send_mail_for_perm_apply(record_id):
             "expire_days_display": PermissionApplyExpireDaysEnum.get_choice_label(record.expire_days),
             "grant_dimension_display": GrantDimensionEnum.get_choice_label(record.grant_dimension),
             "resource_names": sorted(manager.get_resource_names_display(record.gateway.id, record.resource_ids)),
-            "perm_apply_link": f"{apigw_domain}/{record.gateway_id}/permission/applys",
+            "perm_apply_link": f"{apigw_domain}/{record.gateway_id}/permission/apply",
         },
     )
 

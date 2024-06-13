@@ -121,6 +121,7 @@ class ReleasedResourceHandler:
             "resource_version__name",
             "resource_version__title",
             "resource_version__version",
+            "resource_version__schema_version",
             "updated_time",
             "updated_by",
         )
@@ -136,6 +137,7 @@ class ReleasedResourceHandler:
                     if release["resource_version__version"] != ""
                     else release["resource_version__title"]
                 },
+                "resource_version_schema_version": release["resource_version__schema_version"],
                 "resource_version_display": release["resource_version__version"],
                 "release_by": release["updated_by"],
             }

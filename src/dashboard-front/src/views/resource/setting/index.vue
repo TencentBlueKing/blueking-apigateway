@@ -26,7 +26,7 @@
             theme="primary"
             v-if="versionConfigs.needNewVersion"
             @click="handleCreateResourceVersion">
-            立即生成版本
+            {{ t('立即生成版本') }}
           </bk-button>
         </template>
       </bk-alert>
@@ -154,8 +154,14 @@
             </bk-table-column>
             <bk-table-column
               prop="method"
-              :label="renderMethodsLabel"
+              :label="t('前端请求方法')"
               :show-overflow-tooltip="false"
+              :filter="{
+                list: customMethodsList,
+                checked: chooseMethod,
+                filterFn: handleMethodFilter,
+                btnSave: false,
+              }"
               width="130">
               <template #default="{ row }">
                 <bk-tag :theme="methodsEnum[row?.method]">{{ row?.method }}</bk-tag>
@@ -448,7 +454,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { reactive, ref, watch, onMounted, onBeforeMount, shallowRef, h } from 'vue';
+import { reactive, ref, watch, onMounted, onBeforeMount, shallowRef, h, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
 import { cloneDeep } from 'lodash';
@@ -468,7 +474,7 @@ import AgDropdown from '@/components/ag-dropdown.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
 import ResourcesDoc from '@/views/components/resources-doc/index.vue';
 import TableEmpty from '@/components/table-empty.vue';
-import RenderCustomColumn from '@/components/custom-table-header-filter';
+// import RenderCustomColumn from '@/components/custom-table-header-filter';
 import ResourceSettingTopBar from '@/components/resource-setting-top-bar.vue';
 import mitt from '@/common/event-bus';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
@@ -508,9 +514,9 @@ const common = useCommon();
 const resourceVersionStore = useResourceVersion();
 const { t } = useI18n();
 // 批量下拉的item
-const batchDropData = ref([{ value: 'edit', label: '编辑资源' }, { value: 'delete', label: '删除资源' }]);
+const batchDropData = ref([{ value: 'edit', label: t('编辑资源') }, { value: 'delete', label: t('删除资源') }]);
 // 导入下拉
-const importDropData = ref([{ value: 'config', label: '资源配置' }, { value: 'doc', label: '资源文档' }]);
+const importDropData = ref([{ value: 'config', label: t('资源配置') }, { value: 'doc', label: t('资源文档') }]);
 interface ApigwIDropList extends IDropList {
   tooltips?: string;
 }
@@ -522,7 +528,7 @@ const exportDropData = ref<ApigwIDropList[]>([
 
 const route = useRoute();
 const router = useRouter();
-
+const chooseMethod = ref<string[]>([]);
 const filterData = ref<any>({ keyword: '', order_by: '' });
 
 const tableEmptyConf = ref<TableEmptyConfType>({
@@ -580,6 +586,7 @@ const searchData = shallowRef([
     id: 'method',
     placeholder: t('请选择前端请求方法'),
     children: methodsTypeList.value,
+    multiple: true,
   },
   {
     name: t('后端服务'),
@@ -654,55 +661,65 @@ const columns = [
   },
 ];
 
-const customMethodsList = shallowRef(common.methodList);
+// const customMethodsList = shallowRef(common.methodList);
+const customMethodsList = computed(() => {
+  return common.methodList?.map((item: any) => {
+    return {
+      text: item.name,
+      value: item.id,
+    };
+  });
+});
 
-const curSelectMethod = ref('ALL');
+const handleMethodFilter = () => true;
 
-const tableKey =  ref(-1);
+// const curSelectMethod = ref('ALL');
+
+// const tableKey =  ref(-1);
 const tableDataKey = ref(-1);
 
-const renderMethodsLabel = () => {
-  return h('div', { class: 'resource-setting-custom-label' }, [
-    h(
-      RenderCustomColumn,
-      {
-        key: tableKey.value,
-        hasAll: true,
-        columnLabel: t('前端请求方法'),
-        selectValue: curSelectMethod.value,
-        list: customMethodsList.value,
-        onSelected: (value: Record<string, string>) => {
-          handleSelectMethod(value);
-        },
-      },
-    ),
-  ]);
-};
+// const renderMethodsLabel = () => {
+//   return h('div', { class: 'resource-setting-custom-label' }, [
+//     h(
+//       RenderCustomColumn,
+//       {
+//         key: tableKey.value,
+//         hasAll: true,
+//         columnLabel: t('前端请求方法'),
+//         selectValue: curSelectMethod.value,
+//         list: customMethodsList.value,
+//         onSelected: (value: Record<string, string>) => {
+//           handleSelectMethod(value);
+//         },
+//       },
+//     ),
+//   ]);
+// };
 
-const handleSelectMethod = (payload: Record<string, string>) => {
-  const { id, name } = payload;
-  filterData.value.method = payload.id;
-  const hasMethodData = searchValue.value.find((item: Record<string, any>) => ['method'].includes(item.id));
-  if (hasMethodData) {
-    hasMethodData.values = [{
-      id,
-      name,
-    }];
-  } else {
-    searchValue.value.push({
-      id: 'method',
-      name: t('前端请求方法'),
-      values: [{
-        id,
-        name,
-      }],
-    });
-  }
-  if (['ALL'].includes(payload.id)) {
-    delete filterData.value.method;
-    searchValue.value = searchValue.value.filter((item: Record<string, any>) => !['method'].includes(item.id));
-  }
-};
+// const handleSelectMethod = (payload: Record<string, string>) => {
+//   const { id, name } = payload;
+//   filterData.value.method = payload.id;
+//   const hasMethodData = searchValue.value.find((item: Record<string, any>) => ['method'].includes(item.id));
+//   if (hasMethodData) {
+//     hasMethodData.values = [{
+//       id,
+//       name,
+//     }];
+//   } else {
+//     searchValue.value.push({
+//       id: 'method',
+//       name: t('前端请求方法'),
+//       values: [{
+//         id,
+//         name,
+//       }],
+//     });
+//   }
+//   if (['ALL'].includes(payload.id)) {
+//     delete filterData.value.method;
+//     searchValue.value = searchValue.value.filter((item: Record<string, any>) => !['method'].includes(item.id));
+//   }
+// };
 
 // 列表hooks
 const {
@@ -712,7 +729,7 @@ const {
   handlePageChange,
   handlePageSizeChange,
   getList,
-} = useQueryList(getResourceListData, filterData);
+} = useQueryList(getResourceListData, filterData, 0, true);
 
 // checkbox hooks
 const {
@@ -739,15 +756,16 @@ const refreshTableData = () => {
 const handleClearFilterKey = () => {
   filterData.value = cloneDeep({ keyword: '', order_by: '' });
   searchValue.value = [];
+  chooseMethod.value = [];
 };
 
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (searchValue.value.length && !tableData.value.length) {
+  if ((searchValue.value.length || chooseMethod.value?.length) && !tableData.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
   }
-  if (searchValue.value.length) {
+  if (searchValue.value.length || chooseMethod.value?.length) {
     tableEmptyConf.value.keyword = '$CONSTANT';
     return;
   }
@@ -878,7 +896,7 @@ const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
       item.highlight = false;
     }
   });
-  // console.log('curResource.value', curResource.value);
+
   if (isDetail.value) {
     isComponentLoading.value = true;
     active.value = curActive;
@@ -1151,7 +1169,7 @@ watch(
       });
       item.isEditLabel = false;
     });
-    console.log('tableData.value', tableData.value);
+
     updateTableEmptyConfig();
   },
   { immediate: true },
@@ -1200,7 +1218,11 @@ watch(
         if (e.id === e.name) {
           filterData.value.keyword = e.name;
         } else {
-          filterData.value[e.id] = e.values[0].id;
+          if (e.id === 'method') {
+            filterData.value[e.id] = e.values?.map((item: any) => item.id)?.join(',');
+          } else {
+            filterData.value[e.id] = e.values[0].id;
+          }
         }
       });
     }
@@ -1210,8 +1232,23 @@ watch(
         e.disabled = !v.length;
       }
     });
-    curSelectMethod.value = filterData.value.method || 'ALL';
-    tableKey.value = +new Date();
+    // curSelectMethod.value = filterData.value.method || 'ALL';
+    // tableKey.value = +new Date();
+    nextTick(() => {
+      const choose = chooseMethod.value?.sort((a: any, b: any) => (a - b));
+      const filter = filterData.value?.method?.split(',')?.sort((a: any, b: any) => (a - b));
+
+      if (filter?.length && (choose?.join(',') !== filter?.join(','))) { // 值有变化时，同步给表头筛选
+        chooseMethod.value = filterData.value?.method?.split(',');
+        tableDataKey.value = +new Date();
+      }
+
+      if (!filter?.length && chooseMethod.value?.length) { // 清空筛选时，同步给表头筛选
+        chooseMethod.value = [];
+        tableDataKey.value = +new Date();
+      }
+    });
+
     updateTableEmptyConfig();
   },
   { immediate: true, deep: true },
@@ -1232,6 +1269,33 @@ watch(
       isShowLeft: isShowLeft.value,
     });
   },
+);
+
+watch(
+  () => chooseMethod.value,
+  (v) => {
+    if (!v?.length) { // 重置
+      filterData.value.method = undefined;
+      searchValue.value = searchValue.value.filter((item: Record<string, any>) => !['method'].includes(item.id));
+    } else { // 选择
+      filterData.value.method = v?.join(',');
+      const hasMethodData = searchValue.value.find((item: Record<string, any>) => ['method'].includes(item.id));
+      const method = v?.map((m: string) => {
+        return { id: m, name: m };
+      });
+      if (hasMethodData) {
+        hasMethodData.values = method;
+      } else {
+        searchValue.value.push({
+          id: 'method',
+          name: t('前端请求方法'),
+          values: method,
+        });
+      }
+    }
+    getList();
+  },
+  { deep: true, immediate: true },
 );
 
 const recoverPageStatus = () => {
@@ -1502,6 +1566,14 @@ onBeforeMount(() => {
   :deep(.bk-modal-content) {
     max-height: calc(100vh - 52px);
     overflow: hidden;
+  }
+}
+</style>
+<style lang="scss">
+.content-footer {
+  justify-content: flex-end;
+  .btn-filter-save.disabled {
+    display: none !important;
   }
 }
 </style>

@@ -1,10 +1,16 @@
 module.exports = {
   root: true,
   extends: ['@blueking/eslint-config-bk/tsvue3'],
+  parser: 'vue-eslint-parser',
   parserOptions: {
     project: './tsconfig.eslint.json',
     tsconfigRootDir: __dirname,
     sourceType: 'module',
+    parser: '@typescript-eslint/parser',
+    ecmaFeatures: {
+      jsx: true,
+    },
+    ecmaVersion: 13,
   },
   rules: {
     'no-param-reassign': 0,

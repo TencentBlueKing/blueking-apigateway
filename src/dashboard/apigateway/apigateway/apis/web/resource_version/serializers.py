@@ -78,17 +78,11 @@ class ResourceInfoSLZ(serializers.Serializer):
         return proxy
 
     def get_plugins(self, obj):
-        plugins = {}
+        plugins = self.context.get("stage_plugins", {})
 
         # v2 才有plugin数据
         if not self.context["is_schema_v2"]:
             return list(plugins.values())
-
-        # 列表需要展示资源生效插件，此时需要返回环境绑定的插件信息
-        for plugin_type, plugin_binding in self.context.get("stage_plugin_bindings", {}).items():
-            plugin_config = plugin_binding.snapshot()
-            plugin_config["binding_type"] = PluginBindingScopeEnum.STAGE.value
-            plugins[plugin_type] = plugin_config
 
         # 资源绑定插件覆盖环境绑定插件
         for plugin in obj.get("plugins", []):
@@ -121,6 +115,7 @@ class ResourceVersionListOutputSLZ(serializers.Serializer):
     released_stages = serializers.SerializerMethodField(help_text="已发布的环境列表")
     sdk_count = serializers.SerializerMethodField(help_text="生成skd数量")
     version = serializers.SerializerMethodField(help_text="版本号")
+    schema_version = serializers.CharField(help_text="资源版本协议版本：1.0/2.0")
     comment = serializers.CharField(help_text="版本日志")
     created_time = serializers.DateTimeField(help_text="创建时间")
 
