@@ -2,6 +2,7 @@
   <BkConfigProvider :locale="bkuiLocale">
     <div id="app" :class="[systemCls]">
       <NoticeComponent
+        v-if="showNoticeAlert && enableShowNotice"
         :api-url="noticeApi"
         @show-alert-change="handleShowAlertChange"
       />
