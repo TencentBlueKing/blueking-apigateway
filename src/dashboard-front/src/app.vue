@@ -2,7 +2,6 @@
   <BkConfigProvider :locale="bkuiLocale">
     <div id="app" :class="[systemCls]">
       <NoticeComponent
-        v-if="showNoticeAlert && enableShowNotice"
         :api-url="noticeApi"
         @show-alert-change="handleShowAlertChange"
       />
@@ -104,7 +103,7 @@ const user = useUser();
 // 跑马灯数据
 const showNoticeAlert = ref(true);
 const enableShowNotice = ref(false);
-const noticeApi = ref(`${BK_DASHBOARD_URL}/notice/`);
+const noticeApi = ref(`${BK_DASHBOARD_URL}/notice/announcements/`);
 const curLeavePageData = ref({});
 
 // getUser()
