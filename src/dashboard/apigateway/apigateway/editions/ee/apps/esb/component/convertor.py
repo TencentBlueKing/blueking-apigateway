@@ -64,7 +64,7 @@ class Component(BaseModel):
                 "method": self.resource_method,
                 "path": self.full_path,
                 "match_subpath": False,
-                "timeout": 0,
+                "timeout": {"connect": 0, "send": 0, "read": 0},
             },
             "auth_config": {
                 # 不需要权限校验的组件，在网关层也不需要认证应用，而是将应用认证结果传递给 ESB，由 ESB 处理

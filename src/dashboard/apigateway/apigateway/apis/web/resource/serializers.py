@@ -21,6 +21,7 @@ from typing import List, Optional
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
+from rest_framework.fields import empty
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.web.constants import ExportTypeEnum
@@ -36,6 +37,7 @@ from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.common.fields import CurrentGatewayDefault
+from apigateway.common.timeout import convert_timeout
 from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
@@ -156,13 +158,20 @@ class ResourceAuthConfigSLZ(serializers.Serializer):
     )
 
 
+class TimeoutSLZ(serializers.Serializer):
+    connect = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, help_text="连接超时时间")
+    read = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, help_text="读取超时时间")
+    send = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, help_text="写入超时时间")
+
+    class Meta:
+        ref_name = "apis.web.resource.TimeoutSLZ"
+
+
 class HttpBackendConfigSLZ(serializers.Serializer):
     method = serializers.ChoiceField(choices=RESOURCE_METHOD_CHOICES, help_text="请求方法")
     path = serializers.RegexField(PATH_PATTERN, help_text="请求路径")
     match_subpath = serializers.BooleanField(required=False, help_text="是否匹配所有子路径")
-    timeout = serializers.IntegerField(
-        max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, required=False, help_text="超时时间"
-    )
+    timeout = TimeoutSLZ(help_text="超时时间", required=False)
     # 1.13 版本：兼容旧版 (api_version=0.1) 资源 yaml 通过 openapi 导入
     legacy_upstreams = LegacyUpstreamsSLZ(
         allow_null=True, required=False, help_text="旧版 upstreams，管理端不需要处理"
@@ -519,6 +528,18 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
             PathVarsValidator(),
             BackendPathVarsValidator(),
         ]
+
+    def __init__(self, instance=None, data=empty, **kwargs):
+        # 兼容旧版导入数据
+        if (
+            data is not empty
+            and "backend_config" in data
+            and "timeout" in data["backend_config"]
+            and isinstance(data["backend_config"]["timeout"], int)
+        ):
+            _timeout = data["backend_config"]["timeout"]
+            data["backend_config"]["timeout"] = convert_timeout(_timeout)
+        super().__init__(instance, data, **kwargs)
 
     def validate_description_en(self, value) -> Optional[str]:
         # description_en 为 None 时，文档中描述会展示 description 内容，

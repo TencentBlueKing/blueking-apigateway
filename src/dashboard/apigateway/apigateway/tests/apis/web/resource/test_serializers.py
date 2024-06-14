@@ -158,7 +158,7 @@ class TestResourceInputSLZ:
                     "method": "GET",
                     "path": "/test",
                     "match_subpath": False,
-                    "timeout": 0,
+                    "timeout": {"connect": 0, "read": 0, "send": 0},
                 },
             },
             "label_ids": [],
@@ -253,6 +253,44 @@ class TestResourceDataImportSLZ:
         slz = ResourceDataImportSLZ()
         result = slz.validate_description_en(description_en)
         assert result == expected
+
+    def test_timeout_int(self):
+        slz = ResourceDataImportSLZ(
+            data={
+                "name": "test",
+                "method": "GET",
+                "path": "/test/",
+                "auth_config": {},
+                "backend_name": "default",
+                "backend_config": {
+                    "method": "GET",
+                    "path": "/test",
+                    "timeout": 10,
+                },
+            },
+            context={"stages": []},
+        )
+        slz.is_valid(raise_exception=True)
+        assert slz.validated_data["backend_config"]["timeout"] == {"connect": 10, "read": 10, "send": 10}
+
+    def test_timeout_dict(self):
+        slz = ResourceDataImportSLZ(
+            data={
+                "name": "test",
+                "method": "GET",
+                "path": "/test/",
+                "auth_config": {},
+                "backend_name": "default",
+                "backend_config": {
+                    "method": "GET",
+                    "path": "/test",
+                    "timeout": {"connect": 10, "read": 10, "send": 10},
+                },
+            },
+            context={"stages": []},
+        )
+        slz.is_valid(raise_exception=True)
+        assert slz.validated_data["backend_config"]["timeout"] == {"connect": 10, "read": 10, "send": 10}
 
 
 class TestResourceImportInputSLZ:

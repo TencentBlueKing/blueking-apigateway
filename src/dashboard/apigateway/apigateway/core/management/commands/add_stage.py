@@ -63,7 +63,7 @@ class Command(BaseCommand):
 
         config = {
             "type": "node",
-            "timeout": 60,
+            "timeout": {"connect": 60, "read": 60, "send": 60},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "http", "host": "0.0.0.1", "weight": 100}],
         }

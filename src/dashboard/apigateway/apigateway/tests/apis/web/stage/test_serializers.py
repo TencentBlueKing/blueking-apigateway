@@ -34,9 +34,13 @@ class TestStageInputSLZ:
                         "id": fake_backend.id,
                         "config": {
                             "type": "node",
-                            "timeout": 1,
+                            "timeout": {"connect": 1, "read": 1, "send": 1},
                             "loadbalance": "roundrobin",
                             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                            "retries": 0,
+                            "retry_timeout": 0,
+                            "hash_on": "",
+                            "key": "",
                         },
                     }
                 ],
@@ -50,9 +54,13 @@ class TestStageInputSLZ:
                         "id": 0,
                         "config": {
                             "type": "node",
-                            "timeout": 1,
+                            "timeout": {"connect": 1, "read": 1, "send": 1},
                             "loadbalance": "roundrobin",
                             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                            "retries": 0,
+                            "retry_timeout": 0,
+                            "hash_on": "",
+                            "key": "",
                         },
                     }
                 ],
@@ -74,9 +82,13 @@ class TestStageInputSLZ:
                         "id": fake_backend.id,
                         "config": {
                             "type": "node",
-                            "timeout": 1,
+                            "timeout": {"connect": 1, "read": 1, "send": 1},
                             "loadbalance": "roundrobin",
                             "hosts": [{"scheme": "grpc", "host": "www.example.com", "weight": 1}],
+                            "retries": 0,
+                            "retry_timeout": 0,
+                            "hash_on": "",
+                            "key": "",
                         },
                     }
                 ],
@@ -101,16 +113,24 @@ class TestBackendConfigInputSLZ:
         data = [
             {
                 "type": "node",
-                "timeout": 1,
+                "timeout": {"connect": 1, "read": 1, "send": 1},
                 "loadbalance": "roundrobin",
                 "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                "retries": 0,
+                "retry_timeout": 0,
+                "hash_on": "",
+                "key": "",
             },
             {
                 "type": "node",
-                "timeout": 1,
+                "timeout": {"connect": 1, "read": 1, "send": 1},
                 "loadbalance": "roundrobin",
                 "hosts": [{"scheme": "grpc", "host": "www.example.com", "weight": 1}],
+                "retries": 0,
+                "retry_timeout": 0,
                 "will_error": True,
+                "hash_on": "",
+                "key": "",
             },
         ]
 

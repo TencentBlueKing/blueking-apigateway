@@ -33,7 +33,7 @@ class TestBackendHandler:
                     {
                         "stage_id": fake_stage.id,
                         "type": "node",
-                        "timeout": 1,
+                        "timeout": {"connect": 1, "read": 1, "send": 1},
                         "loadbalance": "roundrobin",
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                     }
@@ -50,9 +50,13 @@ class TestBackendHandler:
         assert backend_config.gateway_id == fake_stage.gateway.id
         assert backend_config.config == {
             "type": "node",
-            "timeout": 1,
+            "timeout": {"connect": 1, "read": 1, "send": 1},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+            "retries": 0,
+            "retry_timeout": 0,
+            "hash_on": "",
+            "key": "",
         }
 
     def test_update(self, fake_stage):
@@ -66,7 +70,7 @@ class TestBackendHandler:
                     {
                         "stage_id": fake_stage.id,
                         "type": "node",
-                        "timeout": 1,
+                        "timeout": {"connect": 1, "read": 1, "send": 1},
                         "loadbalance": "roundrobin",
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                     }
@@ -89,7 +93,7 @@ class TestBackendHandler:
                     {
                         "stage_id": fake_stage.id,
                         "type": "node",
-                        "timeout": 10,
+                        "timeout": {"connect": 10, "read": 10, "send": 10},
                         "loadbalance": "roundrobin",
                         "hosts": [{"scheme": "https", "host": "www.example.com", "weight": 1}],
                     }
@@ -104,7 +108,11 @@ class TestBackendHandler:
         backend_config = BackendConfig.objects.get(backend=backend)
         assert backend_config.config == {
             "type": "node",
-            "timeout": 10,
+            "timeout": {"connect": 10, "read": 10, "send": 10},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "https", "host": "www.example.com", "weight": 1}],
+            "retries": 0,
+            "retry_timeout": 0,
+            "hash_on": "",
+            "key": "",
         }

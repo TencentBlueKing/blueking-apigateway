@@ -42,7 +42,7 @@ class TestStageApi:
                     "id": fake_backend.id,
                     "config": {
                         "type": "node",
-                        "timeout": 1,
+                        "timeout": {"connect": 1, "read": 1, "send": 1},
                         "loadbalance": "roundrobin",
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                     },
@@ -64,9 +64,13 @@ class TestStageApi:
         assert backend_config
         assert backend_config.config == {
             "type": "node",
-            "timeout": 1,
+            "timeout": {"connect": 1, "read": 1, "send": 1},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+            "retries": 0,
+            "retry_timeout": 0,
+            "hash_on": "",
+            "key": "",
         }
 
     def test_retrieve(self, request_view, fake_stage):
@@ -89,7 +93,7 @@ class TestStageApi:
                     "id": fake_backend.id,
                     "config": {
                         "type": "node",
-                        "timeout": 1,
+                        "timeout": {"connect": 1, "read": 1, "send": 1},
                         "loadbalance": "roundrobin",
                         "hosts": [{"scheme": "http", "host": "www.test.com", "weight": 1}],
                     },
@@ -109,9 +113,13 @@ class TestStageApi:
         backend_config = BackendConfig.objects.get(stage=stage)
         assert backend_config.config == {
             "type": "node",
-            "timeout": 1,
+            "timeout": {"connect": 1, "read": 1, "send": 1},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "http", "host": "www.test.com", "weight": 1}],
+            "retries": 0,
+            "retry_timeout": 0,
+            "hash_on": "",
+            "key": "",
         }
 
     def partial_update(self, request_view, fake_stage):
@@ -213,17 +221,25 @@ class TestStageBackendApi:
         data = response.json()
         assert data["data"]["config"] == {
             "type": "node",
-            "timeout": 30,
+            "timeout": {"connect": 30, "read": 30, "send": 30},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 100}],
+            "retries": 0,
+            "retry_timeout": 0,
+            "hash_on": "",
+            "key": "",
         }
 
     def test_update(self, request_view, fake_stage, fake_backend):
         data = {
             "type": "node",
-            "timeout": 30,
+            "timeout": {"connect": 30, "read": 30, "send": 30},
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "http", "host": "www.test.com", "weight": 100}],
+            "retries": 0,
+            "retry_timeout": 0,
+            "hash_on": "",
+            "key": "",
         }
 
         response = request_view(

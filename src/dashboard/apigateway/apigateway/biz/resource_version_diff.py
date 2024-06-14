@@ -20,6 +20,8 @@ from typing import Any, Dict, List, Literal, Optional, Text, Tuple, Union
 
 from pydantic import BaseModel, Field, Json, validator
 
+from apigateway.common.timeout import convert_timeout
+
 
 class DiffMixin:
     def diff(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
@@ -60,13 +62,24 @@ class TransformHeaders(BaseModel, DiffMixin):
     delete: Optional[List[Text]] = None
 
 
+class Timeout(BaseModel, DiffMixin):
+    connect: int = Field(default=0)
+    read: int = Field(default=0)
+    send: int = Field(default=0)
+
+
 class ResourceProxyHTTPConfig(BaseModel, DiffMixin):
     method: Text
     path: Text
     match_subpath: bool = False
-    timeout: int
+    timeout: Timeout = Field(default_factory=lambda: Timeout())
     upstreams: Dict[Text, Any] = Field(default_factory=dict)
     transform_headers: Dict[Text, Any] = Field(default_factory=dict)
+
+    def __init__(self, **data: Any) -> None:
+        if "timeout" in data and isinstance(data["timeout"], int):
+            data["timeout"] = convert_timeout(data["timeout"])
+        super().__init__(**data)
 
     @validator("transform_headers")
     def clean_transform_headers(cls, v):  # noqa: N805

@@ -28,6 +28,8 @@ class UpstreamHashOnEnum(str, YamlRepresenterEnum):
 class UpstreamTypeEnum(str, YamlRepresenterEnum):
     ROUNDROBIN = "roundrobin"
     CHASH = "chash"
+    EWMA = "ewma"
+    LEAST_CONN = "least-conn"
 
 
 class UpstreamSchemeEnum(str, YamlRepresenterEnum):
