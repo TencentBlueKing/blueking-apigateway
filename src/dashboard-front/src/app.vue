@@ -104,7 +104,7 @@ const user = useUser();
 // 跑马灯数据
 const showNoticeAlert = ref(true);
 const enableShowNotice = ref(false);
-const noticeApi = ref(`${BK_DASHBOARD_URL}/notice/`);
+const noticeApi = ref(`${BK_DASHBOARD_URL}/notice/announcements/`);
 const curLeavePageData = ref({});
 
 // getUser()
