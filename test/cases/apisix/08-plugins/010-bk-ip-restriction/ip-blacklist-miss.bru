@@ -1,0 +1,15 @@
+meta {
+  name: ip-blacklist-miss
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/ip_blacklist
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

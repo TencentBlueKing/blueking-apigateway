@@ -88,9 +88,12 @@
         </bk-table-column> -->
         <bk-table-column :label="t('操作')" :resizable="false">
           <template #default="{ index, column }">
-            <div class="normal-status">
+            <div class="normal-status" v-if="tableIsEdit">
               <i class="apigateway-icon icon-ag-plus-circle-shape" @click="addRow(index, column.index)" />
               <i class="apigateway-icon icon-ag-minus-circle-shape" @click="delRow(index)" />
+            </div>
+            <div class="normal-status" v-else>
+              --
             </div>
             <!-- <div class="normal-status" v-show="!row.isFocus">
               <i class="apigateway-icon icon-ag-plus-circle-shape" @click="addRow(index, column.index)" />
@@ -123,7 +126,7 @@
       {{ t('变量名由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符') }}
     </div> -->
 
-    <div class="footer-btn">
+    <div class="footer-btn" v-show="tableIsEdit">
       <bk-button
         theme="primary"
         @click.stop="handleSave"
@@ -304,11 +307,11 @@ const editTable = () => {
 
 const cancelTableEdit = () => {
   tableIsEdit.value = false;
-  // getData();
-  tableData.value.forEach((item: Record<string, string | boolean>) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    item = Object.assign(item, { isEdit: true, isFocus: false });
-  });
+  getData();
+  // tableData.value.forEach((item: Record<string, string | boolean>) => {
+  //   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  //   item = Object.assign(item, { isEdit: true, isFocus: false });
+  // });
 };
 
 const addRow = async (index: number, columnIndex: number) => {
@@ -339,6 +342,8 @@ const handleInputBlur = (index: number) => {
 };
 
 const handleCellClick = async ({ event, column, rowIndex }: any) => {
+  if (!tableIsEdit.value) return;
+
   event.stopPropagation();
   const { field, index } = column;
   if (!field) {

@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from unittest import mock
+
 import pytest
 from ddf import G
 
@@ -103,6 +105,7 @@ class TestReleasedResourceRetrieveApi:
 
         request = request_factory.get("/backend/api/v1/demo/")
         request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
         stage_name = "prod"
         resource_name = mocked_resource and mocked_resource["name"]
 
@@ -212,6 +215,7 @@ class TestReleasedResourceListApi:
 
         request = request_factory.get("/backend/api/v1/demo/")
         request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
 
         view = views.ReleasedResourceListApi.as_view()
         response = view(request, stage_name)
@@ -312,6 +316,7 @@ class TestReleasedResourceListByGatewayNameApi:
 
         request = request_factory.get("/backend/api/v1/demo/")
         request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
 
         response = request_to_view(
             request=request,

@@ -21,6 +21,7 @@ import arrow
 from django_dynamic_fixture import G
 
 from apigateway.apis.web.resource_version import serializers
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin_binding import PluginBindingHandler
 from apigateway.core.models import Gateway, ResourceVersion
@@ -49,9 +50,12 @@ class TestResourceVersionListOutputSLZ:
             gateway=gateway,
             version="1.0.1",
             created_time=arrow.get("2019-01-01 12:30:00").datetime,
+            created_by="x"
         )
 
-        queryset = ResourceVersion.objects.filter(gateway=gateway).values("id", "version", "comment", "created_time")
+        queryset = ResourceVersion.objects.filter(gateway=gateway).values(
+            "id", "version", "schema_version", "comment", "created_time", "created_by"
+        )
 
         slz = serializers.ResourceVersionListOutputSLZ(
             instance=queryset,
@@ -76,6 +80,7 @@ class TestResourceVersionListOutputSLZ:
             {
                 "id": resource_version.id,
                 "version": resource_version.version,
+                "schema_version": resource_version.schema_version,
                 "comment": resource_version.comment,
                 "sdk_count": 0,
                 "released_stages": [
@@ -88,6 +93,7 @@ class TestResourceVersionListOutputSLZ:
                         "name": "test",
                     },
                 ],
+                "created_by": "x",
                 "created_time": "2019-01-01 20:30:00",
             },
         ]
@@ -105,7 +111,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                     fake_gateway.id, fake_stage.id
                 ),
                 "is_schema_v2": fake_resource_version_v1.is_schema_v2,
-                "stage_plugin_binding": PluginBindingHandler.get_stage_plugin_bindings(fake_gateway.id, fake_stage.id),
+                "stage_plugins": {},
                 "resource_doc_updated_time": {},
             },
         )
@@ -151,6 +157,12 @@ class TestResourceVersionRetrieveOutputSLZ:
     def test_to_representation_v2(
         self, fake_backend, fake_stage, fake_gateway, fake_resource_version_v2, echo_plugin_stage_binding
     ):
+        stage_plugin_bindings = PluginBindingHandler.get_stage_plugin_bindings(fake_gateway.id, fake_stage.id)
+        stage_plugins = {}
+        for plugin_type, plugin_binding in stage_plugin_bindings.items():
+            plugin_config = plugin_binding.snapshot()
+            plugin_config["binding_type"] = PluginBindingScopeEnum.STAGE.value
+            stage_plugins[plugin_type] = plugin_config
         slz = serializers.ResourceVersionRetrieveOutputSLZ(
             instance=fake_resource_version_v2,
             context={
@@ -159,9 +171,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                     fake_gateway.id, fake_stage.id
                 ),
                 "is_schema_v2": fake_resource_version_v2.is_schema_v2,
-                "stage_plugin_bindings": PluginBindingHandler.get_stage_plugin_bindings(
-                    fake_gateway.id, fake_stage.id
-                ),
+                "stage_plugins": stage_plugins,
                 "resource_doc_updated_time": {},
             },
         )

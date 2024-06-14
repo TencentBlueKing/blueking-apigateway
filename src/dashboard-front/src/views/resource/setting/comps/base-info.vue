@@ -70,7 +70,7 @@
           v-model="formData.allow_apply_permission">
           <span
             class="bottom-line"
-            v-bk-tooltips="{ content: '允许，则任何蓝鲸应用可在蓝鲸开发者中心申请资源的访问权限；否则，只能通过网关管理员主动授权为某应用添加权限' }">
+            v-bk-tooltips="{ content: t('允许，则任何蓝鲸应用可在蓝鲸开发者中心申请资源的访问权限；否则，只能通过网关管理员主动授权为某应用添加权限') }">
             {{ t('允许申请权限') }}
           </span>
         </bk-checkbox>

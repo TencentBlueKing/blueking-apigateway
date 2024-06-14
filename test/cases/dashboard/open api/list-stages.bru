@@ -1,0 +1,21 @@
+meta {
+  name: list-stages
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v1/apis/bk-apigateway/stages/
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.code: eq 0
+  res.body.data[0].name: eq prod
+}

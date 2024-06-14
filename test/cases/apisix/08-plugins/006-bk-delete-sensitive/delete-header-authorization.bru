@@ -1,0 +1,22 @@
+meta {
+  name: delete-header-authorization
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/get
+  body: none
+  auth: none
+}
+
+headers {
+  a: b
+  X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.headers.A: eq b
+  res.body.headers["X-Bkapi-Authorization"]: isUndefined
+}

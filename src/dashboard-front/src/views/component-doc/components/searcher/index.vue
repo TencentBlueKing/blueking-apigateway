@@ -6,8 +6,8 @@
         <i class="ag-doc-icon doc-down-shape apigateway-icon icon-ag-down-shape"></i>
       </div>
       <template #content>
-        <bk-dropdown-menu class="bk-dropdown-list">
-          <bk-dropdown-item v-for="item in curVersionList" :key="item.board_label">
+        <bk-dropdown-menu class="dropdown-trigger-content bk-dropdown-list">
+          <bk-dropdown-item v-for="item in curVersionList" :key="item.board_label" :title="item.board_label">
             <a href="javascript:;" @click="triggerHandler(item)" class="f14">{{ item.board_label }}</a>
           </bk-dropdown-item>
         </bk-dropdown-menu>
@@ -91,6 +91,7 @@ const curVersion = ref<any>({
 });
 const popoverOptions = {
   boundary: 'body',
+  placement: 'bottom-start',
 };
 
 watch(
@@ -266,14 +267,21 @@ const handleKeyup = (e: any) => {
   }
 }
 
+.dropdown-trigger-content {
+  :deep(.bk-dropdown-item) {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 
 .bk-dropdown-content {
   box-shadow: none !important;
   -webkit-box-shadow: none !important;
 
   .bk-dropdown-list {
-    width: 105px;
-
     a {
       color: #63656e;
 

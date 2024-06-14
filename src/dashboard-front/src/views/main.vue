@@ -81,7 +81,9 @@
           />
         </bk-select>
       </template>
-      <div class="content-view">
+      <!-- 提示发布 -->
+      <tips-publish-bar v-show="stage.getNotUpdatedStages?.length" />
+      <div class="content-view" :style="stage.getNotUpdatedStages?.length ? 'padding-top: 42px' : 'padding-top: 0px'">
         <!-- 默认头部 -->
         <div class="flex-row align-items-center content-header" v-if="!route.meta.customHeader">
           <i
@@ -101,6 +103,8 @@
         </div>
       </div>
     </bk-navigation>
+
+    <version-release-note ref="versionReleaseNoteRef" />
   </div>
 </template>
 
@@ -108,11 +112,13 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { createMenuData } from '@/common/menu';
-import { useGetApiList, useSidebar } from '@/hooks';
-import { useCommon, usePermission } from '@/store';
+import { useGetApiList, useSidebar, useGetStageList } from '@/hooks';
+import { useCommon, usePermission, useStage } from '@/store';
 import { getPermissionApplyList, getGatewaysDetail } from '@/http';
 import mitt from '@/common/event-bus';
 import { cloneDeep } from 'lodash';
+import versionReleaseNote from '@/components/version-release-note.vue';
+import tipsPublishBar from '@/components/tips-publish-bar.vue';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const route = useRoute();
@@ -122,6 +128,11 @@ const common = useCommon();
 const permission = usePermission();
 const filterData = ref({ name: '' });
 const apigwSelect = ref();
+
+const stage = useStage();
+const versionReleaseNoteRef = ref();
+const { getStagesStatus } = useGetStageList();
+
 // 获取网关数据方法
 const {
   getGatewaysListData,
@@ -143,6 +154,7 @@ const headerTitle = ref('');
 const curLeavePageData = ref({});
 
 const handleCollapse = (v: boolean) => {
+  mitt.emit('side-toggle', v);
   collapse.value = !v;
 };
 
@@ -156,6 +168,13 @@ const handleSetApigwName = () => {
 const handleSetApigwDeatail = async () => {
   const curApigwDataDetail = await getGatewaysDetail(apigwId.value);
   common.setCurApigwData(curApigwDataDetail);
+};
+
+const getStages = async () => {
+  const res = await getStagesStatus();
+  if (res?.notUpdatedStages?.length) {
+    versionReleaseNoteRef.value?.show();
+  }
 };
 
 const needMenu = ref(true);
@@ -245,6 +264,18 @@ onBeforeUnmount(() => {
 const handleBack = () => {
   router.back();
 };
+
+watch(
+  () => apigwId.value,
+  (v) => {
+    if (v) {
+      setTimeout(() => {
+        getStages();
+      }, 200);
+    }
+  },
+  { immediate: true },
+);
 
 onMounted(async () => {
   // 处理其他页面离开页面前是否会出现提示框的判断
@@ -393,6 +424,7 @@ onMounted(async () => {
         // box-shadow: 0 3px 4px rgba(64,112,203,0.05882);
         box-shadow: 0 3px 4px 0 #0000000a;
         height: 52px;
+        box-sizing: border-box;
         margin-right: auto;
         color: #313238;
         font-size: 16px;

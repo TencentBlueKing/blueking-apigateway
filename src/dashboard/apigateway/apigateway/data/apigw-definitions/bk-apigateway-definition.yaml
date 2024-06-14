@@ -11,17 +11,26 @@ apigateway:
 
 stage:
   name: prod
-  vars: {}
-  proxy_http:
-    timeout: 60
-    upstreams:
-      loadbalance: roundrobin
-      hosts:
-        - host: "{{ environ.DASHBOARD_INNER_URL }}"
+  backends:
+    - name: "default"
+      config:
+        timeout: 60
+        loadbalance: "roundrobin"
+        hosts:
+          - host: "{{ environ.DASHBOARD_INNER_URL }}"
+            weight: 100
+    - name: "core-api"
+      config:
+        timeout: 60
+        loadbalance: "roundrobin"
+        hosts:
+          - host: "{{ environ.CORE_API_INNER_URL }}"
+            weight: 100
 
 grant_permissions:
   - bk_app_code: visual-layout
   - bk_app_code: bk_lesscode
+  - bk_app_code: {{ settings.BK_APP_CODE }}
 
 resource_docs:
   basedir: "{{ settings.BASE_DIR }}/data/apidocs/"

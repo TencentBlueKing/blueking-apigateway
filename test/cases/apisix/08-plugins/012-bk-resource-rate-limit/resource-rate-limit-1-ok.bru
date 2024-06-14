@@ -1,0 +1,15 @@
+meta {
+  name: resource-rate-limit-1-ok
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/resource_rate_limit
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

@@ -176,3 +176,9 @@ class ScopePluginConfigListOutputSLZ(serializers.Serializer):
     name = serializers.CharField(help_text="插件类型名称")
     config = serializers.DictField(help_text="插件配置")
     config_id = serializers.IntegerField(help_text="插件配置 id")
+    related_scope_count = serializers.SerializerMethodField(help_text="插件类型绑定的环境及资源数量")
+
+    def get_related_scope_count(self, obj):
+        related_scope_count = self.context.get("type_related_scope_count", {})
+        print("the related_scope_count:", related_scope_count)
+        return related_scope_count.get(obj["code"], {"stage": 0, "resource": 0})

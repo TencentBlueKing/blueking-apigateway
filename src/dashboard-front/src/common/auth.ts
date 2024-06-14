@@ -14,6 +14,7 @@ let checkWindowTimer = -1;
 const getLoginUrl = (url: string, cUrl: string, size: string) => {
   const loginUrl = new URL(url);
   loginUrl.searchParams.append('size', size);
+  loginUrl.searchParams.append('is_from_logout', '1');
   loginUrl.searchParams.append('c_url', cUrl);
   return loginUrl.href;
 };

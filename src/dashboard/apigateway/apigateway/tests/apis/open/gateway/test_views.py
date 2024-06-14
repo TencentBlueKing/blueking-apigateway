@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from unittest import mock
 
 import pytest
 from django_dynamic_fixture import G
@@ -24,6 +25,7 @@ from apigateway.apis.open.gateway import views
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.core.models import Gateway, GatewayRelatedApp, Release
+from apigateway.tests.utils.testing import get_response_json
 
 
 @pytest.fixture()
@@ -44,6 +46,7 @@ class TestGatewayListApi:
         resp = request_view(
             method="GET",
             view_name="openapi.gateway.list",
+            app=mock.MagicMock(app_code="test"),
         )
         result = resp.json()
         assert resp.status_code == 200
@@ -66,33 +69,41 @@ class TestGatewayListApi:
 
 
 class TestGatewayRetrieveApi:
-    def test_retrieve(self, request_view, fake_gateway):
-        resp = request_view(
-            method="GET",
+    def test_retrieve(self, request_to_view, request_factory, fake_gateway):
+        request = request_factory.get("")
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+        response = request_to_view(
+            request,
             view_name="openapi.gateway.retrieve",
             path_params={"id": fake_gateway.id},
         )
-        result = resp.json()
+        result = get_response_json(response)
 
-        assert resp.status_code == 200
+        assert response.status_code == 200
         assert result["code"] == 0
         assert result["data"]
 
 
 class TestGatewayPublicKeyRetrieveApi:
-    def test_get(self, settings, request_view, fake_gateway):
+    def test_get(self, settings, request_to_view, request_factory, fake_gateway):
+        request = request_factory.get("")
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+
         settings.JWT_ISSUER = "foo"
 
         jwt = GatewayJWTHandler.create_jwt(fake_gateway)
 
-        resp = request_view(
-            method="GET",
+        response = request_to_view(
+            request,
+            # method="GET",
             view_name="openapi.gateway.get_public_key",
             path_params={"gateway_name": fake_gateway.name},
         )
-        result = resp.json()
+        result = get_response_json(response)
 
-        assert resp.status_code == 200
+        assert response.status_code == 200
         assert result["code"] == 0
         assert result["data"] == {
             "issuer": "foo",

@@ -242,7 +242,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
         validators = [
             MaxCountPerGatewayValidator(
                 Resource,
-                max_count_callback=lambda gateway: GatewayHandler.get_max_resource_count(gateway),
+                max_count_callback=lambda gateway: GatewayHandler.get_max_resource_count(gateway.name),
                 message=gettext_lazy("每个网关最多创建 {max_count} 个资源。"),
             ),
             UniqueTogetherValidator(

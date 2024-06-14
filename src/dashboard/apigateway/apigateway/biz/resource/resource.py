@@ -151,10 +151,10 @@ class ResourceHandler:
         queryset = Resource.objects.filter(gateway_id=gateway_id)
 
         if condition.get("name"):
-            queryset = queryset.filter(name=condition["name"])
+            queryset = queryset.filter(name__icontains=condition["name"])
 
         if condition.get("path"):
-            queryset = queryset.filter(path=condition["path"])
+            queryset = queryset.filter(path__icontains=condition["path"])
 
         if condition.get("method"):
             queryset = queryset.filter(method__in=condition["method"].split(","))

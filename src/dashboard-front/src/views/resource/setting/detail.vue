@@ -15,16 +15,18 @@
         <div v-if="!nameEdit" class="value-container">
           <span class="value-cls">{{ formData.name }}</span>
           <span class="operate-btn">
-            <i @click="nameEdit = true" class="apigateway-icon icon-ag-edit-line"></i>
+            <i @click="toggleEdit" class="apigateway-icon icon-ag-edit-line"></i>
             <i class="apigateway-icon icon-ag-copy-info" @click="copy(formData.name)"></i>
           </span>
         </div>
 
         <div class="edit-name" v-else>
           <bk-input
+            ref="nameInputRef"
             size="small"
             v-model="formData.name"
             @blur="handleEditSave"
+            @enter="handleEditEnter"
             :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
           />
         </div>
@@ -64,7 +66,7 @@
             <i @click="labelsEdit = true" class="apigateway-icon icon-ag-edit-line"></i>
             <i
               class="apigateway-icon icon-ag-copy-info"
-              @click="copy(formData?.labels?.map(item => item.name)?.join(','))">
+              @click="copy(formData?.labels?.map((item: any) => item.name)?.join(','))">
             </i>
           </span>
         </div>
@@ -386,7 +388,7 @@
         <template #label>
           <span class="label-cls">{{ t('请求路径：') }}</span>
         </template>
-        
+
         <div v-if="!backPathEdit" class="value-container">
           <span class="value-cls">{{ formData.backend?.config?.path }}</span>
           <span class="operate-btn">
@@ -729,6 +731,7 @@ const handleConfirmTime = () => {
   timeOutValue.value = '';
   handleEditSave();
 };
+
 const renderTimeOutLabel = () => {
   return (
     <div>
@@ -813,7 +816,7 @@ const handleCheckPath = async () => {
 const verifiedRequired = (auth_config: any = {}) => {
   const { app_verified_required, auth_verified_required } = auth_config;
   if (app_verified_required && auth_verified_required) {
-    return '蓝鲸应用认证， 用户认证';
+    return '蓝鲸应用认证，用户认证';
   }
   if (app_verified_required) {
     return '蓝鲸应用认证';
@@ -858,6 +861,21 @@ const handleEditSave = async () => {
   } catch (e) {
     console.error(e);
   };
+};
+
+const nameInputRef = ref(null);
+
+const handleEditEnter = () => {
+  nextTick(() => {
+    nameInputRef.value.blur();
+  });
+};
+
+const toggleEdit = () => {
+  nameEdit.value = true;
+  nextTick(() => {
+    nameInputRef.value.focus();
+  });
 };
 
 // 认证方式修改

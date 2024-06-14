@@ -1,0 +1,18 @@
+meta {
+  name: user_verify-no-auth-header
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/user_verify
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 400
+  res.body.code: eq 1640001
+  res.body.code_name: eq INVALID_ARGS
+  res.body.message: matches user authentication failed, please provide a valid user identity, such as bk_username, bk_token, access_token
+}

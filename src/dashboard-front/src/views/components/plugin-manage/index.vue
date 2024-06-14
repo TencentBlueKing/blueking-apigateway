@@ -165,7 +165,12 @@
           <!-- 配置插件 -->
           <div class="plugin-config pl40 pr40 pt20 pb20" v-else>
             <pluginInfo
-              :cur-plugin="curChoosePlugin" :scope-info="curScopeInfo" :type="curType"
+              :cur-plugin="curChoosePlugin"
+              :scope-info="curScopeInfo"
+              :type="curType"
+              :plugin-list="pluginListDate"
+              :binding-plugins="curBindingPlugins"
+              @choose-plugin="handleChoosePlugin"
               @on-change="handleOperate">
             </pluginInfo>
           </div>
@@ -371,9 +376,7 @@ const handleClearFilterKey = () => {
 const handleEditePlugin = async (item: any) => {
   curType.value = 'edit';
   const { code, config_id } = item;
-  console.log(item);
-  console.log(pluginListDate.value);
-  const curEditItem = pluginListDate.value.find((pluginItem: { code: string; }) => pluginItem.code === code);
+  const curEditItem = curBindingPlugins.value.find((pluginItem: { code: string; }) => pluginItem.code === code);
   curChoosePlugin.value = curEditItem;
   try {
     const res = await getPluginConfig(apigwId, scopeType.value, scopeId.value, code, config_id);
@@ -424,7 +427,6 @@ const handleDeletePlugin = (item: any) => {
 // 跳转stage
 const handeleJumpStage = (item: any) => {
   const { name } = item;
-  console.log(item, name);
   const isRouteStage = route.path.includes('stage');
   const query = {
     stage: name,
@@ -489,7 +491,6 @@ const getBindingDetails = async () => {
     // 当前环境或资源绑定的插件
     const res = await getScopeBindingPluginList(apigwId, scopeType.value, scopeId.value);
     curBindingPlugins.value = res;
-    console.log('当前环境或资源绑定的插件', curBindingPlugins.value);
   } catch (error) {
     console.log('error', error);
   } finally {
@@ -528,7 +529,6 @@ const handleChoosePlugin = (obj: any) => {
   }
   curChooseCode.value = obj.code;
   curChoosePlugin.value = obj;
-  console.log(curChoosePlugin.value);
 };
 
 // enter搜索

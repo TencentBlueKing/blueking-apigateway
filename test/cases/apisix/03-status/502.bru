@@ -1,0 +1,15 @@
+meta {
+  name: 502
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/httpbin/prod/status/502
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 502
+}

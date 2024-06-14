@@ -93,7 +93,6 @@ class BackendHandler:
                 updated_by,
                 backend_config.gateway_id,
                 backend_config.stage_id,
-                is_sync=True,
             )
 
         return backend
