@@ -50,10 +50,11 @@ class TestResourceVersionListOutputSLZ:
             gateway=gateway,
             version="1.0.1",
             created_time=arrow.get("2019-01-01 12:30:00").datetime,
+            created_by="x"
         )
 
         queryset = ResourceVersion.objects.filter(gateway=gateway).values(
-            "id", "version", "schema_version", "comment", "created_time"
+            "id", "version", "schema_version", "comment", "created_time", "created_by"
         )
 
         slz = serializers.ResourceVersionListOutputSLZ(
@@ -92,6 +93,7 @@ class TestResourceVersionListOutputSLZ:
                         "name": "test",
                     },
                 ],
+                "created_by": "x",
                 "created_time": "2019-01-01 20:30:00",
             },
         ]
