@@ -66,22 +66,22 @@ class Jinja2ToMarkdownGenerator:
         return self.filepath[: -len(self.filename)]
 
 
-class SwaggerToMarkdownGenerator:
-    """根据 swagger 生成 markdown 格式文档"""
+class OpenAPIToMarkdownGenerator:
+    """根据 openapi 生成 markdown 格式文档"""
 
-    def __init__(self, swagger: str, language: DocLanguageEnum):
-        self.swagger = swagger
+    def __init__(self, openapi_data: str, language: DocLanguageEnum):
+        self.openapi_data = openapi_data
         self.language = language
 
     def generate_doc_content(self) -> str:
-        if not self.swagger:
+        if not self.openapi_data:
             return ""
 
         with TemporaryDirectory() as output_dir:
-            swagger_filepath = os.path.join(output_dir, "swagger.yaml")
-            write_to_file(self.swagger, swagger_filepath)
+            openapi_filepath = os.path.join(output_dir, "swagger.yaml")
+            write_to_file(self.openapi_data, openapi_filepath)
             doc_filepath = generate_markdown(
-                swagger=swagger_filepath,
+                swagger=openapi_filepath,
                 language=self.language.value,
                 output=os.path.join(output_dir, "docs.md"),
             )

@@ -17,10 +17,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-from ddf import G
 
 from apigateway.apps.esb.component.sync import ComponentSynchronizer
-from apigateway.core.models import Gateway
 
 pytestmark = pytest.mark.django_db
 
@@ -33,19 +31,30 @@ class TestComponentSynchronizer:
         )
         mock_to_resources = mocker.patch(
             "apigateway.apps.esb.component.sync.ComponentConvertor.to_resources",
-            return_value=[{"id": 1, "method": "GET"}],
+            return_value=[{"id": 1, "name": "test", "path": "/test", "method": "GET"}],
         )
 
         synchronizer = ComponentSynchronizer()
         result = synchronizer.get_importing_resources()
 
-        assert result == [{"id": 1, "method": "GET"}]
+        assert result == [{"id": 1, "name": "test", "path": "/test", "method": "GET"}]
         mock_to_resources.assert_called_once()
 
-    def test_sync_to_resources(self, mocker, fake_resource, fake_backend, fake_resource_data):
+    def test_sync_to_resources(self, mocker, fake_gateway, fake_resource, fake_default_backend, fake_resource_data):
         mocker.patch(
             "apigateway.apps.esb.component.sync.ComponentSynchronizer.get_importing_resources",
-            return_value=[{"id": 1, "method": "GET"}],
+            return_value=[
+                {
+                    "id": fake_resource.id,
+                    "name": "test",
+                    "path": "/test",
+                    "method": "GET",
+                    "backend_config": {
+                        "method": "GET",
+                        "path": "/backend/test1",
+                    },
+                }
+            ],
         )
         mocker.patch(
             "apigateway.apps.esb.component.sync.ResourcesImporter.from_resources",
@@ -54,7 +63,9 @@ class TestComponentSynchronizer:
                     "import_resources.return_value": None,
                     "get_deleted_resources.return_value": [],
                     "get_selected_resource_data_list.return_value": [
-                        fake_resource_data.copy(update={"resource": fake_resource, "backend": fake_backend}, deep=True)
+                        fake_resource_data.copy(
+                            update={"resource": fake_resource, "backend": fake_default_backend}, deep=True
+                        )
                     ],
                 }
             ),
@@ -64,5 +75,5 @@ class TestComponentSynchronizer:
         )
 
         synchronizer = ComponentSynchronizer()
-        result = synchronizer.sync_to_resources(G(Gateway), "admin")
+        result = synchronizer.sync_to_resources(fake_gateway, "admin")
         assert len(result) == 1

@@ -110,6 +110,8 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
                 data=ResourceDocVersion.objects.make_version(request.gateway.id),
             )
 
+        # 创建resource_schema版本
+
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
 

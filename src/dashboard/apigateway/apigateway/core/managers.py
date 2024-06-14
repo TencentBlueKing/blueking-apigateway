@@ -36,6 +36,8 @@ from apigateway.utils.time import now_datetime
 
 # - managers.py 下面不能存在跨 models 的操作，每个 manager 只关心自己的逻辑 (避免循环引用)
 
+RELEASED_RESOURCE_CREATE_BATCH_SIZE = 50
+
 
 class StageManager(models.Manager):
     def get_names(self, gateway_id):
@@ -211,7 +213,7 @@ class ReleaseManager(models.Manager):
             obj.comment = comment
             obj.updated_by = username
             obj.updated_time = now_datetime()
-            obj.save()
+            # 需要等到发布成功才能 save 更新
 
         return obj
 
@@ -260,7 +262,7 @@ class ReleasedResourceManager(models.Manager):
             )
             for resource in resource_version.data
         ]
-        self.bulk_create(resource_to_add, batch_size=settings.RELEASED_RESOURCE_CREATE_BATCH_SIZE)
+        self.bulk_create(resource_to_add, batch_size=RELEASED_RESOURCE_CREATE_BATCH_SIZE)
 
     def get_released_resource(self, gateway_id: int, resource_version_id: int, resource_name: str) -> Optional[dict]:
         released_resource = self.filter(

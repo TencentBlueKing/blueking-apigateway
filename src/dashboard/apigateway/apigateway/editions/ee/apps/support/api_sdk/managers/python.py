@@ -17,7 +17,7 @@
 #
 from apigateway.apps.support.api_sdk.distributors.bkrepo import GenericDistributor
 from apigateway.apps.support.api_sdk.distributors.pypi import PypiSourceDistributor
-from apigateway.apps.support.api_sdk.generators.swagger import PythonTemplateGenerator
+from apigateway.apps.support.api_sdk.generators.openapi import PythonTemplateGenerator
 from apigateway.apps.support.api_sdk.managers.base import BaseSDKManager
 from apigateway.apps.support.api_sdk.managers.mixins import SDKManagerMixin
 from apigateway.apps.support.api_sdk.packagers.python import PythonPackager

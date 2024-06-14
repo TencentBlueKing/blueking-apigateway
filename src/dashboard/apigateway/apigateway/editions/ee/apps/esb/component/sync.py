@@ -24,7 +24,7 @@ from apigateway.apps.esb.component.convertor import ComponentConvertor
 
 # FIXME: 将 sync 中内容挪到 biz 模块，apps 模块不能引用 biz 模块内容
 from apigateway.biz.esb.component_resource_binding import ComponentResourceBindingHandler
-from apigateway.biz.resource.importer import ResourcesImporter
+from apigateway.biz.resource.importer import ResourceDataConvertor, ResourcesImporter
 from apigateway.core.models import Gateway
 
 
@@ -40,10 +40,13 @@ class ComponentSynchronizer:
         # 获取组件对应的资源配置
         importing_resources = self.get_importing_resources()
 
-        # 导入资源
+        # 导入资源】
+
+        resource_data_list = ResourceDataConvertor(gateway, importing_resources).convert()
+
         resources_importer = ResourcesImporter.from_resources(
             gateway=gateway,
-            resources=importing_resources,
+            resources=resource_data_list,
             selected_resources=None,
             need_delete_unspecified_resources=True,
             username=username,

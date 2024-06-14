@@ -16,31 +16,31 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import hashlib
-import os
 from tempfile import TemporaryDirectory
 from typing import IO, AnyStr, Dict, List, Optional, Union
 
-from bkapi_client_generator import expand_swagger
 from django.utils.translation import gettext as _
+from openapi_spec_validator.versions import OPENAPIV2
 
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
-from apigateway.biz.constants import SwaggerFormatEnum
-from apigateway.biz.resource.importer.swagger import SwaggerManager
+from apigateway.biz.constants import OpenAPIFormatEnum
+from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
+from apigateway.biz.resource.importer.schema import convert_operation_v3_to_v2
 from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError
-from apigateway.core.models import Resource
-from apigateway.utils.file import read_file, write_to_file
+from apigateway.common.exceptions import SchemaValidationError
+from apigateway.core.models import Gateway, Resource
 
-from .generators import Jinja2ToMarkdownGenerator, SwaggerToMarkdownGenerator
-from .models import ArchiveDoc, SwaggerDoc
+from .generators import Jinja2ToMarkdownGenerator, OpenAPIToMarkdownGenerator
+from .models import ArchiveDoc, OpenAPIDoc
 
 
 class BaseParser:
     def __init__(self, gateway_id: int):
         self.gateway_id = gateway_id
 
-    def _enrich_docs(self, docs: Union[List[ArchiveDoc], List[SwaggerDoc]]):
+    def _enrich_docs(self, docs: Union[List[ArchiveDoc], List[OpenAPIDoc]]):
         """
         丰富文档数据
         - 补全解析文档对应的资源、资源文档对象
@@ -158,51 +158,41 @@ class ArchiveParser(BaseParser):
         return None
 
 
-class SwaggerParser(BaseParser):
+class OpenAPIParser(BaseParser):
     """Swagger 描述文件解析"""
 
-    def parse(self, swagger: str, language: DocLanguageEnum) -> List[SwaggerDoc]:
+    def parse(self, swagger: str, language: DocLanguageEnum) -> List[OpenAPIDoc]:
         docs = self._parse(swagger, language)
         self._enrich_docs(docs)
         return docs
 
-    def _parse(self, swagger: str, language: DocLanguageEnum) -> List[SwaggerDoc]:
-        expanded_swagger = self._expand_swagger(swagger)
-        swagger_manager = SwaggerManager.load_from_swagger(expanded_swagger)
-        swagger_manager.validate()
+    def _parse(self, openapi: str, language: DocLanguageEnum) -> List[OpenAPIDoc]:
+        gateway = Gateway.objects.get(id=self.gateway_id)
+        openapi_manager = OpenAPIImportManager.load_from_content(gateway, openapi)
+
+        validate_err_list = openapi_manager.validate()
+        if len(validate_err_list) > 0 or not openapi_manager.parser:
+            raise SchemaValidationError("")
 
         docs = []
-        for path, path_item in swagger_manager.get_paths().items():
-            for method, operation in path_item.items():
-                swagger = SwaggerManager.to_swagger(
+        for path, path_item in openapi_manager.parser.get_paths().items():
+            for method, original_operation in path_item.items():
+                converted_operation = original_operation
+                if openapi_manager.version != OPENAPIV2:
+                    converted_operation = convert_operation_v3_to_v2(original_operation)
+                openapi = OpenAPIExportManager(title=converted_operation["operationId"]).get_swagger_by_paths(
                     paths={
-                        path: {method: operation},
+                        path: {method: converted_operation},
                     },
-                    title=operation["operationId"],
-                    swagger_format=SwaggerFormatEnum.YAML,
+                    openapi_format=OpenAPIFormatEnum.YAML,
                 )
                 docs.append(
-                    SwaggerDoc(
-                        resource_name=operation["operationId"],
+                    OpenAPIDoc(
+                        resource_name=converted_operation["operationId"],
                         language=language,
-                        content=SwaggerToMarkdownGenerator(swagger, language).generate_doc_content(),
-                        swagger=swagger,
+                        content=OpenAPIToMarkdownGenerator(openapi, language).generate_doc_content(),
+                        openapi=openapi,
                     )
                 )
 
         return docs
-
-    def _expand_swagger(self, swagger: str) -> str:
-        """展开 swagger 描述
-
-        - 参考：https://goswagger.io/usage/expand.html
-        """
-        swagger_format = SwaggerManager.guess_swagger_format(swagger)
-
-        with TemporaryDirectory() as output_dir:
-            src = os.path.join(output_dir, f"swagger.{swagger_format.value}")
-            dst = os.path.join(output_dir, f"expanded_swagger.{swagger_format.value}")
-
-            write_to_file(swagger, src)
-            expand_swagger(src, swagger_format.value, dst)
-            return read_file(dst).decode()

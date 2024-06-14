@@ -32,6 +32,7 @@ type reportPublishEventSerializer struct {
 	Name          string                 `json:"name"  binding:"required" example:"generate_release_task"`
 	Status        string                 `json:"status" binding:"required" example:"success" `
 	Detail        map[string]interface{} `json:"detail"`
+	Ts            int64                  `json:"ts"`
 }
 
 // ReportPublishEvent report publish event
@@ -50,6 +51,7 @@ func ReportPublishEvent(c *gin.Context) {
 		Status:    query.Status,
 		PublishID: publishID,
 		DetailMap: query.Detail,
+		Ts:        query.Ts,
 	}
 	err := svc.Report(c.Request.Context(), event)
 	if err != nil {

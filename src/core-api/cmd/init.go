@@ -21,14 +21,13 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/getsentry/raven-go"
-	"github.com/getsentry/sentry-go"
 	"github.com/spf13/viper"
 
 	"core/pkg/config"
 	"core/pkg/database"
 	"core/pkg/logging"
 	"core/pkg/metric"
+	sty "core/pkg/sentry"
 	"core/pkg/trace"
 )
 
@@ -68,25 +67,11 @@ func initDatabase() {
 }
 
 func initSentry() {
-	if len(globalConfig.Sentry.DSN) != 0 {
-		err := sentry.Init(sentry.ClientOptions{
-			Dsn: globalConfig.Sentry.DSN,
-		})
-		if err != nil {
-			logging.GetLogger().Errorf("init Sentry fail: %s", err)
-			return
-		}
-		logging.GetLogger().Info("init Sentry success")
-
-		// init gin sentry
-		err = raven.SetDSN(globalConfig.Sentry.DSN)
-		if err != nil {
-			logging.GetLogger().Errorf("init gin Sentry fail: %s", err)
-			return
-		}
-		logging.GetLogger().Info("init gin Sentry success")
+	err := sty.Init(globalConfig.Sentry)
+	if err != nil {
+		logging.GetLogger().Errorf("init Sentry fail: %s", err)
 	} else {
-		logging.GetLogger().Info("Sentry is not enabled, will not init it")
+		logging.GetLogger().Info("init Sentry success")
 	}
 }
 

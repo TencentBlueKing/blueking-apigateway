@@ -16,358 +16,20 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from collections import defaultdict
 from typing import Any, Dict, List, Optional
-
-from django.conf import settings
-from django.utils.translation import gettext as _
-from pydantic import parse_obj_as
 
 from apigateway.apps.label.models import APILabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
-from apigateway.apps.plugin.models import PluginType
-from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_label import GatewayLabelHandler
 from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData, PluginSynchronizer
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
+from apigateway.biz.resource.models import ResourceData
 from apigateway.biz.resource.savers import ResourcesSaver
-from apigateway.common.plugin.plugin_validators import PluginConfigYamlValidator
-from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY
-from apigateway.core.models import Backend, Gateway, Resource
-from apigateway.utils.list import get_duplicate_items
+from apigateway.core.models import Gateway, Resource
 
 from .legacy_synchronizers import LegacyTransformHeadersToPluginSynchronizer, LegacyUpstreamToBackendSynchronizer
 
 logger = logging.getLogger(__name__)
-
-
-class ResourceDataConvertor:
-    def __init__(self, gateway: Gateway, resources: List[Dict[str, Any]]):
-        """
-        将资源数据转换为 ResourceData
-
-        :param resources: 资源数据，可由 swagger yaml 解析而来或者自主构造。样例：
-            {
-                "id": 1,  # 可为 None
-                "method": "GET",
-                "path": "/v1/test",
-                "match_subpath": False,
-                "name": "test",
-                "description": "test",
-                "is_public": True,
-                "allow_apply_permission": True,
-                "labels": ["label1", "label2"],
-                "auth_config": {
-                    "app_verified_required": True,
-                    "auth_verified_required": True,
-                    "resource_perm_required": True,
-                },
-                "backend_name": "default",
-                "backend_config": {
-                    "method": "GET",
-                    "path": "/v1/test",
-                    "match_subpath": False,
-                    "timeout": 0
-                },
-                "plugin_configs": [
-                    {
-                        "type": "bk-cors",
-                        "yaml": "xxx",
-                    }
-                ]
-            }
-        """
-        self.gateway = gateway
-        self.resources = resources
-
-    def convert(self) -> List[ResourceData]:
-        resource_objs = list(Resource.objects.filter(gateway=self.gateway))
-        resource_id_to_resource_obj = {resource.id: resource for resource in resource_objs}
-        resource_key_to_resource_obj = {f"{resource.method}:{resource.path}": resource for resource in resource_objs}
-        backends = {backend.name: backend for backend in Backend.objects.filter(gateway=self.gateway)}
-
-        resource_data_list = []
-        for resource in self.resources:
-            resource_obj = self._get_resource_obj(resource, resource_id_to_resource_obj, resource_key_to_resource_obj)
-
-            metadata = resource.get("metadata", {})
-            # 是否为新增资源
-            metadata["is_created"] = not resource_obj
-            # 标签名
-            metadata["labels"] = resource.get("labels", [])
-
-            backend_name = resource.get("backend_name", DEFAULT_BACKEND_NAME)
-            backend = backends.get(backend_name)
-            if not backend:
-                raise ValueError(_("后端服务 (name={name}) 不存在。").format(name=backend_name))
-
-            resource_data_list.append(
-                ResourceData(
-                    resource=resource_obj,
-                    name=resource["name"],
-                    description=resource.get("description", ""),
-                    description_en=resource.get("description_en", None),
-                    method=resource["method"],
-                    path=resource["path"],
-                    match_subpath=resource.get("match_subpath", False),
-                    is_public=resource.get("is_public", True),
-                    allow_apply_permission=resource.get("allow_apply_permission", True),
-                    auth_config=ResourceAuthConfig.parse_obj(resource.get("auth_config", {})),
-                    backend=backend,
-                    backend_config=ResourceBackendConfig.parse_obj(resource["backend_config"]),
-                    plugin_configs=parse_obj_as(Optional[List[PluginConfigData]], resource.get("plugin_configs")),
-                    # 在导入时，根据 metadata 中的 labels 创建 GatewayLabel，并补全 label_ids 数据
-                    label_ids=[],
-                    metadata=metadata,
-                )
-            )
-
-        return resource_data_list
-
-    def _get_resource_obj(
-        self,
-        resource: Dict[str, Any],
-        resource_id_to_resource_obj: Dict[int, Resource],
-        resource_key_to_resource_obj: Dict[str, Resource],
-    ) -> Optional[Resource]:
-        if resource.get("id") is not None:
-            if resource["id"] not in resource_id_to_resource_obj:
-                raise ValueError("资源 (id={id}) 不存在。".format(id=resource["id"]))
-
-            return resource_id_to_resource_obj[resource["id"]]
-
-        key = f"{resource['method']}:{resource['path']}"
-        return resource_key_to_resource_obj.get(key)
-
-
-class ResourceImportValidator:
-    """校验导入的资源是否合法"""
-
-    def __init__(
-        self,
-        gateway: Gateway,
-        resource_data_list: List[ResourceData],
-        need_delete_unspecified_resources: bool = False,
-    ):
-        """
-        :param resource_data_list: 资源数据列表
-        :param need_delete_unspecified_resources: 是否删除未指定资源；已创建，但未在 resource_data_list 中指定的资源，即为未指定资源
-        """
-        self.gateway = gateway
-        self.resource_data_list = resource_data_list
-        self.need_delete_unspecified_resources = need_delete_unspecified_resources
-        self._unchanged_resources = self._get_unchanged_resources()
-
-    def validate(self):
-        self._validate_resources()
-        self._validate_method_path()
-        self._validate_method()
-        self._validate_name()
-        self._validate_match_subpath()
-        self._validate_resource_count()
-        self._validate_label_count()
-        self._validate_plugin_type()
-        self._validate_plugin_config()
-
-    def _get_unchanged_resources(self) -> List[Dict[str, Any]]:
-        """
-        获取不会发生变化的资源，便于校验数据；不会发生变化的资源 + resource_data_list 中资源，即为最终的全量资源
-        - 如果需要删除未指定的资源，则所有资源均会变化，返回空列表
-        - 如果不删除未指定的资源，则未指定的资源，即为不会变化的资源
-        """
-        if self.need_delete_unspecified_resources:
-            return []
-
-        return self.get_unspecified_resources()
-
-    def get_unspecified_resources(self) -> List[Dict[str, Any]]:
-        """获取未指定的资源。未指定的资源，指已创建的资源中，未被选中的资源"""
-        specified_resource_ids = [
-            resource_data.resource.id for resource_data in self.resource_data_list if resource_data.resource
-        ]
-        return list(
-            Resource.objects.filter(gateway=self.gateway)
-            .exclude(id__in=specified_resource_ids)
-            .values("id", "name", "method", "path")
-        )
-
-    def _validate_resources(self):
-        """校验资源数据列表中，是否存在重复的资源"""
-        resource_ids = set()
-        for resource_data in self.resource_data_list:
-            if not resource_data.resource:
-                continue
-
-            resource_id = resource_data.resource.id
-            if resource_id in resource_ids:
-                raise ValueError(
-                    _(
-                        "资源重复，id={resource_id}, method={method}, path={path} 在当前配置数据中被多次使用，请检查。"
-                    ).format(
-                        resource_id=resource_id,
-                        method=resource_data.method,
-                        path=resource_data.path,
-                    )
-                )
-
-            resource_ids.add(resource_id)
-
-    def _validate_method_path(self):
-        """校验 method + path 不能重复"""
-        unchanged_resource_keys = {
-            f"{resource['method']}:{resource['path']}" for resource in self._unchanged_resources
-        }
-        resource_keys = set()
-
-        for resource_data in self.resource_data_list:
-            key = f"{resource_data.method}:{resource_data.path}"
-            if key in unchanged_resource_keys:
-                raise ValueError(
-                    _("资源请求方法+请求路径重复，method={method}, path={path} 已被现有资源占用，请检查。").format(
-                        method=resource_data.method, path=resource_data.path
-                    )
-                )
-
-            if key in resource_keys:
-                raise ValueError(
-                    _(
-                        "资源请求方法+请求路径重复，method={method}, path={path} 在当前配置数据中被多次使用，请检查。"
-                    ).format(method=resource_data.method, path=resource_data.path)
-                )
-
-            resource_keys.add(key)
-
-    def _validate_method(self):
-        """
-        校验请求方法
-        - 同一路径下，如果存在 ANY 请求方法，则不能存在其它请求方法
-        """
-        path_to_methods = defaultdict(list)
-        for resource in self._unchanged_resources:
-            path_to_methods[resource["path"]].append(resource["method"])
-        for resource_data in self.resource_data_list:
-            path_to_methods[resource_data.path].append(resource_data.method)
-
-        for path, methods in path_to_methods.items():
-            if HTTP_METHOD_ANY in methods and len(methods) > 1:
-                raise ValueError(
-                    _(
-                        "当前配置数据及已有资源数据中，请求路径 {path} 下，同时存在 {method_any} 及其它请求方法。"
-                    ).format(path=path, method_any=HTTP_METHOD_ANY)
-                )
-
-    def _validate_name(self):
-        """校验资源名称不能重复"""
-        unchanged_resource_names = {item["name"] for item in self._unchanged_resources}
-        resource_names = set()
-
-        for resource_data in self.resource_data_list:
-            if resource_data.name in unchanged_resource_names:
-                raise ValueError(
-                    _("资源名称重复，operationId={name} 已被现有资源占用，请检查。").format(name=resource_data.name)
-                )
-
-            if resource_data.name in resource_names:
-                raise ValueError(
-                    _("资源名称重复，operationId={name} 在当前配置数据中被多次使用，请检查。").format(
-                        name=resource_data.name
-                    )
-                )
-
-            resource_names.add(resource_data.name)
-
-    def _validate_match_subpath(self):
-        for resource_data in self.resource_data_list:
-            if resource_data.match_subpath != resource_data.backend_config.match_subpath:
-                raise ValueError(
-                    _(
-                        "当前配置数据中，资源 method={method}, path={path}，前端配置中的 match_subpath 与后端配置中的 match_subpath 值必需相同。"
-                    ).format(method=resource_data.method, path=resource_data.path)
-                )
-
-    def _validate_resource_count(self):
-        count = len(self.resource_data_list) + len(self._unchanged_resources)
-        max_resource_count = GatewayHandler.get_max_resource_count(self.gateway.name)
-        if count > max_resource_count:
-            raise ValueError(_("每个网关最多创建 {count} 个资源。").format(count=max_resource_count))
-
-    def _validate_label_count(self):
-        label_names = set()
-        for resource_data in self.resource_data_list:
-            label_names.update(resource_data.metadata.get("labels", []))
-
-        if not label_names:
-            return
-
-        exist_label_names = set(APILabel.objects.filter(gateway=self.gateway).values_list("name", flat=True))
-        if len(label_names | exist_label_names) > settings.MAX_LABEL_COUNT_PER_GATEWAY:
-            raise ValueError(
-                _("每个网关最多创建 {max_count} 个标签。").format(max_count=settings.MAX_LABEL_COUNT_PER_GATEWAY)
-            )
-
-    def _validate_plugin_type(self):
-        """
-        校验插件类型
-        - 1. 资源绑定的插件，插件类型不能重复
-        - 2. 插件类型必须已存在
-        """
-        types = set()
-        for resource_data in self.resource_data_list:
-            if resource_data.plugin_configs is None:
-                continue
-
-            resource_plugin_types = [config.type for config in resource_data.plugin_configs]
-            duplicate_types = get_duplicate_items(resource_plugin_types)
-            if duplicate_types:
-                raise ValueError(
-                    _("资源绑定的插件类型重复，资源名称：{resource_name}，重复的插件类型：{duplicate_types}").format(
-                        resource_name=resource_data.name,
-                        duplicate_types=", ".join(duplicate_types),
-                    )
-                )
-            types.update(resource_plugin_types)
-
-        if not types:
-            return
-
-        exist_plugin_types = set(PluginType.objects.all().values_list("code", flat=True))
-        not_exist_types = types - exist_plugin_types
-        if not_exist_types:
-            raise ValueError(
-                _("插件类型 {not_exist_types} 不存在。").format(not_exist_types=", ".join(not_exist_types))
-            )
-
-    def _validate_plugin_config(self):
-        """
-        校验插件配置
-        - 1. 插件配置，必须符合插件类型的 schema 约束
-        """
-        plugin_types = {plugin_type.code: plugin_type for plugin_type in PluginType.objects.all()}
-        yaml_validator = PluginConfigYamlValidator()
-
-        for resource_data in self.resource_data_list:
-            if resource_data.plugin_configs is None:
-                continue
-
-            for plugin_config_data in resource_data.plugin_configs:
-                plugin_type = plugin_types[plugin_config_data.type]
-                try:
-                    yaml_validator.validate(
-                        plugin_type.code,
-                        plugin_config_data.yaml,
-                        plugin_type.schema and plugin_type.schema.schema,
-                    )
-                except Exception as err:
-                    raise ValueError(
-                        _(
-                            "资源的插件配置校验失败，资源名称：{resource_name}，插件类型：{plugin_type_code}，错误信息：{err}。"
-                        ).format(
-                            resource_name=resource_data.name,
-                            plugin_type_code=plugin_type.code,
-                            err=err,
-                        )
-                    )
 
 
 class ResourcesImporter:
@@ -387,12 +49,6 @@ class ResourcesImporter:
         :param need_delete_unspecified_resources: 是否删除未指定的资源；未指定的资源，指已创建的资源中，未被选中的资源
         """
         selected_resource_data_list = self._filter_selected_resource_data_list(selected_resources, resource_data_list)
-        validator = ResourceImportValidator(
-            gateway=gateway,
-            resource_data_list=selected_resource_data_list,
-            need_delete_unspecified_resources=need_delete_unspecified_resources,
-        )
-        validator.validate()
 
         self.gateway = gateway
         self.resource_data_list = selected_resource_data_list
@@ -405,7 +61,7 @@ class ResourcesImporter:
     def from_resources(
         cls,
         gateway: Gateway,
-        resources: List[Dict[str, Any]],
+        resources: List[ResourceData],
         selected_resources: Optional[List[Dict[str, Any]]] = None,
         need_delete_unspecified_resources: bool = False,
         username: str = "",
@@ -413,10 +69,9 @@ class ResourcesImporter:
         """
         :param resources: 资源数据，可由 swagger yaml 解析而来或自主构造；此方法中，将其转换为 ResourceData
         """
-        resource_data_list = ResourceDataConvertor(gateway, resources).convert()
         return cls(
             gateway=gateway,
-            resource_data_list=resource_data_list,
+            resource_data_list=resources,
             selected_resources=selected_resources,
             need_delete_unspecified_resources=need_delete_unspecified_resources,
             username=username,

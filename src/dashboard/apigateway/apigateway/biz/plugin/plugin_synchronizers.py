@@ -63,7 +63,7 @@ class PluginSynchronizer:
                     existing_binding = remaining_key_to_binding.pop(key)
 
                     plugin_config_obj = existing_binding.config
-                    plugin_config_obj.config = plugin_config_data.yaml
+                    plugin_config_obj.config = plugin_config_data.yaml.encode().decode("unicode_escape")
                     plugin_config_obj.updated_by = username
                     plugin_config_obj.updated_time = now
                     update_plugin_configs.append(plugin_config_obj)
@@ -84,7 +84,7 @@ class PluginSynchronizer:
                                     type_id=plugin_type.id,
                                 ),
                                 type=plugin_type,
-                                yaml=plugin_config_data.yaml,
+                                yaml=plugin_config_data.yaml.encode().decode("unicode_escape"),
                                 created_by=username,
                             ),
                         )
@@ -115,7 +115,7 @@ class PluginSynchronizer:
             )
 
         if remaining_key_to_binding:
-            # 已创建且当前存在的 binding 已被 pop 出去，剩余的(排除用户创建的)即为需要删除的 binding
+            # 已创建且当前存在的 binding 已被 pop 出去，剩余的 (排除用户创建的) 即为需要删除的 binding
             bindings_to_delete: List[PluginBinding] = [
                 binding
                 for binding in remaining_key_to_binding.values()

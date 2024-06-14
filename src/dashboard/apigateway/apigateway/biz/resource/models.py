@@ -61,6 +61,8 @@ class ResourceData(BaseModel):
     plugin_configs: Optional[List[PluginConfigData]] = Field(default=None)
     # 扩展数据
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    # schema 接口参数
+    openapi_schema: Dict[str, Any] = Field(default_factory=dict)
 
     class Config:
         arbitrary_types_allowed = True

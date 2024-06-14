@@ -19,9 +19,15 @@ from blue_krill.data_types.enum import EnumField, StructuredEnum
 
 
 # 资源导出 Swagger 配置中的扩展字段名
-class SwaggerExtensionEnum(StructuredEnum):
+class OpenAPIExtensionEnum(StructuredEnum):
     METHOD_ANY = EnumField("x-bk-apigateway-method-any")
     RESOURCE = EnumField("x-bk-apigateway-resource")
+
+
+# openAPI版本字段的key
+class OpenAPIVersionKeyEnum(StructuredEnum):
+    Swagger = EnumField("swagger")
+    OpenAPI = EnumField("openapi")
 
 
 VALID_METHOD_IN_SWAGGER_PATHITEM = [
@@ -32,5 +38,5 @@ VALID_METHOD_IN_SWAGGER_PATHITEM = [
     "options",
     "head",
     "patch",
-    SwaggerExtensionEnum.METHOD_ANY.value,
+    OpenAPIExtensionEnum.METHOD_ANY.value,
 ]

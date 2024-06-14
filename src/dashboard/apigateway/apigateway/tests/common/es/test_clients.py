@@ -22,19 +22,16 @@ from urllib3.exceptions import ConnectTimeoutError
 
 from apigateway.common.error_codes import APIError
 from apigateway.common.es.clients import (
-    BaseESClient,
     BKLogESClient,
-    DslESClient,
-    ElasticsearchGetter,
     ESClientFactory,
     RawESClient,
 )
 from apigateway.components.exceptions import RemoteRequestError
 
 
-class TestElasticsearchGetter:
+class TestRawESClient:
     def test_get_elasticsearch(self, mocker):
-        getter = ElasticsearchGetter()
+        getter = RawESClient("index")
 
         mocker.patch.object(getter, "_hosts", new_callable=mocker.PropertyMock(return_value=None))
         with pytest.raises(APIError):
@@ -49,67 +46,15 @@ class TestElasticsearchGetter:
         with pytest.raises(APIError):
             getter._get_elasticsearch()
 
-    def test_get_es_hosts_display(self, settings):
-        getter = ElasticsearchGetter()
+    # def test_get_es_hosts_display(self, settings):
+    #     getter = RawESClient("index")
 
-        settings.ELASTICSEARCH_HOSTS_WITHOUT_AUTH = None
-        assert getter._get_es_hosts_display() == ""
+    #     settings.ELASTICSEARCH_HOSTS_WITHOUT_AUTH = None
+    #     assert getter._get_es_hosts_display() == ""
 
-        settings.ELASTICSEARCH_HOSTS_WITHOUT_AUTH = ["1.0.0.1:9200"]
-        assert getter._get_es_hosts_display() == "1.0.0.1:9200"
+    #     settings.ELASTICSEARCH_HOSTS_WITHOUT_AUTH = ["1.0.0.1:9200"]
+    #     assert getter._get_es_hosts_display() == "1.0.0.1:9200"
 
-    def test_get_es_search_timeout(self):
-        getter = ElasticsearchGetter()
-        assert getter._get_es_search_timeout() == 30
-
-
-class TestBaseESClient:
-    def test_get_es_index(self):
-        es_client = BaseESClient("index")
-        assert es_client._get_es_index() == "index"
-
-
-class TestDslESClient:
-    def test_execute_search_with_dsl_search(self, mocker, faker):
-        es_client = DslESClient(faker.pystr())
-
-        response = mocker.MagicMock(success=mocker.MagicMock(return_value=True))
-        s = mocker.MagicMock(execute=mocker.MagicMock(return_value=response))
-        assert es_client.execute_search_with_dsl_search(s) == response
-
-    def test_execute_search_with_dsl_search_response_fail(self, mocker, faker):
-        es_client = DslESClient(faker.pystr())
-
-        response = mocker.MagicMock(success=mocker.MagicMock(return_value=False))
-        s = mocker.MagicMock(
-            execute=mocker.MagicMock(return_value=response), to_dict=mocker.MagicMock(return_value={})
-        )
-        with pytest.raises(APIError):
-            es_client.execute_search_with_dsl_search(s)
-
-    @pytest.mark.parametrize(
-        "exception",
-        [
-            ConnectionError(500, "error", {}),
-            ConnectionTimeout(500, "error", {}),
-            ConnectTimeoutError,
-            NotFoundError,
-            AuthenticationException,
-            Exception,
-        ],
-    )
-    def test_execute_search_with_dsl_search_error(self, mocker, faker, exception):
-        es_client = DslESClient(faker.pystr())
-
-        s = mocker.MagicMock(
-            execute=mocker.MagicMock(side_effect=exception), to_dict=mocker.MagicMock(return_value={})
-        )
-
-        with pytest.raises(APIError):
-            es_client.execute_search_with_dsl_search(s)
-
-
-class TestRawESClient:
     def test_execute_search(self, mocker, faker):
         es_index = faker.pystr()
         es_body = faker.pystr()

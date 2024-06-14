@@ -21,27 +21,27 @@ from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginFor
 
 
 class PluginTypeAdmin(admin.ModelAdmin):
-    list_display = ["id", "code", "name"]
+    list_display = ["id", "code", "name", "is_public", "scope"]
     search_fields = ["code", "name"]
-    list_filter = ["code", "is_public"]
+    list_filter = ["code", "is_public", "scope"]
 
 
 class PluginFormAdmin(admin.ModelAdmin):
-    list_display = ["id", "type", "language"]
+    list_display = ["id", "type", "style", "language"]
     search_fields = ["notes"]
-    list_filter = ["type", "language"]
+    list_filter = ["type", "language", "style"]
 
 
 class PluginConfigAdmin(admin.ModelAdmin):
-    list_display = ["id", "type", "gateway"]
-    search_fields = ["type"]
+    list_display = ["id", "gateway", "name", "type"]
+    search_fields = ["type", "gateway__id", "gateway__name"]
     list_filter = ["type", "gateway"]
 
 
 class PluginBindingAdmin(admin.ModelAdmin):
-    list_display = ["id", "scope_type", "scope_id", "config", "gateway"]
-    search_fields = ["scope_id"]
-    list_filter = ["scope_type", "gateway"]
+    list_display = ["id", "scope_type", "scope_id", "config", "gateway", "source"]
+    search_fields = ["scope_id", "gateway__id", "gateway__name"]
+    list_filter = ["scope_type", "gateway", "source"]
 
 
 admin.site.register(PluginType, PluginTypeAdmin)

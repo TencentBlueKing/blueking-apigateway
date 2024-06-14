@@ -37,6 +37,7 @@ from apigateway.biz.proxy import ProxyHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_label import ResourceLabelHandler
+from apigateway.biz.resource_openapi_schema import ResourceOpenAPISchemaVersionHandler
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
 from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
 from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
@@ -126,6 +127,9 @@ class ResourceVersionHandler:
         resource_version = ResourceVersion(**data)
 
         resource_version.save()
+
+        # 创建资源schema版本
+        ResourceOpenAPISchemaVersionHandler.make_new_version(resource_version)
 
         Auditor.record_resource_version_op_success(
             op_type=OpTypeEnum.CREATE,
