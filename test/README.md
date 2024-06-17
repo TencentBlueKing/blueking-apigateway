@@ -7,8 +7,26 @@ test
 
 ## run
 
-1. 准备好 `./cases/environments/local.bru`
-2. 执行 `cd cases && ./run.sh`
+### config file
+
+准备好
+
+`./cases/environments/e2e.bru`
+
+### run
+
+in bash
+
+```
+cd cases && ./run.sh e2e
+```
+
+via docker
+
+```
+docker build --tag apigateway_test .
+docker run --rm apigateway_test:latest
+```
 
 ## 规范
 
