@@ -101,7 +101,7 @@ class HeaderRewriteChecker(BaseChecker):
         set_duplicate_keys = [key for key, count in Counter(set_keys).items() if count >= 2]
         if set_duplicate_keys:
             raise ValueError(_("set 存在重复的元素：{}。").format(", ".join(set_duplicate_keys)))
-        
+
         # 用于存储原始键值对（忽略大小写）的映射
         lowercase_to_original = {}
 
@@ -125,7 +125,7 @@ class HeaderRewriteChecker(BaseChecker):
             raise ValueError(
                 f"set 存在元素一致的元素: {duplicate_key_value_pairs[0][0]}, {duplicate_key_value_pairs[0][1]}"
             )
-        
+
         remove_keys = [item["key"] for item in loaded_data["remove"]]
         remove_duplicate_keys = [key for key, count in Counter(remove_keys).items() if count >= 2]
         if remove_duplicate_keys:
