@@ -7,7 +7,6 @@ RUN which bru
 WORKDIR /app
 
 ADD bin /app/bin
-ADD data /app/data
 ADD cases /app/cases
 
 RUN ls -alrt /app/
