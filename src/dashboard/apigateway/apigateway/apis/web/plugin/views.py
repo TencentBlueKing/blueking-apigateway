@@ -17,6 +17,7 @@
 #
 from typing import Any, Dict, Union
 
+import yaml
 from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
@@ -271,6 +272,11 @@ class PluginConfigCreateApi(
 
         super().perform_create(serializer)
 
+        # 判断是否为大小写一致的数据
+        data = yaml.safe_load(get_model_dict(serializer.instance)["yaml"])
+        if not check_dict_keys_unique_ignore_case(data["set"]):
+            raise error_codes.FAILED_PRECONDITION.format("Check whether the entered data is case-sensitive")
+
         # binding
         PluginBinding(
             gateway=self.request.gateway,
@@ -292,6 +298,16 @@ class PluginConfigCreateApi(
         )
 
 
+def check_dict_keys_unique_ignore_case(dictionary):
+    seen_keys = set()
+    for key in dictionary:
+        lowercase_key = key["key"].lower()
+        if lowercase_key in seen_keys:
+            return False  # 发现了重复的键（忽略大小写）
+        seen_keys.add(lowercase_key)
+    return True  # 所有键都是唯一的（忽略大小写）
+
+    
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
