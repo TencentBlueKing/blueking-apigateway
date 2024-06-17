@@ -40,7 +40,6 @@ class Migration(migrations.Migration):
                         choices=[
                             ("context", "CONTEXT"),
                             ("proxy", "PROXY"),
-                            ("access_strategy", "ACCESS_STRATEGY"),
                             ("monitor", "MONITOR"),
                         ],
                         max_length=32,

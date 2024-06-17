@@ -1,8 +1,0 @@
-swagger: '2.0'
-basePath: /
-info:
-  version: '0.1'
-  title: API Gateway Resources
-schemes:
-- http
-paths: {}

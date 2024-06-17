@@ -19,6 +19,7 @@ from apigateway.controller.tasks.micro_gateway import deploy_micro_gateway
 from apigateway.controller.tasks.release import (
     release_gateway_by_helm,
     release_gateway_by_registry,
+    update_release_data_after_success,
 )
 from apigateway.controller.tasks.syncing import (
     revoke_release,
@@ -31,4 +32,5 @@ __all__ = [
     "release_gateway_by_registry",
     "rolling_update_release",
     "revoke_release",
+    "update_release_data_after_success",
 ]

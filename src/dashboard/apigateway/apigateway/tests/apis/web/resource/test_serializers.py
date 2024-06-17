@@ -256,7 +256,7 @@ class TestResourceDataImportSLZ:
 
 
 class TestResourceImportInputSLZ:
-    def test_validate(self, fake_stage, fake_resource_swagger):
+    def test_validate(self, fake_gateway, fake_default_backend, fake_stage, fake_resource_swagger):
         data = {
             "content": fake_resource_swagger,
             "selected_resources": [{"name": "foo"}],
@@ -265,12 +265,14 @@ class TestResourceImportInputSLZ:
         slz = ResourceImportInputSLZ(
             data=data,
             context={
+                "gateway": fake_gateway,
                 "stages": [fake_stage],
                 "exist_label_names": [],
+                "resource_id_to_schema": {},
             },
         )
         slz.is_valid(raise_exception=True)
-        assert len(slz.validated_data["resources"]) == 1
+        assert len(slz.validated_data["validate_result"]["resource_list"]) == 1
 
     @pytest.mark.parametrize(
         "content",
@@ -299,6 +301,7 @@ class TestResourceExportOutputSLZ:
                 "backends": backends,
                 "auth_configs": {fake_resource.id: {"foo": True}},
                 "resource_id_to_plugin_bindings": {fake_resource.id: [echo_plugin_resource_binding]},
+                "resource_id_to_schema": {},
             },
         )
         assert len(slz.data) == 1

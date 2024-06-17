@@ -23,7 +23,7 @@ import operator
 from django_dynamic_fixture import G
 
 from apigateway.apps.support.models import GatewaySDK, ResourceDoc, ResourceDocVersion
-from apigateway.core.models import Release, Resource, ResourceVersion, Stage
+from apigateway.core.models import Proxy, Release, Resource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, dummy_time
 
 
@@ -249,26 +249,28 @@ class TestResourceVersionDiffApi:
         )
         assert resp.status_code == 200
         result = resp.json()
+
+        proxy = Proxy.objects.get(resource_id=fake_resource.id)
         assert result == {
             "data": {
                 "add": [
                     {
                         "id": fake_resource.id,
-                        "name": "Red",
-                        "description": "",
-                        "method": "HEAD",
-                        "path": "posts/search/wp-content",
-                        "match_subpath": False,
-                        "is_public": True,
-                        "allow_apply_permission": True,
+                        "name": fake_resource.name,
+                        "description": fake_resource.description,
+                        "method": fake_resource.method,
+                        "path": fake_resource.path,
+                        "match_subpath": fake_resource.match_subpath,
+                        "is_public": fake_resource.is_public,
+                        "allow_apply_permission": fake_resource.allow_apply_permission,
                         "proxy": {
                             "type": "http",
                             "backend_id": fake_backend.id,
                             "config": {
-                                "method": "POST",
-                                "path": "wp-content",
-                                "match_subpath": False,
-                                "timeout": 540,
+                                "method": proxy.config.get("method"),
+                                "path": proxy.config.get("path"),
+                                "match_subpath": proxy.config.get("match_subpath"),
+                                "timeout": proxy.config.get("timeout"),
                                 "upstreams": {},
                                 "transform_headers": {},
                             },

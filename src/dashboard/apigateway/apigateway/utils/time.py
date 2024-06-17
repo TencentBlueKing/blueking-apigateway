@@ -109,14 +109,14 @@ def to_seconds(days: Union[int, None] = None) -> int:
     return result
 
 
-def convert_epoch_millis_to_second(value):
+def convert_epoch_millisecond_to_second(value):
     """
     将 ES 中的时间戳转换为秒
     """
     return math.ceil(value / 1000.0)
 
 
-def convert_second_to_epoch_millis(value):
+def convert_second_to_epoch_millisecond(value):
     return value * 1000 if value is not None else None
 
 

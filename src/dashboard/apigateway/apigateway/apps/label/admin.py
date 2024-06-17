@@ -24,7 +24,7 @@ from apigateway.apps.label.models import APILabel, ResourceLabel
 class APILabelAdmin(admin.ModelAdmin):
     list_display = ["id", "name", "gateway"]
     list_filter = ["gateway"]
-    search_fields = ["gateway__id", "name"]
+    search_fields = ["gateway__id", "gateway__name", "name"]
 
 
 class ResourceLabelAdmin(admin.ModelAdmin):

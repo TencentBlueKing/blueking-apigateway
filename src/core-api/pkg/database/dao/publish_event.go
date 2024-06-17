@@ -97,7 +97,7 @@ func (p publishEventManager) Create(ctx context.Context, publishEvent PublishEve
         status, 
         detail,
         created_time,
-		updated_time                       
+	updated_time                       
         )VALUES (:gateway_id, :publish_id, :stage_id, :name, :step, :status, :detail,:created_time,:updated_time)`
 	query, args, err := sqlx.Named(insertSql, publishEvent)
 	if err != nil {

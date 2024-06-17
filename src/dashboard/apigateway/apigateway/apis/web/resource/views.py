@@ -36,8 +36,8 @@ from apigateway.biz.audit import Auditor
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin_binding import PluginBindingHandler
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator, ResourcesImporter
-from apigateway.biz.resource.importer.swagger import ResourceSwaggerExporter
+from apigateway.biz.resource.importer import ResourcesImporter
+from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
 from apigateway.biz.resource.savers import ResourcesSaver
 from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_label import ResourceLabelHandler
@@ -46,7 +46,7 @@ from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.constants import STAGE_VAR_PATTERN
 from apigateway.core.models import BackendConfig, Proxy, Resource, Stage
 from apigateway.utils.django import get_model_dict
-from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
+from apigateway.utils.responses import DownloadableResponse, FailJsonResponse, OKJsonResponse
 
 from .serializers import (
     BackendPathCheckInputSLZ,
@@ -55,6 +55,7 @@ from .serializers import (
     ResourceBatchUpdateInputSLZ,
     ResourceExportInputSLZ,
     ResourceExportOutputSLZ,
+    ResourceImportCheckFailOutputSLZ,
     ResourceImportCheckInputSLZ,
     ResourceImportCheckOutputSLZ,
     ResourceImportInputSLZ,
@@ -190,6 +191,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
                 "auth_config": ResourceAuthContext().get_config(instance.id),
                 "labels": ResourceLabelHandler.get_labels([instance.id]),
                 "proxy": Proxy.objects.get(resource_id=instance.id),
+                "resource_id_to_schema": ResourceHandler.get_id_to_schema([instance.id]),
             },
         )
         return OKJsonResponse(data=slz.data)
@@ -358,7 +360,10 @@ class ResourceImportCheckApi(generics.CreateAPIView):
     @swagger_auto_schema(
         operation_description="导入资源检查，导入资源前，检查资源配置是否正确",
         request_body=ResourceImportCheckInputSLZ,
-        responses={status.HTTP_200_OK: ResourceImportCheckOutputSLZ(many=True)},
+        responses={
+            status.HTTP_200_OK: ResourceImportCheckOutputSLZ(many=True),
+            status.HTTP_400_BAD_REQUEST: ResourceImportCheckFailOutputSLZ(many=True),
+        },
         tags=["WebAPI.Resource"],
     )
     def post(self, request, *args, **kwargs):
@@ -370,30 +375,32 @@ class ResourceImportCheckApi(generics.CreateAPIView):
                 "exist_label_names": list(
                     APILabel.objects.filter(gateway=request.gateway).values_list("name", flat=True)
                 ),
+                "gateway": request.gateway,
             },
         )
         slz.is_valid(raise_exception=True)
 
-        resource_data_list = ResourceDataConvertor(request.gateway, slz.validated_data["resources"]).convert()
+        validate_result = slz.validated_data.get("validate_result", {})
 
-        validator = ResourceImportValidator(
-            gateway=request.gateway,
-            resource_data_list=resource_data_list,
-            need_delete_unspecified_resources=False,
-        )
-        validator.validate()
+        validate_err_list = validate_result.get("validate_err_list", {})
+        if len(validate_err_list) != 0:
+            return FailJsonResponse(
+                status=status.HTTP_400_BAD_REQUEST, code="INVALID", data=validate_err_list, message="validate fail"
+            )
 
         doc_language = slz.validated_data.get("doc_language", "")
+
+        resource_data_list = validate_result.get("resource_list", [])
         resource_ids = [resource_data.resource.id for resource_data in resource_data_list if resource_data.resource]
         slz = ResourceImportCheckOutputSLZ(
-            resource_data_list,
+            data=resource_data_list,
             many=True,
             context={
                 "doc_language": doc_language,
                 "docs": ResourceDocHandler.get_docs_by_language(resource_ids, doc_language),
             },
         )
-
+        slz.is_valid()
         return OKJsonResponse(data=slz.data)
 
 
@@ -410,13 +417,14 @@ class ResourceImportApi(generics.CreateAPIView):
             data=request.data,
             context={
                 "stages": Stage.objects.filter(gateway=request.gateway),
+                "gateway": request.gateway,
             },
         )
         slz.is_valid(raise_exception=True)
 
         importer = ResourcesImporter.from_resources(
             gateway=request.gateway,
-            resources=slz.validated_data["resources"],
+            resources=slz.validated_data.get("validate_result", {}).get("resource_list", []),
             selected_resources=slz.validated_data.get("selected_resources"),
             need_delete_unspecified_resources=False,
             username=request.user.username,
@@ -459,13 +467,14 @@ class ResourceExportApi(generics.CreateAPIView):
                     scope_type=PluginBindingScopeEnum.RESOURCE,
                     scope_ids=selected_resource_ids,
                 ),
+                "resource_id_to_schema": ResourceHandler.get_id_to_schema(selected_resource_ids),
                 "auth_configs": ResourceAuthContext().get_resource_id_to_auth_config(selected_resource_ids),
             },
         )
 
         file_type = slz.validated_data["file_type"]
-        exporter = ResourceSwaggerExporter()
-        content = exporter.to_swagger(output_slz.data, file_type=file_type)
+        exporter = OpenAPIExportManager()
+        content = exporter.export_openapi(output_slz.data, file_type=file_type)
 
         # 导出的文件名，需满足规范：bk_产品名_功能名_文件名.后缀
         export_filename = f"bk_apigw_resources_{self.request.gateway.name}.{file_type}"

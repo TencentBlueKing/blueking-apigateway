@@ -22,7 +22,12 @@ from rest_framework import serializers
 
 class RequestLogQueryInputSLZ(serializers.Serializer):
     stage_id = serializers.IntegerField(required=True, help_text="环境 ID")
+    resource_id = serializers.IntegerField(allow_null=True, required=False, help_text="资源 ID")
     query = serializers.CharField(label="查询条件", required=False, allow_blank=True, help_text="查询条件")
+    # ?include=xxx:yyy&include=aaa:bbb
+    include = serializers.ListField(child=serializers.CharField(), required=False, help_text="包含条件")
+    # ?exclude=xxx:yyy&exclude=aaa:bbb
+    exclude = serializers.ListField(child=serializers.CharField(), required=False, help_text="排除条件")
     time_range = serializers.IntegerField(label="时间范围", required=False, min_value=0, help_text="时间范围")
     time_start = serializers.IntegerField(label="起始时间", required=False, min_value=0, help_text="起始时间")
     time_end = serializers.IntegerField(label="结束时间", required=False, min_value=0, help_text="结束时间")
@@ -32,6 +37,34 @@ class RequestLogQueryInputSLZ(serializers.Serializer):
     def validate(self, data):
         if not (data.get("time_start") and data.get("time_end") or data.get("time_range")):
             raise serializers.ValidationError(_("参数 time_start+time_end, time_range 必须一组有效。"))
+        return data
+
+    def to_internal_value(self, data):
+        data = super().to_internal_value(data)
+
+        include_conditions = {}
+        if data.get("include"):
+            # aaa:bbb => {aaa: bbb}, aaa:bbb:ccc => {aaa: bbb:ccc}
+            for expr in data["include"]:
+                if ":" not in expr:
+                    continue
+                k, v = expr.split(":", 1)
+                include_conditions[k] = v
+
+        if include_conditions:
+            data["include_conditions"] = include_conditions
+
+        exclude_conditions = {}
+        if data.get("exclude"):
+            for expr in data["exclude"]:
+                if ":" not in expr:
+                    continue
+                k, v = expr.split(":", 1)
+                exclude_conditions[k] = v
+
+        if exclude_conditions:
+            data["exclude_conditions"] = exclude_conditions
+
         return data
 
 
@@ -63,7 +96,6 @@ class RequestLogOutputSLZ(serializers.Serializer):
     response_body = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="响应体")
     status = serializers.IntegerField(required=False, allow_null=True, help_text="响应状态码")
 
-    # headers = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="响应头")
     request_duration = serializers.IntegerField(required=False, allow_null=True, help_text="请求耗时")
     backend_duration = serializers.IntegerField(required=False, allow_null=True, help_text="后端请求耗时")
 

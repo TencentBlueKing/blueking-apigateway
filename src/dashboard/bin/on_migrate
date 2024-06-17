@@ -39,7 +39,6 @@ python manage.py sync_default_micro_gateway \
 
 # ESB 相关
 python manage.py create_esb_jwt_key
-python manage.py sync_legacy_esb_reusable_data
 python manage.py create_esb_gateway
 python manage.py sync_esb_jwt_key_to_gateway
 python manage.py update_esb_user_verified_unrequired_apps ${esb_verified_user_exempted_apps}

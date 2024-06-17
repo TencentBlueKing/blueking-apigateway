@@ -1576,6 +1576,11 @@ msgstr ""
 "The plugin configuration verification of the resource failed. Resource name: "
 "{resource_name}, plugin type: {plugin_type_code}, error message: {err}."
 
+msgid ""
+"资源的后端服务校验失败，资源名称：{resource_name}，后端服务：{backend_name} 不存在"
+msgstr ""
+"Backend service validation failed for resource, resource name: {resource_name}, backend service: {backend_name} "
+"does not exist"
 #: apigateway/biz/resource/savers.py:115
 #, python-brace-format
 msgid ""

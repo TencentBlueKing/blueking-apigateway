@@ -25,6 +25,7 @@ from typing import Any, Dict, List, Optional
 from django.db.models import Q
 
 from apigateway.apps.label.models import APILabel, ResourceLabel
+from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ResourceDoc
@@ -250,3 +251,7 @@ class ResourceHandler:
     @staticmethod
     def get_valid_ids(gateway_id: int, ids: List[int]) -> List[int]:
         return list(Resource.objects.filter(gateway_id=gateway_id, id__in=ids).values_list("id", flat=True))
+
+    @staticmethod
+    def get_id_to_schema(ids: List[int]) -> Dict[int, OpenAPIResourceSchema]:
+        return {s.resource.id: s for s in OpenAPIResourceSchema.objects.filter(resource_id__in=ids)}

@@ -38,16 +38,23 @@ class LogSearchClient:
         self,
         gateway_id: Optional[int] = None,
         stage_name: Optional[str] = None,
+        resource_id: Optional[int] = None,
         request_id: Optional[str] = None,
         query: Optional[str] = None,
+        include_conditions: Optional[Dict[str, str]] = None,
+        exclude_conditions: Optional[Dict[str, str]] = None,
         time_start: Optional[int] = None,
         time_end: Optional[int] = None,
         time_range: Optional[int] = None,
     ):
         self._gateway_id = gateway_id
         self._stage_name = stage_name
+        self._resource_id = resource_id
         self._request_id = request_id
         self._query_string = query
+        self._include_conditions = include_conditions
+        self._exclude_conditions = exclude_conditions
+
         self._smart_time_range: Optional[SmartTimeRange] = None
 
         if (time_start and time_end) or time_range:
@@ -94,8 +101,17 @@ class LogSearchClient:
         if self._stage_name:
             s = s.filter("term", stage=self._stage_name)
 
+        if self._resource_id:
+            s = s.filter("term", resource_id=self._resource_id)
+
         if self._request_id:
             s = s.filter("term", request_id=self._request_id)
+
+        if self._include_conditions:
+            s = s.filter("term", **self._include_conditions)
+
+        if self._exclude_conditions:
+            s = s.exclude("term", **self._exclude_conditions)
 
         # time range
         if self._smart_time_range:
@@ -104,8 +120,8 @@ class LogSearchClient:
                 "range",
                 **{
                     self._es_time_field_name: {
-                        "gte": time_utils.convert_second_to_epoch_millis(time_start),
-                        "lte": time_utils.convert_second_to_epoch_millis(time_end),
+                        "gte": time_utils.convert_second_to_epoch_millisecond(time_start),
+                        "lte": time_utils.convert_second_to_epoch_millisecond(time_end),
                     }
                 },
             )
@@ -138,8 +154,8 @@ class LogSearchClient:
             # min_doc_count=0，extended_bounds 强制返回空数据，时间间隔内缺少数据时，则自动补充 0，使存在空数据时，图例时间范围完整
             min_doc_count=0,
             extended_bounds={
-                "min": time_utils.convert_second_to_epoch_millis(start),
-                "max": time_utils.convert_second_to_epoch_millis(end),
+                "min": time_utils.convert_second_to_epoch_millisecond(start),
+                "max": time_utils.convert_second_to_epoch_millisecond(end),
             },
         )
         s.aggs.bucket("histogram", aggs_by_dh)
@@ -152,7 +168,7 @@ class LogSearchClient:
         buckets = data.get("histogram", {}).get("buckets", [])
         for bucket in buckets:
             ts = bucket["key"]
-            timeline.append(time_utils.convert_epoch_millis_to_second(ts))
+            timeline.append(time_utils.convert_epoch_millisecond_to_second(ts))
             series.append(bucket["doc_count"])
 
         return {
@@ -162,5 +178,5 @@ class LogSearchClient:
 
     def _to_log_display(self, hit: Dict) -> Dict:
         log = hit["_source"]
-        log["timestamp"] = time_utils.convert_epoch_millis_to_second(hit["sort"][0])
+        log["timestamp"] = time_utils.convert_epoch_millisecond_to_second(hit["sort"][0])
         return log

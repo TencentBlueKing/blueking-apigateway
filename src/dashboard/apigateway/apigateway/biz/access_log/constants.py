@@ -143,7 +143,7 @@ ES_LOG_FIELDS = [
 ]
 
 
-ES_QUERY_FIELDS = [field["field"] for field in ES_LOG_FIELDS if field["is_filter"]]
+# ES_QUERY_FIELDS = [field["field"] for field in ES_LOG_FIELDS if field["is_filter"]]
 
 
 ES_OUTPUT_FIELDS = [field["field"] for field in ES_LOG_FIELDS]
@@ -156,6 +156,7 @@ SENSITIVE_KEYS = [
     "openkey",
     "auth_token",
     "access_token",
+    "bk_token",
     "bk_ticket",
     "oa_ticket",
     "app_secret",

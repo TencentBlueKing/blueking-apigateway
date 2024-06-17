@@ -169,13 +169,6 @@ class TestStageSyncViewSet:
                         "set": {"k1": "v1"},
                     },
                 },
-                "rate_limit": {
-                    "enabled": True,
-                    "rate": {
-                        "tokens": 100,
-                        "period": 60,
-                    },
-                },
             },
         )
         request.gateway = gateway

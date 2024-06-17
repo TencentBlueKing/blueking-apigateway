@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from apigateway.apps.support.api_sdk.distributors.bkrepo import GenericDistributor
-from apigateway.apps.support.api_sdk.generators.swagger import GolangTemplateGenerator
+from apigateway.apps.support.api_sdk.generators.openapi import GolangTemplateGenerator
 from apigateway.apps.support.api_sdk.managers.base import BaseSDKManager
 from apigateway.apps.support.api_sdk.managers.mixins import SDKManagerMixin
 from apigateway.apps.support.api_sdk.packagers.archive import TgzPackager

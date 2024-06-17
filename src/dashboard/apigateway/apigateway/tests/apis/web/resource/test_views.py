@@ -301,6 +301,16 @@ class TestResourceImportCheckApi:
                                     "get": {
                                         "operationId": "http_get_mapping_user_id",
                                         "description": "test",
+                                        "parameters": [
+                                            {
+                                                "name": "userId",
+                                                "in": "path",
+                                                "description": "ID of User",
+                                                "required": True,
+                                                "type": "integer",
+                                                "format": "int64",
+                                            }
+                                        ],
                                         "tags": ["pet"],
                                         "schemes": ["http"],
                                         "x-bk-apigateway-resource": {
@@ -333,6 +343,21 @@ class TestResourceImportCheckApi:
                             "id": None,
                             "language": "",
                         },
+                        "schema": {
+                            "parameters": [
+                                {
+                                    "name": "userId",
+                                    "in": "path",
+                                    "description": "ID of User",
+                                    "required": True,
+                                    "schema": {
+                                        "type": "integer",
+                                        "format": "int64",
+                                    },
+                                }
+                            ],
+                        },
+                        "plugin_configs": None,
                     }
                 ],
             ),
@@ -385,6 +410,8 @@ class TestResourceImportCheckApi:
                             "id": None,
                             "language": "zh",
                         },
+                        "schema": {},
+                        "plugin_configs": None,
                     }
                 ],
             ),

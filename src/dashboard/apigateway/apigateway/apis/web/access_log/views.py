@@ -66,7 +66,10 @@ class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
         client = LogSearchClient(
             gateway_id=request.gateway.id,
             stage_name=stage_name,
+            resource_id=data.get("resource_id"),
             query=data.get("query"),
+            include_conditions=data.get("include_conditions"),
+            exclude_conditions=data.get("exclude_conditions"),
             time_start=data.get("time_start"),
             time_end=data.get("time_end"),
             time_range=data.get("time_range"),
@@ -75,13 +78,16 @@ class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
         return OKJsonResponse(data=slz.data)
 
 
-def add_extend_fields(logs: List[Dict]):
+def add_or_refine_fields(logs: List[Dict]):
     """为日志添加扩展字段"""
     for log in logs:
         if log.get("error"):
             log["response_desc"] = _("网关未请求或请求后端接口异常，响应内容由网关提供。")
         else:
             log["response_desc"] = _("网关已请求后端接口，并将其响应原样返回。")
+
+        if log.get("status") == 200 and log.get("response_body") == "":
+            log["response_body"] = _("当状态码为 200 时，不记录响应正文")
 
     return logs
 
@@ -106,7 +112,10 @@ class SearchLogListApi(generics.ListAPIView):
         client = LogSearchClient(
             gateway_id=request.gateway.id,
             stage_name=stage_name,
+            resource_id=data.get("resource_id"),
             query=data.get("query"),
+            include_conditions=data.get("include_conditions"),
+            exclude_conditions=data.get("exclude_conditions"),
             time_start=data.get("time_start"),
             time_end=data.get("time_end"),
             time_range=data.get("time_range"),
@@ -119,7 +128,7 @@ class SearchLogListApi(generics.ListAPIView):
         # 去除 params、body 中的敏感数据
         logs = DataScrubber().scrub_sensitive_data(logs)
         # 添加扩展数据
-        logs = add_extend_fields(logs)
+        logs = add_or_refine_fields(logs)
 
         paginator = LimitOffsetPaginator(total_count, data["offset"], data["limit"])
 
@@ -138,11 +147,11 @@ class SearchLogListApi(generics.ListAPIView):
         tags=["WebAPI.Log"],
     ),
 )
-class LogDetailListApi(generics.ListAPIView):
+class LogDetailRetrieveApi(generics.RetrieveAPIView):
     # 打开分享日志链接的，可能不是网关负责人，因此去除权限校验
     gateway_permission_exempt = True
 
-    def list(self, request, request_id, *args, **kwargs):
+    def retrieve(self, request, request_id, *args, **kwargs):
         """
         获取指定 request_id 的日志内容
         """
@@ -154,7 +163,7 @@ class LogDetailListApi(generics.ListAPIView):
         total_count, logs = client.search_logs()
         # 去除 params、body 中的敏感数据
         logs = DataScrubber().scrub_sensitive_data(logs)
-        logs = add_extend_fields(logs)
+        logs = add_or_refine_fields(logs)
 
         paginator = LimitOffsetPaginator(total_count, 0, total_count)
 

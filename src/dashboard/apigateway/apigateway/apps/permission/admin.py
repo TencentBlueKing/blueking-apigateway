@@ -28,14 +28,14 @@ from apigateway.apps.permission.models import (
 
 class AppAPIPermissionAdmin(admin.ModelAdmin):
     list_display = ["id", "bk_app_code", "gateway", "expires"]
-    search_fields = ["bk_app_code"]
-    list_filter = ["gateway"]
+    search_fields = ["bk_app_code", "gateway__id", "gateway__name"]
+    list_filter = ["gateway", "expires"]
 
 
 class AppResourcePermissionAdmin(admin.ModelAdmin):
     list_display = ["id", "bk_app_code", "gateway", "resource_id", "expires", "grant_type"]
-    search_fields = ["bk_app_code", "resource_id"]
-    list_filter = ["gateway"]
+    search_fields = ["bk_app_code", "resource_id", "gateway__id", "gateway__name"]
+    list_filter = ["gateway", "expires"]
 
 
 class AppPermissionApplyAdmin(admin.ModelAdmin):
@@ -49,8 +49,8 @@ class AppPermissionApplyAdmin(admin.ModelAdmin):
         "created_time",
         "status",
     ]
-    search_fields = ["bk_app_code"]
-    list_filter = ["gateway"]
+    search_fields = ["bk_app_code", "gateway__id", "gateway__name", "resource__id", "resource__name"]
+    list_filter = ["gateway", "grant_dimension", "status"]
 
 
 class AppPermissionRecordAdmin(admin.ModelAdmin):
@@ -65,14 +65,14 @@ class AppPermissionRecordAdmin(admin.ModelAdmin):
         "handled_time",
         "status",
     ]
-    search_fields = ["bk_app_code"]
-    list_filter = ["gateway", "status"]
+    search_fields = ["bk_app_code", "gateway__id", "gateway__name"]
+    list_filter = ["gateway", "grant_dimension", "status"]
 
 
 class AppPermissionApplyStatusAdmin(admin.ModelAdmin):
     list_display = ["id", "bk_app_code", "apply", "resource", "status"]
     search_fields = ["bk_app_code"]
-    list_filter = ["gateway", "status"]
+    list_filter = ["gateway", "grant_dimension", "status"]
 
 
 admin.site.register(AppGatewayPermission, AppAPIPermissionAdmin)
