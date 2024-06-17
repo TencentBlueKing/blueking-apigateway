@@ -307,7 +307,7 @@ def check_dict_keys_unique_ignore_case(dictionary):
         seen_keys.add(lowercase_key)
     return True  # 所有键都是唯一的（忽略大小写）
 
-    
+
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
