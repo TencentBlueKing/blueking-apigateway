@@ -270,7 +270,7 @@ class PluginConfigCreateApi(
             )
 
         super().perform_create(serializer)
-        
+
         # binding
         PluginBinding(
             gateway=self.request.gateway,
