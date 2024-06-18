@@ -291,6 +291,7 @@ class PluginConfigCreateApi(
             data_after=get_model_dict(serializer.instance),
         )
 
+
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
