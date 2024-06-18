@@ -94,6 +94,10 @@ class TestPluginConfigCreateApi:
         "config_tmpl, status_code",
         [
             [yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}), 201],  # success
+            # 数据大小写不一致的重复
+            [yaml_dumps({"set": [{"key": "h", "value": "1"}, {"key": "H", "value": "1"}], "remove": []}), 400],
+            # 数据完全一致的重复
+            [yaml_dumps({"set": [{"key": "h", "value": "1"}, {"key": "h", "value": "1"}], "remove": []}), 400],
             ["", 400],  # config is None
             ["foo: bar", 400],  # config validate failure by schema
         ],

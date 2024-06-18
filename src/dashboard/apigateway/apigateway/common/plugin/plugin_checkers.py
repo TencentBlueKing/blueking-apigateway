@@ -97,7 +97,7 @@ class HeaderRewriteChecker(BaseChecker):
     def check(self, payload: str):
         loaded_data = yaml_loads(payload)
 
-        set_keys = [item["key"] for item in loaded_data["set"]]
+        set_keys = [item["key"].lower() for item in loaded_data["set"]]
         set_duplicate_keys = [key for key, count in Counter(set_keys).items() if count >= 2]
         if set_duplicate_keys:
             raise ValueError(_("set 存在重复的元素：{}。").format(", ".join(set_duplicate_keys)))
