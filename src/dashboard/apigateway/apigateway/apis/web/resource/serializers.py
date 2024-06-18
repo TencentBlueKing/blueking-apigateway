@@ -49,6 +49,7 @@ class ResourceQueryInputSLZ(serializers.Serializer):
     path = serializers.CharField(allow_blank=True, required=False, help_text="资源前端请求路径，完整匹配")
     method = serializers.CharField(allow_blank=True, required=False, help_text="资源请求方法，完整匹配")
     label_ids = serializers.CharField(allow_blank=True, required=False, help_text="标签 ID，多个以逗号 , 分割")
+    label_name = serializers.CharField(allow_blank=True, required=False, help_text="标签名称，多个以逗号 , 分割")
     backend_id = serializers.IntegerField(allow_null=True, required=False, help_text="后端服务 ID")
     backend_name = serializers.CharField(allow_blank=True, required=False, help_text="后端服务名称，完整匹配")
     keyword = serializers.CharField(
