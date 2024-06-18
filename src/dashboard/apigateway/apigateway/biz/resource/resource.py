@@ -183,6 +183,12 @@ class ResourceHandler:
             ).values_list("resource_id", flat=True)
             queryset = queryset.filter(id__in=resource_ids)
 
+        if condition.get("label_name"):
+            resource_ids = APILabel.objects.filter(
+                resource__gateway_id=gateway_id, name=condition["label_name"]
+            ).values_list("resource_id", flat=True)
+            queryset = queryset.filter(id__in=resource_ids)
+
         if condition.get("keyword"):
             keyword = condition.get("keyword")
             queryset = queryset.filter(Q(path__icontains=keyword) | Q(name__icontains=keyword))
