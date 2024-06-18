@@ -97,20 +97,10 @@ class HeaderRewriteChecker(BaseChecker):
     def check(self, payload: str):
         loaded_data = yaml_loads(payload)
 
-        # # 创建一个 defaultdict 来存储键值对
-        # # 键是 item["key"].lower()，值是包含原始键和规范化键的列表
-        normalized_keys_dict = defaultdict(list)
-        for item in loaded_data["set"]:
-            original_key = item["key"]
-            normalized_key = original_key.lower()
-
-            # 将原始键和规范化键的元组添加到与规范化键关联的列表中
-            normalized_keys_dict[normalized_key].append((original_key, normalized_key))
-
-        for key_list in normalized_keys_dict.values():
-            if len(key_list) > 1:
-                # 这里有大小写不敏感加完全一致的的重复键
-                raise ValueError(_("set 存在重复的元素：{}。").format(", ".join(key[0] for key in key_list)))
+        set_keys = [item["key"].lower() for item in loaded_data["set"]]
+        set_duplicate_keys = [key for key, count in Counter(set_keys).items() if count >= 2]
+        if set_duplicate_keys:
+            raise ValueError(_("set 存在重复的元素：{}。").format(", ".join(set_duplicate_keys)))
 
         remove_keys = [item["key"] for item in loaded_data["remove"]]
         remove_duplicate_keys = [key for key, count in Counter(remove_keys).items() if count >= 2]
