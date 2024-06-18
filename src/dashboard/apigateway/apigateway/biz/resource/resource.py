@@ -178,6 +178,13 @@ class ResourceHandler:
             queryset = queryset.filter(id__in=resource_ids)
 
         if condition.get("label_name"):
+            labels = APILabel.objects.filter(gateway_id=gateway_id, name__in=condition["label_name"])
+            resource_ids = (
+                ResourceLabel.objects.filter(api_label__in=labels).values_list("resource_id", flat=True).distinct()
+            )
+            queryset = queryset.filter(id__in=resource_ids)
+
+        if condition.get("label_name"):
             resource_ids = APILabel.objects.filter(
                 resource__gateway_id=gateway_id, name=condition["label_name"]
             ).values_list("resource_id", flat=True)
