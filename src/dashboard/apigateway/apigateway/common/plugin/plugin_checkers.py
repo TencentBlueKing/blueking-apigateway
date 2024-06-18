@@ -26,7 +26,7 @@
 import ipaddress
 import re
 from abc import ABC, abstractmethod
-from collections import Counter, defaultdict
+from collections import Counter
 from typing import ClassVar, Dict, List, Optional
 
 from django.utils.translation import gettext as _
