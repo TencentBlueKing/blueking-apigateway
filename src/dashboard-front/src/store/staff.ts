@@ -36,6 +36,7 @@ export const useStaffStore = defineStore({
         if (result) {
           this.fetching = false;
           this.list = _.unionBy(this.list, data.results, 'id');
+          console.log('staffs', this.list.length);
         }
         headTag.removeChild(scriptTag);
         // @ts-ignore
