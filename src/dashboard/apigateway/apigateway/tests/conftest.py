@@ -349,6 +349,38 @@ def fake_resource_schema(fake_gateway, fake_resource):
 
 
 @pytest.fixture
+def fake_resource_schema_with_body(fake_gateway, fake_resource):
+    return G(
+        OpenAPIResourceSchema,
+        resource=fake_resource,
+        schema={
+            "requestBody": {
+                "description": "Update an existent pet in the store",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "required": ["name", "photoUrls"],
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "integer", "format": "int64", "example": 10},
+                                "name": {"type": "string", "example": "doggie"},
+                                "status": {
+                                    "type": "string",
+                                    "description": "pet status in the store",
+                                    "enum": ["available", "pending", "sold"],
+                                },
+                            },
+                            "xml": {"name": "pet"},
+                        }
+                    }
+                },
+                "required": True,
+            },
+        },
+    )
+
+
+@pytest.fixture
 def fake_resource_version_v2(faker, fake_gateway, fake_resource):
     resource_version = G(
         ResourceVersion,

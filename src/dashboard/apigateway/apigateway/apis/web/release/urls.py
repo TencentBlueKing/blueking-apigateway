@@ -20,6 +20,7 @@ from django.urls import include, path
 
 from .views import (
     ReleaseAvailableResourceListApi,
+    ReleaseAvailableResourceSchemaRetryApi,
     ReleaseCreateApi,
     ReleaseHistoryListApi,
     ReleaseHistoryRetrieveApi,
@@ -30,8 +31,16 @@ urlpatterns = [
     path("", ReleaseCreateApi.as_view(), name="gateway.release.create"),
     path(
         "stages/<int:stage_id>/resources/",
-        ReleaseAvailableResourceListApi.as_view(),
-        name="gateway.releases.available_resources",
+        include(
+            [
+                path("", ReleaseAvailableResourceListApi.as_view(), name="gateway.releases.available_resources"),
+                path(
+                    "<int:resource_id>/schema/",
+                    ReleaseAvailableResourceSchemaRetryApi.as_view(),
+                    name="gateway.releases.available_resource.schema",
+                ),
+            ]
+        ),
     ),
     path(
         "histories/",

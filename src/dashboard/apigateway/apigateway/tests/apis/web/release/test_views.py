@@ -22,7 +22,11 @@ from unittest.mock import MagicMock
 
 import pytest
 from django_dynamic_fixture import G
+from jsonschema.exceptions import ValidationError
+from jsonschema.validators import validate
+from openapi_schema_to_json_schema import to_json_schema
 
+from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
@@ -86,6 +90,48 @@ class TestReleaseCreateApi:
             assert history_qs.count() == 1
 
             assert resp.status_code == 200, result
+
+
+class TestReleaseResourceSchemaRetry:
+    def test_retry(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_release,
+        fake_resource,
+        fake_resource_version,
+        fake_resource_schema_with_body,
+        request_factory,
+    ):
+        openapi_schema_version = G(
+            OpenAPIResourceSchemaVersion,
+            resource_version=fake_resource_version,
+            schema=[
+                {
+                    "resource_id": fake_resource.id,
+                    "schema": fake_resource_schema_with_body.schema,
+                }
+            ],
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.releases.available_resource.schema",
+            path_params={"gateway_id": fake_gateway.id, "stage_id": fake_stage.id, "resource_id": fake_resource.id},
+        )
+        result = resp.json()
+        assert result["data"]["body_schema"] == fake_resource_schema_with_body.schema["requestBody"]
+
+        json_schema = to_json_schema(
+            fake_resource_schema_with_body.schema["requestBody"]["content"]["application/json"]["schema"]
+        )
+
+        # 验证生成的示例数据是否符合 JSON Schema
+        try:
+            validate(instance=result["data"]["body_example"], schema=json_schema)
+        except ValidationError as e:
+            pytest.fail(f"Example data is invalid: {e}")
 
 
 class TestReleaseHistoryListApi:
