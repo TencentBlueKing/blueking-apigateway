@@ -1,7 +1,7 @@
 import { useStaffStore } from '@/store';
 import { Staff, StaffType } from '@/types';
 import { Loading, TagInput } from 'bkui-vue';
-import { computed, defineComponent, onMounted, PropType, ref, watch, nextTick } from 'vue';
+import { computed, defineComponent, PropType, ref, watch, nextTick } from 'vue';
 import _ from 'lodash';
 
 import './member-select.scss';
@@ -39,6 +39,7 @@ export default defineComponent({
   emits: ['change', 'input', 'blur', 'focus'],
   setup(props, ctx) {
     const tagInputRef = ref(null);
+    // const isLoading = ref(false);
     const staffStore = useStaffStore();
     const searchKey = ['username'];
     const userList: any = ref([]);
@@ -50,11 +51,11 @@ export default defineComponent({
       // fixOnBoundary: true,
     };
 
-    onMounted(() => {
-      if (staffStore.list.length === 0) {
-        staffStore.fetchStaffs();
-      }
-    });
+    // onMounted(() => {
+    //   if (staffStore.list.length === 0) {
+    //     staffStore.fetchStaffs();
+    //   }
+    // });
 
     function tpl(node: Staff) {
       return (
@@ -92,15 +93,20 @@ export default defineComponent({
       () => staffStore.list,
       (list) => {
         if (list.length) {
+          // isLoading.value = false;
           nextTick(() => {
             userList.value = _.cloneDeep(list);
           });
+        } else {
+          // isLoading.value = true;
+          staffStore.fetchStaffs();
         }
       },
       { immediate: true, deep: true },
     );
 
-    return () => (
+    return () => <>
+      {/* v-bkloading={{ loading: isLoading, opacity: 1, color: '#fff', mode: 'spin', size: 'mini' }} */}
       <TagInput
         {...ctx.attrs}
         {...maxData.value}
@@ -135,6 +141,6 @@ export default defineComponent({
             ),
           }}
       </TagInput>
-    );
+    </>;
   },
 });
