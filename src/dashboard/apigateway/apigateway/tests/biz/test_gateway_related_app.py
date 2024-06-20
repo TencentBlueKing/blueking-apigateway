@@ -55,13 +55,13 @@ class TestGatewayRelatedAppHandler:
 
     def test_update_related_app_codes(self, fake_gateway):
         GatewayRelatedAppHandler.update_related_app_codes(fake_gateway, [], ["app1", "app2"])
-        assert GatewayRelatedAppHandler.objects.filter(gateway=fake_gateway).count() == 2
+        assert GatewayRelatedApp.objects.filter(gateway=fake_gateway).count() == 2
 
         GatewayRelatedAppHandler.update_related_app_codes(fake_gateway, ["app1", "app2"], ["app3", "app2"])
-        assert GatewayRelatedAppHandler.objects.filter(gateway=fake_gateway).count() == 2
+        assert GatewayRelatedApp.objects.filter(gateway=fake_gateway).count() == 2
 
         GatewayRelatedAppHandler.update_related_app_codes(fake_gateway, ["app3", "app2"], ["app1"])
-        assert GatewayRelatedAppHandler.objects.filter(gateway=fake_gateway).count() == 1
+        assert GatewayRelatedApp.objects.filter(gateway=fake_gateway).count() == 1
 
         GatewayRelatedAppHandler.update_related_app_codes(fake_gateway, ["app1"], [])
-        assert GatewayRelatedAppHandler.objects.filter(gateway=fake_gateway).count() == 0
+        assert GatewayRelatedApp.objects.filter(gateway=fake_gateway).count() == 0
