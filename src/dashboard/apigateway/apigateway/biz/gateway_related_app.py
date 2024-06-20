@@ -48,8 +48,10 @@ class GatewayRelatedAppHandler:
         return list(GatewayRelatedApp.objects.filter(gateway_id=gateway_id).values_list("bk_app_code", flat=True))
 
     @staticmethod
-    def update_related_app_codes(gateway: Gateway, bound_app_codes: List[str], related_app_codes: List[str]) -> None:
+    def update_related_app_codes(gateway: Gateway, related_app_codes: List[str]) -> None:
         # 比对数据
+        bound_app_codes = GatewayRelatedApp.objects.filter(gateway_id=gateway.id).values_list("bk_app_code", flat=True)
+
         app_codes_to_add = set(related_app_codes) - set(bound_app_codes)
         app_codes_to_delete = set(bound_app_codes) - set(related_app_codes)
 
