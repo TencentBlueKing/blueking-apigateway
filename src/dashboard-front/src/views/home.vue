@@ -122,7 +122,7 @@
       </div>
     </div>
     <div class="footer-container">
-      <div>
+      <!-- <div>
         <bk-link theme="primary" :href="GLOBAL_CONFIG.FOOT_INFO.NAMEHREF" target="_blank">
           {{ $t(GLOBAL_CONFIG.FOOT_INFO.NAME) }}
         </bk-link>
@@ -138,7 +138,10 @@
           {{ $t(GLOBAL_CONFIG.FOOT_INFO.PRODUCT) }}
         </bk-link>
       </div>
-      Copyright © 2012-{{curYear}} Tencent BlueKing. All Rights Reserved. V{{GLOBAL_CONFIG.FOOT_INFO.VERSION}}
+      Copyright © 2012-{{curYear}} Tencent BlueKing. All Rights Reserved. V{{GLOBAL_CONFIG.FOOT_INFO.VERSION}} -->
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <p class="contact" v-html="contact"></p>
+      <p class="copyright">{{copyright}}</p>
     </div>
 
     <bk-dialog
@@ -209,16 +212,19 @@ import { IDialog } from '@/types';
 import { useRouter } from 'vue-router';
 import { useGetApiList, useGetGlobalProperties } from '@/hooks';
 import { is24HoursAgo } from '@/common/util';
+import { useCommon } from '@/store';
 import MemberSelect from '@/components/member-select';
 import TableEmpty from '@/components/table-empty.vue';
 import {
   ref,
   watch,
   h,
+  computed,
 } from 'vue';
 const { t } = useI18n();
 const user = useUser();
 const router = useRouter();
+const common = useCommon();
 
 const formRef = ref(null);
 const filterKey = ref<string>('updated_time');
@@ -291,8 +297,8 @@ const formData = ref<IinitDialogData>(initDialogData);
 // 网关列表数据
 const gatewaysList = ref<any>([]);
 
-// 当前年份
-const curYear = (new Date()).getFullYear();
+// // 当前年份
+// const curYear = (new Date()).getFullYear();
 
 const filterData = ref([
   { value: 'updated_time', label: t('更新时间') },
@@ -306,6 +312,14 @@ const {
   dataList,
   pagination,
 } = useGetApiList(filterNameData);
+
+const contact = computed(() => {
+  return common?.websiteConfig?.i18n?.footerInfoHTML;
+});
+
+const copyright = computed(() => {
+  return common?.websiteConfig?.footerCopyrightContent;
+});
 
 // 处理列表项
 const handleGatewaysList = (arr: any) => {
@@ -591,9 +605,6 @@ watch(
     flex-flow: column;
     align-items: center;
     font-size: 12px;
-    .bk-link {
-      font-size: 12px;
-    }
   }
 
   .deact {

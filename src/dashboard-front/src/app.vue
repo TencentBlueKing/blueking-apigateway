@@ -12,8 +12,9 @@
         :need-menu="false"
         :default-open="true">
         <template #side-icon>
-          <img v-if="locale === 'en'" src="@/images/APIgataway-en.png" class="api-logo">
-          <img v-else src="@/images/APIgataway-c.png" class="api-logo">
+          <!-- <img v-if="locale === 'en'" src="@/images/APIgataway-en.png" class="api-logo">
+          <img v-else src="@/images/APIgataway-c.png" class="api-logo"> -->
+          <img :src="appLogo" class="api-logo" />
         </template>
         <div class="content">
           <router-view v-if="userLoaded"></router-view>
@@ -73,16 +74,20 @@ import ProductInfo from '@/components/product-info.vue';
 import LanguageToggle from '@/components/language-toggle.vue';
 // import AppAuth from '@/components/auth/index.vue';
 import mitt from '@/common/event-bus';
-import { useUser } from '@/store';
+import { useUser, useCommon } from '@/store';
 import { getUser, getFeatureFlags } from '@/http';
 // import { ILoginData } from '@/common/auth';
 import { useSidebar } from '@/hooks';
+import { getPlatformConfig, setShortcutIcon, setDocumentTitle  } from '@blueking/platform-config';
+import logoSvg from '@/images/APIgataway-en.png';
+import constantConfig from '@/constant/config';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const { t, locale } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const { BK_DASHBOARD_URL } = window;
+const common = useCommon();
 
 const bkuiLocaleData = {
   zhCn,
@@ -94,6 +99,30 @@ const bkuiLocale = computed(() => {
     return bkuiLocaleData.zhCn;
   }
   return bkuiLocaleData.en;
+});
+
+const websiteConfig = ref<any>({});
+
+const getWebsiteConfig = async () => {
+  const bkSharedResUrl = window.BK_SHARED_RES_URL;
+
+  if (bkSharedResUrl) {
+    const url = bkSharedResUrl?.endsWith('/') ? bkSharedResUrl : `${bkSharedResUrl}/`;
+    websiteConfig.value = await getPlatformConfig(`${url}bk_cmdb/base.js`, constantConfig.SITE_CONFIG);
+  } else {
+    websiteConfig.value = await getPlatformConfig(constantConfig.SITE_CONFIG);
+  }
+
+  setShortcutIcon(websiteConfig.value?.favicon);
+  setDocumentTitle(websiteConfig.value?.i18n);
+  common.setWebsiteConfig(websiteConfig.value);
+};
+getWebsiteConfig();
+
+const appLogo = computed(() => {
+  // 如果未获取到配置，使用默认logo
+  const src = websiteConfig.value?.appLogo || logoSvg;
+  return src;
 });
 
 // 加载完用户数据才会展示页面

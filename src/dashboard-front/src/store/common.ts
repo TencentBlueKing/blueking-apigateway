@@ -44,6 +44,7 @@ export const useCommon = defineStore('common', {
     curApigwData: { allow_update_gateway_auth: false },
     // 网关标签
     gatewayLabels: [],
+    websiteConfig: {},
   }),
   actions: {
     setApigwId(apigwId: number) {
@@ -57,6 +58,9 @@ export const useCommon = defineStore('common', {
     },
     setGatewayLabels(data: any) {
       this.gatewayLabels = data;
+    },
+    setWebsiteConfig(data: any) {
+      this.websiteConfig = data;
     },
   },
 });
