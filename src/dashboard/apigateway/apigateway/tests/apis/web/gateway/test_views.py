@@ -19,7 +19,7 @@ from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.core.constants import GatewayStatusEnum
-from apigateway.core.models import JWT, Gateway, Stage
+from apigateway.core.models import JWT, Gateway, Stage, GatewayRelatedApp
 
 
 class TestGatewayListCreateApi:
@@ -97,6 +97,7 @@ class TestGatewayRetrieveUpdateDestroyApi:
         assert gateway.description == data["description"]
         assert gateway.is_public is data["is_public"]
         assert GatewayAppBinding.objects.filter(gateway=gateway).count() == 1
+        assert GatewayRelatedApp.objects.filter(gateway=gateway).count() == 1
 
         auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
         assert "allow_auth_from_params" not in auth_config
