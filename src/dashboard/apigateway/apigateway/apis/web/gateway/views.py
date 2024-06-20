@@ -211,9 +211,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
             GatewayAppBindingHandler.update_gateway_app_bindings(instance, bk_app_codes)
 
         related_app_codes = slz.validated_data.pop("related_app_codes", None)
-        GatewayRelatedAppHandler.update_related_app_codes(
-            request.gateway, GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id), related_app_codes
-        )
+        GatewayRelatedAppHandler.update_related_app_codes(request.gateway, related_app_codes)
 
         Auditor.record_gateway_op_success(
             op_type=OpTypeEnum.MODIFY,
