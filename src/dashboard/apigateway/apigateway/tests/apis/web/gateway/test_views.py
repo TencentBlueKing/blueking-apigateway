@@ -19,7 +19,7 @@ from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.core.constants import GatewayStatusEnum
-from apigateway.core.models import JWT, Gateway, Stage, GatewayRelatedApp
+from apigateway.core.models import JWT, Gateway, GatewayRelatedApp, Stage
 
 
 class TestGatewayListCreateApi:
