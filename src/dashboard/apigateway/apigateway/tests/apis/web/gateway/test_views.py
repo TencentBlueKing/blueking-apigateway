@@ -83,6 +83,7 @@ class TestGatewayRetrieveUpdateDestroyApi:
             "maintainers": ["admin"],
             "is_public": faker.random_element([True, False]),
             "bk_app_codes": ["app1"],
+            "related_app_codes": ["app2"],
         }
         resp = request_view(
             method="PUT",
