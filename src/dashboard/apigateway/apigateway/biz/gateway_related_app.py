@@ -20,7 +20,7 @@ from typing import List
 from django.conf import settings
 
 from apigateway.common.error_codes import error_codes
-from apigateway.core.models import GatewayRelatedApp
+from apigateway.core.models import Gateway, GatewayRelatedApp
 
 
 class GatewayRelatedAppHandler:
@@ -46,3 +46,17 @@ class GatewayRelatedAppHandler:
     @staticmethod
     def get_related_app_codes(gateway_id: int) -> List[str]:
         return list(GatewayRelatedApp.objects.filter(gateway_id=gateway_id).values_list("bk_app_code", flat=True))
+
+    @staticmethod
+    def update_related_app_codes(gateway: Gateway, bound_app_codes: List[str], related_app_codes: List[str]) -> None:
+        # 比对数据
+        app_codes_to_add = set(related_app_codes) - set(bound_app_codes)
+        app_codes_to_delete = set(bound_app_codes) - set(related_app_codes)
+
+        if app_codes_to_add:
+            GatewayRelatedApp.objects.bulk_create(
+                [GatewayRelatedApp(gateway=gateway, bk_app_code=code) for code in app_codes_to_add]
+            )
+
+        if app_codes_to_delete:
+            GatewayRelatedApp.objects.filter(gateway=gateway, bk_app_code__in=app_codes_to_delete).delete()
