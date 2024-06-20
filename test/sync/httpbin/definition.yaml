@@ -1,0 +1,31 @@
+spec_version: 1
+
+release:
+  version: 1.0.0
+  title: "httpbin for testing"
+  comment: ""
+
+apigateway:
+  description: "httpbin apis"
+  description_en: "httpbin apis"
+  is_public: true
+  allow_auth_from_params: true
+  allow_delete_sensitive_params: true
+  maintainers:
+    - "admin"
+
+stage:
+  name: "prod"
+  description: "描述"
+  description_en: "English description"
+  proxy_http:
+    timeout: 60
+    upstreams:
+      loadbalance: "roundrobin"
+      hosts:
+        - host: "http://httpbin"
+          weight: 100
+
+related_apps:
+  - "bk_apigateway"
+

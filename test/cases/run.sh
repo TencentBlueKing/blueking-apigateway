@@ -11,8 +11,14 @@ then
     dd if=/dev/zero of=data_41M.dat  bs=42991616  count=1
 fi
 
+if [[ -z $1 ]]; then
+    CONF="local"
+else
+    CONF=$1
+fi
+
 # run cases
-bru run . -r --env local
+bru run . -r --env $CONF
 if [ $? -ne 0 ]
 then
     echo "run cases fail, please check"
