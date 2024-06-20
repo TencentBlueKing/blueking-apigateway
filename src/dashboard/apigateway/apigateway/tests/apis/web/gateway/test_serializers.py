@@ -245,6 +245,7 @@ class TestGatewayRetrieveOutputSLZ:
                     allow_update_gateway_auth=True,
                 ),
                 "bk_app_codes": [],
+                "related_app_codes": [],
             },
         )
         jwt = GatewayJWTHandler.create_jwt(fake_gateway)
@@ -266,6 +267,7 @@ class TestGatewayRetrieveOutputSLZ:
             "public_key_fingerprint": calculate_fingerprint(jwt.public_key),
             "is_official": False,
             "bk_app_codes": [],
+            "related_app_codes": [],
         }
 
         assert slz.data == expected
@@ -282,6 +284,7 @@ class TestGatewayUpdateInputSLZ:
                     "description": "test",
                     "is_public": True,
                     "bk_app_codes": ["app1", "app2"],
+                    "related_app_codes": ["app1", "app2"],
                 },
                 {
                     "maintainers": ["admin"],
@@ -289,6 +292,7 @@ class TestGatewayUpdateInputSLZ:
                     "description": "test",
                     "is_public": True,
                     "bk_app_codes": ["app1", "app2"],
+                    "related_app_codes": ["app1", "app2"],
                 },
             ),
             # input include status
