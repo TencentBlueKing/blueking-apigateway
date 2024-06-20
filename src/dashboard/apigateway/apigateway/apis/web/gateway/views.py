@@ -29,6 +29,7 @@ from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
+from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
 from apigateway.common.release.publish import trigger_gateway_publish
@@ -188,6 +189,7 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
             context={
                 "auth_config": GatewayAuthContext().get_auth_config(instance.pk),
                 "bk_app_codes": GatewayAppBindingHandler.get_bound_app_codes(instance),
+                "related_app_codes": GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id),
             },
         )
         return OKJsonResponse(data=slz.data)
@@ -207,6 +209,11 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
         if bk_app_codes is not None:
             GatewayAppBindingHandler.update_gateway_app_bindings(instance, bk_app_codes)
+
+        related_app_codes = slz.validated_data.pop("related_app_codes", None)
+        GatewayRelatedAppHandler.update_related_app_codes(
+            request.gateway, GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id), related_app_codes
+        )
 
         Auditor.record_gateway_op_success(
             op_type=OpTypeEnum.MODIFY,
