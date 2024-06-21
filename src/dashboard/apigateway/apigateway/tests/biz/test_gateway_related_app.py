@@ -52,3 +52,19 @@ class TestGatewayRelatedAppHandler:
         G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="bar")
         result = GatewayRelatedAppHandler.get_related_app_codes(fake_gateway.id)
         assert sorted(result) == ["bar", "foo"]
+
+    def test_update_related_app_codes_new(self, fake_gateway):
+        G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="app1")
+        GatewayRelatedAppHandler.update_related_app_codes(fake_gateway, ["app1", "app2"])
+        assert GatewayRelatedApp.objects.filter(gateway=fake_gateway).count() == 2
+
+    def test_update_related_app_codes_update(self, fake_gateway):
+        G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="app1")
+        GatewayRelatedAppHandler.update_related_app_codes(fake_gateway, ["app2"])
+        result = GatewayRelatedAppHandler.get_related_app_codes(fake_gateway.id)
+        assert sorted(result) == ["app2"]
+
+    def test_update_related_app_codes_delete(self, fake_gateway):
+        G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="app1")
+        GatewayRelatedAppHandler.update_related_app_codes(fake_gateway, [])
+        assert GatewayRelatedApp.objects.filter(gateway=fake_gateway).count() == 0

@@ -147,6 +147,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
     public_key_fingerprint = serializers.SerializerMethodField(help_text="公钥(指纹)")
     allow_update_gateway_auth = serializers.SerializerMethodField(help_text="是否允许更新网关认证配置")
     bk_app_codes = serializers.SerializerMethodField(help_text="网关关联的应用")
+    related_app_codes = serializers.SerializerMethodField(help_text="关联的APP")
 
     class Meta:
         model = Gateway
@@ -167,6 +168,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             "docs_url",
             "public_key_fingerprint",
             "bk_app_codes",
+            "related_app_codes",
         )
         read_only_fields = fields
         lookup_field = "id"
@@ -210,6 +212,9 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
     def get_bk_app_codes(self, obj):
         return self.context["bk_app_codes"]
 
+    def get_related_app_codes(self, obj):
+        return self.context["related_app_codes"]
+
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="网关维护人员")
@@ -217,7 +222,10 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
         child=serializers.CharField(), allow_empty=True, default=list, help_text="网关开发者"
     )
     bk_app_codes = serializers.ListField(
-        child=serializers.RegexField(APP_CODE_PATTERN), allow_empty=True, required=False, help_text="网关关联的应用"
+        child=serializers.RegexField(APP_CODE_PATTERN), allow_empty=True, required=False, help_text="网关相关的应用列表"
+    )
+    related_app_codes = serializers.ListField(
+        child=serializers.RegexField(APP_CODE_PATTERN), allow_empty=True, required=False, help_text="管理网关的应用列表"
     )
 
     class Meta:
@@ -228,6 +236,7 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
             "developers",
             "is_public",
             "bk_app_codes",
+            "related_app_codes",
         )
         lookup_field = "id"
 
