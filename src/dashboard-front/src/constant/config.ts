@@ -1,6 +1,8 @@
-import i18n from '@/language/i18n';
+import i18n, { isChinese } from '@/language/i18n';
 
 const { t } = i18n.global;
+// 当前年份
+const curYear = (new Date()).getFullYear();
 const {
   BK_LOGIN_URL,
   BK_LIST_USERS_API_URL,
@@ -119,6 +121,38 @@ export default {
     USER_API: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/use-api/use-apigw-api.md`,
 
     // 升级到 1.13 的指引说明
-    UPGRADE_TO_113_TIP: "",
+    UPGRADE_TO_113_TIP: '',
+  },
+
+  // 网站默认配置
+  SITE_CONFIG: {
+    bkAppCode: 'bk_apigateway', // appcode
+    name: 'API Gateway', // 站点的名称，通常显示在页面左上角，也会出现在网页title中
+    nameEn: 'API Gateway', // 站点的名称-英文
+    appLogo: isChinese ? '/static/images/APIgataway-c.png' : '/static/images/APIgataway-en.png', // 站点logo
+    favicon: '/static/images/favicon.png', // 站点favicon
+    helperText: '联系 BK 助手',
+    helperTextEn: 'Contact BK Assistant',
+    helperLink: 'wxwork://message/?username=BK%E5%8A%A9%E6%89%8B',
+    brandImg: 'https://bkrepo.paas3-dev.bktencent.com/generic/blueking/bk-config/bk_cmdb/brand.png?preview=true',
+    brandImgEn: 'https://bkrepo.paas3-dev.bktencent.com/generic/blueking/bk-config/bk_cmdb/brand.png?preview=true',
+    brandName: '腾讯蓝鲸智云', // 品牌名，会用于拼接在站点名称后面显示在网页title中
+    brandNameEn: '腾讯蓝鲸智云', // 品牌名-英文
+    footerInfo: '[技术支持](https://wpa1.qq.com/KziXGWJs?_type=wpa&qidian=true) | [社区论坛](https://bk.tencent.com/s-mart/community/) | [产品官网](https://bk.tencent.com/index/)', // 页脚的内容，仅支持 a 的 markdown 内容格式
+    footerInfoEn: '[Support](https://wpa1.qq.com/KziXGWJs?_type=wpa&qidian=true) | [Forum](https://bk.tencent.com/s-mart/community/) | [Official](https://bk.tencent.com/index/)', // 页脚的内容-英文
+    footerCopyright: `Copyright © 2012-${curYear} Tencent BlueKing. All Rights Reserved. V${BK_APIGATEWAY_VERSION}`, // 版本信息，包含变量，展示在页脚内容下方
+
+    footerInfoHTML: '<a target="_blank" class="link-item" href="https://wpa1.qq.com/KziXGWJs?_type=wpa&qidian=true">技术支持</a> | <a target="_blank" class="link-item" href="https://bk.tencent.com/s-mart/community/">社区论坛</a> | <a target="_blank" class="link-item" href="https://bk.tencent.com/index/">产品官网</a>',
+    footerInfoHTMLEn: '<a target="_blank" class="link-item" href="https://wpa1.qq.com/KziXGWJs?_type=wpa&qidian=true">Support</a> | <a target="_blank" class="link-item" href="https://bk.tencent.com/s-mart/community/">Forum</a> | <a target="_blank" class="link-item" href="https://bk.tencent.com/index/">Official</a>',
+    footerCopyrightContent: `Copyright © 2012-${curYear} Tencent BlueKing. All Rights Reserved. V${BK_APIGATEWAY_VERSION}`,
+
+    // 需要国际化的字段，根据当前语言cookie自动匹配，页面中应该优先使用这里的字段
+    i18n: {
+      name: 'API Gateway',
+      helperText: '联系 BK 助手',
+      brandImg: 'https://bkrepo.paas3-dev.bktencent.com/generic/blueking/bk-config/bk_cmdb/brand.png?preview=true',
+      brandName: '腾讯蓝鲸智云',
+      footerInfoHTML: '<a target="_blank" class="link-item" href="https://wpa1.qq.com/KziXGWJs?_type=wpa&qidian=true">技术支持</a> | <a target="_blank" class="link-item" href="https://bk.tencent.com/s-mart/community/">社区论坛</a> | <a target="_blank" class="link-item" href="https://bk.tencent.com/index/">产品官网</a>',
+    },
   },
 };
