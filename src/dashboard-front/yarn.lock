@@ -1120,6 +1120,13 @@
   resolved "https://registry.npmjs.org/@blueking/notice-component/-/notice-component-2.0.2.tgz"
   integrity sha512-wAky90ATlMEdnwBHe1LAxR/8gEF8xMpHKgOhgxpZ7MU2YRjgHRmv2grzlc3MNFVK9ziBc7+yJPYLrqJbi5+btw==
 
+"@blueking/platform-config@^1.0.1":
+  version "1.0.2"
+  resolved "https://registry.npmjs.org/@blueking/platform-config/-/platform-config-1.0.2.tgz"
+  integrity sha512-ai4x5Ru0gcucSuxpE9gha7S/lIsU0RsGchrHRPUrbbR8OujzC1X6KmUcRoJDZ4m3gghAUvWQFArkheL+o41v0Q==
+  dependencies:
+    xss "^1.0.15"
+
 "@blueking/release-note@^0.0.1-beta.7":
   version "0.0.1-beta.7"
   resolved "https://registry.npmjs.org/@blueking/release-note/-/release-note-0.0.1-beta.7.tgz"
@@ -8738,10 +8745,10 @@ xml-name-validator@^4.0.0:
   resolved "https://registry.npmjs.org/xml-name-validator/-/xml-name-validator-4.0.0.tgz"
   integrity sha512-ICP2e+jsHvAj2E2lIHxa5tjXRlKDJo4IdvPvCXbXQGdzSfmSpNVyIKMvoZHjDY9DP0zV17iI85o90vRFXNccRw==
 
-xss@^1.0.10:
-  version "1.0.14"
-  resolved "https://registry.npmjs.org/xss/-/xss-1.0.14.tgz"
-  integrity sha512-og7TEJhXvn1a7kzZGQ7ETjdQVS2UfZyTlsEdDOqvQF7GoxNfY+0YLCzBy1kPdsDDx4QuNAonQPddpsn6Xl/7sw==
+xss@^1.0.10, xss@^1.0.15:
+  version "1.0.15"
+  resolved "https://registry.npmjs.org/xss/-/xss-1.0.15.tgz"
+  integrity sha512-FVdlVVC67WOIPvfOwhoMETV72f6GbW7aOabBC3WxN/oUdoEMDyLz4OgRv5/gck2ZeNqEQu+Tb0kloovXOfpYVg==
   dependencies:
     commander "^2.20.3"
     cssfilter "0.0.10"
