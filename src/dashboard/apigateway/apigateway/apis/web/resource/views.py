@@ -353,7 +353,6 @@ class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
         )
 
         # 更新标签也要更新资源的更新时间
-        instance.updated_time = datetime.now()
         instance.save()
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
