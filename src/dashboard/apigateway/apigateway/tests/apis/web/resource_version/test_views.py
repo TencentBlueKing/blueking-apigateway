@@ -291,3 +291,105 @@ class TestResourceVersionDiffApi:
                 "update": [],
             }
         }
+
+
+class TestResourceVersionGetApi:
+    def test_resource_version_get(self, request_view):
+        # 没有ResourceVersion时
+        gateway_1 = create_gateway()
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.get",
+            gateway=gateway_1,
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result == {"data": "0.0.1"}
+
+        # 多种版本类型的更新
+        gateway_2 = create_gateway()
+        G(
+            ResourceVersion,
+            gateway=gateway_2,
+            version="0.0.1",
+            created_time=dummy_time.time,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.get",
+            gateway=gateway_2,
+            path_params={"increment_type": "major"},  # 更新主版本号
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result == {"data": "1.0.0"}
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.get",
+            gateway=gateway_2,
+            path_params={"increment_type": "minor"},  # 更新次版本号
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result == {"data": "0.1.0"}
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.get",
+            gateway=gateway_2,
+            path_params={"increment_type": "patch"},  # 更新补丁版本号
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result == {"data": "0.0.2"}
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.get",
+            gateway=gateway_2,
+            path_params={},  # 不填 increment_type 时，默认时为更新补丁版本号
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result == {"data": "0.0.2"}
+
+        gateway_3 = create_gateway()
+        G(
+            ResourceVersion,
+            gateway=gateway_3,
+            version="1.0.0-alpha+001",
+            created_time=dummy_time.time,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.get",
+            gateway=gateway_3,
+            path_params={"preserve_suffix": "True"},  # 保留后缀为True
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result == {"data": "1.0.1-alpha+001"}
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.get",
+            gateway=gateway_3,
+            path_params={"preserve_suffix": "False"},  # 保留后缀为False
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result == {"data": "1.0.1"}
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.get",
+            gateway=gateway_3,
+            path_params={},  # 不填保留后缀字段，默认为False
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result == {"data": "1.0.1"}
+
