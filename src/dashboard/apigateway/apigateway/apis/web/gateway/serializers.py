@@ -160,6 +160,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             "is_public",
             "created_by",
             "created_time",
+            "updated_time",
             "public_key",
             "is_official",
             "allow_update_gateway_auth",
