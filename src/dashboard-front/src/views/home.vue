@@ -210,10 +210,11 @@ import { useUser } from '@/store/user';
 import { Message } from 'bkui-vue';
 import { IDialog } from '@/types';
 import { useRouter } from 'vue-router';
-import { useGetApiList, useGetGlobalProperties } from '@/hooks';
+import { useGetApiList/* , useGetGlobalProperties */ } from '@/hooks';
 import { is24HoursAgo } from '@/common/util';
 import { useCommon } from '@/store';
 import MemberSelect from '@/components/member-select';
+// @ts-ignore
 import TableEmpty from '@/components/table-empty.vue';
 import {
   ref,
@@ -245,8 +246,8 @@ interface IinitDialogData {
   is_public: boolean
 }
 
-const globalProperties = useGetGlobalProperties();
-const { GLOBAL_CONFIG } = globalProperties;
+// const globalProperties = useGetGlobalProperties();
+// const { GLOBAL_CONFIG } = globalProperties;
 
 // dialog弹窗数据
 const initDialogData: IinitDialogData = {
@@ -314,11 +315,11 @@ const {
 } = useGetApiList(filterNameData);
 
 const contact = computed(() => {
-  return common?.websiteConfig?.i18n?.footerInfoHTML;
+  return (common?.websiteConfig as any)?.i18n?.footerInfoHTML;
 });
 
 const copyright = computed(() => {
-  return common?.websiteConfig?.footerCopyrightContent;
+  return (common?.websiteConfig as any)?.footerCopyrightContent;
 });
 
 // 处理列表项
