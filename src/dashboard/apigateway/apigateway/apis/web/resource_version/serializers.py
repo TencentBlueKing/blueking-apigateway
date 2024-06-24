@@ -156,3 +156,8 @@ class ResourceVersionDiffOutputSLZ(serializers.Serializer):
     add = ResourceVersionResourceSLZ()
     delete = ResourceVersionResourceSLZ()
     update = serializers.DictField(child=ResourceVersionResourceSLZ())
+
+
+class ResourceVersionGetInputSLZ(serializers.Serializer):
+    increment_type = serializers.CharField(help_text="增加版本号的类型", default="patch")
+    preserve_suffix = serializers.BooleanField(help_text="是否保留后缀", default=False)
