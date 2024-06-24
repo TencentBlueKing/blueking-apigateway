@@ -297,7 +297,6 @@ class TestResourceVersionGetApi:
     def test_resource_version_get(self, request_view):
         gateway_1 = create_gateway()
         G(ResourceVersion, gateway=gateway_1, version="1.0.1", created_time=dummy_time.time)
-
         resp = request_view(
             method="GET",
             view_name="gateway.resource_version.get",
@@ -307,3 +306,26 @@ class TestResourceVersionGetApi:
         assert resp.status_code == 200
         result = resp.json()
         assert result == {"data": {"version": "1.0.2"}}
+
+        gateway_2 = create_gateway()
+        G(ResourceVersion, gateway=gateway_2, version="1.0.0-alpha+001", created_time=dummy_time.time)
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.get",
+            gateway=gateway_2,
+            path_params={"gateway_id": gateway_2.id},
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result == {"data": {"version": "1.0.1-alpha+001"}}
+
+        gateway_3 = create_gateway()
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.get",
+            gateway=gateway_3,
+            path_params={"gateway_id": gateway_3.id},
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result == {"data": {"version": "0.0.1"}}
