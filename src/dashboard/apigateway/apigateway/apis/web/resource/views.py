@@ -18,6 +18,7 @@
 #
 import operator
 import re
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
@@ -350,6 +351,10 @@ class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
             resource=instance,
             label_ids=slz.validated_data["label_ids"],
         )
+
+        # 更新标签也要更新资源的更新时间
+        instance.updated_time = datetime.now()
+        instance.save()
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
