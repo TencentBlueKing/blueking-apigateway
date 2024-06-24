@@ -56,22 +56,22 @@ def max_version(versions: List[str]) -> str:
 def get_next_version(current_version: str) -> str:
     try:
         match = re.match(r'^(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z0-9.+-]+))?(?:\+([a-zA-Z0-9.+-]+))?$', current_version)
-        if not match:  
-            raise ValueError(f"Invalid version format: {current_version}")  
+        if not match:
+            raise ValueError(f"Invalid version format: {current_version}")
           
         # 提取主版本号、次版本号和补丁版本号  
-        major, minor, patch = int(match.group(1)), int(match.group(2)), int(match.group(3))  
-        pre_release = match.group(4)  # 预发布标签  
-        build_metadata = match.group(5)  # 构建元数据  
+        major, minor, patch = int(match.group(1)), int(match.group(2)), int(match.group(3))
+        pre_release = match.group(4)  # 预发布标签
+        build_metadata = match.group(5)  # 构建元数据
 
-        patch += 1  
-          
-        # 构造新的版本号字符串，并保留后缀（如果需要）  
-        new_version = f"{major}.{minor}.{patch}"  
-        if pre_release:  
-            new_version += f"-{pre_release}"  
-        if build_metadata:  
-            new_version += f"+{build_metadata}"  
+        patch += 1
+
+        # 构造新的版本号字符串，并保留后缀（如果需要)
+        new_version = f"{major}.{minor}.{patch}"
+        if pre_release:
+            new_version += f"-{pre_release}"
+        if build_metadata:
+            new_version += f"+{build_metadata}"
         return new_version
     except version.InvalidVersion:
         now = time.now_datetime()
