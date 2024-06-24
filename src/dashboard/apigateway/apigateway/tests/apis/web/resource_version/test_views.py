@@ -301,6 +301,7 @@ class TestResourceVersionGetApi:
             method="GET",
             view_name="gateway.resource_version.get",
             gateway=gateway_1,
+            path_params={"gateway_id": gateway_1.id}
         )
         assert resp.status_code == 200
         result = resp.json()
@@ -319,7 +320,7 @@ class TestResourceVersionGetApi:
             method="GET",
             view_name="gateway.resource_version.get",
             gateway=gateway_2,
-            path_params={"increment_type": "major"},  # 更新主版本号
+            path_params={"gateway_id": gateway_2.id, "increment_type": "major"},  # 更新主版本号
         )
         assert resp.status_code == 200
         result = resp.json()
@@ -329,7 +330,7 @@ class TestResourceVersionGetApi:
             method="GET",
             view_name="gateway.resource_version.get",
             gateway=gateway_2,
-            path_params={"increment_type": "minor"},  # 更新次版本号
+            path_params={"gateway_id": gateway_2.id, "increment_type": "minor"},  # 更新次版本号
         )
         assert resp.status_code == 200
         result = resp.json()
@@ -339,7 +340,7 @@ class TestResourceVersionGetApi:
             method="GET",
             view_name="gateway.resource_version.get",
             gateway=gateway_2,
-            path_params={"increment_type": "patch"},  # 更新补丁版本号
+            path_params={""gateway_id": gateway_2.id, increment_type": "patch"},  # 更新补丁版本号
         )
         assert resp.status_code == 200
         result = resp.json()
@@ -349,7 +350,7 @@ class TestResourceVersionGetApi:
             method="GET",
             view_name="gateway.resource_version.get",
             gateway=gateway_2,
-            path_params={},  # 不填 increment_type 时，默认时为更新补丁版本号
+            path_params={"gateway_id": gateway_2.id},  # 不填 increment_type 时，默认时为更新补丁版本号
         )
         assert resp.status_code == 200
         result = resp.json()
@@ -367,7 +368,7 @@ class TestResourceVersionGetApi:
             method="GET",
             view_name="gateway.resource_version.get",
             gateway=gateway_3,
-            path_params={"preserve_suffix": "True"},  # 保留后缀为True
+            path_params={"gateway_id": gateway_3.id, "preserve_suffix": "True"},  # 保留后缀为True
         )
         assert resp.status_code == 200
         result = resp.json()
@@ -377,7 +378,7 @@ class TestResourceVersionGetApi:
             method="GET",
             view_name="gateway.resource_version.get",
             gateway=gateway_3,
-            path_params={"preserve_suffix": "False"},  # 保留后缀为False
+            path_params={"gateway_id": gateway_3.id, "preserve_suffix": "False"},  # 保留后缀为False
         )
         assert resp.status_code == 200
         result = resp.json()
@@ -387,7 +388,7 @@ class TestResourceVersionGetApi:
             method="GET",
             view_name="gateway.resource_version.get",
             gateway=gateway_3,
-            path_params={},  # 不填保留后缀字段，默认为False
+            path_params={"gateway_id": gateway_3.id},  # 不填保留后缀字段，默认为False
         )
         assert resp.status_code == 200
         result = resp.json()
