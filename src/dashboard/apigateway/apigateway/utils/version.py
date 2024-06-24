@@ -58,8 +58,8 @@ def get_next_version(current_version: str) -> str:
         match = re.match(r'^(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z0-9.+-]+))?(?:\+([a-zA-Z0-9.+-]+))?$', current_version)
         if not match:
             raise ValueError(f"Invalid version format: {current_version}")
-          
-        # 提取主版本号、次版本号和补丁版本号  
+
+        # 提取主版本号、次版本号和补丁版本号
         major, minor, patch = int(match.group(1)), int(match.group(2)), int(match.group(3))
         pre_release = match.group(4)  # 预发布标签
         build_metadata = match.group(5)  # 构建元数据
