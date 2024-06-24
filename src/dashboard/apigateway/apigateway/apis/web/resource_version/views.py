@@ -309,3 +309,6 @@ class ResourceVersionGetApi(generics.RetrieveAPIView):
                 data=new_version,
             )
 
+        return OKJsonResponse(
+            data="0.0.1",
+        )
