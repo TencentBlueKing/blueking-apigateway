@@ -340,7 +340,7 @@ class TestResourceVersionGetApi:
             method="GET",
             view_name="gateway.resource_version.get",
             gateway=gateway_2,
-            path_params={""gateway_id": gateway_2.id, increment_type": "patch"},  # 更新补丁版本号
+            path_params={"gateway_id": gateway_2.id, "increment_type": "patch"},  # 更新补丁版本号
         )
         assert resp.status_code == 200
         result = resp.json()
