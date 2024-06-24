@@ -40,7 +40,6 @@ from .serializers import (
     ResourceVersionCreateInputSLZ,
     ResourceVersionDiffOutputSLZ,
     ResourceVersionDiffQueryInputSLZ,
-    ResourceVersionGetInputSLZ,
     ResourceVersionListInputSLZ,
     ResourceVersionListOutputSLZ,
     ResourceVersionRetrieveOutputSLZ,
