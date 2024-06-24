@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import re
 
 from django.db import transaction
 from django.utils.decorators import method_decorator
@@ -32,9 +31,9 @@ from apigateway.biz.plugin_binding import PluginBindingHandler
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.biz.resource_version_diff import ResourceDifferHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
-from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.version import get_next_version
 
 from .serializers import (
     NeedNewVersionOutputSLZ,
@@ -262,53 +261,13 @@ class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
 
 class ResourceVersionGetApi(generics.RetrieveAPIView):
     def get(self, request, *args, **kwargs):
-        slz = ResourceVersionGetInputSLZ(data=request.query_params)
-        slz.is_valid(raise_exception=True)
-        data = slz.validated_data
-
         query_set = ResourceVersion.objects.filter(gateway=request.gateway).order_by("-id")
         obj = query_set.first()
         if obj:
-            version = obj.version
-            increment_type = data.get("increment_type")
-            preserve_suffix = data.get("preserve_suffix")
-
-            match = re.match(r"^(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z0-9.+-]+))?(?:\+([a-zA-Z0-9.+-]+))?$", version)
-            if not match:
-                raise error_codes.INTERNAL.format(f"Invalid version format: {version}")
-
-            # 提取主版本号、次版本号和补丁版本号
-            major, minor, patch = int(match.group(1)), int(match.group(2)), int(match.group(3))
-            pre_release = match.group(4)  # 预发布标签
-            build_metadata = match.group(5)  # 构建元数据
-
-            # 根据不同的类型增加版本号
-            if increment_type == "major":
-                major += 1
-                minor = 0
-                patch = 0
-            elif increment_type == "minor":
-                minor += 1
-                patch = 0
-            elif increment_type == "patch":
-                patch += 1
-            else:
-                raise error_codes.NOT_FOUND.format(f"Invalid increment type: {increment_type}")
-
-                # 构造新的版本号字符串，并保留后缀（如果需要）
-            if preserve_suffix:
-                new_version = f"{major}.{minor}.{patch}"
-                if pre_release:
-                    new_version += f"-{pre_release}"
-                if build_metadata:
-                    new_version += f"+{build_metadata}"
-            else:
-                new_version = f"{major}.{minor}.{patch}"
-
+            version_str = obj.version
+            new_version_str = get_next_version(version_str)
             return OKJsonResponse(
-                data=new_version,
+                data={"version": new_version_str},
             )
 
-        return OKJsonResponse(
-            data="0.0.1",
-        )
+        return OKJsonResponse(data={"version": "0.0.1"})
