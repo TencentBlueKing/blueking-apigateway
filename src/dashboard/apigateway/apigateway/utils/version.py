@@ -56,7 +56,17 @@ def max_version(versions: List[str]) -> str:
 def get_next_version(current_version: str) -> str:
     try:
         std_version = version.parse(current_version)
-        return f"{std_version.major}.{std_version.minor}.{std_version.micro + 1}"
+        major, minor, patch = std_version.release
+
+        patch += 1
+        new_version_str = f"{major}.{minor}.{patch}"
+        if std_version.pre:
+            new_version_str += f"-{'.'.join(map(str, std_version.pre))}"
+        if std_version.post:
+            new_version_str += f"+{'.'.join(map(str, std_version.post))}"
+        if std_version.dev:
+            new_version_str += f".dev{std_version.dev}"
+        return new_version_str
     except version.InvalidVersion:
         now = time.now_datetime()
         now_str = time.format(now, fmt="YYYYMMDDHHmmss")
