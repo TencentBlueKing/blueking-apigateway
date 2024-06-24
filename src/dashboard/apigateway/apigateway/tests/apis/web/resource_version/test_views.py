@@ -318,3 +318,14 @@ class TestResourceVersionGetApi:
         assert resp.status_code == 200
         result = resp.json()
         assert result == {"data": {"version": "1.0.1-alpha+001"}}
+
+        gateway_3 = create_gateway()
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.get",
+            gateway=gateway_3,
+            path_params={"gateway_id": gateway_3.id},
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result == {"data": {"version": "0.0.1"}}
