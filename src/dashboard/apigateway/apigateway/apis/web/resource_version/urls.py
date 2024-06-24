@@ -20,6 +20,7 @@ from django.urls import path
 
 from .views import (
     ResourceVersionDiffRetrieveApi,
+    ResourceVersionGetApi,
     ResourceVersionListCreateApi,
     ResourceVersionNeedNewVersionRetrieveApi,
     ResourceVersionRetrieveApi,
