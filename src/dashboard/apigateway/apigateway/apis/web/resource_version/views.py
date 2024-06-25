@@ -267,4 +267,6 @@ class ResourceVersionGetApi(generics.RetrieveAPIView):
             return OKJsonResponse(
                 data={"version": new_version_str},
             )
-        return ""
+        return OKJsonResponse(
+            data={"version": ""},
+        )
