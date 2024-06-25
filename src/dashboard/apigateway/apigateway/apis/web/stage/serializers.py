@@ -196,6 +196,20 @@ class StageInputSLZ(serializers.Serializer):
             for host in input_backend["config"]["hosts"]:
                 check_backend_host_scheme(backend, host)
 
+        # 校验backend下的http和https的唯一
+        for input_backend in attrs["backends"]:
+            seen_schemes = set()
+            for host in input_backend["config"]["hosts"]:
+                scheme = host.get("scheme")
+                if seen_schemes and scheme and scheme not in seen_schemes:
+                    raise serializers.ValidationError(
+                        _("请求参数中，同时存在HTTP和HTTPS的【{backend_id}】的配置。").format(
+                            backend_name=input_backend.name
+                        )
+                    )
+                if scheme:
+                    seen_schemes.add(scheme)
+
         return attrs
 
 
