@@ -258,3 +258,102 @@ class TestStageSyncViewSet:
             "hosts": [{"scheme": "http", "host": "www.a.com", "weight": 100}],
         }
         assert len(PluginBindingHandler.get_stage_plugin_bindings(gateway.id, stage.id)) == 1
+
+    def test_sync_stages(self, fake_plugin_type_bk_header_rewrite, mocker, unique_gateway_name, request_factory):
+        mocker.patch(
+            "apigateway.apis.open.stage.views.GatewayRelatedAppPermission.has_permission",
+            return_value=True,
+        )
+
+        mocker.patch(
+            "apigateway.common.plugin.header_rewrite.HeaderRewriteConvertor.sync_plugins",
+            return_value=True,
+        )
+
+        gateway = G(Gateway, name=unique_gateway_name, is_public=False)
+
+        request = request_factory.post(
+            f"/api/v1/apis/{unique_gateway_name}/stages/sync/",
+            data=[
+                {
+                    "name": "prod",
+                    "description": "desc",
+                    "vars": {},
+                    "backends": [
+                        {
+                            "name": "default",
+                            "config": {
+                                "timeout": 60,
+                                "loadbalance": "roundrobin",
+                                "hosts": [
+                                    {
+                                        "host": "http://www.a.com",
+                                    }
+                                ],
+                            },
+                        },
+                        {
+                            "name": "service1",
+                            "config": {
+                                "timeout": 60,
+                                "loadbalance": "roundrobin",
+                                "hosts": [
+                                    {
+                                        "host": "http://www.a.com",
+                                    }
+                                ],
+                            },
+                        },
+                    ],
+                    "plugin_configs": [
+                        {
+                            "type": "bk-header-rewrite",
+                            "yaml": yaml_dumps(
+                                {
+                                    "set": [{"key": "foo", "value": "bar"}],
+                                    "remove": [],
+                                }
+                            ),
+                        }
+                    ],
+                },
+                {
+                    "name": "test",
+                    "description": "desc",
+                    "vars": {},
+                    "backends": [
+                        {
+                            "name": "default",
+                            "config": {
+                                "timeout": 60,
+                                "loadbalance": "roundrobin",
+                                "hosts": [
+                                    {
+                                        "host": "http://www.a.com",
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                },
+            ],
+        )
+        request.gateway = gateway
+
+        view = views.StageSyncViewSet.as_view({"post": "sync"})
+        response = view(request, gateway_name=unique_gateway_name)
+
+        result = get_response_json(response)
+        stage = Stage.objects.get(gateway=gateway, name="prod")
+
+        assert result["code"] == 0
+        assert stage.status == 0
+        assert len(Backend.objects.filter(gateway=gateway, name__in=["default", "service1"])) == 2
+        assert len(BackendConfig.objects.filter(backend__name__in=["default", "service1"])) == 4
+        assert BackendConfig.objects.get(backend__name="default", stage__name="prod").config == {
+            "type": "node",
+            "timeout": 60,
+            "loadbalance": "roundrobin",
+            "hosts": [{"scheme": "http", "host": "www.a.com", "weight": 100}],
+        }
+        assert len(PluginBindingHandler.get_stage_plugin_bindings(gateway.id, stage.id)) == 1

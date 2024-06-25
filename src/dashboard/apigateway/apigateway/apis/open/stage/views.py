@@ -95,13 +95,30 @@ class StageV1ViewSet(viewsets.ViewSet):
 class StageSyncViewSet(viewsets.ViewSet):
     permission_classes = [GatewayRelatedAppPermission]
 
-    @swagger_auto_schema(request_body=StageSLZ, tags=["OpenAPI.Stage"])
+    @swagger_auto_schema(request_body=StageSLZ(many=True), tags=["OpenAPI.Stage"])
     def sync(self, request, gateway_name: str, *args, **kwargs):
-        instance = get_object_or_None(Stage, gateway=request.gateway, name=request.data.get("name", ""))
+        if isinstance(request.data, list):
+            return self._sync_multiple(request, gateway_name, *args, **kwargs)
+
+        return self._sync_single(request, gateway_name, *args, **kwargs)
+
+    def _sync_single(self, request, gateway_name: str, *args, **kwargs):
+        stage_data = self._sync_stage(request, request.data)
+        return V1OKJsonResponse("OK", data=stage_data)
+
+    def _sync_multiple(self, request, gateway_name: str, *args, **kwargs):
+        response_data = []
+        for item in request.data:
+            stage_data = self._sync_stage(request, item)
+            response_data.append(stage_data)
+        return V1OKJsonResponse("OK", data=response_data)
+
+    def _sync_stage(self, request, data):
+        instance = get_object_or_None(Stage, gateway=request.gateway, name=data.get("name", ""))
         data_before = get_model_dict(instance) if instance else {}
         slz = StageSLZ(
             instance,
-            data=request.data,
+            data=data,
             context={
                 "request": request,
                 "allow_var_not_exist": True,
@@ -124,10 +141,7 @@ class StageSyncViewSet(viewsets.ViewSet):
             data_after=get_model_dict(stage),
         )
 
-        return V1OKJsonResponse(
-            "OK",
-            data={
-                "id": slz.instance.id,
-                "name": slz.instance.name,
-            },
-        )
+        return {
+            "id": slz.instance.id,
+            "name": slz.instance.name,
+        }
