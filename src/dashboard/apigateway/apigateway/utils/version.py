@@ -15,10 +15,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import re
 from typing import List
 
 from packaging import version
+from packaging.version import Version, parse
 
 
 def _filter_the_valid_versions(versions: List[str]) -> List[str]:
