@@ -258,7 +258,7 @@ class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
         )
 
 
-class ResourceVersionGetApi(generics.RetrieveAPIView):
+class NextResourceVersionRetrieveApi(generics.RetrieveAPIView):
     def get(self, request, *args, **kwargs):
         query_set = ResourceVersion.objects.filter(gateway=request.gateway).order_by("-id")
         obj = query_set.first()
