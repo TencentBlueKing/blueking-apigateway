@@ -20,6 +20,7 @@ import json
 
 import pytest
 from ddf import G
+from django.utils import timezone
 
 from apigateway.apis.web.resource.views import (
     BackendHostIsEmpty,
@@ -244,9 +245,11 @@ class TestResourceBatchUpdateDestroyApi:
 class TestResourceLabelUpdateApi:
     def test_update(self, request_view, fake_resource):
         fake_gateway = fake_resource.gateway
+        initial_updated_time = fake_resource.updated_time
         label_1 = G(APILabel, gateway=fake_gateway)
         label_2 = G(APILabel, gateway=fake_gateway)
 
+        assert initial_updated_time is not None and initial_updated_time <= timezone.now()
         resp = request_view(
             method="PUT",
             view_name="resource.label.update",
@@ -257,7 +260,10 @@ class TestResourceLabelUpdateApi:
         )
         assert resp.status_code == 204
         assert ResourceLabel.objects.filter(resource=fake_resource).count() == 1
+        fake_resource.refresh_from_db()
+        assert fake_resource.updated_time > initial_updated_time
 
+        initial_updated_time = fake_resource.updated_time
         resp = request_view(
             method="PUT",
             view_name="resource.label.update",
@@ -268,7 +274,10 @@ class TestResourceLabelUpdateApi:
         )
         assert resp.status_code == 204
         assert ResourceLabel.objects.filter(resource=fake_resource).count() == 2
+        fake_resource.refresh_from_db()
+        assert fake_resource.updated_time > initial_updated_time
 
+        initial_updated_time = fake_resource.updated_time
         resp = request_view(
             method="PUT",
             view_name="resource.label.update",
@@ -279,6 +288,8 @@ class TestResourceLabelUpdateApi:
         )
         assert resp.status_code == 204
         assert ResourceLabel.objects.filter(resource=fake_resource).count() == 1
+        fake_resource.refresh_from_db()
+        assert fake_resource.updated_time > initial_updated_time
 
 
 class TestResourceImportCheckApi:

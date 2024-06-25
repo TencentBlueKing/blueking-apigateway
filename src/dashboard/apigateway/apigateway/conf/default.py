@@ -449,7 +449,7 @@ JWT_ISSUER = env.str("BK_APIGW_JWT_ISSUER", "APIGW")
 # 检查保留的官方网关名
 CHECK_RESERVED_GATEWAY_NAME = True
 # 保留的网关名前缀，检查保留网关名时，不允许在管理端创建此前缀的网关
-RESERVED_GATEWAY_NAME_PREFIXES = ["bk-"]
+RESERVED_GATEWAY_NAME_PREFIXES = ["bk-", "bp-"]
 # 官方网关命名前缀，仅做标记
 OFFICIAL_GATEWAY_NAME_PREFIXES = ["bk-"]
 # 允许管理端更新网关认证信息

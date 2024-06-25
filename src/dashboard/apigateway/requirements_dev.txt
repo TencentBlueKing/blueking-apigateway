@@ -125,6 +125,7 @@ protobuf==3.20.3 ; python_version >= "3.10" and python_version < "3.11"
 ptyprocess==0.7.0 ; python_version >= "3.10" and python_version < "3.11" and (sys_platform != "win32" and sys_platform != "emscripten")
 pure-eval==0.2.2 ; python_version >= "3.10" and python_version < "3.11"
 py-cpuinfo==8.0.0 ; python_version >= "3.10" and python_version < "3.11"
+py-openapi-schema-to-json-schema==0.0.3 ; python_version >= "3.10" and python_version < "3.11"
 pycparser==2.21 ; python_version >= "3.10" and python_version < "3.11"
 pycryptodomex==3.19.1 ; python_version >= "3.10" and python_version < "3.11"
 pydantic==1.9.2 ; python_version >= "3.10" and python_version < "3.11"

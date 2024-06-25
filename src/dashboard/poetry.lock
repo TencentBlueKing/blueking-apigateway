@@ -3188,6 +3188,22 @@ url = "https://mirrors.cloud.tencent.com/pypi/simple"
 reference = "tencent"
 
 [[package]]
+name = "py-openapi-schema-to-json-schema"
+version = "0.0.3"
+description = "Convert OpenAPI Schemas to JSON Schemas"
+optional = false
+python-versions = "*"
+files = [
+    {file = "py-openapi-schema-to-json-schema-0.0.3.tar.gz", hash = "sha256:d557afb6bcc45d62a1383ada0ad57515421552efa3b2e07b2264e5b9e1e9634e"},
+    {file = "py_openapi_schema_to_json_schema-0.0.3-py3-none-any.whl", hash = "sha256:456802186309257a9667fd50eca7c6ff6eaf9930ab09dcc87c54537e01066f09"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.cloud.tencent.com/pypi/simple"
+reference = "tencent"
+
+[[package]]
 name = "pycparser"
 version = "2.21"
 description = "C parser in Python"
@@ -4942,4 +4958,4 @@ reference = "tencent"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "e14c6b4e3e552164924ae54a73cc106f5cbb5ecb761159415cb9a0504c7bf249"
+content-hash = "7603d2e3291aa7e8e15befc379a84e626ba3585b1f5fc1225dde0fd283ce02da"

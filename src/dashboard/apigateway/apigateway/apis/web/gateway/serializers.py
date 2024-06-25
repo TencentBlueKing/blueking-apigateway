@@ -161,6 +161,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             "is_public",
             "created_by",
             "created_time",
+            "updated_time",
             "public_key",
             "is_official",
             "allow_update_gateway_auth",
@@ -222,10 +223,16 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
         child=serializers.CharField(), allow_empty=True, default=list, help_text="网关开发者"
     )
     bk_app_codes = serializers.ListField(
-        child=serializers.RegexField(APP_CODE_PATTERN), allow_empty=True, required=False, help_text="网关相关的应用列表"
+        child=serializers.RegexField(APP_CODE_PATTERN),
+        allow_empty=True,
+        required=False,
+        help_text="网关相关的应用列表",
     )
     related_app_codes = serializers.ListField(
-        child=serializers.RegexField(APP_CODE_PATTERN), allow_empty=True, required=False, help_text="管理网关的应用列表"
+        child=serializers.RegexField(APP_CODE_PATTERN),
+        allow_empty=True,
+        required=False,
+        help_text="管理网关的应用列表",
     )
 
     class Meta:
