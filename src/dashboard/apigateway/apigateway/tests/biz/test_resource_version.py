@@ -266,7 +266,7 @@ class TestResourceVersionHandler:
             ],
         )
         resource_schema = ResourceVersionHandler.get_resource_schema(fake_resource_version.id, fake_resource.id)
-        assert resource_schema["body_schema"] == fake_resource_schema_with_body.schema["requestBody"]
+        assert resource_schema["requestBody"] == fake_resource_schema_with_body.schema["requestBody"]
 
 
 class TestResourceDocVersionHandler:
