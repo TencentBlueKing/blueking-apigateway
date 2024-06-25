@@ -353,6 +353,9 @@ class ResourceLabelUpdateApi(ResourceQuerySetMixin, generics.UpdateAPIView):
             label_ids=slz.validated_data["label_ids"],
         )
 
+        # 更新标签也要更新资源的更新时间
+        instance.save()
+
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
