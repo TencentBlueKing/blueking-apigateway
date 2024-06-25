@@ -92,7 +92,7 @@ class TestReleaseCreateApi:
             assert resp.status_code == 200, result
 
 
-class TestReleaseResourceSchemaRetry:
+class TestReleaseResourceSchemaRetrieve:
     def test_retry(
         self,
         request_view,

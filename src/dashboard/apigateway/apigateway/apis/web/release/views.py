@@ -24,17 +24,15 @@ from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
-from openapi_schema_to_json_schema import to_json_schema
 from rest_framework import generics, status
 
-from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceData
 from apigateway.biz.releaser import ReleaseError, release
+from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.user_credentials import get_user_credentials_from_request
 from apigateway.core.models import Release, ReleaseHistory
-from apigateway.utils import openapi
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
@@ -102,7 +100,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
         responses={status.HTTP_200_OK: ReleaseResourceSchemaOutputSLZ()},
     ),
 )
-class ReleaseAvailableResourceSchemaRetryApi(generics.RetrieveAPIView):
+class ReleaseAvailableResourceSchemaRetrieveApi(generics.RetrieveAPIView):
     lookup_field = "stage_id"
     serializer_class = ReleaseResourceSchemaOutputSLZ
 
@@ -117,35 +115,8 @@ class ReleaseAvailableResourceSchemaRetryApi(generics.RetrieveAPIView):
             instance = self.get_object()
         except Http404:
             raise error_codes.NOT_FOUND.format(_("当前选择环境未发布版本，请先发布版本到该环境。"))
-
-        resources_version_schema = OpenAPIResourceSchemaVersion.objects.get(
-            resource_version_id=instance.resource_version_id
-        )
-        if resources_version_schema is None:
-            return OKJsonResponse(data={})
-
-        # 筛选资源数据
         resource_id = self.kwargs["resource_id"]
-
-        schema_result = {"resource_id": resource_id}
-
-        for schema_info in resources_version_schema.schema:
-            schema = schema_info["schema"]
-            if resource_id == schema_info["resource_id"]:
-                schema_result["parameters"] = schema.get("parameters", [])
-                schema_result["responses"] = schema.get("responses", {})
-                request_body = schema.get("requestBody")
-                if request_body:
-                    # todo: 暂时在只支持application/json
-                    json_schema = to_json_schema(request_body["content"]["application/json"]["schema"])
-                    example = openapi.generate_example(json_schema)
-                    schema_result.update(
-                        {
-                            "body_schema": request_body,
-                            "body_example": example,
-                        }
-                    )
-                    break
+        schema_result = ResourceVersionHandler.get_resource_schema(instance.resource_version.id, resource_id)
         slz = self.get_serializer(schema_result)
         return OKJsonResponse(data=slz.data)
 

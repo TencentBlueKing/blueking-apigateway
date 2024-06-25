@@ -55,8 +55,8 @@ class ReleaseResourceSchemaOutputSLZ(serializers.Serializer):
     resource_id = serializers.IntegerField(allow_null=False, required=True, help_text="资源id")
     body_schema = serializers.JSONField(required=False, help_text="request_body schema")
     body_example = serializers.JSONField(required=False, help_text="request_body example")
-    parameters = serializers.JSONField(required=False, help_text="parameters schema")
-    responses = serializers.JSONField(required=False, help_text="response schema")
+    parameter_schema = serializers.JSONField(required=False, help_text="parameters schema")
+    response_schema = serializers.JSONField(required=False, help_text="response schema")
 
 
 class ReleaseHistoryQueryInputSLZ(serializers.Serializer):

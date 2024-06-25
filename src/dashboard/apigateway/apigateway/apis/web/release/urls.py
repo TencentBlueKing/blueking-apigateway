@@ -20,7 +20,7 @@ from django.urls import include, path
 
 from .views import (
     ReleaseAvailableResourceListApi,
-    ReleaseAvailableResourceSchemaRetryApi,
+    ReleaseAvailableResourceSchemaRetrieveApi,
     ReleaseCreateApi,
     ReleaseHistoryListApi,
     ReleaseHistoryRetrieveApi,
@@ -36,7 +36,7 @@ urlpatterns = [
                 path("", ReleaseAvailableResourceListApi.as_view(), name="gateway.releases.available_resources"),
                 path(
                     "<int:resource_id>/schema/",
-                    ReleaseAvailableResourceSchemaRetryApi.as_view(),
+                    ReleaseAvailableResourceSchemaRetrieveApi.as_view(),
                     name="gateway.releases.available_resource.schema",
                 ),
             ]

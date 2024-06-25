@@ -24,9 +24,11 @@ from typing import Any, Dict, List, Optional
 from cachetools import TTLCache, cached
 from django.conf import settings
 from django.utils.translation import gettext as _
+from openapi_schema_to_json_schema import to_json_schema
 from rest_framework import serializers
 
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
@@ -42,6 +44,7 @@ from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
 from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
 from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Gateway, Proxy, Release, Resource, ResourceVersion, Stage
+from apigateway.utils import openapi
 from apigateway.utils import time as time_utils
 from apigateway.utils.version import max_version
 
@@ -261,6 +264,36 @@ class ResourceVersionHandler:
             "in_path": list(used_in_path),
             "in_host": list(used_in_host),
         }
+
+    @staticmethod
+    def get_resource_schema(resource_version_id: int, resource_id: int) -> dict:
+        """
+        获取指定版本的资源对应的api schema
+        """
+        schema_result = {"resource_id": resource_id}
+        resources_version_schema = OpenAPIResourceSchemaVersion.objects.get(resource_version_id=resource_version_id)
+        if resources_version_schema is None:
+            return schema_result
+
+        # 筛选资源数据
+        for schema_info in resources_version_schema.schema:
+            schema = schema_info["schema"]
+            if resource_id == schema_info["resource_id"]:
+                schema_result["parameter_schema"] = schema.get("parameters", [])
+                schema_result["response_schema"] = schema.get("responses", {})
+                request_body = schema.get("requestBody")
+                if request_body:
+                    # todo: 暂时在只支持application/json
+                    json_schema = to_json_schema(request_body["content"]["application/json"]["schema"])
+                    example = openapi.generate_example(json_schema)
+                    schema_result.update(
+                        {
+                            "body_schema": request_body,
+                            "body_example": example,
+                        }
+                    )
+                    break
+        return schema_result
 
 
 class ResourceDocVersionHandler:
