@@ -262,7 +262,9 @@ class ResourceVersionGetApi(generics.RetrieveAPIView):
     def get(self, request, *args, **kwargs):
         query_set = ResourceVersion.objects.filter(gateway=request.gateway).order_by("-id")
         obj = query_set.first()
-        new_version_str = get_next_version(obj.version)
-        return OKJsonResponse(
-            data={"version": new_version_str},
-        )
+        if obj:
+            new_version_str = get_next_version(obj.version)
+            return OKJsonResponse(
+                data={"version": new_version_str},
+            )
+        return ""
