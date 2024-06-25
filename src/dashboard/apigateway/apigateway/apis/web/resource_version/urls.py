@@ -39,5 +39,5 @@ urlpatterns = [
         name="gateway.resource_version.need_new_version",
     ),
     path("diff/", ResourceVersionDiffRetrieveApi.as_view(), name="gateway.resource_version.diff"),
-    path("get-new-version/", NextResourceVersionRetrieveApi.as_view(), name="gateway.resource_version.get"),
+    path("next-version/", NextResourceVersionRetrieveApi.as_view(), name="gateway.resource_version.next_version"),
 ]
