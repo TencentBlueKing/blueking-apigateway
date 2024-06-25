@@ -317,7 +317,7 @@ class TestResourceVersionGetApi:
         )
         assert resp.status_code == 200
         result = resp.json()
-        assert result == {"data": {"version": "1.0.1-alpha+001"}}
+        assert result == {"data": {"version": "1.0.1"}}
 
         gateway_3 = create_gateway()
         resp = request_view(
@@ -328,4 +328,4 @@ class TestResourceVersionGetApi:
         )
         assert resp.status_code == 200
         result = resp.json()
-        assert result == {"data": {"version": "0.0.1"}}
+        assert result == {"data": {"version": ""}}
