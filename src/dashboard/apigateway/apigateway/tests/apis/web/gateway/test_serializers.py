@@ -259,7 +259,7 @@ class TestGatewayRetrieveOutputSLZ:
             "is_public": fake_gateway.is_public,
             "created_by": fake_gateway.created_by,
             "created_time": DateTimeField().to_representation(fake_gateway.created_time),
-            "updated_time": DateTimeField().to_representation(fake_gateway.created_time),
+            "updated_time": DateTimeField().to_representation(fake_gateway.updated_time),
             "public_key": jwt.public_key,
             "allow_update_gateway_auth": True,
             "api_domain": "http://bkapi.demo.com",
