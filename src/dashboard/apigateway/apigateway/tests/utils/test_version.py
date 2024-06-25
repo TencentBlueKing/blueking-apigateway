@@ -57,6 +57,7 @@ class TestUtilsVersion:
         [
             ("1.2.3", "1.2.4"),
             ("1.0.0-alpha+001", "1.0.1-alpha+001"),  # The actual timestamp will be appended
+            ("123456", "0.0.1"),
         ],
     )
     def test_get_next_version(self, current_version, expected_start):
