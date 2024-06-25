@@ -299,7 +299,7 @@ class TestResourceVersionGetApi:
         G(ResourceVersion, gateway=gateway_1, version="1.0.1", created_time=dummy_time.time)
         resp = request_view(
             method="GET",
-            view_name="gateway.resource_version.get",
+            view_name="gateway.resource_version.next_version",
             gateway=gateway_1,
             path_params={"gateway_id": gateway_1.id},
         )
@@ -311,7 +311,7 @@ class TestResourceVersionGetApi:
         G(ResourceVersion, gateway=gateway_2, version="1.0.0-alpha+001", created_time=dummy_time.time)
         resp = request_view(
             method="GET",
-            view_name="gateway.resource_version.get",
+            view_name="gateway.resource_version.next_version",
             gateway=gateway_2,
             path_params={"gateway_id": gateway_2.id},
         )
@@ -322,7 +322,7 @@ class TestResourceVersionGetApi:
         gateway_3 = create_gateway()
         resp = request_view(
             method="GET",
-            view_name="gateway.resource_version.get",
+            view_name="gateway.resource_version.next_version",
             gateway=gateway_3,
             path_params={"gateway_id": gateway_3.id},
         )
