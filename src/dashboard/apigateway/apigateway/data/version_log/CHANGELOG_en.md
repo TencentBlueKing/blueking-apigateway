@@ -1,3 +1,27 @@
+<!-- 2024-06-21 -->
+# V1.13.6 Release Log
+
+### Bug Fixes
+
+- Incorrect frontend request URL when the notification center is activated
+- Maintenance staff information not displaying correctly in basic information
+
+### Feature Enhancements
+
+- Online debugging apps are no longer displayed on the permission list page
+- Global configuration support for BK_SHARED_RES_URL
+
+---
+
+<!-- 2024-06-12 -->
+# V1.13.5 Release Log
+
+### Feature Enhancements
+
+- Changes in backend services to trigger deployment updated to asynchronous
+
+---
+
 <!-- 2024-06-11 -->
 # V1.13.4 Release Log
 
