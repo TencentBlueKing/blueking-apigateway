@@ -15,12 +15,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-
 from typing import List
 
 from packaging import version
-
-from apigateway.utils import time
+from packaging.version import Version, parse
 
 
 def _filter_the_valid_versions(versions: List[str]) -> List[str]:
@@ -55,12 +53,10 @@ def max_version(versions: List[str]) -> str:
 
 def get_next_version(current_version: str) -> str:
     try:
-        std_version = version.parse(current_version)
-        return f"{std_version.major}.{std_version.minor}.{std_version.micro + 1}"
-    except version.InvalidVersion:
-        now = time.now_datetime()
-        now_str = time.format(now, fmt="YYYYMMDDHHmmss")
-        return current_version + f".{now_str}"
+        version = parse(current_version)
+        return str(Version(f"{version.major}.{version.minor}.{version.micro + 1}"))
+    except Exception:
+        return ""
 
 
 def is_version1_greater_than_version2(version1: str, version2: str) -> bool:

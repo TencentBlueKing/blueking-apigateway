@@ -19,6 +19,7 @@
 from django.urls import path
 
 from .views import (
+    NextResourceVersionRetrieveApi,
     ResourceVersionDiffRetrieveApi,
     ResourceVersionListCreateApi,
     ResourceVersionNeedNewVersionRetrieveApi,
@@ -38,4 +39,5 @@ urlpatterns = [
         name="gateway.resource_version.need_new_version",
     ),
     path("diff/", ResourceVersionDiffRetrieveApi.as_view(), name="gateway.resource_version.diff"),
+    path("next-version/", NextResourceVersionRetrieveApi.as_view(), name="gateway.resource_version.next_version"),
 ]
