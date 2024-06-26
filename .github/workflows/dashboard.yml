@@ -28,7 +28,7 @@ jobs:
         cache-dependency-path: 'src/dashboard/apigateway/requirements_dev.txt'
 
     - name: Install dependencies
-      run: pip install -r src/dashboard/apigateway/requirements_dev.txt -i https://pypi.org/simple/
+      run: pip install pip==23.0.1 && pip install -r src/dashboard/apigateway/requirements_dev.txt -i https://pypi.org/simple/
 
     - name: Lint
       run: make edition-ee && make lint-check
