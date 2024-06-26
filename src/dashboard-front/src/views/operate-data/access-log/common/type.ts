@@ -1,5 +1,6 @@
 export interface SearchParamsInterface {
   stage_id?: number
+  resource_id?: string | number
   time_start?: string | number
   time_end?: string | number
   query?: string
