@@ -29,7 +29,13 @@ from apigateway.biz.validators import MaxCountPerGatewayValidator, PublishValida
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.core.constants import STAGE_NAME_PATTERN, BackendTypeEnum, PublishEventStatusEnum, ReleaseStatusEnum, StageStatusEnum
+from apigateway.core.constants import (
+    STAGE_NAME_PATTERN,
+    BackendTypeEnum,
+    PublishEventStatusEnum,
+    ReleaseStatusEnum,
+    StageStatusEnum,
+)
 from apigateway.core.models import Backend, Stage
 from apigateway.utils.version import is_version1_greater_than_version2
 
@@ -211,6 +217,7 @@ def check_backend_host_scheme(backend, host):
                 backend_name=backend.name, scheme=host["scheme"]
             )
         )
+
 
 def check_backend_hosts_scheme(backend, hosts):
     schemes = {host.get("scheme") for host in hosts}
