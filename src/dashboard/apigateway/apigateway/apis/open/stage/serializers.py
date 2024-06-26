@@ -472,21 +472,22 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                 )
 
     def _validate_backend_hosts(self, backends):
-        for backend in backends:
-            hosts = backend["config"]["hosts"]
-            schemes = {host.get("scheme") for host in hosts}
-            if len(schemes) > 1 and backend.type == BackendTypeEnum.HTTP.value:
-                raise serializers.ValidationError(
-                    _("后端服务【{backend_name}】的配置 scheme 同时存在 http 和 https， 需要保持一致。").format(
-                        backend_name=backend.name
+        if backends is not None:
+            for backend in backends:
+                hosts = backend["config"]["hosts"]
+                schemes = {host.get("scheme") for host in hosts}
+                if len(schemes) > 1 and backend.type == BackendTypeEnum.HTTP.value:
+                    raise serializers.ValidationError(
+                        _("后端服务【{backend_name}】的配置 scheme 同时存在 http 和 https， 需要保持一致。").format(
+                            backend_name=backend.name
+                        )
                     )
-                )
-            if len(schemes) > 1 and backend.type == BackendTypeEnum.GRPC.value:
-                raise serializers.ValidationError(
-                    _("后端服务【{backend_name}】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致.").format(
-                        backend_name=backend.name
+                if len(schemes) > 1 and backend.type == BackendTypeEnum.GRPC.value:
+                    raise serializers.ValidationError(
+                        _("后端服务【{backend_name}】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致.").format(
+                            backend_name=backend.name
+                        )
                     )
-                )
 
     def _sync_plugins(self, gateway_id: int, stage_id: int, plugin_configs: Optional[Dict[str, Any]] = None):
         # plugin_configs为None则，plugin_config_datas 设置[]则清空对应配置
