@@ -42,6 +42,7 @@ from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
     STAGE_NAME_PATTERN,
+    BackendTypeEnum,
     LoadBalanceTypeEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, MicroGateway, Stage
@@ -228,6 +229,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     def validate(self, data):
         self._validate_micro_gateway_stage_unique(data.get("micro_gateway_id"))
         self._validate_plugin_configs(data.get("plugin_configs"))
+        self._validate_backend_hosts(data.get("backends"))
         # validate stage backend
         if data.get("proxy_http") is None and data.get("backends") is None:
             raise serializers.ValidationError(_("proxy_http or backends 必须要选择一种方式配置后端服务"))
@@ -466,6 +468,23 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                     _("插件配置校验失败，插件类型：{plugin_type_code}，错误信息：{err}。").format(
                         plugin_type_code=plugin_type.code,
                         err=err,
+                    )
+                )
+
+    def _validate_backend_hosts(self, backend):
+        if backend:
+            hosts = backend["config"]["hosts"]
+            schemes = {host.get("scheme") for host in hosts}
+            if len(schemes) > 1 and backend.type == BackendTypeEnum.HTTP.value:
+                raise serializers.ValidationError(
+                    _("后端服务【{backend_name}】的配置 scheme 同时存在 http 和 https， 需要保持一致。").format(
+                        backend_name=backend.name
+                    )
+                )
+            if len(schemes) > 1 and backend.type == BackendTypeEnum.GRPC.value:
+                raise serializers.ValidationError(
+                    _("后端服务【{backend_name}】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致.").format(
+                        backend_name=backend.name
                     )
                 )
 

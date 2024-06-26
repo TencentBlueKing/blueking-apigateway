@@ -29,7 +29,7 @@ from apigateway.biz.validators import MaxCountPerGatewayValidator, PublishValida
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.core.constants import STAGE_NAME_PATTERN, PublishEventStatusEnum, ReleaseStatusEnum, StageStatusEnum
+from apigateway.core.constants import STAGE_NAME_PATTERN, BackendTypeEnum, ReleaseStatusEnum, StageStatusEnum
 from apigateway.core.models import Backend, Stage
 from apigateway.utils.version import is_version1_greater_than_version2
 
@@ -38,9 +38,8 @@ from .validators import StageVarsValidator
 
 class StageOutputSLZ(serializers.ModelSerializer):
     release = serializers.SerializerMethodField(help_text="发布信息")
-    resource_version = serializers.SerializerMethodField(help_text="当前生效资源版本")
+    resource_version = serializers.SerializerMethodField(help_text="资源版本")
     publish_id = serializers.SerializerMethodField(help_text="发布ID")
-    publish_version = serializers.SerializerMethodField(help_text="正在发布的版本")
     publish_validate_msg = serializers.SerializerMethodField(help_text="发布校验结果,如果有值，则不能发布")
     new_resource_version = serializers.SerializerMethodField(help_text="新资源版本")
     description = SerializerTranslatedField(
@@ -65,7 +64,6 @@ class StageOutputSLZ(serializers.ModelSerializer):
             "release",
             "resource_version",
             "publish_id",
-            "publish_version",
             "publish_validate_msg",
             "new_resource_version",
         )
@@ -95,19 +93,6 @@ class StageOutputSLZ(serializers.ModelSerializer):
             "id": self.context["stage_release"].get(obj.id, {}).get("resource_version_id", 0),
             "schema_version": self.context["stage_release"].get(obj.id, {}).get("resource_version_schema_version", ""),
         }
-
-    def get_publish_version(self, obj):
-        """
-        获取正在发布版本
-        """
-        latest_publish_info = self.context["stage_publish_status"].get(obj.id)
-        if not latest_publish_info:
-            return ""
-
-        if latest_publish_info.get("status", "") != PublishEventStatusEnum.SUCCESS.value:
-            return latest_publish_info.get("resource_version_display", "")
-
-        return ""
 
     def get_publish_id(self, obj):
         return self.context["stage_publish_status"].get(obj.id, {}).get("publish_id", 0)
@@ -196,20 +181,10 @@ class StageInputSLZ(serializers.Serializer):
             for host in input_backend["config"]["hosts"]:
                 check_backend_host_scheme(backend, host)
 
-        # 校验backend下的http和https的唯一
+        # 校验backend下的host下的类型的唯一性
         for input_backend in attrs["backends"]:
-            seen_schemes = set()
-            for host in input_backend["config"]["hosts"]:
-                scheme = host.get("scheme")
-                if seen_schemes and scheme and scheme not in seen_schemes:
-                    raise serializers.ValidationError(
-                        _("请求参数中，同时存在HTTP和HTTPS的【{backend_id}】的配置。").format(
-                            backend_name=input_backend.name
-                        )
-                    )
-                if scheme:
-                    seen_schemes.add(scheme)
-
+            backend = backend_dict[input_backend["id"]]
+            check_backend_hosts_scheme(backend, input_backend["config"]["hosts"])
         return attrs
 
 
@@ -218,6 +193,22 @@ def check_backend_host_scheme(backend, host):
         raise serializers.ValidationError(
             _("后端服务【{backend_name}】的配置Scheme【{scheme}】不合法。").format(
                 backend_name=backend.name, scheme=host["scheme"]
+            )
+        )
+
+
+def check_backend_hosts_scheme(backend, hosts):
+    schemes = {host.get("scheme") for host in hosts}
+    if len(schemes) > 1 and backend.type == BackendTypeEnum.HTTP.value:
+        raise serializers.ValidationError(
+            _("后端服务【{backend_name}】的配置 scheme 同时存在 http 和 https， 需要保持一致。").format(
+                backend_name=backend.name
+            )
+        )
+    if len(schemes) > 1 and backend.type == BackendTypeEnum.GRPC.value:
+        raise serializers.ValidationError(
+            _("后端服务【{backend_name}】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致.").format(
+                backend_name=backend.name
             )
         )
 

@@ -84,6 +84,23 @@ class BackendInputSLZ(serializers.Serializer):
                             stage_name=stage_id_name[backend_config["stage_id"]], scheme=host["scheme"]
                         )
                     )
+
+        # 校验backend下的host下的类型的唯一性
+        for backend_config in attrs["configs"]:
+            hosts = backend_config["hosts"]
+            schemes = {host.get("scheme") for host in hosts}
+            if len(schemes) > 1 and attrs["type"] == BackendTypeEnum.HTTP.value:
+                raise serializers.ValidationError(
+                    _("环境【{stage_name}】的配置 scheme 同时存在 http 和 https， 需要保持一致.").format(
+                        stage_name=stage_id_name[backend_config["stage_id"]]
+                    )
+                )
+            if len(schemes) > 1 and attrs["type"] == BackendTypeEnum.GRPC.value:
+                raise serializers.ValidationError(
+                    _("环境【{stage_name}】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致.").format(
+                        stage_name=stage_id_name[backend_config["stage_id"]]
+                    )
+                )
         return attrs
 
 
