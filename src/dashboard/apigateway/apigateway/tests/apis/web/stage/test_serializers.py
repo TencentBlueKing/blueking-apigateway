@@ -82,6 +82,46 @@ class TestStageInputSLZ:
                 ],
                 "will_error": True,
             },
+            {
+                "gateway": fake_gateway,
+                "name": "stage-test",
+                "description": "test",
+                "backends": [
+                    {
+                        "id": fake_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [
+                                {"scheme": "http", "host": "www.example.com", "weight": 1},
+                                {"scheme": "https", "host": "www.example.com", "weight": 1},
+                            ],
+                        },
+                    }
+                ],
+                "will_error": True,
+            },
+            {
+                "gateway": fake_gateway,
+                "name": "stage-test",
+                "description": "test",
+                "backends": [
+                    {
+                        "id": fake_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [
+                                {"scheme": "grpc", "host": "www.example.com", "weight": 1},
+                                {"scheme": "grpcs", "host": "www.example.com", "weight": 1},
+                            ],
+                        },
+                    }
+                ],
+                "will_error": True,
+            },
         ]
 
         for test in data:

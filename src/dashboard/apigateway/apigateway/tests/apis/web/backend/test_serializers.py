@@ -95,6 +95,44 @@ class TestBackendInputSLZ:
                 ],
                 "will_error": True,
             },
+            {
+                "gateway": fake_stage.gateway,
+                "name": "backend-test",
+                "description": "test",
+                "type": "http",
+                "configs": [
+                    {
+                        "stage_id": fake_stage.id,
+                        "type": "node",
+                        "timeout": 1,
+                        "loadbalance": "roundrobin",
+                        "hosts": [
+                            {"scheme": "http", "host": "www.example.com", "weight": 1},
+                            {"scheme": "https", "host": "www.example.com", "weight": 1},
+                        ],
+                    }
+                ],
+                "will_error": True,
+            },
+            {
+                "gateway": fake_stage.gateway,
+                "name": "backend-test",
+                "description": "test",
+                "type": "http",
+                "configs": [
+                    {
+                        "stage_id": fake_stage.id,
+                        "type": "node",
+                        "timeout": 1,
+                        "loadbalance": "roundrobin",
+                        "hosts": [
+                            {"scheme": "grpc", "host": "www.example.com", "weight": 1},
+                            {"scheme": "grpcs", "host": "www.example.com", "weight": 1},
+                        ],
+                    }
+                ],
+                "will_error": True,
+            },
         ]
 
         for test in data:
