@@ -27,6 +27,7 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
@@ -261,6 +262,21 @@ class ResourceVersionHandler:
             "in_path": list(used_in_path),
             "in_host": list(used_in_host),
         }
+
+    @staticmethod
+    def get_resource_schema(resource_version_id: int, resource_id: int) -> dict:
+        """
+        获取指定版本的资源对应的api schema
+        """
+        resources_version_schema = OpenAPIResourceSchemaVersion.objects.get(resource_version_id=resource_version_id)
+        if resources_version_schema is None:
+            return {}
+        # 筛选资源数据
+        for schema_info in resources_version_schema.schema:
+            schema = schema_info["schema"]
+            if resource_id == schema_info["resource_id"]:
+                return schema
+        return {}
 
 
 class ResourceDocVersionHandler:

@@ -10,7 +10,9 @@ RUN pip config set global.index-url "${PYPI}"
 
 WORKDIR /app
 ADD build/requirements.txt /app/requirements.txt
-RUN pip install --upgrade pip
+# while the celery 4.4.7 can't be installed via pip >=24.x
+# RUN pip install --upgrade pip
+RUN pip install pip==23.0.1
 RUN pip install -r requirements.txt
 
 ADD build /app

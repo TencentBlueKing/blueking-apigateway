@@ -22,6 +22,7 @@ import json
 import pytest
 from django_dynamic_fixture import G
 
+from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
@@ -252,6 +253,20 @@ class TestResourceVersionHandler:
                 id=test["resource_version"].id if test["resource_version"] else 0,
             )
             assert result == test["expected"]
+
+    def test_get_resource_schema(self, fake_resource, fake_resource_version, fake_resource_schema_with_body):
+        openapi_schema_version = G(
+            OpenAPIResourceSchemaVersion,
+            resource_version=fake_resource_version,
+            schema=[
+                {
+                    "resource_id": fake_resource.id,
+                    "schema": fake_resource_schema_with_body.schema,
+                }
+            ],
+        )
+        resource_schema = ResourceVersionHandler.get_resource_schema(fake_resource_version.id, fake_resource.id)
+        assert resource_schema["requestBody"] == fake_resource_schema_with_body.schema["requestBody"]
 
 
 class TestResourceDocVersionHandler:
