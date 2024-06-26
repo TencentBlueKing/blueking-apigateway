@@ -503,6 +503,18 @@ msgstr ""
 "The configuration Scheme [{scheme}] of the backend service [{backend_name}] "
 "is illegal."
 
+#: apigateway/apis/web/stage/serializers.py:204
+#, python-brace-format
+msgid "后端服务【{backend_name}】的配置 scheme 同时存在 http 和 https， 需要保持一致。"
+msgstr ""
+"The configuration scheme of the backend service [{backend_name}] has both http and https, and must be consistent"
+
+#: apigateway/apis/web/stage/serializers.py:210
+#, python-brace-format
+msgid "后端服务【{backend_name}】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致。"
+msgstr ""
+"The configuration scheme of the backend service [{backend_name}] has both grpc and grpcs, and must be consistent"
+
 #: apigateway/apis/web/stage/validators.py:54
 #, python-brace-format
 msgid ""
