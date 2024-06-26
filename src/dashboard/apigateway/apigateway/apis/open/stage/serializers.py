@@ -471,8 +471,8 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                     )
                 )
 
-    def _validate_backend_hosts(self, backend):
-        if backend:
+    def _validate_backend_hosts(self, backends):
+        for backend in backends:
             hosts = backend["config"]["hosts"]
             schemes = {host.get("scheme") for host in hosts}
             if len(schemes) > 1 and backend.type == BackendTypeEnum.HTTP.value:
