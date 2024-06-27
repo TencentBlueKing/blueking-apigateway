@@ -33,6 +33,7 @@ from apigateway.biz.resource_version_diff import ResourceDifferHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.version import get_next_version
 
 from .serializers import (
     NeedNewVersionOutputSLZ,
@@ -256,4 +257,18 @@ class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
 
         return OKJsonResponse(
             data=data,
+        )
+
+
+class NextResourceVersionRetrieveApi(generics.RetrieveAPIView):
+    def get(self, request, *args, **kwargs):
+        query_set = ResourceVersion.objects.filter(gateway=request.gateway).order_by("-id")
+        obj = query_set.first()
+        if obj:
+            new_version_str = get_next_version(obj.version)
+            return OKJsonResponse(
+                data={"version": new_version_str},
+            )
+        return OKJsonResponse(
+            data={"version": ""},
         )
