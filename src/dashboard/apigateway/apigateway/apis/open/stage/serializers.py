@@ -31,7 +31,7 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData, PluginSynchronizer
-from apigateway.biz.validators import MaxCountPerGatewayValidator
+from apigateway.biz.validators import MaxCountPerGatewayValidator, SchemeValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
@@ -42,7 +42,6 @@ from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
     STAGE_NAME_PATTERN,
-    BackendTypeEnum,
     LoadBalanceTypeEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, MicroGateway, Stage
@@ -229,7 +228,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     def validate(self, data):
         self._validate_micro_gateway_stage_unique(data.get("micro_gateway_id"))
         self._validate_plugin_configs(data.get("plugin_configs"))
-        self._validate_backend_hosts(data.get("backends"))
+        self._validate_scheme(data.get("backends"))
         # validate stage backend
         if data.get("proxy_http") is None and data.get("backends") is None:
             raise serializers.ValidationError(_("proxy_http or backends 必须要选择一种方式配置后端服务"))
@@ -471,23 +470,13 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                     )
                 )
 
-    def _validate_backend_hosts(self, backends):
+    def _validate_scheme(self, backends):
         if backends is not None:
             for backend in backends:
-                hosts = backend["config"]["hosts"]
-                schemes = {host.get("scheme") for host in hosts}
-                if len(schemes) > 1 and backend.type == BackendTypeEnum.HTTP.value:
-                    raise serializers.ValidationError(
-                        _("后端服务【{backend_name}】的配置 scheme 同时存在 http 和 https， 需要保持一致。").format(
-                            backend_name=backend.name
-                        )
-                    )
-                if len(schemes) > 1 and backend.type == BackendTypeEnum.GRPC.value:
-                    raise serializers.ValidationError(
-                        _("后端服务【{backend_name}】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致.").format(
-                            backend_name=backend.name
-                        )
-                    )
+                SchemeValidator(
+                    hosts=backend["config"]["hosts"],
+                    backend=backend,
+                )
 
     def _sync_plugins(self, gateway_id: int, stage_id: int, plugin_configs: Optional[Dict[str, Any]] = None):
         # plugin_configs为None则，plugin_config_datas 设置[]则清空对应配置

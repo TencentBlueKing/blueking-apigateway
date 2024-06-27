@@ -25,13 +25,12 @@ from rest_framework.validators import UniqueTogetherValidator
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.biz.releaser import ReleaseValidationError
-from apigateway.biz.validators import MaxCountPerGatewayValidator, PublishValidator
+from apigateway.biz.validators import MaxCountPerGatewayValidator, PublishValidator, SchemeValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import (
     STAGE_NAME_PATTERN,
-    BackendTypeEnum,
     PublishEventStatusEnum,
     ReleaseStatusEnum,
     StageStatusEnum,
@@ -205,8 +204,12 @@ class StageInputSLZ(serializers.Serializer):
         # 校验backend下的host下的类型的唯一性
         for input_backend in attrs["backends"]:
             backend = backend_dict[input_backend["id"]]
-            check_backend_hosts_scheme(backend, input_backend["config"]["hosts"])
-
+            (
+                SchemeValidator(
+                    hosts=input_backend["config"]["hosts"],
+                    backend=backend,
+                ),
+            )
         return attrs
 
 
@@ -215,22 +218,6 @@ def check_backend_host_scheme(backend, host):
         raise serializers.ValidationError(
             _("后端服务【{backend_name}】的配置Scheme【{scheme}】不合法。").format(
                 backend_name=backend.name, scheme=host["scheme"]
-            )
-        )
-
-
-def check_backend_hosts_scheme(backend, hosts):
-    schemes = {host.get("scheme") for host in hosts}
-    if len(schemes) > 1 and backend.type == BackendTypeEnum.HTTP.value:
-        raise serializers.ValidationError(
-            _("后端服务【{backend_name}】的配置 scheme 同时存在 http 和 https， 需要保持一致。").format(
-                backend_name=backend.name
-            )
-        )
-    if len(schemes) > 1 and backend.type == BackendTypeEnum.GRPC.value:
-        raise serializers.ValidationError(
-            _("后端服务【{backend_name}】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致.").format(
-                backend_name=backend.name
             )
         )
 

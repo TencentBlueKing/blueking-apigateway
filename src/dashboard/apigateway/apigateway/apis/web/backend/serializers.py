@@ -22,6 +22,7 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
+from apigateway.biz.validators import SchemeValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, BackendTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Stage
@@ -87,20 +88,12 @@ class BackendInputSLZ(serializers.Serializer):
 
         # 校验backend下的host下的类型的唯一性
         for backend_config in attrs["configs"]:
-            hosts = backend_config["hosts"]
-            schemes = {host.get("scheme") for host in hosts}
-            if len(schemes) > 1 and attrs["type"] == BackendTypeEnum.HTTP.value:
-                raise serializers.ValidationError(
-                    _("环境【{stage_name}】的配置 scheme 同时存在 http 和 https， 需要保持一致.").format(
-                        stage_name=stage_id_name[backend_config["stage_id"]]
-                    )
-                )
-            if len(schemes) > 1 and attrs["type"] == BackendTypeEnum.GRPC.value:
-                raise serializers.ValidationError(
-                    _("环境【{stage_name}】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致.").format(
-                        stage_name=stage_id_name[backend_config["stage_id"]]
-                    )
-                )
+            (
+                SchemeValidator(
+                    hosts=backend_config["hosts"],
+                    backend=backend_config,
+                ),
+            )
 
         return attrs
 
