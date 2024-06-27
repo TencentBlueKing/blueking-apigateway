@@ -372,7 +372,7 @@ class TestSchemeInputValidator:
 
         # 捕获可能的异常
         try:
-            validator.validate_scheme()
+            validator._validate_scheme()
             assert expected_error_message is None
         except Exception as e:
             assert str(e) == expected_error_message
