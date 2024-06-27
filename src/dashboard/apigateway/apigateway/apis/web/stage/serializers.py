@@ -25,7 +25,7 @@ from rest_framework.validators import UniqueTogetherValidator
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.biz.releaser import ReleaseValidationError
-from apigateway.biz.validators import MaxCountPerGatewayValidator, PublishValidator, SchemeValidator
+from apigateway.biz.validators import MaxCountPerGatewayValidator, PublishValidator, SchemeInputValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
@@ -205,7 +205,7 @@ class StageInputSLZ(serializers.Serializer):
         for input_backend in attrs["backends"]:
             backend = backend_dict[input_backend["id"]]
             (
-                SchemeValidator(
+                SchemeInputValidator(
                     hosts=input_backend["config"]["hosts"],
                     backend=backend,
                 ),

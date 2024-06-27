@@ -22,7 +22,7 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
-from apigateway.biz.validators import SchemeValidator
+from apigateway.biz.validators import SchemeInputValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, BackendTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Stage
@@ -89,7 +89,7 @@ class BackendInputSLZ(serializers.Serializer):
         # 校验backend下的host下的类型的唯一性
         for backend_config in attrs["configs"]:
             (
-                SchemeValidator(
+                SchemeInputValidator(
                     hosts=backend_config["hosts"],
                     backend=backend_config,
                 ),
