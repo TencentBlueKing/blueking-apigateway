@@ -214,6 +214,7 @@ import { useGetApiList/* , useGetGlobalProperties */ } from '@/hooks';
 import { is24HoursAgo } from '@/common/util';
 import { useCommon } from '@/store';
 import MemberSelect from '@/components/member-select';
+// @ts-ignore
 import TableEmpty from '@/components/table-empty.vue';
 import {
   ref,

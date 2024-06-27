@@ -1,150 +1,200 @@
 <template>
   <div class="access-log-wrapper page-wrapper-padding">
-    <div class="ag-top-header">
-      <bk-form class="search-form" form-type="vertical">
-        <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker">
-          <bk-date-picker
-            ref="datePickerRef"
-            type="datetimerange"
-            style="width: 320px"
-            v-model="dateTimeRange"
-            :key="dateKey"
-            :placeholder="t('选择日期时间范围')"
-            :shortcuts="AccessLogStore.datepickerShortcuts"
-            :shortcut-close="true"
-            :use-shortcut-text="true"
-            :clearable="false"
-            :shortcut-selected-index="shortcutSelectedIndex"
-            @shortcut-change="handleShortcutChange" @change="handlePickerChange" />
-        </bk-form-item>
-        <bk-form-item :label="t('环境')">
-          <bk-select
-            style="width: 150px" v-model="searchParams.stage_id" :clearable="false" searchable
-            @change="handleStageChange">
-            <bk-option v-for="option in stageList" :key="option.id" :id="option.id" :name="option.name">
-            </bk-option>
-          </bk-select>
-        </bk-form-item>
-        <bk-form-item :label="t('查询条件')" class="ag-form-item-inline">
-          <SearchInput
-            v-model:modeValue="keyword"
-            @search="handleSearch"
-            :class="[
-              'top-search-input',
-              localLanguage === 'en' ? 'top-search-input-en' : '',
-            ]"
-          />
-          <span>
-            <bk-popover
-              :is-show="searchUsage.showed" trigger="click" width="450" theme="light" placement="bottom"
-              ext-cls="access-log-popover" @after-show="handlePopoverShow" @after-hidden="handlePopoverHidden">
-              <bk-button text theme="primary" class="search-usage">
-                {{ `${searchUsage.showed ? t("隐藏示例") : t("显示示例")}` }}
-              </bk-button>
-              <template #content>
-                <div class="access-log-search-usage-content">
-                  <div class="sample">
-                    <p>
-                      <span class="mode">{{ t("匹配包含某个关键字") }}: </span>
-                      <span class="value" @click="handleClickUsageValue">
-                        request_id: b3e2497532e54f518b3d1267fb67c83a
-                      </span>
-                    </p>
-                    <p>
-                      <span class="mode">{{ t("多个关键字匹配") }}: </span>
-                      <span class="value" @click="handleClickUsageValue">
-                        (app_code: "app-template" AND client_ip: "1.0.0.1") OR
-                        resource_name: get_user
-                      </span>
-                    </p>
-                    <p>
-                      <span class="mode">{{ t("不包含关键字") }}: </span>
-                      <span class="value" @click="handleClickUsageValue">-status: 200</span>
-                    </p>
-                    <p>
-                      <span class="mode">{{ t("范围匹配") }}: </span>
-                      <span class="value" @click="handleClickUsageValue">duration: [5000 TO 30000]</span>
-                    </p>
-                  </div>
-                  <div class="more">
-                    {{ t("更多示例请参阅") }}
-                    <a class="link" target="_blank" :href="GLOBAL_CONFIG.DOC.QUERY_USE">
-                      {{ t("“请求流水查询规则”") }}
-                    </a>
-                  </div>
-                </div>
-              </template>
-            </bk-popover>
-          </span>
-        </bk-form-item>
-      </bk-form>
-    </div>
-
     <bk-loading :loading="!isPageLoading && isDataLoading" :z-index="100">
-      <div class="chart">
-        <div class="chart-container">
-          <div class="chart-title">{{ t("请求数") }}</div>
-          <div v-show="isShowChart" ref="chartContainer" class="chart-el" />
-          <div v-show="!isShowChart && !isPageLoading" class="no-data-chart">
-            <slot name="empty">
-              <TableEmpty
-                :keyword="tableEmptyConf.keyword" :abnormal="tableEmptyConf.isAbnormal"
-                @reacquire="getSearchData" @clear-filter="handleClearFilterKey" />
-            </slot>
-          </div>
-        </div>
-      </div>
-      <div class="list">
-        <bk-table
-          ref="tableRef"
-          size="small"
-          class="access-log-table"
-          :data="table.list"
-          :columns="table.headers"
-          :pagination="pagination"
-          :remote-pagination="true"
-          :row-style="{ cursor: 'pointer' }"
-          :row-class="getRowClass"
-          :show-overflow-tooltip="true"
-          @row-click="handleRowClick"
-          @page-value-change="handlePageChange"
-          @page-limit-change="handlePageLimitChange"
-        >
-          <template #expandRow="row">
-            <dl class="details">
-              <div
-                class="item"
-                v-for="({ label, field, is_filter: showCopy }, index) in table.fields"
-                :key="index">
-                <dt class="label">
-                  {{label}}
-                  <i
-                    v-if="showCopy"
-                    v-bk-tooltips="$t('复制字段名')"
-                    @click.stop="copy(field)"
-                    class="apigateway-icon icon-ag-clipboard copy-btn"
-                  >
-                  </i>
-                </dt>
-                <dd class="value">{{ formatValue(row[field], field) }}</dd>
+      <bk-collapse v-model="activeIndex">
+        <bk-collapse-panel :name="1" class="collapse-panel mb16">
+          <template #header>
+            <div class="collapse-panel-header">
+              <angle-up-fill :class="['panel-title-icon', activeIndex?.includes(1) ? '' : 'packUp']" />
+              <span class="panel-title">{{ t('查询条件') }}</span>
+            </div>
+          </template>
+          <template #content>
+            <div class="ag-top-header">
+              <bk-form class="search-form" form-type="vertical">
+                <bk-form-item :label="t('起止时间')" class="ag-form-item-datepicker">
+                  <bk-date-picker
+                    ref="datePickerRef"
+                    type="datetimerange"
+                    style="width: 300px"
+                    v-model="dateTimeRange"
+                    :key="dateKey"
+                    :placeholder="t('选择日期时间范围')"
+                    :shortcuts="AccessLogStore.datepickerShortcuts"
+                    :shortcut-close="true"
+                    :use-shortcut-text="true"
+                    :clearable="false"
+                    :shortcut-selected-index="shortcutSelectedIndex"
+                    @shortcut-change="handleShortcutChange" @change="handlePickerChange" />
+                </bk-form-item>
+                <bk-form-item :label="t('环境')">
+                  <bk-select
+                    style="width: 300px" v-model="searchParams.stage_id" :clearable="false" searchable
+                    @change="handleStageChange">
+                    <bk-option v-for="option in stageList" :key="option.id" :id="option.id" :name="option.name">
+                    </bk-option>
+                  </bk-select>
+                </bk-form-item>
+                <bk-form-item :label="t('资源')">
+                  <bk-select
+                    style="width: 300px"
+                    class="top-resource-select"
+                    :popover-width="180"
+                    ext-popover-cls="resource-dropdown-content"
+                    v-model="searchParams.resource_id"
+                    filterable
+                    :input-search="false"
+                    @change="handleResourceChange">
+                    <bk-option
+                      v-for="option in resourceList"
+                      :key="option.id"
+                      :id="option.id"
+                      :name="`${option.method} ${option.path}`">
+                    </bk-option>
+                  </bk-select>
+                </bk-form-item>
+                <bk-form-item :label="t('查询语句')" class="ag-form-item-inline">
+                  <SearchInput
+                    v-model:modeValue="keyword"
+                    @search="handleSearch"
+                    @choose="handleChoose"
+                    :class="[
+                      'top-search-input',
+                      localLanguage === 'en' ? 'top-search-input-en' : '',
+                    ]"
+                  />
+                </bk-form-item>
+                <bk-form-item label="" style="margin-left: 0">
+                  <bk-button theme="primary" @click="handleSearch(keyword)">{{ t('查询') }}</bk-button>
+                  <bk-button class="ml10" @click="handleClearFilterKey">{{ t('重置') }}</bk-button>
+                </bk-form-item>
+              </bk-form>
+            </div>
+          </template>
+        </bk-collapse-panel>
+
+        <bk-collapse-panel :name="2" class="collapse-panel mb32">
+          <template #header>
+            <div class="collapse-panel-header">
+              <angle-up-fill :class="['panel-title-icon', activeIndex?.includes(2) ? '' : 'packUp']" />
+              <span class="panel-title">{{ t('请求数') }}</span>
+            </div>
+          </template>
+          <template #content>
+            <div class="chart">
+              <div class="chart-container">
+                <div class="chart-title">{{ t("请求数") }}</div>
+                <div v-show="isShowChart" ref="chartContainer" class="chart-el" />
+                <div v-show="!isShowChart && !isPageLoading" class="no-data-chart">
+                  <slot name="empty">
+                    <TableEmpty
+                      :keyword="tableEmptyConf.keyword" :abnormal="tableEmptyConf.isAbnormal"
+                      @reacquire="getSearchData" @clear-filter="handleClearFilterKey" />
+                  </slot>
+                </div>
               </div>
-              <bk-button
-                class="share-btn"
-                theme="primary"
-                outline
-                @click="handleClickCopyLink(row)"
-                :loading="isShareLoading">
-                {{ $t('复制分享链接') }}
-              </bk-button>
-            </dl>
+            </div>
           </template>
-          <template #empty>
-            <TableEmpty
-              :keyword="tableEmptyConf.keyword" :abnormal="tableEmptyConf.isAbnormal" @reacquire="getSearchData"
-              @clear-filter="handleClearFilterKey" />
+        </bk-collapse-panel>
+
+        <bk-collapse-panel :name="3" class="collapse-panel">
+          <template #header>
+            <div class="collapse-panel-header">
+              <angle-up-fill :class="['panel-title-icon', activeIndex?.includes(3) ? '' : 'packUp']" />
+              <span class="panel-title">{{ t('日志详情') }}</span>
+              <span class="panel-total">
+                {{ t('共') }}
+                <span>{{ table?.list?.length }}</span>
+                {{ t('条') }}
+              </span>
+              <bk-alert
+                class="flex1"
+                theme="warning"
+                closable
+                v-if="table?.list?.length >= 10000"
+                :title="t('每次查询操作最多只会返回 10,000 条记录。如果您未能查看全部需要的日志，请尝试缩小查询的时间范围')"
+              />
+            </div>
           </template>
-        </bk-table>
-      </div>
+          <template #content>
+            <div class="list">
+              <bk-table
+                ref="tableRef"
+                size="small"
+                class="access-log-table"
+                border="outer"
+                :data="table.list"
+                :columns="table.headers"
+                :pagination="pagination"
+                :remote-pagination="true"
+                :row-style="{ cursor: 'pointer' }"
+                :row-class="getRowClass"
+                :show-overflow-tooltip="true"
+                @row-click="handleRowClick"
+                @page-value-change="handlePageChange"
+                @page-limit-change="handlePageLimitChange"
+              >
+                <template #expandRow="row">
+                  <dl class="details">
+                    <div
+                      class="item"
+                      v-for="({ label, field/*, is_filter: showCopy*/ }, index) in table.fields"
+                      :key="index">
+                      <dt class="label">
+                        {{ label }}
+                        <span class="fields">
+                          ( <span
+                            class="fields-main"
+                            v-bk-tooltips="t('复制')"
+                            @click.stop="copy(field)">
+                            {{ field }}
+                          </span> ) :
+                        </span>
+                        <!-- <i
+                          v-if="showCopy"
+                          v-bk-tooltips="$t('复制字段名')"
+                          @click.stop="copy(field)"
+                          class="apigateway-icon icon-ag-clipboard copy-btn"
+                        >
+                        </i> -->
+                      </dt>
+                      <dd class="value">
+
+                        <span class="respond" v-if="field === 'response_body' && row.status === 200">
+                          <info-line class="respond-icon" /><span>{{ t('状态码为 200 时不记录响应正文') }}</span>
+                        </span>
+                        <span v-else>
+                          {{ formatValue(row[field], field) }}
+                        </span>
+
+                        <span class="opt-btns" v-if="field === 'request_id'">
+                          <copy-shape v-bk-tooltips="t('复制')" @click="handleRowCopy(field, row)" class="opt-copy" />
+                          <enlarge-line v-bk-tooltips="t('添加到本次检索')" @click="handleKeySearch(row)" />
+                          <narrow-line v-bk-tooltips="t('从本次检索中排除')" @click="handleRemoveKey" />
+                        </span>
+
+                      </dd>
+                    </div>
+                    <!-- <bk-button
+                      class="share-btn"
+                      theme="primary"
+                      outline
+                      @click="handleClickCopyLink(row)"
+                      :loading="isShareLoading">
+                      {{ $t('复制分享链接') }}
+                    </bk-button> -->
+                  </dl>
+                </template>
+                <template #empty>
+                  <TableEmpty
+                    :keyword="tableEmptyConf.keyword" :abnormal="tableEmptyConf.isAbnormal" @reacquire="getSearchData"
+                    @clear-filter="handleClearFilterKey" />
+                </template>
+              </bk-table>
+            </div>
+          </template>
+        </bk-collapse-panel>
+      </bk-collapse>
     </bk-loading>
   </div>
 </template>
@@ -162,21 +212,29 @@ import { merge } from 'lodash';
 import { copy } from '@/common/util';
 import { SearchParamsInterface } from './common/type';
 import { useCommon, useAccessLog } from '@/store';
-import { useGetGlobalProperties, userChartIntervalOption } from '@/hooks';
+import { userChartIntervalOption } from '@/hooks';
 import {
   fetchApigwAccessLogList,
   fetchApigwAccessLogChart,
   fetchApigwStages,
-  fetchApigwAccessLogShareLink,
+  // fetchApigwAccessLogShareLink,
+  getApigwResources,
 } from '@/http';
+import {
+  AngleUpFill,
+  CopyShape,
+  EnlargeLine,
+  NarrowLine,
+  InfoLine,
+} from 'bkui-vue/lib/icon';
 
 const { t } = i18n.global;
 const { getChartIntervalOption } = userChartIntervalOption();
 const commonStore = useCommon();
 const AccessLogStore = useAccessLog();
-const globalProperties = useGetGlobalProperties();
-const { GLOBAL_CONFIG } = globalProperties;
-
+// const globalProperties = useGetGlobalProperties();
+// const { GLOBAL_CONFIG } = globalProperties;
+const activeIndex = ref<number[]>([1, 2, 3]);
 const keyword = ref('');
 const chartInstance = ref(null);
 const chartContainer = ref(null);
@@ -184,10 +242,11 @@ const tableRef = ref(null);
 const datePickerRef = ref(null);
 const isPageLoading = ref(false);
 const isDataLoading = ref(false);
-const isShareLoading = ref(false);
+// const isShareLoading = ref(false);
 const shortcutSelectedIndex = ref(1);
 const dateKey = ref('dateKey');
 const dateTimeRange = ref([]);
+const resourceList = ref<any>([]);
 const apigwId = ref(commonStore.apigwId);
 const pagination = ref({
   current: 1,
@@ -197,6 +256,7 @@ const pagination = ref({
 });
 const searchParams = ref<SearchParamsInterface>({
   stage_id: 0,
+  resource_id: '',
   time_start: '',
   time_end: '',
   query: '',
@@ -210,9 +270,9 @@ const table = ref({
   fields: [],
   headers: [],
 });
-const searchUsage = ref({
-  showed: false,
-});
+// const searchUsage = ref({
+//   showed: false,
+// });
 const chartData: Record<string, any> = ref({});
 const stageList = ref([]);
 
@@ -254,7 +314,7 @@ const setSearchTimeRange = () => {
 
 const renderChart = (data: Record<string, any>) => {
   const { series, timeline } = data;
-  const xAxisData = timeline.map((time: number) => dayjs.unix(time).format('MM-DD\nHH:mm:ss'));
+  const xAxisData = timeline.map((time: number) => dayjs.unix(time).format('YYYY-MM-DD\nHH:mm:ss'));
   const options = {
     grid: {
       left: 20,
@@ -310,12 +370,25 @@ const renderChart = (data: Record<string, any>) => {
     ],
     tooltip: {
       trigger: 'item',
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      backgroundColor: 'rgba(255, 255, 255, 1)',
       textStyle: {
         fontSize: 12,
+        color: '#63656E',
+        lineHeight: 24,
       },
+      padding: [6, 10],
+      extraCssText: 'box-shadow: 0 0 12px 4px #31323826;',
       formatter(params: any) {
-        return `${formatterValue(params)}<br />${params.name}`;
+        return `${params.name}<br />请求数: ${formatterValue(params)}`;
+      },
+    },
+    toolbox: {
+      right: 12,
+      top: -8,
+      feature: {
+        dataZoom: {
+          show: true,
+        },
       },
     },
   };
@@ -323,6 +396,23 @@ const renderChart = (data: Record<string, any>) => {
   const intervalOption = getChartIntervalOption(timeDuration, 'time', 'xAxis');
   chartInstance.value.setOption(merge(options, intervalOption));
   chartResize();
+};
+
+const getResources = async () => {
+  const { apigwId } = commonStore;
+  const pageParams = {
+    no_page: true,
+    order_by: 'path',
+    offset: 0,
+    limit: 10000,
+  };
+
+  try {
+    const res = await getApigwResources(apigwId, pageParams);
+    resourceList.value = res.results;
+  } catch (e) {
+    isDataLoading.value = false;
+  }
 };
 
 const setTableHeader = () => {
@@ -356,6 +446,11 @@ const setTableHeader = () => {
     },
   ];
   table.value.headers = columns;
+};
+
+const handleResourceChange = (value: any) => {
+  searchParams.value.resource_id = value;
+  getSearchData();
 };
 
 const getApigwStages = async () => {
@@ -423,19 +518,34 @@ const getSearchData = async () => {
   }
 };
 
-
-const handleClickCopyLink = async ({ request_id }: any) => {
-  const params = { request_id };
-  isShareLoading.value = true;
-  try {
-    const { link } = await fetchApigwAccessLogShareLink(apigwId.value, params);
-    copy(link || '');
-  } catch (e) {
-    console.error(e);
-  } finally {
-    isShareLoading.value = false;
-  }
+const handleRowCopy = (field:  string, row: any) => {
+  const copyStr = `${field}: ${row[field]}`;
+  copy(copyStr);
 };
+
+const handleKeySearch = (row: any) => {
+  const { request_id } = row;
+  keyword.value = `request_id: ${request_id}`;
+  handleSearch(keyword.value);
+};
+
+const handleRemoveKey = () => {
+  keyword.value = '';
+  handleSearch(keyword.value);
+};
+
+// const handleClickCopyLink = async ({ request_id }: any) => {
+//   const params = { request_id };
+//   isShareLoading.value = true;
+//   try {
+//     const { link } = await fetchApigwAccessLogShareLink(apigwId.value, params);
+//     copy(link || '');
+//   } catch (e) {
+//     console.error(e);
+//   } finally {
+//     isShareLoading.value = false;
+//   }
+// };
 
 const handleShortcutChange = (value: Record<string, any>, index: number) => {
   shortcutSelectedIndex.value = index;
@@ -462,16 +572,8 @@ const handleSearch = (value: string) => {
   getSearchData();
 };
 
-const handlePopoverShow = ({ isShow }: Record<string, boolean>) => {
-  searchUsage.value.showed = isShow;
-};
-
-const handlePopoverHidden = ({ isShow }: Record<string, boolean>) => {
-  searchUsage.value.showed = isShow;
-};
-
-const handleClickUsageValue = (event: any) => {
-  keyword.value = event.target.innerText;
+const handleChoose = (search: string) => {
+  keyword.value = search;
 };
 
 const handlePageLimitChange = (limit: number) => {
@@ -497,6 +599,7 @@ const handleClearFilterKey = () => {
   if (stageList.value.length) {
     searchParams.value.stage_id = stageList.value[0].id;
   }
+  searchParams.value.resource_id = '';
   [datePickerRef.value.shortcut] = [AccessLogStore.datepickerShortcuts[1]];
   dateTimeRange.value = [];
   shortcutSelectedIndex.value = 1;
@@ -530,6 +633,7 @@ const chartResize = () => {
 
 const initData = async () => {
   await getApigwStages();
+  await getResources();
   await getSearchData();
 };
 
@@ -553,30 +657,63 @@ onBeforeUnmount(() => {
   min-height: calc(100vh - 208px);
   padding-bottom: 24px;
 
+  .collapse-panel {
+    background-color: #fff;
+    padding: 24px;
+    padding-bottom: 8px;
+    .collapse-panel-header {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      margin-bottom: 24px;
+      .panel-title {
+        margin-left: 10px;
+        font-weight: 700;
+        font-size: 14px;
+        color: #313238;
+      }
+      .panel-total {
+        color: #63656e;
+        font-size: 12px;
+        margin-left: 10px;
+        margin-right: 14px;
+        span {
+          font-weight: bold;
+        }
+      }
+      .panel-title-icon {
+        transition: .2s;
+      }
+      .packUp {
+        transform: rotate(-90deg);
+      }
+    }
+  }
+
+  .mb16 {
+    margin-bottom: 16px;
+  }
+
+  .mb32 {
+    margin-bottom: 32px;
+  }
+
   .ag-top-header {
-    min-height: 32px;
-    margin-bottom: 20px;
-    position: relative;
+    padding-left: 20px;
+    padding-right: 4px;
 
     :deep(.search-form) {
-      width: 100% !important;
-      max-width: 100% !important;
-      display: inline-block;
-
       .bk-form-item {
-        display: inline-flex;
-        margin-bottom: 0;
+        display: inline-block;
+        margin-bottom: 16px;
         margin-left: 8px;
-        vertical-align: middle;
 
         &:first-child {
           margin-left: 0;
         }
 
         .bk-form-label {
-          width: auto !important;
           line-height: 32px;
-          display: inline-block;
           padding: 0 15px 0 0;
 
           span {
@@ -591,7 +728,6 @@ onBeforeUnmount(() => {
       }
 
       .ag-form-item-inline {
-        margin-right: 8px !important;
         margin-top: 0px !important;
 
         .bk-form-content {
@@ -605,31 +741,43 @@ onBeforeUnmount(() => {
       }
 
       .top-search-input {
-        width: 600px;
+        width: 586px;
       }
     }
   }
 
   .list {
+    padding-left: 22px;
     margin-top: 16px;
 
     .details {
       position: relative;
       padding: 16px 0;
+      padding-left: 55px;
       font-size: 12px;
       background-color: #ffffff;
       .item {
         display: flex;
+        align-items: center;
         margin-bottom: 8px;
 
         .label {
+          font-size: 12px;
           position: relative;
           flex: none;
-          width: 200px;
-          font-weight: bold;
-          color: #63656e;
-          margin-right: 32px;
+          width: 212px;
+          color: #63656E;
+          margin-right: 12px;
           text-align: right;
+          .fields {
+            color: #979BA5;
+            .fields-main {
+              cursor: pointer;
+              &:hover {
+                background-color: #f0f1f5;
+              }
+            }
+          }
 
           .copy-btn {
             color: #c4c6cc;
@@ -651,8 +799,35 @@ onBeforeUnmount(() => {
           width: calc(100% - 400px);
           white-space: pre-wrap;
           word-break: break-word;
-          color: #63656e;
+          color: #313238;
           line-height: 20px;
+          display: flex;
+          align-items: center;
+
+          .respond {
+            font-size: 12px;
+            color: #FF9C01;
+            display: flex;
+            align-items: center;
+            .respond-icon {
+              margin-right: 4px;
+              margin-top: -2px;
+            }
+          }
+
+          .opt-btns {
+            color: #1768EF;
+            font-size: 18px;
+            padding-top: 3px;
+            margin-left: 10px;
+            .opt-copy {
+              font-size: 16px;
+            }
+            span {
+              cursor: pointer;
+              margin-right: -4px;
+            }
+          }
         }
       }
 
@@ -663,6 +838,10 @@ onBeforeUnmount(() => {
       }
     }
   }
+}
+
+:deep(.bk-collapse-content) {
+  padding: 0;
 }
 
 :deep(.exception) {
@@ -768,6 +947,9 @@ onBeforeUnmount(() => {
     font-weight: 700!important;
     color: #63656e!important;
   }
+}
+.flex1 {
+  flex: 1;
 }
 </style>
 

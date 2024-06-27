@@ -68,9 +68,11 @@ import en from 'bkui-vue/dist/locale/en.esm';
 // @ts-ignore
 import NoticeComponent from '@blueking/notice-component';
 import '@blueking/notice-component/dist/style.css';
-
+// @ts-ignore
 import UserInfo from '@/components/user-info.vue';
+// @ts-ignore
 import ProductInfo from '@/components/product-info.vue';
+// @ts-ignore
 import LanguageToggle from '@/components/language-toggle.vue';
 // import AppAuth from '@/components/auth/index.vue';
 import mitt from '@/common/event-bus';
