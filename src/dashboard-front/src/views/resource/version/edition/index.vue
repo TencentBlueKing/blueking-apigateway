@@ -74,6 +74,8 @@
                 </span>
               </template>
             </bk-table-column>
+            <bk-table-column :label="t('创建者')" prop="created_by">
+            </bk-table-column>
             <bk-table-column :label="t('操作')" width="200">
               <template #default="{ data }">
                 <bk-button

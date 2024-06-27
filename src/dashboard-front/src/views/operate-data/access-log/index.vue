@@ -170,7 +170,7 @@
                         <span class="opt-btns" v-if="field === 'request_id'">
                           <copy-shape v-bk-tooltips="t('复制')" @click="handleRowCopy(field, row)" class="opt-copy" />
                           <enlarge-line v-bk-tooltips="t('添加到本次检索')" @click="handleKeySearch(row)" />
-                          <narrow-line v-bk-tooltips="t('从本次检索中排除')" @click="handleRemoveKey" />
+                          <narrow-line v-bk-tooltips="t('从本次检索中排除')" @click="handleRemoveKey(row)" />
                         </span>
 
                       </dd>
@@ -270,6 +270,8 @@ const table = ref({
   fields: [],
   headers: [],
 });
+const includeObj = ref<string[]>([]);
+const excludeObj = ref<string[]>([]);
 // const searchUsage = ref({
 //   showed: false,
 // });
@@ -476,7 +478,16 @@ const getApigwAccessLogList = async () => {
     offset: (pagination.value.current - 1) * pagination.value.limit,
     limit: pagination.value.limit,
   };
-  return await fetchApigwAccessLogList(apigwId.value, params);
+
+  let includeStr = '';
+  includeObj.value?.forEach((item: string) => {
+    includeStr += `&include=${item}`;
+  });
+  let excludeStr = '';
+  excludeObj.value?.forEach((item: string) => {
+    excludeStr += `&exclude=${item}`;
+  });
+  return await fetchApigwAccessLogList(apigwId.value, params, includeStr + excludeStr);
 };
 
 const getApigwAccessLogChart = async () => {
@@ -525,13 +536,30 @@ const handleRowCopy = (field:  string, row: any) => {
 
 const handleKeySearch = (row: any) => {
   const { request_id } = row;
-  keyword.value = `request_id: ${request_id}`;
-  handleSearch(keyword.value);
+
+  includeObj.value?.push(`request_id:${request_id}`);
+  includeObj.value = Array.from(new Set(includeObj.value));
+
+  const index = excludeObj.value?.indexOf(`request_id:${request_id}`);
+  if (index !== -1) {
+    excludeObj.value?.splice(index, 1);
+  }
+
+  getSearchData();
 };
 
-const handleRemoveKey = () => {
-  keyword.value = '';
-  handleSearch(keyword.value);
+const handleRemoveKey = (row: any) => {
+  const { request_id } = row;
+
+  excludeObj.value?.push(`request_id:${request_id}`);
+  excludeObj.value = Array.from(new Set(excludeObj.value));
+
+  const index = includeObj.value?.indexOf(`request_id:${request_id}`);
+  if (index !== -1) {
+    includeObj.value?.splice(index, 1);
+  }
+
+  getSearchData();
 };
 
 // const handleClickCopyLink = async ({ request_id }: any) => {
