@@ -138,7 +138,7 @@
                   <dl class="details">
                     <div
                       class="item"
-                      v-for="({ label, field, is_filter: showCopy }, index) in table.fields"
+                      v-for="({ label, field/*, is_filter: showCopy*/ }, index) in table.fields"
                       :key="index">
                       <dt class="label">
                         {{ label }}
