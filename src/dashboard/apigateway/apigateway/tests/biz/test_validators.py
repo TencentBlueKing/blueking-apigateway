@@ -343,6 +343,7 @@ def create_backend_mock(name, type):
     backend.type = type
     return backend
 
+
 class TestSchemeInputValidator:
     @pytest.mark.parametrize(
         "backend_type, hosts, expected_error_message",
