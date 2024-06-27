@@ -135,6 +135,8 @@ const init = async (isUpdate?: Boolean, isDelete?: Boolean) => {
 
     // 获取当前环境的详情数据
     await getStageDetailFun(curStage.value?.id);
+    // 获取当前环境的资源信息
+    await mitt.emit('update-resource', curStage.value);
   } catch (error) {
     console.error(error);
   } finally {
@@ -379,8 +381,8 @@ defineExpose({
   padding: 0 24px;
   box-sizing: border-box;
   background: #fff;
-  border-bottom: 1px solid #dcdee5;
-  box-shadow: 0 3px 4px rgba(64,112,203,0.05882);
+  // border-bottom: 1px solid #dcdee5;
+  // box-shadow: 0 3px 4px rgba(64,112,203,0.05882);
   min-width: 1280px;
 
   .top-title-wrapper {

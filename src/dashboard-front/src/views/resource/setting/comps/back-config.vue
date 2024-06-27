@@ -153,7 +153,9 @@
             :label="t('请求地址')"
           >
             <template #default="{ data }">
-              {{data?.backend_urls[0]}}
+              <span v-bk-tooltips="{ content: data?.backend_urls[0], disabled: !data?.backend_urls[0] }">
+                {{data?.backend_urls[0]}}
+              </span>
             </template>
           </bk-table-column>
         </bk-table>

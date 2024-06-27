@@ -131,8 +131,8 @@ const handleCreateResourceVersion = async () => {
   box-sizing: border-box;
   padding: 0 24px;
   background: #FFFFFF;
-  border-bottom: 1px solid #dcdee5;
-  box-shadow: 0 3px 4px 0 #0000000a;
+  // border-bottom: 1px solid #dcdee5;
+  // box-shadow: 0 3px 4px 0 #0000000a;
   display: flex;
   align-items: center;
   justify-content: space-between;

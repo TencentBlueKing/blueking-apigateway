@@ -152,7 +152,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch, onBeforeMount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getResourceVersionsInfo, getGatewayLabels, getStageList } from '@/http';
 import { useCommon, useStage } from '@/store';
@@ -162,6 +162,7 @@ import editStageSideslider from '../comps/edit-stage-sideslider.vue';
 import { EditLine } from 'bkui-vue/lib/icon';
 import { copy } from '@/common/util';
 import { useRoute } from 'vue-router';
+import mitt from '@/common/event-bus';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -476,6 +477,13 @@ watch(() => stageStore.curStageId, () => {
 // 切换环境重新执行
 onMounted(() => {
   init();
+  mitt.on('update-resource', (curStage: any) => {
+    getResourceVersionsData(curStage);
+  });
+});
+
+onBeforeMount(() => {
+  mitt.off('update-resource');
 });
 </script>
 
