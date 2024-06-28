@@ -8,7 +8,7 @@ const { BK_DASHBOARD_URL } = window;
  *  获取流程日志列表
  * @param apigwId 网关id
  */
-export const fetchApigwAccessLogList = (apigwId: number, params: ChartInterface) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/logs/?${json2Query(params)}`);
+export const fetchApigwAccessLogList = (apigwId: number, params: ChartInterface, extraStr?: string) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/logs/?${json2Query(params)}${extraStr}`);
 
 /**
  *  获取流程日志chart

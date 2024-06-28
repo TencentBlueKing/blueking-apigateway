@@ -657,6 +657,20 @@ const getDiffData = async () => {
     });
     res.update.forEach((item: any) => {
       item.isExpanded = false;
+
+      if (item?.source?.diff?.proxy?.backend_id) {
+        const curBackend: any = backendsList.value?.find((backend: any) => {
+          return backend.id === item.source.diff.proxy.backend_id;
+        });
+        item.source.diff.proxy.backend_name = curBackend?.name || '';
+      }
+
+      if (item?.target?.diff?.proxy?.backend_id) {
+        const curBackend: any = backendsList.value?.find((backend: any) => {
+          return backend.id === item.target.diff.proxy.backend_id;
+        });
+        item.target.diff.proxy.backend_name = curBackend?.name || '';
+      }
     });
 
     diffData.add = res.add;
