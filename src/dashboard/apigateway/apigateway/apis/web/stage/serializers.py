@@ -179,7 +179,6 @@ class StageInputSLZ(serializers.Serializer):
         # 查询网关下所有的backend
         backends = Backend.objects.filter(gateway=attrs["gateway"])
         backend_dict = {backend.id: backend for backend in backends}
-
         # 校验后端服务数据是否完整
         for input_backend in attrs["backends"]:
             if input_backend["id"] not in backend_dict:
@@ -204,12 +203,8 @@ class StageInputSLZ(serializers.Serializer):
         # 校验backend下的host下的类型的唯一性
         for input_backend in attrs["backends"]:
             backend = backend_dict[input_backend["id"]]
-            (
-                SchemeInputValidator(
-                    hosts=input_backend["config"]["hosts"],
-                    backend=backend,
-                ),
-            )
+            validator = SchemeInputValidator(hosts=input_backend["config"]["hosts"], backend=backend)
+            validator.validate_scheme()
         return attrs
 
 

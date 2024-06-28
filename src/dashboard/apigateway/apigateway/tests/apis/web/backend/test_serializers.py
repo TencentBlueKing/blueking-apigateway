@@ -90,7 +90,7 @@ class TestBackendInputSLZ:
                         "type": "node",
                         "timeout": 1,
                         "loadbalance": "roundrobin",
-                        "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                        "hosts": [{"scheme": "http", "host": "www.example1.com", "weight": 1}],
                     },
                 ],
                 "will_error": True,
@@ -113,6 +113,24 @@ class TestBackendInputSLZ:
                     }
                 ],
                 "will_error": True,
+            },
+            {
+                "gateway": fake_stage.gateway,
+                "name": "backend-test",
+                "description": "test",
+                "type": "http",
+                "configs": [
+                    {
+                        "stage_id": fake_stage.id,
+                        "type": "node",
+                        "timeout": 1,
+                        "loadbalance": "roundrobin",
+                        "hosts": [
+                            {"scheme": "http", "host": "www.example.com", "weight": 1},
+                            {"scheme": "http", "host": "www.example1.com", "weight": 1},
+                        ],
+                    }
+                ],
             },
             {
                 "gateway": fake_stage.gateway,

@@ -88,12 +88,9 @@ class BackendInputSLZ(serializers.Serializer):
 
         # 校验backend下的host下的类型的唯一性
         for backend_config in attrs["configs"]:
-            (
-                SchemeInputValidator(
-                    hosts=backend_config["hosts"],
-                    backend=backend_config,
-                ),
-            )
+            backend_instance = Backend(name=attrs["name"], type=BackendTypeEnum.HTTP.value)
+            validator = SchemeInputValidator(hosts=backend_config["hosts"], backend=backend_instance)
+            validator.validate_scheme()
 
         return attrs
 

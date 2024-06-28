@@ -165,6 +165,26 @@ def fake_backend(fake_gateway, fake_stage, faker):
 
 
 @pytest.fixture
+def fake_grpc_backend(fake_gateway, fake_stage, faker):
+    backend = G(Backend, gateway=fake_gateway, name=faker.pystr(), type="grpc")
+
+    G(
+        BackendConfig,
+        gateway=fake_gateway,
+        stage=fake_stage,
+        backend=backend,
+        config={
+            "type": "node",
+            "timeout": 30,
+            "loadbalance": "roundrobin",
+            "hosts": [{"scheme": "grpc", "host": "example.com:999", "weight": 100}],
+        },
+    )
+
+    return backend
+
+
+@pytest.fixture
 def fake_default_backend(fake_gateway, fake_stage, faker):
     backend = G(
         Backend,
