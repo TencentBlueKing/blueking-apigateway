@@ -14,6 +14,7 @@ module.exports = {
     return {
       devServer: {
         setupMiddlewares: mockServer,
+        host: 'dev-t.paas3-dev.bktencent.com',
         client: {
           overlay: false,
         },
