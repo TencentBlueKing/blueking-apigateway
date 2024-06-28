@@ -15,6 +15,7 @@ declare interface Window {
   CREATE_CHAT_API: string
   SEND_CHAT_API: string
   BK_SHARED_RES_URL: string
+  BK_APP_CODE: string
 }
 
 declare module "*.svg" {
