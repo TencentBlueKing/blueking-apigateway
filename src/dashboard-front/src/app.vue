@@ -81,7 +81,10 @@ import { useSidebar } from '@/hooks';
 // @ts-ignore
 import { getPlatformConfig, setShortcutIcon, setDocumentTitle  } from '@blueking/platform-config';
 // @ts-ignore
-import logoSvg from '@/images/APIgataway-en.png';
+import logoSvg from '@/images/APIgataway-c.png';
+// @ts-ignore
+import logoSvgEn from '@/images/APIgataway-en.png';
+import { isChinese } from '@/language/i18n';
 import constantConfig from '@/constant/config';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
@@ -106,13 +109,21 @@ const bkuiLocale = computed(() => {
 const websiteConfig = ref<any>({});
 
 const getWebsiteConfig = async () => {
-  const bkSharedResUrl = window.BK_SHARED_RES_URL;
+  const bkSharedResUrl = window.BK_NODE_ENV === 'development'
+    ? window.BK_DASHBOARD_FE_URL
+    : window.BK_SHARED_RES_URL;
 
   if (bkSharedResUrl) {
     const url = bkSharedResUrl?.endsWith('/') ? bkSharedResUrl : `${bkSharedResUrl}/`;
     websiteConfig.value = await getPlatformConfig(`${url}${window.BK_APP_CODE || 'bk_apigateway'}/base.js`, constantConfig.SITE_CONFIG);
   } else {
     websiteConfig.value = await getPlatformConfig(constantConfig.SITE_CONFIG);
+  }
+
+  console.log('websiteConfig', websiteConfig.value);
+
+  if (websiteConfig.value.i18n) {
+    websiteConfig.value.i18n.appLogo = websiteConfig.value[isChinese ? 'appLogo' : 'appLogoEn'];
   }
 
   setShortcutIcon(websiteConfig.value?.favicon);
@@ -123,7 +134,7 @@ getWebsiteConfig();
 
 const appLogo = computed(() => {
   // 如果未获取到配置，使用默认logo
-  const src = websiteConfig.value?.appLogo || logoSvg;
+  const src = websiteConfig.value?.i18n?.appLogo || (isChinese ? logoSvg : logoSvgEn);
   return src;
 });
 
