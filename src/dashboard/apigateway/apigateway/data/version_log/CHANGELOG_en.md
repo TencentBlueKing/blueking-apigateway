@@ -1,3 +1,46 @@
+<!-- 2024-07-15 -->
+# V1.14.0 Release Log
+
+### Bug Fixes
+
+- Plugins: Header transformation validates duplicate headers
+- Incorrect frontend request URL when the notification center is activated
+- Maintenance staff information not displaying correctly in basic information
+- After a successful release, the current environment's version number is updated to prevent page functionality issues in case of release failure
+- Issue with negative duration displayed during the release process
+
+### Feature Enhancements
+
+- Import and export enhancements: support for openapi 3.0
+- Improved user experience on the log search page
+- Enhanced online debugging experience
+- Basic information: support for configuring related_apps
+- Plugins: Header transformation supports settings that include the `$` symbol
+
+<!-- 2024-06-21 -->
+# V1.13.6 Release Log
+
+### Bug Fixes
+
+- Incorrect frontend request URL when the notification center is activated
+- Maintenance staff information not displaying correctly in basic information
+
+### Feature Enhancements
+
+- Online debugging apps are no longer displayed on the permission list page
+- Global configuration support for BK_SHARED_RES_URL
+
+---
+
+<!-- 2024-06-12 -->
+# V1.13.5 Release Log
+
+### Feature Enhancements
+
+- Changes in backend services to trigger deployment updated to asynchronous
+
+---
+
 <!-- 2024-06-11 -->
 # V1.13.4 Release Log
 
