@@ -99,7 +99,7 @@ export default defineComponent({
           });
         } else {
           // isLoading.value = true;
-          staffStore.fetchStaffs();
+          staffStore.fetchStaffs(props.modelValue.join(','));
         }
       },
       { immediate: true, deep: true },
