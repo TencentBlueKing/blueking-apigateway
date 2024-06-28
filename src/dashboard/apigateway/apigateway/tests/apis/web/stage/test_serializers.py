@@ -23,7 +23,7 @@ from apigateway.apis.web.stage import serializers
 
 
 class TestStageInputSLZ:
-    def test_to_internal_value(self, fake_gateway, fake_backend):
+    def test_http_scheme(self, fake_gateway, fake_backend, fake_grpc_backend):
         data = [
             {
                 "gateway": fake_gateway,
@@ -38,7 +38,16 @@ class TestStageInputSLZ:
                             "loadbalance": "roundrobin",
                             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                         },
-                    }
+                    },
+                    {
+                        "id": fake_grpc_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "grpc", "host": "example.com:999", "weight": 1}],
+                        },
+                    },
                 ],
             },
             {
@@ -54,7 +63,16 @@ class TestStageInputSLZ:
                             "loadbalance": "roundrobin",
                             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                         },
-                    }
+                    },
+                    {
+                        "id": fake_grpc_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "grpc", "host": "example.com:999", "weight": 1}],
+                        },
+                    },
                 ],
                 "will_error": True,
             },
@@ -78,9 +96,124 @@ class TestStageInputSLZ:
                             "loadbalance": "roundrobin",
                             "hosts": [{"scheme": "grpc", "host": "www.example.com", "weight": 1}],
                         },
-                    }
+                    },
+                    {
+                        "id": fake_grpc_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "grpc", "host": "example.com:999", "weight": 1}],
+                        },
+                    },
                 ],
                 "will_error": True,
+            },
+            {
+                "gateway": fake_gateway,
+                "name": "stage-test",
+                "description": "test",
+                "backends": [
+                    {
+                        "id": fake_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                        },
+                    },
+                    {
+                        "id": fake_grpc_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "grpc", "host": "example.com:999", "weight": 1}],
+                        },
+                    },
+                ],
+            },
+            {
+                "gateway": fake_gateway,
+                "name": "stage-test",
+                "description": "test",
+                "backends": [
+                    {
+                        "id": fake_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "https", "host": "www.example.com", "weight": 1}],
+                        },
+                    },
+                    {
+                        "id": fake_grpc_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "grpc", "host": "example.com:999", "weight": 1}],
+                        },
+                    },
+                ],
+            },
+            {
+                "gateway": fake_gateway,
+                "name": "stage-test",
+                "description": "test",
+                "backends": [
+                    {
+                        "id": fake_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [
+                                {"scheme": "http", "host": "www.example.com", "weight": 1},
+                                {"scheme": "http", "host": "www.example1.com", "weight": 1},
+                            ],
+                        },
+                    },
+                    {
+                        "id": fake_grpc_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "grpc", "host": "example.com:999", "weight": 1}],
+                        },
+                    },
+                ],
+            },
+            {
+                "gateway": fake_gateway,
+                "name": "stage-test",
+                "description": "test",
+                "backends": [
+                    {
+                        "id": fake_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [
+                                {"scheme": "https", "host": "www.example.com", "weight": 1},
+                                {"scheme": "https", "host": "www.example1.com", "weight": 1},
+                            ],
+                        },
+                    },
+                    {
+                        "id": fake_grpc_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "grpc", "host": "example.com:999", "weight": 1}],
+                        },
+                    },
+                ],
             },
             {
                 "gateway": fake_gateway,
@@ -98,7 +231,16 @@ class TestStageInputSLZ:
                                 {"scheme": "https", "host": "www.example.com", "weight": 1},
                             ],
                         },
-                    }
+                    },
+                    {
+                        "id": fake_grpc_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "grpc", "host": "example.com:999", "weight": 1}],
+                        },
+                    },
                 ],
                 "will_error": True,
             },
@@ -113,17 +255,106 @@ class TestStageInputSLZ:
                             "type": "node",
                             "timeout": 1,
                             "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                        },
+                    },
+                    {
+                        "id": fake_grpc_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "grpcs", "host": "www.example.com", "weight": 1}],
+                        },
+                    },
+                ],
+            },
+            {
+                "gateway": fake_gateway,
+                "name": "stage-test",
+                "description": "test",
+                "backends": [
+                    {
+                        "id": fake_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                        },
+                    },
+                    {
+                        "id": fake_grpc_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [
+                                {"scheme": "grpc", "host": "www.example.com", "weight": 1},
+                                {"scheme": "grpc", "host": "www.example1.com", "weight": 1},
+                            ],
+                        },
+                    },
+                ],
+            },
+            {
+                "gateway": fake_gateway,
+                "name": "stage-test",
+                "description": "test",
+                "backends": [
+                    {
+                        "id": fake_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                        },
+                    },
+                    {
+                        "id": fake_grpc_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [
+                                {"scheme": "grpcs", "host": "example", "weight": 1},
+                                {"scheme": "grpcs", "host": "example1", "weight": 1},
+                            ],
+                        },
+                    },
+                ],
+            },
+            {
+                "gateway": fake_gateway,
+                "name": "stage-test",
+                "description": "test",
+                "backends": [
+                    {
+                        "id": fake_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                        },
+                    },
+                    {
+                        "id": fake_grpc_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 1,
+                            "loadbalance": "roundrobin",
                             "hosts": [
                                 {"scheme": "grpc", "host": "www.example.com", "weight": 1},
                                 {"scheme": "grpcs", "host": "www.example.com", "weight": 1},
                             ],
                         },
-                    }
+                    },
                 ],
                 "will_error": True,
             },
         ]
-
         for test in data:
             slz = serializers.StageInputSLZ(data=test, context={"gateway": fake_gateway})
 

@@ -471,12 +471,11 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                 )
 
     def _validate_scheme(self, backends):
-        if backends is not None:
-            for backend in backends:
-                SchemeInputValidator(
-                    hosts=backend["config"]["hosts"],
-                    backend=backend,
-                )
+        if backends is None:
+            return
+        for backend in backends:
+            validator = SchemeInputValidator(hosts=backend["config"]["hosts"], backend=backend)
+            validator.validate_scheme()
 
     def _sync_plugins(self, gateway_id: int, stage_id: int, plugin_configs: Optional[Dict[str, Any]] = None):
         # plugin_configs为None则，plugin_config_datas 设置[]则清空对应配置

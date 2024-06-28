@@ -293,7 +293,7 @@ class SchemeInputValidator:
         self.hosts = hosts
         self.backend = backend
 
-    def _validate_scheme(self):
+    def validate_scheme(self):
         schemes = {host.get("scheme") for host in self.hosts}
         if len(schemes) > 1 and self.backend.type == BackendTypeEnum.HTTP.value:
             raise serializers.ValidationError(
@@ -303,7 +303,7 @@ class SchemeInputValidator:
             )
         if len(schemes) > 1 and self.backend.type == BackendTypeEnum.GRPC.value:
             raise serializers.ValidationError(
-                _("后端服务【{backend_name}】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致.").format(
+                _("后端服务【{backend_name}】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致。").format(
                     backend_name=self.backend.name
                 )
             )
