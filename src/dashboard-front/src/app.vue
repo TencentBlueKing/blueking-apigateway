@@ -112,7 +112,7 @@ const getWebsiteConfig = async () => {
 
   if (bkSharedResUrl) {
     const url = bkSharedResUrl?.endsWith('/') ? bkSharedResUrl : `${bkSharedResUrl}/`;
-    websiteConfig.value = await getPlatformConfig(`${url}bk_cmdb/base.js`, constantConfig.SITE_CONFIG);
+    websiteConfig.value = await getPlatformConfig(`${url}${window.BK_APP_CODE || 'bk_apigateway'}/base.js`, constantConfig.SITE_CONFIG);
   } else {
     websiteConfig.value = await getPlatformConfig(constantConfig.SITE_CONFIG);
   }
