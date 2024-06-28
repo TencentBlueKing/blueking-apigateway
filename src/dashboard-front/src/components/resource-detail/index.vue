@@ -185,7 +185,7 @@
         class="title mt15"
         :class="{
           'ag-diff':
-            checkDiff('localData.proxy') ||
+            checkDiff('localData.proxy.backend_name') ||
             checkDiff('localData.proxy.config.method') ||
             checkDiff('localData.proxy.config.timeout') ||
             checkDiff('localData.proxy.config.path'),
@@ -218,14 +218,14 @@
         </bk-row> -->
 
         <bk-row
-          :class="{ 'ag-diff': checkDiff('localData?.proxy?.backend?.name') }"
+          :class="{ 'ag-diff': checkDiff('localData.proxy.backend_name') }"
         >
           <bk-col :span="4">
             <label class="ag-key">{{ $t("后端服务:") }}</label>
           </bk-col>
           <bk-col :span="10">
             <div class="ag-value">
-              {{ localData?.proxy?.backend_name || "--" }}
+              {{ localData.proxy.backend_name || "--" }}
             </div>
           </bk-col>
         </bk-row>

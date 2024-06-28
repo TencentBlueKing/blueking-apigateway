@@ -937,11 +937,12 @@ watch(
       color: #313238;
       font-weight: 700;
       font-size: 14px;
-      margin-bottom: 18px;
+      margin-bottom: 12px;
     }
     .form-cls {
       font-size: 12px;
       flex-flow: wrap;
+      margin-bottom: 30px;
       :deep(.form-item-cls){
         flex: 0 0 50%;
         margin-bottom: 6px;
