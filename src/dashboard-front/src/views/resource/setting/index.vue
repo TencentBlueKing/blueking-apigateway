@@ -209,6 +209,12 @@
               :label="t('标签')"
               :show-overflow-tooltip="false"
               prop="labels"
+              :filter="{
+                list: labelsList,
+                checked: chooseLabels,
+                filterFn: handleMethodFilter,
+                btnSave: false,
+              }"
               width="180">
               <template #default="{ row }">
                 <span class="text-warp" v-if="!row?.isEditLabel" @click="handleEditLabel(row)">
@@ -530,7 +536,7 @@ const route = useRoute();
 const router = useRouter();
 const chooseMethod = ref<string[]>([]);
 const filterData = ref<any>({ keyword: '', order_by: '' });
-
+const chooseLabels = ref<string[]>([]);
 const tableEmptyConf = ref<TableEmptyConfType>({
   keyword: '',
   isAbnormal: false,
@@ -721,6 +727,16 @@ const tableDataKey = ref(-1);
 //   }
 // };
 
+const labelsList = computed(() => {
+  tableDataKey.value = +new Date();
+  return labelsData.value?.map((item: any) => {
+    return {
+      text: item.name,
+      value: item.id,
+    };
+  });
+});
+
 // 列表hooks
 const {
   tableData,
@@ -757,15 +773,17 @@ const handleClearFilterKey = () => {
   filterData.value = cloneDeep({ keyword: '', order_by: '' });
   searchValue.value = [];
   chooseMethod.value = [];
+  chooseLabels.value = [];
 };
 
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if ((searchValue.value.length || chooseMethod.value?.length) && !tableData.value.length) {
+  if ((searchValue.value.length || chooseMethod.value?.length || chooseLabels.value?.length)
+  && !tableData.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
   }
-  if (searchValue.value.length || chooseMethod.value?.length) {
+  if (searchValue.value.length || chooseMethod.value?.length || chooseLabels.value?.length) {
     tableEmptyConf.value.keyword = '$CONSTANT';
     return;
   }
@@ -1269,6 +1287,18 @@ watch(
       isShowLeft: isShowLeft.value,
     });
   },
+);
+
+watch(
+  () => chooseLabels.value,
+  (v) => {
+    if (!v?.length) { // 重置
+      filterData.value.label_ids = undefined;
+    } else { // 选择
+      filterData.value.label_ids = v?.join(',');
+    }
+  },
+  { deep: true, immediate: true },
 );
 
 watch(

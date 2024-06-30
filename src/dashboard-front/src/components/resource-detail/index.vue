@@ -654,27 +654,28 @@
     </bk-container>
 
     <!-- <template v-if="localData.proxy?.banckend_id"> -->
-    <template v-for="plugin in localData.plugins" :key="plugin.id">
-      <p class="title mt15" :class="{ 'ag-diff': checkPluginsDiff() }">
-        {{ $t('插件:{name}', { name: plugin.name }) }}
-      </p>
-      <bk-container class="ag-kv-box" :col="14" :margin="6">
-        <bk-row
-          v-for="key in Object.keys(plugin.config)"
-          :key="key"
-          :class="{ 'ag-diff': checkPluginsDiff() }"
-        >
-          <bk-col :span="5">
-            <label class="ag-key">{{ key }}:</label>
-          </bk-col>
-          <bk-col :span="9">
-            <div class="ag-value">
-              {{ plugin.config[key] || "--" }}
-            </div>
-          </bk-col>
-        </bk-row>
-      </bk-container>
-    </template>
+    <div :class="{ 'container-diff': checkPluginsDiff() }" v-if="localData.plugins?.length">
+      <template v-for="plugin in localData.plugins" :key="plugin.id">
+        <p class="title mt15" :class="{ 'ag-diff': checkPluginsDiff() }">
+          {{ $t('插件:{name}', { name: plugin.name }) }}
+        </p>
+        <bk-container class="ag-kv-box" :col="14" :margin="6">
+          <bk-row
+            v-for="key in Object.keys(plugin.config)"
+            :key="key"
+          >
+            <bk-col :span="5">
+              <label class="ag-key">{{ key }}:</label>
+            </bk-col>
+            <bk-col :span="9">
+              <div class="ag-value">
+                {{ plugin.config[key] || "--" }}
+              </div>
+            </bk-col>
+          </bk-row>
+        </bk-container>
+      </template>
+    </div>
     <!-- </template> -->
   </div>
 </template>
@@ -883,7 +884,10 @@ const checkDiff = (path: any) => {
 //   );
 // };
 
-const checkPluginsDiff = () => {};
+const checkPluginsDiff = () => {
+  const keys = Object.keys(diffMap.value);
+  return keys.some(item => item.startsWith('localData.plugins'));
+};
 
 // 网关标签
 const labels = computed(() => common.gatewayLabels || []);
@@ -1041,6 +1045,11 @@ initLocalData();
   }
 }
 
+.container-diff {
+  background: rgba(255, 156, 1, 0.1);
+  padding: 2px 8px;
+  margin: 18px 0;
+}
 .ag-kv-box {
   &.box-diff {
     background: #fbf4e9;

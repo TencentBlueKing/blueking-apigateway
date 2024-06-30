@@ -189,7 +189,7 @@ const labels = ref<any[]>([]);
 
 // 网关id
 const apigwId = computed(() => common.apigwId);
-const isLoading = ref(false);
+const isLoading = ref(true);
 
 const pagination = ref({
   current: 1,
@@ -327,6 +327,11 @@ watch(
 );
 
 const getPageData = () => {
+  if (!resourceVersionList.value?.length) {
+    pagination.value.count = 0;
+    return [];
+  }
+
   isLoading.value = true;
   let curAllData = resourceVersionList.value;
   if (searchValue.value) {
