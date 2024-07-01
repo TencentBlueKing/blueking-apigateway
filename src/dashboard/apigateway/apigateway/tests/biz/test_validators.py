@@ -36,7 +36,7 @@ from apigateway.biz.validators import (
 )
 from apigateway.common.factories import SchemaFactory
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import GatewayStatusEnum, ProxyTypeEnum
+from apigateway.core.constants import BackendTypeEnum, GatewayStatusEnum, ProxyTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Gateway, Proxy, Resource, ResourceVersion, Stage
 
 
@@ -338,31 +338,36 @@ class TestPublishValidator:
 
 class TestSchemeInputValidator:
     @pytest.mark.parametrize(
-        "hosts, expected_error_message",
+        "backend_type, hosts, expected_error_message",
         [
-            ([{"scheme": "http"}], None),
-            # (BackendTypeEnum.HTTP.value, [{"scheme": "https"}], None),
-            # (BackendTypeEnum.HTTP.value, [{"scheme": "http"}, {"scheme": "http"}], None),
-            # (BackendTypeEnum.HTTP.value, [{"scheme": "https"}, {"scheme": "https"}], None),
-            # (
-            #     BackendTypeEnum.HTTP.value,
-            #     [{"scheme": "http"}, {"scheme": "https"}],
-            #     "后端服务【Test Backend】的配置 scheme 同时存在 http 和 https， 需要保持一致。",
-            # ),
-            # (BackendTypeEnum.GRPC.value, [{"scheme": "grpc"}], None),
-            # (BackendTypeEnum.GRPC.value, [{"scheme": "grpcs"}], None),
-            # (BackendTypeEnum.GRPC.value, [{"scheme": "grpc"}, {"scheme": "grpc"}], None),
-            # (BackendTypeEnum.GRPC.value, [{"scheme": "grpcs"}, {"scheme": "grpcs"}], None),
-            # (
-            #     BackendTypeEnum.GRPC.value,
-            #     [{"scheme": "grpc"}, {"scheme": "grpcs"}],
-            #     "后端服务【Test Backend】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致。",
-            # ),
+            (BackendTypeEnum.HTTP.value, [{"scheme": "http"}], None),
+            (BackendTypeEnum.HTTP.value, [{"scheme": "https"}], None),
+            (BackendTypeEnum.HTTP.value, [{"scheme": "http"}, {"scheme": "http"}], None),
+            (BackendTypeEnum.HTTP.value, [{"scheme": "https"}, {"scheme": "https"}], None),
+            (
+                BackendTypeEnum.HTTP.value,
+                [{"scheme": "http"}, {"scheme": "https"}],
+                "后端服务【Test Backend】的配置 scheme 同时存在 http 和 https， 需要保持一致。",
+            ),
+            (BackendTypeEnum.GRPC.value, [{"scheme": "grpc"}], None),
+            (BackendTypeEnum.GRPC.value, [{"scheme": "grpcs"}], None),
+            (BackendTypeEnum.GRPC.value, [{"scheme": "grpc"}, {"scheme": "grpc"}], None),
+            (BackendTypeEnum.GRPC.value, [{"scheme": "grpcs"}, {"scheme": "grpcs"}], None),
+            (
+                BackendTypeEnum.GRPC.value,
+                [{"scheme": "grpc"}, {"scheme": "grpcs"}],
+                "后端服务【Test Backend】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致。",
+            ),
         ],
     )
-    def test_validate_scheme(self, fake_backend, hosts, expected_error_message):
-        validator = SchemeInputValidator(fake_backend, hosts)
-
+    def test_validate_scheme(self, fake_backend, fake_grpc_backend, backend_type, hosts, expected_error_message):
+        backend_name = ""
+        if backend_type == BackendTypeEnum.HTTP.value:
+            backend_name = fake_backend.name
+            validator = SchemeInputValidator(fake_backend, hosts)
+        else:
+            backend_name = fake_grpc_backend.name
+            validator = SchemeInputValidator(fake_grpc_backend, hosts)
         # 捕获可能的异常
         try:
             validator.validate_scheme()
@@ -371,4 +376,4 @@ class TestSchemeInputValidator:
             # 获取ValidationError中的detail列表
             error_details = e.detail
             error_string = str(error_details[0])
-            assert error_string == expected_error_message
+            assert error_string == expected_error_message.replace("Test Backend", backend_name)

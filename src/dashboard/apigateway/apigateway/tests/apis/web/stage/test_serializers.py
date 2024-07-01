@@ -23,6 +23,79 @@ from apigateway.apis.web.stage import serializers
 
 
 class TestStageInputSLZ:
+    class TestStageInputSLZ:
+        def test_to_internal_value(self, fake_gateway, fake_backend):
+            data = [
+                {
+                    "gateway": fake_gateway,
+                    "name": "stage-test",
+                    "description": "test",
+                    "backends": [
+                        {
+                            "id": fake_backend.id,
+                            "config": {
+                                "type": "node",
+                                "timeout": 1,
+                                "loadbalance": "roundrobin",
+                                "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                            },
+                        }
+                    ],
+                },
+                {
+                    "gateway": fake_gateway,
+                    "name": "stage-test",
+                    "description": "test",
+                    "backends": [
+                        {
+                            "id": 0,
+                            "config": {
+                                "type": "node",
+                                "timeout": 1,
+                                "loadbalance": "roundrobin",
+                                "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                            },
+                        }
+                    ],
+                    "will_error": True,
+                },
+                {
+                    "gateway": fake_gateway,
+                    "name": "stage-test",
+                    "description": "test",
+                    "backends": [],
+                    "will_error": True,
+                },
+                {
+                    "gateway": fake_gateway,
+                    "name": "stage-test",
+                    "description": "test",
+                    "backends": [
+                        {
+                            "id": fake_backend.id,
+                            "config": {
+                                "type": "node",
+                                "timeout": 1,
+                                "loadbalance": "roundrobin",
+                                "hosts": [{"scheme": "grpc", "host": "www.example.com", "weight": 1}],
+                            },
+                        }
+                    ],
+                    "will_error": True,
+                },
+            ]
+
+            for test in data:
+                slz = serializers.StageInputSLZ(data=test, context={"gateway": fake_gateway})
+
+                if not test.get("will_error"):
+                    slz.is_valid(raise_exception=True)
+                    assert test == slz.validated_data
+                    continue
+
+                with pytest.raises(ValidationError):
+                    slz.is_valid(raise_exception=True)
+
     def test_http_scheme(self, fake_gateway, fake_backend, fake_grpc_backend):
         data = [
             {
@@ -56,7 +129,7 @@ class TestStageInputSLZ:
                 "description": "test",
                 "backends": [
                     {
-                        "id": 0,
+                        "id": 0,  # 这个配置id不存在报错
                         "config": {
                             "type": "node",
                             "timeout": 1,
@@ -80,7 +153,7 @@ class TestStageInputSLZ:
                 "gateway": fake_gateway,
                 "name": "stage-test",
                 "description": "test",
-                "backends": [],
+                "backends": [],  # 没有传入配置报错
                 "will_error": True,
             },
             {
@@ -94,7 +167,9 @@ class TestStageInputSLZ:
                             "type": "node",
                             "timeout": 1,
                             "loadbalance": "roundrobin",
-                            "hosts": [{"scheme": "grpc", "host": "www.example.com", "weight": 1}],
+                            "hosts": [
+                                {"scheme": "grpc", "host": "www.example.com", "weight": 1}
+                            ],  # http的配置传入grpc报错
                         },
                     },
                     {

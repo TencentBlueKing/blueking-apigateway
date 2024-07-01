@@ -76,22 +76,19 @@ class BackendInputSLZ(serializers.Serializer):
                     )
                 )
 
-        # 校验backend下类型选择的关联性
         for backend_config in attrs["configs"]:
             for host in backend_config["hosts"]:
+                # 校验backend下类型选择的关联性
                 if host["scheme"] not in BACKEND_CONFIG_SCHEME_MAP[attrs["type"]]:
                     raise serializers.ValidationError(
                         _("环境【{stage_name}】的配置Scheme【{scheme}】不合法。").format(
                             stage_name=stage_id_name[backend_config["stage_id"]], scheme=host["scheme"]
                         )
                     )
-
-        # 校验backend下的host下的类型的唯一性
-        for backend_config in attrs["configs"]:
-            backend_instance = Backend(name=attrs["name"], type=BackendTypeEnum.HTTP.value)
-            validator = SchemeInputValidator(hosts=backend_config["hosts"], backend=backend_instance)
-            validator.validate_scheme()
-
+                # 校验backend下的host下的类型的唯一性
+                backend_instance = Backend(name=attrs["name"], type=attrs["type"])
+                validator = SchemeInputValidator(hosts=backend_config["hosts"], backend=backend_instance)
+                validator.validate_scheme()
         return attrs
 
 

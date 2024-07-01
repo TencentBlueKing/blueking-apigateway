@@ -193,18 +193,15 @@ class StageInputSLZ(serializers.Serializer):
                     _("请求参数中，缺少后端服务【{backend_id}】的配置。").format(backend_name=backend.name)
                 )
 
-        # 校验backend下类型选择的关联性
         for input_backend in attrs["backends"]:
             backend = backend_dict[input_backend["id"]]
-
+            # 校验backend下的host下的类型的唯一性
+            validator = SchemeInputValidator(hosts=input_backend["config"]["hosts"], backend=backend)
+            validator.validate_scheme()
+            # 校验backend下类型选择的关联性
             for host in input_backend["config"]["hosts"]:
                 check_backend_host_scheme(backend, host)
 
-        # 校验backend下的host下的类型的唯一性
-        for input_backend in attrs["backends"]:
-            backend = backend_dict[input_backend["id"]]
-            validator = SchemeInputValidator(hosts=input_backend["config"]["hosts"], backend=backend)
-            validator.validate_scheme()
         return attrs
 
 

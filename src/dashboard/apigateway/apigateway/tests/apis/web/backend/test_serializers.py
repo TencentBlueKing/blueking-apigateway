@@ -51,7 +51,9 @@ class TestBackendInputSLZ:
                         "type": "node",
                         "timeout": 1,
                         "loadbalance": "roundrobin",
-                        "hosts": [{"scheme": "grpc", "host": "www.example.com", "weight": 1}],
+                        "hosts": [
+                            {"scheme": "grpc", "host": "www.example.com", "weight": 1}
+                        ],  # 类型是http,但是scheme是grpc报错
                     }
                 ],
                 "will_error": True,
@@ -67,7 +69,9 @@ class TestBackendInputSLZ:
                         "type": "node",
                         "timeout": 1,
                         "loadbalance": "roundrobin",
-                        "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                        "hosts": [
+                            {"scheme": "http", "host": "www.example.com", "weight": 1}
+                        ],  # stage_id为0找不到该配置
                     }
                 ],
                 "will_error": True,
@@ -136,7 +140,75 @@ class TestBackendInputSLZ:
                 "gateway": fake_stage.gateway,
                 "name": "backend-test",
                 "description": "test",
-                "type": "http",
+                "type": "grpc",
+                "configs": [
+                    {
+                        "stage_id": fake_stage.id,
+                        "type": "node",
+                        "timeout": 1,
+                        "loadbalance": "roundrobin",
+                        "hosts": [{"scheme": "grpc", "host": "www.example.com", "weight": 1}],
+                    }
+                ],
+            },
+            {
+                "gateway": fake_stage.gateway,
+                "name": "backend-test",
+                "description": "test",
+                "type": "grpc",
+                "configs": [
+                    {
+                        "stage_id": fake_stage.id,
+                        "type": "node",
+                        "timeout": 1,
+                        "loadbalance": "roundrobin",
+                        "hosts": [
+                            {"scheme": "grpcs", "host": "www.example.com", "weight": 1},
+                        ],
+                    }
+                ],
+            },
+            {
+                "gateway": fake_stage.gateway,
+                "name": "backend-test",
+                "description": "test",
+                "type": "grpc",
+                "configs": [
+                    {
+                        "stage_id": fake_stage.id,
+                        "type": "node",
+                        "timeout": 1,
+                        "loadbalance": "roundrobin",
+                        "hosts": [
+                            {"scheme": "grpc", "host": "www.example.com", "weight": 1},
+                            {"scheme": "grpc", "host": "www.example1.com", "weight": 1},
+                        ],
+                    }
+                ],
+            },
+            {
+                "gateway": fake_stage.gateway,
+                "name": "backend-test",
+                "description": "test",
+                "type": "grpc",
+                "configs": [
+                    {
+                        "stage_id": fake_stage.id,
+                        "type": "node",
+                        "timeout": 1,
+                        "loadbalance": "roundrobin",
+                        "hosts": [
+                            {"scheme": "grpcs", "host": "www.example.com", "weight": 1},
+                            {"scheme": "grpcs", "host": "www.example1.com", "weight": 1},
+                        ],
+                    }
+                ],
+            },
+            {
+                "gateway": fake_stage.gateway,
+                "name": "backend-test",
+                "description": "test",
+                "type": "grpc",
                 "configs": [
                     {
                         "stage_id": fake_stage.id,
