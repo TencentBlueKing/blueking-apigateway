@@ -347,7 +347,7 @@ class TestSchemeInputValidator:
             (
                 BackendTypeEnum.HTTP.value,
                 [{"scheme": "http"}, {"scheme": "https"}],
-                "后端服务【Test Backend】的配置 scheme 同时存在 http 和 https， 需要保持一致。",
+                "[ErrorDetail(string='后端服务【Test Backend】的配置 scheme 同时存在 http 和 https， 需要保持一致。', code='invalid')]",
             ),
             (BackendTypeEnum.GRPC.value, [{"scheme": "grpc"}], None),
             (BackendTypeEnum.GRPC.value, [{"scheme": "grpcs"}], None),
@@ -356,7 +356,7 @@ class TestSchemeInputValidator:
             (
                 BackendTypeEnum.GRPC.value,
                 [{"scheme": "grpc"}, {"scheme": "grpcs"}],
-                "后端服务【Test Backend】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致。",
+                "[ErrorDetail(string='后端服务【Test Backend】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致。', code='invalid')]",
             ),
         ],
     )
@@ -369,11 +369,12 @@ class TestSchemeInputValidator:
             backend_name = fake_grpc_backend.name
             validator = SchemeInputValidator(fake_grpc_backend, hosts)
         # 捕获可能的异常
-        try:
+        # 假设这个方法在某些条件下会抛出异常
+        if expected_error_message is not None:
+            # 验证异常消息是否符合预期
+            with pytest.raises(Exception) as exc_info:
+                validator.validate_scheme()
+            expected_msg = expected_error_message.replace("Test Backend", backend_name)
+            assert str(exc_info.value) == expected_msg
+        else:
             validator.validate_scheme()
-            assert expected_error_message is None
-        except ValidationError as e:
-            # 获取ValidationError中的detail列表
-            error_details = e.detail
-            error_string = str(error_details[0])
-            assert error_string == expected_error_message.replace("Test Backend", backend_name)
