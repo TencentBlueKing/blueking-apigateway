@@ -58,10 +58,7 @@
                     v-model:modeValue="keyword"
                     @search="handleSearch"
                     @choose="handleChoose"
-                    :class="[
-                      'top-search-input',
-                      localLanguage === 'en' ? 'top-search-input-en' : '',
-                    ]"
+                    class="top-search-input"
                   />
                 </bk-form-item>
                 <bk-form-item label="" style="margin-left: 0">
@@ -943,19 +940,10 @@ onBeforeUnmount(() => {
 
 @media (max-width: 1753px) {
   :deep(.search-form) {
-    width: 700px !important;
 
     .ag-form-item-inline {
       margin-left: 0px !important;
       margin-top: 10px !important;
-    }
-
-    .top-search-input {
-      width: 526px;
-    }
-
-    .top-search-input-en {
-      width: 460px;
     }
   }
 }
