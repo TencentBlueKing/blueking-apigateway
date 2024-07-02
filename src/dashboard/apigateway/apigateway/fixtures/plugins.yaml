@@ -988,11 +988,14 @@
                       },
                       "bk_app_code": {
                         "type": "string",
-                        "title": "蓝鲸应用ID",
+                        "title": "蓝鲸应用 ID",
                         "pattern": "^[a-z][a-z0-9_-]{0,31}$",
                         "ui:rules": [
                           "required"
-                        ]
+                        ],
+                        "ui:props": {
+                          "labelWidth": 100
+                        }
                       }
                     }
                   }
@@ -1208,7 +1211,10 @@
                         "pattern": "^[a-z][a-z0-9_-]{0,31}$",
                         "ui:rules": [
                           "required"
-                        ]
+                        ],
+                        "ui:props": {
+                          "labelWidth": 100
+                        }
                       }
                     }
                   }
