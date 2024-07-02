@@ -1280,6 +1280,8 @@ const lang: ILANG = {
   '请输入 2-20 字符的字母、数字、连字符(-)、下划线(_)，以字母开头': ['Please enter 2-20 characters of letters, numbers, hyphens(-), and underscores(_), starting with a letter'],
   '确认发布资源?': ['Confirm resource release?'],
   '当前资源版本': ['Current resource version'],
+  '当前生效资源版本': ['The current valid resource version'],
+  '查看日志': ['View logs'],
   '发布人': ['Releaser'],
   '发布资源': ['Release resource'],
   '下架': ['Unpublish'],

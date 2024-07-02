@@ -16,7 +16,7 @@
                   <bk-date-picker
                     ref="datePickerRef"
                     type="datetimerange"
-                    style="width: 300px"
+                    style="width: 250px"
                     v-model="dateTimeRange"
                     :key="dateKey"
                     :placeholder="t('选择日期时间范围')"
@@ -29,7 +29,7 @@
                 </bk-form-item>
                 <bk-form-item :label="t('环境')">
                   <bk-select
-                    style="width: 300px" v-model="searchParams.stage_id" :clearable="false" searchable
+                    style="width: 250px" v-model="searchParams.stage_id" :clearable="false" searchable
                     @change="handleStageChange">
                     <bk-option v-for="option in stageList" :key="option.id" :id="option.id" :name="option.name">
                     </bk-option>
@@ -37,7 +37,7 @@
                 </bk-form-item>
                 <bk-form-item :label="t('资源')">
                   <bk-select
-                    style="width: 300px"
+                    style="width: 250px; margin-right: 8px;"
                     class="top-resource-select"
                     :popover-width="180"
                     ext-popover-cls="resource-dropdown-content"
@@ -754,6 +754,8 @@ onBeforeUnmount(() => {
 
       .ag-form-item-inline {
         margin-top: 0px !important;
+        margin-left: 0px !important;
+        margin-right: 8px;
 
         .bk-form-content {
           display: flex !important;
@@ -766,7 +768,7 @@ onBeforeUnmount(() => {
       }
 
       .top-search-input {
-        width: 586px;
+        width: 400px;
       }
     }
   }
