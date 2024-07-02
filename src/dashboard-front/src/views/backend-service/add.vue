@@ -163,6 +163,37 @@
         </div>
       </template>
     </bk-sideslider>
+
+    <!-- 提示弹窗 -->
+    <bk-dialog
+      v-model:is-show="publishDialog.isShow"
+      class="custom-main-dialog"
+      width="500"
+    >
+      <div class="dialog-content">
+        <div class="publish-icon">
+          <success fill="#3FC06D" />
+        </div>
+        <div class="dialog-title">
+          {{ t('内容保存成功，正在发布至对应环境...') }}
+        </div>
+        <div class="dialog-main">
+          <div class="publish-tips">
+            {{ t('当前服务') }} <span>{{ baseInfo.name }}</span>{{ t('，') }}
+            {{ t('已绑定以下') }} <span>{{ publishDialog.stageNames?.length }}</span> {{ t('个环境，所有修改都将发布到这些环境中：') }}
+          </div>
+          <div class="publish-stages">
+            <div class="stage-item" v-for="stage in publishDialog.stageNames" :key="stage">
+              {{ stage }}
+            </div>
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <bk-button theme="primary" @click="toPublishLogs">{{ t('去查看发布记录') }}</bk-button>
+          <bk-button class="ml10" @click="publishDialog.isShow = false">{{ t('关闭') }}</bk-button>
+        </div>
+      </div>
+    </bk-dialog>
   </div>
 </template>
 
@@ -179,7 +210,7 @@ import {
   getBackendServiceDetail,
 } from '@/http';
 import { useRouter } from 'vue-router';
-import { AngleUpFill } from 'bkui-vue/lib/icon';
+import { AngleUpFill, Success } from 'bkui-vue/lib/icon';
 
 const props = defineProps({
   editId: {
@@ -215,6 +246,10 @@ const isPublish = ref<boolean>(false);
 const isSaveLoading = ref<boolean>(false);
 const baseInfoRef = ref<any>(null);
 const finaConfigs = ref<any>([]);
+const publishDialog = reactive<any>({
+  isShow: false,
+  stageNames: [],
+});
 // scheme 类型
 const schemeList = [{ value: 'http' }, { value: 'https' }];
 const sidesliderConfi = reactive({
@@ -390,19 +425,8 @@ const handleConfirm = async () => {
       });
 
       if (stageNames?.length) {
-        InfoBox({
-          title: t('后端服务内容保存成功，正在发布到对应的环境'),
-          infoType: 'success',
-          width: 482,
-          subTitle: t('当前后端服务（{name}）已绑定以下 {num} 个环境，所有修改都将发布到这些环境中：{names}', { name: baseInfo.value.name, num: stageNames?.length, names: stageNames?.join('，') }),
-          confirmText: t('去查看发布记录'),
-          cancelText: t('关闭'),
-          onConfirm: () => {
-            router.push({
-              name: 'apigwReleaseHistory',
-            });
-          },
-        });
+        publishDialog.isShow = true;
+        publishDialog.stageNames = stageNames;
       } else {
         InfoBox({
           title: t('后端服务内容保存成功'),
@@ -427,6 +451,12 @@ const handleConfirm = async () => {
   } finally {
     isSaveLoading.value = false;
   }
+};
+
+const toPublishLogs = () => {
+  router.push({
+    name: 'apigwReleaseHistory',
+  });
 };
 
 const setInit = () => {
@@ -705,6 +735,66 @@ defineExpose({
       :deep(.bk-form-error) {
         position: relative;
       }
+    }
+  }
+}
+.custom-main-dialog {
+  :deep(.bk-dialog-title) {
+    display: none;
+  }
+  :deep(.bk-modal-footer) {
+    display: none;
+  }
+  .dialog-content {
+    .publish-icon {
+      text-align: center;
+      margin-bottom: 18px;
+      font-size: 42px;
+      line-height: 32px;
+    }
+    .dialog-title {
+      font-size: 20px;
+      color: #313238;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .dialog-main {
+      background: #F5F6FA;
+      border-radius: 2px;
+      margin-bottom: 25px;
+      padding: 12px 16px 18px;
+      .publish-tips {
+        font-size: 14px;
+        color: #63656E;
+        margin-bottom: 10px;
+        span {
+          font-weight: 700;
+        }
+      }
+      .publish-stages {
+        display: flex;
+        flex-wrap: wrap;
+        .stage-item {
+          font-size: 14px;
+          color: #63656E;
+          position: relative;
+          padding-left: 12px;
+          width: 33%;
+          &::after {
+            content: ' ';
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #63656E;
+            top: 10px;
+            left: 0;
+          }
+        }
+      }
+    }
+    .dialog-footer {
+      text-align: center;
     }
   }
 }

@@ -64,7 +64,16 @@
             prop="path"
             sort
           ></bk-table-column>
-          <bk-table-column prop="gateway_label_ids" :label="t('标签')">
+          <bk-table-column
+            prop="gateway_label_ids"
+            :label="t('标签')"
+            :filter="{
+              list: labelsList,
+              checked: chooseLabels,
+              filterFn: handleMethodFilter,
+              btnSave: false,
+            }"
+          >
             <template #default="{ row }">
               <template v-if="row?.gateway_label_ids?.length">
                 <bk-tag
@@ -186,6 +195,7 @@ const tableDataKey = ref(-1);
 
 // 网关标签
 const labels = ref<any[]>([]);
+const chooseLabels = ref<string[]>([]);
 
 // 网关id
 const apigwId = computed(() => common.apigwId);
@@ -223,6 +233,17 @@ const customMethodsList = computed(() => {
     };
   });
 });
+
+const labelsList = computed(() => {
+  tableDataKey.value = +new Date();
+  return labels.value?.map((item: any) => {
+    return {
+      text: item.name,
+      value: item.id,
+    };
+  });
+});
+
 // const renderMethodsLabel = () => {
 //   return h('div', { class: 'resource-setting-custom-label' }, [
 //     h(
@@ -360,6 +381,18 @@ const getPageData = () => {
     updateTableEmptyConfig();
   }
 
+  if (chooseLabels.value?.length) {
+    curAllData = curAllData?.filter((row: any) => {
+      const flag = chooseLabels.value?.some((item: any) => row?.gateway_label_ids?.includes(item));
+      if (flag)  {
+        return true;
+      }
+      return false;
+    });
+
+    updateTableEmptyConfig();
+  }
+
   // 当前页数
   const page = pagination.value.current;
   // limit 页容量
@@ -399,11 +432,11 @@ const handlePageSizeChange = (limit: number) => {
 
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (searchValue.value || chooseMethod.value?.length || !curPageData.value.length) {
+  if (searchValue.value || chooseMethod.value?.length || chooseLabels.value?.length || !curPageData.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
   }
-  if (searchValue.value || chooseMethod.value?.length) {
+  if (searchValue.value || chooseMethod.value?.length || chooseLabels.value?.length) {
     tableEmptyConf.value.keyword = '$CONSTANT';
     return;
   }
@@ -413,6 +446,7 @@ const updateTableEmptyConfig = () => {
 const handleClearFilterKey = () => {
   searchValue.value = '';
   chooseMethod.value = [];
+  chooseLabels.value = [];
   tableDataKey.value = +new Date();
   // handleSearchClear();
   pagination.value = Object.assign(pagination.value, {
