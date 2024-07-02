@@ -25,11 +25,16 @@ from rest_framework.validators import UniqueTogetherValidator
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.biz.releaser import ReleaseValidationError
-from apigateway.biz.validators import MaxCountPerGatewayValidator, PublishValidator
+from apigateway.biz.validators import MaxCountPerGatewayValidator, PublishValidator, SchemeInputValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.core.constants import STAGE_NAME_PATTERN, PublishEventStatusEnum, ReleaseStatusEnum, StageStatusEnum
+from apigateway.core.constants import (
+    STAGE_NAME_PATTERN,
+    PublishEventStatusEnum,
+    ReleaseStatusEnum,
+    StageStatusEnum,
+)
 from apigateway.core.models import Backend, Stage
 from apigateway.utils.version import is_version1_greater_than_version2
 
@@ -174,7 +179,6 @@ class StageInputSLZ(serializers.Serializer):
         # 查询网关下所有的backend
         backends = Backend.objects.filter(gateway=attrs["gateway"])
         backend_dict = {backend.id: backend for backend in backends}
-
         # 校验后端服务数据是否完整
         for input_backend in attrs["backends"]:
             if input_backend["id"] not in backend_dict:
@@ -189,10 +193,12 @@ class StageInputSLZ(serializers.Serializer):
                     _("请求参数中，缺少后端服务【{backend_id}】的配置。").format(backend_name=backend.name)
                 )
 
-        # 校验backend下类型选择的关联性
         for input_backend in attrs["backends"]:
             backend = backend_dict[input_backend["id"]]
-
+            # 校验backend下的host下的类型的唯一性
+            validator = SchemeInputValidator(hosts=input_backend["config"]["hosts"], backend=backend)
+            validator.validate_scheme()
+            # 校验backend下类型选择的关联性
             for host in input_backend["config"]["hosts"]:
                 check_backend_host_scheme(backend, host)
 
