@@ -470,6 +470,7 @@ class TestStageInputSLZ:
                 with pytest.raises(ValidationError):
                     slz.is_valid(raise_exception=True)
 
+
 class TestBackendConfigInputSLZ:
     def test_to_internal_value(self, fake_backend):
         data = [

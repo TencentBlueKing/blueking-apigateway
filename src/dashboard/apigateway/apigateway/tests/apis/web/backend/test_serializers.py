@@ -23,15 +23,7 @@ from apigateway.apis.web.backend import serializers
 
 
 class TestBackendInputSLZ:
-    @pytest.mark.parametrize(
-        "data, will_error",
-        [
-            (
-                    {
-                    },
-            )
-        ]
-    )
+    @pytest.mark.parametrize("data, will_error", [({},)])
     def test_to_internal_value(self, fake_stage):
         data = [
             (
