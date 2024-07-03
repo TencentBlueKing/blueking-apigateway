@@ -161,7 +161,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, onBeforeMount } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getResourceVersionsInfo, getGatewayLabels, getStageList } from '@/http';
 import { useCommon, useStage } from '@/store';
@@ -509,20 +509,15 @@ const init = async () => {
 };
 
 // 切换环境重新获取资源信息
-watch(() => stageStore.curStageId, () => {
-  init();
+watch(() => stageStore.curStageId, (newV, oldV) => {
+  if (oldV !== -1) { // 初始化时onMounted会请求，防止重复
+    init();
+  }
 });
 
 // 切换环境重新执行
 onMounted(() => {
   init();
-  mitt.on('update-resource', (curStage: any) => {
-    getResourceVersionsData(curStage);
-  });
-});
-
-onBeforeMount(() => {
-  mitt.off('update-resource');
 });
 </script>
 
