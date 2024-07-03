@@ -279,9 +279,9 @@ const isShowChart = computed(() => {
   return chartData.value?.series?.length > 0;
 });
 
-const localLanguage = computed(() => {
-  return 'zh-cn';
-});
+// const localLanguage = computed(() => {
+//   return 'zh-cn';
+// });
 
 const formatterValue = (params: Record<string, any>) => {
   return `${params.value.toLocaleString()}次`;
