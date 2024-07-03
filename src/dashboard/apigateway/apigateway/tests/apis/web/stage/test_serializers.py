@@ -121,6 +121,7 @@ class TestStageInputSLZ:
                         },
                     },
                 ],
+                "will_error": False,
             },
             {
                 "gateway": fake_gateway,
@@ -207,6 +208,7 @@ class TestStageInputSLZ:
                         },
                     },
                 ],
+                "will_error": False,
             },
             {
                 "gateway": fake_gateway,
@@ -232,6 +234,7 @@ class TestStageInputSLZ:
                         },
                     },
                 ],
+                "will_error": False,
             },
             {
                 "gateway": fake_gateway,
@@ -260,6 +263,7 @@ class TestStageInputSLZ:
                         },
                     },
                 ],
+                "will_error": False,
             },
             {
                 "gateway": fake_gateway,
@@ -288,6 +292,7 @@ class TestStageInputSLZ:
                         },
                     },
                 ],
+                "will_error": False,
             },
             {
                 "gateway": fake_gateway,
@@ -342,6 +347,7 @@ class TestStageInputSLZ:
                         },
                     },
                 ],
+                "will_error": False,
             },
             {
                 "gateway": fake_gateway,
@@ -370,6 +376,7 @@ class TestStageInputSLZ:
                         },
                     },
                 ],
+                "will_error": False,
             },
             {
                 "gateway": fake_gateway,
@@ -398,6 +405,7 @@ class TestStageInputSLZ:
                         },
                     },
                 ],
+                "will_error": False,
             },
             {
                 "gateway": fake_gateway,
@@ -432,13 +440,13 @@ class TestStageInputSLZ:
         for test in data:
             slz = serializers.StageInputSLZ(data=test, context={"gateway": fake_gateway})
 
-            if not test.get("will_error"):
+            if not test.get("will_error", False):
                 slz.is_valid(raise_exception=True)
+                test.pop("will_error", None)
                 assert test == slz.validated_data
-                continue
-
-            with pytest.raises(ValidationError):
-                slz.is_valid(raise_exception=True)
+            else:
+                with pytest.raises(ValidationError):
+                    slz.is_valid(raise_exception=True)
 
 
 class TestBackendConfigInputSLZ:

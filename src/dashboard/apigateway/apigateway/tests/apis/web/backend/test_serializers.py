@@ -39,6 +39,7 @@ class TestBackendInputSLZ:
                         "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                     }
                 ],
+                "will_error": False,
             },
             {
                 "gateway": fake_stage.gateway,
@@ -135,6 +136,7 @@ class TestBackendInputSLZ:
                         ],
                     }
                 ],
+                "will_error": False,
             },
             {
                 "gateway": fake_stage.gateway,
@@ -150,6 +152,7 @@ class TestBackendInputSLZ:
                         "hosts": [{"scheme": "grpc", "host": "www.example.com", "weight": 1}],
                     }
                 ],
+                "will_error": False,
             },
             {
                 "gateway": fake_stage.gateway,
@@ -167,6 +170,7 @@ class TestBackendInputSLZ:
                         ],
                     }
                 ],
+                "will_error": False,
             },
             {
                 "gateway": fake_stage.gateway,
@@ -185,6 +189,7 @@ class TestBackendInputSLZ:
                         ],
                     }
                 ],
+                "will_error": False,
             },
             {
                 "gateway": fake_stage.gateway,
@@ -203,6 +208,7 @@ class TestBackendInputSLZ:
                         ],
                     }
                 ],
+                "will_error": False,
             },
             {
                 "gateway": fake_stage.gateway,
@@ -230,8 +236,8 @@ class TestBackendInputSLZ:
 
             if not test.get("will_error"):
                 slz.is_valid(raise_exception=True)
+                test.pop("will_error", None)
                 assert test == slz.validated_data
-                continue
-
-            with pytest.raises(ValidationError):
-                slz.is_valid(raise_exception=True)
+            else:
+                with pytest.raises(ValidationError):
+                    slz.is_valid(raise_exception=True)
