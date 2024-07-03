@@ -134,9 +134,14 @@
       </bk-loading>
       <bk-alert
         theme="warning"
-        :title="t('环境所有配置信息的变更（包含后端服务配置，插件配置，变量配置）将直接影响至线上环境，请谨慎操作')"
         class="mt15 mb15"
-      ></bk-alert>
+      >
+        <template #title>
+          <div>
+            {{ t('修改环境的配置信息（含后端服务配置、插件配置、变量配置）后，会') }}<span class="stress">{{ t('立即在线上环境生效，请谨慎操作') }}</span>
+          </div>
+        </template>
+      </bk-alert>
       <div class="tab-wrapper">
         <bk-tab
           v-model:active="active"
@@ -222,7 +227,7 @@ const stageData: any = computed(() => {
     name: '',
     description: '',
     description_en: '',
-    status: 0,
+    status: 1,
     created_time: '',
     release: {
       status: '',
@@ -578,5 +583,8 @@ onMounted(async () => {
     transform: rotate(90deg);
     font-size: 16px;
   }
+}
+.stress {
+  color: red;
 }
 </style>
