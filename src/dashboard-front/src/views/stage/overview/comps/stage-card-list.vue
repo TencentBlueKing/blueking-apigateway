@@ -72,17 +72,17 @@
           </div>
         </div>
         <div class="apigw-form-item">
-          <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('当前资源版本')}：` }}</div>
+          <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('当前生效资源版本')}：` }}</div>
           <div class="value">
             <span class="unrelease" v-if="stageData.release.status === 'unreleased'">--</span>
             <span v-else>{{ stageData.resource_version.version || '--' }}</span>
             <template v-if="getStatus(stageData) === 'doing'">
-              <bk-tag theme="info">发布中</bk-tag>,
+              <bk-tag theme="info" class="ml10">{{ stageData.publish_version }} {{ t('发布中') }} </bk-tag>
               <bk-button
                 text
                 theme="primary"
                 @click.stop="showLogs(stageData.publish_id)">
-                查看日志
+                {{ t('查看日志') }}
               </bk-button>
             </template>
           </div>
@@ -344,7 +344,7 @@ onUnmounted(() => {
 
       .label {
         padding-right: 8px;
-        width: 100px;
+        width: 120px;
         text-align: right;
         &.en {
           width: 158px;
