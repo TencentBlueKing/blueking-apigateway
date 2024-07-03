@@ -65,6 +65,7 @@ class SDKUsageExampleInputSLZ(serializers.Serializer):
     )
     stage_name = serializers.CharField(help_text="网关环境名称")
     resource_name = serializers.CharField(help_text="资源名称")
+    resource_id = serializers.IntegerField(help_text="资源id", required=False)
 
 
 class SDKUsageExampleOutputSLZ(serializers.Serializer):

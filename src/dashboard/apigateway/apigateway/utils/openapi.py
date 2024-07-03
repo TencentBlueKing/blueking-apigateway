@@ -19,6 +19,7 @@
 import random
 
 from faker import Faker
+from openapi_schema_to_json_schema import to_json_schema
 
 fake = Faker()
 
@@ -67,3 +68,36 @@ def handle_integer(schema):
 
 def handle_default(schema):
     return None
+
+
+def generate_parameters_example(parameters):
+    path_params = {}
+    query_params = {}
+    headers = {}
+
+    for param in parameters:
+        name = param["name"]
+        example = param.get("example", "example_value")
+        if param["in"] == "path":
+            path_params[name] = example
+        elif param["in"] == "query":
+            query_params[name] = example
+        elif param["in"] == "header":
+            headers[name] = example
+
+    return path_params, query_params, headers
+
+
+def get_openapi_example(schema):
+    example = {}
+    request_body = schema.get("requestBody")
+    if request_body and "content" in request_body and "application/json" in request_body["content"]:
+        # todo: 暂时在只支持application/json
+        json_schema = to_json_schema(request_body["content"]["application/json"]["schema"])
+        example["body_example"] = generate_example(json_schema)
+    parameters = schema.get("parameters", [])
+    path, query, headers = generate_parameters_example(parameters)
+    example["path_params"] = path
+    example["query_params"] = query
+    example["headers"] = headers
+    return example
