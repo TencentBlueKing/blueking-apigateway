@@ -89,9 +89,15 @@ class SDKUsageExampleApi(generics.RetrieveAPIView):
 
         resource_name = slz.validated_data["resource_name"]
 
+        resource_id = slz.validated_data.get("resource_id")
+
         # 获取对应资源的schema
         resource_version_id = Release.objects.get_released_resource_version_id(request.gateway.id, stage_name)
-        resource_id = ResourceVersionHandler.get_resource_id(resource_version_id, resource_name)
+
+        # 如果前端没有传resource_id,通过资源版本s
+        if not resource_id:
+            resource_id = ResourceVersionHandler.get_resource_id(resource_version_id, resource_name)
+
         resource_schema = ResourceVersionHandler.get_resource_schema(resource_version_id, resource_id)
         example = openapi.get_openapi_example(resource_schema)
 
