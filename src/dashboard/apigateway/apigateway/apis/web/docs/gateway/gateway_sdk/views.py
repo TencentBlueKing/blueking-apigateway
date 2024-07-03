@@ -94,7 +94,7 @@ class SDKUsageExampleApi(generics.RetrieveAPIView):
         # 获取对应资源的schema
         resource_version_id = Release.objects.get_released_resource_version_id(request.gateway.id, stage_name)
 
-        # 如果前端没有传resource_id,通过资源版本s
+        # 如果前端没有传resource_id,通过资源版本获取一下
         if not resource_id:
             resource_id = ResourceVersionHandler.get_resource_id(resource_version_id, resource_name)
 
