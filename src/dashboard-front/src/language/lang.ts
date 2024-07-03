@@ -1355,6 +1355,8 @@ const lang: ILANG = {
   '暂无下载地址': ['No download address available'],
   '当前环境已下架，所有内容的更新均不会生效，如需重新启用，需要重新发布': ['The current environment has been taken down, and all content updates will not take effect. To re-enable, it needs to be re-released'],
   '环境所有配置信息的变更（包含后端服务配置，插件配置，变量配置）将直接影响至线上环境，请谨慎操作': ['Changes in all configuration information of the environment (including backend service configuration, plugin configuration, variable configuration) will directly affect the online environment, please proceed with caution'],
+  '修改环境的配置信息（含后端服务配置、插件配置、变量配置）后，会': ['After modifying the environment configuration information (including back-end service configuration, plug-in configuration, and variable configuration), the system will'],
+  '立即在线上环境生效，请谨慎操作': ['The online environment takes effect immediately. Perform this operation with caution'],
   '已下架': ['Taken down'],
   '删除环境': ['Delete environment'],
   '自定义超时时间': ['Custom timeout'],

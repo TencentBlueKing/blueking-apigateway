@@ -135,8 +135,6 @@ const init = async (isUpdate?: Boolean, isDelete?: Boolean) => {
 
     // 获取当前环境的详情数据
     await getStageDetailFun(curStage.value?.id);
-    // 获取当前环境的资源信息
-    await mitt.emit('update-resource', curStage.value);
   } catch (error) {
     console.error(error);
   } finally {

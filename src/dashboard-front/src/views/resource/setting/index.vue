@@ -3,6 +3,7 @@
     :latest="versionConfigs.needNewVersion"
     :current-source="curResource"
     :is-detail="isDetail"
+    :show-new-tips="!!tableData?.length"
   />
   <div
     :class="['resource-container',
@@ -176,12 +177,9 @@
               width="40"
               prop="plugin_count">
               <template #default="{ row }">
-                <bk-button
-                  text
-                  theme="primary"
-                  @click="handleShowInfo(row.id, 'pluginManage')">
+                <div class="plugin-num" @click="handleShowInfo(row.id, 'pluginManage')">
                   {{row?.plugin_count}}
-                </bk-button>
+                </div>
               </template>
             </bk-table-column>
             <bk-table-column
@@ -1597,6 +1595,10 @@ onBeforeMount(() => {
     max-height: calc(100vh - 52px);
     overflow: hidden;
   }
+}
+.plugin-num {
+  color: #3a84ff;
+  cursor: pointer;
 }
 </style>
 <style lang="scss">
