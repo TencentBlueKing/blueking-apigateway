@@ -238,7 +238,7 @@ const labelsList = computed(() => {
   return labels.value?.map((item: any) => {
     return {
       text: item.name,
-      value: item.id,
+      value: item.name,
     };
   });
 });
@@ -299,6 +299,15 @@ const getResourceVersionsData = async (curStageData: any) => {
   }
   try {
     const res = await getResourceVersionsInfo(apigwId.value, curVersionId, { stage_id: curStageData?.id });
+    res.resources?.forEach((item: any) => {
+      item.gateway_label_names = [];
+      item?.gateway_label_ids?.forEach((id: string) => {
+        const tagLabel = labels.value?.find((label: any) => label.id === id);
+        if (tagLabel) {
+          item.gateway_label_names?.push(tagLabel.name);
+        }
+      });
+    });
     pagination.value.count = res.resources.length;
     resourceVersionList.value = res.resources || [];
   } catch (e) {
@@ -382,7 +391,7 @@ const getPageData = () => {
 
   if (chooseLabels.value?.length) {
     curAllData = curAllData?.filter((row: any) => {
-      const flag = chooseLabels.value?.some((item: any) => row?.gateway_label_ids?.includes(item));
+      const flag = chooseLabels.value?.some((item: any) => row?.gateway_label_names?.includes(item));
       if (flag)  {
         return true;
       }

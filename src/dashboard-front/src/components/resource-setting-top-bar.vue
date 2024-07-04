@@ -2,7 +2,7 @@
   <div class="resource-top-bar" :style="stage.getNotUpdatedStages?.length ? 'top: 42px' : 'top: -1px'">
     <div class="top-title-wrapper">
       <div class="title">{{ t('资源配置') }}</div>
-      <div class="is-latest" v-show="!latest && showNewTips">
+      <div class="is-latest" v-show="showNewTips">
         {{ t('当前最新资源') }}
       </div>
       <div class="current-resource" v-show="isDetail && currentSource?.name">
