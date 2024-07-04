@@ -730,7 +730,7 @@ const labelsList = computed(() => {
   return labelsData.value?.map((item: any) => {
     return {
       text: item.name,
-      value: item.id,
+      value: item.name,
     };
   });
 });
@@ -1293,7 +1293,14 @@ watch(
     if (!v?.length) { // 重置
       filterData.value.label_ids = undefined;
     } else { // 选择
-      filterData.value.label_ids = v?.join(',');
+      const ids: string[] = [];
+      v?.forEach((name: string) => {
+        const tagLabel = labelsData.value?.find((label: any) => label.name === name);
+        if (tagLabel?.id) {
+          ids?.push(tagLabel.id);
+        }
+      });
+      filterData.value.label_ids = ids.join(',');
     }
   },
   { deep: true, immediate: true },
