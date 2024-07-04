@@ -171,7 +171,6 @@ import editStageSideslider from '../comps/edit-stage-sideslider.vue';
 import { EditLine } from 'bkui-vue/lib/icon';
 import { copy } from '@/common/util';
 import { useRoute } from 'vue-router';
-import mitt from '@/common/event-bus';
 
 const { t } = useI18n();
 const route = useRoute();
