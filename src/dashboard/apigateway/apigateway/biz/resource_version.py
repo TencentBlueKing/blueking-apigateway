@@ -268,7 +268,9 @@ class ResourceVersionHandler:
         """
         获取指定版本的资源对应的api schema
         """
-        resources_version_schema = OpenAPIResourceSchemaVersion.objects.get(resource_version_id=resource_version_id)
+        resources_version_schema = OpenAPIResourceSchemaVersion.objects.filter(
+            resource_version_id=resource_version_id
+        ).first()
         if resources_version_schema is None:
             return {}
         # 筛选资源数据
