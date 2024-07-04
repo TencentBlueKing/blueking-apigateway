@@ -724,7 +724,7 @@ onBeforeUnmount(() => {
   }
 
   .ag-top-header {
-    padding-left: 20px;
+    padding-left: 24px;
     padding-right: 4px;
 
     :deep(.search-form) {
@@ -774,7 +774,7 @@ onBeforeUnmount(() => {
   }
 
   .list {
-    padding-left: 22px;
+    padding-left: 24px;
     margin-top: 16px;
 
     .details {
@@ -889,6 +889,9 @@ onBeforeUnmount(() => {
   }
 }
 
+.chart {
+  padding-left: 24px;
+}
 .chart-container {
   width: 100%;
   background: #fff;
