@@ -50,10 +50,15 @@
                     :description="t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1')"
                     class="form-item-version mt-20"
                     required>
-                    <bk-input
-                      v-model="formData.version"
-                      :placeholder="t('由数字、字母、中折线（-）、点号（.）组成，长度小于64个字符')"
-                    />
+                    <bk-popover
+                      :content="t('由数字、字母、中折线（-）、点号（.）组成，长度小于64个字符')"
+                      theme="light"
+                    >
+                      <bk-input
+                        v-model="formData.version"
+                        :placeholder="t('由数字、字母、中折线（-）、点号（.）组成，长度小于64个字符')"
+                      />
+                    </bk-popover>
                     <div class="form-tips">
                       <i class="apigateway-icon icon-ag-info"></i>
                       {{ t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1') }}
@@ -186,6 +191,7 @@ import {
   createResourceVersion,
   resourceVersionsDiff,
   getStageList,
+  getNextVersion,
 } from '@/http';
 import { useGetStageList } from '@/hooks';
 import versionDiff from '@/components/version-diff/index.vue';
@@ -375,11 +381,19 @@ const handlePublish = async () => {
   }
 };
 
+const getSuggestionVersion = async () => {
+  const res = await getNextVersion(apigwId.value);
+  if (res?.version) {
+    formData.version = res.version;
+  }
+};
+
 watch(
   () => isShow.value,
   (val) => {
     if (val) {
       getResourceVersions();
+      getSuggestionVersion();
     } else {
       stepsConfig.value.curStep = 1;
       formData.version = '';

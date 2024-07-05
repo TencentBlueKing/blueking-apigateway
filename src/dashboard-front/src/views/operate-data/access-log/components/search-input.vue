@@ -107,7 +107,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['input', 'search', 'choose']);
+const emit = defineEmits(['update:modeValue', 'search', 'choose']);
 
 const searchInputRef = ref(null);
 const localValue = ref('');
@@ -135,7 +135,7 @@ watch(
 watch(
   () => localValue.value,
   (payload: string) => {
-    emit('input', payload);
+    emit('update:modeValue', payload);
   },
 );
 

@@ -157,7 +157,8 @@
               </bk-button>
               <template v-else-if="stepsConfig.curStep === 2">
                 <bk-button theme="primary" style="width: 100px" @click="showPublishDia">
-                  {{ isRollback ? $t('确认回滚') : $t('确认发布') }}
+                  <!-- {{ isRollback ? $t('确认回滚') : $t('确认发布') }} -->
+                  {{ $t('确认发布') }}
                 </bk-button>
                 <bk-button style="margin-left: 4px; width: 100px" @click="handleBack">
                   {{ $t('上一步') }}

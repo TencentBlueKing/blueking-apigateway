@@ -188,6 +188,12 @@ export const deleteResourceDocs = (apigwId: number, resourceId: number, docId: n
 export const checkNeedNewVersion = (apigwId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource-versions/need-new-version/`, { globalError: false });
 
 /**
+ * 获取建议的版本
+ * @param apigwId 网关id
+ */
+export const getNextVersion = (apigwId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource-versions/next-version/`);
+
+/**
  * 设置标签
  * @param apigwId 网关id
  * @param resourceId 资源id
