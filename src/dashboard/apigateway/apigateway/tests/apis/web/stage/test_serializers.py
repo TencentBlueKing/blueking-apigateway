@@ -123,7 +123,7 @@ class TestStageInputSLZ:
                         },
                     ],
                 },
-                {False},
+                False,
             ),
             (
                 {
@@ -151,7 +151,7 @@ class TestStageInputSLZ:
                         },
                     ],
                 },
-                {True},
+                True,
             ),
             (
                 {
@@ -160,7 +160,7 @@ class TestStageInputSLZ:
                     "description": "test",
                     "backends": [],  # 没有传入配置报错
                 },
-                {True},
+                True,
             ),
             (
                 {
@@ -190,7 +190,7 @@ class TestStageInputSLZ:
                         },
                     ],
                 },
-                {True},
+                True,
             ),
             (
                 {
@@ -218,7 +218,7 @@ class TestStageInputSLZ:
                         },
                     ],
                 },
-                {False},
+                False,
             ),
             (
                 {
@@ -246,7 +246,7 @@ class TestStageInputSLZ:
                         },
                     ],
                 },
-                {False},
+                False,
             ),
             (
                 {
@@ -277,7 +277,7 @@ class TestStageInputSLZ:
                         },
                     ],
                 },
-                {False},
+                False,
             ),
             (
                 {
@@ -308,7 +308,7 @@ class TestStageInputSLZ:
                         },
                     ],
                 },
-                {False},
+                False,
             ),
             (
                 {
@@ -339,7 +339,7 @@ class TestStageInputSLZ:
                         },
                     ],
                 },
-                {True},
+                True,
             ),
             (
                 {
@@ -367,7 +367,7 @@ class TestStageInputSLZ:
                         },
                     ],
                 },
-                {False},
+                False,
             ),
             (
                 {
@@ -398,7 +398,7 @@ class TestStageInputSLZ:
                         },
                     ],
                 },
-                {False},
+                False,
             ),
             (
                 {
@@ -429,7 +429,7 @@ class TestStageInputSLZ:
                         },
                     ],
                 },
-                {False},
+                False,
             ),
             (
                 {
@@ -460,13 +460,15 @@ class TestStageInputSLZ:
                         },
                     ],
                 },
-                {False},
+                False,
             ),
         ]
         for test in data:
-            slz = serializers.StageInputSLZ(data=test[0], context={"gateway": fake_gateway})
+            record = test[0]
+            will_error = test[1]
+            slz = serializers.StageInputSLZ(data=record, context={"gateway": fake_gateway})
 
-            if test[1] is True:
+            if will_error:
                 with pytest.raises(ValidationError):
                     slz.is_valid(raise_exception=True)
 

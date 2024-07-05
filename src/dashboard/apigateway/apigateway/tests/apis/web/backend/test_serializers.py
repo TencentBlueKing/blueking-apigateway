@@ -41,7 +41,7 @@ class TestBackendInputSLZ:
                         }
                     ],
                 },
-                {False},
+                False,
             ),
             (
                 {
@@ -61,7 +61,7 @@ class TestBackendInputSLZ:
                         }
                     ],
                 },
-                {True},
+                True,
             ),
             (
                 {
@@ -81,7 +81,7 @@ class TestBackendInputSLZ:
                         }
                     ],
                 },
-                {True},
+                True,
             ),
             (
                 {
@@ -106,7 +106,7 @@ class TestBackendInputSLZ:
                         },
                     ],
                 },
-                {True},
+                True,
             ),
             (
                 {
@@ -127,7 +127,7 @@ class TestBackendInputSLZ:
                         }
                     ],
                 },
-                {True},
+                True,
             ),
             (
                 {
@@ -148,7 +148,7 @@ class TestBackendInputSLZ:
                         }
                     ],
                 },
-                {False},
+                False,
             ),
             (
                 {
@@ -166,7 +166,7 @@ class TestBackendInputSLZ:
                         }
                     ],
                 },
-                {False},
+                False,
             ),
             (
                 {
@@ -186,7 +186,7 @@ class TestBackendInputSLZ:
                         }
                     ],
                 },
-                {False},
+                False,
             ),
             (
                 {
@@ -207,7 +207,7 @@ class TestBackendInputSLZ:
                         }
                     ],
                 },
-                {False},
+                False,
             ),
             (
                 {
@@ -228,7 +228,7 @@ class TestBackendInputSLZ:
                         }
                     ],
                 },
-                {False},
+                False,
             ),
             (
                 {
@@ -249,13 +249,15 @@ class TestBackendInputSLZ:
                         }
                     ],
                 },
-                {True},
+                True,
             ),
         ]
 
         for test in data:
-            slz = serializers.BackendInputSLZ(data=test[0], context={"gateway": fake_stage.gateway})
+            record = test[0]
+            will_error = test[1]
+            slz = serializers.BackendInputSLZ(data=record, context={"gateway": fake_stage.gateway})
 
-            if test[1] is True:
+            if will_error:
                 with pytest.raises(ValidationError):
                     slz.is_valid(raise_exception=True)

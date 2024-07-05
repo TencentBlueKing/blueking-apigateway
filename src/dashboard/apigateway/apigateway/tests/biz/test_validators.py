@@ -345,48 +345,32 @@ class TestSchemeInputValidator:
                     "backend_type": BackendTypeEnum.HTTP.value,
                     "hosts": [{"scheme": "http"}],
                 },
-                {
-                    None,
-                },
-                {
-                    False,
-                },
+                None,
+                False,
             ),
             (
                 {
                     "backend_type": BackendTypeEnum.HTTP.value,
                     "hosts": [{"scheme": "https"}],
                 },
-                {
-                    None,
-                },
-                {
-                    False,
-                },
+                None,
+                False,
             ),
             (
                 {
                     "backend_type": BackendTypeEnum.HTTP.value,
                     "hosts": [{"scheme": "http"}, {"scheme": "http"}],
                 },
-                {
-                    None,
-                },
-                {
-                    False,
-                },
+                None,
+                False,
             ),
             (
                 {
                     "backend_type": BackendTypeEnum.HTTP.value,
                     "hosts": [{"scheme": "https"}, {"scheme": "https"}],
                 },
-                {
-                    None,
-                },
-                {
-                    False,
-                },
+                None,
+                False,
             ),
             (
                 {
@@ -396,57 +380,39 @@ class TestSchemeInputValidator:
                 {
                     "error_message": "[ErrorDetail(string='后端服务【Test Backend】的配置 scheme 同时存在 http 和 https， 需要保持一致。', code='invalid')]",
                 },
-                {
-                    True,
-                },
+                True,
             ),
             (
                 {
                     "backend_type": BackendTypeEnum.GRPC.value,
                     "hosts": [{"scheme": "grpc"}],
                 },
-                {
-                    None,
-                },
-                {
-                    False,
-                },
+                None,
+                False,
             ),
             (
                 {
                     "backend_type": BackendTypeEnum.GRPC.value,
                     "hosts": [{"scheme": "grpcs"}],
                 },
-                {
-                    None,
-                },
-                {
-                    False,
-                },
+                None,
+                False,
             ),
             (
                 {
                     "backend_type": BackendTypeEnum.GRPC.value,
                     "hosts": [{"scheme": "grpc"}, {"scheme": "grpc"}],
                 },
-                {
-                    None,
-                },
-                {
-                    False,
-                },
+                None,
+                False,
             ),
             (
                 {
                     "backend_type": BackendTypeEnum.GRPC.value,
                     "hosts": [{"scheme": "grpcs"}, {"scheme": "grpcs"}],
                 },
-                {
-                    None,
-                },
-                {
-                    False,
-                },
+                None,
+                False,
             ),
             (
                 {
@@ -456,9 +422,7 @@ class TestSchemeInputValidator:
                 {
                     "error_message": "[ErrorDetail(string='后端服务【Test Backend】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致。', code='invalid')]",
                 },
-                {
-                    True,
-                },
+                True,
             ),
         ],
     )
@@ -472,7 +436,7 @@ class TestSchemeInputValidator:
             validator = SchemeInputValidator(fake_grpc_backend, data["hosts"])
         # 捕获可能的异常
         # 假设这个方法在某些条件下会抛出异常
-        if will_error is True:
+        if will_error:
             # 验证异常消息是否符合预期
             with pytest.raises(Exception) as exc_info:
                 validator.validate_scheme()
