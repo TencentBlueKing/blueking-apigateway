@@ -566,7 +566,7 @@ const active = ref('resourceInfo');
 
 const isComponentLoading = ref(true);
 
-const methodsTypeList =  ref(common.methodList);
+const methodsTypeList = ref(common.methodList);
 
 const searchValue = ref([]);
 const searchData = shallowRef([
@@ -667,6 +667,9 @@ const columns = [
 
 // const customMethodsList = shallowRef(common.methodList);
 const customMethodsList = computed(() => {
+  if (!common.methodList?.length) {
+    return [];
+  }
   return common.methodList?.map((item: any) => {
     return {
       text: item.name,
@@ -726,6 +729,9 @@ const tableDataKey = ref(-1);
 // };
 
 const labelsList = computed(() => {
+  if (!labelsData?.value.length) {
+    return [];
+  }
   tableDataKey.value = +new Date();
   return labelsData.value?.map((item: any) => {
     return {

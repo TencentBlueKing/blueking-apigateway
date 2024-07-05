@@ -1,7 +1,7 @@
 import { useStaffStore } from '@/store';
 import { Staff, StaffType } from '@/types';
 import { Loading, TagInput } from 'bkui-vue';
-import { computed, defineComponent, PropType, ref, watch, nextTick } from 'vue';
+import { computed, defineComponent, PropType, ref, watch, nextTick, onMounted } from 'vue';
 import _ from 'lodash';
 
 import './member-select.scss';
@@ -104,6 +104,13 @@ export default defineComponent({
       },
       { immediate: true, deep: true },
     );
+
+    onMounted(() => {
+      if (props.modelValue?.length) {
+        staffStore.fetchStaffs(props.modelValue.join(','));
+        return;
+      }
+    });
 
     return () => <>
       {/* v-bkloading={{ loading: isLoading, opacity: 1, color: '#fff', mode: 'spin', size: 'mini' }} */}
