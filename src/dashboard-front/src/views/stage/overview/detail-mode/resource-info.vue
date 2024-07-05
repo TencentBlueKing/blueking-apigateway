@@ -49,7 +49,7 @@
             prop="method"
             :label="t('前端请求方法')"
             :filter="{
-              list: customMethodsList,
+              list: customMethodsList || [{ text: '', value: '' }],
               checked: chooseMethod,
               filterFn: handleMethodFilter,
               btnSave: false,
@@ -68,7 +68,7 @@
             prop="gateway_label_ids"
             :label="t('标签')"
             :filter="{
-              list: labelsList,
+              list: labelsList || [{ text: '', value: '' }],
               checked: chooseLabels,
               filterFn: handleMethodFilter,
               btnSave: false,
@@ -225,6 +225,9 @@ const getLabels = async () => {
 // const curSelectMethod = ref('ALL');
 // const customMethodsList = shallowRef(common.methodList);
 const customMethodsList = computed(() => {
+  if (!common.methodList?.length) {
+    return [];
+  }
   return common.methodList?.map((item: any) => {
     return {
       text: item.name,
@@ -234,6 +237,9 @@ const customMethodsList = computed(() => {
 });
 
 const labelsList = computed(() => {
+  if (!labels.value?.length) {
+    return [];
+  }
   tableDataKey.value = +new Date();
   return labels.value?.map((item: any) => {
     return {
@@ -512,8 +518,8 @@ const init = async () => {
 
   const curStageData = data.find((item: { name: string; }) => item.name === paramsStage)
   || stageStore.stageList[0];
-  getResourceVersionsData(curStageData);
-  getLabels();
+  await getResourceVersionsData(curStageData);
+  await getLabels();
 };
 
 // 切换环境重新获取资源信息
