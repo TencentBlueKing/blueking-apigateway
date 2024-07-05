@@ -740,7 +740,7 @@
           },
           "operationId": {
             "type": "string",
-            "pattern": "^[a-zA-Z][a-zA-Z0-9_]{0,255}$"
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,255}$"
           },
           "parameters": {
             "$ref": "#/definitions/anysOrExpressions"
