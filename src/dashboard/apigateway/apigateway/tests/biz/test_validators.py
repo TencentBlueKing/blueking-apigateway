@@ -32,10 +32,11 @@ from apigateway.biz.validators import (
     ReleaseValidationError,
     ResourceIDValidator,
     ResourceVersionValidator,
+    SchemeInputValidator,
 )
 from apigateway.common.factories import SchemaFactory
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import GatewayStatusEnum, ProxyTypeEnum
+from apigateway.core.constants import BackendTypeEnum, GatewayStatusEnum, ProxyTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Gateway, Proxy, Resource, ResourceVersion, Stage
 
 
@@ -333,3 +334,111 @@ class TestPublishValidator:
         publish_validator = PublishValidator(fake_gateway, fake_stage, fake_resource_version)
         with pytest.raises(ReleaseValidationError):
             publish_validator._validate_stage_plugins()
+
+
+class TestSchemeInputValidator:
+    @pytest.mark.parametrize(
+        "data, expected, will_error",
+        [
+            (
+                {
+                    "backend_type": BackendTypeEnum.HTTP.value,
+                    "hosts": [{"scheme": "http"}],
+                },
+                None,
+                False,
+            ),
+            (
+                {
+                    "backend_type": BackendTypeEnum.HTTP.value,
+                    "hosts": [{"scheme": "https"}],
+                },
+                None,
+                False,
+            ),
+            (
+                {
+                    "backend_type": BackendTypeEnum.HTTP.value,
+                    "hosts": [{"scheme": "http"}, {"scheme": "http"}],
+                },
+                None,
+                False,
+            ),
+            (
+                {
+                    "backend_type": BackendTypeEnum.HTTP.value,
+                    "hosts": [{"scheme": "https"}, {"scheme": "https"}],
+                },
+                None,
+                False,
+            ),
+            (
+                {
+                    "backend_type": BackendTypeEnum.HTTP.value,
+                    "hosts": [{"scheme": "http"}, {"scheme": "https"}],
+                },
+                {
+                    "error_message": "[ErrorDetail(string='后端服务【Test Backend】的配置 scheme 同时存在 http 和 https， 需要保持一致。', code='invalid')]",
+                },
+                True,
+            ),
+            (
+                {
+                    "backend_type": BackendTypeEnum.GRPC.value,
+                    "hosts": [{"scheme": "grpc"}],
+                },
+                None,
+                False,
+            ),
+            (
+                {
+                    "backend_type": BackendTypeEnum.GRPC.value,
+                    "hosts": [{"scheme": "grpcs"}],
+                },
+                None,
+                False,
+            ),
+            (
+                {
+                    "backend_type": BackendTypeEnum.GRPC.value,
+                    "hosts": [{"scheme": "grpc"}, {"scheme": "grpc"}],
+                },
+                None,
+                False,
+            ),
+            (
+                {
+                    "backend_type": BackendTypeEnum.GRPC.value,
+                    "hosts": [{"scheme": "grpcs"}, {"scheme": "grpcs"}],
+                },
+                None,
+                False,
+            ),
+            (
+                {
+                    "backend_type": BackendTypeEnum.GRPC.value,
+                    "hosts": [{"scheme": "grpc"}, {"scheme": "grpcs"}],
+                },
+                {
+                    "error_message": "[ErrorDetail(string='后端服务【Test Backend】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致。', code='invalid')]",
+                },
+                True,
+            ),
+        ],
+    )
+    def test_validate_scheme(self, fake_backend, fake_grpc_backend, data, expected, will_error):
+        backend_name = ""
+        if data["backend_type"] == BackendTypeEnum.HTTP.value:
+            backend_name = fake_backend.name
+            validator = SchemeInputValidator(fake_backend, data["hosts"])
+        else:
+            backend_name = fake_grpc_backend.name
+            validator = SchemeInputValidator(fake_grpc_backend, data["hosts"])
+        # 捕获可能的异常
+        # 假设这个方法在某些条件下会抛出异常
+        if will_error:
+            # 验证异常消息是否符合预期
+            with pytest.raises(Exception) as exc_info:
+                validator.validate_scheme()
+            expected_msg = expected["error_message"].replace("Test Backend", backend_name)
+            assert str(exc_info.value) == expected_msg

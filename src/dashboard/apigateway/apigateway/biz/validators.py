@@ -24,7 +24,7 @@ from rest_framework import serializers
 
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
 from apigateway.core import constants as core_constants
-from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, GatewayStatusEnum
+from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, BackendTypeEnum, GatewayStatusEnum
 from apigateway.core.models import BackendConfig, Gateway, Proxy, Resource, ResourceVersion, Stage
 
 from .constants import APP_CODE_PATTERN, STAGE_VAR_FOR_PATH_PATTERN
@@ -286,3 +286,24 @@ class ResourceVersionValidator:
         # ResourceVersion 中数据量较大，因此，不使用 UniqueTogetherValidator
         if ResourceVersion.objects.filter(gateway=gateway, version=version).exists():
             raise serializers.ValidationError(_("版本 {version} 已存在。").format(version=version))
+
+
+class SchemeInputValidator:
+    def __init__(self, backend, hosts):
+        self.hosts = hosts
+        self.backend = backend
+
+    def validate_scheme(self):
+        schemes = {host.get("scheme") for host in self.hosts}
+        if len(schemes) > 1 and self.backend.type == BackendTypeEnum.HTTP.value:
+            raise serializers.ValidationError(
+                _("后端服务【{backend_name}】的配置 scheme 同时存在 http 和 https， 需要保持一致。").format(
+                    backend_name=self.backend.name
+                )
+            )
+        if len(schemes) > 1 and self.backend.type == BackendTypeEnum.GRPC.value:
+            raise serializers.ValidationError(
+                _("后端服务【{backend_name}】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致。").format(
+                    backend_name=self.backend.name
+                )
+            )
