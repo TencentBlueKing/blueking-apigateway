@@ -70,7 +70,7 @@
           </template>
         </bk-collapse-panel>
 
-        <bk-collapse-panel :name="2" class="collapse-panel mb32">
+        <bk-collapse-panel :name="2" class="collapse-panel mb32" @change="handlePanelChange">
           <template #header>
             <div class="collapse-panel-header">
               <angle-up-fill :class="['panel-title-icon', activeIndex?.includes(2) ? '' : 'packUp']" />
@@ -309,6 +309,12 @@ const setSearchTimeRange = () => {
     time_start: formatTimeRange[0],
     time_end: formatTimeRange[1],
   });
+};
+
+const handlePanelChange = ({ name }: any) => {
+  if (name === 2) {
+    chartResize();
+  }
 };
 
 const renderChart = (data: Record<string, any>) => {
