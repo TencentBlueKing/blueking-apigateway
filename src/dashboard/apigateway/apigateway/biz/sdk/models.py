@@ -31,6 +31,10 @@ class SDKDocContext:
     resource_name: str
     sdk_created_time: datetime = field(default_factory=timezone_now)
     gateway_name_with_underscore: str = ""
+    body_example: dict = field(default_factory=dict)
+    path_params: dict = field(default_factory=dict)
+    query_params: dict = field(default_factory=dict)
+    headers: dict = field(default_factory=dict)
     django_settings: Any = settings
 
     def as_dict(self):
@@ -41,6 +45,10 @@ class SDKDocContext:
             "resource_name": self.resource_name,
             "sdk_created_time": self.sdk_created_time,
             "django_settings": self.django_settings,
+            "body_example": self.body_example,
+            "path_params": self.path_params,
+            "query_params": self.query_params,
+            "headers": self.headers,
         }
 
 

@@ -126,9 +126,11 @@ class ReleaseAvailableResourceSchemaRetrieveApi(generics.RetrieveAPIView):
         schema_result["parameter_schema"] = schema.get("parameters", [])
         schema_result["response_schema"] = schema.get("responses", {})
         request_body = schema.get("requestBody")
-        if request_body:
+        if request_body and "content" in request_body and "application/json" in request_body["content"]:
             # todo: 暂时在只支持application/json
-            json_schema = to_json_schema(request_body["content"]["application/json"]["schema"])
+            json_schema = to_json_schema(
+                request_body["content"]["application/json"]["schema"], {"keepNotSupported": ["example"]}
+            )
             example = openapi.generate_example(json_schema)
             schema_result.update(
                 {
