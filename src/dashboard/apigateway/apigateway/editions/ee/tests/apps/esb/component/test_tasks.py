@@ -17,9 +17,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from ddf import G
 
 from apigateway.apps.esb.component.exceptions import ComponentReleaseError
 from apigateway.apps.esb.component.tasks import sync_and_release_esb_components
+from apigateway.core.models import ResourceVersion
 
 pytestmark = pytest.mark.django_db
 
@@ -67,9 +69,8 @@ pytestmark = pytest.mark.django_db
         ),
     ],
 )
-def test_sync_and_release_esb_components(
-    mocker, fake_gateway, fake_resource_version, updated_resources, release_side_effect
-):
+def test_sync_and_release_esb_components(mocker, fake_gateway, updated_resources, release_side_effect):
+    fake_resource_version = G(ResourceVersion, gateway=fake_gateway)
     # not acquired
     mocker.patch(
         "apigateway.apps.esb.component.tasks.get_release_lock",
@@ -131,8 +132,9 @@ def test_test_sync_and_release_esb_components_error(mocker, fake_gateway):
 
     mock_mark_release_fail = mocker.patch("apigateway.apps.esb.component.tasks.ComponentReleaser.mark_release_fail")
 
+    fake_resource_version = G(ResourceVersion, gateway=fake_gateway)
     with pytest.raises(Exception):
-        sync_and_release_esb_components(fake_gateway.id, "admin", False)
+        sync_and_release_esb_components(fake_gateway.id, fake_resource_version.id, "admin", False)
 
     mock_mark_release_fail.assert_called_once()
     mock_release_lock_release.assert_called_once_with()
