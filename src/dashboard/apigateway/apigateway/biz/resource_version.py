@@ -284,11 +284,11 @@ class ResourceVersionHandler:
     def get_resource_id(resource_version_id: int, resource_name: str) -> int:
         resource_version = ResourceVersion.objects.filter(id=resource_version_id).first()
         if not resource_version:
-            return 0
+            return -1
         for resource in resource_version.data:
             if resource["name"] == resource_name:
                 return resource["id"]
-        return 0
+        return -1
 
 
 class ResourceDocVersionHandler:

@@ -18,6 +18,7 @@
 import pytest
 
 from apigateway.utils import openapi
+from apigateway.utils.openapi import generate_parameters_example, get_openapi_example
 
 
 class TestOpenAPI:
@@ -49,3 +50,72 @@ class TestOpenAPI:
             assert schema["minimum"] <= result <= schema["maximum"]
         elif "enum" in schema:
             assert result in schema["enum"]
+
+    @pytest.mark.parametrize(
+        "parameters, expected_path, expected_query, expected_headers",
+        [
+            (
+                [
+                    {"name": "userId", "in": "path", "example": "123"},
+                    {"name": "search", "in": "query", "example": "test"},
+                    {"name": "Authorization", "in": "header", "example": "Bearer token"},
+                ],
+                {"userId": "123"},
+                {"search": "test"},
+                {"Authorization": "Bearer token"},
+            ),
+            (
+                [
+                    {"name": "userId", "in": "path"},
+                    {"name": "search", "in": "query"},
+                    {"name": "Authorization", "in": "header"},
+                ],
+                {"userId": "example_value"},
+                {"search": "example_value"},
+                {"Authorization": "example_value"},
+            ),
+            ([], {}, {}, {}),
+        ],
+    )
+    def test_generate_parameters_example(self, parameters, expected_path, expected_query, expected_headers):
+        path_params, query_params, headers = generate_parameters_example(parameters)
+        assert path_params == expected_path
+        assert query_params == expected_query
+        assert headers == expected_headers
+
+    @pytest.mark.parametrize(
+        "schema, expected_example",
+        [
+            (
+                {
+                    "requestBody": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {"type": "integer", "example": 1},
+                                        "name": {"type": "string", "example": "test"},
+                                    },
+                                }
+                            }
+                        }
+                    },
+                    "parameters": [
+                        {"name": "userId", "in": "path", "example": "123"},
+                        {"name": "search", "in": "query", "example": "test"},
+                        {"name": "Authorization", "in": "header", "example": "Bearer token"},
+                    ],
+                },
+                {
+                    "body_example": {"id": 1, "name": "test"},
+                    "path_params": {"userId": "123"},
+                    "query_params": {"search": "test"},
+                    "headers": {"Authorization": "Bearer token"},
+                },
+            )
+        ],
+    )
+    def test_get_openapi_example(self, schema, expected_example):
+        example = get_openapi_example(schema)
+        assert example == expected_example

@@ -89,11 +89,13 @@ def generate_parameters_example(parameters):
 
 
 def get_openapi_example(schema):
-    example = {}
+    example = {"body_example": {}, "path_params": {}, "query_params": {}, "headers": {}}
     request_body = schema.get("requestBody")
     if request_body and "content" in request_body and "application/json" in request_body["content"]:
         # todo: 暂时在只支持application/json
-        json_schema = to_json_schema(request_body["content"]["application/json"]["schema"])
+        json_schema = to_json_schema(
+            request_body["content"]["application/json"]["schema"], {"keepNotSupported": ["example"]}
+        )
         example["body_example"] = generate_example(json_schema)
     parameters = schema.get("parameters", [])
     path, query, headers = generate_parameters_example(parameters)
