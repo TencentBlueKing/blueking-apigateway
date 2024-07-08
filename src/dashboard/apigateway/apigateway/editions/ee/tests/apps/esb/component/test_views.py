@@ -437,25 +437,19 @@ class TestComponentReleaseHistoryStatusViewSet:
             ],
         )
         request = self.factory.get(f"/sync/release/histories/status/{history1.id}/")
-
         view = views.ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"})
         response = view(request, id=history1.id)
-
-        result = get_response_json(response)
-        assert result["data"] == [{"status": "releasing"}]
-
-        request = self.factory.get(f"/sync/release/histories/status/{history2.id}/")
-
-        view = views.ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"})
-        response = view(request, id=history2.id)
-
         result = get_response_json(response)
         assert result["data"] == [{"status": "success"}]
 
-        request = self.factory.get(f"/sync/release/histories/status/{history3.id}/")
+        request = self.factory.get(f"/sync/release/histories/status/{history2.id}/")
+        view = views.ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"})
+        response = view(request, id=history2.id)
+        result = get_response_json(response)
+        assert result["data"] == [{"status": "failure"}]
 
+        request = self.factory.get(f"/sync/release/histories/status/{history3.id}/")
         view = views.ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"})
         response = view(request, id=history3.id)
-
         result = get_response_json(response)
         assert result["data"] == [{"status": "releasing"}]
