@@ -76,7 +76,7 @@ def test_sync_and_release_esb_components(
         return_value=mocker.MagicMock(**{"acquire.return_value": False}),
     )
 
-    sync_and_release_esb_components(fake_gateway.id, fake_resource_version, "admin", False)
+    sync_and_release_esb_components(fake_gateway.id, fake_resource_version.id, "admin", False)
 
     # acquired
     mock_release_lock_release = mocker.MagicMock()
@@ -103,9 +103,9 @@ def test_sync_and_release_esb_components(
 
     if release_side_effect:
         with pytest.raises(ComponentReleaseError):
-            sync_and_release_esb_components(fake_gateway.id, "admin", False)
+            sync_and_release_esb_components(fake_gateway.id, fake_resource_version.id, "admin", False)
     else:
-        sync_and_release_esb_components(fake_gateway.id, "admin", False)
+        sync_and_release_esb_components(fake_gateway.id, fake_resource_version.id, "admin", False)
 
     mock_sync_to_resources.asset_called_once_with(fake_gateway, username="admin")
     mock_create_resource_version.assert_called_once_with()

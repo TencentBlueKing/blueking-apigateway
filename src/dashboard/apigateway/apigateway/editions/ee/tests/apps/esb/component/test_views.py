@@ -243,7 +243,7 @@ class TestComponentSyncViewSet:
         response = view(request)
         assert response.status_code == 400
         result = get_response_json(response)
-        assert result["error"]["data"] == {"is_releasing": True, "id": 1}
+        assert result["error"]["data"] == {"is_releasing": True}
         mock_sync_and_release.assert_not_called()
 
         # not locked
@@ -432,7 +432,7 @@ class TestComponentReleaseHistoryStatusViewSet:
                         "component_path": "/echo/",
                         "component_permission_level": "unlimited",
                     },
-                    "status": "failure",
+                    "status": "releasing",
                 }
             ],
         )
