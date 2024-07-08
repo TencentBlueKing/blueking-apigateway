@@ -65,7 +65,7 @@ class BaseParser:
                     "method": method,
                     "path": path,
                     "match_subpath": extension_resource.get("matchSubpath", False),
-                    "name": operation["operationId"],
+                    "name": operation["operationId"].replace("-", "_"),  # 避免drf生成的带有-的导入不进去
                     "description": self._adapt_description(operation.get("summary"), operation.get("description")),
                     "description_en": extension_resource.get("descriptionEn"),
                     "labels": operation.get("tags", []),
