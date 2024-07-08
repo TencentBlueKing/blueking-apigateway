@@ -396,7 +396,7 @@ class TestComponentReleaseHistoryStatusViewSet:
                         "component_path": "/echo/",
                         "component_permission_level": "unlimited",
                     },
-                    "status": "success"
+                    "status": "success",
                 }
             ],
         )
@@ -414,7 +414,7 @@ class TestComponentReleaseHistoryStatusViewSet:
                         "component_path": "/echo/",
                         "component_permission_level": "unlimited",
                     },
-                    "status": "failure"
+                    "status": "failure",
                 }
             ],
         )
@@ -432,7 +432,7 @@ class TestComponentReleaseHistoryStatusViewSet:
                         "component_path": "/echo/",
                         "component_permission_level": "unlimited",
                     },
-                    "status": "failure"
+                    "status": "failure",
                 }
             ],
         )
@@ -442,11 +442,7 @@ class TestComponentReleaseHistoryStatusViewSet:
         response = view(request, id=history1.id)
 
         result = get_response_json(response)
-        assert result["data"] == [
-            {
-                "status": "releasing"
-            }
-        ]
+        assert result["data"] == [{"status": "releasing"}]
 
         request = self.factory.get(f"/sync/release/histories/status/{history2.id}/")
 
@@ -454,11 +450,7 @@ class TestComponentReleaseHistoryStatusViewSet:
         response = view(request, id=history2.id)
 
         result = get_response_json(response)
-        assert result["data"] == [
-            {
-                "status": "success"
-            }
-        ]
+        assert result["data"] == [{"status": "success"}]
 
         request = self.factory.get(f"/sync/release/histories/status/{history3.id}/")
 
@@ -466,8 +458,4 @@ class TestComponentReleaseHistoryStatusViewSet:
         response = view(request, id=history3.id)
 
         result = get_response_json(response)
-        assert result["data"] == [
-            {
-                "status": "releasing"
-            }
-        ]
+        assert result["data"] == [{"status": "releasing"}]
