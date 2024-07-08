@@ -243,7 +243,7 @@ class TestComponentSyncViewSet:
         response = view(request)
         assert response.status_code == 400
         result = get_response_json(response)
-        assert result["error"]["data"] == {"is_releasing": True}
+        assert result["error"]["data"] == {"is_releasing": True, "id": 1}
         mock_sync_and_release.assert_not_called()
 
         # not locked
@@ -253,7 +253,7 @@ class TestComponentSyncViewSet:
         )
         response = view(request)
         result = get_response_json(response)
-        assert result["data"] == {"is_releasing": True}
+        assert result["data"] == {"is_releasing": True, "id": 1}
         mock_sync_and_release.assert_called_once_with(
             args=(api_id, "admin", False),
             expires=ESB_RELEASE_TASK_EXPIRES,
@@ -372,5 +372,102 @@ class TestComponentReleaseHistoryViewSet:
                 "component_method": "GET",
                 "component_path": "/echo/",
                 "component_permission_level": "unlimited",
+            }
+        ]
+
+
+class TestComponentReleaseHistoryStatusViewSet:
+    @pytest.fixture(autouse=True)
+    def setup_fixtures(self, request_factory):
+        self.factory = request_factory
+
+    def test_retrieve(self):
+        history1 = G(
+            ComponentReleaseHistory,
+            data=[
+                {
+                    "id": 1,
+                    "name": "echo",
+                    "metadata": {
+                        "system_name": "DEMO",
+                        "component_id": 1,
+                        "component_name": "get_echo",
+                        "component_method": "GET",
+                        "component_path": "/echo/",
+                        "component_permission_level": "unlimited",
+                    },
+                    "status": "success"
+                }
+            ],
+        )
+        history2 = G(
+            ComponentReleaseHistory,
+            data=[
+                {
+                    "id": 2,
+                    "name": "echo",
+                    "metadata": {
+                        "system_name": "DEMO",
+                        "component_id": 1,
+                        "component_name": "get_echo",
+                        "component_method": "GET",
+                        "component_path": "/echo/",
+                        "component_permission_level": "unlimited",
+                    },
+                    "status": "failure"
+                }
+            ],
+        )
+        history3 = G(
+            ComponentReleaseHistory,
+            data=[
+                {
+                    "id": 3,
+                    "name": "echo",
+                    "metadata": {
+                        "system_name": "DEMO",
+                        "component_id": 1,
+                        "component_name": "get_echo",
+                        "component_method": "GET",
+                        "component_path": "/echo/",
+                        "component_permission_level": "unlimited",
+                    },
+                    "status": "failure"
+                }
+            ],
+        )
+        request = self.factory.get(f"/sync/release/histories/status/{history1.id}/")
+
+        view = views.ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"})
+        response = view(request, id=history1.id)
+
+        result = get_response_json(response)
+        assert result["data"] == [
+            {
+                "status": "releasing"
+            }
+        ]
+
+        request = self.factory.get(f"/sync/release/histories/status/{history2.id}/")
+
+        view = views.ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"})
+        response = view(request, id=history2.id)
+
+        result = get_response_json(response)
+        assert result["data"] == [
+            {
+                "status": "success"
+            }
+        ]
+
+        request = self.factory.get(f"/sync/release/histories/status/{history3.id}/")
+
+        view = views.ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"})
+        response = view(request, id=history3.id)
+
+        result = get_response_json(response)
+        assert result["data"] == [
+            {
+                "status": "releasing"
             }
         ]

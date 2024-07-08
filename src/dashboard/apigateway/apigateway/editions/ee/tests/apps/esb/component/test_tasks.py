@@ -67,14 +67,14 @@ pytestmark = pytest.mark.django_db
         ),
     ],
 )
-def test_sync_and_release_esb_components(mocker, fake_gateway, updated_resources, release_side_effect):
+def test_sync_and_release_esb_components(mocker, fake_gateway, fake_resource_version, updated_resources, release_side_effect):
     # not acquired
     mocker.patch(
         "apigateway.apps.esb.component.tasks.get_release_lock",
         return_value=mocker.MagicMock(**{"acquire.return_value": False}),
     )
 
-    sync_and_release_esb_components(fake_gateway.id, "admin", False)
+    sync_and_release_esb_components(fake_gateway.id,fake_resource_version, "admin", False)
 
     # acquired
     mock_release_lock_release = mocker.MagicMock()
