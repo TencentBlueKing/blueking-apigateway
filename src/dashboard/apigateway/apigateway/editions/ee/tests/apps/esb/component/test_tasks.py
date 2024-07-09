@@ -22,6 +22,7 @@ from ddf import G
 from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory
 from apigateway.apps.esb.component.exceptions import ComponentReleaseError
 from apigateway.apps.esb.component.tasks import sync_and_release_esb_components
+from apigateway.core.constants import ReleaseStatusEnum
 
 pytestmark = pytest.mark.django_db
 
@@ -70,7 +71,9 @@ pytestmark = pytest.mark.django_db
     ],
 )
 def test_sync_and_release_esb_components(mocker, fake_gateway, updated_resources, release_side_effect):
-    fake_component_release_history = G(ComponentReleaseHistory, gateway=fake_gateway)
+    fake_component_release_history = G(
+        ComponentReleaseHistory, resource_version_id=0, data=[], status=ReleaseStatusEnum.RELEASING.value
+    )
     # not acquired
     mocker.patch(
         "apigateway.apps.esb.component.tasks.get_release_lock",
@@ -128,7 +131,9 @@ def test_test_sync_and_release_esb_components_error(mocker, fake_gateway):
 
     mock_mark_release_fail = mocker.patch("apigateway.apps.esb.component.tasks.ComponentReleaser.mark_release_fail")
 
-    fake_component_release_history = G(ComponentReleaseHistory, gateway=fake_gateway)
+    fake_component_release_history = G(
+        ComponentReleaseHistory, resource_version_id=0, data=[], status=ReleaseStatusEnum.RELEASING.value
+    )
     with pytest.raises(Exception):
         sync_and_release_esb_components(fake_gateway.id, fake_component_release_history.id, "admin", False)
 

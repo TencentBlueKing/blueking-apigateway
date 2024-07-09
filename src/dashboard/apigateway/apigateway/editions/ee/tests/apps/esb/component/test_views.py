@@ -382,60 +382,9 @@ class TestComponentReleaseHistoryStatusViewSet:
         self.factory = request_factory
 
     def test_retrieve(self):
-        history1 = G(
-            ComponentReleaseHistory,
-            data=[
-                {
-                    "id": 2,
-                    "name": "echo",
-                    "metadata": {
-                        "system_name": "DEMO",
-                        "component_id": 1,
-                        "component_name": "get_echo",
-                        "component_method": "GET",
-                        "component_path": "/echo/",
-                        "component_permission_level": "unlimited",
-                    },
-                    "status": "SUCCESS",
-                }
-            ],
-        )
-        history2 = G(
-            ComponentReleaseHistory,
-            data=[
-                {
-                    "id": 3,
-                    "name": "echo",
-                    "metadata": {
-                        "system_name": "DEMO",
-                        "component_id": 1,
-                        "component_name": "get_echo",
-                        "component_method": "GET",
-                        "component_path": "/echo/",
-                        "component_permission_level": "unlimited",
-                    },
-                    "status": "FAILURE",
-                }
-            ],
-        )
-        history3 = G(
-            ComponentReleaseHistory,
-            data=[
-                {
-                    "id": 4,
-                    "name": "echo",
-                    "metadata": {
-                        "system_name": "DEMO",
-                        "component_id": 1,
-                        "component_name": "get_echo",
-                        "component_method": "GET",
-                        "component_path": "/echo/",
-                        "component_permission_level": "unlimited",
-                    },
-                    "status": "RELEASING",
-                }
-            ],
-        )
+        history1 = G(ComponentReleaseHistory, status="success")
+        history2 = G(ComponentReleaseHistory, status="failure")
+        history3 = G(ComponentReleaseHistory, status="releasing")
         request1 = self.factory.get(f"/sync/release/histories/status/{history1.id}/")
         view1 = views.ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"})
         response1 = view1(request1, id=history1.id)
