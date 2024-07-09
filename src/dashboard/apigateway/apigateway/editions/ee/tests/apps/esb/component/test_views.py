@@ -396,7 +396,7 @@ class TestComponentReleaseHistoryStatusViewSet:
                         "component_path": "/echo/",
                         "component_permission_level": "unlimited",
                     },
-                    "status": "success",
+                    "status": "SUCCESS",
                 }
             ],
         )
@@ -414,7 +414,7 @@ class TestComponentReleaseHistoryStatusViewSet:
                         "component_path": "/echo/",
                         "component_permission_level": "unlimited",
                     },
-                    "status": "failure",
+                    "status": "FAILURE",
                 }
             ],
         )
@@ -432,7 +432,7 @@ class TestComponentReleaseHistoryStatusViewSet:
                         "component_path": "/echo/",
                         "component_permission_level": "unlimited",
                     },
-                    "status": "releasing",
+                    "status": "RELEASING",
                 }
             ],
         )
