@@ -19,10 +19,9 @@
 import pytest
 from ddf import G
 
-from apigateway.apps.esb.component.exceptions import ComponentReleaseError
 from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory
+from apigateway.apps.esb.component.exceptions import ComponentReleaseError
 from apigateway.apps.esb.component.tasks import sync_and_release_esb_components
-from apigateway.core.models import ResourceVersion
 
 pytestmark = pytest.mark.django_db
 
