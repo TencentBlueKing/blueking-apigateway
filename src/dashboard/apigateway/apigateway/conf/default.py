@@ -373,7 +373,7 @@ if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True):
     )
 
 # 清理任务相关配置
-CLEAN_PUBLISH_EVENT_INTERVAL_DAYS = env.int("CLEAN_PUBLISH_EVENT_INTERVAL_DAYS", 365)
+CLEAN_TABLE_INTERVAL_DAYS = env.int("CLEAN_TABLE_INTERVAL_DAYS", 365)
 
 # ==============================================================================
 # log 配置

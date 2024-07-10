@@ -41,13 +41,17 @@ CELERY_BEAT_SCHEDULE = {
     #     "task": "apigateway.apps.monitor.tasks.add",
     #     "schedule": crontab(),
     # },
-    "apigateway.controller.tasks.clean_task.delete_old_publish_events": {
-        "task": "apigateway.controller.clean_task.delete_old_publish_events",
+    "delete_old_publish_events": {
+        "task": "apigateway.controller.tasks.clean_task.delete_old_publish_events",
         "schedule": crontab(day_of_week="*", hour=0, minute=0),
     },
     "apigateway.apps.permission.tasks.alert_app_permission_expiring_soon": {
         "task": "apigateway.apps.permission.tasks.alert_app_permission_expiring_soon",
         "schedule": crontab(minute=30, hour=14),
+    },
+    "delete_old_resource_version_records": {
+        "task": "apigateway.controller.tasks.clean_task.delete_old_resource_version_records",
+        "schedule": crontab(day_of_week="*", hour=0, minute=0),
     },
 }
 
