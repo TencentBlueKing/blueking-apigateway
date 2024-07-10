@@ -125,3 +125,22 @@ class BackendRetrieveOutputSLZ(serializers.Serializer):
             data.append(config)
 
         return data
+
+
+class BoundEnvironmentSerializer(serializers.Serializer):
+    names = serializers.ListField(child=serializers.CharField())
+
+
+class ChangedEnvironmentSerializer(serializers.Serializer):
+    names = serializers.ListField(child=serializers.CharField())
+
+
+class BackendUpdateOutputSLZ(serializers.Serializer):
+    bound_environment = BoundEnvironmentSerializer()
+    changed_environment = ChangedEnvironmentSerializer()
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["bound_environment"] = BoundEnvironmentSerializer(instance.bound_environment).data
+        data["changed_environment"] = ChangedEnvironmentSerializer(instance.changed_environment).data
+        return data

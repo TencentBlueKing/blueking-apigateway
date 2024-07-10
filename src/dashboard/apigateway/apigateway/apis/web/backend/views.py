@@ -32,7 +32,7 @@ from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 from .filters import BackendFilter
-from .serializers import BackendInputSLZ, BackendListOutputSLZ, BackendRetrieveOutputSLZ
+from .serializers import BackendInputSLZ, BackendListOutputSLZ, BackendRetrieveOutputSLZ, BackendUpdateOutputSLZ
 
 
 class BackendQuerySetMixin:
@@ -148,19 +148,18 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
 
         data = slz.validated_data
 
-        backend = BackendHandler.update(instance, data, request.user.username)
-
+        response = BackendHandler.update(instance, data, request.user.username)
         Auditor.record_backend_op_success(
             op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
             gateway_id=request.gateway.id,
-            instance_id=backend.id,
-            instance_name=backend.name,
+            instance_id=response.backend.id,
+            instance_name=response.backend.name,
             data_before=data_before,
-            data_after=get_model_dict(backend),
+            data_after=get_model_dict(response.backend),
         )
-
-        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+        serializer = BackendUpdateOutputSLZ(response)
+        return OKJsonResponse(data=serializer.data)
 
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
