@@ -115,7 +115,8 @@ class TestBackendApi:
             data=data,
         )
         assert response.status_code == 200
-        assert response.data == {
+        data = response.json()
+        assert data["data"] == {
             "bound_environment": {"names": [fake_stage.name]},
             "changed_environment": {"names": [fake_stage.name]},
         }
