@@ -385,19 +385,19 @@ class TestComponentReleaseHistoryStatusViewSet:
         history1 = G(ComponentReleaseHistory, status="success")
         history2 = G(ComponentReleaseHistory, status="failure")
         history3 = G(ComponentReleaseHistory, status="releasing")
-        request1 = self.factory.get(f"/sync/release/histories/status/{history1.id}/")
+        request1 = self.factory.get(f"/sync/release/histories/{history1.id}/status/")
         view1 = views.ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"})
         response1 = view1(request1, id=history1.id)
         result1 = get_response_json(response1)
         assert result1["data"] == {"status": "success"}
 
-        request2 = self.factory.get(f"/sync/release/histories/status/{history2.id}/")
+        request2 = self.factory.get(f"/sync/release/histories/{history2.id}/status/")
         view2 = views.ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"})
         response2 = view2(request2, id=history2.id)
         result2 = get_response_json(response2)
         assert result2["data"] == {"status": "failure"}
 
-        request3 = self.factory.get(f"/sync/release/histories/status/{history3.id}/")
+        request3 = self.factory.get(f"/sync/release/histories/{history3.id}/status/")
         view3 = views.ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"})
         response3 = view3(request3, id=history3.id)
         result3 = get_response_json(response3)
