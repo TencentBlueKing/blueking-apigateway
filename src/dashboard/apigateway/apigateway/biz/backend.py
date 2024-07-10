@@ -85,7 +85,7 @@ class BackendHandler:
 
     @staticmethod
     @transaction.atomic
-    def update(backend: Backend, data: Dict[str, Any], updated_by: str) -> Backend:
+    def update(backend: Backend, data: Dict[str, Any], updated_by: str) -> UpdateResponse:
         """更新后端服务"""
         backend.type = data["type"]
         if backend.name != DEFAULT_BACKEND_NAME:
@@ -98,17 +98,16 @@ class BackendHandler:
         stage_configs = {config.stage_id: config for config in backend_configs}
 
         backend_configs = []
-        response = UpdateResponse()
+        result = UpdateResponse()
         now = now_datetime()
         for config in data["configs"]:
             stage_name = Stage.objects.get(id=config["stage_id"]).name
-            print(f"stage_name: {stage_name}")
-            response.bound_environment.add_name(stage_name)
+            result.bound_environment.add_name(stage_name)
             backend_config = stage_configs[config["stage_id"]]
             new_config = {key: value for key, value in config.items() if key != "stage_id"}
             if new_config == backend_config.config:
                 continue
-            response.changed_environment.add_name(stage_name)
+            result.changed_environment.add_name(stage_name)
             backend_config.config = new_config
             backend_config.updated_by = updated_by
             backend_config.updated_time = now
@@ -125,8 +124,8 @@ class BackendHandler:
                 backend_config.gateway_id,
                 backend_config.stage_id,
             )
-        response.backend = backend
-        return response
+        result.backend = backend
+        return result
 
     @staticmethod
     def deletable(backend: Backend) -> bool:
