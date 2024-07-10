@@ -19,6 +19,7 @@
 from django.urls import path
 
 from apigateway.apps.esb.component.views import (
+    ComponentReleaseHistoryStatusViewSet,
     ComponentReleaseHistoryViewSet,
     ComponentSyncViewSet,
     ESBChannelBatchViewSet,
@@ -67,5 +68,10 @@ urlpatterns = [
         "sync/release/histories/<int:id>/",
         ComponentReleaseHistoryViewSet.as_view({"get": "retrieve"}),
         name="apigateway.apps.esb.components.release.history",
+    ),
+    path(
+        "sync/release/histories/status/<int:id>/",
+        ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"}),
+        name="apigateway.apps.esb.components.release.histories.status",
     ),
 ]

@@ -253,9 +253,9 @@ class TestComponentSyncViewSet:
         )
         response = view(request)
         result = get_response_json(response)
-        assert result["data"] == {"is_releasing": True}
+        assert result["data"] == {"is_releasing": True, "id": 1}
         mock_sync_and_release.assert_called_once_with(
-            args=(api_id, "admin", False),
+            args=(api_id, 1, "admin", False),
             expires=ESB_RELEASE_TASK_EXPIRES,
             ignore_result=True,
         )
@@ -374,3 +374,31 @@ class TestComponentReleaseHistoryViewSet:
                 "component_permission_level": "unlimited",
             }
         ]
+
+
+class TestComponentReleaseHistoryStatusViewSet:
+    @pytest.fixture(autouse=True)
+    def setup_fixtures(self, request_factory):
+        self.factory = request_factory
+
+    def test_retrieve(self):
+        history1 = G(ComponentReleaseHistory, status="success")
+        history2 = G(ComponentReleaseHistory, status="failure")
+        history3 = G(ComponentReleaseHistory, status="releasing")
+        request1 = self.factory.get(f"/sync/release/histories/status/{history1.id}/")
+        view1 = views.ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"})
+        response1 = view1(request1, id=history1.id)
+        result1 = get_response_json(response1)
+        assert result1["data"] == {"status": "success"}
+
+        request2 = self.factory.get(f"/sync/release/histories/status/{history2.id}/")
+        view2 = views.ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"})
+        response2 = view2(request2, id=history2.id)
+        result2 = get_response_json(response2)
+        assert result2["data"] == {"status": "failure"}
+
+        request3 = self.factory.get(f"/sync/release/histories/status/{history3.id}/")
+        view3 = views.ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"})
+        response3 = view3(request3, id=history3.id)
+        result3 = get_response_json(response3)
+        assert result3["data"] == {"status": "releasing"}
