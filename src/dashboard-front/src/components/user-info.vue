@@ -25,7 +25,7 @@ const userInfo = ref(user.user);
       <div
         class="logout"
         @click="logout"
-      >{{t('退出登陆')}}</div>
+      >{{t('退出登录')}}</div>
     </template>
   </bk-popover>
 </template>
