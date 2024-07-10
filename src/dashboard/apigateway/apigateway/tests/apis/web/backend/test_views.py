@@ -87,11 +87,9 @@ class TestBackendApi:
 
     def test_update(self, request_view, fake_stage):
         fake_gateway = fake_stage.gateway
-
         _create(request_view, fake_stage)
         backend = Backend.objects.filter(gateway=fake_stage.gateway).first()
         assert backend
-
         data = {
             "name": "backend-update",
             "description": "update",
@@ -106,7 +104,6 @@ class TestBackendApi:
                 }
             ],
         }
-
         response = request_view(
             "PUT",
             "backend.retrieve-update-destroy",
@@ -115,8 +112,30 @@ class TestBackendApi:
             data=data,
         )
         assert response.status_code == 200
-        data = response.json()
-        assert data["data"] == {
+
+        data1 = {
+            "name": "backend-update",
+            "description": "update",
+            "type": "http",
+            "configs": [
+                {
+                    "stage_id": fake_stage.id,
+                    "type": "node",
+                    "timeout": 1,
+                    "loadbalance": "roundrobin",
+                    "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                }
+            ],
+        }
+        response = request_view(
+            "PUT",
+            "backend.retrieve-update-destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": backend.id},
+            gateway=fake_gateway,
+            data=data1,
+        )
+        result = response.json()
+        assert result["data"] == {
             "bound_environment": {"names": [fake_stage.name]},
             "changed_environment": {"names": [fake_stage.name]},
         }
