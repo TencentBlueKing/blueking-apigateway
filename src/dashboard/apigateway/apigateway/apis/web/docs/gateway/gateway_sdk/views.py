@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.timezone import now as timezone_now
@@ -23,10 +24,13 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.support.models import GatewaySDK
+from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.biz.sdk.models import SDKDocContext
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.permissions import GatewayDisplayablePermission
+from apigateway.core.models import Release
+from apigateway.utils import openapi
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import SDKListInputSLZ, SDKUsageExampleInputSLZ, SDKUsageExampleOutputSLZ, StageSDKOutputSLZ
@@ -81,13 +85,31 @@ class SDKUsageExampleApi(generics.RetrieveAPIView):
             language=programming_language,
         ).last()
 
+        stage_name = slz.validated_data["stage_name"]
+        resource_name = slz.validated_data["resource_name"]
+        resource_id = slz.validated_data.get("resource_id")
+
+        resource_version_id = Release.objects.get_released_resource_version_id(request.gateway.id, stage_name)
+
+        example = {}
+        # 如果前端没有传resource_id,通过资源版本获取一下
+        if not resource_id and resource_version_id:
+            resource_id = ResourceVersionHandler.get_resource_id(resource_version_id, resource_name)
+            # 获取对应资源的schema
+            resource_schema = ResourceVersionHandler.get_resource_schema(resource_version_id, resource_id)
+            example = openapi.get_openapi_example(resource_schema)
+
         content = render_to_string(
             f"api_sdk/{get_current_language_code()}/{programming_language}_sdk_usage_example.md",
             context=SDKDocContext(
                 gateway_name=request.gateway.name,
-                stage_name=slz.validated_data["stage_name"],
-                resource_name=slz.validated_data["resource_name"],
+                stage_name=stage_name,
+                resource_name=resource_name,
                 sdk_created_time=(sdk and sdk.created_time) or timezone_now(),
+                body_example=example.get("body_example", {}),
+                path_params=example.get("path_params", {}),
+                query_params=example.get("query_params", {}),
+                headers=example.get("headers", {}),
             ).as_dict(),
         )
 

@@ -1,4 +1,4 @@
-
+{% load json_filters %}
 创建网关 {{gateway_name}} Client 并调用 API 资源 {{resource_name}} 使用示例：
 
 ### 1. Django 项目
@@ -23,7 +23,13 @@ client = get_client_by_request(
 )
 
 # 请按具体场景修改请求
-client.api.{{resource_name}}(...)
+client.api.{{resource_name}}(
+    data={{ body_example|indent_json:4|safe }},  # 设置请求参数
+    path_params={{ path_params|indent_json:4|safe }},  # 设置路径参数
+    params={{ query_params|indent_json:4|safe }},  # 设置 querystring
+    headers={{ headers|indent_json:4|safe }},  # 设置请求头
+    timeout=10,  # 设置当前请求超时  
+)
 ```
 
 #### 1.2 get_client_by_username
@@ -44,7 +50,13 @@ client = get_client_by_username(
 )
 
 # 请按具体场景修改请求
-client.api.{{resource_name}}(...)
+client.api.{{resource_name}}(
+    data={{ body_example|indent_json:4|safe }},  # 设置请求参数
+    path_params={{ path_params|indent_json:4|safe }},  # 设置路径参数
+    params={{ query_params|indent_json:4|safe }},  # 设置 querystring
+    headers={{ headers|indent_json:4|safe }},  # 设置请求头
+    timeout=10,  # 设置当前请求超时  
+)
 ```
 
 ### 2. 非 Django 项目
@@ -59,11 +71,11 @@ client = Client(
 )
 
 # 请求网关资源，请按具体场景修改请求，参数与 requests 保持兼容
-client.api.{{resource_name}}(
-    data={...},  # 设置请求参数
-    path_params={...},  # 设置路径参数
-    params={...},  # 设置 querystring
-    headers={...},  # 设置请求头
+client.api.{{ resource_name }}(
+    data={{ body_example|indent_json:4|safe }},  # 设置请求参数
+    path_params={{ path_params|indent_json:4|safe }},  # 设置路径参数
+    params={{ query_params|indent_json:4|safe }},  # 设置 querystring
+    headers={{ headers|indent_json:4|safe }},  # 设置请求头
     timeout=10,  # 设置当前请求超时
 )
 ```
