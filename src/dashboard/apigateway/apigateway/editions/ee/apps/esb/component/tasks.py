@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(name="apigateway.apps.esb.tasks.sync_and_release_esb_components", ignore_result=True)
-def sync_and_release_esb_components(api_id: int, release_history_id: int, username: str, lock_blocking: bool):
+def sync_and_release_esb_components(gateway_id: int, release_history_id: int, username: str, lock_blocking: bool):
     logger.info("sync_and_release_esb_components task start")
 
     release_lock = get_release_lock()
@@ -48,7 +48,7 @@ def sync_and_release_esb_components(api_id: int, release_history_id: int, userna
         logger.warning("components is releasing, please don't repeat release")
         return
 
-    gateway = Gateway.objects.get(id=api_id)
+    gateway = Gateway.objects.get(id=gateway_id)
     synchronizer = ComponentSynchronizer()
     releaser = ComponentReleaser(gateway, username)
     releaser.release_history = ComponentReleaseHistory.objects.get(id=release_history_id)
