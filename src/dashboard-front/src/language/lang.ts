@@ -1407,7 +1407,6 @@ const lang: ILANG = {
   '变量列表': ['Variable list'],
   '（可在资源配置中使用）': ['(Can be used in resource allocation)'],
   '请输入组件名称': ['Please enter the component name'],
-  '退出登陆': ['Logout'],
   '编辑后端服务【{name}】': ['Edit backend service【{name}】'],
   '各环境的服务配置': ['Service configuration for each environment'],
   '服务名称': ['Service name'],
