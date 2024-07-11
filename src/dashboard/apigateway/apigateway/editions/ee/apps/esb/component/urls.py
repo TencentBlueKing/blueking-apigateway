@@ -70,7 +70,7 @@ urlpatterns = [
         name="apigateway.apps.esb.components.release.history",
     ),
     path(
-        "sync/release/histories/status/<int:id>/",
+        "sync/release/histories/<int:id>/status/",
         ComponentReleaseHistoryStatusViewSet.as_view({"get": "retrieve"}),
         name="apigateway.apps.esb.components.release.histories.status",
     ),
