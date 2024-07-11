@@ -98,45 +98,40 @@ def build_logging_config(log_level: str, to_console: bool, file_directory: Optio
         # the root logger, 用于整个项目的默认 logger
         "root": {"handlers": logger_handlers_map["root"], "level": log_level, "propagate": False},
         "loggers": {
-            "": {
-                "handlers": ["root", "sentry"],
-                "level": log_level,
-                "propagate": True,
-            },
             "django": {
-                "handlers": ["root", "sentry"],
+                "handlers": [*logger_handlers_map["root"], "sentry"],
                 "level": "ERROR",
                 "propagate": True,
             },
             "django.db.backends": {
-                "handlers": ["mysql"],
+                "handlers": logger_handlers_map["mysql"],
                 "level": log_level,
                 "propagate": True,
             },
             # 组件调用日志
             "component": {
-                "handlers": ["component", "sentry"],
+                "handlers": [*logger_handlers_map["component"], "sentry"],
                 "level": log_level,
                 "propagate": False,
             },
             "bkapi_client_core": {
-                "handlers": ["component", "sentry"],
+                "handlers": [*logger_handlers_map["component"], "sentry"],
                 "level": log_level,
                 "propagate": False,
             },
             "iam": {
-                "handlers": ["iam", "sentry"],
+                "handlers": [*logger_handlers_map["iam"], "sentry"],
                 "level": log_level,
                 "propagate": False,
             },
             "celery": {
-                "handlers": ["celery", "sentry"],
+                "handlers": [*logger_handlers_map["celery"], "sentry"],
                 "level": "INFO",
                 "propagate": False,
             },
             "opentelemetry.util._time": {
                 # TODO: 升级 python >= 3.7 后，可删除此 logger
-                "handlers": ["celery", "sentry"],
+                "handlers": [*logger_handlers_map["celery"], "sentry"],
                 "level": "ERROR",
                 "propagate": False,
             },
