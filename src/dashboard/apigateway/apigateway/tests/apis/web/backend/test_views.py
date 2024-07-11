@@ -123,7 +123,7 @@ class TestBackendApi:
                     "type": "node",
                     "timeout": 1,
                     "loadbalance": "roundrobin",
-                    "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                    "hosts": [{"scheme": "https", "host": "www.example1.com", "weight": 1}],
                 }
             ],
         }
