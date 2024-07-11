@@ -15,41 +15,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 from django.db import transaction
 
 from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, PublishSourceEnum
-from apigateway.core.models import Backend, BackendConfig, Proxy, Stage
+from apigateway.core.models import Backend, BackendConfig, Proxy
 from apigateway.utils.time import now_datetime
-
-
-class BoundEnvironment:
-    def __init__(self, names=None):
-        if names is None:
-            names = []
-        self.names = names
-
-    def add_name(self, name):
-        self.names.append(name)
-
-
-class ChangedEnvironment:
-    def __init__(self, names=None):
-        if names is None:
-            names = []
-        self.names = names
-
-    def add_name(self, name):
-        self.names.append(name)
-
-
-class UpdateResponse:
-    def __init__(self):
-        self.bound_environment = BoundEnvironment()
-        self.changed_environment = ChangedEnvironment()
-        self.backend = Backend()
 
 
 class BackendHandler:
@@ -85,33 +58,29 @@ class BackendHandler:
 
     @staticmethod
     @transaction.atomic
-    def update(backend: Backend, data: Dict[str, Any], updated_by: str) -> UpdateResponse:
+    def update(backend: Backend, data: Dict[str, Any], updated_by: str) -> Tuple[Backend, List[int]]:
         """更新后端服务"""
+        updated_stage_ids = []
         backend.type = data["type"]
         if backend.name != DEFAULT_BACKEND_NAME:
             backend.name = data["name"]
         backend.description = data["description"]
         backend.updated_by = updated_by
         backend.save()
-
         backend_configs = BackendConfig.objects.filter(backend_id=backend.id)
         stage_configs = {config.stage_id: config for config in backend_configs}
 
         backend_configs = []
-        result = UpdateResponse()
         now = now_datetime()
         for config in data["configs"]:
-            stage_name = Stage.objects.get(id=config["stage_id"]).name
-            result.bound_environment.add_name(stage_name)
             backend_config = stage_configs[config["stage_id"]]
             new_config = {key: value for key, value in config.items() if key != "stage_id"}
             if new_config == backend_config.config:
                 continue
-            result.changed_environment.add_name(stage_name)
+            updated_stage_ids.append(config["stage_id"])
             backend_config.config = new_config
             backend_config.updated_by = updated_by
             backend_config.updated_time = now
-
             backend_configs.append(backend_config)
 
         BackendConfig.objects.bulk_update(backend_configs, fields=["config", "updated_by", "updated_time"])
@@ -124,8 +93,7 @@ class BackendHandler:
                 backend_config.gateway_id,
                 backend_config.stage_id,
             )
-        result.backend = backend
-        return result
+        return backend, updated_stage_ids
 
     @staticmethod
     def deletable(backend: Backend) -> bool:

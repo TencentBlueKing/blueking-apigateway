@@ -27,7 +27,7 @@ from apigateway.biz.audit import Auditor
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.proxy import ProxyHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.core.models import Backend, BackendConfig
+from apigateway.core.models import Backend, BackendConfig, Stage
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
@@ -148,17 +148,25 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
 
         data = slz.validated_data
 
-        response = BackendHandler.update(instance, data, request.user.username)
+        backend, updated_stage_ids = BackendHandler.update(instance, data, request.user.username)
+        # 获取bound_stages 和 updated_stages
+        bound_stages = [
+            {"id": c.stage.id, "name": c.stage.name} for c in BackendConfig.objects.filter(backend_id=backend.id)
+        ]
+        updated_stages = [
+            {"id": stage.id, "name": stage.name}
+            for stage in Stage.objects.filter(gateway=request.gateway, id__in=updated_stage_ids).only("id", "name")
+        ]
         Auditor.record_backend_op_success(
             op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
             gateway_id=request.gateway.id,
-            instance_id=response.backend.id,
-            instance_name=response.backend.name,
+            instance_id=backend.id,
+            instance_name=backend.name,
             data_before=data_before,
-            data_after=get_model_dict(response.backend),
+            data_after=get_model_dict(backend),
         )
-        serializer = BackendUpdateOutputSLZ(response)
+        serializer = BackendUpdateOutputSLZ({"bound_stages": bound_stages, "updated_stages": updated_stages})
         return OKJsonResponse(data=serializer.data)
 
     @transaction.atomic

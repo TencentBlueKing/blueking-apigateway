@@ -127,20 +127,11 @@ class BackendRetrieveOutputSLZ(serializers.Serializer):
         return data
 
 
-class BoundEnvironmentSerializer(serializers.Serializer):
-    names = serializers.ListField(child=serializers.CharField())
-
-
-class ChangedEnvironmentSerializer(serializers.Serializer):
-    names = serializers.ListField(child=serializers.CharField())
+class StageSLZ(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField(help_text="")
 
 
 class BackendUpdateOutputSLZ(serializers.Serializer):
-    bound_environment = BoundEnvironmentSerializer()
-    changed_environment = ChangedEnvironmentSerializer()
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data["bound_environment"] = BoundEnvironmentSerializer(instance.bound_environment).data
-        data["changed_environment"] = ChangedEnvironmentSerializer(instance.changed_environment).data
-        return data
+    bound_stages = serializers.ListField(child=StageSLZ(), help_text="已绑定的环境列表")
+    updated_stages = serializers.ListField(child=StageSLZ(), help_text="更改的环境列表")
