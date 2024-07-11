@@ -17,7 +17,7 @@
 #
 from apigateway.controller.tasks.clean_task import (
     delete_old_publish_events,
-    delete_old_resource_version_records,
+    delete_old_resource_doc_version_records,
 )
 from apigateway.controller.tasks.micro_gateway import deploy_micro_gateway
 from apigateway.controller.tasks.release import (
@@ -37,6 +37,6 @@ __all__ = [
     "rolling_update_release",
     "revoke_release",
     "update_release_data_after_success",
-    "delete_old_resource_version_records",
+    "delete_old_resource_doc_version_records",
     "delete_old_publish_events",
 ]

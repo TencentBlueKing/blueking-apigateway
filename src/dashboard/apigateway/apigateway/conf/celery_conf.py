@@ -50,7 +50,7 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(minute=30, hour=14),
     },
     "delete_old_resource_version_records": {
-        "task": "apigateway.controller.tasks.clean_task.delete_old_resource_version_records",
+        "task": "apigateway.controller.tasks.clean_task.delete_old_resource_doc_version_records",
         "schedule": crontab(day_of_week="*", hour=0, minute=0),
     },
 }

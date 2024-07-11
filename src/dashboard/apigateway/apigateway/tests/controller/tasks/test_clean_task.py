@@ -21,9 +21,10 @@ import pytest
 from ddf import G
 from django.utils import timezone
 
-from apigateway.controller.tasks.clean_task import delete_old_publish_events, delete_old_resource_version_records
+from apigateway.apps.support.models import ResourceDocVersion
+from apigateway.controller.tasks.clean_task import delete_old_publish_events, delete_old_resource_doc_version_records
 from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
-from apigateway.core.models import PublishEvent, ReleaseHistory, ResourceVersion
+from apigateway.core.models import PublishEvent
 
 
 @pytest.mark.django_db
@@ -32,7 +33,7 @@ def test_delete_old_publish_events(fake_publish_event, fake_release_history):
     new_time = timezone.now()
     fake_publish_event.created_time = new_time
     fake_publish_event.save()
-    # 创建测试数据
+
     G(
         PublishEvent,
         publish=fake_release_history,
@@ -40,37 +41,28 @@ def test_delete_old_publish_events(fake_publish_event, fake_release_history):
         name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value,
         status=PublishEventStatusTypeEnum.SUCCESS.value,
     )
-    # 执行任务
+
     delete_old_publish_events()
 
-    # 验证结果
     assert PublishEvent.objects.filter(created_time__lt=old_time).count() == 0
     assert PublishEvent.objects.filter(created_time__gte=old_time).count() == 1
 
 
 @pytest.mark.django_db
-def test_delete_old_resource_version_records(
-    fake_gateway, fake_resource_version, fake_publish_event, fake_release_history
-):
-    # 创建测试数据
+def test_delete_old_resource_version_records(fake_gateway, fake_resource_version, fake_resource_doc):
     old_time = timezone.now() - timedelta(days=366)
-    fake_resource_version.created_time = old_time
-    fake_resource_version.save()
+    fake_resource_doc.created_time = old_time
+    fake_resource_doc.save()
 
     new_time = timezone.now()
     G(
-        ResourceVersion,
+        ResourceDocVersion,
         gateway=fake_gateway,
-        name="test",
-        version="1.0.1",
+        resource_version=fake_resource_version,
         created_time=new_time,
     )
 
-    # 执行任务
-    delete_old_resource_version_records()
+    delete_old_resource_doc_version_records()
 
-    # 验证结果
-    assert ResourceVersion.objects.filter(created_time__lt=old_time).count() == 0
-    assert PublishEvent.objects.filter(id=fake_publish_event.id).count() == 0
-    assert ReleaseHistory.objects.filter(id=fake_release_history.id).count() == 0
-    assert ResourceVersion.objects.filter(created_time__gte=old_time).count() == 1
+    assert ResourceDocVersion.objects.filter(created_time__lt=old_time).count() == 0
+    assert ResourceDocVersion.objects.filter(created_time__gte=old_time).count() == 1
