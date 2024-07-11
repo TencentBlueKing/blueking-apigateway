@@ -136,8 +136,8 @@ class TestBackendApi:
         )
         result = response.json()
         assert result["data"] == {
-            "bound_stages": {"id": fake_stage.id, "names": fake_stage.name},
-            "updated_stages": {"id": fake_stage.id, "names": fake_stage.name},
+            "bound_stages": [{"id": fake_stage.id, "names": fake_stage.name}],
+            "updated_stages": [{"id": fake_stage.id, "names": fake_stage.name}],
         }
 
     def test_delete(self, request_view, fake_stage):
