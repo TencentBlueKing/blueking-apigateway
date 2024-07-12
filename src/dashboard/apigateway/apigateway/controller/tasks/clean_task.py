@@ -56,7 +56,9 @@ def delete_old_resource_doc_version_records():
     referenced_resource_versions = Release.objects.values_list("resource_version_id", flat=True)
 
     # 过滤掉在 Release 中使用的 ResourceVersion
-    resource_doc_versions_to_delete = old_resource_doc_versions.exclude(id__in=referenced_resource_versions)
+    resource_doc_versions_to_delete = old_resource_doc_versions.exclude(
+        resource_version_id__in=referenced_resource_versions
+    )
 
     # 每次最多删除 1000 条记录
     resource_doc_versions_to_delete = resource_doc_versions_to_delete[:1000]
