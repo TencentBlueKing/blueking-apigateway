@@ -181,7 +181,7 @@ target-version = "py310"
 
 [tool.ruff.lint]
 # Enable Pyflakes `E` and `F` codes by default.
-select = ["E", "F", "W", "I", "C90", "B", "PIE", "C4", "PL", "RET", "N",  "PERF", "G", "TRY", "SIM",]
+select = ["E", "F", "W", "I", "C90", "B", "PIE", "C4", "PL", "RET", "N",  "PERF", "G", "TRY", "SIM","LOG"]
 # TODO: enable `PT`
 
 # Disable E501 until this issue is fixed: https://github.com/astral-sh/ruff/issues/3825

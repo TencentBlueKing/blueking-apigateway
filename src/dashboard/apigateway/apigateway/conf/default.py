@@ -399,7 +399,7 @@ else:
 
 
 # 是否总是打印日志到控制台，默认关闭
-LOGGING_ALWAYS_CONSOLE = env.bool("LOGGING_ALWAYS_CONSOLE", True)
+LOGGING_ALWAYS_CONSOLE = env.bool("LOGGING_ALWAYS_CONSOLE", False)
 if LOGGING_ALWAYS_CONSOLE:
     logging_to_console = True
 
