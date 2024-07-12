@@ -153,10 +153,7 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
         bound_stages = [
             {"id": c.stage.id, "name": c.stage.name} for c in BackendConfig.objects.filter(backend_id=backend.id)
         ]
-        updated_stages = [
-            {"id": stage.id, "name": stage.name}
-            for stage in Stage.objects.filter(gateway=request.gateway, id__in=updated_stage_ids).only("id", "name")
-        ]
+        updated_stages = Stage.objects.filter(gateway=request.gateway, id__in=updated_stage_ids).values("id", "name")
         Auditor.record_backend_op_success(
             op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
