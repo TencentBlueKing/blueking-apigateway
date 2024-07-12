@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import os
+from pathlib import Path
 from typing import List
 from urllib.parse import quote
 
@@ -26,7 +27,7 @@ from django.utils.encoding import force_bytes
 from apigateway.common.env import Env
 from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
-from apigateway.conf.log_utils import get_logging_config, makedirs_when_not_exists
+from apigateway.conf.log_utils import build_logging_config
 from apigateway.conf.utils import get_default_keepalive_options
 
 env = Env()
@@ -363,7 +364,7 @@ if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True):
         {
             "apigateway.apps.metrics.tasks.statistics_request_by_day": {
                 "task": "apigateway.apps.metrics.tasks.statistics_request_by_day",
-                "schedule": crontab(minute=30, hour=8),
+                "schedule": crontab(minute=30, hour=8),  # noqa: F405
             },
             "apigateway.apps.permission.tasks.renew_app_resource_permission": {
                 "task": "apigateway.apps.permission.tasks.renew_app_resource_permission",
@@ -379,9 +380,30 @@ CLEAN_TABLE_INTERVAL_DAYS = env.int("CLEAN_TABLE_INTERVAL_DAYS", 365)
 # log 配置
 # ==============================================================================
 LOG_LEVEL = env.str("LOG_LEVEL", "WARNING")
-LOG_DIR = env.str("BK_APIGW_LOG_PATH", "")
-LOGGING = get_logging_config(LOG_LEVEL, IS_LOCAL, LOG_DIR, bool(LOG_DIR))
-makedirs_when_not_exists(LOG_DIR)
+# 用于存放日志文件的目录，默认值为空，表示不使用任何文件，所有日志直接输出到控制台。
+# 可配置为有效目录，支持相对或绝对地址，比如："logs" 或 "/var/lib/app_logs/"。
+# 配置本选项后，原有的控制台日志输出将关闭。
+LOG_DIR = env.str("BK_APIGW_LOG_PATH", default=None)
+# 日志文件格式，可选值为：json/text
+LOGGING_FILE_FORMAT = env.str("LOGGING_FILE_FORMAT", default="json")
+
+if LOG_DIR is None:
+    logging_to_console = True
+    logging_directory = None
+else:
+    logging_to_console = False
+    # The dir allows both absolute and relative path, when it's relative, combine
+    # the value with project's base directory
+    logging_directory = Path(BASE_DIR) / Path(LOG_DIR)
+    logging_directory.mkdir(exist_ok=True)
+
+
+# 是否总是打印日志到控制台，默认关闭
+LOGGING_ALWAYS_CONSOLE = env.bool("LOGGING_ALWAYS_CONSOLE", False)
+if LOGGING_ALWAYS_CONSOLE:
+    logging_to_console = True
+
+LOGGING = build_logging_config(LOG_LEVEL, logging_to_console, logging_directory, LOGGING_FILE_FORMAT)
 
 # sentry 配置
 RAVEN_CONFIG = {

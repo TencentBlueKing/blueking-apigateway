@@ -81,6 +81,7 @@ openapi-spec-validator = "^0.7.1"
 prance = "^23.6.21.0"
 py-openapi-schema-to-json-schema = "0.0.3"
 faker = "24.2.0"
+concurrent-log-handler = "0.9.25"
 [tool.poetry.group.dev.dependencies]
 nose = "1.3.7"
 django-nose = "1.4.7"
@@ -180,7 +181,7 @@ target-version = "py310"
 
 [tool.ruff.lint]
 # Enable Pyflakes `E` and `F` codes by default.
-select = ["E", "F", "W", "I", "C90", "B", "PIE", "C4", "PL", "RET", "N",  "PERF", "G", "TRY", "SIM",]
+select = ["E", "F", "W", "I", "C90", "B", "PIE", "C4", "PL", "RET", "N",  "PERF", "G", "TRY", "SIM","LOG"]
 # TODO: enable `PT`
 
 # Disable E501 until this issue is fixed: https://github.com/astral-sh/ruff/issues/3825
