@@ -1,4 +1,13 @@
 <!-- 2024-07-12 -->
+# V1.13.10 Release Log
+
+### Bug Fixes
+
+- Supplemented version logs
+
+---
+
+<!-- 2024-07-12 -->
 # V1.13.9 Release Log
 
 ### Bug Fixes
