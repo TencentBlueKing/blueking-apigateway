@@ -1,3 +1,31 @@
+<!-- 2024-07-12 -->
+# V1.13.9 Release Log
+
+### Bug Fixes
+
+- Standardized logout messages
+- Supplemented version logs
+
+---
+
+<!-- 2024-06-29 -->
+# V1.13.8 Release Log
+
+### Bug Fixes
+
+- Maintenance staff information not displaying correctly in basic information for certain environments
+
+---
+
+<!-- 2024-06-28 -->
+# V1.13.7 Release Log
+
+### Bug Fixes
+
+- Maintenance staff information not displaying correctly in basic information for certain environments
+
+---
+
 <!-- 2024-06-21 -->
 # V1.13.6 Release Log
 
