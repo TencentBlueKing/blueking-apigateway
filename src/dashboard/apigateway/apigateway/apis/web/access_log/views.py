@@ -27,6 +27,7 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
+from django.http import HttpResponse
 
 from apigateway.biz.access_log.constants import ES_LOG_FIELDS, LOG_LINK_EXPIRE_SECONDS, LOG_LINK_SHARED_PATH
 from apigateway.biz.access_log.data_scrubber import DataScrubber
@@ -35,6 +36,7 @@ from apigateway.common.signature import SignatureGenerator, SignatureValidator
 from apigateway.core.models import Stage
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
+import csv
 
 from .serializers import (
     LogDetailQueryInputSLZ,
@@ -138,6 +140,52 @@ class SearchLogListApi(generics.ListAPIView):
 
         return OKJsonResponse(data=results)
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: 'file/csv'},
+        tags=["WebAPI.Log"],
+    ),
+)
+class LogListCsvApi(generics.RetrieveAPIView):
+    def get(self,request, *args, **kwargs):
+        slz = RequestLogQueryInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
+        if not stage_name:
+            raise Http404
+
+        client = LogSearchClient(
+            gateway_id=request.gateway.id,
+            stage_name=stage_name,
+            resource_id=data.get("resource_id"),
+            query=data.get("query"),
+            include_conditions=data.get("include_conditions"),
+            exclude_conditions=data.get("exclude_conditions"),
+            time_start=data.get("time_start"),
+            time_end=data.get("time_end"),
+            time_range=data.get("time_range"),
+        )
+        total_count, logs = client.search_logs(
+            offset=data["offset"],
+            limit=data["limit"],
+        )
+
+        # 去除 params、body 中的敏感数据
+        logs = DataScrubber().scrub_sensitive_data(logs)
+        # 创建一个HttpResponse对象，并设置内容类型为CSV
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="logs.csv"'
+
+        writer = csv.writer(response)
+
+        # 写入CSV头部
+        writer.writerow(field_dict["field"] for field_dict in ES_LOG_FIELDS)
+        for log in logs:
+            writer.writerow([log.get(field_dict["field"]) for field_dict in ES_LOG_FIELDS])
+        return response
 
 @method_decorator(
     name="get",
