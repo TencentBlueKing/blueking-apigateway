@@ -27,12 +27,12 @@ from apigateway.biz.audit import Auditor
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.proxy import ProxyHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.core.models import Backend, BackendConfig
+from apigateway.core.models import Backend, BackendConfig, Stage
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 from .filters import BackendFilter
-from .serializers import BackendInputSLZ, BackendListOutputSLZ, BackendRetrieveOutputSLZ
+from .serializers import BackendInputSLZ, BackendListOutputSLZ, BackendRetrieveOutputSLZ, BackendUpdateOutputSLZ
 
 
 class BackendQuerySetMixin:
@@ -148,8 +148,12 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
 
         data = slz.validated_data
 
-        backend = BackendHandler.update(instance, data, request.user.username)
-
+        backend, updated_stage_ids = BackendHandler.update(instance, data, request.user.username)
+        # 获取bound_stages 和 updated_stages
+        bound_stages = [
+            {"id": c.stage.id, "name": c.stage.name} for c in BackendConfig.objects.filter(backend_id=backend.id)
+        ]
+        updated_stages = Stage.objects.filter(gateway=request.gateway, id__in=updated_stage_ids).values("id", "name")
         Auditor.record_backend_op_success(
             op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
@@ -159,8 +163,8 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
             data_before=data_before,
             data_after=get_model_dict(backend),
         )
-
-        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+        serializer = BackendUpdateOutputSLZ({"bound_stages": bound_stages, "updated_stages": updated_stages})
+        return OKJsonResponse(data=serializer.data)
 
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):

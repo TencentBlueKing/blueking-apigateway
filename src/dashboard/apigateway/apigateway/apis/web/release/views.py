@@ -81,6 +81,9 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
             data[path_display].append(
                 {
                     "id": resource_data.id,
+                    "name": resource_data.name,
+                    "description": resource_data.description,
+                    "description_en": resource_data.description_en,
                     "method": resource_data.method,
                     "path": path_display,
                     "match_subpath": resource_data.match_subpath,

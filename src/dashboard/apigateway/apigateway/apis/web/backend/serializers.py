@@ -130,3 +130,13 @@ class BackendRetrieveOutputSLZ(serializers.Serializer):
             data.append(config)
 
         return data
+
+
+class StageSLZ(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField(help_text="")
+
+
+class BackendUpdateOutputSLZ(serializers.Serializer):
+    bound_stages = serializers.ListField(child=StageSLZ(), help_text="已绑定的环境列表")
+    updated_stages = serializers.ListField(child=StageSLZ(), help_text="更改的环境列表")
