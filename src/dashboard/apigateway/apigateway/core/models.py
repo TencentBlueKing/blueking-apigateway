@@ -30,6 +30,7 @@ from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin
 from apigateway.core import managers
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
+    HTTP_METHOD_CHOICES,
     RESOURCE_METHOD_CHOICES,
     APIHostingTypeEnum,
     BackendTypeEnum,
@@ -568,6 +569,26 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
         verbose_name = "ReleaseHistory"
         verbose_name_plural = "ReleaseHistory"
         db_table = "core_release_history"
+
+
+class TestHistory(TimestampedModelMixin, OperatorModelMixin):
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
+    resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
+    request_time = models.DateTimeField(null=True, blank=True)
+    response_time = models.DateTimeField(null=True, blank=True)
+    request_url = models.CharField(null=False, blank=False)
+    request_method = models.CharField(blank=False, null=False, choices=HTTP_METHOD_CHOICES)
+    request_params = models.TextField(blank=True, default="", null=False)
+    response_data = models.TextField(blank=True, default="", null=False)
+    response_code = models.IntegerField(blank=False, null=False)
+    response_status = models.BooleanField(default=False, help_text="是否调用成功")
+    error_message = models.TextField(blank=True, default="", null=False)
+    duration = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        verbose_name = "TestHistory"
+        verbose_name_plural = "TestHistory"
+        db_table = "test_history"
 
 
 class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
