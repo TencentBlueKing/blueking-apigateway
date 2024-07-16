@@ -143,7 +143,7 @@ class SearchLogListApi(generics.ListAPIView):
     name="get",
     decorator=swagger_auto_schema(
         query_serializer=LogDetailQueryInputSLZ,
-        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=False)},
         tags=["WebAPI.Log"],
     ),
 )
@@ -214,7 +214,7 @@ class LogLinkRetrieveApi(generics.RetrieveAPIView):
     name="get",
     decorator=swagger_auto_schema(
         query_serializer=LogDetailQueryInputSLZ,
-        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=False)},
         tags=["WebAPI.Log"],
     ),
 )
