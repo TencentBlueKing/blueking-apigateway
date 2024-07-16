@@ -18,7 +18,7 @@
 #
 from django.urls import include, path
 
-from .views import LogDetailRetrieveApi, LogLinkRetrieveApi, LogTimeChartRetrieveApi, SearchLogListApi, LogListCsvApi
+from .views import LogDetailRetrieveApi, LogLinkRetrieveApi, LogListCsvApi, LogTimeChartRetrieveApi, SearchLogListApi
 
 urlpatterns = [
     path("", SearchLogListApi.as_view(), name="access_log.logs"),

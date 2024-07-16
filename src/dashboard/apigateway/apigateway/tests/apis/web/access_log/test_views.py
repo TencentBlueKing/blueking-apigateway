@@ -15,9 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import pytest
 import csv
 from io import StringIO
+
+import pytest
+
 from apigateway.biz.access_log.constants import ES_LOG_FIELDS
 
 pytestmark = pytest.mark.django_db
@@ -133,6 +135,7 @@ class TestLogLinkRetrieveApi:
 
         assert response.status_code == 200
         assert result["data"]["link"]
+
 
 class TestLogListCsvApi:
     def test_get(self, mocker, request_view, fake_stage):
