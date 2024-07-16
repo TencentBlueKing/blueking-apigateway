@@ -40,9 +40,107 @@
           </bk-link>
         </div>
       </div>
-
+      <!-- 代码编辑器 -->
       <div class="monacoEditor mt10">
-        <editor-monaco v-model="editorText" ref="resourceEditorRef" />
+        <bk-resize-layout placement="bottom" immediate style="height: 100%">
+          <template #main>
+            <div style="height: 100%">
+              <!--   编辑器工具栏-->
+              <div class="editorToolbar">
+                <span class="p10" style="color: #ccc">代码编辑器</span>
+                <aside class="toolItems">
+                  <section class="toolItem">
+                    <search width="18px" height="18px" />
+                  </section>
+                  <section class="toolItem">
+                    <upload width="18px" height="18px" />
+                  </section>
+                  <section class="toolItem">
+                    <filliscreen-line width="18px" height="18px" />
+                  </section>
+                </aside>
+              </div>
+              <main class="editorMainContent">
+                <editor-monaco v-model="editorText" ref="resourceEditorRef" />
+                <!--  代码error, warning 计数器  -->
+                <aside class="editorErrorCounters">
+                  <div class="errorCountItem" v-bk-tooltips="{ content: 'Warning: 6', placement: 'left' }">
+                    <warn fill="#EA3636" />
+                    <span style="color:#EA3636">6</span>
+                  </div>
+                  <div class="errorCountItem" v-bk-tooltips="{ content: 'Warning: 2', placement: 'left' }">
+                    <warn fill="#EA3636" />
+                    <span style="color:#EA3636">2</span>
+                  </div>
+                  <div class="errorCountItem" v-bk-tooltips="{ content: 'All: 8', placement: 'left' }">
+                    <span>all</span>
+                    <span>8</span>
+                  </div>
+                </aside>
+              </main>
+            </div>
+          </template>
+          <template #aside>
+            <div class="editorMessagesWrapper">
+              <article class="editorMessage">
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                <span class="msgPart msgHost">[typescript]</span>
+                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
+                <span class="msgPart msgErrorCode">[2339]</span>
+                <span class="msgPart msgPos">(56, 29)</span>
+              </article>
+              <article class="editorMessage">
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                <span class="msgPart msgHost">[typescript]</span>
+                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
+                <span class="msgPart msgErrorCode">[2339]</span>
+                <span class="msgPart msgPos">(56, 29)</span>
+              </article>
+              <article class="editorMessage">
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                <span class="msgPart msgHost">[typescript]</span>
+                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
+                <span class="msgPart msgErrorCode">[2339]</span>
+                <span class="msgPart msgPos">(56, 29)</span>
+              </article>
+              <article class="editorMessage">
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                <span class="msgPart msgHost">[typescript]</span>
+                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
+                <span class="msgPart msgErrorCode">[2339]</span>
+                <span class="msgPart msgPos">(56, 29)</span>
+              </article>
+              <article class="editorMessage">
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                <span class="msgPart msgHost">[typescript]</span>
+                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
+                <span class="msgPart msgErrorCode">[2339]</span>
+                <span class="msgPart msgPos">(56, 29)</span>
+              </article>
+              <article class="editorMessage">
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                <span class="msgPart msgHost">[typescript]</span>
+                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
+                <span class="msgPart msgErrorCode">[2339]</span>
+                <span class="msgPart msgPos">(56, 29)</span>
+              </article>
+              <article class="editorMessage">
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                <span class="msgPart msgHost">[typescript]</span>
+                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
+                <span class="msgPart msgErrorCode">[2339]</span>
+                <span class="msgPart msgPos">(56, 29)</span>
+              </article>
+              <article class="editorMessage">
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                <span class="msgPart msgHost">[typescript]</span>
+                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
+                <span class="msgPart msgErrorCode">[2339]</span>
+                <span class="msgPart msgPos">(56, 29)</span>
+              </article>
+            </div>
+          </template>
+        </bk-resize-layout>
       </div>
     </section>
     <section v-else>
@@ -112,7 +210,9 @@
       >
         {{ curView === 'import' ? t('下一步') : t('上一步') }}
       </bk-button>
-      <span v-bk-tooltips="{ content: t('请确认勾选资源'), disabled: selections.length }" v-if="curView === 'resources'">
+      <span
+        v-bk-tooltips="{ content: t('请确认勾选资源'), disabled: selections.length }"
+        v-if="curView === 'resources'">
         <bk-button
           class="mr10"
           theme="primary"
@@ -143,6 +243,7 @@ import { checkResourceImport, importResource, importResourceDocSwagger } from '@
 import { useCommon } from '@/store';
 import { useSelection, useGetGlobalProperties } from '@/hooks';
 import TmplExampleSideslider from '@/views/resource/setting/comps/tmpl-example-sideslider.vue';
+import { Warn, Search, FilliscreenLine, Upload } from 'bkui-vue/lib/icon';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -196,10 +297,11 @@ const handleReq = (res: any) => {
     return;
   }
   // 读取文件内容并赋值给编辑器
-  getStrFromFile(file).then((res: any) => {
-    editorText.value = res;
-    setEditValue();
-  });
+  getStrFromFile(file)
+    .then((res: any) => {
+      editorText.value = res;
+      setEditValue();
+    });
 };
 // 下一步需要检查数据
 const handleCheckData = async () => {
@@ -301,23 +403,125 @@ const handleHiddenExample = () => {
 };
 </script>
 <style scoped lang="scss">
-.import-container{
-  .import-header{
-    .icon-ag-add-small{
+.import-container {
+  .import-header {
+    .icon-ag-add-small {
       font-size: 16px;
     }
-    .desc{
+
+    .desc {
       font-size: 12px;
       color: #979ba5;
     }
   }
+
   .monacoEditor {
     width: 100%;
     height: calc(100vh - 240px);
+
+    .editorToolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #1a1a1a;
+      box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.2);
+
+      .toolItems {
+        height: 100%;
+        display: flex;
+        align-items: center;
+
+        .toolItem {
+          padding: 0 8px;
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+
+          &:hover {
+            color: #ccc;
+          }
+        }
+      }
+    }
+
+    .editorMainContent {
+      display: flex;
+      height: 100%;
+
+      .editorErrorCounters {
+        width: 48px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #1a1a1a;
+
+        .errorCountItem {
+          width: 100%;
+          padding: 5px 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          cursor: pointer;
+
+          &:hover {
+            background-color: #333;
+          }
+        }
+      }
+    }
+
+    .editorMessagesWrapper {
+      //height: 200px;
+      height: 100%;
+      padding-top: 12px;
+      background-color: #1a1a1a;
+      border-left: 4px solid #1a1a1a;
+
+      &.hasErrorMsg {
+        border-left: 4px solid #EA3636;
+      }
+
+      .editorMessage {
+        padding: 2px 4px;
+        margin-bottom: 2px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+
+        &:hover {
+          background-color: #333;
+        }
+
+        //.msgPart {
+        //  margin-right: 2px;
+        //}
+
+        .msgIcon {
+          padding-top: 3px;
+          display: flex;
+          align-items: center;
+        }
+
+        //.msgHost, .msgErrorCode, .msgPos {
+        //  //color: #7b7d8a;
+        //}
+
+        .msgBody {
+          color: #ccc;
+        }
+      }
+    }
+
+    // 变更代码编辑器伸缩线样式
+    :deep(.bk-resize-layout-bottom > .bk-resize-layout-aside) {
+      border-top: 1px solid black;
+    }
   }
 
   :deep(.upload-cls) {
-    .bk-upload-list{
+    .bk-upload-list {
       display: none !important;
     }
   }
