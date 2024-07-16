@@ -137,7 +137,7 @@ class TestLogLinkRetrieveApi:
         assert result["data"]["link"]
 
 
-class TestLogListCsvApi:
+class TestLogExportApi:
     def test_get(self, mocker, request_view, fake_stage):
         mocker.patch(
             "apigateway.apis.web.access_log.views.LogSearchClient.search_logs",
@@ -148,7 +148,7 @@ class TestLogListCsvApi:
 
         response = request_view(
             "GET",
-            "access_log.csv",
+            "access_log.export",
             path_params={"gateway_id": fake_gateway.id},
             gateway=fake_gateway,
             data={

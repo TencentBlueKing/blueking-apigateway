@@ -147,7 +147,7 @@ class SearchLogListApi(generics.ListAPIView):
         tags=["WebAPI.Log"],
     ),
 )
-class LogListCsvApi(generics.RetrieveAPIView):
+class LogExportApi(generics.RetrieveAPIView):
     def get(self, request, *args, **kwargs):
         slz = RequestLogQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -169,8 +169,8 @@ class LogListCsvApi(generics.RetrieveAPIView):
             time_range=data.get("time_range"),
         )
         total_count, logs = client.search_logs(
-            offset=data["offset"],
-            limit=data["limit"],
+            offset=data.get("offset", 0),
+            limit=min(data.get("limit", 10000), 10000),
         )
 
         # 去除 params、body 中的敏感数据
