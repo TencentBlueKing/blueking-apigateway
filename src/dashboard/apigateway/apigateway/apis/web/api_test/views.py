@@ -145,7 +145,7 @@ class TestHistoriesQuerySetMixin:
         tags=["WebAPI.TesthHistories"],
     ),
 )
-class TestHistoryListApi(TestHistoriesQuerySetMixin):
+class TestHistoryListApi(TestHistoriesQuerySetMixin, generics.ListAPIView):
     queryset = TestHistory.objects.order_by("-updated_time")
     serializer_class = TestHistoriesListOutputSLZ
 
