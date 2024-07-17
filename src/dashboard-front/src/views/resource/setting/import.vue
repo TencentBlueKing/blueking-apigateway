@@ -65,15 +65,27 @@
                 <editor-monaco v-model="editorText" ref="resourceEditorRef" />
                 <!--  右侧的代码 error, warning 计数器  -->
                 <aside class="editorErrorCounters">
-                  <div class="errorCountItem" v-bk-tooltips="{ content: 'Warning: 6', placement: 'left' }">
+                  <div
+                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'error' }"
+                    v-bk-tooltips="{ content: 'Error: 6', placement: 'left' }"
+                    @click="handleErrorCountClick('error')"
+                  >
                     <warn fill="#EA3636" />
                     <span style="color:#EA3636">6</span>
                   </div>
-                  <div class="errorCountItem" v-bk-tooltips="{ content: 'Warning: 2', placement: 'left' }">
-                    <warn fill="#EA3636" />
-                    <span style="color:#EA3636">2</span>
+                  <div
+                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'warning' }"
+                    v-bk-tooltips="{ content: 'Warning: 2', placement: 'left' }"
+                    @click="handleErrorCountClick('warning')"
+                  >
+                    <div class="warningCircle"></div>
+                    <span style="color: hsla(36.6, 81.7%, 55.1%, 0.5);">2</span>
                   </div>
-                  <div class="errorCountItem" v-bk-tooltips="{ content: 'All: 8', placement: 'left' }">
+                  <div
+                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'all' }"
+                    v-bk-tooltips="{ content: 'All: 8', placement: 'left' }"
+                    @click="handleErrorCountClick('all')"
+                  >
                     <span>all</span>
                     <span>8</span>
                   </div>
@@ -84,56 +96,21 @@
           <!--  底部错误信息展示  -->
           <template #aside>
             <div class="editorMessagesWrapper">
-              <article class="editorMessage">
+              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 3 })">
                 <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
                 <span class="msgPart msgHost">[typescript]</span>
                 <span class="msgPart msgBody">unused expression unused expression unused expression </span>
                 <span class="msgPart msgErrorCode">[2339]</span>
                 <span class="msgPart msgPos">(56, 29)</span>
               </article>
-              <article class="editorMessage">
+              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 4 })">
                 <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
                 <span class="msgPart msgHost">[typescript]</span>
                 <span class="msgPart msgBody">unused expression unused expression unused expression </span>
                 <span class="msgPart msgErrorCode">[2339]</span>
                 <span class="msgPart msgPos">(56, 29)</span>
               </article>
-              <article class="editorMessage">
-                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost">[typescript]</span>
-                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
-                <span class="msgPart msgErrorCode">[2339]</span>
-                <span class="msgPart msgPos">(56, 29)</span>
-              </article>
-              <article class="editorMessage">
-                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost">[typescript]</span>
-                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
-                <span class="msgPart msgErrorCode">[2339]</span>
-                <span class="msgPart msgPos">(56, 29)</span>
-              </article>
-              <article class="editorMessage">
-                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost">[typescript]</span>
-                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
-                <span class="msgPart msgErrorCode">[2339]</span>
-                <span class="msgPart msgPos">(56, 29)</span>
-              </article>
-              <article class="editorMessage">
-                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost">[typescript]</span>
-                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
-                <span class="msgPart msgErrorCode">[2339]</span>
-                <span class="msgPart msgPos">(56, 29)</span>
-              </article>
-              <article class="editorMessage">
-                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost">[typescript]</span>
-                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
-                <span class="msgPart msgErrorCode">[2339]</span>
-                <span class="msgPart msgPos">(56, 29)</span>
-              </article>
-              <article class="editorMessage">
+              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 5 })">
                 <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
                 <span class="msgPart msgHost">[typescript]</span>
                 <span class="msgPart msgBody">unused expression unused expression unused expression </span>
@@ -214,13 +191,15 @@
       </bk-button>
       <span
         v-bk-tooltips="{ content: t('请确认勾选资源'), disabled: selections.length }"
-        v-if="curView === 'resources'">
+        v-if="curView === 'resources'"
+      >
         <bk-button
           class="mr10"
           theme="primary"
           type="button"
           :disabled="!selections.length"
-          @click="handleImportResource" :loading="isImportLoading">
+          @click="handleImportResource" :loading="isImportLoading"
+        >
           {{ $t('确定导入') }}
         </bk-button>
       </span>
@@ -233,7 +212,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, nextTick, computed } from 'vue';
+import { ref, nextTick, computed, onMounted } from 'vue';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -261,6 +240,11 @@ const curView = ref<string>('import'); // 当前页面
 const tableData = ref<any[]>([]);
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
+
+type codeErrorMsgType = 'all' | 'error' | 'warning';
+
+// 选中的代码错误提示 Tab，默认展示 all 即全部类型的错误提示
+const activeCodeMsgType = ref<codeErrorMsgType>('all');
 
 // 资源新建条数
 const createNum = computed(() => {
@@ -320,15 +304,15 @@ const handleCheckData = async () => {
   }
   try {
     isDataLoading.value = true;
-    const parmas: any = {
+    const params: any = {
       content: editorText.value,
       allow_overwrite: true,
     };
     // 如果勾选了资源文档
     if (showDoc.value) {
-      parmas.doc_language = language.value;
+      params.doc_language = language.value;
     }
-    const res = await checkResourceImport(apigwId, parmas);
+    const res = await checkResourceImport(apigwId, params);
     tableData.value = res;
     curView.value = 'resources';
     nextTick(() => {
@@ -346,11 +330,11 @@ const handleCheckData = async () => {
 const handleImportResource = async () => {
   try {
     isImportLoading.value = true;
-    const parmas = {
+    const params = {
       content: editorText.value,
       selected_resources: selections.value,
     };
-    await importResource(apigwId, parmas);
+    await importResource(apigwId, params);
     // 勾选了文档才需要上传swagger文档
     if (showDoc.value) {
       // swagger需要的参数
@@ -403,6 +387,22 @@ const handleShowExample = () => {
 const handleHiddenExample = () => {
   isShowExample.value = false;
 };
+
+// 处理代码错误消息点击事件，应跳转到编辑器对应行
+const handleMsgClick = (pos: { lineNumber: number, column?: number }) => {
+  resourceEditorRef.value.setCursorPos(pos);
+};
+
+// 处理右侧错误类型计数器点击事件
+const handleErrorCountClick = (type: codeErrorMsgType) => {
+  activeCodeMsgType.value = type;
+//   TODO 更新错误提示视图
+};
+
+onMounted(() => {
+  resourceEditorRef.value.genDecorations({ startLineNumber: 3, startColumn: 1, endLineNumber: 5, level: 'Warning' });
+  resourceEditorRef.value.setDecorations();
+});
 </script>
 <style scoped lang="scss">
 .import-container {
@@ -476,7 +476,7 @@ const handleHiddenExample = () => {
             border-bottom: none;
           }
 
-          &:hover {
+          &:hover, &.active {
             background-color: #333;
           }
         }
@@ -547,6 +547,13 @@ const handleHiddenExample = () => {
   :deep(.glyphMarginWarning) {
     width: 6px !important;
     background: hsla(36.6, 81.7%, 55.1%, 0.5);
+  }
+
+  .warningCircle {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: hsla(36.6, 81.7%, 55.1%, 0.5);
   }
 }
 </style>

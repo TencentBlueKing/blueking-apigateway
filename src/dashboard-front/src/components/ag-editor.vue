@@ -11,6 +11,8 @@ import * as monaco from 'monaco-editor';
 
 let editor = null; // 编辑器实例
 const monacoEditor = ref(null);
+// 编辑器装饰器（高亮效果等）
+let decorations = [];
 // 定义从父组件接收的属性
 const props = defineProps({
   modelValue: { type: [String, Object, Array], default: () => 'yaml' },
@@ -90,27 +92,8 @@ const initEditor = () => {
 
   editorMounted(); // 编辑器初始化后
 
-  const decorations = editor.createDecorationsCollection([
-    {
-      range: new monaco.Range(6, 1, 8, Number.MAX_VALUE), // 行:10, 列从1开始到最后
-      options: {
-        isWholeLine: true, // 整行高亮
-        className: 'lineHighlightError', // 当前行装饰用类名
-        glyphMarginClassName: 'glyphMarginError', // 当前行左侧装饰(glyph)用类名
-      },
-    },
-    {
-      range: new monaco.Range(9, 1, 11, Number.MAX_VALUE), // 行:10, 列从1开始到最后
-      options: {
-        isWholeLine: true, // 整行高亮
-        className: 'lineHighlightWarning', // 当前行装饰用类名
-        glyphMarginClassName: 'glyphMarginWarning', // 当前行左侧装饰(glyph)用类名
-      },
-    },
-  ]);
-
-  // decorations.clear();
-  // decorations.set();
+  // genDecorations();
+  // setDecorations();
 };
 
 const editorMounted = () => {
@@ -126,8 +109,58 @@ const emitChange = (emitValue, event) => {
   emit('update:modelValue', emitValue, event);
 };
 
+// 更改光标位置
+const setCursorPos = ({ lineNumber, column }) => {
+  const model = editor.getModel();
+
+  if (!model) return;
+
+  const lastColumnNumber = column ?? model.getLineLastNonWhitespaceColumn(lineNumber);
+  editor.focus();
+  editor.setPosition(new monaco.Position(lineNumber, lastColumnNumber));
+  editor.revealLine(lineNumber);
+};
+
+const genDecorations = ({ startLineNumber, startColumn = 1, endLineNumber, level }) => {
+  decorations = editor.createDecorationsCollection([
+    {
+      range: new monaco.Range(
+        startLineNumber,
+        startColumn,
+        endLineNumber ?? startLineNumber,
+        Number.MAX_VALUE,
+      ), // 行:10, 列从1开始到最后
+      options: {
+        isWholeLine: true, // 整行高亮
+        className: `lineHighlight${level}`, // 当前行装饰用类名
+        glyphMarginClassName: `glyphMargin${level}`, // 当前行左侧装饰(glyph)用类名
+      },
+    },
+    // {
+    //   range: new monaco.Range(10, 1, 12, Number.MAX_VALUE), // 行:10, 列从1开始到最后
+    //   options: {
+    //     isWholeLine: true, // 整行高亮
+    //     className: 'lineHighlightWarning', // 当前行装饰用类名
+    //     glyphMarginClassName: 'glyphMarginWarning', // 当前行左侧装饰(glyph)用类名
+    //   },
+    // },
+  ]);
+};
+
+const setDecorations = () => {
+  decorations.set();
+};
+
+const clearDecorations = () => {
+  decorations.clear();
+};
+
 defineExpose({
   setValue,
+  setCursorPos,
+  setDecorations,
+  clearDecorations,
+  genDecorations,
 });
 
 </script>
