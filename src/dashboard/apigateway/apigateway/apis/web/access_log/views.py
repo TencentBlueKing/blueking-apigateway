@@ -28,10 +28,10 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.biz.access_log.constants import ES_LOG_FIELDS, LOG_LINK_EXPIRE_SECONDS, LOG_LINK_SHARED_PATH
+from apigateway.biz.access_log.constants import ES_LOG_FIELDS, LOG_LINK_SHARED_PATH
 from apigateway.biz.access_log.data_scrubber import DataScrubber
 from apigateway.biz.access_log.log_search import LogSearchClient
-from apigateway.common.signature import SignatureGenerator, SignatureValidator
+from apigateway.common.signature import SignatureGenerator
 from apigateway.core.models import Stage
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
@@ -155,9 +155,6 @@ class LogDetailRetrieveApi(generics.RetrieveAPIView):
         """
         获取指定 request_id 的日志内容
         """
-        validator = SignatureValidator(settings.LOG_LINK_SECRET, request, LOG_LINK_EXPIRE_SECONDS)
-        validator.is_valid(raise_exception=True)
-
         client = LogSearchClient(request_id=request_id)
 
         total_count, logs = client.search_logs()
