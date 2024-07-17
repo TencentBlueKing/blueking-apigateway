@@ -571,24 +571,21 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
         db_table = "core_release_history"
 
 
-class TestHistory(TimestampedModelMixin, OperatorModelMixin):
-    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
-    resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
-    request_time = models.DateTimeField(null=True, blank=True)
-    response_time = models.DateTimeField(null=True, blank=True)
+class ResourceDebugHistory(TimestampedModelMixin, OperatorModelMixin):
+    gateway = models.ForeignKey(Gateway, db_column="gateway_id", on_delete=models.CASCADE)
+    resource_name = models.CharField(null=False, blank=False)
     request_url = models.CharField(null=False, blank=False)
     request_method = models.CharField(blank=False, null=False, choices=HTTP_METHOD_CHOICES)
     request_params = models.TextField(blank=True, default="", null=False)
+    request_time = models.DateTimeField(null=True, blank=True)
     response_data = models.TextField(blank=True, default="", null=False)
     response_code = models.IntegerField(blank=False, null=False)
-    response_status = models.BooleanField(default=False, help_text="是否调用成功")
-    error_message = models.TextField(blank=True, default="", null=False)
     duration = models.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
-        verbose_name = "TestHistory"
-        verbose_name_plural = "TestHistory"
-        db_table = "test_history"
+        verbose_name = "ResourceDebugHistory"
+        verbose_name_plural = "ResourceDebugHistory"
+        db_table = "resource_debug_history"
 
 
 class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
