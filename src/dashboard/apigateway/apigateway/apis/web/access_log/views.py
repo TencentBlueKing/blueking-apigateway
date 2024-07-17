@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import csv
+import datetime
 import random
 import time
 from typing import Dict, List
@@ -33,7 +34,7 @@ from apigateway.biz.access_log.constants import ES_LOG_FIELDS, LOG_LINK_EXPIRE_S
 from apigateway.biz.access_log.data_scrubber import DataScrubber
 from apigateway.biz.access_log.log_search import LogSearchClient
 from apigateway.common.signature import SignatureGenerator, SignatureValidator
-from apigateway.core.models import Stage
+from apigateway.core.models import Gateway, Stage
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 
@@ -149,6 +150,8 @@ class SearchLogListApi(generics.ListAPIView):
 )
 class LogExportApi(generics.RetrieveAPIView):
     def get(self, request, *args, **kwargs):
+        # 定义限制条数为10000条
+        limit = 10000
         slz = RequestLogQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
@@ -170,14 +173,29 @@ class LogExportApi(generics.RetrieveAPIView):
         )
         total_count, logs = client.search_logs(
             offset=data.get("offset", 0),
-            limit=min(data.get("limit", 10000), 10000),
+            limit=limit,
         )
 
         # 去除 params、body 中的敏感数据
         logs = DataScrubber().scrub_sensitive_data(logs)
+        # 增加扩展数据
+        logs = add_or_refine_fields(logs)
         # 创建一个HttpResponse对象，并设置内容类型为CSV
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="logs.csv"'
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+
+        # 准备文件名称数据
+        gateway = Gateway.objects.get(id=request.gateway.id)
+        # 格式化时间
+        time_start = data.get("time_start")
+        time_start_obj = datetime.datetime.utcfromtimestamp(time_start)
+        formatted_time_start = time_start_obj.strftime("%Y%m%d%H%M%S")
+        time_end = data.get("time_end")
+        time_end_obj = datetime.datetime.utcfromtimestamp(time_end)
+        formatted_time_end = time_end_obj.strftime("%Y%m%d%H%M%S")
+
+        response["Content-Disposition"] = (
+            f'attachment; filename="{gateway.name}-{formatted_time_start}-{formatted_time_end}-logs.csv"'
+        )
 
         writer = csv.writer(response)
 

@@ -155,12 +155,14 @@ class TestLogExportApi:
                 "stage_id": fake_stage.id,
                 "time_range": 300,
                 "offset": 0,
+                "time_start": 1720606081,
+                "time_end": 1721210881,
                 "limit": 3,
                 "query": "api_id: 2",
             },
         )
         assert response.status_code == 200
-        assert response.headers["Content-Type"] == "text/csv"
+        assert response.headers["Content-Type"] == "text/csv; charset=utf-8"
         reader = csv.DictReader(StringIO(response.content.decode("utf-8")))
         log_count = sum(1 for _ in reader)
         assert log_count == 3
