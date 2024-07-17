@@ -85,9 +85,32 @@ const initEditor = () => {
     lineNumbersMinChars: 5, // 行号最小字符   number
     readOnly: readOnly.value, // 是否只读  取值 true | false
     lineHeight: 24,
+    glyphMargin: true,  // 是否显示行号左侧装饰，用于显示当前行的错误信息登记：error | warning
   });
 
   editorMounted(); // 编辑器初始化后
+
+  const decorations = editor.createDecorationsCollection([
+    {
+      range: new monaco.Range(6, 1, 8, Number.MAX_VALUE), // 行:10, 列从1开始到最后
+      options: {
+        isWholeLine: true, // 整行高亮
+        className: 'lineHighlightError', // 当前行装饰用类名
+        glyphMarginClassName: 'glyphMarginError', // 当前行左侧装饰(glyph)用类名
+      },
+    },
+    {
+      range: new monaco.Range(9, 1, 11, Number.MAX_VALUE), // 行:10, 列从1开始到最后
+      options: {
+        isWholeLine: true, // 整行高亮
+        className: 'lineHighlightWarning', // 当前行装饰用类名
+        glyphMarginClassName: 'glyphMarginWarning', // 当前行左侧装饰(glyph)用类名
+      },
+    },
+  ]);
+
+  // decorations.clear();
+  // decorations.set();
 };
 
 const editorMounted = () => {
@@ -111,7 +134,7 @@ defineExpose({
 <style scoped>
 .codemirror,
 .monaco-editor {
-    width: 100%;
-    height: 100%;
+  width: 100%;
+  height: 100%;
 }
 </style>

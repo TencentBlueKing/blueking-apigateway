@@ -4,10 +4,10 @@
       <div class="import-header flex-row justify-content-between">
         <div class="flex-row align-items-center">
           <bk-upload
-              theme="button"
-              :custom-request="handleReq"
-              class="upload-cls"
-              accept=".yaml,.json,.yml"
+            theme="button"
+            :custom-request="handleReq"
+            class="upload-cls"
+            accept=".yaml,.json,.yml"
           >
             <div>
               <i class="icon apigateway-icon icon-ag-add-small"></i>
@@ -50,27 +50,27 @@
                 <span class="p10" style="color: #ccc">代码编辑器</span>
                 <aside class="toolItems">
                   <section class="toolItem">
-                    <search width="18px" height="18px"/>
+                    <search width="18px" height="18px" />
                   </section>
                   <section class="toolItem">
-                    <upload width="18px" height="18px"/>
+                    <upload width="18px" height="18px" />
                   </section>
                   <section class="toolItem">
-                    <filliscreen-line width="18px" height="18px"/>
+                    <filliscreen-line width="18px" height="18px" />
                   </section>
                 </aside>
               </header>
               <main class="editorMainContent">
                 <!--  编辑器本体  -->
-                <editor-monaco v-model="editorText" ref="resourceEditorRef"/>
+                <editor-monaco v-model="editorText" ref="resourceEditorRef" />
                 <!--  右侧的代码 error, warning 计数器  -->
                 <aside class="editorErrorCounters">
                   <div class="errorCountItem" v-bk-tooltips="{ content: 'Warning: 6', placement: 'left' }">
-                    <warn fill="#EA3636"/>
+                    <warn fill="#EA3636" />
                     <span style="color:#EA3636">6</span>
                   </div>
                   <div class="errorCountItem" v-bk-tooltips="{ content: 'Warning: 2', placement: 'left' }">
-                    <warn fill="#EA3636"/>
+                    <warn fill="#EA3636" />
                     <span style="color:#EA3636">2</span>
                   </div>
                   <div class="errorCountItem" v-bk-tooltips="{ content: 'All: 8', placement: 'left' }">
@@ -85,56 +85,56 @@
           <template #aside>
             <div class="editorMessagesWrapper">
               <article class="editorMessage">
-                <span class="msgPart msgIcon"><warn fill="#EA3636"/></span>
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
                 <span class="msgPart msgHost">[typescript]</span>
                 <span class="msgPart msgBody">unused expression unused expression unused expression </span>
                 <span class="msgPart msgErrorCode">[2339]</span>
                 <span class="msgPart msgPos">(56, 29)</span>
               </article>
               <article class="editorMessage">
-                <span class="msgPart msgIcon"><warn fill="#EA3636"/></span>
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
                 <span class="msgPart msgHost">[typescript]</span>
                 <span class="msgPart msgBody">unused expression unused expression unused expression </span>
                 <span class="msgPart msgErrorCode">[2339]</span>
                 <span class="msgPart msgPos">(56, 29)</span>
               </article>
               <article class="editorMessage">
-                <span class="msgPart msgIcon"><warn fill="#EA3636"/></span>
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
                 <span class="msgPart msgHost">[typescript]</span>
                 <span class="msgPart msgBody">unused expression unused expression unused expression </span>
                 <span class="msgPart msgErrorCode">[2339]</span>
                 <span class="msgPart msgPos">(56, 29)</span>
               </article>
               <article class="editorMessage">
-                <span class="msgPart msgIcon"><warn fill="#EA3636"/></span>
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
                 <span class="msgPart msgHost">[typescript]</span>
                 <span class="msgPart msgBody">unused expression unused expression unused expression </span>
                 <span class="msgPart msgErrorCode">[2339]</span>
                 <span class="msgPart msgPos">(56, 29)</span>
               </article>
               <article class="editorMessage">
-                <span class="msgPart msgIcon"><warn fill="#EA3636"/></span>
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
                 <span class="msgPart msgHost">[typescript]</span>
                 <span class="msgPart msgBody">unused expression unused expression unused expression </span>
                 <span class="msgPart msgErrorCode">[2339]</span>
                 <span class="msgPart msgPos">(56, 29)</span>
               </article>
               <article class="editorMessage">
-                <span class="msgPart msgIcon"><warn fill="#EA3636"/></span>
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
                 <span class="msgPart msgHost">[typescript]</span>
                 <span class="msgPart msgBody">unused expression unused expression unused expression </span>
                 <span class="msgPart msgErrorCode">[2339]</span>
                 <span class="msgPart msgPos">(56, 29)</span>
               </article>
               <article class="editorMessage">
-                <span class="msgPart msgIcon"><warn fill="#EA3636"/></span>
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
                 <span class="msgPart msgHost">[typescript]</span>
                 <span class="msgPart msgBody">unused expression unused expression unused expression </span>
                 <span class="msgPart msgErrorCode">[2339]</span>
                 <span class="msgPart msgPos">(56, 29)</span>
               </article>
               <article class="editorMessage">
-                <span class="msgPart msgIcon"><warn fill="#EA3636"/></span>
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
                 <span class="msgPart msgHost">[typescript]</span>
                 <span class="msgPart msgBody">unused expression unused expression unused expression </span>
                 <span class="msgPart msgErrorCode">[2339]</span>
@@ -166,35 +166,35 @@
         </div>
       </div>
       <bk-table
-          class="table-layout"
-          :data="tableData"
-          show-overflow-tooltip
-          :checked="tableData"
-          @selection-change="handleSelectionChange"
+        class="table-layout"
+        :data="tableData"
+        show-overflow-tooltip
+        :checked="tableData"
+        @selection-change="handleSelectionChange"
       >
         <bk-table-column
-            width="80"
-            type="selection"
-            align="center"
+          width="80"
+          type="selection"
+          align="center"
         />
         <bk-table-column
-            :label="t('请求路径')"
-            prop="path"
+          :label="t('请求路径')"
+          prop="path"
         >
         </bk-table-column>
         <bk-table-column
-            :label="t('请求方法')"
-            prop="method"
+          :label="t('请求方法')"
+          prop="method"
         >
         </bk-table-column>
         <bk-table-column
-            :label="t('描述')"
-            prop="description"
+          :label="t('描述')"
+          prop="description"
         >
         </bk-table-column>
         <bk-table-column
-            :label="t('资源操作类型')"
-            prop="path"
+          :label="t('资源操作类型')"
+          prop="path"
         >
           <template #default="{ data }">
             <span class="danger-c" v-if="data?.id">{{ t('覆盖') }}</span>
@@ -206,21 +206,21 @@
 
     <div class="mt15">
       <bk-button
-          :theme="curView === 'import' ? 'primary' : ''"
-          @click="handleCheckData"
-          :loading="isDataLoading"
+        :theme="curView === 'import' ? 'primary' : ''"
+        @click="handleCheckData"
+        :loading="isDataLoading"
       >
         {{ curView === 'import' ? t('下一步') : t('上一步') }}
       </bk-button>
       <span
-          v-bk-tooltips="{ content: t('请确认勾选资源'), disabled: selections.length }"
-          v-if="curView === 'resources'">
+        v-bk-tooltips="{ content: t('请确认勾选资源'), disabled: selections.length }"
+        v-if="curView === 'resources'">
         <bk-button
-            class="mr10"
-            theme="primary"
-            type="button"
-            :disabled="!selections.length"
-            @click="handleImportResource" :loading="isImportLoading">
+          class="mr10"
+          theme="primary"
+          type="button"
+          :disabled="!selections.length"
+          @click="handleImportResource" :loading="isImportLoading">
           {{ $t('确定导入') }}
         </bk-button>
       </span>
@@ -300,10 +300,10 @@ const handleReq = (res: any) => {
   }
   // 读取文件内容并赋值给编辑器
   getStrFromFile(file)
-      .then((res: any) => {
-        editorText.value = res;
-        setEditValue();
-      });
+    .then((res: any) => {
+      editorText.value = res;
+      setEditValue();
+    });
 };
 // 下一步需要检查数据
 const handleCheckData = async () => {
@@ -529,6 +529,24 @@ const handleHiddenExample = () => {
     .bk-upload-list {
       display: none !important;
     }
+  }
+
+  :deep(.lineHighlightError) {
+    background-color: #382322;
+  }
+
+  :deep(.glyphMarginError) {
+    width: 6px !important;
+    background: #B34747;
+  }
+
+  :deep(.lineHighlightWarning) {
+    background-color: hsla(36.6, 81.7%, 55.1%, 0.1);
+  }
+
+  :deep(.glyphMarginWarning) {
+    width: 6px !important;
+    background: hsla(36.6, 81.7%, 55.1%, 0.5);
   }
 }
 </style>
