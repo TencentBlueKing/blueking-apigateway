@@ -28,10 +28,10 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.biz.access_log.constants import ES_LOG_FIELDS, LOG_LINK_SHARED_PATH
+from apigateway.biz.access_log.constants import ES_LOG_FIELDS, LOG_LINK_EXPIRE_SECONDS, LOG_LINK_SHARED_PATH
 from apigateway.biz.access_log.data_scrubber import DataScrubber
 from apigateway.biz.access_log.log_search import LogSearchClient
-from apigateway.common.signature import SignatureGenerator
+from apigateway.common.signature import SignatureGenerator, SignatureValidator
 from apigateway.core.models import Stage
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
@@ -143,7 +143,7 @@ class SearchLogListApi(generics.ListAPIView):
     name="get",
     decorator=swagger_auto_schema(
         query_serializer=LogDetailQueryInputSLZ,
-        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=False)},
         tags=["WebAPI.Log"],
     ),
 )
@@ -154,6 +154,40 @@ class LogDetailRetrieveApi(generics.RetrieveAPIView):
     def retrieve(self, request, request_id, *args, **kwargs):
         """
         获取指定 request_id 的日志内容
+        """
+        validator = SignatureValidator(settings.LOG_LINK_SECRET, request, LOG_LINK_EXPIRE_SECONDS)
+        validator.is_valid(raise_exception=True)
+
+        client = LogSearchClient(request_id=request_id)
+
+        total_count, logs = client.search_logs()
+        # 去除 params、body 中的敏感数据
+        logs = DataScrubber().scrub_sensitive_data(logs)
+        logs = add_or_refine_fields(logs)
+
+        paginator = LimitOffsetPaginator(total_count, 0, total_count)
+
+        # 将字段信息添加到结果中，便于前端展示
+        results = paginator.get_paginated_data(logs)
+        results["fields"] = ES_LOG_FIELDS
+
+        return OKJsonResponse(data=results)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        query_serializer=LogDetailQueryInputSLZ,
+        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=False)},
+        tags=["WebAPI.Log"],
+    ),
+)
+class LogDetailInfoApi(generics.RetrieveAPIView):
+    gateway_permission_exempt = True
+
+    def retrieve(self, request, request_id, *args, **kwargs):
+        """
+        获取指定 request_id 日志的分享链接
         """
         client = LogSearchClient(request_id=request_id)
 

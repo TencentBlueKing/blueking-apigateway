@@ -98,6 +98,8 @@ class TestLogDetailListApi:
             return_value=(1, [{"a": 1}]),
         )
 
+        mocker.patch("apigateway.apis.web.access_log.views.SignatureValidator.is_valid")
+
         response = request_view(
             "GET",
             "access_log.logs.detail",
