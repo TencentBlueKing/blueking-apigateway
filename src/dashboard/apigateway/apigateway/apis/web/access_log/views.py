@@ -143,7 +143,7 @@ class SearchLogListApi(generics.ListAPIView):
     name="get",
     decorator=swagger_auto_schema(
         query_serializer=LogDetailQueryInputSLZ,
-        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=False)},
+        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
         tags=["WebAPI.Log"],
     ),
 )
@@ -205,34 +205,3 @@ class LogLinkRetrieveApi(generics.RetrieveAPIView):
             "GET", log_detail_path, params
         )
         return urlencode(params)
-
-
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=LogDetailQueryInputSLZ,
-        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=False)},
-        tags=["WebAPI.Log"],
-    ),
-)
-class LogDetailInfoApi(generics.RetrieveAPIView):
-    gateway_permission_exempt = True
-
-    def list(self, request, request_id, *args, **kwargs):
-        """
-        获取指定 request_id 日志的分享链接
-        """
-        client = LogSearchClient(request_id=request_id)
-
-        total_count, logs = client.search_logs()
-        # 去除 params、body 中的敏感数据
-        logs = DataScrubber().scrub_sensitive_data(logs)
-        logs = add_or_refine_fields(logs)
-
-        paginator = LimitOffsetPaginator(total_count, 0, total_count)
-
-        # 将字段信息添加到结果中，便于前端展示
-        results = paginator.get_paginated_data(logs)
-        results["fields"] = ES_LOG_FIELDS
-
-        return OKJsonResponse(data=results)
