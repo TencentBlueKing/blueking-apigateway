@@ -28,7 +28,7 @@ urlpatterns = [
             [
                 path("", APIDebugHistoryListApi.as_view(), name="api_debug.histories.list"),
                 path(
-                    "<int:history_id>/",
+                    "<int:id>/",
                     APIDebugHistoryRetrieveDestroyApi.as_view(),
                     name="api_debug.histories.retrieve-destroy",
                 ),
