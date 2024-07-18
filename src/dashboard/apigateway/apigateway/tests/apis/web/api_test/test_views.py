@@ -63,6 +63,16 @@ class TestAPITestAPIView:
             "x-token": "test",
         }
 
+        # 查看是否有记录
+        resp = request_view(
+            method="GET",
+            path_params={"gateway_id": fake_gateway.id},
+            view_name="api_debug.histories.list",
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
 
 class TestAPIDebugHistoryApi:
     def test_list(self, request_view, fake_resource, fake_gateway):

@@ -16,11 +16,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import time
 from typing import Any, Dict
 
 import requests
 from django.conf import settings
 from django.http import Http404
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.encoding import force_bytes
 from django.utils.translation import gettext as _
@@ -83,6 +85,9 @@ class APITestApi(generics.CreateAPIView):
             stage_name=stage.name,
         )
 
+        # 开始时间
+        start_time = time.perf_counter()
+        request_time = timezone.now()
         try:
             response = requests.request(
                 method=data["method"],
@@ -97,7 +102,43 @@ class APITestApi(generics.CreateAPIView):
                 allow_redirects=False,
                 verify=False,
             )
+            end_time = time.perf_counter()
+            duration = end_time - start_time
+            success_history_data = {
+                "gateway": request.gateway,
+                "resource_name": released_resource.name,
+                "request_url": prepared_request_url.request_url,
+                "request_method": data["method"],
+                "request_params": {
+                    "query_params": data["query_params"],
+                    "body": data["body"],
+                    "header": prepared_request_headers.headers,
+                },
+                "request_time": request_time,
+                "response_code": response.status_code,
+                "response_data": response.text,
+                "duration": duration,
+            }
+            ResourceDebugHistory.objects.create(**success_history_data)
         except Exception as err:
+            end_time = time.perf_counter()
+            duration = end_time - start_time
+            failure_history_data = {
+                "gateway": request.gateway,
+                "resource_name": released_resource.name,
+                "request_url": prepared_request_url.request_url,
+                "request_method": data["method"],
+                "request_params": {
+                    "query_params": data["query_params"],
+                    "body": data["body"],
+                    "header": prepared_request_headers.headers,
+                },
+                "request_time": request_time,
+                "response_code": 500,
+                "response_data": str(err),
+                "duration": duration,
+            }
+            ResourceDebugHistory.objects.create(**failure_history_data)
             return FailJsonResponse(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 code="UNKNOWN",
