@@ -155,12 +155,15 @@ const clearDecorations = () => {
   decorations.clear();
 };
 
+const getModel = () => editor.getModel();
+
 defineExpose({
   setValue,
   setCursorPos,
   setDecorations,
   clearDecorations,
   genDecorations,
+  getModel,
 });
 
 </script>

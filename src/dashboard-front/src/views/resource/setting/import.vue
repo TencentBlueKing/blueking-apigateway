@@ -96,68 +96,15 @@
           <!--  底部错误信息展示  -->
           <template #aside>
             <div class="editorMessagesWrapper">
-              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 3 })">
+              <article
+                v-for="(reason, index) in errorReasons" :key="index" class="editorMessage"
+                @click="handleErrorMsgClick(reason)"
+              >
                 <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost">[typescript]</span>
-                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
-                <span class="msgPart msgErrorCode">[2339]</span>
-                <span class="msgPart msgPos">(56, 29)</span>
-              </article>
-              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 4 })">
-                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost">[typescript]</span>
-                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
-                <span class="msgPart msgErrorCode">[2339]</span>
-                <span class="msgPart msgPos">(56, 29)</span>
-              </article>
-              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 5 })">
-                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost">[typescript]</span>
-                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
-                <span class="msgPart msgErrorCode">[2339]</span>
-                <span class="msgPart msgPos">(56, 29)</span>
-              </article>
-              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 3 })">
-                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost">[typescript]</span>
-                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
-                <span class="msgPart msgErrorCode">[2339]</span>
-                <span class="msgPart msgPos">(56, 29)</span>
-              </article>
-              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 4 })">
-                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost">[typescript]</span>
-                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
-                <span class="msgPart msgErrorCode">[2339]</span>
-                <span class="msgPart msgPos">(56, 29)</span>
-              </article>
-              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 5 })">
-                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost">[typescript]</span>
-                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
-                <span class="msgPart msgErrorCode">[2339]</span>
-                <span class="msgPart msgPos">(56, 29)</span>
-              </article>
-              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 3 })">
-                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost">[typescript]</span>
-                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
-                <span class="msgPart msgErrorCode">[2339]</span>
-                <span class="msgPart msgPos">(56, 29)</span>
-              </article>
-              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 4 })">
-                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost">[typescript]</span>
-                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
-                <span class="msgPart msgErrorCode">[2339]</span>
-                <span class="msgPart msgPos">(56, 29)</span>
-              </article>
-              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 5 })">
-                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost">[typescript]</span>
-                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
-                <span class="msgPart msgErrorCode">[2339]</span>
-                <span class="msgPart msgPos">(56, 29)</span>
+                <span class="msgPart msgHost"></span>
+                <span class="msgPart msgBody">{{ reason.message }}</span>
+                <span class="msgPart msgErrorCode"></span>
+                <span class="msgPart msgPos"></span>
               </article>
             </div>
           </template>
@@ -267,6 +214,9 @@ import { useCommon } from '@/store';
 import { useSelection, useGetGlobalProperties } from '@/hooks';
 import TmplExampleSideslider from '@/views/resource/setting/comps/tmpl-example-sideslider.vue';
 import { Warn, Search, FilliscreenLine, Upload } from 'bkui-vue/lib/icon';
+import yaml from 'js-yaml';
+import { JSONPath } from 'jsonpath-plus';
+import _ from 'lodash';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -284,9 +234,19 @@ const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
 
 type codeErrorMsgType = 'all' | 'error' | 'warning';
+type errorReasonType = {
+  json_path: string,
+  paths: string[],
+  quotedValue: string,
+  pathValues: any[],
+  message: string,
+  isDecorated: boolean,
+};
 
 // 选中的代码错误提示 Tab，默认展示 all 即全部类型的错误提示
 const activeCodeMsgType = ref<codeErrorMsgType>('all');
+// 记录代码错误消息
+const errorReasons = ref<errorReasonType[]>([]);
 
 // 资源新建条数
 const createNum = computed(() => {
@@ -354,15 +314,35 @@ const handleCheckData = async () => {
     if (showDoc.value) {
       params.doc_language = language.value;
     }
-    const res = await checkResourceImport(apigwId, params);
-    tableData.value = res;
+    tableData.value = await checkResourceImport(apigwId, params);
     curView.value = 'resources';
     nextTick(() => {
       selections.value = JSON.parse(JSON.stringify(tableData.value));
     });
     // resetSelections();
-  } catch (error) {
-
+  } catch (error) {  // 校验失败会走到这里
+    // TODO 处理校验失败
+    // console.log(error);
+    // 如果是内容错误
+    if (error?.code === 'INVALID' && error?.message === 'validate fail') {
+      const jsonData = yaml.load(editorText.value) as object;
+      const errData: { json_path: string, message: string }[] = error.data ?? [];
+      errorReasons.value = errData.map(err => ({
+        json_path: err.json_path,
+        paths: JSONPath.toPathArray(err.json_path)
+          .slice(1),
+        quotedValue: getFirstQuotedValue(err.message),
+        pathValues: JSONPath(err.json_path, jsonData, () => {
+        }, () => {
+        })[0] || [],
+        message: err.message,
+        isDecorated: false,
+      }));
+      // console.log(errorReasons.value);
+      // errorReasons.value.forEach((r) => {
+      //   console.log(getStringToFind(r));
+      // });
+    }
   } finally {
     isDataLoading.value = false;
   }
@@ -431,14 +411,48 @@ const handleHiddenExample = () => {
 };
 
 // 处理代码错误消息点击事件，应跳转到编辑器对应行
-const handleMsgClick = (pos: { lineNumber: number, column?: number }) => {
-  resourceEditorRef.value.setCursorPos(pos);
+const handleErrorMsgClick = (reason: errorReasonType) => {
+  const stringToFind = getStringToFind(reason);
+  console.log(stringToFind);
+  const lineNumber = resourceEditorRef.value.getModel()
+    .findMatches(stringToFind, true, false, true, null, true)[0].range.startLineNumber;
+  console.log(stringToFind);
+  console.log(lineNumber);
+  resourceEditorRef.value.setCursorPos({ lineNumber });
 };
 
 // 处理右侧错误类型计数器点击事件
 const handleErrorCountClick = (type: codeErrorMsgType) => {
   activeCodeMsgType.value = type;
 //   TODO 更新错误提示视图
+};
+
+// 获取字符串中第一个被 '' 包裹的值
+const getFirstQuotedValue = (str: string) => {
+  const match = str.match(/'([^']*)'/);
+  return match ? match[1] : null;
+};
+
+// 从报错中找到要拿去编辑器搜索的字符串
+const getStringToFind = (reason: errorReasonType) => {
+  const { pathValues, quotedValue } = reason;
+  const lastPath = reason.paths[reason.paths.length - 1];
+  if (_.isObjectLike(pathValues)) {
+    if (_.isObject(pathValues)) {
+      if (quotedValue in pathValues) {
+        return quotedValue;
+      }
+      return lastPath;
+    }
+    if (Array.isArray(pathValues) && _.includes(pathValues, quotedValue)) {
+      return quotedValue;
+    }
+    return lastPath;
+  }
+  if (lastPath !== quotedValue) {
+    return lastPath;
+  }
+  return quotedValue;
 };
 
 onMounted(() => {
