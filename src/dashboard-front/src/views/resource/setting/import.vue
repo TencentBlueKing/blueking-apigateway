@@ -42,7 +42,7 @@
       </div>
       <!-- 代码编辑器 -->
       <div class="monacoEditor mt10">
-        <bk-resize-layout placement="bottom" immediate style="height: 100%">
+        <bk-resize-layout placement="bottom" collapsible immediate style="height: 100%">
           <template #main>
             <div style="height: 100%">
               <!--   编辑器工具栏-->
@@ -96,6 +96,48 @@
           <!--  底部错误信息展示  -->
           <template #aside>
             <div class="editorMessagesWrapper">
+              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 3 })">
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                <span class="msgPart msgHost">[typescript]</span>
+                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
+                <span class="msgPart msgErrorCode">[2339]</span>
+                <span class="msgPart msgPos">(56, 29)</span>
+              </article>
+              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 4 })">
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                <span class="msgPart msgHost">[typescript]</span>
+                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
+                <span class="msgPart msgErrorCode">[2339]</span>
+                <span class="msgPart msgPos">(56, 29)</span>
+              </article>
+              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 5 })">
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                <span class="msgPart msgHost">[typescript]</span>
+                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
+                <span class="msgPart msgErrorCode">[2339]</span>
+                <span class="msgPart msgPos">(56, 29)</span>
+              </article>
+              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 3 })">
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                <span class="msgPart msgHost">[typescript]</span>
+                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
+                <span class="msgPart msgErrorCode">[2339]</span>
+                <span class="msgPart msgPos">(56, 29)</span>
+              </article>
+              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 4 })">
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                <span class="msgPart msgHost">[typescript]</span>
+                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
+                <span class="msgPart msgErrorCode">[2339]</span>
+                <span class="msgPart msgPos">(56, 29)</span>
+              </article>
+              <article class="editorMessage" @click="handleMsgClick({ lineNumber: 5 })">
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                <span class="msgPart msgHost">[typescript]</span>
+                <span class="msgPart msgBody">unused expression unused expression unused expression </span>
+                <span class="msgPart msgErrorCode">[2339]</span>
+                <span class="msgPart msgPos">(56, 29)</span>
+              </article>
               <article class="editorMessage" @click="handleMsgClick({ lineNumber: 3 })">
                 <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
                 <span class="msgPart msgHost">[typescript]</span>
@@ -484,8 +526,9 @@ onMounted(() => {
     }
 
     .editorMessagesWrapper {
+      position: relative;
       height: 100%;
-      padding-top: 12px;
+      padding-top: 16px;
       background-color: #1a1a1a;
       border-left: 4px solid #1a1a1a;
       font-size: 12px;
@@ -522,6 +565,19 @@ onMounted(() => {
     // 变更代码编辑器伸缩线样式
     :deep(.bk-resize-layout-bottom > .bk-resize-layout-aside) {
       border-top: 1px solid black;
+      background: #1a1a1a;
+    }
+
+    // ResizeLayout 的折叠按钮样式
+    :deep(.bk-resize-layout>.bk-resize-layout-aside .bk-resize-collapse) {
+      margin-bottom: 9px;
+      background: #1a1a1a;
+      box-shadow: 0 0 2px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    // ResizeLayout 的折叠区应允许滚动
+    :deep(.bk-resize-layout>.bk-resize-layout-aside .bk-resize-layout-aside-content) {
+      overflow-y: auto;
     }
   }
 
@@ -547,6 +603,32 @@ onMounted(() => {
   :deep(.glyphMarginWarning) {
     width: 6px !important;
     background: hsla(36.6, 81.7%, 55.1%, 0.5);
+  }
+
+  // 让错误消息台的滚动条模仿 monaco editor 风格
+  /* 整个滚动条 */
+  ::-webkit-scrollbar {
+    width: 14px; /* 滚动条宽度 */
+  }
+
+  /* 滚动条轨道 */
+  ::-webkit-scrollbar-track {
+    background: #1e1e1e;
+  }
+
+  /* 滚动条滑块 */
+  ::-webkit-scrollbar-thumb {
+    background: #4f4f4f;
+  }
+
+  /* 鼠标悬停时的滚动条滑块 */
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+
+  /* 鼠标按住时的滚动条滑块 */
+  ::-webkit-scrollbar-thumb:active {
+    background: #5e5e5e;
   }
 
   .warningCircle {
