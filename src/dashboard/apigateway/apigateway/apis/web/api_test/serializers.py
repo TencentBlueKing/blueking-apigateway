@@ -73,15 +73,15 @@ class APITestOutputSLZ(serializers.Serializer):
     headers = serializers.DictField(help_text="响应头")
 
 
-# class TestHistoriesListOutputSLZ(serializers.Serializer):
-#     id = serializers.IntegerField(read_only=True, help_text="测试历史 ID")
-#     resource_display = serializers.SerializerMethodField(read_only=True, help_text="测试的资源信息")
-#     request_time = serializers.DateTimeField(read_only=True, help_text="请求时间")
-#     response_time = serializers.DateTimeField(read_only=True, help_text="回复时间")
-#     request_url = serializers.CharField(help_text="请求路由")
-#     request_method = serializers.CharField(help_text="请求方式")
-#     request_params = serializers.CharField(help_text="请求参数")
-#     response_data = serializers.CharField(help_text="返回结果")
-#     response_code = serializers.IntegerField(help_text="返回的状态码")
-#     response_status = serializers.BooleanField(help_text="返回的状态")
-#     error_message = serializers.CharField(help_text="错误信息")
+class APIDebugHistoriesListOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="测试历史 ID")
+    resource_display = serializers.SerializerMethodField(read_only=True, help_text="测试的资源信息")
+    request_time = serializers.DateTimeField(read_only=True, help_text="请求时间")
+    response_time = serializers.DateTimeField(read_only=True, help_text="回复时间")
+    request_url = serializers.CharField(help_text="请求路由")
+    request_method = serializers.CharField(help_text="请求方式")
+    request_params = serializers.CharField(help_text="请求参数")
+    response_data = serializers.CharField(help_text="返回结果")
+    response_code = serializers.IntegerField(help_text="返回的状态码")
+    response_status = serializers.BooleanField(help_text="返回的状态")
+    error_message = serializers.CharField(help_text="错误信息")

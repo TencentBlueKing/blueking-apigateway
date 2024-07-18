@@ -573,9 +573,9 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
 
 class ResourceDebugHistory(TimestampedModelMixin, OperatorModelMixin):
     gateway = models.ForeignKey(Gateway, db_column="gateway_id", on_delete=models.CASCADE)
-    resource_name = models.CharField(null=False, blank=False)
-    request_url = models.CharField(null=False, blank=False)
-    request_method = models.CharField(blank=False, null=False, choices=HTTP_METHOD_CHOICES)
+    resource_name = models.CharField(null=False, blank=False, max_length=32)
+    request_url = models.CharField(null=False, blank=False, max_length=256)
+    request_method = models.CharField(blank=False, null=False, choices=HTTP_METHOD_CHOICES, max_length=10)
     request_params = models.TextField(blank=True, default="", null=False)
     request_time = models.DateTimeField(null=True, blank=True)
     response_data = models.TextField(blank=True, default="", null=False)

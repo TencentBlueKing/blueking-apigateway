@@ -16,23 +16,23 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from django.urls import include, path
 
-from .views import APITestApi
+from .views import APIDebugHistoryListApi, APIDebugHistoryRetrieveDestroyApi, APITestApi
 
 urlpatterns = [
     path("", APITestApi.as_view(), name="api_test.tests"),
-    # path(
-    #     "histories/",
-    #     include(
-    #         [
-    #             path("", TestHistoryListApi.as_view(), name="api_test.histories.list"),
-    #             path(
-    #                 "<int:history_id>/",
-    #                 TestHistoryRetrieveDestroyAPI.as_view(),
-    #                 name="api_test.histories.retrieve-destroy",
-    #             ),
-    #         ]
-    #     ),
-    # ),
+    path(
+        "histories/",
+        include(
+            [
+                path("", APIDebugHistoryListApi.as_view(), name="api_debug.histories.list"),
+                path(
+                    "<int:history_id>/",
+                    APIDebugHistoryRetrieveDestroyApi.as_view(),
+                    name="api_debug.histories.retrieve-destroy",
+                ),
+            ]
+        ),
+    ),
 ]
