@@ -381,7 +381,8 @@
           "$ref": "#/$defs/external-documentation"
         },
         "operationId": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,255}$"
         },
         "parameters": {
           "type": "array",
