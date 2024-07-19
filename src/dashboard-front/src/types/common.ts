@@ -1,4 +1,6 @@
 // 分页interface
+import type { IRange } from 'monaco-editor';
+
 export interface IPagination {
   small?: boolean
   offset: number
@@ -41,3 +43,19 @@ export interface Staff {
   username: string;
   display_name: string;
 }
+
+// monaco editor 代码错误高亮要用的类型
+export type CodeErrorMsgType = 'All' | 'Error' | 'Warning';
+
+export type ErrorReasonType = {
+  json_path: string,
+  paths: string[],
+  pathValue: any[],
+  quotedValue: string,
+  stringToFind: string,
+  matchedRange: IRange,
+  message: string,
+  isDecorated: boolean,
+  level: CodeErrorMsgType,
+};
+

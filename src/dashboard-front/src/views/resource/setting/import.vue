@@ -66,28 +66,28 @@
                 <!--  右侧的代码 error, warning 计数器  -->
                 <aside class="editorErrorCounters">
                   <div
-                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'error' }"
-                    v-bk-tooltips="{ content: 'Error: 6', placement: 'left' }"
-                    @click="handleErrorCountClick('error')"
+                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'Error' }"
+                    v-bk-tooltips="{ content: `Error: ${msgAsErrorNum}`, placement: 'left' }"
+                    @click="handleErrorCountClick('Error')"
                   >
                     <warn fill="#EA3636" />
-                    <span style="color:#EA3636">6</span>
+                    <span style="color:#EA3636">{{ msgAsErrorNum }}</span>
                   </div>
                   <div
-                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'warning' }"
-                    v-bk-tooltips="{ content: 'Warning: 2', placement: 'left' }"
-                    @click="handleErrorCountClick('warning')"
+                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'Warning' }"
+                    v-bk-tooltips="{ content: `Warning: ${msgAsWarningNum}`, placement: 'left' }"
+                    @click="handleErrorCountClick('Warning')"
                   >
                     <div class="warningCircle"></div>
-                    <span style="color: hsla(36.6, 81.7%, 55.1%, 0.5);">2</span>
+                    <span style="color: hsla(36.6, 81.7%, 55.1%, 0.5);">{{ msgAsWarningNum }}</span>
                   </div>
                   <div
-                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'all' }"
-                    v-bk-tooltips="{ content: 'All: 8', placement: 'left' }"
-                    @click="handleErrorCountClick('all')"
+                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'All' }"
+                    v-bk-tooltips="{ content: `All: ${errorReasons.length}`, placement: 'left' }"
+                    @click="handleErrorCountClick('All')"
                   >
                     <span>all</span>
-                    <span>8</span>
+                    <span>{{ msgAsErrorNum + msgAsWarningNum }}</span>
                   </div>
                 </aside>
               </main>
@@ -95,9 +95,9 @@
           </template>
           <!--  底部错误信息展示  -->
           <template #aside>
-            <div class="editorMessagesWrapper">
+            <div class="editorMessagesWrapper" :class="{ 'hasErrorMsg': visibleErrorReasons.length > 0 }">
               <article
-                v-for="(reason, index) in errorReasons" :key="index" class="editorMessage"
+                v-for="(reason, index) in visibleErrorReasons" :key="index" class="editorMessage"
                 @click="handleErrorMsgClick(reason)"
               >
                 <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
@@ -201,7 +201,11 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, nextTick, computed, onMounted } from 'vue';
+import {
+  ref,
+  nextTick,
+  computed,
+} from 'vue';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -218,6 +222,16 @@ import yaml from 'js-yaml';
 import { JSONPath } from 'jsonpath-plus';
 import _ from 'lodash';
 
+import type { IRange } from 'monaco-editor';
+import type { ErrorReasonType, CodeErrorMsgType } from '@/types/common';
+
+type CodeErrorResponse = {
+  code: string,
+  data: { json_path: string, message: string }[],
+  details: any[],
+  message: string,
+};
+
 const router = useRouter();
 const { t } = useI18n();
 const common = useCommon();
@@ -233,20 +247,10 @@ const tableData = ref<any[]>([]);
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
 
-type codeErrorMsgType = 'all' | 'error' | 'warning';
-type errorReasonType = {
-  json_path: string,
-  paths: string[],
-  quotedValue: string,
-  pathValues: any[],
-  message: string,
-  isDecorated: boolean,
-};
-
 // 选中的代码错误提示 Tab，默认展示 all 即全部类型的错误提示
-const activeCodeMsgType = ref<codeErrorMsgType>('all');
+const activeCodeMsgType = ref<CodeErrorMsgType>('All');
 // 记录代码错误消息
-const errorReasons = ref<errorReasonType[]>([]);
+const errorReasons = ref<ErrorReasonType[]>([]);
 
 // 资源新建条数
 const createNum = computed(() => {
@@ -258,6 +262,25 @@ const createNum = computed(() => {
 const updateNum = computed(() => {
   const results = deDuplication(selections.value.filter(item => item.id), 'name');
   return results.length;
+});
+
+// 可视的错误消息，实际要渲染到编辑器视图的数据
+const visibleErrorReasons = computed(() => {
+  if (activeCodeMsgType.value === 'All') return errorReasons.value;
+  if (activeCodeMsgType.value === 'Error') {
+    return errorReasons.value.filter(r => r.level === 'Error');
+  } else if (activeCodeMsgType.value === 'Warning') {
+    return errorReasons.value.filter(r => r.level === 'Warning');
+  }
+  return [];
+});
+
+const msgAsErrorNum = computed(() => {
+  return errorReasons.value.filter(r => r.level === 'Error').length;
+});
+
+const msgAsWarningNum = computed(() => {
+  return errorReasons.value.filter(r => r.level === 'Warning').length;
 });
 
 // checkbox hooks
@@ -320,29 +343,39 @@ const handleCheckData = async () => {
       selections.value = JSON.parse(JSON.stringify(tableData.value));
     });
     // resetSelections();
-  } catch (error) {  // 校验失败会走到这里
-    // TODO 处理校验失败
+  } catch (error: unknown) {  // 校验失败会走到这里
     // console.log(error);
     // 如果是内容错误
-    if (error?.code === 'INVALID' && error?.message === 'validate fail') {
-      const jsonData = yaml.load(editorText.value) as object;
-      const errData: { json_path: string, message: string }[] = error.data ?? [];
-      errorReasons.value = errData.map(err => ({
-        json_path: err.json_path,
-        paths: JSONPath.toPathArray(err.json_path)
-          .slice(1),
-        quotedValue: getFirstQuotedValue(err.message),
-        pathValues: JSONPath(err.json_path, jsonData, () => {
-        }, () => {
-        })[0] || [],
-        message: err.message,
-        isDecorated: false,
-      }));
+    if ((error as CodeErrorResponse)?.code === 'INVALID' && (error as CodeErrorResponse)?.message === 'validate fail') {
+      const editorJsonObj = yaml.load(editorText.value) as object;
+      const errData: { json_path: string, message: string }[] = (error as CodeErrorResponse).data ?? [];
+      errorReasons.value = errData.map((err) => {
+        // 从 jsonpath 提取路径组成数组，去掉开头的 $
+        const paths = JSONPath.toPathArray(err.json_path).slice(1);
+        // 找到 jsonpath 指向的值
+        const pathValue = JSONPath(err.json_path, editorJsonObj, null, null)[0] ?? [];
+        // 提取后端错误消息中第一个用引号包起来的字符串，它常常就是代码错误所在
+        const quotedValue = getFirstQuotedValue(err.message);
+        // 通过一系列判断决定要用哪个关键字去 editor 中搜索
+        const stringToFind = getStringToFind({ paths, pathValue, quotedValue });
+        // 找到关键字在 editor 中的 Range
+        const matchedRange = getFirstErrorRange(stringToFind);
+        return {
+          paths,
+          quotedValue,
+          pathValue,
+          stringToFind,
+          matchedRange,
+          json_path: err.json_path,
+          message: err.message,
+          isDecorated: false,
+          level: 'Error',
+        };
+      });
       // console.log(errorReasons.value);
-      // errorReasons.value.forEach((r) => {
-      //   console.log(getStringToFind(r));
-      // });
+      updateEditorDecorations();
     }
+    // }
   } finally {
     isDataLoading.value = false;
   }
@@ -410,21 +443,42 @@ const handleHiddenExample = () => {
   isShowExample.value = false;
 };
 
-// 处理代码错误消息点击事件，应跳转到编辑器对应行
-const handleErrorMsgClick = (reason: errorReasonType) => {
-  const stringToFind = getStringToFind(reason);
-  console.log(stringToFind);
-  const lineNumber = resourceEditorRef.value.getModel()
-    .findMatches(stringToFind, true, false, true, null, true)[0].range.startLineNumber;
-  console.log(stringToFind);
-  console.log(lineNumber);
-  resourceEditorRef.value.setCursorPos({ lineNumber });
+// 触发编辑器高亮
+const updateEditorDecorations = () => {
+  resourceEditorRef.value.clearDecorations();
+  resourceEditorRef.value.genLineDecorations(visibleErrorReasons.value.map(r => ({
+    range: r.matchedRange,
+    level: r.level,
+  })));
+  resourceEditorRef.value.setDecorations();
 };
 
-// 处理右侧错误类型计数器点击事件
-const handleErrorCountClick = (type: codeErrorMsgType) => {
-  activeCodeMsgType.value = type;
-//   TODO 更新错误提示视图
+// 处理代码错误消息点击事件，应跳转到编辑器对应行
+const handleErrorMsgClick = (reason: ErrorReasonType) => {
+  resourceEditorRef.value.setCursorPos(reason.matchedRange);
+};
+
+// 从报错中找到要拿去编辑器搜索的字符串
+const getStringToFind = ({ paths, pathValue, quotedValue }: Partial<ErrorReasonType>) => {
+  const lastPath = paths[paths.length - 1];
+  // 如果 jsonpath 指向的值是引用类型
+  if (_.isObject(pathValue)) {
+    if (quotedValue in pathValue) {
+      return quotedValue;
+    }
+  } else if (Array.isArray(pathValue)) {
+    if (_.includes(pathValue, quotedValue)) {
+      return quotedValue;
+    }
+  }
+  // 如果 jsonpath 指向的值是原始类型，返回 jsonpath 指向的键名即可
+  return lastPath === quotedValue ? quotedValue : lastPath;
+};
+
+// 根据字符串找到第一个匹配项的 Range
+const getFirstErrorRange = (str: string): IRange | undefined => {
+  return resourceEditorRef.value.getModel()
+    .findMatches(str, true, false, true, null, true)[0]?.range;
 };
 
 // 获取字符串中第一个被 '' 包裹的值
@@ -433,32 +487,11 @@ const getFirstQuotedValue = (str: string) => {
   return match ? match[1] : null;
 };
 
-// 从报错中找到要拿去编辑器搜索的字符串
-const getStringToFind = (reason: errorReasonType) => {
-  const { pathValues, quotedValue } = reason;
-  const lastPath = reason.paths[reason.paths.length - 1];
-  if (_.isObjectLike(pathValues)) {
-    if (_.isObject(pathValues)) {
-      if (quotedValue in pathValues) {
-        return quotedValue;
-      }
-      return lastPath;
-    }
-    if (Array.isArray(pathValues) && _.includes(pathValues, quotedValue)) {
-      return quotedValue;
-    }
-    return lastPath;
-  }
-  if (lastPath !== quotedValue) {
-    return lastPath;
-  }
-  return quotedValue;
+// 处理右侧错误类型计数器点击事件
+const handleErrorCountClick = (type: CodeErrorMsgType) => {
+  activeCodeMsgType.value = type;
+  updateEditorDecorations();
 };
-
-onMounted(() => {
-  resourceEditorRef.value.genDecorations({ startLineNumber: 3, startColumn: 1, endLineNumber: 5, level: 'Warning' });
-  resourceEditorRef.value.setDecorations();
-});
 </script>
 <style scoped lang="scss">
 .import-container {
@@ -548,7 +581,7 @@ onMounted(() => {
       font-size: 12px;
 
       &.hasErrorMsg {
-        border-left: 4px solid #EA3636;
+        border-left: 4px solid #B34747;
       }
 
       .editorMessage {
@@ -601,8 +634,10 @@ onMounted(() => {
     }
   }
 
+  // 编辑器错误行高亮样式
   :deep(.lineHighlightError) {
     background-color: #382322;
+    opacity: .7;
   }
 
   :deep(.glyphMarginError) {
