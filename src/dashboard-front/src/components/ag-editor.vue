@@ -117,7 +117,7 @@ const setCursorPos = ({ startLineNumber, column }) => {
   const lastColumnNumber = column ?? model.getLineLastNonWhitespaceColumn(startLineNumber);
   editor.focus();
   editor.setPosition(new monaco.Position(startLineNumber, lastColumnNumber));
-  editor.revealLine(startLineNumber);
+  editor.revealLineInCenter(startLineNumber);
 };
 
 const genLineDecorations = (decorationOptions) => {

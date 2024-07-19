@@ -177,6 +177,7 @@
         :theme="curView === 'import' ? 'primary' : ''"
         @click="handleCheckData"
         :loading="isDataLoading"
+        :disabled="curView === 'import' && !isCodeValid"
       >
         {{ curView === 'import' ? t('下一步') : t('上一步') }}
       </bk-button>
@@ -271,9 +272,12 @@ const updateNum = computed(() => {
 // 可视的错误消息，实际要渲染到编辑器视图的数据
 const visibleErrorReasons = computed(() => {
   if (activeCodeMsgType.value === 'All') return errorReasons.value;
+
   if (activeCodeMsgType.value === 'Error') {
     return errorReasons.value.filter(r => r.level === 'Error');
-  } else if (activeCodeMsgType.value === 'Warning') {
+  }
+
+  if (activeCodeMsgType.value === 'Warning') {
     return errorReasons.value.filter(r => r.level === 'Warning');
   }
   return [];
@@ -353,6 +357,8 @@ const handleCheckData = async ({ changeView = true } = { changeView: true }) => 
     }
     tableData.value = await checkResourceImport(apigwId, params);
     isCodeValid.value = true;
+    resourceEditorRef.value.clearDecorations();
+    errorReasons.value = [];
     // 判断是否跳转，默认为是
     if (changeView) {
       curView.value = 'resources';
@@ -361,12 +367,14 @@ const handleCheckData = async ({ changeView = true } = { changeView: true }) => 
       });
     }
     // resetSelections();
-  } catch (error: unknown) {  // 校验失败会走到这里
+  } catch (err: unknown) {  // 校验失败会走到这里
     // console.log(error);
+    isCodeValid.value = false;
+    const error = err as CodeErrorResponse;
     // 如果是内容错误
-    if ((error as CodeErrorResponse)?.code === 'INVALID' && (error as CodeErrorResponse)?.message === 'validate fail') {
+    if (error?.code === 'INVALID' && error?.message === 'validate fail') {
       const editorJsonObj = yaml.load(editorText.value) as object;
-      const errData: { json_path: string, message: string }[] = (error as CodeErrorResponse).data ?? [];
+      const errData: { json_path: string, message: string }[] = error.data ?? [];
       errorReasons.value = errData.map((err) => {
         // 从 jsonpath 提取路径组成数组，去掉开头的 $
         const paths = JSONPath.toPathArray(err.json_path)
@@ -496,8 +504,10 @@ const getStringToFind = ({ paths, pathValue, quotedValue }: Partial<ErrorReasonT
 
 // 根据字符串找到第一个匹配项的 Range
 const getFirstErrorRange = (str: string): IRange | undefined => {
-  return resourceEditorRef.value.getModel()
-    .findMatches(str, true, false, true, null, true)[0]?.range;
+  const regex = new RegExp(`\\b${str}\\b`);
+  const matches = resourceEditorRef.value.getModel()
+    .findMatches(regex, true, true, true, null, true);
+  return matches[0]?.range;
 };
 
 // 获取字符串中第一个被 '' 包裹的值
