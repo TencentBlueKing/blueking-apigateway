@@ -104,7 +104,7 @@
                 <span class="msgPart msgHost"></span>
                 <span class="msgPart msgBody">{{ reason.message }}</span>
                 <span class="msgPart msgErrorCode"></span>
-                <span class="msgPart msgPos"></span>
+                <span class="msgPart msgPos">{{ `(${reason.matchedRange.startLineNumber}, ${reason.matchedRange.startColumn})` }}</span>
               </article>
             </div>
           </template>
