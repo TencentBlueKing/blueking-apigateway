@@ -104,7 +104,9 @@
                 <span class="msgPart msgHost"></span>
                 <span class="msgPart msgBody">{{ reason.message }}</span>
                 <span class="msgPart msgErrorCode"></span>
-                <span class="msgPart msgPos">{{ `(${reason.matchedRange.startLineNumber}, ${reason.matchedRange.startColumn})` }}</span>
+                <span class="msgPart msgPos">
+                  {{ `(${reason.matchedRange.startLineNumber}, ${reason.matchedRange.startColumn})` }}
+                </span>
               </article>
             </div>
           </template>
@@ -205,6 +207,7 @@ import {
   ref,
   nextTick,
   computed,
+  watch,
 } from 'vue';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
@@ -241,6 +244,7 @@ const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>(); // 实�
 const showDoc = ref<boolean>(false);
 const language = ref<string>('zh');
 const isDataLoading = ref<boolean>(false);
+const isCodeValid = ref<boolean>(false);
 const isImportLoading = ref<boolean>(false);
 const curView = ref<string>('import'); // 当前页面
 const tableData = ref<any[]>([]);
@@ -283,6 +287,16 @@ const msgAsWarningNum = computed(() => {
   return errorReasons.value.filter(r => r.level === 'Warning').length;
 });
 
+// 防抖的代码校验
+const debouncedCheckData = _.debounce((args) => {
+  handleCheckData(args);
+}, 1000);
+
+// 代码有变化时自动校验
+watch(editorText, () => {
+  debouncedCheckData({ changeView: false });
+});
+
 // checkbox hooks
 const {
   selections,
@@ -315,7 +329,7 @@ const handleReq = (res: any) => {
     });
 };
 // 下一步需要检查数据
-const handleCheckData = async () => {
+const handleCheckData = async ({ changeView = true } = { changeView: true }) => {
   // 上一步按钮功能
   if (curView.value === 'resources') {
     curView.value = 'import';
@@ -338,10 +352,14 @@ const handleCheckData = async () => {
       params.doc_language = language.value;
     }
     tableData.value = await checkResourceImport(apigwId, params);
-    curView.value = 'resources';
-    nextTick(() => {
-      selections.value = JSON.parse(JSON.stringify(tableData.value));
-    });
+    isCodeValid.value = true;
+    // 判断是否跳转，默认为是
+    if (changeView) {
+      curView.value = 'resources';
+      nextTick(() => {
+        selections.value = JSON.parse(JSON.stringify(tableData.value));
+      });
+    }
     // resetSelections();
   } catch (error: unknown) {  // 校验失败会走到这里
     // console.log(error);
@@ -351,7 +369,8 @@ const handleCheckData = async () => {
       const errData: { json_path: string, message: string }[] = (error as CodeErrorResponse).data ?? [];
       errorReasons.value = errData.map((err) => {
         // 从 jsonpath 提取路径组成数组，去掉开头的 $
-        const paths = JSONPath.toPathArray(err.json_path).slice(1);
+        const paths = JSONPath.toPathArray(err.json_path)
+          .slice(1);
         // 找到 jsonpath 指向的值
         const pathValue = JSONPath(err.json_path, editorJsonObj, null, null)[0] ?? [];
         // 提取后端错误消息中第一个用引号包起来的字符串，它常常就是代码错误所在
