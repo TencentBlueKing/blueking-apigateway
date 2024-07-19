@@ -110,8 +110,8 @@ class APITestApi(generics.CreateAPIView):
                 "request_url": prepared_request_url.request_url,
                 "request_method": data["method"],
                 "request_params": {
-                    "query_params": data["query_params"],
-                    "body": data["body"],
+                    "query_params": data.get("query_params", ""),
+                    "body": data.get("body", ""),
                     "header": prepared_request_headers.headers,
                 },
                 "request_time": request_time,
@@ -121,24 +121,6 @@ class APITestApi(generics.CreateAPIView):
             }
             ResourceDebugHistory.objects.create(**success_history_data)
         except Exception as err:
-            end_time = time.perf_counter()
-            duration = end_time - start_time
-            failure_history_data = {
-                "gateway": request.gateway,
-                "resource_name": released_resource.name,
-                "request_url": prepared_request_url.request_url,
-                "request_method": data["method"],
-                "request_params": {
-                    "query_params": data["query_params"],
-                    "body": data["body"],
-                    "header": prepared_request_headers.headers,
-                },
-                "request_time": request_time,
-                "response_code": 500,
-                "response_data": str(err),
-                "duration": duration,
-            }
-            ResourceDebugHistory.objects.create(**failure_history_data)
             return FailJsonResponse(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 code="UNKNOWN",

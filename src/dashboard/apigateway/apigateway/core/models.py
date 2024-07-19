@@ -576,7 +576,21 @@ class ResourceDebugHistory(TimestampedModelMixin, OperatorModelMixin):
     resource_name = models.CharField(null=False, blank=False, max_length=32)
     request_url = models.CharField(null=False, blank=False, max_length=256)
     request_method = models.CharField(blank=False, null=False, choices=HTTP_METHOD_CHOICES, max_length=10)
-    request_params = models.TextField(blank=True, default="", null=False)
+    # request_params的结构如下：
+    # {
+    #     "query_param": {
+    #         "request_id": "xxxx"
+    #     }
+    #     "body": {
+    #         "data": {
+    #             "test": "xxxx"
+    #         }
+    #     }
+    #     "header": {
+    #         "cookie": "xxxx"
+    #     }
+    # }
+    request_params = JSONField(blank=True, dump_kwargs={"indent": None})
     request_time = models.DateTimeField(null=True, blank=True)
     response_data = models.TextField(blank=True, default="", null=False)
     response_code = models.IntegerField(blank=False, null=False)
