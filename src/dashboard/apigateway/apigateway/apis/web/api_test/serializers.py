@@ -80,7 +80,7 @@ class APIDebugHistoriesListOutputSLZ(serializers.Serializer):
     request_time = serializers.DateTimeField(read_only=True, help_text="请求时间")
     request_url = serializers.CharField(help_text="请求路由")
     request_method = serializers.CharField(help_text="请求方式")
-    request_params = serializers.CharField(help_text="请求参数")
+    request_params = serializers.JSONField(help_text="请求参数")
     response_data = serializers.CharField(help_text="返回结果")
     response_code = serializers.IntegerField(help_text="返回的状态码")
     duration = serializers.FloatField(help_text="处理时间")

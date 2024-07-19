@@ -590,7 +590,7 @@ class ResourceDebugHistory(TimestampedModelMixin, OperatorModelMixin):
     #         "cookie": "xxxx"
     #     }
     # }
-    request_params = JSONField(blank=True, dump_kwargs={"indent": None})
+    request_params = JSONField(blank=True, help_text="请求参数")
     request_time = models.DateTimeField(null=True, blank=True)
     response_data = models.TextField(blank=True, default="", null=False)
     response_code = models.IntegerField(blank=False, null=False)
