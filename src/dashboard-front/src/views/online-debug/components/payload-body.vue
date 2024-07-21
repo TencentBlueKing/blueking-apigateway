@@ -52,11 +52,8 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue';
-import { useI18n } from 'vue-i18n';
 import editTable from '@/views/online-debug/components/edit-table.vue';
 import editorMonaco from '@/components/ag-editor.vue';
-
-const { t } = useI18n();
 
 const type = ref<string>('data');
 const rawType = ref<string>('JSON');

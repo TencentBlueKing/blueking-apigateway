@@ -75,7 +75,7 @@
           v-if="!row?.isEdit">
           <bk-tag
             theme="info"
-            @click="(event) => handleCellClick({ event, column, rowIndex: index })">
+            @click="(event: any) => handleCellClick({ event, column, rowIndex: index })">
             {{ row?.type }}
           </bk-tag>
         </div>
@@ -131,7 +131,7 @@
       </template>
     </bk-table-column>
     <bk-table-column label="操作">
-      <template #default="{ row, index }">
+      <template #default="{ index }">
         <i
           class="tb-btn add-btn apigateway-icon icon-ag-plus-circle-shape"
           @click="addRow(index)"></i>

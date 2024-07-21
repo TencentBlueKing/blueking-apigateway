@@ -16,13 +16,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, nextTick } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { ref } from 'vue';
 import payloadBody from './payload-body.vue';
 import payloadParams from './payload-params.vue';
 import payloadHeaders from './payload-headers.vue';
 
-const { t } = useI18n();
 const active = ref<string>('Body');
 const payloadBodyRef = ref();
 const payloadParamsRef = ref();

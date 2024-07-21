@@ -11,18 +11,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
-import { useRoute } from 'vue-router';
+// import { computed } from 'vue';
+// import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { Message } from 'bkui-vue';
-import { getResourceVersionsList } from '@/http';
 import { useStage } from '@/store';
 
 const { t } = useI18n();
 const stage = useStage();
 
-const route = useRoute();
-const apigwId = computed(() => +route.params.id);
+// const route = useRoute();
+// const apigwId = computed(() => +route.params.id);
 
 // const props = defineProps({
 // });
