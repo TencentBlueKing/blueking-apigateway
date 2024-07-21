@@ -18,9 +18,10 @@ const props = defineProps({
   readOnly: { type: Boolean, default: false },
   width: { type: [String, Number], default: '100%' },
   height: { type: [String, Number], default: '100%' },
+  theme: { type: String, default: 'vs-dark' },
 });
 
-const { modelValue, language, readOnly, width, height } = toRefs(props);
+const { modelValue, language, readOnly, width, height, theme } = toRefs(props);
 
 const emit = defineEmits(['change', 'update:modelValue']);
 
@@ -67,7 +68,7 @@ const getValue = () => {
 const initEditor = () => {
   editor = monaco.editor.create(monacoEditor.value, {
     value: modelValue.value,
-    theme: 'vs-dark', // 主题
+    theme: theme.value, // 主题
     language: language.value,
     folding: true, // 是否折叠
     foldingHighlight: true, // 折叠等高线

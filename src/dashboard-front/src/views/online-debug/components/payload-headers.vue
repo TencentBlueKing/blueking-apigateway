@@ -1,0 +1,65 @@
+<template>
+  <bk-collapse
+    class="params-collapse"
+    v-model="activeIndex"
+  >
+    <bk-collapse-panel :name="1">
+      <template #header>
+        <div class="params-header">
+          <div class="params-header-title">
+            <angle-up-fill class="params-header-fold" /><span>Headers 参数</span>
+          </div>
+        </div>
+      </template>
+      <template #content>
+        <div>
+          <edit-table ref="editTableRef" />
+        </div>
+      </template>
+    </bk-collapse-panel>
+  </bk-collapse>
+</template>
+
+<script lang="ts" setup>
+import { ref } from 'vue';
+import { AngleUpFill } from 'bkui-vue/lib/icon';
+import editTable from '@/views/online-debug/components/edit-table.vue';
+
+const activeIndex = ref<number[]>([1]);
+const editTableRef = ref();
+
+const getData = () => {
+  return editTableRef.value?.getTableData();
+};
+
+defineExpose({
+  getData,
+});
+
+</script>
+
+<style lang="scss" scoped>
+.params-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  cursor: pointer;
+  .params-header-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #313238;
+    display: flex;
+    align-items: center;
+    .params-header-fold {
+      margin-top: 2px;
+      margin-right: 8px;
+    }
+  }
+}
+.params-collapse {
+  :deep(.bk-collapse-content) {
+    padding: 0;
+  }
+}
+</style>
