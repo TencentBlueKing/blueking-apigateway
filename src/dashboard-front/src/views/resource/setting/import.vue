@@ -104,8 +104,8 @@
                 <span class="msgPart msgHost"></span>
                 <span class="msgPart msgBody">{{ reason.message }}</span>
                 <span class="msgPart msgErrorCode"></span>
-                <span class="msgPart msgPos">
-                  {{ `(${reason.matchedRange.startLineNumber}, ${reason.matchedRange.startColumn})` }}
+                <span v-if="reason.position" class="msgPart msgPos">
+                  {{ `(${reason.position.lineNumber}, ${reason.position.column})` }}
                 </span>
               </article>
             </div>
@@ -226,7 +226,7 @@ import yaml from 'js-yaml';
 import { JSONPath } from 'jsonpath-plus';
 import _ from 'lodash';
 
-import type { IRange } from 'monaco-editor';
+import type { IPosition } from 'monaco-editor';
 import type { ErrorReasonType, CodeErrorMsgType } from '@/types/common';
 
 type CodeErrorResponse = {
@@ -383,23 +383,43 @@ const handleCheckData = async ({ changeView = true } = { changeView: true }) => 
         const pathValue = JSONPath(err.json_path, editorJsonObj, null, null)[0] ?? [];
         // 提取后端错误消息中第一个用引号包起来的字符串，它常常就是代码错误所在
         const quotedValue = getFirstQuotedValue(err.message);
-        // 通过一系列判断决定要用哪个关键字去 editor 中搜索
-        const stringToFind = getStringToFind({ paths, pathValue, quotedValue });
-        // 找到关键字在 editor 中的 Range
-        const matchedRange = getFirstErrorRange(stringToFind);
+        const stringToFind = '';
+        // jsonpath 指向的键名
+        const lastPath = paths[paths.length - 1];
+        // 记录正则匹配到的起始位置，从 0 开始，没有匹配项时为 -1
+        let offset = -1;
+        // 用于搜索的正则
+        let regex: RegExp | null = null;
+        // 匹配项在 editor 中的 Position
+        let position: IPosition | null = null;
+        // 生成用于搜索 jsonpath 所在行的正则
+        // 判断 jsonpath 指向的是否为数组成员，是的话不传入 key
+        if (Number.isInteger(Number.parseInt(lastPath, 10))) {
+          regex = getRegexFromObj({ objValue: pathValue });
+        } else {
+          regex = getRegexFromObj({ objKey: lastPath, objValue: pathValue });
+        }
+        offset = resourceEditorRef.value.getValue()
+          .search(regex);
+        // 用 editor 的 api 找到 Position
+        if (offset > -1) {
+          position = resourceEditorRef.value.getModel().getPositionAt(offset);
+        }
         return {
           paths,
           quotedValue,
           pathValue,
           stringToFind,
-          matchedRange,
+          offset,
+          regex,
+          position,
           json_path: err.json_path,
           message: err.message,
           isDecorated: false,
           level: 'Error',
         };
       });
-      // console.log(errorReasons.value);
+      console.log(errorReasons.value);
       updateEditorDecorations();
     }
     // }
@@ -474,7 +494,7 @@ const handleHiddenExample = () => {
 const updateEditorDecorations = () => {
   resourceEditorRef.value.clearDecorations();
   resourceEditorRef.value.genLineDecorations(visibleErrorReasons.value.map(r => ({
-    range: r.matchedRange,
+    position: r.position,
     level: r.level,
   })));
   resourceEditorRef.value.setDecorations();
@@ -482,32 +502,23 @@ const updateEditorDecorations = () => {
 
 // 处理代码错误消息点击事件，应跳转到编辑器对应行
 const handleErrorMsgClick = (reason: ErrorReasonType) => {
-  resourceEditorRef.value.setCursorPos(reason.matchedRange);
+  resourceEditorRef.value.setCursorPos(reason.position);
 };
 
-// 从报错中找到要拿去编辑器搜索的字符串
-const getStringToFind = ({ paths, pathValue, quotedValue }: Partial<ErrorReasonType>) => {
-  const lastPath = paths[paths.length - 1];
-  // 如果 jsonpath 指向的值是引用类型
-  if (_.isObject(pathValue)) {
-    if (quotedValue in pathValue) {
-      return quotedValue;
-    }
-  } else if (Array.isArray(pathValue)) {
-    if (_.includes(pathValue, quotedValue)) {
-      return quotedValue;
-    }
+// 从把 jsonpath 指向的对象转换成正则
+const getRegexFromObj = ({ objKey, objValue }: { objKey?: string, objValue: any }): RegExp => {
+  let exp = '';
+  if (objKey) {
+    exp = `\\b${objKey}\\b:[\\s\\S\\n\\r]*?`;
   }
-  // 如果 jsonpath 指向的值是原始类型，返回 jsonpath 指向的键名即可
-  return lastPath === quotedValue ? quotedValue : lastPath;
-};
-
-// 根据字符串找到第一个匹配项的 Range
-const getFirstErrorRange = (str: string): IRange | undefined => {
-  const regex = new RegExp(`\\b${str}\\b`);
-  const matches = resourceEditorRef.value.getModel()
-    .findMatches(regex, true, true, true, null, true);
-  return matches[0]?.range;
+  Object.entries(objValue)
+    .forEach((e) => {
+      exp += `\\b${e[0]}\\b[\\s\\S\\n\\r]*?`;
+      if (!_.isObject(e[1])) {
+        exp += `${e[1]}[\\s\\S\\n\\r]*?`;
+      }
+    });
+  return new RegExp(exp, 'gm');
 };
 
 // 获取字符串中第一个被 '' 包裹的值

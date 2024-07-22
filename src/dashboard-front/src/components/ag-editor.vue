@@ -109,20 +109,25 @@ const emitChange = (emitValue, event) => {
 };
 
 // 更改光标位置
-const setCursorPos = ({ startLineNumber, column }) => {
+const setCursorPos = ({ lineNumber }) => {
   const model = editor.getModel();
 
   if (!model) return;
 
-  const lastColumnNumber = column ?? model.getLineLastNonWhitespaceColumn(startLineNumber);
+  const lastColumnNumber = model.getLineLastNonWhitespaceColumn(lineNumber);
   editor.focus();
-  editor.setPosition(new monaco.Position(startLineNumber, lastColumnNumber));
-  editor.revealLineInCenter(startLineNumber);
+  editor.setPosition(new monaco.Position(lineNumber, lastColumnNumber));
+  editor.revealLineInCenter(lineNumber);
 };
 
 const genLineDecorations = (decorationOptions) => {
-  const decoOptions = decorationOptions.map(o => ({
-    range: o.range,
+  const decoOptions = decorationOptions.filter(o => o.position).map(o => ({
+    range: {
+      startLineNumber: o.position.lineNumber,
+      endLineNumber: o.position.lineNumber,
+      startColumn: o.position.column,
+      endColumn: o.position.column,
+    },
     options: {
       isWholeLine: true, // 整行高亮
       className:
@@ -151,6 +156,7 @@ defineExpose({
   clearDecorations,
   genLineDecorations,
   getModel,
+  getValue,
 });
 
 </script>

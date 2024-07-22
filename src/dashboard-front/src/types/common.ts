@@ -1,5 +1,5 @@
 // 分页interface
-import type { IRange } from 'monaco-editor';
+import type { IPosition } from 'monaco-editor';
 
 export interface IPagination {
   small?: boolean
@@ -53,9 +53,11 @@ export type ErrorReasonType = {
   pathValue: any[],
   quotedValue: string,
   stringToFind: string,
-  matchedRange: IRange,
   message: string,
   isDecorated: boolean,
   level: CodeErrorMsgType,
+  offset: number,
+  position: IPosition | null,
+  regex?: RegExp | null,
 };
 
