@@ -16,7 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import csv
-import datetime
 import random
 import time
 from typing import Dict, List
@@ -37,6 +36,7 @@ from apigateway.common.signature import SignatureGenerator, SignatureValidator
 from apigateway.core.models import Gateway, Stage
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.time import format
 
 from .serializers import (
     LogDetailQueryInputSLZ,
@@ -185,17 +185,12 @@ class LogExportApi(generics.RetrieveAPIView):
 
         # 准备文件名称数据
         gateway = Gateway.objects.get(id=request.gateway.id)
-        # 格式化时间
-        time_start = data.get("time_start")
-        time_start_obj = datetime.datetime.utcfromtimestamp(time_start)
-        formatted_time_start = time_start_obj.strftime("%Y%m%d%H%M%S")
-        time_end = data.get("time_end")
-        time_end_obj = datetime.datetime.utcfromtimestamp(time_end)
-        formatted_time_end = time_end_obj.strftime("%Y%m%d%H%M%S")
 
-        response["Content-Disposition"] = (
-            f'attachment; filename="{gateway.name}-{formatted_time_start}-{formatted_time_end}-logs.csv"'
-        )
+        # 格式化时间
+        time_start = format(data.get("time_start"), "%Y%m%d%H%M%S")
+        time_end = format(data.get("time_end"), "%Y%m%d%H%M%S")
+
+        response["Content-Disposition"] = f'attachment; filename="{gateway.name}-{time_start}-{time_end}-logs.csv"'
 
         writer = csv.writer(response)
 
