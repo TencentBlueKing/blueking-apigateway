@@ -45,16 +45,16 @@
         <bk-resize-layout placement="bottom" collapsible immediate style="height: 100%">
           <template #main>
             <div style="height: 100%">
-              <!--   编辑器工具栏-->
+              <!--  顶部编辑器工具栏-->
               <header class="editorToolbar">
                 <span class="p10" style="color: #ccc">代码编辑器</span>
                 <aside class="toolItems">
-                  <section class="toolItem">
+                  <section class="toolItem" :class="{ 'active': isFindPanelVisible }" @click="toggleFindToolClick()">
                     <search width="18px" height="18px" />
                   </section>
-                  <section class="toolItem">
-                    <upload width="18px" height="18px" />
-                  </section>
+<!--                  <section class="toolItem">-->
+<!--                    <upload width="18px" height="18px" />-->
+<!--                  </section>-->
                   <section class="toolItem">
                     <filliscreen-line width="18px" height="18px" />
                   </section>
@@ -62,7 +62,7 @@
               </header>
               <main class="editorMainContent">
                 <!--  编辑器本体  -->
-                <editor-monaco v-model="editorText" ref="resourceEditorRef" />
+                <editor-monaco v-model="editorText" ref="resourceEditorRef" @findStateChanged="(isVisible) => { isFindPanelVisible = isVisible; }" />
                 <!--  右侧的代码 error, warning 计数器  -->
                 <aside class="editorErrorCounters">
                   <div
@@ -256,6 +256,7 @@ const { GLOBAL_CONFIG } = globalProperties;
 const activeCodeMsgType = ref<CodeErrorMsgType>('All');
 // 记录代码错误消息
 const errorReasons = ref<ErrorReasonType[]>([]);
+const isFindPanelVisible = ref(false);
 
 // 资源新建条数
 const createNum = computed(() => {
@@ -532,6 +533,15 @@ const handleErrorCountClick = (type: CodeErrorMsgType) => {
   activeCodeMsgType.value = type;
   updateEditorDecorations();
 };
+
+// 切换搜索面板
+const toggleFindToolClick = () => {
+  if (isFindPanelVisible.value) {
+    resourceEditorRef.value.closeFindPanel();
+  } else {
+    resourceEditorRef.value.showFindPanel();
+  }
+}
 </script>
 <style scoped lang="scss">
 .import-container {
@@ -570,7 +580,7 @@ const handleErrorCountClick = (type: CodeErrorMsgType) => {
           align-items: center;
           cursor: pointer;
 
-          &:hover {
+          &.active, &:hover {
             color: #ccc;
           }
         }

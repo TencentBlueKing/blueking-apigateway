@@ -24,7 +24,7 @@ const props = defineProps({
 
 const { modelValue, language, readOnly, width, height } = toRefs(props);
 
-const emit = defineEmits(['change', 'update:modelValue']);
+const emit = defineEmits(['change', 'update:modelValue', 'findStateChanged']);
 
 // 挂载
 onMounted(() => {
@@ -100,6 +100,12 @@ const editorMounted = () => {
     const yamlValue = getValue();
     emitChange(yamlValue, event);
   });
+
+  // 监听搜索工具状态变化，把可视状态传递出去
+  editor.getContribution("editor.contrib.findController").getState().onFindReplaceStateChange(() => {
+    const isVisible = editor.getContribution("editor.contrib.findController").getState().isRevealed;
+    emit('findStateChanged', isVisible);
+  });
 };
 
 // 修改editor的值
@@ -149,6 +155,14 @@ const clearDecorations = () => {
 
 const getModel = () => editor.getModel();
 
+const showFindPanel = () => {
+  editor.trigger('', 'actions.find')
+}
+
+const closeFindPanel = () => {
+  editor.trigger('', 'closeFindWidget');
+}
+
 defineExpose({
   setValue,
   setCursorPos,
@@ -157,6 +171,8 @@ defineExpose({
   genLineDecorations,
   getModel,
   getValue,
+  showFindPanel,
+  closeFindPanel,
 });
 
 </script>
