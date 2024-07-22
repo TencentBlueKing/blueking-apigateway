@@ -18,6 +18,7 @@
 #
 import json
 import logging
+from django.conf import settings
 
 from django.core.management.base import BaseCommand
 
@@ -305,4 +306,25 @@ class Command(BaseCommand):
         return list(ESBChannel.objects.filter(system_id__in=official_system_ids).values_list("id", flat=True))
 
     def _hide_channels(self, channel_ids):
+        exclude_channels_config = settings.EXCLUDE_OFFICIAL_CHANNELS_WHEN_SYNCING
+        try:
+            # 环境变量只能传递字符串，需要先json格式化
+            exclude_channels_config = json.loads(exclude_channels_config)
+        except Exception:
+            logger.warning("EXCLUDE_OFFICIAL_CHANNELS_WHEN_SYNCING is not a json format!")
+            exclude_channels_config = []
+        if exclude_channels_config:
+            channel_ids_dict = dict.fromkeys(channel_ids, None)
+            for channel in exclude_channels_config:
+                if "board" in channel and "method" in channel and "path" in channel:
+                    try:
+                        exclude_channel_id = ESBChannel.objects.get(
+                            board=channel["board"], method=channel["method"], path=channel["path"]
+                        ).id
+                        channel_ids_dict.pop(exclude_channel_id, None)
+                    except ESBChannel.DoesNotExist:
+                        logger.warning("channel does not exist: board=%s, method=%s, path=%s",
+                            channel["board"], channel["method"], channel["path"])
+                        continue
+            channel_ids = channel_ids_dict.keys()
         ESBChannel.objects.filter(id__in=channel_ids).update(is_public=False)
