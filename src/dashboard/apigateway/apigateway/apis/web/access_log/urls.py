@@ -21,6 +21,7 @@ from django.urls import include, path
 from .views import (
     LogDetailInfoApi,
     LogDetailRetrieveApi,
+    LogExportApi,
     LogLinkRetrieveApi,
     LogTimeChartRetrieveApi,
     SearchLogListApi,
@@ -28,6 +29,7 @@ from .views import (
 
 urlpatterns = [
     path("", SearchLogListApi.as_view(), name="access_log.logs"),
+    path("export/", LogExportApi.as_view(), name="access_log.export"),
     path("timechart/", LogTimeChartRetrieveApi.as_view(), name="access_log.logs.time_chart"),
     path(
         "<slug:request_id>/",

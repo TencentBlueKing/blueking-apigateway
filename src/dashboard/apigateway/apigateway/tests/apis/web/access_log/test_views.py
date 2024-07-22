@@ -15,6 +15,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import csv
+from io import StringIO
+
 import pytest
 
 from apigateway.biz.access_log.constants import ES_LOG_FIELDS
@@ -133,3 +136,34 @@ class TestLogLinkRetrieveApi:
 
         assert response.status_code == 200
         assert result["data"]["link"]
+
+
+class TestLogExportApi:
+    def test_get(self, mocker, request_view, fake_stage):
+        mocker.patch(
+            "apigateway.apis.web.access_log.views.LogSearchClient.search_logs",
+            return_value=(3, [{"a": 1}, {"a": 2}, {"a": 3}]),
+        )
+
+        fake_gateway = fake_stage.gateway
+
+        response = request_view(
+            "GET",
+            "access_log.export",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "stage_id": fake_stage.id,
+                "time_range": 300,
+                "offset": 0,
+                "time_start": 1720606081,
+                "time_end": 1721210881,
+                "limit": 3,
+                "query": "api_id: 2",
+            },
+        )
+        assert response.status_code == 200
+        assert response.headers["Content-Type"] == "text/csv; charset=utf-8"
+        reader = csv.DictReader(StringIO(response.content.decode("utf-8")))
+        log_count = sum(1 for _ in reader)
+        assert log_count == 3
