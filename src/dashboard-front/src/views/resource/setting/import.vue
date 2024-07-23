@@ -1,206 +1,236 @@
 <template>
-  <div class="import-container p20">
-    <section v-if="curView === 'import'">
-      <div class="import-header flex-row justify-content-between">
-        <div class="flex-row align-items-center">
-          <bk-upload
-            theme="button"
-            :custom-request="handleReq"
-            class="upload-cls"
-            accept=".yaml,.json,.yml"
-          >
-            <div>
-              <i class="icon apigateway-icon icon-ag-add-small"></i>
-              {{ t('导入 Swagger 文件') }}
-            </div>
-          </bk-upload>
-          <span class="desc">{{ t('（json /yaml 格式）') }}</span>
-          <bk-form class="flex-row">
-            <bk-form-item class="mb0" :label-width="20">
-              <bk-checkbox v-model="showDoc">
-                {{ t('生成资源文档') }}
-              </bk-checkbox>
-            </bk-form-item>
-            <bk-form-item class="mb0" :label="t('文档语言')" v-if="showDoc" :required="true" :label-width="120">
-              <bk-radio-group v-model="language">
-                <bk-radio label="zh">{{ t('中文文档') }}</bk-radio>
-                <bk-radio label="en">{{ t('英文文档') }}</bk-radio>
-              </bk-radio-group>
-            </bk-form-item>
-          </bk-form>
-        </div>
-        <div class="flex-row align-items-center">
-          <!-- <bk-link theme="primary" :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank">
-            {{ t('模板示例') }}
-          </bk-link> -->
-          <bk-button theme="primary" text @click="handleShowExample">{{ t('模板示例') }}</bk-button>
-          <bk-link theme="primary" class="pl10" :href="GLOBAL_CONFIG.DOC.SWAGGER" target="_blank">
-            <i class="apigateway-icon icon-ag-info"></i>
-            {{ t('Swagger 说明文档') }}
-          </bk-link>
-        </div>
-      </div>
-      <!-- 代码编辑器 -->
-      <div class="monacoEditor mt10">
-        <bk-resize-layout placement="bottom" collapsible immediate style="height: 100%">
-          <template #main>
-            <div style="height: 100%">
-              <!--  顶部编辑器工具栏-->
-              <header class="editorToolbar">
-                <span class="p10" style="color: #ccc">代码编辑器</span>
-                <aside class="toolItems">
-                  <section class="toolItem" :class="{ 'active': isFindPanelVisible }" @click="toggleFindToolClick()">
-                    <search width="18px" height="18px" />
-                  </section>
-<!--                  <section class="toolItem">-->
-<!--                    <upload width="18px" height="18px" />-->
-<!--                  </section>-->
-                  <section class="toolItem">
-                    <filliscreen-line width="18px" height="18px" />
-                  </section>
-                </aside>
-              </header>
-              <main class="editorMainContent">
-                <!--  编辑器本体  -->
-                <editor-monaco v-model="editorText" ref="resourceEditorRef" @findStateChanged="(isVisible) => { isFindPanelVisible = isVisible; }" />
-                <!--  右侧的代码 error, warning 计数器  -->
-                <aside class="editorErrorCounters">
-                  <div
-                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'Error' }"
-                    v-bk-tooltips="{ content: `Error: ${msgAsErrorNum}`, placement: 'left' }"
-                    @click="handleErrorCountClick('Error')"
-                  >
-                    <warn fill="#EA3636" />
-                    <span style="color:#EA3636">{{ msgAsErrorNum }}</span>
-                  </div>
-                  <div
-                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'Warning' }"
-                    v-bk-tooltips="{ content: `Warning: ${msgAsWarningNum}`, placement: 'left' }"
-                    @click="handleErrorCountClick('Warning')"
-                  >
-                    <div class="warningCircle"></div>
-                    <span style="color: hsla(36.6, 81.7%, 55.1%, 0.5);">{{ msgAsWarningNum }}</span>
-                  </div>
-                  <div
-                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'All' }"
-                    v-bk-tooltips="{ content: `All: ${errorReasons.length}`, placement: 'left' }"
-                    @click="handleErrorCountClick('All')"
-                  >
-                    <span>all</span>
-                    <span>{{ msgAsErrorNum + msgAsWarningNum }}</span>
-                  </div>
-                </aside>
-              </main>
-            </div>
-          </template>
-          <!--  底部错误信息展示  -->
-          <template #aside>
-            <div class="editorMessagesWrapper" :class="{ 'hasErrorMsg': visibleErrorReasons.length > 0 }">
-              <article
-                v-for="(reason, index) in visibleErrorReasons" :key="index" class="editorMessage"
-                @click="handleErrorMsgClick(reason)"
-              >
-                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost"></span>
-                <span class="msgPart msgBody">{{ reason.message }}</span>
-                <span class="msgPart msgErrorCode"></span>
-                <span v-if="reason.position" class="msgPart msgPos">
-                  {{ `(${reason.position.lineNumber}, ${reason.position.column})` }}
-                </span>
-              </article>
-            </div>
-          </template>
-        </bk-resize-layout>
-      </div>
-    </section>
-    <section v-else>
-      <div class="flex-row justify-content-between">
-        <div class="info">
-          {{ t('请确认以下资源变更，资源配置：') }}
-          <span class="add-info">{{ t('新建') }}
-            <span class="ag-strong success pl5 pr5">
-              {{ createNum }}
-            </span>{{ t('条') }}
-          </span>
-          <span class="add-info">{{ t('覆盖') }}
-            <span class="ag-strong danger pl5 pr5">{{ updateNum }}</span>
-            {{ t('条') }}
-          </span>
-          <span v-if="showDoc">
-            ，{{ $t('资源文档：') }}
-            <span class="add-info">{{ t('新建') }}<span class="ag-strong success pl5 pr5">1</span>{{ t('条') }}</span>
-            <span class="add-info">{{ t('覆盖') }}<span class="ag-strong danger pl5 pr5">1</span>{{ t('条') }}</span>
-          </span>
-        </div>
-      </div>
-      <bk-table
-        class="table-layout"
-        :data="tableData"
-        show-overflow-tooltip
-        :checked="tableData"
-        @selection-change="handleSelectionChange"
-      >
-        <bk-table-column
-          width="80"
-          type="selection"
-          align="center"
-        />
-        <bk-table-column
-          :label="t('请求路径')"
-          prop="path"
-        >
-        </bk-table-column>
-        <bk-table-column
-          :label="t('请求方法')"
-          prop="method"
-        >
-        </bk-table-column>
-        <bk-table-column
-          :label="t('描述')"
-          prop="description"
-        >
-        </bk-table-column>
-        <bk-table-column
-          :label="t('资源操作类型')"
-          prop="path"
-        >
-          <template #default="{ data }">
-            <span class="danger-c" v-if="data?.id">{{ t('覆盖') }}</span>
-            <span class="success-c" v-else>{{ t('新建') }}</span>
-          </template>
-        </bk-table-column>
-      </bk-table>
-    </section>
-
-    <div class="mt15">
-      <bk-button
-        :theme="curView === 'import' ? 'primary' : ''"
-        @click="handleCheckData"
-        :loading="isDataLoading"
-        :disabled="curView === 'import' && !isCodeValid"
-      >
-        {{ curView === 'import' ? t('下一步') : t('上一步') }}
-      </bk-button>
-      <span
-        v-bk-tooltips="{ content: t('请确认勾选资源'), disabled: selections.length }"
-        v-if="curView === 'resources'"
-      >
-        <bk-button
-          class="mr10"
+  <div class="importWrapper">
+    <header class="stepsIndicatorWrap">
+      <main class="stepsIndicator">
+        <bk-steps
+          :steps="[
+            { title: '校验文件' },
+            { title: '资源信息确认' },
+          ]"
+          :cur-step="curView === 'import' ? 1 : 2"
           theme="primary"
-          type="button"
-          :disabled="!selections.length"
-          @click="handleImportResource" :loading="isImportLoading"
+        />
+      </main>
+    </header>
+    <div class="import-container">
+      <section v-if="curView === 'import'">
+        <div class="import-header flex-row justify-content-between">
+          <div class="flex-row align-items-center">
+            <bk-upload
+              theme="button"
+              :custom-request="handleReq"
+              class="upload-cls"
+              accept=".yaml,.json,.yml"
+            >
+              <div>
+                <i class="icon apigateway-icon icon-ag-add-small"></i>
+                {{ t('上传文件') }}
+              </div>
+            </bk-upload>
+            <span class="desc">{{ t('支持 Swagger 2.0 和 OpenAPI 3.0 规范的文件，文件格式支持 JSON、YAML') }}</span>
+            <span class="desc">
+              <bk-link
+                theme="primary" :href="GLOBAL_CONFIG.DOC.SWAGGER" target="_blank"
+                style="font-size: 12px;"
+              >
+                <span class="flex-row align-items-center">
+                  <share width="12px" height="12px" fill="#3A84FF" style="margin-right: 4px;" />{{ t('使用指引') }}
+                </span>
+              </bk-link>
+            </span>
+            <!--            <bk-form class="flex-row">-->
+            <!--              <bk-form-item class="mb0" :label-width="20">-->
+            <!--                <bk-checkbox v-model="showDoc">-->
+            <!--                  {{ t('生成资源文档') }}-->
+            <!--                </bk-checkbox>-->
+            <!--              </bk-form-item>-->
+            <!--  <bk-form-item class="mb0" :label="t('文档语言')" v-if="showDoc" :required="true" :label-width="120">-->
+            <!--                <bk-radio-group v-model="language">-->
+            <!--                  <bk-radio label="zh">{{ t('中文文档') }}</bk-radio>-->
+            <!--                  <bk-radio label="en">{{ t('英文文档') }}</bk-radio>-->
+            <!--                </bk-radio-group>-->
+            <!--              </bk-form-item>-->
+            <!--            </bk-form>-->
+          </div>
+          <div class="flex-row align-items-center">
+            <!-- <bk-link theme="primary" :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank">
+              {{ t('模板示例') }}
+            </bk-link> -->
+            <bk-button theme="primary" text style="font-size: 12px;" @click="handleShowExample">
+              {{
+                t('模板示例')
+              }}
+            </bk-button>
+          </div>
+        </div>
+        <!-- 代码编辑器 -->
+        <div class="monacoEditor mt10">
+          <bk-resize-layout placement="bottom" collapsible immediate style="height: 100%">
+            <template #main>
+              <div style="height: 100%">
+                <!--  顶部编辑器工具栏-->
+                <header class="editorToolbar">
+                  <span class="p10" style="color: #ccc">代码编辑器</span>
+                  <aside class="toolItems">
+                    <section class="toolItem" :class="{ 'active': isFindPanelVisible }" @click="toggleFindToolClick()">
+                      <search width="18px" height="18px" />
+                    </section>
+                    <!--                  <section class="toolItem">-->
+                    <!--                    <upload width="18px" height="18px" />-->
+                    <!--                  </section>-->
+                    <section class="toolItem">
+                      <filliscreen-line width="18px" height="18px" />
+                    </section>
+                  </aside>
+                </header>
+                <main class="editorMainContent">
+                  <!--  编辑器本体  -->
+                  <editor-monaco
+                    v-model="editorText"
+                    ref="resourceEditorRef"
+                    @find-state-changed="(isVisible) => {
+                      isFindPanelVisible = isVisible;
+                    }"
+                  />
+                  <!--  右侧的代码 error, warning 计数器  -->
+                  <aside class="editorErrorCounters">
+                    <div
+                      class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'Error' }"
+                      v-bk-tooltips="{ content: `Error: ${msgAsErrorNum}`, placement: 'left' }"
+                      @click="handleErrorCountClick('Error')"
+                    >
+                      <warn fill="#EA3636" />
+                      <span style="color:#EA3636">{{ msgAsErrorNum }}</span>
+                    </div>
+                    <div
+                      class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'Warning' }"
+                      v-bk-tooltips="{ content: `Warning: ${msgAsWarningNum}`, placement: 'left' }"
+                      @click="handleErrorCountClick('Warning')"
+                    >
+                      <div class="warningCircle"></div>
+                      <span style="color: hsla(36.6, 81.7%, 55.1%, 0.5);">{{ msgAsWarningNum }}</span>
+                    </div>
+                    <div
+                      class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'All' }"
+                      v-bk-tooltips="{ content: `All: ${errorReasons.length}`, placement: 'left' }"
+                      @click="handleErrorCountClick('All')"
+                    >
+                      <span>all</span>
+                      <span>{{ msgAsErrorNum + msgAsWarningNum }}</span>
+                    </div>
+                  </aside>
+                </main>
+              </div>
+            </template>
+            <!--  底部错误信息展示  -->
+            <template #aside>
+              <div class="editorMessagesWrapper" :class="{ 'hasErrorMsg': visibleErrorReasons.length > 0 }">
+                <article
+                  v-for="(reason, index) in visibleErrorReasons" :key="index" class="editorMessage"
+                  @click="handleErrorMsgClick(reason)"
+                >
+                  <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                  <span class="msgPart msgHost"></span>
+                  <span class="msgPart msgBody">{{ reason.message }}</span>
+                  <span class="msgPart msgErrorCode"></span>
+                  <span v-if="reason.position" class="msgPart msgPos">
+                    {{ `(${reason.position.lineNumber}, ${reason.position.column})` }}
+                  </span>
+                </article>
+              </div>
+            </template>
+          </bk-resize-layout>
+        </div>
+      </section>
+      <section v-else>
+        <div class="flex-row justify-content-between">
+          <div class="info">
+            {{ t('请确认以下资源变更，资源配置：') }}
+            <span class="add-info">{{ t('新建') }}
+              <span class="ag-strong success pl5 pr5">
+                {{ createNum }}
+              </span>{{ t('条') }}
+            </span>
+            <span class="add-info">{{ t('覆盖') }}
+              <span class="ag-strong danger pl5 pr5">{{ updateNum }}</span>
+              {{ t('条') }}
+            </span>
+            <span v-if="showDoc">
+              ，{{ $t('资源文档：') }}
+              <span class="add-info">{{ t('新建') }}<span class="ag-strong success pl5 pr5">1</span>{{ t('条') }}</span>
+              <span class="add-info">{{ t('覆盖') }}<span class="ag-strong danger pl5 pr5">1</span>{{ t('条') }}</span>
+            </span>
+          </div>
+        </div>
+        <bk-table
+          class="table-layout"
+          :data="tableData"
+          show-overflow-tooltip
+          :checked="tableData"
+          @selection-change="handleSelectionChange"
         >
-          {{ $t('确定导入') }}
-        </bk-button>
-      </span>
-      <bk-button @click="goBack">
-        {{ t('取消') }}
-      </bk-button>
+          <bk-table-column
+            width="80"
+            type="selection"
+            align="center"
+          />
+          <bk-table-column
+            :label="t('请求路径')"
+            prop="path"
+          >
+          </bk-table-column>
+          <bk-table-column
+            :label="t('请求方法')"
+            prop="method"
+          >
+          </bk-table-column>
+          <bk-table-column
+            :label="t('描述')"
+            prop="description"
+          >
+          </bk-table-column>
+          <bk-table-column
+            :label="t('资源操作类型')"
+            prop="path"
+          >
+            <template #default="{ data }">
+              <span class="danger-c" v-if="data?.id">{{ t('覆盖') }}</span>
+              <span class="success-c" v-else>{{ t('新建') }}</span>
+            </template>
+          </bk-table-column>
+        </bk-table>
+      </section>
+      <TmplExampleSideslider :is-show="isShowExample" @on-hidden="handleHiddenExample"></TmplExampleSideslider>
     </div>
-
-    <TmplExampleSideslider :is-show="isShowExample" @on-hidden="handleHiddenExample"></TmplExampleSideslider>
+    <footer class="pageActionsWrap">
+      <main class="pageActions">
+        <bk-button
+          :theme="curView === 'import' ? 'primary' : ''"
+          @click="handleCheckData"
+          :loading="isDataLoading"
+          :disabled="curView === 'import' && !isCodeValid"
+        >
+          {{ curView === 'import' ? t('下一步') : t('上一步') }}
+        </bk-button>
+        <span
+          v-bk-tooltips="{ content: t('请确认勾选资源'), disabled: selections.length }"
+          v-if="curView === 'resources'"
+        >
+          <bk-button
+            class="mr10"
+            theme="primary"
+            type="button"
+            :disabled="!selections.length"
+            @click="handleImportResource" :loading="isImportLoading"
+          >
+            {{ $t('确定导入') }}
+          </bk-button>
+        </span>
+        <bk-button @click="goBack">
+          {{ t('取消') }}
+        </bk-button>
+      </main>
+    </footer>
   </div>
 </template>
 <script setup lang="ts">
@@ -221,7 +251,13 @@ import { checkResourceImport, importResource, importResourceDocSwagger } from '@
 import { useCommon } from '@/store';
 import { useSelection, useGetGlobalProperties } from '@/hooks';
 import TmplExampleSideslider from '@/views/resource/setting/comps/tmpl-example-sideslider.vue';
-import { Warn, Search, FilliscreenLine, Upload } from 'bkui-vue/lib/icon';
+import {
+  Warn,
+  Search,
+  FilliscreenLine,
+  Share,
+  // Upload,
+} from 'bkui-vue/lib/icon';
 import yaml from 'js-yaml';
 import { JSONPath } from 'jsonpath-plus';
 import _ from 'lodash';
@@ -404,7 +440,8 @@ const handleCheckData = async ({ changeView = true } = { changeView: true }) => 
           .search(regex);
         // 用 editor 的 api 找到 Position
         if (offset > -1) {
-          position = resourceEditorRef.value.getModel().getPositionAt(offset);
+          position = resourceEditorRef.value.getModel()
+            .getPositionAt(offset);
         }
         return {
           paths,
@@ -541,16 +578,50 @@ const toggleFindToolClick = () => {
   } else {
     resourceEditorRef.value.showFindPanel();
   }
-}
+};
 </script>
 <style scoped lang="scss">
+.importWrapper {
+  .stepsIndicatorWrap,
+  .pageActionsWrap {
+    position: sticky;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    background: #FFFFFF;
+    z-index: 100;
+  }
+
+  .stepsIndicatorWrap {
+    top: 0;
+    justify-content: center;
+    border-bottom: 1px solid #DCDEE5;
+
+    .stepsIndicator {
+      width: 50%;
+    }
+  }
+
+  .pageActionsWrap {
+    bottom: 0;
+    padding-left: 48px;
+    border-top: 1px solid #DCDEE5;
+  }
+}
+
 .import-container {
+  padding: 20px 24px 18px;
+  margin: 20px 24px 0 24px;
+  background-color: #FFFFFF;
+  box-shadow: 0 2px 4px 0 #1919290d;
+
   .import-header {
     .icon-ag-add-small {
       font-size: 16px;
     }
 
     .desc {
+      margin-left: 12px;
       font-size: 12px;
       color: #979ba5;
     }
@@ -559,6 +630,8 @@ const toggleFindToolClick = () => {
   .monacoEditor {
     width: 100%;
     height: calc(100vh - 240px);
+    border-radius: 2px;
+    overflow: hidden;
 
     .editorToolbar {
       position: relative;
