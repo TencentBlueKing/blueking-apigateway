@@ -29,7 +29,9 @@ from apigateway.common.i18n.field import I18nProperty
 from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
 from apigateway.core import managers
 from apigateway.core.constants import (
+    API_TEST_METHOD_CHOICES,
     DEFAULT_STAGE_NAME,
+    HTTP_METHOD_CHOICES,
     RESOURCE_METHOD_CHOICES,
     APIHostingTypeEnum,
     BackendTypeEnum,
@@ -568,6 +570,46 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
         verbose_name = "ReleaseHistory"
         verbose_name_plural = "ReleaseHistory"
         db_table = "core_release_history"
+
+
+class ResourceDebugHistory(TimestampedModelMixin, OperatorModelMixin):
+    gateway = models.ForeignKey(Gateway, db_column="gateway_id", on_delete=models.CASCADE)
+    stage = models.ForeignKey(Stage, db_column="stage_id", on_delete=models.CASCADE)
+    resource = models.ForeignKey(ReleasedResource, db_column="resource_id", on_delete=models.CASCADE)
+    type = models.CharField(null=False, blank=False, choices=API_TEST_METHOD_CHOICES, max_length=10)
+    resource_name = models.CharField(null=False, blank=False, max_length=32)
+    request_url = models.CharField(null=False, blank=False, max_length=256)
+    request_method = models.CharField(blank=False, null=False, choices=HTTP_METHOD_CHOICES, max_length=10)
+    # request_params的结构如下：
+    # {
+    #     "path": {
+    #         "gateway_id": xxx,
+    #         "stage_id": xxx,
+    #         "resource_id": xxx,
+    #     }
+    #     "query_param": {
+    #         "request_id": "xxxx"
+    #     }
+    #     "body": {
+    #         "data": {
+    #             "test": "xxxx"
+    #         }
+    #     }
+    #     "header": {
+    #         "cookie": "xxxx"
+    #     }
+    # }
+    request = JSONField(blank=True, help_text="请求参数")
+    request_time = models.DateTimeField(null=True, blank=True)
+    response = JSONField(blank=True, help_text="返回结果的内容")
+    status_code = models.IntegerField(blank=False, null=False)
+    proxy_time = models.DecimalField(max_digits=10, decimal_places=2)
+    spec_version = models.IntegerField(blank=False, null=False)
+
+    class Meta:
+        verbose_name = "ResourceDebugHistory"
+        verbose_name_plural = "ResourceDebugHistory"
+        db_table = "resource_debug_history"
 
 
 class PublishEvent(TimestampedModelMixin, OperatorModelMixin):

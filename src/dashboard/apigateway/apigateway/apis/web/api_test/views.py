@@ -16,11 +16,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import time
 from typing import Any, Dict
 
 import requests
 from django.conf import settings
 from django.http import Http404
+from django.utils import timezone
+from django.utils.decorators import method_decorator
 from django.utils.encoding import force_bytes
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -28,28 +31,28 @@ from rest_framework import generics, status
 
 from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.released_resource import get_released_resource_data
-from apigateway.core.models import Stage
+from apigateway.core.models import ResourceDebugHistory, Stage
 from apigateway.utils.curlify import to_curl
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.time import convert_second_to_epoch_millisecond
 
+from .helpers import APITestRequestBuilder
 from .prepared_request import PreparedRequestHeaders, PreparedRequestURL
-from .serializers import APITestInputSLZ, APITestOutputSLZ
+from .serializers import APIDebugHistoriesListOutputSLZ, APITestOutputSLZ
 
 TEST_PERMISSION_EXPIRE_DAYS = 1
 
 
 class APITestApi(generics.CreateAPIView):
     @swagger_auto_schema(
-        request_body=APITestInputSLZ,
+        request_body=APITestRequestBuilder,
         responses={status.HTTP_200_OK: APITestOutputSLZ},
         operation_description="在线调试发起请求",
         tags=["WebAPI.APITest"],
     )
     def post(self, request, *args, **kwargs):
-        slz = APITestInputSLZ(data=request.data)
-        slz.is_valid(raise_exception=True)
-        data = slz.validated_data
+        build = APITestRequestBuilder(**request.data)
+        data = build.dict()
 
         # 获取资源
         stage = generics.get_object_or_404(Stage, gateway=request.gateway, id=data["stage_id"])
@@ -82,6 +85,9 @@ class APITestApi(generics.CreateAPIView):
             stage_name=stage.name,
         )
 
+        # 开始时间
+        start_time = time.perf_counter()
+        request_time = timezone.now()
         try:
             response = requests.request(
                 method=data["method"],
@@ -96,6 +102,26 @@ class APITestApi(generics.CreateAPIView):
                 allow_redirects=False,
                 verify=False,
             )
+            end_time = time.perf_counter()
+            duration = end_time - start_time
+            success_history_data = {
+                "gateway": request.gateway,
+                "stage": stage,
+                "resource": released_resource,
+                "request_url": prepared_request_url.request_url,
+                "request_method": data["method"],
+                "request": {
+                    "query_params": data.get("query_params", ""),
+                    "body": data.get("body", ""),
+                    "header": prepared_request_headers.headers,
+                },
+                "request_time": request_time,
+                "status_code": response.status_code,
+                "response": response.text,
+                "proxy_time": duration,
+                "spec_version": 1,
+            }
+            ResourceDebugHistory.objects.create(**success_history_data)
         except Exception as err:
             return FailJsonResponse(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -128,3 +154,59 @@ class APITestApi(generics.CreateAPIView):
             key: cookies.get(cookie_name, "")
             for key, cookie_name in settings.BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME.items()
         }
+
+
+class TestHistoriesQuerySetMixin:
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return queryset.filter(gateway=self.request.gateway)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取测试历史列表",
+        responses={status.HTTP_200_OK: APIDebugHistoriesListOutputSLZ(many=True)},
+        tags=["WebAPI.ResourceDebugHistory"],
+    ),
+)
+class APIDebugHistoryListApi(TestHistoriesQuerySetMixin, generics.ListAPIView):
+    queryset = ResourceDebugHistory.objects.order_by("-updated_time")
+    serializer_class = APIDebugHistoriesListOutputSLZ
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        slz = APIDebugHistoriesListOutputSLZ(queryset, many=True)
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取调用历史详情",
+        responses={status.HTTP_200_OK: APIDebugHistoriesListOutputSLZ()},
+        tags=["WebAPI.Backend"],
+    ),
+)
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        operation_description="删除调用历史",
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.Backend"],
+    ),
+)
+class APIDebugHistoryRetrieveDestroyApi(TestHistoriesQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
+    lookup_field = "id"
+    serializer_class = APIDebugHistoriesListOutputSLZ
+    queryset = ResourceDebugHistory.objects.all()
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = APIDebugHistoriesListOutputSLZ(instance)
+        return OKJsonResponse(data=serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
