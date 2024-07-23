@@ -102,10 +102,13 @@ const editorMounted = () => {
   });
 
   // 监听搜索工具状态变化，把可视状态传递出去
-  editor.getContribution("editor.contrib.findController").getState().onFindReplaceStateChange(() => {
-    const isVisible = editor.getContribution("editor.contrib.findController").getState().isRevealed;
-    emit('findStateChanged', isVisible);
-  });
+  editor.getContribution('editor.contrib.findController')
+    .getState()
+    .onFindReplaceStateChange(() => {
+      const isVisible = editor.getContribution('editor.contrib.findController')
+        .getState().isRevealed;
+      emit('findStateChanged', isVisible);
+    });
 };
 
 // 修改editor的值
@@ -127,21 +130,22 @@ const setCursorPos = ({ lineNumber }) => {
 };
 
 const genLineDecorations = (decorationOptions) => {
-  const decoOptions = decorationOptions.filter(o => o.position).map(o => ({
-    range: {
-      startLineNumber: o.position.lineNumber,
-      endLineNumber: o.position.lineNumber,
-      startColumn: o.position.column,
-      endColumn: o.position.column,
-    },
-    options: {
-      isWholeLine: true, // 整行高亮
-      className:
-        `lineHighlight${o.level}`, // 当前行装饰用类名
-      glyphMarginClassName:
-        `glyphMargin${o.level}`, // 当前行左侧装饰(glyph)用类名
-    },
-  }));
+  const decoOptions = decorationOptions.filter(o => o.position)
+    .map(o => ({
+      range: {
+        startLineNumber: o.position.lineNumber,
+        endLineNumber: o.position.lineNumber,
+        startColumn: o.position.column,
+        endColumn: o.position.column,
+      },
+      options: {
+        isWholeLine: true, // 整行高亮
+        className:
+          `lineHighlight${o.level}`, // 当前行装饰用类名
+        glyphMarginClassName:
+          `glyphMargin${o.level}`, // 当前行左侧装饰(glyph)用类名
+      },
+    }));
   decorations = editor.createDecorationsCollection(decoOptions);
 };
 
@@ -156,12 +160,12 @@ const clearDecorations = () => {
 const getModel = () => editor.getModel();
 
 const showFindPanel = () => {
-  editor.trigger('', 'actions.find')
-}
+  editor.trigger('', 'actions.find');
+};
 
 const closeFindPanel = () => {
   editor.trigger('', 'closeFindWidget');
-}
+};
 
 defineExpose({
   setValue,
