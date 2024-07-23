@@ -1483,6 +1483,11 @@ const lang: ILANG = {
   '确认发布 {version} 版本至 {stage} 环境？': ['Are you sure to release {version} to the {stage} environment?'],
   '发布后，将会覆盖原来的资源版本，请谨慎操作！': ['After the release, the original resource version will be overwritten, please exercise caution!'],
   '立即生成版本': ['Generate Version'],
+  '插件数量': ['Plugin Count'],
+  '不导入': ['Don\'t Import'],
+  '后端请求方法': ['Backend Method'],
+  '后端请求路径': ['Backend Path'],
+  '修改配置': ['Change Settings'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

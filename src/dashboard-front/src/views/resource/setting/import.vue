@@ -12,195 +12,705 @@
         />
       </main>
     </header>
-    <div class="import-container">
-      <section v-if="curView === 'import'">
-        <div class="import-header flex-row justify-content-between">
-          <div class="flex-row align-items-center">
-            <bk-upload
-              theme="button"
-              :custom-request="handleReq"
-              class="upload-cls"
-              accept=".yaml,.json,.yml"
+    <!--  导入前视图，代码编辑器在此页  -->
+    <div v-if="curView === 'import'" class="import-container">
+      <div class="import-header flex-row justify-content-between">
+        <div class="flex-row align-items-center">
+          <bk-upload
+            theme="button"
+            :custom-request="handleReq"
+            class="upload-cls"
+            accept=".yaml,.json,.yml"
+          >
+            <div>
+              <i class="icon apigateway-icon icon-ag-add-small"></i>
+              {{ t('上传文件') }}
+            </div>
+          </bk-upload>
+          <span class="desc">{{ t('支持 Swagger 2.0 和 OpenAPI 3.0 规范的文件，文件格式支持 JSON、YAML') }}</span>
+          <span class="desc">
+            <bk-link
+              theme="primary" :href="GLOBAL_CONFIG.DOC.SWAGGER" target="_blank"
+              style="font-size: 12px;"
             >
-              <div>
-                <i class="icon apigateway-icon icon-ag-add-small"></i>
-                {{ t('上传文件') }}
-              </div>
-            </bk-upload>
-            <span class="desc">{{ t('支持 Swagger 2.0 和 OpenAPI 3.0 规范的文件，文件格式支持 JSON、YAML') }}</span>
-            <span class="desc">
-              <bk-link
-                theme="primary" :href="GLOBAL_CONFIG.DOC.SWAGGER" target="_blank"
-                style="font-size: 12px;"
+              <span class="flex-row align-items-center">
+                <share width="12px" height="12px" fill="#3A84FF" style="margin-right: 4px;" />{{ t('使用指引') }}
+              </span>
+            </bk-link>
+          </span>
+          <!--            <bk-form class="flex-row">-->
+          <!--              <bk-form-item class="mb0" :label-width="20">-->
+          <!--                <bk-checkbox v-model="showDoc">-->
+          <!--                  {{ t('生成资源文档') }}-->
+          <!--                </bk-checkbox>-->
+          <!--              </bk-form-item>-->
+          <!--  <bk-form-item class="mb0" :label="t('文档语言')" v-if="showDoc" :required="true" :label-width="120">-->
+          <!--                <bk-radio-group v-model="language">-->
+          <!--                  <bk-radio label="zh">{{ t('中文文档') }}</bk-radio>-->
+          <!--                  <bk-radio label="en">{{ t('英文文档') }}</bk-radio>-->
+          <!--                </bk-radio-group>-->
+          <!--              </bk-form-item>-->
+          <!--            </bk-form>-->
+        </div>
+        <div class="flex-row align-items-center">
+          <!-- <bk-link theme="primary" :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank">
+            {{ t('模板示例') }}
+          </bk-link> -->
+          <bk-button theme="primary" text style="font-size: 12px;" @click="handleShowExample">
+            {{
+              t('模板示例')
+            }}
+          </bk-button>
+        </div>
+      </div>
+      <!-- 代码编辑器 -->
+      <div class="monacoEditor mt10">
+        <bk-resize-layout placement="bottom" collapsible immediate style="height: 100%">
+          <template #main>
+            <div style="height: 100%">
+              <!--  顶部编辑器工具栏-->
+              <header class="editorToolbar">
+                <span class="p10" style="color: #ccc">代码编辑器</span>
+                <aside class="toolItems">
+                  <section class="toolItem" :class="{ 'active': isFindPanelVisible }" @click="toggleFindToolClick()">
+                    <search width="18px" height="18px" />
+                  </section>
+                  <!--                  <section class="toolItem">-->
+                  <!--                    <upload width="18px" height="18px" />-->
+                  <!--                  </section>-->
+                  <section class="toolItem">
+                    <filliscreen-line width="18px" height="18px" />
+                  </section>
+                </aside>
+              </header>
+              <main class="editorMainContent">
+                <!--  编辑器本体  -->
+                <editor-monaco
+                  v-model="editorText"
+                  ref="resourceEditorRef"
+                  @find-state-changed="(isVisible) => {
+                    isFindPanelVisible = isVisible;
+                  }"
+                />
+                <!--  右侧的代码 error, warning 计数器  -->
+                <aside class="editorErrorCounters">
+                  <div
+                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'Error' }"
+                    v-bk-tooltips="{ content: `Error: ${msgAsErrorNum}`, placement: 'left' }"
+                    @click="handleErrorCountClick('Error')"
+                  >
+                    <warn fill="#EA3636" />
+                    <span style="color:#EA3636">{{ msgAsErrorNum }}</span>
+                  </div>
+                  <div
+                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'Warning' }"
+                    v-bk-tooltips="{ content: `Warning: ${msgAsWarningNum}`, placement: 'left' }"
+                    @click="handleErrorCountClick('Warning')"
+                  >
+                    <div class="warningCircle"></div>
+                    <span style="color: hsla(36.6, 81.7%, 55.1%, 0.5);">{{ msgAsWarningNum }}</span>
+                  </div>
+                  <div
+                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'All' }"
+                    v-bk-tooltips="{ content: `All: ${errorReasons.length}`, placement: 'left' }"
+                    @click="handleErrorCountClick('All')"
+                  >
+                    <span>all</span>
+                    <span>{{ msgAsErrorNum + msgAsWarningNum }}</span>
+                  </div>
+                </aside>
+              </main>
+            </div>
+          </template>
+          <!--  底部错误信息展示  -->
+          <template #aside>
+            <div class="editorMessagesWrapper" :class="{ 'hasErrorMsg': visibleErrorReasons.length > 0 }">
+              <article
+                v-for="(reason, index) in visibleErrorReasons" :key="index" class="editorMessage"
+                @click="handleErrorMsgClick(reason)"
               >
-                <span class="flex-row align-items-center">
-                  <share width="12px" height="12px" fill="#3A84FF" style="margin-right: 4px;" />{{ t('使用指引') }}
+                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
+                <span class="msgPart msgHost"></span>
+                <span class="msgPart msgBody">{{ reason.message }}</span>
+                <span class="msgPart msgErrorCode"></span>
+                <span v-if="reason.position" class="msgPart msgPos">
+                  {{ `(${reason.position.lineNumber}, ${reason.position.column})` }}
                 </span>
-              </bk-link>
-            </span>
-            <!--            <bk-form class="flex-row">-->
-            <!--              <bk-form-item class="mb0" :label-width="20">-->
-            <!--                <bk-checkbox v-model="showDoc">-->
-            <!--                  {{ t('生成资源文档') }}-->
-            <!--                </bk-checkbox>-->
-            <!--              </bk-form-item>-->
-            <!--  <bk-form-item class="mb0" :label="t('文档语言')" v-if="showDoc" :required="true" :label-width="120">-->
-            <!--                <bk-radio-group v-model="language">-->
-            <!--                  <bk-radio label="zh">{{ t('中文文档') }}</bk-radio>-->
-            <!--                  <bk-radio label="en">{{ t('英文文档') }}</bk-radio>-->
-            <!--                </bk-radio-group>-->
-            <!--              </bk-form-item>-->
-            <!--            </bk-form>-->
-          </div>
-          <div class="flex-row align-items-center">
-            <!-- <bk-link theme="primary" :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank">
-              {{ t('模板示例') }}
-            </bk-link> -->
-            <bk-button theme="primary" text style="font-size: 12px;" @click="handleShowExample">
-              {{
-                t('模板示例')
-              }}
-            </bk-button>
-          </div>
-        </div>
-        <!-- 代码编辑器 -->
-        <div class="monacoEditor mt10">
-          <bk-resize-layout placement="bottom" collapsible immediate style="height: 100%">
-            <template #main>
-              <div style="height: 100%">
-                <!--  顶部编辑器工具栏-->
-                <header class="editorToolbar">
-                  <span class="p10" style="color: #ccc">代码编辑器</span>
-                  <aside class="toolItems">
-                    <section class="toolItem" :class="{ 'active': isFindPanelVisible }" @click="toggleFindToolClick()">
-                      <search width="18px" height="18px" />
-                    </section>
-                    <!--                  <section class="toolItem">-->
-                    <!--                    <upload width="18px" height="18px" />-->
-                    <!--                  </section>-->
-                    <section class="toolItem">
-                      <filliscreen-line width="18px" height="18px" />
-                    </section>
-                  </aside>
-                </header>
-                <main class="editorMainContent">
-                  <!--  编辑器本体  -->
-                  <editor-monaco
-                    v-model="editorText"
-                    ref="resourceEditorRef"
-                    @find-state-changed="(isVisible) => {
-                      isFindPanelVisible = isVisible;
-                    }"
-                  />
-                  <!--  右侧的代码 error, warning 计数器  -->
-                  <aside class="editorErrorCounters">
-                    <div
-                      class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'Error' }"
-                      v-bk-tooltips="{ content: `Error: ${msgAsErrorNum}`, placement: 'left' }"
-                      @click="handleErrorCountClick('Error')"
-                    >
-                      <warn fill="#EA3636" />
-                      <span style="color:#EA3636">{{ msgAsErrorNum }}</span>
-                    </div>
-                    <div
-                      class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'Warning' }"
-                      v-bk-tooltips="{ content: `Warning: ${msgAsWarningNum}`, placement: 'left' }"
-                      @click="handleErrorCountClick('Warning')"
-                    >
-                      <div class="warningCircle"></div>
-                      <span style="color: hsla(36.6, 81.7%, 55.1%, 0.5);">{{ msgAsWarningNum }}</span>
-                    </div>
-                    <div
-                      class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'All' }"
-                      v-bk-tooltips="{ content: `All: ${errorReasons.length}`, placement: 'left' }"
-                      @click="handleErrorCountClick('All')"
-                    >
-                      <span>all</span>
-                      <span>{{ msgAsErrorNum + msgAsWarningNum }}</span>
-                    </div>
-                  </aside>
-                </main>
-              </div>
-            </template>
-            <!--  底部错误信息展示  -->
-            <template #aside>
-              <div class="editorMessagesWrapper" :class="{ 'hasErrorMsg': visibleErrorReasons.length > 0 }">
-                <article
-                  v-for="(reason, index) in visibleErrorReasons" :key="index" class="editorMessage"
-                  @click="handleErrorMsgClick(reason)"
-                >
-                  <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                  <span class="msgPart msgHost"></span>
-                  <span class="msgPart msgBody">{{ reason.message }}</span>
-                  <span class="msgPart msgErrorCode"></span>
-                  <span v-if="reason.position" class="msgPart msgPos">
-                    {{ `(${reason.position.lineNumber}, ${reason.position.column})` }}
-                  </span>
-                </article>
-              </div>
-            </template>
-          </bk-resize-layout>
-        </div>
-      </section>
-      <section v-else>
-        <div class="flex-row justify-content-between">
-          <div class="info">
-            {{ t('请确认以下资源变更，资源配置：') }}
-            <span class="add-info">{{ t('新建') }}
-              <span class="ag-strong success pl5 pr5">
-                {{ createNum }}
-              </span>{{ t('条') }}
-            </span>
-            <span class="add-info">{{ t('覆盖') }}
-              <span class="ag-strong danger pl5 pr5">{{ updateNum }}</span>
-              {{ t('条') }}
-            </span>
-            <span v-if="showDoc">
-              ，{{ $t('资源文档：') }}
-              <span class="add-info">{{ t('新建') }}<span class="ag-strong success pl5 pr5">1</span>{{ t('条') }}</span>
-              <span class="add-info">{{ t('覆盖') }}<span class="ag-strong danger pl5 pr5">1</span>{{ t('条') }}</span>
-            </span>
-          </div>
-        </div>
-        <bk-table
-          class="table-layout"
-          :data="tableData"
-          show-overflow-tooltip
-          :checked="tableData"
-          @selection-change="handleSelectionChange"
-        >
-          <bk-table-column
-            width="80"
-            type="selection"
-            align="center"
-          />
-          <bk-table-column
-            :label="t('请求路径')"
-            prop="path"
-          >
-          </bk-table-column>
-          <bk-table-column
-            :label="t('请求方法')"
-            prop="method"
-          >
-          </bk-table-column>
-          <bk-table-column
-            :label="t('描述')"
-            prop="description"
-          >
-          </bk-table-column>
-          <bk-table-column
-            :label="t('资源操作类型')"
-            prop="path"
-          >
-            <template #default="{ data }">
-              <span class="danger-c" v-if="data?.id">{{ t('覆盖') }}</span>
-              <span class="success-c" v-else>{{ t('新建') }}</span>
-            </template>
-          </bk-table-column>
-        </bk-table>
-      </section>
+              </article>
+            </div>
+          </template>
+        </bk-resize-layout>
+      </div>
       <TmplExampleSideslider :is-show="isShowExample" @on-hidden="handleHiddenExample"></TmplExampleSideslider>
+    </div>
+    <!--  导入后视图  -->
+    <div v-else class="imported-resources-wrap">
+      <header class="res-counter-banner">
+        <main>
+          <info-line width="14px" height="14px" fill="#3A84FF" class="mr5" />
+          <span>共<span class="ag-strong pl5 pr5">{{ tableData.length }}</span>个资源，新增<span
+            class="ag-strong success pl5 pr5"
+          >{{ tableDataToAdd.length }}</span>个，更新<span
+            class="ag-strong warning pl5 pr5"
+          >{{ tableDataToUpdate.length }}</span>个，取消导入<span class="ag-strong danger pl5 pr5">{{
+              tableDataUnchecked.length
+            }}</span>个</span>
+        </main>
+        <aside>
+          <bk-button
+            text
+            theme="primary"
+            @click="handleRecoverAllRes()"
+          >
+            <left-turn-line fill="#3A84FF" />
+            {{ t('恢复取消导入的资源') }}
+          </bk-button>
+        </aside>
+      </header>
+      <!--  新增的资源  -->
+      <section class="res-content-wrap add">
+        <bk-collapse
+          v-model="activeIndexAdd"
+          :list="collapsePanelListAdd"
+          header-icon="right-shape"
+        >
+          <template #title>
+            <div class="collapse-panel-title">
+              <!--              <span>新增的资源（共{{ createNum }}个）</span>-->
+              <span>新增的资源（共{{ tableDataToAdd.length }}个）</span>
+              <bk-input
+                :clearable="true"
+                :placeholder="t('请输入资源名称，按Enter搜索')"
+                :right-icon="'bk-icon icon-search'"
+                style="width: 240px;"
+                @click.stop.prevent
+              />
+            </div>
+          </template>
+          <template #content>
+            <div class="collapse-panel-table-wrap">
+              <bk-table
+                class="table-layout"
+                :data="tableDataToAdd"
+                row-key="name"
+                show-overflow-tooltip
+              >
+                <bk-table-column
+                  :label="t('资源名称')"
+                  prop="name"
+                >
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('认证方式')"
+                >
+                  <template #default="{ row }">
+                    {{ getResourceAuth(row?.auth_config) }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('校验应用权限')"
+                >
+                  <template #default="{ row }">
+                    {{ getPermRequired(row?.auth_config) }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('是否公开')"
+                >
+                  <template #default="{ row }">
+                    <span>
+                      {{ row.is_public ? t('是') : row.is_public === false ? t('否') : t('是') }}
+                    </span>
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('允许申请权限')"
+                >
+                  <template #default="{ row }">
+                    {{
+                      row.allow_apply_permission ? t('是') : row.allow_apply_permission === false ? t('否') : t('是')
+                    }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('前端请求路径')"
+                  prop="path"
+                >
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('前端请求方法')"
+                  prop="method"
+                  :show-overflow-tooltip="false"
+                >
+                  <template #default="{ row }">
+                    <bk-tag :theme="methodsEnum[row?.method]">{{ row?.method }}</bk-tag>
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('后端服务')"
+                  prop="method"
+                >
+                  <template #default="{ row }">
+                    {{ row.backend?.name ?? 'default' }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('后端请求方法')"
+                  prop="method"
+                  :show-overflow-tooltip="false"
+                >
+                  <template #default="{ row }">
+                    <bk-tag
+                      :theme="methodsEnum[row.backend?.method ?? row.method]"
+                    >
+                      {{ row.backend?.method ?? row.method }}
+                    </bk-tag>
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('后端请求路径')"
+                  prop="path"
+                >
+                  <template #default="{ row }">
+                    {{ row.backend?.path ?? row.path }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('资源文档')"
+                  prop="doc"
+                >
+                  <template #default="{ row }">
+                    <bk-button
+                      text
+                      theme="primary"
+                    >
+                      <doc-fill fill="#3A84FF" />
+                      {{ t('详情') }}
+                    </bk-button>
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('插件数量')"
+                  prop="plugin_configs"
+                >
+                  <template #default="{ row }">
+                    <span>{{ row.plugin_configs?.length ?? 0 }}</span>
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('操作')"
+                  width="200"
+                  fixed="right"
+                  prop="act"
+                >
+                  <template #default="{ row }">
+                    <bk-button
+                      text
+                      theme="primary"
+                    >
+                      {{ t('修改配置') }}
+                    </bk-button>
+                    <bk-button
+                      text
+                      theme="primary"
+                      class="pl10 pr10"
+                      @click="() => {
+                        toggleRowUnchecked(row)
+                      }"
+                    >
+                      {{ t('不导入') }}
+                    </bk-button>
+                    <!--                    <bk-pop-confirm-->
+                    <!--                      :title="t('确认删除资源{resourceName}？', { resourceName: data?.name || '' })"-->
+                    <!--                      content="删除操作无法撤回，请谨慎操作！"-->
+                    <!--                      width="288"-->
+                    <!--                      trigger="click"-->
+                    <!--                      @confirm="handleDeleteResource(data.id)"-->
+                    <!--                    >-->
+                    <!--                      <bk-button-->
+                    <!--                        text-->
+                    <!--                        theme="primary"-->
+                    <!--                      >-->
+                    <!--                        {{ t('删除') }}-->
+                    <!--                      </bk-button>-->
+                    <!--                    </bk-pop-confirm>-->
+                  </template>
+                </bk-table-column>
+                <!--                <bk-table-column-->
+                <!--                  :label="t('操作')"-->
+                <!--                  prop="path"-->
+                <!--                >-->
+                <!--                  <template #default="{ data }">-->
+                <!--                    <span class="danger-c" v-if="data?.id">{{ t('覆盖') }}</span>-->
+                <!--                    <span class="success-c" v-else>{{ t('新建') }}</span>-->
+                <!--                  </template>-->
+                <!--                </bk-table-column>-->
+              </bk-table>
+            </div>
+          </template>
+        </bk-collapse>
+      </section>
+      <!--  更新的资源  -->
+      <section class="res-content-wrap update">
+        <bk-collapse
+          v-model="activeIndexUpdate"
+          :list="collapsePanelListUpdate"
+          header-icon="right-shape"
+        >
+          <template #title>
+            <div class="collapse-panel-title">
+              <span>更新的资源（共{{ tableDataToUpdate.length }}个）</span>
+              <bk-input
+                :clearable="true"
+                :placeholder="t('请输入资源名称，按Enter搜索')"
+                :right-icon="'bk-icon icon-search'"
+                style="width: 240px;"
+                @click.stop.prevent
+              />
+            </div>
+          </template>
+          <template #content>
+            <div class="collapse-panel-table-wrap">
+              <bk-table
+                class="table-layout"
+                :data="tableDataToUpdate"
+                show-overflow-tooltip
+                row-key="name"
+                :checked="tableData"
+                @selection-change="handleSelectionChange"
+              >
+                <bk-table-column
+                  :label="t('资源名称')"
+                  prop="name"
+                >
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('认证方式')"
+                >
+                  <template #default="{ row }">
+                    {{ getResourceAuth(row?.auth_config) }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('校验应用权限')"
+                >
+                  <template #default="{ row }">
+                    {{ getPermRequired(row?.auth_config) }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('是否公开')"
+                >
+                  <template #default="{ row }">
+                    <span>
+                      {{ row.is_public ? t('是') : row.is_public === false ? t('否') : t('是') }}
+                    </span>
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('允许申请权限')"
+                >
+                  <template #default="{ row }">
+                    {{
+                      row.allow_apply_permission ? t('是') : row.allow_apply_permission === false ? t('否') : t('是')
+                    }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('前端请求路径')"
+                  prop="path"
+                >
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('前端请求方法')"
+                  prop="method"
+                  :show-overflow-tooltip="false"
+                >
+                  <template #default="{ row }">
+                    <bk-tag :theme="methodsEnum[row?.method]">{{ row?.method }}</bk-tag>
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('后端服务')"
+                  prop="method"
+                >
+                  <template #default="{ row }">
+                    {{ row.backend?.name ?? 'default' }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('后端请求方法')"
+                  prop="method"
+                  :show-overflow-tooltip="false"
+                >
+                  <template #default="{ row }">
+                    <bk-tag
+                      :theme="methodsEnum[row.backend?.method ?? row.method]"
+                    >
+                      {{ row.backend?.method ?? row.method }}
+                    </bk-tag>
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('后端请求路径')"
+                  prop="path"
+                >
+                  <template #default="{ row }">
+                    {{ row.backend?.path ?? row.path }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('资源文档')"
+                  prop="doc"
+                >
+                  <template #default="{ row }">
+                    <bk-button
+                      text
+                      theme="primary"
+                    >
+                      <doc-fill fill="#3A84FF" />
+                      {{ t('详情') }}
+                    </bk-button>
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('插件数量')"
+                  prop="plugin_configs"
+                >
+                  <template #default="{ row }">
+                    <span>{{ row.plugin_configs?.length ?? 0 }}</span>
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('操作')"
+                  width="200"
+                  fixed="right"
+                  prop="act"
+                >
+                  <template #default="{ row }">
+                    <bk-button
+                      text
+                      theme="primary"
+                    >
+                      {{ t('修改配置') }}
+                    </bk-button>
+                    <bk-button
+                      text
+                      theme="primary"
+                      class="pl10 pr10"
+                      @click="() => {
+                        toggleRowUnchecked(row)
+                      }"
+                    >
+                      {{ t('不导入') }}
+                    </bk-button>
+                    <!--                    <bk-pop-confirm-->
+                    <!--                      :title="t('确认删除资源{resourceName}？', { resourceName: data?.name || '' })"-->
+                    <!--                      content="删除操作无法撤回，请谨慎操作！"-->
+                    <!--                      width="288"-->
+                    <!--                      trigger="click"-->
+                    <!--                      @confirm="handleDeleteResource(data.id)"-->
+                    <!--                    >-->
+                    <!--                      <bk-button-->
+                    <!--                        text-->
+                    <!--                        theme="primary"-->
+                    <!--                      >-->
+                    <!--                        {{ t('删除') }}-->
+                    <!--                      </bk-button>-->
+                    <!--                    </bk-pop-confirm>-->
+                  </template>
+                </bk-table-column>
+              </bk-table>
+            </div>
+          </template>
+        </bk-collapse>
+      </section>
+      <!--  不导入的资源  -->
+      <section class="res-content-wrap unchecked">
+        <bk-collapse
+          v-model="activeIndexUnchecked"
+          :list="collapsePanelListUnchecked"
+          header-icon="right-shape"
+        >
+          <template #title>
+            <div class="collapse-panel-title">
+              <span>不导入的资源（共{{ tableDataUnchecked.length }}个）</span>
+              <bk-input
+                :clearable="true"
+                :placeholder="t('请输入资源名称，按Enter搜索')"
+                :right-icon="'bk-icon icon-search'"
+                style="width: 240px;"
+                @click.stop.prevent
+              />
+            </div>
+          </template>
+          <template #content>
+            <div class="collapse-panel-table-wrap">
+              <bk-table
+                class="table-layout"
+                :data="tableDataUnchecked"
+                show-overflow-tooltip
+                row-key="name"
+              >
+                <bk-table-column
+                  :label="t('资源名称')"
+                  prop="name"
+                >
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('认证方式')"
+                >
+                  <template #default="{ row }">
+                    {{ getResourceAuth(row?.auth_config) }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('校验应用权限')"
+                >
+                  <template #default="{ row }">
+                    {{ getPermRequired(row?.auth_config) }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('是否公开')"
+                >
+                  <template #default="{ row }">
+                    <span>
+                      {{ row.is_public ? t('是') : row.is_public === false ? t('否') : t('是') }}
+                    </span>
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('允许申请权限')"
+                >
+                  <template #default="{ row }">
+                    {{
+                      row.allow_apply_permission ? t('是') : row.allow_apply_permission === false ? t('否') : t('是')
+                    }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('前端请求路径')"
+                  prop="path"
+                >
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('前端请求方法')"
+                  prop="method"
+                  :show-overflow-tooltip="false"
+                >
+                  <template #default="{ row }">
+                    <bk-tag :theme="methodsEnum[row?.method]">{{ row?.method }}</bk-tag>
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('后端服务')"
+                  prop="method"
+                >
+                  <template #default="{ row }">
+                    {{ row.backend?.name ?? 'default' }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('后端请求方法')"
+                  prop="method"
+                  :show-overflow-tooltip="false"
+                >
+                  <template #default="{ row }">
+                    <bk-tag
+                      :theme="methodsEnum[row.backend?.method ?? row.method]"
+                    >
+                      {{ row.backend?.method ?? row.method }}
+                    </bk-tag>
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('后端请求路径')"
+                  prop="path"
+                >
+                  <template #default="{ row }">
+                    {{ row.backend?.path ?? row.path }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('资源文档')"
+                  prop="doc"
+                >
+                  <template #default="{ row }">
+                    <bk-button
+                      text
+                      theme="primary"
+                    >
+                      <doc-fill fill="#3A84FF" />
+                      {{ t('详情') }}
+                    </bk-button>
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('插件数量')"
+                  prop="plugin_configs"
+                >
+                  <template #default="{ row }">
+                    <span>{{ row.plugin_configs?.length ?? 0 }}</span>
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('操作')"
+                  width="200"
+                  fixed="right"
+                  prop="act"
+                >
+                  <template #default="{ row }">
+                    <bk-button
+                      text
+                      theme="primary"
+                      class="pl10 pr10"
+                      @click="() => {
+                        toggleRowUnchecked(row)
+                      }"
+                    >
+                      {{ t('恢复') }}
+                    </bk-button>
+                    <!--                    <bk-pop-confirm-->
+                    <!--                      :title="t('确认删除资源{resourceName}？', { resourceName: data?.name || '' })"-->
+                    <!--                      content="删除操作无法撤回，请谨慎操作！"-->
+                    <!--                      width="288"-->
+                    <!--                      trigger="click"-->
+                    <!--                      @confirm="handleDeleteResource(data.id)"-->
+                    <!--                    >-->
+                    <!--                      <bk-button-->
+                    <!--                        text-->
+                    <!--                        theme="primary"-->
+                    <!--                      >-->
+                    <!--                        {{ t('删除') }}-->
+                    <!--                      </bk-button>-->
+                    <!--                    </bk-pop-confirm>-->
+                  </template>
+                </bk-table-column>
+              </bk-table>
+            </div>
+          </template>
+        </bk-collapse>
+      </section>
+      <!--      <section class="flex-row justify-content-between">-->
+      <!--        <div class="info">-->
+      <!--          {{ t('请确认以下资源变更，资源配置：') }}-->
+      <!--          <span class="add-info">{{ t('新建') }}-->
+      <!--            <span class="ag-strong success pl5 pr5">-->
+      <!--              {{ createNum }}-->
+      <!--            </span>{{ t('条') }}-->
+      <!--          </span>-->
+      <!--          <span class="add-info">{{ t('覆盖') }}-->
+      <!--            <span class="ag-strong danger pl5 pr5">{{ updateNum }}</span>-->
+      <!--            {{ t('条') }}-->
+      <!--          </span>-->
+      <!--          <span v-if="showDoc">-->
+      <!--            ，{{ $t('资源文档：') }}-->
+      <!--            <span class="add-info">{{ t('新建') }}<span class="ag-strong success pl5 pr5">1</span>{{ t('条') }}</span>-->
+      <!--            <span class="add-info">{{ t('覆盖') }}<span class="ag-strong danger pl5 pr5">1</span>{{ t('条') }}</span>-->
+      <!--          </span>-->
+      <!--        </div>-->
+      <!--      </section>-->
     </div>
     <footer class="pageActionsWrap">
       <main class="pageActions">
@@ -256,6 +766,9 @@ import {
   Search,
   FilliscreenLine,
   Share,
+  InfoLine,
+  DocFill,
+  LeftTurnLine,
   // Upload,
 } from 'bkui-vue/lib/icon';
 import yaml from 'js-yaml';
@@ -264,6 +777,7 @@ import _ from 'lodash';
 
 import type { IPosition } from 'monaco-editor';
 import type { ErrorReasonType, CodeErrorMsgType } from '@/types/common';
+import { MethodsEnum } from '@/types';
 
 type CodeErrorResponse = {
   code: string,
@@ -286,6 +800,7 @@ const isImportLoading = ref<boolean>(false);
 const curView = ref<string>('import'); // 当前页面
 const tableData = ref<any[]>([]);
 const globalProperties = useGetGlobalProperties();
+const methodsEnum: any = Object.freeze(MethodsEnum);
 const { GLOBAL_CONFIG } = globalProperties;
 
 // 选中的代码错误提示 Tab，默认展示 all 即全部类型的错误提示
@@ -293,6 +808,27 @@ const activeCodeMsgType = ref<CodeErrorMsgType>('All');
 // 记录代码错误消息
 const errorReasons = ref<ErrorReasonType[]>([]);
 const isFindPanelVisible = ref(false);
+
+const activeIndexAdd = ref(0);
+const collapsePanelListAdd = ref([{ name: '新增资源' }]);
+
+const activeIndexUpdate = ref(0);
+const collapsePanelListUpdate = ref([{ name: '更新资源' }]);
+
+const activeIndexUnchecked = ref(0);
+const collapsePanelListUnchecked = ref([{ name: '不导入资源' }]);
+
+const tableDataToAdd = computed(() => {
+  return tableData.value.filter(data => !data.id && !data._unchecked);
+});
+
+const tableDataToUpdate = computed(() => {
+  return tableData.value.filter(data => data.id && !data._unchecked);
+});
+// 被取消导入的资源
+const tableDataUnchecked = computed(() => {
+  return tableData.value.filter(data => data._unchecked);
+});
 
 // 资源新建条数
 const createNum = computed(() => {
@@ -392,7 +928,11 @@ const handleCheckData = async ({ changeView = true } = { changeView: true }) => 
     if (showDoc.value) {
       params.doc_language = language.value;
     }
-    tableData.value = await checkResourceImport(apigwId, params);
+    const res = await checkResourceImport(apigwId, params);
+    tableData.value = res.map(data => ({
+      ...data,
+      _unchecked: false, // 标记是否不导入
+    }));
     isCodeValid.value = true;
     resourceEditorRef.value.clearDecorations();
     errorReasons.value = [];
@@ -579,12 +1119,62 @@ const toggleFindToolClick = () => {
     resourceEditorRef.value.showFindPanel();
   }
 };
+
+const getResourceAuth = (authConfig: string | object | null | undefined) => {
+  if (!authConfig) return '--';
+  let auth;
+
+  if (typeof authConfig === 'string') {
+    auth = JSON.parse(authConfig);
+  } else {
+    auth = authConfig;
+  }
+  const tmpArr: string[] = [];
+
+  if (auth?.auth_verified_required) {
+    tmpArr.push(`${t('用户认证')}`);
+  }
+  if (auth?.app_verified_required) {
+    tmpArr.push(`${t('蓝鲸应用认证')}`);
+  }
+  return tmpArr.join(', ');
+};
+
+const getPermRequired = (authStr: string | object | null | undefined) => {
+  if (!authStr) return '--';
+  let auth;
+
+  if (typeof authConfig === 'string') {
+    auth = JSON.parse(authConfig);
+  } else {
+    auth = authConfig;
+  }
+  if (auth?.resource_perm_required) {
+    return `${t('校验')}`;
+  }
+  return `${t('不校验')}`;
+};
+
+const toggleRowUnchecked = (row: any) => {
+  const data = tableData.value.find(d => d.name === row.name);
+  if (data) data._unchecked = !data._unchecked;
+};
+
+const handleRecoverAllRes = () => {
+  tableData.value.forEach(d => d._unchecked = false);
+};
 </script>
 <style scoped lang="scss">
+//$successColor: #34d97b;
+//$warningColor: #ffb400;
+//$failColor: #ff5656;
+
 .importWrapper {
+  position: relative;
+  min-height: 100%;
+
   .stepsIndicatorWrap,
   .pageActionsWrap {
-    position: sticky;
     height: 52px;
     display: flex;
     align-items: center;
@@ -593,6 +1183,7 @@ const toggleFindToolClick = () => {
   }
 
   .stepsIndicatorWrap {
+    position: sticky;
     top: 0;
     justify-content: center;
     border-bottom: 1px solid #DCDEE5;
@@ -603,6 +1194,9 @@ const toggleFindToolClick = () => {
   }
 
   .pageActionsWrap {
+    position: absolute;
+    left: 0;
+    right: 0;
     bottom: 0;
     padding-left: 48px;
     border-top: 1px solid #DCDEE5;
@@ -611,7 +1205,7 @@ const toggleFindToolClick = () => {
 
 .import-container {
   padding: 20px 24px 18px;
-  margin: 20px 24px 0 24px;
+  margin: 20px 24px;
   background-color: #FFFFFF;
   box-shadow: 0 2px 4px 0 #1919290d;
 
@@ -809,5 +1403,56 @@ const toggleFindToolClick = () => {
     border-radius: 50%;
     background-color: hsla(36.6, 81.7%, 55.1%, 0.5);
   }
+}
+
+.imported-resources-wrap {
+  margin: 20px 24px;
+
+  .res-counter-banner {
+    height: 40px;
+    padding: 0 12px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #FFFFFF;
+    box-shadow: 0 2px 4px 0 #1919290d;
+    border-radius: 2px;
+  }
+
+  .res-content-wrap {
+    //padding: 24px;
+    margin-bottom: 12px;
+    background: #FFFFFF;
+    box-shadow: 0 2px 4px 0 #1919290d;
+  }
+
+  .collapse-panel-title {
+    flex-grow: 1;
+    display: inline-flex;
+    position: relative;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .collapse-panel-table-wrap {
+    padding-bottom: 24px;
+  }
+}
+
+:deep(.bk-collapse-header) {
+  display: flex;
+  align-items: center;
+}
+
+:deep(.bk-collapse-header .bk-collapse-title) {
+  flex-grow: 1;
+  display: inline-flex;
+  align-items: center;
+}
+
+:deep(.bk-collapse-content) {
+  padding-left: 24px;
+  padding-right: 24px;
 }
 </style>
