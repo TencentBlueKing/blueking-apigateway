@@ -21,6 +21,7 @@ from io import StringIO
 import pytest
 
 from apigateway.biz.access_log.constants import ES_LOG_FIELDS
+from apigateway.utils.time import format
 
 pytestmark = pytest.mark.django_db
 
@@ -140,6 +141,8 @@ class TestLogLinkRetrieveApi:
 
 class TestLogExportApi:
     def test_get(self, mocker, request_view, fake_stage):
+        mock_time_start = 1720606081
+        mock_time_end = 1721210881
         mocker.patch(
             "apigateway.apis.web.access_log.views.LogSearchClient.search_logs",
             return_value=(3, [{"a": 1}, {"a": 2}, {"a": 3}]),
@@ -156,14 +159,20 @@ class TestLogExportApi:
                 "stage_id": fake_stage.id,
                 "time_range": 300,
                 "offset": 0,
-                "time_start": 1720606081,
-                "time_end": 1721210881,
+                "time_start": mock_time_start,
+                "time_end": mock_time_end,
                 "limit": 3,
                 "query": "api_id: 2",
             },
         )
+        time_start = format(mock_time_start, "%Y%m%d%H%M%S")
+        time_end = format(mock_time_end, "%Y%m%d%H%M%S")
         assert response.status_code == 200
         assert response.headers["Content-Type"] == "text/csv; charset=utf-8"
+        assert (
+            response["Content-Disposition"]
+            == f'attachment; filename="{fake_gateway.name}-{time_start}-{time_end}-logs.csv"'
+        )
         reader = csv.DictReader(StringIO(response.content.decode("utf-8")))
         log_count = sum(1 for _ in reader)
         assert log_count == 3
