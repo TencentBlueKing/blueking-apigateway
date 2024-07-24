@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import os
+import logging
 from tempfile import TemporaryDirectory
 
 from bkapi_client_generator import generate_markdown
@@ -31,19 +32,26 @@ from apigateway.biz.resource_doc.exceptions import (
 )
 from apigateway.utils.file import read_file, write_to_file
 
+logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 class Jinja2ToMarkdownGenerator:
-    """根据 Jinja2 模版文件，生成 markdown 格式文档"""
-
     def __init__(self, filename: str, filepath: str):
         self.filename = filename
         self.filepath = filepath
 
     def generate_doc_content(self) -> str:
-        if self._is_jinja2_template():
-            return self._render_jinja2_template()
-
-        return read_file(self.filepath).decode()
+        try:
+            if self._is_jinja2_template():
+                return self._render_jinja2_template()
+            else:
+                with open(self.filepath, 'r', encoding='utf-8') as file:
+                    return file.read()
+        except Exception as e:
+            # 记录错误日志
+            logging.error(f"Error processing file {self.filepath}: {e}")
+            # 返回给前端的错误信息
+            return f"Error processing file {self.filepath}: {str(e)}"
 
     def _is_jinja2_template(self) -> bool:
         return self.filepath.endswith(".md.j2")
@@ -52,13 +60,17 @@ class Jinja2ToMarkdownGenerator:
         env = SandboxedEnvironment(loader=FileSystemLoader(os.path.dirname(self.filepath)))
         try:
             template = env.get_template(os.path.basename(self.filepath))
+            # 假设没有上下文，如果有需要，可以传递一个 context 字典
             return template.render()
         except TemplateSyntaxError as err:
-            raise ResourceDocJinja2TemplateSyntaxError(self._base_path, self.filename, err)
-        except (TemplateNotFound, TemplatesNotFound) as err:
-            raise ResourceDocJinja2TemplateNotFound(self.filename, err)
+            logging.error(f"Syntax error in template {self.filepath}: {err}")
+            return f"Syntax error in template {self.filepath}: {str(err)}"
+        except TemplateNotFound as err:
+            logging.error(f"Template {self.filename} not found: {err}")
+            return f"Template {self.filename} not found: {str(err)}"
         except Exception as err:
-            raise ResourceDocJinja2TemplateError(self.filename, err)
+            logging.error(f"Unexpected error rendering template {self.filepath}: {err}")
+            return f"Unexpected error rendering template {self.filepath}: {str(err)}"
 
     @property
     def _base_path(self) -> str:
