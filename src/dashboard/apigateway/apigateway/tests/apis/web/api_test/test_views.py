@@ -17,7 +17,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import responses
+from ddf import G
 
+from apigateway.core.models import ResourceDebugHistory
 from apigateway.core.utils import get_resource_url
 
 
@@ -55,8 +57,61 @@ class TestAPITestAPIView:
         )
 
         result = response.json()
+        print(f"response: {result}")
         assert response.status_code == 200
         assert result["data"]["headers"] == {
             "Content-Type": "text/plain",
             "x-token": "test",
         }
+
+        # 查看是否有记录
+        resp = request_view(
+            method="GET",
+            path_params={"gateway_id": fake_gateway.id},
+            view_name="api_debug.histories.list",
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+
+class TestAPIDebugHistoryApi:
+    def test_list(self, request_view, fake_resource, fake_gateway):
+        G(ResourceDebugHistory, resource_name=fake_resource.name, gateway=fake_gateway, request_url="url1")
+        G(ResourceDebugHistory, resource_name=fake_resource.name, gateway=fake_gateway, request_url="url2")
+        G(ResourceDebugHistory, resource_name=fake_resource.name, gateway=fake_gateway, request_url="url3")
+        resp = request_view(
+            method="GET",
+            path_params={"gateway_id": fake_gateway.id},
+            view_name="api_debug.histories.list",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 3
+
+    def test_retrieve(self, request_view, fake_gateway, fake_resource):
+        fake_history = G(
+            ResourceDebugHistory, resource_name=fake_resource.name, gateway=fake_gateway, request_url="url1"
+        )
+        resp = request_view(
+            method="GET",
+            path_params={"gateway_id": fake_gateway.id, "id": fake_history.id},
+            view_name="api_debug.histories.retrieve-destroy",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["id"] == fake_history.id
+
+    def test_destroy(self, request_view, fake_gateway, fake_resource):
+        fake_history = G(
+            ResourceDebugHistory, resource_name=fake_resource.name, gateway=fake_gateway, request_url="url1"
+        )
+        resp = request_view(
+            method="DELETE",
+            path_params={"gateway_id": fake_gateway.id, "id": fake_history.id},
+            view_name="api_debug.histories.retrieve-destroy",
+        )
+
+        assert resp.status_code == 204

@@ -575,30 +575,21 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
 class ResourceDebugHistory(TimestampedModelMixin, OperatorModelMixin):
     gateway = models.ForeignKey(Gateway, db_column="gateway_id", on_delete=models.CASCADE)
     stage = models.ForeignKey(Stage, db_column="stage_id", on_delete=models.CASCADE)
-    resource = models.ForeignKey(ReleasedResource, db_column="resource_id", on_delete=models.CASCADE)
+    resource = models.ForeignKey(Resource, db_column="resource_id", on_delete=models.CASCADE)
     type = models.CharField(null=False, blank=False, choices=API_TEST_METHOD_CHOICES, max_length=10)
     resource_name = models.CharField(null=False, blank=False, max_length=32)
     request_url = models.CharField(null=False, blank=False, max_length=256)
     request_method = models.CharField(blank=False, null=False, choices=HTTP_METHOD_CHOICES, max_length=10)
-    # request_params的结构如下：
-    # {
-    #     "path": {
-    #         "gateway_id": xxx,
-    #         "stage_id": xxx,
-    #         "resource_id": xxx,
-    #     }
-    #     "query_param": {
-    #         "request_id": "xxxx"
-    #     }
-    #     "body": {
-    #         "data": {
-    #             "test": "xxxx"
-    #         }
-    #     }
-    #     "header": {
-    #         "cookie": "xxxx"
-    #     }
-    # }
+    # "request": {
+    #     "authorization": {aa:"aa"},,
+    #     "path_params": {aa:"aa"},,
+    #     "query_params": {aa:"aa"},
+    #     "body": "",
+    #     "headers": {aa:"aa"},,
+    #     "subpath": "",
+    #     "use_test_app": True,
+    #     "use_user_from_cookies": False,
+    # },
     request = JSONField(blank=True, help_text="请求参数")
     request_time = models.DateTimeField(null=True, blank=True)
     response = JSONField(blank=True, help_text="返回结果的内容")

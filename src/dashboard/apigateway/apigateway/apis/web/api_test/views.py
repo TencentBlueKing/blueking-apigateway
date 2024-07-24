@@ -31,7 +31,7 @@ from rest_framework import generics, status
 
 from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.released_resource import get_released_resource_data
-from apigateway.core.models import ResourceDebugHistory, Stage
+from apigateway.core.models import Resource, ResourceDebugHistory, Stage
 from apigateway.utils.curlify import to_curl
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.time import convert_second_to_epoch_millisecond
@@ -107,13 +107,18 @@ class APITestApi(generics.CreateAPIView):
             success_history_data = {
                 "gateway": request.gateway,
                 "stage": stage,
-                "resource": released_resource,
+                "resource": Resource(id=data["resource_id"]),
                 "request_url": prepared_request_url.request_url,
                 "request_method": data["method"],
                 "request": {
-                    "query_params": data.get("query_params", ""),
+                    "authorization": data.get("authorization", {}),
+                    "path_params": data.get("path_params", {}),
+                    "query_params": data.get("query_params", {}),
                     "body": data.get("body", ""),
-                    "header": prepared_request_headers.headers,
+                    "headers": data.get("headers", {}),
+                    "subpath": data.get("subpath", ""),
+                    "use_test_app": data.get("use_test_app", True),
+                    "use_user_from_cookies": data.get("use_user_from_cookies", False),
                 },
                 "request_time": request_time,
                 "status_code": response.status_code,

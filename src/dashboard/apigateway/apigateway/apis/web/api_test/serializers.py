@@ -76,7 +76,7 @@ class APITestOutputSLZ(serializers.Serializer):
 class APIDebugHistoriesListOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="测试历史ID")
     gateway_id = serializers.IntegerField(read_only=True, help_text="网关ID")
-    resource_name = serializers.CharField(help_text="资源名称")
+    resource_id = serializers.CharField(read_only=True, help_text="资源ID")
     request_time = serializers.DateTimeField(read_only=True, help_text="请求时间")
     request_url = serializers.CharField(help_text="请求路由")
     request_method = serializers.CharField(help_text="请求方式")

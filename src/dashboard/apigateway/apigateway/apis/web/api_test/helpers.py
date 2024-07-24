@@ -1,4 +1,4 @@
-from typing import Dict, Literal, Optional
+from typing import Any, Dict, Literal, Optional
 
 from django.conf import settings
 from pydantic import BaseModel, Field, root_validator, validator
@@ -13,13 +13,13 @@ class Authorization(BaseModel):
     skey: Optional[str] = Field(None, help="skey")
 
     @validator("uin", allow_reuse=True)
-    def validate_uin(cls, v):
+    def _validate_uin(cls, v): # noqa: N805
         if v is not None:
             return v.lstrip("o0")
         return v
 
     @root_validator(pre=True, allow_reuse=True)
-    def remove_empty_values(cls, values):
+    def remove_empty_values(cls, values): # noqa: N805
         return {k: v for k, v in values.items() if v is not None and v.strip()}
 
 
@@ -37,7 +37,7 @@ class APITestRequestBuilder(BaseModel):
     authorization: Optional[Authorization] = Field(None, help="认证信息")
 
     @validator("authorization", pre=True, always=True)
-    def validate_authorization(cls, v, values):
+    def validate_authorization(cls, v: Any, values: Dict[str, Any]) -> Optional[Authorization]: # noqa: N805
         if values.get("use_test_app"):
             return Authorization(**settings.DEFAULT_TEST_APP)
         return v
