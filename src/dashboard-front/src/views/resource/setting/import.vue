@@ -1,6 +1,6 @@
 <template>
   <div class="importWrapper">
-    <header class="stepsIndicatorWrap">
+    <header class="steps-indicator-wrap">
       <main class="stepsIndicator">
         <bk-steps
           :steps="[
@@ -53,9 +53,6 @@
           <!--            </bk-form>-->
         </div>
         <div class="flex-row align-items-center">
-          <!-- <bk-link theme="primary" :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank">
-            {{ t('模板示例') }}
-          </bk-link> -->
           <bk-button theme="primary" text style="font-size: 12px;" @click="handleShowExample">
             {{
               t('模板示例')
@@ -205,14 +202,14 @@
                   :label="renderAuthConfigColLabel"
                 >
                   <template #default="{ row }">
-                    {{ getResourceAuth(row?.auth_config) }}
+                    {{ getAuthConfigText(row?.auth_config) }}
                   </template>
                 </bk-table-column>
                 <bk-table-column
                   :label="t('校验应用权限')"
                 >
                   <template #default="{ row }">
-                    {{ getPermRequired(row?.auth_config) }}
+                    {{ getPermRequiredText(row?.auth_config) }}
                   </template>
                 </bk-table-column>
                 <!--  “是否公开”列  -->
@@ -324,15 +321,6 @@
                     </bk-button>
                   </template>
                 </bk-table-column>
-                <!--                <bk-table-column-->
-                <!--                  :label="t('操作')"-->
-                <!--                  prop="path"-->
-                <!--                >-->
-                <!--                  <template #default="{ data }">-->
-                <!--                    <span class="danger-c" v-if="data?.id">{{ t('覆盖') }}</span>-->
-                <!--                    <span class="success-c" v-else>{{ t('新建') }}</span>-->
-                <!--                  </template>-->
-                <!--                </bk-table-column>-->
               </bk-table>
             </div>
           </template>
@@ -376,14 +364,14 @@
                   :label="t('认证方式')"
                 >
                   <template #default="{ row }">
-                    {{ getResourceAuth(row?.auth_config) }}
+                    {{ getAuthConfigText(row?.auth_config) }}
                   </template>
                 </bk-table-column>
                 <bk-table-column
                   :label="t('校验应用权限')"
                 >
                   <template #default="{ row }">
-                    {{ getPermRequired(row?.auth_config) }}
+                    {{ getPermRequiredText(row?.auth_config) }}
                   </template>
                 </bk-table-column>
                 <bk-table-column
@@ -537,14 +525,14 @@
                   :label="t('认证方式')"
                 >
                   <template #default="{ row }">
-                    {{ getResourceAuth(row?.auth_config) }}
+                    {{ getAuthConfigText(row?.auth_config) }}
                   </template>
                 </bk-table-column>
                 <bk-table-column
                   :label="t('校验应用权限')"
                 >
                   <template #default="{ row }">
-                    {{ getPermRequired(row?.auth_config) }}
+                    {{ getPermRequiredText(row?.auth_config) }}
                   </template>
                 </bk-table-column>
                 <bk-table-column
@@ -674,8 +662,8 @@
       <!--        </div>-->
       <!--      </section>-->
     </div>
-    <footer class="pageActionsWrap">
-      <main class="pageActions">
+    <footer class="page-actions-wrap">
+      <main class="page-actions">
         <bk-button
           :theme="curView === 'import' ? 'primary' : ''"
           @click="handleCheckData"
@@ -793,16 +781,16 @@ const tableDataUnchecked = computed(() => {
 });
 
 // 资源新建条数
-const createNum = computed(() => {
-  const results = deDuplication(selections.value.filter(item => !item.id), 'name');
-  return results.length;
-});
+// const createNum = computed(() => {
+//   const results = deDuplication(selections.value.filter(item => !item.id), 'name');
+//   return results.length;
+// });
 
 // 资源覆盖条数
-const updateNum = computed(() => {
-  const results = deDuplication(selections.value.filter(item => item.id), 'name');
-  return results.length;
-});
+// const updateNum = computed(() => {
+//   const results = deDuplication(selections.value.filter(item => item.id), 'name');
+//   return results.length;
+// });
 
 // 可视的错误消息，实际要渲染到编辑器视图的数据
 const visibleErrorReasons = computed(() => {
@@ -1082,7 +1070,7 @@ const toggleFindToolClick = () => {
   }
 };
 
-const getResourceAuth = (authConfig: string | object | null | undefined) => {
+const getAuthConfigText = (authConfig: string | object | null | undefined) => {
   if (!authConfig) return '--';
   let auth;
 
@@ -1102,7 +1090,7 @@ const getResourceAuth = (authConfig: string | object | null | undefined) => {
   return tmpArr.join(', ');
 };
 
-const getPermRequired = (authConfig: string | object | null | undefined) => {
+const getPermRequiredText = (authConfig: string | object | null | undefined) => {
   if (!authConfig) return '--';
   let auth;
 
@@ -1320,8 +1308,8 @@ const renderIsPublicColLabel = () => {
   position: relative;
   min-height: 100%;
 
-  .stepsIndicatorWrap,
-  .pageActionsWrap {
+  .steps-indicator-wrap,
+  .page-actions-wrap {
     height: 52px;
     display: flex;
     align-items: center;
@@ -1329,7 +1317,7 @@ const renderIsPublicColLabel = () => {
     z-index: 100;
   }
 
-  .stepsIndicatorWrap {
+  .steps-indicator-wrap {
     position: sticky;
     top: 0;
     justify-content: center;
@@ -1340,7 +1328,7 @@ const renderIsPublicColLabel = () => {
     }
   }
 
-  .pageActionsWrap {
+  .page-actions-wrap {
     position: absolute;
     left: 0;
     right: 0;
