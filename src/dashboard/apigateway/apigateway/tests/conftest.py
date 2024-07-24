@@ -252,7 +252,6 @@ def fake_resource1(faker, fake_resource):
     resource.is_public = True
     resource.name = faker.bothify("?????")
     resource.save()
-    resource.method = "GET"
 
     ResourceHandler.save_auth_config(
         resource.id,

@@ -27,7 +27,7 @@ class TestAPITestAPIView:
     @responses.activate
     def test_post(self, settings, request_view, fake_gateway, fake_stage, fake_resource1, fake_released_resource):
         settings.API_RESOURCE_URL_TMPL = "http://bking.com/{stage_name}/{resource_path}"
-
+        fake_resource1.method = "GET"
         url = get_resource_url(settings.API_RESOURCE_URL_TMPL, fake_gateway.name, fake_stage.name, fake_resource1.path)
         responses.add(
             fake_resource1.method,
@@ -38,7 +38,6 @@ class TestAPITestAPIView:
             },
             content_type="text/plain",
         )
-
         response = request_view(
             "POST",
             "api_test.tests",

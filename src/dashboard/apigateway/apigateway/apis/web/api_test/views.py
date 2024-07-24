@@ -45,7 +45,6 @@ TEST_PERMISSION_EXPIRE_DAYS = 1
 
 class APITestApi(generics.CreateAPIView):
     @swagger_auto_schema(
-        request_body=APITestRequestBuilder,
         responses={status.HTTP_200_OK: APITestOutputSLZ},
         operation_description="在线调试发起请求",
         tags=["WebAPI.APITest"],
