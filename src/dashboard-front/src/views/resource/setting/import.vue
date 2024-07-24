@@ -199,7 +199,7 @@
                 </bk-table-column>
                 <!--  认证方式列  -->
                 <bk-table-column
-                  :label="renderAuthConfigColLabel"
+                  :label="() => renderAuthConfigColLabel('add')"
                 >
                   <template #default="{ row }">
                     {{ getAuthConfigText(row?.auth_config) }}
@@ -214,7 +214,7 @@
                 </bk-table-column>
                 <!--  “是否公开”列  -->
                 <bk-table-column
-                  :label="renderIsPublicColLabel"
+                  :label="() => renderIsPublicColLabel('add')"
                 >
                   <template #default="{ row }">
                     <span>
@@ -360,8 +360,9 @@
                   prop="name"
                 >
                 </bk-table-column>
+                <!--  认证方式列  -->
                 <bk-table-column
-                  :label="t('认证方式')"
+                  :label="() => renderAuthConfigColLabel('update')"
                 >
                   <template #default="{ row }">
                     {{ getAuthConfigText(row?.auth_config) }}
@@ -374,8 +375,9 @@
                     {{ getPermRequiredText(row?.auth_config) }}
                   </template>
                 </bk-table-column>
+                <!--  “是否公开”列  -->
                 <bk-table-column
-                  :label="t('是否公开')"
+                  :label="() => renderIsPublicColLabel('update')"
                 >
                   <template #default="{ row }">
                     <span>
@@ -992,15 +994,15 @@ const handleImportResource = async () => {
 };
 
 
-const deDuplication = (data: any[], k: string) => {
-  const map = new Map();
-  for (const item of data) {
-    if (!map.has(item[k])) {
-      map.set(item[k], item);
-    }
-  }
-  return [...map.values()];
-};
+// const deDuplication = (data: any[], k: string) => {
+//   const map = new Map();
+//   for (const item of data) {
+//     if (!map.has(item[k])) {
+//       map.set(item[k], item);
+//     }
+//   }
+//   return [...map.values()];
+// };
 
 // 取消返回到资源列表
 const goBack = () => {
@@ -1081,13 +1083,13 @@ const getAuthConfigText = (authConfig: string | object | null | undefined) => {
   }
   const tmpArr: string[] = [];
 
-  if (auth?.auth_verified_required) {
-    tmpArr.push(`${t('用户认证')}`);
-  }
   if (auth?.app_verified_required) {
     tmpArr.push(`${t('蓝鲸应用认证')}`);
   }
-  return tmpArr.join(', ');
+  if (auth?.auth_verified_required) {
+    tmpArr.push(`${t('用户认证')}`);
+  }
+  return tmpArr.join(', ') || '--';
 };
 
 const getPermRequiredText = (authConfig: string | object | null | undefined) => {
@@ -1137,19 +1139,19 @@ const tempAuthConfig = ref({
   resource_perm_required: false,
 });
 
-const isAuthConfigMultiEditVisible = ref(false);
-
-const showAuthConfigMultiEditPopover = () => {
-  isAuthConfigMultiEditVisible.value = true;
+const handleConfirmAuthConfigPopConfirm = (action: 'add' | 'update') => {
+  if (tempAuthConfig.value.app_verified_required === false) tempAuthConfig.value.resource_perm_required = false;
+  tableData.value.filter(item => !item._unchecked)
+    .forEach(data => {
+      if ((action === 'add' && !data.id) || (action === 'update' && data.id)) {
+        data.auth_config = {
+          ...tempAuthConfig.value,
+        }
+      }
+    });
 };
 
-const handleConfirmAuthConfigPopConfirm = () => {
-  if (tempAuthConfig.value.app_verified_required === false) tempAuthConfig.value.resource_perm_required = false;
-  console.log(tempAuthConfig.value);
-}
-
 const handleCancelAuthConfigPopConfirm = () => {
-  isAuthConfigMultiEditVisible.value = false;
   tempAuthConfig.value = {
     app_verified_required: false,
     auth_verified_required: false,
@@ -1157,17 +1159,15 @@ const handleCancelAuthConfigPopConfirm = () => {
   }
 }
 
-const renderAuthConfigColLabel = () => {
+const renderAuthConfigColLabel = (action: 'add' | 'update') => {
   return (
     <div>
       <div class="auth-config-col-label">
         <span>{t('认证方式')}</span>
         <bk-pop-confirm
           width="430"
-          trigger="manual"
+          trigger="click"
           title={t('批量修改认证方式')}
-          extCls="auth-config-popover"
-          is-show={isAuthConfigMultiEditVisible.value}
           content={
             <div class="multi-edit-popconfirm-wrap auth-config">
               <bk-form model={tempAuthConfig.value} labelWidth="120" labelPosition="right">
@@ -1197,11 +1197,11 @@ const renderAuthConfigColLabel = () => {
               </bk-form>
             </div>
           }
-          onConfirm={() => handleConfirmAuthConfigPopConfirm()}
+          onConfirm={() => handleConfirmAuthConfigPopConfirm(action)}
           onCancel={() => handleCancelAuthConfigPopConfirm()}
         >
           <i
-            class="apigateway-icon icon-ag-bulk-edit edit-action"
+            class="apigateway-icon icon-ag-bulk-edit edit-action ml5 f14 default-c"
             v-bk-tooltips={{
               content: (
                 <div>
@@ -1209,7 +1209,6 @@ const renderAuthConfigColLabel = () => {
                 </div>
               ),
             }}
-            onClick={() => showAuthConfigMultiEditPopover()}
           />
         </bk-pop-confirm>
       </div>
@@ -1222,36 +1221,35 @@ const tempPublicConfig = ref({
   allow_apply_permission: false,
 });
 
-const isPublicConfigMultiEditVisible = ref(false);
+const handleConfirmPublicConfigPopConfirm = (action: 'add' | 'update') => {
+  const isPublic = tempPublicConfig.value.is_public;
+  const allowApplyPermission = tempPublicConfig.value.allow_apply_permission && isPublic;
 
-const showPublicConfigMultiEditPopover = () => {
-  isPublicConfigMultiEditVisible.value = true;
+  tableData.value.filter(item => !item._unchecked)
+    .forEach(item => {
+      if ((action === 'add' && !item.id) || (action === 'update' && item.id)) {
+        item.is_public = isPublic;
+        item.allow_apply_permission = allowApplyPermission;
+      }
+    });
 };
 
-const handleConfirmPublicConfigPopConfirm = () => {
-  if (tempPublicConfig.value.is_public === false) tempPublicConfig.value.allow_apply_permission = false;
-  console.log(tempPublicConfig.value);
-}
-
 const handleCancelPublicConfigPopConfirm = () => {
-  isPublicConfigMultiEditVisible.value = false;
   tempPublicConfig.value = {
     is_public: false,
     allow_apply_permission: false,
   }
 }
 
-const renderIsPublicColLabel = () => {
+const renderIsPublicColLabel = (action: 'add' | 'update') => {
   return (
     <div>
       <div class="public-config-col-label">
         <span>{t('是否公开')}</span>
         <bk-pop-confirm
           width="320"
-          trigger="manual"
+          trigger="click"
           title={t('批量修改公开设置')}
-          extCls="public-config-popover"
-          is-show={isPublicConfigMultiEditVisible.value}
           content={
             <div class="multi-edit-popconfirm-wrap public-config">
               <bk-form model={tempPublicConfig.value} labelWidth="100" labelPosition="right">
@@ -1279,11 +1277,11 @@ const renderIsPublicColLabel = () => {
               </bk-form>
             </div>
           }
-          onConfirm={() => handleConfirmPublicConfigPopConfirm()}
+          onConfirm={() => handleConfirmPublicConfigPopConfirm(action)}
           onCancel={() => handleCancelPublicConfigPopConfirm()}
         >
           <i
-            class="apigateway-icon icon-ag-bulk-edit edit-action"
+            class="apigateway-icon icon-ag-bulk-edit edit-action ml5 f14 default-c"
             v-bk-tooltips={{
               content: (
                 <div>
@@ -1291,7 +1289,6 @@ const renderIsPublicColLabel = () => {
                 </div>
               ),
             }}
-            onClick={() => showPublicConfigMultiEditPopover()}
           />
         </bk-pop-confirm>
       </div>
