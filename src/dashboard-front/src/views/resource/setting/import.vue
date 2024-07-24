@@ -1345,7 +1345,7 @@ const renderIsPublicColLabel = (action: 'add' | 'update') => {
   }
 
   .page-actions-wrap {
-    position: absolute;
+    position: sticky;
     left: 0;
     right: 0;
     bottom: 0;
@@ -1558,6 +1558,7 @@ const renderIsPublicColLabel = (action: 'add' | 'update') => {
 
 .imported-resources-wrap {
   margin: 20px 24px;
+  min-height: 768px;
 
   .res-counter-banner {
     height: 40px;
