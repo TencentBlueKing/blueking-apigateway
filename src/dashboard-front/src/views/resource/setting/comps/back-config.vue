@@ -146,7 +146,7 @@
             :label="t('请求类型')"
           >
             <template #default="{ data }">
-              {{backConfigData.config.method || data?.stage?.name}}
+              {{ backConfigData?.config?.method || data?.stage?.name }}
             </template>
           </bk-table-column>
           <bk-table-column
@@ -503,8 +503,10 @@ watch(
   (val: any) => {
     if (Object.keys(val).length) {
       const { backend } = val;
-      backConfigData.value = { ...backend };
-      handleServiceChange(backend.id);
+      backConfigData.value = { ...backConfigData.value, ...backend };
+      if (backend?.id) {
+        handleServiceChange(backend.id);
+      }
     }
   },
   { immediate: true },

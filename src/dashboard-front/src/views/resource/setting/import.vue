@@ -306,6 +306,7 @@
                     <bk-button
                       text
                       theme="primary"
+                      @click="handleEdit(row)"
                     >
                       {{ t('修改配置') }}
                     </bk-button>
@@ -469,9 +470,8 @@
                     <bk-button
                       text
                       theme="primary"
-                      @click="handleEditResource(row.id, 'edit')"
+                      @click="handleEdit(row)"
                     >
-                      >
                       {{ t('修改配置') }}
                     </bk-button>
                     <bk-button
@@ -693,6 +693,13 @@
         </bk-button>
       </main>
     </footer>
+    <!--  编辑资源侧栏  -->
+    <edit-import-resource-side-slider
+      :resource="editingResource"
+      :isSliderShow="isSliderShow"
+      @on-hidden="handleEditSliderHidden"
+      @submit="handleEditSubmit"
+    ></edit-import-resource-side-slider>
   </div>
 </template>
 <script setup lang="tsx">
@@ -730,6 +737,7 @@ import _ from 'lodash';
 import type { IPosition } from 'monaco-editor';
 import type { ErrorReasonType, CodeErrorMsgType } from '@/types/common';
 import { MethodsEnum } from '@/types';
+import EditImportResourceSideSlider from "@/views/resource/setting/comps/edit-import-resource-side-slider.vue";
 
 type CodeErrorResponse = {
   code: string,
@@ -770,6 +778,21 @@ const collapsePanelListUpdate = ref([{ name: '更新资源' }]);
 const activeIndexUnchecked = ref(0);
 const collapsePanelListUnchecked = ref([{ name: '不导入资源' }]);
 
+const editingResource = ref<any>({
+  name: '',
+  description: '',
+  label_ids: [],
+  labels: [],
+  auth_config: {
+    auth_verified_required: true,
+    app_verified_required: true,
+    resource_perm_required: true,
+  },
+  is_public: true,
+  allow_apply_permission: true,
+});
+const isSliderShow = ref(false);
+
 const tableDataToAdd = computed(() => {
   return tableData.value.filter(data => !data.id && !data._unchecked);
 });
@@ -781,18 +804,6 @@ const tableDataToUpdate = computed(() => {
 const tableDataUnchecked = computed(() => {
   return tableData.value.filter(data => data._unchecked);
 });
-
-// 资源新建条数
-// const createNum = computed(() => {
-//   const results = deDuplication(selections.value.filter(item => !item.id), 'name');
-//   return results.length;
-// });
-
-// 资源覆盖条数
-// const updateNum = computed(() => {
-//   const results = deDuplication(selections.value.filter(item => item.id), 'name');
-//   return results.length;
-// });
 
 // 可视的错误消息，实际要渲染到编辑器视图的数据
 const visibleErrorReasons = computed(() => {
@@ -881,7 +892,7 @@ const handleCheckData = async ({ changeView = true } = { changeView: true }) => 
       params.doc_language = language.value;
     }
     const res = await checkResourceImport(apigwId, params);
-    tableData.value = res.map(data => ({
+    tableData.value = res.map((data: any) => ({
       ...data,
       _unchecked: false, // 标记是否不导入
     }));
@@ -949,7 +960,7 @@ const handleCheckData = async ({ changeView = true } = { changeView: true }) => 
           level: 'Error',
         };
       });
-      console.log(errorReasons.value);
+      // console.log(errorReasons.value);
       updateEditorDecorations();
     }
     // }
@@ -993,7 +1004,6 @@ const handleImportResource = async () => {
   }
 };
 
-
 // const deDuplication = (data: any[], k: string) => {
 //   const map = new Map();
 //   for (const item of data) {
@@ -1018,6 +1028,27 @@ const handleShowExample = () => {
 
 const handleHiddenExample = () => {
   isShowExample.value = false;
+};
+
+const handleEditSliderHidden = () => {
+  isSliderShow.value = false;
+};
+
+// 确认修改配置后
+const handleEditSubmit = (newResource: any) => {
+  let pos = tableData.value.findIndex(data => data.name === newResource.name);
+  if (pos > -1) tableData.value[pos] = { ...tableData.value[pos], ...newResource };
+  // console.log('pos');
+  // console.log(pos);
+  // console.log('tableData.value:');
+  // console.log(tableData.value);
+};
+
+// 点击修改配置时，会唤出 SideSlider
+const handleEdit = (resourceRow: any) => {
+  const _editingResource = tableData.value.find(data => data.name === resourceRow.name);
+  if (_editingResource) editingResource.value = { ...editingResource.value, ..._editingResource };
+  isSliderShow.value = true;
 };
 
 // 触发编辑器高亮
@@ -1118,27 +1149,13 @@ const handleRecoverAllRes = () => {
   tableData.value.forEach(d => d._unchecked = false);
 };
 
-// 编辑资源
-const handleEditResource = (id: number) => {
-  const name = 'apigwResourceEdit';
-  resourceVersionStore.setPageStatus({
-    isDetail: false,
-    isShowLeft: true,
-  });
-  router.push({
-    name,
-    params: {
-      resourceId: id,
-    },
-  });
-};
-
 const tempAuthConfig = ref({
   app_verified_required: false,
   auth_verified_required: false,
   resource_perm_required: false,
 });
 
+// 批量修改认证方式确认后
 const handleConfirmAuthConfigPopConfirm = (action: 'add' | 'update') => {
   if (tempAuthConfig.value.app_verified_required === false) tempAuthConfig.value.resource_perm_required = false;
   tableData.value.filter(item => !item._unchecked)
@@ -1151,6 +1168,7 @@ const handleConfirmAuthConfigPopConfirm = (action: 'add' | 'update') => {
     });
 };
 
+// 批量修改认证方式取消后
 const handleCancelAuthConfigPopConfirm = () => {
   tempAuthConfig.value = {
     app_verified_required: false,
@@ -1159,6 +1177,7 @@ const handleCancelAuthConfigPopConfirm = () => {
   }
 }
 
+// 认证方式列 TSX
 const renderAuthConfigColLabel = (action: 'add' | 'update') => {
   return (
     <div>
@@ -1221,6 +1240,7 @@ const tempPublicConfig = ref({
   allow_apply_permission: false,
 });
 
+// 批量修改公开设置确认后
 const handleConfirmPublicConfigPopConfirm = (action: 'add' | 'update') => {
   const isPublic = tempPublicConfig.value.is_public;
   const allowApplyPermission = tempPublicConfig.value.allow_apply_permission && isPublic;
@@ -1234,13 +1254,15 @@ const handleConfirmPublicConfigPopConfirm = (action: 'add' | 'update') => {
     });
 };
 
+// 批量修改公开设置取消后
 const handleCancelPublicConfigPopConfirm = () => {
   tempPublicConfig.value = {
     is_public: false,
     allow_apply_permission: false,
   }
-}
+};
 
+// 公开设置列 TSX
 const renderIsPublicColLabel = (action: 'add' | 'update') => {
   return (
     <div>
@@ -1297,9 +1319,6 @@ const renderIsPublicColLabel = (action: 'add' | 'update') => {
 };
 </script>
 <style scoped lang="scss">
-//$successColor: #34d97b;
-//$warningColor: #ffb400;
-//$failColor: #ff5656;
 
 .importWrapper {
   position: relative;
