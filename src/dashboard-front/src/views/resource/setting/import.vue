@@ -200,8 +200,9 @@
                   prop="name"
                 >
                 </bk-table-column>
+                <!--  认证方式列  -->
                 <bk-table-column
-                  :label="t('认证方式')"
+                  :label="renderAuthConfigColLabel"
                 >
                   <template #default="{ row }">
                     {{ getResourceAuth(row?.auth_config) }}
@@ -214,8 +215,9 @@
                     {{ getPermRequired(row?.auth_config) }}
                   </template>
                 </bk-table-column>
+                <!--  “是否公开”列  -->
                 <bk-table-column
-                  :label="t('是否公开')"
+                  :label="renderIsPublicColLabel"
                 >
                   <template #default="{ row }">
                     <span>
@@ -320,20 +322,6 @@
                     >
                       {{ t('不导入') }}
                     </bk-button>
-                    <!--                    <bk-pop-confirm-->
-                    <!--                      :title="t('确认删除资源{resourceName}？', { resourceName: data?.name || '' })"-->
-                    <!--                      content="删除操作无法撤回，请谨慎操作！"-->
-                    <!--                      width="288"-->
-                    <!--                      trigger="click"-->
-                    <!--                      @confirm="handleDeleteResource(data.id)"-->
-                    <!--                    >-->
-                    <!--                      <bk-button-->
-                    <!--                        text-->
-                    <!--                        theme="primary"-->
-                    <!--                      >-->
-                    <!--                        {{ t('删除') }}-->
-                    <!--                      </bk-button>-->
-                    <!--                    </bk-pop-confirm>-->
                   </template>
                 </bk-table-column>
                 <!--                <bk-table-column-->
@@ -491,7 +479,9 @@
                     <bk-button
                       text
                       theme="primary"
+                      @click="handleEditResource(row.id, 'edit')"
                     >
+                      >
                       {{ t('修改配置') }}
                     </bk-button>
                     <bk-button
@@ -504,20 +494,6 @@
                     >
                       {{ t('不导入') }}
                     </bk-button>
-                    <!--                    <bk-pop-confirm-->
-                    <!--                      :title="t('确认删除资源{resourceName}？', { resourceName: data?.name || '' })"-->
-                    <!--                      content="删除操作无法撤回，请谨慎操作！"-->
-                    <!--                      width="288"-->
-                    <!--                      trigger="click"-->
-                    <!--                      @confirm="handleDeleteResource(data.id)"-->
-                    <!--                    >-->
-                    <!--                      <bk-button-->
-                    <!--                        text-->
-                    <!--                        theme="primary"-->
-                    <!--                      >-->
-                    <!--                        {{ t('删除') }}-->
-                    <!--                      </bk-button>-->
-                    <!--                    </bk-pop-confirm>-->
                   </template>
                 </bk-table-column>
               </bk-table>
@@ -669,22 +645,8 @@
                         toggleRowUnchecked(row)
                       }"
                     >
-                      {{ t('恢复') }}
+                      {{ t('恢复导入') }}
                     </bk-button>
-                    <!--                    <bk-pop-confirm-->
-                    <!--                      :title="t('确认删除资源{resourceName}？', { resourceName: data?.name || '' })"-->
-                    <!--                      content="删除操作无法撤回，请谨慎操作！"-->
-                    <!--                      width="288"-->
-                    <!--                      trigger="click"-->
-                    <!--                      @confirm="handleDeleteResource(data.id)"-->
-                    <!--                    >-->
-                    <!--                      <bk-button-->
-                    <!--                        text-->
-                    <!--                        theme="primary"-->
-                    <!--                      >-->
-                    <!--                        {{ t('删除') }}-->
-                    <!--                      </bk-button>-->
-                    <!--                    </bk-pop-confirm>-->
                   </template>
                 </bk-table-column>
               </bk-table>
@@ -743,7 +705,7 @@
     </footer>
   </div>
 </template>
-<script setup lang="ts">
+<script setup lang="tsx">
 import {
   ref,
   nextTick,
@@ -1140,8 +1102,8 @@ const getResourceAuth = (authConfig: string | object | null | undefined) => {
   return tmpArr.join(', ');
 };
 
-const getPermRequired = (authStr: string | object | null | undefined) => {
-  if (!authStr) return '--';
+const getPermRequired = (authConfig: string | object | null | undefined) => {
+  if (!authConfig) return '--';
   let auth;
 
   if (typeof authConfig === 'string') {
@@ -1155,13 +1117,198 @@ const getPermRequired = (authStr: string | object | null | undefined) => {
   return `${t('不校验')}`;
 };
 
+// 切换资源是否导入
 const toggleRowUnchecked = (row: any) => {
   const data = tableData.value.find(d => d.name === row.name);
   if (data) data._unchecked = !data._unchecked;
 };
 
+// 还原所有不导入的资源
 const handleRecoverAllRes = () => {
   tableData.value.forEach(d => d._unchecked = false);
+};
+
+// 编辑资源
+const handleEditResource = (id: number) => {
+  const name = 'apigwResourceEdit';
+  resourceVersionStore.setPageStatus({
+    isDetail: false,
+    isShowLeft: true,
+  });
+  router.push({
+    name,
+    params: {
+      resourceId: id,
+    },
+  });
+};
+
+const tempAuthConfig = ref({
+  app_verified_required: false,
+  auth_verified_required: false,
+  resource_perm_required: false,
+});
+
+const isAuthConfigMultiEditVisible = ref(false);
+
+const showAuthConfigMultiEditPopover = () => {
+  isAuthConfigMultiEditVisible.value = true;
+};
+
+const handleConfirmAuthConfigPopConfirm = () => {
+  if (tempAuthConfig.value.app_verified_required === false) tempAuthConfig.value.resource_perm_required = false;
+  console.log(tempAuthConfig.value);
+}
+
+const handleCancelAuthConfigPopConfirm = () => {
+  isAuthConfigMultiEditVisible.value = false;
+  tempAuthConfig.value = {
+    app_verified_required: false,
+    auth_verified_required: false,
+    resource_perm_required: false,
+  }
+}
+
+const renderAuthConfigColLabel = () => {
+  return (
+    <div>
+      <div class="auth-config-col-label">
+        <span>{t('认证方式')}</span>
+        <bk-pop-confirm
+          width="430"
+          trigger="manual"
+          title={t('批量修改认证方式')}
+          extCls="auth-config-popover"
+          is-show={isAuthConfigMultiEditVisible.value}
+          content={
+            <div class="multi-edit-popconfirm-wrap auth-config">
+              <bk-form model={tempAuthConfig.value} labelWidth="120" labelPosition="right">
+                <bk-form-item label={t('认证方式')} required={true}>
+                  <bk-checkbox
+                    v-model={tempAuthConfig.value.app_verified_required}
+                  >
+                      <span class="bottom-line" v-bk-tooltips={{ content: t('请求方需提供蓝鲸应用身份信息') }}>
+                        {t('蓝鲸应用认证')}
+                      </span>
+                  </bk-checkbox>
+                  <bk-checkbox class="ml40" v-model={tempAuthConfig.value.auth_verified_required}>
+                      <span class="bottom-line" v-bk-tooltips={{ content: t('请求方需提供蓝鲸用户身份信息') }}>
+                        {t('用户认证')}
+                      </span>
+                  </bk-checkbox>
+                </bk-form-item>
+                {tempAuthConfig.value.app_verified_required ?
+                  <bk-form-item label={t('检验应用权限')}>
+                    <bk-switcher
+                      v-model={tempAuthConfig.value.resource_perm_required}
+                      theme="primary"
+                      size="small"
+                    />
+                  </bk-form-item> : ''
+                }
+              </bk-form>
+            </div>
+          }
+          onConfirm={() => handleConfirmAuthConfigPopConfirm()}
+          onCancel={() => handleCancelAuthConfigPopConfirm()}
+        >
+          <i
+            class="apigateway-icon icon-ag-bulk-edit edit-action"
+            v-bk-tooltips={{
+              content: (
+                <div>
+                  {t('批量修改认证方式')}
+                </div>
+              ),
+            }}
+            onClick={() => showAuthConfigMultiEditPopover()}
+          />
+        </bk-pop-confirm>
+      </div>
+    </div>
+  );
+};
+
+const tempPublicConfig = ref({
+  is_public: false,
+  allow_apply_permission: false,
+});
+
+const isPublicConfigMultiEditVisible = ref(false);
+
+const showPublicConfigMultiEditPopover = () => {
+  isPublicConfigMultiEditVisible.value = true;
+};
+
+const handleConfirmPublicConfigPopConfirm = () => {
+  if (tempPublicConfig.value.is_public === false) tempPublicConfig.value.allow_apply_permission = false;
+  console.log(tempPublicConfig.value);
+}
+
+const handleCancelPublicConfigPopConfirm = () => {
+  isPublicConfigMultiEditVisible.value = false;
+  tempPublicConfig.value = {
+    is_public: false,
+    allow_apply_permission: false,
+  }
+}
+
+const renderIsPublicColLabel = () => {
+  return (
+    <div>
+      <div class="public-config-col-label">
+        <span>{t('是否公开')}</span>
+        <bk-pop-confirm
+          width="320"
+          trigger="manual"
+          title={t('批量修改公开设置')}
+          extCls="public-config-popover"
+          is-show={isPublicConfigMultiEditVisible.value}
+          content={
+            <div class="multi-edit-popconfirm-wrap public-config">
+              <bk-form model={tempPublicConfig.value} labelWidth="100" labelPosition="right">
+                <bk-form-item
+                  label={t('是否公开')} required={true}
+                  description={t('公开，则用户可查看资源文档、申请资源权限；不公开，则资源对用户隐藏')}
+                >
+                  <bk-switcher
+                    v-model={tempPublicConfig.value.is_public}
+                    theme="primary"
+                    size="small"
+                  />
+                </bk-form-item>
+                {tempPublicConfig.value.is_public ?
+                  <bk-form-item label="">
+                    <bk-checkbox
+                      v-model={tempPublicConfig.value.allow_apply_permission}
+                    >
+                      <span class="bottom-line">
+                        {t('允许申请权限')}
+                      </span>
+                    </bk-checkbox>
+                  </bk-form-item> : ''
+                }
+              </bk-form>
+            </div>
+          }
+          onConfirm={() => handleConfirmPublicConfigPopConfirm()}
+          onCancel={() => handleCancelPublicConfigPopConfirm()}
+        >
+          <i
+            class="apigateway-icon icon-ag-bulk-edit edit-action"
+            v-bk-tooltips={{
+              content: (
+                <div>
+                  {t('批量修改公开设置')}
+                </div>
+              ),
+            }}
+            onClick={() => showPublicConfigMultiEditPopover()}
+          />
+        </bk-pop-confirm>
+      </div>
+    </div>
+  );
 };
 </script>
 <style scoped lang="scss">
@@ -1455,4 +1602,9 @@ const handleRecoverAllRes = () => {
   padding-left: 24px;
   padding-right: 24px;
 }
+
+:deep(.multi-edit-popconfirm-wrap .auth-config) {
+  font-size: 12px;
+}
+
 </style>

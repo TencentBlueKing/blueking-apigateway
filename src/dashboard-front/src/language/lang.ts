@@ -1488,6 +1488,11 @@ const lang: ILANG = {
   '后端请求方法': ['Backend Method'],
   '后端请求路径': ['Backend Path'],
   '修改配置': ['Change Settings'],
+  '批量修改认证方式': ['Edit All Auth Config'],
+  '批量修改公开设置': ['Edit All Public Config'],
+  '恢复取消导入的资源': ['Undo Resources Uncheck'],
+  '恢复导入': ['Undo Uncheck'],
+  '请输入资源名称，按Enter搜索': ['Input Resource Name And Press Enter'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
