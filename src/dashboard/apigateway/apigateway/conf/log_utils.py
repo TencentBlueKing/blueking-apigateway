@@ -16,102 +16,122 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import os
-
-LOG_CLASS = "logging.handlers.RotatingFileHandler"
-LOG_MAX_BYTES = 1024 * 1024 * 100
-LOG_BACKUP_COUNT = 5
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 
-def get_logging_config(log_level: str, is_local: bool, log_dir: str, log_to_file: bool):
-    if is_local:
-        logging_format = {
-            "format": (
-                "%(levelname)s [%(asctime)s] %(pathname)s "
-                "%(lineno)d %(funcName)s %(process)d %(thread)d "
-                "\n \t %(message)s \n"
-            ),
-            "datefmt": "%Y-%m-%d %H:%M:%S",
+def build_logging_config(log_level: str, to_console: bool, file_directory: Optional[Path], file_format: str) -> Dict:
+    """Build the global logging config dict.
+    :param log_level: The log level.
+    :param to_console: If True, output the logs to the console.
+    :param file_directory: If the value is not None, output the logs to the given directory.
+    :param file_format: The format of the logging file, "json" or "text".
+    :return: The logging config dict.
+    """
+
+    def _build_file_handler(log_path: Path, filename: str, format: str) -> Dict:
+        if format not in ("json", "text"):
+            raise ValueError(f"Invalid file_format: {file_format}")
+        formatter = "verbose_json" if format == "json" else "verbose"
+        return {
+            "class": "concurrent_log_handler.ConcurrentRotatingFileHandler",
+            "level": log_level,
+            "formatter": formatter,
+            "filename": str(log_path / filename),
+            # Set max file size to 100MB
+            "maxBytes": 100 * 1024 * 1024,
+            "backupCount": 5,
         }
-    else:
-        logging_format = {
-            "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
-            "fmt": (
-                "%(levelname)s %(asctime)s %(pathname)s %(lineno)d " "%(funcName)s %(process)d %(thread)d %(message)s"
-            ),
-        }
+
+    handlers_config: Dict[str, Any] = {
+        "null": {"level": log_level, "class": "logging.NullHandler"},
+        "console": {"level": log_level, "class": "logging.StreamHandler", "formatter": "verbose"},
+        "console_simple": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+        "sentry": {
+            "level": "ERROR",
+            "class": "raven.contrib.django.raven_compat.handlers.SentryHandler",
+            "formatter": "verbose",
+        },
+    }
+    # 生成指定 Logger 对应的 Handlers
+    logger_handlers_map: Dict[str, List[str]] = {}
+    for logger_name in ["root", "component", "iam", "mysql", "celery"]:
+        handlers = []
+
+        if to_console:
+            handlers.append("console")
+
+        if file_directory:
+            # 生成 logger 对应日志文件的 Handler
+            handlers_config[logger_name] = _build_file_handler(
+                file_directory, f"{logger_name}-{file_format}.log", file_format
+            )
+            handlers.append(logger_name)
+
+        logger_handlers_map[logger_name] = handlers
 
     return {
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
-            "verbose": logging_format,
-            "simple": {"format": "%(levelname)s %(message)s \n"},
+            "verbose": {
+                "format": (
+                    "%(name)s %(levelname)s [%(asctime)s] %(pathname)s %(lineno)d %(funcName)s %(process)d %(thread)d "
+                    "\n \t%(message)s \n"
+                ),
+                "datefmt": "%Y-%m-%d %H:%M:%S",
+            },
+            "verbose_json": {
+                "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+                "fmt": (
+                    "%(name)s %(levelname)s %(asctime)s %(pathname)s %(lineno)d "
+                    "%(funcName)s %(process)d %(thread)d %(message)s"
+                ),
+            },
+            "simple": {"format": "%(name)s %(levelname)s %(message)s"},
         },
-        "handlers": {
-            "null": {
-                "level": "DEBUG",
-                "class": "logging.NullHandler",
-            },
-            "console": {"level": "DEBUG", "class": "logging.StreamHandler", "formatter": "verbose"},
-            "console_simple": {
-                "level": "INFO",
-                "class": "logging.StreamHandler",
-                "formatter": "simple",
-            },
-            "root": _get_logging_handler(log_to_file, os.path.join(log_dir, "dashboard-django.log"), "verbose"),
-            "component": _get_logging_handler(
-                log_to_file, os.path.join(log_dir, "dashboard-component.log"), "verbose"
-            ),
-            "iam": _get_logging_handler(log_to_file, os.path.join(log_dir, "dashboard-iam.log"), "verbose"),
-            "mysql": _get_logging_handler(log_to_file, os.path.join(log_dir, "dashboard-mysql.log"), "verbose"),
-            "celery": _get_logging_handler(log_to_file, os.path.join(log_dir, "dashboard-celery.log"), "verbose"),
-            "sentry": {
-                "level": "ERROR",
-                "class": "raven.contrib.django.raven_compat.handlers.SentryHandler",
-                "formatter": "verbose",
-            },
-        },
+        "handlers": handlers_config,
+        # the root logger, 用于整个项目的默认 logger
+        "root": {"handlers": logger_handlers_map["root"], "level": log_level, "propagate": False},
         "loggers": {
-            "": {
-                "handlers": ["root", "sentry"],
-                "level": log_level,
-                "propagate": True,
-            },
             "django": {
-                "handlers": ["root", "sentry"],
+                "handlers": [*logger_handlers_map["root"], "sentry"],
                 "level": "ERROR",
                 "propagate": True,
             },
             "django.db.backends": {
-                "handlers": ["mysql"],
+                "handlers": logger_handlers_map["mysql"],
                 "level": log_level,
                 "propagate": True,
             },
             # 组件调用日志
             "component": {
-                "handlers": ["component", "sentry"],
+                "handlers": [*logger_handlers_map["component"], "sentry"],
                 "level": log_level,
                 "propagate": False,
             },
             "bkapi_client_core": {
-                "handlers": ["component", "sentry"],
+                "handlers": [*logger_handlers_map["component"], "sentry"],
                 "level": log_level,
                 "propagate": False,
             },
             "iam": {
-                "handlers": ["iam", "sentry"],
+                "handlers": [*logger_handlers_map["iam"], "sentry"],
                 "level": log_level,
                 "propagate": False,
             },
             "celery": {
-                "handlers": ["celery", "sentry"],
+                "handlers": [*logger_handlers_map["celery"], "sentry"],
                 "level": "INFO",
                 "propagate": False,
             },
             "opentelemetry.util._time": {
                 # TODO: 升级 python >= 3.7 后，可删除此 logger
-                "handlers": ["celery", "sentry"],
+                "handlers": [*logger_handlers_map["celery"], "sentry"],
                 "level": "ERROR",
                 "propagate": False,
             },
@@ -126,27 +146,4 @@ def get_logging_config(log_level: str, is_local: bool, log_dir: str, log_to_file
                 "propagate": True,
             },
         },
-    }
-
-
-def makedirs_when_not_exists(path: str):
-    if not path or os.path.exists(path):
-        return
-
-    os.makedirs(path, exist_ok=True)
-
-
-def _get_logging_handler(log_to_file: bool, filename: str, formatter: str):
-    if log_to_file:
-        return {
-            "class": LOG_CLASS,
-            "formatter": formatter,
-            "filename": filename,
-            "maxBytes": LOG_MAX_BYTES,
-            "backupCount": LOG_BACKUP_COUNT,
-        }
-
-    return {
-        "class": "logging.StreamHandler",
-        "formatter": formatter,
     }

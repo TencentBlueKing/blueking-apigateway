@@ -234,3 +234,7 @@ class ComponentReleaseHistorySLZ(serializers.Serializer):
             return ""
 
         return self.context["resource_version_id_to_fields"][resource_version_id].get("version")
+
+
+class ComponentReleaseHistoryStatusSLZ(serializers.Serializer):
+    status = serializers.CharField(help_text="状态")

@@ -4,28 +4,18 @@
       <div class="title">{{ t('在线调试') }}</div>
       <div class="history">
         <i class="apigateway-icon icon-ag-cc-history history-icon"></i>
-        <span>请求记录</span>
+        <span>{{ t('请求记录') }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
-import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { Message } from 'bkui-vue';
-import { getResourceVersionsList } from '@/http';
 import { useStage } from '@/store';
 
 const { t } = useI18n();
 const stage = useStage();
-
-const route = useRoute();
-const apigwId = computed(() => +route.params.id);
-
-// const props = defineProps({
-// });
 </script>
 
 <style lang="scss" scoped>

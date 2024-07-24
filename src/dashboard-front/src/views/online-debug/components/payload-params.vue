@@ -41,6 +41,7 @@ import { AngleUpFill } from 'bkui-vue/lib/icon';
 import editTable from '@/views/online-debug/components/edit-table.vue';
 
 const { t } = useI18n();
+
 const editTableRef1 = ref();
 const editTableRef2 = ref();
 const activeIndex = ref<number[]>([1, 2]);

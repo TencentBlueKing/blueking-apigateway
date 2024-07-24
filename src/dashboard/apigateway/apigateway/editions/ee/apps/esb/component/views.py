@@ -35,11 +35,11 @@ from apigateway.apps.esb.component.sync import ComponentSynchronizer
 from apigateway.apps.esb.component.tasks import sync_and_release_esb_components
 from apigateway.apps.esb.constants import DataTypeEnum
 from apigateway.apps.esb.permissions import UserAccessESBPermission
-from apigateway.biz.resource.importer.parser import ResourceDataConvertor
-from apigateway.biz.resource.importer.validate import ResourceImportValidator
 
 # FIXME: 将 views 挪到 apis.web 模块
+from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator
 from apigateway.common.error_codes import error_codes
+from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import Gateway, ResourceVersion
 from apigateway.utils.django import get_object_or_None
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
@@ -211,14 +211,22 @@ class ComponentSyncViewSet(viewsets.ViewSet):
                 data={"is_releasing": True},
             )
 
+        # 创建同步记录以返回id以供查询
+        release_history = ComponentReleaseHistory.objects.create(
+            resource_version_id=0,
+            data=[],
+            status=ReleaseStatusEnum.RELEASING.value,
+            created_by=request.user.username,
+        )
+
         # 因同步及发布任务耗时较长，因此采用异步方式处理
         apply_async_on_commit(
             sync_and_release_esb_components,
-            args=(esb_gateway.id, request.user.username, False),
+            args=(esb_gateway.id, release_history.id, request.user.username, False),
             expires=ESB_RELEASE_TASK_EXPIRES,
         )
 
-        return OKJsonResponse(data={"is_releasing": True})
+        return OKJsonResponse(data={"is_releasing": True, "id": release_history.id})
 
     def _get_esb_gateway(self) -> Gateway:
         gateway = get_object_or_None(Gateway, name=settings.BK_ESB_GATEWAY_NAME)
@@ -268,4 +276,19 @@ class ComponentReleaseHistoryViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = serializers.ComponentResourceBindingSLZ(instance.data, many=True)
+        return OKJsonResponse(data=slz.data)
+
+
+class ComponentReleaseHistoryStatusViewSet(viewsets.ModelViewSet):
+    queryset = ComponentReleaseHistory.objects.all()
+    serializer_class = serializers.ComponentReleaseHistoryStatusSLZ
+    lookup_field = "id"
+
+    @swagger_auto_schema(
+        responses={status.HTTP_200_OK: serializers.ComponentReleaseHistoryStatusSLZ},
+        tags=["ESB.Component"],
+    )
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        slz = serializers.ComponentReleaseHistoryStatusSLZ(instance)
         return OKJsonResponse(data=slz.data)

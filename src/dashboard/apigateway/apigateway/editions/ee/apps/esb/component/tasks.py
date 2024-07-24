@@ -27,6 +27,7 @@ import logging
 from celery import shared_task
 from rest_framework.serializers import ValidationError
 
+from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory
 from apigateway.apps.esb.component.helpers import get_release_lock
 from apigateway.apps.esb.component.release import ComponentReleaser
 from apigateway.apps.esb.component.sync import ComponentSynchronizer
@@ -37,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(name="apigateway.apps.esb.tasks.sync_and_release_esb_components", ignore_result=True)
-def sync_and_release_esb_components(api_id: int, username: str, lock_blocking: bool):
+def sync_and_release_esb_components(gateway_id: int, release_history_id: int, username: str, lock_blocking: bool):
     logger.info("sync_and_release_esb_components task start")
 
     release_lock = get_release_lock()
@@ -47,13 +48,12 @@ def sync_and_release_esb_components(api_id: int, username: str, lock_blocking: b
         logger.warning("components is releasing, please don't repeat release")
         return
 
-    gateway = Gateway.objects.get(id=api_id)
+    gateway = Gateway.objects.get(id=gateway_id)
     synchronizer = ComponentSynchronizer()
     releaser = ComponentReleaser(gateway, username)
+    releaser.release_history = ComponentReleaseHistory.objects.get(id=release_history_id)
 
     try:
-        releaser.create_release_history()
-
         # sync components to gateway resources
         updated_resources = synchronizer.sync_to_resources(gateway, username=username)
         releaser.record_updated_resources(updated_resources)

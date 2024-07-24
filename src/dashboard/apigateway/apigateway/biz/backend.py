@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 from django.db import transaction
 
@@ -58,15 +58,15 @@ class BackendHandler:
 
     @staticmethod
     @transaction.atomic
-    def update(backend: Backend, data: Dict[str, Any], updated_by: str) -> Backend:
+    def update(backend: Backend, data: Dict[str, Any], updated_by: str) -> Tuple[Backend, List[int]]:
         """更新后端服务"""
+        updated_stage_ids = []
         backend.type = data["type"]
         if backend.name != DEFAULT_BACKEND_NAME:
             backend.name = data["name"]
         backend.description = data["description"]
         backend.updated_by = updated_by
         backend.save()
-
         backend_configs = BackendConfig.objects.filter(backend_id=backend.id)
         stage_configs = {config.stage_id: config for config in backend_configs}
 
@@ -77,11 +77,10 @@ class BackendHandler:
             new_config = {key: value for key, value in config.items() if key != "stage_id"}
             if new_config == backend_config.config:
                 continue
-
+            updated_stage_ids.append(config["stage_id"])
             backend_config.config = new_config
             backend_config.updated_by = updated_by
             backend_config.updated_time = now
-
             backend_configs.append(backend_config)
 
         BackendConfig.objects.bulk_update(backend_configs, fields=["config", "updated_by", "updated_time"])
@@ -94,8 +93,7 @@ class BackendHandler:
                 backend_config.gateway_id,
                 backend_config.stage_id,
             )
-
-        return backend
+        return backend, updated_stage_ids
 
     @staticmethod
     def deletable(backend: Backend) -> bool:
