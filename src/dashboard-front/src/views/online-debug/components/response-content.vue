@@ -1,101 +1,174 @@
 <template>
   <div class="response-container">
-    <div class="response-title flex">
-      <div class="response-type flex">
-        <angle-up-fill class="response-header-fold" />
-        <bk-tab v-model:active="tabActive" type="unborder-card" class="response-type-tab">
-          <bk-tab-panel label="Body" name="body"></bk-tab-panel>
-          <bk-tab-panel label="请求详情" name="detail"></bk-tab-panel>
-        </bk-tab>
-      </div>
-      <div class="response-status flex">
-        <div class="response-status-item">
-          <span class="label">Status：</span>
-          <span class="value">400 Bad Request</span>
-        </div>
-        <div class="response-status-item">
-          <span class="label">Time：</span>
-          <span class="value">742 ms</span>
-        </div>
-        <div class="response-status-item">
-          <span class="label">Size：</span>
-          <span class="value">968 B</span>
-        </div>
-      </div>
-    </div>
-    <div class="response-main">
-      <div class="response-content-type flex">
-        <div class="payload-type">
-          <div class="payload-type-item active">
-            <span class="icon apigateway-icon icon-ag-menu"></span>
-            Pretty
+    <bk-collapse
+      class="bk-collapse-response"
+      v-model="activeIndex"
+    >
+      <bk-collapse-panel :name="1">
+        <template #header>
+          <div class="response-title flex">
+            <div class="response-type flex">
+              <angle-up-fill :class="['header-icon', activeIndex?.includes(1) ? '' : 'fold']" />
+              <bk-tab v-model:active="tabActive" type="unborder-card" class="response-type-tab" @click="stopPropa">
+                <bk-tab-panel label="Body" name="body"></bk-tab-panel>
+                <bk-tab-panel :label="t('请求详情')" name="detail"></bk-tab-panel>
+              </bk-tab>
+            </div>
+            <div class="response-status flex" @click="stopPropa">
+              <div class="response-status-item">
+                <span class="label">Status：</span>
+                <span class="value">{{ data?.status_code || '--' }}</span>
+              </div>
+              <div class="response-status-item">
+                <span class="label">Time：</span>
+                <span class="value">{{ data?.proxy_time || 0 }} ms</span>
+              </div>
+              <div class="response-status-item">
+                <span class="label">Size：</span>
+                <span class="value">{{ data?.size || 0 }} KB</span>
+              </div>
+            </div>
           </div>
-          <div class="payload-type-item">
-            <span class="icon apigateway-icon icon-ag-menu"></span>
-            Raw
+        </template>
+        <template #content>
+          <div class="response-main">
+            <div class="response-content-type flex" v-show="tabActive === 'body'">
+              <div class="payload-type">
+                <div class="payload-type-item">
+                  <span class="icon apigateway-icon icon-ag-menu"></span>
+                  Pretty
+                </div>
+                <div class="payload-type-item active">
+                  <span class="icon apigateway-icon icon-ag-menu"></span>
+                  Raw
+                </div>
+              </div>
+              <bk-select
+                class="bk-select"
+                v-model="responseType"
+                :clearable="false"
+                :filterable="false"
+                :disabled="true"
+              >
+                <bk-option
+                  v-for="(item, index) in bodyTypeList"
+                  :id="item.value"
+                  :key="index"
+                  :name="item.label"
+                />
+              </bk-select>
+            </div>
+            <div class="response-content-type flex" v-show="tabActive === 'detail'">
+              <div class="payload-type">
+                <div class="payload-type-item active">
+                  <span class="icon apigateway-icon icon-ag-menu"></span>
+                  Shell
+                </div>
+                <div class="payload-type-item">
+                  <span class="icon apigateway-icon icon-ag-menu"></span>
+                  Python
+                </div>
+              </div>
+              <bk-select
+                class="bk-select"
+                v-model="detailsType"
+                :clearable="false"
+                :filterable="false"
+                :disabled="true"
+              >
+                <bk-option
+                  v-for="(item, index) in detailsTypeList"
+                  :id="item.value"
+                  :key="index"
+                  :name="item.label"
+                />
+              </bk-select>
+            </div>
+            <div class="response-content">
+              <editor-monaco v-model="editorText" theme="Visual Studio" ref="resourceEditorRef" />
+            </div>
           </div>
-        </div>
-        <bk-select
-          class="bk-select"
-          v-model="responseType"
-          :clearable="false"
-          :filterable="false"
-        >
-          <bk-option
-            v-for="(item, index) in datasource"
-            :id="item.value"
-            :key="index"
-            :name="item.label"
-          />
-        </bk-select>
-      </div>
-      <div class="response-content">
-        <editor-monaco v-model="editorText" theme="Visual Studio" ref="resourceEditorRef" />
-      </div>
-    </div>
+        </template>
+      </bk-collapse-panel>
+    </bk-collapse>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
+import { useI18n } from 'vue-i18n';
 import editorMonaco from '@/components/ag-editor.vue';
 
+const { t } = useI18n();
+
+const props = defineProps({
+  res: {
+    type: Object,
+    default: {},
+  },
+});
+
+const activeIndex = ref<number[]>([1]);
 const tabActive = ref<string>('body');
 const responseType = ref<string>('JSON');
-const datasource = ref([
+const bodyTypeList = ref([
   {
-    value: 'climbing',
+    value: 'JSON',
     label: 'JSON',
   },
   {
-    value: 'climbing1',
+    value: 'XML',
     label: 'XML',
   },
   {
-    value: 'climbing2',
+    value: 'HTML',
     label: 'HTML',
   },
   {
-    value: 'fitness',
+    value: 'TEXT',
     label: 'TEXT',
   },
 ]);
-const editorText = ref<string>(`{
-	"type": "team",
-	"test": {
-		"testPage": "tools/testing/run-tests.htm",
-		"enabled": true
-	},
-    "search": {
-        "excludeFolders": [
-			".git",
-			"tools/testing/qunit",
-			"tools/testing/chutzpah",
-			"server.net"
-        ]
-}`);
+const detailsType = ref<string>('cURL');
+const detailsTypeList = ref([
+  {
+    value: 'cURL',
+    label: 'cURL',
+  },
+]);
+const editorText = ref<any>('');
 const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>();
+const data = ref<any>({});
+
+const stopPropa = (e: Event) => {
+  e?.stopPropagation();
+};
+
+const setEditorValue = () => {
+  if (tabActive.value === 'body') {
+    editorText.value = data.value?.body || '';
+  } else {
+    editorText.value = data.value?.curl || '';
+  }
+  resourceEditorRef.value?.setValue(editorText.value);
+};
+
+watch(
+  () => tabActive.value,
+  () => {
+    setEditorValue();
+  },
+);
+
+watch(
+  () => props.res,
+  (v) => {
+    data.value = v || {};
+    tabActive.value = 'body';
+    setEditorValue();
+  },
+);
 
 </script>
 
@@ -106,9 +179,14 @@ const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>();
     position: relative;
     .response-type {
       flex: 1;
-      .response-header-fold {
+      .header-icon {
         margin-top: -18px;
         margin-right: 8px;
+        transition: all .2s;
+        cursor: pointer;
+        &.fold {
+          transform: rotate(-90deg);
+        }
       }
       .response-type-tab {
         flex: 1;
@@ -138,12 +216,17 @@ const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>();
         margin-right: 8px;
       }
     }
-    .response-content{
+    .response-content {
       width: 100%;
-      height: 345px;
+      height: 235px;
       background: #FFFFFF;
       border: 1px solid #DCDEE5;
       border-radius: 2px;
+    }
+  }
+  .bk-collapse-response {
+    :deep(.bk-collapse-content) {
+      padding: 0;
     }
   }
 }

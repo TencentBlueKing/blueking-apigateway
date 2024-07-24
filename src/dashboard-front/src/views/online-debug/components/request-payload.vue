@@ -4,13 +4,21 @@
     type="unborder-card"
   >
     <bk-tab-panel label="Body" name="Body">
-      <payload-body ref="payloadBodyRef" />
+      <payload-body
+        ref="payloadBodyRef"
+        :from-data-payload="schema.fromDataPayload"
+        :raw-payload="schema.rawPayload" />
     </bk-tab-panel>
     <bk-tab-panel label="Params" name="Params">
-      <payload-params ref="payloadParamsRef" />
+      <payload-params
+        :query-payload="schema.queryPayload"
+        :path-payload="schema.pathPayload"
+        ref="payloadParamsRef" />
     </bk-tab-panel>
     <bk-tab-panel label="Headers" name="Headers">
-      <payload-headers ref="payloadHeadersRef" />
+      <payload-headers
+        :headers-payload="schema.headersPayload"
+        ref="payloadHeadersRef" />
     </bk-tab-panel>
   </bk-tab>
 </template>
@@ -25,6 +33,13 @@ const active = ref<string>('Body');
 const payloadBodyRef = ref();
 const payloadParamsRef = ref();
 const payloadHeadersRef = ref();
+
+defineProps({
+  schema: {
+    type: Object,
+    default: {},
+  },
+});
 
 const getData = () => {
   return {

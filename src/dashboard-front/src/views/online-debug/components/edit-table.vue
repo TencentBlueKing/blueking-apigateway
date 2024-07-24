@@ -9,7 +9,7 @@
     :cell-class="getCellClass"
     border="outer">
     <bk-table-column :width="55" type="selection" align="center" />
-    <bk-table-column label="参数名" prop="name">
+    <bk-table-column :label="t('参数名')" prop="name">
       <template #default="{ row, column, index }">
         <div class="td-text" v-if="!row?.isEdit">
           {{ row?.name }}
@@ -43,7 +43,7 @@
 
       </template>
     </bk-table-column>
-    <bk-table-column label="参数值" prop="value">
+    <bk-table-column :label="t('参数值')" prop="value">
       <template #default="{ row, column, index }">
         <div class="td-text" v-if="!row?.isEdit">
           {{ row?.value }}
@@ -67,7 +67,7 @@
         </template>
       </template>
     </bk-table-column>
-    <bk-table-column label="类型" prop="type">
+    <bk-table-column :label="t('类型')" prop="type">
       <template #default="{ row, column, index }">
         <div
           class="td-text"
@@ -106,7 +106,7 @@
         </template>
       </template>
     </bk-table-column>
-    <bk-table-column label="说明" prop="instructions">
+    <bk-table-column :label="t('说明')" prop="instructions">
       <template #default="{ row, column, index }">
         <div class="td-text" v-if="!row?.isEdit">
           {{ row?.instructions }}
@@ -130,7 +130,7 @@
         </template>
       </template>
     </bk-table-column>
-    <bk-table-column label="操作">
+    <bk-table-column :label="t('操作')">
       <template #default="{ row, index }">
         <i
           class="tb-btn add-btn apigateway-icon icon-ag-plus-circle-shape"
@@ -144,10 +144,17 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
+
+const props = defineProps({
+  list: {
+    type: Array,
+    default: [],
+  },
+});
 
 const isShowVarPopover = ref(false);
 
@@ -166,7 +173,6 @@ const setInputRefs = (el: any, name: string) => {
 };
 const getDefaultTbRow = () => {
   return {
-    id: 0,
     name: '',
     value: '',
     type: '',
@@ -175,9 +181,7 @@ const getDefaultTbRow = () => {
   };
 };
 
-const tableData = ref<any>([
-  getDefaultTbRow(),
-]);
+const tableData = ref<any>(props?.list?.length ? props.list : [getDefaultTbRow()]);
 
 const typeList = ref<any[]>([
   {
@@ -211,7 +215,7 @@ const handleCellClick = async ({ event, column, rowIndex }: any) => {
   nextTick(() => {
     if (field === 'type') {
       // formInputRef.value?.get(`${field}-input-${rowIndex}-${index}`)?.showPopover();
-      formInputRef.value?.get(`${field}-input-${rowIndex}-${index}`)?.focus();
+      // formInputRef.value?.get(`${field}-input-${rowIndex}-${index}`)?.focus();
     } else {
       formInputRef.value?.get(`${field}-input-${rowIndex}-${index}`)?.focus();
     }
@@ -302,12 +306,42 @@ const varRules = {
   ],
   instructions: [
     {
-      required: true,
+      required: false,
       message: t('必填项'),
       trigger: 'blur',
     },
   ],
 };
+
+watch(
+  () => props.list,
+  (v) => {
+    // console.log('table: ', v);
+    const list: any[] = [];
+    v?.forEach((item: any) => {
+      list.push({
+        isEdit: false,
+        name: item.name,
+        value: '',
+        instructions: item.description,
+        required: item.required,
+        type: item.schema?.type,
+        options: item.schema?.enum || [],
+        default: item.schema?.default,
+      });
+    });
+
+    if (!list?.length) {
+      tableData.value = [getDefaultTbRow()];
+    } else {
+      tableData.value = list;
+    }
+  },
+  {
+    deep: true,
+    immediate: true,
+  },
+);
 
 defineExpose({
   getTableData,

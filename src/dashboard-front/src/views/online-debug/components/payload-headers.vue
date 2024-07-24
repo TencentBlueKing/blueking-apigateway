@@ -7,13 +7,13 @@
       <template #header>
         <div class="params-header">
           <div class="params-header-title">
-            <angle-up-fill class="params-header-fold" /><span>Headers 参数</span>
+            <angle-up-fill class="params-header-fold" /><span>{{ t('Headers 参数') }}</span>
           </div>
         </div>
       </template>
       <template #content>
         <div>
-          <edit-table ref="editTableRef" />
+          <edit-table ref="editTableRef" :list="headerList" />
         </div>
       </template>
     </bk-collapse-panel>
@@ -21,19 +21,37 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import editTable from '@/views/online-debug/components/edit-table.vue';
 
 const { t } = useI18n();
 
+const props = defineProps({
+  headersPayload: {
+    type: Array,
+    default: [],
+  },
+});
+
 const activeIndex = ref<number[]>([1]);
 const editTableRef = ref();
+const headerList = ref<any[]>([]);
 
 const getData = () => {
   return editTableRef.value?.getTableData();
 };
+
+watch(
+  () => props.headersPayload,
+  (v: any) => {
+    headerList.value = v;
+  },
+  {
+    deep: true,
+  },
+);
 
 defineExpose({
   getData,
