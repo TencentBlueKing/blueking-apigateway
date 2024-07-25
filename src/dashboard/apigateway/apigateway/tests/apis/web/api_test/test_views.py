@@ -19,7 +19,7 @@
 import responses
 from ddf import G
 
-from apigateway.core.models import ResourceDebugHistory
+from apigateway.apps.api_debug.models import APIDebugHistory
 from apigateway.core.utils import get_resource_url
 
 
@@ -56,6 +56,7 @@ class TestAPITestAPIView:
         )
 
         result = response.json()
+        print(f"response: {result}")
         assert response.status_code == 200
         assert result["data"]["headers"] == {
             "Content-Type": "text/plain",
@@ -75,9 +76,9 @@ class TestAPITestAPIView:
 
 class TestAPIDebugHistoryApi:
     def test_list(self, request_view, fake_resource, fake_gateway):
-        G(ResourceDebugHistory, resource_name=fake_resource.name, gateway=fake_gateway, request_url="url1")
-        G(ResourceDebugHistory, resource_name=fake_resource.name, gateway=fake_gateway, request_url="url2")
-        G(ResourceDebugHistory, resource_name=fake_resource.name, gateway=fake_gateway, request_url="url3")
+        G(APIDebugHistory, resource_name=fake_resource.name, gateway=fake_gateway)
+        G(APIDebugHistory, resource_name=fake_resource.name, gateway=fake_gateway)
+        G(APIDebugHistory, resource_name=fake_resource.name, gateway=fake_gateway)
         resp = request_view(
             method="GET",
             path_params={"gateway_id": fake_gateway.id},
@@ -89,9 +90,7 @@ class TestAPIDebugHistoryApi:
         assert len(result["data"]) == 3
 
     def test_retrieve(self, request_view, fake_gateway, fake_resource):
-        fake_history = G(
-            ResourceDebugHistory, resource_name=fake_resource.name, gateway=fake_gateway, request_url="url1"
-        )
+        fake_history = G(APIDebugHistory, resource_name=fake_resource.name, gateway=fake_gateway)
         resp = request_view(
             method="GET",
             path_params={"gateway_id": fake_gateway.id, "id": fake_history.id},
@@ -103,9 +102,7 @@ class TestAPIDebugHistoryApi:
         assert result["data"]["id"] == fake_history.id
 
     def test_destroy(self, request_view, fake_gateway, fake_resource):
-        fake_history = G(
-            ResourceDebugHistory, resource_name=fake_resource.name, gateway=fake_gateway, request_url="url1"
-        )
+        fake_history = G(APIDebugHistory, resource_name=fake_resource.name, gateway=fake_gateway)
         resp = request_view(
             method="DELETE",
             path_params={"gateway_id": fake_gateway.id, "id": fake_history.id},

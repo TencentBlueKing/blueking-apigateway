@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     "apigateway.apps.esb",
     "apigateway.apps.docs",
     "apigateway.apps.esb.bkcore",
+    "apigateway.apps.api_debug",
     "apigw_manager.apigw",
     "apigateway.controller",
     "apigateway.healthz",

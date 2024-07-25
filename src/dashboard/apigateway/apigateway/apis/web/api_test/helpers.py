@@ -1,43 +1,33 @@
-from typing import Any, Dict, Literal, Optional
+from datetime import datetime
+from typing import Dict, Literal, Optional
 
-from django.conf import settings
-from pydantic import BaseModel, Field, root_validator, validator
-
-
-class Authorization(BaseModel):
-    bk_app_code: Optional[str] = Field(None, help="蓝鲸应用编码")
-    bk_app_secret: Optional[str] = Field(None, help="蓝鲸应用密钥")
-    bk_ticket: Optional[str] = Field(None, help="蓝鲸用户票据")
-    bk_token: Optional[str] = Field(None, help="蓝鲸用户票据")  # 注意：这里可能是一个重复字段，根据实际需求调整
-    uin: Optional[str] = Field(None, help="uin")
-    skey: Optional[str] = Field(None, help="skey")
-
-    @validator("uin", allow_reuse=True)
-    def _validate_uin(cls, v): # noqa: N805
-        if v is not None:
-            return v.lstrip("o0")
-        return v
-
-    @root_validator(pre=True, allow_reuse=True)
-    def remove_empty_values(cls, values): # noqa: N805
-        return {k: v for k, v in values.items() if v is not None and v.strip()}
+from pydantic import BaseModel, Field
 
 
-class APITestRequestBuilder(BaseModel):
-    stage_id: int
-    resource_id: int
-    method: Literal["GET", "POST", "PUT", "DELETE"] = Field("GET", help="HTTP 方法，默认为GET")
-    subpath: Optional[str] = Field(None, help="子路径")
-    headers: Dict[str, str] = Field({}, help="请求头")
+class ApiDebugHistoryRequest(BaseModel):
+    request_url: Optional[str] = Field(help="请求路由")
+    request_method: Literal["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"] = Field(
+        "GET", help="HTTP 方法，默认为GET"
+    )
+    type: Literal["HTTP", "GRPC", "WEBSOCKET"] = Field("HTTP", help="请求类型，默认为HTTP")
+    authorization: Dict[str, str] = Field(None, help="认证信息")
     path_params: Dict[str, str] = Field({}, help="路径参数")
     query_params: Dict[str, str] = Field({}, help="查询参数")
     body: Optional[str] = Field(None, help="请求体")
+    headers: Dict[str, str] = Field({}, help="请求头")
+    subpath: Optional[str] = Field(None, help="子路径")
     use_test_app: bool = Field(False, help="是否使用测试应用")
     use_user_from_cookies: bool = Field(False, help="是否使用 cookies 中的用户信息")
-    authorization: Optional[Authorization] = Field(None, help="认证信息")
+    request_time: Optional[datetime] = Field(None, help="请求时间")
+    spec_version: Optional[int] = Field(1, help="请求版本")
 
-    @validator("authorization", pre=True, always=True)
-    def validate_authorization(cls, v: Any, values: Dict[str, Any]) -> Optional[Authorization]: # noqa: N805
-        if values.get("use_test_app"):
-            return Authorization(**settings.DEFAULT_TEST_APP)
-        return v
+
+class ApiDebugHistoryResponse(BaseModel):
+    status_code: Optional[int] = Field(200, help="返回结果的状态码")
+    proxy_time: float = Field(..., gt=0, help="处理时间，单位为秒，包含两位小数")
+    body: Optional[str] = Field(None)
+    spec_version: Optional[int] = Field(1, help="返回的结果版本")
+
+    # 格式化时间
+    def format_proxy_time(self) -> str:
+        return f"{self.proxy_time:.2f}"

@@ -29,16 +29,17 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apps.api_debug.models import APIDebugHistory
 from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.released_resource import get_released_resource_data
-from apigateway.core.models import Resource, ResourceDebugHistory, Stage
+from apigateway.core.models import Stage
 from apigateway.utils.curlify import to_curl
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.time import convert_second_to_epoch_millisecond
 
-from .helpers import APITestRequestBuilder
+from .helpers import ApiDebugHistoryRequest, ApiDebugHistoryResponse
 from .prepared_request import PreparedRequestHeaders, PreparedRequestURL
-from .serializers import APIDebugHistoriesListOutputSLZ, APITestOutputSLZ
+from .serializers import APIDebugHistoriesListOutputSLZ, APITestInputSLZ, APITestOutputSLZ
 
 TEST_PERMISSION_EXPIRE_DAYS = 1
 
@@ -50,8 +51,9 @@ class APITestApi(generics.CreateAPIView):
         tags=["WebAPI.APITest"],
     )
     def post(self, request, *args, **kwargs):
-        build = APITestRequestBuilder(**request.data)
-        data = build.dict()
+        slz = APITestInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
 
         # 获取资源
         stage = generics.get_object_or_404(Stage, gateway=request.gateway, id=data["stage_id"])
@@ -87,6 +89,7 @@ class APITestApi(generics.CreateAPIView):
         # 开始时间
         start_time = time.perf_counter()
         request_time = timezone.now()
+
         try:
             response = requests.request(
                 method=data["method"],
@@ -102,30 +105,38 @@ class APITestApi(generics.CreateAPIView):
                 verify=False,
             )
             end_time = time.perf_counter()
-            duration = end_time - start_time
+            proxy_time = end_time - start_time
+            # 入参检查
+            history_request = {
+                "request_url": prepared_request_url.request_url,
+                "request_method": data["method"],
+                "type": "HTTP",
+                "authorization": data.get("authorization", {}),
+                "path_params": data.get("path_params", {}),
+                "query_params": data.get("query_params", {}),
+                "body": data.get("body", ""),
+                "headers": data.get("headers", {}),
+                "subpath": data.get("subpath", ""),
+                "use_test_app": data.get("use_test_app", True),
+                "use_user_from_cookies": data.get("use_user_from_cookies", False),
+                "request_time": request_time,
+                "spec_version": data.get("spec_version", 1),
+            }
+            # 接口检查
+            history_response = {
+                "status_code": response.status_code,
+                "response": response.text,
+                "proxy_time": proxy_time,
+                "spec_version": 1,
+            }
             success_history_data = {
                 "gateway": request.gateway,
                 "stage": stage,
-                "resource": Resource(id=data["resource_id"]),
-                "request_url": prepared_request_url.request_url,
-                "request_method": data["method"],
-                "request": {
-                    "authorization": data.get("authorization", {}),
-                    "path_params": data.get("path_params", {}),
-                    "query_params": data.get("query_params", {}),
-                    "body": data.get("body", ""),
-                    "headers": data.get("headers", {}),
-                    "subpath": data.get("subpath", ""),
-                    "use_test_app": data.get("use_test_app", True),
-                    "use_user_from_cookies": data.get("use_user_from_cookies", False),
-                },
-                "request_time": request_time,
-                "status_code": response.status_code,
-                "response": response.text,
-                "proxy_time": duration,
-                "spec_version": 1,
+                "resource_name": released_resource.name,
+                "request": ApiDebugHistoryRequest(**history_request),
+                "response": ApiDebugHistoryResponse(**history_response),
             }
-            ResourceDebugHistory.objects.create(**success_history_data)
+            APIDebugHistory.objects.create(**success_history_data)
         except Exception as err:
             return FailJsonResponse(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -160,7 +171,7 @@ class APITestApi(generics.CreateAPIView):
         }
 
 
-class TestHistoriesQuerySetMixin:
+class APIDebugHistoriesQuerySetMixin:
     def get_queryset(self):
         queryset = super().get_queryset()
         return queryset.filter(gateway=self.request.gateway)
@@ -174,8 +185,8 @@ class TestHistoriesQuerySetMixin:
         tags=["WebAPI.ResourceDebugHistory"],
     ),
 )
-class APIDebugHistoryListApi(TestHistoriesQuerySetMixin, generics.ListAPIView):
-    queryset = ResourceDebugHistory.objects.order_by("-updated_time")
+class APIDebugHistoryListApi(APIDebugHistoriesQuerySetMixin, generics.ListAPIView):
+    queryset = APIDebugHistory.objects.order_by("-updated_time")
     serializer_class = APIDebugHistoriesListOutputSLZ
 
     def list(self, request, *args, **kwargs):
@@ -200,10 +211,10 @@ class APIDebugHistoryListApi(TestHistoriesQuerySetMixin, generics.ListAPIView):
         tags=["WebAPI.ResourceDebugHistory"],
     ),
 )
-class APIDebugHistoryRetrieveDestroyApi(TestHistoriesQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
+class APIDebugHistoryRetrieveDestroyApi(APIDebugHistoriesQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "id"
     serializer_class = APIDebugHistoriesListOutputSLZ
-    queryset = ResourceDebugHistory.objects.all()
+    queryset = APIDebugHistory.objects.all()
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
