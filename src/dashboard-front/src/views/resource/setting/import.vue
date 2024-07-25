@@ -173,14 +173,14 @@
         >
           <template #title>
             <div class="collapse-panel-title">
-              <!--              <span>新增的资源（共{{ createNum }}个）</span>-->
               <span>新增的资源（共{{ tableDataToAdd.length }}个）</span>
               <bk-input
-                :clearable="true"
-                :placeholder="t('请输入资源名称，按Enter搜索')"
+                clearable
+                :placeholder="t('请输入资源名称/路径，按Enter搜索')"
                 :right-icon="'bk-icon icon-search'"
                 style="width: 240px;"
                 @click.stop.prevent
+                @enter="(val: string) => {filterData(val, 'add')}"
               />
             </div>
           </template>
@@ -338,11 +338,12 @@
             <div class="collapse-panel-title">
               <span>更新的资源（共{{ tableDataToUpdate.length }}个）</span>
               <bk-input
-                :clearable="true"
-                :placeholder="t('请输入资源名称，按Enter搜索')"
+                clearable
+                :placeholder="t('请输入资源名称/路径，按Enter搜索')"
                 :right-icon="'bk-icon icon-search'"
                 style="width: 240px;"
                 @click.stop.prevent
+                @enter="(val: string) => {filterData(val, 'update')}"
               />
             </div>
           </template>
@@ -501,13 +502,13 @@
           <template #title>
             <div class="collapse-panel-title">
               <span>不导入的资源（共{{ tableDataUnchecked.length }}个）</span>
-              <bk-input
-                :clearable="true"
-                :placeholder="t('请输入资源名称，按Enter搜索')"
-                :right-icon="'bk-icon icon-search'"
-                style="width: 240px;"
-                @click.stop.prevent
-              />
+              <!--              <bk-input-->
+              <!--                :clearable="true"-->
+              <!--                :placeholder="t('请输入资源名称，按Enter搜索')"-->
+              <!--                :right-icon="'bk-icon icon-search'"-->
+              <!--                style="width: 240px;"-->
+              <!--                @click.stop.prevent-->
+              <!--              />-->
             </div>
           </template>
           <template #content>
@@ -793,12 +794,22 @@ const editingResource = ref<any>({
 });
 const isSliderShow = ref(false);
 
+// 展示在“新增的资源”一栏的资源
 const tableDataToAdd = computed(() => {
-  return tableData.value.filter(data => !data.id && !data._unchecked);
+  return tableData.value.filter(data => {
+    return !data.id &&
+      !data._unchecked
+      && (data.name.includes(filterInputAdd.value) || data.path.includes(filterInputAdd.value))
+  });
 });
 
+// 展示在“更新的资源”一栏的资源
 const tableDataToUpdate = computed(() => {
-  return tableData.value.filter(data => data.id && !data._unchecked);
+  return tableData.value.filter(data => {
+    return data.id &&
+      !data._unchecked
+      && (data.name.includes(filterInputUpdate.value) || data.path.includes(filterInputUpdate.value))
+  });
 });
 // 被取消导入的资源
 const tableDataUnchecked = computed(() => {
@@ -1317,6 +1328,18 @@ const renderIsPublicColLabel = (action: 'add' | 'update') => {
     </div>
   );
 };
+
+const filterInputAdd = ref('')
+const filterInputUpdate = ref('')
+const filterData = (val: string, action: 'add' | 'update') => {
+  if (action === 'add') {
+    filterInputAdd.value = val;
+  }
+
+  if (action === 'update') {
+    filterInputUpdate.value = val;
+  }
+}
 </script>
 <style scoped lang="scss">
 
