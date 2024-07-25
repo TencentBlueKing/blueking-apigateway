@@ -39,6 +39,10 @@ const activeIndex = ref<number[]>([1]);
 const editTableRef = ref();
 const headerList = ref<any[]>([]);
 
+const validate = async () => {
+  return await editTableRef.value?.validate();
+};
+
 const getData = () => {
   return editTableRef.value?.getTableData();
 };
@@ -54,6 +58,7 @@ watch(
 );
 
 defineExpose({
+  validate,
   getData,
 });
 

@@ -734,6 +734,8 @@ const formatPayload = () => {
 
 const handleSend = async (e: Event) => {
   e?.stopPropagation();
+  const isValidate = await requestPayloadRef.value?.validate();
+  if (!isValidate) return;
   const data = formatPayload();
   if (!data) return;
   console.log('....data...', data);

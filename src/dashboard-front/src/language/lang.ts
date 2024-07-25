@@ -1024,6 +1024,8 @@ const lang: ILANG = {
   '最近12小时': ['Last 12 hours'],
   '最近1天': ['Last 1 day'],
   '最近7天': ['Last 7 days'],
+  '请确认{name}参数名输入正确': ['Please make sure the {name} parameter name is entered correctly'],
+  '请确认{name}参数值输入正确': ['Please make sure the {name} parameter value is entered correctly'],
   '确定要删除蓝鲸应用【{appCode}】的权限？': ['Confirm to delete permissions for app [{appCode}]?'],
   '无': ['None'],
   'Python SDK信息': ['Python SDK Info'],

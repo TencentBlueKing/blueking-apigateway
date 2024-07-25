@@ -41,6 +41,17 @@ defineProps({
   },
 });
 
+const validate = async () => {
+  const bodyValidate = await payloadBodyRef.value?.validate();
+  const paramsValidate = await payloadParamsRef.value?.validate();
+  const headersValidate = await payloadHeadersRef.value?.validate();
+
+  if (bodyValidate && paramsValidate && headersValidate) {
+    return true;
+  }
+  return false;
+};
+
 const getData = () => {
   return {
     body: payloadBodyRef.value?.getData(),
@@ -50,6 +61,7 @@ const getData = () => {
 };
 
 defineExpose({
+  validate,
   getData,
 });
 

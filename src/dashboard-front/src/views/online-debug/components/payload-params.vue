@@ -59,6 +59,16 @@ const pathRef = ref();
 const pathList = ref<any[]>([]);
 const activeIndex = ref<number[]>([1, 2]);
 
+const validate = async () => {
+  const query = await queryRef.value?.validate();
+  const path = await pathRef.value?.validate();
+
+  if (query && path) {
+    return true;
+  }
+  return false;
+};
+
 const getData = () => {
   return {
     query: queryRef.value?.getTableData(),
@@ -67,19 +77,10 @@ const getData = () => {
 };
 
 watch(
-  () => props.queryPayload,
-  (v) => {
-    queryList.value = v;
-  },
-  {
-    deep: true,
-  },
-);
-
-watch(
-  () => props.pathPayload,
-  (v) => {
-    pathList.value = v;
+  () => [props.queryPayload, props.pathPayload],
+  ([v1, v2]) => {
+    queryList.value = v1;
+    pathList.value = v2;
   },
   {
     deep: true,
@@ -87,6 +88,7 @@ watch(
 );
 
 defineExpose({
+  validate,
   getData,
 });
 

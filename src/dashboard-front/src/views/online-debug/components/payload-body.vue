@@ -98,6 +98,16 @@ const datasource = ref([
 const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>();
 const editorText = ref<any>(JSON.stringify(props.rawPayload, null, 2));
 
+const validate = async () => {
+  const formData = await dataRef.value?.validate();
+  const urlencoded = await urlencodedRef.value?.validate();
+
+  if (formData && urlencoded) {
+    return true;
+  }
+  return false;
+};
+
 const getData = () => {
   return {
     type: type.value,
@@ -130,6 +140,7 @@ watch(
 );
 
 defineExpose({
+  validate,
   getData,
 });
 </script>
