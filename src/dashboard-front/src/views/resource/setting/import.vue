@@ -209,7 +209,9 @@
                   :label="t('校验应用权限')"
                 >
                   <template #default="{ row }">
-                    {{ getPermRequiredText(row?.auth_config) }}
+                    <span
+                      :class="{ 'warning-c': getPermRequiredText(row?.auth_config) === '是' }"
+                    >{{ getPermRequiredText(row?.auth_config) }}</span>
                   </template>
                 </bk-table-column>
                 <!--  “是否公开”列  -->
@@ -217,8 +219,8 @@
                   :label="() => renderIsPublicColLabel('add')"
                 >
                   <template #default="{ row }">
-                    <span>
-                      {{ row.is_public ? t('是') : row.is_public === false ? t('否') : t('是') }}
+                    <span :class="{ 'warning-c': getPublicSettingText(row.is_public) === '是' }">
+                      {{ getPublicSettingText(row.is_public) }}
                     </span>
                   </template>
                 </bk-table-column>
@@ -226,9 +228,9 @@
                   :label="t('允许申请权限')"
                 >
                   <template #default="{ row }">
-                    {{
-                      row.allow_apply_permission ? t('是') : row.allow_apply_permission === false ? t('否') : t('是')
-                    }}
+                    <span :class="{ 'warning-c': getAllowApplyPermissionText(row.allow_apply_permission) === '是' }">
+                      {{ getAllowApplyPermissionText(row.allow_apply_permission) }}
+                    </span>
                   </template>
                 </bk-table-column>
                 <bk-table-column
@@ -378,7 +380,9 @@
                   :label="t('校验应用权限')"
                 >
                   <template #default="{ row }">
-                    {{ getPermRequiredText(row?.auth_config) }}
+                    <span
+                      :class="{ 'warning-c': getPermRequiredText(row?.auth_config) === '是' }"
+                    >{{ getPermRequiredText(row?.auth_config) }}</span>
                   </template>
                 </bk-table-column>
                 <!--  “是否公开”列  -->
@@ -386,8 +390,8 @@
                   :label="() => renderIsPublicColLabel('update')"
                 >
                   <template #default="{ row }">
-                    <span>
-                      {{ row.is_public ? t('是') : row.is_public === false ? t('否') : t('是') }}
+                    <span :class="{ 'warning-c': getPublicSettingText(row.is_public) === '是' }">
+                      {{ getPublicSettingText(row.is_public) }}
                     </span>
                   </template>
                 </bk-table-column>
@@ -395,9 +399,9 @@
                   :label="t('允许申请权限')"
                 >
                   <template #default="{ row }">
-                    {{
-                      row.allow_apply_permission ? t('是') : row.allow_apply_permission === false ? t('否') : t('是')
-                    }}
+                    <span :class="{ 'warning-c': getAllowApplyPermissionText(row.allow_apply_permission) === '是' }">
+                      {{ getAllowApplyPermissionText(row.allow_apply_permission) }}
+                    </span>
                   </template>
                 </bk-table-column>
                 <bk-table-column
@@ -543,15 +547,17 @@
                   :label="t('校验应用权限')"
                 >
                   <template #default="{ row }">
-                    {{ getPermRequiredText(row?.auth_config) }}
+                    <span
+                      :class="{ 'warning-c': getPermRequiredText(row?.auth_config) === '是' }"
+                    >{{ getPermRequiredText(row?.auth_config) }}</span>
                   </template>
                 </bk-table-column>
                 <bk-table-column
                   :label="t('是否公开')"
                 >
                   <template #default="{ row }">
-                    <span>
-                      {{ row.is_public ? t('是') : row.is_public === false ? t('否') : t('是') }}
+                    <span :class="{ 'warning-c': getPublicSettingText(row.is_public) === '是' }">
+                      {{ getPublicSettingText(row.is_public) }}
                     </span>
                   </template>
                 </bk-table-column>
@@ -559,9 +565,9 @@
                   :label="t('允许申请权限')"
                 >
                   <template #default="{ row }">
-                    {{
-                      row.allow_apply_permission ? t('是') : row.allow_apply_permission === false ? t('否') : t('是')
-                    }}
+                    <span :class="{ 'warning-c': getAllowApplyPermissionText(row.allow_apply_permission) === '是' }">
+                      {{ getAllowApplyPermissionText(row.allow_apply_permission) }}
+                    </span>
                   </template>
                 </bk-table-column>
                 <bk-table-column
@@ -1194,9 +1200,17 @@ const getPermRequiredText = (authConfig: string | object | null | undefined) => 
     auth = authConfig;
   }
   if (auth?.resource_perm_required) {
-    return `${t('校验')}`;
+    return `${t('是')}`;
   }
-  return `${t('不校验')}`;
+  return `${t('否')}`;
+};
+
+const getPublicSettingText = (is_public: boolean | null | undefined) => {
+  return is_public ? t('是') : is_public === false ? t('否') : t('是');
+};
+
+const getAllowApplyPermissionText = (allow_apply_permission: boolean | null | undefined) => {
+  return allow_apply_permission ? t('是') : allow_apply_permission === false ? t('否') : t('是');
 };
 
 // 切换资源是否导入
