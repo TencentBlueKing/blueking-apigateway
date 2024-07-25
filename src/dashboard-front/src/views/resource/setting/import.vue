@@ -293,7 +293,11 @@
                   prop="plugin_configs"
                 >
                   <template #default="{ row }">
-                    <span>{{ row.plugin_configs?.length ?? 0 }}</span>
+                    <span
+                      v-bk-tooltips="{ content: `${row.plugin_configs?.map((c: any)=>c.name).join('，') || '无插件'}` }"
+                    >
+                      {{ row.plugin_configs?.length ?? 0 }}
+                    </span>
                   </template>
                 </bk-table-column>
                 <bk-table-column
@@ -458,7 +462,11 @@
                   prop="plugin_configs"
                 >
                   <template #default="{ row }">
-                    <span>{{ row.plugin_configs?.length ?? 0 }}</span>
+                    <span
+                      v-bk-tooltips="{ content: `${row.plugin_configs?.map((c: any)=>c.name).join('，') || '无插件'}` }"
+                    >
+                      {{ row.plugin_configs?.length ?? 0 }}
+                    </span>
                   </template>
                 </bk-table-column>
                 <bk-table-column
@@ -618,7 +626,11 @@
                   prop="plugin_configs"
                 >
                   <template #default="{ row }">
-                    <span>{{ row.plugin_configs?.length ?? 0 }}</span>
+                    <span
+                      v-bk-tooltips="{ content: `${row.plugin_configs?.map((c: any)=>c.name).join('，') || '无插件'}` }"
+                    >
+                      {{ row.plugin_configs?.length ?? 0 }}
+                    </span>
                   </template>
                 </bk-table-column>
                 <bk-table-column
