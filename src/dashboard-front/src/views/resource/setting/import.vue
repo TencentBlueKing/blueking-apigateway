@@ -284,6 +284,7 @@
                     <bk-button
                       text
                       theme="primary"
+                      @click="handleShowResourceDoc(row)"
                     >
                       <doc-fill fill="#3A84FF" />
                       {{ t('详情') }}
@@ -455,6 +456,7 @@
                     <bk-button
                       text
                       theme="primary"
+                      @click="handleShowResourceDoc(row)"
                     >
                       <doc-fill fill="#3A84FF" />
                       {{ t('详情') }}
@@ -621,6 +623,7 @@
                     <bk-button
                       text
                       theme="primary"
+                      @click="handleShowResourceDoc(row)"
                     >
                       <doc-fill fill="#3A84FF" />
                       {{ t('详情') }}
@@ -749,6 +752,23 @@
         <bk-button @click="isImportConfirmDialogVisible = false"> {{ t('取消') }}</bk-button>
       </template>
     </bk-dialog>
+    <!-- 文档侧边栏 -->
+    <bk-sideslider
+      v-model:isShow="isResourceDocSliderVisible"
+      quick-close
+      :title="editingResource.name"
+      width="780"
+      ext-cls="doc-sideslider-cls doc-sides"
+    >
+      <template #default>
+        <ResourcesDoc
+          :cur-resource="editingResource"
+          source="side"
+          doc-root-class="doc-sideslider"
+        >
+        </ResourcesDoc>
+      </template>
+    </bk-sideslider>
   </div>
 </template>
 <script setup lang="tsx">
@@ -787,6 +807,7 @@ import type { IPosition } from 'monaco-editor';
 import type { ErrorReasonType, CodeErrorMsgType } from '@/types/common';
 import { MethodsEnum } from '@/types';
 import EditImportResourceSideSlider from "@/views/resource/setting/comps/edit-import-resource-side-slider.vue";
+import ResourcesDoc from "@/views/components/resources-doc/index.vue";
 
 type CodeErrorResponse = {
   code: string,
@@ -828,6 +849,7 @@ const activeIndexUnchecked = ref(0);
 const collapsePanelListUnchecked = ref([{ name: '不导入资源' }]);
 
 const isImportConfirmDialogVisible = ref(false);
+const isResourceDocSliderVisible = ref(false);
 
 const editingResource = ref<any>({
   name: '',
@@ -1116,6 +1138,13 @@ const handleEdit = (resourceRow: any) => {
   const _editingResource = tableData.value.find(data => data.name === resourceRow.name);
   if (_editingResource) editingResource.value = { ...editingResource.value, ..._editingResource };
   isSliderShow.value = true;
+};
+
+// 点击查看文档时，会唤出 SideSlider
+const handleShowResourceDoc = (resourceRow: any) => {
+  const _editingResource = tableData.value.find(data => data.name === resourceRow.name);
+  if (_editingResource) editingResource.value = { ...editingResource.value, ..._editingResource };
+  isResourceDocSliderVisible.value = true;
 };
 
 // 触发编辑器高亮
@@ -1703,6 +1732,13 @@ const filterData = (val: string, action: 'add' | 'update') => {
   .content-wrap {
     padding: 12px;
     background-color: #aaa;
+  }
+}
+
+.doc-sides {
+  :deep(.bk-modal-content) {
+    max-height: calc(100vh - 52px);
+    overflow: hidden;
   }
 }
 
