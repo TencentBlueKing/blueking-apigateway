@@ -688,7 +688,7 @@
           {{ curView === 'import' ? t('下一步') : t('上一步') }}
         </bk-button>
         <span
-          v-bk-tooltips="{ content: t('请确认勾选资源'), disabled: selections.length }"
+          v-bk-tooltips="{ content: t('请确认导入的资源'), disabled: (tableDataToAdd.length < 1) && (tableDataToUpdate.length < 1)}"
           v-if="curView === 'resources'"
         >
           <bk-button
@@ -696,7 +696,8 @@
             theme="primary"
             type="button"
             :disabled="!selections.length"
-            @click="handleImportResource" :loading="isImportLoading"
+            :loading="isImportLoading"
+            @click="showImportConfirmDialog"
           >
             {{ $t('确定导入') }}
           </bk-button>
@@ -713,6 +714,35 @@
       @on-hidden="handleEditSliderHidden"
       @submit="handleEditSubmit"
     ></edit-import-resource-side-slider>
+    <!--  导入确认弹窗  -->
+    <bk-dialog
+      width="480"
+      :mask-close="true"
+      :is-show="isImportConfirmDialogVisible"
+      :title="t('确认导入资源？')"
+    >
+      <template #default>
+        <div class="import-confirm-dialog-content-wrap">
+          <header class="mb10">网关：{{ common.apigwName }}</header>
+          <main class="content-main">
+            将新增
+            <span class="ag-strong success-c">{{ tableDataToAdd.length }}</span>
+            条资源，更新覆盖
+            <span class="ag-strong warning-c">{{ tableDataToUpdate.length }}</span>
+            条资源
+          </main>
+        </div>
+      </template>
+      <template #footer>
+        <bk-button
+          theme="primary"
+          @click="handleImportResource"
+        >
+          {{ t('确定') }}
+        </bk-button>
+        <bk-button @click="isImportConfirmDialogVisible = false"> {{ t('取消') }}</bk-button>
+      </template>
+    </bk-dialog>
   </div>
 </template>
 <script setup lang="tsx">
@@ -790,6 +820,8 @@ const collapsePanelListUpdate = ref([{ name: '更新资源' }]);
 
 const activeIndexUnchecked = ref(0);
 const collapsePanelListUnchecked = ref([{ name: '不导入资源' }]);
+
+const isImportConfirmDialogVisible = ref(false);
 
 const editingResource = ref<any>({
   name: '',
@@ -993,7 +1025,13 @@ const handleCheckData = async ({ changeView = true } = { changeView: true }) => 
 };
 
 // 确认导入
+const showImportConfirmDialog = () => {
+  isImportConfirmDialogVisible.value = true
+};
+
+// 确认导入
 const handleImportResource = async () => {
+  isImportConfirmDialogVisible.value = false;
   try {
     isImportLoading.value = true;
     const params = {
@@ -1645,6 +1683,13 @@ const filterData = (val: string, action: 'add' | 'update') => {
 
 :deep(.multi-edit-popconfirm-wrap .auth-config) {
   font-size: 12px;
+}
+
+.import-confirm-dialog-content-wrap {
+  .content-wrap {
+    padding: 12px;
+    background-color: #aaa;
+  }
 }
 
 </style>
