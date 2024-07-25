@@ -1,7 +1,7 @@
 <template>
-  <div class="importWrapper">
+  <div class="import-wrapper">
     <header class="steps-indicator-wrap">
-      <main class="stepsIndicator">
+      <main class="steps-indicator">
         <bk-steps
           :steps="[
             { title: '校验文件' },
@@ -771,7 +771,7 @@ import exampleData from '@/constant/example-data';
 import { getStrFromFile } from '@/common/util';
 import { checkResourceImport, importResource, importResourceDocSwagger } from '@/http';
 import { useCommon } from '@/store';
-import { useSelection, useGetGlobalProperties } from '@/hooks';
+import { useGetGlobalProperties } from '@/hooks';
 import TmplExampleSideslider from '@/views/resource/setting/comps/tmpl-example-sideslider.vue';
 import {
   Warn,
@@ -1415,7 +1415,7 @@ const filterData = (val: string, action: 'add' | 'update') => {
 </script>
 <style scoped lang="scss">
 
-.importWrapper {
+.import-wrapper {
   position: relative;
   min-height: 100%;
 
@@ -1434,7 +1434,7 @@ const filterData = (val: string, action: 'add' | 'update') => {
     justify-content: center;
     border-bottom: 1px solid #DCDEE5;
 
-    .stepsIndicator {
+    .steps-indicator {
       width: 50%;
     }
   }
