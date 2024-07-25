@@ -393,3 +393,7 @@ class SchemaValidateErr:
         self.message = message
         self.json_path = json_path
         self.absolute_path = absolute_path
+
+    def to_dict(self):
+        """将对象转换为字典。"""
+        return {"message": self.message, "json_path": self.json_path, "absolute_path": self.absolute_path}

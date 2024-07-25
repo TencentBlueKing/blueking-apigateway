@@ -25,11 +25,10 @@ from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics, status
+from rest_framework import generics, serializers, status
 
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.label.models import APILabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.biz.audit import Auditor
@@ -37,7 +36,7 @@ from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin_binding import PluginBindingHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.importer import ResourcesImporter
-from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
+from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
 from apigateway.biz.resource.savers import ResourcesSaver
 from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_label import ResourceLabelHandler
@@ -53,6 +52,7 @@ from .serializers import (
     BackendPathCheckOutputSLZ,
     ResourceBatchDestroyInputSLZ,
     ResourceBatchUpdateInputSLZ,
+    ResourceDataImportSLZ,
     ResourceExportInputSLZ,
     ResourceExportOutputSLZ,
     ResourceImportCheckFailOutputSLZ,
@@ -374,26 +374,32 @@ class ResourceImportCheckApi(generics.CreateAPIView):
         slz = ResourceImportCheckInputSLZ(
             data=request.data,
             context={
-                "stages": Stage.objects.filter(gateway=request.gateway),
-                "exist_label_names": list(
-                    APILabel.objects.filter(gateway=request.gateway).values_list("name", flat=True)
-                ),
                 "gateway": request.gateway,
             },
         )
         slz.is_valid(raise_exception=True)
 
-        validate_result = slz.validated_data.get("validate_result", {})
+        try:
+            openapi_manager = OpenAPIImportManager.load_from_content(request.gateway, slz.validated_data["content"])
+        except Exception as err:
+            raise serializers.ValidationError(
+                {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)}
+            )
 
-        validate_err_list = validate_result.get("validate_err_list", {})
+        validate_err_list = openapi_manager.validate()
+
         if len(validate_err_list) != 0:
+            slz = ResourceImportCheckFailOutputSLZ(
+                instance=validate_err_list,
+                many=True,
+            )
             return FailJsonResponse(
-                status=status.HTTP_400_BAD_REQUEST, code="INVALID", data=validate_err_list, message="validate fail"
+                status=status.HTTP_400_BAD_REQUEST, code="INVALID", data=slz.data, message="validate fail"
             )
 
         doc_language = slz.validated_data.get("doc_language", "")
 
-        resource_data_list = validate_result.get("resource_list", [])
+        resource_data_list = openapi_manager.get_resource_list()
         resource_ids = [resource_data.resource.id for resource_data in resource_data_list if resource_data.resource]
         slz = ResourceImportCheckOutputSLZ(
             data=resource_data_list,
@@ -419,16 +425,36 @@ class ResourceImportApi(generics.CreateAPIView):
         slz = ResourceImportInputSLZ(
             data=request.data,
             context={
-                "stages": Stage.objects.filter(gateway=request.gateway),
                 "gateway": request.gateway,
+            },
+        )
+        slz.is_valid(raise_exception=True)
+
+        try:
+            openapi_manager = OpenAPIImportManager.load_from_content(request.gateway, slz.validated_data["content"])
+        except Exception as err:
+            raise serializers.ValidationError(
+                {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)}
+            )
+
+        validate_err_list = openapi_manager.validate()
+        if len(validate_err_list) != 0:
+            return FailJsonResponse(
+                status=status.HTTP_400_BAD_REQUEST, code="INVALID", data=slz.data, message="validate fail"
+            )
+
+        slz = ResourceDataImportSLZ(
+            data=openapi_manager.get_resource_list(raw=True),
+            many=True,
+            context={
+                "stages": Stage.objects.filter(gateway=request.gateway),
             },
         )
         slz.is_valid(raise_exception=True)
 
         importer = ResourcesImporter.from_resources(
             gateway=request.gateway,
-            resources=slz.validated_data.get("validate_result", {}).get("resource_list", []),
-            selected_resources=slz.validated_data.get("selected_resources"),
+            resources=openapi_manager.get_resource_list(),
             need_delete_unspecified_resources=False,
             username=request.user.username,
         )
