@@ -591,11 +591,11 @@ class ResourceDebugHistory(TimestampedModelMixin, OperatorModelMixin):
     #     "use_user_from_cookies": False,
     # },
     request = JSONField(blank=True, help_text="请求参数")
-    request_time = models.DateTimeField(null=True, blank=True)
+    request_time = models.DateTimeField(null=True, blank=True, help_text="请求开始时间")
     response = JSONField(blank=True, help_text="返回结果的内容")
-    status_code = models.IntegerField(blank=False, null=False)
-    proxy_time = models.DecimalField(max_digits=10, decimal_places=2)
-    spec_version = models.IntegerField(blank=False, null=False)
+    status_code = models.IntegerField(blank=False, null=False, help_text="回复的状态码")
+    proxy_time = models.DecimalField(max_digits=10, decimal_places=2, help_text="处理时间")
+    spec_version = models.IntegerField(blank=False, null=False, help_text="版本号")
 
     class Meta:
         verbose_name = "ResourceDebugHistory"

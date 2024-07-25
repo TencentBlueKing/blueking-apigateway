@@ -56,7 +56,6 @@ class TestAPITestAPIView:
         )
 
         result = response.json()
-        print(f"response: {result}")
         assert response.status_code == 200
         assert result["data"]["headers"] == {
             "Content-Type": "text/plain",

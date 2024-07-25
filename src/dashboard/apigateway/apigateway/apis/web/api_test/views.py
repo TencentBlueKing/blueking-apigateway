@@ -189,7 +189,7 @@ class APIDebugHistoryListApi(TestHistoriesQuerySetMixin, generics.ListAPIView):
     decorator=swagger_auto_schema(
         operation_description="获取调用历史详情",
         responses={status.HTTP_200_OK: APIDebugHistoriesListOutputSLZ()},
-        tags=["WebAPI.Backend"],
+        tags=["WebAPI.ResourceDebugHistory"],
     ),
 )
 @method_decorator(
@@ -197,7 +197,7 @@ class APIDebugHistoryListApi(TestHistoriesQuerySetMixin, generics.ListAPIView):
     decorator=swagger_auto_schema(
         operation_description="删除调用历史",
         responses={status.HTTP_204_NO_CONTENT: ""},
-        tags=["WebAPI.Backend"],
+        tags=["WebAPI.ResourceDebugHistory"],
     ),
 )
 class APIDebugHistoryRetrieveDestroyApi(TestHistoriesQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
