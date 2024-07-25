@@ -33,8 +33,6 @@ from .serializers import ResourceSyncOutputSLZ
 
 
 class ResourceSyncApi(generics.CreateAPIView):
-    gateway_permission_exempt = True
-    request_from_gateway_required = False
     permission_classes = [GatewayRelatedAppPermission]
 
     def get_queryset(self):
