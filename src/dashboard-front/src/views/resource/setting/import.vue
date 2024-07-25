@@ -38,19 +38,6 @@
               </span>
             </bk-link>
           </span>
-          <!--            <bk-form class="flex-row">-->
-          <!--              <bk-form-item class="mb0" :label-width="20">-->
-          <!--                <bk-checkbox v-model="showDoc">-->
-          <!--                  {{ t('生成资源文档') }}-->
-          <!--                </bk-checkbox>-->
-          <!--              </bk-form-item>-->
-          <!--  <bk-form-item class="mb0" :label="t('文档语言')" v-if="showDoc" :required="true" :label-width="120">-->
-          <!--                <bk-radio-group v-model="language">-->
-          <!--                  <bk-radio label="zh">{{ t('中文文档') }}</bk-radio>-->
-          <!--                  <bk-radio label="en">{{ t('英文文档') }}</bk-radio>-->
-          <!--                </bk-radio-group>-->
-          <!--              </bk-form-item>-->
-          <!--            </bk-form>-->
         </div>
         <div class="flex-row align-items-center">
           <bk-button theme="primary" text style="font-size: 12px;" @click="handleShowExample">
@@ -356,13 +343,20 @@
           </template>
           <template #content>
             <div class="collapse-panel-table-wrap">
+              <section class="pb10">
+                <bk-switcher
+                  v-model="showDoc"
+                  theme="primary"
+                  size="small"
+                />
+                生成新文档：原有的文档将会覆盖更新
+              </section>
               <bk-table
                 class="table-layout"
                 :data="tableDataToUpdate"
                 show-overflow-tooltip
                 row-key="name"
                 :checked="tableData"
-                @selection-change="handleSelectionChange"
               >
                 <bk-table-column
                   :label="t('资源名称')"
@@ -668,16 +662,6 @@
       </section>
       <!--      <section class="flex-row justify-content-between">-->
       <!--        <div class="info">-->
-      <!--          {{ t('请确认以下资源变更，资源配置：') }}-->
-      <!--          <span class="add-info">{{ t('新建') }}-->
-      <!--            <span class="ag-strong success pl5 pr5">-->
-      <!--              {{ createNum }}-->
-      <!--            </span>{{ t('条') }}-->
-      <!--          </span>-->
-      <!--          <span class="add-info">{{ t('覆盖') }}-->
-      <!--            <span class="ag-strong danger pl5 pr5">{{ updateNum }}</span>-->
-      <!--            {{ t('条') }}-->
-      <!--          </span>-->
       <!--          <span v-if="showDoc">-->
       <!--            ，{{ $t('资源文档：') }}-->
       <!--            <span class="add-info">{{ t('新建') }}<span class="ag-strong success pl5 pr5">1</span>{{ t('条') }}</span>-->
@@ -704,7 +688,7 @@
             class="mr10"
             theme="primary"
             type="button"
-            :disabled="!selections.length"
+            :disabled="(tableDataToAdd.length < 1) && (tableDataToUpdate.length < 1)"
             :loading="isImportLoading"
             @click="showImportConfirmDialog"
           >
@@ -822,7 +806,7 @@ const common = useCommon();
 const editorText = ref<string>(exampleData.content);
 const { apigwId } = common; // 网关id
 const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>(); // 实例化
-const showDoc = ref<boolean>(false);
+const showDoc = ref<boolean>(true);
 const language = ref<string>('zh');
 const isDataLoading = ref<boolean>(false);
 const isCodeValid = ref<boolean>(false);
@@ -921,10 +905,10 @@ watch(editorText, () => {
 });
 
 // checkbox hooks
-const {
-  selections,
-  handleSelectionChange,
-} = useSelection();
+// const {
+//   selections,
+//   handleSelectionChange,
+// } = useSelection();
 
 // 设置editor的内容
 const setEditValue = () => {
@@ -985,9 +969,9 @@ const handleCheckData = async ({ changeView = true } = { changeView: true }) => 
     // 判断是否跳转，默认为是
     if (changeView) {
       curView.value = 'resources';
-      nextTick(() => {
-        selections.value = JSON.parse(JSON.stringify(tableData.value));
-      });
+      // nextTick(() => {
+      //   selections.value = JSON.parse(JSON.stringify(tableData.value));
+      // });
     }
     // resetSelections();
   } catch (err: unknown) {  // 校验失败会走到这里
@@ -1052,7 +1036,7 @@ const handleCheckData = async ({ changeView = true } = { changeView: true }) => 
   }
 };
 
-// 确认导入
+// 唤出确认导入Dialog
 const showImportConfirmDialog = () => {
   isImportConfirmDialogVisible.value = true
 };
@@ -1062,21 +1046,26 @@ const handleImportResource = async () => {
   isImportConfirmDialogVisible.value = false;
   try {
     isImportLoading.value = true;
+    const selected_resources = tableData.value.filter((e: any) => e._unchecked === false)
+      .map((e: any) => {
+        const { _unchecked, ...restOfResource } = e;  // 去掉_unchecked属性，不要发到后端
+        return restOfResource;
+      });
     const params = {
+      selected_resources,
       content: editorText.value,
-      selected_resources: selections.value,
     };
     await importResource(apigwId, params);
     // 勾选了文档才需要上传swagger文档
     if (showDoc.value) {
       // swagger需要的参数
-      const resourceDocs = selections.value.map((e: any) => ({
+      const selected_resource_docs = selected_resources.map((e: any) => ({
         language: e.doc.language,
         resource_name: e.name,
       }));
       const paramsDocs = {
+        selected_resource_docs,
         swagger: editorText.value,
-        selected_resource_docs: resourceDocs,
         language: language.value,
       };
       await importResourceDocSwagger(apigwId, paramsDocs);
@@ -1092,16 +1081,6 @@ const handleImportResource = async () => {
     isImportLoading.value = false;
   }
 };
-
-// const deDuplication = (data: any[], k: string) => {
-//   const map = new Map();
-//   for (const item of data) {
-//     if (!map.has(item[k])) {
-//       map.set(item[k], item);
-//     }
-//   }
-//   return [...map.values()];
-// };
 
 // 取消返回到资源列表
 const goBack = () => {
