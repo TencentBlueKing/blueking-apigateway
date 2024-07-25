@@ -16,9 +16,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
+
 from django.db import transaction
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics, status
+from rest_framework import generics, serializers, status
 
 from apigateway.apis.web.resource.serializers import ResourceImportInputSLZ
 from apigateway.biz.resource.importer import ResourcesImporter
@@ -30,6 +33,8 @@ from .serializers import ResourceSyncOutputSLZ
 
 
 class ResourceSyncApi(generics.CreateAPIView):
+    gateway_permission_exempt = True
+    request_from_gateway_required = False
     permission_classes = [GatewayRelatedAppPermission]
 
     def get_queryset(self):
@@ -50,6 +55,14 @@ class ResourceSyncApi(generics.CreateAPIView):
             },
         )
         slz.is_valid(raise_exception=True)
+
+        validate_result = slz.validated_data.get("validate_result", {})
+
+        validate_err_list = validate_result.get("validate_err_list", {})
+        if len(validate_err_list) != 0:
+            raise serializers.ValidationError(
+                {"content": _("validate err {err}。").format(err=json.dumps(validate_err_list, indent=4))}
+            )
 
         importer = ResourcesImporter.from_resources(
             gateway=request.gateway,

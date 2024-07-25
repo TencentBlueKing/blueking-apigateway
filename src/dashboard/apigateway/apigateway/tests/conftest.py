@@ -903,6 +903,90 @@ def fake_resource_swagger():
 
 
 @pytest.fixture
+def fake_err_resource_swagger():
+    return json.dumps(
+        {
+            "openapi": "3.0.3",
+            "info": {
+                "title": "custom-demo",
+                "version": "1.0.0",
+                "description": "这是应用 bk_apigateway 的 API 网关。由网关开发框架自动注册。",
+            },
+            "paths": {
+                "/api/v1/demo/{id}/": {
+                    "get": {
+                        "operationId": "v1_demo_retrieve",
+                        "description": "这是一个 demo api",
+                        "parameters": [
+                            {"in": "path", "name": "id", "schema": {"type": "integer"}, "required": True},
+                            {
+                                "in": "query",
+                                "name": "name",
+                                "schema": {"type": "string", "maxLength": 100, "minLength": 1},
+                                "required": True,
+                            },
+                        ],
+                        "tags": ["open"],
+                        "security": [{"ApiGatewayJWTAuthentication": []}],
+                        "responses": {
+                            "200": {
+                                "content": {
+                                    "application/json": {
+                                        "schema": {"$ref": "#/components/schemas/DemoRetrieveOutputSLZ"},
+                                        "examples": {
+                                            "Example": {
+                                                "value": {"message": "hello, world, and my id is 1"},
+                                                "summary": "example",
+                                            }
+                                        },
+                                    }
+                                },
+                                "description": "",
+                            }
+                        },
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "matchSubpath": True,
+                            "backend": {
+                                "method": "get",
+                                "path": "/api/v1/demo/{id}/",
+                                "matchSubpath": True,
+                                "timeout": 0,
+                            },
+                            "pluginConfigs": [
+                                {
+                                    "type": "bk-header-rewrite",
+                                    "yaml": "remove:\n- X-Bar\nset:\n- key: X-Foo\n  value: test\n",
+                                }
+                            ],
+                            "allowApplyPermission": True,
+                            "authConfig": {
+                                "userVerifiedRequired": True,
+                                "appVerifiedRequired": True,
+                                "resourcePermissionRequired": True,
+                            },
+                            "descriptionEn": "this is a demo api",
+                        },
+                    }
+                }
+            },
+            "components": {
+                "schemas": {
+                    "DemoRetrieveOutputSLZ": {
+                        "type": "object",
+                        "properties": {"message": {"type": "string"}},
+                        "required": ["message"],
+                    }
+                },
+                "securitySchemes": {
+                    "ApiGatewayJWTAuthentication": {"type": "apiKey", "in": "header", "name": "X-BKAPI-JWT"}
+                },
+            },
+        }
+    )
+
+
+@pytest.fixture
 def fake_openapi_content():
     return {
         "swagger": "2.0",

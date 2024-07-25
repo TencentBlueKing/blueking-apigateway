@@ -66,3 +66,43 @@ class TestResourceSyncApi:
             "updated": [{"id": 2}],
             "deleted": [{"id": 3}],
         }
+
+    def test_sync_with_err_swagger(
+        self,
+        request_view,
+        fake_gateway,
+        fake_default_backend,
+        mocker,
+        fake_err_resource_swagger,
+        ignore_related_app_permission,
+    ):
+        mocker.patch(
+            "apigateway.apis.open.resource.views.ResourcesImporter.from_resources",
+            return_value=mocker.MagicMock(
+                get_selected_resource_data_list=mocker.MagicMock(
+                    return_value=[
+                        mocker.MagicMock(
+                            resource=mocker.MagicMock(id=1),
+                            metadata={"is_created": True},
+                        ),
+                        mocker.MagicMock(
+                            resource=mocker.MagicMock(id=2),
+                            metadata={"is_created": False},
+                        ),
+                    ]
+                ),
+                get_deleted_resources=mocker.MagicMock(return_value=[{"id": 3}]),
+            ),
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.resource.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "content": fake_err_resource_swagger,
+                "delete": True,
+            },
+            gateway=fake_gateway,
+        )
+        assert resp.status_code != 200
