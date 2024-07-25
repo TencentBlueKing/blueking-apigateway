@@ -1495,6 +1495,7 @@ const lang: ILANG = {
   '请输入资源名称，按Enter搜索': ['Input Resource Name And Press Enter'],
   '请确认导入的资源': ['Check Resources To Import'],
   '确认导入资源？': ['Confirm To Import?'],
+  '语法校验': ['Validate Code'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

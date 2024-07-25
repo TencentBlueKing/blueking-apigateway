@@ -49,11 +49,16 @@
       </div>
       <!-- 代码编辑器 -->
       <div class="monacoEditor mt10">
-        <bk-resize-layout placement="bottom" collapsible immediate style="height: 100%">
+        <bk-resize-layout
+          placement="bottom"
+          collapsible
+          immediate
+          style="height: 100%"
+        >
           <template #main>
-            <div style="height: 100%">
+            <div class="editor-layout-main">
               <!--  顶部编辑器工具栏-->
-              <header class="editorToolbar">
+              <header class="editor-toolbar">
                 <span class="p10" style="color: #ccc">代码编辑器</span>
                 <aside class="toolItems">
                   <section class="toolItem" :class="{ 'active': isFindPanelVisible }" @click="toggleFindToolClick()">
@@ -62,12 +67,12 @@
                   <!--                  <section class="toolItem">-->
                   <!--                    <upload width="18px" height="18px" />-->
                   <!--                  </section>-->
-                  <section class="toolItem">
-                    <filliscreen-line width="18px" height="18px" />
-                  </section>
+                  <!--                  <section class="toolItem">-->
+                  <!--                    <filliscreen-line width="18px" height="18px" />-->
+                  <!--                  </section>-->
                 </aside>
               </header>
-              <main class="editorMainContent">
+              <main class="editor-main-content" :class="{ 'show-valid-msg': isValidMsgVisible }">
                 <!--  编辑器本体  -->
                 <editor-monaco
                   v-model="editorText"
@@ -77,9 +82,9 @@
                   }"
                 />
                 <!--  右侧的代码 error, warning 计数器  -->
-                <aside class="editorErrorCounters">
+                <aside class="editor-error-counters">
                   <div
-                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'Error' }"
+                    class="error-count-item" :class="{ 'active': activeCodeMsgType === 'Error' }"
                     v-bk-tooltips="{ content: `Error: ${msgAsErrorNum}`, placement: 'left' }"
                     @click="handleErrorCountClick('Error')"
                   >
@@ -87,15 +92,15 @@
                     <span style="color:#EA3636">{{ msgAsErrorNum }}</span>
                   </div>
                   <div
-                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'Warning' }"
+                    class="error-count-item" :class="{ 'active': activeCodeMsgType === 'Warning' }"
                     v-bk-tooltips="{ content: `Warning: ${msgAsWarningNum}`, placement: 'left' }"
                     @click="handleErrorCountClick('Warning')"
                   >
-                    <div class="warningCircle"></div>
+                    <div class="warning-circle"></div>
                     <span style="color: hsla(36.6, 81.7%, 55.1%, 0.5);">{{ msgAsWarningNum }}</span>
                   </div>
                   <div
-                    class="errorCountItem" :class="{ 'active': activeCodeMsgType === 'All' }"
+                    class="error-count-item" :class="{ 'active': activeCodeMsgType === 'All' }"
                     v-bk-tooltips="{ content: `All: ${errorReasons.length}`, placement: 'left' }"
                     @click="handleErrorCountClick('All')"
                   >
@@ -104,20 +109,40 @@
                   </div>
                 </aside>
               </main>
+              <footer class="editor-footer-bar">
+                <footer v-if="isValidMsgVisible" class="editor-message">
+                  <success class="success-c" width="14px" height="14px" />
+                  <span class="msg-part msg-body">校验通过</span>
+                  <close-line
+                    width="14px" height="14px" fill="#DCDEE5" style="margin-left: auto; cursor: pointer;"
+                    @click="() => { isValidMsgVisible = false }"
+                  ></close-line>
+                </footer>
+                <main v-else class="editor-footer-validate-btn">
+                  <bk-button
+                    theme="primary"
+                    size="small"
+                    @click="handleCheckData({ changeView: false })"
+                  >
+                    <play-shape />
+                    {{ t('语法校验') }}
+                  </bk-button>
+                </main>
+              </footer>
             </div>
           </template>
           <!--  底部错误信息展示  -->
           <template #aside>
-            <div class="editorMessagesWrapper" :class="{ 'hasErrorMsg': visibleErrorReasons.length > 0 }">
+            <div class="editor-messages-wrapper" :class="{ 'has-error-msg': visibleErrorReasons.length > 0 }">
               <article
-                v-for="(reason, index) in visibleErrorReasons" :key="index" class="editorMessage"
+                v-for="(reason, index) in visibleErrorReasons" :key="index" class="editor-message"
                 @click="handleErrorMsgClick(reason)"
               >
-                <span class="msgPart msgIcon"><warn fill="#EA3636" /></span>
-                <span class="msgPart msgHost"></span>
-                <span class="msgPart msgBody">{{ reason.message }}</span>
-                <span class="msgPart msgErrorCode"></span>
-                <span v-if="reason.position" class="msgPart msgPos">
+                <span class="msg-part msg-icon"><warn fill="#EA3636" /></span>
+                <span class="msg-part msgHost"></span>
+                <span class="msg-part msg-body">{{ reason.message }}</span>
+                <span class="msg-part msgErrorCode"></span>
+                <span v-if="reason.position" class="msg-part msgPos">
                   {{ `(${reason.position.lineNumber}, ${reason.position.column})` }}
                 </span>
               </article>
@@ -660,15 +685,6 @@
           </template>
         </bk-collapse>
       </section>
-      <!--      <section class="flex-row justify-content-between">-->
-      <!--        <div class="info">-->
-      <!--          <span v-if="showDoc">-->
-      <!--            ，{{ $t('资源文档：') }}-->
-      <!--            <span class="add-info">{{ t('新建') }}<span class="ag-strong success pl5 pr5">1</span>{{ t('条') }}</span>-->
-      <!--            <span class="add-info">{{ t('覆盖') }}<span class="ag-strong danger pl5 pr5">1</span>{{ t('条') }}</span>-->
-      <!--          </span>-->
-      <!--        </div>-->
-      <!--      </section>-->
     </div>
     <footer class="page-actions-wrap">
       <main class="page-actions">
@@ -776,11 +792,14 @@ import TmplExampleSideslider from '@/views/resource/setting/comps/tmpl-example-s
 import {
   Warn,
   Search,
-  FilliscreenLine,
   Share,
   InfoLine,
   DocFill,
   LeftTurnLine,
+  PlayShape,
+  Success,
+  CloseLine,
+  // FilliscreenLine,
   // Upload,
 } from 'bkui-vue/lib/icon';
 import yaml from 'js-yaml';
@@ -834,6 +853,7 @@ const collapsePanelListUnchecked = ref([{ name: '不导入资源' }]);
 
 const isImportConfirmDialogVisible = ref(false);
 const isResourceDocSliderVisible = ref(false);
+const isValidMsgVisible = ref(false);
 
 const editingResource = ref<any>({
   name: '',
@@ -895,13 +915,14 @@ const msgAsWarningNum = computed(() => {
 });
 
 // 防抖的代码校验
-const debouncedCheckData = _.debounce((args) => {
-  handleCheckData(args);
-}, 1000);
+// const debouncedCheckData = _.debounce((args) => {
+//   handleCheckData(args);
+// }, 1000);
 
 // 代码有变化时自动校验
 watch(editorText, () => {
-  debouncedCheckData({ changeView: false });
+  isCodeValid.value = false;
+  isValidMsgVisible.value = false;
 });
 
 // checkbox hooks
@@ -933,10 +954,15 @@ const handleReq = (res: any) => {
     .then((res: any) => {
       editorText.value = res;
       setEditValue();
+    })
+    .then(() => {
+      handleCheckData({ changeView: false });
     });
 };
+
 // 下一步需要检查数据
-const handleCheckData = async ({ changeView = true } = { changeView: true }) => {
+const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
+  let _changeView = changeView ?? true;
   // 上一步按钮功能
   if (curView.value === 'resources') {
     curView.value = 'import';
@@ -964,16 +990,13 @@ const handleCheckData = async ({ changeView = true } = { changeView: true }) => 
       _unchecked: false, // 标记是否不导入
     }));
     isCodeValid.value = true;
+    isValidMsgVisible.value = true;
     resourceEditorRef.value.clearDecorations();
     errorReasons.value = [];
     // 判断是否跳转，默认为是
-    if (changeView) {
+    if (_changeView) {
       curView.value = 'resources';
-      // nextTick(() => {
-      //   selections.value = JSON.parse(JSON.stringify(tableData.value));
-      // });
     }
-    // resetSelections();
   } catch (err: unknown) {  // 校验失败会走到这里
     // console.log(error);
     isCodeValid.value = false;
@@ -1277,14 +1300,14 @@ const renderAuthConfigColLabel = (action: 'add' | 'update') => {
                   <bk-checkbox
                     v-model={tempAuthConfig.value.app_verified_required}
                   >
-                      <span class="bottom-line" v-bk-tooltips={{ content: t('请求方需提供蓝鲸应用身份信息') }}>
-                        {t('蓝鲸应用认证')}
-                      </span>
+                    <span class="bottom-line" v-bk-tooltips={{ content: t('请求方需提供蓝鲸应用身份信息') }}>
+                      {t('蓝鲸应用认证')}
+                    </span>
                   </bk-checkbox>
                   <bk-checkbox class="ml40" v-model={tempAuthConfig.value.auth_verified_required}>
-                      <span class="bottom-line" v-bk-tooltips={{ content: t('请求方需提供蓝鲸用户身份信息') }}>
-                        {t('用户认证')}
-                      </span>
+                    <span class="bottom-line" v-bk-tooltips={{ content: t('请求方需提供蓝鲸用户身份信息') }}>
+                      {t('用户认证')}
+                    </span>
                   </bk-checkbox>
                 </bk-form-item>
                 {tempAuthConfig.value.app_verified_required ?
@@ -1473,7 +1496,14 @@ const filterData = (val: string, action: 'add' | 'update') => {
     border-radius: 2px;
     overflow: hidden;
 
-    .editorToolbar {
+    .editor-layout-main {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .editor-toolbar {
+      height: 40px;
       position: relative;
       display: flex;
       justify-content: space-between;
@@ -1500,11 +1530,11 @@ const filterData = (val: string, action: 'add' | 'update') => {
       }
     }
 
-    .editorMainContent {
+    .editor-main-content {
       display: flex;
       height: 100%;
 
-      .editorErrorCounters {
+      .editor-error-counters {
         width: 32px;
         height: 100%;
         display: flex;
@@ -1512,7 +1542,7 @@ const filterData = (val: string, action: 'add' | 'update') => {
         align-items: center;
         background-color: #1a1a1a;
 
-        .errorCountItem {
+        .error-count-item {
           height: 34px;
           width: 100%;
           border-bottom: 1px solid #222;
@@ -1535,7 +1565,32 @@ const filterData = (val: string, action: 'add' | 'update') => {
       }
     }
 
-    .editorMessagesWrapper {
+    .editor-footer-bar {
+      background-color: #1a1a1a;
+      box-shadow: 0 -2px 4px 0 #00000029;
+
+      .editor-footer-validate-btn {
+        height: 52px;
+        padding-left: 24px;
+        display: flex;
+        align-items: center;
+      }
+
+      .editor-message {
+        height: 52px;
+        padding-left: 24px;
+        padding-right: 24px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background-color: #212121;;
+        font-size: 12px;
+        color: #DCDEE5;
+        border-left: 4px solid #34d97b;
+      }
+    }
+
+    .editor-messages-wrapper {
       position: relative;
       height: 100%;
       padding-top: 16px;
@@ -1543,11 +1598,11 @@ const filterData = (val: string, action: 'add' | 'update') => {
       border-left: 4px solid #1a1a1a;
       font-size: 12px;
 
-      &.hasErrorMsg {
+      &.has-error-msg {
         border-left: 4px solid #B34747;
       }
 
-      .editorMessage {
+      .editor-message {
         height: 20px;
         padding: 0 4px 0 12px;
         margin-bottom: 6px;
@@ -1560,13 +1615,13 @@ const filterData = (val: string, action: 'add' | 'update') => {
           background-color: #333;
         }
 
-        .msgIcon {
+        .msg-icon {
           padding-top: 3px;
           display: flex;
           align-items: center;
         }
 
-        .msgBody {
+        .msg-body {
           color: #ccc;
         }
       }
@@ -1643,7 +1698,7 @@ const filterData = (val: string, action: 'add' | 'update') => {
     background: #5e5e5e;
   }
 
-  .warningCircle {
+  .warning-circle {
     width: 10px;
     height: 10px;
     border-radius: 50%;
