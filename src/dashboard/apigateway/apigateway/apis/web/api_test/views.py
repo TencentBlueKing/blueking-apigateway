@@ -29,6 +29,7 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apps.api_debug.constants import SPEC_VERSION
 from apigateway.apps.api_debug.models import APIDebugHistory
 from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.released_resource import get_released_resource_data
@@ -37,7 +38,7 @@ from apigateway.utils.curlify import to_curl
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.time import convert_second_to_epoch_millisecond
 
-from .helpers import ApiDebugHistoryRequest, ApiDebugHistoryResponse
+from .data_models import ApiDebugHistoryRequest, ApiDebugHistoryResponse
 from .prepared_request import PreparedRequestHeaders, PreparedRequestURL
 from .serializers import APIDebugHistoriesListOutputSLZ, APITestInputSLZ, APITestOutputSLZ
 
@@ -120,14 +121,14 @@ class APITestApi(generics.CreateAPIView):
                 "use_test_app": data.get("use_test_app", True),
                 "use_user_from_cookies": data.get("use_user_from_cookies", False),
                 "request_time": request_time,
-                "spec_version": data.get("spec_version", 1),
+                "spec_version": SPEC_VERSION,
             }
             # 接口检查
             history_response = {
                 "status_code": response.status_code,
                 "response": response.text,
                 "proxy_time": proxy_time,
-                "spec_version": 1,
+                "spec_version": SPEC_VERSION,
             }
             success_history_data = {
                 "gateway": request.gateway,
@@ -138,6 +139,34 @@ class APITestApi(generics.CreateAPIView):
             }
             APIDebugHistory.objects.create(**success_history_data)
         except Exception as err:
+            # 入参检查
+            history_request = {
+                "request_url": prepared_request_url.request_url,
+                "request_method": data["method"],
+                "type": "HTTP",
+                "authorization": data.get("authorization", {}),
+                "path_params": data.get("path_params", {}),
+                "query_params": data.get("query_params", {}),
+                "body": data.get("body", ""),
+                "headers": data.get("headers", {}),
+                "subpath": data.get("subpath", ""),
+                "use_test_app": data.get("use_test_app", True),
+                "use_user_from_cookies": data.get("use_user_from_cookies", False),
+                "request_time": request_time,
+                "spec_version": SPEC_VERSION,
+            }
+            # 接口检查
+            history_response = {
+                "error": err,
+            }
+            fail_history_data = {
+                "gateway": request.gateway,
+                "stage": stage,
+                "resource_name": released_resource.name,
+                "request": ApiDebugHistoryRequest(**history_request),
+                "response": ApiDebugHistoryResponse(**history_response),
+            }
+            APIDebugHistory.objects.create(**fail_history_data)
             return FailJsonResponse(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 code="UNKNOWN",

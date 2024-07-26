@@ -1,3 +1,20 @@
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
 from datetime import datetime
 from typing import Dict, Literal, Optional
 
@@ -23,10 +40,11 @@ class ApiDebugHistoryRequest(BaseModel):
 
 
 class ApiDebugHistoryResponse(BaseModel):
-    status_code: Optional[int] = Field(200, help="返回结果的状态码")
+    status_code: Optional[int] = Field(500, help="返回结果的状态码")
     proxy_time: float = Field(..., gt=0, help="处理时间，单位为秒，包含两位小数")
     body: Optional[str] = Field(None)
     spec_version: Optional[int] = Field(1, help="返回的结果版本")
+    error: Optional[str] = Field(None, help="错误信息")
 
     # 格式化时间
     def format_proxy_time(self) -> str:
