@@ -91,6 +91,22 @@ class APITestApi(generics.CreateAPIView):
         start_time = time.perf_counter()
         request_time = timezone.now()
 
+         # 入参检查
+        history_request = {
+            "request_url": prepared_request_url.request_url,
+            "request_method": data["method"],
+            "type": "HTTP",
+            "authorization": data.get("authorization", {}),
+            "path_params": data.get("path_params", {}),
+            "query_params": data.get("query_params", {}),
+            "body": data.get("body", ""),
+            "headers": data.get("headers", {}),
+            "subpath": data.get("subpath", ""),
+            "use_test_app": data.get("use_test_app", True),
+            "use_user_from_cookies": data.get("use_user_from_cookies", False),
+            "request_time": request_time,
+            "spec_version": SPEC_VERSION,
+        }
         try:
             response = requests.request(
                 method=data["method"],
@@ -107,23 +123,8 @@ class APITestApi(generics.CreateAPIView):
             )
             end_time = time.perf_counter()
             proxy_time = end_time - start_time
-            # 入参检查
-            history_request = {
-                "request_url": prepared_request_url.request_url,
-                "request_method": data["method"],
-                "type": "HTTP",
-                "authorization": data.get("authorization", {}),
-                "path_params": data.get("path_params", {}),
-                "query_params": data.get("query_params", {}),
-                "body": data.get("body", ""),
-                "headers": data.get("headers", {}),
-                "subpath": data.get("subpath", ""),
-                "use_test_app": data.get("use_test_app", True),
-                "use_user_from_cookies": data.get("use_user_from_cookies", False),
-                "request_time": request_time,
-                "spec_version": SPEC_VERSION,
-            }
-            # 接口检查
+
+            # 结果检查
             history_response = {
                 "status_code": response.status_code,
                 "response": response.text,
@@ -139,23 +140,7 @@ class APITestApi(generics.CreateAPIView):
             }
             APIDebugHistory.objects.create(**success_history_data)
         except Exception as err:
-            # 入参检查
-            history_request = {
-                "request_url": prepared_request_url.request_url,
-                "request_method": data["method"],
-                "type": "HTTP",
-                "authorization": data.get("authorization", {}),
-                "path_params": data.get("path_params", {}),
-                "query_params": data.get("query_params", {}),
-                "body": data.get("body", ""),
-                "headers": data.get("headers", {}),
-                "subpath": data.get("subpath", ""),
-                "use_test_app": data.get("use_test_app", True),
-                "use_user_from_cookies": data.get("use_user_from_cookies", False),
-                "request_time": request_time,
-                "spec_version": SPEC_VERSION,
-            }
-            # 接口检查
+            # 结果检查
             history_response = {
                 "error": err,
             }
