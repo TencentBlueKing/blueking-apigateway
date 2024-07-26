@@ -17,7 +17,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
-import json
 
 import pytest
 from dateutil.tz import tzutc
@@ -29,7 +28,6 @@ from apigateway.apis.web.resource.serializers import (
     HttpBackendConfigSLZ,
     ResourceDataImportSLZ,
     ResourceExportOutputSLZ,
-    ResourceImportInputSLZ,
     ResourceInputSLZ,
     ResourceListOutputSLZ,
 )
@@ -253,38 +251,6 @@ class TestResourceDataImportSLZ:
         slz = ResourceDataImportSLZ()
         result = slz.validate_description_en(description_en)
         assert result == expected
-
-
-class TestResourceImportInputSLZ:
-    def test_validate(self, fake_gateway, fake_default_backend, fake_stage, fake_resource_swagger):
-        data = {
-            "content": fake_resource_swagger,
-            "selected_resources": [{"name": "foo"}],
-            "delete": True,
-        }
-        slz = ResourceImportInputSLZ(
-            data=data,
-            context={
-                "gateway": fake_gateway,
-                "stages": [fake_stage],
-                "exist_label_names": [],
-                "resource_id_to_schema": {},
-            },
-        )
-        slz.is_valid(raise_exception=True)
-        assert len(slz.validated_data["validate_result"]["resource_list"]) == 1
-
-    @pytest.mark.parametrize(
-        "content",
-        [
-            "foo",
-            json.dumps({"foo": "bar"}),
-        ],
-    )
-    def test_validate_content__error(self, content):
-        slz = ResourceImportInputSLZ()
-        with pytest.raises(ValidationError):
-            slz._validate_content(content)
 
 
 class TestResourceExportOutputSLZ:

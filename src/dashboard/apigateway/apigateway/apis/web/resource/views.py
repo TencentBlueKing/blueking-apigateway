@@ -443,18 +443,19 @@ class ResourceImportApi(generics.CreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST, code="INVALID", data=slz.data, message="validate fail"
             )
 
-        slz = ResourceDataImportSLZ(
+        output_slz = ResourceDataImportSLZ(
             data=openapi_manager.get_resource_list(raw=True),
             many=True,
             context={
                 "stages": Stage.objects.filter(gateway=request.gateway),
             },
         )
-        slz.is_valid(raise_exception=True)
+        output_slz.is_valid(raise_exception=True)
 
         importer = ResourcesImporter.from_resources(
             gateway=request.gateway,
             resources=openapi_manager.get_resource_list(),
+            selected_resources=slz.validated_data.get("selected_resources"),
             need_delete_unspecified_resources=False,
             username=request.user.username,
         )
