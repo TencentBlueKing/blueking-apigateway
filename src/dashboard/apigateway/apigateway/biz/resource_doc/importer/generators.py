@@ -48,7 +48,7 @@ class Jinja2ToMarkdownGenerator:
                 with open(self.filepath, "r", encoding="utf-8") as file:
                     return file.read()
             except Exception as err:
-                logging.info("Error processing file %s: %s", self.filepath, err)
+                logging.info("Error processing file for _render_jinja2_template %s: %s", self.filepath, err)
 
         return self._render_jinja2_template()
 
@@ -61,13 +61,13 @@ class Jinja2ToMarkdownGenerator:
             template = env.get_template(os.path.basename(self.filepath))
             return template.render()
         except TemplateSyntaxError as err:
-            logging.info("TemplateSyntaxError in %s: %s", self.filepath, err)
+            logging.info("TemplateSyntaxError for _render_jinja2_template %s: %s", self.filepath, err)
             raise ResourceDocJinja2TemplateSyntaxError(self._base_path, self.filename, err)
         except (TemplateNotFound, TemplatesNotFound) as err:
-            logging.info("TemplateNotFound for %s: %s", self.filepath, err)
+            logging.info("TemplateNotFound for _render_jinja2_template %s: %s", self.filepath, err)
             raise ResourceDocJinja2TemplateNotFound(self.filename, err)
         except Exception as err:
-            logging.info("Unexpected error in %s: %s", self.filepath, err)
+            logging.info("Unexpected error for _render_jinja2_template %s: %s", self.filepath, err)
             raise ResourceDocJinja2TemplateError(self.filename, err)
 
     @property

@@ -423,11 +423,7 @@ class ResourceImportApi(generics.CreateAPIView):
                 "gateway": request.gateway,
             },
         )
-        slz.is_valid(raise_exception=False)  # 设置为False以避免自动抛出异常
-
-        if not slz.is_valid():
-            # 自定义错误响应
-            return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERRORT, code="INVALID", data=slz.errors)
+        slz.is_valid(raise_exception=True)
 
         importer = ResourcesImporter.from_resources(
             gateway=request.gateway,
