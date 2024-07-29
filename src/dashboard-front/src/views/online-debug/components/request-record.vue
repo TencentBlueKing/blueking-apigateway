@@ -52,11 +52,12 @@
             <bk-table-column :label="t('调用时间')" prop="time"></bk-table-column>
             <bk-table-column :label="t('操作')">
               <template #default="{ row }">
-                <bk-button theme="primary" text @click="(e) => handleRowClick(e, row)">
+                <bk-button theme="primary" text @click="(e: any) => handleRowClick(e, row)">
                   {{ t('请求详情') }}
                 </bk-button>
               </template>
             </bk-table-column>
+            <!-- eslint-disable-next-line vue/no-unused-vars -->
             <template #expandRow="row">
               <div class="details">
                 <editor-monaco v-model="editorText" theme="Visual Studio" ref="resourceEditorRef" />
@@ -143,16 +144,16 @@ const handleShortcutChange = (value: Record<string, any>, index: number) => {
   updateTableEmptyConfig();
 };
 
-const formatDatetime = (timeRange: number[]) => {
-  return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
-};
+// const formatDatetime = (timeRange: number[]) => {
+//   return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
+// };
 
 const setSearchTimeRange = () => {
-  let timeRange = dateTimeRange.value;
-  // 选择的是时间快捷项，需要实时计算时间值
-  if (shortcutSelectedIndex.value !== -1) {
-    timeRange = AccessLogStore.datepickerShortcuts[shortcutSelectedIndex.value].value();
-  }
+  // let timeRange = dateTimeRange.value;
+  // // 选择的是时间快捷项，需要实时计算时间值
+  // if (shortcutSelectedIndex.value !== -1) {
+  //   timeRange = AccessLogStore.datepickerShortcuts[shortcutSelectedIndex.value].value();
+  // }
   // const formatTimeRange = formatDatetime(timeRange);
   // filterData.value = Object.assign(filterData.value, {
   //   time_start: formatTimeRange[0] || '',
