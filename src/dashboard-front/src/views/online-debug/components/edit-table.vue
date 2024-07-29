@@ -9,8 +9,8 @@
     :cell-class="getCellClass"
     border="outer">
     <bk-table-column :width="55" type="selection" align="center" />
-    <bk-table-column label="参数名" prop="name">
-      <template #default="{ row, column, index }">
+    <bk-table-column :label="t('参数名')" prop="name">
+      <template #default="{ row, index }">
         <div class="td-text" v-if="!row?.isEdit">
           {{ row?.name }}
         </div>
@@ -23,7 +23,7 @@
             :content="t('变量名由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符') "
             :popover-delay="[300, 0]"
           >
-            <bk-form :ref="(el: HTMLElement) => setRefs(el, `name-${index}`)" :model="row" label-width="0">
+            <bk-form :ref="(el) => setRefs(el, `name-${index}`)" :model="row" label-width="0">
               <bk-form-item
                 :rules="varRules.name"
                 property="name"
@@ -34,7 +34,7 @@
                   :clearable="false"
                   class="edit-input"
                   @blur="handleCellBlur(index)"
-                  :ref="(el: HTMLElement) => setInputRefs(el, `name-input-${index}-${column?.index}`)"
+                  :ref="(el) => setInputRefs(el, `name-input-${index}-${column?.index}`)"
                 />
               </bk-form-item>
             </bk-form>
@@ -43,31 +43,50 @@
 
       </template>
     </bk-table-column>
-    <bk-table-column label="参数值" prop="value">
+    <bk-table-column :label="t('参数值')" prop="value">
       <template #default="{ row, column, index }">
         <div class="td-text" v-if="!row?.isEdit">
           {{ row?.value }}
         </div>
         <template v-else>
-          <bk-form :ref="(el: HTMLElement) => setRefs(el, `value-${index}`)" :model="row" label-width="0">
+          <bk-form :ref="(el) => setRefs(el, `value-${index}`)" :model="row" label-width="0">
             <bk-form-item
               :rules="varRules.value"
               property="value"
               error-display-type="tooltips"
               class="table-form-item">
-              <bk-input
-                v-model="row.value"
-                :clearable="false"
-                class="edit-input"
-                @blur="handleCellBlur(index)"
-                :ref="(el: HTMLElement) => setInputRefs(el, `value-input-${index}-${column?.index}`)"
-              />
+              <template v-if="row?.options?.length">
+                <bk-select
+                  class="edit-select"
+                  :clearable="false"
+                  :filterable="false"
+                  v-model="row.value"
+                  @change="handleCellBlur(index)"
+                  :ref="(el) => setInputRefs(el, `value-input-${index}-${column?.index}`)"
+                >
+                  <bk-option
+                    v-for="item in row.options"
+                    :id="item"
+                    :key="item"
+                    :name="item"
+                  />
+                </bk-select>
+              </template>
+              <template v-else>
+                <bk-input
+                  v-model="row.value"
+                  :clearable="false"
+                  class="edit-input"
+                  @blur="handleCellBlur(index)"
+                  :ref="(el) => setInputRefs(el, `value-input-${index}-${column?.index}`)"
+                />
+              </template>
             </bk-form-item>
           </bk-form>
         </template>
       </template>
     </bk-table-column>
-    <bk-table-column label="类型" prop="type">
+    <bk-table-column :label="t('类型')" prop="type">
       <template #default="{ row, column, index }">
         <div
           class="td-text"
@@ -75,14 +94,13 @@
           v-if="!row?.isEdit">
           <bk-tag
             theme="info"
-            @click="(event: any) => handleCellClick({ event, column, rowIndex: index })">
+            @click="(event) => handleCellClick({ event, column, rowIndex: index })">
             {{ row?.type }}
           </bk-tag>
         </div>
         <template v-else>
-          <bk-form :ref="(el: HTMLElement) => setRefs(el, `type-${index}`)" :model="row" label-width="0">
+          <bk-form :ref="(el) => setRefs(el, `type-${index}`)" :model="row" label-width="0">
             <bk-form-item
-              :rules="varRules.type"
               property="type"
               error-display-type="tooltips"
               class="table-form-item">
@@ -92,7 +110,7 @@
                 :filterable="false"
                 v-model="row.type"
                 @change="handleCellBlur(index)"
-                :ref="(el: HTMLElement) => setInputRefs(el, `type-input-${index}-${column?.index}`)"
+                :ref="(el) => setInputRefs(el, `type-input-${index}-${column?.index}`)"
               >
                 <bk-option
                   v-for="item in typeList"
@@ -106,15 +124,14 @@
         </template>
       </template>
     </bk-table-column>
-    <bk-table-column label="说明" prop="instructions">
+    <bk-table-column :label="t('说明')" prop="instructions">
       <template #default="{ row, column, index }">
         <div class="td-text" v-if="!row?.isEdit">
           {{ row?.instructions }}
         </div>
         <template v-else>
-          <bk-form :ref="(el: HTMLElement) => setRefs(el, `instructions-${index}`)" :model="row" label-width="0">
+          <bk-form :ref="(el) => setRefs(el, `instructions-${index}`)" :model="row" label-width="0">
             <bk-form-item
-              :rules="varRules.instructions"
               property="instructions"
               error-display-type="tooltips"
               class="table-form-item">
@@ -123,14 +140,14 @@
                 :clearable="false"
                 class="edit-input"
                 @blur="handleCellBlur(index)"
-                :ref="(el: HTMLElement) => setInputRefs(el, `instructions-input-${index}-${column?.index}`)"
+                :ref="(el) => setInputRefs(el, `instructions-input-${index}-${column?.index}`)"
               />
             </bk-form-item>
           </bk-form>
         </template>
       </template>
     </bk-table-column>
-    <bk-table-column label="操作">
+    <bk-table-column :label="t('操作')">
       <template #default="{ index }">
         <i
           class="tb-btn add-btn apigateway-icon icon-ag-plus-circle-shape"
@@ -144,10 +161,18 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { Message } from 'bkui-vue';
 
 const { t } = useI18n();
+
+const props = defineProps({
+  list: {
+    type: Array,
+    default: [],
+  },
+});
 
 const isShowVarPopover = ref(false);
 
@@ -166,27 +191,24 @@ const setInputRefs = (el: any, name: string) => {
 };
 const getDefaultTbRow = () => {
   return {
-    id: 0,
     name: '',
     value: '',
-    type: '',
+    type: 'string',
     instructions: '',
     isEdit: true,
   };
 };
 
-const tableData = ref<any>([
-  getDefaultTbRow(),
-]);
+const tableData = ref<any>(props?.list?.length ? props.list : [getDefaultTbRow()]);
 
 const typeList = ref<any[]>([
   {
-    label: 'Number',
-    value: 'number',
-  },
-  {
     label: 'String',
     value: 'string',
+  },
+  {
+    label: 'Number',
+    value: 'number',
   },
   {
     label: 'Boolean',
@@ -211,7 +233,7 @@ const handleCellClick = async ({ event, column, rowIndex }: any) => {
   nextTick(() => {
     if (field === 'type') {
       // formInputRef.value?.get(`${field}-input-${rowIndex}-${index}`)?.showPopover();
-      formInputRef.value?.get(`${field}-input-${rowIndex}-${index}`)?.focus();
+      // formInputRef.value?.get(`${field}-input-${rowIndex}-${index}`)?.focus();
     } else {
       formInputRef.value?.get(`${field}-input-${rowIndex}-${index}`)?.focus();
     }
@@ -254,6 +276,32 @@ const delRow = (index: number) => {
   tableData.value?.splice(index, 1);
 };
 
+const validate = async () => {
+  const list = tableData.value;
+  let flag = true;
+
+  list?.forEach(async (item: any) => {
+    if (item.required) {
+      if (!item.name) {
+        flag = false;
+        Message({
+          theme: 'error',
+          message: t('请确认{name}参数名输入正确', { name: item.name }),
+        });
+      }
+
+      if (!item.value) {
+        flag = false;
+        Message({
+          theme: 'error',
+          message: t('请确认{name}参数值输入正确', { name: item.name }),
+        });
+      }
+    }
+  });
+  return flag;
+};
+
 const getTableData = () => {
   return tableData.value;
 };
@@ -293,23 +341,54 @@ const varRules = {
       trigger: 'blur',
     },
   ],
-  type: [
-    {
-      required: true,
-      message: t('必填项'),
-      trigger: 'change',
-    },
-  ],
-  instructions: [
-    {
-      required: true,
-      message: t('必填项'),
-      trigger: 'blur',
-    },
-  ],
+  // type: [
+  //   {
+  //     required: true,
+  //     message: t('必填项'),
+  //     trigger: 'change',
+  //   },
+  // ],
+  // instructions: [
+  //   {
+  //     required: false,
+  //     message: t('必填项'),
+  //     trigger: 'blur',
+  //   },
+  // ],
 };
 
+watch(
+  () => props.list,
+  (v) => {
+    // console.log('table: ', v);
+    const list: any[] = [];
+    v?.forEach((item: any) => {
+      list.push({
+        isEdit: false,
+        name: item.name,
+        value: item.schema?.default || '',
+        instructions: item.description,
+        required: !!item.required,
+        type: item.schema?.type || 'string',
+        options: item.schema?.enum || [],
+        default: item.schema?.default,
+      });
+    });
+
+    if (!list?.length) {
+      tableData.value = [getDefaultTbRow()];
+    } else {
+      tableData.value = list;
+    }
+  },
+  {
+    deep: true,
+    immediate: true,
+  },
+);
+
 defineExpose({
+  validate,
   getTableData,
 });
 </script>

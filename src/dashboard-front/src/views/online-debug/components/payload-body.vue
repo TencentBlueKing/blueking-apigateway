@@ -29,6 +29,7 @@
             :id="item.value"
             :key="index"
             :name="item.label"
+            :disabled="true"
           />
         </bk-select>
       </div>
@@ -43,7 +44,8 @@
           </div>
         </div> -->
     </div>
-    <edit-table v-show="type !== 'raw'" ref="editTableRef" />
+    <edit-table v-show="type === 'data'" ref="dataRef" :list="fromDataList" />
+    <edit-table v-show="type === 'urlencoded'" ref="urlencodedRef" :list="urlencodedList" />
     <div class="raw-content" v-show="type === 'raw'">
       <editor-monaco v-model="editorText" theme="Visual Studio" ref="resourceEditorRef" />
     </div>
@@ -51,62 +53,94 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
+// import { useI18n } from 'vue-i18n';
 import editTable from '@/views/online-debug/components/edit-table.vue';
 import editorMonaco from '@/components/ag-editor.vue';
 
-const type = ref<string>('data');
+// const { t } = useI18n();
+
+const props = defineProps({
+  fromDataPayload: {
+    type: Array,
+    default: [],
+  },
+  rawPayload: {
+    type: Object,
+    default: {},
+  },
+});
+
+const type = ref<string>('raw');
 const rawType = ref<string>('JSON');
-const editTableRef = ref();
+const dataRef = ref();
+const fromDataList = ref<any[]>([]);
+const urlencodedList = ref<any[]>([]);
+const urlencodedRef = ref();
 const datasource = ref([
   {
-    value: 'climbing',
+    value: 'JSON',
     label: 'JSON',
   },
   {
-    value: 'climbing1',
+    value: 'XML',
     label: 'XML',
   },
   {
-    value: 'climbing2',
+    value: 'HTML',
     label: 'HTML',
   },
   {
-    value: 'fitness',
+    value: 'TEXT',
     label: 'TEXT',
   },
 ]);
 const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>();
-const editorText = ref<string>(`{
-	"type": "team",
-	"test": {
-		"testPage": "tools/testing/run-tests.htm",
-		"enabled": true
-	},
-    "search": {
-        "excludeFolders": [
-			".git",
-			"tools/testing/qunit",
-			"tools/testing/chutzpah",
-			"server.net"
-        ]
-}`);
+const editorText = ref<any>(JSON.stringify(props.rawPayload, null, 2));
+
+const validate = async () => {
+  const formData = await dataRef.value?.validate();
+  const urlencoded = await urlencodedRef.value?.validate();
+
+  if (formData && urlencoded) {
+    return true;
+  }
+  return false;
+};
 
 const getData = () => {
-  if (type.value !== 'raw') {
-    return {
-      type: type.value,
-      list: editTableRef.value?.getTableData(),
-    };
-  }
   return {
     type: type.value,
+    formData: dataRef.value?.getTableData(),
+    urlencoded: urlencodedRef.value?.getTableData(),
+    raw: editorText.value,
     rawType: rawType.value,
-    text: editorText.value,
   };
 };
 
+watch(
+  () => props.fromDataPayload,
+  (v: any) => {
+    fromDataList.value = v;
+  },
+  {
+    deep: true,
+  },
+);
+
+watch(
+  () => props.rawPayload,
+  (v: any) => {
+    editorText.value = JSON.stringify(v, null, 2);
+    resourceEditorRef.value?.setValue(editorText.value);
+  },
+  {
+    deep: true,
+  },
+);
+
 defineExpose({
+  validate,
   getData,
 });
 </script>
