@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,23 +15,3 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import include, path
-
-from .views import APIDebugHistoryListApi, APIDebugHistoryRetrieveDestroyApi, APITestApi
-
-urlpatterns = [
-    path("", APITestApi.as_view(), name="api_test.tests"),
-    path(
-        "histories/",
-        include(
-            [
-                path("", APIDebugHistoryListApi.as_view(), name="api_debug.histories.list"),
-                path(
-                    "<int:id>/",
-                    APIDebugHistoryRetrieveDestroyApi.as_view(),
-                    name="api_debug.histories.retrieve-destroy",
-                ),
-            ]
-        ),
-    ),
-]
