@@ -566,6 +566,7 @@ class TestResourceImportApi:
             path_params={"gateway_id": fake_gateway.id},
             data=data,
         )
+        print("***************")
 
         assert resp.status_code == 204
         assert Resource.objects.filter(gateway=fake_gateway).count() == expected

@@ -71,3 +71,11 @@ class APITestOutputSLZ(serializers.Serializer):
     size = serializers.FloatField(help_text="响应体大小")
     body = serializers.CharField(help_text="响应体内容")
     headers = serializers.DictField(help_text="响应头")
+
+
+class APIDebugHistoriesListOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="测试历史ID")
+    gateway_id = serializers.IntegerField(read_only=True, help_text="网关ID")
+    resource_name = serializers.CharField(read_only=True, help_text="资源名称")
+    request = serializers.JSONField(help_text="请求参数")
+    response = serializers.JSONField(help_text="返回结果")
