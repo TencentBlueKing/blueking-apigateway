@@ -13,7 +13,7 @@
           v-model="stage"
           filterable
           :clearable="false"
-          prefix="环境"
+          :prefix="t('环境')"
           @change="handleStageChange"
         >
           <bk-option
@@ -93,15 +93,15 @@
                     v-show="showPath"
                   >
                     <div class="path-title">
-                      请求路径：
+                      {{ t('请求路径') }}：
                     </div>
                     <div class="source-path">
                       <div class="request-path-box">
                         <bk-tag theme="success">{{ curResource?.method }}</bk-tag>
                         <span class="request-path">{{ curResource?.path }}</span>
                       </div>
-                      <bk-button theme="primary" @click="handleSend"> 发送 </bk-button>
-                      <bk-button class="ml8" @click="viewDoc"> 查看文档 </bk-button>
+                      <bk-button theme="primary" @click="handleSend" :loading="isLoading">{{ t('发送') }}</bk-button>
+                      <bk-button class="ml8" @click="viewDoc">{{ t('查看文档') }}</bk-button>
                     </div>
                   </div>
                 </div>
@@ -110,12 +110,12 @@
                 <div class="request-setting-content">
                   <div class="request-setting-item top-flush">
                     <div class="request-setting-label">
-                      应用认证：
+                      {{ t('应用认证') }}：
                     </div>
                     <div class="request-setting-main">
                       <template v-if="!appAuthorization.isEdit">
                         <span>
-                          ({{ isDefaultAppAuth ? '默认测试应用' : '自定义应用' }})
+                          ({{ isDefaultAppAuth ? t('默认测试应用') : t('自定义应用') }})
                           bk_app_code：{{ isDefaultAppAuth ? testAppCode : formData.authorization.bk_app_code }}；
                           bk_app_secret：{{ isDefaultAppAuth ? '******' : formData.authorization.bk_app_secret }}
                         </span>
@@ -123,8 +123,8 @@
                       </template>
                       <div class="edit-user-auth" v-else>
                         <bk-radio-group v-model="appAuthorization.appAuth" class="auth-type">
-                          <bk-radio-button label="use_test_app">默认测试应用</bk-radio-button>
-                          <bk-radio-button label="use_custom_app">自定义应用</bk-radio-button>
+                          <bk-radio-button label="use_test_app">{{ t('默认测试应用') }}</bk-radio-button>
+                          <bk-radio-button label="use_custom_app">{{ t('自定义应用') }}</bk-radio-button>
                         </bk-radio-group>
                         <template v-if="appAuthorization.appAuth === 'use_test_app'">
                           <bk-input
@@ -155,37 +155,37 @@
                           />
                         </template>
                         <div class="edit-user-tips">
-                          <info-line /> <span class="tips">默认测试应用，网关自动为其短期授权；自定义应用，需主动为应用授权资源访问权限</span>
+                          <info-line /> <span class="tips">{{ t('默认测试应用，网关自动为其短期授权；自定义应用，需主动为应用授权资源访问权限') }}</span>
                         </div>
                         <div class="edit-user-btns">
-                          <bk-button theme="primary" @click="saveAppAuthEdit"> 保存 </bk-button>
-                          <bk-button class="ml8" @click="cancelAppAuthEdit"> 取消 </bk-button>
+                          <bk-button theme="primary" @click="saveAppAuthEdit">{{ t('保存') }}</bk-button>
+                          <bk-button class="ml8" @click="cancelAppAuthEdit">{{ t('取消') }}</bk-button>
                         </div>
                       </div>
                     </div>
                   </div>
                   <div class="request-setting-item top-flush" v-if="curResource?.verified_user_required">
                     <div class="request-setting-label">
-                      用户认证：
+                      {{ t('用户认证') }}：
                     </div>
                     <div class="request-setting-main">
                       <template v-if="!userCookies.isEdit">
                         <span>
-                          ({{ formData.useUserFromCookies ? '默认用户认证' : '自定义用户认证' }})
+                          ({{ formData.useUserFromCookies ? t('默认用户认证') : t('自定义用户认证') }})
                           bk_token：{{ formData.useUserFromCookies ? '******' : formData.authorization.bk_token}}
                         </span>
                         <edit-line class="edit-auth" @click="handleEditUserAuth" />
                       </template>
                       <div class="edit-user-auth" v-else>
                         <bk-radio-group class="auth-type" v-model="userCookies.useUserFromCookies">
-                          <bk-radio-button :label="true">默认用户认证</bk-radio-button>
-                          <bk-radio-button :label="false">自定义用户认证</bk-radio-button>
+                          <bk-radio-button :label="true">{{ t('默认用户认证') }}</bk-radio-button>
+                          <bk-radio-button :label="false">{{ t('自定义用户认证') }}</bk-radio-button>
                         </bk-radio-group>
                         <template v-if="userCookies.useUserFromCookies">
                           <bk-input
                             class="auth-value"
                             prefix="bk_token"
-                            placeholder="请输入 Cookies 中，字段 bk_token 的值"
+                            :placeholder="t('请输入 Cookies 中，字段 bk_token 的值')"
                             :value="'******'"
                             :disabled="true"
                           />
@@ -194,32 +194,32 @@
                           <bk-input
                             class="auth-value"
                             prefix="bk_token"
-                            placeholder="请输入 Cookies 中，字段 bk_token 的值"
+                            :placeholder="t('请输入 Cookies 中，字段 bk_token 的值')"
                             v-model="userCookies.bk_token"
                           />
                         </template>
 
                         <div class="edit-user-tips">
-                          <info-line /> <span class="tips">默认测试应用，网关自动为其短期授权；自定义应用，需主动为应用授权资源访问权限</span>
+                          <info-line /> <span class="tips">{{ t('默认测试应用，网关自动为其短期授权；自定义应用，需主动为应用授权资源访问权限') }}</span>
                         </div>
                         <div class="edit-user-btns">
-                          <bk-button theme="primary" @click="saveUserAuthEdit"> 保存 </bk-button>
-                          <bk-button class="ml8" @click="cancelUserAuthEdit"> 取消 </bk-button>
+                          <bk-button theme="primary" @click="saveUserAuthEdit">{{ t('保存') }}</bk-button>
+                          <bk-button class="ml8" @click="cancelUserAuthEdit">{{ t('取消') }}</bk-button>
                         </div>
                       </div>
                     </div>
                   </div>
                   <div class="request-setting-item request-source-path">
                     <div class="request-setting-label path-title">
-                      请求路径：
+                      {{ t('请求路径') }}：
                     </div>
                     <div class="request-setting-main source-path">
                       <div class="request-path-box">
                         <bk-tag theme="success">{{ curResource?.method }}</bk-tag>
                         <span class="request-path">{{ curResource?.path }}</span>
                       </div>
-                      <bk-button theme="primary" @click="handleSend"> 发送 </bk-button>
-                      <bk-button class="ml8" @click="viewDoc"> 查看文档 </bk-button>
+                      <bk-button theme="primary" @click="handleSend" :loading="isLoading">{{ t('发送') }}</bk-button>
+                      <bk-button class="ml8" @click="viewDoc">{{ t('查看文档') }}</bk-button>
                     </div>
                   </div>
                 </div>
@@ -234,12 +234,12 @@
         >
           <template #aside>
             <div class="request-payload">
-              <request-payload ref="requestPayloadRef" />
+              <request-payload ref="requestPayloadRef" :schema="payloadType" />
             </div>
           </template>
           <template #main>
             <div class="request-response">
-              <response-content />
+              <response-content :res="response" />
             </div>
           </template>
         </bk-resize-layout>
@@ -251,7 +251,7 @@
   <bk-sideslider v-model:isShow="isShowDoc" :width="960" quick-close>
     <template #header>
       <div class="custom-side-header">
-        <div class="title">查看文档详情</div>
+        <div class="title">{{ t('查看文档详情') }}</div>
         <span></span>
         <div class="subtitle">{{ curResource?.name }}</div>
 
@@ -279,19 +279,23 @@ import responseContent from '@/views/online-debug/components/response-content.vu
 import doc from '@/views/online-debug/components/doc.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import { useCommon } from '@/store';
+import { Message } from 'bkui-vue';
 import {
   getStages,
   getApigwResourcesDocs,
   getApiDetail,
+  resourceSchema,
+  postAPITest,
 } from '@/http';
 
 
 const { t } = useI18n();
 const common = useCommon();
 
+const isLoading = ref<boolean>(false);
 const keyword = ref<string>('');
 const activeIndex = ref<number[]>([1]);
-const stage = ref<string>('');
+const stage = ref<number>();
 const stageList = ref<any[]>([]);
 const resourceList = ref<any>([]);
 const activeName = ref<any>([]);
@@ -355,6 +359,13 @@ const formData = ref<any>({ ...defaultValue.formData });
 const isShowDoc = ref<boolean>(false);
 const requestPayloadRef = ref();
 const showPath = ref<boolean>(false);
+const payloadType = reactive<any>({
+  rawPayload: {},
+  queryPayload: [],
+  pathPayload: [],
+  headersPayload: [],
+  fromDataPayload: [],
+});
 
 // 编辑应用认证
 const appAuthorization = reactive<any>({
@@ -369,6 +380,7 @@ const userCookies = reactive<any>({
   useUserFromCookies: true,
   bk_token: '',
 });
+const response = ref<any>({});
 
 const isDefaultAppAuth = computed(() => formData.value.appAuth === 'use_test_app');
 
@@ -400,7 +412,7 @@ const getApigwReleaseResources = async () => {
       offset: 0,
       stage_name: getStageName.value,
     };
-    const res = await getApigwResourcesDocs(common.apigwName, query);
+    const res = await getApigwResourcesDocs(curApigw.value?.name, query);
     const group: any = {};
     const defaultItem: any = {
       labelId: 'default',
@@ -446,7 +458,7 @@ const getApigwReleaseResources = async () => {
       }
     });
     if (defaultItem.resources.length) {
-      group['默认'] = defaultItem;
+      group[t('默认')] = defaultItem;
     }
     originResourceGroup.value = group;
   } catch (e) {
@@ -458,9 +470,9 @@ const resourceGroup = computed(() => {
   const group: any = {};
   let keys = Object.keys(originResourceGroup.value).sort();
 
-  if (keys.includes('默认')) {
-    const list = keys.filter(item => item !== '默认');
-    keys = ['默认', ...list];
+  if (keys.includes(t('默认'))) {
+    const list = keys.filter(item => item !== t('默认'));
+    keys = [t('默认'), ...list];
   }
   for (const key of keys) {
     let resources: any = [];
@@ -484,9 +496,15 @@ const resourceGroup = computed(() => {
       group[key] = obj;
     }
   }
-  activeName.value = [Object.keys(group)[0]];
-  curResource.value = group[Object.keys(group)[0]]?.resources[0];
-  curComponentName.value = curResource.value?.name;
+
+  // 默认选中第一个标签的第一个资源
+  if (!curComponentName.value) {
+    activeName.value = [Object.keys(group)[0]];
+    curResource.value = group[Object.keys(group)[0]]?.resources[0];
+    curComponentName.value = curResource.value?.name;
+    getResourceParams();
+  }
+
   return group;
 });
 
@@ -502,10 +520,43 @@ const handleStageChange = (payload: number) => {
   }
 };
 
+const clearSchema = () => {
+  payloadType.rawPayload = {};
+  payloadType.queryPayload = [];
+  payloadType.pathPayload = [];
+  payloadType.headersPayload = [];
+  payloadType.fromDataPayload = [];
+};
+
+const getResourceParams = async () => {
+  if (!common.apigwId || !stage.value || !curResource.value?.id) return;
+  const res = await resourceSchema(common.apigwId, stage.value, curResource.value?.id);
+
+  clearSchema();
+  if (res?.body_example) {
+    payloadType.rawPayload = res?.body_example;
+  }
+
+  res?.parameter_schema?.forEach((item: any) => {
+    if (item.in === 'query') {
+      payloadType.queryPayload?.push(item);
+    } else if (item.in === 'path') {
+      payloadType.pathPayload?.push(item);
+    } else if (item.in === 'header') {
+      payloadType.headersPayload?.push(item);
+    } else if (item.in === 'fromData') {
+      payloadType.fromDataPayload?.push(item);
+    }
+  });
+  console.log('schema: ', payloadType);
+};
+
 // 点击资源列表项
 const handleShowDoc = (resource: any) => {
   curResource.value = resource;
   curComponentName.value = resource.name;
+  getResourceParams();
+  response.value = {};
 };
 
 const hightlight = (value: string) => {
@@ -598,10 +649,107 @@ const cancelUserAuthEdit = () => {
   userCookies.isEdit = false;
 };
 
-const handleSend = (e: Event) => {
+const getKeyValue = (list: any[]) => {
+  if (!list?.length) return {};
+
+  const obj: any = {};
+  list.forEach((item: any) => {
+    if (item.name) {
+      obj[item.name] = item.value;
+    }
+  });
+
+  return obj;
+};
+
+const checkFormData = (data: any) => {
+  const pathValues = Object.values(data.path_params);
+  const pathKeys = Object.keys(data.path_params);
+  // const reg = /^[\w{}/.-]*$/;
+  const codeReg = /^[a-z][a-z0-9-_]+$/;
+  // if ((isShowSubpath.value) && !reg.test(data.subpath)) {
+  //   Message({
+  //     theme: 'error',
+  //     message: t('请输入合法的子路径'),
+  //   });
+  //   form.value.validate();
+  //   return false;
+  // }
+  if (pathKeys?.length && pathValues.some((val: any) => !val?.length)) {
+    Message({
+      theme: 'error',
+      message: t('请输入完整的路径参数'),
+    });
+    // form.value.validate();
+    return false;
+  }
+  if (data.authorization.bk_app_code && !codeReg.test(data.authorization.bk_app_code)) {
+    Message({
+      theme: 'error',
+      delay: 5000,
+      message: t('应用ID格式不正确，只能包含：小写字母、数字、连字符(-)、下划线(_)，首字母必须是字母'),
+    });
+    return false;
+  }
+
+  return true;
+};
+
+const formatPayload = () => {
+  const payload = requestPayloadRef.value?.getData();
+  const { headers } = payload;
+  const { path, query } = payload.params;
+  const { formData: formDataList, urlencoded, raw } = payload.body;
+
+  const data: any = {};
+  data.stage_id = stage.value;
+  data.resource_id = curResource.value?.id;
+  data.method = curResource.value?.method;
+  data.query_params = getKeyValue(query);
+  data.path_params = getKeyValue(path);
+  data.headers = getKeyValue(headers);
+  data.body = raw;
+
+  // 用户认证
+  data.use_user_from_cookies = curResource.value?.verified_user_required ? formData.value?.useUserFromCookies : false;
+  data.authorization = formData.value?.authorization || {};
+  data.use_test_app = isDefaultAppAuth.value;
+
+  // 默认应用认证数据过滤
+  if (isDefaultAppAuth.value) {
+    data.authorization.bk_app_secret = '';
+    data.authorization.bk_app_code = '';
+  }
+
+  // 默认用户认证数据过滤
+  if (formData.value?.useUserFromCookies) {
+    data.authorization.bk_token = '';
+  }
+
+  if (checkFormData(data)) {
+    return data;
+  }
+  return false;
+};
+
+const handleSend = async (e: Event) => {
   e?.stopPropagation();
-  const params = requestPayloadRef.value?.getData();
-  console.log('.................', params);
+  const isValidate = await requestPayloadRef.value?.validate();
+  if (!isValidate) return;
+  const data = formatPayload();
+  if (!data) return;
+  console.log('....data...', data);
+
+  try {
+    isLoading.value = true;
+    const res = await postAPITest(common.apigwId, data);
+    console.log('res: ', res);
+    response.value = res;
+  } catch (e) {
+    console.log(e);
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 const viewDoc = (e: Event) => {
@@ -610,8 +758,8 @@ const viewDoc = (e: Event) => {
 };
 
 const init = async () => {
-  getApigwStages();
   await getApigwDetail();
+  getApigwStages();
   setUserToken();
 };
 
@@ -904,6 +1052,11 @@ watch(
     .opt-close {
       font-size: 16px;
     }
+  }
+}
+.request-resize {
+  :deep(.bk-resize-trigger:hover) {
+    border-top: 2px solid #3a84ff;
   }
 }
 </style>

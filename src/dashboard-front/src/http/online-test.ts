@@ -37,3 +37,12 @@ export const getApiDetail = (apigwId: number) => fetch.get(`${BK_DASHBOARD_URL}/
  * @returns
  */
 export const getUserAuthType = () => fetch.get(`${BK_DASHBOARD_URL}/settings/user_auth_type/`);
+
+/**
+ * 获取环境下可用的某个资源接口schema(在线调试)
+ * @param gatewayId 网关id
+ * @param stageId 环境id
+ * @param resourceId 资源id
+ * @returns
+ */
+export const resourceSchema = (gatewayId: number, stageId: number, resourceId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${gatewayId}/releases/stages/${stageId}/resources/${resourceId}/schema/`);

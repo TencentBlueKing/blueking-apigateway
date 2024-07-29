@@ -7,13 +7,13 @@
       <template #header>
         <div class="params-header">
           <div class="params-header-title">
-            <angle-up-fill class="params-header-fold" /><span>Query 参数</span>
+            <angle-up-fill class="params-header-fold" /><span>{{ t('Query 参数') }}</span>
           </div>
         </div>
       </template>
       <template #content>
         <div>
-          <edit-table ref="editTableRef1" />
+          <edit-table ref="queryRef" :list="queryList" />
         </div>
       </template>
     </bk-collapse-panel>
@@ -21,13 +21,13 @@
       <template #header>
         <div class="params-header">
           <div class="params-header-title">
-            <angle-up-fill class="params-header-fold" /><span>Path 参数</span>
+            <angle-up-fill class="params-header-fold" /><span>{{ t('Path 参数') }}</span>
           </div>
         </div>
       </template>
       <template #content>
         <div>
-          <edit-table ref="editTableRef2" />
+          <edit-table ref="pathRef" :list="pathList" />
         </div>
       </template>
     </bk-collapse-panel>
@@ -35,22 +35,60 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import editTable from '@/views/online-debug/components/edit-table.vue';
 
-const editTableRef1 = ref();
-const editTableRef2 = ref();
+const { t } = useI18n();
+
+const props = defineProps({
+  queryPayload: {
+    type: Array,
+    default: [],
+  },
+  pathPayload: {
+    type: Array,
+    default: [],
+  },
+});
+
+const queryRef = ref();
+const queryList = ref<any[]>([]);
+const pathRef = ref();
+const pathList = ref<any[]>([]);
 const activeIndex = ref<number[]>([1, 2]);
+
+const validate = async () => {
+  const query = await queryRef.value?.validate();
+  const path = await pathRef.value?.validate();
+
+  if (query && path) {
+    return true;
+  }
+  return false;
+};
 
 const getData = () => {
   return {
-    query: editTableRef1.value?.getTableData(),
-    path: editTableRef2.value?.getTableData(),
+    query: queryRef.value?.getTableData(),
+    path: pathRef.value?.getTableData(),
   };
 };
 
+watch(
+  () => [props.queryPayload, props.pathPayload],
+  ([v1, v2]) => {
+    queryList.value = v1;
+    pathList.value = v2;
+  },
+  {
+    deep: true,
+  },
+);
+
 defineExpose({
+  validate,
   getData,
 });
 
