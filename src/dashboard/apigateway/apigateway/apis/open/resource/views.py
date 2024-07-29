@@ -16,17 +16,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.db import transaction
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics, status
+import json
 
-from apigateway.apis.web.resource.serializers import ResourceImportInputSLZ
+from django.db import transaction
+from django.utils.translation import gettext as _
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import generics, serializers, status
+
 from apigateway.biz.resource.importer import ResourcesImporter
+from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
 from apigateway.common.permissions import GatewayRelatedAppPermission
-from apigateway.core.models import Resource, Stage
+from apigateway.core.models import Resource
 from apigateway.utils.responses import V1OKJsonResponse
 
-from .serializers import ResourceSyncOutputSLZ
+from .serializers import ResourceImportInputSLZ, ResourceSyncOutputSLZ
 
 
 class ResourceSyncApi(generics.CreateAPIView):
@@ -45,17 +48,28 @@ class ResourceSyncApi(generics.CreateAPIView):
         slz = ResourceImportInputSLZ(
             data=request.data,
             context={
-                "stages": Stage.objects.filter(gateway=request.gateway),
                 "gateway": request.gateway,
             },
         )
         slz.is_valid(raise_exception=True)
 
+        try:
+            openapi_manager = OpenAPIImportManager.load_from_content(request.gateway, slz.validated_data["content"])
+        except Exception as err:
+            raise serializers.ValidationError(
+                {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)}
+            )
+
+        validate_err_list = openapi_manager.validate()
+        if len(validate_err_list) != 0:
+            error_dicts = [error.to_dict() for error in validate_err_list]
+            raise serializers.ValidationError(
+                {"content": _("validate err {err}。").format(err=json.dumps(error_dicts, indent=4))}
+            )
+
         importer = ResourcesImporter.from_resources(
             gateway=request.gateway,
-            resources=slz.validated_data.get("validate_result", {}).get("resource_list", []),
-            selected_resources=slz.validated_data.get("selected_resources"),
-            need_delete_unspecified_resources=slz.validated_data["delete"],
+            resources=openapi_manager.get_resource_list(),
             username=request.user.username,
         )
         importer.import_resources()
