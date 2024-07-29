@@ -43,14 +43,24 @@ class Jinja2ToMarkdownGenerator:
         self.filepath = filepath
 
     def generate_doc_content(self) -> str:
-        if not self._is_jinja2_template():
-            try:
-                with open(self.filepath, "r", encoding="utf-8") as file:
-                    return file.read()
-            except Exception as err:
-                logging.info("Error processing file for _render_jinja2_template %s: %s", self.filepath, err)
+        if self._is_jinja2_template():
+            return self._render_jinja2_template()
 
-        return self._render_jinja2_template()
+        # 检查是否能够打开文件
+        try:
+            content = read_file(self.filepath)
+        except Exception as err:
+            logging.info("File reading failure for _render_jinja2_template %s: %s", self.filepath, err)
+            raise ValueError(f"Failed to read file {self.filename}: {err}")
+
+        # 检查文件编码是否正确
+        try:
+            decoded_content = content.decode()
+        except UnicodeDecodeError as err:
+            logging.info("File encoding error for _render_jinja2_template %s: %s", self.filepath, err)
+            raise ValueError(f"Error decoding file {self.filepath}: {err}")
+
+        return decoded_content
 
     def _is_jinja2_template(self) -> bool:
         return self.filepath.endswith(".md.j2")
