@@ -119,14 +119,13 @@ func (db *DBClient) Close() {
 
 // NewDBClient :
 func NewDBClient(cfg *config.Database) *DBClient {
-
 	timeout := defaultTimeout
-
 	if cfg.Timeout > 0 {
 		timeout = cfg.Timeout
 	}
 
-	dataSource := fmt.Sprintf("%s:%s@(%s:%d)/%s?charset=%s&parseTime=True&interpolateParams=true&loc=%s&time_zone=%s&timeout=%ds",
+	dataSource := fmt.Sprintf(
+		"%s:%s@(%s:%d)/%s?charset=%s&parseTime=True&interpolateParams=true&loc=%s&time_zone=%s&timeout=%ds",
 		cfg.User,
 		cfg.Password,
 		cfg.Host,
