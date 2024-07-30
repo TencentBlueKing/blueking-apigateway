@@ -55,6 +55,7 @@
           collapsible
           immediate
           style="height: 100%"
+          @collapse-change="updateIsEditorMsgCollapsed"
         >
           <template #main>
             <div class="editor-layout-main">
@@ -1020,9 +1021,11 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
     resourceEditorRef?.value?.clearDecorations();
     errorReasons.value = [];
     // 折叠错误消息栏
-    // await nextTick(() => {
-    //   resizeLayoutRef.value.setCollapse(true);
-    // });
+    if (!isEditorMsgCollapsed) {
+      await nextTick(() => {
+        resizeLayoutRef.value.setCollapse(true);
+      });
+    }
     // 判断是否跳转，默认为是
     if (_changeView) {
       curView.value = 'resources';
@@ -1085,7 +1088,11 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
       // 更新编辑器高亮样式
       updateEditorDecorations();
       // 展开错误消息栏
-      // resizeLayoutRef.value.setCollapse(false);
+      if (isEditorMsgCollapsed) {
+        await nextTick(() => {
+          resizeLayoutRef.value.setCollapse(false);
+        });
+      }
     }
     // }
   } finally {
@@ -1503,6 +1510,12 @@ const handleFullScreenClick = () => {
     editorWrapRef.value.requestFullscreen();
   }
 };
+
+// 记录编辑器错误消息栏折叠状态
+let isEditorMsgCollapsed: boolean = false;
+const updateIsEditorMsgCollapsed = (collapsed: boolean) => {
+  isEditorMsgCollapsed = collapsed;
+};
 </script>
 <style scoped lang="scss">
 
@@ -1612,7 +1625,8 @@ const handleFullScreenClick = () => {
 
       .editor-main-content {
         display: flex;
-        height: 100%;
+        // 100% - 40px(.editor-toolbar高度) - 52px(.editor-footer-bar高度)
+        height: calc(100% - 92px);
 
         .editor-side-bar {
           width: 32px;
