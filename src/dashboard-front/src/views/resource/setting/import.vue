@@ -1056,12 +1056,11 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
         // 匹配项在 editor 中的 Position
         let position: IPosition | null = null;
         // 生成用于搜索 jsonpath 所在行的正则
-        // 判断 jsonpath 指向的是否为数组成员，是的话不传入 key
-        if (Number.isInteger(Number.parseInt(lastPath, 10))) {
-          regex = getRegexFromObj({ objValue: pathValue });
-        } else {
-          regex = getRegexFromObj({ objKey: lastPath, objValue: pathValue });
-        }
+        // 判断 jsonpath 指向的是否为数组成员，是的话传入倒数第二个 path
+        const isInteger = Number.isInteger(Number(lastPath)) && lastPath.trim() !== '';
+        const objKey = isInteger ? paths[paths.length - 2] : lastPath;
+        regex = getRegexFromObj({ objKey, objValue: pathValue });
+
         offset = resourceEditorRef.value.getValue()
           .search(regex);
         // 用 editor 的 api 找到 Position
@@ -1222,23 +1221,31 @@ const handleErrorShiftClick = (action: 'prev' | 'next') => {
 };
 
 // 从把 jsonpath 指向的对象转换成正则
-const getRegexFromObj = ({ objKey, objValue }: { objKey?: string, objValue: any }): RegExp => {
-  let exp = '';
-  if (objKey) {
-    exp = `\\b${objKey}\\b:[\\s\\S\\n\\r]*?`;
-  }
-  if (_.isObject(objValue)) {
-    Object.entries(objValue)
-      .forEach((e) => {
-        exp += `\\b${e[0]}\\b[\\s\\S\\n\\r]*?`;
-        if (!_.isObject(e[1])) {
-          exp += `${e[1]}[\\s\\S\\n\\r]*?`;
+const getRegexFromObj = ({ objKey, objValue }: { objKey: string, objValue: any }): RegExp => {
+  const exp = `\\b${objKey}\\b:${getRegexString(objValue)}`;
+  return new RegExp(exp, 'gm');
+};
+
+// 递归地把变量转换成可以生成正则表达式的字符串
+const getRegexString = (value: any): string => {
+  let expStr = `[-"\\s\\n\\r]*?`;
+
+  if (_.isObject(value)) {
+    Object.entries(value)
+      .forEach(([key, val]) => {
+        expStr += `\\b${key}\\b:`;
+        if (_.isObject(val)) {
+          expStr += getRegexString(val);
+        } else {
+          expStr += `["\\s\\n\\r]*?${val}["\\s\\n\\r]*?`;
         }
       });
   } else {
-    exp += `\\b${objValue}[\\s\\S\\n\\r]*?`
+    expStr += `${value || ''}["\\s\\n\\r]*?`
   }
-  return new RegExp(exp, 'gm');
+
+  // 把 $ 开头的变量转义，并与\b交换位置，否则无法正确匹配，如：\b$var => \$\bvar
+  return expStr.replaceAll('\\b$', '\\$\\b');
 };
 
 // 获取字符串中第一个被 '' 包裹的值
