@@ -47,7 +47,7 @@ func TestGetStage(t *testing.T) {
 		return dao.Stage{}, nil
 	}
 	mockCache := memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	stageCache = mockCache
 
 	_, err := GetStage(context.Background(), 1, "hello")
@@ -58,7 +58,7 @@ func TestGetStage(t *testing.T) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	stageCache = mockCache
 
 	_, err = GetStage(context.Background(), 1, "hello")

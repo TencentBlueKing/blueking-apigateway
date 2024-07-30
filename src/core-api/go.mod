@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
-	github.com/TencentBlueKing/gopkg v1.2.0
+	github.com/TencentBlueKing/gopkg v1.3.0
 	github.com/agiledragon/gomonkey/v2 v2.10.1
 	github.com/dlmiddlecote/sqlstats v1.0.2
 	github.com/getsentry/raven-go v0.2.0

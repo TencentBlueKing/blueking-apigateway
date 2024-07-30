@@ -27,9 +27,6 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 )
 
-// DisableCache will turn off the cache, all query will go to db
-const DisableCache = false
-
 func newRandomDuration(seconds int) backend.RandomExtraExpirationDurationFunc {
 	return func() time.Duration {
 		return time.Duration(rand.Intn(seconds*1000)) * time.Millisecond
@@ -45,7 +42,6 @@ var (
 	// TODO: 需要关注未来 micro_gateway.config中 配置修改的问题
 	microGatewayCache = memory.NewCache(
 		"micro_gateway",
-		DisableCache,
 		tracedFuncWrapper("micro_gateway", retrieveMicroGateway),
 		12*time.Hour,
 		newRandomDuration(30),
@@ -53,25 +49,22 @@ var (
 
 	microGatewayCredentialsCache = memory.NewCache(
 		"micro_gateway_credentials",
-		DisableCache,
 		tracedFuncWrapper("micro_gateway_credentials", retrieveAndVerifyMicroGatewayCredentials),
-		1*time.Minute,
+		2*time.Hour,
 		newRandomDuration(10),
 	)
 
 	// gateway_id => gateway or gateway_name => gateway will never change
 	gatewayCache = memory.NewCache(
 		"gateway",
-		DisableCache,
 		tracedFuncWrapper("gateway", retrieveGatewayByName),
-		1*time.Minute,
+		time.Hour*2,
 		newRandomDuration(30),
 	)
 
 	// NOTE: public_key should not be changed, if support changed, we should change the cache here
 	jwtPublicKeyCache = memory.NewCache(
 		"jwt_public_key",
-		DisableCache,
 		tracedFuncWrapper("jwt_public_key", retrieveJWTPublicKey),
 		12*time.Hour,
 		newRandomDuration(30),
@@ -80,7 +73,6 @@ var (
 	// resource_version_id => map[resourceName]resourceID, will never change
 	resourceVersionMappingCache = memory.NewCache(
 		"resource_version_mapping",
-		DisableCache,
 		tracedFuncWrapper("resource_version_mapping", retrieveResourceVersionMapping),
 		12*time.Hour,
 		newRandomDuration(30),
@@ -128,7 +120,6 @@ var (
 	// stage_name => stage, may change in some cases
 	stageCache = memory.NewCache(
 		"stage",
-		DisableCache,
 		tracedFuncWrapper("stage", retrieveStageByGatewayIDStageName),
 		5*time.Minute,
 		newRandomDuration(30),
@@ -138,7 +129,6 @@ var (
 	// stage_id => release, may change frequently
 	releaseCache = memory.NewCache(
 		"release",
-		DisableCache,
 		tracedFuncWrapper("release", retrieveStageByGatewayIDStageID),
 		1*time.Minute,
 		newRandomDuration(10),
@@ -146,7 +136,6 @@ var (
 
 	releaseHistoryCache = memory.NewCache(
 		"release_history",
-		DisableCache,
 		tracedFuncWrapper("release_history", retrieveReleaseHistory),
 		1*time.Minute,
 		newRandomDuration(10),
@@ -155,7 +144,6 @@ var (
 	// app_code + gateway_id => permission, may change frequently
 	appGatewayPermissionCache = memory.NewCache(
 		"app_gateway_permission",
-		DisableCache,
 		tracedFuncWrapper("app_gateway_permission", retrieveAppGatewayPermission),
 		1*time.Minute,
 		newRandomDuration(10),
@@ -163,7 +151,6 @@ var (
 	// app_code + gateway_id + resource_id => permission , may change frequently
 	appResourcePermissionCache = memory.NewCache(
 		"app_resource_permission",
-		DisableCache,
 		tracedFuncWrapper("app_resource_permission", retrieveAppResourcePermission),
 		1*time.Minute,
 		newRandomDuration(10),
