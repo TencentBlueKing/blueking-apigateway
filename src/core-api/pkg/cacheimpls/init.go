@@ -51,14 +51,14 @@ var (
 		"micro_gateway_credentials",
 		tracedFuncWrapper("micro_gateway_credentials", retrieveAndVerifyMicroGatewayCredentials),
 		2*time.Hour,
-		newRandomDuration(10),
+		newRandomDuration(30),
 	)
 
 	// gateway_id => gateway or gateway_name => gateway will never change
 	gatewayCache = memory.NewCache(
 		"gateway",
 		tracedFuncWrapper("gateway", retrieveGatewayByName),
-		time.Hour*2,
+		2*time.Hour,
 		newRandomDuration(30),
 	)
 

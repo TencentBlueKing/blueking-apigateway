@@ -43,6 +43,7 @@ const (
 	defaultMaxOpenConns    = 100
 	defaultMaxIdleConns    = 25
 	defaultConnMaxLifetime = 10 * time.Minute
+	defaultTimeout         = 2
 )
 
 const (
@@ -118,7 +119,14 @@ func (db *DBClient) Close() {
 
 // NewDBClient :
 func NewDBClient(cfg *config.Database) *DBClient {
-	dataSource := fmt.Sprintf("%s:%s@(%s:%d)/%s?charset=%s&parseTime=True&interpolateParams=true&loc=%s&time_zone=%s",
+
+	timeout := defaultTimeout
+
+	if cfg.Timeout > 0 {
+		timeout = cfg.Timeout
+	}
+
+	dataSource := fmt.Sprintf("%s:%s@(%s:%d)/%s?charset=%s&parseTime=True&interpolateParams=true&loc=%s&time_zone=%s&timeout=%ds",
 		cfg.User,
 		cfg.Password,
 		cfg.Host,
@@ -127,6 +135,7 @@ func NewDBClient(cfg *config.Database) *DBClient {
 		"utf8",
 		"UTC",
 		url.QueryEscape("'+00:00'"),
+		timeout,
 	)
 
 	maxOpenConns := defaultMaxOpenConns
