@@ -16,12 +16,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import csv
+from datetime import datetime
 from io import StringIO
 
 import pytest
 
 from apigateway.biz.access_log.constants import ES_LOG_FIELDS
-from apigateway.utils.time import format
 
 pytestmark = pytest.mark.django_db
 
@@ -165,13 +165,16 @@ class TestLogExportApi:
                 "query": "api_id: 2",
             },
         )
-        time_start = format(mock_time_start, "%Y%m%d%H%M%S")
-        time_end = format(mock_time_end, "%Y%m%d%H%M%S")
+        time_start_dt = datetime.fromtimestamp(mock_time_start)
+        time_end_dt = datetime.fromtimestamp(mock_time_end)
+
+        formatted_time_start = time_start_dt.strftime("%Y%m%d%H%M%S")
+        formatted_time_end = time_end_dt.strftime("%Y%m%d%H%M%S")
         assert response.status_code == 200
         assert response.headers["Content-Type"] == "text/csv; charset=utf-8"
         assert (
             response["Content-Disposition"]
-            == f'attachment; filename="{fake_gateway.name}-{time_start}-{time_end}-logs.csv"'
+            == f'attachment; filename="{fake_gateway.name}-{formatted_time_start}-{formatted_time_end}-logs.csv"'
         )
         reader = csv.DictReader(StringIO(response.content.decode("utf-8")))
         log_count = sum(1 for _ in reader)
