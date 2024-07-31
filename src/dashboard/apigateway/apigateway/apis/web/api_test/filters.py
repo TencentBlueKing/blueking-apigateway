@@ -30,7 +30,6 @@ class APIDebugHistoryRecordFilter(filters.FilterSet):
     class Meta:
         model = APIDebugHistory
         fields = [
-            "created_time",
             "time_start",
             "time_end",
             "resource_name",
