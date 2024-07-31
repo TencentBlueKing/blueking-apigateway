@@ -53,13 +53,25 @@ func logSlowSQL(start time.Time, query string, args interface{}) {
 	// to ms
 	latency := float64(elapsed / time.Millisecond)
 
-	// current, set 20ms
-	if logging.GetLogger().Level() == zap.DebugLevel || latency > 20 {
+	if logging.GetLogger().Level() == zap.DebugLevel {
 		query = strings.ReplaceAll(query, "\n", "")
 		query = strings.ReplaceAll(query, "\t", " ")
 		query = strings.ReplaceAll(query, "  ", " ")
-
 		logging.GetLogger().Infow(
+			"Slow SQL",
+			"sql", query,
+			"args", truncateArgs(args, ArgsTruncateLength),
+			"latency", latency,
+		)
+	}
+
+	//  对于超时的这里会再打印一次
+	if latency > 100 {
+		query = strings.ReplaceAll(query, "\n", "")
+		query = strings.ReplaceAll(query, "\t", " ")
+		query = strings.ReplaceAll(query, "  ", " ")
+		// err will send to sentry
+		logging.GetLogger().Errorw(
 			"Slow SQL",
 			"sql", query,
 			"args", truncateArgs(args, ArgsTruncateLength),

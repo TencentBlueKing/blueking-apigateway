@@ -47,7 +47,7 @@ func TestGetAppGatewayPermissionExpiredAt(t *testing.T) {
 		return dao.AppGatewayPermission{}, nil
 	}
 	mockCache := memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	appGatewayPermissionCache = mockCache
 
 	_, err := GetAppGatewayPermissionExpiredAt(context.Background(), "hello", 1)
@@ -58,7 +58,7 @@ func TestGetAppGatewayPermissionExpiredAt(t *testing.T) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	appGatewayPermissionCache = mockCache
 
 	_, err = GetAppGatewayPermissionExpiredAt(context.Background(), "hello", 1)
