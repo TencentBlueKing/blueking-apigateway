@@ -45,7 +45,7 @@ func TestVerifyMicroGatewayCredentials(t *testing.T) {
 		return true, nil
 	}
 	mockCache := memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	microGatewayCredentialsCache = mockCache
 
 	_, err := VerifyMicroGatewayCredentials(context.Background(), "hello", "world")
@@ -56,7 +56,7 @@ func TestVerifyMicroGatewayCredentials(t *testing.T) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	microGatewayCredentialsCache = mockCache
 
 	_, err = VerifyMicroGatewayCredentials(context.Background(), "hello", "world")

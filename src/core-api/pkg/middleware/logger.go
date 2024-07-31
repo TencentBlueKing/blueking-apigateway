@@ -99,6 +99,7 @@ func logContextFields(c *gin.Context) []zap.Field {
 		fields = append(fields, zap.String("response_body", stringx.Truncate(newWriter.body.String(), 1024)))
 	}
 
+<<<<<<< HEAD
 	// only send 5xx err to sentry
 	if status >= http.StatusInternalServerError {
 		sentry.ReportToSentry(
@@ -107,6 +108,14 @@ func logContextFields(c *gin.Context) []zap.Field {
 				"fields": fields,
 			},
 		)
+=======
+	if hasError {
+		c.Errors = append(c.Errors, &gin.Error{
+			Err:  fmt.Errorf("http status[%d] not ok", status),
+			Type: gin.ErrorTypeAny,
+			Meta: fields,
+		})
+>>>>>>> 5fce6462 (core-api fix cache (#769))
 	}
 
 	return fields

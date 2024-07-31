@@ -46,7 +46,7 @@ func TestGetGatewayByName(t *testing.T) {
 		return dao.Gateway{}, nil
 	}
 	mockCache := memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	gatewayCache = mockCache
 
 	_, err := GetGatewayByName(context.Background(), "hello")
@@ -57,7 +57,7 @@ func TestGetGatewayByName(t *testing.T) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	gatewayCache = mockCache
 
 	_, err = GetGatewayByName(context.Background(), "hello")
