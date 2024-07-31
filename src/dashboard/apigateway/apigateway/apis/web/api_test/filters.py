@@ -25,12 +25,14 @@ from apigateway.apps.api_debug.models import APIDebugHistory
 class APIDebugHistoryRecordFilter(filters.FilterSet):
     time_start = filters.NumberFilter(method="time_start_filter")
     time_end = filters.NumberFilter(method="time_end_filter")
-    resource_name = filters.CharFilter()
+    resource_name = filters.CharFilter(field_name="resource_name", lookup_expr="icontains")
 
     class Meta:
         model = APIDebugHistory
         fields = [
             "created_time",
+            "time_start",
+            "time_end",
             "resource_name",
         ]
 
