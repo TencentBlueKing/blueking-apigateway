@@ -93,21 +93,22 @@ class APITestApi(generics.CreateAPIView):
         request_time = timezone.now()
 
         # 入参检查
-        history_request = ApiDebugHistoryRequest(
-            request_url=prepared_request_url.request_url,
-            request_method=data["method"],
-            type="HTTP",
-            authorization=data.get("authorization", {}),
-            path_params=data.get("path_params", {}),
-            query_params=data.get("query_params", {}),
-            body=data.get("body", ""),
-            headers=data.get("headers", {}),
-            subpath=data.get("subpath", ""),
-            use_test_app=data.get("use_test_app", True),
-            use_user_from_cookies=data.get("use_user_from_cookies", False),
-            request_time=request_time,
-            spec_version=SPEC_VERSION,
-        )
+        history_request = {
+            "request_url": prepared_request_url.request_url,
+            "request_method": data["method"],
+            "type": "HTTP",
+            "authorization": data.get("authorization", {}),
+            "path_params": data.get("path_params", {}),
+            "query_params": data.get("query_params", {}),
+            "body": data.get("body", ""),
+            "headers": data.get("headers", {}),
+            "subpath": data.get("subpath", ""),
+            "use_test_app": data.get("use_test_app", True),
+            "use_user_from_cookies": data.get("use_user_from_cookies", False),
+            "request_time": request_time,
+            "spec_version": SPEC_VERSION,
+        }
+        validated_request = ApiDebugHistoryRequest(**history_request)
         try:
             response = requests.request(
                 method=data["method"],
@@ -126,31 +127,33 @@ class APITestApi(generics.CreateAPIView):
             proxy_time = end_time - start_time
 
             # 结果检查
-            history_response = ApiDebugHistoryResponse(
-                status_code=response.status_code,
-                response=response.text,
-                proxy_time=proxy_time,
-                spec_version=SPEC_VERSION,
-            )
+            success_history_response = {
+                "status_code": response.status_code,
+                "response": response.text,
+                "proxy_time": proxy_time,
+                "spec_version": SPEC_VERSION,
+            }
+            validated_response = ApiDebugHistoryResponse(**success_history_response)
             success_history_data = {
                 "gateway": request.gateway,
                 "stage": stage,
                 "resource_name": released_resource.name,
-                "request": history_request,
-                "response": history_response,
+                "request": validated_request.dict(),
+                "response": validated_response.dict(),
             }
             APIDebugHistory.objects.create(**success_history_data)
         except Exception as err:
             # 结果检查
-            history_response = ApiDebugHistoryResponse(
-                error=err,
-            )
+            error_history_response = {
+                "error": err,
+            }
+            validated_response = ApiDebugHistoryResponse(**error_history_response)
             fail_history_data = {
                 "gateway": request.gateway,
                 "stage": stage,
                 "resource_name": released_resource.name,
-                "request": history_request,
-                "response": history_response,
+                "request": validated_request.dict(),
+                "response": validated_response.dict(),
             }
             APIDebugHistory.objects.create(**fail_history_data)
             return FailJsonResponse(
