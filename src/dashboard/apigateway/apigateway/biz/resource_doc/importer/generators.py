@@ -50,14 +50,14 @@ class Jinja2ToMarkdownGenerator:
         try:
             content = read_file(self.filepath)
         except Exception as err:
-            logger.exception("File reading failure for _render_jinja2_template %s", self.filepath)
+            logger.exception("File reading failure for generate_doc_content %s", self.filepath)
             raise ValueError(f"Failed to read file {self.filepath}: {err}")
 
         # 检查文件编码是否正确
         try:
             decoded_content = content.decode()
         except UnicodeDecodeError as err:
-            logger.exception("File encoding error for _render_jinja2_template %s", self.filepath)
+            logger.exception("File encoding error for generate_doc_content %s", self.filepath)
             raise ValueError(f"Error decoding file {self.filepath}: {err}")
 
         return decoded_content
