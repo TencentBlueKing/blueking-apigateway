@@ -50,14 +50,14 @@ class Jinja2ToMarkdownGenerator:
         try:
             content = read_file(self.filepath)
         except Exception as err:
-            logging.info("File reading failure for _render_jinja2_template %s: %s", self.filepath, err)
-            raise ValueError(f"Failed to read file {self.filename}: {err}")
+            logger.exception(format_string("File reading failure", self.filepath))
+            raise ValueError(f"Failed to read file {self.filepath}: {err}")
 
         # 检查文件编码是否正确
         try:
             decoded_content = content.decode()
         except UnicodeDecodeError as err:
-            logging.info("File encoding error for _render_jinja2_template %s: %s", self.filepath, err)
+            logger.exception(format_string("File encoding error", self.filepath))
             raise ValueError(f"Error decoding file {self.filepath}: {err}")
 
         return decoded_content
@@ -71,19 +71,23 @@ class Jinja2ToMarkdownGenerator:
             template = env.get_template(os.path.basename(self.filepath))
             return template.render()
         except TemplateSyntaxError as err:
-            logging.info("TemplateSyntaxError for _render_jinja2_template %s: %s", self.filepath, err)
+            logger.exception(format_string("TemplateSyntaxError", self.filepath))
             raise ResourceDocJinja2TemplateSyntaxError(self._base_path, self.filename, err)
         except (TemplateNotFound, TemplatesNotFound) as err:
-            logging.info("TemplateNotFound for _render_jinja2_template %s: %s", self.filepath, err)
+            logger.exception(format_string("TemplatesNotFound", self.filepath))
             raise ResourceDocJinja2TemplateNotFound(self.filename, err)
         except Exception as err:
-            logging.info("Unexpected error for _render_jinja2_template %s: %s", self.filepath, err)
+            logger.exception(format_string("Unexpected error", self.filepath))
             raise ResourceDocJinja2TemplateError(self.filename, err)
 
     @property
     def _base_path(self) -> str:
         """文档目录地址，如：/tmp/xxx，此目录下为文档语言目录"""
         return self.filepath[: -len(self.filename)]
+
+
+def format_string(error_type: str, error_filepath: str) -> str:
+    return error_type + " for _render_jinja2_template " + error_filepath
 
 
 class OpenAPIToMarkdownGenerator:
