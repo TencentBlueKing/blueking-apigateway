@@ -46,7 +46,7 @@ func TestGetMicroGateway(t *testing.T) {
 		return dao.MicroGateway{}, nil
 	}
 	mockCache := memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	microGatewayCache = mockCache
 
 	_, err := GetMicroGateway(context.Background(), "hello")
@@ -57,7 +57,7 @@ func TestGetMicroGateway(t *testing.T) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	microGatewayCache = mockCache
 
 	_, err = GetMicroGateway(context.Background(), "hello")

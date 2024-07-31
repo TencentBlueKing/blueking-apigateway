@@ -46,7 +46,7 @@ func TestGetReleaseHistory(t *testing.T) {
 		return dao.ReleaseHistory{}, nil
 	}
 	mockCache := memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	releaseHistoryCache = mockCache
 
 	_, err := GetReleaseHistory(context.Background(), 1)
@@ -57,7 +57,7 @@ func TestGetReleaseHistory(t *testing.T) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	releaseHistoryCache = mockCache
 
 	_, err = GetReleaseHistory(context.Background(), 1)

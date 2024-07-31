@@ -108,6 +108,5 @@ func logContextFields(c *gin.Context) []zap.Field {
 			},
 		)
 	}
-
 	return fields
 }

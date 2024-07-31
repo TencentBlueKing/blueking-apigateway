@@ -44,7 +44,7 @@ func TestGetResourceVersionMapping(t *testing.T) {
 		return map[string]int64{}, nil
 	}
 	mockCache := memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	resourceVersionMappingCache = mockCache
 
 	_, err := GetResourceVersionMapping(context.Background(), 1)
@@ -55,7 +55,7 @@ func TestGetResourceVersionMapping(t *testing.T) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	resourceVersionMappingCache = mockCache
 
 	_, err = GetResourceVersionMapping(context.Background(), 1)
