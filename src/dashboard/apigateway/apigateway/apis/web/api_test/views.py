@@ -39,6 +39,7 @@ from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.time import convert_second_to_epoch_millisecond
 
 from .data_models import ApiDebugHistoryRequest, ApiDebugHistoryResponse
+from .filters import APIDebugHistoryRecordFilter
 from .prepared_request import PreparedRequestHeaders, PreparedRequestURL
 from .serializers import APIDebugHistoriesListOutputSLZ, APITestInputSLZ, APITestOutputSLZ
 
@@ -91,7 +92,7 @@ class APITestApi(generics.CreateAPIView):
         start_time = time.perf_counter()
         request_time = timezone.now()
 
-         # 入参检查
+        # 入参检查
         history_request = {
             "request_url": prepared_request_url.request_url,
             "request_method": data["method"],
@@ -200,6 +201,7 @@ class APIDebugHistoriesQuerySetMixin:
     ),
 )
 class APIDebugHistoryListApi(APIDebugHistoriesQuerySetMixin, generics.ListAPIView):
+    filterset_class = APIDebugHistoryRecordFilter
     queryset = APIDebugHistory.objects.order_by("-updated_time")
     serializer_class = APIDebugHistoriesListOutputSLZ
 
