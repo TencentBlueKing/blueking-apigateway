@@ -39,6 +39,7 @@ from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.time import convert_second_to_epoch_millisecond
 
 from .data_models import ApiDebugHistoryRequest, ApiDebugHistoryResponse
+from .filters import APIDebugHistoryRecordFilter
 from .prepared_request import PreparedRequestHeaders, PreparedRequestURL
 from .serializers import APIDebugHistoriesListOutputSLZ, APITestInputSLZ, APITestOutputSLZ
 
@@ -91,7 +92,7 @@ class APITestApi(generics.CreateAPIView):
         start_time = time.perf_counter()
         request_time = timezone.now()
 
-         # 入参检查
+        # 入参检查
         history_request = {
             "request_url": prepared_request_url.request_url,
             "request_method": data["method"],
@@ -107,6 +108,7 @@ class APITestApi(generics.CreateAPIView):
             "request_time": request_time,
             "spec_version": SPEC_VERSION,
         }
+        validated_request = ApiDebugHistoryRequest(**history_request)
         try:
             response = requests.request(
                 method=data["method"],
@@ -125,31 +127,33 @@ class APITestApi(generics.CreateAPIView):
             proxy_time = end_time - start_time
 
             # 结果检查
-            history_response = {
+            success_history_response = {
                 "status_code": response.status_code,
                 "response": response.text,
                 "proxy_time": proxy_time,
                 "spec_version": SPEC_VERSION,
             }
+            validated_response = ApiDebugHistoryResponse(**success_history_response)
             success_history_data = {
                 "gateway": request.gateway,
                 "stage": stage,
                 "resource_name": released_resource.name,
-                "request": ApiDebugHistoryRequest(**history_request),
-                "response": ApiDebugHistoryResponse(**history_response),
+                "request": validated_request.dict(),
+                "response": validated_response.dict(),
             }
             APIDebugHistory.objects.create(**success_history_data)
         except Exception as err:
             # 结果检查
-            history_response = {
+            error_history_response = {
                 "error": err,
             }
+            validated_response = ApiDebugHistoryResponse(**error_history_response)
             fail_history_data = {
                 "gateway": request.gateway,
                 "stage": stage,
                 "resource_name": released_resource.name,
-                "request": ApiDebugHistoryRequest(**history_request),
-                "response": ApiDebugHistoryResponse(**history_response),
+                "request": validated_request.dict(),
+                "response": validated_response.dict(),
             }
             APIDebugHistory.objects.create(**fail_history_data)
             return FailJsonResponse(
@@ -200,6 +204,7 @@ class APIDebugHistoriesQuerySetMixin:
     ),
 )
 class APIDebugHistoryListApi(APIDebugHistoriesQuerySetMixin, generics.ListAPIView):
+    filterset_class = APIDebugHistoryRecordFilter
     queryset = APIDebugHistory.objects.order_by("-updated_time")
     serializer_class = APIDebugHistoriesListOutputSLZ
 

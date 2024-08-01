@@ -44,7 +44,7 @@ func TestGetJWTPublicKey(t *testing.T) {
 		return "hello", nil
 	}
 	mockCache := memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	jwtPublicKeyCache = mockCache
 
 	_, err := GetJWTPublicKey(context.Background(), 1)
@@ -55,7 +55,7 @@ func TestGetJWTPublicKey(t *testing.T) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	jwtPublicKeyCache = mockCache
 
 	_, err = GetJWTPublicKey(context.Background(), 1)
