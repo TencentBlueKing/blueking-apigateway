@@ -47,7 +47,16 @@
     <edit-table v-show="type === 'data'" ref="dataRef" :list="fromDataList" />
     <edit-table v-show="type === 'urlencoded'" ref="urlencodedRef" :list="urlencodedList" />
     <div class="raw-content" v-show="type === 'raw'">
-      <editor-monaco v-model="editorText" theme="Visual Studio" ref="resourceEditorRef" />
+      <editor-monaco
+        v-model="editorText"
+        theme="Visual Studio"
+        language="json"
+        ref="resourceEditorRef"
+        :minimap="false"
+        :show-format="true"
+        :show-copy="true"
+        :show-full-screen="true"
+      />
     </div>
   </div>
 </template>

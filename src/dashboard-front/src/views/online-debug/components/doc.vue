@@ -58,7 +58,7 @@
           <!-- eslint-disable-next-line vue/no-v-html -->
           <div class="ag-markdown-view" id="markdown" :key="renderHtmlIndex" v-html="curComponent.markdownHtml"></div>
         </bk-tab-panel>
-        <bk-tab-panel
+        <!-- <bk-tab-panel
           :name="'sdk'"
           :label="t('SDK及示例')"
           v-if="userStore.featureFlags?.ENABLE_SDK"
@@ -80,10 +80,9 @@
             </div>
 
             <h3 class="f16 mt20"> {{ t('SDK使用样例') }} </h3>
-            <!-- eslint-disable-next-line vue/no-v-html -->
             <div class="ag-markdown-view mt20" :key="renderHtmlIndex" v-html="sdkMarkdownHtml"></div>
           </div>
-        </bk-tab-panel>
+        </bk-tab-panel> -->
       </bk-tab>
     </div>
 

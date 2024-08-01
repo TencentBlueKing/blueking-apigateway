@@ -1,6 +1,11 @@
 <template>
   <div class="codemirror">
     <div id="monacoEditor" class="monaco-editor" ref="monacoEditor" :style="style"></div>
+    <div class="tools">
+      <cog-shape class="tool-icon" v-if="showFormat" @click="handleFormat" />
+      <copy-shape class="tool-icon" v-if="showCopy" @click="handleCopy" />
+      <filliscreen-line class="tool-icon" v-if="showFullScreen" @click="handleFullScreen" />
+    </div>
   </div>
 </template>
 <script setup>
@@ -8,6 +13,8 @@
 import { ref, onMounted, toRefs, computed, watch, onBeforeMount } from 'vue';
 // 引入monaco编辑器
 import * as monaco from 'monaco-editor';
+import { copy } from '@/common/util';
+import { CogShape, CopyShape, FilliscreenLine } from 'bkui-vue/lib/icon';
 
 let editor = null; // 编辑器实例
 const monacoEditor = ref(null);
@@ -27,6 +34,10 @@ const props = defineProps({
   width: { type: [String, Number], default: '100%' },
   height: { type: [String, Number], default: '100%' },
   theme: { type: String, default: 'vs-dark' },
+  minimap: { type: Boolean, default: true },
+  showFormat: { type: Boolean, default: false },
+  showCopy: { type: Boolean, default: false },
+  showFullScreen: { type: Boolean, default: false },
 });
 
 const { modelValue, language, readOnly, width, height, theme } = toRefs(props);
@@ -95,6 +106,9 @@ const initEditor = () => {
     readOnly: readOnly.value, // 是否只读  取值 true | false
     lineHeight: 24,
     glyphMargin: true,  // 是否显示行号左侧装饰，用于显示当前行的错误信息等级：error | warning
+    minimap: {
+      enabled: props.minimap, // 小地图
+    },
   });
 
   editorMounted(); // 编辑器初始化后
@@ -182,6 +196,46 @@ const switchFontSize = () => {
   });
 };
 
+const handleFormat = () => {
+  if (language.value === 'json') { // 格式化 JSON 文档
+    editor.trigger('a', 'editor.action.formatDocument');
+  }
+  // yaml 格式 需 npm i yamljs 拓展支持
+};
+
+const handleCopy = () => {
+  copy(editor.getValue());
+};
+
+// 全屏开关变量
+let isFullScreen = false;
+const handleFullScreen = () => {
+  const domNode = editor.getDomNode();
+  const container = (domNode.parentNode).parentNode;
+  const toolsDom = container.querySelector('.tools');
+
+  if (isFullScreen) {
+    document.body.style.overflow = '';
+    container.style.position = 'relative';
+    container.style.zIndex = '0';
+    toolsDom.style.zIndex = '0';
+    editor.layout();
+    isFullScreen = false;
+  } else {
+    document.body.style.overflow = 'hidden';
+    container.style.position = 'fixed';
+    container.style.zIndex = '6003';
+    container.style.overflow = 'hidden';
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.left = 0;
+    container.style.top = 0;
+    toolsDom.style.zIndex = '6004';
+    editor.layout();
+    isFullScreen = true;
+  }
+};
+
 defineExpose({
   setValue,
   setCursorPos,
@@ -196,10 +250,24 @@ defineExpose({
 });
 
 </script>
-<style scoped>
+<style scoped lang="scss">
 .codemirror,
 .monaco-editor {
   width: 100%;
   height: 100%;
+}
+.codemirror {
+  position: relative;
+  .tools {
+    position: absolute;
+    top: 5px;
+    right: 28px;
+    .tool-icon {
+      cursor: pointer;
+      font-size: 16px;
+      color: #979BA5;
+      margin-left: 12px;
+    }
+  }
 }
 </style>
