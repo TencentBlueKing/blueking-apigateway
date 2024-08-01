@@ -310,3 +310,7 @@ BK_BSCP_API_ADDR = env.str("BK_BSCP_API_URL", "")
 BK_SSM_API_URL = env.str("BK_SSM_API_URL", "")
 BK_SSM_ACCESS_TOKEN_CACHE_MAXSIZE = env.int("BK_SSM_ACCESS_TOKEN_CACHE_MAXSIZE", 2000)
 BK_SSM_ACCESS_TOKEN_CACHE_TTL_SECONDS = env.int("BK_SSM_ACCESS_TOKEN_CACHE_TTL_SECONDS", 300)
+
+# 从环境变量获取同步通道数据时豁免的自定义通道列表，格式为字符串，格式为：
+# [{"board": "default", "method": "get", "path": "/cmsi/send_xxxx"}]
+EXCLUDE_OFFICIAL_CHANNELS_WHEN_SYNCING = env.str("BK_ESB_EXCLUDE_OFFICIAL_CHANNELS_WHEN_SYNCING", default="")

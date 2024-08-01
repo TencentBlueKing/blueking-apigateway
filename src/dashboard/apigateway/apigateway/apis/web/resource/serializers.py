@@ -31,7 +31,6 @@ from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, OpenAPIForma
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_label import GatewayLabelHandler
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
@@ -553,41 +552,6 @@ class ResourceImportInputSLZ(serializers.Serializer):
     delete = serializers.BooleanField(
         default=False, help_text="是否删除未选中的资源，即已存在，但是未在 content 中的资源"
     )
-
-    def validate(self, data):
-        data["validate_result"] = self._validate_content(data["content"])
-        return data
-
-    def _validate_content(self, content: str):
-        # 将 openapi 内容转换为内部资源数据；
-        # 此部分主要使用 SLZ 做数据转换 + 单字段值有效性校验（如正则）,
-        # 不做复杂的业务逻辑校验，业务逻辑校验统一放到 ResourceImportValidator 处理
-        try:
-            openapi_manager = OpenAPIImportManager.load_from_content(self.context["gateway"], content)
-        except Exception as err:
-            raise serializers.ValidationError(
-                {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)}
-            )
-
-        validate_err_list = openapi_manager.validate()
-        if len(validate_err_list) != 0:
-            slz = ResourceImportCheckFailOutputSLZ(
-                instance=validate_err_list,
-                many=True,
-            )
-            return {"validate_err_list": slz.data}
-
-        slz = ResourceDataImportSLZ(
-            data=openapi_manager.get_resource_list(raw=True),
-            many=True,
-            context={
-                "stages": self.context["stages"],
-            },
-        )
-        slz.is_valid(raise_exception=True)
-        return {
-            "resource_list": openapi_manager.get_resource_list(),
-        }
 
 
 class ResourceImportCheckInputSLZ(ResourceImportInputSLZ):

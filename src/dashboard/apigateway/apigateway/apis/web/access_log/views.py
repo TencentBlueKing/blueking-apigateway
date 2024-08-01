@@ -15,13 +15,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import csv
 import random
 import time
+from datetime import datetime
 from typing import Dict, List
 from urllib.parse import urlencode
 
 from django.conf import settings
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -32,7 +34,7 @@ from apigateway.biz.access_log.constants import ES_LOG_FIELDS, LOG_LINK_EXPIRE_S
 from apigateway.biz.access_log.data_scrubber import DataScrubber
 from apigateway.biz.access_log.log_search import LogSearchClient
 from apigateway.common.signature import SignatureGenerator, SignatureValidator
-from apigateway.core.models import Stage
+from apigateway.core.models import Gateway, Stage
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 
@@ -142,8 +144,73 @@ class SearchLogListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: "file/csv"},
+        tags=["WebAPI.Log"],
+    ),
+)
+class LogExportApi(generics.RetrieveAPIView):
+    def get(self, request, *args, **kwargs):
+        # 定义限制条数为10000条
+        limit = 10000
+        slz = RequestLogQueryInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
+        if not stage_name:
+            raise Http404
+
+        client = LogSearchClient(
+            gateway_id=request.gateway.id,
+            stage_name=stage_name,
+            resource_id=data.get("resource_id"),
+            query=data.get("query"),
+            include_conditions=data.get("include_conditions"),
+            exclude_conditions=data.get("exclude_conditions"),
+            time_start=data.get("time_start"),
+            time_end=data.get("time_end"),
+            time_range=data.get("time_range"),
+        )
+        total_count, logs = client.search_logs(
+            offset=data.get("offset", 0),
+            limit=limit,
+        )
+
+        # 去除 params、body 中的敏感数据
+        logs = DataScrubber().scrub_sensitive_data(logs)
+        # 增加扩展数据
+        logs = add_or_refine_fields(logs)
+        # 创建一个HttpResponse对象，并设置内容类型为CSV
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+
+        # 准备文件名称数据
+        gateway = Gateway.objects.get(id=request.gateway.id)
+
+        # 格式化时间
+        time_start_dt = datetime.fromtimestamp(int(data.get("time_start")))
+        time_end_dt = datetime.fromtimestamp(int(data.get("time_end")))
+
+        formatted_time_start = time_start_dt.strftime("%Y%m%d%H%M%S")
+        formatted_time_end = time_end_dt.strftime("%Y%m%d%H%M%S")
+
+        response["Content-Disposition"] = (
+            f'attachment; filename="{gateway.name}-{formatted_time_start}-{formatted_time_end}-logs.csv"'
+        )
+
+        writer = csv.writer(response)
+
+        # 写入CSV头部
+        writer.writerow(field_dict["field"] for field_dict in ES_LOG_FIELDS)
+        for log in logs:
+            writer.writerow([log.get(field_dict["field"]) for field_dict in ES_LOG_FIELDS])
+        return response
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         query_serializer=LogDetailQueryInputSLZ,
-        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=False)},
         tags=["WebAPI.Log"],
     ),
 )
@@ -158,6 +225,37 @@ class LogDetailRetrieveApi(generics.RetrieveAPIView):
         validator = SignatureValidator(settings.LOG_LINK_SECRET, request, LOG_LINK_EXPIRE_SECONDS)
         validator.is_valid(raise_exception=True)
 
+        client = LogSearchClient(request_id=request_id)
+
+        total_count, logs = client.search_logs()
+        # 去除 params、body 中的敏感数据
+        logs = DataScrubber().scrub_sensitive_data(logs)
+        logs = add_or_refine_fields(logs)
+
+        paginator = LimitOffsetPaginator(total_count, 0, total_count)
+
+        # 将字段信息添加到结果中，便于前端展示
+        results = paginator.get_paginated_data(logs)
+        results["fields"] = ES_LOG_FIELDS
+
+        return OKJsonResponse(data=results)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        query_serializer=LogDetailQueryInputSLZ,
+        responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=False)},
+        tags=["WebAPI.Log"],
+    ),
+)
+class LogDetailInfoApi(generics.RetrieveAPIView):
+    gateway_permission_exempt = True
+
+    def retrieve(self, request, request_id, *args, **kwargs):
+        """
+        获取指定 request_id 日志的分享链接
+        """
         client = LogSearchClient(request_id=request_id)
 
         total_count, logs = client.search_logs()

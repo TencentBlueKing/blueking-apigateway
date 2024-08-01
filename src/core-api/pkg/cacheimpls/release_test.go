@@ -47,7 +47,7 @@ func TestGetRelease(t *testing.T) {
 		return dao.Release{}, nil
 	}
 	mockCache := memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	releaseCache = mockCache
 
 	_, err := GetRelease(context.Background(), 1, 2)
@@ -58,7 +58,7 @@ func TestGetRelease(t *testing.T) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(
-		"mockCache", false, retrieveFunc, expiration, nil)
+		"mockCache", retrieveFunc, expiration, nil)
 	releaseCache = mockCache
 
 	_, err = GetRelease(context.Background(), 1, 2)

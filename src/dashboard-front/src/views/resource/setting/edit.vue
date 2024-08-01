@@ -114,9 +114,11 @@ const getResourceDetails = async () => {
 
 // 提交
 const handleSubmit = async () => {
-  await baseInfoRef.value?.validate();
-  await frontConfigRef.value?.validate();
-  await backConfigRef.value?.validate();
+  await Promise.all([
+    baseInfoRef.value?.validate(),
+    frontConfigRef.value?.validate(),
+    backConfigRef.value?.validate(),
+  ]);
   const baseFormData = baseInfoRef.value.formData;
   const frontFormData = frontConfigRef.value.frontConfigData;
   const backFormData = backConfigRef.value.backConfigData;

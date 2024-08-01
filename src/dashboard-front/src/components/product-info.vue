@@ -39,7 +39,7 @@ import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import semver from 'semver';
 import ReleaseNote from '@blueking/release-note';
-import '@blueking/release-note/dist/vue3-light.css';
+import '@blueking/release-note/vue3/vue3.css';
 
 import { useGetGlobalProperties } from '@/hooks';
 import { getVersionLog } from '@/http';

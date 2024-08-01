@@ -52,7 +52,7 @@
             <bk-table-column :label="t('调用时间')" prop="time"></bk-table-column>
             <bk-table-column :label="t('操作')">
               <template #default="{ row }">
-                <bk-button theme="primary" text @click="(e) => handleRowClick(e, row)">
+                <bk-button theme="primary" text @click="(e: any) => handleRowClick(e, row)">
                   {{ t('请求详情') }}
                 </bk-button>
               </template>

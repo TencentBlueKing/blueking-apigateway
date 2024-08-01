@@ -15,20 +15,30 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from rest_framework import serializers
+from datetime import datetime
 
-from apigateway.common.fields import CurrentGatewayDefault
+from django_filters import rest_framework as filters
 
-
-class ResourceSyncOutputSLZ(serializers.Serializer):
-    added = serializers.ListField(child=serializers.DictField())
-    updated = serializers.ListField(child=serializers.DictField())
-    deleted = serializers.ListField(child=serializers.DictField())
+from apigateway.apps.api_debug.models import APIDebugHistory
 
 
-class ResourceImportInputSLZ(serializers.Serializer):
-    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    content = serializers.CharField(allow_blank=False, required=True, help_text="导入内容，yaml/json 格式字符串")
+class APIDebugHistoryRecordFilter(filters.FilterSet):
+    time_start = filters.NumberFilter(method="time_start_filter")
+    time_end = filters.NumberFilter(method="time_end_filter")
+    resource_name = filters.CharFilter(field_name="resource_name", lookup_expr="icontains")
 
     class Meta:
-        ref_name = "apis.open.resource.ResourceImportInputSLZ"
+        model = APIDebugHistory
+        fields = [
+            "time_start",
+            "time_end",
+            "resource_name",
+        ]
+
+    def time_start_filter(self, queryset, name, value):
+        value = int(value)
+        return queryset.filter(created_time__gte=datetime.fromtimestamp(value))
+
+    def time_end_filter(self, queryset, name, value):
+        value = int(value)
+        return queryset.filter(created_time__lt=datetime.fromtimestamp(value))
