@@ -536,12 +536,6 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
         return value or None
 
 
-class SelectedResourceSLZ(serializers.Serializer):
-    """导入时选中的资源"""
-
-    name = serializers.CharField(help_text="资源名称")
-
-
 class ResourceImportInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     import_resources = serializers.ListField(
@@ -578,18 +572,6 @@ class ResourceImportCheckFailOutputSLZ(serializers.Serializer):
     json_path = serializers.CharField(read_only=True, help_text="对应的path")
 
 
-class BackendConfigSLZ(serializers.Serializer):
-    method = serializers.ChoiceField(choices=RESOURCE_METHOD_CHOICES, help_text="请求方法")
-    path = serializers.RegexField(PATH_PATTERN, help_text="请求路径")
-    match_subpath = serializers.BooleanField(required=False, help_text="是否匹配所有子路径")
-    timeout = serializers.IntegerField(
-        max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, required=False, help_text="超时时间"
-    )
-
-    class Meta:
-        ref_name = "apis.web.resource.BackendConfigSLZ"
-
-
 class ResourceImportInfoSLZ(serializers.Serializer):
     id = serializers.SerializerMethodField(help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
@@ -603,7 +585,7 @@ class ResourceImportInfoSLZ(serializers.Serializer):
 
     doc = serializers.SerializerMethodField(help_text="资源文档列表，zh和en")
     auth_config = ResourceAuthConfigSLZ(help_text="认证配置")
-    backend = serializers.SerializerMethodField(help_text="后端服务名称")
+    backend = serializers.SerializerMethodField(help_text="后端服务")
     labels = serializers.SerializerMethodField(help_text="参数协议")
     openapi_schema = serializers.SerializerMethodField(help_text="参数协议")
     plugin_configs = serializers.ListField(
