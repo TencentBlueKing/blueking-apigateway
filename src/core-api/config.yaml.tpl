@@ -24,6 +24,7 @@ databases:
     maxOpenConns: 200
     maxIdleConns: 50
     connMaxLifetimeSecond: 600
+    timeout: 2
 
 logger:
   default:

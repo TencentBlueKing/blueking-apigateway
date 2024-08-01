@@ -20,6 +20,7 @@ package middleware
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -96,14 +97,13 @@ func logContextFields(c *gin.Context) []zap.Field {
 		fields = append(fields, zap.String("response_body", stringx.Truncate(newWriter.body.String(), 1024)))
 	}
 
-	// if hasError && e != nil {
-	// 	util.ReportToSentry(
-	// 		fmt.Sprintf("%s %s error", c.Request.Method, c.Request.URL.Path),
-	// 		map[string]interface{}{
-	// 			"fields": fields,
-	// 		},
-	// 	)
-	// }
+	if hasError {
+		c.Errors = append(c.Errors, &gin.Error{
+			Err:  fmt.Errorf("http status[%d] not ok", status),
+			Type: gin.ErrorTypeAny,
+			Meta: fields,
+		})
+	}
 
 	return fields
 }

@@ -33,7 +33,7 @@ const (
 func RequestID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		requestID := c.GetHeader(RequestIDHeaderKey)
-		if requestID == "" || len(requestID) != 32 {
+		if requestID == "" {
 			requestID = util.GenUUID4()
 		}
 		util.SetRequestID(c, requestID)
