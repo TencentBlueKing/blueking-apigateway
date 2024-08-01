@@ -33,7 +33,7 @@
       </div>
       <div class="choose-plugin" v-show="isAdd" @click="showChoosePlugin = !showChoosePlugin">
         <transfer />
-        <span>切换插件</span>
+        <span>{{ t('切换插件') }}</span>
       </div>
     </div>
     <bk-select
@@ -65,7 +65,7 @@
 
       <bk-alert
         theme="warning"
-        title="allow_origins 与 allow_origins_by_regex 不能同时为空"
+        :title="t('allow_origins 与 allow_origins_by_regex 不能同时为空')"
         v-show="typeId === 1"
       />
 
@@ -94,8 +94,11 @@
     <div class="info-btn mt20">
       <div class="last-step">
         <bk-pop-confirm
-          :title="`确认${isAdd ? '添加' : '修改'}插件（${curPluginInfo?.name}）到 ${stageStore?.curStageData?.name} 环境？`"
-          content="插件配置变更后，将立即影响线上环境，请确认。"
+          :title="t('确认{optType}插件（{name}）到 {stage} 环境？',
+                    { optType: isAdd ? t('添加') : t('修改'),
+                      name: curPluginInfo?.name,
+                      stage: stageStore?.curStageData?.name })"
+          :content="t('插件配置变更后，将立即影响线上环境，请确认。')"
           trigger="click"
           @confirm="handleAdd"
           v-if="isStage"
