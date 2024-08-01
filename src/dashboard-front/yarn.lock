@@ -1122,10 +1122,10 @@
   dependencies:
     xss "^1.0.15"
 
-"@blueking/release-note@^0.0.1-beta.7":
-  version "0.0.1-beta.7"
-  resolved "https://registry.npmjs.org/@blueking/release-note/-/release-note-0.0.1-beta.7.tgz"
-  integrity sha512-8vuZgNwVWyqli+yRTq7DgbQmXHzoCROALeJZbHlT/ynOiyF/obhsdXlfWvU9AwBTnNEWVhj+Q5uVjuZFCbsMZg==
+"@blueking/release-note@0.0.1-beta.14":
+  version "0.0.1-beta.14"
+  resolved "https://registry.yarnpkg.com/@blueking/release-note/-/release-note-0.0.1-beta.14.tgz#cc0ba5c639d045d884817d97111513c44ed9f8e0"
+  integrity sha512-NVmoVp2A0dhBPo8e2AC8+XyuDaVohdpo2yxtBehV8BQ2QKIn3R1772RNejccmaywKuyr/8bHvxlm4DOH9cKOLg==
 
 "@blueking/stylelint-config-bk@^2.1.0-beta.10":
   version "2.1.0-beta.10"
@@ -1773,11 +1773,6 @@
   version "0.0.29"
   resolved "https://registry.npmjs.org/@types/json5/-/json5-0.0.29.tgz"
   integrity sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==
-
-"@types/jsonpath@^0.2.4":
-  version "0.2.4"
-  resolved "https://registry.yarnpkg.com/@types/jsonpath/-/jsonpath-0.2.4.tgz#065be59981c1420832835af656377622271154be"
-  integrity sha512-K3hxB8Blw0qgW6ExKgMbXQv2UPZBoE2GqLpVY+yr7nMD2Pq86lsuIzyAaiQ7eMqFL5B6di6pxSkogLJEyEHoGA==
 
 "@types/linkify-it@*":
   version "3.0.5"
