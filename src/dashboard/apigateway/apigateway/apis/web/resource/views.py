@@ -416,7 +416,7 @@ class ResourceImportCheckApi(generics.CreateAPIView):
 
 class ResourceImportApi(generics.CreateAPIView):
     @swagger_auto_schema(
-        operation_description="导入资源，支持根据 yaml、json 格式导入",
+        operation_description="yaml/json check之后的标准化资源数据导入",
         request_body=ResourceImportInputSLZ,
         responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["WebAPI.Resource"],
