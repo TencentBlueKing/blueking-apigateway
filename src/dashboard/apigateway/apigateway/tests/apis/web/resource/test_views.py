@@ -360,8 +360,10 @@ class TestResourceImportCheckApi:
                             "app_verified_required": True,
                             "resource_perm_required": True,
                         },
-                        "backend_name": "default",
-                        "backend_config": {"method": "GET", "path": "/hello/", "match_subpath": True, "timeout": 30},
+                        "backend": {
+                            "name": "default",
+                            "config": {"method": "GET", "path": "/hello/", "match_subpath": True, "timeout": 30},
+                        },
                         "labels": ["pet"],
                         "openapi_schema": {
                             "parameters": [
@@ -433,8 +435,10 @@ class TestResourceImportCheckApi:
                             "app_verified_required": True,
                             "resource_perm_required": True,
                         },
-                        "backend_name": "default",
-                        "backend_config": {"method": "GET", "path": "/hello/", "match_subpath": False, "timeout": 30},
+                        "backend": {
+                            "name": "default",
+                            "config": {"method": "GET", "path": "/hello/", "match_subpath": False, "timeout": 30},
+                        },
                         "labels": ["pet"],
                         "openapi_schema": {},
                         "plugin_configs": None,

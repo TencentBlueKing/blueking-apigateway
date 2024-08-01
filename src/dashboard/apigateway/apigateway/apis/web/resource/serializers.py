@@ -560,7 +560,7 @@ class ResourceImportInputSLZ(serializers.Serializer):
 
 class ResourceImportDocPreviewInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    review_resource = ResourceDataImportSLZ(required=True, help_text="要预览z")
+    review_resource = ResourceDataImportSLZ(required=True, help_text="要预览的资源")
     doc_language = serializers.ChoiceField(
         choices=DocLanguageEnum.get_choices(),
         allow_blank=True,
@@ -603,8 +603,7 @@ class ResourceImportInfoSLZ(serializers.Serializer):
 
     doc = serializers.SerializerMethodField(help_text="资源文档列表，zh和en")
     auth_config = ResourceAuthConfigSLZ(help_text="认证配置")
-    backend_name = serializers.SerializerMethodField(help_text="后端服务名称")
-    backend_config = BackendConfigSLZ(help_text="后端配置")
+    backend = serializers.SerializerMethodField(help_text="后端服务名称")
     labels = serializers.SerializerMethodField(help_text="参数协议")
     openapi_schema = serializers.SerializerMethodField(help_text="参数协议")
     plugin_configs = serializers.ListField(
@@ -625,8 +624,16 @@ class ResourceImportInfoSLZ(serializers.Serializer):
         resource_id = self.get_id(obj)
         return self.context["docs"].get(resource_id, [])
 
-    def get_backend_name(self, obj):
-        return obj.backend.name
+    def get_backend(self, obj):
+        return {
+            "name": obj.backend.name,
+            "config": {
+                "method": obj.backend_config.method,
+                "path": obj.backend_config.path,
+                "match_subpath": obj.backend_config.match_subpath,
+                "timeout": obj.backend_config.timeout,
+            },
+        }
 
     def get_labels(self, obj):
         return obj.metadata.get("labels", [])
