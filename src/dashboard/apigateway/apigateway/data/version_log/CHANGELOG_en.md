@@ -1,3 +1,13 @@
+<!-- 2024-08-01 -->
+# V1.13.11 Release Log
+
+### Bug Fixes
+
+- Fixed issues with version log internationalization
+- Updated gateway API documentation
+
+---
+
 <!-- 2024-07-12 -->
 # V1.13.10 Release Log
 
