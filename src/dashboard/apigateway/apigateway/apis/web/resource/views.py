@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
 import operator
 import re
 from typing import Any, Dict, List, Optional
@@ -31,13 +32,16 @@ from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
+from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin_binding import PluginBindingHandler
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource.importer import ResourcesImporter
+from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator, ResourcesImporter
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
 from apigateway.biz.resource.savers import ResourcesSaver
+from apigateway.biz.resource_doc.importer import DocImporter
+from apigateway.biz.resource_doc.importer.parsers import OpenAPIParser
 from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
@@ -52,12 +56,12 @@ from .serializers import (
     BackendPathCheckOutputSLZ,
     ResourceBatchDestroyInputSLZ,
     ResourceBatchUpdateInputSLZ,
-    ResourceDataImportSLZ,
     ResourceExportInputSLZ,
     ResourceExportOutputSLZ,
     ResourceImportCheckFailOutputSLZ,
     ResourceImportCheckInputSLZ,
-    ResourceImportCheckOutputSLZ,
+    ResourceImportDocPreviewInputSLZ,
+    ResourceImportInfoSLZ,
     ResourceImportInputSLZ,
     ResourceInputSLZ,
     ResourceLabelUpdateInputSLZ,
@@ -364,7 +368,7 @@ class ResourceImportCheckApi(generics.CreateAPIView):
         operation_description="导入资源检查，导入资源前，检查资源配置是否正确",
         request_body=ResourceImportCheckInputSLZ,
         responses={
-            status.HTTP_200_OK: ResourceImportCheckOutputSLZ(many=True),
+            status.HTTP_200_OK: ResourceImportInfoSLZ(many=True),
             status.HTTP_400_BAD_REQUEST: ResourceImportCheckFailOutputSLZ(many=True),
         },
         tags=["WebAPI.Resource"],
@@ -397,16 +401,13 @@ class ResourceImportCheckApi(generics.CreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST, code="INVALID", data=slz.data, message="validate fail"
             )
 
-        doc_language = slz.validated_data.get("doc_language", "")
-
         resource_data_list = openapi_manager.get_resource_list()
         resource_ids = [resource_data.resource.id for resource_data in resource_data_list if resource_data.resource]
-        slz = ResourceImportCheckOutputSLZ(
+        slz = ResourceImportInfoSLZ(
             data=resource_data_list,
             many=True,
             context={
-                "doc_language": doc_language,
-                "docs": ResourceDocHandler.get_docs_by_language(resource_ids, doc_language),
+                "docs": ResourceDocHandler.get_docs_by_resource_ids(resource_ids),
             },
         )
         slz.is_valid()
@@ -426,42 +427,77 @@ class ResourceImportApi(generics.CreateAPIView):
             data=request.data,
             context={
                 "gateway": request.gateway,
+                "stages": Stage.objects.filter(gateway=request.gateway),
             },
         )
         slz.is_valid(raise_exception=True)
 
-        try:
-            openapi_manager = OpenAPIImportManager.load_from_content(request.gateway, slz.validated_data["content"])
-        except Exception as err:
-            raise serializers.ValidationError(
-                {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)}
-            )
+        resource_list = ResourceDataConvertor(request.gateway, slz.data.get("import_resources", [])).convert()
 
-        validate_err_list = openapi_manager.validate()
-        if len(validate_err_list) != 0:
-            return FailJsonResponse(
-                status=status.HTTP_400_BAD_REQUEST, code="INVALID", data=slz.data, message="validate fail"
-            )
-
-        output_slz = ResourceDataImportSLZ(
-            data=openapi_manager.get_resource_list(raw=True),
-            many=True,
-            context={
-                "stages": Stage.objects.filter(gateway=request.gateway),
-            },
+        validator = ResourceImportValidator(
+            gateway=request.gateway,
+            resource_data_list=resource_list,
+            need_delete_unspecified_resources=False,
         )
-        output_slz.is_valid(raise_exception=True)
 
+        # 再次进行逻辑校验
+        validate_err_list = validator.validate()
+        if len(validate_err_list) > 0:
+            error_dicts = [error.to_dict() for error in validate_err_list]
+            raise serializers.ValidationError(
+                {"content": _("validate err {err}。").format(err=json.dumps(error_dicts, indent=4))}
+            )
         importer = ResourcesImporter.from_resources(
             gateway=request.gateway,
-            resources=openapi_manager.get_resource_list(),
-            selected_resources=slz.validated_data.get("selected_resources"),
+            resources=resource_list,
             need_delete_unspecified_resources=False,
             username=request.user.username,
         )
         importer.import_resources()
+        # 如果生成文档还要再生成文档
+        if slz.validated_data.get("doc_language"):
+            exporter = OpenAPIExportManager(include_bk_apigateway_resource=False)
+            # 生成openapi yaml
+            content = exporter.export_openapi(slz.data.get("import_resources", []), file_type="yaml")
+            parser = OpenAPIParser(gateway_id=request.gateway.id)
+            docs = parser.parse(
+                swagger=content,
+                language=DocLanguageEnum(slz.validated_data["doc_language"]),
+            )
+            importer = DocImporter(
+                gateway_id=request.gateway.id,
+            )
+            importer.import_docs(docs=docs)
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+class ResourceImportDocPreviewApi(generics.CreateAPIView):
+    @swagger_auto_schema(
+        operation_description="导入文档预览",
+        request_body=ResourceImportDocPreviewInputSLZ,
+        tags=["WebAPI.Resource"],
+    )
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        slz = ResourceImportDocPreviewInputSLZ(
+            data=request.data,
+            context={
+                "gateway": request.gateway,
+                "stages": Stage.objects.filter(gateway=request.gateway),
+            },
+        )
+        slz.is_valid(raise_exception=True)
+
+        exporter = OpenAPIExportManager(include_bk_apigateway_resource=False)
+        # 生成openapi yaml
+        content = exporter.export_openapi([slz.data.get("review_resource")], file_type="yaml")
+        parser = OpenAPIParser(gateway_id=request.gateway.id)
+        docs = parser.parse(
+            swagger=content,
+            language=DocLanguageEnum(slz.validated_data["doc_language"]),
+        )
+        return OKJsonResponse(data={"doc": "" if len(docs) == 0 else docs[0].content})
 
 
 class ResourceExportApi(generics.CreateAPIView):

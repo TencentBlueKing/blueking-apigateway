@@ -474,6 +474,7 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
         required=False,
         help_text="插件配置列表",
     )
+    openapi_schema = serializers.DictField(allow_empty=True, required=False)
 
     class Meta:
         model = Resource
@@ -496,6 +497,8 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
             "labels",
             # 插件配置
             "plugin_configs",
+            # 接口协议
+            "openapi_schema",
         ]
 
         extra_kwargs = {
@@ -541,20 +544,12 @@ class SelectedResourceSLZ(serializers.Serializer):
 
 class ResourceImportInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    content = serializers.CharField(allow_blank=False, required=True, help_text="导入内容，yaml/json 格式字符串")
-    selected_resources = serializers.ListField(
-        child=SelectedResourceSLZ(),
-        allow_empty=False,
+    import_resources = serializers.ListField(
+        child=ResourceDataImportSLZ(),
         allow_null=True,
         required=False,
-        help_text="导入时选中的资源列表",
+        help_text="导入的资源列表",
     )
-    delete = serializers.BooleanField(
-        default=False, help_text="是否删除未选中的资源，即已存在，但是未在 content 中的资源"
-    )
-
-
-class ResourceImportCheckInputSLZ(ResourceImportInputSLZ):
     doc_language = serializers.ChoiceField(
         choices=DocLanguageEnum.get_choices(),
         allow_blank=True,
@@ -563,19 +558,55 @@ class ResourceImportCheckInputSLZ(ResourceImportInputSLZ):
     )
 
 
+class ResourceImportDocPreviewInputSLZ(serializers.Serializer):
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
+    review_resource = ResourceDataImportSLZ(required=True, help_text="要预览z")
+    doc_language = serializers.ChoiceField(
+        choices=DocLanguageEnum.get_choices(),
+        allow_blank=True,
+        required=False,
+        help_text="文档语言，en: 英文，zh: 中文",
+    )
+
+
+class ResourceImportCheckInputSLZ(serializers.Serializer):
+    content = serializers.CharField(allow_blank=False, required=True, help_text="导入内容，yaml/json 格式字符串")
+
+
 class ResourceImportCheckFailOutputSLZ(serializers.Serializer):
     message = serializers.CharField(read_only=True, help_text="check失败信息")
     json_path = serializers.CharField(read_only=True, help_text="对应的path")
 
 
-class ResourceImportCheckOutputSLZ(serializers.Serializer):
+class BackendConfigSLZ(serializers.Serializer):
+    method = serializers.ChoiceField(choices=RESOURCE_METHOD_CHOICES, help_text="请求方法")
+    path = serializers.RegexField(PATH_PATTERN, help_text="请求路径")
+    match_subpath = serializers.BooleanField(required=False, help_text="是否匹配所有子路径")
+    timeout = serializers.IntegerField(
+        max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=0, required=False, help_text="超时时间"
+    )
+
+    class Meta:
+        ref_name = "apis.web.resource.BackendConfigSLZ"
+
+
+class ResourceImportInfoSLZ(serializers.Serializer):
     id = serializers.SerializerMethodField(help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
     description = serializers.CharField(read_only=True, help_text="资源描述")
+    description_en = serializers.CharField(help_text="资源英文描述")
     method = serializers.CharField(read_only=True, help_text="请求方法")
     path = serializers.SerializerMethodField(help_text="请求路径")
-    doc = serializers.SerializerMethodField(help_text="资源文档")
-    schema = serializers.SerializerMethodField(help_text="参数协议")
+    match_subpath = serializers.BooleanField(help_text="是否匹配所有子路径")
+    is_public = serializers.BooleanField(help_text="是否公开")
+    allow_apply_permission = serializers.BooleanField(help_text="是否允许应用在开发者中心申请访问资源的权限")
+
+    doc = serializers.SerializerMethodField(help_text="资源文档列表，zh和en")
+    auth_config = ResourceAuthConfigSLZ(help_text="认证配置")
+    backend_name = serializers.SerializerMethodField(help_text="后端服务名称")
+    backend_config = BackendConfigSLZ(help_text="后端配置")
+    labels = serializers.SerializerMethodField(help_text="参数协议")
+    openapi_schema = serializers.SerializerMethodField(help_text="参数协议")
     plugin_configs = serializers.ListField(
         child=PluginConfigImportSLZ(),
         allow_empty=True,
@@ -592,9 +623,15 @@ class ResourceImportCheckOutputSLZ(serializers.Serializer):
 
     def get_doc(self, obj):
         resource_id = self.get_id(obj)
-        return self.context["docs"].get(resource_id, {"id": None, "language": self.context["doc_language"]})
+        return self.context["docs"].get(resource_id, [])
 
-    def get_schema(self, obj):
+    def get_backend_name(self, obj):
+        return obj.backend.name
+
+    def get_labels(self, obj):
+        return obj.metadata.get("labels", [])
+
+    def get_openapi_schema(self, obj):
         return obj.openapi_schema
 
 
@@ -633,7 +670,7 @@ class ResourceExportOutputSLZ(serializers.Serializer):
     backend = serializers.SerializerMethodField(help_text="后端服务")
     plugin_configs = serializers.SerializerMethodField(help_text="插件配置")
     auth_config = serializers.SerializerMethodField(help_text="认证配置")
-    schema = serializers.SerializerMethodField(help_text="参数协议")
+    openapi_schema = serializers.SerializerMethodField(help_text="参数协议")
 
     def get_labels(self, obj):
         labels = self.context["labels"].get(obj.id, [])
@@ -652,8 +689,11 @@ class ResourceExportOutputSLZ(serializers.Serializer):
     def get_plugin_configs(self, obj) -> List[PluginConfig]:
         return [binding.config for binding in self.context["resource_id_to_plugin_bindings"].get(obj.id, [])]
 
-    def get_schema(self, obj):
-        return self.context["resource_id_to_schema"].get(obj.id, {})
+    def get_openapi_schema(self, obj):
+        schema = self.context["resource_id_to_schema"].get(obj.id)
+        if schema:
+            return schema.schema
+        return {}
 
 
 class BackendPathCheckInputSLZ(serializers.Serializer):

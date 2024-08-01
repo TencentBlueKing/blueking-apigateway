@@ -46,14 +46,15 @@ class ResourceDocHandler:
         return docs
 
     @staticmethod
-    def get_docs_by_language(resource_ids: List[int], language: str) -> Dict[int, Dict]:
-        if not (resource_ids and language):
+    def get_docs_by_resource_ids(resource_ids: List[int]) -> Dict[int, List[Dict]]:
+        if len(resource_ids) == 0:
             return {}
 
-        queryset = ResourceDoc.objects.filter(resource_id__in=resource_ids, language=language).values(
-            "id", "resource_id", "language"
-        )
-        return {doc["resource_id"]: {"id": doc["id"], "language": doc["language"]} for doc in queryset}
+        queryset = ResourceDoc.objects.filter(resource_id__in=resource_ids).values("id", "resource_id", "language")
+        result: Dict[int, List[Dict]] = defaultdict(list)
+        for doc in queryset:
+            result[doc["resource_id"]].append({"id": doc["id"], "language": doc["language"]})
+        return result
 
     @staticmethod
     def get_resource_doc_tmpl(gateway_name: str, language: str) -> str:

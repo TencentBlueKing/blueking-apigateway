@@ -62,18 +62,12 @@ class TestResourceDocHandler:
             ]
         }
 
-    def test_get_docs_by_language(self, fake_resource):
-        zh_doc = G(ResourceDoc, resource_id=fake_resource.id, gateway=fake_resource.gateway, language="zh")
-        en_doc = G(ResourceDoc, resource_id=fake_resource.id, gateway=fake_resource.gateway, language="en")
+    def test_get_docs_by_resource(self, fake_resource):
+        G(ResourceDoc, resource_id=fake_resource.id, gateway=fake_resource.gateway, language="zh")
+        G(ResourceDoc, resource_id=fake_resource.id, gateway=fake_resource.gateway, language="en")
 
-        result = ResourceDocHandler.get_docs_by_language([], "en")
+        result = ResourceDocHandler.get_docs_by_resource_ids([])
         assert result == {}
 
-        result = ResourceDocHandler.get_docs_by_language([fake_resource.id], "")
-        assert result == {}
-
-        result = ResourceDocHandler.get_docs_by_language([fake_resource.id], "zh")
-        assert result == {fake_resource.id: {"id": zh_doc.id, "language": "zh"}}
-
-        result = ResourceDocHandler.get_docs_by_language([fake_resource.id], "en")
-        assert result == {fake_resource.id: {"id": en_doc.id, "language": "en"}}
+        result = ResourceDocHandler.get_docs_by_resource_ids([fake_resource.id])
+        assert len(result[fake_resource.id]) == 2
