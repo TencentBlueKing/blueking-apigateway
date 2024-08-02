@@ -571,7 +571,7 @@ const matchPath = (resource: any) => {
         const tempStr = str.split('{')[1];
         pathArr.push({
           name: tempStr.split('}')[0],
-          description: '优先',
+          description: '',
           in: 'path',
           required: true,
           schema: {
