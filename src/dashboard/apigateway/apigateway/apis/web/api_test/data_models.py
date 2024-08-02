@@ -15,7 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from datetime import datetime
 from typing import Dict, Literal, Optional
 
 from pydantic import BaseModel, Field

@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import time
 from typing import Any, Dict
 
 import requests
@@ -217,7 +216,7 @@ class APIDebugHistoryListApi(APIDebugHistoriesQuerySetMixin, generics.ListAPIVie
             time_end = timezone.datetime.fromtimestamp(int(time_end_stamp), timezone.get_current_timezone())
 
         # 过滤查询集
-        queryset = self.queryset
+        queryset = self.get_queryset()
         if time_start and time_end:
             queryset = queryset.filter(created_time__range=(time_start, time_end))
         # 应用额外的过滤器
