@@ -47,7 +47,7 @@ class Command(BaseCommand):
             logger.info("gateway[name=%s] has exist not need update", name)
             return
         saver = GatewaySaver(
-            id=gateway and gateway.id,
+            id=None,
             data=GatewayData(
                 name=name,
                 maintainers=[settings.GATEWAY_DEFAULT_CREATOR],
