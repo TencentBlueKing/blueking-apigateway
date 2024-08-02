@@ -699,7 +699,7 @@ const formatPayload = () => {
   const payload = requestPayloadRef.value?.getData();
   const { headers } = payload;
   const { path, query } = payload.params;
-  const { raw } = payload.body;
+  const { formData: formDataList, urlencoded, raw } = payload.body;
 
   const data: any = {};
   data.stage_id = stage.value;
