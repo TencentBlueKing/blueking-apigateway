@@ -41,10 +41,15 @@ class APIDebugHistory(TimestampedModelMixin, OperatorModelMixin):
     #     "spec_version": 1,                    # 请求版本
     # }
     request = JSONField(blank=True, help_text="请求参数")
-    # "response": {
-    #     "status_code": 200,                   # 返回结果状态码
-    #     "proxy_time": 2.22,                   # 处理的时间
-    #     "body": "xxx",                        # 和在线调试一样的结果
+    #   "response": {
+    #     "body": {                             # 和在线调试一样的结果
+    #         "status_code":200,                # 结果状态码
+    #         "proxy_time": 0.00001,            # 处理时间
+    #         "size": 1024,                     # 结果大小
+    #         "body": "返回的body结果",           # 返回结果的body
+    #         "headers": "返回的headers",        # 返回结果的header
+    #         "curl": "路由",                    # 路由
+    #      },
     #     "spec_version": 1,                    # 返回的结果版本
     #     "error":null,                         # 返回的错误信息（如果发起调用的时候报错等于调用都没成功，就直接将错误信息放入其中，上面全部字段都没数据）
     # }

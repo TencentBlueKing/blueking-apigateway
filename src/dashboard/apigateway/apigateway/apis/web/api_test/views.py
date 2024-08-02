@@ -89,7 +89,6 @@ class APITestApi(generics.CreateAPIView):
         )
 
         # 开始时间
-        start_time = time.perf_counter()
         request_time = timezone.now()
 
         # 入参检查
@@ -104,7 +103,6 @@ class APITestApi(generics.CreateAPIView):
             "subpath": data.get("subpath", ""),
             "use_test_app": data.get("use_test_app", True),
             "use_user_from_cookies": data.get("use_user_from_cookies", False),
-            "request_time": request_time,
             "spec_version": SPEC_VERSION,
         }
         validated_request = ApiDebugHistoryRequest(**history_request)
@@ -122,16 +120,12 @@ class APITestApi(generics.CreateAPIView):
                 allow_redirects=False,
                 verify=False,
             )
-            end_time = time.perf_counter()
-            proxy_time = end_time - start_time
             response_data_dict = self._get_response_data(
                 response, prepared_request_headers.headers_without_sensitive, verify=False
             )
             # 结果检查
             success_history_response = {
-                "status_code": response.status_code,
                 "body": response_data_dict,
-                "proxy_time": proxy_time,
                 "spec_version": SPEC_VERSION,
             }
             validated_response = ApiDebugHistoryResponse(**success_history_response)
@@ -147,6 +141,7 @@ class APITestApi(generics.CreateAPIView):
             # 结果检查
             error_history_response = {
                 "error": err,
+                "spec_version": SPEC_VERSION,
             }
             validated_response = ApiDebugHistoryResponse(**error_history_response)
             fail_history_data = {
