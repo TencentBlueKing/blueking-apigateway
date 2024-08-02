@@ -43,6 +43,9 @@ class Command(BaseCommand):
     @transaction.atomic
     def handle(self, name: str, **options):
         gateway = get_object_or_None(Gateway, name=name)
+        if gateway:
+            logger.info("gateway[name=%s] has exist not need update", name)
+            return
         saver = GatewaySaver(
             id=gateway and gateway.id,
             data=GatewayData(

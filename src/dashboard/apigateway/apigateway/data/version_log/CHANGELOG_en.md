@@ -1,4 +1,14 @@
 <!-- 2024-08-01 -->
+# V1.13.12 Release Log
+
+### Bug Fixes
+
+- Fixed issues with sync_gateway command
+- Updated `bk-apigateway` resource version
+
+---
+
+<!-- 2024-08-01 -->
 # V1.13.11 Release Log
 
 ### Bug Fixes

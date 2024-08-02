@@ -50,7 +50,7 @@ class TestResourceVersionListOutputSLZ:
             gateway=gateway,
             version="1.0.1",
             created_time=arrow.get("2019-01-01 12:30:00").datetime,
-            created_by="x"
+            created_by="x",
         )
 
         queryset = ResourceVersion.objects.filter(gateway=gateway).values(

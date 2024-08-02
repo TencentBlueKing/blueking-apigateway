@@ -71,7 +71,9 @@ class AppResourcePermissionQuerySetMixin:
 
         # 仅展示资源存在的权限
         resource_ids = Resource.objects.filter(gateway=self.request.gateway).values_list("id", flat=True)
-        return queryset.filter(gateway=self.request.gateway, resource_id__in=resource_ids).exclude(bk_app_code=settings.DEFAULT_TEST_APP['bk_app_code'])
+        return queryset.filter(gateway=self.request.gateway, resource_id__in=resource_ids).exclude(
+            bk_app_code=settings.DEFAULT_TEST_APP["bk_app_code"]
+        )
 
 
 @method_decorator(
