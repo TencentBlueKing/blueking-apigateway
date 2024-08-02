@@ -177,8 +177,10 @@ class ReleasedResourceHandler:
         return doc_links
 
     @staticmethod
-    def get_public_released_resource_data_list(gateway_id: int, stage_name: str) -> List[ReleasedResourceData]:
-        """获取网关环境下，已发布的，可公开的资源数据"""
+    def get_public_released_resource_data_list(
+        gateway_id: int, stage_name: str, is_only_public: Optional[bool] = True
+    ) -> List[ReleasedResourceData]:
+        """获取网关环境下，已发布的资源数据"""
         release = (
             Release.objects.filter(gateway_id=gateway_id, stage__name=stage_name)
             .prefetch_related("resource_version")
@@ -188,7 +190,9 @@ class ReleasedResourceHandler:
             return []
 
         resources = [ReleasedResourceData.from_data(resource) for resource in release.resource_version.data]
-        return list(filter(lambda resource: resource.is_public, resources))
+        if is_only_public:
+            return list(filter(lambda resource: resource.is_public, resources))
+        return resources
 
     @staticmethod
     def get_released_resource(gateway_id: int, stage_name: str, resource_name: str) -> Optional[ReleasedResource]:
