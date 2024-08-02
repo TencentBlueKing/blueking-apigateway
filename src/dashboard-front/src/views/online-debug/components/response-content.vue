@@ -85,7 +85,14 @@
               </bk-select>
             </div>
             <div class="response-content">
-              <editor-monaco v-model="editorText" theme="Visual Studio" ref="resourceEditorRef" />
+              <editor-monaco
+                v-model="editorText"
+                theme="Visual Studio"
+                ref="resourceEditorRef"
+                :minimap="false"
+                :show-copy="true"
+                :show-full-screen="true"
+              />
             </div>
           </div>
         </template>

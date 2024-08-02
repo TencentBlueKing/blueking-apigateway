@@ -1,4 +1,5 @@
 const mockServer = require('./mock-server');
+const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin')
 // const { DefinePlugin } = require('webpack');
 
 module.exports = {
@@ -23,12 +24,10 @@ module.exports = {
     };
   },
 
-  // chainWebpack: config => {
-  //   config
-  //   .plugin('feature-flags')
-  //   .use(DefinePlugin, [{
-  //     "__VUE_PROD_DEVTOOLS__": true,
-  //   }]);
-  //   return config
-  // }
+  chainWebpack: config => {
+    config
+    .plugin('monaco')
+    .use(new MonacoWebpackPlugin());
+    return config
+  }
 };
