@@ -100,8 +100,10 @@
                         <bk-tag theme="success">{{ curResource?.method }}</bk-tag>
                         <span class="request-path">{{ curResource?.path }}</span>
                       </div>
-                      <bk-button theme="primary" @click="handleSend" :loading="isLoading">{{ t('发送') }}</bk-button>
-                      <bk-button class="ml8" @click="viewDoc">{{ t('查看文档') }}</bk-button>
+                      <bk-button class="fixed-w" theme="primary" @click="handleSend" :loading="isLoading">
+                        {{ t('发送') }}
+                      </bk-button>
+                      <bk-button class="ml8 fixed-w" @click="viewDoc">{{ t('查看文档') }}</bk-button>
                     </div>
                   </div>
                 </div>
@@ -218,8 +220,10 @@
                         <bk-tag theme="success">{{ curResource?.method }}</bk-tag>
                         <span class="request-path">{{ curResource?.path }}</span>
                       </div>
-                      <bk-button theme="primary" @click="handleSend" :loading="isLoading">{{ t('发送') }}</bk-button>
-                      <bk-button class="ml8" @click="viewDoc">{{ t('查看文档') }}</bk-button>
+                      <bk-button class="fixed-w" theme="primary" @click="handleSend" :loading="isLoading">
+                        {{ t('发送') }}
+                      </bk-button>
+                      <bk-button class="ml8 fixed-w" @click="viewDoc">{{ t('查看文档') }}</bk-button>
                     </div>
                   </div>
                 </div>
@@ -234,7 +238,7 @@
         >
           <template #aside>
             <div class="request-payload">
-              <request-payload ref="requestPayloadRef" :schema="payloadType" />
+              <request-payload ref="requestPayloadRef" :schema="payloadType" :tab="tab" />
             </div>
           </template>
           <template #main>
@@ -363,9 +367,11 @@ const payloadType = reactive<any>({
   rawPayload: {},
   queryPayload: [],
   pathPayload: [],
+  priorityPath: [],
   headersPayload: [],
   fromDataPayload: [],
 });
+const tab = ref<string>('Params');
 
 // 编辑应用认证
 const appAuthorization = reactive<any>({
@@ -524,6 +530,7 @@ const clearSchema = () => {
   payloadType.rawPayload = {};
   payloadType.queryPayload = [];
   payloadType.pathPayload = [];
+  payloadType.priorityPath = [];
   payloadType.headersPayload = [];
   payloadType.fromDataPayload = [];
 };
@@ -548,7 +555,34 @@ const getResourceParams = async () => {
       payloadType.fromDataPayload?.push(item);
     }
   });
-  console.log('schema: ', payloadType);
+  matchPath(curResource.value);
+};
+
+// path 参数
+const matchPath = (resource: any) => {
+  if (!resource) return;
+
+  const { path } = resource;
+  const pathArr: any[] = [];
+
+  if (path?.indexOf('{') !== -1) {
+    path.split('/').forEach((str: string) => {
+      if (str.indexOf('{') !== -1) {
+        const tempStr = str.split('{')[1];
+        pathArr.push({
+          name: tempStr.split('}')[0],
+          description: '优先',
+          in: 'path',
+          required: true,
+          schema: {
+            type: 'string',
+          },
+        });
+      }
+    });
+  }
+
+  payloadType.priorityPath = pathArr;
 };
 
 // 点击资源列表项
@@ -699,7 +733,8 @@ const formatPayload = () => {
   const payload = requestPayloadRef.value?.getData();
   const { headers } = payload;
   const { path, query } = payload.params;
-  const { formData: formDataList, urlencoded, raw } = payload.body;
+  const { raw } = payload.body;
+  // formData: formDataList, urlencoded,
 
   const data: any = {};
   data.stage_id = stage.value;
@@ -738,12 +773,10 @@ const handleSend = async (e: Event) => {
   if (!isValidate) return;
   const data = formatPayload();
   if (!data) return;
-  console.log('....data...', data);
 
   try {
     isLoading.value = true;
     const res = await postAPITest(common.apigwId, data);
-    console.log('res: ', res);
     response.value = res;
   } catch (e) {
     console.log(e);
@@ -800,11 +833,28 @@ watch(
     }
   },
 );
+
+watch(
+  () => curResource.value,
+  (resource) => {
+    if (['POST', 'PUT'].includes(resource?.method)) {
+      tab.value = 'Body';
+    } else {
+      tab.value = 'Params';
+    }
+  },
+);
 </script>
 
 <style lang="scss" scoped>
+.bk-resize-layout-border {
+  border: none;
+}
 .content-resize {
   height: 100%;
+  :deep(.bk-resize-trigger:hover) {
+    border-right: 2px solid #3a84ff;
+  }
   .resize-aside {
     background: #FFFFFF;
     height: 100%;
@@ -826,6 +876,7 @@ watch(
   }
   .request-setting {
     background: #FFFFFF;
+    box-shadow: 0 2px 4px 0 #1919290d;
     .request-setting-title {
       padding: 24px 24px 16px;
       .request-source-name {
@@ -978,6 +1029,8 @@ watch(
     }
     .menu-header-icon {
       transition: all .2s;
+      color: #979BA5;
+      font-size: 14px;
       &.fold {
         transform: rotate(-90deg);
       }
@@ -1058,5 +1111,8 @@ watch(
   :deep(.bk-resize-trigger:hover) {
     border-top: 2px solid #3a84ff;
   }
+}
+.fixed-w {
+  width: 88px;
 }
 </style>

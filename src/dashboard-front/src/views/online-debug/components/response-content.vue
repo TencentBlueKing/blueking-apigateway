@@ -7,14 +7,20 @@
       <bk-collapse-panel :name="1">
         <template #header>
           <div class="response-title flex">
-            <div class="response-type flex">
+            <div :class="['response-type', 'flex', activeIndex?.includes(1) ? '' : 'fold-header']">
               <angle-up-fill :class="['header-icon', activeIndex?.includes(1) ? '' : 'fold']" />
-              <bk-tab v-model:active="tabActive" type="unborder-card" class="response-type-tab" @click="stopPropa">
+              <span class="fold-title" v-show="!activeIndex?.includes(1)">{{ t('返回响应') }}</span>
+              <bk-tab
+                v-model:active="tabActive"
+                type="unborder-card"
+                class="response-type-tab"
+                v-show="activeIndex?.includes(1)"
+                @click="stopPropa">
                 <bk-tab-panel label="Body" name="body"></bk-tab-panel>
                 <bk-tab-panel :label="t('请求详情')" name="detail"></bk-tab-panel>
               </bk-tab>
             </div>
-            <div class="response-status flex" @click="stopPropa">
+            <div class="response-status flex" @click="stopPropa" v-show="activeIndex?.includes(1)">
               <div class="response-status-item">
                 <span class="label">Status：</span>
                 <span class="value">{{ data?.status_code || '--' }}</span>
@@ -186,6 +192,16 @@ watch(
     position: relative;
     .response-type {
       flex: 1;
+      cursor: pointer;
+      transition: all .2s;
+      &.fold-header {
+        display: flex;
+        align-items: center;
+        line-height: 52px;
+        .header-icon {
+          margin-top: 0px;
+        }
+      }
       .header-icon {
         margin-top: -18px;
         margin-right: 8px;
@@ -197,6 +213,11 @@ watch(
       }
       .response-type-tab {
         flex: 1;
+      }
+      .fold-title {
+        font-weight: 700;
+        font-size: 14px;
+        color: #313238;
       }
     }
     .response-status {
@@ -252,7 +273,7 @@ watch(
     align-items: center;
     font-size: 12px;
     color: #63656E;
-    padding: 4px 10px;
+    padding: 1px 10px;
     cursor: pointer;
     .apigateway-icon {
       margin-right: 4px;

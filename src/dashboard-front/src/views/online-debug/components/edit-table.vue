@@ -203,15 +203,15 @@ const tableData = ref<any>(props?.list?.length ? props.list : [getDefaultTbRow()
 
 const typeList = ref<any[]>([
   {
-    label: 'String',
+    label: 'string',
     value: 'string',
   },
   {
-    label: 'Number',
+    label: 'number',
     value: 'number',
   },
   {
-    label: 'Boolean',
+    label: 'boolean',
     value: 'boolean',
   },
 ]);

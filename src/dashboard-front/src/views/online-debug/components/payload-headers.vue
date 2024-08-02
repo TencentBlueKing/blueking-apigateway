@@ -7,7 +7,8 @@
       <template #header>
         <div class="params-header">
           <div class="params-header-title">
-            <angle-up-fill class="params-header-fold" /><span>{{ t('Headers 参数') }}</span>
+            <angle-up-fill :class="['params-header-fold', activeIndex?.includes(1) ? '' : 'fold']" />
+            <span>{{ t('Headers 参数') }}</span>
           </div>
         </div>
       </template>
@@ -78,8 +79,11 @@ defineExpose({
     display: flex;
     align-items: center;
     .params-header-fold {
-      margin-top: 2px;
       margin-right: 8px;
+      transition: all .2s;
+      &.fold {
+        transform: rotate(-90deg);
+      }
     }
   }
 }
