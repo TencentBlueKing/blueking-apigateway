@@ -97,7 +97,6 @@ class APITestApi(generics.CreateAPIView):
             "request_url": prepared_request_url.request_url,
             "request_method": data["method"],
             "type": "HTTP",
-            "authorization": data.get("authorization", {}),
             "path_params": data.get("path_params", {}),
             "query_params": data.get("query_params", {}),
             "body": data.get("body", ""),
@@ -125,11 +124,13 @@ class APITestApi(generics.CreateAPIView):
             )
             end_time = time.perf_counter()
             proxy_time = end_time - start_time
-
+            response_data_dict = self._get_response_data(
+                response, prepared_request_headers.headers_without_sensitive, verify=False
+            )
             # 结果检查
             success_history_response = {
                 "status_code": response.status_code,
-                "response": response.text,
+                "body": str(response_data_dict),
                 "proxy_time": proxy_time,
                 "spec_version": SPEC_VERSION,
             }
@@ -163,7 +164,7 @@ class APITestApi(generics.CreateAPIView):
             )
 
         return OKJsonResponse(
-            data=self._get_response_data(response, prepared_request_headers.headers_without_sensitive, verify=False),
+            data=response_data_dict,
         )
 
     def _get_response_data(self, response, headers_without_sensitive=Dict[str, Any], verify=False):
@@ -209,7 +210,7 @@ class APIDebugHistoryListApi(APIDebugHistoriesQuerySetMixin, generics.ListAPIVie
     serializer_class = APIDebugHistoriesListOutputSLZ
 
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
+        queryset = self.filter_queryset(self.get_queryset())
         slz = APIDebugHistoriesListOutputSLZ(queryset, many=True)
         return OKJsonResponse(data=slz.data)
 

@@ -30,7 +30,6 @@ class APIDebugHistory(TimestampedModelMixin, OperatorModelMixin):
     #     "request_url": "www.baidu.com",       # 请求路由
     #     "request_method": "GET",              # 请求方法
     #     "type":"HTTP",                        # 请求类型
-    #     "authorization": {aa:"aa"},           # 授权
     #     "path_params": {aa:"aa"},             # 路径参数
     #     "query_params": {aa:"aa"},            # 查询参数
     #     "body": "",                           # 请求Body
@@ -45,8 +44,9 @@ class APIDebugHistory(TimestampedModelMixin, OperatorModelMixin):
     # "response": {
     #     "status_code": 200,                   # 返回结果状态码
     #     "proxy_time": 2.22,                   # 处理的时间
-    #     "body": "xxx",                        # 返回的结果内容
+    #     "body": "xxx",                        # 和在线调试一样的结果
     #     "spec_version": 1,                    # 返回的结果版本
+    #     "error":null,                         # 返回的错误信息（如果发起调用的时候报错等于调用都没成功，就直接将错误信息放入其中，上面全部字段都没数据）
     # }
     response = JSONField(blank=True, help_text="返回结果")
 
