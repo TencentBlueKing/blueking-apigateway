@@ -124,7 +124,7 @@ class APITestApi(generics.CreateAPIView):
             )
             # 结果检查
             success_history_response = {
-                "body": response_data_dict,
+                "data": response_data_dict,
                 "spec_version": SPEC_VERSION,
             }
             validated_response = ApiDebugHistoryResponse(**success_history_response)

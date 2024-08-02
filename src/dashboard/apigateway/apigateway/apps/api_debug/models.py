@@ -42,7 +42,7 @@ class APIDebugHistory(TimestampedModelMixin, OperatorModelMixin):
     # }
     request = JSONField(blank=True, help_text="请求参数")
     #   "response": {
-    #     "body": {                             # 和在线调试一样的结果
+    #     "data": {                             # 和在线调试一样的结果
     #         "status_code":200,                # 结果状态码
     #         "proxy_time": 0.00001,            # 处理时间
     #         "size": 1024,                     # 结果大小
