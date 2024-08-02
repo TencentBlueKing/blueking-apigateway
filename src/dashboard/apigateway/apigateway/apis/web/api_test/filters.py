@@ -15,7 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from datetime import datetime
 
 from django_filters import rest_framework as filters
 
@@ -23,22 +22,10 @@ from apigateway.apps.api_debug.models import APIDebugHistory
 
 
 class APIDebugHistoryRecordFilter(filters.FilterSet):
-    time_start = filters.NumberFilter(method="time_start_filter")
-    time_end = filters.NumberFilter(method="time_end_filter")
     resource_name = filters.CharFilter(field_name="resource_name", lookup_expr="icontains")
 
     class Meta:
         model = APIDebugHistory
         fields = [
-            "time_start",
-            "time_end",
             "resource_name",
         ]
-
-    def time_start_filter(self, queryset, name, value):
-        value = int(value)
-        return queryset.filter(created_time__gte=datetime.fromtimestamp(value))
-
-    def time_end_filter(self, queryset, name, value):
-        value = int(value)
-        return queryset.filter(created_time__lt=datetime.fromtimestamp(value))

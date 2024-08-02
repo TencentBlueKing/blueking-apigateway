@@ -90,6 +90,8 @@
 </template>
 
 <script setup lang="ts">
+/* eslint-disable max-len */
+
 import { ref, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useUser, useCommon } from '@/store';
@@ -145,7 +147,7 @@ const userList = computed(() => {
 });
 const chatName = computed(() => `${t('[蓝鲸网关API咨询] 网关')}${curApigw.value?.name}`);
 const chatContent = computed(() => `${t('网关API文档')}:${location.href}`);
-const SDKInfo = computed(() => t('网关当前环境【{curStageText}】对应的资源版本未生成 SDK，可联系网关负责人生成 SDK', { curStageText: props.stageName }));
+// const SDKInfo = computed(() => t('网关当前环境【{curStageText}】对应的资源版本未生成 SDK，可联系网关负责人生成 SDK', { curStageText: props.stageName }));
 
 const md = new MarkdownIt({
   linkify: false,

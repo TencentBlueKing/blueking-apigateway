@@ -348,25 +348,33 @@ class TestResourceImportCheckApi:
                         "id": None,
                         "name": "http_get_mapping_user_id",
                         "description": "test",
+                        "description_en": None,
                         "method": "GET",
                         "path": "/http/get/mapping/{userId}/*",
-                        "doc": {
-                            "id": None,
-                            "language": "",
+                        "match_subpath": True,
+                        "is_public": True,
+                        "allow_apply_permission": True,
+                        "doc": [],
+                        "auth_config": {
+                            "auth_verified_required": True,
+                            "app_verified_required": True,
+                            "resource_perm_required": True,
                         },
-                        "schema": {
+                        "backend": {
+                            "name": "default",
+                            "config": {"method": "GET", "path": "/hello/", "match_subpath": True, "timeout": 30},
+                        },
+                        "labels": ["pet"],
+                        "openapi_schema": {
                             "parameters": [
                                 {
                                     "name": "userId",
                                     "in": "path",
-                                    "description": "ID of User",
                                     "required": True,
-                                    "schema": {
-                                        "type": "integer",
-                                        "format": "int64",
-                                    },
+                                    "description": "ID of User",
+                                    "schema": {"type": "integer", "format": "int64"},
                                 }
-                            ],
+                            ]
                         },
                         "plugin_configs": None,
                     }
@@ -415,13 +423,24 @@ class TestResourceImportCheckApi:
                         "id": None,
                         "name": "http_get_mapping_user_id",
                         "description": "test",
+                        "description_en": None,
                         "method": "GET",
                         "path": "/http/get/mapping/{userId}",
-                        "doc": {
-                            "id": None,
-                            "language": "zh",
+                        "match_subpath": False,
+                        "is_public": True,
+                        "allow_apply_permission": True,
+                        "doc": [],
+                        "auth_config": {
+                            "auth_verified_required": True,
+                            "app_verified_required": True,
+                            "resource_perm_required": True,
                         },
-                        "schema": {},
+                        "backend": {
+                            "name": "default",
+                            "config": {"method": "GET", "path": "/hello/", "match_subpath": False, "timeout": 30},
+                        },
+                        "labels": ["pet"],
+                        "openapi_schema": {},
                         "plugin_configs": None,
                     }
                 ],
@@ -448,113 +467,65 @@ class TestResourceImportApi:
         [
             (
                 {
-                    "content": json.dumps(
+                    "import_resources": [
                         {
-                            "swagger": "2.0",
-                            "basePath": "/",
-                            "info": {
-                                "version": "0.1",
-                                "title": "API Gateway Swagger",
+                            "id": None,
+                            "name": "import_r_user_2",
+                            "description": "test",
+                            "description_en": None,
+                            "method": "GET",
+                            "path": "/import/r/{user}/",
+                            "match_subpath": False,
+                            "is_public": True,
+                            "allow_apply_permission": True,
+                            "doc": [],
+                            "auth_config": {
+                                "auth_verified_required": True,
+                                "app_verified_required": True,
+                                "resource_perm_required": True,
                             },
-                            "schemes": ["http"],
-                            "paths": {
-                                "/import/r/{user}/": {
-                                    "get": {
-                                        "operationId": "import_r_user",
-                                        "description": "test",
-                                        "tags": ["pet"],
-                                        "schemes": ["http"],
-                                        "x-bk-apigateway-resource": {
-                                            "isPublic": True,
-                                            "backend": {
-                                                "name": "default",
-                                                "type": "HTTP",
-                                                "path": "/hello/",
-                                                "method": "get",
-                                                "timeout": 30,
-                                            },
-                                        },
-                                    },
-                                },
-                                "/import/any/{user}/": {
-                                    "x-bk-apigateway-method-any": {
-                                        "operationId": "import_any_user",
-                                        "description": "test",
-                                        "schemes": ["http"],
-                                        "x-bk-apigateway-resource": {
-                                            "backend": {
-                                                "name": "default",
-                                                "type": "HTTP",
-                                                "path": "/hello/",
-                                                "method": "any",
-                                                "timeout": 0,
-                                            }
-                                        },
-                                    },
-                                },
+                            "backend_name": "default",
+                            "backend_config": {
+                                "method": "GET",
+                                "path": "/hello/",
+                                "match_subpath": False,
+                                "timeout": 30,
                             },
-                        }
-                    ),
+                            "labels": ["pet"],
+                            "openapi_schema": {},
+                            "plugin_configs": None,
+                        },
+                        {
+                            "id": None,
+                            "name": "import_any_user_2",
+                            "description": "test",
+                            "description_en": None,
+                            "method": "ANY",
+                            "path": "/import/any/{user}/2/",
+                            "match_subpath": False,
+                            "is_public": True,
+                            "allow_apply_permission": True,
+                            "doc": [],
+                            "auth_config": {
+                                "auth_verified_required": True,
+                                "app_verified_required": True,
+                                "resource_perm_required": True,
+                            },
+                            "backend_name": "default",
+                            "backend_config": {
+                                "method": "ANY",
+                                "path": "/hello/",
+                                "match_subpath": False,
+                                "timeout": 30,
+                            },
+                            "labels": [],
+                            "openapi_schema": {},
+                            "plugin_configs": None,
+                        },
+                    ]
                 },
                 2,
-            ),
-            (
-                {
-                    "content": json.dumps(
-                        {
-                            "swagger": "2.0",
-                            "basePath": "/",
-                            "info": {
-                                "version": "0.1",
-                                "title": "API Gateway Swagger",
-                            },
-                            "schemes": ["http"],
-                            "paths": {
-                                "/import/r/{user}/": {
-                                    "get": {
-                                        "operationId": "import_r_user_2",
-                                        "description": "test",
-                                        "tags": ["pet"],
-                                        "schemes": ["http"],
-                                        "x-bk-apigateway-resource": {
-                                            "isPublic": True,
-                                            "backend": {
-                                                "name": "default",
-                                                "type": "HTTP",
-                                                "path": "/hello/",
-                                                "method": "get",
-                                                "timeout": 30,
-                                            },
-                                        },
-                                    },
-                                },
-                                "/import/any/{user}/2/": {
-                                    "x-bk-apigateway-method-any": {
-                                        "operationId": "import_any_user_2",
-                                        "description": "test",
-                                        "schemes": ["http"],
-                                        "x-bk-apigateway-resource": {
-                                            "backend": {
-                                                "name": "default",
-                                                "type": "HTTP",
-                                                "path": "/hello/",
-                                                "method": "any",
-                                                "timeout": 30,
-                                            }
-                                        },
-                                    },
-                                },
-                            },
-                        }
-                    ),
-                    "selected_resources": [
-                        {
-                            "name": "import_any_user_2",
-                        }
-                    ],
-                },
-                1,
-            ),
+            )
         ],
     )
     def test_post(self, request_view, fake_gateway, data, expected):
@@ -566,7 +537,6 @@ class TestResourceImportApi:
             path_params={"gateway_id": fake_gateway.id},
             data=data,
         )
-        print("***************")
 
         assert resp.status_code == 204
         assert Resource.objects.filter(gateway=fake_gateway).count() == expected
