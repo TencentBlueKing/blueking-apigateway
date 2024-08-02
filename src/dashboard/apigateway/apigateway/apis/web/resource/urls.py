@@ -24,6 +24,7 @@ from apigateway.apis.web.resource.views import (
     ResourceExportApi,
     ResourceImportApi,
     ResourceImportCheckApi,
+    ResourceImportDocPreviewApi,
     ResourceLabelUpdateApi,
     ResourceListCreateApi,
     ResourceRetrieveUpdateDestroyApi,
@@ -48,6 +49,7 @@ urlpatterns = [
         include(
             [
                 path("check/", ResourceImportCheckApi.as_view(), name="resource.import.check"),
+                path("doc/preview/", ResourceImportDocPreviewApi.as_view(), name="resource.doc.preview"),
                 path("", ResourceImportApi.as_view(), name="resource.import"),
             ]
         ),

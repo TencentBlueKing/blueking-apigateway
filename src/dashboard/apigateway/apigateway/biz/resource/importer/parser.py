@@ -518,8 +518,7 @@ class BaseExporter:
             }
 
             # schema
-            schema_obj = resource.get("schema", None)
-            schema = schema_obj.schema if schema_obj else {}
+            schema = resource.get("openapi_schema", {})
             operation.update(schema)
 
             if self.include_bk_apigateway_resource:
