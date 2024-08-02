@@ -17,11 +17,15 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+
+import datetime
+
 import responses
 from ddf import G
 
 from apigateway.apps.api_debug.models import APIDebugHistory
 from apigateway.core.utils import get_resource_url
+from apigateway.tests.utils.testing import dummy_time
 
 
 class TestAPITestAPIView:
@@ -76,10 +80,14 @@ class TestAPITestAPIView:
 
 class TestAPIDebugHistoryApi:
     def test_list(self, request_view, fake_resource, fake_gateway):
-        G(APIDebugHistory, resource_name="aa", gateway=fake_gateway)
-        G(APIDebugHistory, resource_name="aaa", gateway=fake_gateway)
-        G(APIDebugHistory, resource_name="bb", gateway=fake_gateway)
-
+        G(APIDebugHistory, resource_name="aa", gateway=fake_gateway, created_time=dummy_time.time)
+        G(APIDebugHistory, resource_name="aaa", gateway=fake_gateway, created_time=dummy_time.time)
+        G(
+            APIDebugHistory,
+            resource_name="bb",
+            gateway=fake_gateway,
+            created_time=dummy_time.time + datetime.timedelta(seconds=-300),
+        )
         resp = request_view(
             method="GET",
             path_params={"gateway_id": fake_gateway.id},
@@ -89,13 +97,26 @@ class TestAPIDebugHistoryApi:
 
         assert resp.status_code == 200
         assert len(result["data"]) == 3
-
         resp = request_view(
             method="GET",
             path_params={"gateway_id": fake_gateway.id},
             view_name="api_debug.histories.list",
             data={
                 "resource_name": "aa",
+            },
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        assert len(result["data"]) == 2
+
+        # 时间参数单测
+        resp = request_view(
+            method="GET",
+            path_params={"gateway_id": fake_gateway.id},
+            view_name="api_debug.histories.list",
+            data={
+                "time_start": dummy_time.timestamp,
+                "time_end": dummy_time.timestamp + 10,
             },
         )
         result = resp.json()

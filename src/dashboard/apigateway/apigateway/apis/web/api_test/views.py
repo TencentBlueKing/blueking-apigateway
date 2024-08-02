@@ -210,9 +210,29 @@ class APIDebugHistoryListApi(APIDebugHistoriesQuerySetMixin, generics.ListAPIVie
     serializer_class = APIDebugHistoriesListOutputSLZ
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        slz = APIDebugHistoriesListOutputSLZ(queryset, many=True)
-        return OKJsonResponse(data=slz.data)
+        time_start_stamp = request.query_params.get("time_start", None)
+        time_end_stamp = request.query_params.get("time_end", None)
+
+        # 将时间戳转换为datetime对象
+        time_start = None
+        time_end = None
+        if time_start_stamp:
+            time_start = timezone.datetime.fromtimestamp(int(time_start_stamp), timezone.get_current_timezone())
+        if time_end_stamp:
+            time_end = timezone.datetime.fromtimestamp(int(time_end_stamp), timezone.get_current_timezone())
+
+        # 过滤查询集
+        queryset = self.queryset
+        if time_start and time_end:
+            queryset = queryset.filter(created_time__range=(time_start, time_end))
+        # 应用额外的过滤器
+        queryset = self.filter_queryset(queryset)
+
+        # 序列化查询集
+        serializer = self.serializer_class(queryset, many=True)
+
+        # 返回响应
+        return OKJsonResponse(data=serializer.data)
 
 
 @method_decorator(
