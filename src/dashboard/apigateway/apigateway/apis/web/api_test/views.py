@@ -130,7 +130,7 @@ class APITestApi(generics.CreateAPIView):
             # 结果检查
             success_history_response = {
                 "status_code": response.status_code,
-                "body": str(response_data_dict),
+                "body": response_data_dict,
                 "proxy_time": proxy_time,
                 "spec_version": SPEC_VERSION,
             }

@@ -41,7 +41,7 @@ class ApiDebugHistoryRequest(BaseModel):
 class ApiDebugHistoryResponse(BaseModel):
     status_code: Optional[int] = Field(500, help="返回结果的状态码")
     proxy_time: float = Field(..., gt=0, help="处理时间，单位为秒，包含两位小数")
-    body: Optional[str] = Field(None, help="调用成功的时候跟返回结果一致")
+    body: Optional[dict] = Field(None, help="调用成功的时候跟返回结果一致")
     spec_version: Optional[int] = Field(1, help="返回的结果版本")
     error: Optional[str] = Field(None, help="错误信息")
 
