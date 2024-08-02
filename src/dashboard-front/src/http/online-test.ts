@@ -46,3 +46,10 @@ export const getUserAuthType = () => fetch.get(`${BK_DASHBOARD_URL}/settings/use
  * @returns
  */
 export const resourceSchema = (gatewayId: number, stageId: number, resourceId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${gatewayId}/releases/stages/${stageId}/resources/${resourceId}/schema/`);
+
+/**
+ *  在线调试历史记录列表
+ * @param apigwId 网关id
+ * @returns
+ */
+export const getTestHistories = (apigwId: number, data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/tests/histories/?${json2Query(data)}`);

@@ -9,9 +9,10 @@
         <div class="history-search">
           <bk-input
             class="search-input"
-            v-model="name"
+            v-model="filterData.resource_name"
             type="search"
             :placeholder="t('请输入资源名称')"
+            @blur="getList()"
           />
 
           <bk-date-picker
@@ -42,14 +43,16 @@
             :row-style="{ cursor: 'pointer' }"
             :show-overflow-tooltip="true"
           >
-            <bk-table-column :label="t('资源名称')" prop="name"></bk-table-column>
-            <bk-table-column :label="t('响应状态码')" prop="status">
+            <bk-table-column :label="t('资源名称')" prop="resource_name"></bk-table-column>
+            <bk-table-column :label="t('响应状态码')" prop="status_code">
               <template #default="{ data }">
-                <span :class="['dot', String(data?.status)?.startsWith('2') ? 'success' : 'failure']"></span>
-                {{ data?.status }}
+                <span
+                  :class="['dot', String(data?.response?.status_code)?.startsWith('2') ? 'success' : 'failure']">
+                </span>
+                {{ data?.response?.status_code }}
               </template>
             </bk-table-column>
-            <bk-table-column :label="t('调用时间')" prop="time"></bk-table-column>
+            <bk-table-column :label="t('调用时间')" prop="created_time"></bk-table-column>
             <bk-table-column :label="t('操作')">
               <template #default="{ row }">
                 <bk-button theme="primary" text @click="(e: any) => handleRowClick(e, row)">
@@ -57,10 +60,16 @@
                 </bk-button>
               </template>
             </bk-table-column>
-            <!-- eslint-disable-next-line vue/no-unused-vars -->
-            <template #expandRow="row">
+            <template #expandRow>
               <div class="details">
-                <editor-monaco v-model="editorText" theme="Visual Studio" ref="resourceEditorRef" />
+                <editor-monaco
+                  v-model="editorText"
+                  theme="Visual Studio"
+                  ref="resourceEditorRef"
+                  language="json"
+                  :minimap="false"
+                  :show-copy="true"
+                />
               </div>
             </template>
           </bk-table>
@@ -73,59 +82,27 @@
 <script lang="ts" setup>
 import { ref, shallowRef, reactive, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useAccessLog } from '@/store';
+import { useAccessLog, useCommon } from '@/store';
 import editorMonaco from '@/components/ag-editor.vue';
+import { getTestHistories } from '@/http';
 
 const { t } = useI18n();
+const common = useCommon();
 
 const isShow = ref<boolean>(false);
-const name = ref<string>('');
+const filterData = ref<any>({
+  resource_name: '',
+  time_start: '',
+  time_end: '',
+});
 const dateTimeRange = ref([]);
 const dateKey = ref('dateKey');
 const AccessLogStore = useAccessLog();
 const shortcutSelectedIndex = shallowRef(-1);
 const tableRef = ref(null);
 const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>();
-const tableList = ref<any>([
-  {
-    id: 1,
-    name: 'bk_login_is_login',
-    status: 200,
-    time: '2024-12-12 12:00:00',
-  },
-  {
-    id: 2,
-    name: 'bk_login_is_login',
-    status: 200,
-    time: '2024-12-12 12:00:00',
-  },
-  {
-    id: 3,
-    name: 'bk_login_is_login',
-    status: 400,
-    time: '2024-12-12 12:00:00',
-  },
-  {
-    id: 4,
-    name: 'bk_login_is_login',
-    status: 500,
-    time: '2024-12-12 12:00:00',
-  },
-]);
-const editorText = ref<string>(`{
-	"type": "team",
-	"test": {
-		"testPage": "tools/testing/run-tests.htm",
-		"enabled": true
-	},
-    "search": {
-        "excludeFolders": [
-			".git",
-			"tools/testing/qunit",
-			"tools/testing/chutzpah",
-			"server.net"
-        ]
-}`);
+const tableList = ref<any>([]);
+const editorText = ref<string>('');
 const tableEmptyConf = reactive<any>({
   keyword: '',
   isAbnormal: false,
@@ -144,21 +121,23 @@ const handleShortcutChange = (value: Record<string, any>, index: number) => {
   updateTableEmptyConfig();
 };
 
-// const formatDatetime = (timeRange: number[]) => {
-//   return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
-// };
+const formatDatetime = (timeRange: number[]) => {
+  return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
+};
 
 const setSearchTimeRange = () => {
-  // let timeRange = dateTimeRange.value;
-  // // 选择的是时间快捷项，需要实时计算时间值
-  // if (shortcutSelectedIndex.value !== -1) {
-  //   timeRange = AccessLogStore.datepickerShortcuts[shortcutSelectedIndex.value].value();
-  // }
-  // const formatTimeRange = formatDatetime(timeRange);
-  // filterData.value = Object.assign(filterData.value, {
-  //   time_start: formatTimeRange[0] || '',
-  //   time_end: formatTimeRange[1] || '',
-  // });
+  let timeRange = dateTimeRange.value;
+  // 选择的是时间快捷项，需要实时计算时间值
+  if (shortcutSelectedIndex.value !== -1) {
+    timeRange = AccessLogStore.datepickerShortcuts[shortcutSelectedIndex.value].value();
+  }
+  const formatTimeRange = formatDatetime(timeRange);
+  filterData.value = Object.assign(filterData.value, {
+    time_start: formatTimeRange[0] || '',
+    time_end: formatTimeRange[1] || '',
+  });
+
+  getList();
 };
 
 const handleTimeChange = () => {
@@ -179,8 +158,28 @@ const handleRowClick = (e: Event, row: Record<string, any>) => {
   });
 };
 
+const clear = () => {
+  filterData.value.resource_name = '';
+  filterData.value.time_start = '';
+  filterData.value.time_end = '';
+  shortcutSelectedIndex.value = -1;
+  dateTimeRange.value = [];
+};
+
 const show = () => {
+  clear();
   isShow.value = true;
+  getList();
+};
+
+const getList = async () => {
+  const data = {
+    offset: 0,
+    limit: 10000,
+    ...filterData.value,
+  };
+  const res = await getTestHistories(common.apigwId, data);
+  tableList.value = res;
 };
 
 defineExpose({

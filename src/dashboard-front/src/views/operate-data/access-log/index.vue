@@ -69,7 +69,16 @@
             </div>
           </template>
         </bk-collapse-panel>
-
+        <div class="search-term" v-show="!!searchConditions?.length">
+          <funnel class="icon" />
+          <span class="title">{{ t('检索项：') }}</span>
+          <bk-tag closable v-for="item in searchConditions" :key="item" @close="handleTagClose(item)">
+            {{ item }}
+          </bk-tag>
+          <bk-button theme="primary" text @click="handleClearSearch">
+            {{ t('清除') }}
+          </bk-button>
+        </div>
         <bk-collapse-panel :name="2" class="collapse-panel mb32" @change="handlePanelChange">
           <template #header>
             <div class="collapse-panel-header">
@@ -103,6 +112,11 @@
                 {{ t('共') }}
                 <span>{{ table?.list?.length }}</span>
                 {{ t('条') }}
+              </span>
+              <span class="download-logs" @click="handleDownload">
+                <i class="apigateway-icon icon-ag-download">
+                </i>
+                {{ t('下载日志') }}
               </span>
               <bk-alert
                 class="flex1"
@@ -164,10 +178,10 @@
                           {{ formatValue(row[field], field) }}
                         </span>
 
-                        <span class="opt-btns" v-if="field === 'request_id'">
+                        <span class="opt-btns" v-if="showOpts(field)">
                           <copy-shape v-bk-tooltips="t('复制')" @click="handleRowCopy(field, row)" class="opt-copy" />
-                          <enlarge-line v-bk-tooltips="t('添加到本次检索')" @click="handleKeySearch(row)" />
-                          <narrow-line v-bk-tooltips="t('从本次检索中排除')" @click="handleRemoveKey(row)" />
+                          <enlarge-line v-bk-tooltips="t('添加到本次检索')" @click="handleInclude(field, row)" />
+                          <narrow-line v-bk-tooltips="t('从本次检索中排除')" @click="handleExclude(field, row)" />
                         </span>
 
                       </dd>
@@ -216,6 +230,7 @@ import {
   fetchApigwStages,
   // fetchApigwAccessLogShareLink,
   getApigwResources,
+  exportLogs,
 } from '@/http';
 import {
   AngleUpFill,
@@ -223,7 +238,9 @@ import {
   EnlargeLine,
   NarrowLine,
   InfoLine,
+  Funnel,
 } from 'bkui-vue/lib/icon';
+import { Message } from 'bkui-vue';
 
 const { t } = i18n.global;
 const { getChartIntervalOption } = userChartIntervalOption();
@@ -269,6 +286,20 @@ const table = ref({
 });
 const includeObj = ref<string[]>([]);
 const excludeObj = ref<string[]>([]);
+
+const searchConditions = computed(() => {
+  const res: string[] = [];
+  includeObj.value?.forEach((item: string) => {
+    const tempArr = item?.split(':');
+    res.push(`${tempArr[0]}=${tempArr[1]}`);
+  });
+  excludeObj.value?.forEach((item: string) => {
+    const tempArr = item?.split(':');
+    res.push(`${tempArr[0]}!=${tempArr[1]}`);
+  });
+  return res;
+});
+
 // const searchUsage = ref({
 //   showed: false,
 // });
@@ -537,13 +568,12 @@ const handleRowCopy = (field:  string, row: any) => {
   copy(copyStr);
 };
 
-const handleKeySearch = (row: any) => {
-  const { request_id } = row;
-
-  includeObj.value?.push(`request_id:${request_id}`);
+const handleInclude = (field:  string, row: any) => {
+  const fieldStr = `${field}:${row[field]}`;
+  includeObj.value?.push(fieldStr);
   includeObj.value = Array.from(new Set(includeObj.value));
 
-  const index = excludeObj.value?.indexOf(`request_id:${request_id}`);
+  const index = excludeObj.value?.indexOf(fieldStr);
   if (index !== -1) {
     excludeObj.value?.splice(index, 1);
   }
@@ -551,18 +581,79 @@ const handleKeySearch = (row: any) => {
   getSearchData();
 };
 
-const handleRemoveKey = (row: any) => {
-  const { request_id } = row;
+const handleExclude = (field:  string, row: any) => {
+  const fieldStr = `${field}:${row[field]}`;
 
-  excludeObj.value?.push(`request_id:${request_id}`);
+  excludeObj.value?.push(fieldStr);
   excludeObj.value = Array.from(new Set(excludeObj.value));
 
-  const index = includeObj.value?.indexOf(`request_id:${request_id}`);
+  const index = includeObj.value?.indexOf(fieldStr);
   if (index !== -1) {
     includeObj.value?.splice(index, 1);
   }
 
   getSearchData();
+};
+
+const showOpts = (field: string) => {
+  const fieldArr = ['request_id', 'app_code', 'client_ip', 'resource_name', 'method', 'status'];
+  if (fieldArr?.includes(field)) {
+    return true;
+  }
+  return false;
+};
+
+const handleTagClose = (item: string) => {
+  if (!item) return;
+
+  if (item?.indexOf('!=') !== -1) { // 排除项
+    const tempArr = item?.split('!=');
+    const field = `${tempArr[0]}:${tempArr[1]}`;
+
+    const index = excludeObj.value?.indexOf(field);
+    if (index !== -1) {
+      excludeObj.value?.splice(index, 1);
+    }
+  } else {
+    const tempArr = item?.split('=');
+    const field = `${tempArr[0]}:${tempArr[1]}`;
+
+    const index = includeObj.value?.indexOf(field);
+    if (index !== -1) {
+      includeObj.value?.splice(index, 1);
+    }
+  }
+  getSearchData();
+};
+
+const handleClearSearch = () => {
+  includeObj.value = [];
+  excludeObj.value = [];
+  getSearchData();
+};
+
+const handleDownload = async (e: Event) => {
+  e.stopPropagation();
+  try {
+    const exportParams = {
+      ...searchParams.value,
+      query: keyword.value,
+      offset: (pagination.value.current - 1) * pagination.value.limit,
+      limit: 10000,
+    };
+    const res = await exportLogs(apigwId.value, exportParams);
+    if (res.success) {
+      Message({
+        message: t('导出成功'),
+        theme: 'success',
+      });
+    }
+  } catch ({ error }: any) {
+    Message({
+      message: error.message || t('导出失败'),
+      theme: 'error',
+    });
+  }
 };
 
 // const handleClickCopyLink = async ({ request_id }: any) => {
@@ -706,10 +797,18 @@ onBeforeUnmount(() => {
       .panel-total {
         color: #63656e;
         font-size: 12px;
-        margin-left: 10px;
-        margin-right: 14px;
+        margin: 0 10px;
         span {
           font-weight: bold;
+        }
+      }
+      .download-logs {
+        margin-right: 14px;
+        color: #3A84FF;
+        font-size: 12px;
+        .icon-ag-download {
+          font-size: 16px;
+          margin-right: -4px;
         }
       }
       .panel-title-icon {
@@ -717,6 +816,29 @@ onBeforeUnmount(() => {
       }
       .packUp {
         transform: rotate(-90deg);
+      }
+    }
+  }
+
+  .search-term {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    .icon {
+      padding-top: 2px;
+      margin-right: 4px;
+      color: #979BA5;
+      font-size: 16px;
+    }
+    .title {
+      font-size: 12px;
+      color: #63656E;
+    }
+    :deep(.bk-tag) {
+      background-color: #EAEBF0;
+      border-radius: 2px;
+      &:not(:nth-last-child(1)) {
+        margin-right: 8px;
       }
     }
   }
