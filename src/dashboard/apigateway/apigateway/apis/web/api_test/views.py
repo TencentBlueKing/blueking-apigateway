@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import time
 from typing import Any, Dict
 
 import requests
@@ -89,7 +88,6 @@ class APITestApi(generics.CreateAPIView):
         )
 
         # 开始时间
-        start_time = time.perf_counter()
         request_time = timezone.now()
 
         # 入参检查
@@ -97,7 +95,6 @@ class APITestApi(generics.CreateAPIView):
             "request_url": prepared_request_url.request_url,
             "request_method": data["method"],
             "type": "HTTP",
-            "authorization": data.get("authorization", {}),
             "path_params": data.get("path_params", {}),
             "query_params": data.get("query_params", {}),
             "body": data.get("body", ""),
@@ -105,7 +102,6 @@ class APITestApi(generics.CreateAPIView):
             "subpath": data.get("subpath", ""),
             "use_test_app": data.get("use_test_app", True),
             "use_user_from_cookies": data.get("use_user_from_cookies", False),
-            "request_time": request_time,
             "spec_version": SPEC_VERSION,
         }
         validated_request = ApiDebugHistoryRequest(**history_request)
@@ -123,14 +119,12 @@ class APITestApi(generics.CreateAPIView):
                 allow_redirects=False,
                 verify=False,
             )
-            end_time = time.perf_counter()
-            proxy_time = end_time - start_time
-
+            response_data_dict = self._get_response_data(
+                response, prepared_request_headers.headers_without_sensitive, verify=False
+            )
             # 结果检查
             success_history_response = {
-                "status_code": response.status_code,
-                "response": response.text,
-                "proxy_time": proxy_time,
+                "data": response_data_dict,
                 "spec_version": SPEC_VERSION,
             }
             validated_response = ApiDebugHistoryResponse(**success_history_response)
@@ -146,6 +140,7 @@ class APITestApi(generics.CreateAPIView):
             # 结果检查
             error_history_response = {
                 "error": err,
+                "spec_version": SPEC_VERSION,
             }
             validated_response = ApiDebugHistoryResponse(**error_history_response)
             fail_history_data = {
@@ -163,7 +158,7 @@ class APITestApi(generics.CreateAPIView):
             )
 
         return OKJsonResponse(
-            data=self._get_response_data(response, prepared_request_headers.headers_without_sensitive, verify=False),
+            data=response_data_dict,
         )
 
     def _get_response_data(self, response, headers_without_sensitive=Dict[str, Any], verify=False):
@@ -209,9 +204,29 @@ class APIDebugHistoryListApi(APIDebugHistoriesQuerySetMixin, generics.ListAPIVie
     serializer_class = APIDebugHistoriesListOutputSLZ
 
     def list(self, request, *args, **kwargs):
+        time_start_stamp = request.query_params.get("time_start", None)
+        time_end_stamp = request.query_params.get("time_end", None)
+
+        # 将时间戳转换为datetime对象
+        time_start = None
+        time_end = None
+        if time_start_stamp:
+            time_start = timezone.datetime.fromtimestamp(int(time_start_stamp), timezone.get_current_timezone())
+        if time_end_stamp:
+            time_end = timezone.datetime.fromtimestamp(int(time_end_stamp), timezone.get_current_timezone())
+
+        # 过滤查询集
         queryset = self.get_queryset()
-        slz = APIDebugHistoriesListOutputSLZ(queryset, many=True)
-        return OKJsonResponse(data=slz.data)
+        if time_start and time_end:
+            queryset = queryset.filter(created_time__range=(time_start, time_end))
+        # 应用额外的过滤器
+        queryset = self.filter_queryset(queryset)
+
+        # 序列化查询集
+        serializer = self.serializer_class(queryset, many=True)
+
+        # 返回响应
+        return OKJsonResponse(data=serializer.data)
 
 
 @method_decorator(
