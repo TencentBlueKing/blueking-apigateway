@@ -179,29 +179,29 @@ defineExpose({
         color: #FFFFFF;
         background: #3A84FF;
         position: relative;
-        padding-left: 36px;
-        &::before {
-          position: absolute;
-          content: ' ';
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          border: 1px solid #fff;
-          top: 50%;
-          transform: translateY(-50%);
-          left: 12px;
-        }
-        &::after {
-          position: absolute;
-          content: ' ';
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          background: #FFFFFF;
-          top: 50%;
-          transform: translateY(-50%);
-          left: 16px;
-        }
+        // padding-left: 36px;
+        // &::before {
+        //   position: absolute;
+        //   content: ' ';
+        //   width: 16px;
+        //   height: 16px;
+        //   border-radius: 50%;
+        //   border: 1px solid #fff;
+        //   top: 50%;
+        //   transform: translateY(-50%);
+        //   left: 12px;
+        // }
+        // &::after {
+        //   position: absolute;
+        //   content: ' ';
+        //   width: 10px;
+        //   height: 10px;
+        //   border-radius: 50%;
+        //   background: #FFFFFF;
+        //   top: 50%;
+        //   transform: translateY(-50%);
+        //   left: 16px;
+        // }
       }
     }
   }

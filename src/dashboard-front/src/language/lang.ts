@@ -1301,6 +1301,7 @@ const lang: ILANG = {
   '发布人': ['Releaser'],
   '发布资源': ['Release resource'],
   '响应状态码': ['Response status code'],
+  '返回响应': ['Return response'],
   '调用时间': ['Call time'],
   '请求记录': ['Request record'],
   '检索项：': ['Search terms:'],

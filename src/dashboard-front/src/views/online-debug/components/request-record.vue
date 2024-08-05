@@ -47,9 +47,9 @@
             <bk-table-column :label="t('响应状态码')" prop="status_code">
               <template #default="{ data }">
                 <span
-                  :class="['dot', String(data?.response?.status_code)?.startsWith('2') ? 'success' : 'failure']">
+                  :class="['dot', String(data?.response?.data?.status_code)?.startsWith('2') ? 'success' : 'failure']">
                 </span>
-                {{ data?.response?.status_code }}
+                {{ data?.response?.data?.status_code }}
               </template>
             </bk-table-column>
             <bk-table-column :label="t('调用时间')" prop="created_time"></bk-table-column>
@@ -60,12 +60,21 @@
                 </bk-button>
               </template>
             </bk-table-column>
-            <template #expandRow>
+            <template #expandRow="row">
               <div class="details">
                 <editor-monaco
-                  v-model="editorText"
+                  v-if="row?.editorText"
+                  v-model="row.editorText"
                   theme="Visual Studio"
                   ref="resourceEditorRef"
+                  language="json"
+                  :minimap="false"
+                  :show-copy="true"
+                />
+                <editor-monaco
+                  v-else
+                  v-model="placeholderText"
+                  theme="Visual Studio"
                   language="json"
                   :minimap="false"
                   :show-copy="true"
@@ -84,7 +93,7 @@ import { ref, shallowRef, reactive, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAccessLog, useCommon } from '@/store';
 import editorMonaco from '@/components/ag-editor.vue';
-import { getTestHistories } from '@/http';
+import { getTestHistories, getTestHistoriesDetails } from '@/http';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -102,7 +111,7 @@ const shortcutSelectedIndex = shallowRef(-1);
 const tableRef = ref(null);
 const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>();
 const tableList = ref<any>([]);
-const editorText = ref<string>('');
+const placeholderText = ref<string>('');
 const tableEmptyConf = reactive<any>({
   keyword: '',
   isAbnormal: false,
@@ -150,12 +159,16 @@ const handleTimeClear = () => {
   setSearchTimeRange();
 };
 
-const handleRowClick = (e: Event, row: Record<string, any>) => {
+const handleRowClick = async (e: Event, row: Record<string, any>) => {
   e.stopPropagation();
-  row.isExpand = !row.isExpand;
-  nextTick(() => {
-    tableRef.value.setRowExpand(row,  row.isExpand);
-  });
+  if (!row.isExpand) {
+    await getDetails(row.id, row);
+  } else {
+    row.isExpand = !row.isExpand;
+    nextTick(() => {
+      tableRef.value.setRowExpand(row,  row.isExpand);
+    });
+  }
 };
 
 const clear = () => {
@@ -179,7 +192,20 @@ const getList = async () => {
     ...filterData.value,
   };
   const res = await getTestHistories(common.apigwId, data);
+  res?.forEach((item: any) => {
+    item.editorText = '';
+  });
   tableList.value = res;
+};
+
+const getDetails = async (id: number, row: Record<string, any>) => {
+  const res = await getTestHistoriesDetails(common.apigwId, id);
+
+  row.editorText = res?.response?.data?.curl;
+  row.isExpand = !row.isExpand;
+  nextTick(() => {
+    tableRef.value.setRowExpand(row,  row.isExpand);
+  });
 };
 
 defineExpose({
@@ -207,7 +233,7 @@ defineExpose({
   .history-data {
     .details {
       width: 100%;
-      height: 400px;
+      height: 300px;
       max-height: 600px;
       padding: 12px 0;
       background: #FFFFFF;

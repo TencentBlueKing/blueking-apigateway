@@ -7,7 +7,8 @@
       <template #header>
         <div class="params-header">
           <div class="params-header-title">
-            <angle-up-fill class="params-header-fold" /><span>{{ t('Query 参数') }}</span>
+            <angle-up-fill :class="['params-header-fold', activeIndex?.includes(1) ? '' : 'fold']" />
+            <span>{{ t('Query 参数') }}</span>
           </div>
         </div>
       </template>
@@ -21,7 +22,8 @@
       <template #header>
         <div class="params-header">
           <div class="params-header-title">
-            <angle-up-fill class="params-header-fold" /><span>{{ t('Path 参数') }}</span>
+            <angle-up-fill :class="['params-header-fold', activeIndex?.includes(2) ? '' : 'fold']" />
+            <span>{{ t('Path 参数') }}</span>
           </div>
         </div>
       </template>
@@ -51,13 +53,17 @@ const props = defineProps({
     type: Array,
     default: [],
   },
+  priorityPath: {
+    type: Array,
+    default: [],
+  },
 });
 
 const queryRef = ref();
 const queryList = ref<any[]>([]);
 const pathRef = ref();
 const pathList = ref<any[]>([]);
-const activeIndex = ref<number[]>([1, 2]);
+const activeIndex = ref<number[]>([1]);
 
 const validate = async () => {
   const query = await queryRef.value?.validate();
@@ -77,13 +83,24 @@ const getData = () => {
 };
 
 watch(
-  () => [props.queryPayload, props.pathPayload],
-  ([v1, v2]) => {
+  () => [props.queryPayload, props.pathPayload, props.priorityPath],
+  ([v1, v2, v3]) => {
     queryList.value = v1;
-    pathList.value = v2;
+    pathList.value = v3?.length ? v3 : v2;
   },
   {
     deep: true,
+  },
+);
+
+watch(
+  () => pathList.value,
+  (v) => {
+    if (v?.length && v[0]?.name) {
+      activeIndex.value = [1, 2];
+    } else {
+      activeIndex.value = [1];
+    }
   },
 );
 
@@ -108,8 +125,11 @@ defineExpose({
     display: flex;
     align-items: center;
     .params-header-fold {
-      margin-top: 2px;
       margin-right: 8px;
+      transition: all .2s;
+      &.fold {
+        transform: rotate(-90deg);
+      }
     }
   }
 }
