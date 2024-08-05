@@ -91,7 +91,7 @@
         <div
           class="td-text"
           @click="(event) => handleCellClick({ event, column, rowIndex: index })"
-          v-if="!row?.isEdit">
+          v-if="!row?.editType">
           <bk-tag
             theme="info"
             @click="(event) => handleCellClick({ event, column, rowIndex: index })">
@@ -109,6 +109,7 @@
                 :clearable="false"
                 :filterable="false"
                 v-model="row.type"
+                @toggle="(v) => handleTypeChange(index, v)"
                 @change="handleCellBlur(index)"
                 :ref="(el) => setInputRefs(el, `type-input-${index}-${column?.index}`)"
               >
@@ -196,6 +197,7 @@ const getDefaultTbRow = () => {
     type: 'string',
     instructions: '',
     isEdit: true,
+    editType: false,
   };
 };
 
@@ -230,6 +232,10 @@ const handleCellClick = async ({ event, column, rowIndex }: any) => {
     return;
   };
   tableData.value[rowIndex].isEdit = true;
+  if (field === 'type') {
+    tableData.value[rowIndex].editType = true;
+  }
+
   nextTick(() => {
     if (field === 'type') {
       // formInputRef.value?.get(`${field}-input-${rowIndex}-${index}`)?.showPopover();
@@ -266,6 +272,10 @@ const handleCellBlur = async (index: number) => {
   if (await validateRow(index)) {
     tableData.value[index].isEdit = false;
   }
+};
+
+const handleTypeChange = (index: number, v: boolean) => {
+  tableData.value[index].editType = v;
 };
 
 const addRow = (index: number) => {
@@ -365,6 +375,7 @@ watch(
     v?.forEach((item: any) => {
       list.push({
         isEdit: false,
+        editType: false,
         name: item.name,
         value: item.schema?.default || '',
         instructions: item.description,

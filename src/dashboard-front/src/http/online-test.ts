@@ -18,6 +18,14 @@ export const getReleaseResources = (apigwId: number, stageId: string) => fetch.g
 export const getStages = (apigwId: number, data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/stages/?${json2Query(data)}`);
 
 /**
+ *  获取环境下可用的资源列表接口(在线调试)
+ * @param apigwId 网关id
+ * @returns
+ */
+export const getResourcesOnline = (apigwId: number, stageId: number, data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/stages/${stageId}/resources/?${json2Query(data)}`);
+
+
+/**
  *  在线调试发起请求
  * @param apigwId 网关id
  * @param data 请求数据
@@ -53,3 +61,10 @@ export const resourceSchema = (gatewayId: number, stageId: number, resourceId: n
  * @returns
  */
 export const getTestHistories = (apigwId: number, data: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/tests/histories/?${json2Query(data)}`);
+
+/**
+ *  获取调用历史详情
+ * @param apigwId 网关id
+ * @returns
+ */
+export const getTestHistoriesDetails = (apigwId: number, id: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/tests/histories/${id}/`);

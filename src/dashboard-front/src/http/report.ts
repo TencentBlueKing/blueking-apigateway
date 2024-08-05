@@ -26,7 +26,7 @@ export const getApigwResources = (apigwId: number, params: any) => fetch.get(`${
  * @param apigwId 网关id
  * @param data 导出参数
  */
-export const exportLogs = async (apigwId: number, data: any) => {
-  const res = await fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/logs/export/`, data, { responseType: 'blob' });
+export const exportLogs = async (apigwId: number, data: any, extraStr?: string) => {
+  const res = await fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/logs/export/?${json2Query(data)}${extraStr}`, {}, { responseType: 'blob' });
   return blobDownLoad(res);
 };

@@ -286,7 +286,7 @@ import { useCommon } from '@/store';
 import { Message } from 'bkui-vue';
 import {
   getStages,
-  getApigwResourcesDocs,
+  getResourcesOnline,
   getApiDetail,
   resourceSchema,
   postAPITest,
@@ -416,9 +416,8 @@ const getApigwReleaseResources = async () => {
     const query = {
       limit: 10000,
       offset: 0,
-      stage_name: getStageName.value,
     };
-    const res = await getApigwResourcesDocs(curApigw.value?.name, query);
+    const res = await getResourcesOnline(common.apigwId, stage.value, query);
     const group: any = {};
     const defaultItem: any = {
       labelId: 'default',
