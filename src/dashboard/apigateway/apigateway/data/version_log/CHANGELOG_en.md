@@ -1,4 +1,4 @@
-<!-- 2024-07-15 -->
+<!-- 2024-08-05 -->
 # V1.14.0 Release Log
 
 ### Bug Fixes
@@ -16,6 +16,65 @@
 - Enhanced online debugging experience
 - Basic information: support for configuring related_apps
 - Plugins: Header transformation supports settings that include the `$` symbol
+
+---
+
+<!-- 2024-08-01 -->
+# V1.13.12 Release Log
+
+### Bug Fixes
+
+- Fixed issues with sync_gateway command
+- Updated `bk-apigateway` resource version
+
+---
+
+<!-- 2024-08-01 -->
+# V1.13.11 Release Log
+
+### Bug Fixes
+
+- Fixed issues with version log internationalization
+- Updated gateway API documentation
+
+---
+
+<!-- 2024-07-12 -->
+# V1.13.10 Release Log
+
+### Bug Fixes
+
+- Supplemented version logs
+
+---
+
+<!-- 2024-07-12 -->
+# V1.13.9 Release Log
+
+### Bug Fixes
+
+- Standardized logout messages
+- Supplemented version logs
+
+---
+
+<!-- 2024-06-29 -->
+# V1.13.8 Release Log
+
+### Bug Fixes
+
+- Maintenance staff information not displaying correctly in basic information for certain environments
+
+---
+
+<!-- 2024-06-28 -->
+# V1.13.7 Release Log
+
+### Bug Fixes
+
+- Maintenance staff information not displaying correctly in basic information for certain environments
+
+---
 
 <!-- 2024-06-21 -->
 # V1.13.6 Release Log
