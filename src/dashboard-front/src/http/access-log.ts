@@ -14,7 +14,7 @@ export const fetchApigwAccessLogList = (apigwId: number, params: ChartInterface,
  *  获取流程日志chart
  * @param apigwId 网关id
  */
-export const fetchApigwAccessLogChart = (apigwId: number, params: ChartInterface)  => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/logs/timechart/?${json2Query(params)}`);
+export const fetchApigwAccessLogChart = (apigwId: number, params: ChartInterface, extraStr?: string)  => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/logs/timechart/?${json2Query(params)}${extraStr}`);
 
 /**
  *  获取流程日志link

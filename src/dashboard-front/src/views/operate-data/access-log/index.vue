@@ -505,12 +505,10 @@ const getApigwStages = async () => {
   }
 };
 
-const getApigwAccessLogList = async () => {
-  const params = {
+const getPayload = () => {
+  const params: any = {
     ...searchParams.value,
     query: keyword.value,
-    offset: (pagination.value.current - 1) * pagination.value.limit,
-    limit: pagination.value.limit,
   };
 
   let includeStr = '';
@@ -521,16 +519,26 @@ const getApigwAccessLogList = async () => {
   excludeObj.value?.forEach((item: string) => {
     excludeStr += `&exclude=${item}`;
   });
-  return await fetchApigwAccessLogList(apigwId.value, params, includeStr + excludeStr);
+
+  return {
+    params,
+    path: includeStr + excludeStr,
+  };
+};
+
+const getApigwAccessLogList = async () => {
+  const { params, path } = getPayload();
+  params.offset = (pagination.value.current - 1) * pagination.value.limit;
+  params.limit = pagination.value.limit;
+
+  return await fetchApigwAccessLogList(apigwId.value, params, path);
 };
 
 const getApigwAccessLogChart = async () => {
-  const params = {
-    ...searchParams.value,
-    query: keyword.value,
-    no_page: true,
-  };
-  return await fetchApigwAccessLogChart(apigwId.value, params);
+  const { params, path } = getPayload();
+  params.no_page = true;
+
+  return await fetchApigwAccessLogChart(apigwId.value, params, path);
 };
 
 const getSearchData = async () => {
@@ -635,13 +643,11 @@ const handleClearSearch = () => {
 const handleDownload = async (e: Event) => {
   e.stopPropagation();
   try {
-    const exportParams = {
-      ...searchParams.value,
-      query: keyword.value,
-      offset: (pagination.value.current - 1) * pagination.value.limit,
-      limit: 10000,
-    };
-    const res = await exportLogs(apigwId.value, exportParams);
+    const { params, path } = getPayload();
+    params.offset = (pagination.value.current - 1) * pagination.value.limit;
+    params.limit = 10000;
+
+    const res = await exportLogs(apigwId.value, params, path);
     if (res.success) {
       Message({
         message: t('导出成功'),
