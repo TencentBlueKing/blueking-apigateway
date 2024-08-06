@@ -14,7 +14,7 @@
       </template>
       <template #content>
         <div>
-          <edit-table ref="editTableRef" :list="headerList" />
+          <edit-table ref="editTableRef" :list="headerList" @change="handleChange" />
         </div>
       </template>
     </bk-collapse-panel>
@@ -36,6 +36,8 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(['change']);
+
 const activeIndex = ref<number[]>([1]);
 const editTableRef = ref();
 const headerList = ref<any[]>([]);
@@ -46,6 +48,10 @@ const validate = async () => {
 
 const getData = () => {
   return editTableRef.value?.getTableData();
+};
+
+const handleChange = (list: any) => {
+  emit('change', list);
 };
 
 watch(
