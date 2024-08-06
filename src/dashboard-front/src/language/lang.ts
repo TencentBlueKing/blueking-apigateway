@@ -1409,6 +1409,7 @@ const lang: ILANG = {
   '当前后端服务（{name}）已绑定以下 {num} 个环境，所有修改都将发布到这些环境中：{names}': ['The current backend service ({name}) has bound the following {num} environments to which all changes will be published: {names}'],
   '网关环境【prod】中的配置【后端服务地址】不合法。请在网关 `后端服务` 中进行配置。': ['The back-end service address configured in gateway environment prod is invalid. Please configure in Gateway back-end services.'],
   '最大 300s': ['Maximum 300s'],
+  '后端服务内容保存成功': ['The back-end service content is saved successfully. Procedure'],
   '恢复初始值': ['Reset to default'],
   '请输入超时时间': ['Please enter the timeout period'],
   '批量修改超时时间': ['Batch modify timeout period'],

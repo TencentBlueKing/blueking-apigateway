@@ -412,21 +412,22 @@ const handleConfirm = async () => {
   };
   isSaveLoading.value = true;
   try {
+    let res: any = {};
     if (!props.editId) {
-      await createBackendService(apigwId, params);
+      res = await createBackendService(apigwId, params);
     } else {
-      await updateBackendService(apigwId, curServiceDetail.value.id, params);
+      res = await updateBackendService(apigwId, curServiceDetail.value.id, params);
     }
     if (isPublish.value && props.editId) {
       sidesliderConfi.isShow = false;
 
-      const stageNames = stageConfig.value?.map((item: any) => {
-        return item.name;
-      });
+      // const stageNames = stageConfig.value?.map((item: any) => {
+      //   return item.name;
+      // });
 
-      if (stageNames?.length) {
+      if (res?.updated_stages?.length) {
         publishDialog.isShow = true;
-        publishDialog.stageNames = stageNames;
+        publishDialog.stageNames = res?.updated_stages;
       } else {
         InfoBox({
           title: t('后端服务内容保存成功'),

@@ -175,6 +175,8 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(['change']);
+
 const isShowVarPopover = ref(false);
 
 const formRefs = ref(new Map());
@@ -395,6 +397,13 @@ watch(
   {
     deep: true,
     immediate: true,
+  },
+);
+
+watch(
+  () => tableData.value,
+  (v) => {
+    emit('change', v);
   },
 );
 
