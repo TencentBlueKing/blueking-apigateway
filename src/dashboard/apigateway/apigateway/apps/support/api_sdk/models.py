@@ -182,10 +182,16 @@ class GolangSDK(SDK):
     language = ProgrammingLanguageEnum.GOLANG
 
 
+@dataclass
+class JavaSDK(SDK):
+    language = ProgrammingLanguageEnum.JAVA
+
+
 class SDKFactory:
     _mappings: Dict[str, Type[SDK]] = {
         PythonSDK.language.value: PythonSDK,
         GolangSDK.language.value: GolangSDK,
+        JavaSDK.language.value: JavaSDK,
     }
 
     @classmethod
