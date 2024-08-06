@@ -17,7 +17,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from collections import defaultdict
 
 from django.conf import settings
 from django.http import Http404
@@ -28,8 +27,9 @@ from openapi_schema_to_json_schema import to_json_schema
 from rest_framework import generics, status
 
 from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.released_resource import ReleasedResourceData
+from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.releaser import ReleaseError, release
+from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.user_credentials import get_user_credentials_from_request
@@ -45,6 +45,7 @@ from .serializers import (
     ReleaseHistoryQueryInputSLZ,
     ReleaseInputSLZ,
     ReleaseResourceSchemaOutputSLZ,
+    ResourceOutputSLZ,
 )
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,9 @@ logger = logging.getLogger(__name__)
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        tags=["WebAPI.Release"], operation_description="获取环境下可用的资源列表接口(在线调试)"
+        tags=["WebAPI.Release"],
+        operation_description="获取环境下可用的资源列表接口(在线调试)",
+        responses={status.HTTP_200_OK: ResourceOutputSLZ(many=True)},
     ),
 )
 class ReleaseAvailableResourceListApi(generics.ListAPIView):
@@ -70,31 +73,20 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
             instance = self.get_object()
         except Http404:
             raise error_codes.NOT_FOUND.format(_("当前选择环境未发布版本，请先发布版本到该环境。"))
+
         stage_name = instance.stage.name
-        data = defaultdict(list)
-        for resource in instance.resource_version.data:
-            resource_data = ReleasedResourceData.from_data(resource)
-            # 禁用环境时，去掉相应资源
-            if resource_data.is_disabled_in_stage(stage_name):
-                continue
-            path_display = resource_data.path_display
-            data[path_display].append(
-                {
-                    "id": resource_data.id,
-                    "name": resource_data.name,
-                    "description": resource_data.description,
-                    "description_en": resource_data.description_en,
-                    "method": resource_data.method,
-                    "path": path_display,
-                    "match_subpath": resource_data.match_subpath,
-                    "verified_user_required": resource_data.verified_user_required,
-                }
-            )
-
-        if data:
-            return OKJsonResponse(data=data)
-
-        raise error_codes.NOT_FOUND.format(_("当前选择环境未发布版本，请先发布版本到该环境。"))
+        resources = ReleasedResourceHandler.get_public_released_resource_data_list(
+            request.gateway.id, stage_name, is_only_public=False
+        )
+        resource_ids = [resource.id for resource in resources]
+        output_slz = ResourceOutputSLZ(
+            resources,
+            many=True,
+            context={
+                "labels": ResourceLabelHandler.get_labels(resource_ids),
+            },
+        )
+        return OKJsonResponse(data=output_slz.data)
 
 
 @method_decorator(

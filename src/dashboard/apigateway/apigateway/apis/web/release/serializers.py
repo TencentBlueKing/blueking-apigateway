@@ -23,6 +23,7 @@ from rest_framework import serializers
 
 from apigateway.biz.release import ReleaseHandler
 from apigateway.common.fields import CurrentGatewayDefault, TimestampField
+from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import (
     PublishEventEnum,
     PublishEventNameTypeEnum,
@@ -49,6 +50,26 @@ class ReleaseInputSLZ(serializers.Serializer):
             raise Http404
 
         return value
+
+
+class ResourceOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="资源 ID")
+    name = serializers.CharField(read_only=True, help_text="资源名称")
+    description = SerializerTranslatedField(
+        translated_fields={"en": "description_en"}, allow_blank=True, read_only=True, help_text="资源描述"
+    )
+    method = serializers.CharField(read_only=True, help_text="资源前端请求方法")
+    path = serializers.CharField(read_only=True, help_text="资源前端请求路径")
+    verified_user_required = serializers.BooleanField(read_only=True, help_text="是否需要认证用户")
+    verified_app_required = serializers.BooleanField(read_only=True, help_text="是否需要认证应用")
+    resource_perm_required = serializers.BooleanField(read_only=True, help_text="是否验证应用访问资源的权限")
+    labels = serializers.SerializerMethodField(help_text="资源标签列表")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.ResourceOutputSLZ"
+
+    def get_labels(self, obj):
+        return self.context["labels"].get(obj.id, [])
 
 
 class ReleaseResourceSchemaOutputSLZ(serializers.Serializer):
