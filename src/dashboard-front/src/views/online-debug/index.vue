@@ -1151,4 +1151,7 @@ watch(
   height: 16px;
   line-height: 16px;
 }
+.fixed-w {
+  width: 88px;
+}
 </style>
