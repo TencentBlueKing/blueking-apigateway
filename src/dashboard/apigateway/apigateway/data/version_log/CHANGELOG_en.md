@@ -19,6 +19,15 @@
 
 ---
 
+<!-- 2024-08-06 -->
+# V1.13.13 Release Log
+
+### Bug Fixes
+
+- Updated title brand name
+
+---
+
 <!-- 2024-08-01 -->
 # V1.13.12 Release Log
 
