@@ -51,7 +51,7 @@ def sync_and_release_esb_components(gateway_id: int, release_history_id: int, us
     gateway = Gateway.objects.get(id=gateway_id)
     synchronizer = ComponentSynchronizer()
     releaser = ComponentReleaser(gateway, username)
-    releaser.release_history = ComponentReleaseHistory.objects.get(id=release_history_id)
+    releaser.release_history = ComponentReleaseHistory.objects.filter(id=release_history_id)
 
     try:
         # sync components to gateway resources
