@@ -66,6 +66,7 @@ from .serializers import (
 )
 class ResourceVersionListCreateApi(generics.ListCreateAPIView):
     lookup_field = "id"
+    serializer_class = ResourceVersionCreateInputSLZ
 
     def get_queryset(self):
         return ResourceVersion.objects.filter(gateway=self.request.gateway).order_by("-id")
@@ -98,7 +99,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
-        slz = ResourceVersionCreateInputSLZ(data=request.data, context={"gateway": request.gateway})
+        slz = self.serializer_class(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
         instance = ResourceVersionHandler.create_resource_version(request.gateway, slz.data, request.user.username)
