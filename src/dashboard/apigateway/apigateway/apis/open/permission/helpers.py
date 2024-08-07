@@ -199,7 +199,6 @@ class AppPermissionBuilder:
     def build(self) -> list:
         api_permission_map = self._get_api_permission_map()
         resource_permission_map = self._get_resource_permission_map()
-        gateway_id_to_permission_apply_status = self._get_gateway_id_to_permission_apply_status()
         resource_id_to_permission_apply_status = self._get_resource_id_to_permission_apply_status()
 
         resource_map: defaultdict = defaultdict(dict)
@@ -227,8 +226,8 @@ class AppPermissionBuilder:
             resource["api_name"] = resource_fields.get("gateway__name", "")
             resource["gateway_id"] = resource_fields.get("gateway_id")
             resource["doc_link"] = doc_links.get(resource_id, "")
-            resource["api_permission_apply_status"] = gateway_id_to_permission_apply_status.get(
-                resource_fields.get("gateway_id"), ""
+            resource["api_permission_apply_status"] = (
+                PermissionStatusEnum.OWNED.value if api_permission_map.get(resource["gateway_id"]) else ""
             )
             resource["resource_permission_apply_status"] = resource_id_to_permission_apply_status.get(resource_id, "")
 
@@ -246,14 +245,6 @@ class AppPermissionBuilder:
             perm.resource_id: perm
             for perm in AppResourcePermission.objects.filter_public_permission_by_app(bk_app_code=self.target_app_code)
         }
-
-    def _get_gateway_id_to_permission_apply_status(self):
-        return dict(
-            AppPermissionApplyStatus.objects.filter(
-                bk_app_code=self.target_app_code,
-                grant_dimension=GrantDimensionEnum.API.value,
-            ).values_list("gateway_id", "status")
-        )
 
     def _get_resource_id_to_permission_apply_status(self):
         return dict(
