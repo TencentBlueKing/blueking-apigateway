@@ -56,6 +56,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-delet:before {
 	content: "\e15d";
 }
+.icon-ag-danger-fill:before {
+	content: "\e181";
+}
 .icon-ag-down:before {
 	content: "\e114";
 }
@@ -112,6 +115,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-down-shape:before {
 	content: "\e102";
+}
+.icon-ag-exclamation-circle-fill:before {
+	content: "\e185";
 }
 .icon-ag-minus-circle-shape:before {
 	content: "\e10c";
@@ -211,6 +217,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-ps-arrow-right:before {
 	content: "\e16c";
+}
+.icon-ag-search:before {
+	content: "\e183";
 }
 .icon-ag-copy:before {
 	content: "\e14c";
@@ -364,4 +373,10 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-jibenxinxi:before {
 	content: "\e177";
+}
+.icon-ag-gongneng-quanping2:before {
+	content: "\e184";
+}
+.icon-ag-font:before {
+	content: "\e182";
 }

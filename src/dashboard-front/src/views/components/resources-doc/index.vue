@@ -29,8 +29,12 @@
             :description="language === 'zh' ? t('您尚未创建中文文档') : t('您尚未创建英文文档')"
           />
           <bk-button
-            class="mt20" theme="primary" style="width: 120px;"
-            @click="handleEditMarkdown('create')"> {{ t('立即创建') }} </bk-button>
+            v-if="showCreateBtn"
+            class="mt20"
+            theme="primary"
+            style="width: 120px;"
+            @click="handleEditMarkdown('create')"
+          > {{ t('立即创建') }} </bk-button>
         </div>
       </div>
       <div v-show="!isEmpty">
@@ -43,12 +47,11 @@
         </div>
         <!-- eslint-disable vue/no-v-html -->
         <div class="ag-markdown-view" v-html="markdownHtml" v-show="!isEdited"></div>
-        <div class="ag-markdown-editor">
+        <div class="ag-markdown-editor" v-show="isEdited">
           <mavon-editor
             ref="markdownRef"
             :class="{ 'content-editor': !isFullscreen }"
             v-model="markdownDoc"
-            v-show="isEdited"
             :language="language"
             :box-shadow="false"
             :subfield="false"
@@ -61,60 +64,64 @@
         </div>
       </div>
     </section>
-    <div :class="['doc-btn-wrapper', `${docRootClass}-btn`]" v-if="!isEmpty">
-      <template v-if="isEdited">
-        <bk-button
-          class="mr5" theme="primary" style="width: 100px;"
-          @click="handleSaveMarkdown"
-          :loading="isSaving">{{isUpdate ? $t('更新') : $t('提交')}}</bk-button>
-        <bk-button
-          style="width: 100px;"
-          @click="handleCancelMarkdown"> {{ $t('取消') }} </bk-button>
-      </template>
-      <template v-else>
-        <bk-button class="mr5" theme="primary" style="width: 100px;" @click="handleEditMarkdown('edit')">
-          {{ $t('修改') }}
-        </bk-button>
-        <bk-pop-confirm
-          :title="t('确认要删除该文档？')"
-          content="将删除相关配置，不可恢复，请确认是否删除"
-          width="288"
-          trigger="click"
-          @confirm="handleDeleteMarkdown"
-        >
-          <bk-button>
-            {{ t('删除') }}
+    <template v-if="showFooter">
+      <div :class="['doc-btn-wrapper', `${docRootClass}-btn`]" v-if="!isEmpty">
+        <template v-if="isEdited">
+          <bk-button
+            class="mr5" theme="primary" style="width: 100px;"
+            @click="handleSaveMarkdown"
+            :loading="isSaving">{{isUpdate ? $t('更新') : $t('提交')}}</bk-button>
+          <bk-button
+            style="width: 100px;"
+            @click="handleCancelMarkdown"> {{ $t('取消') }} </bk-button>
+        </template>
+        <template v-else>
+          <bk-button class="mr5" theme="primary" style="width: 100px;" @click="handleEditMarkdown('edit')">
+            {{ $t('修改') }}
           </bk-button>
-        </bk-pop-confirm>
+          <bk-pop-confirm
+            :title="t('确认要删除该文档？')"
+            content="将删除相关配置，不可恢复，请确认是否删除"
+            width="288"
+            trigger="click"
+            @confirm="handleDeleteMarkdown"
+          >
+            <bk-button>
+              {{ t('删除') }}
+            </bk-button>
+          </bk-pop-confirm>
+        </template>
+      </div>
+      <template v-if="!isEmpty">
+        <div class="fixed-doc-btn-wrapper" v-show="isAdsorb" :style="fixedBtnLeft">
+          <template v-if="isEdited">
+            <bk-button
+              class="mr5" theme="primary" style="width: 100px;"
+              @click="handleSaveMarkdown"
+              :loading="isSaving">{{isUpdate ? $t('更新') : $t('提交')}}</bk-button>
+            <bk-button
+              style="width: 100px;"
+              @click="handleCancelMarkdown"> {{ $t('取消') }} </bk-button>
+          </template>
+          <template v-else>
+            <bk-button class="mr5" theme="primary" style="width: 100px;" @click="handleEditMarkdown('edit')">
+              {{ $t('修改') }}
+            </bk-button>
+            <bk-pop-confirm
+              :title="t('确认要删除该文档？')"
+              content="将删除相关配置，不可恢复，请确认是否删除"
+              width="288"
+              trigger="click"
+              @confirm="handleDeleteMarkdown"
+            >
+              <bk-button>
+                {{ t('删除') }}
+              </bk-button>
+            </bk-pop-confirm>
+          </template>
+        </div>
       </template>
-    </div>
-    <div class="fixed-doc-btn-wrapper" v-show="isAdsorb" v-if="!isEmpty" :style="fixedBtnLeft">
-      <template v-if="isEdited">
-        <bk-button
-          class="mr5" theme="primary" style="width: 100px;"
-          @click="handleSaveMarkdown"
-          :loading="isSaving">{{isUpdate ? $t('更新') : $t('提交')}}</bk-button>
-        <bk-button
-          style="width: 100px;"
-          @click="handleCancelMarkdown"> {{ $t('取消') }} </bk-button>
-      </template>
-      <template v-else>
-        <bk-button class="mr5" theme="primary" style="width: 100px;" @click="handleEditMarkdown('edit')">
-          {{ $t('修改') }}
-        </bk-button>
-        <bk-pop-confirm
-          :title="t('确认要删除该文档？')"
-          content="将删除相关配置，不可恢复，请确认是否删除"
-          width="288"
-          trigger="click"
-          @confirm="handleDeleteMarkdown"
-        >
-          <bk-button>
-            {{ t('删除') }}
-          </bk-button>
-        </bk-pop-confirm>
-      </template>
-    </div>
+    </template>
   </div>
 </template>
 <script setup lang="ts">
@@ -134,9 +141,15 @@ const props = defineProps({
   height: { type: String, default: 'calc(100vh - 104px)' },
   source: { type: String }, // side 侧边栏引用
   docRootClass: { type: String }, // 自定义类
+  showFooter: { type: Boolean, default: true }, // 是否显示底部按钮
+  showCreateBtn: { type: Boolean, default: true }, // 是否显示"立即创建"按钮
 });
 
-const { curResource } = toRefs(props);
+const {
+  curResource,
+  showFooter,
+  showCreateBtn,
+} = toRefs(props);
 
 const languagesData = ref([{ label: t('中文文档'), value: 'zh' }, { label: t('英文文档'), value: 'en' }]);
 const isEmpty = ref<boolean>(false);
@@ -386,9 +399,22 @@ onBeforeUnmount(() => {
 <style scoped lang="scss">
 .resources-doc-container {
   overflow-y: auto;
+
+  .content {
+    height: calc(100% - 50px);
+  }
 }
+
+.ag-markdown-editor {
+  height: calc(100vh - 300px);
+}
+
 .content-editor {
-  height: calc(100vh - 420px) !important;
+  height: 100%;
+
+  :deep(.content-input-wrapper) {
+    height: 100%;
+  }
 }
 .doc-btn-wrapper {
   margin-top: 8px;

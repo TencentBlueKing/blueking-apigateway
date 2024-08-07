@@ -48,16 +48,16 @@ export interface Staff {
 export type CodeErrorMsgType = 'All' | 'Error' | 'Warning';
 
 export type ErrorReasonType = {
-  json_path: string,
-  paths: string[],
-  pathValue: any[],
-  quotedValue: string,
-  stringToFind: string,
+  json_path?: string,
+  paths?: string[],
+  pathValue?: any[],
+  quotedValue?: string,
+  stringToFind?: string,
   message: string,
-  isDecorated: boolean,
+  isDecorated?: boolean,
   level: CodeErrorMsgType,
-  offset: number,
-  position: IPosition | null,
+  offset?: number,
+  position?: IPosition | null,
   regex?: RegExp | null,
 };
 
