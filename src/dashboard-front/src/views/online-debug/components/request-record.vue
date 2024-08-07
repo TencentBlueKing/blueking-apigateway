@@ -3,6 +3,7 @@
     v-model:isShow="isShow"
     :title="t('调用历史')"
     :width="960"
+    class="sutra-scrollbar"
     quick-close>
     <template #default>
       <div class="history-container">
@@ -237,9 +238,16 @@ defineExpose({
       max-height: 600px;
       padding: 12px 0;
       background: #FFFFFF;
-      border: 1px solid #DCDEE5;
       border-radius: 2px;
     }
+  }
+}
+.sutra-scrollbar {
+  :deep(.bk-modal-content) {
+    scrollbar-gutter: auto;
+  }
+  :deep(.bk-table-body) {
+    scrollbar-gutter: auto;
   }
 }
 </style>

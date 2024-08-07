@@ -14,7 +14,7 @@
       </template>
       <template #content>
         <div>
-          <edit-table ref="queryRef" :list="queryList" />
+          <edit-table ref="queryRef" :list="queryList" @change="handleQueryChange" />
         </div>
       </template>
     </bk-collapse-panel>
@@ -29,7 +29,7 @@
       </template>
       <template #content>
         <div>
-          <edit-table ref="pathRef" :list="pathList" />
+          <edit-table ref="pathRef" :list="pathList" @change="handlePathChange" />
         </div>
       </template>
     </bk-collapse-panel>
@@ -59,6 +59,8 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(['queryChange', 'pathChange']);
+
 const queryRef = ref();
 const queryList = ref<any[]>([]);
 const pathRef = ref();
@@ -80,6 +82,14 @@ const getData = () => {
     query: queryRef.value?.getTableData(),
     path: pathRef.value?.getTableData(),
   };
+};
+
+const handleQueryChange = (list: any) => {
+  emit('queryChange', list);
+};
+
+const handlePathChange = (list: any) => {
+  emit('pathChange', list);
 };
 
 watch(

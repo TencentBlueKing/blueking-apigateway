@@ -105,7 +105,7 @@ const initEditor = () => {
     lineNumbersMinChars: 5, // 行号最小字符   number
     readOnly: readOnly.value, // 是否只读  取值 true | false
     lineHeight: 24,
-    glyphMargin: true,  // 是否显示行号左侧装饰，用于显示当前行的错误信息等级：error | warning
+    glyphMargin: false,  // 是否显示行号左侧装饰，用于显示当前行的错误信息等级：error | warning
     minimap: {
       enabled: props.minimap, // 小地图
     },
@@ -114,6 +114,15 @@ const initEditor = () => {
   editorMounted(); // 编辑器初始化后
   // 初始化编辑器装饰
   decorations = editor.createDecorationsCollection([]);
+  // 定义一个资源导入导出页要用的主题
+  monaco.editor.defineTheme('import-theme', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': '#1A1A1A',
+    },
+  });
 };
 
 const editorMounted = () => {
@@ -139,15 +148,20 @@ const emitChange = (emitValue, event) => {
 };
 
 // 更改光标位置
-const setCursorPos = ({ lineNumber }) => {
+const setCursorPos = ({ lineNumber = null, toBottom = false }) => {
   const model = editor.getModel();
 
   if (!model) return;
 
-  const lastColumnNumber = model.getLineLastNonWhitespaceColumn(lineNumber);
+  let _lineNumber = lineNumber;
+
+  // 如果直接跳转到底部, 获取最后一行的行号
+  if (toBottom === true) _lineNumber = model.getLineCount();
+
+  const lastColumnNumber = model.getLineLastNonWhitespaceColumn(_lineNumber);
   editor.focus();
-  editor.setPosition(new monaco.Position(lineNumber, lastColumnNumber));
-  editor.revealLineInCenter(lineNumber);
+  editor.setPosition(new monaco.Position(_lineNumber, lastColumnNumber));
+  editor.revealLineInCenter(_lineNumber);
 };
 
 const genLineDecorations = (decorationOptions) => {
@@ -162,9 +176,9 @@ const genLineDecorations = (decorationOptions) => {
       options: {
         isWholeLine: true, // 整行高亮
         className:
-          `lineHighlight${o.level}`, // 当前行装饰用类名
+          'line-highlight-error', // 当前行装饰用类名
         glyphMarginClassName:
-          `glyphMargin${o.level}`, // 当前行左侧装饰(glyph)用类名
+          'apigateway-icon icon-ag-exclamation-circle-fill f14', // 当前行左侧装饰(glyph)用类名
       },
     }));
   decorations = editor.createDecorationsCollection(decoOptions);
@@ -236,6 +250,14 @@ const handleFullScreen = () => {
   }
 };
 
+const setTheme = (theme) => {
+  monaco.editor.setTheme(theme);
+};
+
+const updateOptions = (options) => {
+  editor.updateOptions(options);
+};
+
 defineExpose({
   setValue,
   setCursorPos,
@@ -247,6 +269,8 @@ defineExpose({
   showFindPanel,
   closeFindPanel,
   switchFontSize,
+  setTheme,
+  updateOptions,
 });
 
 </script>

@@ -44,8 +44,16 @@
           </div>
         </div> -->
     </div>
-    <edit-table v-show="type === 'data'" ref="dataRef" :list="fromDataList" />
-    <edit-table v-show="type === 'urlencoded'" ref="urlencodedRef" :list="urlencodedList" />
+    <edit-table
+      v-show="type === 'data'"
+      ref="dataRef"
+      @change="handleDataChange"
+      :list="fromDataList" />
+    <edit-table
+      v-show="type === 'urlencoded'"
+      ref="urlencodedRef"
+      @change="handleUrlencodedChange"
+      :list="urlencodedList" />
     <div class="raw-content" v-show="type === 'raw'">
       <editor-monaco
         v-model="editorText"
@@ -79,6 +87,8 @@ const props = defineProps({
     default: {},
   },
 });
+
+const emit = defineEmits(['dataChange', 'urlencodedChange']);
 
 const type = ref<string>('raw');
 const rawType = ref<string>('JSON');
@@ -125,6 +135,14 @@ const getData = () => {
     raw: editorText.value,
     rawType: rawType.value,
   };
+};
+
+const handleDataChange = (list: any) => {
+  emit('dataChange', list);
+};
+
+const handleUrlencodedChange = (list: any) => {
+  emit('urlencodedChange', list);
 };
 
 watch(
