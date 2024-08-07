@@ -13,7 +13,9 @@
     :popover-options="{
       extCls: 'select-check-box-popover-wrapper'
     }"
-    @toggle="handleToggle">
+    @toggle="handleToggle"
+    @blur="handleBlur"
+  >
     <bk-option v-for="(option, index) in labelsData" :key="option.name" :id="option.id" :name="option.name">
       <template #default>
         <div
@@ -250,7 +252,7 @@ const handleEditOptionItem = (e: any) => {
   });
   e.isEdited = true;
   setTimeout(() => {
-    editInputRef.value[0].focus();
+    editInputRef.value[0]?.focus();
   }, 500);
 };
 
@@ -288,6 +290,13 @@ const handleMouseLeave = () => {
   // 如果点击了icon 则不隐藏icon
   if (isIconClick.value) return;
   hoverIndex.value = null;
+};
+
+// select 失焦时，移除所有 input 的编辑态
+const handleBlur = () => {
+  labelsData.value.forEach((item: any) => {
+    item.isEdited = false;
+  });
 };
 </script>
 <style scoped lang="scss">
