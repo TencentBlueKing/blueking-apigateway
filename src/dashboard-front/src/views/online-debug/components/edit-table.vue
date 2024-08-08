@@ -403,7 +403,12 @@ watch(
 watch(
   () => tableData.value,
   (v) => {
-    emit('change', v);
+    const list = v?.filter((item: any) => item.name);
+    emit('change', list);
+  },
+  {
+    deep: true,
+    immediate: true,
   },
 );
 
@@ -487,11 +492,31 @@ defineExpose({
                 height: 42px;
                 line-height: 42px;
                 border: 0;
+                &--text {
+                  padding: 0 16px;
+                }
+              }
+              .edit-input.bk-input {
+                &:hover {
+                  border: 1px solid #A3C5FD;
+                }
                 &.is-focused {
                   border: 1px solid #3A84FF;
                 }
-                &--text {
-                  padding: 0 16px;
+              }
+              .bk-select {
+                &:hover {
+                  border: 1px solid #A3C5FD;
+                }
+                &.is-focus {
+                  border: 1px solid #3A84FF;
+                }
+              }
+            }
+            &.is-error {
+              .bk-form-content {
+                .bk-input--text {
+                  background: #FFEEEE;
                 }
               }
             }

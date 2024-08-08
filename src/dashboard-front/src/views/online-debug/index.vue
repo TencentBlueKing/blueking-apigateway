@@ -257,6 +257,7 @@
         <bk-resize-layout
           class="request-resize"
           placement="top"
+          initial-divide="90%"
         >
           <template #aside>
             <div class="request-payload">
@@ -799,6 +800,11 @@ const handleSend = async (e: Event) => {
     isLoading.value = true;
     const res = await postAPITest(common.apigwId, data);
     response.value = res;
+
+    const aside: any = document.querySelector('.request-resize .bk-resize-layout-aside');
+    if (aside) {
+      aside.style.height = `${100}px`;
+    }
   } catch (e) {
     console.log(e);
   } finally {
@@ -1024,6 +1030,7 @@ watch(
 }
 .request-response {
   background: #FFFFFF;
+  height: 100%;
 }
 .my-menu {
   max-height: 100%;
@@ -1137,6 +1144,7 @@ watch(
   }
 }
 .request-resize {
+  flex: 1;
   :deep(.bk-resize-trigger:hover) {
     border-top: 2px solid #3a84ff;
   }
@@ -1150,5 +1158,10 @@ watch(
 .method-tag {
   height: 16px;
   line-height: 16px;
+}
+.resize-main {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 </style>

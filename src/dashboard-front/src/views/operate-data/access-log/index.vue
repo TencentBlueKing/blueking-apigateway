@@ -186,14 +186,14 @@
 
                       </dd>
                     </div>
-                    <!-- <bk-button
+                    <bk-button
                       class="share-btn"
                       theme="primary"
                       outline
                       @click="handleClickCopyLink(row)"
                       :loading="isShareLoading">
-                      {{ $t('复制分享链接') }}
-                    </bk-button> -->
+                      {{ t('复制分享链接') }}
+                    </bk-button>
                   </dl>
                 </template>
                 <template #empty>
@@ -228,7 +228,7 @@ import {
   fetchApigwAccessLogList,
   fetchApigwAccessLogChart,
   fetchApigwStages,
-  // fetchApigwAccessLogShareLink,
+  fetchApigwAccessLogShareLink,
   getApigwResources,
   exportLogs,
 } from '@/http';
@@ -256,7 +256,7 @@ const tableRef = ref(null);
 const datePickerRef = ref(null);
 const isPageLoading = ref(false);
 const isDataLoading = ref(false);
-// const isShareLoading = ref(false);
+const isShareLoading = ref(false);
 const shortcutSelectedIndex = ref(1);
 const dateKey = ref('dateKey');
 const dateTimeRange = ref([]);
@@ -662,18 +662,18 @@ const handleDownload = async (e: Event) => {
   }
 };
 
-// const handleClickCopyLink = async ({ request_id }: any) => {
-//   const params = { request_id };
-//   isShareLoading.value = true;
-//   try {
-//     const { link } = await fetchApigwAccessLogShareLink(apigwId.value, params);
-//     copy(link || '');
-//   } catch (e) {
-//     console.error(e);
-//   } finally {
-//     isShareLoading.value = false;
-//   }
-// };
+const handleClickCopyLink = async ({ request_id }: any) => {
+  const params = { request_id };
+  isShareLoading.value = true;
+  try {
+    const { link } = await fetchApigwAccessLogShareLink(apigwId.value, params);
+    copy(link || '');
+  } catch (e) {
+    console.error(e);
+  } finally {
+    isShareLoading.value = false;
+  }
+};
 
 const handleShortcutChange = (value: Record<string, any>, index: number) => {
   shortcutSelectedIndex.value = index;
@@ -994,8 +994,8 @@ onBeforeUnmount(() => {
 
       .share-btn {
         position: absolute;
-        right: 30px;
-        top: 18px;
+        right: 28px;
+        top: 32px;
       }
     }
   }
