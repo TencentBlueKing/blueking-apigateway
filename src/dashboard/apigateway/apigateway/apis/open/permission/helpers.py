@@ -226,16 +226,17 @@ class AppPermissionBuilder:
         }
 
         doc_links = ReleasedResourceHandler.get_latest_doc_link(list(resource_map.keys()))
+        # resource_map由 已有的资源
         for resource_id, resource in resource_map.items():
             resource_fields = resource_id_to_fields.get(resource_id, {})
             resource["api_name"] = resource_fields.get("gateway__name", "")
             resource["gateway_id"] = resource_fields.get("gateway_id")
             resource["doc_link"] = doc_links.get(resource_id, "")
-
-            api_permission_apply_status = gateway_id_to_permission_apply_status.get(
+            resource["api_permission_apply_status"] = gateway_id_to_permission_apply_status.get(
                 resource_fields.get("gateway_id"), ""
             )
-            resource["api_permission_apply_status"] = api_permission_apply_status
+            # 判断这个资源是否有网关资源的权限,而不是直接通过
+            # 如果应用已经有网关权限，则不展示单个资源申请的状态
             if api_permission_map.get(resource["gateway_id"]):
                 resource["resource_permission_apply_status"] = ""
             else:
