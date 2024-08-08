@@ -7,6 +7,7 @@ export interface IPagination {
   limit: number
   count: number
   abnormal?: boolean
+  limitList?: number[]
 }
 
 export interface IDialog {

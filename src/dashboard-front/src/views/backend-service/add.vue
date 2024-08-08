@@ -429,13 +429,9 @@ const handleConfirm = async () => {
         publishDialog.isShow = true;
         publishDialog.stageNames = res?.updated_stages;
       } else {
-        InfoBox({
-          title: t('后端服务内容保存成功'),
-          infoType: 'success',
-          dialogType: 'confirm',
-          headerAlign: 'center',
-          footerAlign: 'center',
-          confirmText: t('关闭'),
+        Message({
+          message: t('保存成功'),
+          theme: 'success',
         });
       }
     } else {
