@@ -1213,6 +1213,7 @@ const lang: ILANG = {
   '请输入关键字搜索': ['Please input keyword'],
   '请输入关键字': ['Please enter keyword'],
   'API Gateway | 腾讯蓝鲸智云': ['API Gateway | BlueKing'],
+  '蓝鲸 API 网关': ['BK API Gateway'],
   '只支持.tar.gz、.tgz、.zip 压缩格式': ['Only supports .tar.gz, .tgz, .zip compression formats'],
   '无该应用访问权限': ['No access permission to this application.'],
   '服务异常': ['Service exception'],
