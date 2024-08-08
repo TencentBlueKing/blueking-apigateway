@@ -24,7 +24,12 @@ from typing import Dict, List, Optional, Union
 from django.utils.functional import cached_property
 from pydantic import BaseModel, parse_obj_as
 
-from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionLevelEnum, PermissionStatusEnum
+from apigateway.apps.permission.constants import (
+    ApplyStatusEnum,
+    GrantDimensionEnum,
+    PermissionLevelEnum,
+    PermissionStatusEnum,
+)
 from apigateway.apps.permission.models import AppGatewayPermission, AppPermissionApplyStatus, AppResourcePermission
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
@@ -227,7 +232,7 @@ class AppPermissionBuilder:
             resource["gateway_id"] = resource_fields.get("gateway_id")
             resource["doc_link"] = doc_links.get(resource_id, "")
             resource["api_permission_apply_status"] = (
-                PermissionStatusEnum.OWNED.value if api_permission_map.get(resource["gateway_id"]) else ""
+                ApplyStatusEnum.APPROVED.value if api_permission_map.get(resource["gateway_id"]) else ""
             )
             resource["resource_permission_apply_status"] = resource_id_to_permission_apply_status.get(resource_id, "")
 
