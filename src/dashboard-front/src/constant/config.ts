@@ -137,8 +137,8 @@ export default {
     helperLink: 'wxwork://message/?username=BK%E5%8A%A9%E6%89%8B',
     brandImg: '/static/images/brand.png',
     brandImgEn: '/static/images/brand.png',
-    brandName: '腾讯蓝鲸智云', // 品牌名，会用于拼接在站点名称后面显示在网页title中
-    brandNameEn: 'BlueKing', // 品牌名-英文
+    brandName: '蓝鲸智云', // 品牌名，会用于拼接在站点名称后面显示在网页title中
+    brandNameEn: 'Tencent BlueKing', // 品牌名-英文
     footerInfo: '[技术支持](https://wpa1.qq.com/KziXGWJs?_type=wpa&qidian=true) | [社区论坛](https://bk.tencent.com/s-mart/community/) | [产品官网](https://bk.tencent.com/index/)', // 页脚的内容，仅支持 a 的 markdown 内容格式
     footerInfoEn: '[Support](https://wpa1.qq.com/KziXGWJs?_type=wpa&qidian=true) | [Forum](https://bk.tencent.com/s-mart/community/) | [Official](https://bk.tencent.com/index/)', // 页脚的内容-英文
     footerCopyright: `Copyright © 2012-${curYear} Tencent BlueKing. All Rights Reserved. V${BK_APIGATEWAY_VERSION}`, // 版本信息，包含变量，展示在页脚内容下方
