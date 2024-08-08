@@ -1,4 +1,3 @@
-
 <template>
   <bk-form ref="backRef" :model="backConfigData" :rules="rules" class="back-config-container">
     <bk-form-item
@@ -10,7 +9,9 @@
         :input-search="false"
         class="service"
         :popoverOptions="{ extCls: 'service-select-popover' }"
-        v-model="backConfigData.id" @change="handleServiceChange">
+        v-model="backConfigData.id"
+        @change="handleServiceChange"
+      >
         <!-- <bk-option v-for="item in servicesData" :key="item.id" :value="item.id" :label="item.name" /> -->
         <bk-option
           v-for="(item, index) in servicesData"
@@ -19,9 +20,9 @@
           :label="item.name"
         >
           <div class="service-select-item">
-            <span>{{item.name}}</span>
+            <span>{{ item.name }}</span>
             <template v-if="item.description">
-              <span class="desc" :title="item.description">（{{item.description}}）</span>
+              <span class="desc" :title="item.description">（{{ item.description }}）</span>
             </template>
           </div>
         </bk-option>
@@ -46,13 +47,13 @@
     >
       <bk-table-column :label="t('环境名称')" :resizable="false">
         <template #default="{ data }">
-          {{data?.stage?.name}}
+          {{ data?.stage?.name }}
         </template>
       </bk-table-column>
       <bk-table-column :label="t('后端服务地址')" :resizable="false">
         <template #default="{ data }">
           <span v-if="data?.hosts[0].host">
-            {{data?.hosts[0].scheme}}://{{ data?.hosts[0].host }}
+            {{ data?.hosts[0].scheme }}://{{ data?.hosts[0].host }}
           </span>
           <span v-else>--</span>
         </template>
@@ -94,7 +95,8 @@
         :input-search="false"
         v-model="backConfigData.config.method"
         :clearable="false"
-        class="method">
+        class="method"
+      >
         <bk-option v-for="item in methodData" :key="item.id" :value="item.id" :label="item.name" />
       </bk-select>
     </bk-form-item>
@@ -105,6 +107,8 @@
           :placeholder="t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名')"
           clearable
           class="w568"
+          @change="isPathValid = false"
+          @input="isPathValid = false"
         />
         <bk-button
           theme="primary"
@@ -124,7 +128,7 @@
         {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在\{\}中") }}
         <!-- <a :href="GLOBAL_CONFIG.DOC.TEMPLATE_VARS" target="_blank" class="ag-primary">{{ t('更多详情') }}</a> -->
       </div>
-      <div v-if="servicesCheckData.length">
+      <div v-if="servicesCheckData.length && isPathValid">
         <bk-alert
           theme="success"
           class="w700 mt10"
@@ -139,7 +143,7 @@
             :label="t('环境名称')"
           >
             <template #default="{ data }">
-              {{data?.stage?.name}}
+              {{ data?.stage?.name }}
             </template>
           </bk-table-column>
           <bk-table-column
@@ -154,7 +158,7 @@
           >
             <template #default="{ data }">
               <span v-bk-tooltips="{ content: data?.backend_urls[0], disabled: !data?.backend_urls[0] }">
-                {{data?.backend_urls[0]}}
+                {{ data?.backend_urls[0] }}
               </span>
             </template>
           </bk-table-column>
@@ -173,7 +177,13 @@
 </template>
 
 <script setup lang="tsx">
-import { ref, unref, watch, computed,  onMounted } from 'vue';
+import {
+  ref,
+  unref,
+  watch,
+  computed,
+  onMounted,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { cloneDeep } from 'lodash';
 import { Message } from 'bkui-vue';
@@ -196,11 +206,12 @@ const { t } = useI18n();
 const common = useCommon();
 const backConfigData = ref<any>({
   id: '',
+  name: '',
   config: {
     path: '',
     method: 'GET',
     match_subpath: false,
-    timeout: 0
+    timeout: 0,
   },
 });
 const baseInfo = ref({
@@ -241,11 +252,14 @@ const rules = {
   ],
 };
 
+// 后端地址是否校验通过
+const isPathValid = ref(false);
+
 // 提示默认超时时间
 const formatDefaultTime = computed(() => {
   return (payload: any) => {
     const curServices = servicesConfigsStorage.value.find((item) => item?.stage?.id === payload?.stage?.id);
-    if(curServices) {
+    if (curServices) {
       return curServices.timeout
     }
     return ''
@@ -285,11 +299,11 @@ const handleShowPopover = () => {
 };
 
 const handleConfirmTime = () => {
-  if(!timeOutValue.value) {
+  if (!timeOutValue.value) {
     isTimeEmpty.value = true;
     return;
   }
-  servicesConfigs.value.forEach((item:Record<string, string | boolean>) => {
+  servicesConfigs.value.forEach((item: Record<string, string | boolean>) => {
     item.isCustom = true;
     item.timeout = timeOutValue.value;
   })
@@ -304,19 +318,22 @@ const handleCancelTime = () => {
   timeOutValue.value = '';
 }
 
-const handleTimeOutInput = (value:string) => {
+const handleTimeOutInput = (value: string) => {
   value = value.replace(/\D/g, '')
-  if(Number(value) > 300) {
+  if (Number(value) > 300) {
     value = '300';
   }
   timeOutValue.value = value.replace(/\D/g, '');
   isTimeEmpty.value = !value;
 }
 
-const handleClickOutSide = (e:Event) => {
+const handleClickOutSide = (e: Event) => {
   if (
     isShowPopConfirm.value &&
-    !unref(popoverConfirmRef).content.el.contains(e.target)
+    !unref(popoverConfirmRef)
+      .content
+      .el
+      .contains(e.target)
   ) {
     handleCancelTime();
   }
@@ -325,36 +342,40 @@ const handleClickOutSide = (e:Event) => {
 const renderTimeOutLabel = () => {
   return (
     <div>
-      <div class='back-config-timeout'>
+      <div class="back-config-timeout">
         <span>{t('超时时间')}</span>
         <bk-pop-confirm
-          width='280'
-          trigger='manual'
+          width="280"
+          trigger="manual"
           ref={popoverConfirmRef}
           title={t('批量修改超时时间')}
-          extCls='back-config-timeout-popover'
+          extCls="back-config-timeout-popover"
           is-show={isShowPopConfirm.value}
           content={
-            <div class='back-config-timeout-wrapper'>
-              <div class='back-config-timeout-content'>
-                <div class='back-config-timeout-input'>
+            <div class="back-config-timeout-wrapper">
+              <div class="back-config-timeout-content">
+                <div class="back-config-timeout-input">
                   <bk-input
                     v-model={timeOutValue.value}
                     maxlength={3}
                     overMaxLengthLimit={true}
                     class={isTimeEmpty ? 'time-empty-error' : ''}
                     placeholder={t('请输入超时时间')}
-                    onInput={(value:string) => {handleTimeOutInput(value)}}
-                    nativeOnKeypress={(value:string) => { value = value.replace(/\d/g, '') }}
+                    onInput={(value: string) => {
+                      handleTimeOutInput(value)
+                    }}
+                    nativeOnKeypress={(value: string) => {
+                      value = value.replace(/\d/g, '')
+                    }}
                     autofocus={true}
-                    suffix='s'
+                    suffix="s"
                     onEnter={() => handleConfirmTime()}
                   />
                 </div>
-                <div class='back-config-timeout-tip'>{t('最大 300s')}</div>
+                <div class="back-config-timeout-tip">{t('最大 300s')}</div>
               </div>
               {
-                isTimeEmpty.value ? <div class='time-empty-error'>{t('超时时间不能为空')}{isTimeEmpty.value}</div> : ''
+                isTimeEmpty.value ? <div class="time-empty-error">{t('超时时间不能为空')}{isTimeEmpty.value}</div> : ''
               }
             </div>
           }
@@ -368,10 +389,10 @@ const renderTimeOutLabel = () => {
                 <div>
                   {t('自定义超时时间')}
                 </div>
-              )
+              ),
             }}
             onClick={() => handleShowPopover()}
-            v-clickOutSide={(e:any) => handleClickOutSide(e)}
+            v-clickOutSide={(e: any) => handleClickOutSide(e)}
           />
         </bk-pop-confirm>
         <i
@@ -379,7 +400,7 @@ const renderTimeOutLabel = () => {
           v-bk-tooltips={{
             content: (
               <div>{t('恢复初始值')}</div>
-            )
+            ),
           }}
           onClick={() => handleRefreshTime()}
         />
@@ -390,15 +411,20 @@ const renderTimeOutLabel = () => {
 
 // 选择服务获取服务详情数据
 const handleServiceChange = async (backendId: number) => {
-  const res = await getBackendsDetailData(common.apigwId, backendId);
-  const resStorage: any = cloneDeep(res);
-  const detailTimeout = props.detail?.backend?.config?.timeout;
-  if (detailTimeout !== 0 && detailTimeout !== undefined && detailTimeout !== null) {
-    res.configs.forEach((item:any) => {
-      item.timeout = detailTimeout;
-    });
+  try {
+    const res = await getBackendsDetailData(common.apigwId, backendId);
+    const resStorage: any = cloneDeep(res);
+    const detailTimeout = props.detail?.backend?.config?.timeout;
+    if (detailTimeout !== 0 && detailTimeout !== undefined && detailTimeout !== null) {
+      res.configs.forEach((item: any) => {
+        item.timeout = detailTimeout;
+      });
+    }
+    [servicesConfigs.value, servicesConfigsStorage.value] = [cloneDeep(res.configs || []), cloneDeep(resStorage.configs || [])];
+    backConfigData.value.name = res.name;
+  } catch {
+    console.log("=>(back-config.vue:415) handleServiceChange error");
   }
-  [servicesConfigs.value, servicesConfigsStorage.value] = [cloneDeep(res.configs || []), cloneDeep(resStorage.configs || [])];
 };
 
 const editService = () => {
@@ -421,22 +447,23 @@ const handleCheckPath = async () => {
       backend_id: backConfigData.value.id,
       backend_path: backConfigData.value.config.path,
     };
-    const res = await backendsPathCheck(common.apigwId, params);
-    servicesCheckData.value = res;
+    servicesCheckData.value = await backendsPathCheck(common.apigwId, params);
+    isPathValid.value = true;
   } catch (error) {
-
+    servicesCheckData.value = [];
+    isPathValid.value = false;
   }
 };
 
-const handleTableTimeOutInput = (value:string, row:Record<string, any>) => {
+const handleTableTimeOutInput = (value: string, row: Record<string, any>) => {
   value = value.replace(/\D/g, '')
-  if(Number(value) > 300) {
+  if (Number(value) > 300) {
     value = '300';
   }
   row.timeout = Number(value);
   // 判断数据是否有变动，如有更新需要显示自定义标签
-  const configData = servicesConfigsStorage.value.find((item:any) => item?.stage?.id === row?.stage?.id);
-  if(configData) {
+  const configData = servicesConfigsStorage.value.find((item: any) => item?.stage?.id === row?.stage?.id);
+  if (configData) {
     row.isCustom = String(row.timeout) !== String(configData.timeout) ? true : false;
   }
 }
@@ -445,9 +472,10 @@ const handleTableTimeOutBlur = () => {
   handleTimeOutTotal(servicesConfigs.value);
 }
 
-const handleClickTableOutSide = (e:Event, row:Record<string, number | string | boolean>) => {
-  if (timeInputRef && !unref(timeInputRef)?.contains(e.target)) {
-    if(!row.timeout) {
+const handleClickTableOutSide = (e: Event, row: Record<string, number | string | boolean>) => {
+  if (timeInputRef && !unref(timeInputRef)
+    ?.contains(e.target)) {
+    if (!row.timeout) {
       return;
     }
     row.isEditTime = false;
@@ -458,7 +486,7 @@ const handleEditTime = (payload: Record<string, number | string | boolean>) => {
   servicesConfigs.value.forEach((item) => {
     item.isEditTime = false;
   });
-  payload = Object.assign(payload, {  isCustom: false, isEditTime: true });
+  payload = Object.assign(payload, { isCustom: false, isEditTime: true });
 }
 
 const handleMouseEnter = (e: Event, row: Record<string, number | string | boolean>) => {
@@ -476,6 +504,14 @@ const handleMouseLeave = (e: Event, row: Record<string, number | string | boolea
 const init = async () => {
   const res = await getBackendsListData(common.apigwId, { offset: 0, limit: 1000 });
   servicesData.value = res.results;
+  // 检查传进来的资源的 backend 有没有 id，没有的话用 name 匹配一下以正确获取服务数据
+  if (!props.detail?.backend?.id) {
+    const backendId = servicesData.value.find((s) => s.name === props.detail?.backend?.name)?.id;
+    if (backendId) {
+      backConfigData.value.id = backendId;
+      await handleServiceChange(backendId);
+    }
+  }
 };
 
 const validate = async () => {
@@ -535,6 +571,7 @@ defineExpose({
     width: auto !important;
     // width: 700px !important;
   }
+
   .table-warning {
     max-width: 700px !important;
     margin: 0 0 8px 150px;
@@ -554,6 +591,7 @@ defineExpose({
   .method {
     max-width: 700px !important;
   }
+
   .service {
     display: inline-block;
     flex: 1;
@@ -579,6 +617,7 @@ defineExpose({
 
   .time-wrapper {
     position: relative;
+
     .edit-icon {
       position: absolute;
       top: -2px;
@@ -593,6 +632,7 @@ defineExpose({
   .service-select-item {
     display: flex;
   }
+
   .desc {
     color: #979ba5;
     margin-left: 6px;
@@ -615,6 +655,7 @@ defineExpose({
     vertical-align: middle;
     cursor: pointer;
   }
+
   // .refresh-icon {
   //   margin-left: 15px;
   // }
@@ -636,28 +677,34 @@ defineExpose({
   .back-config-timeout-content {
     display: flex;
     align-items: center;
+
     .back-config-timeout-input {
       min-width: 182px;
       display: flex;
       align-items: center;
+
       .bk-input {
         width: 100%;
       }
+
       .bk-input--number-control {
         display: none;
       }
     }
+
     .back-config-timeout-tip {
       font-size: 12px;
       margin-left: 10px;
       color: #63656E;
     }
   }
+
   .time-empty-error {
     color: #ea3636;
     border-color: #ea3636;
   }
 }
+
 .back-config-timeout-popover {
   padding: 16px 16px !important;
 }
