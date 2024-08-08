@@ -90,15 +90,18 @@
                 />
               </bk-select>
             </div>
-            <div class="response-content">
-              <editor-monaco
-                v-model="editorText"
-                theme="Visual Studio"
-                ref="resourceEditorRef"
-                :minimap="false"
-                :show-copy="true"
-                :show-full-screen="true"
-              />
+            <div class="response-content" id="response-content">
+              <div class="response-editor-box">
+                <editor-monaco
+                  v-model="editorText"
+                  theme="Visual Studio"
+                  ref="resourceEditorRef"
+                  :minimap="false"
+                  :show-copy="true"
+                  :show-full-screen="true"
+                  :read-only="true"
+                />
+              </div>
             </div>
           </div>
         </template>
@@ -108,7 +111,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useI18n } from 'vue-i18n';
 import editorMonaco from '@/components/ag-editor.vue';
@@ -122,7 +125,7 @@ const props = defineProps({
   },
 });
 
-const activeIndex = ref<number[]>([1]);
+const activeIndex = ref<number[]>([]);
 const tabActive = ref<string>('body');
 const responseType = ref<string>('JSON');
 const bodyTypeList = ref([
@@ -165,7 +168,29 @@ const setEditorValue = () => {
     editorText.value = data.value?.curl || '';
   }
   resourceEditorRef.value?.setValue(editorText.value);
+  activeIndex.value = [1];
 };
+
+const setHeight = () => {
+  const element = document.getElementById('response-content');
+
+  const resizeObserver = new ResizeObserver((entries: any) => {
+    for (const entry of entries) {
+      const { contentRect } = entry;
+
+      const box: any = document.querySelector('.response-editor-box');
+      if (box) {
+        box.style.height = `${contentRect?.height}px`;
+      }
+    }
+  });
+
+  resizeObserver.observe(element);
+};
+
+onMounted(() => {
+  setHeight();
+});
 
 watch(
   () => tabActive.value,
@@ -188,6 +213,7 @@ watch(
 <style lang="scss" scoped>
 .response-container {
   padding-left: 24px;
+  height: 100%;
   .response-title {
     position: relative;
     .response-type {
@@ -238,6 +264,9 @@ watch(
   }
   .response-main {
     padding-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     .response-content-type {
       margin-bottom: 12px;
       .payload-type {
@@ -245,16 +274,27 @@ watch(
       }
     }
     .response-content {
-      width: 100%;
-      height: 235px;
+      flex: 1;
+      overflow: hidden;
       background: #FFFFFF;
       border: 1px solid #DCDEE5;
       border-radius: 2px;
+      .response-editor-box {
+        height: 100%;
+        min-height: 100px;
+        max-height: 70vh;
+      }
     }
   }
   .bk-collapse-response {
+    height: 100%;
+    :deep(.bk-collapse-item) {
+      height: 100%;
+    }
     :deep(.bk-collapse-content) {
       padding: 0;
+      // flex: 1;
+      height: calc(100% - 72px);
     }
   }
 }
