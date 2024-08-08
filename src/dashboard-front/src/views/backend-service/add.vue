@@ -199,7 +199,7 @@
 
 <script lang="ts" setup>
 import { ref, reactive, watch } from 'vue';
-import { InfoBox, Message } from 'bkui-vue';
+import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { useCommon } from '@/store';
 import { useSidebar } from '@/hooks';
