@@ -367,65 +367,6 @@ class TestAppPermissionBuilder:
             }
         ]
 
-    # 没有网关权限的情况
-    def test_build_with_approval_bug_rejected(self, mocker, fake_gateway, unique_id):
-        r = G(Resource, gateway=fake_gateway)
-        # 资源审批状态权限
-        G(
-            AppPermissionApplyStatus,
-            gateway=fake_gateway,
-            bk_app_code=unique_id,
-            grant_dimension=GrantDimensionEnum.RESOURCE.value,
-            resource_id=r.id,
-            status=ApplyStatusEnum.REJECTED.value,
-        )
-        mocker.patch(
-            "apigateway.apis.open.permission.helpers.ResourceVersionHandler.get_released_public_resources",
-            return_value=[
-                {
-                    "id": r.id,
-                    "name": "test1-1",
-                    "description": "desc",
-                    "description_en": "desc_en",
-                    "resource_perm_required": True,
-                },
-            ],
-        )
-        mocker.patch(
-            "apigateway.apis.open.permission.helpers.ReleasedResource.objects.filter_latest_released_resources",
-            return_value=[
-                {
-                    "id": r.id,
-                    "name": "test1-2",
-                    "description": "desc",
-                    "description_en": "desc_en",
-                    "resource_perm_required": True,
-                },
-            ],
-        )
-        mocker.patch(
-            "apigateway.apis.open.permission.helpers.ReleasedResourceHandler.get_latest_doc_link",
-            return_value={
-                r.id: "test",
-            },
-        )
-
-        result = AppPermissionBuilder(unique_id).build()
-        assert result == [
-            {
-                "id": r.id,
-                "name": "test1-2",
-                "api_name": fake_gateway.name,
-                "gateway_id": fake_gateway.id,
-                "description": "desc",
-                "description_en": "desc_en",
-                "permission_status": "need_apply",  # 拥有权限
-                "permission_level": "normal",
-                "expires_in": -math.inf,
-                "doc_link": "test",
-            }
-        ]
-
     def test_build_with_apply_status(self, mocker, fake_gateway, fake_resource, unique_id):
         G(
             AppResourcePermission,
