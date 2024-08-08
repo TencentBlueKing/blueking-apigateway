@@ -23,10 +23,12 @@ from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
+from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory
 from apigateway.apps.esb.component.constants import ESB_RELEASE_TASK_EXPIRES
 from apigateway.apps.esb.component.tasks import sync_and_release_esb_components
 from apigateway.apps.esb.exceptions import EsbGatewayNotFound
 from apigateway.apps.esb.utils import get_esb_gateway
+from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import Gateway, Release
 from apigateway.utils.conv import str_bool
 
@@ -55,6 +57,14 @@ class Command(BaseCommand):
     def handle(self, async_: Optional[bool], access_token: str = "", *args, **options):
         print(f"sync esb components to gateway(name={settings.BK_ESB_GATEWAY_NAME}) start")
 
+        # 创建 ComponentReleaseHistory
+        release_history = ComponentReleaseHistory.objects.create(
+            resource_version_id=0,
+            data=[],
+            status=ReleaseStatusEnum.RELEASING.value,
+            created_by="admin",
+        )
+
         try:
             esb_gateway = get_esb_gateway()
         except EsbGatewayNotFound as err:
@@ -65,13 +75,13 @@ class Command(BaseCommand):
                 f"sync esb components to gateway(name={settings.BK_ESB_GATEWAY_NAME}) synchronously, "
                 "please wait a few minutes"
             )
-            sync_and_release_esb_components(esb_gateway.id, "admin", True)
+            sync_and_release_esb_components(esb_gateway.id, release_history.id, "admin", True)
             print(f"sync esb components to gateway(name={settings.BK_ESB_GATEWAY_NAME}) and release successfully")
             return
 
         apply_async_on_commit(
             sync_and_release_esb_components,
-            args=(esb_gateway.id, "admin", True),
+            args=(esb_gateway.id, release_history.id, "admin", True),
             expires=ESB_RELEASE_TASK_EXPIRES,
         )
 
