@@ -28,6 +28,7 @@ from apigateway.apis.web.resource.views import (
 )
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.biz.resource import ResourceHandler
+from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core import constants
 from apigateway.core.models import Backend, BackendConfig, Context, Proxy, Resource, Stage
@@ -206,17 +207,20 @@ class TestResourceRetrieveUpdateDestroyApi:
 
 
 class TestResourceBatchUpdateDestroyApi:
-    def test_update(self, request_view, fake_resource):
+    def test_update(self, request_view, fake_resource, fake_resource1, fake_resource2, fake_gateway):
+        label_1 = G(APILabel, gateway=fake_gateway, name="test")
+        label_2 = G(APILabel, gateway=fake_gateway, name="test1")
         data = {
-            "ids": [fake_resource.id],
+            "ids": [fake_resource.id, fake_resource1.id, fake_resource2.id],
             "is_public": True,
             "allow_apply_permission": True,
+            "label_ids": [label_1.id, label_2.id],
         }
 
         resp = request_view(
             method="PUT",
             view_name="resource.batch_update_destroy",
-            path_params={"gateway_id": fake_resource.gateway.id},
+            path_params={"gateway_id": fake_gateway.id},
             data=data,
         )
 
@@ -225,6 +229,28 @@ class TestResourceBatchUpdateDestroyApi:
         resource = Resource.objects.get(id=fake_resource.id)
         assert resource.is_public == data["is_public"]
         assert resource.allow_apply_permission == data["allow_apply_permission"]
+        label = ResourceLabelHandler.get_labels([fake_resource.id])
+        assert label[fake_resource.id] == [
+            {"id": label_1.id, "name": label_1.name},
+            {"id": label_2.id, "name": label_2.name},
+        ]
+
+        resp = request_view(
+            method="GET",
+            view_name="resource.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            data=data,
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        assert result["data"]["results"][0]["labels"] == [
+            {"id": label_1.id, "name": label_1.name},
+            {"id": label_2.id, "name": label_2.name},
+        ]
+        assert result["data"]["results"][1]["labels"] == [
+            {"id": label_1.id, "name": label_1.name},
+            {"id": label_2.id, "name": label_2.name},
+        ]
 
     def test_destroy(self, request_view, fake_resource):
         data = {

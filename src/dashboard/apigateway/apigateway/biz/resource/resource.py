@@ -226,6 +226,50 @@ class ResourceHandler:
             ResourceLabel.objects.filter(id__in=remaining_resource_labels.values()).delete()
 
     @staticmethod
+    def batch_save_resource_labels(gateway: Gateway, resource_ids: List[int], label_ids: List[int]):
+        """
+        批量存储资源标签
+        - 删除未指定的标签
+
+        :param gateway: 网关实例
+        :param resource_ids: 资源ID列表
+        :param label_ids: 要关联的网关标签ID列表，忽略不存在的标签
+        """
+        if not resource_ids or not label_ids:
+            return
+
+        # 获取每个资源当前已有的标签ID
+        current_resource_labels = {
+            resource_id: {
+                label.api_label_id: label.id for label in ResourceLabel.objects.filter(resource_id=resource_id)
+            }
+            for resource_id in resource_ids
+        }
+
+        # 准备要添加的新标签
+        new_resource_labels = []
+        for resource_id in resource_ids:
+            for label in APILabel.objects.filter(gateway=gateway, id__in=label_ids):
+                if label.id in current_resource_labels.get(resource_id, {}):
+                    current_resource_labels[resource_id].pop(label.id)  # 如果已存在，则从当前标签中移除
+                else:
+                    resource = Resource.objects.get(id=resource_id)
+                    new_resource_labels.append(ResourceLabel(resource=resource, api_label=label))
+
+        # 批量创建新标签
+        if new_resource_labels:
+            ResourceLabel.objects.bulk_create(new_resource_labels)
+
+        # 提取要删除的ResourceLabel ID
+        delete_ids = [
+            label_id for resource_id, labels in current_resource_labels.items() for label_id in labels.values()
+        ]
+
+        # 删除不再需要的标签
+        if delete_ids:
+            ResourceLabel.objects.filter(id__in=delete_ids).delete()
+
+    @staticmethod
     def group_by_gateway_id(resource_ids: List[int]) -> Dict[int, List[int]]:
         """将资源 ID 按网关进行分组"""
         data = Resource.objects.filter(id__in=resource_ids).values("gateway_id", "id").order_by("gateway_id")
