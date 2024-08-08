@@ -3,18 +3,18 @@
     <div class="table-header">
       <div class="body-type">
         <div
-          :class="['body-type-item', type === 'data' ? 'active' : '']"
-          @click="type = 'data'">
+          :class="['body-type-item', type === 'fromData' ? 'active' : '']"
+          @click="handleTabChange('fromData')">
           form-data
         </div>
         <div
           :class="['body-type-item', type === 'urlencoded' ? 'active' : '']"
-          @click="type = 'urlencoded'">
+          @click="handleTabChange('urlencoded')">
           x-www-form-urlencoded
         </div>
         <div
           :class="['body-type-item', type === 'raw' ? 'active' : '']"
-          @click="type = 'raw'">
+          @click="handleTabChange('raw')">
           raw
         </div>
         <bk-select
@@ -45,14 +45,14 @@
         </div> -->
     </div>
     <edit-table
-      v-show="type === 'data'"
+      v-show="type === 'fromData'"
       ref="dataRef"
-      @change="handleDataChange"
+      @change="handleListChange"
       :list="fromDataList" />
     <edit-table
       v-show="type === 'urlencoded'"
       ref="urlencodedRef"
-      @change="handleUrlencodedChange"
+      @change="handleListChange"
       :list="urlencodedList" />
     <div class="raw-content" v-show="type === 'raw'">
       <editor-monaco
@@ -88,7 +88,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['dataChange', 'urlencodedChange']);
+const emit = defineEmits(['change']);
 
 const type = ref<string>('raw');
 const rawType = ref<string>('JSON');
@@ -137,12 +137,26 @@ const getData = () => {
   };
 };
 
-const handleDataChange = (list: any) => {
-  emit('dataChange', list);
+const handleListChange = (list: any) => {
+  const data = {
+    source: type.value,
+    list,
+  };
+  emit('change', data);
 };
 
-const handleUrlencodedChange = (list: any) => {
-  emit('urlencodedChange', list);
+const handleTabChange = (key: string) => {
+  type.value = key;
+
+  let list: any = [];
+  if (key === 'fromData') {
+    list = dataRef.value?.getTableData();
+  } else if (key === 'urlencoded') {
+    list = urlencodedRef.value?.getTableData();
+  }
+  list = list?.filter((item: any) => item.name);
+
+  handleListChange(list);
 };
 
 watch(

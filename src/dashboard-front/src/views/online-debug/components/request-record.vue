@@ -71,6 +71,7 @@
                   language="json"
                   :minimap="false"
                   :show-copy="true"
+                  :read-only="true"
                 />
                 <editor-monaco
                   v-else
@@ -79,6 +80,7 @@
                   language="json"
                   :minimap="false"
                   :show-copy="true"
+                  :read-only="true"
                 />
               </div>
             </template>
