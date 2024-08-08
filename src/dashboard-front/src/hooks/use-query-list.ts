@@ -21,6 +21,8 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number,
     small: false,
     // 获取接口是否异常
     abnormal: false,
+    // 每页页数选项，这个也是 table 组件的默认值
+    limitList: [10, 20, 50, 100],
   };
 
   const pagination = ref<IPagination>({ ...initPagination });

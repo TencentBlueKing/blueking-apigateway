@@ -8,21 +8,21 @@
       <template #label>
         <div :class="['tab-label', active?.includes('Body') ? 'active' : '']">
           <span class="title">Body</span>
-          <!-- <span class="count">{{ Number(dataList?.length + urlencodedList?.length) || 0 }}</span> -->
+          <span class="count">{{ bodyData?.list?.length || 0 }}</span>
         </div>
       </template>
       <payload-body
         ref="payloadBodyRef"
         :from-data-payload="schema.fromDataPayload"
         :raw-payload="schema.rawPayload"
-        @data-change="dataChange"
-        @urlencoded-change="urlencodedChange" />
+        @change="handleBodyChange"
+      />
     </bk-tab-panel>
     <bk-tab-panel label="Params" name="Params">
       <template #label>
         <div :class="['tab-label', active?.includes('Params') ? 'active' : '']">
           <span class="title">Params</span>
-          <span class="count">{{ Number(queryList?.length + pathList?.length) || 0 }}</span>
+          <span class="count">{{ queryList?.length }}</span>
         </div>
       </template>
       <payload-params
@@ -30,14 +30,13 @@
         :path-payload="schema.pathPayload"
         :priority-path="schema.priorityPath"
         @query-change="queryChange"
-        @path-change="pathChange"
         ref="payloadParamsRef" />
     </bk-tab-panel>
     <bk-tab-panel label="Headers" name="Headers">
       <template #label>
         <div :class="['tab-label', active?.includes('Headers') ? 'active' : '']">
           <span class="title">Headers</span>
-          <span class="count">{{ headersList?.length || 0 }}</span>
+          <span class="count">{{ headersList?.length }}</span>
         </div>
       </template>
       <payload-headers
@@ -99,19 +98,14 @@ const queryChange = (list: any) => {
   queryList.value = list;
 };
 
-const pathList = ref<any>([]);
-const pathChange = (list: any) => {
-  pathList.value = list;
-};
+// const pathList = ref<any>([]);
+// const pathChange = (list: any) => {
+//   pathList.value = list;
+// };
 
-const dataList = ref<any>([]);
-const dataChange = (list: any) => {
-  dataList.value = list;
-};
-
-const urlencodedList = ref<any>([]);
-const urlencodedChange = (list: any) => {
-  urlencodedList.value = list;
+const bodyData = ref<any>({});
+const handleBodyChange = (data: any) => {
+  bodyData.value = data;
 };
 
 watch(

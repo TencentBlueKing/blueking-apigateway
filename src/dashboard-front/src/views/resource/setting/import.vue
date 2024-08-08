@@ -119,22 +119,14 @@
                       <i class="apigateway-icon icon-ag-exclamation-circle-fill icon mb0 f12" style="color:#EA3636"></i>
                       <span class="num" style="color:#EA3636">{{ msgAsErrorNum }}</span>
                     </div>
-                    <!--                    <div-->
-                    <!--                      class="error-count-item" :class="{ 'active': activeCodeMsgType === 'Warning' }"-->
-                    <!--                      v-bk-tooltips="{ content: `Warning: ${msgAsWarningNum}`, placement: 'left' }"-->
-                    <!--                      @click="handleErrorCountClick('Warning')"-->
-                    <!--                    >-->
-                    <!--                      <div class="warning-circle"></div>-->
-                    <!--                      <span style="color: hsla(36.6, 81.7%, 55.1%, 0.5);">{{ msgAsWarningNum }}</span>-->
-                    <!--                    </div>-->
-                    <div
-                      class="error-count-item" :class="{ 'active': activeCodeMsgType === 'All' }"
-                      v-bk-tooltips="{ content: `All: ${errorReasons.length}`, placement: 'left' }"
-                      @click="handleErrorCountClick('All')"
-                    >
-                      <span class="icon">all</span>
-                      <span class="num">{{ msgAsErrorNum + msgAsWarningNum }}</span>
-                    </div>
+<!--                    <div-->
+<!--                      class="error-count-item" :class="{ 'active': activeCodeMsgType === 'All' }"-->
+<!--                      v-bk-tooltips="{ content: `All: ${errorReasons.length}`, placement: 'left' }"-->
+<!--                      @click="handleErrorCountClick('All')"-->
+<!--                    >-->
+<!--                      <span class="icon">all</span>-->
+<!--                      <span class="num">{{ msgAsErrorNum + msgAsWarningNum }}</span>-->
+<!--                    </div>-->
                   </main>
                   <footer class="editor-error-shifts">
                     <div class="shift-btn prev" @click="setEditorCursor('top')">
@@ -380,11 +372,17 @@
                     width="85"
                   >
                     <template #default="{ row }">
-                    <span
-                      v-bk-tooltips="{ content: `${row.plugin_configs?.map((c: any)=>c.name || c.type).join('，') || '无插件'}` }"
-                    >
-                      {{ row.plugin_configs?.length ?? 0 }}
-                    </span>
+                      <bk-button
+                        theme="primary"
+                        text style="font-size: 12px;"
+                        @click="handleShowPluginsSlider(row)"
+                      >
+                        <span
+                          v-bk-tooltips="{ content: `${row.plugin_configs?.map((c: any)=>c.name || c.type).join('，') || '无插件'}` }"
+                        >
+                          {{ row.plugin_configs?.length ?? 0 }}
+                        </span>
+                      </bk-button>
                     </template>
                   </bk-table-column>
                   <bk-table-column
@@ -570,11 +568,17 @@
                     width="85"
                   >
                     <template #default="{ row }">
-                    <span
-                      v-bk-tooltips="{ content: `${row.plugin_configs?.map((c: any)=>c.name || c.type).join('，') || '无插件'}` }"
-                    >
-                      {{ row.plugin_configs?.length ?? 0 }}
-                    </span>
+                      <bk-button
+                        theme="primary"
+                        text style="font-size: 12px;"
+                        @click="handleShowPluginsSlider(row)"
+                      >
+                        <span
+                          v-bk-tooltips="{ content: `${row.plugin_configs?.map((c: any)=>c.name || c.type).join('，') || '无插件'}` }"
+                        >
+                          {{ row.plugin_configs?.length ?? 0 }}
+                        </span>
+                      </bk-button>
                     </template>
                   </bk-table-column>
                   <bk-table-column
@@ -742,11 +746,17 @@
                     width="85"
                   >
                     <template #default="{ row }">
-                    <span
-                      v-bk-tooltips="{ content: `${row.plugin_configs?.map((c: any)=>c.name || c.type).join('，') || '无插件'}` }"
-                    >
-                      {{ row.plugin_configs?.length ?? 0 }}
-                    </span>
+                      <bk-button
+                        theme="primary"
+                        text style="font-size: 12px;"
+                        @click="handleShowPluginsSlider(row)"
+                      >
+                        <span
+                          v-bk-tooltips="{ content: `${row.plugin_configs?.map((c: any)=>c.name || c.type).join('，') || '无插件'}` }"
+                        >
+                          {{ row.plugin_configs?.length ?? 0 }}
+                        </span>
+                      </bk-button>
                     </template>
                   </bk-table-column>
                   <bk-table-column
@@ -854,10 +864,17 @@
           doc-root-class="doc-sideslider"
           :show-footer="false"
           :show-create-btn="false"
+          :is-preview="!editingResource.doc || editingResource.doc.length < 1"
         >
         </ResourcesDoc>
       </template>
     </bk-sideslider>
+    <!--  查看插件侧边栏  -->
+    <plugin-preview-side-slider
+      :plugins="editingResource.plugin_configs"
+      :is-slider-show="isPluginsSliderShow"
+      @on-hidden="isPluginsSliderShow = false"
+    ></plugin-preview-side-slider>
   </div>
   <!--  导入结果展示页  -->
   <div v-else class="import-result-wrapper">
@@ -1006,6 +1023,7 @@ import { MethodsEnum } from '@/types';
 import EditImportResourceSideSlider from "@/views/resource/setting/comps/edit-import-resource-side-slider.vue";
 import DownloadDialog from "@/views/resource/setting/comps/download-dialog.vue";
 import ResourcesDoc from "@/views/components/resources-doc/index.vue";
+import PluginPreviewSideSlider from '@/views/resource/setting/comps/plugin-preview-side-slider.vue';
 
 type CodeErrorResponse = {
   code: string,
@@ -1066,6 +1084,7 @@ const editingResource = ref<any>({
   _localId: -1,
 });
 const isSliderShow = ref(false);
+const isPluginsSliderShow = ref(false);
 
 // 编辑器所在的 resize-layout
 const resizeLayoutRef = ref<InstanceType<typeof ResizeLayout> | null>(null);
@@ -1269,7 +1288,7 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
       const editorJsonObj = yaml.load(editorText.value) as object;
       const errData: { json_path: string, message: string }[] = error.data ?? [];
       errorReasons.value = errData.map((err) => {
-        if (err.json_path !== '$') {
+        if (err.json_path !== '$' && err.json_path !== '') {
           // 从 jsonpath 提取路径组成数组，去掉开头的 $
           const paths = JSONPath.toPathArray(err.json_path)
             .slice(1);
@@ -1438,6 +1457,14 @@ const handleShowResourceDoc = (resourceRow: any) => {
   const _editingResource = tableData.value.find(data => data._localId === resourceRow._localId);
   if (_editingResource) editingResource.value = { ...editingResource.value, ..._editingResource };
   isResourceDocSliderVisible.value = true;
+};
+
+// 点击插件数时，会唤出 PluginsSlider
+const handleShowPluginsSlider = (resourceRow: any) => {
+  if (!resourceRow.plugin_configs || resourceRow.plugin_configs?.length < 1) return;
+  const _editingResource = tableData.value.find(data => data._localId === resourceRow._localId);
+  if (_editingResource) editingResource.value = { ...editingResource.value, ..._editingResource };
+  isPluginsSliderShow.value = true;
 };
 
 // 触发编辑器高亮
