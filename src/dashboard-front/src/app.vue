@@ -10,10 +10,10 @@
         class="navigation-content"
         navigation-type="top-bottom"
         :need-menu="false"
-        :default-open="true">
+        :default-open="true"
+        :side-title="sideTitle"
+      >
         <template #side-icon>
-          <!-- <img v-if="locale === 'en'" src="@/images/APIgataway-en.png" class="api-logo">
-          <img v-else src="@/images/APIgataway-c.png" class="api-logo"> -->
           <img :src="appLogo" class="api-logo" />
         </template>
         <div class="content">
@@ -81,9 +81,7 @@ import { useSidebar } from '@/hooks';
 // @ts-ignore
 import { getPlatformConfig, setShortcutIcon, setDocumentTitle  } from '@blueking/platform-config';
 // @ts-ignore
-import logoSvg from '@/images/APIgataway-c.png';
-// @ts-ignore
-import logoSvgEn from '@/images/APIgataway-en.png';
+import logoWithoutName from '@/images/APIgateway-logo.png';
 import { isChinese } from '@/language/i18n';
 import constantConfig from '@/constant/config';
 
@@ -104,6 +102,12 @@ const bkuiLocale = computed(() => {
     return bkuiLocaleData.zhCn;
   }
   return bkuiLocaleData.en;
+});
+
+// t()方法的 | 符号有特殊含义，需要用插值才能正确显示
+const sideTitle = computed(() => {
+  //  return t("蓝鲸 {pipe} API 网关", { pipe: '|'});
+  return t('蓝鲸 API 网关');
 });
 
 const websiteConfig = ref<any>({});
@@ -133,9 +137,7 @@ const getWebsiteConfig = async () => {
 getWebsiteConfig();
 
 const appLogo = computed(() => {
-  // 如果未获取到配置，使用默认logo
-  const src = websiteConfig.value?.i18n?.appLogo || (isChinese ? logoSvg : logoSvgEn);
-  return src;
+  return logoWithoutName;
 });
 
 // 加载完用户数据才会展示页面
@@ -387,8 +389,13 @@ onMounted(() => {
     height: 100%;
   }
 
-  .api-logo{
-    height: 22px;
+  :deep(.title-desc) {
+    color: #eaebf0;
+    cursor: pointer;
+  }
+
+  .api-logo {
+    height: 28px;
     cursor: pointer;
   }
 
