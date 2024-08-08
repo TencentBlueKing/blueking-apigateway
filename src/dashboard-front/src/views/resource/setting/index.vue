@@ -748,6 +748,19 @@ const labelsList = computed(() => {
   });
 });
 
+// 当前视口高度能展示最多多少条表格数据
+const maxTableLimit = ref(10);
+
+// 计算当前视口高度下能展示多少表格行
+const calcMaxTableLimit = (lineHeight = 42, heightTaken = 347) => {
+  const viewportHeight = window.innerHeight;
+  const heightToUse = viewportHeight - heightTaken;
+  const limit = Math.floor(heightToUse / lineHeight);
+  return limit > 0 ? limit : 1;
+};
+
+maxTableLimit.value = calcMaxTableLimit();
+
 // 列表hooks
 const {
   tableData,
@@ -757,6 +770,11 @@ const {
   handlePageSizeChange,
   getList,
 } = useQueryList(getResourceListData, filterData, 0, true);
+
+// 注意，pagination 的 limit 必须在 limitList 里才能生效
+// 所以要先放进 limitList 里
+pagination.value.limitList.unshift(maxTableLimit.value);
+pagination.value.limit = maxTableLimit.value;
 
 // checkbox hooks
 const {
@@ -1364,7 +1382,7 @@ onMounted(() => {
   dragTwoColDiv('resourceId', 'resourceLf', 'resourceLine'/* , 'resourceRg' */);
   // 监听其他组件是否触发了资源更新，获取最新的列表数据
   mitt.on('on-update-plugin', () => {
-    pagination.value = Object.assign(pagination.value, { current: 0, limit: 10 });
+    pagination.value = Object.assign(pagination.value, { current: 0, limit: maxTableLimit.value });
     getList();
     handleShowVersion();
   });
@@ -1438,9 +1456,7 @@ onBeforeMount(() => {
   .left-wraper{
     position: relative;
     background: #fff;
-    // height: calc(100vh - 220px);
-    // overflow-y: auto;
-    // padding-bottom: 24px;
+
     .document-info{
       color: #3a84ff;
       font-size: 12px;
