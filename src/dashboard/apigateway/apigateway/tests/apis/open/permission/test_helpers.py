@@ -372,6 +372,19 @@ class TestAppPermissionBuilder:
             },
         ]
 
+    def test_get_gateway_id_to_permission_apply_status(self, fake_gateway, unique_id):
+        G(
+            AppPermissionApplyStatus,
+            bk_app_code=unique_id,
+            gateway=fake_gateway,
+            grant_dimension=GrantDimensionEnum.API.value,
+            status=ApplyStatusEnum.PENDING.value,
+        )
+
+        builder = AppPermissionBuilder(unique_id)
+        result = builder._get_gateway_id_to_permission_apply_status()
+        assert result == {fake_gateway.id: "pending"}
+
     def test_get_resource_id_to_permission_apply_status(self, fake_gateway, fake_resource, unique_id):
         G(
             AppPermissionApplyStatus,
