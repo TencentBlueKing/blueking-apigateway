@@ -235,9 +235,6 @@ class ResourceHandler:
         :param resource_ids: 资源ID列表
         :param label_ids: 要关联的网关标签ID列表，忽略不存在的标签
         """
-        if not resource_ids or not label_ids:
-            return
-
         # 获取每个资源当前已有的标签ID
         current_resource_labels = {
             resource_id: {
@@ -245,7 +242,6 @@ class ResourceHandler:
             }
             for resource_id in resource_ids
         }
-
         # 准备要添加的新标签
         new_resource_labels = []
         for resource_id in resource_ids:

@@ -289,7 +289,7 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
             updated_by=request.user.username,
         )
         label_ids = slz.validated_data.get("label_ids")
-        if label_ids:
+        if slz.validated_data["is_label"]:
             ResourceHandler.batch_save_resource_labels(
                 gateway=request.gateway,
                 resource_ids=slz.validated_data["ids"],
