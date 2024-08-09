@@ -3,8 +3,7 @@ ARG TAG=3.10.12-slim-bullseye
 FROM ${IMAGE}:${TAG}
 
 RUN apt-get update && apt-get install -y libssl-dev default-libmysqlclient-dev libffi-dev \
-    build-essential libc6-dev libjpeg-dev zlib1g-dev vim procps default-mysql-client curl
-
+    build-essential libc6-dev libjpeg-dev zlib1g-dev vim procps default-mysql-client curl openjdk-11-jdk maven
 ARG PYPI="https://pypi.org/simple/"
 RUN pip config set global.index-url "${PYPI}"
 
