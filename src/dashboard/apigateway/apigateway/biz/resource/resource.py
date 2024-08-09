@@ -236,7 +236,7 @@ class ResourceHandler:
         :param label_ids: 要关联的网关标签ID列表，忽略不存在的标签
         """
         # 获取当前所有相关的ResourceLabel记录
-        current_resource_labels = {}
+        current_resource_labels: Dict[int, List[int]] = {}
         for resource_label in ResourceLabel.objects.filter(resource_id__in=resource_ids):
             if resource_label.resource_id not in current_resource_labels:
                 current_resource_labels[resource_label.resource_id] = []
