@@ -4,6 +4,8 @@
 ### Bug Fixes
 
 - Updated title brand name
+- Updated product logo
+- Fixed issue with gateway documentation authentication flag display
 
 ---
 
