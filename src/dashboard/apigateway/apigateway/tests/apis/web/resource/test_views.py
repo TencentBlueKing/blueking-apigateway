@@ -234,7 +234,7 @@ class TestResourceBatchUpdateDestroyApi:
             "ids": [fake_resource.id, fake_resource1.id],
             "is_public": True,
             "allow_apply_permission": True,
-            "is_label": True,
+            "is_update_labels": True,
             "label_ids": [label_1.id, label_2.id],
         }
 
@@ -285,7 +285,7 @@ class TestResourceBatchUpdateDestroyApi:
             "ids": [fake_resource.id, fake_resource1.id],
             "is_public": True,
             "allow_apply_permission": True,
-            "is_label": True,
+            "is_update_labels": True,
             "label_ids": [],
         }
 

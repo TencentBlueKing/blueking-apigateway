@@ -226,7 +226,7 @@ class ResourceHandler:
             ResourceLabel.objects.filter(id__in=remaining_resource_labels.values()).delete()
 
     @staticmethod
-    def batch_save_resource_labels(gateway: Gateway, resource_ids: List[int], label_ids: List[int]):
+    def batch_update_resource_labels(gateway: Gateway, resource_ids: List[int], label_ids: List[int]):
         """
         批量存储资源标签
         - 删除未指定的标签
@@ -235,31 +235,41 @@ class ResourceHandler:
         :param resource_ids: 资源ID列表
         :param label_ids: 要关联的网关标签ID列表，忽略不存在的标签
         """
-        # 获取每个资源当前已有的标签ID
-        current_resource_labels = {
-            resource_id: {
-                label.api_label_id: label.id for label in ResourceLabel.objects.filter(resource_id=resource_id)
-            }
-            for resource_id in resource_ids
-        }
-        # 准备要添加的新标签
+        # 获取当前所有相关的ResourceLabel记录
+        current_resource_labels = {}
+        for resource_label in ResourceLabel.objects.filter(resource_id__in=resource_ids):
+            if resource_label.resource_id not in current_resource_labels:
+                current_resource_labels[resource_label.resource_id] = []
+            current_resource_labels[resource_label.resource_id].append(resource_label.id)
+
+        # 准备新增和更新的标签
         new_resource_labels = []
+        api_labels = APILabel.objects.filter(gateway=gateway, id__in=label_ids)
         for resource_id in resource_ids:
-            for label in APILabel.objects.filter(gateway=gateway, id__in=label_ids):
-                if label.id in current_resource_labels.get(resource_id, {}):
-                    current_resource_labels[resource_id].pop(label.id)  # 如果已存在，则从当前标签中移除
-                else:
-                    resource = Resource.objects.get(id=resource_id)
-                    new_resource_labels.append(ResourceLabel(resource=resource, api_label=label))
+            existing_label_ids = set(current_resource_labels.get(resource_id, []))
+            new_label_ids = {label.id for label in api_labels if label.id not in existing_label_ids}
+
+            # 遍历新标签ID，构建新的ResourceLabel对象
+            new_resource_labels = [
+                ResourceLabel(
+                    resource_id=resource_id,
+                    api_label_id=label_id,
+                )
+                for resource_id in resource_ids
+                for label_id in {
+                    label.id for label in api_labels if label.id not in current_resource_labels.get(resource_id, [])
+                }
+            ]
+
+            # 更新current_resource_labels，移除已处理的标签ID
+            current_resource_labels[resource_id] = list(existing_label_ids - new_label_ids)
 
         # 批量创建新标签
         if new_resource_labels:
             ResourceLabel.objects.bulk_create(new_resource_labels)
 
         # 提取要删除的ResourceLabel ID
-        delete_ids = [
-            label_id for resource_id, labels in current_resource_labels.items() for label_id in labels.values()
-        ]
+        delete_ids = [rl_id for resource_labels in current_resource_labels.values() for rl_id in resource_labels]
 
         # 删除不再需要的标签
         if delete_ids:
