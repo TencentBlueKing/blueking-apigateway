@@ -54,7 +54,7 @@
                 </i>：
               </div>
               <div class="v">
-                {{(curComponent.verified_user_required || curComponent.user_verified_required) ? $t('是') : $t('否')}}}
+                {{(curComponent.verified_user_required || curComponent.user_verified_required) ? $t('是') : $t('否')}}
               </div>
             </div>
             <div class="kv-row">
