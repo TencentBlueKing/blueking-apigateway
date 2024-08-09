@@ -158,6 +158,13 @@ export const importResourceDocSwagger = (apigwId: number, data: any) => fetch.po
 export const getResourceDocs = (apigwId: number, resourceId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/${resourceId}/docs/`);
 
 /**
+ * 获取资源文档预览数据
+ * @param apigwId 网关id
+ * @param data 资源参数
+ */
+export const getResourceDocPreview = (apigwId: number, data: any) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resources/import/doc/preview/`, data);
+
+/**
  * 保存资源文档数据
  * @param apigwId 网关id
  * @param resourceId 资源id

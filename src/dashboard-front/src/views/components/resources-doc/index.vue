@@ -126,7 +126,13 @@
 </template>
 <script setup lang="ts">
 import { ref, toRefs, onMounted, onUnmounted, onBeforeUnmount, nextTick, onUpdated, computed } from 'vue';
-import { getResourceDocs, updateResourceDocs, saveResourceDocs, deleteResourceDocs } from '@/http';
+import {
+  getResourceDocs,
+  getResourceDocPreview,
+  updateResourceDocs,
+  saveResourceDocs,
+  deleteResourceDocs,
+} from '@/http';
 import { useCommon } from '@/store';
 import { cloneDeep } from 'lodash';
 import { useI18n } from 'vue-i18n';
@@ -143,6 +149,7 @@ const props = defineProps({
   docRootClass: { type: String }, // 自定义类
   showFooter: { type: Boolean, default: true }, // 是否显示底部按钮
   showCreateBtn: { type: Boolean, default: true }, // 是否显示"立即创建"按钮
+  isPreview: { type: Boolean, default: false }, // 是否获取预览文档，决定调用的接口
 });
 
 const {
@@ -235,7 +242,27 @@ const handleFullscreen = (full: Boolean) => {
 // 获取文档信息
 const initData = async () => {
   try {
-    docData.value = await getResourceDocs(apigwId, curResource.value.id);
+    if (!props.isPreview) {
+      docData.value = await getResourceDocs(apigwId, curResource.value.id);
+    } else {
+      const { backend, doc, _localId, _unchecked, ...restOfCurResource } = curResource.value;
+
+      const params = {
+        review_resource: {
+          ...restOfCurResource,
+          backend_name: backend.name,
+          backend_config: { ...backend.config },
+        },
+        doc_language: language.value,
+      };
+
+      const res = await getResourceDocPreview(apigwId, params);
+      docData.value.push({
+        id: null,
+        language: language.value,
+        content: res.doc,
+      });
+    }
     // 根据语言找到是否有文档内容
     handleDocDataWithLanguage();
   } catch (error) {
@@ -313,11 +340,18 @@ const handleSelectLanguage = (payload: string) => {
 
 // 根据语言找到是否有文档内容
 const handleDocDataWithLanguage = () => {
-  const docDataItem =  cloneDeep(docData.value).find((e: any) => e.language === language.value);
-  docId.value = docDataItem.id;
-  isEmpty.value = !docDataItem.id;
-  markdownDoc.value = docDataItem.content;
-  markdownHtml.value = markdownRef.value.markdownIt.render(docDataItem.content);
+  if (!props.isPreview) {
+    const docDataItem =  cloneDeep(docData.value).find((e: any) => e.language === language.value);
+    docId.value = docDataItem.id;
+    isEmpty.value = !docDataItem.id;
+    markdownDoc.value = docDataItem.content;
+    markdownHtml.value = markdownRef.value.markdownIt.render(docDataItem.content);
+  } else {
+    // 预览资源文档会走到这里
+    const content = docData.value[0]?.content ?? '';
+    markdownDoc.value = content;
+    markdownHtml.value = markdownRef.value.markdownIt.render(content);
+  }
 };
 
 // 是否吸附
