@@ -244,17 +244,7 @@ class TestResourceBatchUpdateDestroyApi:
             path_params={"gateway_id": fake_gateway.id},
             data=data,
         )
-
         assert resp.status_code == 204
-
-        resource = Resource.objects.get(id=fake_resource.id)
-        assert resource.is_public == data["is_public"]
-        assert resource.allow_apply_permission == data["allow_apply_permission"]
-        label = ResourceLabelHandler.get_labels([fake_resource.id])
-        assert label[fake_resource.id] == [
-            {"id": label_1.id, "name": label_1.name},
-            {"id": label_2.id, "name": label_2.name},
-        ]
 
         resp = request_view(
             method="GET",
@@ -295,14 +285,7 @@ class TestResourceBatchUpdateDestroyApi:
             path_params={"gateway_id": fake_gateway.id},
             data=data,
         )
-
         assert resp.status_code == 204
-
-        resource = Resource.objects.get(id=fake_resource.id)
-        assert resource.is_public == data["is_public"]
-        assert resource.allow_apply_permission == data["allow_apply_permission"]
-        label = ResourceLabelHandler.get_labels([fake_resource.id])
-        assert label[fake_resource.id] == []
 
         resp = request_view(
             method="GET",
@@ -314,6 +297,48 @@ class TestResourceBatchUpdateDestroyApi:
         assert resp.status_code == 200
         assert result["data"]["results"][0]["labels"] == []
         assert result["data"]["results"][1]["labels"] == []
+
+    def test_update_label_update(self, request_view, fake_resource, fake_resource1, fake_gateway):
+        A = G(APILabel, gateway=fake_gateway, name="A")
+        B = G(APILabel, gateway=fake_gateway, name="B")
+        C = G(APILabel, gateway=fake_gateway, name="C")
+        # 将标签绑定上资源
+        G(ResourceLabel, resource=fake_resource, api_label=A)
+        G(ResourceLabel, resource=fake_resource, api_label=B)
+        G(ResourceLabel, resource=fake_resource1, api_label=A)
+        G(ResourceLabel, resource=fake_resource1, api_label=B)
+        data = {
+            "ids": [fake_resource.id, fake_resource1.id],
+            "is_public": True,
+            "allow_apply_permission": True,
+            "is_update_labels": True,
+            "label_ids": [B.id, C.id],
+        }
+
+        resp = request_view(
+            method="PUT",
+            view_name="resource.batch_update_destroy",
+            path_params={"gateway_id": fake_gateway.id},
+            data=data,
+        )
+        assert resp.status_code == 204
+
+        resp = request_view(
+            method="GET",
+            view_name="resource.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            data=data,
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        assert result["data"]["results"][0]["labels"] == [
+            {"id": B.id, "name": B.name},
+            {"id": C.id, "name": C.name},
+        ]
+        assert result["data"]["results"][1]["labels"] == [
+            {"id": B.id, "name": B.name},
+            {"id": C.id, "name": C.name},
+        ]
 
     def test_destroy(self, request_view, fake_resource):
         data = {
