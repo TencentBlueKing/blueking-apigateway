@@ -1,9 +1,11 @@
-<!-- 2024-08-06 -->
-# V1.13.13 Release Log
+<!-- 2024-08-09 -->
+# V1.13.14 Release Log
 
 ### Bug Fixes
 
 - Updated title brand name
+- Updated product logo
+- Fixed issue with gateway documentation authentication flag display
 
 ---
 
