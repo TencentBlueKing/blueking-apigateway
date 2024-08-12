@@ -20,7 +20,7 @@ import datetime
 import itertools
 import json
 import operator
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from django.db.models import Q
 
@@ -224,6 +224,37 @@ class ResourceHandler:
 
         if remaining_resource_labels:
             ResourceLabel.objects.filter(id__in=remaining_resource_labels.values()).delete()
+
+    @staticmethod
+    def batch_update_resource_labels(gateway: Gateway, resource_ids: List[int], label_ids: List[int]):
+        """
+        批量存储资源标签
+        - 删除未指定的标签
+
+        :param gateway: 网关实例
+        :param resource_ids: 资源ID列表
+        :param label_ids: 要关联的网关标签ID列表，忽略不存在的标签
+        """
+        # while the unique key of resource_label is (resource_id, api_label_id)
+        input_resource_labels = {(r_id, l_id): -1 for r_id in resource_ids for l_id in label_ids}
+
+        current_resource_labels: Dict[Tuple[int, int], int] = {}
+        for resource_label in ResourceLabel.objects.filter(resource_id__in=resource_ids):
+            key = (resource_label.resource_id, resource_label.api_label_id)
+            value = resource_label.id
+            current_resource_labels[key] = value
+
+        # to add
+        to_add_set = set(input_resource_labels.keys()) - set(current_resource_labels.keys())
+        new_resource_labels = [ResourceLabel(resource_id=r_id, api_label_id=l_id) for r_id, l_id in to_add_set]
+        if new_resource_labels:
+            ResourceLabel.objects.bulk_create(new_resource_labels)
+
+        # to delete
+        to_delete_set: Set[Tuple[int, int]] = set(current_resource_labels.keys()) - set(input_resource_labels.keys())
+        delete_ids: List[int] = [current_resource_labels[key] for key in to_delete_set]
+        if delete_ids:
+            ResourceLabel.objects.filter(id__in=delete_ids).delete()
 
     @staticmethod
     def group_by_gateway_id(resource_ids: List[int]) -> Dict[int, List[int]]:
