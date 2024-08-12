@@ -28,7 +28,6 @@ from apigateway.apis.web.resource.views import (
 )
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core import constants
 from apigateway.core.models import Backend, BackendConfig, Context, Proxy, Resource, Stage
@@ -299,20 +298,20 @@ class TestResourceBatchUpdateDestroyApi:
         assert result["data"]["results"][1]["labels"] == []
 
     def test_update_label_update(self, request_view, fake_resource, fake_resource1, fake_gateway):
-        A = G(APILabel, gateway=fake_gateway, name="A")
-        B = G(APILabel, gateway=fake_gateway, name="B")
-        C = G(APILabel, gateway=fake_gateway, name="C")
+        label_a = G(APILabel, gateway=fake_gateway, name="A")
+        label_b = G(APILabel, gateway=fake_gateway, name="B")
+        label_c = G(APILabel, gateway=fake_gateway, name="C")
         # 将标签绑定上资源
-        G(ResourceLabel, resource=fake_resource, api_label=A)
-        G(ResourceLabel, resource=fake_resource, api_label=B)
-        G(ResourceLabel, resource=fake_resource1, api_label=A)
-        G(ResourceLabel, resource=fake_resource1, api_label=B)
+        G(ResourceLabel, resource=fake_resource, api_label=label_a)
+        G(ResourceLabel, resource=fake_resource, api_label=label_b)
+        G(ResourceLabel, resource=fake_resource1, api_label=label_a)
+        G(ResourceLabel, resource=fake_resource1, api_label=label_b)
         data = {
             "ids": [fake_resource.id, fake_resource1.id],
             "is_public": True,
             "allow_apply_permission": True,
             "is_update_labels": True,
-            "label_ids": [B.id, C.id],
+            "label_ids": [label_b.id, label_c.id],
         }
 
         resp = request_view(
@@ -332,12 +331,12 @@ class TestResourceBatchUpdateDestroyApi:
         result = resp.json()
         assert resp.status_code == 200
         assert result["data"]["results"][0]["labels"] == [
-            {"id": B.id, "name": B.name},
-            {"id": C.id, "name": C.name},
+            {"id": label_b.id, "name": label_b.name},
+            {"id": label_c.id, "name": label_c.name},
         ]
         assert result["data"]["results"][1]["labels"] == [
-            {"id": B.id, "name": B.name},
-            {"id": C.id, "name": C.name},
+            {"id": label_b.id, "name": label_b.name},
+            {"id": label_c.id, "name": label_c.name},
         ]
 
     def test_destroy(self, request_view, fake_resource):
