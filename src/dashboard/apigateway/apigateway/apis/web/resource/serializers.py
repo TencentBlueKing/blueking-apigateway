@@ -404,6 +404,16 @@ class ResourceBatchUpdateInputSLZ(serializers.Serializer):
     ids = serializers.ListField(child=serializers.IntegerField(min_value=1), help_text="资源 ID 列表")
     is_public = serializers.BooleanField(help_text="是否公开，true：公开，false：不公开")
     allow_apply_permission = serializers.BooleanField(help_text="是否允许应用在开发者中心申请访问资源的权限")
+    is_update_labels = serializers.BooleanField(
+        help_text="是否批量修改标签，true:需要批量修改标签，false：不批量修改标签", required=False, default=False
+    )
+    label_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_empty=True,
+        required=False,
+        max_length=MAX_LABEL_COUNT_PER_RESOURCE,
+        help_text="标签 ID 列表",
+    )
 
     def validate_ids(self, value):
         gateway_id = self.context["gateway_id"]
