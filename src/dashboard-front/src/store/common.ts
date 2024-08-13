@@ -45,6 +45,7 @@ export const useCommon = defineStore('common', {
     // 网关标签
     gatewayLabels: [],
     websiteConfig: {},
+    noGlobalError: false, // 请求出错是否显示全局的错误Message
   }),
   actions: {
     setApigwId(apigwId: number) {
@@ -61,6 +62,9 @@ export const useCommon = defineStore('common', {
     },
     setWebsiteConfig(data: any) {
       this.websiteConfig = data;
+    },
+    setNoGlobalError(val: boolean) {
+      this.noGlobalError = val;
     },
   },
 });
