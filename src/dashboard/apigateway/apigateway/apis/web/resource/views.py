@@ -288,6 +288,13 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
             allow_apply_permission=slz.validated_data["allow_apply_permission"],
             updated_by=request.user.username,
         )
+        label_ids = slz.validated_data.get("label_ids")
+        if slz.validated_data["is_update_labels"]:
+            ResourceHandler.batch_update_resource_labels(
+                gateway=request.gateway,
+                resource_ids=slz.validated_data["ids"],
+                label_ids=label_ids,
+            )
 
         Auditor.record_resource_op_success(
             op_type=OpTypeEnum.MODIFY,
@@ -300,6 +307,7 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
             data_after={
                 "is_public": slz.validated_data["is_public"],
                 "allow_apply_permission": slz.validated_data["allow_apply_permission"],
+                "label_ids": label_ids,
             },
         )
 

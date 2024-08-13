@@ -374,6 +374,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-jibenxinxi:before {
 	content: "\e177";
 }
+.icon-ag-upload:before {
+	content: "\e186";
+}
 .icon-ag-gongneng-quanping2:before {
 	content: "\e184";
 }

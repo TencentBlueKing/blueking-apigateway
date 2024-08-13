@@ -23,7 +23,7 @@
             accept=".yaml,.json,.yml"
           >
             <div>
-              <i class="icon apigateway-icon icon-ag-plus"></i>
+              <i class="icon apigateway-icon icon-ag-upload"></i>
               {{ t('上传文件') }}
             </div>
           </bk-upload>
@@ -72,13 +72,14 @@
         </div>
       </div>
       <!-- 代码编辑器 -->
-      <div class="monaco-editor" ref="editorWrapRef">
+      <div class="monaco-editor" :class="{ 'hide-collapse-btn': visibleErrorReasons.length < 1 }" ref="editorWrapRef">
         <bk-resize-layout
           ref="resizeLayoutRef"
           placement="bottom"
           collapsible
-          immediate
           :border="false"
+          :max="resizeLayoutAsideMax"
+          :min="resizeLayoutAsideMin"
           style="height: 100%"
           @collapse-change="updateIsEditorMsgCollapsed"
         >
@@ -143,10 +144,10 @@
                 <article v-if="isValidBannerVisible" class="validation-message">
                   <success class="success-c" width="14px" height="14px" />
                   <span class="msg-part msg-body">{{ t('校验通过') }}</span>
-                  <close-line
-                    width="14px" height="14px" fill="#DCDEE5" style="margin-left: auto; cursor: pointer;"
-                    @click="() => { isValidBannerVisible = false }"
-                  ></close-line>
+<!--                  <close-line-->
+<!--                    width="14px" height="14px" fill="#DCDEE5" style="margin-left: auto; cursor: pointer;"-->
+<!--                    @click="() => { isValidBannerVisible = false }"-->
+<!--                  ></close-line>-->
                 </article>
                 <article v-else class="editor-footer-validate-btn">
                   <bk-button
@@ -1008,7 +1009,6 @@ import {
   Share,
   PlayShape,
   Success,
-  CloseLine,
   CollapseLeft,
   Close, AngleUpFill,
 } from 'bkui-vue/lib/icon';
@@ -1088,6 +1088,9 @@ const isPluginsSliderShow = ref(false);
 
 // 编辑器所在的 resize-layout
 const resizeLayoutRef = ref<InstanceType<typeof ResizeLayout> | null>(null);
+// resizeLayout 拉伸区高度范围
+const resizeLayoutAsideMax = ref(100);
+const resizeLayoutAsideMin = ref(50);
 
 // 导入失败消息
 const importErrorMsg = ref('');
@@ -1150,9 +1153,9 @@ const msgAsErrorNum = computed(() => {
   return errorReasons.value.filter(r => r.level === 'Error').length;
 });
 
-const msgAsWarningNum = computed(() => {
-  return errorReasons.value.filter(r => r.level === 'Warning').length;
-});
+// const msgAsWarningNum = computed(() => {
+//   return errorReasons.value.filter(r => r.level === 'Warning').length;
+// });
 
 // 代码有变化时重置校验状态
 watch(editorText, () => {
@@ -1174,7 +1177,11 @@ watch(curView, async (newCurView, oldCurView) => {
 
 // 进入页面默认折叠编辑器错误消息栏
 onMounted(() => {
-  resizeLayoutRef?.value?.setCollapse(true);
+  resizeLayoutRef.value?.setCollapse(true);
+  // 设置拉伸区高度范围
+  const editorViewportHeight = resizeLayoutRef.value?.$el.clientHeight - 92;
+  resizeLayoutAsideMax.value = Math.floor(editorViewportHeight * 0.8);
+  resizeLayoutAsideMin.value = Math.ceil(editorViewportHeight * 0.2);
   // 更改编辑器主题和行号左边的提示列(glyph margin)
   if (resourceEditorRef?.value) {
     resourceEditorRef.value.setTheme('import-theme');
@@ -1250,6 +1257,8 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
     // 清空编辑器高亮样式
     resourceEditorRef?.value?.clearDecorations();
     errorReasons.value = [];
+    // 重置可视错误消息类型
+    activeCodeMsgType.value = 'All';
     const params: any = {
       content: editorText.value,
       allow_overwrite: true,
@@ -1290,10 +1299,21 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
       errorReasons.value = errData.map((err) => {
         if (err.json_path !== '$' && err.json_path !== '') {
           // 从 jsonpath 提取路径组成数组，去掉开头的 $
-          const paths = JSONPath.toPathArray(err.json_path)
+          let paths = JSONPath.toPathArray(err.json_path)
             .slice(1);
           // 找到 jsonpath 指向的值
-          const pathValue = JSONPath(err.json_path, editorJsonObj, null, null)[0] ?? [];
+          let pathValue = JSONPath(err.json_path, editorJsonObj, null, null)[0] ?? null;
+          // 当获取 json_path 指向的值失败时，检查是不是因为 json_path 中有大写的 http method
+          if (pathValue === null) {
+            const httpMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'];
+            // 把 json_path 中的大写 method 规范化为小写的
+            if (paths.some(item => httpMethods.includes(item))) {
+              paths = paths.map(item =>
+                httpMethods.includes(item) ? item.toLowerCase() : item
+              );
+              pathValue = JSONPath(`$.${paths.join('.')}`, editorJsonObj, null, null)[0] ?? null;
+            }
+          }
           // 提取后端错误消息中第一个用引号包起来的字符串，它常常就是代码错误所在
           const quotedValue = getFirstQuotedValue(err.message);
           const stringToFind = '';
@@ -1334,7 +1354,7 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
         } else {
           return {
             json_path: err.json_path,
-            message: err.message ?? '未知错误',
+            message: err.message ?? t('未知错误'),
             level: 'Error',
           };
         }
@@ -1342,7 +1362,7 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
     } else {
       // 其他错误会走到这里，包括格式错误等等
       errorReasons.value.push({
-        message: error?.message ?? '未知错误',
+        message: error?.message ?? t('未知错误'),
         level: 'Error',
       });
     }
@@ -1553,9 +1573,16 @@ const getFirstQuotedValue = (str: string) => {
 
 // 处理右侧错误类型计数器点击事件
 const handleErrorCountClick = (type: CodeErrorMsgType) => {
-  activeCodeMsgType.value = type;
+  // 重复点击同一个类型，则重置选中态
+  activeCodeMsgType.value = (type === activeCodeMsgType.value) ? 'All' : type;
   activeVisibleErrorMsgIndex.value = -1;
   updateEditorDecorations();
+  // 如果有错误消息，点击后可以展开错误消息栏
+  if (isEditorMsgCollapsed && visibleErrorReasons.value.length > 0) {
+    nextTick(() => {
+      resizeLayoutRef?.value?.setCollapse(false);
+    });
+  }
 };
 
 // 切换搜索面板
@@ -1941,7 +1968,7 @@ const handleReturnClick = () => {
           flex-direction: column;
           align-items: center;
           justify-content: space-between;
-          background-color: #1a1a1a;
+          background-color: #212121;
 
           .editor-error-counters {
             width: 32px;
@@ -1966,7 +1993,7 @@ const handleReturnClick = () => {
               }
 
               &:hover, &.active {
-                background-color: #333;
+                background-color: #3e3e3e;
               }
 
               .icon {
@@ -2079,11 +2106,18 @@ const handleReturnClick = () => {
     }
 
     // ResizeLayout 的折叠按钮样式
-    :deep(.bk-resize-layout>.bk-resize-layout-aside .bk-resize-collapse) {
+    :deep(.bk-resize-layout > .bk-resize-layout-aside .bk-resize-collapse) {
       margin-bottom: 9px;
       margin-left: -16px;
       background: #1a1a1a;
       box-shadow: 0 0 2px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    &.hide-collapse-btn {
+      // 隐藏 ResizeLayout 的折叠按钮
+      :deep(.bk-resize-layout > .bk-resize-layout-aside .bk-resize-collapse) {
+        display: none !important;
+      }
     }
 
     // ResizeLayout 的折叠区应允许滚动
@@ -2104,6 +2138,7 @@ const handleReturnClick = () => {
     opacity: .7;
   }
 
+  // 行号左侧图标样式
   :deep(.apigateway-icon.icon-ag-exclamation-circle-fill.f14) {
     color: #b34747;
   }
@@ -2132,13 +2167,6 @@ const handleReturnClick = () => {
   /* 鼠标按住时的滚动条滑块 */
   ::-webkit-scrollbar-thumb:active {
     background: #5e5e5e;
-  }
-
-  .warning-circle {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background-color: hsla(36.6, 81.7%, 55.1%, 0.5);
   }
 }
 

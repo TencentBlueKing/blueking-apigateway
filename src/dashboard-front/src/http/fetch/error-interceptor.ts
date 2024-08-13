@@ -3,6 +3,8 @@ import { Message } from 'bkui-vue';
 // import mitt from '@/common/event-bus';
 import { showLoginModal } from '@blueking/login-modal';
 // import { showLoginModal } from '@/common/auth';
+import { useCommon } from '@/store';
+
 const { BK_LOGIN_URL } = window;
 
 // 请求执行失败拦截器
@@ -51,7 +53,7 @@ export default (errorData: any, config: IFetchConfig) => {
   }
   // 全局捕获错误给出提示
   if (config.globalError) {
-    if (error.code !== 'UNAUTHENTICATED') {
+    if (error.code !== 'UNAUTHENTICATED' && !useCommon()?.noGlobalError) {
       Message({ theme: 'error', message: error.message });
     }
   }
