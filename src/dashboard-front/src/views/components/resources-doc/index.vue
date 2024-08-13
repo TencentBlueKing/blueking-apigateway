@@ -445,11 +445,13 @@ onBeforeUnmount(() => {
 
 .content-editor {
   height: 100%;
-
-  :deep(.content-input-wrapper) {
-    height: 100%;
-  }
 }
+
+// 把编辑器多余高度的背景色涂成和编辑区一样
+:deep(.v-note-wrapper .v-note-panel .v-note-edit.divarea-wrapper.single-edit) {
+  background-color: #313238;
+}
+
 .doc-btn-wrapper {
   margin-top: 8px;
   background: #fff;
