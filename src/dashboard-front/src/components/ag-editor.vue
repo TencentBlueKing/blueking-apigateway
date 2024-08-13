@@ -185,7 +185,9 @@ const genLineDecorations = (decorationOptions) => {
 };
 
 const setDecorations = () => {
-  decorations.set();
+  if (decorations.length > 0) {
+    decorations.set();
+  }
 };
 
 const clearDecorations = () => {

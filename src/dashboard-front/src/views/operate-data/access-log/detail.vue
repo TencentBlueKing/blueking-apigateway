@@ -14,7 +14,7 @@
             <div class="item" v-for="({ label, field }, index) in details.fields" :key="index">
               <dt class="label">{{label}}</dt>
               <dd class="value">
-                {{field === 'timestamp' ? transformTime(details.result[field]) : details.result[field]}}
+                {{ getFieldText(field) }}
               </dd>
             </div>
           </dl>
@@ -25,8 +25,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import {
+  ref,
+  onMounted,
+  onBeforeUnmount,
+  computed,
+} from 'vue';
+import { useRoute, onBeforeRouteLeave } from 'vue-router';
 import dayjs from 'dayjs';
 
 import { useGetApiList } from '@/hooks';
@@ -34,9 +39,14 @@ import { useGetApiList } from '@/hooks';
 import i18n from '@/language/i18n';
 import { fetchApigwAccessLogDetail } from '@/http';
 import { LogDetailInterface } from './common/type';
+import { useCommon } from '@/store';
 
 const { t } = i18n.global;
 const route = useRoute();
+const common = useCommon();
+
+// 组件默认不展示任何请求的错误 Message
+common.setNoGlobalError(true);
 
 const isDataLoading = ref(false);
 const hasError = ref(false);
@@ -77,23 +87,39 @@ const routeParams = computed(() => route.params);
 
 const currentApigwName = computed(() => {
   const current = apigwDataList.value.find(item => String(item.id) === String(routeParams.value.id)) || {};
-  const name = current.name || '';
-  return name;
+  return current.name || '--';
 });
 
 const titleInfo = computed(() => t(
   '蓝鲸应用ID [{detailsAppCode}] 访问API网关 [{currentApigwName}] 资源的请求详情',
-  { detailsAppCode: details.value.result.app_code, currentApigwName: currentApigwName.value },
+  { detailsAppCode: details.value?.result?.app_code || '--', currentApigwName: currentApigwName.value },
 ));
 
 const transformTime = (time: number) => dayjs.unix(time).format('YYYY-MM-DD HH:mm:ss');
 
+const getFieldText = (field: string) => {
+  if (field === 'timestamp') return transformTime(details.value.result[field]);
+
+  if (details.value.result[field] === false) return false;
+
+  return details.value.result[field] || '--';
+};
+
 onMounted(async () => {
-  // console.error('routeParams', routeParams.value);
-  // console.error('routeQuery', routeQuery.value);
+  // console.log('routeParams', routeParams.value);
+  // console.log('routeQuery', routeQuery.value);
   // console.error('apigwDataList.valueapigwDataList.value', apigwDataList.value);
   await initData();
   apigwDataList.value = useGetApiList({}).dataList.value;
+});
+
+// 离开组件前重置 noGlobalError 状态，避免其他页面也不展示错误 Message
+onBeforeRouteLeave(() => {
+  common.setNoGlobalError(false);
+});
+
+onBeforeUnmount(() => {
+  common.setNoGlobalError(false);
 });
 </script>
 
@@ -107,11 +133,12 @@ onMounted(async () => {
 
 .detail-panel {
   margin-top: 24px;
+  margin-bottom: 24px;
   border: 1px solid #EBEDF1;
   background: #fff;
 
   .panel-bd {
-    padding: 16px 0 32px 0;
+    padding: 16px 0;
   }
 
   .panel-hd {
