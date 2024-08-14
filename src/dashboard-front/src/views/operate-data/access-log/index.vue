@@ -15,7 +15,10 @@
             :use-shortcut-text="true"
             :clearable="false"
             :shortcut-selected-index="shortcutSelectedIndex"
-            @shortcut-change="handleShortcutChange" @change="handlePickerChange" />
+            @shortcut-change="handleShortcutChange"
+            @change="handlePickerChange"
+            @pick-success="handlePickerConfirm"
+          />
         </bk-form-item>
         <bk-form-item :label="t('环境')">
           <bk-select
@@ -169,6 +172,7 @@ import {
   fetchApigwStages,
   fetchApigwAccessLogShareLink,
 } from '@/http';
+import { Message } from 'bkui-vue';
 
 const { t } = i18n.global;
 const { getChartIntervalOption } = userChartIntervalOption();
@@ -447,6 +451,16 @@ const handlePickerChange = () => {
     pagination.value.current = 1;
     getSearchData();
   });
+};
+
+const handlePickerConfirm = () => {
+  const internalValue = datePickerRef.value?.internalValue;
+  if (internalValue) {
+    dateTimeRange.value = internalValue;
+    getSearchData();
+  } else {
+    Message({ theme: 'warning', message: t('输入的时间错误'), delay: 2000, dismissable: false });
+  }
 };
 
 const handleStageChange = (value: number) => {

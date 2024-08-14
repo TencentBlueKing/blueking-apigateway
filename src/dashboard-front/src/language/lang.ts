@@ -237,6 +237,7 @@ const lang: ILANG = {
   '访问地址': ['Access URL'],
   '子路径': ['Subpath'],
   '选择日期时间范围': ['Select date and time range'],
+  '输入的时间错误': ['Invalid Time Format'],
   '隐藏示例': ['Hide example'],
   '显示示例': ['Show example'],
   '创建时间': ['Create Time'],
