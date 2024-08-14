@@ -1564,6 +1564,19 @@ const lang: ILANG = {
   '请先进行语法检测': ['Validate code to proceed'],
   '请先修复报错信息后再导入': ['Resolve errors to proceed'],
   '查看插件': ['Plugins'],
+  '执行成功': ['Success'],
+  '执行失败': ['Failure'],
+  '执行中': ['Doing'],
+  '网关启用': ['Gateway Enable'],
+  '网关停用': ['Gateway Disable'],
+  '版本发布中': ['Version Publish'],
+  '插件绑定': ['Plugin Bind'],
+  '插件更新': ['Plugin Update'],
+  '插件解绑': ['Plugin Unbind'],
+  '环境下架': ['Stage Disable'],
+  '环境删除': ['Stage Delete'],
+  '环境更新': ['Stage Update'],
+  '服务更新': ['Backend Update'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
