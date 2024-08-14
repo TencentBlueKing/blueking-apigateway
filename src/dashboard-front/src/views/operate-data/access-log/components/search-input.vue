@@ -52,10 +52,10 @@
             <div class="sample-item">
               <p class="mode">{{ t("配置范围") }}</p>
               <p class="value">
-                duration: [5000 TO 30000]
+                request_duration: [5000 TO 30000]
                 <span
                   class="icon apigateway-icon icon-ag-3-yuan-bohui"
-                  @click="handleClickUsageValue('duration: [5000 TO 30000]')"
+                  @click="handleClickUsageValue('request_duration: [5000 TO 30000]')"
                   v-bk-tooltips="{ content: '引用条件' }">
                 </span>
               </p>

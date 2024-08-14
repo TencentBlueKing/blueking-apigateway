@@ -109,6 +109,7 @@ const initEditor = () => {
     minimap: {
       enabled: props.minimap, // 小地图
     },
+    wordWrap: 'on', // 启用 soft-wraps
   });
 
   editorMounted(); // 编辑器初始化后

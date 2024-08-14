@@ -427,7 +427,7 @@ const handleConfirm = async () => {
 
       if (res?.updated_stages?.length) {
         publishDialog.isShow = true;
-        publishDialog.stageNames = res?.updated_stages;
+        publishDialog.stageNames = res?.updated_stages?.map((item: any) => item.name);
       } else {
         Message({
           message: t('保存成功'),
