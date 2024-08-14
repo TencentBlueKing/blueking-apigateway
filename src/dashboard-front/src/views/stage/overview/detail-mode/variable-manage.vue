@@ -484,11 +484,21 @@ watch(
                 height: 42px;
                 line-height: 42px;
                 border: 0;
+                &:hover {
+                  border: 1px solid #A3C5FD;
+                }
                 &.is-focused {
                   border: 1px solid #3A84FF;
                 }
                 &--text {
                   padding: 0 16px;
+                }
+              }
+            }
+            &.is-error {
+              .bk-form-content {
+                .bk-input--text {
+                  background: #FFEEEE;
                 }
               }
             }

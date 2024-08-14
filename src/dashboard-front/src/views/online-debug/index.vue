@@ -86,7 +86,7 @@
                   <div class="request-source-name">
                     <right-shape :class="['request-source-icon', activeIndex?.includes(1) ? 'switch' : '']" />
                     <span class="source-title">{{ curResource?.name }}</span>
-                    <span class="source-subtitle">（{{ curResource?.description }}）</span>
+                    <span class="source-subtitle">（ {{ curResource?.description }} ）</span>
                   </div>
                   <div
                     class="request-source-path seldom-path"
@@ -115,20 +115,18 @@
                       {{ t('应用认证') }}：
                     </div>
                     <div class="request-setting-main">
+                      <span>
+                        ({{ isDefaultAppAuth ? t('默认测试应用') : t('自定义应用') }})
+                        bk_app_code：{{ isDefaultAppAuth ? testAppCode : formData.authorization.bk_app_code }}；
+                        bk_app_secret：{{ isDefaultAppAuth ? '******' : formData.authorization.bk_app_secret }}
+                      </span>
                       <bk-pop-confirm
                         width="470"
                         trigger="click"
                         @confirm="saveAppAuthEdit"
                         @cancel="cancelAppAuthEdit"
                       >
-                        <div>
-                          <span>
-                            ({{ isDefaultAppAuth ? t('默认测试应用') : t('自定义应用') }})
-                            bk_app_code：{{ isDefaultAppAuth ? testAppCode : formData.authorization.bk_app_code }}；
-                            bk_app_secret：{{ isDefaultAppAuth ? '******' : formData.authorization.bk_app_secret }}
-                          </span>
-                          <edit-line class="edit-auth" @click="handleEditAppAuth" />
-                        </div>
+                        <edit-line class="edit-auth" @click="handleEditAppAuth" />
 
                         <template #content>
                           <div class="edit-user-auth">
@@ -166,7 +164,8 @@
                               />
                             </template>
                             <div class="edit-user-tips">
-                              <info-line /> <span class="tips">{{ t('默认测试应用，网关自动为其短期授权；自定义应用，需主动为应用授权资源访问权限') }}</span>
+                              <info-line class="icon" />
+                              <span class="tips">{{ t('默认测试应用，网关自动为其短期授权；自定义应用，需主动为应用授权资源访问权限') }}</span>
                             </div>
                             <!-- <div class="edit-user-btns">
                           <bk-button theme="primary" @click="saveAppAuthEdit">{{ t('保存') }}</bk-button>
@@ -182,19 +181,17 @@
                       {{ t('用户认证') }}：
                     </div>
                     <div class="request-setting-main">
+                      <span>
+                        ({{ formData.useUserFromCookies ? t('默认用户认证') : t('自定义用户认证') }})
+                        bk_token：{{ formData.useUserFromCookies ? '******' : formData.authorization.bk_token}}
+                      </span>
                       <bk-pop-confirm
                         width="470"
                         trigger="click"
                         @confirm="saveUserAuthEdit"
                         @cancel="cancelUserAuthEdit"
                       >
-                        <div>
-                          <span>
-                            ({{ formData.useUserFromCookies ? t('默认用户认证') : t('自定义用户认证') }})
-                            bk_token：{{ formData.useUserFromCookies ? '******' : formData.authorization.bk_token}}
-                          </span>
-                          <edit-line class="edit-auth" @click="handleEditUserAuth" />
-                        </div>
+                        <edit-line class="edit-auth" @click="handleEditUserAuth" />
 
                         <template #content>
                           <div class="edit-user-auth">
@@ -222,7 +219,8 @@
                             </template>
 
                             <div class="edit-user-tips">
-                              <info-line /> <span class="tips">{{ t('默认测试应用，网关自动为其短期授权；自定义应用，需主动为应用授权资源访问权限') }}</span>
+                              <info-line class="icon" />
+                              <span class="tips">{{ t('默认测试应用，网关自动为其短期授权；自定义应用，需主动为应用授权资源访问权限') }}</span>
                             </div>
                             <!-- <div class="edit-user-btns">
                           <bk-button theme="primary" @click="saveUserAuthEdit">{{ t('保存') }}</bk-button>
@@ -257,7 +255,7 @@
         <bk-resize-layout
           class="request-resize"
           placement="top"
-          initial-divide="90%"
+          :initial-divide="initialDivide"
         >
           <template #aside>
             <div class="request-payload">
@@ -297,7 +295,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, computed, watch } from 'vue';
+import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import onlineTestTop from '@/components/online-test-top.vue';
 import { RightShape, EditLine, InfoLine, AngleUpFill, Share, CloseLine } from 'bkui-vue/lib/icon';
@@ -395,6 +393,18 @@ const payloadType = reactive<any>({
   fromDataPayload: [],
 });
 const tab = ref<string>('Params');
+const initialDivide = ref<string>('90%');
+
+const setInitialDivide = () => {
+  const box: any = document.querySelector('.request-resize');
+  if (box) {
+    initialDivide.value = `${box?.offsetHeight - 52 - 24}px`;
+  }
+};
+
+onMounted(() => {
+  setInitialDivide();
+});
 
 // 编辑应用认证
 const appAuthorization = reactive<any>({
@@ -882,6 +892,11 @@ watch(
   :deep(.bk-resize-trigger:hover) {
     border-right: 2px solid #3a84ff;
   }
+  &.bk-resize-layout-collapsed {
+    :deep(.bk-resize-layout-aside) {
+      border-right: none;
+    }
+  }
   .resize-aside {
     background: #FFFFFF;
     height: 100%;
@@ -926,6 +941,7 @@ watch(
         .source-subtitle {
           font-size: 12px;
           color: #979BA5;
+          margin-top: 2px;
         }
       }
     }
@@ -935,6 +951,7 @@ watch(
       display: flex;
       align-items: center;
       margin-bottom: 4px;
+      line-height: 28px;
       &.top-flush {
         align-items: self-start;
       }
@@ -976,8 +993,7 @@ watch(
     display: flex;
     align-items: center;
     .request-path-box {
-      padding: 6px;
-      padding-right: 15px;
+      padding: 2px 15px 2px 6px;
       background: #F5F7FA;
       border-radius: 2px;
       margin-right: 8px;
@@ -1008,8 +1024,11 @@ watch(
   .edit-user-tips {
     margin-bottom: 8px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     font-size: 14px;
+    .icon {
+      margin-top: 2px;
+    }
     .tips {
       margin-left: 6px;
       font-size: 12px;
@@ -1054,7 +1073,7 @@ watch(
     display: inline-block;
   }
   .my-menu-header {
-    padding: 6px 24px;
+    padding: 7px 24px;
     display: flex;
     align-items: center;
     cursor: pointer;
@@ -1073,7 +1092,7 @@ watch(
     }
   }
   :deep(.bk-collapse-content) {
-    padding: 8px 0;
+    padding: 2px 0;
   }
   .component-list {
     list-style: none;
@@ -1109,6 +1128,7 @@ watch(
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
+      line-height: 20px;
     }
   }
 }
