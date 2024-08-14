@@ -146,7 +146,7 @@ watch(() => props.isSliderShow, (val) => {
   padding: 24px 24px 0 24px;
 
   :deep(.collapse-cls) {
-    margin-bottom: 52px;
+    margin-bottom: 24px;
 
     .bk-collapse-item {
       background: #fff;
