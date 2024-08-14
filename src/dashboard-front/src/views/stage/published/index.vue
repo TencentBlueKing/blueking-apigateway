@@ -45,7 +45,7 @@
         </bk-table-column>
         <bk-table-column :label="t('类型')">
           <template #default="{ data }">
-            {{ publishSourceEnum[data?.source] }}
+            {{ getTextFromEnum(publishSourceEnum, data?.source) }}
           </template>
         </bk-table-column>
         <bk-table-column
@@ -62,7 +62,7 @@
           <template #default="{ data }">
             <spinner v-if="data?.status === 'doing'" fill="#3A84FF" />
             <span v-else :class="['dot', data?.status]"></span>
-            {{ publishStatusEnum[data?.status] }}
+            {{ getTextFromEnum(publishStatusEnum, data?.status) }}
           </template>
         </bk-table-column>
         <bk-table-column :label="t('操作时间')" prop="created_time">
@@ -106,7 +106,6 @@ import { useRouter } from 'vue-router';
 
 import { useQueryList, useDatePicker } from '@/hooks';
 import { useI18n } from 'vue-i18n';
-import { PublishSourceEnum, PublishStatusEnum } from '@/types';
 import logDetails from '@/components/log-details/index.vue';
 import publishDetails from './comps/publish-details.vue';
 import { Spinner } from 'bkui-vue/lib/icon';
@@ -126,8 +125,23 @@ const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
 const shortcutSelectedIndex = ref(-1);
 const datePickerRef = ref(null);
 const dateKey = ref('dateKey');
-const publishSourceEnum: any = ref(PublishSourceEnum);
-const publishStatusEnum: any = ref(PublishStatusEnum);
+const publishSourceEnum = Object.freeze({
+  gateway_enable: '网关启用',
+  gateway_disable: '网关停用',
+  version_publish: '版本发布中',
+  plugin_bind: '插件绑定',
+  plugin_update: '插件更新',
+  plugin_unbind: '插件解绑',
+  stage_disable: '环境下架',
+  stage_delete: '环境删除',
+  stage_update: '环境更新',
+  backend_update: '服务更新',
+});
+const publishStatusEnum = Object.freeze({
+  success: '执行成功',
+  failure: '执行失败',
+  doing: '执行中',
+});
 
 // 列表hooks
 const {
@@ -198,6 +212,13 @@ const goVersionList = (data: any) => {
       version: data?.resource_version_display,
     },
   });
+};
+
+type Enums = typeof publishSourceEnum | typeof publishStatusEnum;
+// 从枚举对象中获取文本
+const getTextFromEnum = (e: Enums, key?: unknown) => {
+  if (!key) return '--';
+  return t(e[key as keyof Enums]);
 };
 
 watch(() => filterData.value, () => {
