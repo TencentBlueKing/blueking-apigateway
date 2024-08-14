@@ -237,6 +237,7 @@ const lang: ILANG = {
   '访问地址': ['Access URL'],
   '子路径': ['Subpath'],
   '选择日期时间范围': ['Select date and time range'],
+  '输入的时间错误': ['Invalid Time Format'],
   '隐藏示例': ['Hide example'],
   '显示示例': ['Show example'],
   '创建时间': ['Create Time'],
@@ -1577,6 +1578,9 @@ const lang: ILANG = {
   '环境删除': ['Stage Delete'],
   '环境更新': ['Stage Update'],
   '服务更新': ['Backend Update'],
+  '文件名需要跟资源名称完全一致才能导入，请检查文件名': ['Filename must matches resource name'],
+  '已匹配到资源': ['Resource matched'],
+  '未匹配到资源': ['Resource not matched'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

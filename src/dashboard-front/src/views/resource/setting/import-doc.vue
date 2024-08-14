@@ -120,12 +120,14 @@
         show-overflow-tooltip
         :checked="checkData"
         :is-row-select-enable="isRowSelectEnable"
+        :row-class="getRowClass"
         @selection-change="handleSelectionChange"
       >
         <bk-table-column
           width="80"
           type="selection"
           align="center"
+          :explain="{ content: (col: any, row: any) => getColExplainContent(row) }"
         />
         <bk-table-column
           v-if="docType === 'archive'"
@@ -163,8 +165,14 @@
           prop="path"
         >
           <template #default="{ data }">
-            <span class="danger-c" v-if="data?.id">{{ t('覆盖') }}</span>
-            <span class="success-c" v-else>{{ t('新建') }}</span>
+            <!--  若是没匹配到资源，给出提示  -->
+            <template v-if="!data?.resource">
+              <span class="warning-c">{{ t('未匹配到资源') }}</span>
+            </template>
+            <template v-else>
+              <span class="danger-c" v-if="!!data?.resource_doc">{{ t('覆盖') }}</span>
+              <span class="success-c" v-else>{{ t('新建') }}</span>
+            </template>
           </template>
         </bk-table-column>
       </bk-table>
@@ -285,7 +293,7 @@ const handleUploadDone = async (response: any) => {
   const res = response[0].response.data;
   const data = res.map((e: any) => ({ ...e, ...e.resource, ...e.resource_doc }));
   tableData.value = data;
-  checkData.value = data.filter((e: any) => !!e.resource_doc); // 有资源文档的才默认选中
+  checkData.value = data.filter((e: any) => !!e.resource); // 有资源文档的才默认选中
   curView.value = 'resources';
   nextTick(() => {
     selections.value = JSON.parse(JSON.stringify(checkData.value));
@@ -360,9 +368,22 @@ const handleImportDoc = async () => {
 
 // 没有资源不能导入
 const isRowSelectEnable = (data: any) => {
-  console.log('row', data);
+  // console.log('row', data);
   if (docType.value === 'swagger') return true; // 如果是swagger 则可以选择
-  return data?.row.resource_doc;
+  return !!data?.row.resource;
+};
+
+// 获取 checkbox 悬浮时的文本
+const getColExplainContent = (row: any) => {
+  if (docType.value !== 'swagger' && !row?.resource) {
+    return t('文件名需要跟资源名称完全一致才能导入，请检查文件名');
+  }
+  return t('已匹配到资源');
+};
+
+// 为不能选中的行添加类名
+const getRowClass = (data: any) => {
+  if (docType.value !== 'swagger' && !data?.resource) return 'row-disabled';
 };
 
 // 取消返回到资源列表
@@ -429,6 +450,13 @@ const handleHiddenExample = () => {
   :deep(.upload-cls) {
     .bk-upload-list{
       display: none !important;
+    }
+  }
+
+  // 不能被选中的表格行的样式
+  :deep(.row-disabled) {
+    td {
+      background-color: #fafbfd;
     }
   }
 }

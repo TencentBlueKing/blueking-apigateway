@@ -432,7 +432,13 @@ const handleResourceChange = (value: any) => {
 };
 
 const handleTimeChange = () => {
-  getDataByDimension();
+  const internalValue = datePickerRef.value?.internalValue;
+  if (internalValue) {
+    dateTimeRange.value = internalValue;
+    getDataByDimension();
+  } else {
+    Message({ theme: 'warning', message: t('输入的时间错误'), delay: 2000, dismissable: false });
+  }
 };
 
 const handleShortcutChange = (value: any, index: number) => {
