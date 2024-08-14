@@ -162,17 +162,21 @@ class APITestApi(generics.CreateAPIView):
         )
 
     def _get_response_data(self, response, headers_without_sensitive=Dict[str, Any], verify=False):
+        # 去掉 curl 字符串的换行
+        original_curl = to_curl(
+            response.request,
+            verify=verify,
+            headers=headers_without_sensitive,
+        )
+        modified_curl = original_curl.replace("\n", "")
+
         return {
             "status_code": response.status_code,
             "proxy_time": round(convert_second_to_epoch_millisecond(response.elapsed.total_seconds())),
             "size": "{:.2f}".format(len(response.content) / 1024),
             "body": response.text,
             "headers": dict(response.headers),
-            "curl": to_curl(
-                response.request,
-                verify=verify,
-                headers=headers_without_sensitive,
-            ),
+            "curl": modified_curl,
         }
 
     def _get_authorization_from_cookies(self) -> Dict[str, str]:
