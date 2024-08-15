@@ -138,14 +138,14 @@ class ArchiveParser(BaseParser):
     def _extract_resource_name(self, filename: str) -> Optional[str]:
         """
         根据文件名提取资源名称
-        - 忽略下划线开头的文件
+        - 忽略下划线开头的文件以及._开头的(mac压缩的文件解压会包含._重名文件)
         - 忽略非 .md, .md.j2 结尾的文件
 
         :param filename: 形如：en/get_user.md, docs/en/get_users.md
         """
         name = filename.rsplit("/", 1)[-1]
 
-        if name.startswith("_"):
+        if name.startswith(("_", "._")):
             return None
 
         if name.endswith(".md"):
