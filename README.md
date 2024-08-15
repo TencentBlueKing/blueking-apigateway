@@ -63,7 +63,7 @@
 
 ## 合作方
 
-<a href="https://apisix.apache.org/"><img src="https://github.com/apache/apisix/blob/master/logos/apisix-white-bg.jpg" alt="APISIX logo" height="150px" /></a>
+<a href="https://apisix.apache.org/" target="_blank"><img src="https://github.com/apache/apisix/blob/master/logos/apisix-white-bg.jpg" alt="APISIX logo" height="150px" /></a>
 
 ## 证书
 
