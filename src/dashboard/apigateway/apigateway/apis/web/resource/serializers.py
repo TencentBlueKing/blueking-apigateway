@@ -36,7 +36,6 @@ from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES
 from apigateway.core.models import Backend, Gateway, Resource
-from apigateway.core.utils import get_path_display
 
 from .constants import MAX_LABEL_COUNT_PER_RESOURCE, PATH_PATTERN, RESOURCE_NAME_PATTERN
 from .legacy_serializers import LegacyTransformHeadersSLZ, LegacyUpstreamsSLZ
@@ -588,7 +587,7 @@ class ResourceImportInfoSLZ(serializers.Serializer):
     description = serializers.CharField(read_only=True, help_text="资源描述")
     description_en = serializers.CharField(help_text="资源英文描述")
     method = serializers.CharField(read_only=True, help_text="请求方法")
-    path = serializers.SerializerMethodField(help_text="请求路径")
+    path = serializers.CharField(help_text="请求路径")
     match_subpath = serializers.BooleanField(help_text="是否匹配所有子路径")
     is_public = serializers.BooleanField(help_text="是否公开")
     allow_apply_permission = serializers.BooleanField(help_text="是否允许应用在开发者中心申请访问资源的权限")
@@ -608,9 +607,6 @@ class ResourceImportInfoSLZ(serializers.Serializer):
 
     def get_id(self, obj):
         return obj.resource and obj.resource.id
-
-    def get_path(self, obj):
-        return get_path_display(obj.path, obj.match_subpath)
 
     def get_doc(self, obj):
         resource_id = self.get_id(obj)

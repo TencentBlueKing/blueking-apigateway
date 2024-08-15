@@ -225,7 +225,7 @@
         "description": "Holds the relative paths to the individual endpoints and their operations. The path is appended to the URL from the `Server Object` in order to construct the full URL.  The Paths MAY be empty, due to ACL constraints.",
         "additionalProperties": false,
         "patternProperties": {
-          "^/": {
+          "^/[\\w{}/.-]*$": {
             "$ref": "#/definitions/pathItem"
           },
           "^x-": {
@@ -379,7 +379,7 @@
                     },
                     "path": {
                       "type": "string",
-                      "pattern": "^/"
+                      "pattern": "^/[\\w{}/.-]*$"
                     },
                     "matchSubpath": {
                       "type": "boolean"

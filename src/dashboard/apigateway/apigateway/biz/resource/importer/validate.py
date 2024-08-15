@@ -146,7 +146,7 @@ class ResourceImportValidator:
             if resource_data.name in unchanged_resource_names:
                 validate_err = SchemaValidateErr(
                     _("资源名称重复，operationId={name} 已被现有资源占用，请检查。").format(name=resource_data.name),
-                    f"$.paths.{resource_data.path}.{resource_data.method}.operationId",
+                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.operationId",
                     absolute_path=[],
                 )
                 self.schema_validate_result.append(validate_err)
@@ -156,7 +156,7 @@ class ResourceImportValidator:
                     _("资源名称重复，operationId={name} 在当前配置数据中被多次使用，请检查。").format(
                         name=resource_data.name
                     ),
-                    f"$.paths.{resource_data.path}.{resource_data.method}.operationId",
+                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.operationId",
                     absolute_path=[],
                 )
                 self.schema_validate_result.append(validate_err)
@@ -170,7 +170,7 @@ class ResourceImportValidator:
                     _(
                         "当前配置数据中，资源 method={method}, path={path}，前端配置中的 match_subpath 与后端配置中的 match_subpath 值必需相同。"
                     ).format(method=resource_data.method, path=resource_data.path),
-                    f"$.paths.{resource_data.path}.{resource_data.method}.match_subpath",
+                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.match_subpath",
                     absolute_path=[],
                 )
                 self.schema_validate_result.append(validate_err)
@@ -220,7 +220,7 @@ class ResourceImportValidator:
                         resource_name=resource_data.name,
                         duplicate_types=", ".join(duplicate_types),
                     ),
-                    f"$.paths.{resource_data.path}.{resource_data.method}.x-bk-apigateway-resource",
+                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.x-bk-apigateway-resource",
                     absolute_path=[],
                 )
                 self.schema_validate_result.append(validate_err)
@@ -230,7 +230,7 @@ class ResourceImportValidator:
             if not_exist_types:
                 validate_err = SchemaValidateErr(
                     _("插件类型 {not_exist_types} 不存在。").format(not_exist_types=", ".join(not_exist_types)),
-                    f"$.paths.{resource_data.path}.{resource_data.method}.x-bk-apigateway-resource",
+                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.x-bk-apigateway-resource",
                     absolute_path=[],
                 )
                 self.schema_validate_result.append(validate_err)
@@ -264,7 +264,7 @@ class ResourceImportValidator:
                             plugin_type_code=plugin_type.code,
                             err=err,
                         ),
-                        f"$.paths.{resource_data.path}.{resource_data.method}.x-bk-apigateway-resource",
+                        f"$.paths.{resource_data.path}.{resource_data.method.lower()}.x-bk-apigateway-resource",
                         absolute_path=[],
                     )
                     self.schema_validate_result.append(validate_err)
@@ -286,7 +286,7 @@ class ResourceImportValidator:
                         resource_name=resource_data.name,
                         plugin_type_code=resource_data.backend.name,
                     ),
-                    f"$.paths.{resource_data.path}.{resource_data.method}.x-bk-apigateway-resource.backend",
+                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.x-bk-apigateway-resource.backend",
                     absolute_path=[],
                 )
                 self.schema_validate_result.append(validate_err)
