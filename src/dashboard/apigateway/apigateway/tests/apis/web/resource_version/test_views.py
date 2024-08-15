@@ -22,6 +22,8 @@ import operator
 
 from django_dynamic_fixture import G
 
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import GatewaySDK, ResourceDoc, ResourceDocVersion
 from apigateway.core.models import Proxy, Release, Resource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, dummy_time
@@ -139,6 +141,42 @@ class TestResourceVersionRetrieveApi:
             "created_time": fake_resource_version_v2.created_time,
             "created_by": fake_resource_version_v2.created_by,
         }
+
+    def test_retrieve_filter_ip_restriction(
+        self,
+        request_view,
+        fake_stage,
+        fake_gateway,
+        fake_resource_version_v2,
+        fake_plugin_bk_cors,
+        fake_plugin_bk_ip_restriction,
+    ):
+        G(
+            PluginBinding,
+            gateway=fake_gateway,
+            config=fake_plugin_bk_cors,
+            scope_type=PluginBindingScopeEnum.STAGE.value,
+            scope_id=fake_stage.pk,
+        )
+        G(
+            PluginBinding,
+            gateway=fake_gateway,
+            config=fake_plugin_bk_ip_restriction,
+            scope_type=PluginBindingScopeEnum.STAGE.value,
+            scope_id=fake_stage.pk,
+        )
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.retrieve",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id, "id": fake_resource_version_v2.id},
+            data={"stage_id": fake_stage.id},
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        assert len(result["data"]["resources"][0]["plugins"]) == 1
+        assert result["data"]["resources"][0]["plugins"][0]["type"] == "bk-cors"
 
 
 class TestResourceVersionNeedNewVersionRetrieveApi:

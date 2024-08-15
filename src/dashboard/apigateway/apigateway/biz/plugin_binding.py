@@ -17,6 +17,7 @@
 #
 from typing import Dict, List
 
+from django.conf import settings
 from django.db.models import Count
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
@@ -51,3 +52,24 @@ class PluginBindingHandler:
             .annotate(count=Count("id"))
         )
         return {binding["scope_id"]: binding["count"] for binding in resource_bindings}
+
+    # 应用筛选规则
+    @staticmethod
+    def apply_plugin_display_rules(plugins_dict: dict) -> dict:
+        rules = settings.PLUGIN_FILTER_CONFIG
+
+        # 直接在遍历过程中修改 plugins_dict
+        for rule_details in rules.values():
+            if "plugins" in rule_details and "display" in rule_details:
+                plugins_set = set(rule_details["plugins"])
+
+                # 检查 plugins_set 是否是 plugins_dict 的子集
+                if plugins_set.issubset(set(plugins_dict.keys())):
+                    display_list = set(rule_details["display"])
+
+                    # 遍历要移除的插件
+                    for plugin_type in plugins_set - display_list:
+                        if plugin_type in plugins_dict:
+                            del plugins_dict[plugin_type]
+
+        return plugins_dict

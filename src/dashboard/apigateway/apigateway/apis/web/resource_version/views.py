@@ -165,12 +165,14 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
             stage_plugins = {}
             stage_plugin_bindings = PluginBindingHandler.get_stage_plugin_bindings(request.gateway.id, stage_id)
             # 列表需要展示资源生效插件，此时需要返回环境绑定的插件信息
-            for plugin_type, plugin_binding in stage_plugin_bindings.items():
+            print(f"stage_plugin_bindings: {stage_plugin_bindings}")
+            filtered_plugin = PluginBindingHandler.apply_plugin_display_rules(stage_plugin_bindings)
+            for plugin_type, plugin_binding in filtered_plugin.items():
                 plugin_config = plugin_binding.snapshot()
                 plugin_config["binding_type"] = PluginBindingScopeEnum.STAGE.value
                 stage_plugins[plugin_type] = plugin_config
+            # 根据配置筛选掉需要被覆盖的插件
             context["stage_plugins"] = stage_plugins
-
         slz = ResourceVersionRetrieveOutputSLZ(instance, context=context)
 
         return OKJsonResponse(data=slz.data)

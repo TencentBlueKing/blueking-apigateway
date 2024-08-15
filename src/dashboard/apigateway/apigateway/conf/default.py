@@ -765,6 +765,10 @@ PLUGIN_METADATA_CONFIG = {
     },
 }
 
+# 插件筛选配置
+PLUGIN_FILTER_CONFIG = {"filter-ip-restriction": {"plugins": ["bk-cors", "bk-ip-restriction"], "display": ["bk-cors"]}}
+
+
 APISIX_CONFIG = {
     "pluginAttrs": {
         "log-rotate": {

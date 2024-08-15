@@ -45,3 +45,11 @@ class TestPluginBindingHandler:
 
         assert data[1] == 1
         assert data[2] == 2
+
+    def test_apply_plugin_display_rules(
+        self, fake_gateway, fake_stage, fake_plugin_bk_cors, fake_plugin_bk_ip_restriction
+    ):
+        plugin_dict = {"bk-cors": "cors插件", "bk-ip-restriction": "bk-ip-restriction插件"}
+        data = PluginBindingHandler.apply_plugin_display_rules(plugin_dict)
+        assert len(data) == 1
+        assert data == {"bk-cors": "cors插件"}

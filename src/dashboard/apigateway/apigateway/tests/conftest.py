@@ -791,6 +791,60 @@ def fake_plugin_bk_header_rewrite(fake_plugin_type_bk_header_rewrite, fake_gatew
 
 
 @pytest.fixture()
+def fake_plugin_type_bk_cors(fake_plugin_type_bk_header_rewrite_schema):
+    return G(
+        PluginType,
+        code=PluginTypeCodeEnum.BK_CORS.value,
+        name=PluginTypeCodeEnum.BK_CORS.value,
+        is_public=True,
+        schema=fake_plugin_type_bk_header_rewrite_schema,  # 参数暂时用的是 bk-header-rewrite 的schema
+    )
+
+
+@pytest.fixture
+def fake_plugin_bk_cors(fake_plugin_type_bk_cors, fake_gateway, faker):
+    return G(
+        PluginConfig,
+        gateway=fake_gateway,
+        name="bk-cors",
+        type=fake_plugin_type_bk_cors,
+        yaml=yaml_dumps(
+            {
+                "set": [{"key": "foo", "value": "bar"}],
+                "remove": [{"key": "baz"}],
+            }
+        ),
+    )
+
+
+@pytest.fixture()
+def fake_plugin_type_bk_ip_restriction(fake_plugin_type_bk_header_rewrite_schema):
+    return G(
+        PluginType,
+        code=PluginTypeCodeEnum.BK_IP_RESTRICTION.value,
+        name=PluginTypeCodeEnum.BK_IP_RESTRICTION.value,
+        is_public=True,
+        schema=fake_plugin_type_bk_header_rewrite_schema,  # 参数暂时用的是 bk-header-rewrite 的schema
+    )
+
+
+@pytest.fixture
+def fake_plugin_bk_ip_restriction(fake_plugin_type_bk_ip_restriction, fake_gateway, faker):
+    return G(
+        PluginConfig,
+        gateway=fake_gateway,
+        name="bk-ip-restriction",
+        type=fake_plugin_type_bk_ip_restriction,
+        yaml=yaml_dumps(
+            {
+                "set": [{"key": "foo", "value": "bar"}],
+                "remove": [{"key": "baz"}],
+            }
+        ),
+    )
+
+
+@pytest.fixture()
 def fake_rsa_private_key():
     return """-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEArkgtL4OVsDVSlns1n5EAqs908uDoQMoPJ+2i3o/ddKXRObaN
