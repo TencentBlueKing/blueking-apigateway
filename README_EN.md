@@ -70,7 +70,7 @@ our [Tencent OpenSource Plan](https://opensource.tencent.com/contribution).
 
 ## Partners
 
-![apache apisix](https://github.com/apache/apisix/blob/master/logos/apisix-white-bg.jpg)
+<img src="https://github.com/apache/apisix/blob/master/logos/apisix-white-bg.jpg" alt="APISIX logo" height="150px" />
 
 ## License
 
