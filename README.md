@@ -9,7 +9,7 @@
 
 蓝鲸 API 网关（API Gateway），是一种高性能、高可用的 API 托管服务，可以帮助开发者创建、发布、维护、监控和保护 API， 以快速、低成本、低风险地对外开放蓝鲸应用或其他系统的数据或服务。
 
-蓝鲸 API 网关分为控制面和数据面，控制面负责 API 的配置、发布、监控、权限管理等功能，数据面负责 API 的流量转发、安全防护等功能。其中数据面是基于 [Apache APISIX](https://github.com/apache/apisix) 为基础增加一系列插件以支持蓝鲸 API 网关的特性。得益于 Apache APISIX 动态、实时、高性能等特点，蓝鲸 API 网关能够支持高并发、低延迟的 API 服务。
+蓝鲸 API 网关分为控制面和数据面，控制面负责 API 的配置、发布、监控、权限管理等功能，数据面负责 API 的流量转发、安全防护等功能。其中数据面是基于 [Apache APISIX](https://github.com/apache/apisix) 增加一系列插件以支持蓝鲸 API 网关的特性。得益于 Apache APISIX 动态、实时、高性能等特点，蓝鲸 API 网关能够支持高并发、低延迟的 API 服务。
 
 本项目是 `蓝鲸 API 网关 - 控制面`。
 
