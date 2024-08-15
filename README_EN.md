@@ -67,6 +67,11 @@ the [CONTRIBUTING(In Chinese)](docs/CONTRIBUTING.md)
 If you are interested in contributing, check out the [CONTRIBUTING.md], also join
 our [Tencent OpenSource Plan](https://opensource.tencent.com/contribution).
 
+
+## Partners
+
+![apache apisix](https://github.com/apache/apisix/blob/master/logos/apisix-white-bg.jpg)
+
 ## License
 
 blueking-apigateway is based on the MIT protocol. Please refer to [LICENSE](LICENSE.txt)

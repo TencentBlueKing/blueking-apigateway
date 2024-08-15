@@ -60,3 +60,12 @@
 请查看 [CONTRIBUTING](docs/CONTRIBUTING.md)。
 
 [腾讯开源激励计划](https://opensource.tencent.com/contribution) 鼓励开发者的参与和贡献，期待你的加入。
+
+## 合作方
+
+![apache apisix](https://github.com/apache/apisix/blob/master/logos/apisix-white-bg.jpg)
+
+
+## 证书
+
+基于 MIT 协议，详细请参考 [LICENSE](LICENSE.txt)
