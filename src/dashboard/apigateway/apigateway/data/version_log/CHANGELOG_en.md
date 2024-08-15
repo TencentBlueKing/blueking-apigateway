@@ -1,3 +1,15 @@
+<!-- 2024-08-15 -->
+# V1.13.15 Release Log
+
+### Bug Fixes
+
+- Replace favicon
+- Fix issue with resource documentation import failure
+- Fix issue where manual input in the time picker is not effective
+- Fix issue with incorrect plugin display on the environment overview resource list page
+
+---
+
 <!-- 2024-08-09 -->
 # V1.13.14 Release Log
 
