@@ -9,6 +9,8 @@
 
 BlueKing API Gateway is a high-performance and highly available API hosting service that helps developers create, publish, maintain, monitor, and protect APIs, allowing for quick, low-cost, and low-risk access to data or services from BlueKing applications or other systems.
 
+The BlueKing API Gateway is divided into the control plane and the data plane. The control plane is responsible for functions such as API configuration, publishing, monitoring, and permission management. The data plane handles API traffic forwarding, security protection, and other functions. The data plane is built on [Apache APISIX](https://github.com/apache/apisix) with a series of additional plugins to support the features of the BlueKing API Gateway. Thanks to the dynamic, real-time, and high-performance characteristics of Apache APISIX, the BlueKing API Gateway can support high-concurrency and low-latency API services.
+
 This project is the "BlueKing API Gateway - Control Plane".
 
 **BlueKing API Gateway Core Services Open Source Projects**
@@ -64,6 +66,11 @@ the [CONTRIBUTING(In Chinese)](docs/CONTRIBUTING.md)
 
 If you are interested in contributing, check out the [CONTRIBUTING.md], also join
 our [Tencent OpenSource Plan](https://opensource.tencent.com/contribution).
+
+
+## Partners
+
+<a href="https://apisix.apache.org/" target="_blank"><img src="https://github.com/apache/apisix/blob/master/logos/apisix-white-bg.jpg" alt="APISIX logo" height="150px" /></a>
 
 ## License
 
