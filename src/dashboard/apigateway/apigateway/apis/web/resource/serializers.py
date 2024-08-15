@@ -589,7 +589,7 @@ class ResourceImportInfoSLZ(serializers.Serializer):
     description_en = serializers.CharField(help_text="资源英文描述")
     method = serializers.CharField(read_only=True, help_text="请求方法")
     path = serializers.CharField(help_text="请求路径")
-    display_path = serializers.SerializerMethodField(required=False, help_text="请求路径(需要体现是否匹配所有子路径)")
+    path_display = serializers.SerializerMethodField(required=False, help_text="请求路径(需要体现是否匹配所有子路径)")
     match_subpath = serializers.BooleanField(help_text="是否匹配所有子路径")
     is_public = serializers.BooleanField(help_text="是否公开")
     allow_apply_permission = serializers.BooleanField(help_text="是否允许应用在开发者中心申请访问资源的权限")
@@ -610,7 +610,7 @@ class ResourceImportInfoSLZ(serializers.Serializer):
     def get_id(self, obj):
         return obj.resource and obj.resource.id
 
-    def get_display_path(self, obj):
+    def get_path_display(self, obj):
         return get_path_display(obj.path, obj.match_subpath)
 
     def get_doc(self, obj):
