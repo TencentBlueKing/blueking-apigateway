@@ -187,6 +187,9 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
+.body-payload {
+  height: 100%;
+}
 .table-header {
   width: 100%;
   display: flex;
@@ -243,7 +246,7 @@ defineExpose({
 }
 .raw-content {
   width: 100%;
-  height: 312px;
+  height: calc(100% - 50px);
   background: #FFFFFF;
   border: 1px solid #DCDEE5;
   border-radius: 2px;

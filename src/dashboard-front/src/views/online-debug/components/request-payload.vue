@@ -124,6 +124,7 @@ defineExpose({
 
 <style lang="scss" scoped>
 .payload-tab {
+  height: 100%;
   :deep(.bk-tab-content) {
     padding: 12px 24px 12px 0px;
   }
