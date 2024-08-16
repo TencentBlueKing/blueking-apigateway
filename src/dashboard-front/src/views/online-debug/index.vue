@@ -253,7 +253,7 @@
         </div>
 
         <bk-resize-layout
-          style="height: 100%"
+          style="height: 100%; overflow: hidden;"
           initial-divide="52px"
           :border="false"
           :min="52"
