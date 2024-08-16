@@ -18,6 +18,7 @@
 #
 import copy
 
+from django.conf import settings
 from rest_framework import serializers
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
@@ -81,14 +82,19 @@ class ResourceInfoSLZ(serializers.Serializer):
 
     def get_plugins(self, obj):
         plugins = copy.deepcopy(self.context.get("stage_plugins", {}))
-
         # v2 才有plugin数据
         if not self.context["is_schema_v2"]:
             return list(plugins.values())
-
+        rules = settings.PLUGIN_MERGE_TYPE
         # 资源绑定插件覆盖环境绑定插件
         for plugin in obj.get("plugins", []):
-            plugin["binding_type"] = PluginBindingScopeEnum.RESOURCE.value
+            plugin_type = plugin["type"]
+            if rules.get(plugin_type, "default") == "merge":
+                plugin["binding_type"] = PluginBindingScopeEnum.RESOURCE.value
+                plugins[plugin_type + "_stage"] = plugin
+            else:
+                plugin["binding_type"] = PluginBindingScopeEnum.RESOURCE.value
+                plugins[plugin_type] = plugin
             plugins[plugin["type"]] = plugin
 
         return list(plugins.values())
