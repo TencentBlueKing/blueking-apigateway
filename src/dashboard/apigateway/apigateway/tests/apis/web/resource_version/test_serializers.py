@@ -301,6 +301,10 @@ class TestResourceVersionRetrieveOutputSLZ:
         )
 
         assert len(slz.data["resources"][0]["plugins"]) == 2
+        assert (
+            slz.data["resources"][0]["plugins"][0]["binding_type"]
+            != slz.data["resources"][0]["plugins"][1]["binding_type"]
+        )
 
     def test_get_plugins_for_bk_cors(
         self,
