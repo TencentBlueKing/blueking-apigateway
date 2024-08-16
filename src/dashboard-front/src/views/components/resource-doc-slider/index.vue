@@ -221,8 +221,8 @@ const handleEditMarkdown = (type: string) => {
   markdownDoc.value = docDataItem.content;
 };
 
-const isFullscreen = ref<Boolean>(false);
-const handleFullscreen = (full: Boolean) => {
+const isFullscreen = ref(false);
+const handleFullscreen = (full: boolean) => {
   isFullscreen.value = full;
 };
 

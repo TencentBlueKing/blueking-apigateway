@@ -59,3 +59,11 @@ BACKEND_CONFIG_SCHEME_MAP = {
     BackendTypeEnum.HTTP.value: [BackendConfigSchemeEnum.HTTP.value, BackendConfigSchemeEnum.HTTPS.value],
     BackendTypeEnum.GRPC.value: [BackendConfigSchemeEnum.GRPC.value, BackendConfigSchemeEnum.GRPCS.value],
 }
+
+
+PLUGIN_MERGE_TYPE = {
+    "bk-rate-limit": "merge",
+    "bk-header-rewrite": "merge",
+    "bk-cors": "override",
+    "bk-ip-restriction": "override",
+}

@@ -764,7 +764,7 @@ def fake_plugin_type_bk_header_rewrite_schema():
 
 
 @pytest.fixture()
-def fake_plugin_type_bk_header_rewrite(fake_plugin_type_bk_header_rewrite_schema):
+def fake_plugin_type_bk_header_rewrite(fake_gateway, fake_plugin_type_bk_header_rewrite_schema):
     return G(
         PluginType,
         code=PluginTypeCodeEnum.BK_HEADER_REWRITE.value,
@@ -787,6 +787,77 @@ def fake_plugin_bk_header_rewrite(fake_plugin_type_bk_header_rewrite, fake_gatew
                 "remove": [{"key": "baz"}],
             }
         ),
+    )
+
+
+@pytest.fixture()
+def fake_plugin_stage_bk_header_rewrite_binding(fake_plugin_bk_header_rewrite, fake_stage):
+    return G(
+        PluginBinding,
+        gateway=fake_plugin_bk_header_rewrite.gateway,
+        config=fake_plugin_bk_header_rewrite,
+        scope_type=PluginBindingScopeEnum.STAGE.value,
+        scope_id=fake_stage.pk,
+    )
+
+
+@pytest.fixture()
+def fake_plugin_resource_bk_header_rewrite_binding(fake_plugin_bk_header_rewrite, fake_resource):
+    return G(
+        PluginBinding,
+        gateway=fake_plugin_bk_header_rewrite.gateway,
+        config=fake_plugin_bk_header_rewrite,
+        scope_type=PluginBindingScopeEnum.RESOURCE.value,
+        scope_id=fake_resource.pk,
+    )
+
+
+@pytest.fixture()
+def fake_plugin_type_bk_cors(fake_plugin_type_bk_header_rewrite_schema):
+    return G(
+        PluginType,
+        code=PluginTypeCodeEnum.BK_CORS.value,
+        name=PluginTypeCodeEnum.BK_CORS.value,
+        is_public=True,
+        schema=fake_plugin_type_bk_header_rewrite_schema,  # 参数暂时用的是 bk-header-rewrite 的schema
+    )
+
+
+@pytest.fixture
+def fake_plugin_bk_cors(fake_plugin_type_bk_cors, fake_gateway, faker):
+    return G(
+        PluginConfig,
+        gateway=fake_gateway,
+        name="bk-cors",
+        type=fake_plugin_type_bk_cors,
+        yaml=yaml_dumps(
+            {
+                "set": [{"key": "foo", "value": "bar"}],
+                "remove": [{"key": "baz"}],
+            }
+        ),
+    )
+
+
+@pytest.fixture()
+def fake_plugin_stage_bk_cors_binding(fake_plugin_bk_cors, fake_stage):
+    return G(
+        PluginBinding,
+        gateway=fake_plugin_bk_cors.gateway,
+        config=fake_plugin_bk_cors,
+        scope_type=PluginBindingScopeEnum.STAGE.value,
+        scope_id=fake_stage.pk,
+    )
+
+
+@pytest.fixture()
+def fake_plugin_resource_bk_cors_binding(fake_plugin_bk_cors, fake_resource):
+    return G(
+        PluginBinding,
+        gateway=fake_plugin_bk_cors.gateway,
+        config=fake_plugin_bk_cors,
+        scope_type=PluginBindingScopeEnum.RESOURCE.value,
+        scope_id=fake_resource.pk,
     )
 
 

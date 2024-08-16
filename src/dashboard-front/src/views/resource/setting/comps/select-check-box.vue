@@ -2,6 +2,7 @@
   <bk-select
     :style="{ maxWidth: `${width}px` }"
     class="select-wrapper mt5"
+    :class="{ 'is-focus': _forceFocus }"
     filterable
     multiple
     multiple-mode="tag"
@@ -85,7 +86,7 @@
   </bk-select>
 </template>
 <script setup lang="ts">
-import { ref, computed, toRefs, PropType, watch } from 'vue';
+import { ref, computed, toRefs, PropType, watch, toValue } from 'vue';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { cloneDeep } from 'lodash';
@@ -106,6 +107,9 @@ const props = defineProps({
   labelsData: { type: Array as PropType<any>, default: [] },
   width: { type: Number, default: 235 },
   isAdd: { type: Boolean, default: false },
+  // 是否强制让 select 进入 focus 态
+  // 用于某些场景下 select 框不展示 focus 态样式的问题
+  forceFocus: { type: Boolean, default: false },
 });
 
 const { curSelectLabelIds, resourceId, labelsData, width, isAdd, modelValue } = toRefs(props);
@@ -118,6 +122,7 @@ const selectRef = ref(null);
 const editInputRef = ref(null);
 const hoverIndex = ref<number>(null);
 const isIconClick = ref<boolean>(false);  // 是否点击了icon
+const _forceFocus = ref(toValue(props.forceFocus));
 
 const curLabelIdsbackUp = ref(cloneDeep(curLabelIds.value));
 
@@ -145,6 +150,8 @@ const handleToggle = async (v: boolean) => {
   if (!v) {
     showEdit.value = false;
     optionName.value = '';
+    // 面板收起后去掉强制 focus 态
+    _forceFocus.value = false;
   }
   // 新增标签标识
   if (isAdd.value) return;
