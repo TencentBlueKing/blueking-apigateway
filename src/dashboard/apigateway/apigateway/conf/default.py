@@ -153,6 +153,7 @@ DATABASE_ROUTERS = [
 # django 3.2 add
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
+
 # CSRF Config
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 CSRF_COOKIE_DOMAIN = env.str("DASHBOARD_CSRF_COOKIE_DOMAIN")
@@ -397,6 +398,7 @@ else:
     logging_directory = Path(BASE_DIR) / Path(LOG_DIR)
     logging_directory.mkdir(exist_ok=True)
 
+
 # 是否总是打印日志到控制台，默认关闭
 LOGGING_ALWAYS_CONSOLE = env.bool("LOGGING_ALWAYS_CONSOLE", False)
 if LOGGING_ALWAYS_CONSOLE:
@@ -553,7 +555,7 @@ BK_IAM_SKIP = env.bool("BK_IAM_SKIP", False)
 # bkrepo 配置
 # ==============================================================================
 BKREPO_ENDPOINT_URL = env.str("BKREPO_ENDPOINT_URL", "")
-BKREPO_USERNAME = env.str("BKREPO_USERNAME", "apigw")
+BKREPO_USERNAME = env.str("BKREPO_USERNAME", "bk_apigateway")
 BKREPO_PASSWORD = env.str("BKREPO_PASSWORD", "")
 BKREPO_PROJECT = env.str("BKREPO_PROJECT", "bk_apigateway")
 BKREPO_GENERIC_BUCKET = env.str("BKREPO_GENERIC_BUCKET", "generic")

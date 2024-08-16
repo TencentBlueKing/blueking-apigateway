@@ -20,6 +20,7 @@ import logging
 import os
 import subprocess
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import ClassVar, List
 
 from apigateway.apps.support.api_sdk.exceptions import DistributeError
@@ -68,7 +69,7 @@ class MavenSourceDistributor(Distributor):
         command = [
             "mvn",
             "-s",
-            os.path.join(os.getcwd(), "apigateway/apps/support/api_sdk/maven/settings.xml"),
+            Path.cwd() / "apigateway/apps/support/api_sdk/maven/settings.xml",
             "-e",
             "deploy:deploy-file",
             "-DgroupId=" + self.group_id,
@@ -90,11 +91,11 @@ class MavenSourceDistributor(Distributor):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                check=False,  # Python 3.7+，将输出解码为字符串
+                check=False,
             )
-            print("stdout:", completed_process.stdout)
-            print("stderr:", completed_process.stderr)
-            completed_process.check_returncode()  # 检查命令是否成功
+            logger.info("stdout:%s", completed_process.stdout)
+            logger.info("stderr:%s", completed_process.stderr)
+            completed_process.check_returncode()
         except subprocess.CalledProcessError:
             logger.exception("upload to maven repository [%s] failed", self.repository)
             raise DistributeError(f"can not distribute to maven repository [{self.repository}]")

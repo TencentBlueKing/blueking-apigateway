@@ -19,6 +19,7 @@
 import logging
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from subprocess import check_output
 from typing import List
 
@@ -39,7 +40,7 @@ class SourcePackager(Packager):
                 [
                     "mvn",
                     "-s",
-                    os.path.join(original_dir, "apigateway/apps/support/api_sdk/maven/settings.xml"),
+                    Path(original_dir) / "apigateway/apps/support/api_sdk/maven/settings.xml",
                     "clean",
                     "package",
                 ],
@@ -47,7 +48,7 @@ class SourcePackager(Packager):
                 cwd=output_dir,
             )
 
-            print(output.decode("utf-8"))
+            logger.info(output.decode("utf-8"))
 
             # 查找生成的 JAR 文件
             target_dir = os.path.join(output_dir, "target")
