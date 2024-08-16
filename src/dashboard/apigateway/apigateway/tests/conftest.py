@@ -813,6 +813,55 @@ def fake_plugin_resource_bk_header_rewrite_binding(fake_plugin_bk_header_rewrite
 
 
 @pytest.fixture()
+def fake_plugin_type_bk_rate_limit(fake_gateway, fake_plugin_type_bk_header_rewrite_schema):
+    return G(
+        PluginType,
+        code=PluginTypeCodeEnum.BK_RATE_LIMIT.value,
+        name=PluginTypeCodeEnum.BK_RATE_LIMIT.value,
+        is_public=True,
+        schema=fake_plugin_type_bk_header_rewrite_schema,
+    )
+
+
+@pytest.fixture
+def fake_plugin_bk_rate_limit(fake_plugin_type_bk_rate_limit, fake_gateway, faker):
+    return G(
+        PluginConfig,
+        gateway=fake_gateway,
+        name="bk-rate-limit",
+        type=fake_plugin_type_bk_rate_limit,
+        yaml=yaml_dumps(
+            {
+                "set": [{"key": "foo", "value": "bar"}],
+                "remove": [{"key": "baz"}],
+            }
+        ),
+    )
+
+
+@pytest.fixture()
+def fake_plugin_stage_bk_rate_limit_binding(fake_plugin_bk_rate_limit, fake_stage):
+    return G(
+        PluginBinding,
+        gateway=fake_plugin_bk_rate_limit.gateway,
+        config=fake_plugin_bk_rate_limit,
+        scope_type=PluginBindingScopeEnum.STAGE.value,
+        scope_id=fake_stage.pk,
+    )
+
+
+@pytest.fixture()
+def fake_plugin_resource_bk_rate_limit_binding(fake_plugin_bk_rate_limit, fake_resource):
+    return G(
+        PluginBinding,
+        gateway=fake_plugin_bk_rate_limit.gateway,
+        config=fake_plugin_bk_rate_limit,
+        scope_type=PluginBindingScopeEnum.RESOURCE.value,
+        scope_id=fake_resource.pk,
+    )
+
+
+@pytest.fixture()
 def fake_plugin_type_bk_cors(fake_plugin_type_bk_header_rewrite_schema):
     return G(
         PluginType,
@@ -856,6 +905,55 @@ def fake_plugin_resource_bk_cors_binding(fake_plugin_bk_cors, fake_resource):
         PluginBinding,
         gateway=fake_plugin_bk_cors.gateway,
         config=fake_plugin_bk_cors,
+        scope_type=PluginBindingScopeEnum.RESOURCE.value,
+        scope_id=fake_resource.pk,
+    )
+
+
+@pytest.fixture()
+def fake_plugin_type_bk_ip_restriction(fake_plugin_type_bk_header_rewrite_schema):
+    return G(
+        PluginType,
+        code=PluginTypeCodeEnum.BK_IP_RESTRICTION.value,
+        name=PluginTypeCodeEnum.BK_IP_RESTRICTION.value,
+        is_public=True,
+        schema=fake_plugin_type_bk_header_rewrite_schema,  # 参数暂时用的是 bk-header-rewrite 的schema
+    )
+
+
+@pytest.fixture
+def fake_plugin_bk_ip_restriction(fake_plugin_type_bk_ip_restriction, fake_gateway, faker):
+    return G(
+        PluginConfig,
+        gateway=fake_gateway,
+        name="bk-cors",
+        type=fake_plugin_type_bk_ip_restriction,
+        yaml=yaml_dumps(
+            {
+                "set": [{"key": "foo", "value": "bar"}],
+                "remove": [{"key": "baz"}],
+            }
+        ),
+    )
+
+
+@pytest.fixture()
+def fake_plugin_stage_bk_ip_restriction_binding(fake_plugin_bk_ip_restriction, fake_stage):
+    return G(
+        PluginBinding,
+        gateway=fake_plugin_bk_ip_restriction.gateway,
+        config=fake_plugin_bk_ip_restriction,
+        scope_type=PluginBindingScopeEnum.STAGE.value,
+        scope_id=fake_stage.pk,
+    )
+
+
+@pytest.fixture()
+def fake_plugin_resource_bk_ip_restriction_binding(fake_plugin_bk_ip_restriction, fake_resource):
+    return G(
+        PluginBinding,
+        gateway=fake_plugin_bk_ip_restriction.gateway,
+        config=fake_plugin_bk_ip_restriction,
         scope_type=PluginBindingScopeEnum.RESOURCE.value,
         scope_id=fake_resource.pk,
     )

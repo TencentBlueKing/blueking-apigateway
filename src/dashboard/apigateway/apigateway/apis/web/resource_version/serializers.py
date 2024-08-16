@@ -99,7 +99,6 @@ class ResourceInfoSLZ(serializers.Serializer):
             else:
                 plugin["binding_type"] = PluginBindingScopeEnum.RESOURCE.value
                 plugins[plugin_type] = plugin
-            plugins[plugin["type"]] = plugin
 
         return list(plugins.values())
 

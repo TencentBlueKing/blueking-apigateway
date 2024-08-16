@@ -301,11 +301,80 @@ class TestResourceVersionRetrieveOutputSLZ:
         )
 
         assert len(slz.data["resources"][0]["plugins"]) == 2
+        assert (
+            slz.data["resources"][0]["plugins"][0]["binding_type"]
+            != slz.data["resources"][0]["plugins"][1]["binding_type"]
+        )
+
+    def test_get_plugins_for_bk_rate_limit(
+        self,
+        fake_plugin_stage_bk_rate_limit_binding,
+        fake_plugin_resource_bk_rate_limit_binding,
+        fake_gateway,
+        fake_stage,
+        fake_resource_version_v2,
+        fake_resource,
+    ):
+        stage_plugin_bindings = PluginBindingHandler.get_stage_plugin_bindings(fake_gateway.id, fake_stage.id)
+        stage_plugins = {}
+        for plugin_type, plugin_binding in stage_plugin_bindings.items():
+            plugin_config = plugin_binding.snapshot()
+            plugin_config["binding_type"] = PluginBindingScopeEnum.STAGE.value
+            stage_plugins[plugin_type] = plugin_config
+        slz = serializers.ResourceVersionRetrieveOutputSLZ(
+            instance=fake_resource_version_v2,
+            context={
+                "resource_backends": BackendHandler.get_id_to_instance(fake_gateway.id),
+                "resource_backend_configs": BackendHandler.get_backend_configs_by_stage(
+                    fake_gateway.id, fake_stage.id
+                ),
+                "is_schema_v2": fake_resource_version_v2.is_schema_v2,
+                "stage_plugins": stage_plugins,
+                "resource_doc_updated_time": {},
+            },
+        )
+
+        assert len(slz.data["resources"][0]["plugins"]) == 2
+        assert (
+            slz.data["resources"][0]["plugins"][0]["binding_type"]
+            != slz.data["resources"][0]["plugins"][1]["binding_type"]
+        )
 
     def test_get_plugins_for_bk_cors(
         self,
         fake_plugin_stage_bk_cors_binding,
         fake_plugin_resource_bk_cors_binding,
+        fake_gateway,
+        fake_stage,
+        fake_resource_version_v2,
+        fake_resource,
+    ):
+        stage_plugin_bindings = PluginBindingHandler.get_stage_plugin_bindings(fake_gateway.id, fake_stage.id)
+        stage_plugins = {}
+        for plugin_type, plugin_binding in stage_plugin_bindings.items():
+            plugin_config = plugin_binding.snapshot()
+            plugin_config["binding_type"] = PluginBindingScopeEnum.STAGE.value
+            stage_plugins[plugin_type] = plugin_config
+        slz = serializers.ResourceVersionRetrieveOutputSLZ(
+            instance=fake_resource_version_v2,
+            context={
+                "resource_backends": BackendHandler.get_id_to_instance(fake_gateway.id),
+                "resource_backend_configs": BackendHandler.get_backend_configs_by_stage(
+                    fake_gateway.id, fake_stage.id
+                ),
+                "is_schema_v2": fake_resource_version_v2.is_schema_v2,
+                "stage_plugins": stage_plugins,
+                "resource_doc_updated_time": {},
+            },
+        )
+
+        assert len(slz.data["resources"][0]["plugins"]) == 1
+        assert slz.data["resources"][0]["plugins"][0]["binding_type"] == PluginBindingScopeEnum.RESOURCE.value
+
+    def test_get_plugins_for_bk_ip_restriction(
+        self,
+        fake_plugin_stage_bk_ip_restriction_binding,
+        fake_plugin_resource_bk_ip_restriction_binding,
         fake_gateway,
         fake_stage,
         fake_resource_version_v2,
