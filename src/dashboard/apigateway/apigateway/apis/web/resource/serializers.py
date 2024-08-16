@@ -572,6 +572,11 @@ class ResourceImportDocPreviewInputSLZ(serializers.Serializer):
         help_text="文档语言，en: 英文，zh: 中文",
     )
 
+    def validate_review_resource(self, value):
+        if value.get("method") == HTTP_METHOD_ANY:
+            raise serializers.ValidationError(_("ANY的资源不支持文档预览"))
+        return value
+
 
 class ResourceImportCheckInputSLZ(serializers.Serializer):
     content = serializers.CharField(allow_blank=False, required=True, help_text="导入内容，yaml/json 格式字符串")

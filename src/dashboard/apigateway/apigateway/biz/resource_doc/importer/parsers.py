@@ -25,6 +25,7 @@ from openapi_spec_validator.versions import OPENAPIV2
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.biz.constants import OpenAPIFormatEnum
+from apigateway.biz.resource.importer.constants import OpenAPIExtensionEnum
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
 from apigateway.biz.resource.importer.schema import convert_operation_v3_to_v2
 from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
@@ -177,6 +178,8 @@ class OpenAPIParser(BaseParser):
         docs = []
         for path, path_item in openapi_manager.parser.get_paths().items():
             for method, original_operation in path_item.items():
+                if method == OpenAPIExtensionEnum.METHOD_ANY.value:
+                    continue
                 converted_operation = original_operation
                 if openapi_manager.version != OPENAPIV2:
                     converted_operation = convert_operation_v3_to_v2(original_operation)
