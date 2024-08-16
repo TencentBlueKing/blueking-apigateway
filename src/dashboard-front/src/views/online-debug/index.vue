@@ -253,18 +253,21 @@
         </div>
 
         <bk-resize-layout
+          style="height: 100%"
+          initial-divide="52px"
+          :border="false"
+          :min="52"
+          placement="bottom"
           class="request-resize"
-          placement="top"
-          :initial-divide="initialDivide"
         >
           <template #aside>
-            <div class="request-payload">
-              <request-payload ref="requestPayloadRef" :schema="payloadType" :tab="tab" />
+            <div class="request-response">
+              <response-content :res="response" @response-fold="handleResponseFold" />
             </div>
           </template>
           <template #main>
-            <div class="request-response">
-              <response-content :res="response" />
+            <div class="request-payload">
+              <request-payload ref="requestPayloadRef" :schema="payloadType" :tab="tab" />
             </div>
           </template>
         </bk-resize-layout>
@@ -295,7 +298,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, computed, watch, onMounted } from 'vue';
+import { ref, reactive, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import onlineTestTop from '@/components/online-test-top.vue';
 import { RightShape, EditLine, InfoLine, AngleUpFill, Share, CloseLine } from 'bkui-vue/lib/icon';
@@ -393,18 +396,6 @@ const payloadType = reactive<any>({
   fromDataPayload: [],
 });
 const tab = ref<string>('Params');
-const initialDivide = ref<string>('90%');
-
-const setInitialDivide = () => {
-  const box: any = document.querySelector('.request-resize');
-  if (box) {
-    initialDivide.value = `${box?.offsetHeight - 52 - 24}px`;
-  }
-};
-
-onMounted(() => {
-  setInitialDivide();
-});
 
 // 编辑应用认证
 const appAuthorization = reactive<any>({
@@ -665,6 +656,18 @@ const getApigwDetail = async () => {
   }
 };
 
+const setAsideHeight = (height: number) => {
+  const aside: any = document.querySelector('.request-resize .bk-resize-layout-aside');
+
+  if (aside) {
+    aside.style.height = `${height}px`;
+  }
+};
+
+const handleResponseFold = () => {
+  setAsideHeight(52);
+};
+
 const setUserToken = () => {
   // formData.value.authorization[tokenName.value] = '';
   // tokenInputRender.value += 1;
@@ -811,10 +814,7 @@ const handleSend = async (e: Event) => {
     const res = await postAPITest(common.apigwId, data);
     response.value = res;
 
-    const aside: any = document.querySelector('.request-resize .bk-resize-layout-aside');
-    if (aside) {
-      aside.style.height = `${100}px`;
-    }
+    setAsideHeight(600);
   } catch (e) {
     console.log(e);
   } finally {
@@ -839,11 +839,7 @@ watch(
   () => activeIndex.value,
   (index) => {
     setTimeout(() => {
-      if (index?.includes(1)) {
-        showPath.value = false;
-      } else {
-        showPath.value = true;
-      }
+      showPath.value = !index?.includes(1);
     }, 180);
   },
 );
@@ -1046,6 +1042,10 @@ watch(
   border-radius: 2px;
   padding-left: 24px;
   padding-bottom: 14px;
+  max-height: calc(100% - 16px);
+  height: calc(100% - 24px);
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 .request-response {
   background: #FFFFFF;
@@ -1167,9 +1167,6 @@ watch(
   flex: 1;
   :deep(.bk-resize-trigger:hover) {
     border-top: 2px solid #3a84ff;
-  }
-  :deep(.bk-resize-layout-aside:after) {
-    bottom: -5px;
   }
 }
 .fixed-w {
