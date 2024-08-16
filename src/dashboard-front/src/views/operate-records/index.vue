@@ -100,6 +100,7 @@ import {
   TableEmptyConfType,
 } from './common/type';
 import { fetchApigwAuditLogs } from '@/http';
+import { Message } from 'bkui-vue';
 
 const { t } = i18n.global;
 const AccessLogStore = useAccessLog();
@@ -355,7 +356,13 @@ const getOpObjectTypeText = (type: string) => {
 };
 
 const handleTimeChange = () => {
-  setSearchTimeRange();
+  const internalValue = topDatePicker.value?.internalValue;
+  if (internalValue) {
+    dateTimeRange.value = internalValue;
+    setSearchTimeRange();
+  } else {
+    Message({ theme: 'warning', message: t('输入的时间错误'), delay: 2000, dismissable: false });
+  }
 };
 
 const handleTimeClear = () => {

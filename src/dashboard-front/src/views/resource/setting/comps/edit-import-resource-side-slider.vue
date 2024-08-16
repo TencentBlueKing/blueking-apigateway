@@ -66,7 +66,7 @@
           >
             {{ t('保存') }}
           </bk-button>
-          <bk-button style="margin-left: 6px;" @click="handleHidden"> {{ t('取消') }}</bk-button>
+          <bk-button style="margin-left: 8px;" @click="handleHidden"> {{ t('取消') }}</bk-button>
         </div>
       </template>
     </bk-sideslider>
@@ -146,7 +146,7 @@ watch(() => props.isSliderShow, (val) => {
   padding: 24px 24px 0 24px;
 
   :deep(.collapse-cls) {
-    margin-bottom: 52px;
+    margin-bottom: 24px;
 
     .bk-collapse-item {
       background: #fff;
