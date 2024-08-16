@@ -4,6 +4,7 @@
       <bk-form class="flex-row">
         <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker" label-width="85">
           <bk-date-picker
+            ref="datePickerRef"
             class="w320" v-model="initDateTimeRange" :key="dateKey"
             :placeholder="t('选择日期时间范围')" :type="'datetimerange'"
             :shortcuts="datepickerShortcuts" :shortcut-close="true" :use-shortcut-text="true" @clear="handleTimeClear"
@@ -150,6 +151,7 @@ import {
 } from '@/http';
 import { cloneDeep } from 'lodash';
 import TableEmpty from '@/components/table-empty.vue';
+import { Message } from 'bkui-vue';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -163,6 +165,7 @@ const scrollLoading = ref<boolean>(false);
 const initDateTimeRange = ref([]);
 const alarmStrategies = ref([]);
 const curStrategyCount = ref<number>(0);
+const datePickerRef = ref(null);
 const initParams = reactive({
   limit: 10,
   offset: 0,
@@ -225,17 +228,23 @@ const handleShortcutChange = (value: any, index: any) => {
 };
 // 日期快捷方式改变触发
 const handleTimeChange = () => {
-  nextTick(async () => {
-    const startStr: any = (+new Date(`${initDateTimeRange.value[0]}`)) / 1000;
-    const endStr: any = (+new Date(`${initDateTimeRange.value[1]}`)) / 1000;
-    // eslint-disable-next-line radix
-    const satrt: any = parseInt(startStr);
-    // eslint-disable-next-line radix
-    const end: any = parseInt(endStr);
-    filterData.value.time_start = satrt;
-    filterData.value.time_end = end;
-    await fetchRefreshTable();
-  });
+  const internalValue = datePickerRef.value?.internalValue;
+  if (internalValue) {
+    initDateTimeRange.value = internalValue;
+    nextTick(async () => {
+      const startStr: any = (+new Date(`${initDateTimeRange.value[0]}`)) / 1000;
+      const endStr: any = (+new Date(`${initDateTimeRange.value[1]}`)) / 1000;
+      // eslint-disable-next-line radix
+      const satrt: any = parseInt(startStr);
+      // eslint-disable-next-line radix
+      const end: any = parseInt(endStr);
+      filterData.value.time_start = satrt;
+      filterData.value.time_end = end;
+      await fetchRefreshTable();
+    });
+  } else {
+    Message({ theme: 'warning', message: t('输入的时间错误'), delay: 2000, dismissable: false });
+  }
 };
 
 // 获取状态name

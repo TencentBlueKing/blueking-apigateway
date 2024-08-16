@@ -15,7 +15,7 @@
           :key="dateKey"
           @change="handleChange"
           @clear="handleClear"
-          @pick-success="handleComfirm">
+          @pick-success="handlePickSuccess">
         </bk-date-picker>
       </div>
       <div class="flex-row justify-content-end">
@@ -114,6 +114,7 @@ import {
   getReleaseHistories,
 } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
+import { Message } from 'bkui-vue';
 
 const router = useRouter();
 
@@ -205,6 +206,16 @@ watch(() => filterData.value, () => {
 }, {
   deep: true,
 });
+
+const handlePickSuccess = () => {
+  const internalValue = datePickerRef.value?.internalValue;
+  if (internalValue) {
+    dateValue.value = internalValue;
+    handleComfirm();
+  } else {
+    Message({ theme: 'warning', message: t('输入的时间错误'), delay: 2000, dismissable: false });
+  }
+};
 
 
 let timeId: any = null;
