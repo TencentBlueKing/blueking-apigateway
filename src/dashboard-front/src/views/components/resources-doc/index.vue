@@ -39,14 +39,14 @@
       </div>
       <div v-show="!isEmpty">
         <div class="ag-markdown-view">
-          <h3> {{ $t('请求方法/请求路径') }} </h3>
+          <h3> {{ language === 'zh' ? $t('请求方法/请求路径') : 'Method/Path' }} </h3>
           <p class="pb15">
             <span class="ag-tag" :class="curResource.method.toLowerCase()">{{curResource.method}}</span>
             {{curResource.path}}
           </p>
         </div>
         <!-- eslint-disable vue/no-v-html -->
-        <div class="ag-markdown-view" v-html="markdownHtml" v-show="!isEdited"></div>
+        <div class="ag-markdown-view" v-html="markdownHtml" v-show="!isEdited" style="padding-bottom: 54px;"></div>
         <div class="ag-markdown-editor" v-show="isEdited">
           <mavon-editor
             ref="markdownRef"
@@ -64,8 +64,8 @@
         </div>
       </div>
     </section>
-    <template v-if="showFooter">
-      <div :class="['doc-btn-wrapper', `${docRootClass}-btn`]" v-if="!isEmpty">
+    <template v-if="showFooter && !isEmpty">
+      <div :class="['doc-btn-wrapper', `${docRootClass}-btn`]" v-if="isAdsorb">
         <template v-if="isEdited">
           <bk-button
             class="mr5" theme="primary" style="width: 100px;"
@@ -92,35 +92,33 @@
           </bk-pop-confirm>
         </template>
       </div>
-      <template v-if="!isEmpty">
-        <div class="fixed-doc-btn-wrapper" v-show="isAdsorb" :style="fixedBtnLeft">
-          <template v-if="isEdited">
-            <bk-button
-              class="mr5" theme="primary" style="width: 100px;"
-              @click="handleSaveMarkdown"
-              :loading="isSaving">{{isUpdate ? $t('更新') : $t('提交')}}</bk-button>
-            <bk-button
-              style="width: 100px;"
-              @click="handleCancelMarkdown"> {{ $t('取消') }} </bk-button>
-          </template>
-          <template v-else>
-            <bk-button class="mr5" theme="primary" style="width: 100px;" @click="handleEditMarkdown('edit')">
-              {{ $t('修改') }}
+      <div v-else class="fixed-doc-btn-wrapper" :style="fixedBtnLeft">
+        <template v-if="isEdited">
+          <bk-button
+            class="mr5" theme="primary" style="width: 100px;"
+            @click="handleSaveMarkdown"
+            :loading="isSaving">{{isUpdate ? $t('更新') : $t('提交')}}</bk-button>
+          <bk-button
+            style="width: 100px;"
+            @click="handleCancelMarkdown"> {{ $t('取消') }} </bk-button>
+        </template>
+        <template v-else>
+          <bk-button class="mr5" theme="primary" style="width: 100px;" @click="handleEditMarkdown('edit')">
+            {{ $t('修改') }}
+          </bk-button>
+          <bk-pop-confirm
+            :title="t('确认要删除该文档？')"
+            content="将删除相关配置，不可恢复，请确认是否删除"
+            width="288"
+            trigger="click"
+            @confirm="handleDeleteMarkdown"
+          >
+            <bk-button>
+              {{ t('删除') }}
             </bk-button>
-            <bk-pop-confirm
-              :title="t('确认要删除该文档？')"
-              content="将删除相关配置，不可恢复，请确认是否删除"
-              width="288"
-              trigger="click"
-              @confirm="handleDeleteMarkdown"
-            >
-              <bk-button>
-                {{ t('删除') }}
-              </bk-button>
-            </bk-pop-confirm>
-          </template>
-        </div>
-      </template>
+          </bk-pop-confirm>
+        </template>
+      </div>
     </template>
   </div>
 </template>
@@ -210,7 +208,7 @@ const emit = defineEmits(['fetch', 'on-update']);
 
 const resourcesHeight = computed(() => {
   if (props.source === 'side') {
-    return 'height: calc(100vh - 60px)';
+    return 'height: calc(100vh - 57px)';
   }
   return 'height: calc(100vh - 176px)';
 });
