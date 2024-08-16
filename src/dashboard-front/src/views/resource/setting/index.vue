@@ -240,11 +240,13 @@
                     @click="handleEditLabel(row)"
                     class="icon apigateway-icon icon-ag-edit-small edit-icon"></i>
                 </span>
-                <section style="position: absolute;" v-else>
+                <section ref="selectCheckBoxParentRef" v-else>
                   <SelectCheckBox
                     :cur-select-label-ids="curLabelIds"
                     :resource-id="resourceId"
                     :labels-data="labelsData"
+                    :width="selectCheckBoxParentRef?.offsetWidth"
+                    force-focus
                     @close="handleCloseSelect"
                     @update-success="handleUpdateLabelSuccess"
                     @label-add-success="getLabelsData"></SelectCheckBox>
@@ -540,6 +542,7 @@ const tableEmptyConf = ref<TableEmptyConfType>({
 
 // ref
 const versionSidesliderRef = ref(null);
+const selectCheckBoxParentRef = ref(null);
 // 导出参数
 const exportParams: IexportParams = reactive({
   export_type: '',
