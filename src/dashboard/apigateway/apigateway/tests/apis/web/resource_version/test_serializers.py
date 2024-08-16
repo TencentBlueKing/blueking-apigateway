@@ -306,10 +306,10 @@ class TestResourceVersionRetrieveOutputSLZ:
             != slz.data["resources"][0]["plugins"][1]["binding_type"]
         )
 
-    def test_get_plugins_for_bk_rate_limit(
+    def test_get_plugins_for_bk_cors(
         self,
-        fake_plugin_stage_bk_rate_limit_binding,
-        fake_plugin_resource_bk_rate_limit_binding,
+        fake_plugin_stage_bk_cors_binding,
+        fake_plugin_resource_bk_cors_binding,
         fake_gateway,
         fake_stage,
         fake_resource_version_v2,
@@ -334,8 +334,5 @@ class TestResourceVersionRetrieveOutputSLZ:
             },
         )
 
-        assert len(slz.data["resources"][0]["plugins"]) == 2
-        assert (
-            slz.data["resources"][0]["plugins"][0]["binding_type"]
-            != slz.data["resources"][0]["plugins"][1]["binding_type"]
-        )
+        assert len(slz.data["resources"][0]["plugins"]) == 1
+        assert slz.data["resources"][0]["plugins"][0]["binding_type"] == PluginBindingScopeEnum.RESOURCE.value
