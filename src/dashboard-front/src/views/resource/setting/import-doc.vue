@@ -182,6 +182,7 @@
       class="mt15" :class="curView === 'import' ? 'btn-container' : ''"
       v-if="docType === 'swagger' || curView === 'resources'">
       <bk-button
+        class="mr8"
         :theme="curView === 'import' ? 'primary' : ''"
         @click="handleCheckData"
         :loading="isDataLoading"
@@ -190,7 +191,7 @@
       </bk-button>
       <span v-bk-tooltips="{ content: t('请确认勾选资源'), disabled: selections.length }" v-if="curView === 'resources'">
         <bk-button
-          class="mr10"
+          class="mr8"
           theme="primary"
           type="button"
           :disabled="!selections.length"
@@ -338,30 +339,32 @@ const handleCheckData = async () => {
 const handleImportDoc = async () => {
   try {
     isImportLoading.value = true;
+    // swagger需要的参数
+    const resourceDocs = selections.value.map((e: any) => ({
+      language: e.language || e.doc?.language,
+      resource_name: e.resource?.name || e.name,
+    }));
     // 压缩包需要的参数
     const formData = new FormData();
     formData.append('file', zipFile.value);
-    formData.append('selected_resource_docs', JSON.stringify(selections.value));
-    // swagger需要的参数
-    const resourceDocs = selections.value.map((e: any) => ({
-      language: e.doc.language,
-      resource_name: e.name,
-    }));
+    // formData.append('selected_resource_docs', JSON.stringify(selections.value));
+    formData.append('selected_resource_docs', JSON.stringify(resourceDocs));
     const paramsSwagger = {
       swagger: editorText.value,
       selected_resource_docs: resourceDocs,
       language: language.value,
     };
-    const parmas = docType.value === 'archive' ? formData : paramsSwagger;
+    const params = docType.value === 'archive' ? formData : paramsSwagger;
     const fetchUrl: any = docType.value === 'archive' ? importResourceDoc : importResourceDocSwagger;
     const message = docType.value === 'archive' ? '资源文档' : '资源';
-    await fetchUrl(apigwId, parmas);
+    await fetchUrl(apigwId, params);
     Message({
       theme: 'success',
       message: t(`${message}导入成功`),
     });
+    isImportLoading.value = false;
     goBack();
-  } catch (error) {} finally {
+  } catch {
     isImportLoading.value = false;
   }
 };
