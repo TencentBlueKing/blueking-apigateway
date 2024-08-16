@@ -2,9 +2,30 @@
   <div class="codemirror">
     <div id="monacoEditor" class="monaco-editor" ref="monacoEditor" :style="style"></div>
     <div class="tools">
-      <cog-shape class="tool-icon" v-if="showFormat" @click="handleFormat" />
-      <copy-shape class="tool-icon" v-if="showCopy" @click="handleCopy" />
-      <filliscreen-line class="tool-icon" v-if="showFullScreen" @click="handleFullScreen" />
+      <span
+        class="icon apigateway-icon icon-ag-geshihua tool-icon"
+        v-if="showFormat"
+        @click="handleFormat"
+        v-bk-tooltips="t('格式化')">
+      </span>
+      <copy-shape
+        class="tool-icon"
+        v-if="showCopy"
+        v-bk-tooltips="t('复制')"
+        @click="handleCopy" />
+      <template v-if="showFullScreen">
+        <filliscreen-line
+          class="tool-icon"
+          v-show="!isFullScreen"
+          v-bk-tooltips="t('全屏')"
+          @click="handleFullScreen" />
+        <span
+          v-show="isFullScreen"
+          class="icon apigateway-icon icon-ag-un-full-screen-2 tool-icon"
+          @click="handleFullScreen"
+          v-bk-tooltips="t('退出全屏')">
+        </span>
+      </template>
     </div>
   </div>
 </template>
@@ -14,7 +35,10 @@ import { ref, onMounted, toRefs, computed, watch, onBeforeMount } from 'vue';
 // 引入monaco编辑器
 import * as monaco from 'monaco-editor';
 import { copy } from '@/common/util';
-import { CogShape, CopyShape, FilliscreenLine } from 'bkui-vue/lib/icon';
+import { useI18n } from 'vue-i18n';
+import { CopyShape, FilliscreenLine } from 'bkui-vue/lib/icon';
+
+const { t } = useI18n();
 
 let editor = null; // 编辑器实例
 const monacoEditor = ref(null);
@@ -225,32 +249,19 @@ const handleCopy = () => {
 };
 
 // 全屏开关变量
-let isFullScreen = false;
+const isFullScreen = ref(false);
 const handleFullScreen = () => {
   const domNode = editor.getDomNode();
   const container = (domNode.parentNode).parentNode;
-  const toolsDom = container.querySelector('.tools');
 
-  if (isFullScreen) {
-    document.body.style.overflow = '';
-    container.style.position = 'relative';
-    container.style.zIndex = '0';
-    toolsDom.style.zIndex = '0';
-    editor.layout();
-    isFullScreen = false;
+  if (isFullScreen.value) {
+    document.exitFullscreen();
+    isFullScreen.value = false;
   } else {
-    document.body.style.overflow = 'hidden';
-    container.style.position = 'fixed';
-    container.style.zIndex = '6003';
-    container.style.overflow = 'hidden';
-    container.style.width = '100%';
-    container.style.height = '100%';
-    container.style.left = 0;
-    container.style.top = 0;
-    toolsDom.style.zIndex = '6004';
-    editor.layout();
-    isFullScreen = true;
+    container?.requestFullscreen();
+    isFullScreen.value = true;
   }
+  editor.layout();
 };
 
 const setTheme = (theme) => {
@@ -289,11 +300,16 @@ defineExpose({
     position: absolute;
     top: 5px;
     right: 28px;
+    display: flex;
+    align-items: center;
     .tool-icon {
       cursor: pointer;
       font-size: 16px;
       color: #979BA5;
       margin-left: 12px;
+      &:hover {
+        color: #3A84FF;
+      }
     }
   }
 }

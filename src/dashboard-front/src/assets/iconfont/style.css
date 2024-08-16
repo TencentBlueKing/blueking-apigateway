@@ -227,6 +227,12 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-yishanchu:before {
 	content: "\e136";
 }
+.icon-ag-un-full-screen-2:before {
+	content: "\e187";
+}
+.icon-ag-filliscreen-line:before {
+	content: "\e188";
+}
 .icon-ag-exchange-line:before {
 	content: "\e137";
 }
@@ -380,6 +386,24 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-gongneng-quanping2:before {
 	content: "\e184";
 }
+.icon-ag-lishijilu-2:before {
+	content: "\e18d";
+}
 .icon-ag-font:before {
 	content: "\e182";
+}
+.icon-ag-table-2:before {
+	content: "\e189";
+}
+.icon-ag-yiqiyong:before {
+	content: "\e18a";
+}
+.icon-ag-python:before {
+	content: "\e18b";
+}
+.icon-ag-shell:before {
+	content: "\e18c";
+}
+.icon-ag-geshihua:before {
+	content: "\e18e";
 }
