@@ -178,7 +178,7 @@
         "^x-": {
           "$ref": "#/definitions/vendorExtension"
         },
-        "^/": {
+        "^/[\\w{}/.-]*$": {
           "$ref": "#/definitions/pathItem"
         }
       },
@@ -345,7 +345,7 @@
                     },
                     "path": {
                       "type": "string",
-                      "pattern": "^/"
+                      "pattern": "^/[\\w{}/.-]*$"
                     },
                     "matchSubpath": {
                       "type": "boolean"
