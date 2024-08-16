@@ -66,7 +66,7 @@
           >
             {{ t('保存') }}
           </bk-button>
-          <bk-button style="margin-left: 6px;" @click="handleHidden"> {{ t('取消') }}</bk-button>
+          <bk-button style="margin-left: 8px;" @click="handleHidden"> {{ t('取消') }}</bk-button>
         </div>
       </template>
     </bk-sideslider>
