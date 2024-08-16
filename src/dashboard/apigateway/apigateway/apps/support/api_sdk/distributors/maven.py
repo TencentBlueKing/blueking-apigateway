@@ -69,7 +69,7 @@ class MavenSourceDistributor(Distributor):
         command = [
             "mvn",
             "-s",
-            Path.cwd() / "apigateway/apps/support/api_sdk/maven/settings.xml",
+            str(Path.cwd() / "apigateway/apps/support/api_sdk/maven/settings.xml"),
             "-e",
             "deploy:deploy-file",
             "-DgroupId=" + self.group_id,
