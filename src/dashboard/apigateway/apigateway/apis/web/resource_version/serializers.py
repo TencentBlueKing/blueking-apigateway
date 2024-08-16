@@ -18,9 +18,9 @@
 #
 import copy
 
-from django.conf import settings
 from rest_framework import serializers
 
+from apigateway.apis.web.constants import PLUGIN_MERGE_TYPE
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.validators import ResourceVersionValidator
@@ -85,13 +85,17 @@ class ResourceInfoSLZ(serializers.Serializer):
         # v2 才有plugin数据
         if not self.context["is_schema_v2"]:
             return list(plugins.values())
-        rules = settings.PLUGIN_MERGE_TYPE
-        # 资源绑定插件覆盖环境绑定插件
+
+        # 如果类型是merge， 同一个类型的环境 + 资源插件将会同时存在
+        # 如果类型是override， 同一个类型的环境插件将会被资源插件覆盖
+        rules = PLUGIN_MERGE_TYPE
+
+        # 根据 rules 配置确定是否资源插件配置覆盖环境插件配置
         for plugin in obj.get("plugins", []):
             plugin_type = plugin["type"]
-            if rules.get(plugin_type, "default") == "merge":
+            if rules.get(plugin_type, "") == "merge":
                 plugin["binding_type"] = PluginBindingScopeEnum.RESOURCE.value
-                plugins[plugin_type + "_stage"] = plugin
+                plugins[f"{plugin_type}:resource"] = plugin
             else:
                 plugin["binding_type"] = PluginBindingScopeEnum.RESOURCE.value
                 plugins[plugin_type] = plugin

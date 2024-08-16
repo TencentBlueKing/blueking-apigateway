@@ -765,14 +765,6 @@ PLUGIN_METADATA_CONFIG = {
     },
 }
 
-PLUGIN_MERGE_TYPE = {
-    "bk-rate-limit": "merge",
-    "bk-header-rewrite": "merge",
-    "bk-cors": "override",
-    "bk-ip-restriction": "override",
-}
-
-
 APISIX_CONFIG = {
     "pluginAttrs": {
         "log-rotate": {
