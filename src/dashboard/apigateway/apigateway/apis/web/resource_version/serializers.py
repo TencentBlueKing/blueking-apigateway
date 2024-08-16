@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import copy
+
 from rest_framework import serializers
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
@@ -78,7 +80,7 @@ class ResourceInfoSLZ(serializers.Serializer):
         return proxy
 
     def get_plugins(self, obj):
-        plugins = self.context.get("stage_plugins", {})
+        plugins = copy.deepcopy(self.context.get("stage_plugins", {}))
 
         # v2 才有plugin数据
         if not self.context["is_schema_v2"]:
