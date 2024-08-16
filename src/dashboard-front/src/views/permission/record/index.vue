@@ -4,6 +4,7 @@
       <bk-form class="flex-row">
         <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker mb15" label-width="85">
           <bk-date-picker
+            ref="datePickerRef"
             class="w320" v-model="initDateTimeRange" :placeholder="t('选择日期时间范围')" :key="dateKey"
             :type="'datetimerange'" :shortcuts="datepickerShortcuts" :shortcut-close="true" :use-shortcut-text="true"
             @clear="handleTimeClear" :shortcut-selected-index="shortcutSelectedIndex"
@@ -179,6 +180,7 @@ import { useCommon } from '@/store';
 import { useQueryList } from '@/hooks';
 import { sortByKey } from '@/common/util';
 import TableEmpty from '@/components/table-empty.vue';
+import { Message } from 'bkui-vue';
 
 const { t } = useI18n();
 
@@ -196,6 +198,7 @@ const initDateTimeRange = ref([]);
 const resourceList = ref([]);
 const shortcutSelectedIndex = ref<number>(-1);
 const dateKey = ref('dateKey');
+const datePickerRef = ref(null);
 const curRecord = ref({
   bk_app_code: '',
   applied_by: '',
@@ -386,16 +389,22 @@ const handleShortcutChange = (value: any, index: any) => {
 };
 // 日期快捷方式改变触发
 const handleTimeChange = () => {
-  nextTick(() => {
-    const startStr: any = (+new Date(`${initDateTimeRange.value[0]}`)) / 1000;
-    const endStr: any = (+new Date(`${initDateTimeRange.value[1]}`)) / 1000;
-    // eslint-disable-next-line radix
-    const satrt: any = parseInt(startStr);
-    // eslint-disable-next-line radix
-    const end: any = parseInt(endStr);
-    filterData.value.time_start = satrt;
-    filterData.value.time_end = end;
-  });
+  const internalValue = datePickerRef.value?.internalValue;
+  if (internalValue) {
+    initDateTimeRange.value = internalValue;
+    nextTick(() => {
+      const startStr: any = (+new Date(`${initDateTimeRange.value[0]}`)) / 1000;
+      const endStr: any = (+new Date(`${initDateTimeRange.value[1]}`)) / 1000;
+      // eslint-disable-next-line radix
+      const satrt: any = parseInt(startStr);
+      // eslint-disable-next-line radix
+      const end: any = parseInt(endStr);
+      filterData.value.time_start = satrt;
+      filterData.value.time_end = end;
+    });
+  } else {
+    Message({ theme: 'warning', message: t('输入的时间错误'), delay: 2000, dismissable: false });
+  }
 };
 // 展示详情
 const handleShowRecord = (e: Event, data: any) => {

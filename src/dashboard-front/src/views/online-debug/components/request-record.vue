@@ -97,6 +97,7 @@ import { useI18n } from 'vue-i18n';
 import { useAccessLog, useCommon } from '@/store';
 import editorMonaco from '@/components/ag-editor.vue';
 import { getTestHistories, getTestHistoriesDetails } from '@/http';
+import { Message } from 'bkui-vue';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -109,6 +110,7 @@ const filterData = ref<any>({
 });
 const dateTimeRange = ref([]);
 const dateKey = ref('dateKey');
+const topDatePicker = ref(null);
 const AccessLogStore = useAccessLog();
 const shortcutSelectedIndex = shallowRef(-1);
 const tableRef = ref(null);
@@ -153,7 +155,13 @@ const setSearchTimeRange = () => {
 };
 
 const handleTimeChange = () => {
-  setSearchTimeRange();
+  const internalValue = topDatePicker.value?.internalValue;
+  if (internalValue) {
+    dateTimeRange.value = internalValue;
+    setSearchTimeRange();
+  } else {
+    Message({ theme: 'warning', message: t('输入的时间错误'), delay: 2000, dismissable: false });
+  }
 };
 
 const handleTimeClear = () => {
