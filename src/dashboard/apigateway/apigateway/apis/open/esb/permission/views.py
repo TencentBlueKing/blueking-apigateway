@@ -85,7 +85,7 @@ class AppPermissionApplyV1APIView(viewsets.GenericViewSet):
         data = slz.validated_data
 
         manager = ComponentPermissionManager.get_manager()
-        manager.create_apply_record(
+        record = manager.create_apply_record(
             data["target_app_code"],
             system,
             data["component_ids"],
@@ -94,7 +94,7 @@ class AppPermissionApplyV1APIView(viewsets.GenericViewSet):
             request.user.username,
         )
 
-        return V1OKJsonResponse("OK")
+        return V1OKJsonResponse("OK", data={"record_id": record.id})
 
 
 class AppPermissionRenewAPIView(viewsets.GenericViewSet):
