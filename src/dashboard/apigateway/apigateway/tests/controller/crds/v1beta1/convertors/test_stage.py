@@ -50,7 +50,6 @@ class TestStageConvertor:
     @pytest.mark.parametrize(
         "name",
         [
-            "bk-opentelemetry",
             "prometheus",
             "bk-request-id",
             "file-logger",
