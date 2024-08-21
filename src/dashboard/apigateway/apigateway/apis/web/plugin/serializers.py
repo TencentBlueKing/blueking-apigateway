@@ -81,6 +81,7 @@ class PluginFormOutputSLZ(serializers.ModelSerializer):
             "id",
             "language",
             "notes",
+            "example",
             "style",
             "default_value",
             "config",
