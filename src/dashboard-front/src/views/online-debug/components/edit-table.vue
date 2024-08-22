@@ -4,91 +4,90 @@
     ref="bkTableRef"
     row-hover="auto"
     :data="tableData"
-    show-overflow-tooltip
     @cell-click="handleCellClick"
     :cell-class="getCellClass"
     border="outer">
     <bk-table-column :width="55" type="selection" align="center" />
     <bk-table-column :label="t('参数名')" prop="name">
       <template #default="{ row, index }">
-        <div class="td-text" v-if="!row?.isEdit">
+        <!-- <div class="td-text" v-if="!row?.isEdit">
           {{ row?.name }}
-        </div>
-        <template v-else>
-          <bk-popover
-            placement="top-start"
-            trigger="click"
-            theme="light"
-            :is-show="isShowVarPopover"
-            :content="t('变量名由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符') "
-            :popover-delay="[300, 0]"
-          >
-            <bk-form :ref="(el) => setRefs(el, `name-${index}`)" :model="row" label-width="0">
-              <bk-form-item
-                :rules="varRules.name"
-                property="name"
-                error-display-type="tooltips"
-                class="table-form-item">
-                <bk-input
-                  v-model="row.name"
-                  :clearable="false"
-                  class="edit-input"
-                  @blur="handleCellBlur(index)"
-                  :ref="(el) => setInputRefs(el, `name-input-${index}-${column?.index}`)"
-                />
-              </bk-form-item>
-            </bk-form>
-          </bk-popover>
-        </template>
+        </div> -->
+        <!-- <template v-else> -->
+        <bk-popover
+          placement="top-start"
+          trigger="click"
+          theme="light"
+          :is-show="isShowVarPopover"
+          :content="t('变量名由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符') "
+          :popover-delay="[300, 0]"
+        >
+          <bk-form :ref="(el) => setRefs(el, `name-${index}`)" :model="row" label-width="0">
+            <bk-form-item
+              :rules="varRules.name"
+              property="name"
+              error-display-type="tooltips"
+              class="table-form-item">
+              <bk-input
+                v-model="row.name"
+                :clearable="false"
+                class="edit-input"
+                @blur="handleCellBlur(index)"
+                :ref="(el) => setInputRefs(el, `name-input-${index}-${column?.index}`)"
+              />
+            </bk-form-item>
+          </bk-form>
+        </bk-popover>
+        <!-- </template> -->
 
       </template>
     </bk-table-column>
     <bk-table-column :label="t('参数值')" prop="value">
       <template #default="{ row, column, index }">
-        <div class="td-text" v-if="!row?.isEdit">
+        <!-- <div class="td-text" v-if="!row?.isEdit">
           {{ row?.value }}
-        </div>
-        <template v-else>
-          <bk-form :ref="(el) => setRefs(el, `value-${index}`)" :model="row" label-width="0">
-            <bk-form-item
-              :rules="varRules.value"
-              property="value"
-              error-display-type="tooltips"
-              class="table-form-item">
-              <template v-if="row?.options?.length">
-                <bk-select
-                  class="edit-select"
-                  :clearable="false"
-                  :filterable="false"
-                  v-model="row.value"
-                  @change="handleCellBlur(index)"
-                  :ref="(el) => setInputRefs(el, `value-input-${index}-${column?.index}`)"
-                >
-                  <bk-option
-                    v-for="item in row.options"
-                    :id="item"
-                    :key="item"
-                    :name="item"
-                  />
-                </bk-select>
-              </template>
-              <template v-else>
-                <bk-input
-                  v-model="row.value"
-                  :clearable="false"
-                  class="edit-input"
-                  @blur="handleCellBlur(index)"
-                  :ref="(el) => setInputRefs(el, `value-input-${index}-${column?.index}`)"
+        </div> -->
+        <!-- <template v-else> -->
+        <bk-form :ref="(el) => setRefs(el, `value-${index}`)" :model="row" label-width="0">
+          <bk-form-item
+            :rules="varRules.value"
+            property="value"
+            error-display-type="tooltips"
+            class="table-form-item">
+            <template v-if="row?.options?.length">
+              <bk-select
+                class="edit-select"
+                :clearable="false"
+                :filterable="false"
+                v-model="row.value"
+                @change="handleCellBlur(index)"
+                :ref="(el) => setInputRefs(el, `value-input-${index}-${column?.index}`)"
+              >
+                <bk-option
+                  v-for="item in row.options"
+                  :id="item"
+                  :key="item"
+                  :name="item"
                 />
-              </template>
-            </bk-form-item>
-          </bk-form>
-        </template>
+              </bk-select>
+            </template>
+            <template v-else>
+              <bk-input
+                v-model="row.value"
+                :clearable="false"
+                class="edit-input"
+                @blur="handleCellBlur(index)"
+                :ref="(el) => setInputRefs(el, `value-input-${index}-${column?.index}`)"
+              />
+            </template>
+          </bk-form-item>
+        </bk-form>
+        <!-- </template> -->
       </template>
     </bk-table-column>
     <bk-table-column :label="t('类型')" prop="type">
       <template #default="{ row, column, index }">
-        <div
+        <!-- <div
           class="td-text"
           @click="(event) => handleCellClick({ event, column, rowIndex: index })"
           v-if="!row?.editType">
@@ -97,55 +96,55 @@
             @click="(event) => handleCellClick({ event, column, rowIndex: index })">
             {{ row?.type }}
           </bk-tag>
-        </div>
-        <template v-else>
-          <bk-form :ref="(el) => setRefs(el, `type-${index}`)" :model="row" label-width="0">
-            <bk-form-item
-              property="type"
-              error-display-type="tooltips"
-              class="table-form-item">
-              <bk-select
-                class="edit-select"
-                :clearable="false"
-                :filterable="false"
-                v-model="row.type"
-                @toggle="(v) => handleTypeChange(index, v)"
-                @change="handleCellBlur(index)"
-                :ref="(el) => setInputRefs(el, `type-input-${index}-${column?.index}`)"
-              >
-                <bk-option
-                  v-for="item in typeList"
-                  :id="item.value"
-                  :key="item.value"
-                  :name="item.label"
-                />
-              </bk-select>
-            </bk-form-item>
-          </bk-form>
-        </template>
+        </div> -->
+        <!-- <template v-else> -->
+        <bk-form :ref="(el) => setRefs(el, `type-${index}`)" :model="row" label-width="0">
+          <bk-form-item
+            property="type"
+            error-display-type="tooltips"
+            class="table-form-item">
+            <bk-select
+              class="edit-select"
+              :clearable="false"
+              :filterable="false"
+              v-model="row.type"
+              @toggle="(v) => handleTypeChange(index, v)"
+              @change="handleCellBlur(index)"
+              :ref="(el) => setInputRefs(el, `type-input-${index}-${column?.index}`)"
+            >
+              <bk-option
+                v-for="item in typeList"
+                :id="item.value"
+                :key="item.value"
+                :name="item.label"
+              />
+            </bk-select>
+          </bk-form-item>
+        </bk-form>
+        <!-- </template> -->
       </template>
     </bk-table-column>
     <bk-table-column :label="t('说明')" prop="instructions">
       <template #default="{ row, column, index }">
-        <div class="td-text" v-if="!row?.isEdit">
+        <!-- <div class="td-text" v-if="!row?.isEdit">
           {{ row?.instructions }}
-        </div>
-        <template v-else>
-          <bk-form :ref="(el) => setRefs(el, `instructions-${index}`)" :model="row" label-width="0">
-            <bk-form-item
-              property="instructions"
-              error-display-type="tooltips"
-              class="table-form-item">
-              <bk-input
-                v-model="row.instructions"
-                :clearable="false"
-                class="edit-input"
-                @blur="handleCellBlur(index)"
-                :ref="(el) => setInputRefs(el, `instructions-input-${index}-${column?.index}`)"
-              />
-            </bk-form-item>
-          </bk-form>
-        </template>
+        </div> -->
+        <!-- <template v-else> -->
+        <bk-form :ref="(el) => setRefs(el, `instructions-${index}`)" :model="row" label-width="0">
+          <bk-form-item
+            property="instructions"
+            error-display-type="tooltips"
+            class="table-form-item">
+            <bk-input
+              v-model="row.instructions"
+              :clearable="false"
+              class="edit-input"
+              @blur="handleCellBlur(index)"
+              :ref="(el) => setInputRefs(el, `instructions-input-${index}-${column?.index}`)"
+            />
+          </bk-form-item>
+        </bk-form>
+        <!-- </template> -->
       </template>
     </bk-table-column>
     <bk-table-column :label="t('操作')">
@@ -451,11 +450,15 @@ defineExpose({
   :deep(.bk-input) {
     border: none;
     height: 100%;
+    border-radius: 0px;
     .angle-up {
       display: none !important;
     }
     &:hover {
       border: 1px solid #A3C5FD;
+      .angle-up {
+        display: inline-flex !important;
+      }
     }
   }
   &.is-focus {
@@ -484,6 +487,7 @@ defineExpose({
         }
         .bk-form {
           line-height: 42px;
+          margin-bottom: -1px;
           .table-form-item {
             margin-bottom: 0;
             .bk-form-content {
@@ -497,6 +501,7 @@ defineExpose({
                 }
               }
               .edit-input.bk-input {
+                border-radius: 0px;
                 &:hover {
                   border: 1px solid #A3C5FD;
                 }
@@ -506,10 +511,14 @@ defineExpose({
               }
               .bk-select {
                 &:hover {
-                  border: 1px solid #A3C5FD;
+                  .bk-input {
+                    border: 1px solid #A3C5FD;
+                  }
                 }
                 &.is-focus {
-                  border: 1px solid #3A84FF;
+                  .bk-input {
+                    border: 1px solid #3A84FF;
+                  }
                 }
               }
             }
