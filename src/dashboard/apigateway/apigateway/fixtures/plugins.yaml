@@ -110,7 +110,7 @@
     type:
     - bk-cors
     notes: cors 插件支持为后端服务增加 CORS（Cross-Origin Resource Sharing，跨域资源共享）的返回头。
-    example: "allow_origins: https://example.com:8081\nallow_origins_by_regex: []\nallow_methods: GET,POST\nallow_headers: '**'\nexpose_headers: '**'\nmax_age: 86400\nallow_credential: true"
+    example: "作用：允许https://a.example.com:8081, https://b.example.com:8081 这两个站点发起跨域请求    allow_origins:  allow_origins_by_regex: ^https://.*\.example\.com:8081$  allow_methods: GET,POST,PUT,PATCH,HEAD,DELETE,OPTIONS  allow_headers: **  expose_headers:  max_age: 86400  allow_credential: false"
     style: dynamic
     default_value: ''
     config: |-
@@ -201,7 +201,7 @@
     type:
     - bk-cors
     notes: The cors Plugins lets you enable CORS easily.
-    example: "allow_origins: https://example.com:8081\nallow_origins_by_regex: []\nallow_methods: GET,POST\nallow_headers: '**'\nexpose_headers: '**'\nmax_age: 86400\nallow_credential: true"
+    example: "Role: allows https://a.example.com:8081, https://b.example.com:8081 this two site launch cross-domain request    allow_origins:  allow_origins_by_regex: ^https://.*\.example\.com:8081$  allow_methods: GET,POST,PUT,PATCH,HEAD,DELETE,OPTIONS  allow_headers: **  expose_headers:  max_age: 86400  allow_credential: false"
     style: dynamic
     default_value: ''
     config: |-
@@ -343,7 +343,7 @@
     type:
     - bk-header-rewrite
     notes: Header 转换插件支持对请求添加或删除请求头。注意设置的值中如果包含`$`符号，会被认为是变量被变量的值替换（不存在的变量值为空）; `$arg_foo`可获取 query string中`foo`的值, `$http_bar`可以获取 header 中 `bar`的值。
-    example: "set:\n  - key: aaa\n    value: '1'\n  - key: bbb\n    value: '2'\nremove:\n  - key: ccc"
+    example: "作用：设置header `X-Api-Version: 1`， 并且删除header `X-test`    设置: X-Api-Version: 1  删除: X-test"
     style: dynamic
     default_value: ''
     config: |-
@@ -431,7 +431,7 @@
     type:
     - bk-header-rewrite
     notes: Header transformation plugins allow you to easily add or remove request headers. If a value for a setting contains the $ symbol, it will be treated as a variable and its value will be replaced (with the variable’s value or empty if the variable does not exist). `$arg_foo` can fetch the value of `foo` from the query string, and `$http_bar` can fetch the value of `bar` from the header.
-    example: "set:\n  - key: aaa\n    value: '1'\n  - key: bbb\n    value: '2'\nremove:\n  - key: ccc"
+    example: "Action: Set header 'X-Api-Version: 1' and delete header 'X-test'    Settings: X-Api-Version: 1  Delete: X-test"
     style: dynamic
     default_value: ''
     config: |-
@@ -649,7 +649,7 @@
       该插件可以通过将 IP 地址列入白名单或黑名单来限制对资源的访问。
       支持对单个 IP 地址、多个 IP 地址和类似 1.1.1.0/24 的 CIDR（无类别域间路由）范围的限制。
       每行一条数据, 并且支持空行及注释行（以 # 开头）。
-    example: "blacklist: 127.0.0.1\n"
+    example: "作用：仅允许 IP 192.168.1.1 和 192.168.1.1 请求当前接口    类型：白名单  白名单： # comment          192.168.1.1          192.168.1.2"
     style: dynamic
     default_value: ''
     config: |-
@@ -711,7 +711,7 @@
       This plugin allows you to restrict access to a Resource by either whitelisting or blacklisting IP addresses.
       Single IPs, multiple IPs or even IP ranges in CIDR notation like 1.1.1.0/24 can be used.
       One piece of data per line, and supports blank lines and comment lines (beginning with #).
-    example: "blacklist: 127.0.0.1\n"
+    example: "Function: Only IP 192.168.1.1 and 192.168.1.1 are allowed to request the current interface    Type: whitelist  Whitelist: # comment          192.168.1.1          192.168.1.2"
     style: dynamic
     default_value: ''
     config: |-
@@ -842,7 +842,7 @@
     notes: |-
       默认频率限制，表示单个应用的默认频率限制；特殊应用频率限制，对指定应用设置单独的频率限制。频率控制插件，在环境上配置表示对应用访问环境下所有资源的总访问频率进行限制，
       在资源上配置，表示对应用访问单个资源的频率进行限制， 如果在环境和资源上都配置，两个都会生效，先校验资源的频率限制，再校验环境的频率限制。
-    example: "rates:\n  default:\n    tokens: 100\n    period: 1\n  specials:\n    - tokens: 1\n      period: 1\n      bk_app_code: kq-test\n"
+    example: "作用：默认每个应用 100 次/秒，应用demo 200 次/秒    默认频率限制： 次数: 100 时间范围: 秒  特殊应用频率限制： 次数: 200  时间范围: 秒  蓝鲸应用ID: demo"
     style: dynamic
     default_value: ''
     config: |-
@@ -1062,7 +1062,7 @@
       Limit plugin, when binding a stage, indicates the total rate limit of all resources
       in the stage by the app; when binding a resource, indicates the rate limit of
       an app on the single resource.
-    example: "rates:\n  default:\n    tokens: 100\n    period: 1\n  specials:\n    - tokens: 1\n      period: 1\n      bk_app_code: kq-test\n"
+    example: "Function: By default, each application is performed 100 times/second, and demo is performed 200 times/second    Default frequency limit: Times: 100 Time range: seconds  Special application frequency limit: Times: 200  Time range: seconds Blue  Whale application ID: demo"
     style: dynamic
     default_value: ''
     config: |-
