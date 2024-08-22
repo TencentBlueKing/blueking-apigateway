@@ -285,6 +285,7 @@ defineExpose({
   switchFontSize,
   setTheme,
   updateOptions,
+  handleFormat,
 });
 
 </script>

@@ -40,11 +40,17 @@
           <div class="response-main">
             <div class="response-content-type flex" v-show="tabActive === 'body'">
               <div class="payload-type">
-                <div class="payload-type-item">
+                <div
+                  :class="['payload-type-item', bodyType === 'pretty' ? 'active' : '']"
+                  @click="handleBodyTypeChange('pretty')"
+                >
                   <span class="icon apigateway-icon icon-ag-cardd"></span>
                   Pretty
                 </div>
-                <div class="payload-type-item active">
+                <div
+                  :class="['payload-type-item', bodyType === 'raw' ? 'active' : '']"
+                  @click="handleBodyTypeChange('raw')"
+                >
                   <span class="icon apigateway-icon icon-ag-shitu-liebiao"></span>
                   Raw
                 </div>
@@ -95,6 +101,7 @@
                 v-model="editorText"
                 theme="Visual Studio"
                 ref="resourceEditorRef"
+                language="json"
                 :minimap="false"
                 :show-copy="true"
                 :show-full-screen="true"
@@ -146,6 +153,7 @@ const bodyTypeList = ref([
     label: 'TEXT',
   },
 ]);
+const bodyType = ref<string>('pretty');
 const detailsType = ref<string>('cURL');
 const detailsTypeList = ref([
   {
@@ -161,6 +169,29 @@ const stopPropa = (e: Event) => {
   e?.stopPropagation();
 };
 
+const formatBody = () => {
+  resourceEditorRef.value?.updateOptions({
+    readOnly: false,
+  });
+  setTimeout(() => {
+    resourceEditorRef.value?.handleFormat();
+  });
+  setTimeout(() => {
+    resourceEditorRef.value?.updateOptions({
+      readOnly: true,
+    });
+  }, 200);
+};
+
+const handleBodyTypeChange = (type: string) => {
+  bodyType.value = type;
+  if (type === 'pretty') {
+    formatBody();
+  } else {
+    setEditorValue();
+  }
+};
+
 const setEditorValue = () => {
   if (tabActive.value === 'body') {
     editorText.value = data.value?.body || '';
@@ -168,6 +199,9 @@ const setEditorValue = () => {
     editorText.value = data.value?.curl || '';
   }
   resourceEditorRef.value?.setValue(editorText.value);
+  if (tabActive.value === 'body' && bodyType.value === 'pretty') {
+    formatBody();
+  }
   activeIndex.value = [1];
 };
 
