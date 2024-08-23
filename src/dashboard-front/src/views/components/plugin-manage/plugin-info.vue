@@ -114,7 +114,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRefs } from 'vue';
+import {
+  computed,
+  ref,
+  toRefs,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPluginForm, creatPlugin, updatePluginConfig } from '@/http';
 import { Message } from 'bkui-vue';
@@ -463,6 +467,12 @@ const getSchemaFormData = async (code: string) => {
     //   type_code: 'bk-rate-limit',
     //   type_name: '频率控制',
     // };
+
+    // 当使用 select 组件切换到 ip 访问保护插件时，schemaFormData 没有被正确地设置
+    // 需要手动重置 schemaFormData
+    if (code === 'bk-ip-restriction') {
+      schemaFormData.value = { whitelist: '' };
+    }
 
     isPluginFormLoading.value = false;
     infoNotes.value = res.notes;
