@@ -116,7 +116,8 @@ class TestAppPermissionApplyV1APIView:
 
         result = get_response_json(response)
         assert result["code"] == 0, result
-        assert AppPermissionApplyRecord.objects.filter(bk_app_code=unique_id).exists()
+        record = AppPermissionApplyRecord.objects.get(bk_app_code=unique_id)
+        assert record.id == result["data"]["record_id"]
 
 
 class TestAppPermissionViewSet:
