@@ -201,7 +201,7 @@
     type:
     - bk-cors
     notes: The cors Plugins lets you enable CORS easily.
-    example: "Role: allows https://a.example.com:8081, https://b.example.com:8081 this two site launch cross-domain request\n\nallow_origins: \nallow_origins_by_regex: ^https://.*\\.example\\.com:8081$\nallow_methods: GET,POST,PUT,PATCH,HEAD,DELETE,OPTIONS\nallow_headers: **\nexpose_headers: \nmax_age: 86400\nallow_credential: false"
+    example: "Function: allows https://a.example.com:8081, https://b.example.com:8081 this two site launch cross-domain request\n\nallow_origins: \nallow_origins_by_regex: ^https://.*\\.example\\.com:8081$\nallow_methods: GET,POST,PUT,PATCH,HEAD,DELETE,OPTIONS\nallow_headers: **\nexpose_headers: \nmax_age: 86400\nallow_credential: false"
     style: dynamic
     default_value: ''
     config: |-
@@ -431,7 +431,7 @@
     type:
     - bk-header-rewrite
     notes: Header transformation plugins allow you to easily add or remove request headers. If a value for a setting contains the $ symbol, it will be treated as a variable and its value will be replaced (with the variable’s value or empty if the variable does not exist). `$arg_foo` can fetch the value of `foo` from the query string, and `$http_bar` can fetch the value of `bar` from the header.
-    example: "Action: Set header 'X-Api-Version: 1' and delete header 'X-test'\n\nSettings: X-Api-Version: 1\nDelete:&nbsp;&nbsp;&nbsp;X-test"
+    example: "Function: Set header 'X-Api-Version: 1' and delete header 'X-test'\n\nSettings: X-Api-Version: 1\nDelete: X-test"
     style: dynamic
     default_value: ''
     config: |-
@@ -649,7 +649,7 @@
       该插件可以通过将 IP 地址列入白名单或黑名单来限制对资源的访问。
       支持对单个 IP 地址、多个 IP 地址和类似 1.1.1.0/24 的 CIDR（无类别域间路由）范围的限制。
       每行一条数据, 并且支持空行及注释行（以 # 开头）。
-    example: "作用：仅允许 IP 192.168.1.1 和 192.168.1.1 请求当前接口\n\n类型：白名单\n白名单： # comment\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;192.168.1.1\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;192.168.1.2"
+    example: "作用：仅允许 IP 192.168.1.1 和 192.168.1.1 请求当前接口\n\n类型：白名单\n白名单： # comment\n       192.168.1.1\n       192.168.1.2"
     style: dynamic
     default_value: ''
     config: |-
@@ -711,7 +711,7 @@
       This plugin allows you to restrict access to a Resource by either whitelisting or blacklisting IP addresses.
       Single IPs, multiple IPs or even IP ranges in CIDR notation like 1.1.1.0/24 can be used.
       One piece of data per line, and supports blank lines and comment lines (beginning with #).
-    example: "Function: Only IP 192.168.1.1 and 192.168.1.1 are allowed to request the current interface\n\nType: whitelist\nWhitelist: # comment\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;192.168.1.1\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;192.168.1.2"
+    example: "Function: Only IP 192.168.1.1 and 192.168.1.1 are allowed to request the current interface\n\nType: whitelist\nWhitelist: # comment\n       192.168.1.1\n       192.168.1.2"
     style: dynamic
     default_value: ''
     config: |-
