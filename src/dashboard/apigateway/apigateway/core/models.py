@@ -197,6 +197,7 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     method = models.CharField(max_length=10, choices=RESOURCE_METHOD_CHOICES, blank=False, null=False)
     path = models.CharField(max_length=2048, blank=False, null=False)
     match_subpath = models.BooleanField(default=False)
+    enable_websocket = models.BooleanField(default=False)
 
     # only one proxy is activated
     proxy_id = models.IntegerField(blank=False, null=False)
