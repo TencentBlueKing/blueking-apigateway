@@ -151,7 +151,7 @@ def convert_openapi2_formdata_to_openapi(
             schema["required"] = required
         openapi_request_body = {
             "content": {
-                content_type: schema,
+                content_type: {"schema": schema},
             }
         }
 

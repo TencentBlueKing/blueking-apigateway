@@ -1882,6 +1882,11 @@
   dependencies:
     "@types/node" "*"
 
+"@types/web-bluetooth@^0.0.20":
+  version "0.0.20"
+  resolved "https://registry.yarnpkg.com/@types/web-bluetooth/-/web-bluetooth-0.0.20.tgz#f066abfcd1cbe66267cdbbf0de010d8a41b41597"
+  integrity sha512-g9gZnnXVq7gM7v3tJCWV/qw7w+KeOlSHAhgF9RytFyifW6AF61hdT2ucrYhPq9hLs5JIryeupHV3qGk95dH9ow==
+
 "@types/ws@^8.5.5":
   version "8.5.10"
   resolved "https://registry.npmjs.org/@types/ws/-/ws-8.5.10.tgz"
@@ -2230,6 +2235,28 @@
   version "3.4.27"
   resolved "https://registry.npmjs.org/@vue/shared/-/shared-3.4.27.tgz"
   integrity sha512-DL3NmY2OFlqmYYrzp39yi3LDkKxa5vZVwxWdQ3rG0ekuWscHraeIbnI8t+aZK7qhYqEqWKTUdijadunb9pnrgA==
+
+"@vueuse/core@^11.0.3":
+  version "11.0.3"
+  resolved "https://registry.yarnpkg.com/@vueuse/core/-/core-11.0.3.tgz#e5fb5aa6580c6e505cecea43518fcb66cb56a3ef"
+  integrity sha512-RENlh64+SYA9XMExmmH1a3TPqeIuJBNNB/63GT35MZI+zpru3oMRUA6cEFr9HmGqEgUisurwGwnIieF6qu3aXw==
+  dependencies:
+    "@types/web-bluetooth" "^0.0.20"
+    "@vueuse/metadata" "11.0.3"
+    "@vueuse/shared" "11.0.3"
+    vue-demi ">=0.14.10"
+
+"@vueuse/metadata@11.0.3":
+  version "11.0.3"
+  resolved "https://registry.yarnpkg.com/@vueuse/metadata/-/metadata-11.0.3.tgz#f3f20066fb5217df24614de92162b65c24475e1b"
+  integrity sha512-+FtbO4SD5WpsOcQTcC0hAhNlOid6QNLzqedtquTtQ+CRNBoAt9GuV07c6KNHK1wCmlq8DFPwgiLF2rXwgSHX5Q==
+
+"@vueuse/shared@11.0.3":
+  version "11.0.3"
+  resolved "https://registry.yarnpkg.com/@vueuse/shared/-/shared-11.0.3.tgz#0e5519dcdc9ac0c6fc831c105a9e7ba7bda98628"
+  integrity sha512-0rY2m6HS5t27n/Vp5cTDsKTlNnimCqsbh/fmT2LgE+aaU42EMfXo8+bNX91W9I7DDmxfuACXMmrd7d79JxkqWA==
+  dependencies:
+    vue-demi ">=0.14.10"
 
 "@webassemblyjs/ast@1.11.6", "@webassemblyjs/ast@^1.11.5":
   version "1.11.6"
@@ -8317,6 +8344,11 @@ verror@1.10.0:
     assert-plus "^1.0.0"
     core-util-is "1.0.2"
     extsprintf "^1.2.0"
+
+vue-demi@>=0.14.10:
+  version "0.14.10"
+  resolved "https://registry.yarnpkg.com/vue-demi/-/vue-demi-0.14.10.tgz#afc78de3d6f9e11bf78c55e8510ee12814522f04"
+  integrity sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==
 
 vue-demi@>=0.14.5:
   version "0.14.7"

@@ -70,9 +70,7 @@
               <bk-table-column :label="t('组件名')" prop="req_component_name"></bk-table-column>
               <bk-table-column :label="t('错误 / 总次数')" prop="req_component_name" :sort="true" :sort-fn="handleSortCount">
                 <template #default="props">
-                  <span v-if="props?.row?.requests?.error_count">
-                    {{props?.row?.requests?.error_count}} /
-                  </span>
+                  <span>{{props?.row?.requests?.error_count}} /</span>
                   <span>{{props?.row?.requests?.count}}</span>
                   <bk-button
                     v-if="props?.row?.requests?.error_count"
@@ -127,9 +125,7 @@
               <bk-table-column label="app_code" prop="req_app_code"></bk-table-column>
               <bk-table-column :label="t('错误 / 总次数')" prop="req_app_code" :sort="true" :sort-fn="handleSortCount">
                 <template #default="props">
-                  <span v-if="props?.row?.requests?.error_count">
-                    {{props?.row?.requests?.error_count}} /
-                  </span>
+                  <span>{{props?.row?.requests?.error_count}} /</span>
                   <span>{{props?.row?.requests?.count}}</span>
                   <bk-button
                     v-if="props?.row?.requests?.error_count"
@@ -182,9 +178,7 @@
               <bk-table-column label="URL" prop="req_url" :min-width="200"></bk-table-column>
               <bk-table-column :label="t('错误 / 总次数')" prop="req_url" :sort="true" :sort-fn="handleSortCount">
                 <template #default="props">
-                  <span v-if="props?.row?.requests?.error_count">
-                    {{props?.row?.requests?.error_count}} /
-                  </span>
+                  <span>{{props?.row?.requests?.error_count}} /</span>
                   <span>{{props?.row?.requests?.count}}</span>
                   <bk-button
                     v-if="props?.row?.requests?.error_count"

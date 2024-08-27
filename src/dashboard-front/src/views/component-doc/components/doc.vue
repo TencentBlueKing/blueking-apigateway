@@ -34,13 +34,17 @@
               <div class="k">{{ t('应用认证') }}<i
                 class="ml5 icon apigateway-icon icon-ag-help"
                 v-bk-tooltips="t('应用访问该组件API时，是否需提供应用认证信息')"></i>：</div>
-              <div class="v">{{ curComponent.app_verified_required ? t('是') : t('否') }}</div>
+              <div class="v">
+                {{ (curComponent.verified_app_required || curComponent.app_verified_required) ? t('是') : t('否') }}
+              </div>
             </div>
             <div class="kv-row">
               <div class="k">{{ t('用户认证') }}<i
                 class="ml5 icon apigateway-icon icon-ag-help"
                 v-bk-tooltips="t('应用访问该组件API时，是否需要提供用户认证信息')"></i>：</div>
-              <div class="v">{{ curComponent.user_verified_required ? t('是') : t('否') }}</div>
+              <div class="v">
+                {{ (curComponent.verified_user_required || curComponent.user_verified_required) ? t('是') : t('否') }}
+              </div>
             </div>
             <div class="kv-row">
               <div class="k">{{ t('是否需申请权限') }}<i

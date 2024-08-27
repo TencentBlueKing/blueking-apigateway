@@ -707,6 +707,7 @@ PLUGIN_METADATA_CONFIG = {
             "request_id": "$bk_request_id",
             "x_request_id": "$x_request_id",
             "request_duration": "$bk_log_request_duration",
+            "bk_username": "$bk_username",
             # 网关信息
             "api_id": "$bk_gateway_id",
             "api_name": "$bk_gateway_name",

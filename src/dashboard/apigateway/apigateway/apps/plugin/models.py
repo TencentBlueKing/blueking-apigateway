@@ -95,6 +95,7 @@ class PluginForm(models.Model):
     language = models.CharField(max_length=16, blank=True)
     type = models.ForeignKey(PluginType, on_delete=models.CASCADE)
     notes = models.TextField(help_text="notes for this plugin", default="", blank=True)
+    example = models.TextField(help_text="example for this plugin", default="", blank=True)
     style = models.CharField(max_length=32, choices=PluginStyleEnum.get_choices(), help_text="表单样式")
     default_value = models.TextField(help_text="default value", default=None, blank=True, null=True)
     config = JSONField(

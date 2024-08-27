@@ -72,7 +72,8 @@ class StageConvertor(BaseConvertor):
     def _get_default_stage_plugins(self) -> List[PluginConfig]:
         """Get the default plugins for stage, which is shared by all resources in the stage"""
         return [
-            PluginConfig(name="bk-opentelemetry"),
+            # 2024-08-19 disable the bk-opentelemetry plugin, we should let each gateway set their own opentelemetry
+            # PluginConfig(name="bk-opentelemetry"),
             PluginConfig(name="prometheus"),
             PluginConfig(name="bk-real-ip"),
             PluginConfig(name="bk-auth-validate"),

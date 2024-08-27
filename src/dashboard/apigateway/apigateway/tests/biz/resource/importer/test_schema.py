@@ -40,9 +40,11 @@ class TestSchema:
         expected_output = {
             "content": {
                 "multipart/form-data": {
-                    "type": "object",
-                    "properties": {"file": {"type": "string"}, "name": {"type": "string"}},
-                    "required": ["file"],
+                    "schema": {
+                        "type": "object",
+                        "properties": {"file": {"type": "string"}, "name": {"type": "string"}},
+                        "required": ["file"],
+                    }
                 }
             }
         }
