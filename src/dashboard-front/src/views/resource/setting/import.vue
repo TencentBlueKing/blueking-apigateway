@@ -223,7 +223,7 @@
           <!--  新增的资源  -->
           <bk-collapse-panel name="add">
             <template #header>
-              <div class="panel-header">
+              <div class="panel-header" ref="panelHeadAddRef">
                 <main class="flex-row align-items-center">
                   <angle-up-fill
                     :class="[panelNamesList.includes('add') ? 'panel-header-show' : 'panel-header-hide']"
@@ -257,179 +257,27 @@
             </template>
             <template #content>
               <div>
-                <bk-table
-                  :data="tableDataToAdd"
-                  row-key="name"
-                  show-overflow-tooltip
-                  :pagination="tableToAddPagination"
-                >
-                  <bk-table-column
-                    :label="t('资源名称')"
-                    prop="name"
-                    :min-width="160"
-                    width="160"
-                    fixed="left"
-                  >
-                  </bk-table-column>
-                  <!--  认证方式列  -->
-                  <bk-table-column
-                    :label="() => renderAuthConfigColLabel('add')"
-                    width="100"
-                    :show-overflow-tooltip="false"
-                  >
-                    <template #default="{ row }">
-                    <span v-bk-tooltips="{ content: `${getAuthConfigText(row?.auth_config)}`, placement: 'top' }">
-                      {{ getAuthConfigText(row?.auth_config) }}
-                    </span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('校验应用权限')"
-                  >
-                    <template #default="{ row }">
-                    <span
-                      :class="{ 'warning-c': getPermRequiredText(row?.auth_config) === '是' }"
-                    >{{ getPermRequiredText(row?.auth_config) }}</span>
-                    </template>
-                  </bk-table-column>
-                  <!--  “是否公开”列  -->
-                  <bk-table-column
-                    :label="() => renderIsPublicColLabel('add')"
-                    width="100"
-                  >
-                    <template #default="{ row }">
-                    <span :class="{ 'warning-c': getPublicSettingText(row.is_public) === '是' }">
-                      {{ getPublicSettingText(row.is_public) }}
-                    </span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('允许申请权限')"
-                  >
-                    <template #default="{ row }">
-                    <span :class="{ 'warning-c': getAllowApplyPermissionText(row.allow_apply_permission) === '是' }">
-                      {{ getAllowApplyPermissionText(row.allow_apply_permission) }}
-                    </span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('前端请求路径')"
-                    :min-width="160"
-                    :width="160"
-                  >
-                    <template #default="{ row }">
-                      <span>{{ row.match_subpath ? row.path_display : row.path }}</span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('前端请求方法')"
-                    prop="method"
-                    :show-overflow-tooltip="false"
-                  >
-                    <template #default="{ row }">
-                      <bk-tag :theme="methodsEnum[row?.method]">{{ row?.method }}</bk-tag>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('后端服务')"
-                    prop="method"
-                  >
-                    <template #default="{ row }">
-                      {{ row.backend?.name ?? 'default' }}
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('后端请求方法')"
-                    prop="method"
-                    :show-overflow-tooltip="false"
-                  >
-                    <template #default="{ row }">
-                      <bk-tag
-                        :theme="methodsEnum[row.backend?.method ?? row.method]"
-                      >
-                        {{ row.backend?.method ?? row.method }}
-                      </bk-tag>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('后端请求路径')"
-                    :min-width="160"
-                    :width="160"
-                  >
-                    <template #default="{ row }">
-                      {{ row.backend?.config?.path ?? row.backend?.path ?? row.path }}
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('资源文档')"
-                    prop="doc"
-                    width="85"
-                  >
-                    <template #default="{ row }">
-                      <bk-button
-                        v-if="showDoc"
-                        text
-                        theme="primary"
-                        @click="handleShowResourceDoc(row)"
-                      >
-                        <i class="apigateway-icon icon-ag-doc-2 mr4 f14 default-c" />
-                        {{ t('详情') }}
-                      </bk-button>
-                      <span v-else>{{ t('未生成') }}</span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('插件数量')"
-                    width="85"
-                  >
-                    <template #default="{ row }">
-                      <bk-button
-                        theme="primary"
-                        text style="font-size: 12px;"
-                        @click="handleShowPluginsSlider(row)"
-                      >
-                        <span
-                          v-bk-tooltips="{ content: `${row.plugin_configs?.map((c: any)=>c.name || c.type).join('，') || '无插件'}` }"
-                        >
-                          {{ row.plugin_configs?.length ?? 0 }}
-                        </span>
-                      </bk-button>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('操作')"
-                    width="150"
-                    fixed="right"
-                    prop="act"
-                  >
-                    <template #default="{ row }">
-                      <bk-button
-                        text
-                        theme="primary"
-                        @click="handleEdit(row)"
-                      >
-                        {{ t('修改配置') }}
-                      </bk-button>
-                      <bk-button
-                        text
-                        theme="primary"
-                        class="pl10 pr10"
-                        @click="() => {
-                        toggleRowUnchecked(row)
-                      }"
-                      >
-                        {{ t('不导入') }}
-                      </bk-button>
-                    </template>
-                  </bk-table-column>
-                </bk-table>
+                <!--  新增资源 table  -->
+                <TableResToAction
+                  action="add"
+                  :table-data="tableDataToAdd"
+                  :show-doc="showDoc"
+                  v-model:tempAuthConfig="tempAuthConfig"
+                  v-model:tempPublicConfig="tempPublicConfig"
+                  @show-row-doc="handleShowResourceDoc"
+                  @show-row-plugin="handleShowPluginsSlider"
+                  @show-row-edit="handleEdit"
+                  @toggle-row-unchecked="toggleRowUnchecked"
+                  @confirm-auth-config="handleConfirmAuthConfigPopConfirm"
+                  @confirm-pub-config="handleConfirmPublicConfigPopConfirm"
+                ></TableResToAction>
               </div>
             </template>
           </bk-collapse-panel>
           <!--  更新的资源  -->
           <bk-collapse-panel name="update">
             <template #header>
-              <div class="panel-header">
+              <div class="panel-header" ref="panelHeadUpdateRef">
                 <main class="flex-row align-items-center">
                   <angle-up-fill
                     :class="[panelNamesList.includes('update') ? 'panel-header-show' : 'panel-header-hide']"
@@ -463,179 +311,26 @@
             </template>
             <template #content>
               <div>
-                <bk-table
-                  :data="tableDataToUpdate"
-                  show-overflow-tooltip
-                  row-key="name"
-                  :pagination="tableToUpdatePagination"
-                >
-                  <bk-table-column
-                    :label="t('资源名称')"
-                    prop="name"
-                    :min-width="160"
-                    width="160"
-                    fixed="left"
-                  >
-                  </bk-table-column>
-                  <!--  认证方式列  -->
-                  <bk-table-column
-                    :label="() => renderAuthConfigColLabel('update')"
-                    width="100"
-                    :show-overflow-tooltip="false"
-                  >
-                    <template #default="{ row }">
-                    <span v-bk-tooltips="{ content: `${getAuthConfigText(row?.auth_config)}`, placement: 'top' }">
-                      {{ getAuthConfigText(row?.auth_config) }}
-                    </span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('校验应用权限')"
-                  >
-                    <template #default="{ row }">
-                    <span
-                      :class="{ 'warning-c': getPermRequiredText(row?.auth_config) === '是' }"
-                    >{{ getPermRequiredText(row?.auth_config) }}</span>
-                    </template>
-                  </bk-table-column>
-                  <!--  “是否公开”列  -->
-                  <bk-table-column
-                    :label="() => renderIsPublicColLabel('update')"
-                    width="100"
-                  >
-                    <template #default="{ row }">
-                    <span :class="{ 'warning-c': getPublicSettingText(row.is_public) === '是' }">
-                      {{ getPublicSettingText(row.is_public) }}
-                    </span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('允许申请权限')"
-                  >
-                    <template #default="{ row }">
-                    <span :class="{ 'warning-c': getAllowApplyPermissionText(row.allow_apply_permission) === '是' }">
-                      {{ getAllowApplyPermissionText(row.allow_apply_permission) }}
-                    </span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('前端请求路径')"
-                    :min-width="160"
-                    :width="160"
-                  >
-                    <template #default="{ row }">
-                      <span>{{ row.match_subpath ? row.path_display : row.path }}</span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('前端请求方法')"
-                    prop="method"
-                    :show-overflow-tooltip="false"
-                  >
-                    <template #default="{ row }">
-                      <bk-tag :theme="methodsEnum[row?.method]">{{ row?.method }}</bk-tag>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('后端服务')"
-                    prop="method"
-                  >
-                    <template #default="{ row }">
-                      {{ row.backend?.name ?? 'default' }}
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('后端请求方法')"
-                    prop="method"
-                    :show-overflow-tooltip="false"
-                  >
-                    <template #default="{ row }">
-                      <bk-tag
-                        :theme="methodsEnum[row.backend?.method ?? row.method]"
-                      >
-                        {{ row.backend?.method ?? row.method }}
-                      </bk-tag>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('后端请求路径')"
-                    :min-width="160"
-                    :width="160"
-                  >
-                    <template #default="{ row }">
-                      {{ row.backend?.config?.path ?? row.backend?.path ?? row.path }}
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('资源文档')"
-                    prop="doc"
-                    width="85"
-                  >
-                    <template #default="{ row }">
-                      <bk-button
-                        v-if="showDoc"
-                        text
-                        theme="primary"
-                        @click="handleShowResourceDoc(row)"
-                      >
-                        <i class="apigateway-icon icon-ag-doc-2 mr4 f14 default-c" />
-                        {{ t('详情') }}
-                      </bk-button>
-                      <span v-else>{{ t('未生成') }}</span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('插件数量')"
-                    width="85"
-                  >
-                    <template #default="{ row }">
-                      <bk-button
-                        theme="primary"
-                        text style="font-size: 12px;"
-                        @click="handleShowPluginsSlider(row)"
-                      >
-                        <span
-                          v-bk-tooltips="{ content: `${row.plugin_configs?.map((c: any)=>c.name || c.type).join('，') || '无插件'}` }"
-                        >
-                          {{ row.plugin_configs?.length ?? 0 }}
-                        </span>
-                      </bk-button>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('操作')"
-                    width="150"
-                    fixed="right"
-                    prop="act"
-                  >
-                    <template #default="{ row }">
-                      <bk-button
-                        text
-                        theme="primary"
-                        @click="handleEdit(row)"
-                      >
-                        {{ t('修改配置') }}
-                      </bk-button>
-                      <bk-button
-                        text
-                        theme="primary"
-                        class="pl10 pr10"
-                        @click="() => {
-                        toggleRowUnchecked(row)
-                      }"
-                      >
-                        {{ t('不导入') }}
-                      </bk-button>
-                    </template>
-                  </bk-table-column>
-                </bk-table>
+                <!--  更新资源 table  -->
+                <TableResToAction
+                  action="update"
+                  :table-data="tableDataToUpdate"
+                  v-model:tempAuthConfig="tempAuthConfig"
+                  v-model:tempPublicConfig="tempPublicConfig"
+                  @show-row-doc="handleShowResourceDoc"
+                  @show-row-plugin="handleShowPluginsSlider"
+                  @show-row-edit="handleEdit"
+                  @toggle-row-unchecked="toggleRowUnchecked"
+                  @confirm-auth-config="handleConfirmAuthConfigPopConfirm"
+                  @confirm-pub-config="handleConfirmPublicConfigPopConfirm"
+                ></TableResToAction>
               </div>
             </template>
           </bk-collapse-panel>
           <!--  不导入的资源  -->
           <bk-collapse-panel name="uncheck">
             <template #header>
-              <div class="panel-header">
+              <div class="panel-header" ref="panelHeadUncheckRef">
                 <main class="flex-row align-items-center">
                   <angle-up-fill
                     :class="[panelNamesList.includes('uncheck') ? 'panel-header-show' : 'panel-header-hide']"
@@ -650,156 +345,12 @@
             </template>
             <template #content>
               <div>
-                <bk-table
-                  :data="tableDataUnchecked"
-                  show-overflow-tooltip
-                  row-key="name"
-                  :pagination="tableUncheckedPagination"
-                >
-                  <bk-table-column
-                    :label="t('资源名称')"
-                    prop="name"
-                    :min-width="160"
-                    width="160"
-                    fixed="left"
-                  >
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('认证方式')"
-                  >
-                    <template #default="{ row }">
-                    <span v-bk-tooltips="{ content: `${getAuthConfigText(row?.auth_config)}`, placement: 'top' }">
-                      {{ getAuthConfigText(row?.auth_config) }}
-                    </span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('校验应用权限')"
-                  >
-                    <template #default="{ row }">
-                    <span
-                      :class="{ 'warning-c': getPermRequiredText(row?.auth_config) === '是' }"
-                    >{{ getPermRequiredText(row?.auth_config) }}</span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('是否公开')"
-                  >
-                    <template #default="{ row }">
-                    <span :class="{ 'warning-c': getPublicSettingText(row.is_public) === '是' }">
-                      {{ getPublicSettingText(row.is_public) }}
-                    </span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('允许申请权限')"
-                  >
-                    <template #default="{ row }">
-                    <span :class="{ 'warning-c': getAllowApplyPermissionText(row.allow_apply_permission) === '是' }">
-                      {{ getAllowApplyPermissionText(row.allow_apply_permission) }}
-                    </span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('前端请求路径')"
-                    :min-width="160"
-                  >
-                    <template #default="{ row }">
-                      <span>{{ row.match_subpath ? row.path_display : row.path }}</span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('前端请求方法')"
-                    prop="method"
-                    :show-overflow-tooltip="false"
-                  >
-                    <template #default="{ row }">
-                      <bk-tag :theme="methodsEnum[row?.method]">{{ row?.method }}</bk-tag>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('后端服务')"
-                    prop="method"
-                  >
-                    <template #default="{ row }">
-                      {{ row.backend?.name ?? 'default' }}
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('后端请求方法')"
-                    prop="method"
-                    :show-overflow-tooltip="false"
-                  >
-                    <template #default="{ row }">
-                      <bk-tag
-                        :theme="methodsEnum[row.backend?.method ?? row.method]"
-                      >
-                        {{ row.backend?.method ?? row.method }}
-                      </bk-tag>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('后端请求路径')"
-                    :min-width="160"
-                  >
-                    <template #default="{ row }">
-                      {{ row.backend?.config?.path ?? row.backend?.path ?? row.path }}
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('资源文档')"
-                    prop="doc"
-                  >
-                    <template #default="{ row }">
-                      <bk-button
-                        v-if="showDoc"
-                        text
-                        theme="primary"
-                        @click="handleShowResourceDoc(row)"
-                      >
-                        <i class="apigateway-icon icon-ag-doc-2 mr4 f14 default-c" />
-                        {{ t('详情') }}
-                      </bk-button>
-                      <span v-else>{{ t('未生成') }}</span>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('插件数量')"
-                    width="85"
-                  >
-                    <template #default="{ row }">
-                      <bk-button
-                        theme="primary"
-                        text style="font-size: 12px;"
-                        @click="handleShowPluginsSlider(row)"
-                      >
-                        <span
-                          v-bk-tooltips="{ content: `${row.plugin_configs?.map((c: any)=>c.name || c.type).join('，') || '无插件'}` }"
-                        >
-                          {{ row.plugin_configs?.length ?? 0 }}
-                        </span>
-                      </bk-button>
-                    </template>
-                  </bk-table-column>
-                  <bk-table-column
-                    :label="t('操作')"
-                    width="100"
-                    fixed="right"
-                    prop="act"
-                  >
-                    <template #default="{ row }">
-                      <bk-button
-                        text
-                        theme="primary"
-                        @click="() => {
-                        toggleRowUnchecked(row)
-                      }"
-                      >
-                        {{ t('恢复导入') }}
-                      </bk-button>
-                    </template>
-                  </bk-table-column>
-                </bk-table>
+                <TableResToUncheck
+                  :table-data="tableDataUnchecked"
+                  @show-row-doc="handleShowResourceDoc"
+                  @show-row-plugin="handleShowPluginsSlider"
+                  @toggle-row-unchecked="toggleRowUnchecked"
+                ></TableResToUncheck>
               </div>
             </template>
           </bk-collapse-panel>
@@ -837,12 +388,12 @@
       </main>
     </footer>
     <!--  编辑资源侧栏  -->
-    <edit-import-resource-side-slider
+    <EditImportResourceSideSlider
       :resource="editingResource"
       :isSliderShow="isSliderShow"
       @on-hidden="handleEditSliderHidden"
       @submit="handleEditSubmit"
-    ></edit-import-resource-side-slider>
+    ></EditImportResourceSideSlider>
     <!--  导入确认弹窗  -->
     <bk-dialog
       v-model:is-show="isImportConfirmDialogVisible"
@@ -880,11 +431,11 @@
       :preview-lang="language"
     ></ResourceDocSideSlider>
     <!--  查看插件侧边栏  -->
-    <plugin-preview-side-slider
+    <PluginPreviewSideSlider
       :plugins="editingResource.plugin_configs"
       :is-slider-show="isPluginsSliderShow"
       @on-hidden="isPluginsSliderShow = false"
-    ></plugin-preview-side-slider>
+    ></PluginPreviewSideSlider>
   </div>
   <!--  导入结果展示页  -->
   <div v-else class="import-result-wrapper">
@@ -1028,11 +579,18 @@ import _ from 'lodash';
 import type { IPosition } from 'monaco-editor';
 import type { ErrorReasonType, CodeErrorMsgType } from '@/types/common';
 import { ResizeLayout } from 'bkui-vue';
-import { MethodsEnum } from '@/types';
 import EditImportResourceSideSlider from "@/views/resource/setting/comps/edit-import-resource-side-slider.vue";
 import DownloadDialog from "@/views/resource/setting/comps/download-dialog.vue";
 import PluginPreviewSideSlider from '@/views/resource/setting/comps/plugin-preview-side-slider.vue';
 import ResourceDocSideSlider from '@/views/components/resource-doc-slider/index.vue';
+import {
+  ActionType,
+  IImportedResource,
+  ILocalImportedResource,
+} from '@/views/resource/setting/types';
+import TableResToAction from '@/views/resource/setting/comps/table-res-to-action.vue';
+import TableResToUncheck from '@/views/resource/setting/comps/table-res-to-uncheck.vue';
+import { useParentElement } from '@vueuse/core';
 
 type CodeErrorResponse = {
   code: string,
@@ -1048,22 +606,21 @@ const common = useCommon();
 const editorText = ref<string>(exampleData.content);
 const { apigwId } = common; // 网关id
 const resourceEditorRef = ref<InstanceType<typeof editorMonaco>>(); // 实例化
-const showDoc = ref<boolean>(true);
-const language = ref<string>('zh');
-const isDataLoading = ref<boolean>(false);
+const showDoc = ref(true);
+const language = ref<'zh' | 'en'>('zh');
+const isDataLoading = ref(false);
 // 代码校验是否通过
-const isCodeValid = ref<boolean>(false);
+const isCodeValid = ref(false);
 // 代码校验后是否修改过代码
 const isCodeModified = ref(true);
-const isImportLoading = ref<boolean>(false);
+const isImportLoading = ref(false);
 // 是否展示导入结果页（loading、success、fail）
 const isImportResultVisible = ref(false);
 // 导入是否成功
 const isImportSucceeded = ref(false);
 const curView = ref<'import' | 'resources'>('import'); // 当前页面
-const tableData = ref<any[]>([]);
+const tableData = ref<ILocalImportedResource[]>([]);
 const globalProperties = useGetGlobalProperties();
-const methodsEnum: any = Object.freeze(MethodsEnum);
 const { GLOBAL_CONFIG } = globalProperties;
 
 // 选中的代码错误提示 Tab，默认展示 all 即全部类型的错误提示
@@ -1073,12 +630,16 @@ const errorReasons = ref<ErrorReasonType[]>([]);
 const isFindPanelVisible = ref(false);
 // 资源确认页的 collapse 面板列表
 const panelNamesList = ref(['add', 'update', 'uncheck']);
+// 资源确认页的 collapse 面板标题，稍后添加样式要用
+const panelHeadAddRef = ref<HTMLDivElement | null>(null);
+const panelHeadUpdateRef = ref<HTMLDivElement | null>(null);
+const panelHeadUncheckRef = ref<HTMLDivElement | null>(null);
 
 const isImportConfirmDialogVisible = ref(false);
 const isResourceDocSliderVisible = ref(false);
 const isValidBannerVisible = ref(false);
 
-const editingResource = ref<any>({
+const editingResource = ref<ILocalImportedResource>({
   name: '',
   description: '',
   label_ids: [],
@@ -1091,6 +652,7 @@ const editingResource = ref<any>({
   is_public: true,
   allow_apply_permission: true,
   _localId: -1,
+  _unchecked: false,
 });
 const isSliderShow = ref(false);
 const isPluginsSliderShow = ref(false);
@@ -1123,25 +685,10 @@ const tableDataToUpdate = computed(() => {
       && (data.name.includes(filterInputUpdate.value) || data.path.includes(filterInputUpdate.value))
   });
 });
+
 // 被取消导入的资源
 const tableDataUnchecked = computed(() => {
   return tableData.value.filter(data => data._unchecked);
-});
-
-// 表格翻页
-const tableToAddPagination = ref({
-  count: tableDataToAdd.value.length,
-  limit: 10,
-});
-
-const tableToUpdatePagination = ref({
-  count: tableDataToAdd.value.length,
-  limit: 10,
-});
-
-const tableUncheckedPagination = ref({
-  count: tableDataToAdd.value.length,
-  limit: 10,
 });
 
 // 可视的错误消息，实际要渲染到编辑器视图的数据
@@ -1178,8 +725,20 @@ watch(editorText, () => {
 watch(curView, async (newCurView, oldCurView) => {
   if (newCurView === 'import' && oldCurView === 'resources') {
     await nextTick(() => {
-      resizeLayoutRef?.value?.setCollapse(true);
+      resizeLayoutRef.value?.setCollapse(true);
       isEditorMsgCollapsed = true;
+    });
+  } else if (newCurView === 'resources' && oldCurView === 'import') {
+    // 从编辑器页进入资源结果确认页时会走到这里
+    // 给 collapse 表头添加固定样式
+    await nextTick(() => {
+      [
+        useParentElement(panelHeadAddRef),
+        useParentElement(panelHeadUpdateRef),
+        useParentElement(panelHeadUncheckRef),
+      ].forEach((parentEl) => {
+        parentEl.value?.classList.add('panel-head-sticky-top');
+      });
     });
   }
 });
@@ -1278,8 +837,8 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
     }
     // 配置是否显示错误 Message，只校验代码时不显示，改为展示在编辑器的错误消息栏中
     const interceptorConfig = _changeView ? {} : { globalError: false };
-    const res = await checkResourceImport(apigwId, params, interceptorConfig);
-    tableData.value = res.map((data: any, index: number) => ({
+    const res = await checkResourceImport(apigwId, params, interceptorConfig) as IImportedResource[];
+    tableData.value = res.map((data, index: number) => ({
       ...data,
       _unchecked: false, // 标记是否不导入
       _localId: index, // 给一个本地id以识别修改了哪一条数据
@@ -1403,8 +962,8 @@ const handleImportResource = async () => {
   try {
     isImportLoading.value = true;
     isImportResultVisible.value = true;
-    const import_resources = tableData.value.filter((e: any) => e._unchecked === false)
-      .map((e: any) => {
+    const import_resources = tableData.value.filter((e) => e._unchecked === false)
+      .map((e) => {
         const {
           _unchecked,
           _localId,
@@ -1449,7 +1008,7 @@ const handleEditSliderHidden = () => {
 };
 
 // 确认修改配置后
-const handleEditSubmit = (newResource: any) => {
+const handleEditSubmit = (newResource: ILocalImportedResource) => {
   let pos = tableData.value.findIndex(data => data._localId === newResource._localId);
   if (pos > -1) tableData.value[pos] = { ...tableData.value[pos], ...newResource };
   // console.log('newResource:');
@@ -1461,21 +1020,21 @@ const handleEditSubmit = (newResource: any) => {
 };
 
 // 点击修改配置时，会唤出 SideSlider
-const handleEdit = (resourceRow: any) => {
+const handleEdit = (resourceRow: ILocalImportedResource) => {
   const _editingResource = tableData.value.find(data => data._localId === resourceRow._localId);
   if (_editingResource) editingResource.value = { ...editingResource.value, ..._editingResource };
   isSliderShow.value = true;
 };
 
 // 点击查看文档时，会唤出 SideSlider
-const handleShowResourceDoc = (resourceRow: any) => {
+const handleShowResourceDoc = (resourceRow: ILocalImportedResource) => {
   const _editingResource = tableData.value.find(data => data._localId === resourceRow._localId);
   if (_editingResource) editingResource.value = { ...editingResource.value, ..._editingResource };
   isResourceDocSliderVisible.value = true;
 };
 
 // 点击插件数时，会唤出 PluginsSlider
-const handleShowPluginsSlider = (resourceRow: any) => {
+const handleShowPluginsSlider = (resourceRow: ILocalImportedResource) => {
   if (!resourceRow.plugin_configs || resourceRow.plugin_configs?.length < 1) return;
   const _editingResource = tableData.value.find(data => data._localId === resourceRow._localId);
   if (_editingResource) editingResource.value = { ...editingResource.value, ..._editingResource };
@@ -1606,51 +1165,8 @@ const handleFontSizeClick = () => {
   resourceEditorRef.value.switchFontSize();
 };
 
-const getAuthConfigText = (authConfig: string | object | null | undefined) => {
-  if (!authConfig) return '--';
-  let auth;
-
-  if (typeof authConfig === 'string') {
-    auth = JSON.parse(authConfig);
-  } else {
-    auth = authConfig;
-  }
-  const tmpArr: string[] = [];
-
-  if (auth?.app_verified_required) {
-    tmpArr.push(`${t('蓝鲸应用认证')}`);
-  }
-  if (auth?.auth_verified_required) {
-    tmpArr.push(`${t('用户认证')}`);
-  }
-  return tmpArr.join(', ') || '--';
-};
-
-const getPermRequiredText = (authConfig: string | object | null | undefined) => {
-  if (!authConfig) return '--';
-  let auth;
-
-  if (typeof authConfig === 'string') {
-    auth = JSON.parse(authConfig);
-  } else {
-    auth = authConfig;
-  }
-  if (auth?.resource_perm_required) {
-    return `${t('是')}`;
-  }
-  return `${t('否')}`;
-};
-
-const getPublicSettingText = (is_public: boolean | null | undefined) => {
-  return is_public ? t('是') : is_public === false ? t('否') : t('是');
-};
-
-const getAllowApplyPermissionText = (allow_apply_permission: boolean | null | undefined) => {
-  return allow_apply_permission ? t('是') : allow_apply_permission === false ? t('否') : t('是');
-};
-
 // 切换资源是否导入
-const toggleRowUnchecked = (row: any) => {
+const toggleRowUnchecked = (row: ILocalImportedResource) => {
   const data = tableData.value.find(d => d._localId === row._localId);
   if (data) data._unchecked = !data._unchecked;
 };
@@ -1667,7 +1183,7 @@ const tempAuthConfig = ref({
 });
 
 // 批量修改认证方式确认后
-const handleConfirmAuthConfigPopConfirm = (action: 'add' | 'update') => {
+const handleConfirmAuthConfigPopConfirm = (action: ActionType) => {
   if (tempAuthConfig.value.app_verified_required === false) tempAuthConfig.value.resource_perm_required = false;
   tableData.value.filter(item => !item._unchecked)
     .forEach(data => {
@@ -1679,84 +1195,13 @@ const handleConfirmAuthConfigPopConfirm = (action: 'add' | 'update') => {
     });
 };
 
-// 批量修改认证方式取消后
-const handleCancelAuthConfigPopConfirm = () => {
-  tempAuthConfig.value = {
-    app_verified_required: false,
-    auth_verified_required: false,
-    resource_perm_required: false,
-  }
-}
-
-// 认证方式列 TSX
-const renderAuthConfigColLabel = (action: 'add' | 'update') => {
-  return (
-    <div>
-      <div class="auth-config-col-label">
-        <span>{t('认证方式')}</span>
-        <bk-pop-confirm
-          width="430"
-          trigger="click"
-          title={<span class="f16" style="color: #313238;">{t('批量修改认证方式')}</span>}
-          content={
-            <div class="multi-edit-popconfirm-wrap auth-config" style="margin-bottom: -12px;">
-              <bk-form model={tempAuthConfig.value} labelWidth="110" labelPosition="right">
-                <bk-form-item label={t('认证方式')} required={true} style="margin-bottom: 12px;">
-                  <bk-checkbox
-                    v-model={tempAuthConfig.value.app_verified_required}
-                  >
-                    <span class="bottom-line" v-bk-tooltips={{ content: t('请求方需提供蓝鲸应用身份信息') }}>
-                      {t('蓝鲸应用认证')}
-                    </span>
-                  </bk-checkbox>
-                  <bk-checkbox class="ml40" v-model={tempAuthConfig.value.auth_verified_required}>
-                    <span class="bottom-line" v-bk-tooltips={{ content: t('请求方需提供蓝鲸用户身份信息') }}>
-                      {t('用户认证')}
-                    </span>
-                  </bk-checkbox>
-                </bk-form-item>
-                {tempAuthConfig.value.app_verified_required ?
-                  <bk-form-item
-                    label={t('检验应用权限')}
-                    description={t('蓝鲸应用需申请资源访问权限')}
-                    style="margin-bottom: 12px;"
-                  >
-                    <bk-switcher
-                      v-model={tempAuthConfig.value.resource_perm_required}
-                      theme="primary"
-                      size="small"
-                    />
-                  </bk-form-item> : ''
-                }
-              </bk-form>
-            </div>
-          }
-          onConfirm={() => handleConfirmAuthConfigPopConfirm(action)}
-          onCancel={() => handleCancelAuthConfigPopConfirm()}
-        >
-          <i
-            class="apigateway-icon icon-ag-bulk-edit edit-action ml5 f14 default-c"
-            v-bk-tooltips={{
-              content: (
-                <div>
-                  {t('批量修改认证方式')}
-                </div>
-              ),
-            }}
-          />
-        </bk-pop-confirm>
-      </div>
-    </div>
-  );
-};
-
 const tempPublicConfig = ref({
   is_public: false,
   allow_apply_permission: false,
 });
 
 // 批量修改公开设置确认后
-const handleConfirmPublicConfigPopConfirm = (action: 'add' | 'update') => {
+const handleConfirmPublicConfigPopConfirm = (action: ActionType) => {
   const isPublic = tempPublicConfig.value.is_public;
   const allowApplyPermission = tempPublicConfig.value.allow_apply_permission && isPublic;
 
@@ -1769,77 +1214,11 @@ const handleConfirmPublicConfigPopConfirm = (action: 'add' | 'update') => {
     });
 };
 
-// 批量修改公开设置取消后
-const handleCancelPublicConfigPopConfirm = () => {
-  tempPublicConfig.value = {
-    is_public: false,
-    allow_apply_permission: false,
-  }
-};
-
-// 公开设置列 TSX
-const renderIsPublicColLabel = (action: 'add' | 'update') => {
-  return (
-    <div>
-      <div class="public-config-col-label">
-        <span>{t('是否公开')}</span>
-        <bk-pop-confirm
-          width="360"
-          trigger="click"
-          title={<span class="f16" style="color: #313238;">{t('批量修改公开设置')}</span>}
-          content={
-            <div class="multi-edit-popconfirm-wrap public-config" style="margin-bottom: -12px;">
-              <bk-form model={tempPublicConfig.value} labelWidth="100" labelPosition="right">
-                <bk-form-item
-                  label={t('是否公开')}
-                  required={true}
-                  description={t('公开，则用户可查看资源文档、申请资源权限；不公开，则资源对用户隐藏')}
-                  style="margin-bottom: 12px;"
-                >
-                  <bk-switcher
-                    v-model={tempPublicConfig.value.is_public}
-                    theme="primary"
-                    size="small"
-                  />
-                </bk-form-item>
-                {tempPublicConfig.value.is_public ?
-                  <bk-form-item style="margin-bottom: 12px;">
-                    <bk-checkbox
-                      v-model={tempPublicConfig.value.allow_apply_permission}
-                    >
-                      <span class="bottom-line">
-                        {t('允许申请权限')}
-                      </span>
-                    </bk-checkbox>
-                  </bk-form-item> : ''
-                }
-              </bk-form>
-            </div>
-          }
-          onConfirm={() => handleConfirmPublicConfigPopConfirm(action)}
-          onCancel={() => handleCancelPublicConfigPopConfirm()}
-        >
-          <i
-            class="apigateway-icon icon-ag-bulk-edit edit-action ml5 f14 default-c"
-            v-bk-tooltips={{
-              content: (
-                <div>
-                  {t('批量修改公开设置')}
-                </div>
-              ),
-            }}
-          />
-        </bk-pop-confirm>
-      </div>
-    </div>
-  );
-};
-
 const filterInputAdd = ref('')
 const filterInputAddClone = ref('')
 const filterInputUpdate = ref('')
 const filterInputUpdateClone = ref('')
-const filterData = (action: 'add' | 'update') => {
+const filterData = (action: ActionType) => {
   if (action === 'add') {
     filterInputAdd.value = filterInputAddClone.value;
   }
@@ -2189,8 +1568,8 @@ const handleReturnClick = () => {
 }
 
 .imported-resources-wrap {
-  margin: 20px 24px;
-  min-height: 768px;
+  margin: 20px 24px 0 24px;
+  //min-height: 768px;
 
   .res-counter-banner {
     height: 40px;
@@ -2205,13 +1584,35 @@ const handleReturnClick = () => {
   }
 
   .res-content-wrap {
+    height: calc(100vh - 285px);
+    overflow-y: scroll;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #ddd;
+      border-radius: 20px;
+      box-shadow: inset 0 0 6px #cccccc4d;
+    }
+
     :deep(.collapse-cls) {
-      margin-bottom: 52px;
+      margin-bottom: 24px;
 
       .bk-collapse-item {
         background: #fff;
         box-shadow: 0 2px 4px 0 #1919290d;
         margin-bottom: 16px;
+      }
+
+      // 折叠让 .panel-header 粘滞固定到顶部
+      .panel-head-sticky-top {
+        position: sticky;
+        top: 0;
+        background-color: #ffffff;
+        z-index: 3;
       }
     }
 
