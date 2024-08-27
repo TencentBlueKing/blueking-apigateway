@@ -77,7 +77,7 @@ class RequestsMetrics(BaseMetrics):
         return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
 
 
-class RequestTotalMetrics(BaseMetrics):
+class RequestsTotalMetrics(BaseMetrics):
     metrics = MetricsEnum.REQUESTS_TOTAL
 
     def _get_query_promql(
@@ -91,7 +91,7 @@ class RequestTotalMetrics(BaseMetrics):
                 ("resource_name", "=", resource_name),
             ]
         )
-        return f"count(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
+        return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
 
 
 class Non200StatusMetrics(BaseMetrics):
@@ -257,7 +257,7 @@ class MetricsFactory:
 
 
 MetricsFactory.register(RequestsMetrics)
-MetricsFactory.register(RequestTotalMetrics)
+MetricsFactory.register(RequestsTotalMetrics)
 MetricsFactory.register(Non200StatusMetrics)
 MetricsFactory.register(AppRequestsMetrics)
 MetricsFactory.register(ResourceRequestsMetrics)

@@ -108,14 +108,25 @@ class QueryRangeApi(generics.ListAPIView):
         step = smart_time_range.get_recommended_step()
 
         metrics = MetricsFactory.create_metrics(MetricsEnum(data["metrics"]))
-        data = metrics.query_range(
-            gateway_name=request.gateway.name,
-            stage_name=stage_name,
-            stage_id=int(data["stage_id"]),
-            resource_name=resource_name,
-            start=time_start,
-            end=time_end,
-            step=step,
-        )
+        if data["metrics"] != MetricsEnum.REQUESTS_TOTAL:
+            data = metrics.query_range(
+                gateway_name=request.gateway.name,
+                stage_name=stage_name,
+                stage_id=int(data["stage_id"]),
+                resource_name=resource_name,
+                start=time_start,
+                end=time_end,
+                step=step,
+            )
+        else:
+            data = metrics.query(
+                gateway_name=request.gateway.name,
+                stage_name=stage_name,
+                stage_id=int(data["stage_id"]),
+                resource_name=resource_name,
+                start=time_start,
+                end=time_end,
+                step=step,
+            )
 
         return OKJsonResponse(data=data)

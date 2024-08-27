@@ -20,6 +20,44 @@ from apigateway.apps.metrics.constants import MetricsEnum
 from apigateway.apps.metrics.prometheus import dimension
 
 
+class TestRequestTotalMetrics:
+    def test_get_query_promql(self, mocker):
+        mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+
+        data = [
+            {
+                "params": {
+                    "gateway_name": "foo",
+                    "stage_name": "prod",
+                    "stage_id": 1,
+                    "resource_name": "get_foo",
+                    "step": "1m",
+                },
+                "expected": (
+                    'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
+                    'stage_name="prod", resource_name="get_foo"}[1m]))'
+                ),
+            },
+            {
+                "params": {
+                    "gateway_name": "foo",
+                    "stage_name": "prod",
+                    "stage_id": 1,
+                    "resource_name": None,
+                    "step": "1m",
+                },
+                "expected": (
+                    'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
+                    'stage_name="prod"}[1m]))'
+                ),
+            },
+        ]
+        for test in data:
+            metrics = dimension.RequestsMetrics()
+            result = metrics._get_query_promql(**test["params"])
+            assert result == test["expected"]
+
+
 class TestRequestsMetrics:
     def test_get_query_promql(self, mocker):
         mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
@@ -259,7 +297,7 @@ class TestMetricsFactory:
             },
             {
                 "metrics": "requests_total",
-                "expected": dimension.RequestTotalMetrics,
+                "expected": dimension.RequestsTotalMetrics,
             },
             {
                 "metrics": "non_200_status",
