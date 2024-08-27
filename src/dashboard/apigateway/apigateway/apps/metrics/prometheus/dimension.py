@@ -79,9 +79,9 @@ class RequestsMetrics(BaseDimensionMetrics):
         return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
 
 
-class FailedRequestsMetrics(BaseDimensionMetrics):
+class RequestNumberMetrics(BaseDimensionMetrics):
     dimension = DimensionEnum.ALL
-    metrics = MetricsEnum.FAILED_REQUESTS
+    metrics = MetricsEnum.REQUEST_NUMBER
 
     def _get_query_promql(
         self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
@@ -92,11 +92,9 @@ class FailedRequestsMetrics(BaseDimensionMetrics):
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
                 ("resource_name", "=", resource_name),
-                ("status", "=~", "5.."),
-                # ("proxy_error", "=", "1"),
             ]
         )
-        return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
+        return f"count(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
 
 
 class BaseResponseTimePercentileMetrics(BaseDimensionMetrics):
@@ -119,12 +117,6 @@ class BaseResponseTimePercentileMetrics(BaseDimensionMetrics):
             f"{labels}"
             f"}}[{step}])) by (le, api_name))"
         )
-
-
-class ResponseTime95thMetrics(BaseResponseTimePercentileMetrics):
-    dimension = DimensionEnum.ALL
-    metrics = MetricsEnum.RESPONSE_TIME_95TH
-    quantile = 0.95
 
 
 class ResponseTime90thMetrics(BaseResponseTimePercentileMetrics):
@@ -167,30 +159,6 @@ class ResourceRequestsMetrics(BaseDimensionMetrics):
         )
 
 
-class ResourceFailedRequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.RESOURCE
-    metrics = MetricsEnum.FAILED_REQUESTS
-
-    def _get_query_promql(
-        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
-    ) -> str:
-        labels = self._get_labels_expression(
-            [
-                *self.default_labels,
-                ("api_name", "=", gateway_name),
-                ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
-                ("status", "=~", "5.."),
-                # ("proxy_error", "=", "1"),
-            ]
-        )
-        return (
-            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{"
-            f"{labels}"
-            f"}}[{step}])) by (api_name, resource_name, matched_uri))"
-        )
-
-
 class AppRequestsMetrics(BaseDimensionMetrics):
     dimension = DimensionEnum.APP
     metrics = MetricsEnum.REQUESTS
@@ -213,7 +181,7 @@ class AppRequestsMetrics(BaseDimensionMetrics):
         )
 
 
-class ResourceNon200StatusRequestsMetrics(BaseDimensionMetrics):
+class Non200StatusRequestsMetrics(BaseDimensionMetrics):
     dimension = DimensionEnum.RESOURCE_NON200_STATUS
     metrics = MetricsEnum.REQUESTS
 
@@ -248,7 +216,7 @@ class IngressRequestsSpaceMetrics(BaseDimensionMetrics):
                 *self.default_labels,
                 ("type", "=", "egress"),
                 # 环境参数 prod 待修改
-                ("service", "=", gateway_name + ".prod." + stage_name + "-" + str(stage_id)),
+                ("service", "=", gateway_name + "." + stage_name + ".stage-" + str(stage_id)),
             ]
         )
         return (
@@ -270,9 +238,10 @@ class EgressRequestsSpaceMetrics(BaseDimensionMetrics):
                 *self.default_labels,
                 ("type", "=", "egress"),
                 # 环境参数 prod 待修改
-                ("service", "=", gateway_name + ".prod" + stage_name + "-" + str(stage_id)),
+                ("service", "=", gateway_name + "." + stage_name + ".stage-" + str(stage_id)),
             ]
         )
+        # 底下的 apigateway_bandwidth 待自测验证是否能通
         return (
             f"topk(10, sum(increase({self.metric_name_prefix}apigateway_bandwidth{{"
             f"{labels}"
@@ -300,15 +269,13 @@ class DimensionMetricsFactory:
         cls._registry[_class.dimension][_class.metrics] = dimension_metrics_class
 
 
+DimensionMetricsFactory.register(RequestNumberMetrics)
 DimensionMetricsFactory.register(RequestsMetrics)
-DimensionMetricsFactory.register(FailedRequestsMetrics)
-DimensionMetricsFactory.register(ResponseTime95thMetrics)
-DimensionMetricsFactory.register(ResponseTime90thMetrics)
-DimensionMetricsFactory.register(ResponseTime80thMetrics)
-DimensionMetricsFactory.register(ResponseTime50thMetrics)
-DimensionMetricsFactory.register(ResourceRequestsMetrics)
-DimensionMetricsFactory.register(ResourceFailedRequestsMetrics)
+DimensionMetricsFactory.register(Non200StatusRequestsMetrics)
 DimensionMetricsFactory.register(AppRequestsMetrics)
-DimensionMetricsFactory.register(ResourceNon200StatusRequestsMetrics)
+DimensionMetricsFactory.register(ResourceRequestsMetrics)
+DimensionMetricsFactory.register(ResponseTime50thMetrics)
+DimensionMetricsFactory.register(ResponseTime80thMetrics)
+DimensionMetricsFactory.register(ResponseTime90thMetrics)
 DimensionMetricsFactory.register(IngressRequestsSpaceMetrics)
 DimensionMetricsFactory.register(EgressRequestsSpaceMetrics)
