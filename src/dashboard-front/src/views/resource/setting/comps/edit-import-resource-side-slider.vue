@@ -80,16 +80,23 @@ import BaseInfo from '@/views/resource/setting/comps/base-info.vue';
 import FrontConfig from '@/views/resource/setting/comps/front-config.vue';
 import BackConfig from '@/views/resource/setting/comps/back-config.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
+import { ILocalImportedResource } from '@/views/resource/setting/types';
 
 const { t } = useI18n();
-const props = defineProps({
-  isSliderShow: { type: Boolean, default: false },
-  resource: { type: Object, default: () => ({}) },
+
+interface IProps {
+  isSliderShow: boolean;
+  resource: ILocalImportedResource | null;
+}
+
+const props = withDefaults(defineProps<IProps>(), {
+  isSliderShow: false,
+  resource: () => null,
 });
 
 const emits = defineEmits<{
   'on-hidden': [],
-  'submit': [resConfig: any]
+  submit: [resConfig: ILocalImportedResource]
 }>();
 
 // 默认展开
@@ -98,8 +105,6 @@ const baseInfoRef = ref(null);
 const frontConfigRef = ref(null);
 const backConfigRef = ref(null);
 const renderShow = ref(props.isSliderShow);
-
-const formData = ref<any>({});
 
 // 提交
 const handleSubmit = async () => {
@@ -127,7 +132,6 @@ const handleSubmit = async () => {
 
 const handleHidden = () => {
   renderShow.value = false;
-  formData.value = {};
   emits('on-hidden');
 };
 
