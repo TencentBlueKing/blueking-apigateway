@@ -24,7 +24,7 @@ from rest_framework import generics, status
 
 from apigateway.apps.metrics.constants import MetricsEnum
 from apigateway.apps.metrics.prometheus.dimension import MetricsFactory
-from apigateway.core.models import Resource, Stage, Gateway
+from apigateway.core.models import Resource, Stage
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.time import SmartTimeRange
 

@@ -246,14 +246,12 @@ class MetricsFactory:
     def create_metrics(cls, metrics: MetricsEnum) -> BaseMetrics:
         _class = cls._registry.get(metrics)
         if not _class:
-            raise error_codes.INVALID_ARGUMENT.format(
-                f"unsupported metrics={metrics.value}"
-            )
+            raise error_codes.INVALID_ARGUMENT.format(f"unsupported metrics={metrics.value}")
         return _class()
 
     @classmethod
     def register(cls, metrics_class: Type[BaseMetrics]):
-        if not hasattr(metrics_class, 'metrics') or not isinstance(metrics_class.metrics, MetricsEnum):
+        if not hasattr(metrics_class, "metrics") or not isinstance(metrics_class.metrics, MetricsEnum):
             raise ValueError("metrics_class must have a 'metrics' ClassVar of type MetricsEnum")
         cls._registry[metrics_class.metrics] = metrics_class
 
