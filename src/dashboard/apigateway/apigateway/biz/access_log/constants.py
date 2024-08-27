@@ -36,6 +36,11 @@ ES_LOG_FIELDS = [
         "is_filter": True,
     },
     {
+        "label": _("蓝鲸用户"),
+        "field": "bk_username",
+        "is_filter": True,
+    },
+    {
         "label": _("客户端IP"),
         "field": "client_ip",
         "is_filter": True,
