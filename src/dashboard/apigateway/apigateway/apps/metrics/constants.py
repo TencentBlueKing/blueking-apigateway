@@ -21,18 +21,12 @@ from blue_krill.data_types.enum import EnumField, StructuredEnum
 
 class MetricsEnum(StructuredEnum):
     REQUESTS = EnumField("requests")
-    REQUEST_NUMBER = EnumField("request_number")
-    FAILED_REQUESTS = EnumField("failed_requests")
-    RESPONSE_TIME_90TH = EnumField("response_time_90th")
-    RESPONSE_TIME_80TH = EnumField("response_time_80th")
+    REQUESTS_TOTAL = EnumField("requests_total")
+    NON_200_Status = EnumField("non_200_status")
+    APP_REQUESTS = EnumField("app_requests")
+    RESOURCE_REQUESTS = EnumField("resource_requests")
     RESPONSE_TIME_50TH = EnumField("response_time_50th")
+    RESPONSE_TIME_80TH = EnumField("response_time_80th")
+    RESPONSE_TIME_90TH = EnumField("response_time_90th")
     INGRESS_SPACE = EnumField("ingress_space")
     EGRESS_SPACE = EnumField("egress_space")
-
-
-class DimensionEnum(StructuredEnum):
-    ALL = EnumField("all")
-    APP = EnumField("app")
-    RESOURCE = EnumField("resource")
-    # 资源+非200状态码
-    RESOURCE_NON200_STATUS = EnumField("resource_non200_status")

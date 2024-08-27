@@ -22,9 +22,9 @@ from django.http import Http404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apps.metrics.constants import DimensionEnum, MetricsEnum
-from apigateway.apps.metrics.prometheus.dimension import DimensionMetricsFactory
-from apigateway.core.models import Resource, Stage
+from apigateway.apps.metrics.constants import MetricsEnum
+from apigateway.apps.metrics.prometheus.dimension import MetricsFactory
+from apigateway.core.models import Resource, Stage, Gateway
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.time import SmartTimeRange
 
@@ -86,6 +86,7 @@ class QueryRangeApi(generics.ListAPIView):
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
+        # request.gateway = Gateway.objects.get(id=2)
         stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
         if not stage_name:
             raise Http404
@@ -106,12 +107,11 @@ class QueryRangeApi(generics.ListAPIView):
         time_start, time_end = smart_time_range.get_head_and_tail()
         step = smart_time_range.get_recommended_step()
 
-        metrics = DimensionMetricsFactory.create_dimension_metrics(
-            DimensionEnum(data["dimension"]), MetricsEnum(data["metrics"])
-        )
+        metrics = MetricsFactory.create_metrics(MetricsEnum(data["metrics"]))
         data = metrics.query_range(
             gateway_name=request.gateway.name,
             stage_name=stage_name,
+            stage_id=int(data["stage_id"]),
             resource_name=resource_name,
             start=time_start,
             end=time_end,

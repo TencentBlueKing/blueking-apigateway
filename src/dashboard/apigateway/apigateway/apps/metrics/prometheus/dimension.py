@@ -21,15 +21,14 @@ from typing import ClassVar, Dict, Optional, Type
 
 from django.conf import settings
 
-from apigateway.apps.metrics.constants import DimensionEnum, MetricsEnum
+from apigateway.apps.metrics.constants import MetricsEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.prometheus import prometheus_component
 
 from .base import BasePrometheusMetrics
 
 
-class BaseDimensionMetrics(BasePrometheusMetrics):
-    dimension: ClassVar[DimensionEnum]
+class BaseMetrics(BasePrometheusMetrics):
     metrics: ClassVar[MetricsEnum]
 
     @abstractmethod
@@ -61,8 +60,7 @@ class BaseDimensionMetrics(BasePrometheusMetrics):
         )
 
 
-class RequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.ALL
+class RequestsMetrics(BaseMetrics):
     metrics = MetricsEnum.REQUESTS
 
     def _get_query_promql(
@@ -79,9 +77,8 @@ class RequestsMetrics(BaseDimensionMetrics):
         return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
 
 
-class RequestNumberMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.ALL
-    metrics = MetricsEnum.REQUEST_NUMBER
+class RequestTotalMetrics(BaseMetrics):
+    metrics = MetricsEnum.REQUESTS_TOTAL
 
     def _get_query_promql(
         self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
@@ -97,7 +94,71 @@ class RequestNumberMetrics(BaseDimensionMetrics):
         return f"count(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
 
 
-class BaseResponseTimePercentileMetrics(BaseDimensionMetrics):
+class Non200StatusMetrics(BaseMetrics):
+    metrics = MetricsEnum.NON_200_Status
+
+    def _get_query_promql(
+        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
+    ) -> str:
+        labels = self._get_labels_expression(
+            [
+                *self.default_labels,
+                ("api_name", "=", gateway_name),
+                ("stage_name", "=", stage_name),
+                ("resource_name", "=", resource_name),
+                ("status", "!=", "200"),
+            ]
+        )
+        return (
+            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{"
+            f"{labels}"
+            f"}}[{step}])) by (api_name, status))"
+        )
+
+
+class AppRequestsMetrics(BaseMetrics):
+    metrics = MetricsEnum.APP_REQUESTS
+
+    def _get_query_promql(
+        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
+    ) -> str:
+        labels = self._get_labels_expression(
+            [
+                *self.default_labels,
+                ("api_name", "=", gateway_name),
+                ("stage_name", "=", stage_name),
+                ("resource_name", "=", resource_name),
+            ]
+        )
+        return (
+            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_app_requests_total{{"
+            f"{labels}"
+            f"}}[{step}])) by (api_name, app_code))"
+        )
+
+
+class ResourceRequestsMetrics(BaseMetrics):
+    metrics = MetricsEnum.RESOURCE_REQUESTS
+
+    def _get_query_promql(
+        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
+    ) -> str:
+        labels = self._get_labels_expression(
+            [
+                *self.default_labels,
+                ("api_name", "=", gateway_name),
+                ("stage_name", "=", stage_name),
+                ("resource_name", "=", resource_name),
+            ]
+        )
+        return (
+            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{"
+            f"{labels}"
+            f"}}[{step}])) by (api_name, resource_name, matched_uri))"
+        )
+
+
+class BaseResponseTimePercentileMetrics(BaseMetrics):
     quantile = 1.0
 
     def _get_query_promql(
@@ -119,93 +180,22 @@ class BaseResponseTimePercentileMetrics(BaseDimensionMetrics):
         )
 
 
-class ResponseTime90thMetrics(BaseResponseTimePercentileMetrics):
-    dimension = DimensionEnum.ALL
-    metrics = MetricsEnum.RESPONSE_TIME_90TH
-    quantile = 0.90
-
-
-class ResponseTime80thMetrics(BaseResponseTimePercentileMetrics):
-    dimension = DimensionEnum.ALL
-    metrics = MetricsEnum.RESPONSE_TIME_80TH
-    quantile = 0.80
-
-
 class ResponseTime50thMetrics(BaseResponseTimePercentileMetrics):
-    dimension = DimensionEnum.ALL
     metrics = MetricsEnum.RESPONSE_TIME_50TH
     quantile = 0.50
 
 
-class ResourceRequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.RESOURCE
-    metrics = MetricsEnum.REQUESTS
-
-    def _get_query_promql(
-        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
-    ) -> str:
-        labels = self._get_labels_expression(
-            [
-                *self.default_labels,
-                ("api_name", "=", gateway_name),
-                ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
-            ]
-        )
-        return (
-            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{"
-            f"{labels}"
-            f"}}[{step}])) by (api_name, resource_name, matched_uri))"
-        )
+class ResponseTime80thMetrics(BaseResponseTimePercentileMetrics):
+    metrics = MetricsEnum.RESPONSE_TIME_80TH
+    quantile = 0.80
 
 
-class AppRequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.APP
-    metrics = MetricsEnum.REQUESTS
-
-    def _get_query_promql(
-        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
-    ) -> str:
-        labels = self._get_labels_expression(
-            [
-                *self.default_labels,
-                ("api_name", "=", gateway_name),
-                ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
-            ]
-        )
-        return (
-            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_app_requests_total{{"
-            f"{labels}"
-            f"}}[{step}])) by (api_name, app_code))"
-        )
+class ResponseTime90thMetrics(BaseResponseTimePercentileMetrics):
+    metrics = MetricsEnum.RESPONSE_TIME_90TH
+    quantile = 0.90
 
 
-class Non200StatusRequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.RESOURCE_NON200_STATUS
-    metrics = MetricsEnum.REQUESTS
-
-    def _get_query_promql(
-        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
-    ) -> str:
-        labels = self._get_labels_expression(
-            [
-                *self.default_labels,
-                ("api_name", "=", gateway_name),
-                ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
-                ("status", "!=", "200"),
-            ]
-        )
-        return (
-            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{"
-            f"{labels}"
-            f"}}[{step}])) by (api_name, resource_name, matched_uri, status))"
-        )
-
-
-class IngressRequestsSpaceMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.ALL
+class IngressSpaceMetrics(BaseMetrics):
     metrics = MetricsEnum.INGRESS_SPACE
 
     def _get_query_promql(
@@ -226,9 +216,8 @@ class IngressRequestsSpaceMetrics(BaseDimensionMetrics):
         )
 
 
-class EgressRequestsSpaceMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.ALL
-    metrics = MetricsEnum.INGRESS_SPACE
+class EgressSpaceMetrics(BaseMetrics):
+    metrics = MetricsEnum.EGRESS_SPACE
 
     def _get_query_promql(
         self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
@@ -249,33 +238,33 @@ class EgressRequestsSpaceMetrics(BaseDimensionMetrics):
         )
 
 
-class DimensionMetricsFactory:
-    # map: dimension -> metrics -> dimension_metrics_class
-    _registry: Dict[DimensionEnum, Dict[MetricsEnum, Type[BaseDimensionMetrics]]] = {}
+class MetricsFactory:
+    # map: metrics -> metrics_class
+    _registry: Dict[MetricsEnum, Type[BaseMetrics]] = {}
 
     @classmethod
-    def create_dimension_metrics(cls, dimension: DimensionEnum, metrics: MetricsEnum) -> BaseDimensionMetrics:
-        _class = cls._registry.get(dimension, {}).get(metrics)
+    def create_metrics(cls, metrics: MetricsEnum) -> BaseMetrics:
+        _class = cls._registry.get(metrics)
         if not _class:
             raise error_codes.INVALID_ARGUMENT.format(
-                f"unsupported dimension={dimension.value}, metrics={metrics.value}"
+                f"unsupported metrics={metrics.value}"
             )
         return _class()
 
     @classmethod
-    def register(cls, dimension_metrics_class: Type[BaseDimensionMetrics]):
-        _class = dimension_metrics_class
-        cls._registry.setdefault(_class.dimension, {})
-        cls._registry[_class.dimension][_class.metrics] = dimension_metrics_class
+    def register(cls, metrics_class: Type[BaseMetrics]):
+        if not hasattr(metrics_class, 'metrics') or not isinstance(metrics_class.metrics, MetricsEnum):
+            raise ValueError("metrics_class must have a 'metrics' ClassVar of type MetricsEnum")
+        cls._registry[metrics_class.metrics] = metrics_class
 
 
-DimensionMetricsFactory.register(RequestNumberMetrics)
-DimensionMetricsFactory.register(RequestsMetrics)
-DimensionMetricsFactory.register(Non200StatusRequestsMetrics)
-DimensionMetricsFactory.register(AppRequestsMetrics)
-DimensionMetricsFactory.register(ResourceRequestsMetrics)
-DimensionMetricsFactory.register(ResponseTime50thMetrics)
-DimensionMetricsFactory.register(ResponseTime80thMetrics)
-DimensionMetricsFactory.register(ResponseTime90thMetrics)
-DimensionMetricsFactory.register(IngressRequestsSpaceMetrics)
-DimensionMetricsFactory.register(EgressRequestsSpaceMetrics)
+MetricsFactory.register(RequestsMetrics)
+MetricsFactory.register(RequestTotalMetrics)
+MetricsFactory.register(Non200StatusMetrics)
+MetricsFactory.register(AppRequestsMetrics)
+MetricsFactory.register(ResourceRequestsMetrics)
+MetricsFactory.register(ResponseTime50thMetrics)
+MetricsFactory.register(ResponseTime80thMetrics)
+MetricsFactory.register(ResponseTime90thMetrics)
+MetricsFactory.register(IngressSpaceMetrics)
+MetricsFactory.register(EgressSpaceMetrics)
