@@ -86,7 +86,6 @@ class QueryRangeApi(generics.ListAPIView):
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
-
         stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
         if not stage_name:
             raise Http404
