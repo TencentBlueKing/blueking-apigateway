@@ -22,27 +22,26 @@ import pytest
 from django.http import Http404
 from rest_framework import viewsets
 
-from apigateway.common.permissions import GatewayRelatedAppPermission
+from apigateway.apis.open.permissions import OpenAPIGatewayRelatedAppPermission
 from apigateway.utils.responses import OKJsonResponse
 
 pytestmark = pytest.mark.django_db
 
 
-class TestGatewayRelatedAppPermission:
+class TestOpenAPIGatewayRelatedAppPermission:
     class APINameViewSet(viewsets.ViewSet):
-        permission_classes = [GatewayRelatedAppPermission]
+        permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
         def retrieve(self, request, api_name: str, *args, **kwargs):
             return OKJsonResponse()
 
     @pytest.mark.parametrize(
-        "mock_gateway, allow_gateway_not_exist, gateway_permission_exempt, mock_allow_manage, expected",
+        "mock_gateway, allow_gateway_not_exist, mock_allow_manage, expected",
         [
-            (None, True, False, False, True),
-            (None, False, False, False, Http404),
-            ("gateway", False, True, False, True),
-            ("gateway", False, False, False, False),
-            ("gateway", False, False, True, True),
+            (None, True, False, True),
+            (None, False, False, Http404),
+            ("gateway", False, False, False),
+            ("gateway", False, True, True),
         ],
     )
     def test_has_permission(
@@ -52,22 +51,20 @@ class TestGatewayRelatedAppPermission:
         mocker,
         mock_gateway,
         allow_gateway_not_exist,
-        gateway_permission_exempt,
         mock_allow_manage,
         expected,
     ):
-        permission = GatewayRelatedAppPermission()
+        permission = OpenAPIGatewayRelatedAppPermission()
 
         mocker.patch.object(permission, "get_gateway_object", return_value=fake_gateway if mock_gateway else None)
         mocker.patch(
-            "apigateway.common.permissions.permissions.GatewayRelatedApp.objects.filter",
+            "apigateway.apis.open.permissions.GatewayRelatedApp.objects.filter",
             return_value=mocker.MagicMock(exists=mocker.MagicMock(return_value=mock_allow_manage)),
         )
         fake_request.app = mock.MagicMock(app_code="test")
 
         view = self.APINameViewSet.as_view({"get": "retrieve"})
         view.allow_gateway_not_exist = allow_gateway_not_exist
-        view.gateway_permission_exempt = gateway_permission_exempt
 
         if expected == Http404:
             with pytest.raises(Http404):
@@ -77,7 +74,7 @@ class TestGatewayRelatedAppPermission:
         assert permission.has_permission(fake_request, view) == expected
 
     def test_get_api_object(self, fake_gateway):
-        permission = GatewayRelatedAppPermission()
+        permission = OpenAPIGatewayRelatedAppPermission()
         view = self.APINameViewSet.as_view({"get": "retrieve"})
 
         view.kwargs = {}

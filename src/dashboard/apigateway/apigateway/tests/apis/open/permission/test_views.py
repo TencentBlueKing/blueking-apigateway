@@ -31,7 +31,7 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture(autouse=True)
 def disable_api_related_app_permission_check(mocker):
     mocker.patch(
-        "apigateway.apis.open.permission.views.GatewayRelatedAppPermission.has_permission",
+        "apigateway.apis.open.permission.views.OpenAPIGatewayRelatedAppPermission.has_permission",
         return_value=True,
     )
 
@@ -287,7 +287,7 @@ class TestAppPermissionRecordViewSet:
 class TestAppPermissionGrantViewSet:
     def test_grant(self, mocker, request_factory, fake_gateway):
         mocker.patch(
-            "apigateway.apis.open.permission.views.GatewayRelatedAppPermission.has_permission",
+            "apigateway.apis.open.permission.views.OpenAPIGatewayRelatedAppPermission.has_permission",
             return_value=True,
         )
         request = request_factory.post(

@@ -30,6 +30,12 @@ from apigateway.apis.open.permission.helpers import (
     AppPermissionBuilder,
     ResourcePermissionBuilder,
 )
+from apigateway.apis.open.permissions import (
+    OpenAPIGatewayIdPermission,
+    OpenAPIGatewayNamePermission,
+    OpenAPIGatewayRelatedAppPermission,
+    OpenAPIPermission,
+)
 from apigateway.apps.permission.constants import (
     GrantDimensionEnum,
     GrantTypeEnum,
@@ -45,7 +51,6 @@ from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Gateway, Resource
 from apigateway.utils.responses import V1OKJsonResponse
 
@@ -65,8 +70,7 @@ def get_permission_model(dimension: str):
 
 
 class ResourceViewSet(viewsets.ViewSet):
-    gateway_permission_exempt = True
-    request_from_gateway_required = True
+    permission_classes = [OpenAPIGatewayIdPermission]
 
     @swagger_auto_schema(
         query_serializer=serializers.AppResourcePermissionInputSLZ,
@@ -98,8 +102,7 @@ class ResourceViewSet(viewsets.ViewSet):
 
 
 class AppGatewayPermissionViewSet(viewsets.GenericViewSet):
-    gateway_permission_exempt = True
-    request_from_gateway_required = True
+    permission_classes = [OpenAPIGatewayIdPermission]
     serializer_class = serializers.AppGatewayPermissionInputSLZ
 
     def allow_apply_by_gateway(self, request, *args, **kwargs):
@@ -169,8 +172,7 @@ class PaaSAppPermissionApplyAPIView(BaseAppPermissionApplyAPIView):
     - 提供给 paas3 开发者中心的接口
     """
 
-    gateway_permission_exempt = True
-    request_from_gateway_required = True
+    permission_classes = [OpenAPIGatewayIdPermission]
 
     def get_serializer_class(self):
         return serializers.PaaSAppPermissionApplyInputSLZ
@@ -185,8 +187,7 @@ class AppPermissionApplyV1APIView(BaseAppPermissionApplyAPIView):
     """
 
     # 使用 GatewayRelatedAppPermission 中设置 request.gateway 的功能，而不需要校验权限
-    permission_classes = [GatewayRelatedAppPermission]
-    gateway_permission_exempt = True
+    permission_classes = [OpenAPIGatewayNamePermission]
 
     def get_serializer_class(self):
         return serializers.AppPermissionApplyV1InputSLZ
@@ -195,7 +196,7 @@ class AppPermissionApplyV1APIView(BaseAppPermissionApplyAPIView):
 class AppPermissionGrantViewSet(viewsets.ViewSet):
     """网关关联应用，主动为应用授权访问网关 API 的权限"""
 
-    permission_classes = [GatewayRelatedAppPermission]
+    permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
     def grant(self, request, *args, **kwargs):
         slz = serializers.GrantAppPermissionInputSLZ(data=request.data)
@@ -224,7 +225,7 @@ class AppPermissionGrantViewSet(viewsets.ViewSet):
 class RevokeAppPermissionViewSet(viewsets.ViewSet):
     """网关关联应用，回收应用访问网关 API 的权限"""
 
-    permission_classes = [GatewayRelatedAppPermission]
+    permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
     def revoke(self, request, *args, **kwargs):
         slz = serializers.RevokeAppPermissionInputSLZ(data=request.data)
@@ -246,8 +247,7 @@ class AppPermissionRenewAPIView(APIView):
     权限续期
     """
 
-    gateway_permission_exempt = True
-    request_from_gateway_required = True
+    permission_classes = [OpenAPIPermission]
 
     def post(self, request, *args, **kwargs):
         slz = serializers.AppPermissionRenewInputSLZ(
@@ -281,7 +281,7 @@ class AppPermissionRenewAPIView(APIView):
 
 
 class AppPermissionViewSet(viewsets.ViewSet):
-    request_from_gateway_required = True
+    permission_classes = [OpenAPIPermission]
 
     def list(self, request, *args, **kwargs):
         """已申请权限列表"""
@@ -296,7 +296,7 @@ class AppPermissionViewSet(viewsets.ViewSet):
 
 
 class AppPermissionRecordViewSet(viewsets.GenericViewSet):
-    request_from_gateway_required = True
+    permission_classes = [OpenAPIPermission]
     serializer_class = serializers.AppPermissionRecordInputSLZ
 
     def list(self, request, *args, **kwargs):
