@@ -86,7 +86,6 @@ class QueryRangeApi(generics.ListAPIView):
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
-        # request.gateway = Gateway.objects.get(id=2)
         stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
         if not stage_name:
             raise Http404
@@ -108,25 +107,16 @@ class QueryRangeApi(generics.ListAPIView):
         step = smart_time_range.get_recommended_step()
 
         metrics = MetricsFactory.create_metrics(MetricsEnum(data["metrics"]))
-        if data["metrics"] != MetricsEnum.REQUESTS_TOTAL:
-            data = metrics.query_range(
-                gateway_name=request.gateway.name,
-                stage_name=stage_name,
-                stage_id=int(data["stage_id"]),
-                resource_name=resource_name,
-                start=time_start,
-                end=time_end,
-                step=step,
-            )
-        else:
-            data = metrics.query(
-                gateway_name=request.gateway.name,
-                stage_name=stage_name,
-                stage_id=int(data["stage_id"]),
-                resource_name=resource_name,
-                start=time_start,
-                end=time_end,
-                step=step,
-            )
+
+        data = metrics.query_range(
+            gateway_name=request.gateway.name,
+            stage_id=data.get("stage_id", 0),
+            stage_name=stage_name,
+            resource_id=data.get("resource_id", 0),
+            resource_name=resource_name,
+            start=time_start,
+            end=time_end,
+            step=step,
+        )
 
         return OKJsonResponse(data=data)

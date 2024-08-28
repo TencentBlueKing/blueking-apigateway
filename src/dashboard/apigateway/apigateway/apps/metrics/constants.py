@@ -22,7 +22,7 @@ from blue_krill.data_types.enum import EnumField, StructuredEnum
 class MetricsEnum(StructuredEnum):
     REQUESTS = EnumField("requests")
     REQUESTS_TOTAL = EnumField("requests_total")
-    NON_200_Status = EnumField("non_200_status")
+    NON_200_STATUS = EnumField("non_200_status")
     APP_REQUESTS = EnumField("app_requests")
     RESOURCE_REQUESTS = EnumField("resource_requests")
     RESPONSE_TIME_50TH = EnumField("response_time_50th")

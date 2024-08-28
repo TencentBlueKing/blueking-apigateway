@@ -33,22 +33,29 @@ class BaseMetrics(BasePrometheusMetrics):
 
     @abstractmethod
     def _get_query_promql(
-        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
+        self,
+        gateway_name: str,
+        stage_id: Optional[int],
+        stage_name: str,
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+        step: str,
     ) -> str:
         pass
 
     def query_range(
         self,
         gateway_name: str,
-        stage_id: int,
+        stage_id: Optional[int],
         stage_name: str,
+        resource_id: Optional[int],
         resource_name: Optional[str],
         start: int,
         end: int,
         step: str,
     ):
         # generate query expression
-        promql = self._get_query_promql(gateway_name, stage_id, stage_name, resource_name, step)
+        promql = self._get_query_promql(gateway_name, stage_id, stage_name, resource_id, resource_name, step)
 
         # request prometheus http api to get metrics data
         return prometheus_component.query_range(
@@ -64,7 +71,13 @@ class RequestsMetrics(BaseMetrics):
     metrics = MetricsEnum.REQUESTS
 
     def _get_query_promql(
-        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
+        self,
+        gateway_name: str,
+        stage_id: Optional[int],
+        stage_name: str,
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+        step: str,
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -81,7 +94,13 @@ class RequestsTotalMetrics(BaseMetrics):
     metrics = MetricsEnum.REQUESTS_TOTAL
 
     def _get_query_promql(
-        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
+        self,
+        gateway_name: str,
+        stage_id: Optional[int],
+        stage_name: str,
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+        step: str,
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -95,10 +114,16 @@ class RequestsTotalMetrics(BaseMetrics):
 
 
 class Non200StatusMetrics(BaseMetrics):
-    metrics = MetricsEnum.NON_200_Status
+    metrics = MetricsEnum.NON_200_STATUS
 
     def _get_query_promql(
-        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
+        self,
+        gateway_name: str,
+        stage_id: Optional[int],
+        stage_name: str,
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+        step: str,
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -120,7 +145,13 @@ class AppRequestsMetrics(BaseMetrics):
     metrics = MetricsEnum.APP_REQUESTS
 
     def _get_query_promql(
-        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
+        self,
+        gateway_name: str,
+        stage_id: Optional[int],
+        stage_name: str,
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+        step: str,
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -141,7 +172,13 @@ class ResourceRequestsMetrics(BaseMetrics):
     metrics = MetricsEnum.RESOURCE_REQUESTS
 
     def _get_query_promql(
-        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
+        self,
+        gateway_name: str,
+        stage_id: Optional[int],
+        stage_name: str,
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+        step: str,
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -162,7 +199,13 @@ class BaseResponseTimePercentileMetrics(BaseMetrics):
     quantile = 1.0
 
     def _get_query_promql(
-        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
+        self,
+        gateway_name: str,
+        stage_id: Optional[int],
+        stage_name: str,
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+        step: str,
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -199,20 +242,27 @@ class IngressSpaceMetrics(BaseMetrics):
     metrics = MetricsEnum.INGRESS_SPACE
 
     def _get_query_promql(
-        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
+        self,
+        gateway_name: str,
+        stage_id: Optional[int],
+        stage_name: str,
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+        step: str,
     ) -> str:
-        labels = self._get_labels_expression(
-            [
-                *self.default_labels,
-                ("type", "=", "egress"),
-                # 环境参数 prod 待修改
-                ("service", "=", gateway_name + "." + stage_name + ".stage-" + str(stage_id)),
-            ]
-        )
+        label_list = [
+            *self.default_labels,
+            ("type", "=", "ingress"),
+            # service 的参数规则： 网关名称.环境名称.stage-环境ID
+            ("service", "=", f"{gateway_name}.{stage_name}.stage-{stage_id}"),
+        ]
+        if resource_id:
+            # route 的参数规则： 网关名称.环境名称.资源ID
+            label_list.append(("route", "=", f"{gateway_name}.{stage_name}.{resource_id}"))
+        labels = self._get_labels_expression(label_list)
         return (
-            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_bandwidth{{"
-            f"{labels}"
-            f"}}[{step}])) by (route))"
+            # 指标：bkmonitor:bk_apigateway_bandwidth
+            f"sum(increase({self.metric_name_prefix}bandwidth{{" f"{labels}" f"}}[{step}])) by (route)"
         )
 
 
@@ -220,21 +270,28 @@ class EgressSpaceMetrics(BaseMetrics):
     metrics = MetricsEnum.EGRESS_SPACE
 
     def _get_query_promql(
-        self, gateway_name: str, stage_id: int, stage_name: str, resource_name: Optional[str], step: str
+        self,
+        gateway_name: str,
+        stage_id: Optional[int],
+        stage_name: str,
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+        step: str,
     ) -> str:
-        labels = self._get_labels_expression(
-            [
-                *self.default_labels,
-                ("type", "=", "egress"),
-                # 环境参数 prod 待修改
-                ("service", "=", gateway_name + "." + stage_name + ".stage-" + str(stage_id)),
-            ]
-        )
-        # 底下的 apigateway_bandwidth 待自测验证是否能通
+        label_list = [
+            *self.default_labels,
+            ("type", "=", "egress"),
+            # service 的参数规则： 网关名称.环境名称.stage-环境ID
+            ("service", "=", f"{gateway_name}.{stage_name}.stage-{stage_id}"),
+        ]
+        if resource_id:
+            # route 的参数规则： 网关名称.环境名称.资源ID
+            label_list.append(("route", "=", f"{gateway_name}.{stage_name}.{resource_id}"))
+        labels = self._get_labels_expression(label_list)
+
         return (
-            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_bandwidth{{"
-            f"{labels}"
-            f"}}[{step}])) by (route))"
+            # 指标：bkmonitor:bk_apigateway_bandwidth
+            f"sum(increase({self.metric_name_prefix}bandwidth{{" f"{labels}" f"}}[{step}])) by (route)"
         )
 
 

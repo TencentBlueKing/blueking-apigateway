@@ -28,8 +28,9 @@ class TestRequestTotalMetrics:
             {
                 "params": {
                     "gateway_name": "foo",
-                    "stage_name": "prod",
                     "stage_id": 1,
+                    "stage_name": "prod",
+                    "resource_id": 1,
                     "resource_name": "get_foo",
                     "step": "1m",
                 },
@@ -43,6 +44,7 @@ class TestRequestTotalMetrics:
                     "gateway_name": "foo",
                     "stage_name": "prod",
                     "stage_id": 1,
+                    "resource_id": 1,
                     "resource_name": None,
                     "step": "1m",
                 },
@@ -68,6 +70,7 @@ class TestRequestsMetrics:
                     "gateway_name": "foo",
                     "stage_name": "prod",
                     "stage_id": 1,
+                    "resource_id": 1,
                     "resource_name": "get_foo",
                     "step": "1m",
                 },
@@ -81,6 +84,7 @@ class TestRequestsMetrics:
                     "gateway_name": "foo",
                     "stage_name": "prod",
                     "stage_id": 1,
+                    "resource_id": 1,
                     "resource_name": None,
                     "step": "1m",
                 },
@@ -96,7 +100,7 @@ class TestRequestsMetrics:
             assert result == test["expected"]
 
 
-class TestResponseTime90thMetrics:
+class TestNon200StatusMetrics:
     def test_get_query_promql(self, mocker):
         mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
 
@@ -106,12 +110,13 @@ class TestResponseTime90thMetrics:
                     "gateway_name": "foo",
                     "stage_name": "prod",
                     "stage_id": 1,
+                    "resource_id": 1,
                     "resource_name": "get_foo",
                     "step": "1m",
                 },
                 "expected": (
-                    "histogram_quantile(0.9, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, api_name))'
+                    'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
+                    'stage_name="prod", resource_name="get_foo", status!="200"}[1m])) by (api_name, status))'
                 ),
             },
             {
@@ -119,18 +124,98 @@ class TestResponseTime90thMetrics:
                     "gateway_name": "foo",
                     "stage_name": "prod",
                     "stage_id": 1,
+                    "resource_id": 1,
                     "resource_name": None,
                     "step": "1m",
                 },
                 "expected": (
-                    "histogram_quantile(0.9, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'api_name="foo", stage_name="prod"}[1m])) '
-                    "by (le, api_name))"
+                    'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
+                    'stage_name="prod", status!="200"}[1m])) by (api_name, status))'
                 ),
             },
         ]
         for test in data:
-            metrics = dimension.ResponseTime90thMetrics()
+            metrics = dimension.Non200StatusMetrics()
+            result = metrics._get_query_promql(**test["params"])
+            assert result == test["expected"], result
+
+
+class TestAppRequestsMetrics:
+    def test_get_query_promql(self, mocker):
+        mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+
+        data = [
+            {
+                "params": {
+                    "gateway_name": "foo",
+                    "stage_name": "prod",
+                    "stage_id": 1,
+                    "resource_id": 1,
+                    "resource_name": "get_foo",
+                    "step": "1m",
+                },
+                "expected": (
+                    'topk(10, sum(increase(bk_apigateway_apigateway_app_requests_total{api_name="foo", '
+                    'stage_name="prod", resource_name="get_foo"}[1m])) by (api_name, app_code))'
+                ),
+            },
+            {
+                "params": {
+                    "gateway_name": "foo",
+                    "stage_name": "prod",
+                    "stage_id": 1,
+                    "resource_id": 1,
+                    "resource_name": None,
+                    "step": "1m",
+                },
+                "expected": (
+                    'topk(10, sum(increase(bk_apigateway_apigateway_app_requests_total{api_name="foo", '
+                    'stage_name="prod"}[1m])) by (api_name, app_code))'
+                ),
+            },
+        ]
+        for test in data:
+            metrics = dimension.AppRequestsMetrics()
+            result = metrics._get_query_promql(**test["params"])
+            assert result == test["expected"], result
+
+
+class TestResourceRequestsMetrics:
+    def test_get_query_promql(self, mocker):
+        mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+
+        data = [
+            {
+                "params": {
+                    "gateway_name": "foo",
+                    "stage_name": "prod",
+                    "stage_id": 1,
+                    "resource_id": 1,
+                    "resource_name": "get_foo",
+                    "step": "1m",
+                },
+                "expected": (
+                    'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
+                    'stage_name="prod", resource_name="get_foo"}[1m])) by (api_name, resource_name, matched_uri))'
+                ),
+            },
+            {
+                "params": {
+                    "gateway_name": "foo",
+                    "stage_name": "prod",
+                    "stage_id": 1,
+                    "resource_id": 1,
+                    "resource_name": None,
+                    "step": "1m",
+                },
+                "expected": (
+                    'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
+                    'stage_name="prod"}[1m])) by (api_name, resource_name, matched_uri))'
+                ),
+            },
+        ]
+        for test in data:
+            metrics = dimension.ResourceRequestsMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
@@ -145,6 +230,7 @@ class TestResponseTime50thMetrics:
                     "gateway_name": "foo",
                     "stage_name": "prod",
                     "stage_id": 1,
+                    "resource_id": 1,
                     "resource_name": "get_foo",
                     "step": "1m",
                 },
@@ -158,6 +244,7 @@ class TestResponseTime50thMetrics:
                     "gateway_name": "foo",
                     "stage_name": "prod",
                     "stage_id": 1,
+                    "resource_id": 1,
                     "resource_name": None,
                     "step": "1m",
                 },
@@ -174,7 +261,7 @@ class TestResponseTime50thMetrics:
             assert result == test["expected"], result
 
 
-class TestResourceRequestsMetrics:
+class TestResponseTime80thMetrics:
     def test_get_query_promql(self, mocker):
         mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
 
@@ -184,12 +271,13 @@ class TestResourceRequestsMetrics:
                     "gateway_name": "foo",
                     "stage_name": "prod",
                     "stage_id": 1,
+                    "resource_id": 1,
                     "resource_name": "get_foo",
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"}[1m])) by (api_name, resource_name, matched_uri))'
+                    "histogram_quantile(0.8, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
+                    'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, api_name))'
                 ),
             },
             {
@@ -197,22 +285,24 @@ class TestResourceRequestsMetrics:
                     "gateway_name": "foo",
                     "stage_name": "prod",
                     "stage_id": 1,
+                    "resource_id": 1,
                     "resource_name": None,
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod"}[1m])) by (api_name, resource_name, matched_uri))'
+                    "histogram_quantile(0.8, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
+                    'api_name="foo", stage_name="prod"}[1m])) '
+                    "by (le, api_name))"
                 ),
             },
         ]
         for test in data:
-            metrics = dimension.ResourceRequestsMetrics()
+            metrics = dimension.ResponseTime80thMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
 
-class TestAppRequestsMetrics:
+class TestResponseTime90thMetrics:
     def test_get_query_promql(self, mocker):
         mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
 
@@ -222,12 +312,13 @@ class TestAppRequestsMetrics:
                     "gateway_name": "foo",
                     "stage_name": "prod",
                     "stage_id": 1,
+                    "resource_id": 1,
                     "resource_name": "get_foo",
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(increase(bk_apigateway_apigateway_app_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"}[1m])) by (api_name, app_code))'
+                    "histogram_quantile(0.9, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
+                    'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, api_name))'
                 ),
             },
             {
@@ -235,22 +326,24 @@ class TestAppRequestsMetrics:
                     "gateway_name": "foo",
                     "stage_name": "prod",
                     "stage_id": 1,
+                    "resource_id": 1,
                     "resource_name": None,
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(increase(bk_apigateway_apigateway_app_requests_total{api_name="foo", '
-                    'stage_name="prod"}[1m])) by (api_name, app_code))'
+                    "histogram_quantile(0.9, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
+                    'api_name="foo", stage_name="prod"}[1m])) '
+                    "by (le, api_name))"
                 ),
             },
         ]
         for test in data:
-            metrics = dimension.AppRequestsMetrics()
+            metrics = dimension.ResponseTime90thMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
 
-class TestNon200StatusMetrics:
+class TestIngressSpaceMetrics:
     def test_get_query_promql(self, mocker):
         mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
 
@@ -260,12 +353,13 @@ class TestNon200StatusMetrics:
                     "gateway_name": "foo",
                     "stage_name": "prod",
                     "stage_id": 1,
+                    "resource_id": 2,
                     "resource_name": "get_foo",
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo", status!="200"}[1m])) by (api_name, status))'
+                    'sum(increase(bk_apigateway_bandwidth{type="ingress", service="foo.prod.stage-1", '
+                    'route="foo.prod.2"}[1m])) by (route)'
                 ),
             },
             {
@@ -273,17 +367,58 @@ class TestNon200StatusMetrics:
                     "gateway_name": "foo",
                     "stage_name": "prod",
                     "stage_id": 1,
+                    "resource_id": 0,
                     "resource_name": None,
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", status!="200"}[1m])) by (api_name, status))'
+                    'sum(increase(bk_apigateway_bandwidth{type="ingress", service="foo.prod.stage-1"'
+                    "}[1m])) by (route)"
                 ),
             },
         ]
         for test in data:
-            metrics = dimension.Non200StatusMetrics()
+            metrics = dimension.IngressSpaceMetrics()
+            result = metrics._get_query_promql(**test["params"])
+            assert result == test["expected"], result
+
+
+class TestEgressSpaceMetrics:
+    def test_get_query_promql(self, mocker):
+        mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+
+        data = [
+            {
+                "params": {
+                    "gateway_name": "foo",
+                    "stage_name": "prod",
+                    "stage_id": 1,
+                    "resource_id": 2,
+                    "resource_name": "get_foo",
+                    "step": "1m",
+                },
+                "expected": (
+                    'sum(increase(bk_apigateway_bandwidth{type="egress", service="foo.prod.stage-1", '
+                    'route="foo.prod.2"}[1m])) by (route)'
+                ),
+            },
+            {
+                "params": {
+                    "gateway_name": "foo",
+                    "stage_name": "prod",
+                    "stage_id": 1,
+                    "resource_id": 0,
+                    "resource_name": None,
+                    "step": "1m",
+                },
+                "expected": (
+                    'sum(increase(bk_apigateway_bandwidth{type="egress", service="foo.prod.stage-1"'
+                    "}[1m])) by (route)"
+                ),
+            },
+        ]
+        for test in data:
+            metrics = dimension.EgressSpaceMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
