@@ -21,33 +21,45 @@ from django.urls import include, path
 from . import views
 
 urlpatterns = [
+    # app-permission
+    path(
+        "app-permissions/",
+        include(
+            [
+                path("", views.AppPermissionListApi.as_view(), name="permissions.app-permissions.list"),
+                path(
+                    "renew/",
+                    views.AppPermissionRenewApi.as_view(),
+                    name="permissions.app-resource-permissions.renew",
+                ),
+                path(
+                    "export/",
+                    views.AppPermissionExportApi.as_view(),
+                    name="permissions.app-permissions.export",
+                ),
+                path(
+                    "bk-app-codes/",
+                    views.AppPermissionAppCodeListApi.as_view(),
+                    name="permissions.app-permissions.get_bk_app_codes",
+                ),
+            ]
+        ),
+    ),
     # app-resource-permission
     path(
         "app-resource-permissions/",
         include(
             [
-                path(
-                    "", views.AppResourcePermissionListCreateApi.as_view(), name="permissions.app-resource-permissions"
-                ),
+                path("", views.AppResourcePermissionCreateApi.as_view(), name="permissions.app-resource-permissions"),
                 path(
                     "renew/",
                     views.AppResourcePermissionRenewApi.as_view(),
                     name="permissions.app-resource-permissions.renew",
                 ),
                 path(
-                    "export/",
-                    views.AppResourcePermissionExportApi.as_view(),
-                    name="permissions.app-resource-permissions.export",
-                ),
-                path(
                     "delete/",
                     views.AppResourcePermissionDeleteApi.as_view(),
                     name="permissions.app-resource-permissions.delete",
-                ),
-                path(
-                    "bk-app-codes/",
-                    views.AppResourcePermissionAppCodeListApi.as_view(),
-                    name="permissions.app-resource-permissions.get_bk_app_codes",
                 ),
             ]
         ),
@@ -57,28 +69,16 @@ urlpatterns = [
         "app-gateway-permissions/",
         include(
             [
-                path(
-                    "", views.AppGatewayPermissionListCreateApi.as_view(), name="permissions.app-gateway-permissions"
-                ),
+                path("", views.AppGatewayPermissionCreateApi.as_view(), name="permissions.app-gateway-permissions"),
                 path(
                     "renew/",
                     views.AppGatewayPermissionRenewApi.as_view(),
                     name="permissions.app-gateway-permissions.renew",
                 ),
                 path(
-                    "export/",
-                    views.AppGatewayPermissionExportApi.as_view(),
-                    name="permissions.app-gateway-permissions.export",
-                ),
-                path(
                     "delete/",
                     views.AppGatewayPermissionDeleteApi.as_view(),
                     name="permissions.app-gateway-permissions.delete",
-                ),
-                path(
-                    "bk-app-codes/",
-                    views.AppGatewayPermissionAppCodeListApi.as_view(),
-                    name="permissions.app-gateway-permissions.get_bk_app_codes",
                 ),
             ]
         ),
