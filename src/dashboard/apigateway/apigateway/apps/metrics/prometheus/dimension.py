@@ -238,8 +238,8 @@ class ResponseTime90thMetrics(BaseResponseTimePercentileMetrics):
     quantile = 0.90
 
 
-class IngressSpaceMetrics(BaseMetrics):
-    metrics = MetricsEnum.INGRESS_SPACE
+class IngressMetrics(BaseMetrics):
+    metrics = MetricsEnum.INGRESS
 
     def _get_query_promql(
         self,
@@ -266,8 +266,8 @@ class IngressSpaceMetrics(BaseMetrics):
         )
 
 
-class EgressSpaceMetrics(BaseMetrics):
-    metrics = MetricsEnum.EGRESS_SPACE
+class EgressMetrics(BaseMetrics):
+    metrics = MetricsEnum.EGRESS
 
     def _get_query_promql(
         self,
@@ -321,5 +321,5 @@ MetricsFactory.register(ResourceRequestsMetrics)
 MetricsFactory.register(ResponseTime50thMetrics)
 MetricsFactory.register(ResponseTime80thMetrics)
 MetricsFactory.register(ResponseTime90thMetrics)
-MetricsFactory.register(IngressSpaceMetrics)
-MetricsFactory.register(EgressSpaceMetrics)
+MetricsFactory.register(IngressMetrics)
+MetricsFactory.register(EgressMetrics)

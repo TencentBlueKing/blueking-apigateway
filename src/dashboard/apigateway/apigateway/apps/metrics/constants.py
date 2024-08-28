@@ -28,5 +28,5 @@ class MetricsEnum(StructuredEnum):
     RESPONSE_TIME_50TH = EnumField("response_time_50th")
     RESPONSE_TIME_80TH = EnumField("response_time_80th")
     RESPONSE_TIME_90TH = EnumField("response_time_90th")
-    INGRESS_SPACE = EnumField("ingress_space")
-    EGRESS_SPACE = EnumField("egress_space")
+    INGRESS = EnumField("ingress")
+    EGRESS = EnumField("egress")

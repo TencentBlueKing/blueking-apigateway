@@ -343,7 +343,7 @@ class TestResponseTime90thMetrics:
             assert result == test["expected"], result
 
 
-class TestIngressSpaceMetrics:
+class TestIngressMetrics:
     def test_get_query_promql(self, mocker):
         mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
 
@@ -378,12 +378,12 @@ class TestIngressSpaceMetrics:
             },
         ]
         for test in data:
-            metrics = dimension.IngressSpaceMetrics()
+            metrics = dimension.IngressMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
 
-class TestEgressSpaceMetrics:
+class TestEgressMetrics:
     def test_get_query_promql(self, mocker):
         mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
 
@@ -418,7 +418,7 @@ class TestEgressSpaceMetrics:
             },
         ]
         for test in data:
-            metrics = dimension.EgressSpaceMetrics()
+            metrics = dimension.EgressMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
@@ -459,12 +459,12 @@ class TestMetricsFactory:
                 "expected": dimension.ResponseTime90thMetrics,
             },
             {
-                "metrics": "ingress_space",
-                "expected": dimension.IngressSpaceMetrics,
+                "metrics": "ingress",
+                "expected": dimension.IngressMetrics,
             },
             {
-                "metrics": "egress_space",
-                "expected": dimension.EgressSpaceMetrics,
+                "metrics": "egress",
+                "expected": dimension.EgressMetrics,
             },
         ]
         for test in data:
