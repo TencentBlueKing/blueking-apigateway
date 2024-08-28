@@ -23,6 +23,7 @@ from rest_framework import status, viewsets
 
 from apigateway.apis.open.permissions import (
     OpenAPIGatewayIdPermission,
+    OpenAPIGatewayNamePermission,
     OpenAPIGatewayRelatedAppPermission,
 )
 from apigateway.apis.open.stage import serializers
@@ -64,7 +65,7 @@ class StageViewSet(viewsets.ModelViewSet):
 
 
 class StageListViewSet(viewsets.ModelViewSet):
-    permission_classes = [OpenAPIGatewayRelatedAppPermission]
+    permission_classes = [OpenAPIGatewayNamePermission]
 
     serializer_class = serializers.StageV1SLZ
     # lookup_field = "id"

@@ -138,6 +138,7 @@ class GatewayListApi(generics.ListAPIView):
 class GatewayRetrieveApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIGatewayIdPermission]
     serializer_class = serializers.GatewayRetrieveV1OutputSLZ
+    lookup_url_kwarg = "gateway_id"
     lookup_field = "id"
 
     def get_queryset(self):

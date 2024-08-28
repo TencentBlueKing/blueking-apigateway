@@ -76,7 +76,7 @@ class TestGatewayRetrieveApi:
         response = request_to_view(
             request,
             view_name="openapi.gateway.retrieve",
-            path_params={"id": fake_gateway.id},
+            path_params={"gateway_id": fake_gateway.id},
         )
         result = get_response_json(response)
 

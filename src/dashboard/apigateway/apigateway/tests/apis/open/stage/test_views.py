@@ -43,7 +43,7 @@ class TestStageViewSet:
 
         # have 2 active stages
         view = views.StageViewSet.as_view({"get": "list"})
-        response = view(request)
+        response = view(request, gateway_id=fake_gateway.id)
         result = get_response_json(response)
 
         assert result["code"] == 0
@@ -66,11 +66,11 @@ class TestStageViewSet:
         s2.save()
 
         view = views.StageViewSet.as_view({"get": "list"})
-        response = view(request)
+        response = view(request, gateway_id=fake_gateway.id)
         result = get_response_json(response)
 
-        assert result["code"] == 0
         assert response.status_code == 200
+        assert result["code"] == 0
         assert result["data"] == [
             {
                 "id": s1.id,
@@ -92,8 +92,8 @@ class TestStageViewSet:
 
         result = get_response_json(response)
 
-        assert result["code"] == 0
         assert response.status_code == 200
+        assert result["code"] == 0
         assert result["data"] == [
             {
                 "id": stage.id,

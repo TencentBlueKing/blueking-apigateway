@@ -23,6 +23,7 @@ from ddf import G
 
 from apigateway.apis.open.permission import views
 from apigateway.apps.permission import models
+from apigateway.core.models import Gateway
 from apigateway.tests.utils.testing import get_response_json
 
 pytestmark = pytest.mark.django_db
@@ -131,14 +132,20 @@ class TestResourceViewSet:
     def test_list(
         self,
         mocker,
-        fake_gateway,
+        # fake_gateway,
         request_factory,
         is_active_and_public,
         mocked_resources,
         mocked_resource_permissions,
         expected,
     ):
-        fake_gateway.name = "test"
+        fake_gateway = G(
+            Gateway,
+            name="test",
+            _maintainers="admin",
+            status=1,
+            is_public=True,
+        )
 
         if mocked_resources:
             for d in mocked_resources:
@@ -179,7 +186,7 @@ class TestResourceViewSet:
         request.app = mock.MagicMock(app_code="test")
 
         view = views.ResourceViewSet.as_view({"get": "list"})
-        response = view(request)
+        response = view(request, gateway_id=fake_gateway.id)
 
         result = get_response_json(response)
         assert result["data"] == expected

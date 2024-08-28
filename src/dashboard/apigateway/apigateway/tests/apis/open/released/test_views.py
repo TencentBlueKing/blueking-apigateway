@@ -198,6 +198,7 @@ class TestReleasedResourceListApi:
         self,
         mocker,
         request_factory,
+        request_to_view,
         fake_gateway,
         stage_name,
         mocked_resources,
@@ -218,7 +219,7 @@ class TestReleasedResourceListApi:
         request.app = mock.MagicMock(app_code="test")
 
         view = views.ReleasedResourceListApi.as_view()
-        response = view(request, stage_name)
+        response = view(request, gateway_id=fake_gateway.id, stage_name=stage_name)
         result = get_response_json(response)
 
         assert result["code"] == 0
