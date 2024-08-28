@@ -18,14 +18,24 @@
       </div>
     </template>
     <div v-else class="edit-mode-content">
-      <MemberSelector
-        ref="memberSelectorRef" v-model="displayValue"
-        :class="['edit-selector', { [isErrorClass]: isShowError }]"
-        :placeholder="placeholder"
-        :has-delete-icon="true"
-        @blur="handleBlur"
-        @change="handleChange"
-        @keydown="handleEnter" />
+      <main class="edit-member-wrap">
+        <MemberSelector
+          ref="memberSelectorRef" v-model="displayValue"
+          :class="['edit-selector', { [isErrorClass]: isShowError }]"
+          :placeholder="placeholder"
+          :has-delete-icon="true"
+          style="width: 500px"
+          @change="handleChange"
+          @keydown="handleEnter" />
+        <aside class="edit-member-actions">
+          <bk-button style="width: 32px" @click.stop="handleSubmit">
+            <i class="apigateway-icon icon-ag-check-1 f24" style="color: #3A84FF;"></i>
+          </bk-button>
+          <bk-button style="width: 32px" @click="handleCancel">
+            <i class="apigateway-icon icon-ag-icon-close f24"></i>
+          </bk-button>
+        </aside>
+      </main>
       <p class="validate-error-tips" v-if="isShowError">{{ errorTips }}</p>
     </div>
   </div>
@@ -93,9 +103,14 @@ const handleEdit = () => {
   });
 };
 
-const handleBlur = () => {
+const handleSubmit = () => {
   if (!isEditable.value) return;
   triggerChange();
+};
+
+const handleCancel = () => {
+  isEditable.value = false;
+  displayValue.value = [...props.content];
 };
 
 const handleChange = () => {
@@ -228,6 +243,20 @@ onBeforeMount(() => {
 
     .edit-selector {
       width: 100%;
+    }
+  }
+
+  .edit-mode-content {
+    .edit-member-wrap {
+      display: flex;
+      align-items: center;
+
+      .edit-member-actions {
+        margin-left: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
     }
   }
 }
