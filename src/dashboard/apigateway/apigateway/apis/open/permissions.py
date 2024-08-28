@@ -92,17 +92,16 @@ class OpenAPIGatewayNamePermission(permissions.BasePermission):
 
     def get_gateway_object(self, view):
         """
-        根据路径参数 gateway_id 获取网关对象
-        如果 gateway_id 不在路径参数中，则返回 None，忽略此权限验证
-        否则，返回 api 对象或抛出异常
+        根据路径参数 gateway_name 获取网关对象
+        若 gateway_name 不在路径参数中，或网关不存在，返回 None
         """
-        lookup_url_kwarg = "gateway_id"
+        lookup_url_kwarg = "gateway_name"
 
         if lookup_url_kwarg not in view.kwargs:
             return None
 
-        filter_kwargs = {"id": view.kwargs[lookup_url_kwarg]}
-        return get_object_or_404(Gateway, **filter_kwargs)
+        filter_kwargs = {"name": view.kwargs[lookup_url_kwarg]}
+        return get_object_or_None(Gateway, **filter_kwargs)
 
 
 class OpenAPIGatewayRelatedAppPermission(permissions.BasePermission):
