@@ -24,6 +24,7 @@ from django.conf import settings
 @dataclass
 class RepositoryConfig:
     repository_url: str
+    repository_id: str
     username: str
     password: str
 
@@ -34,6 +35,7 @@ class RepositoryConfig:
 
         return cls(
             repository_url=maven_config.get("repository_url", ""),
+            repository_id=maven_config.get("repository_id", ""),
             username=maven_config.get("username", ""),
             password=maven_config.get("password", ""),
         )

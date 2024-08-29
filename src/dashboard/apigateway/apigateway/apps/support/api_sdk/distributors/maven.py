@@ -77,7 +77,7 @@ class MavenSourceDistributor(Distributor):
             "-Dversion=" + self.context.version,
             "-Dpackaging=jar",
             "-Dfile=" + files[0],
-            "-DrepositoryId=bkapi",
+            "-DrepositoryId=" + self.repository_config.repository_id,
             "-Durl=" + self.repository_config.repository_url,
             "-Dusername=" + self.repository_config.username,
             "-Dpassword=" + self.repository_config.password,
