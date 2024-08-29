@@ -126,6 +126,12 @@ class Distributor:
     def distribute(self, output_dir: str, files: List[str]) -> DistributeResult:
         raise NotImplementedError
 
+    def enabled(self) -> bool:
+        """
+        判断是否配置对应仓库配置
+        """
+        raise NotImplementedError
+
 
 @dataclass
 class SDKManager:
