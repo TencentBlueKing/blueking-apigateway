@@ -61,6 +61,7 @@
                 :clearable="false"
                 :filterable="false"
                 :disabled="true"
+                v-bk-tooltips="t('暂不支持切换')"
               >
                 <bk-option
                   v-for="(item, index) in bodyTypeList"
@@ -87,6 +88,7 @@
                 :clearable="false"
                 :filterable="false"
                 :disabled="true"
+                v-bk-tooltips="t('暂不支持切换')"
               >
                 <bk-option
                   v-for="(item, index) in detailsTypeList"
@@ -309,7 +311,7 @@ watch(
     }
     :deep(.bk-collapse-content) {
       padding: 0;
-      height: calc(100% - 256px);
+      height: calc(100% - 72px);
     }
   }
 }
