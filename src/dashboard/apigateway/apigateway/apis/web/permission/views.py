@@ -197,20 +197,20 @@ class AppPermissionAppCodeListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         """获取有权限的应用列表"""
 
-        app_gateway_codes = (
+        gateway_app_codes = (
             AppGatewayPermission.objects.filter(gateway=request.gateway)
             .order_by("bk_app_code")
             .values_list("bk_app_code", flat=True)
         )
 
-        app_resource_codes = (
+        resource_app_codes = (
             AppResourcePermission.objects.filter(gateway=request.gateway)
             .order_by("bk_app_code")
             .values_list("bk_app_code", flat=True)
         )
 
         # 去重
-        app_codes = sorted(set(app_gateway_codes) | set(app_resource_codes))
+        app_codes = sorted(set(gateway_app_codes) | set(resource_app_codes))
         return OKJsonResponse(data=list(app_codes))
 
 
