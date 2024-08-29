@@ -1561,6 +1561,7 @@ const lang: ILANG = {
   '返回修改配置': ['Back to settings'],
   '失败原因：': ['Error message: '],
   '请选择下载的格式': ['Choose format'],
+  '暂不支持切换': ['Switchover is not supported'],
   '下载格式': ['Format'],
   '下载内容': ['Type'],
   '下载成功：': ['Success'],

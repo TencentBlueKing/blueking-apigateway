@@ -225,3 +225,7 @@ body {
         }
     }
 }
+.bk-table .cell.selection .bk-checkbox,
+.bk-table th .bk-checkbox {
+    vertical-align: middle;
+}
