@@ -27,6 +27,10 @@ from apigateway.utils.django import get_object_or_None
 
 
 class OpenAPIPermission(permissions.BasePermission):
+    """仅验证来自于网关的请求
+    适用：申请网关接口权限后，就能访问的接口，路径参数中没有 gateway_id or gateway_name
+    """
+
     message = gettext_lazy("只能通过网关访问该接口")
 
     def has_permission(self, request, view):
@@ -38,7 +42,9 @@ class OpenAPIPermission(permissions.BasePermission):
 
 
 class OpenAPIGatewayIdPermission(permissions.BasePermission):
-    """路径参数中有 gateway_id, 且这个 gateway_id 存在，则有权限"""
+    """验证来自于网关的请求，并且路径参数中有 gateway_id, 且这个 gateway_id 对应网关存在
+    适用：申请网关接口权限后 + 路径参数中 gateway_id 的接口
+    """
 
     message = gettext_lazy("只能通过网关访问该接口，并且 gateway_id 对应网关必须存在")
 
@@ -72,7 +78,9 @@ class OpenAPIGatewayIdPermission(permissions.BasePermission):
 
 
 class OpenAPIGatewayNamePermission(permissions.BasePermission):
-    """路径参数中有 gateway_name, 且这个 gateway_name 存在，则有权限"""
+    """验证来自于网关的请求，并且路径参数中有 gateway_name, 且这个 gateway_name 对应网关存在
+    适用：申请网关接口权限后 + 路径参数中 gateway_name 的接口
+    """
 
     message = gettext_lazy("只能通过网关访问该接口，并且 gateway_name 对应网关必须存在")
 
@@ -105,7 +113,9 @@ class OpenAPIGatewayNamePermission(permissions.BasePermission):
 
 
 class OpenAPIGatewayRelatedAppPermission(permissions.BasePermission):
-    """获取网关并验证应用是否有操作网关的权限"""
+    """验证来自于网关的请求 + 路径参数中有 gateway_name, 且这个 gateway_name 对应网关存在 + 这个应用有操作这个网关的权限 (GatewayRelatedApp)
+    适用：SDK 使用的 API，某个应用通过网关的接口对网关进行变更
+    """
 
     message = gettext_lazy("应用无操作网关权限")
 
