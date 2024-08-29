@@ -121,17 +121,8 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
 )
 class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
     def get_queryset(self):
-        app_gateway_permissions = AppGatewayPermissionFilter(self.request.GET, queryset=self.get_gateway_queryset()).qs
-
-        app_resource_permissions = AppResourcePermissionFilter(
-            self.request.GET, queryset=self.get_resource_queryset()
-        ).qs
-
         query_params = self.request.query_params
-
-        if query_params.get("grant_dimension") == GrantDimensionEnum.API.value:
-            app_resource_permissions = []
-
+        app_gateway_permissions = AppGatewayPermissionFilter(self.request.GET, queryset=self.get_gateway_queryset()).qs
         # 如果查询维度为资源 或者 授权类型不为 INITIALIZE(网关维度都为INITIALIZE)或者 查询某个资源 都要忽略掉网关维度的
         if (
             query_params.get("grant_dimension") == GrantDimensionEnum.RESOURCE.value
@@ -139,6 +130,12 @@ class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
             or query_params.get("resource_id")
         ):
             app_gateway_permissions = []
+
+        app_resource_permissions = AppResourcePermissionFilter(
+            self.request.GET, queryset=self.get_resource_queryset()
+        ).qs
+        if query_params.get("grant_dimension") == GrantDimensionEnum.API.value:
+            app_resource_permissions = []
 
         return self.get_app_permissions(app_gateway_permissions, app_resource_permissions)
 
@@ -178,12 +175,12 @@ class AppPermissionRenewApi(generics.CreateAPIView):
 
         if data["resource_dimension_ids"]:
             AppResourcePermission.objects.renew_by_ids(
-                gateway=request.gateway, ids=data["resource_ids"], expires=data["expire_days"]
+                gateway=request.gateway, ids=data["resource_dimension_ids"], expires=data["expire_days"]
             )
 
-        if data["api_dimension_ids"]:
+        if data["gateway_dimension_ids"]:
             AppGatewayPermission.objects.renew_by_ids(
-                gateway=request.gateway, ids=data["ids"], expires=data["expire_days"]
+                gateway=request.gateway, ids=data["gateway_dimension_ids"], expires=data["expire_days"]
             )
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
@@ -248,8 +245,8 @@ class AppPermissionExportApi(AppPermissionQuerySetMixin, generics.CreateAPIView)
         elif data["export_type"] == ExportTypeEnum.SELECTED.value:
             if data["resource_permission_ids"]:
                 resource_queryset = self.get_resource_queryset().filter(id__in=data["resource_permission_ids"])
-            if data["api_permission_ids"]:
-                gateway_queryset = self.get_gateway_queryset().filter(id__in=data["api_permission_ids"])
+            if data["gateway_permission_ids"]:
+                gateway_queryset = self.get_gateway_queryset().filter(id__in=data["gateway_permission_ids"])
 
         app_permissions = self.get_app_permissions(gateway_queryset, resource_queryset)
 

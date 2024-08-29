@@ -34,7 +34,7 @@ from apigateway.utils.time import NeverExpiresTime, to_datetime_from_now
 
 class AppPermissionQueryInputSLZ(serializers.Serializer):
     bk_app_code = serializers.CharField(help_text="应用ID", required=False)
-    keyword = serializers.CharField(help_text="应用ID", required=False)
+    keyword = serializers.CharField(help_text="查询关键字", required=False)
     grant_type = serializers.ChoiceField(choices=GrantTypeEnum.get_choices(), required=False)
     resource_id = serializers.IntegerField(help_text="资源id", required=False)
     order_by = serializers.ChoiceField(
@@ -94,7 +94,7 @@ class AppPermissionOutputSLZ(serializers.Serializer):
 
 
 class AppPermissionRenewInputSLZ(serializers.Serializer):
-    api_dimension_ids = serializers.ListField(
+    gateway_dimension_ids = serializers.ListField(
         help_text="网关维度权限id列表", child=serializers.IntegerField(), allow_empty=True, required=False
     )
     resource_dimension_ids = serializers.ListField(
@@ -107,10 +107,10 @@ class AppPermissionRenewInputSLZ(serializers.Serializer):
     )
 
     def validate(self, data):
-        api_dimension_ids = data.get("api_dimension_ids", [])
+        gateway_dimension_ids = data.get("gateway_dimension_ids", [])
         resource_dimension_ids = data.get("resource_dimension_ids", [])
 
-        if not api_dimension_ids and not resource_dimension_ids:
+        if not gateway_dimension_ids and not resource_dimension_ids:
             raise serializers.ValidationError("must select one permission")
 
         return data
@@ -149,11 +149,11 @@ class AppPermissionExportInputSLZ(serializers.Serializer):
             "值为 selected，支持 permission_ids 参数"
         ),
     )
-    api_permission_ids = serializers.ListField(
+    gateway_permission_ids = serializers.ListField(
         child=serializers.IntegerField(),
         allow_empty=True,
         required=False,
-        help_text='api维度:export_type 值为已选资源 "selected" 时，此项必填',
+        help_text='gateway维度:export_type 值为已选资源 "selected" 时，此项必填',
     )
     resource_permission_ids = serializers.ListField(
         child=serializers.IntegerField(),
@@ -164,7 +164,7 @@ class AppPermissionExportInputSLZ(serializers.Serializer):
 
     def validate(self, data):
         if data["export_type"] == ExportTypeEnum.SELECTED.value and (
-            not data.get("api_permission_ids") or not data.get("resource_permission_ids")
+            not data.get("gateway_permission_ids") or not data.get("resource_permission_ids")
         ):
             raise serializers.ValidationError(_("导出已选中权限时，已选中权限不能为空。"))
         return data
