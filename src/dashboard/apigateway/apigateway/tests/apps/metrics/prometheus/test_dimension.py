@@ -35,8 +35,8 @@ class TestRequestTotalMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"}[1m]))'
+                    'count(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
+                    'stage_name="prod", resource_name="get_foo"}[1m])'
                 ),
             },
             {
@@ -49,13 +49,12 @@ class TestRequestTotalMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod"}[1m]))'
+                    'count(bk_apigateway_apigateway_api_requests_total{api_name="foo", ' 'stage_name="prod"}[1m])'
                 ),
             },
         ]
         for test in data:
-            metrics = dimension.RequestsMetrics()
+            metrics = dimension.RequestsTotalMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"]
 

@@ -35,27 +35,27 @@ class BaseMetrics(BasePrometheusMetrics):
     def _get_query_promql(
         self,
         gateway_name: str,
-        stage_id: Optional[int],
         stage_name: str,
+        step: str,
+        stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        step: str,
     ) -> str:
         pass
 
     def query_range(
         self,
         gateway_name: str,
-        stage_id: Optional[int],
         stage_name: str,
-        resource_id: Optional[int],
-        resource_name: Optional[str],
         start: int,
         end: int,
         step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
     ):
         # generate query expression
-        promql = self._get_query_promql(gateway_name, stage_id, stage_name, resource_id, resource_name, step)
+        promql = self._get_query_promql(gateway_name, stage_name, step, stage_id, resource_id, resource_name)
 
         # request prometheus http api to get metrics data
         return prometheus_component.query_range(
@@ -73,11 +73,11 @@ class RequestsMetrics(BaseMetrics):
     def _get_query_promql(
         self,
         gateway_name: str,
-        stage_id: Optional[int],
         stage_name: str,
+        step: str,
+        stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        step: str,
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -96,11 +96,11 @@ class RequestsTotalMetrics(BaseMetrics):
     def _get_query_promql(
         self,
         gateway_name: str,
-        stage_id: Optional[int],
         stage_name: str,
+        step: str,
+        stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        step: str,
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -110,7 +110,7 @@ class RequestsTotalMetrics(BaseMetrics):
                 ("resource_name", "=", resource_name),
             ]
         )
-        return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
+        return f"count({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}])"
 
 
 class Non200StatusMetrics(BaseMetrics):
@@ -119,11 +119,11 @@ class Non200StatusMetrics(BaseMetrics):
     def _get_query_promql(
         self,
         gateway_name: str,
-        stage_id: Optional[int],
         stage_name: str,
+        step: str,
+        stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        step: str,
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -147,11 +147,11 @@ class AppRequestsMetrics(BaseMetrics):
     def _get_query_promql(
         self,
         gateway_name: str,
-        stage_id: Optional[int],
         stage_name: str,
+        step: str,
+        stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        step: str,
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -174,11 +174,11 @@ class ResourceRequestsMetrics(BaseMetrics):
     def _get_query_promql(
         self,
         gateway_name: str,
-        stage_id: Optional[int],
         stage_name: str,
+        step: str,
+        stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        step: str,
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -201,11 +201,11 @@ class BaseResponseTimePercentileMetrics(BaseMetrics):
     def _get_query_promql(
         self,
         gateway_name: str,
-        stage_id: Optional[int],
         stage_name: str,
+        step: str,
+        stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        step: str,
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -244,11 +244,11 @@ class IngressMetrics(BaseMetrics):
     def _get_query_promql(
         self,
         gateway_name: str,
-        stage_id: Optional[int],
         stage_name: str,
+        step: str,
+        stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        step: str,
     ) -> str:
         label_list = [
             *self.default_labels,
@@ -272,11 +272,11 @@ class EgressMetrics(BaseMetrics):
     def _get_query_promql(
         self,
         gateway_name: str,
-        stage_id: Optional[int],
         stage_name: str,
+        step: str,
+        stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        step: str,
     ) -> str:
         label_list = [
             *self.default_labels,
