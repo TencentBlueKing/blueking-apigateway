@@ -106,4 +106,4 @@ class MavenSourceDistributor(Distributor):
         return result
 
     def enabled(self) -> bool:
-        return self.repository_config and self.repository_config.repository_url != ""
+        return bool(self.repository_config and self.repository_config.repository_url)

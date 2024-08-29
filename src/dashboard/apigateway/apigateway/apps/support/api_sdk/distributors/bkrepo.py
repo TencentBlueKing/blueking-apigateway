@@ -58,4 +58,4 @@ class GenericDistributor(Distributor):
         return result
 
     def enabled(self) -> bool:
-        return bool(self.bkrepo and self.bkrepo.endpoint_url and self.bkrepo.endpoint_url != "")
+        return bool(self.bkrepo and self.bkrepo.endpoint_url)
