@@ -17,7 +17,6 @@
 #
 from typing import Dict, List
 
-from cachetools import TTLCache, cached
 from django.db.models import Count
 
 from apigateway.apps.support.api_sdk.models import SDKFactory
@@ -93,7 +92,6 @@ class GatewaySDKHandler:
         return {item["resource_version_id"]: item["count"] for item in queryset}
 
     @staticmethod
-    @cached(cache=TTLCache(maxsize=100, ttl=300))
     def get_sdks(gateway_ids: List[int]) -> Dict[int, List[Dict]]:
         data: Dict[int, List[Dict]] = {}
         queryset = GatewaySDK.objects.filter(gateway_id__in=gateway_ids, is_recommended=True)
