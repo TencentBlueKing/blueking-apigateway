@@ -310,12 +310,15 @@ class AppPermissionApplyAPIView(APIView):
         record_ids = []
         for gateway_resources in data.get("gateway_resource_ids"):
             gateway = Gateway.objects.get(id=gateway_resources["gateway_id"])
-            manager = PermissionDimensionManager.get_manager(GrantDimensionEnum.API.value)
-            grant_dimension = (str(GrantDimensionEnum.API.value),)
             resource_ids = gateway_resources.get("resource_ids") or []
             if resource_ids:
+                # 如果传了resource_ids就是按照资源维度申请
                 manager = PermissionDimensionManager.get_manager(GrantDimensionEnum.RESOURCE.value)
                 grant_dimension = str(GrantDimensionEnum.RESOURCE.value)
+            else:
+                manager = PermissionDimensionManager.get_manager(GrantDimensionEnum.API.value)
+                grant_dimension = str(GrantDimensionEnum.API.value)
+
             record = manager.create_apply_record(
                 data["target_app_code"],
                 gateway,
