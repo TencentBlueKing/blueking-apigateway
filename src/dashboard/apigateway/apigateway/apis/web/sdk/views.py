@@ -104,6 +104,8 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
                 raise error_codes.INTERNAL.format(
                     _("网关下无符合条件(请求方法为非ANY)的资源，无法生成 SDK。"), replace=True
                 )
+            except exceptions.SDKRepoConfigError:
+                raise error_codes.INTERNAL.format(_("网关 SDK 仓库配置异常。"), replace=True)
             except exceptions.GenerateError:
                 raise error_codes.INTERNAL.format(_("网关 SDK 生成失败。"), replace=True)
             except exceptions.PackError:

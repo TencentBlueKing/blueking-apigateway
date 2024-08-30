@@ -104,3 +104,6 @@ class MavenSourceDistributor(Distributor):
         result.is_local = result.url == ""
 
         return result
+
+    def enabled(self) -> bool:
+        return bool(self.repository_config and self.repository_config.repository_url)
