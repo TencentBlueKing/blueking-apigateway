@@ -66,6 +66,26 @@ class BaseMetrics(BasePrometheusMetrics):
             step=step,
         )
 
+    def query(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        start: int,
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ):
+        # generate query expression
+        promql = self._get_query_promql(gateway_name, stage_name, step, stage_id, resource_id, resource_name)
+
+        # request prometheus http api to get metrics data
+        return prometheus_component.query(
+            bk_biz_id=getattr(settings, "BCS_CLUSTER_BK_BIZ_ID", ""),
+            promql=promql,
+            time_=start,
+        )
+
 
 class RequestsMetrics(BaseMetrics):
     metrics = MetricsEnum.REQUESTS
@@ -110,7 +130,7 @@ class RequestsTotalMetrics(BaseMetrics):
                 ("resource_name", "=", resource_name),
             ]
         )
-        return f"count({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}])"
+        return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
 
 
 class Non200StatusMetrics(BaseMetrics):

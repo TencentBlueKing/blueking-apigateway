@@ -35,8 +35,8 @@ class TestRequestTotalMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'count(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"}[1m])'
+                    'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
+                    'stage_name="prod", resource_name="get_foo"}[1m]))'
                 ),
             },
             {
@@ -49,7 +49,8 @@ class TestRequestTotalMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'count(bk_apigateway_apigateway_api_requests_total{api_name="foo", ' 'stage_name="prod"}[1m])'
+                    'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
+                    'stage_name="prod"}[1m]))'
                 ),
             },
         ]
