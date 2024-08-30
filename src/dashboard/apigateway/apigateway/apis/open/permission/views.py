@@ -293,7 +293,7 @@ class AppPermissionApplyAPIView(APIView):
     权限批量申请(网关+resource)
     """
 
-    # permission_classes = [OpenAPIPermission]
+    permission_classes = [OpenAPIPermission]
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
