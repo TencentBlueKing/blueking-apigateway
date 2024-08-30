@@ -22,6 +22,7 @@ from abc import ABCMeta, abstractmethod
 
 from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.db import transaction
+from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
@@ -55,6 +56,7 @@ from apigateway.core.models import Gateway, Resource
 from apigateway.utils.responses import V1OKJsonResponse
 
 from . import serializers
+from .serializers import PaaSAppPermissionApplyV2InputSLZ
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +75,7 @@ class ResourceViewSet(viewsets.ViewSet):
     permission_classes = [OpenAPIGatewayIdPermission]
 
     @swagger_auto_schema(
-        query_serializer=serializers.AppResourcePermissionInputSLZ,
+        query_serializer=serializers.AppResourcePermissionInputSLZ(),
         responses={status.HTTP_200_OK: serializers.AppResourcePermissionOutputSLZ(many=True)},
         tags=["OpenAPI.Permission"],
     )
@@ -268,7 +270,6 @@ class AppPermissionRenewAPIView(APIView):
                 bk_app_code=data["target_app_code"],
                 resource_ids=resource_ids,
             )
-
             AppResourcePermission.objects.renew_by_resource_ids(
                 gateway=gateway,
                 bk_app_code=data["target_app_code"],
@@ -278,6 +279,64 @@ class AppPermissionRenewAPIView(APIView):
             )
 
         return V1OKJsonResponse("OK")
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        request_body=PaaSAppPermissionApplyV2InputSLZ,
+        tags=["OpenAPI.Permission"],
+    ),
+)
+class AppPermissionApplyAPIView(APIView):
+    """
+    权限批量申请(网关+resource)
+    """
+
+    # permission_classes = [OpenAPIPermission]
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        slz = serializers.PaaSAppPermissionApplyV2InputSLZ(
+            data=request.data,
+            context={
+                "request": request,
+            },
+        )
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+
+        record_ids = []
+        for gateway_resources in data.get("gateway_resource_ids"):
+            gateway = Gateway.objects.get(id=gateway_resources["gateway_id"])
+            manager = PermissionDimensionManager.get_manager(GrantDimensionEnum.API.value)
+            grant_dimension = (str(GrantDimensionEnum.API.value),)
+            resource_ids = gateway_resources.get("resource_ids") or []
+            if resource_ids:
+                manager = PermissionDimensionManager.get_manager(GrantDimensionEnum.RESOURCE.value)
+                grant_dimension = str(GrantDimensionEnum.RESOURCE.value)
+            record = manager.create_apply_record(
+                data["target_app_code"],
+                gateway,
+                resource_ids,
+                grant_dimension,
+                data["reason"],
+                data.get("expire_days", PermissionApplyExpireDaysEnum.FOREVER.value),
+                request.user.username,
+            )
+            record_ids.append(record.id)
+        try:
+            apply_async_on_commit(send_mail_for_perm_apply, args=record_ids)
+        except Exception:
+            logger.exception("send mail to gateway manager fail. apply_record_ids=%s", record_ids)
+
+        return V1OKJsonResponse(
+            "OK",
+            data={
+                "record_ids": record_ids,
+            },
+        )
 
 
 class AppPermissionViewSet(viewsets.ViewSet):
