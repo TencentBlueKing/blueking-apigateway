@@ -28,6 +28,7 @@ class TestGatewayOutputSLZ:
             fake_gateway,
             context={
                 "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([fake_gateway.id]),
+                "gateway_sdks": {},
             },
         )
 

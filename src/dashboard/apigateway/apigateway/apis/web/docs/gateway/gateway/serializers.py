@@ -37,8 +37,21 @@ class GatewayOutputSLZ(serializers.Serializer):
     is_official = serializers.SerializerMethodField(help_text="是否为官方网关, true: 是, false: 否")
     api_url = serializers.SerializerMethodField(help_text="网关访问地址")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.gateway.serializers.GatewayOutputSLZ"
+
     def get_api_url(self, obj):
         return GatewayHandler.get_api_domain(obj)
 
     def get_is_official(self, obj):
         return GatewayTypeHandler.is_official(self.context["gateway_auth_configs"][obj.id].gateway_type)
+
+
+class GatewayListOutputSLZ(GatewayOutputSLZ):
+    sdks = serializers.SerializerMethodField(help_text="SDK")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.gateway.serializers.GatewayListOutputSLZ"
+
+    def get_sdks(self, obj):
+        return self.context["gateway_sdks"].get(obj.id, [])
