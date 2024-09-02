@@ -66,26 +66,6 @@ class BaseMetrics(BasePrometheusMetrics):
             step=step,
         )
 
-    def query(
-        self,
-        gateway_name: str,
-        stage_name: str,
-        start: int,
-        step: str,
-        stage_id: Optional[int],
-        resource_id: Optional[int],
-        resource_name: Optional[str],
-    ):
-        # generate query expression
-        promql = self._get_query_promql(gateway_name, stage_name, step, stage_id, resource_id, resource_name)
-
-        # request prometheus http api to get metrics data
-        return prometheus_component.query(
-            bk_biz_id=getattr(settings, "BCS_CLUSTER_BK_BIZ_ID", ""),
-            promql=promql,
-            time_=start,
-        )
-
 
 class RequestsMetrics(BaseMetrics):
     metrics = MetricsEnum.REQUESTS
@@ -130,7 +110,7 @@ class RequestsTotalMetrics(BaseMetrics):
                 ("resource_name", "=", resource_name),
             ]
         )
-        return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
+        return f"sum({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}})"
 
 
 class Non200StatusMetrics(BaseMetrics):
@@ -157,7 +137,7 @@ class Non200StatusMetrics(BaseMetrics):
         return (
             f"topk(10, sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{"
             f"{labels}"
-            f"}}[{step}])) by (api_name, status))"
+            f"}}[{step}])) by (resource_name, status))"
         )
 
 
@@ -211,7 +191,7 @@ class ResourceRequestsMetrics(BaseMetrics):
         return (
             f"topk(10, sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{"
             f"{labels}"
-            f"}}[{step}])) by (api_name, resource_name, matched_uri))"
+            f"}}[{step}])) by (resource_name, matched_uri))"
         )
 
 
@@ -270,6 +250,7 @@ class IngressMetrics(BaseMetrics):
         resource_id: Optional[int],
         resource_name: Optional[str],
     ) -> str:
+        # 因为route的参数结果不能使用self._get_labels_expression方法去去除空参数
         label_list = [
             *self.default_labels,
             ("type", "=", "ingress"),
@@ -298,6 +279,7 @@ class EgressMetrics(BaseMetrics):
         resource_id: Optional[int],
         resource_name: Optional[str],
     ) -> str:
+        # 因为route的参数结果不能使用self._get_labels_expression方法去去除空参数
         label_list = [
             *self.default_labels,
             ("type", "=", "egress"),
@@ -313,6 +295,32 @@ class EgressMetrics(BaseMetrics):
             # 指标：bkmonitor:bk_apigateway_bandwidth
             f"sum(increase({self.metric_name_prefix}bandwidth{{" f"{labels}" f"}}[{step}])) by (route)"
         )
+
+
+# 500 状态码的请求为了提供计算健康率
+class Failed500RequestsMetrics(BaseMetrics):
+    metrics = MetricsEnum.FAILED_500_REQUESTS
+
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
+        labels = self._get_labels_expression(
+            [
+                *self.default_labels,
+                ("api_name", "=", gateway_name),
+                ("stage_name", "=", stage_name),
+                ("resource_name", "=", resource_name),
+                ("status", "=~", "5.."),
+                # ("proxy_error", "=", "1"),
+            ]
+        )
+        return f"sum({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}})"
 
 
 class MetricsFactory:
@@ -343,3 +351,4 @@ MetricsFactory.register(ResponseTime80thMetrics)
 MetricsFactory.register(ResponseTime90thMetrics)
 MetricsFactory.register(IngressMetrics)
 MetricsFactory.register(EgressMetrics)
+MetricsFactory.register(Failed500RequestsMetrics)

@@ -108,25 +108,14 @@ class QueryRangeApi(generics.ListAPIView):
 
         metrics = MetricsFactory.create_metrics(MetricsEnum(data["metrics"]))
 
-        if data["metrics"] != MetricsEnum.REQUESTS_TOTAL.value:
-            data = metrics.query_range(
-                gateway_name=request.gateway.name,
-                stage_id=data.get("stage_id", 0),
-                stage_name=stage_name,
-                resource_id=data.get("resource_id", 0),
-                resource_name=resource_name,
-                start=time_start,
-                end=time_end,
-                step=step,
-            )
-        else:
-            data = metrics.query(
-                gateway_name=request.gateway.name,
-                stage_id=data.get("stage_id", 0),
-                stage_name=stage_name,
-                resource_id=data.get("resource_id", 0),
-                resource_name=resource_name,
-                start=time_start,
-                step=step,
-            )
+        data = metrics.query_range(
+            gateway_name=request.gateway.name,
+            stage_id=data.get("stage_id", 0),
+            stage_name=stage_name,
+            resource_id=data.get("resource_id", 0),
+            resource_name=resource_name,
+            start=time_start,
+            end=time_end,
+            step=step,
+        )
         return OKJsonResponse(data=data)

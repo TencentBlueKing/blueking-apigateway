@@ -30,3 +30,4 @@ class MetricsEnum(StructuredEnum):
     RESPONSE_TIME_90TH = EnumField("response_time_90th")
     INGRESS = EnumField("ingress")
     EGRESS = EnumField("egress")
+    FAILED_500_REQUESTS = EnumField("failed_500_requests")

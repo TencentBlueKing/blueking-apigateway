@@ -35,8 +35,8 @@ class TestRequestTotalMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"}[1m]))'
+                    'sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
+                    'stage_name="prod", resource_name="get_foo"}[1m])'
                 ),
             },
             {
@@ -49,8 +49,7 @@ class TestRequestTotalMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod"}[1m]))'
+                    'sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", ' 'stage_name="prod"}[1m])'
                 ),
             },
         ]
@@ -423,6 +422,46 @@ class TestEgressMetrics:
             assert result == test["expected"], result
 
 
+class TestFailed500RequestsMetrics:
+    def test_get_query_promql(self, mocker):
+        mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+
+        data = [
+            {
+                "params": {
+                    "gateway_name": "foo",
+                    "stage_name": "prod",
+                    "stage_id": 1,
+                    "resource_id": 0,
+                    "resource_name": "get_foo",
+                    "step": "1m",
+                },
+                "expected": (
+                    'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
+                    'stage_name="prod", resource_name="get_foo", status=~"5.."}[1m]))'
+                ),
+            },
+            {
+                "params": {
+                    "gateway_name": "foo",
+                    "stage_name": "prod",
+                    "stage_id": 1,
+                    "resource_id": 0,
+                    "resource_name": None,
+                    "step": "1m",
+                },
+                "expected": (
+                    'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
+                    'stage_name="prod", status=~"5.."}[1m]))'
+                ),
+            },
+        ]
+        for test in data:
+            metrics = dimension.Failed500RequestsMetrics()
+            result = metrics._get_query_promql(**test["params"])
+            assert result == test["expected"], result
+
+
 class TestMetricsFactory:
     def test_create_metrics(self):
         data = [
@@ -465,6 +504,10 @@ class TestMetricsFactory:
             {
                 "metrics": "egress",
                 "expected": dimension.EgressMetrics,
+            },
+            {
+                "metrics": "failed_500_requests",
+                "expected": dimension.Failed500RequestsMetrics,
             },
         ]
         for test in data:
