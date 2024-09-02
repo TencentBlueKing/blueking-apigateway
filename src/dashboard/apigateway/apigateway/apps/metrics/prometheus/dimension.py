@@ -137,7 +137,7 @@ class Non200StatusMetrics(BaseMetrics):
         return (
             f"topk(10, sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{"
             f"{labels}"
-            f"}}[{step}])) by (resource_name, status))"
+            f"}}[{step}])) by (status))"
         )
 
 
@@ -320,7 +320,7 @@ class Failed500RequestsMetrics(BaseMetrics):
                 # ("proxy_error", "=", "1"),
             ]
         )
-        return f"sum({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}})"
+        return f"sum({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}})"
 
 
 class MetricsFactory:

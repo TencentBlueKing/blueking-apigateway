@@ -36,7 +36,7 @@ class TestRequestTotalMetrics:
                 },
                 "expected": (
                     'sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"}[1m])'
+                    'stage_name="prod", resource_name="get_foo"})'
                 ),
             },
             {
@@ -48,9 +48,7 @@ class TestRequestTotalMetrics:
                     "resource_name": None,
                     "step": "1m",
                 },
-                "expected": (
-                    'sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", ' 'stage_name="prod"}[1m])'
-                ),
+                "expected": ('sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", ' 'stage_name="prod"})'),
             },
         ]
         for test in data:
@@ -115,7 +113,7 @@ class TestNon200StatusMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo", status!="200"}[1m])) by (api_name, status))'
+                    'stage_name="prod", resource_name="get_foo", status!="200"}[1m])) by (status))'
                 ),
             },
             {
@@ -129,7 +127,7 @@ class TestNon200StatusMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", status!="200"}[1m])) by (api_name, status))'
+                    'stage_name="prod", status!="200"}[1m])) by (status))'
                 ),
             },
         ]
@@ -195,7 +193,7 @@ class TestResourceRequestsMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"}[1m])) by (api_name, resource_name, matched_uri))'
+                    'stage_name="prod", resource_name="get_foo"}[1m])) by (resource_name, matched_uri))'
                 ),
             },
             {
@@ -209,7 +207,7 @@ class TestResourceRequestsMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod"}[1m])) by (api_name, resource_name, matched_uri))'
+                    'stage_name="prod"}[1m])) by (resource_name, matched_uri))'
                 ),
             },
         ]
@@ -437,8 +435,8 @@ class TestFailed500RequestsMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo", status=~"5.."}[1m]))'
+                    'sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
+                    'stage_name="prod", resource_name="get_foo", status=~"5.."})'
                 ),
             },
             {
@@ -451,8 +449,8 @@ class TestFailed500RequestsMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", status=~"5.."}[1m]))'
+                    'sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
+                    'stage_name="prod", status=~"5.."})'
                 ),
             },
         ]
