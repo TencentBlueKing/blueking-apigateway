@@ -12,4 +12,4 @@ src/views/permission/apply/index.vue
 src/assets/**
 *bak*
 src/views/resource/setting/detail.vue
-src/views/resource/setting/import.vue
+src/views/resource/setting/comps/table-res-to-action.vue
