@@ -206,6 +206,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
             "method",
             "path",
             "match_subpath",
+            "enable_websocket",
             "is_public",
             "allow_apply_permission",
             # 认证配置
@@ -229,6 +230,9 @@ class ResourceInputSLZ(serializers.ModelSerializer):
             },
             "match_subpath": {
                 "help_text": "是否匹配所有子路径",
+            },
+            "enable_websocket": {
+                "help_text": "是否启用 websocket",
             },
             "is_public": {
                 "help_text": "是否公开，true：公开，false：不公开",
@@ -341,6 +345,7 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
             "method",
             "path",
             "match_subpath",
+            "enable_websocket",
             "is_public",
             "allow_apply_permission",
             "auth_config",
@@ -371,6 +376,9 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
             },
             "match_subpath": {
                 "help_text": "是否匹配所有子路径",
+            },
+            "enable_websocket": {
+                "help_text": "是否启用 websocket",
             },
             "is_public": {
                 "help_text": "是否公开",
@@ -496,6 +504,7 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
             "method",
             "path",
             "match_subpath",
+            "enable_websocket",
             "is_public",
             "allow_apply_permission",
             # 认证配置
@@ -526,6 +535,9 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
             },
             "match_subpath": {
                 "help_text": "是否匹配所有子路径",
+            },
+            "enable_websocket": {
+                "help_text": "是否启用 websocket",
             },
             "is_public": {
                 "help_text": "是否公开",
@@ -596,6 +608,7 @@ class ResourceImportInfoSLZ(serializers.Serializer):
     path = serializers.CharField(help_text="请求路径")
     path_display = serializers.SerializerMethodField(required=False, help_text="请求路径(需要体现是否匹配所有子路径)")
     match_subpath = serializers.BooleanField(help_text="是否匹配所有子路径")
+    enable_websocket = serializers.BooleanField(help_text="是否启用 websocket")
     is_public = serializers.BooleanField(help_text="是否公开")
     allow_apply_permission = serializers.BooleanField(help_text="是否允许应用在开发者中心申请访问资源的权限")
 
@@ -668,6 +681,7 @@ class ResourceExportOutputSLZ(serializers.Serializer):
     method = serializers.CharField(help_text="请求方法")
     path = serializers.CharField(help_text="请求路径")
     match_subpath = serializers.BooleanField(help_text="是否匹配所有子路径")
+    enable_websocket = serializers.BooleanField(help_text="是否启用 websocket")
     is_public = serializers.BooleanField(help_text="是否公开")
     allow_apply_permission = serializers.BooleanField(help_text="是否允许应用在开发者中心申请访问资源的权限")
 

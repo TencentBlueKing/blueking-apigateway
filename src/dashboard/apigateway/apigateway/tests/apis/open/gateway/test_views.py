@@ -31,7 +31,7 @@ from apigateway.tests.utils.testing import get_response_json
 @pytest.fixture()
 def disable_app_permission(mocker):
     mocker.patch(
-        "apigateway.apis.open.gateway.views.GatewayRelatedAppPermission.has_permission",
+        "apigateway.apis.open.gateway.views.OpenAPIGatewayRelatedAppPermission.has_permission",
         return_value=True,
     )
 
@@ -76,7 +76,7 @@ class TestGatewayRetrieveApi:
         response = request_to_view(
             request,
             view_name="openapi.gateway.retrieve",
-            path_params={"id": fake_gateway.id},
+            path_params={"gateway_id": fake_gateway.id},
         )
         result = get_response_json(response)
 

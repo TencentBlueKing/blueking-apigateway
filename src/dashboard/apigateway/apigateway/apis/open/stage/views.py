@@ -21,12 +21,16 @@ from django.http import Http404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
+from apigateway.apis.open.permissions import (
+    OpenAPIGatewayIdPermission,
+    OpenAPIGatewayNamePermission,
+    OpenAPIGatewayRelatedAppPermission,
+)
 from apigateway.apis.open.stage import serializers
 from apigateway.apis.open.stage.serializers import StageSLZ
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.released_resource import ReleasedResourceHandler
-from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Stage
 from apigateway.utils.django import get_model_dict, get_object_or_None
@@ -34,11 +38,10 @@ from apigateway.utils.responses import V1OKJsonResponse
 
 
 class StageViewSet(viewsets.ModelViewSet):
-    gateway_permission_exempt = True
-    request_from_gateway_required = True
+    permission_classes = [OpenAPIGatewayIdPermission]
 
     serializer_class = serializers.StageV1SLZ
-    lookup_field = "id"
+    # lookup_field = "id"
 
     def get_queryset(self):
         return Stage.objects.filter(gateway=self.request.gateway)
@@ -60,23 +63,36 @@ class StageViewSet(viewsets.ModelViewSet):
         slz = self.get_serializer(queryset, many=True)
         return V1OKJsonResponse("OK", data=slz.data)
 
+
+class StageListViewSet(viewsets.ModelViewSet):
+    permission_classes = [OpenAPIGatewayNamePermission]
+
+    serializer_class = serializers.StageV1SLZ
+    # lookup_field = "id"
+
+    def get_queryset(self):
+        return Stage.objects.filter(gateway=self.request.gateway)
+
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: serializers.StageV1SLZ(many=True)},
         tags=["OpenAPI.Stage"],
     )
-    def list_by_gateway_name(self, request, gateway_name: str, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
+    def list(self, request, gateway_name: str, *args, **kwargs):
+        if not request.gateway.is_active_and_public:
+            raise Http404
 
-    def get_permissions(self):
-        if self.action == "list_by_gateway_name":
-            permission_classes = [GatewayRelatedAppPermission]
-            return [permission() for permission in permission_classes]
+        queryset = self.get_queryset()
+        queryset = queryset.filter(
+            status=StageStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
 
-        return super().get_permissions()
+        slz = self.get_serializer(queryset, many=True)
+        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class StageV1ViewSet(viewsets.ViewSet):
-    permission_classes = [GatewayRelatedAppPermission]
+    permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: serializers.StageWithResourceVersionV1SLZ(many=True)},
@@ -93,7 +109,7 @@ class StageV1ViewSet(viewsets.ViewSet):
 
 
 class StageSyncViewSet(viewsets.ViewSet):
-    permission_classes = [GatewayRelatedAppPermission]
+    permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
     @swagger_auto_schema(request_body=StageSLZ, tags=["OpenAPI.Stage"])
     def sync(self, request, gateway_name: str, *args, **kwargs):

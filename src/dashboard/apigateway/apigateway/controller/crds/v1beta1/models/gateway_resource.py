@@ -62,6 +62,7 @@ class BkGatewayResourceSpec(GatewayCustomResourceSpec):
     timeout: Optional[TimeoutConfig] = Field(default=None, description="超时配置")
     uri: str = Field(default="/", description="请求路径")
     match_subpath: bool = Field(default=False, alias="matchSubPath", description="是否匹配子路径")
+    enable_websocket: bool = Field(default=False, alias="enableWebsocket", description="是否启用 WebSocket")
     # is_public: bool = Field(default=False, alias="isPublic", description="是否公开")
     # allow_apply_permission: bool = Field(default=False, alias="allowApplyPermission", description="是否允许申请权限")
     upstream: Optional[Upstream] = Field(default_factory=Upstream, description="上游配置")

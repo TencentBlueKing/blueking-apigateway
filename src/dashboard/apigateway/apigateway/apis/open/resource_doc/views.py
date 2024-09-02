@@ -22,13 +22,15 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apis.open.permissions import (
+    OpenAPIGatewayRelatedAppPermission,
+)
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.importer import DocImporter
 from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, OpenAPIParser
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import SchemaValidationError
-from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.utils.responses import V1OKJsonResponse
 
 from .serializers import (
@@ -38,7 +40,7 @@ from .serializers import (
 
 
 class DocImportByArchiveApi(generics.CreateAPIView):
-    permission_classes = [GatewayRelatedAppPermission]
+    permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
     @swagger_auto_schema(
         request_body=DocImportByArchiveV1InputSLZ,
@@ -68,7 +70,7 @@ class DocImportByArchiveApi(generics.CreateAPIView):
 
 
 class DocImportBySwaggerApi(generics.CreateAPIView):
-    permission_classes = [GatewayRelatedAppPermission]
+    permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
     @swagger_auto_schema(
         request_body=DocImportBySwaggerV1InputSLZ,
