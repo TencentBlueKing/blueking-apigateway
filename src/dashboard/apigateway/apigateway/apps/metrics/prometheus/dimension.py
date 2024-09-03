@@ -158,7 +158,6 @@ class AppRequestsMetrics(BaseMetrics):
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
             ]
         )
         return (
@@ -263,7 +262,7 @@ class IngressMetrics(BaseMetrics):
         labels = self._get_labels_expression(label_list)
         return (
             # 指标：bkmonitor:bk_apigateway_bandwidth
-            f"sum(increase({self.metric_name_prefix}bandwidth{{" f"{labels}" f"}}[{step}])) by (route)"
+            f"topk(10, sum(increase({self.metric_name_prefix}bandwidth{{" f"{labels}" f"}}[{step}])) by (route))"
         )
 
 
@@ -293,7 +292,7 @@ class EgressMetrics(BaseMetrics):
 
         return (
             # 指标：bkmonitor:bk_apigateway_bandwidth
-            f"sum(increase({self.metric_name_prefix}bandwidth{{" f"{labels}" f"}}[{step}])) by (route)"
+            f"topk(10, sum(increase({self.metric_name_prefix}bandwidth{{" f"{labels}" f"}}[{step}])) by (route))"
         )
 
 
@@ -320,7 +319,7 @@ class Failed500RequestsMetrics(BaseMetrics):
                 # ("proxy_error", "=", "1"),
             ]
         )
-        return f"sum({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}})"
+        return f"sum(irate({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}}))"
 
 
 class MetricsFactory:

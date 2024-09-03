@@ -355,8 +355,8 @@ class TestIngressMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'sum(increase(bk_apigateway_bandwidth{type="ingress", service="foo.prod.stage-1", '
-                    'route="foo.prod.2"}[1m])) by (route)'
+                    'topk(10, sum(increase(bk_apigateway_bandwidth{type="ingress", service="foo.prod.stage-1", '
+                    'route="foo.prod.2"}[1m])) by (route))'
                 ),
             },
             {
@@ -369,8 +369,8 @@ class TestIngressMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'sum(increase(bk_apigateway_bandwidth{type="ingress", service="foo.prod.stage-1"'
-                    "}[1m])) by (route)"
+                    'topk(10, sum(increase(bk_apigateway_bandwidth{type="ingress", service="foo.prod.stage-1"'
+                    "}[1m])) by (route))"
                 ),
             },
         ]
@@ -395,8 +395,8 @@ class TestEgressMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'sum(increase(bk_apigateway_bandwidth{type="egress", service="foo.prod.stage-1", '
-                    'route="foo.prod.2"}[1m])) by (route)'
+                    'topk(10, sum(increase(bk_apigateway_bandwidth{type="egress", service="foo.prod.stage-1", '
+                    'route="foo.prod.2"}[1m])) by (route))'
                 ),
             },
             {
@@ -409,8 +409,8 @@ class TestEgressMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'sum(increase(bk_apigateway_bandwidth{type="egress", service="foo.prod.stage-1"'
-                    "}[1m])) by (route)"
+                    'topk(10, sum(increase(bk_apigateway_bandwidth{type="egress", service="foo.prod.stage-1"'
+                    "}[1m])) by (route))"
                 ),
             },
         ]
