@@ -126,6 +126,12 @@ class Distributor:
     def distribute(self, output_dir: str, files: List[str]) -> DistributeResult:
         raise NotImplementedError
 
+    def enabled(self) -> bool:
+        """
+        判断是否配置对应仓库配置
+        """
+        raise NotImplementedError
+
 
 @dataclass
 class SDKManager:
@@ -182,10 +188,16 @@ class GolangSDK(SDK):
     language = ProgrammingLanguageEnum.GOLANG
 
 
+@dataclass
+class JavaSDK(SDK):
+    language = ProgrammingLanguageEnum.JAVA
+
+
 class SDKFactory:
     _mappings: Dict[str, Type[SDK]] = {
         PythonSDK.language.value: PythonSDK,
         GolangSDK.language.value: GolangSDK,
+        JavaSDK.language.value: JavaSDK,
     }
 
     @classmethod

@@ -65,6 +65,11 @@ urlpatterns = [
         name="openapi.permission.renew",
     ),
     path(
+        "apis/permissions/apply/",
+        views.AppPermissionApplyAPIView.as_view(),
+        name="openapi.permission.renew",
+    ),
+    path(
         "apis/permissions/app-permissions/",
         views.AppPermissionViewSet.as_view({"get": "list"}),
         name="openapi.permission.app-permissions",

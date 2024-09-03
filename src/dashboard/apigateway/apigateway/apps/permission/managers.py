@@ -45,9 +45,9 @@ class AppGatewayPermissionManager(models.Manager):
         )
 
     def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS):
-        expires = to_datetime_from_now(days=expires)
-        self.filter(gateway=gateway, id__in=ids, expires__lt=expires).update(
-            expires=expires,
+        expire_time = calculate_expires(expires)
+        self.filter(gateway=gateway, id__in=ids, expires__lt=expire_time).update(
+            expires=expire_time,
             updated_time=now_datetime(),
         )
 
@@ -57,9 +57,9 @@ class AppResourcePermissionManager(models.Manager):
         return self.filter(bk_app_code=bk_app_code, gateway__is_public=True)
 
     def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS, grant_type=GrantTypeEnum.RENEW.value):
-        expires = to_datetime_from_now(days=expires)
-        self.filter(gateway=gateway, id__in=ids, expires__lt=expires).update(
-            expires=expires,
+        expire_time = calculate_expires(expires)
+        self.filter(gateway=gateway, id__in=ids, expires__lt=expire_time).update(
+            expires=expire_time,
             grant_type=grant_type,
         )
 
