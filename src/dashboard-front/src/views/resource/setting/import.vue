@@ -264,6 +264,7 @@
                   action="add"
                   :table-data="tableDataToAdd"
                   :show-doc="showDoc"
+                  :keyword="filterInputAddClone"
                   v-model:tempAuthConfig="tempAuthConfig"
                   v-model:tempPublicConfig="tempPublicConfig"
                   @show-row-doc="handleShowResourceDoc"
@@ -272,6 +273,7 @@
                   @toggle-row-unchecked="toggleRowUnchecked"
                   @confirm-auth-config="handleConfirmAuthConfigPopConfirm"
                   @confirm-pub-config="handleConfirmPublicConfigPopConfirm"
+                  @clear-filter="clearFilterInput"
                 ></TableResToAction>
               </div>
             </template>
@@ -317,6 +319,7 @@
                 <TableResToAction
                   action="update"
                   :table-data="tableDataToUpdate"
+                  :keyword="filterInputUpdateClone"
                   v-model:tempAuthConfig="tempAuthConfig"
                   v-model:tempPublicConfig="tempPublicConfig"
                   @show-row-doc="handleShowResourceDoc"
@@ -325,6 +328,7 @@
                   @toggle-row-unchecked="toggleRowUnchecked"
                   @confirm-auth-config="handleConfirmAuthConfigPopConfirm"
                   @confirm-pub-config="handleConfirmPublicConfigPopConfirm"
+                  @clear-filter="clearFilterInput"
                 ></TableResToAction>
               </div>
             </template>
@@ -1216,6 +1220,7 @@ const filterInputAdd = ref('');
 const filterInputAddClone = ref('');
 const filterInputUpdate = ref('');
 const filterInputUpdateClone = ref('');
+
 const filterData = (action: ActionType) => {
   if (action === 'add') {
     filterInputAdd.value = filterInputAddClone.value;
@@ -1223,6 +1228,18 @@ const filterData = (action: ActionType) => {
 
   if (action === 'update') {
     filterInputUpdate.value = filterInputUpdateClone.value;
+  }
+};
+
+const clearFilterInput = (action: ActionType) => {
+  if (action === 'add') {
+    filterInputAdd.value = '';
+    filterInputAddClone.value = '';
+  }
+
+  if (action === 'update') {
+    filterInputUpdate.value = '';
+    filterInputUpdateClone.value = '';
   }
 };
 
