@@ -422,8 +422,8 @@ const renderChart = (data: Record<string, any>) => {
       },
     },
     toolbox: {
-      right: 12,
-      top: -8,
+      right: 22,
+      top: -10,
       feature: {
         dataZoom: {
           show: true,
