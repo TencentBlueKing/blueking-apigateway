@@ -14,6 +14,7 @@
             type="search"
             :placeholder="t('请输入资源名称')"
             @blur="getList()"
+            @enter="getList()"
           />
 
           <bk-date-picker
