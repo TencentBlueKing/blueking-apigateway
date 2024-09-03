@@ -134,6 +134,7 @@ const initEditor = () => {
       enabled: props.minimap, // 小地图
     },
     wordWrap: 'on', // 启用 soft-wraps
+    contextmenu: false, // 禁用右键菜单
   });
 
   editorMounted(); // 编辑器初始化后
@@ -148,6 +149,17 @@ const initEditor = () => {
       'editor.background': '#1A1A1A',
     },
   });
+
+  // 全屏监听
+  const domNode = editor.getDomNode();
+  const container = (domNode.parentNode).parentNode;
+  if (container) {
+    container.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) {
+        isFullScreen.value = false;
+      }
+    });
+  }
 };
 
 const editorMounted = () => {
