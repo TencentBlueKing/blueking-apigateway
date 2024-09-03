@@ -301,6 +301,29 @@
           </bk-popover>
         </div>
       </bk-form-item>
+      <!--  是否启用 websocket  -->
+      <bk-form-item class="form-item-cls">
+        <template #label>
+          <span class="label-cls">{{ t('启用 WebSocket：') }}</span>
+        </template>
+
+        <div v-if="!frontWsEdit" class="value-container">
+          <span>{{ formData?.enable_websocket ? t('是') : t('否') }}</span>
+          <span class="operate-btn">
+            <i @click="frontWsEdit = true" class="apigateway-icon icon-ag-edit-line"></i>
+          </span>
+        </div>
+
+        <div class="edit-name mt8" v-else>
+          <bk-switcher
+            v-model="formData.enable_websocket"
+            theme="primary"
+            size="small"
+            @change="handleEditSave"
+            class="method">
+          </bk-switcher>
+        </div>
+      </bk-form-item>
     </bk-form>
 
     <div class="title">{{ t('后端配置') }}</div>
@@ -579,6 +602,7 @@ const permEdit = ref<boolean>(false);
 const publicEdit = ref<boolean>(false);
 const frontMethodEdit = ref<boolean>(false);
 const frontPathEdit = ref<boolean>(false);
+const frontWsEdit = ref(false); // 是否启用websocket的编辑态
 const backMethodEdit = ref<boolean>(false);
 const backServicesEdit = ref<boolean>(false);
 const backPathEdit = ref<boolean>(false);
@@ -855,6 +879,7 @@ const handleEditSave = async () => {
     publicEdit.value = false;
     frontMethodEdit.value = false;
     frontPathEdit.value = false;
+    frontWsEdit.value = false;
     backMethodEdit.value = false;
     backServicesEdit.value = false;
     backPathEdit.value = false;
