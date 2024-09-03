@@ -1,3 +1,5 @@
+<!-- eslint-disable max-len -->
+
 <template>
   <div v-if="!isImportResultVisible" class="import-wrapper">
     <header class="steps-indicator-wrap">
@@ -120,14 +122,14 @@
                       <i class="apigateway-icon icon-ag-exclamation-circle-fill icon mb0 f12" style="color:#EA3636"></i>
                       <span class="num" style="color:#EA3636">{{ msgAsErrorNum }}</span>
                     </div>
-<!--                    <div-->
-<!--                      class="error-count-item" :class="{ 'active': activeCodeMsgType === 'All' }"-->
-<!--                      v-bk-tooltips="{ content: `All: ${errorReasons.length}`, placement: 'left' }"-->
-<!--                      @click="handleErrorCountClick('All')"-->
-<!--                    >-->
-<!--                      <span class="icon">all</span>-->
-<!--                      <span class="num">{{ msgAsErrorNum + msgAsWarningNum }}</span>-->
-<!--                    </div>-->
+                    <!--                    <div-->
+                    <!--                      class="error-count-item" :class="{ 'active': activeCodeMsgType === 'All' }"-->
+                    <!--                      v-bk-tooltips="{ content: `All: ${errorReasons.length}`, placement: 'left' }"-->
+                    <!--                      @click="handleErrorCountClick('All')"-->
+                    <!--                    >-->
+                    <!--                      <span class="icon">all</span>-->
+                    <!--                      <span class="num">{{ msgAsErrorNum + msgAsWarningNum }}</span>-->
+                    <!--                    </div>-->
                   </main>
                   <footer class="editor-error-shifts">
                     <div class="shift-btn prev" @click="setEditorCursor('top')">
@@ -144,10 +146,10 @@
                 <article v-if="isValidBannerVisible" class="validation-message">
                   <success class="success-c" width="14px" height="14px" />
                   <span class="msg-part msg-body">{{ t('校验通过') }}</span>
-<!--                  <close-line-->
-<!--                    width="14px" height="14px" fill="#DCDEE5" style="margin-left: auto; cursor: pointer;"-->
-<!--                    @click="() => { isValidBannerVisible = false }"-->
-<!--                  ></close-line>-->
+                  <!--                  <close-line-->
+                  <!--                    width="14px" height="14px" fill="#DCDEE5" style="margin-left: auto; cursor: pointer;"-->
+                  <!--                    @click="() => { isValidBannerVisible = false }"-->
+                  <!--                  ></close-line>-->
                 </article>
                 <article v-else class="editor-footer-validate-btn">
                   <bk-button
@@ -171,7 +173,7 @@
                 v-for="(reason, index) in visibleErrorReasons"
                 :key="index"
                 class="editor-message"
-                :class="{'active': activeVisibleErrorMsgIndex === index }"
+                :class="{ 'active': activeVisibleErrorMsgIndex === index }"
                 @click="handleErrorMsgClick(reason, index)"
               >
                 <span class="msg-part msg-icon">
@@ -200,8 +202,8 @@
           >{{ tableDataToAdd.length }}</span>{{ t('个，更新') }}<span
             class="ag-strong warning pl5 pr5"
           >{{ tableDataToUpdate.length }}</span>{{ t('个，取消导入') }}<span class="ag-strong danger pl5 pr5">{{
-              tableDataUnchecked.length
-            }}</span>{{ t('个') }}</span>
+            tableDataUnchecked.length
+          }}</span>{{ t('个') }}</span>
         </main>
         <aside>
           <bk-button
@@ -369,7 +371,7 @@
           {{ curView === 'import' ? t('下一步') : t('上一步') }}
         </bk-button>
         <span
-          v-bk-tooltips="{ content: t('请确认导入的资源'), disabled: (tableDataToAdd.length < 1) && (tableDataToUpdate.length < 1)}"
+          v-bk-tooltips="{ content: t('请确认导入的资源'), disabled: (tableDataToAdd.length < 1) && (tableDataToUpdate.length < 1) }"
           v-if="curView === 'resources'"
         >
           <bk-button
@@ -390,7 +392,7 @@
     <!--  编辑资源侧栏  -->
     <EditImportResourceSideSlider
       :resource="editingResource"
-      :isSliderShow="isSliderShow"
+      :is-slider-show="isSliderShow"
       @on-hidden="handleEditSliderHidden"
       @submit="handleEditSubmit"
     ></EditImportResourceSideSlider>
@@ -488,8 +490,8 @@
         <span class="download-btn" @click="isDownloadDialogShow = true"><i
           class="apigateway-icon icon-ag-download btn-icon"
         />{{
-            t('下载资源文件')
-          }}</span>
+          t('下载资源文件')
+        }}</span>
         <span>{{ t('（包含所有资源）') }}</span>
       </footer>
       <section class="actions">
@@ -546,7 +548,7 @@ import {
   watch,
   onMounted,
 } from 'vue';
-import { InfoBox, Message } from 'bkui-vue';
+import { InfoBox, Message, ResizeLayout } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 
 // 此组件使用 TSX，通过 import { useRouter } from 'vue-router' 引入的路由api无法正常工作
@@ -578,9 +580,8 @@ import _ from 'lodash';
 
 import type { IPosition } from 'monaco-editor';
 import type { ErrorReasonType, CodeErrorMsgType } from '@/types/common';
-import { ResizeLayout } from 'bkui-vue';
-import EditImportResourceSideSlider from "@/views/resource/setting/comps/edit-import-resource-side-slider.vue";
-import DownloadDialog from "@/views/resource/setting/comps/download-dialog.vue";
+import EditImportResourceSideSlider from '@/views/resource/setting/comps/edit-import-resource-side-slider.vue';
+import DownloadDialog from '@/views/resource/setting/comps/download-dialog.vue';
 import PluginPreviewSideSlider from '@/views/resource/setting/comps/plugin-preview-side-slider.vue';
 import ResourceDocSideSlider from '@/views/components/resource-doc-slider/index.vue';
 import {
@@ -590,6 +591,7 @@ import {
 } from '@/views/resource/setting/types';
 import TableResToAction from '@/views/resource/setting/comps/table-res-to-action.vue';
 import TableResToUncheck from '@/views/resource/setting/comps/table-res-to-uncheck.vue';
+// @ts-ignore
 import { useParentElement } from '@vueuse/core';
 
 type CodeErrorResponse = {
@@ -670,19 +672,19 @@ const isDownloadDialogShow = ref(false);
 
 // 展示在“新增的资源”一栏的资源
 const tableDataToAdd = computed(() => {
-  return tableData.value.filter(data => {
-    return !data.id &&
-      !data._unchecked
-      && (data.name.includes(filterInputAdd.value) || data.path.includes(filterInputAdd.value))
+  return tableData.value.filter((data) => {
+    return !data.id
+      && !data._unchecked
+      && (data.name.includes(filterInputAdd.value) || data.path.includes(filterInputAdd.value));
   });
 });
 
 // 展示在“更新的资源”一栏的资源
 const tableDataToUpdate = computed(() => {
-  return tableData.value.filter(data => {
-    return data.id &&
-      !data._unchecked
-      && (data.name.includes(filterInputUpdate.value) || data.path.includes(filterInputUpdate.value))
+  return tableData.value.filter((data) => {
+    return data.id
+      && !data._unchecked
+      && (data.name.includes(filterInputUpdate.value) || data.path.includes(filterInputUpdate.value));
   });
 });
 
@@ -773,8 +775,7 @@ onBeforeRouteLeave((to, from, next) => {
         return false;
       },
     });
-  }
-  else next();
+  } else next();
 });
 
 // 设置editor的内容
@@ -808,7 +809,7 @@ const handleReq = (res: any) => {
 
 // 下一步需要检查数据
 const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
-  let _changeView = changeView ?? true;
+  const _changeView = changeView ?? true;
   // 上一步按钮功能
   if (curView.value === 'resources') {
     curView.value = 'import';
@@ -876,9 +877,7 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
             const httpMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'];
             // 把 json_path 中的大写 method 规范化为小写的
             if (paths.some(item => httpMethods.includes(item))) {
-              paths = paths.map(item =>
-                httpMethods.includes(item) ? item.toLowerCase() : item
-              );
+              paths = paths.map(item => (httpMethods.includes(item) ? item.toLowerCase() : item));
               pathValue = JSONPath(`$.${paths.join('.')}`, editorJsonObj, null, null)[0] ?? null;
             }
           }
@@ -919,13 +918,12 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
             isDecorated: false,
             level: 'Error',
           };
-        } else {
-          return {
-            json_path: err.json_path,
-            message: err.message ?? t('未知错误'),
-            level: 'Error',
-          };
         }
+        return {
+          json_path: err.json_path,
+          message: err.message ?? t('未知错误'),
+          level: 'Error',
+        };
       });
     } else {
       // 其他错误会走到这里，包括格式错误等等
@@ -953,7 +951,7 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
 
 // 唤出确认导入Dialog
 const showImportConfirmDialog = () => {
-  isImportConfirmDialogVisible.value = true
+  isImportConfirmDialogVisible.value = true;
 };
 
 // 确认导入
@@ -962,7 +960,7 @@ const handleImportResource = async () => {
   try {
     isImportLoading.value = true;
     isImportResultVisible.value = true;
-    const import_resources = tableData.value.filter((e) => e._unchecked === false)
+    const import_resources = tableData.value.filter(e => e._unchecked === false)
       .map((e) => {
         const {
           _unchecked,
@@ -1009,7 +1007,7 @@ const handleEditSliderHidden = () => {
 
 // 确认修改配置后
 const handleEditSubmit = (newResource: ILocalImportedResource) => {
-  let pos = tableData.value.findIndex(data => data._localId === newResource._localId);
+  const pos = tableData.value.findIndex(data => data._localId === newResource._localId);
   if (pos > -1) tableData.value[pos] = { ...tableData.value[pos], ...newResource };
   // console.log('newResource:');
   // console.log(newResource);
@@ -1064,23 +1062,23 @@ const activeVisibleErrorMsgIndex = ref(-1);
 const setEditorCursor = (pos: 'top' | 'bottom') => {
   pos === 'top'
     ? resourceEditorRef.value.setCursorPos({ lineNumber: 1 })
-    : resourceEditorRef.value.setCursorPos({ toBottom: true })
+    : resourceEditorRef.value.setCursorPos({ toBottom: true });
 };
 
 // 从把 jsonpath 指向的对象转换成正则
 const getRegexFromObj = ({ objKey, objValue }: { objKey: string, objValue: any }): RegExp => {
-  const exp = `[\\b/\$'"]*?${removeStarting$(objKey)}[\\b\\s/\$'"]*?:${getRegexString(objValue)}`;
+  const exp = `[\\b/$'"]*?${removeStarting$(objKey)}[\\b\\s/$'"]*?:${getRegexString(objValue)}`;
   return new RegExp(exp, 'gm');
 };
 
 // 递归地把变量转换成可以生成正则表达式的字符串
 const getRegexString = (value: any): string => {
-  let expStr = `[-"\\s\\n\\r]*?`;
+  let expStr = '[-"\\s\\n\\r]*?';
 
   if (_.isObject(value)) {
     if (Array.isArray(value)) {
       if (value.length < 1) {
-        expStr += `['"\\s\\n\\r]*?\\[\\]['"\\s\\n\\r]*?`;
+        expStr += '[\'"\\s\\n\\r]*?\\[\\][\'"\\s\\n\\r]*?';
       } else {
         value.forEach((el) => {
           if (_.isObject(el)) {
@@ -1088,15 +1086,15 @@ const getRegexString = (value: any): string => {
           } else {
             expStr += `['"\\s\\n\\r]*?${escapeAsteroid(el)}['"\\s\\n\\r]*?`;
           }
-        })
+        });
       }
     } else {
       if (Object.keys(value).length < 1) {
-        expStr += `['"\\s\\n\\r]*?{}['"\\s\\n\\r]*?`;
+        expStr += '[\'"\\s\\n\\r]*?{}[\'"\\s\\n\\r]*?';
       } else {
         Object.entries(value)
           .forEach(([key, val]) => {
-            expStr += `[\\b/\$'"]*?${removeStarting$(key)}[\\b\\s/\$'"]*?:`;
+            expStr += `[\\b/$'"]*?${removeStarting$(key)}[\\b\\s/$'"]*?:`;
             if (_.isObject(val)) {
               expStr += getRegexString(val);
             } else {
@@ -1106,7 +1104,7 @@ const getRegexString = (value: any): string => {
       }
     }
   } else {
-    expStr += `${value === null ? '' : escapeAsteroid(value)}['"\\s\\n\\r]*?`
+    expStr += `${value === null ? '' : escapeAsteroid(value)}['"\\s\\n\\r]*?`;
   }
 
   return expStr;
@@ -1186,11 +1184,11 @@ const tempAuthConfig = ref({
 const handleConfirmAuthConfigPopConfirm = (action: ActionType) => {
   if (tempAuthConfig.value.app_verified_required === false) tempAuthConfig.value.resource_perm_required = false;
   tableData.value.filter(item => !item._unchecked)
-    .forEach(data => {
+    .forEach((data) => {
       if ((action === 'add' && !data.id) || (action === 'update' && data.id)) {
         data.auth_config = {
           ...tempAuthConfig.value,
-        }
+        };
       }
     });
 };
@@ -1206,7 +1204,7 @@ const handleConfirmPublicConfigPopConfirm = (action: ActionType) => {
   const allowApplyPermission = tempPublicConfig.value.allow_apply_permission && isPublic;
 
   tableData.value.filter(item => !item._unchecked)
-    .forEach(item => {
+    .forEach((item) => {
       if ((action === 'add' && !item.id) || (action === 'update' && item.id)) {
         item.is_public = isPublic;
         item.allow_apply_permission = allowApplyPermission;
@@ -1214,10 +1212,10 @@ const handleConfirmPublicConfigPopConfirm = (action: ActionType) => {
     });
 };
 
-const filterInputAdd = ref('')
-const filterInputAddClone = ref('')
-const filterInputUpdate = ref('')
-const filterInputUpdateClone = ref('')
+const filterInputAdd = ref('');
+const filterInputAddClone = ref('');
+const filterInputUpdate = ref('');
+const filterInputUpdateClone = ref('');
 const filterData = (action: ActionType) => {
   if (action === 'add') {
     filterInputAdd.value = filterInputAddClone.value;
@@ -1226,7 +1224,7 @@ const filterData = (action: ActionType) => {
   if (action === 'update') {
     filterInputUpdate.value = filterInputUpdateClone.value;
   }
-}
+};
 
 const editorWrapRef = ref<HTMLElement | null>(null);
 // 编辑器全屏
@@ -1237,7 +1235,7 @@ const handleFullScreenClick = () => {
 };
 
 // 记录编辑器错误消息栏折叠状态
-let isEditorMsgCollapsed: boolean = false;
+let isEditorMsgCollapsed = false;
 const updateIsEditorMsgCollapsed = (collapsed: boolean) => {
   isEditorMsgCollapsed = collapsed;
 };
@@ -1246,7 +1244,7 @@ const handleReturnClick = () => {
   isImportSucceeded.value = false;
   isImportResultVisible.value = false;
   isImportLoading.value = false;
-}
+};
 </script>
 <style scoped lang="scss">
 
