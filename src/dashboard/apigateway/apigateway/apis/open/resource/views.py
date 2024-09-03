@@ -66,7 +66,11 @@ class ResourceSyncApi(generics.CreateAPIView):
         if len(validate_err_list) != 0:
             error_dicts = [error.to_dict() for error in validate_err_list]
             raise serializers.ValidationError(
-                {"content": _("validate err {err}。").format(err=json.dumps(error_dicts, indent=4))}
+                {
+                    "content": _("validate err {err}。").format(
+                        err=json.dumps(error_dicts, ensure_ascii=False, indent=4)
+                    )
+                }
             )
 
         importer = ResourcesImporter.from_resources(
