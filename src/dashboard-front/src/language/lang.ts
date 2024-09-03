@@ -1589,6 +1589,8 @@ const lang: ILANG = {
   '文件名需要跟资源名称完全一致才能导入，请检查文件名': ['Filename must matches resource name'],
   '已匹配到资源': ['Resource matched'],
   '未匹配到资源': ['Resource not matched'],
+  '启用 WebSocket': ['Enable WebSocket'],
+  '启用 WebSocket：': ['Enable WebSocket: '],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

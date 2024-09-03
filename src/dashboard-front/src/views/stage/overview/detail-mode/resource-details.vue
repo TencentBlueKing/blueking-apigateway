@@ -140,6 +140,15 @@
                 <div class="ag-value">{{ currentSource.path }}</div>
               </bk-col>
             </bk-row>
+
+            <bk-row>
+              <bk-col :span="4">
+                <label class="ag-key">{{ $t("启用 Websocket") }}:</label>
+              </bk-col>
+              <bk-col :span="10">
+                <div class="ag-value">{{ currentSource.enable_websocket ? t('是') : t('否') }}</div>
+              </bk-col>
+            </bk-row>
           </bk-container>
 
           <p
