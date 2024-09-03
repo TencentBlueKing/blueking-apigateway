@@ -153,7 +153,7 @@ class TestAppRequestsMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_app_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"}[1m])) by (api_name, app_code))'
+                    'stage_name="prod"}[1m])) by (api_name, app_code))'
                 ),
             },
             {

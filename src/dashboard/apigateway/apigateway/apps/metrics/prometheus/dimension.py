@@ -319,7 +319,7 @@ class Failed500RequestsMetrics(BaseMetrics):
                 # ("proxy_error", "=", "1"),
             ]
         )
-        return f"sum(irate({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}}))"
+        return f"sum({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}})"
 
 
 class MetricsFactory:
