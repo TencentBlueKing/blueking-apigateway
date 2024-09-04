@@ -130,6 +130,7 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
     method: Text
     path: Text
     match_subpath: bool = False
+    enable_websocket: bool = False
     is_public: bool = True
     allow_apply_permission: bool = True
     proxy: Union[ResourceHTTPProxy, ResourceMockProxy]
