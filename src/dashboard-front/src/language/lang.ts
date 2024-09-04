@@ -138,6 +138,10 @@ const lang: ILANG = {
   '个资源': ['resources'],
   '批量编辑资源': ['Batch Edit Resource'],
   '确定要删除实例': ['Confirm to delete the instance'],
+  '批量编辑资源（共{count}个）': ['Batch edit resources (total {count})'],
+  '确定要删除以下{count}个资源': ['Be sure to delete the following {count} resources'],
+  '删除资源后，需要生成新的版本，并发布到目标环境才能生效': ['After a resource is deleted, a new version must be generated and released to the target environment to take effect'],
+  '是否修改标签': ['Whether to modify labels'],
   '请输入资源名称或请求路径，回车结束': ['Please input resource name or path, press Enter to search'],
   '全部差异类型': ['All Diff Types'],
   '仅显示有差异的资源属性': ['Only show differences'],
@@ -1585,6 +1589,8 @@ const lang: ILANG = {
   '文件名需要跟资源名称完全一致才能导入，请检查文件名': ['Filename must matches resource name'],
   '已匹配到资源': ['Resource matched'],
   '未匹配到资源': ['Resource not matched'],
+  '启用 WebSocket': ['Enable WebSocket'],
+  '启用 WebSocket：': ['Enable WebSocket: '],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

@@ -28,7 +28,6 @@ class TestMetricsQuerySLZ(TestCase):
                 "data": {
                     "stage_id": 1,
                     "resource_id": 1,
-                    "dimension": "all",
                     "metrics": "requests",
                     "time_start": 1,
                     "time_end": 2,
@@ -37,7 +36,6 @@ class TestMetricsQuerySLZ(TestCase):
                 "expected": {
                     "stage_id": 1,
                     "resource_id": 1,
-                    "dimension": "all",
                     "metrics": "requests",
                     "time_start": 1,
                     "time_end": 2,

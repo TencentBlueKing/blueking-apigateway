@@ -32,11 +32,7 @@ from apigateway.utils.time import now_datetime
 pytestmark = pytest.mark.django_db
 
 
-class TestAppResourcePermissionViewSet:
-    @pytest.fixture(autouse=True)
-    def setup_fixtures(self, mocker):
-        mocker.patch("apigateway.apis.web.permission.serializers.BKAppCodeValidator.__call__")
-
+class TestAppPermissionViewSet:
     def test_list(self, fake_resource, request_view):
         fake_gateway = fake_resource.gateway
 
@@ -55,6 +51,12 @@ class TestAppResourcePermissionViewSet:
             grant_type="apply",
         )
 
+        G(
+            models.AppGatewayPermission,
+            gateway=fake_gateway,
+            bk_app_code="test",
+        )
+
         data = [
             {
                 "params": {
@@ -71,7 +73,7 @@ class TestAppResourcePermissionViewSet:
         for test in data:
             response = request_view(
                 "GET",
-                "permissions.app-resource-permissions",
+                "permissions.app-permissions.list",
                 path_params={"gateway_id": fake_gateway.id},
                 gateway=fake_gateway,
                 data=test["params"],
@@ -81,6 +83,8 @@ class TestAppResourcePermissionViewSet:
             assert response.status_code == 200, result
             assert result["data"]["count"] == test["expected"]["count"]
 
+
+class TestAppResourcePermissionViewSet:
     def test_create(self, mocker, request_view, fake_resource):
         mocker.patch("apigateway.apps.permission.models.generate_expire_time", return_value=dummy_time.time)
         fake_gateway = fake_resource.gateway
@@ -126,40 +130,6 @@ class TestAppGatewayPermissionViewSet:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self, mocker):
         mocker.patch("apigateway.apis.web.permission.serializers.BKAppCodeValidator.__call__")
-
-    def test_list(self, fake_resource, request_view):
-        fake_gateway = fake_resource.gateway
-
-        G(
-            models.AppGatewayPermission,
-            gateway=fake_gateway,
-            bk_app_code="test",
-        )
-
-        data = [
-            {
-                "params": {
-                    "bk_app_code": "test",
-                    "grant_type": "initialize",
-                },
-                "expected": {
-                    "count": 1,
-                },
-            }
-        ]
-
-        for test in data:
-            response = request_view(
-                "GET",
-                "permissions.app-gateway-permissions",
-                path_params={"gateway_id": fake_gateway.id},
-                gateway=fake_gateway,
-                data=test["params"],
-            )
-
-            result = response.json()
-            assert response.status_code == 200, result
-            assert result["data"]["count"] == test["expected"]["count"]
 
     def test_create(self, mocker, request_view, fake_resource):
         mocker.patch("apigateway.apps.permission.models.generate_expire_time", return_value=dummy_time.time)
@@ -223,6 +193,7 @@ class TestAppResourcePermissionBatchViewSet(TestCase):
             {
                 "params": {
                     "ids": [perm_2.id],
+                    "expire_days": 180,
                 },
             },
         ]
@@ -300,7 +271,10 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
 
         data = [
             {
-                "params": {"ids": [perm_1.id]},
+                "params": {
+                    "ids": [perm_1.id],
+                    "expire_days": 180,
+                },
             },
         ]
 
@@ -336,6 +310,7 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
         data = [
             {
                 "ids": [perm_1.id],
+                "expire_days": 180,
             },
         ]
 
