@@ -19,7 +19,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, ClassVar, Dict, List, Optional, Type
 
-from apigateway.apps.support.api_sdk.exceptions import DistributeError, ResourcesIsEmpty
+from apigateway.apps.support.api_sdk.exceptions import DistributeError, ResourcesIsEmpty, SDKRepoConfigError
 from apigateway.apps.support.api_sdk.models import (
     DistributeResult,
     Distributor,
@@ -123,6 +123,9 @@ class BaseSDKManager(SDKManager):
         distributor = self.get_distributor(context)
         if not distributor:
             return
+
+        if not distributor.enabled():
+            raise SDKRepoConfigError("sdk repo configuration is not set")
 
         distribute_result = None
         try:

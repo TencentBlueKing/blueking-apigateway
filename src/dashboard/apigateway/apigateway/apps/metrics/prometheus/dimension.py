@@ -21,32 +21,41 @@ from typing import ClassVar, Dict, Optional, Type
 
 from django.conf import settings
 
-from apigateway.apps.metrics.constants import DimensionEnum, MetricsEnum
+from apigateway.apps.metrics.constants import MetricsEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.prometheus import prometheus_component
 
 from .base import BasePrometheusMetrics
 
 
-class BaseDimensionMetrics(BasePrometheusMetrics):
-    dimension: ClassVar[DimensionEnum]
+class BaseMetrics(BasePrometheusMetrics):
     metrics: ClassVar[MetricsEnum]
 
     @abstractmethod
-    def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
         pass
 
     def query_range(
         self,
         gateway_name: str,
         stage_name: str,
-        resource_name: Optional[str],
         start: int,
         end: int,
         step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
     ):
         # generate query expression
-        promql = self._get_query_promql(gateway_name, stage_name, resource_name, step)
+        promql = self._get_query_promql(gateway_name, stage_name, step, stage_id, resource_id, resource_name)
 
         # request prometheus http api to get metrics data
         return prometheus_component.query_range(
@@ -58,11 +67,18 @@ class BaseDimensionMetrics(BasePrometheusMetrics):
         )
 
 
-class RequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.ALL
+class RequestsMetrics(BaseMetrics):
     metrics = MetricsEnum.REQUESTS
 
-    def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
         labels = self._get_labels_expression(
             [
                 *self.default_labels,
@@ -74,28 +90,122 @@ class RequestsMetrics(BaseDimensionMetrics):
         return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
 
 
-class FailedRequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.ALL
-    metrics = MetricsEnum.FAILED_REQUESTS
+class RequestsTotalMetrics(BaseMetrics):
+    metrics = MetricsEnum.REQUESTS_TOTAL
 
-    def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
         labels = self._get_labels_expression(
             [
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
                 ("resource_name", "=", resource_name),
-                ("status", "=~", "5.."),
-                # ("proxy_error", "=", "1"),
             ]
         )
-        return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
+        return f"sum({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}})"
 
 
-class BaseResponseTimePercentileMetrics(BaseDimensionMetrics):
+class Non200StatusMetrics(BaseMetrics):
+    metrics = MetricsEnum.NON_200_STATUS
+
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
+        labels = self._get_labels_expression(
+            [
+                *self.default_labels,
+                ("api_name", "=", gateway_name),
+                ("stage_name", "=", stage_name),
+                ("resource_name", "=", resource_name),
+                ("status", "!=", "200"),
+            ]
+        )
+        return (
+            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{"
+            f"{labels}"
+            f"}}[{step}])) by (status))"
+        )
+
+
+class AppRequestsMetrics(BaseMetrics):
+    metrics = MetricsEnum.APP_REQUESTS
+
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
+        labels = self._get_labels_expression(
+            [
+                *self.default_labels,
+                ("api_name", "=", gateway_name),
+                ("stage_name", "=", stage_name),
+            ]
+        )
+        return (
+            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_app_requests_total{{"
+            f"{labels}"
+            f"}}[{step}])) by (api_name, app_code))"
+        )
+
+
+class ResourceRequestsMetrics(BaseMetrics):
+    metrics = MetricsEnum.RESOURCE_REQUESTS
+
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
+        labels = self._get_labels_expression(
+            [
+                *self.default_labels,
+                ("api_name", "=", gateway_name),
+                ("stage_name", "=", stage_name),
+                ("resource_name", "=", resource_name),
+            ]
+        )
+        return (
+            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{"
+            f"{labels}"
+            f"}}[{step}])) by (resource_name, matched_uri))"
+        )
+
+
+class BaseResponseTimePercentileMetrics(BaseMetrics):
     quantile = 1.0
 
-    def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
         labels = self._get_labels_expression(
             [
                 *self.default_labels,
@@ -112,55 +222,93 @@ class BaseResponseTimePercentileMetrics(BaseDimensionMetrics):
         )
 
 
-class ResponseTime95thMetrics(BaseResponseTimePercentileMetrics):
-    dimension = DimensionEnum.ALL
-    metrics = MetricsEnum.RESPONSE_TIME_95TH
-    quantile = 0.95
-
-
-class ResponseTime90thMetrics(BaseResponseTimePercentileMetrics):
-    dimension = DimensionEnum.ALL
-    metrics = MetricsEnum.RESPONSE_TIME_90TH
-    quantile = 0.90
-
-
-class ResponseTime80thMetrics(BaseResponseTimePercentileMetrics):
-    dimension = DimensionEnum.ALL
-    metrics = MetricsEnum.RESPONSE_TIME_80TH
-    quantile = 0.80
-
-
 class ResponseTime50thMetrics(BaseResponseTimePercentileMetrics):
-    dimension = DimensionEnum.ALL
     metrics = MetricsEnum.RESPONSE_TIME_50TH
     quantile = 0.50
 
 
-class ResourceRequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.RESOURCE
-    metrics = MetricsEnum.REQUESTS
+class ResponseTime80thMetrics(BaseResponseTimePercentileMetrics):
+    metrics = MetricsEnum.RESPONSE_TIME_80TH
+    quantile = 0.80
 
-    def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
-        labels = self._get_labels_expression(
-            [
-                *self.default_labels,
-                ("api_name", "=", gateway_name),
-                ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
-            ]
-        )
+
+class ResponseTime90thMetrics(BaseResponseTimePercentileMetrics):
+    metrics = MetricsEnum.RESPONSE_TIME_90TH
+    quantile = 0.90
+
+
+class IngressMetrics(BaseMetrics):
+    metrics = MetricsEnum.INGRESS
+
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
+        # 因为route的参数结果不能使用self._get_labels_expression方法去去除空参数
+        label_list = [
+            *self.default_labels,
+            ("type", "=", "ingress"),
+            # service 的参数规则： 网关名称.环境名称.stage-环境ID
+            ("service", "=", f"{gateway_name}.{stage_name}.stage-{stage_id}"),
+        ]
+        if resource_id:
+            # route 的参数规则： 网关名称.环境名称.资源ID
+            label_list.append(("route", "=", f"{gateway_name}.{stage_name}.{resource_id}"))
+        labels = self._get_labels_expression(label_list)
         return (
-            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{"
-            f"{labels}"
-            f"}}[{step}])) by (api_name, resource_name, matched_uri))"
+            # 指标：bkmonitor:bk_apigateway_bandwidth
+            f"topk(10, sum(increase({self.metric_name_prefix}bandwidth{{" f"{labels}" f"}}[{step}])) by (route))"
         )
 
 
-class ResourceFailedRequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.RESOURCE
-    metrics = MetricsEnum.FAILED_REQUESTS
+class EgressMetrics(BaseMetrics):
+    metrics = MetricsEnum.EGRESS
 
-    def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
+        # 因为route的参数结果不能使用self._get_labels_expression方法去去除空参数
+        label_list = [
+            *self.default_labels,
+            ("type", "=", "egress"),
+            # service 的参数规则： 网关名称.环境名称.stage-环境ID
+            ("service", "=", f"{gateway_name}.{stage_name}.stage-{stage_id}"),
+        ]
+        if resource_id:
+            # route 的参数规则： 网关名称.环境名称.资源ID
+            label_list.append(("route", "=", f"{gateway_name}.{stage_name}.{resource_id}"))
+        labels = self._get_labels_expression(label_list)
+
+        return (
+            # 指标：bkmonitor:bk_apigateway_bandwidth
+            f"topk(10, sum(increase({self.metric_name_prefix}bandwidth{{" f"{labels}" f"}}[{step}])) by (route))"
+        )
+
+
+# 500 状态码的请求为了提供计算健康率
+class Failed500RequestsMetrics(BaseMetrics):
+    metrics = MetricsEnum.FAILED_500_REQUESTS
+
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
         labels = self._get_labels_expression(
             [
                 *self.default_labels,
@@ -171,81 +319,35 @@ class ResourceFailedRequestsMetrics(BaseDimensionMetrics):
                 # ("proxy_error", "=", "1"),
             ]
         )
-        return (
-            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{"
-            f"{labels}"
-            f"}}[{step}])) by (api_name, resource_name, matched_uri))"
-        )
+        return f"sum({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}})"
 
 
-class AppRequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.APP
-    metrics = MetricsEnum.REQUESTS
-
-    def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
-        labels = self._get_labels_expression(
-            [
-                *self.default_labels,
-                ("api_name", "=", gateway_name),
-                ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
-            ]
-        )
-        return (
-            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_app_requests_total{{"
-            f"{labels}"
-            f"}}[{step}])) by (api_name, app_code))"
-        )
-
-
-class ResourceNon200StatusRequestsMetrics(BaseDimensionMetrics):
-    dimension = DimensionEnum.RESOURCE_NON200_STATUS
-    metrics = MetricsEnum.REQUESTS
-
-    def _get_query_promql(self, gateway_name: str, stage_name: str, resource_name: Optional[str], step: str) -> str:
-        labels = self._get_labels_expression(
-            [
-                *self.default_labels,
-                ("api_name", "=", gateway_name),
-                ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
-                ("status", "!=", "200"),
-            ]
-        )
-        return (
-            f"topk(10, sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{"
-            f"{labels}"
-            f"}}[{step}])) by (api_name, resource_name, matched_uri, status))"
-        )
-
-
-class DimensionMetricsFactory:
-    # map: dimension -> metrics -> dimension_metrics_class
-    _registry: Dict[DimensionEnum, Dict[MetricsEnum, Type[BaseDimensionMetrics]]] = {}
+class MetricsFactory:
+    # map: metrics -> metrics_class
+    _registry: Dict[MetricsEnum, Type[BaseMetrics]] = {}
 
     @classmethod
-    def create_dimension_metrics(cls, dimension: DimensionEnum, metrics: MetricsEnum) -> BaseDimensionMetrics:
-        _class = cls._registry.get(dimension, {}).get(metrics)
+    def create_metrics(cls, metrics: MetricsEnum) -> BaseMetrics:
+        _class = cls._registry.get(metrics)
         if not _class:
-            raise error_codes.INVALID_ARGUMENT.format(
-                f"unsupported dimension={dimension.value}, metrics={metrics.value}"
-            )
+            raise error_codes.INVALID_ARGUMENT.format(f"unsupported metrics={metrics.value}")
         return _class()
 
     @classmethod
-    def register(cls, dimension_metrics_class: Type[BaseDimensionMetrics]):
-        _class = dimension_metrics_class
-        cls._registry.setdefault(_class.dimension, {})
-        cls._registry[_class.dimension][_class.metrics] = dimension_metrics_class
+    def register(cls, metrics_class: Type[BaseMetrics]):
+        if not hasattr(metrics_class, "metrics") or not isinstance(metrics_class.metrics, MetricsEnum):
+            raise ValueError("metrics_class must have a 'metrics' ClassVar of type MetricsEnum")
+        cls._registry[metrics_class.metrics] = metrics_class
 
 
-DimensionMetricsFactory.register(RequestsMetrics)
-DimensionMetricsFactory.register(FailedRequestsMetrics)
-DimensionMetricsFactory.register(ResponseTime95thMetrics)
-DimensionMetricsFactory.register(ResponseTime90thMetrics)
-DimensionMetricsFactory.register(ResponseTime80thMetrics)
-DimensionMetricsFactory.register(ResponseTime50thMetrics)
-DimensionMetricsFactory.register(ResourceRequestsMetrics)
-DimensionMetricsFactory.register(ResourceFailedRequestsMetrics)
-DimensionMetricsFactory.register(AppRequestsMetrics)
-DimensionMetricsFactory.register(ResourceNon200StatusRequestsMetrics)
+MetricsFactory.register(RequestsMetrics)
+MetricsFactory.register(RequestsTotalMetrics)
+MetricsFactory.register(Non200StatusMetrics)
+MetricsFactory.register(AppRequestsMetrics)
+MetricsFactory.register(ResourceRequestsMetrics)
+MetricsFactory.register(ResponseTime50thMetrics)
+MetricsFactory.register(ResponseTime80thMetrics)
+MetricsFactory.register(ResponseTime90thMetrics)
+MetricsFactory.register(IngressMetrics)
+MetricsFactory.register(EgressMetrics)
+MetricsFactory.register(Failed500RequestsMetrics)

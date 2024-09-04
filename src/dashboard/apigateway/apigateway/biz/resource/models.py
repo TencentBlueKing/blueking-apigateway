@@ -48,6 +48,7 @@ class ResourceData(BaseModel):
     method: str = Field(...)
     path: str = Field(...)
     match_subpath: bool = Field(default=False)
+    enable_websocket: bool = Field(default=False)
     is_public: bool = Field(default=True)
     allow_apply_permission: bool = Field(default=True)
     # auth config
@@ -80,6 +81,7 @@ class ResourceData(BaseModel):
             "method",
             "path",
             "match_subpath",
+            "enable_websocket",
             "is_public",
             "allow_apply_permission",
         ]
@@ -95,6 +97,7 @@ class ResourceData(BaseModel):
             "method": self.method,
             "path": self.path,
             "match_subpath": self.match_subpath,
+            "enable_websocket": self.enable_websocket,
             "is_public": self.is_public,
             "allow_apply_permission": self.allow_apply_permission,
             "auth_config": self.auth_config.dict(),
@@ -110,6 +113,7 @@ class ResourceData(BaseModel):
             "method": self.method,
             "path": self.path,
             "match_subpath": self.match_subpath,
+            "enable_websocket": self.enable_websocket,
             "is_public": self.is_public,
             "allow_apply_permission": self.allow_apply_permission,
             "auth_config": self.auth_config.dict(),

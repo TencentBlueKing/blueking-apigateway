@@ -24,7 +24,7 @@ urlpatterns = [
     path("apis/<int:gateway_id>/stages/", views.StageViewSet.as_view({"get": "list"}), name="openapi.stage.list"),
     path(
         "apis/<slug:gateway_name>/stages/",
-        views.StageViewSet.as_view({"get": "list_by_gateway_name"}),
+        views.StageListViewSet.as_view({"get": "list"}),
         name="openapi.stage.list_by_gateway_name",
     ),
     path(

@@ -51,3 +51,13 @@ class TestResourceLabelHandler:
                 {"id": label_2.id, "name": label_2.name},
             ]
         }
+
+    def test_get_labels_by_ids(self, fake_resource):
+        label_1 = G(APILabel, gateway=fake_resource.gateway, name="label1")
+        label_2 = G(APILabel, gateway=fake_resource.gateway, name="label2")
+
+        G(ResourceLabel, resource=fake_resource, api_label=label_1)
+        G(ResourceLabel, resource=fake_resource, api_label=label_2)
+
+        resource_labels = ResourceLabelHandler.get_labels_by_ids([label_1.id])
+        assert resource_labels == {fake_resource.id: [{"id": label_1.id, "name": label_1.name}]}

@@ -126,6 +126,42 @@ class PaaSAppPermissionApplyInputSLZ(serializers.Serializer):
         return data
 
 
+class GatewayResourceIDs(serializers.Serializer):
+    gateway_id = serializers.IntegerField(
+        help_text="gateway_id",
+        required=True,
+    )
+    resource_ids = serializers.ListField(
+        help_text="如果不传则为网关维度申请",
+        child=serializers.IntegerField(),
+        allow_empty=True,
+        required=False,
+        max_length=100,
+    )
+
+
+class PaaSAppPermissionApplyV2InputSLZ(serializers.Serializer):
+    """
+    PaaS中应用申请访问网关API的权限
+    - 提供给 paas 开发者中心的接口
+    - 应用页面申请授权,支持网关+resource维度
+    """
+
+    target_app_code = serializers.CharField(label="", validators=[BKAppCodeValidator()])
+    gateway_resource_ids = serializers.ListField(
+        help_text="申请资源id列表(资源+网关)",
+        child=GatewayResourceIDs(),
+        allow_empty=False,
+        required=True,
+        max_length=100,
+    )
+    reason = serializers.CharField(allow_blank=True, required=False, default="")
+    expire_days = serializers.ChoiceField(
+        choices=PermissionApplyExpireDaysEnum.get_choices(),
+        default=PermissionApplyExpireDaysEnum.SIX_MONTH.value,
+    )
+
+
 class AppPermissionApplyV1InputSLZ(serializers.Serializer):
     """
     普通应用直接申请访问网关API的权限
