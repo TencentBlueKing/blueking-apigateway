@@ -11,7 +11,7 @@ import {
 import { IPagination } from '@/types';
 import { useCommon } from '@/store';
 
-export function useQueryList(apiMethod: Function, filterData?: any, id?: number, filterNoResetPage?: boolean) {
+export function useQueryList<T>(apiMethod: Function, filterData?: any, id?: number, filterNoResetPage?: boolean) {
   const common = useCommon();
   const { apigwId } = common;
   const initPagination: IPagination = {
@@ -27,7 +27,7 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number,
 
   const pagination = ref<IPagination>({ ...initPagination });
   const isLoading = ref(false);
-  const tableData = ref([]);
+  const tableData = ref<T[]>([]);
   const getMethod = ref<any>(null);
 
   // 获取列表数据的方法

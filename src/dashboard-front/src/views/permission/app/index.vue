@@ -8,25 +8,23 @@
           </bk-button>
         </span>
         <bk-dropdown-menu
-          trigger="click" class="mr5" @show="isExportDropdownShow = true"
-          @hide="isExportDropdownShow = false" font-size="medium">
+          trigger="click"
+          class="mr5"
+          @show="() => isExportDropdownShow = true"
+          @hide="() => isExportDropdownShow = false"
+          font-size="medium"
+        >
           <ag-dropdown :text="t('导出')" :dropdown-list="exportDropData" @on-change="handleExport"></ag-dropdown>
         </bk-dropdown-menu>
         <bk-button class=" mr10" @click="handleAuthShow"> {{ t('主动授权') }} </bk-button>
       </div>
       <bk-form class="flex-row ">
-        <bk-form-item :label="$t('授权维度')" class="mb0">
-          <bk-select v-model="dimension" class="w150" :clearable="false">
-            <bk-option v-for="option of dimensionList" :key="option.id" :value="option.id" :label="option.name">
-            </bk-option>
-          </bk-select>
-        </bk-form-item>
         <bk-form-item label="" class="mb0" label-width="10">
           <bk-search-select
+            v-model="filterValues"
+            :data="filterConditions"
             :placeholder="t('搜索')"
             :clearable="true"
-            :data="dimension === 'resource' ? searchResourceCondition : searchApiCondition"
-            v-model="searchValue"
             :key="componentKey"
             :value-split-code="'+'"
             unique-select
@@ -39,49 +37,59 @@
       <bk-loading :loading="isLoading">
         <bk-table
           show-overflow-tooltip
-          class="perm-app-table mt15" :data="tableData" :size="'small'" :pagination="pagination"
+          class="perm-app-table mt15"
+          :data="tableData"
+          size="small"
+          :pagination="pagination"
           border="outer"
           remote-pagination
           @page-limit-change="handlePageSizeChange"
           @page-value-change="handlePageChange"
           @selection-change="handleSelectionChange"
-          @select-all="handleSelecAllChange">
+          @select-all="handleSelecAllChange"
+        >
           <bk-table-column type="selection" width="60" align="center"></bk-table-column>
           <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
-          <bk-table-column :label="t('资源名称')" prop="resource_name" v-if="dimension === 'resource'"></bk-table-column>
-          <bk-table-column :label="t('请求路径')" prop="resource_path" v-if="dimension === 'resource'">
-            <template #default="{ data }">
+          <bk-table-column :label="t('搜索维度')">
+            <template #default="{ row }: { row: IPermission }">
               <span class="ag-auto-text">
-                {{ data?.resource_path || '--' }}
+                {{ getSearchDimensionText(row.grant_dimension) }}
               </span>
             </template>
           </bk-table-column>
-          <bk-table-column width="100" :label="t('请求方法')" prop="resource_method" v-if="dimension === 'resource'">
-            <template #default="{ data }">
-              {{ data?.resource_method || '--' }}
+          <bk-table-column :label="t('资源名称')">
+            <template #default="{ row }: { row: IPermission }">
+              {{ row.resource_name || '--' }}
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('过期时间')" prop="expires">
-            <template #default="{ data }">
-              {{ data?.expires || t('永久有效') }}
+          <bk-table-column :label="t('请求路径')">
+            <template #default="{ row }: { row: IPermission }">
+              <span class="ag-auto-text">
+                {{ row.resource_path || '--' }}
+              </span>
             </template>
           </bk-table-column>
-          <bk-table-column width="150" :label="t('授权类型')" prop="expires">
-            <template #default="{ data }">
-              {{ data?.grant_type === 'initialize' ? t('主动授权') : t('申请审批') }}
+          <bk-table-column :label="t('过期时间')">
+            <template #default="{ row }: { row: IPermission }">
+              {{ row.expires || t('永久有效') }}
+            </template>
+          </bk-table-column>
+          <bk-table-column width="150" :label="t('授权类型')">
+            <template #default="{ row }: { row: IPermission }">
+              {{ row.grant_type === 'initialize' ? t('主动授权') : t('申请审批') }}
             </template>
           </bk-table-column>
           <bk-table-column width="150" :label="t('操作')">
-            <template #default="{ data }">
-              <template v-if="data?.renewable">
-                <bk-button class="mr10" theme="primary" text @click="handleSingleApply(data)"> {{ t('续期') }}</bk-button>
+            <template #default="{ row }: { row: IPermission }">
+              <template v-if="row.renewable">
+                <bk-button class="mr10" theme="primary" text @click="handleSingleApply(row)"> {{ t('续期') }}</bk-button>
               </template>
               <template v-else>
-                <span v-bk-tooltips="renewableConfi">
+                <span v-bk-tooltips="renewableConfig">
                   <bk-button class="mr10" theme="primary" text disabled> {{ t('续期') }} </bk-button>
                 </span>
               </template>
-              <bk-button theme="primary" text @click="handleRemove(data)"> {{ t('删除') }} </bk-button>
+              <bk-button theme="primary" text @click="handleRemove(row)"> {{ t('删除') }} </bk-button>
             </template>
           </bk-table-column>
           <template #empty>
@@ -176,68 +184,185 @@
       :is-show="removeDialogConf.isShow" theme="primary" :width="940" :title="removeDialogConfTitle"
       :quick-close="true" @closed="removeDialogConf.isShow = false" @confirm="handleRemovePermission">
       <div>
-        <bk-table :data="curPermission.detail" :size="'small'" :key="tableIndex" class="mb15">
-          <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code">
-            <template #default="{ data }">
-              {{ data?.bk_app_code || '--' }}
+        <bk-table :data="[curPermission]" size="small" class="mb15">
+          <bk-table-column :label="t('蓝鲸应用ID')">
+            <template #default="{ row }: { row: IPermission }">
+              {{ row.bk_app_code || '--' }}
             </template>
           </bk-table-column>
-          <template v-if="dimension === 'resource'">
-            <bk-table-column :label="t('请求路径')" prop="resource_path">
-              <template #default="{ data }">
-                {{ data?.resource_path || '--' }}
-              </template>
-            </bk-table-column>
-            <bk-table-column :label="t('请求方法')" prop="resource_method">
-              <template #default="{ data }">
-                {{ data?.resource_method || '--' }}
-              </template>
-            </bk-table-column>
-          </template>
-          <template v-else>
-            <bk-table-column :label="t('授权维度')">
-              {{ dimensionType[dimension as keyof typeof dimensionType] }}
-            </bk-table-column>
-            <bk-table-column :label="t('过期时间')" prop="expires">
-              <template #default="{ data }">
-                {{ data?.expires === null ? t('永久有效') : data?.expires }}
-              </template>
-            </bk-table-column>
-          </template>
+          <bk-table-column :label="t('搜索维度')">
+            <template #default="{ row }: { row: IPermission }">
+              <span class="ag-auto-text">
+                {{ getSearchDimensionText(row.grant_dimension) }}
+              </span>
+            </template>
+          </bk-table-column>
+          <bk-table-column :label="t('资源名称')">
+            <template #default="{ row }: { row: IPermission }">
+              {{ row.resource_name || '--' }}
+            </template>
+          </bk-table-column>
+          <bk-table-column :label="t('请求路径')">
+            <template #default="{ row }: { row: IPermission }">
+              {{ row.resource_path || '--' }}
+            </template>
+          </bk-table-column>
+          <bk-table-column :label="t('过期时间')">
+            <template #default="{ row }: { row: IPermission }">
+              {{ row.expires ? row.expires : t('永久有效') }}
+            </template>
+          </bk-table-column>
         </bk-table>
       </div>
     </bk-dialog>
 
-    <!-- 续期dialog -->
+    <!--  批量续期 slider  -->
+    <bk-sideslider
+      v-model:isShow="batchApplySliderConf.isShow"
+      width="960"
+      :title="t('批量续期')"
+      quick-close
+      @hidden="batchApplySliderConf.isShow = false"
+    >
+      <template #default>
+        <div class="renew-slider-content-wrap">
+          <ExpDaySelector v-model="expireDays" form-type="vertical" />
+          <div class="collapse-wrap">
+            <bk-collapse
+              v-model="activeIndex"
+              class="collapse-cls"
+              use-card-theme
+            >
+              <bk-collapse-panel name="resource">
+                <template #header>
+                  <div class="panel-header">
+                    <angle-up-fill
+                      :class="[activeIndex?.includes('resource') ? 'panel-header-show' : 'panel-header-hide']"
+                    />
+                    <div class="title">{{ t('按资源') }}</div>
+                  </div>
+                </template>
+                <template #content>
+                  <bk-table
+                    :data="selectedResourcePermList"
+                    size="small"
+                    :max-height="250"
+                    :border="['row', 'outer']"
+                  >
+                    <bk-table-column width="180" :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
+                    <bk-table-column :label="t('资源名称')">
+                      <template #default="{ row }">
+                        {{ row.resource_name || '--' }}
+                      </template>
+                    </bk-table-column>
+                    <bk-table-column
+                      :label="t('续期前的过期时间')"
+                      :width="392"
+                    >
+                      <template #default="{ row }">
+                        {{ row.expires || '--' }}
+                        <span class="ag-strong default" v-if="!row.renewable && row.expires">
+                          {{ t('(有效期大于30天)') }}
+                        </span>
+                      </template>
+                    </bk-table-column>
+                    <bk-table-column width="180" :label="t('续期后的过期时间')">
+                      <template #default="{ row }">
+                        <span class="ag-strong danger" v-if="!row.renewable"> {{ t('不可续期') }} </span>
+                        <span v-else class="ag-strong warning">{{ getExpTimeAfterRenew(row) }}</span>
+                      </template>
+                    </bk-table-column>
+                  </bk-table>
+                </template>
+              </bk-collapse-panel>
+              <bk-collapse-panel name="gateway">
+                <template #header>
+                  <div class="panel-header">
+                    <angle-up-fill
+                      :class="[activeIndex?.includes('gateway') ? 'panel-header-show' : 'panel-header-hide']"
+                    />
+                    <div class="title">{{ t('按网关') }}</div>
+                  </div>
+                </template>
+                <template #content>
+                  <bk-table
+                    :data="selectedApiPermList"
+                    size="small"
+                    :max-height="250"
+                    :border="['row', 'outer']"
+                  >
+                    <bk-table-column width="180" :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
+                    <bk-table-column :label="t('资源名称')">
+                      <template #default="{ row }">
+                        {{ row.resource_name || '--' }}
+                      </template>
+                    </bk-table-column>
+                    <bk-table-column
+                      :label="t('续期前的过期时间')"
+                      :width="392"
+                    >
+                      <template #default="{ row }">
+                        {{ row.expires || '--' }}
+                        <span class="ag-strong default" v-if="!row.renewable && row.expires">
+                          {{ t('(有效期大于30天)') }}
+                        </span>
+                      </template>
+                    </bk-table-column>
+                    <bk-table-column width="180" :label="t('续期后的过期时间')">
+                      <template #default="{ row }">
+                        <span class="ag-strong danger" v-if="!row.renewable"> {{ t('不可续期') }} </span>
+                        <span v-else class="ag-strong warning">{{ getExpTimeAfterRenew(row) }}</span>
+                      </template>
+                    </bk-table-column>
+                  </bk-table>
+                </template>
+              </bk-collapse-panel>
+            </bk-collapse>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div>
+          <bk-button
+            theme="primary"
+            :disabled="applyCount === 0"
+            :loading="isBatchApplyLoading"
+            @click="handleBatchConfirm"
+          > {{ t('确定') }} </bk-button>
+          <bk-button class="ml8" @click="batchApplySliderConf.isShow = false"> {{ t('取消') }} </bk-button>
+        </div>
+      </template>
+    </bk-sideslider>
+
+    <!--  单个续期 dialog  -->
     <bk-dialog
-      :is-show="batchApplyDialogConf.isShow" theme="primary"
-      :width="dimension === 'resource' ? 950 : 800" :title="t('批量续期')" :quick-close="true"
-      @closed="batchApplyDialogConf.isShow = false">
+      v-model:is-show="isApplyDialogShow"
+      theme="primary"
+      :width="860"
+      :title="t('续期')"
+      quick-close
+    >
       <div>
-        <bk-alert theme="info" class="mb15">
-          <template #title>
-            {{t('将给以下') }} <i class="ag-strong success">{{applyCount}}</i> {{t('个权限续期') }}
-            <i class="ag-strong">180</i> {{t('天') }}
-            <span>；<i class="ag-strong danger">{{unApplyCount}}</i> {{t('个权限不可续期，权限大于 30 天不支持续期') }}
-            </span>
-          </template>
-        </bk-alert>
-        <bk-table :data="curSelections" :size="'small'" :max-height="250" class="mb30">
-          <bk-table-column width="180" :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
-          <bk-table-column :label="t('资源名称')" prop="resource_name" v-if="dimension === 'resource'">
+        <ExpDaySelector v-model="expireDays" />
+        <bk-table :data="curSelections" size="small" :max-height="250" class="mb30">
+          <bk-table-column width="100" :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
+          <bk-table-column :label="t('资源名称')">
+            <template #default="{ row }">
+              {{ row.resource_name || '--' }}
+            </template>
           </bk-table-column>
-          <bk-table-column :label="t('续期前的过期时间')" prop="expires" :width="dimension === 'resource' ? 330 : 392">
-            <template #default="{ data }">
-              {{ data?.expires || '--' }}
-              <span class="ag-strong default " v-if="!data?.renewable && data?.expires">
+          <bk-table-column :label="t('续期前的过期时间')">
+            <template #default="{ row }">
+              {{ row.expires || '--' }}
+              <span class="ag-strong default" v-if="!row.renewable && row.expires">
                 {{ t('(有效期大于30天)') }}
               </span>
             </template>
           </bk-table-column>
-          <bk-table-column width="180" :label="t('续期后的过期时间')" prop="expires">
-            <template #default="{ data }">
-              <span class="ag-strong danger " v-if="!data?.renewable"> {{ t('不可续期') }} </span>
-              <span v-else class="ag-strong warning ">{{ applyNewTime }}</span>
+          <bk-table-column :label="t('续期后的过期时间')">
+            <template #default="{ row }">
+              <span class="ag-strong danger" v-if="!row.renewable"> {{ t('不可续期') }} </span>
+              <span v-else class="ag-strong warning ">{{ getExpTimeAfterRenew(row) }}</span>
             </template>
           </bk-table-column>
         </bk-table>
@@ -245,15 +370,15 @@
       <template #footer>
         <template v-if="applyCount">
           <bk-button
-            theme="primary" :disabled="applyCount === 0" @click="handleComfirmBatch"
-            :loading="isBatchApplyLoaading"> {{ t('确定') }} </bk-button>
+            theme="primary" :disabled="applyCount === 0" @click="handleBatchConfirm"
+            :loading="isBatchApplyLoading"> {{ t('确定') }} </bk-button>
         </template>
         <template v-else>
           <bk-popover placement="top" :content="t('无可续期的权限')">
             <bk-button theme="primary" :disabled="true"> {{ t('确定') }} </bk-button>
           </bk-popover>
         </template>
-        <bk-button @click="batchApplyDialogConf.isShow = false"> {{ t('取消') }} </bk-button>
+        <bk-button @click="isApplyDialogShow = false"> {{ t('取消') }} </bk-button>
       </template>
     </bk-dialog>
   </div>
@@ -262,62 +387,92 @@
 <script setup lang="ts">
 import { isEqual } from 'lodash';
 import { Message } from 'bkui-vue';
-import { reactive, ref, watch, computed } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { sortByKey, timeFormatter } from '@/common/util';
-import agDropdown from '@/components/ag-dropdown.vue';
-import TableEmpty from '@/components/table-empty.vue';
 import {
-  getResourceListData,
-  getApiPermissionList,
-  getResourcePermissionList,
+  computed,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
+import { useI18n } from 'vue-i18n';
+import {
+  sortByKey,
+  timeFormatter,
+} from '@/common/util';
+import {
   authApiPermission,
   authResourcePermission,
+  batchUpdatePermission,
   deleteApiPermission,
   deleteResourcePermission,
-  batchUpdateApiPermission,
-  batchUpdateResourcePermission,
-  exportApiPermission,
-  exportResourcePermission,
-  getApiPermissionAppList,
+  exportPermissionList,
+  fetchPermissionList,
+  getResourceListData,
   getResourcePermissionAppList,
 } from '@/http';
 import { useCommon } from '@/store';
-import { useQueryList, useSelection } from '@/hooks';
+import {
+  useQueryList,
+  useSelection,
+} from '@/hooks';
 import { IDropList } from '@/types';
+import { AngleUpFill } from 'bkui-vue/lib/icon';
+import ExpDaySelector from '@/views/permission/app/comps/exp-day-selector.vue';
+import agDropdown from '@/components/ag-dropdown.vue';
+import TableEmpty from '@/components/table-empty.vue';
+import {
+  IFilterValues,
+  IPermission,
+  IResource,
+} from './types';
+import {
+  IAuthData,
+  IBatchUpdateParams,
+  IExportParams,
+  IFilterParams,
+} from '@/http/permission';
+import dayjs from 'dayjs';
 
 const { t } = useI18n();
 const common = useCommon();
 const { apigwId } = common; // 网关id
 
-const filterData = ref({ bk_app_code: '', keyword: '', grant_type: '', grant_dimension: '', resource_id: '' });
-const isExportDropdownShow = ref<boolean>(false);
-const resourceList = ref([]);
-const isVisible = ref<boolean>(false);
-const isBatchApplyLoaading = ref<boolean>(false);
-const tableIndex = ref<number>(0);
-const curPermission = ref({ bk_app_code: '', detail: [], id: -1 });
-const dimension = ref<string>('resource');
-const applyNewTime = ref<string>('');
+const filterData = ref<IFilterParams>({});
+
+// 列表hooks
+const {
+  tableData,
+  pagination,
+  isLoading,
+  handlePageChange,
+  handlePageSizeChange,
+  getList,
+} = useQueryList<IPermission>(fetchPermissionList, filterData);
+
+// checkbox hooks
+const {
+  selections,
+  handleSelectionChange,
+  handleSelecAllChange,
+  resetSelections,
+} = useSelection();
+
+const isExportDropdownShow = ref(false);
+const resourceList = ref<IResource[]>([]);
+const isVisible = ref(false);
+const isBatchApplyLoading = ref(false);
+const curPermission = ref<Partial<IPermission>>({ bk_app_code: '', detail: [], id: -1 });
 const curSelections = ref([]);
-const renewableConfi = reactive({
+const renewableConfig = reactive({
   content: t('权限有效期大于 30 天时，暂无法续期'), placement: 'left',
 });
-const dimensionType = reactive({
-  api: t('网关'),
-  resource: t('资源'),
-});
+
 // 导出下拉
 const exportDropData = ref<IDropList[]>([
   { value: 'all', label: t('全部应用权限') },
   { value: 'filtered', label: t('已筛选应用权限'), disabled: true },
   { value: 'selected', label: t('已选应用权限'), disabled: true },
 ]);
-// 授权维度
-const dimensionList = reactive([
-  { id: 'api', name: t('按网关') },
-  { id: 'resource', name: t('按资源') },
-]);
+
 // 主动授权config
 const authSliderConf = reactive({
   isLoading: false,
@@ -325,41 +480,54 @@ const authSliderConf = reactive({
   title: t('主动授权'),
 });
 // 当前授权数据
-const curAuthData = ref({
+const curAuthData = ref<IAuthData>({
   bk_app_code: '',
   expire_type: 'custom',
   expire_days: 180,
   resource_ids: [],
   dimension: 'api',
 });
+
+const expireDays = ref<0 | 180 | 360>(0);
+const activeIndex = ref(['resource', 'gateway']);
+
 const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
   keyword: '',
   isAbnormal: false,
 });
 // 批量续期dialog
-const batchApplyDialogConf = reactive({
+const batchApplySliderConf = reactive({
   isShow: false,
 });
+// 单个续期 dialog
+const isApplyDialogShow = ref(false);
 // 删除dialog
 const removeDialogConf = reactive({
   isShow: false,
 });
 // 导出参数
-const exportParams: IexportParams = reactive({
+const exportParams = ref<IExportParams>({
   export_type: '',
 });
-// 导出参数interface
-interface IexportParams {
-  export_type: string
-  bk_app_code?: string
-  keyword?: string
-  resource_ids?: number
-  permission_ids?: Array<number>
-  grant_type?: string
-}
-const searchValue = ref([]);
+
+const filterValues = ref<IFilterValues[]>([]);
 const componentKey = ref(0);
-const searchResourceCondition = ref([
+const filterConditions = ref([
+  {
+    name: t('维度'),
+    id: 'grant_dimension',
+    children: [
+      {
+        id: 'resource',
+        name: t('资源'),
+      },
+      {
+        id: 'api',
+        name: t('网关'),
+      },
+    ],
+    onlyRecommendChildren: true,
+  },
   {
     name: t('蓝鲸应用ID'),
     id: 'bk_app_code',
@@ -377,28 +545,10 @@ const searchResourceCondition = ref([
     id: 'keyword',
   },
 ]);
-const searchApiCondition = ref([
-  {
-    name: t('蓝鲸应用ID'),
-    id: 'bk_app_code',
-    children: [],
-    onlyRecommendChildren: true,
-  },
-  {
-    name: t('模糊搜索'),
-    id: 'keyword',
-  },
-]);
 
 // 可续期的数量
 const applyCount = computed(() => {
-  const number = curSelections.value.filter((item: { renewable: boolean; }) => item.renewable).length;
-  return number;
-});
-// 不可续期的数量
-const unApplyCount = computed(() => {
-  const number = curSelections.value.filter((item: { renewable: boolean; }) => !item.renewable).length;
-  return number;
+  return curSelections.value.filter((item: { renewable: boolean; }) => item.renewable).length;
 });
 // 删除dialog title
 const removeDialogConfTitle = computed(() => {
@@ -406,38 +556,25 @@ const removeDialogConfTitle = computed(() => {
   return t('确定要删除蓝鲸应用【{appCode}】的权限？', { appCode: curPermission.value.bk_app_code });
 });
 
+// 资源维度权限列表
+const selectedResourcePermList = computed(() => curSelections.value.filter(perm => perm.grant_dimension === 'resource'));
 
-// 列表hooks
-const {
-  tableData,
-  pagination,
-  isLoading,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-  getMethod,
-} = useQueryList(getResourcePermissionList, filterData);
-
-// checkbox hooks
-const {
-  selections,
-  handleSelectionChange,
-  handleSelecAllChange,
-  resetSelections,
-} = useSelection();
+// 网关维度权限列表
+const selectedApiPermList = computed(() => curSelections.value.filter(perm => perm.grant_dimension === 'api'));
 
 // 监听搜索是否变化
 watch(
-  () => searchValue.value,
-  (v: any[]) => {
+  () => filterValues.value,
+  (v) => {
     resetSelections();
-    filterData.value.keyword = '';
-    filterData.value.bk_app_code = '';
-    filterData.value.resource_id = '';
-    v?.forEach(((item: any) => {
-      filterData.value[item.id] = item.values[0].id;
-    }));
-    const isEmpty = v?.length === 0;
+    filterData.value = {};
+    let isEmpty = false;
+    if (v) {
+      v.forEach((item) => {
+        filterData.value[item.id] = item.values[0].id;
+      });
+      isEmpty = v.length === 0;
+    }
     exportDropData.value.forEach((e: IDropList) => {
       // 已选资源
       if (e.value === 'filtered') {
@@ -483,21 +620,13 @@ watch(
 );
 
 const getBkAppCodes = async () => {
-  try {
-    const fn = dimension.value === 'resource' ? getResourcePermissionAppList : getApiPermissionAppList;
-    const res = await fn(apigwId);
-    const resources = res?.map((item: any) => {
-      return {
-        id: item,
-        name: item,
-      };
-    });
-    searchResourceCondition.value[0].children = resources;
-    searchApiCondition.value[0].children = resources;
-    componentKey.value += 1;
-  } catch (e) {
-    console.error(e);
-  }
+  const appCodeOption = filterConditions.value.find(condition => condition.id === 'bk_app_code');
+  const response = await getResourcePermissionAppList(apigwId) as string[] || [];
+  appCodeOption.children = response.map(appCode => ({
+    id: appCode,
+    name: appCode,
+  }));
+  componentKey.value += 1;
 };
 
 // 获取资源列表数据
@@ -506,140 +635,146 @@ const getApigwResources = async () => {
     limit: 3000,
     order_by: 'path',
   };
-  try {
-    const res = await getResourceListData(apigwId, pageParams);
-    const results = res.results.map((item: any) => {
-      return {
-        id: item.id,
-        name: item.name,
-        path: item.path,
-        method: item.method,
-        resourceName: `${item.method}：${item.path}`,
-      };
-    });
-    resourceList.value = sortByKey(results, 'name');
-    const filterSource = resourceList.value?.map((item: any) => {
-      return {
-        id: item.id,
-        name: item.name,
-      };
-    });
-    searchResourceCondition.value[1].children = filterSource;
-    componentKey.value += 1;
-  } catch (error) {
-    console.log('error', error);
-  }
+  const resourceIdOption = filterConditions.value.find(condition => condition.id === 'resource_id');
+  const response = await getResourceListData(apigwId, pageParams);
+  const resources: IResource[] = response.results || [];
+  const results = resources.map(resource => ({
+    id: resource.id,
+    name: resource.name,
+    path: resource.path,
+    method: resource.method,
+    resourceName: `${resource.method}：${resource.path}`,
+  }));
+  resourceList.value = sortByKey(results, 'name');
+  resourceIdOption.children = resourceList.value.map(item => ({
+    id: item.id,
+    name: item.name,
+  }));
+  componentKey.value += 1;
 };
 
 // 导出
-const handleExport = async ({ value }: {value: string}) => {
-  console.log(exportDropData.value);
-  console.log(value);
-  exportParams.export_type = value;
+const handleExport = async ({ value }: { value: 'all' | 'selected' | 'filtered' }) => {
+  exportParams.value.export_type = value;
   switch (value) {
     case 'selected':
-      exportParams.permission_ids = selections.value.map(e => e.id);
+      if (selections.value.some(p => p.grant_dimension === 'resource')) {
+        exportParams.value.resource_permission_ids = selections.value.filter(p => p.grant_dimension === 'resource').map(e => e.id);
+      }
+      if (selections.value.some(p => p.grant_dimension === 'api')) {
+        exportParams.value.gateway_permission_ids = selections.value.filter(p => p.grant_dimension === 'api').map(e => e.id);
+      }
       break;
     case 'filtered':
-      searchValue.value?.forEach((item: any) => {
-        exportParams[item.id] = item.values[0]?.id;
+      filterValues.value?.forEach((item) => {
+        const value = item.values[0];
+        if (value) {
+          exportParams.value[item.id] = String(value.id);
+        }
       });
       break;
-    default:
+    case 'all':
+      if (tableData.value.length < 1) {
+        Message({
+          message: t('没有数据'),
+          theme: 'warning',
+        });
+        return;
+      }
       break;
   }
-  const fetchMethod = dimension.value === 'resource' ? exportResourcePermission : exportApiPermission;
   try {
-    const res = await fetchMethod(apigwId, exportParams);
-    if (res.success) {
+    const response = await exportPermissionList(apigwId, exportParams.value);
+    if (response.success) {
       Message({
-        message: t('导出成功'),
+        message: t('导出成功！'),
         theme: 'success',
       });
     }
-  } catch ({ error }: any) {
+  } catch (error: unknown) {
+    const e = error as { message: string };
     Message({
-      message: error.message || t('导出失败'),
+      message: e.message || t('导出失败'),
       theme: 'error',
     });
   } finally {
-    exportParams.export_type = '';
-    exportParams.permission_ids = [];
-    exportParams.keyword = '';
+    exportParams.value = {
+      export_type: '',
+    };
   }
 };
 
 // 确定续期
-const handleComfirmBatch = async () => {
-  if (isBatchApplyLoaading.value) {
-    return false;
-  }
-  isBatchApplyLoaading.value = true;
-  const ids = curSelections.value.map(permission => permission.id);
-  const data = {
-    ids,
+const handleBatchConfirm = async () => {
+  if (isBatchApplyLoading.value) return;
+  isBatchApplyLoading.value = true;
+  const data: IBatchUpdateParams = {
+    resource_dimension_ids: [] as number[],
+    gateway_dimension_ids: [] as number[],
+    expire_days: expireDays.value,
   };
-  const fetchMethod = dimension.value === 'resource' ? batchUpdateResourcePermission : batchUpdateApiPermission;
+
+  if (selectedResourcePermList.value.length > 0) {
+    data.resource_dimension_ids = selectedResourcePermList.value.map(permission => permission.id);
+  }
+
+  if (selectedApiPermList.value.length > 0) {
+    data.gateway_dimension_ids = selectedApiPermList.value.map(permission => permission.id);
+  }
+
   try {
-    await fetchMethod(apigwId, data);
-    batchApplyDialogConf.isShow = false;
-    const method = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
-    getList(method);
+    await batchUpdatePermission(apigwId, data);
+    batchApplySliderConf.isShow = false;
+    await getList(fetchPermissionList);
     resetSelections();
     Message({
       theme: 'success',
       message: t('续期成功！'),
     });
-  } catch ({ error }: any) {
+    isApplyDialogShow.value = false;
+  } catch (error: unknown) {
+    const e = error as { message: string };
     Message({
-      message: error.message || t('续期失败'),
+      message: e.message || t('续期失败'),
       theme: 'error',
     });
   } finally {
-    isBatchApplyLoaading.value = false;
+    isBatchApplyLoading.value = false;
   }
 };
 // 批量续期
 const handleBatchApplyPermission = () => {
   curSelections.value = selections.value;
-  const dataStr: any = Date.now() + 180 * 24 * 60 * 60 * 1000;
-  applyNewTime.value = timeFormatter(dataStr);
-  batchApplyDialogConf.isShow = true;
+  batchApplySliderConf.isShow = true;
 };
 // 单个续期
-const handleSingleApply = (data: any) => {
+const handleSingleApply = (data: IPermission) => {
   curSelections.value = [data];
-  const dataStr: any = Date.now() + 180 * 24 * 60 * 60 * 1000;
-  applyNewTime.value = timeFormatter(dataStr);
-  batchApplyDialogConf.isShow = true;
+  isApplyDialogShow.value = true;
 };
 
 // 删除text
-const handleRemove = (data: any) => {
+const handleRemove = (data: IPermission) => {
   curPermission.value = data;
-  const curData: any = curPermission.value;
-  curData.detail = [data];
-  // eslint-disable-next-line no-plusplus
-  tableIndex.value++;
   removeDialogConf.isShow = true;
 };
 // 删除 dialog btn
 const handleRemovePermission = async () => {
-  const ids: any = [curPermission.value?.id];
-  const data = { ids };
-  const fetchMethod = dimension.value === 'resource' ? deleteResourcePermission : deleteApiPermission;
   try {
-    await fetchMethod(apigwId, data);
+    const dimension = curPermission.value.grant_dimension;
+    const ids = [curPermission.value.id];
+    const fetchMethod = dimension === 'resource' ? deleteResourcePermission : deleteApiPermission;
+    await fetchMethod(apigwId, { ids });
     removeDialogConf.isShow = false;
-    const method = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
-    getList(method);
+    await getList(fetchPermissionList);
     Message({
       theme: 'success',
       message: t('删除成功！'),
     });
-  } catch ({ error }: any) {
+  } catch (error: unknown) {
+    const e = error as { message: string };
     Message({
-      message: error.message || t('删除失败'),
+      message: e.message || t('删除失败'),
       theme: 'error',
     });
   }
@@ -661,11 +796,11 @@ const handleAuthShow = () => {
 };
 // 主动授权关闭前
 const handleBeforeClose = () => {
-  const initData: any = {
+  const initData = {
     bk_app_code: '',
     expire_type: 'custom',
     expire_days: 180,
-    resource_ids: [],
+    resource_ids: [] as number[],
     dimension: 'api',
   };
   const isSame = isEqual(initData, curAuthData.value);
@@ -686,7 +821,7 @@ const handleDialogCancel = () => {
   authSliderConf.isShow = true;
 };
 // 选择授权的资源数量发生改变触发
-const handleResourceChange = (sourceList: any, targetList: any, targetValueList: any) => {
+const handleResourceChange = (sourceList: IResource[], targetList: IResource[], targetValueList: number[]) => {
   curAuthData.value.resource_ids = targetValueList;
 };
 // 主动授权关闭btn
@@ -695,7 +830,7 @@ const handleHidden = () => {
 };
 // 主动授权 不同选项，数据的更改
 const formatData = () => {
-  const params = JSON.parse(JSON.stringify(curAuthData.value));
+  const params: IAuthData = JSON.parse(JSON.stringify(curAuthData.value));
   if (params.expire_type === 'None') {
     params.expire_days = null;
   }
@@ -705,7 +840,7 @@ const formatData = () => {
   return params;
 };
 // 核查授权数据
-const checkDate = (params: any) => {
+const checkDate = (params: IAuthData) => {
   const codeReg = /^[a-z][a-z0-9-_]+$/;
   if (!params.bk_app_code) {
     Message({
@@ -742,25 +877,20 @@ const checkDate = (params: any) => {
   return true;
 };
 // 授权接口
-const authAppDimension = async (params: any) => {
+const authAppDimension = async (params: IAuthData) => {
   const fetchMethod = params.dimension === 'resource' ? authResourcePermission : authApiPermission;
-  console.log(fetchMethod);
-  const isSame = params.dimension === dimension.value;
   try {
     await fetchMethod(apigwId, params);
-    dimension.value = params.dimension;
     authSliderConf.isShow = false;
-    if (isSame) {
-      const method = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
-      getList(method);
-    }
+    await getList(fetchPermissionList);
     Message({
       theme: 'success',
       message: t('授权成功！'),
     });
-  } catch ({ error }: any) {
+  } catch (error: unknown) {
+    const e = error as { message: string };
     Message({
-      message: error.message || t('授权失败'),
+      message: e.message || t('授权失败'),
       theme: 'error',
     });
   }
@@ -771,7 +901,6 @@ const handleSave = () => {
   const isLegal = checkDate(params);
   if (isLegal) {
     authAppDimension(params);
-    console.log(params);
   }
 };
 // 主动授权取消btn
@@ -780,19 +909,17 @@ const handleSidesliderCancel = () => {
 };
 
 const handleClearFilterKey = () => {
-  filterData.value = { bk_app_code: '', keyword: '', grant_type: '', grant_dimension: '', resource_id: '' };
-  dimension.value = '';
-  searchValue.value = [];
+  filterData.value = {};
+  filterValues.value = [];
   getList();
   updateTableEmptyConfig();
 };
 
 const updateTableEmptyConfig = () => {
-  const searchParams: any = {
+  const searchParams = {
     ...filterData.value,
-    dimension: dimension.value,
   };
-  searchValue.value?.forEach((item: any) => {
+  filterValues.value?.forEach((item) => {
     searchParams[item.id] = item.values[0]?.id;
   });
   const list = Object.values(searchParams).filter(item => item !== '');
@@ -808,27 +935,35 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.keyword = '';
 };
 
+const getSearchDimensionText = (raw: string | null) => {
+  if (raw === 'resource') return t('按资源');
+  if (raw === 'api') return t('按网关');
+  return '--';
+};
+
+// 计算续期后的过期时间
+const getExpTimeAfterRenew = (permission: IPermission, days?: number) => {
+  const _days = days || expireDays.value;
+  if (!permission.expires || _days === 0) return t('永久');
+
+  try {
+    return timeFormatter(`${dayjs().add(_days * 24 * 60 * 60 * 1000, 'millisecond')}`);
+  } catch {
+    Message({
+      theme: 'error',
+      message: t('日期格式错误'),
+    });
+    return '--';
+  }
+};
+
 const init = () => {
   getBkAppCodes();
   getApigwResources();
 };
+
 init();
 
-// 监听授权维度是否变化
-watch(
-  () => dimension.value,
-  async (value: string) => {
-    // filterData.value.grant_dimension = value;
-    // resetSelections();
-    // const method = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
-    // await getList(method);
-    resetSelections();
-    getMethod.value = dimension.value === 'resource' ? getResourcePermissionList : getApiPermissionList;
-    filterData.value.grant_dimension = value;
-    updateTableEmptyConfig();
-  },
-  { deep: true, immediate: true },
-);
 </script>
 
 <style lang="scss" scoped>
@@ -967,6 +1102,53 @@ watch(
     height: 280px;
     max-height: 280px;
     justify-content: center;
+  }
+}
+
+.renew-slider-content-wrap {
+  padding: 20px 24px;
+}
+
+.collapse-wrap {
+  //padding: 24px 24px 0 24px;
+
+  :deep(.collapse-cls) {
+    margin-bottom: 24px;
+
+    .bk-collapse-item {
+      //background: #fff;
+      box-shadow: none;
+      margin-bottom: 16px;
+      background-color: #F0F1F5;
+    }
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    color: #63656E;
+    cursor: pointer;
+
+    .title {
+      font-weight: 700;
+      font-size: 14px;
+      margin-left: 8px;
+    }
+
+    .panel-header-show {
+      transition: .2s;
+      transform: rotate(0deg);
+    }
+
+    .panel-header-hide {
+      transition: .2s;
+      transform: rotate(-90deg);
+    }
+  }
+
+  :deep(.bk-collapse-content) {
+    padding: 0 !important;
   }
 }
 </style>
