@@ -36,7 +36,7 @@
           <div class="mr8">
             <bk-button
               style="width: 142px;"
-              v-show="isShowLeft"
+              v-show="isShowLeft && !showBatch"
               theme="primary"
               :class="{ 'super-big-button': isDetail }"
               @click="handleCreateResource"
@@ -44,12 +44,33 @@
               {{ t('新建') }}
             </bk-button>
           </div>
-          <ag-dropdown
+          <!-- <ag-dropdown
             v-show="isShowLeft"
             :text="t('批量')"
             :dropdown-list="batchDropData"
             @on-change="handleBatchOperate"
-            :is-disabled="!selections.length"></ag-dropdown>
+            :is-disabled="!selections.length"></ag-dropdown> -->
+          <bk-button
+            v-show="!showBatch"
+            class="mr8"
+            @click="handleShowBatch"
+          >
+            {{ t('批量操作') }}
+          </bk-button>
+          <div class="batch-status" v-show="showBatch">
+            <bk-button
+              class="mr8"
+              @click="handleBatchOperate('edit')"
+            >
+              {{ t('编辑资源') }}
+            </bk-button>
+            <bk-button
+              class="mr8"
+              @click="handleBatchOperate('delete')"
+            >
+              {{ t('删除资源') }}
+            </bk-button>
+          </div>
           <ag-dropdown
             :text="t('更多')"
             v-show="isDetail && isShowLeft">
@@ -77,12 +98,55 @@
               :text="t('导出')"
               :dropdown-list="exportDropData"
               @on-change="handleExport"></ag-dropdown>
-            <!-- <div class="mr8">
-              <bk-button @click="handleCreateResourceVersion" :disabled="!versionConfigs.needNewVersion">
+          </section>
+
+          <span :class="['split-line', showBatch ? 'batch' : '']" v-show="!isDetail"></span>
+
+          <div class="operate-btn-wrapper" v-show="!showBatch && !isDetail">
+            <bk-button class="operate-btn mr8" @click="handleShowDiff">
+              <i class="apigateway-icon icon-ag-chayiduibi-shixin"></i>
+              {{ t('与历史版本对比') }}
+            </bk-button>
+
+            <bk-badge
+              position="top-right"
+              theme="danger"
+              dot
+              v-if="versionConfigs.needNewVersion"
+            >
+              <bk-button
+                class="operate-btn"
+                @click="handleCreateResourceVersion"
+                v-bk-tooltips="{
+                  content: t('资源有更新，可生产新版本'),
+                }"
+              >
+                <i class="apigateway-icon icon-ag-version"></i>
                 {{ t('生成版本') }}
               </bk-button>
-            </div> -->
-          </section>
+            </bk-badge>
+            <bk-button
+              v-else
+              class="operate-btn"
+              :disabled="true"
+              v-bk-tooltips="{
+                content: t('资源无更新，无需生成版本'),
+              }"
+            >
+              <i class="apigateway-icon icon-ag-version"></i>
+              {{ t('生成版本') }}
+            </bk-button>
+
+          </div>
+          <bk-button
+            v-show="showBatch"
+            @click="handleOutBatch"
+            theme="primary"
+            outline
+            class="operate-btn">
+            <i class="apigateway-icon icon-ag-chahao"></i>
+            {{ t('退出批量编辑') }}
+          </bk-button>
         </div>
         <div class="flex-1 flex-row justify-content-end">
           <bk-search-select
@@ -127,8 +191,8 @@
             :row-class="handleRowClass"
             border="outer"
             :settings="settings">
-            <bk-table-column width="80" type="selection" align="center" fixed />
-            <bk-table-column :label="t('资源名称')" width="160" prop="name" fixed>
+            <bk-table-column width="80" type="selection" align="center" fixed v-if="showBatch" />
+            <bk-table-column :label="t('资源名称')" width="170" prop="name" fixed>
               <template #default="{ row }">
                 <div class="resource-name">
                   <div
@@ -262,7 +326,7 @@
             </bk-table-column>
             <bk-table-column
               :label="t('操作')"
-              width="140"
+              width="150"
               fixed="right"
               prop="act">
               <template #default="{ data }">
@@ -472,8 +536,23 @@
       @fetch="handleSuccess"
       @on-update="handleUpdateTitle"
     ></ResourceDocSideSlider>
+
     <!-- 生成版本 -->
     <version-sideslider ref="versionSidesliderRef" @done="mitt.emit('on-update-plugin');" />
+
+    <!-- 版本对比 -->
+    <bk-sideslider
+      v-model:isShow="diffSidesliderConf.isShow"
+      :title="diffSidesliderConf.title"
+      :width="diffSidesliderConf.width"
+      :quick-close="true"
+    >
+      <template #default>
+        <div class="p20 pure-diff">
+          <version-diff ref="diffRef" :source-id="diffSourceId" :target-id="diffTargetId" />
+        </div>
+      </template>
+    </bk-sideslider>
   </div>
 </template>
 <script setup lang="ts">
@@ -489,9 +568,11 @@ import {
   batchDeleteResources, batchEditResources,
   exportResources, exportDocs, checkNeedNewVersion,
   getGatewayLabels,
+  getResourceVersionsList,
 } from '@/http';
 import Detail from './detail.vue';
 import VersionSideslider from './comps/version-sideslider.vue';
+import versionDiff from '@/components/version-diff/index.vue';
 import SelectCheckBox from './comps/select-check-box.vue';
 import AgDropdown from '@/components/ag-dropdown.vue';
 import PluginManage from '@/views/components/plugin-manage/index.vue';
@@ -538,7 +619,7 @@ const common = useCommon();
 const resourceVersionStore = useResourceVersion();
 const { t } = useI18n();
 // 批量下拉的item
-const batchDropData = ref([{ value: 'edit', label: t('编辑资源') }, { value: 'delete', label: t('删除资源') }]);
+// const batchDropData = ref([{ value: 'edit', label: t('编辑资源') }, { value: 'delete', label: t('删除资源') }]);
 // 导入下拉
 const importDropData = ref([{ value: 'config', label: t('资源配置') }, { value: 'doc', label: t('资源文档') }]);
 interface ApigwIDropList extends IDropList {
@@ -665,6 +746,15 @@ const batchEditData = ref({
   isUpdateLabels: false,
   labelIds: [],
 });
+
+// 版本对比抽屉
+const diffSidesliderConf = reactive({
+  isShow: false,
+  width: 1040,
+  title: t('版本资源对比'),
+});
+const diffSourceId = ref();
+const diffTargetId = ref();
 
 // const showEdit = ref(false);
 // const optionName = ref('');
@@ -950,6 +1040,7 @@ const handleSortChange = ({ column, type }: Record<string, any>) => {
 // 展示右边内容
 const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
   resourceId.value = id;
+  handleOutBatch();
   // curResource.value = tableData.value.find((e: any) => e.id === id);
   tableData.value?.forEach((item: any) => {
     if (item.id === id) {
@@ -978,11 +1069,51 @@ const handleShowList = () => {
   pagination.value.small = false;
 };
 
+const showBatch = ref<boolean>(false);
+// 进入批量操作
+const handleShowBatch = () => {
+  showBatch.value = true;
+  handleShowList();
+};
+
+// 退出批量操作
+const handleOutBatch = () => {
+  showBatch.value = false;
+  selections.value = [];
+  tableDataKey.value = +new Date();
+};
+
+// 版本对比
+const handleShowDiff = async () => {
+  try {
+    const res = await getResourceVersionsList(props.apigwId, { offset: 0, limit: 999 });
+    diffSourceId.value = res.results[0]?.id || '';
+    diffSidesliderConf.width = window.innerWidth <= 1280 ? 1040 : 1280;
+    diffSidesliderConf.isShow = true;
+  } catch (e) {
+    Message({
+      message: t('操作失败，请稍后再试！'),
+      theme: 'error',
+      width: 'auto',
+    });
+    console.log(e);
+  }
+};
+
 // 处理批量编辑或删除
-const handleBatchOperate = async (data: IDropList) => {
+const handleBatchOperate = async (type: string) => {
+  if (!selections.value?.length) {
+    Message({
+      message: t('请先勾选数据！'),
+      theme: 'warning',
+      width: 'auto',
+    });
+    return;
+  }
+
   dialogData.isShow = true;
   // 批量删除
-  if (data.value === 'delete') {
+  if (type === 'delete') {
     isBatchDelete.value = true;
     dialogData.title = t('确定要删除以下{count}个资源', { count: selections.value.length });
   } else {
@@ -1677,6 +1808,28 @@ onBeforeMount(() => {
     margin-top: 0px !important;
     display: inline-block;
     width: 240px;
+  }
+}
+.split-line {
+  width: 1px;
+  height: 14px;
+  background-color: #C4C6CC;
+  margin-right: 8px;
+  &.batch {
+    margin-left: 4px;
+    margin-right: 12px;
+  }
+}
+.operate-btn-wrapper,
+.batch-status {
+  display: flex;
+}
+.operate-btn {
+  .apigateway-icon {
+    margin-right: 8px;
+    &.icon-ag-chahao {
+      font-size: 14px;
+    }
   }
 }
 </style>

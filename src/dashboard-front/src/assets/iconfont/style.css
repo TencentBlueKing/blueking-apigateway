@@ -50,6 +50,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-help-document:before {
 	content: "\e146";
 }
+.icon-ag-chahao:before {
+	content: "\e18f";
+}
 .icon-ag-history:before {
 	content: "\e13e";
 }
