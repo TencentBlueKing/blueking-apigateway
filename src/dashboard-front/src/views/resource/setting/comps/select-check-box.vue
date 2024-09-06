@@ -86,7 +86,14 @@
   </bk-select>
 </template>
 <script setup lang="ts">
-import { ref, computed, toRefs, PropType, watch, toValue } from 'vue';
+import {
+  ref,
+  computed,
+  toRefs,
+  PropType,
+  watch,
+  toValue,
+} from 'vue';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { cloneDeep } from 'lodash';
@@ -175,7 +182,9 @@ const handleToggle = async (v: boolean) => {
         labelsData.value.forEach((item: any) => {
           item.isEdited = false;
         });
-        emit('close');
+        // 把新的标签数据传递出去
+        const newLabelData = labelsData.value.filter((label: any) => curLabelIds.value.includes(label.id));
+        emit('close', newLabelData);
       }
     }
   }, 500);

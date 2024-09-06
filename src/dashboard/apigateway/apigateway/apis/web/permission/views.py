@@ -94,6 +94,7 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
                 "bk_app_code": perm.bk_app_code,
                 "expires": perm.expires,
                 "grant_dimension": GrantDimensionEnum.API.value,
+                "id": perm.id,
             }
             for perm in gateway_queryset
         ]
@@ -104,6 +105,7 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
                 "resource_id": perm.resource_id,
                 "expires": perm.expires,
                 "grant_dimension": GrantDimensionEnum.RESOURCE.value,
+                "id": perm.id,
             }
             for perm in resource_queryset
         ]

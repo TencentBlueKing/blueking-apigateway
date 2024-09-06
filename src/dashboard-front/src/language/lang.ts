@@ -1372,6 +1372,7 @@ const lang: ILANG = {
   '发布日志': ['Release log'],
   '校验应用权限': ['Validate application permissions'],
   '（允许申请权限）': ['(Permission application allowed)'],
+  '（不允许申请权限）': ['(Permission application not allowed)'],
   '公开': ['Public'],
   '版本号须符合 Semver 规范': ['Version number must comply with Semver specification'],
   '确认下架环境？': ['Confirm environment shutdown?'],

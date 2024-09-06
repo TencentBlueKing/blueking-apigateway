@@ -828,8 +828,9 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
   }
   try {
     isDataLoading.value = true;
-    // 清空编辑器高亮样式
-    resourceEditorRef?.value?.clearDecorations();
+    // 清空编辑器高亮样式和所有下划波浪线
+    resourceEditorRef.value?.clearDecorations();
+    resourceEditorRef.value?.clearMarkers();
     errorReasons.value = [];
     // 重置可视错误消息类型
     activeCodeMsgType.value = 'All';
@@ -939,8 +940,9 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
     }
     // console.log('errorReasons:');
     // console.log(errorReasons.value);
-    // 更新编辑器高亮样式
+    // 更新编辑器高亮样式和下划波浪线
     updateEditorDecorations();
+    updateEditorMarkers();
     // 展开错误消息栏
     if (isEditorMsgCollapsed) {
       await nextTick(() => {
@@ -1052,6 +1054,16 @@ const updateEditorDecorations = () => {
     level: r.level,
   })));
   resourceEditorRef.value.setDecorations();
+};
+
+// 触发编辑器添加下划波浪线
+const updateEditorMarkers = () => {
+  resourceEditorRef.value.clearMarkers();
+  resourceEditorRef.value.genMarkers(errorReasons.value.map(r => ({
+    position: r.position,
+    message: r.message,
+  })));
+  resourceEditorRef.value.setMarkers();
 };
 
 // 处理代码错误消息点击事件，应跳转到编辑器对应行

@@ -247,7 +247,9 @@
                     :labels-data="labelsData"
                     :width="selectCheckBoxParentRef?.offsetWidth"
                     force-focus
-                    @close="handleCloseSelect"
+                    @close="(newLabelData) => {
+                      handleCloseSelect(row, newLabelData)
+                    }"
                     @update-success="handleUpdateLabelSuccess"
                     @label-add-success="getLabelsData"></SelectCheckBox>
                 </section>
@@ -478,7 +480,7 @@
 import { reactive, ref, watch, onMounted, onBeforeMount, shallowRef, h, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, differenceBy } from 'lodash';
 import { Message } from 'bkui-vue';
 
 import { useQueryList, useSelection } from '@/hooks';
@@ -1148,10 +1150,19 @@ const getLabelsData = async () => {
 };
 
 // 未做变更关闭select下拉
-const handleCloseSelect = () => {
+const handleCloseSelect = (row: any, newLabelData: any = []) => {
   tableData.value.forEach((item) => {
     item.isEditLabel = false;
   });
+  // 接收新的标签数据，检查标签的 name 是否有变化，有则重新获取列表数据
+  // 用于修复标签更改名称后，SelectCheckBox 组件的 update-success 不能触发，列表中的标签名没有相应更新的 bug
+  if (newLabelData.length > 0) {
+    const diff = differenceBy(row.labels, newLabelData, 'name');
+    if (diff.length > 0) {
+      getList();
+      init();
+    }
+  }
 };
 
 // 更新成功

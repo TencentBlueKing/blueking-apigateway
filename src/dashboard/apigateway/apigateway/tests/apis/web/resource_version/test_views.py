@@ -262,6 +262,7 @@ class TestResourceVersionDiffApi:
                         "method": fake_resource.method,
                         "path": fake_resource.path,
                         "match_subpath": fake_resource.match_subpath,
+                        "enable_websocket": fake_resource.enable_websocket,
                         "is_public": fake_resource.is_public,
                         "allow_apply_permission": fake_resource.allow_apply_permission,
                         "proxy": {
