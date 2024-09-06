@@ -245,9 +245,9 @@ class AppPermissionExportApi(AppPermissionQuerySetMixin, generics.CreateAPIView)
                 data=data, queryset=self.get_queryset(), request=request
             ).qs
         elif data["export_type"] == ExportTypeEnum.SELECTED.value:
-            if data["resource_permission_ids"]:
+            if data.get("resource_permission_ids"):
                 resource_queryset = self.get_resource_queryset().filter(id__in=data["resource_permission_ids"])
-            if data["gateway_permission_ids"]:
+            if data.get("gateway_permission_ids"):
                 gateway_queryset = self.get_gateway_queryset().filter(id__in=data["gateway_permission_ids"])
 
         app_permissions = self.get_app_permissions(gateway_queryset, resource_queryset)
