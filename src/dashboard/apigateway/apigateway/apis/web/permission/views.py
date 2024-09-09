@@ -94,6 +94,7 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
                 "bk_app_code": perm.bk_app_code,
                 "expires": perm.expires,
                 "grant_dimension": GrantDimensionEnum.API.value,
+                "id": perm.id,
             }
             for perm in gateway_queryset
         ]
@@ -104,6 +105,7 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
                 "resource_id": perm.resource_id,
                 "expires": perm.expires,
                 "grant_dimension": GrantDimensionEnum.RESOURCE.value,
+                "id": perm.id,
             }
             for perm in resource_queryset
         ]
@@ -243,9 +245,9 @@ class AppPermissionExportApi(AppPermissionQuerySetMixin, generics.CreateAPIView)
                 data=data, queryset=self.get_queryset(), request=request
             ).qs
         elif data["export_type"] == ExportTypeEnum.SELECTED.value:
-            if data["resource_permission_ids"]:
+            if data.get("resource_permission_ids"):
                 resource_queryset = self.get_resource_queryset().filter(id__in=data["resource_permission_ids"])
-            if data["gateway_permission_ids"]:
+            if data.get("gateway_permission_ids"):
                 gateway_queryset = self.get_gateway_queryset().filter(id__in=data["gateway_permission_ids"])
 
         app_permissions = self.get_app_permissions(gateway_queryset, resource_queryset)

@@ -208,6 +208,15 @@
                               <div class="ag-value">{{ source.path }}</div>
                             </bk-col>
                           </bk-row>
+
+                          <bk-row>
+                            <bk-col :span="4">
+                              <label class="ag-key">{{ $t("启用 WebSocket") }}:</label>
+                            </bk-col>
+                            <bk-col :span="10">
+                              <div class="ag-value">{{ source.enable_websocket ? $t("是") : $t("否") }}</div>
+                            </bk-col>
+                          </bk-row>
                         </bk-container>
 
                         <template v-if="info.schema_version === '2.0'">

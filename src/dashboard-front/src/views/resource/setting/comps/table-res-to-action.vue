@@ -165,6 +165,12 @@
         </bk-button>
       </template>
     </bk-table-column>
+    <template #empty>
+      <TableEmpty
+        :keyword="keyword"
+        @clear-filter="handleClearFilter"
+      />
+    </template>
   </bk-table>
 </template>
 
@@ -179,6 +185,7 @@ import { ref, toRefs } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { MethodsEnum } from '@/types';
 import useTextGetter from '@/views/resource/setting/hooks/useTextGetter';
+import TableEmpty from '@/components/table-empty.vue';
 
 const {
   getAuthConfigText,
@@ -194,12 +201,14 @@ interface IProps {
   tableData: ILocalImportedResource[];
   showDoc: boolean;
   action: ActionType;
+  keyword: string;
 }
 
 const props = withDefaults(defineProps<IProps>(), {
   tableData: () => [],
   showDoc: true,
   action: 'add',
+  keyword: '',
 });
 
 const emit = defineEmits<{
@@ -209,6 +218,7 @@ const emit = defineEmits<{
   'toggle-row-unchecked': [row: ILocalImportedResource]
   'confirm-auth-config': [action: ActionType]
   'confirm-pub-config': [action: ActionType]
+  'clear-filter': [action: ActionType]
 }>();
 
 const tempAuthConfig = defineModel<IAuthConfig>('tempAuthConfig', {
@@ -223,6 +233,7 @@ const {
   tableData,
   showDoc,
   action,
+  keyword,
 } = toRefs(props);
 
 const pagination = ref({
@@ -258,6 +269,11 @@ const handleCancelAuthConfig = () => {
     auth_verified_required: false,
     resource_perm_required: false,
   }
+};
+
+// 点击清空搜索条件后
+const handleClearFilter = () => {
+  emit('clear-filter', action.value);
 };
 
 // 批量修改公开设置确认后

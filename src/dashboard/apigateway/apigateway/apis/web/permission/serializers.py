@@ -164,7 +164,7 @@ class AppPermissionExportInputSLZ(serializers.Serializer):
 
     def validate(self, data):
         if data["export_type"] == ExportTypeEnum.SELECTED.value and (
-            not data.get("gateway_permission_ids") or not data.get("resource_permission_ids")
+            not data.get("gateway_permission_ids") and not data.get("resource_permission_ids")
         ):
             raise serializers.ValidationError(_("导出已选中权限时，已选中权限不能为空。"))
         return data
