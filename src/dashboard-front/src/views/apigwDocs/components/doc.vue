@@ -63,7 +63,7 @@
                 <i class="ml5 bk-icon icon-question-circle" v-bk-tooltips="$t('应用访问该网关API前，是否需要在开发者中心申请该网关API权限')"></i>
                 ：
               </div>
-              <div class="v">{{curComponent.resource_perm_required ? $t('是') : $t('否')}}</div>
+              <div class="v">{{curComponent.allow_apply_permission ? $t('是') : $t('否')}}</div>
             </div>
           </div>
           <!-- eslint-disable-next-line vue/no-v-html -->
