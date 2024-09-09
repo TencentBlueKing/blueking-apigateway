@@ -136,6 +136,9 @@ class AppPermissionExportInputSLZ(serializers.Serializer):
     grant_type = serializers.ChoiceField(
         choices=GrantTypeEnum.get_choices(), allow_blank=True, required=False, help_text="授权类型"
     )
+    grant_dimension = serializers.ChoiceField(
+        help_text="授权维度", required=False, choices=GrantDimensionEnum.get_choices()
+    )
     order_by = serializers.ChoiceField(
         choices=["bk_app_code", "-bk_app_code", "expires", "-expires"],
         allow_blank=True,

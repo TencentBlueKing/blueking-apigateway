@@ -330,7 +330,8 @@ class AppPermissionApplyAPIView(APIView):
             )
             record_ids.append(record.id)
         try:
-            apply_async_on_commit(send_mail_for_perm_apply, args=record_ids)
+            for record_id in record_ids:
+                apply_async_on_commit(send_mail_for_perm_apply, args=[record_id])
         except Exception:
             logger.exception("send mail to gateway manager fail. apply_record_ids=%s", record_ids)
 
