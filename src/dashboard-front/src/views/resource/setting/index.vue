@@ -502,6 +502,7 @@ import { IDialog, IDropList, MethodsEnum } from '@/types';
 import { is24HoursAgo } from '@/common/util';
 import {  useCommon, useResourceVersion } from '@/store';
 import ResourceDocSideSlider from '@/views/components/resource-doc-slider/index.vue';
+import useMaxTableLimit from '@/hooks/use-max-table-limit';
 
 const props = defineProps({
   apigwId: {
@@ -764,16 +765,7 @@ const labelsList = computed(() => {
 
 // 当前视口高度能展示最多多少条表格数据
 const maxTableLimit = ref(10);
-
-// 计算当前视口高度下能展示多少表格行
-const calcMaxTableLimit = (lineHeight = 42, heightTaken = 347) => {
-  const viewportHeight = window.innerHeight;
-  const heightToUse = viewportHeight - heightTaken;
-  const limit = Math.floor(heightToUse / lineHeight);
-  return limit > 0 ? limit : 1;
-};
-
-maxTableLimit.value = calcMaxTableLimit();
+maxTableLimit.value = useMaxTableLimit();
 
 // 列表hooks
 const {

@@ -37,7 +37,7 @@
         <bk-form-item :label="$t('生成语言')" required property="language">
           <bk-radio-group v-model="formData.language" type="card">
             <bk-radio-button label="python">Python</bk-radio-button>
-            <bk-radio-button label="golang">Golang</bk-radio-button>
+            <bk-radio-button label="java">Java</bk-radio-button>
           </bk-radio-group>
         </bk-form-item>
       </bk-form>
