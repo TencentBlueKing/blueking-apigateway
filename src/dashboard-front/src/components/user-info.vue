@@ -13,7 +13,7 @@ const userInfo = ref(user.user);
 <template>
   <bk-popover
     ext-cls="user-home"
-    placement="bottom-end"
+    placement="bottom"
     theme="light"
     :arrow="false"
   >
@@ -36,6 +36,7 @@ const userInfo = ref(user.user);
   font-size: 14px;
 }
 .user-name {
+  padding-left: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -46,7 +47,7 @@ const userInfo = ref(user.user);
 .logout {
   display: inline-block;
   text-align: center;
-  width: 50px;
+  width: 80px;
   cursor: pointer;
   color: #63656E;
 }
