@@ -13,7 +13,7 @@
     >
       <template #header>
         <div class="custom-side-header">
-          <div class="title">{{ isAdd ? t('新建环境') : t('编辑环境') }}</div>
+          <div class="title">{{ title }}</div>
           <template v-if="!isAdd">
             <span></span>
             <div class="subtitle">{{ curStageData.name }}</div>
@@ -22,7 +22,7 @@
       </template>
       <template #default>
         <bk-loading :loading="isDialogLoading">
-          <div class="sideslider-content">
+          <div v-if="actionType !== 'check'" class="sideslider-content">
             <bk-collapse v-model="activeKey" class="bk-collapse-service">
               <bk-collapse-panel name="base-info">
                 <template #header>
@@ -222,8 +222,96 @@
               </bk-collapse-panel>
             </bk-collapse>
           </div>
+          <div v-else class="sideslider-content check-mode">
+            <p class="title mt15">
+              {{ $t("基本信息") }}
+            </p>
+            <bk-container class="ag-kv-box" :col="14" :margin="6">
+              <bk-row>
+                <bk-col :span="4">
+                  <label class="ag-key">{{ $t("环境名称") }}:</label>
+                </bk-col>
+                <bk-col :span="10">
+                  <div class="ag-value">
+                    {{ curStageData.name }}
+                  </div>
+                </bk-col>
+              </bk-row>
 
-          <div class="footer-btn-wrapper">
+              <bk-row>
+                <bk-col :span="4" class="mt8">
+                  <label class="ag-key">{{ $t("访问地址") }}:</label>
+                </bk-col>
+                <bk-col :span="10">
+                  <div class="ag-value address">
+                    <span>{{ stageAddress || '--' }}</span>
+                    <i
+                      class="apigateway-icon icon-ag-copy-info"
+                      @click.self="copy(stageAddress)"
+                    ></i>
+                  </div>
+                </bk-col>
+              </bk-row>
+            </bk-container>
+
+            <template
+              v-for="backend in curStageData.backends"
+              :key="backend.name"
+            >
+              <p class="title mt15">
+                {{ `后端服务：${backend.name}` }}
+              </p>
+              <bk-container class="ag-kv-box" :col="14" :margin="6">
+                <bk-row>
+                  <bk-col :span="4">
+                    <label class="ag-key">{{ $t("负载均衡类型") }}:</label>
+                  </bk-col>
+                  <bk-col :span="10">
+                    <div class="ag-value">
+                      {{ getLoadBalanceText(backend.config.loadbalance) }}
+                    </div>
+                  </bk-col>
+                </bk-row>
+                <template
+                  v-for="host in backend.config.hosts"
+                  :key="host.host"
+                >
+                  <bk-row>
+                    <bk-col :span="4">
+                      <label class="ag-key">{{ $t("后端服务地址") }}:</label>
+                    </bk-col>
+                    <bk-col :span="10">
+                      <div class="ag-value">
+                        {{ `${host.scheme}://${host.host}` }}
+                      </div>
+                    </bk-col>
+                  </bk-row>
+                  <bk-row v-if="backend.config.loadbalance === 'weighted-roundrobin'">
+                    <bk-col :span="4">
+                      <label class="ag-key">{{ $t("权重") }}:</label>
+                    </bk-col>
+                    <bk-col :span="10">
+                      <div class="ag-value">
+                        {{ host.weight }}
+                      </div>
+                    </bk-col>
+                  </bk-row>
+                </template>
+                <bk-row>
+                  <bk-col :span="4">
+                    <label class="ag-key">{{ $t("超时时间") }}:</label>
+                  </bk-col>
+                  <bk-col :span="10">
+                    <div class="ag-value">
+                      {{ `${backend.config.timeout}秒` }}
+                    </div>
+                  </bk-col>
+                </bk-row>
+              </bk-container>
+            </template>
+          </div>
+
+          <div v-if="actionType !== 'check'" class="footer-btn-wrapper">
             <bk-button
               theme="primary"
               style="padding: 0 30px"
@@ -290,6 +378,7 @@ const isShow = ref(false);
 const isAdsorb = ref<boolean>(false);
 const activeKey = ref(['base-info', 'stage-config']);
 const activeIndex = ref([0]);
+const actionType = ref('add');
 const emit = defineEmits(['hidden']);
 
 // 全局变量
@@ -337,6 +426,13 @@ const loadbalanceList = [
 
 // scheme 类型
 const schemeList = [{ value: 'http' }, { value: 'https' }];
+
+// slider 标题
+const titleTextMap: {[key: string]: string} = {
+  add: t('新建环境'),
+  edit: t('编辑环境'),
+  check: t('查看环境'),
+};
 
 // 访问地址
 const stageAddress = computed(() => {
@@ -428,6 +524,10 @@ const apigwId = +route.params.id;
 // 默认为新建
 const isAdd = ref(true);
 
+const title = computed(() => {
+  return titleTextMap[actionType.value] ?? t('环境');
+});
+
 const setBackendConfigRef = (el: any) => {
   if (el !== null) {
     backendConfigRef.value.push(el);
@@ -452,6 +552,18 @@ const addInit = async () => {
   });
   isDialogLoading.value = false;
   initSidebarFormData(curStageData.value);
+};
+
+// 查看态初始化
+const checkInit = async () => {
+  isDialogLoading.value = true;
+  try {
+    const data = await getStageDetail(apigwId, stageStore.curStageData.id);
+    curStageData.value.name = data.name;
+    curStageData.value.backends = await getStageBackends(common.apigwId, stageStore.curStageData.id);
+  } finally {
+    isDialogLoading.value = false;
+  }
 };
 
 // 获取环境详情（编辑）
@@ -498,11 +610,12 @@ const handleCloseSideSlider = () => {
 const handleShowSideslider = async (type: string) => {
   // 数据重置
   handleCloseSideSlider();
+  actionType.value = type || 'add';
   // 新建环境获取当前网关下的所有后端服务进行配置
   if (type === 'add') {
     isAdd.value = true;
     addInit();
-  } else {
+  } else if (type === 'edit') {
     isAdd.value = false;
     // 编辑环境
     await Promise.all([
@@ -511,6 +624,9 @@ const handleShowSideslider = async (type: string) => {
       getStageBackendList(),
     ]);
     initSidebarFormData(curStageData.value);
+  } else if (type === 'check') {
+    isAdd.value = false;
+    await checkInit();
   }
   isShow.value = true;
 };
@@ -578,7 +694,10 @@ const handleConfirmEdit = async () => {
 };
 
 const handleBeforeClose = async () => {
-  return isSidebarClosed(JSON.stringify(curStageData.value));
+  if (actionType.value !== 'check') {
+    return isSidebarClosed(JSON.stringify(curStageData.value));
+  }
+  return true;
 };
 
 const handleAnimationEnd = () => {
@@ -594,7 +713,6 @@ const handleCancel = () => {
 
 // 添加服务地址
 const handleAddServiceAddress = (name: string) => {
-  console.log('add', curStageData.value);
   curStageData.value.backends.forEach((v) => {
     if (v.name === name) {
       v.config.hosts.push({
@@ -637,6 +755,10 @@ const controlToggle = () => {
     isAdsorb.value = false;
     el?.classList?.remove('is-pinned');
   }
+};
+
+const getLoadBalanceText = (value: string) => {
+  return loadbalanceList.find(item => item.id === value)?.name ?? '--';
 };
 
 const observerBtnScroll = () => {
@@ -731,6 +853,33 @@ defineExpose({
   .weights-input {
     :deep(.bk-input--number-control) {
       display: none;
+    }
+  }
+
+  &.check-mode {
+    .title {
+      font-size: 13px;
+      color: #63656e;
+      font-weight: bold;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #dcdee5;
+      margin-bottom: 17px;
+    }
+    .ag-kv-box {
+      .bk-grid-row {
+        margin-bottom: 12px;
+      }
+      .ag-key {
+        font-size: 14px;
+        color: #63656e;
+        display: block;
+        text-align: right;
+        padding-right: 0;
+      }
+      .ag-value {
+        font-size: 14px;
+        color: #313238;
+      }
     }
   }
 }
