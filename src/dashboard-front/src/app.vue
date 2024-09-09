@@ -35,7 +35,7 @@
                 </div>
               </template>
             </div>
-            <div class="flex-row">
+            <div class="header-aside-wrap">
               <language-toggle></language-toggle>
               <product-info></product-info>
               <user-info v-if="userLoaded" />
@@ -429,6 +429,12 @@ onMounted(() => {
               }
           }
       }
+    }
+
+    .header-aside-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
     }
   }
 }
