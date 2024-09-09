@@ -3,7 +3,12 @@ ARG TAG=3.10.12-slim-bullseye
 FROM ${IMAGE}:${TAG}
 
 RUN apt-get update && apt-get install -y libssl-dev default-libmysqlclient-dev libffi-dev \
-    build-essential libc6-dev libjpeg-dev zlib1g-dev vim procps default-mysql-client curl openjdk-11-jdk maven
+    build-essential libc6-dev libjpeg-dev zlib1g-dev vim procps default-mysql-client curl zip unzip
+
+# install kona-jdk maven
+RUN curl -s "https://get.sdkman.io" | bash 
+RUN bash -c "source /root/.sdkman/bin/sdkman-init.sh && sdk install java 11.0.19-kona && apt-get -y install maven"
+
 ARG PYPI="https://pypi.org/simple/"
 RUN pip config set global.index-url "${PYPI}"
 
