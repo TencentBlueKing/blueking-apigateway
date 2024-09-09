@@ -316,6 +316,9 @@
             "matchSubpath": {
               "type": "boolean"
             },
+            "enableWebsocket": {
+              "type": "boolean"
+            },
             "backend": {
               "type": "object",
               "oneOf": [
