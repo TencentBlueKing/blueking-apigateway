@@ -74,9 +74,10 @@ class AppResourcePermissionManager(models.Manager):
         queryset = self.filter(gateway=gateway, bk_app_code=bk_app_code, resource_id__in=resource_ids)
         # 仅续期权限期限小于待续期时间的权限
         expires = to_datetime_from_now(days=expire_days)
+        expire_time = calculate_expires(expire_days)
         queryset = queryset.filter(expires__lt=expires)
         queryset.update(
-            expires=expires,
+            expires=expire_time,
             grant_type=grant_type,
         )
 
