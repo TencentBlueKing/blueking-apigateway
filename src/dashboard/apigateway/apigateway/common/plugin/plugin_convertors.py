@@ -102,6 +102,14 @@ class BkCorsConvertor(PluginConvertor):
         return config
 
 
+class BkMockConvertor(PluginConvertor):
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.BK_MOCK
+
+    def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        config["response_headers"] = {item["key"]: item["value"] for item in config["response_headers"]}
+        return config
+
+
 class PluginConvertorFactory:
     plugin_convertors: ClassVar[Dict[PluginTypeCodeEnum, PluginConvertor]] = {
         c.plugin_type_code: c
@@ -109,6 +117,7 @@ class PluginConvertorFactory:
             HeaderWriteConvertor(),
             IPRestrictionConvertor(),
             BkCorsConvertor(),
+            BkMockConvertor(),
         ]
     }
 
