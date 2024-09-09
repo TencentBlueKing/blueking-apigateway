@@ -22,10 +22,12 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apis.open.permissions import (
+    OpenAPIGatewayRelatedAppPermission,
+)
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.releaser import ReleaseError, release
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import ResourceVersion, Stage
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
@@ -54,7 +56,7 @@ from .serializers import (
     ),
 )
 class ResourceVersionListCreateApi(generics.ListCreateAPIView):
-    permission_classes = [GatewayRelatedAppPermission]
+    permission_classes = [OpenAPIGatewayRelatedAppPermission]
     serializer_class = ResourceVersionCreateV1InputSLZ
 
     def list(self, request, *args, **kwargs):
@@ -96,7 +98,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
 
 
 class ResourceVersionReleaseApi(generics.CreateAPIView):
-    permission_classes = [GatewayRelatedAppPermission]
+    permission_classes = [OpenAPIGatewayRelatedAppPermission]
     serializer_class = ReleaseV1InputSLZ
 
     @swagger_auto_schema(tags=["OpenAPI.ResourceVersion"])
@@ -142,7 +144,7 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
 
 
 class ResourceVersionGetLatestApi(generics.RetrieveAPIView):
-    permission_classes = [GatewayRelatedAppPermission]
+    permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
     @swagger_auto_schema(tags=["OpenAPI.ResourceVersion"])
     def get(self, request, gateway_name: str, *args, **kwargs):

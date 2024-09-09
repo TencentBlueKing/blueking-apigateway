@@ -90,3 +90,17 @@ class GatewaySDKHandler:
             .annotate(count=Count("id"))
         )
         return {item["resource_version_id"]: item["count"] for item in queryset}
+
+    @staticmethod
+    def get_sdks(gateway_ids: List[int]) -> Dict[int, List[Dict]]:
+        data: Dict[int, List[Dict]] = {}
+        queryset = GatewaySDK.objects.filter(gateway_id__in=gateway_ids, is_recommended=True)
+        for sdk in queryset:
+            sdk_dict = SDKFactory().create(sdk).as_dict()
+            gateway_id = sdk.gateway.id
+            if gateway_id not in data:
+                data[gateway_id] = [sdk_dict]
+            else:
+                data[gateway_id].append(sdk_dict)
+
+        return data

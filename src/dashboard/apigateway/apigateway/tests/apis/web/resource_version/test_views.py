@@ -125,6 +125,7 @@ class TestResourceVersionRetrieveApi:
                     "is_public": fake_resource_version_v2.data[0]["is_public"],
                     "allow_apply_permission": fake_resource_version_v2.data[0]["allow_apply_permission"],
                     "doc_updated_time": "",
+                    "enable_websocket": False,
                     "proxy": {
                         "config": fake_resource_version_v2.data[0]["proxy"]["config"],
                         "backend": {

@@ -23,6 +23,7 @@ from ddf import G
 
 from apigateway.apis.open.permission import views
 from apigateway.apps.permission import models
+from apigateway.core.models import Gateway
 from apigateway.tests.utils.testing import get_response_json
 
 pytestmark = pytest.mark.django_db
@@ -31,7 +32,7 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture(autouse=True)
 def disable_api_related_app_permission_check(mocker):
     mocker.patch(
-        "apigateway.apis.open.permission.views.GatewayRelatedAppPermission.has_permission",
+        "apigateway.apis.open.permission.views.OpenAPIGatewayRelatedAppPermission.has_permission",
         return_value=True,
     )
 
@@ -131,14 +132,20 @@ class TestResourceViewSet:
     def test_list(
         self,
         mocker,
-        fake_gateway,
+        # fake_gateway,
         request_factory,
         is_active_and_public,
         mocked_resources,
         mocked_resource_permissions,
         expected,
     ):
-        fake_gateway.name = "test"
+        fake_gateway = G(
+            Gateway,
+            name="test",
+            _maintainers="admin",
+            status=1,
+            is_public=True,
+        )
 
         if mocked_resources:
             for d in mocked_resources:
@@ -179,7 +186,7 @@ class TestResourceViewSet:
         request.app = mock.MagicMock(app_code="test")
 
         view = views.ResourceViewSet.as_view({"get": "list"})
-        response = view(request)
+        response = view(request, gateway_id=fake_gateway.id)
 
         result = get_response_json(response)
         assert result["data"] == expected
@@ -287,7 +294,7 @@ class TestAppPermissionRecordViewSet:
 class TestAppPermissionGrantViewSet:
     def test_grant(self, mocker, request_factory, fake_gateway):
         mocker.patch(
-            "apigateway.apis.open.permission.views.GatewayRelatedAppPermission.has_permission",
+            "apigateway.apis.open.permission.views.OpenAPIGatewayRelatedAppPermission.has_permission",
             return_value=True,
         )
         request = request_factory.post(

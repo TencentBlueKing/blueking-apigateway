@@ -264,6 +264,7 @@
                   action="add"
                   :table-data="tableDataToAdd"
                   :show-doc="showDoc"
+                  :keyword="filterInputAddClone"
                   v-model:tempAuthConfig="tempAuthConfig"
                   v-model:tempPublicConfig="tempPublicConfig"
                   @show-row-doc="handleShowResourceDoc"
@@ -272,6 +273,7 @@
                   @toggle-row-unchecked="toggleRowUnchecked"
                   @confirm-auth-config="handleConfirmAuthConfigPopConfirm"
                   @confirm-pub-config="handleConfirmPublicConfigPopConfirm"
+                  @clear-filter="clearFilterInput"
                 ></TableResToAction>
               </div>
             </template>
@@ -317,6 +319,7 @@
                 <TableResToAction
                   action="update"
                   :table-data="tableDataToUpdate"
+                  :keyword="filterInputUpdateClone"
                   v-model:tempAuthConfig="tempAuthConfig"
                   v-model:tempPublicConfig="tempPublicConfig"
                   @show-row-doc="handleShowResourceDoc"
@@ -325,6 +328,7 @@
                   @toggle-row-unchecked="toggleRowUnchecked"
                   @confirm-auth-config="handleConfirmAuthConfigPopConfirm"
                   @confirm-pub-config="handleConfirmPublicConfigPopConfirm"
+                  @clear-filter="clearFilterInput"
                 ></TableResToAction>
               </div>
             </template>
@@ -591,6 +595,7 @@ import {
 } from '@/views/resource/setting/types';
 import TableResToAction from '@/views/resource/setting/comps/table-res-to-action.vue';
 import TableResToUncheck from '@/views/resource/setting/comps/table-res-to-uncheck.vue';
+
 // @ts-ignore
 import { useParentElement } from '@vueuse/core';
 
@@ -823,8 +828,9 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
   }
   try {
     isDataLoading.value = true;
-    // 清空编辑器高亮样式
-    resourceEditorRef?.value?.clearDecorations();
+    // 清空编辑器高亮样式和所有下划波浪线
+    resourceEditorRef.value?.clearDecorations();
+    resourceEditorRef.value?.clearMarkers();
     errorReasons.value = [];
     // 重置可视错误消息类型
     activeCodeMsgType.value = 'All';
@@ -934,8 +940,9 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
     }
     // console.log('errorReasons:');
     // console.log(errorReasons.value);
-    // 更新编辑器高亮样式
+    // 更新编辑器高亮样式和下划波浪线
     updateEditorDecorations();
+    updateEditorMarkers();
     // 展开错误消息栏
     if (isEditorMsgCollapsed) {
       await nextTick(() => {
@@ -1047,6 +1054,16 @@ const updateEditorDecorations = () => {
     level: r.level,
   })));
   resourceEditorRef.value.setDecorations();
+};
+
+// 触发编辑器添加下划波浪线
+const updateEditorMarkers = () => {
+  resourceEditorRef.value.clearMarkers();
+  resourceEditorRef.value.genMarkers(errorReasons.value.map(r => ({
+    position: r.position,
+    message: r.message,
+  })));
+  resourceEditorRef.value.setMarkers();
 };
 
 // 处理代码错误消息点击事件，应跳转到编辑器对应行
@@ -1216,6 +1233,7 @@ const filterInputAdd = ref('');
 const filterInputAddClone = ref('');
 const filterInputUpdate = ref('');
 const filterInputUpdateClone = ref('');
+
 const filterData = (action: ActionType) => {
   if (action === 'add') {
     filterInputAdd.value = filterInputAddClone.value;
@@ -1223,6 +1241,18 @@ const filterData = (action: ActionType) => {
 
   if (action === 'update') {
     filterInputUpdate.value = filterInputUpdateClone.value;
+  }
+};
+
+const clearFilterInput = (action: ActionType) => {
+  if (action === 'add') {
+    filterInputAdd.value = '';
+    filterInputAddClone.value = '';
+  }
+
+  if (action === 'update') {
+    filterInputUpdate.value = '';
+    filterInputUpdateClone.value = '';
   }
 };
 

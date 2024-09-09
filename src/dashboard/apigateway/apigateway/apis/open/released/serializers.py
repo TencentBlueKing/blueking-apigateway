@@ -58,6 +58,7 @@ class ReleasedResourceListV1InputSLZ(ResourceV1SLZ):
     url = serializers.SerializerMethodField()
     description = SerializerTranslatedField(translated_fields={"en": "description_en"})
     match_subpath = serializers.BooleanField()
+    enable_websocket = serializers.BooleanField()
     path = None
 
     def get_url(self, obj):
