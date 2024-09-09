@@ -21,4 +21,4 @@ implementation 'com.tencent.bkapi:{gateway_name}:{sdk_version}'
 假定网关 {{gateway_name}} 下存在网关 API {{resource_name}}。
 
 
-{% include "api_sdk/zh-hans/python_sdk_usage_example.md" %}
+{% include "api_sdk/zh-hans/java_sdk_usage_example.md" %}
