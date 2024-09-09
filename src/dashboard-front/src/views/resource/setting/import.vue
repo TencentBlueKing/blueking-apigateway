@@ -504,11 +504,11 @@
             t('返回查看')
           }}
         </bk-button>
-        <bk-button @click="goBack()">
-          {{
-            t('继续导入')
-          }}
-        </bk-button>
+        <!--        <bk-button @click="goBack()">-->
+        <!--          {{-->
+        <!--            t('继续导入')-->
+        <!--          }}-->
+        <!--        </bk-button>-->
       </section>
     </article>
     <!--  导入失败  -->
