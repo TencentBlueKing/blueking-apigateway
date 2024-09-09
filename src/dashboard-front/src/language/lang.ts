@@ -267,6 +267,7 @@ const lang: ILANG = {
   '请求方法+请求路径在网关下唯一，请至少调整其中一项': ['The method + path should be unique, please adjust one of them'],
   '创建网关': ['Create Gateway'],
   '新建环境': ['Create Stage'],
+  '查看环境': ['Check Stage'],
   '新建资源': ['Create Resource'],
   '编辑资源': ['Edit Resource'],
   '克隆资源': ['Clone Resource'],
