@@ -7,7 +7,7 @@
     :always="false"
   >
     <div class="info-icon">
-      <span class="icon apigateway-icon icon-ag-help-document-fill"></span>
+      <span class="icon apigateway-icon icon-ag-help-document-fill f18"></span>
     </div>
     <template #content>
       <bk-link class="info-item" :href="GLOBAL_CONFIG.DOC.GUIDE" target="_blank">
@@ -80,10 +80,16 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
 .info-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
   cursor: pointer;
-  margin-right: 30px;
 }
 .info-icon:hover {
+  background-color: #303d55;
   color: #fff;
 }
 .info-item {
