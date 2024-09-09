@@ -3,7 +3,7 @@
     theme="light" placement="bottom" :arrow="false" :padding="0">
     <div class="toggle-language-icon">
       <span
-        class="icon apigateway-icon"
+        class="icon apigateway-icon f22"
         :class="locale === 'en' ? 'icon-ag-toggle-english' : 'icon-ag-toggle-chinese'"></span>
     </div>
     <template #content>
@@ -68,14 +68,20 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .toggle-language-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
   cursor: pointer;
-  margin-right: 30px;
   .icon {
     font-size: 16px;
     vertical-align: middle;
   }
 }
 .toggle-language-icon:hover {
+  background-color: #303d55;
   color: #fff;
 }
 .language-item {
