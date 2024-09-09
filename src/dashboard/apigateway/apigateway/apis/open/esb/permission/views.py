@@ -24,6 +24,9 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.esb.permission import serializers
+from apigateway.apis.open.permissions import (
+    OpenAPIPermission,
+)
 from apigateway.apps.esb.bkcore.models import (
     AppPermissionApplyRecord,
     ComponentSystem,
@@ -37,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 
 class ComponentViewSet(viewsets.GenericViewSet):
-    request_from_gateway_required = True
+    permission_classes = [OpenAPIPermission]
     serializer_class = serializers.AppPermissionComponentSLZ
 
     @swagger_auto_schema(
@@ -63,7 +66,7 @@ class ComponentViewSet(viewsets.GenericViewSet):
 
 
 class AppPermissionApplyV1APIView(viewsets.GenericViewSet):
-    request_from_gateway_required = True
+    permission_classes = [OpenAPIPermission]
     serializer_class = serializers.AppPermissionApplySLZ
 
     @transaction.atomic
@@ -102,7 +105,7 @@ class AppPermissionRenewAPIView(viewsets.GenericViewSet):
     权限续期
     """
 
-    request_from_gateway_required = True
+    permission_classes = [OpenAPIPermission]
     serializer_class = serializers.AppPermissionRenewSLZ
 
     def renew(self, request, *args, **kwargs):
@@ -122,7 +125,7 @@ class AppPermissionRenewAPIView(viewsets.GenericViewSet):
 
 
 class AppPermissionViewSet(viewsets.ViewSet):
-    request_from_gateway_required = True
+    permission_classes = [OpenAPIPermission]
 
     def list(self, request, *args, **kwargs):
         """已申请权限列表"""
@@ -142,7 +145,7 @@ class AppPermissionViewSet(viewsets.ViewSet):
 
 
 class AppPermissionApplyRecordViewSet(viewsets.GenericViewSet):
-    request_from_gateway_required = True
+    permission_classes = [OpenAPIPermission]
     serializer_class = serializers.AppPermissionApplyRecordQuerySLZ
 
     def list(self, request, *args, **kwargs):

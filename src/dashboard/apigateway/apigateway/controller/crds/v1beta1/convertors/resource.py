@@ -103,6 +103,7 @@ class HttpResourceConvertor(BaseConvertor):
                 uri=resource["path"],
                 methods=methods,
                 match_subpath=resource_proxy.get("match_subpath", False),
+                enable_websocket=resource.get("enable_websocket", False),
                 # 此处会覆盖 upstream 定义的超时，最终以这里为准
                 timeout=self._convert_http_resource_timeout(resource_proxy),
                 rewrite=self._convert_http_resource_rewrite(resource_proxy),
@@ -131,6 +132,7 @@ class HttpResourceConvertor(BaseConvertor):
             "method": "GET",
             "path": "/__apigw_version",
             "match_subpath": False,
+            "enable_websocket": False,
             "is_public": False,
             "allow_apply_permission": False,
             "proxy": {
@@ -159,6 +161,7 @@ class HttpResourceConvertor(BaseConvertor):
                 uri=resource["path"],
                 methods=[resource["method"]],
                 match_subpath=False,
+                enable_websocket=False,
                 timeout=self._convert_http_resource_timeout({"timeout": 60}),
                 rewrite=ResourceRewrite(enabled=False),
                 plugins=plugins,

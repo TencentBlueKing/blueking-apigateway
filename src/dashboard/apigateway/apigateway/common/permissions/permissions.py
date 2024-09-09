@@ -22,8 +22,7 @@ from django.utils.translation import gettext_lazy
 from rest_framework import permissions
 
 from apigateway.core.constants import GatewayStatusEnum
-from apigateway.core.models import Gateway, GatewayRelatedApp
-from apigateway.utils.django import get_object_or_None
+from apigateway.core.models import Gateway
 
 
 class GatewayPermission(permissions.BasePermission):
@@ -34,10 +33,6 @@ class GatewayPermission(permissions.BasePermission):
     message = gettext_lazy("当前用户无访问网关权限")
 
     def has_permission(self, request, view):
-        # openapi 的请求来源必须是网关，此时经过网关的中间件（所有都开启了应用认证）, 请求中会注入 app 对象
-        if getattr(view, "request_from_gateway_required", False) and not hasattr(request, "app"):
-            return False
-
         gateway_obj = self.get_gateway_object(view)
 
         # FIXME: 可能的越权，待重构 open api 之后，确认剩下的逻辑哪里有需要这个的
@@ -66,49 +61,6 @@ class GatewayPermission(permissions.BasePermission):
 
         filter_kwargs = {"id": view.kwargs[lookup_url_kwarg]}
         return get_object_or_404(Gateway, **filter_kwargs)
-
-
-class GatewayRelatedAppPermission(permissions.BasePermission):
-    """
-    获取网关并验证应用是否有操作网关的权限
-    """
-
-    message = gettext_lazy("应用无操作网关权限")
-
-    def has_permission(self, request, view):
-        # openapi 的请求来源必须是网关，此时经过网关的中间件（所有都开启了应用认证）, 请求中会注入 app 对象
-        if not hasattr(request, "app"):
-            return False
-
-        gateway_obj = self.get_gateway_object(view)
-        # NOTE: only for GatewaySyncApi /<slug:gateway_name>/sync/, at that time, the gateway_obj is None
-        # should be refactored in the future 新版 openapi 不要这么设计了
-        if not gateway_obj and getattr(view, "allow_gateway_not_exist", False):
-            return True
-
-        if not gateway_obj:
-            raise Http404
-
-        request.gateway = gateway_obj
-
-        # 跳过网关权限校验
-        if getattr(view, "gateway_permission_exempt", False):
-            return True
-
-        return GatewayRelatedApp.objects.filter(gateway=request.gateway, bk_app_code=request.app.app_code).exists()
-
-    def get_gateway_object(self, view):
-        """
-        根据路径参数 gateway_name 获取网关对象
-        若 gateway_name 不在路径参数中，或网关不存在，返回 None
-        """
-        lookup_url_kwarg = "gateway_name"
-
-        if lookup_url_kwarg not in view.kwargs:
-            return None
-
-        filter_kwargs = {"name": view.kwargs[lookup_url_kwarg]}
-        return get_object_or_None(Gateway, **filter_kwargs)
 
 
 class GatewayDisplayablePermission(permissions.BasePermission):

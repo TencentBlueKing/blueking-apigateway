@@ -310,12 +310,12 @@ reference = "tencent"
 
 [[package]]
 name = "bkapi-client-generator"
-version = "0.1.29"
+version = "0.1.30"
 description = ""
 optional = false
 python-versions = ">=3.6,<4.0"
 files = [
-    {file = "bkapi_client_generator-0.1.29-py3-none-any.whl", hash = "sha256:da1b1561cf05e0ed7b82e2a46f54feeb788557ec9fa3831aae133ca3c414e917"},
+    {file = "bkapi_client_generator-0.1.30-py3-none-any.whl", hash = "sha256:c09cda8dabdfa7b0106f20ad572f2ce9d3249feea4edf351c0d5666bb1421860"},
 ]
 
 [package.source]
@@ -5029,4 +5029,4 @@ reference = "tencent"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "0f46e6e5722f82b0b1365af7f02d2173bfcb3afb4e8602ce71eaff55ba5719ef"
+content-hash = "2f4aa3e247ca8e26808d804e5bd135807a4ded255dc01359708124e7d0fd624c"

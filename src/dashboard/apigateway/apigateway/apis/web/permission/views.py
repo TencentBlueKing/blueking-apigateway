@@ -30,7 +30,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.constants import ExportTypeEnum
-from apigateway.apps.permission.constants import ApplyStatusEnum, GrantTypeEnum
+from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
     AppGatewayPermission,
     AppPermissionApply,
@@ -50,40 +50,252 @@ from .filters import (
     AppResourcePermissionFilter,
 )
 from .serializers import (
-    AppGatewayPermissionExportOutputSLZ,
-    AppGatewayPermissionOutputSLZ,
     AppPermissionApplyApprovalInputSLZ,
     AppPermissionApplyOutputSLZ,
     AppPermissionExportInputSLZ,
+    AppPermissionExportOutputSLZ,
     AppPermissionIDsSLZ,
     AppPermissionInputSLZ,
+    AppPermissionOutputSLZ,
+    AppPermissionQueryInputSLZ,
     AppPermissionRecordOutputSLZ,
-    AppResourcePermissionExportOutputSLZ,
-    AppResourcePermissionOutputSLZ,
+    AppPermissionRenewInputSLZ,
 )
 
 logger = logging.getLogger(__name__)
 
 
+class AppGatewayPermissionQuerySetMixin:
+    def get_queryset(self):
+        return AppGatewayPermission.objects.filter(gateway=self.request.gateway).order_by("-id")
+
+
 class AppResourcePermissionQuerySetMixin:
     def get_queryset(self):
-        queryset = super().get_queryset()
-
         # 仅展示资源存在的权限
         resource_ids = Resource.objects.filter(gateway=self.request.gateway).values_list("id", flat=True)
-        return queryset.filter(gateway=self.request.gateway, resource_id__in=resource_ids).exclude(
-            bk_app_code=settings.DEFAULT_TEST_APP["bk_app_code"]
+        return (
+            AppResourcePermission.objects.filter(gateway=self.request.gateway, resource_id__in=resource_ids)
+            .exclude(bk_app_code=settings.DEFAULT_TEST_APP["bk_app_code"])
+            .order_by("-id")
         )
+
+
+class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourcePermissionQuerySetMixin):
+    def get_gateway_queryset(self):
+        return AppGatewayPermissionQuerySetMixin.get_queryset(self)
+
+    def get_resource_queryset(self):
+        return AppResourcePermissionQuerySetMixin.get_queryset(self)
+
+    def get_app_permissions(self, gateway_queryset, resource_queryset):
+        gateway_permissions = [
+            {
+                "bk_app_code": perm.bk_app_code,
+                "expires": perm.expires,
+                "grant_dimension": GrantDimensionEnum.API.value,
+            }
+            for perm in gateway_queryset
+        ]
+        resource_permission = [
+            {
+                "bk_app_code": perm.bk_app_code,
+                "grant_type": perm.grant_type,
+                "resource_id": perm.resource_id,
+                "expires": perm.expires,
+                "grant_dimension": GrantDimensionEnum.RESOURCE.value,
+            }
+            for perm in resource_queryset
+        ]
+        return gateway_permissions + resource_permission
 
 
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="获取资源权限列表",
-        responses={status.HTTP_200_OK: AppResourcePermissionOutputSLZ(many=True)},
+        operation_description="获取应用权限列表",
+        query_serializer=AppPermissionQueryInputSLZ(),
+        responses={status.HTTP_200_OK: AppPermissionOutputSLZ(many=True)},
         tags=["WebAPI.Permission"],
     ),
 )
+class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
+    def get_queryset(self):
+        query_params = self.request.query_params
+        app_gateway_permissions = AppGatewayPermissionFilter(self.request.GET, queryset=self.get_gateway_queryset()).qs
+        # 如果查询维度为资源 或者 授权类型不为 INITIALIZE(网关维度都为INITIALIZE)或者 查询某个资源 都要忽略掉网关维度的
+        if (
+            query_params.get("grant_dimension") == GrantDimensionEnum.RESOURCE.value
+            or (query_params.get("grant_type") and query_params.get("grant_type") != GrantTypeEnum.INITIALIZE.value)
+            or query_params.get("resource_id")
+        ):
+            app_gateway_permissions = []
+
+        app_resource_permissions = AppResourcePermissionFilter(
+            self.request.GET, queryset=self.get_resource_queryset()
+        ).qs
+        if query_params.get("grant_dimension") == GrantDimensionEnum.API.value:
+            app_resource_permissions = []
+
+        return self.get_app_permissions(app_gateway_permissions, app_resource_permissions)
+
+    def get(self, request, *args, **kwargs):
+        """
+        权限列表(gateway+resource)
+        """
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        resource_ids = [perm["resource_id"] for perm in page if perm.get("resource_id")]
+        resources = Resource.objects.filter(id__in=resource_ids)
+        serializer = AppPermissionOutputSLZ(
+            page, many=True, context={"resource_map": {resource.id: resource for resource in resources}}
+        )
+        return self.get_paginated_response(serializer.data)
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="批量续期",
+        responses={status.HTTP_201_CREATED: ""},
+        request_body=AppPermissionRenewInputSLZ,
+        tags=["WebAPI.Permission"],
+    ),
+)
+class AppPermissionRenewApi(generics.CreateAPIView):
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        """
+        批量续期
+        """
+        slz = AppPermissionRenewInputSLZ(data=request.data, context={"gateway": request.gateway})
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+
+        if data["resource_dimension_ids"]:
+            AppResourcePermission.objects.renew_by_ids(
+                gateway=request.gateway, ids=data["resource_dimension_ids"], expires=data["expire_days"]
+            )
+
+        if data["gateway_dimension_ids"]:
+            AppGatewayPermission.objects.renew_by_ids(
+                gateway=request.gateway, ids=data["gateway_dimension_ids"], expires=data["expire_days"]
+            )
+        return OKJsonResponse(status=status.HTTP_201_CREATED)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取有权限的应用列表",
+        responses={status.HTTP_200_OK: ""},
+        tags=["WebAPI.Permission"],
+    ),
+)
+class AppPermissionAppCodeListApi(generics.ListAPIView):
+    def list(self, request, *args, **kwargs):
+        """获取有权限的应用列表"""
+
+        gateway_app_codes = (
+            AppGatewayPermission.objects.filter(gateway=request.gateway)
+            .order_by("bk_app_code")
+            .values_list("bk_app_code", flat=True)
+        )
+
+        resource_app_codes = (
+            AppResourcePermission.objects.filter(gateway=request.gateway)
+            .order_by("bk_app_code")
+            .values_list("bk_app_code", flat=True)
+        )
+
+        # 去重
+        app_codes = sorted(set(gateway_app_codes) | set(resource_app_codes))
+        return OKJsonResponse(data=list(app_codes))
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="网关权限导出",
+        request_body=AppPermissionExportInputSLZ,
+        responses={status.HTTP_200_OK: ""},
+        tags=["WebAPI.Permission"],
+    ),
+)
+class AppPermissionExportApi(AppPermissionQuerySetMixin, generics.CreateAPIView):
+    def create(self, request, *args, **kwargs):
+        """
+        权限导出
+        """
+        slz = AppPermissionExportInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+
+        gateway_queryset = []
+        resource_queryset = []
+        if data["export_type"] == ExportTypeEnum.ALL.value:
+            gateway_queryset = self.get_gateway_queryset()
+            resource_queryset = self.get_resource_queryset()
+        elif data["export_type"] == ExportTypeEnum.FILTERED.value:
+            resource_queryset = AppResourcePermissionFilter(
+                data=data, queryset=self.get_queryset(), request=request
+            ).qs
+        elif data["export_type"] == ExportTypeEnum.SELECTED.value:
+            if data["resource_permission_ids"]:
+                resource_queryset = self.get_resource_queryset().filter(id__in=data["resource_permission_ids"])
+            if data["gateway_permission_ids"]:
+                gateway_queryset = self.get_gateway_queryset().filter(id__in=data["gateway_permission_ids"])
+
+        app_permissions = self.get_app_permissions(gateway_queryset, resource_queryset)
+
+        resource_ids = [perm["resource_id"] for perm in app_permissions if perm.get("resource_id")]
+        resources = Resource.objects.filter(id__in=resource_ids)
+        slz = AppPermissionExportOutputSLZ(
+            app_permissions, many=True, context={"resource_map": {resource.id: resource for resource in resources}}
+        )
+        content = self._get_csv_content(slz.data)
+
+        response = DownloadableResponse(content, filename=f"{self.request.gateway.name}-permissions.csv")
+        # FIXME: change to export excel directly, while the exported csv file copy from mac to windows is not ok now!
+        # use utf-8-sig for windows
+        response.charset = "utf-8-sig" if "windows" in request.headers.get("User-Agent", "").lower() else "utf-8"
+
+        return response
+
+    def _get_csv_content(self, data: List[Any]) -> str:
+        """
+        将筛选出的权限数据，整理为 csv 格式内容
+        """
+        data = sorted(data, key=lambda x: (x["bk_app_code"], x["resource_name"]))
+        headers = [
+            "bk_app_code",
+            "resource_name",
+            "resource_path",
+            "resource_method",
+            "expires",
+            "grant_type",
+            "grant_dimension",
+        ]
+        header_row = {
+            "bk_app_code": _("蓝鲸应用ID"),
+            "resource_name": _("资源名称"),
+            "resource_path": _("请求路径"),
+            "resource_method": _("请求方法"),
+            "expires": _("过期时间"),
+            "grant_type": _("授权类型"),
+            "grant_dimension": _("授权维度"),
+        }
+
+        content = StringIO()
+        io_csv = csv.DictWriter(content, fieldnames=headers, extrasaction="ignore")
+        io_csv.writerow(header_row)
+        io_csv.writerows(data)
+
+        return content.getvalue()
+
+
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
@@ -93,23 +305,8 @@ class AppResourcePermissionQuerySetMixin:
         tags=["WebAPI.Permission"],
     ),
 )
-class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, generics.ListCreateAPIView):
-    queryset = AppResourcePermission.objects.order_by("-id")
-    filterset_class = AppResourcePermissionFilter
-
-    def list(self, request, *args, **kwargs):
-        """
-        权限列表
-        """
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-
-        resources = Resource.objects.filter(id__in=[perm.resource_id for perm in page])
-        serializer = AppResourcePermissionOutputSLZ(
-            page, many=True, context={"resource_map": {resource.id: resource for resource in resources}}
-        )
-        return self.get_paginated_response(serializer.data)
-
+class AppResourcePermissionCreateApi(generics.CreateAPIView):
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         """
         主动授权
@@ -133,92 +330,6 @@ class AppResourcePermissionListCreateApi(AppResourcePermissionQuerySetMixin, gen
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        operation_description="资源权限导出",
-        request_body=AppPermissionExportInputSLZ,
-        responses={status.HTTP_200_OK: ""},
-        tags=["WebAPI.Permission"],
-    ),
-)
-class AppResourcePermissionExportApi(AppResourcePermissionQuerySetMixin, generics.CreateAPIView):
-    queryset = AppResourcePermission.objects.order_by("-id")
-
-    def create(self, request, *args, **kwargs):
-        """
-        权限导出
-        """
-        slz = AppPermissionExportInputSLZ(data=request.data)
-        slz.is_valid(raise_exception=True)
-
-        data = slz.validated_data
-
-        if data["export_type"] == ExportTypeEnum.ALL.value:
-            queryset = self.get_queryset()
-        elif data["export_type"] == ExportTypeEnum.FILTERED.value:
-            queryset = AppResourcePermissionFilter(data=data, queryset=self.get_queryset(), request=request).qs
-        elif data["export_type"] == ExportTypeEnum.SELECTED.value:
-            queryset = self.get_queryset().filter(id__in=data["permission_ids"])
-
-        resources = Resource.objects.filter(id__in=[perm.resource_id for perm in queryset])
-        slz = AppResourcePermissionExportOutputSLZ(
-            queryset, many=True, context={"resource_map": {resource.id: resource for resource in resources}}
-        )
-        content = self._get_csv_content(slz.data)
-
-        response = DownloadableResponse(content, filename=f"{self.request.gateway.name}-permissions.csv")
-        # FIXME: change to export excel directly, while the exported csv file copy from mac to windows is not ok now!
-        # use utf-8-sig for windows
-        response.charset = "utf-8-sig" if "windows" in request.headers.get("User-Agent", "").lower() else "utf-8"
-
-        return response
-
-    def _get_csv_content(self, data: List[Any]) -> str:
-        """
-        将筛选出的权限数据，整理为 csv 格式内容
-        """
-        data = sorted(data, key=lambda x: (x["bk_app_code"], x["resource_name"]))
-        headers = ["bk_app_code", "resource_name", "resource_path", "resource_method", "expires", "grant_type"]
-        header_row = {
-            "bk_app_code": _("蓝鲸应用ID"),
-            "resource_name": _("资源名称"),
-            "resource_path": _("请求路径"),
-            "resource_method": _("请求方法"),
-            "expires": _("过期时间"),
-            "grant_type": _("授权类型"),
-        }
-
-        content = StringIO()
-        io_csv = csv.DictWriter(content, fieldnames=headers, extrasaction="ignore")
-        io_csv.writerow(header_row)
-        io_csv.writerows(data)
-
-        return content.getvalue()
-
-
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取有资源权限的应用列表",
-        responses={status.HTTP_200_OK: ""},
-        tags=["WebAPI.Permission"],
-    ),
-)
-class AppResourcePermissionAppCodeListApi(generics.ListAPIView):
-    @swagger_auto_schema()
-    def list(self, request, *args, **kwargs):
-        """获取有权限的应用列表"""
-
-        app_codes = list(
-            AppResourcePermission.objects.filter(gateway=request.gateway)
-            .order_by("bk_app_code")
-            .distinct()
-            .values_list("bk_app_code", flat=True)
-        )
-        return OKJsonResponse(data=app_codes)
-
-
-@method_decorator(
-    name="post",
-    decorator=swagger_auto_schema(
         operation_description="资源权限续期",
         responses={status.HTTP_201_CREATED: ""},
         request_body=AppPermissionIDsSLZ,
@@ -237,8 +348,7 @@ class AppResourcePermissionRenewApi(generics.CreateAPIView):
         data = slz.validated_data
 
         AppResourcePermission.objects.renew_by_ids(
-            gateway=request.gateway,
-            ids=data["ids"],
+            gateway=request.gateway, ids=data["ids"], expires=data["expire_days"]
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
@@ -254,8 +364,6 @@ class AppResourcePermissionRenewApi(generics.CreateAPIView):
     ),
 )
 class AppResourcePermissionDeleteApi(AppResourcePermissionQuerySetMixin, generics.DestroyAPIView):
-    queryset = AppResourcePermission.objects.order_by("-id")
-
     @transaction.atomic
     def delete(self, request, *args, **kwargs):
         slz = AppPermissionIDsSLZ(data=request.query_params)
@@ -267,19 +375,6 @@ class AppResourcePermissionDeleteApi(AppResourcePermissionQuerySetMixin, generic
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
-class AppGatewayPermissionQuerySetMixin:
-    def get_queryset(self):
-        return super().get_queryset().filter(gateway=self.request.gateway)
-
-
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关权限列表",
-        responses={status.HTTP_200_OK: AppGatewayPermissionOutputSLZ(many=True)},
-        tags=["WebAPI.Permission"],
-    ),
-)
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
@@ -289,20 +384,7 @@ class AppGatewayPermissionQuerySetMixin:
         tags=["WebAPI.Permission"],
     ),
 )
-class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, generics.ListCreateAPIView):
-    queryset = AppGatewayPermission.objects.order_by("-id")
-    filterset_class = AppGatewayPermissionFilter
-
-    def list(self, request, *args, **kwargs):
-        """
-        权限列表
-        """
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-
-        serializer = AppGatewayPermissionOutputSLZ(page, many=True)
-        return self.get_paginated_response(serializer.data)
-
+class AppGatewayPermissionCreateApi(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         """
         主动授权
@@ -326,85 +408,6 @@ class AppGatewayPermissionListCreateApi(AppGatewayPermissionQuerySetMixin, gener
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        operation_description="网关权限导出",
-        request_body=AppPermissionExportInputSLZ,
-        responses={status.HTTP_200_OK: ""},
-        tags=["WebAPI.Permission"],
-    ),
-)
-class AppGatewayPermissionExportApi(AppGatewayPermissionQuerySetMixin, generics.CreateAPIView):
-    queryset = AppGatewayPermission.objects.order_by("-id")
-
-    def create(self, request, *args, **kwargs):
-        """
-        权限导出
-        """
-        slz = AppPermissionExportInputSLZ(data=request.data)
-        slz.is_valid(raise_exception=True)
-
-        data = slz.validated_data
-
-        if data["export_type"] == ExportTypeEnum.ALL.value:
-            queryset = self.get_queryset()
-        elif data["export_type"] == ExportTypeEnum.FILTERED.value:
-            queryset = AppGatewayPermissionFilter(data=data, queryset=self.get_queryset(), request=request).qs
-        elif data["export_type"] == ExportTypeEnum.SELECTED.value:
-            queryset = self.get_queryset().filter(id__in=data["permission_ids"])
-
-        slz = AppGatewayPermissionExportOutputSLZ(queryset, many=True)
-        content = self._get_csv_content(slz.data)
-
-        response = DownloadableResponse(content, filename=f"{self.request.gateway.name}-permissions.csv")
-        # FIXME: change to export excel directly, while the exported csv file copy from mac to windows is not ok now!
-        # use utf-8-sig for windows
-        response.charset = "utf-8-sig" if "windows" in request.headers.get("User-Agent", "").lower() else "utf-8"
-
-        return response
-
-    def _get_csv_content(self, data: List[Any]) -> str:
-        """
-        将筛选出的权限数据，整理为 csv 格式内容
-        """
-        data = sorted(data, key=lambda x: x["bk_app_code"])
-        headers = ["bk_app_code", "expires", "grant_type"]
-        header_row = {
-            "bk_app_code": _("蓝鲸应用ID"),
-            "expires": _("过期时间"),
-            "grant_type": _("授权类型"),
-        }
-
-        content = StringIO()
-        io_csv = csv.DictWriter(content, fieldnames=headers, extrasaction="ignore")
-        io_csv.writerow(header_row)
-        io_csv.writerows(data)
-
-        return content.getvalue()
-
-
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关权限有权限的应用列表",
-        responses={status.HTTP_200_OK: ""},
-        tags=["WebAPI.Permission"],
-    ),
-)
-class AppGatewayPermissionAppCodeListApi(generics.ListAPIView):
-    def list(self, request, *args, **kwargs):
-        """获取有权限的应用列表"""
-
-        app_codes = list(
-            AppGatewayPermission.objects.filter(gateway=request.gateway)
-            .order_by("bk_app_code")
-            .distinct()
-            .values_list("bk_app_code", flat=True)
-        )
-        return OKJsonResponse(data=app_codes)
-
-
-@method_decorator(
-    name="post",
-    decorator=swagger_auto_schema(
         operation_description="网关权限续期",
         responses={status.HTTP_201_CREATED: ""},
         request_body=AppPermissionIDsSLZ,
@@ -423,8 +426,7 @@ class AppGatewayPermissionRenewApi(generics.CreateAPIView):
         data = slz.validated_data
 
         AppGatewayPermission.objects.renew_by_ids(
-            gateway=request.gateway,
-            ids=data["ids"],
+            gateway=request.gateway, ids=data["ids"], expires=data["expire_days"]
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
@@ -440,8 +442,6 @@ class AppGatewayPermissionRenewApi(generics.CreateAPIView):
     ),
 )
 class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.DestroyAPIView):
-    queryset = AppGatewayPermission.objects.order_by("-id")
-
     @transaction.atomic
     def delete(self, request, *args, **kwargs):
         slz = AppPermissionIDsSLZ(data=request.query_params)

@@ -110,7 +110,7 @@
                                   :rules="configRules.weight"
                                   :property="`configs.hosts.${i}.weight`"
                                   label=""
-                                  style="margin-bottom: 0px;">
+                                  class="weight-input">
                                   <bk-input
                                     class="suffix-slot-cls weights-input"
                                     :placeholder="t('权重')"
@@ -653,15 +653,25 @@ defineExpose({
     display: none;
   }
 }
+.weight-input {
+  margin-bottom: 0px;
+  border-left: 1px solid #c4c6cc !important;
+  :deep(.bk-form-content) {
+    margin-top: -1px;
+  }
+}
 .suffix-slot-cls {
   width: 80px;
   line-height: 30px;
   font-size: 12px;
   color: #63656e;
   text-align: center;
-  height: 28px;
+  height: 30px;
   border: none;
-  border-left: 1px solid #c4c6cc !important;
+  box-shadow: none !important;
+  :deep(.bk-input--text) {
+    border-radius: 0;
+  }
 }
 .scheme-select-cls {
   color: #63656e;

@@ -469,6 +469,7 @@ class TestResourceImportCheckApi:
                         "is_public": True,
                         "allow_apply_permission": True,
                         "doc": [],
+                        "enable_websocket": False,
                         "auth_config": {
                             "auth_verified_required": True,
                             "app_verified_required": True,
@@ -545,6 +546,7 @@ class TestResourceImportCheckApi:
                         "is_public": True,
                         "allow_apply_permission": True,
                         "doc": [],
+                        "enable_websocket": False,
                         "auth_config": {
                             "auth_verified_required": True,
                             "app_verified_required": True,

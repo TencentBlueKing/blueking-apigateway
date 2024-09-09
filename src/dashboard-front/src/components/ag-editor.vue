@@ -44,6 +44,8 @@ let editor = null; // 编辑器实例
 const monacoEditor = ref(null);
 // 编辑器装饰器（高亮效果等）
 let decorations = [];
+// 编辑器下划波浪线
+let markers = [];
 // 可切换字号范围
 const fontSizeOptions = [14, 20, 24];
 // 可切换行高范围
@@ -231,6 +233,28 @@ const clearDecorations = () => {
   decorations.clear();
 };
 
+const genMarkers = (errors) => {
+  errors.forEach((error) => {
+    markers.push({
+      severity: monaco.MarkerSeverity.Error,
+      message: error.message,
+      startLineNumber: error.position.lineNumber,
+      startColumn: error.position.column,
+      endLineNumber: error.position.lineNumber,
+      endColumn: editor.getModel()?.getLineLastNonWhitespaceColumn(error.position.lineNumber),
+    });
+  });
+};
+
+const setMarkers = () => {
+  monaco.editor.setModelMarkers(editor.getModel(), 'owner', markers);
+};
+
+const clearMarkers = () => {
+  markers = [];
+  setMarkers();
+};
+
 const getModel = () => editor.getModel();
 
 const showFindPanel = () => {
@@ -290,6 +314,9 @@ defineExpose({
   setDecorations,
   clearDecorations,
   genLineDecorations,
+  setMarkers,
+  clearMarkers,
+  genMarkers,
   getModel,
   getValue,
   showFindPanel,
