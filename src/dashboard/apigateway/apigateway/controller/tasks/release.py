@@ -251,7 +251,7 @@ def update_release_data_after_success(
     # update_and_clear_released_resource_docs()
     resource_doc_version = ResourceDocVersion.objects.get_by_resource_version_id(
         release.gateway.id,
-        resource_version.resource_version.id,
+        resource_version.id,
     )
     ReleasedResourceDoc.objects.save_released_resource_doc(resource_doc_version)
     ReleasedResourceDoc.objects.clear_unreleased_resource_doc(release.gateway.id)
