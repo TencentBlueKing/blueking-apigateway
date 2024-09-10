@@ -301,7 +301,8 @@ const fetchApigwStages = async () => {
       offset: 0,
     };
     stageList.value = await getApigwStagesDocs(curTargetName.value, query);
-    curStageName.value = stageList.value[0]?.name ?? '';
+    const prodStage = stageList.value.find(stage => stage.name === 'prod');
+    curStageName.value = prodStage?.name || stageList.value[0]?.name || '';
   } catch {
     stageList.value = [];
   }

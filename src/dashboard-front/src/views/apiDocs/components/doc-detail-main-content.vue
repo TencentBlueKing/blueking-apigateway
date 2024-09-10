@@ -100,17 +100,17 @@ const props = withDefaults(defineProps<IProps>(), {
   updatedTime: () => null,
 });
 
+// 注入当前的总 tab 变量
+const curTab = inject<Ref<TabType>>('curTab');
+
+const emit = defineEmits(['show-sdk-instruction']);
+
 const {
   api,
   navList,
   markdownHtml,
   updatedTime,
 } = toRefs(props);
-
-// 注入当前的总 tab 变量
-const curTab = inject<Ref<TabType>>('curTab');
-
-const emit = defineEmits(['show-sdk-instruction']);
 
 const detailWrapRef = ref<HTMLElement | null>(null);
 const { y } = useScroll(detailWrapRef);
@@ -131,6 +131,18 @@ const userVerifiedTooltips = computed(() => {
   if (curTab.value === 'apigw') return t('应用访问该网关API时，是否需要提供用户认证信息');
   if (curTab.value === 'component') return t('应用访问该组件API时，是否需要提供用户认证信息');
   return '--';
+});
+
+watch(markdownHtml, () => {
+  initMarkdownHtml('resMarkdown');
+});
+
+// 切换 api 时滚动到顶部
+watch(api, () => {
+  if (y.value === 0) return;
+  nextTick(() => {
+    y.value = 0;
+  });
 });
 
 const initMarkdownHtml = (box: string) => {
@@ -174,18 +186,6 @@ const initMarkdownHtml = (box: string) => {
 const handleSdkInstructionClick = () => {
   emit('show-sdk-instruction');
 };
-
-watch(markdownHtml, () => {
-  initMarkdownHtml('resMarkdown');
-});
-
-// 切换 api 时滚动到顶部
-watch(api, () => {
-  if (y.value === 0) return;
-  nextTick(() => {
-    y.value = 0;
-  });
-});
 
 </script>
 
