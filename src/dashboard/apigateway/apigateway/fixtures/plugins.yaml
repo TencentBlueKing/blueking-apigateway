@@ -216,8 +216,7 @@
           "properties": {
             "allow_origins": {
               "description": "Origins to allow CORS. Use the scheme://host:port format. For example, https://example.com:8081. If you have multiple origins, use a , to list them. If allow_credential is set to false, you can enable CORS for all origins by using *. If allow_credential is set to true, you can forcefully allow CORS on all origins by using ** but it will pose some security issues. allow_origins, allow_origins_by_regex can only be one valid at a time.",
-              "type": "string",
-      
+              "type": "string",      
               "pattern": "^(|\\*|\\*\\*|null|http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+(,http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+)*)$",
               "default": ""
             },
@@ -1379,59 +1378,65 @@
     type: plugin
     version: '0'
     _schema: |-
-      {   
-        "response_status": {  
-          "type": "integer",  
-          "default": 200,  
-          "title": "response_status",  
-          "minimum": 100  
-        },  
-        "response_example": {  
-          "title": "response_example",  
-          "type": "string",  
-          "minItems": 1,  
-          "ui:component": {  
-            "type": "textarea",  
-            "rows": 10  
-          }  
-        },  
-        "response_headers": {  
-          "description": "Set the request header",  
-          "items": {  
-            "properties": {  
-              "key": {  
-                "title": "key",  
-                "description": "You can set the key of the request header. The key of the request header cannot contain a colon (:).",  
-                "type": "string",  
-                "maxLength": 1024,  
-                "pattern": "^[\\w-]+$",  
-                "ui:rules": ["required"]  
-              },  
-              "value": {  
-                "title": "value",  
-                "description": "You can set the value of the request header.",  
-                "type": "string",  
-                "maxLength": 1024,  
-                "pattern": "^[\\s\\S]*$",  
-                "ui:rules": ["required"]  
-              }  
-            },  
-            "type": "object"  
-          },  
-          "minItems": 0,  
-          "title": "response_header",  
-          "type": "array",  
-          "ui:component": {  
-            "name": "bfArray"  
-          }  
-        }
+      {  
+        "schema": {
+          "type": "object",
+          "properties": {
+            "response_status": {
+              "type": "integer",
+              "default": 200,
+              "title": "response_status",
+              "minimum": 100
+            },
+            "response_example": {
+              "title": "response_example",
+              "type": "string",
+              "ui:component": {
+                "type": "textarea",
+                "rows": 10
+              }
+            },
+            "response_headers": {
+              "description": "Set the response headers",
+              "title": "response_headers",
+              "type": "array",
+              "ui:component": {
+                "name": "bfArray"
+              },
+              "items": {
+                "properties": {
+                  "key": {
+                    "title": "key",
+                    "description": "You can set the key of the response header. The key of the response header cannot contain a colon (:).",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[\\w-]+$",
+                    "ui:rules": ["required"]
+                  },
+                  "value": {
+                    "title": "value",
+                    "description": "You can set the value of the response header.",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[\\s\\S]*$",
+                    "ui:rules": ["required"]
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
       }
     description: '-'
     example: '-'
 - model: plugin.plugintype
   fields:
     code: bk-mock
-    name: 模拟插件
+    name: mocking 插件
     name_en: Mock Plugin
     is_public: true
     scope: resource
@@ -1445,7 +1450,7 @@
     type:
     - bk-mock
     notes: 支持模拟路由的响应，可以模拟响应的状态、正文和报头。
-    example: "example"
+    example: '作用：资源绑定这个插件，用户请求这个资源的时候，返回的是这个插件配置的响应体/状态码以及响应头\n\n响应状态码: 200\n响应体: {"example": {"aaa": "bbb"}}\n响应头: [{"key": "example1", "value": "11"}, {"key": "example2", "value": "22"}]'
     style: dynamic
     default_value: ''
     config: |-  
@@ -1460,16 +1465,15 @@
               "minimum": 100  
             },  
             "response_example": {  
-              "title": "相应示例",  
+              "title": "响应体",  
               "type": "string",  
-              "minItems": 1,  
               "ui:component": {  
                 "type": "textarea",  
                 "rows": 10  
               }  
             },  
             "response_headers": {  
-              "description": "设定响应Header",  
+              "description": "设置响应头",  
               "items": {  
                 "properties": {  
                   "key": {  
@@ -1492,7 +1496,7 @@
                 "type": "object"  
               },  
               "minItems": 0,  
-              "title": "响应Header",  
+              "title": "响应头",  
               "type": "array",  
               "ui:component": {  
                 "name": "bfArray"  
@@ -1509,8 +1513,8 @@
     language: 'en'
     type:
     - bk-mock
-    notes: 支持模拟路由的响应，可以模拟响应的状态、正文和报头。
-    example: "example"
+    notes: for mocking an API, it returns data in the format specified and the request is not forwarded to the Upstream.
+    example: 'Function: Resource binding this plug-in, when the user requests this resource, the return is the plug-in configuration of the response body/status code and response header \n\n Response status code: 200\n response body: {"example": {"aaa": "bbb"}}\n response header: [{"key": "example1", "value": "11"}, {"key": "example2", "value": "22"}]'
     style: dynamic
     default_value: ''
     config: |-
@@ -1527,7 +1531,6 @@
             "response_example": {
               "title": "response_example",
               "type": "string",
-              "minItems": 1,
               "ui:component": {
                 "type": "textarea",
                 "rows": 10
