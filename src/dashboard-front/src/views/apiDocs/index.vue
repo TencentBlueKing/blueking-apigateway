@@ -106,6 +106,8 @@
                   <bk-button
                     text
                     theme="primary"
+                    :disabled="!row.sdks?.length"
+                    v-bk-tooltips="{ content: t('SDK未生成，可联系负责人生成SDK'), disabled: row.sdks?.length }"
                     @click="handleSdkDetailClick(row)"
                   >
                     {{ t('查看 SDK') }}
@@ -165,7 +167,7 @@
                 v-for="cat in systemBoard.categories"
                 :key="cat.id"
                 :data-_nav-id="`${systemBoard.board}-${cat.id}`"
-                :ref="catRefs.set"
+                :ref="categoryRefs.set"
               >
                 <header class="group-title">
                   <span class="name">{{ cat.name }}</span>
@@ -225,7 +227,7 @@
                       v-for="cat in systemBoard.categories"
                       :key="cat.id"
                       class="panel-content-cat-item"
-                      :class="{ 'active': curCatNavId === cat._navId }"
+                      :class="{ 'active': curCategoryNavId === cat._navId }"
                       @click="handleNavClick(cat)"
                     >{{ cat.name }}
                     </article>
@@ -293,6 +295,8 @@ const {
   getList,
 } = useQueryList(getGatewaysDocs, filterData, null, true);
 
+// 组件分类模板引用列表
+const categoryRefs = useTemplateRefsList<HTMLElement>();
 
 // 当前视口高度能展示最多多少条表格数据
 const maxTableLimit = ref(10);
@@ -312,17 +316,24 @@ const tableEmptyConf = ref<{ keyword: string, isAbnormal: boolean }>({
 const curTab = ref<TabType>('apigw');
 const curTargetName = ref('');
 const board = ref('default');
-const curCatNavId = ref('');
+const curCategoryNavId = ref('');
 const navPanelNamesList = ref<string[]>([]);
-
-const catRefs = useTemplateRefsList<HTMLElement>();
+const isSdkInstructionSliderShow = ref(false);
+const isSdkDetailDialogShow = ref(false);
+const componentSystemList = ref<IBoard[]>([]); // 组件系统列表
+const curSdks = ref<ISdk[]>([]);
 
 // 提供当前 tab 的值
 // 注入时请使用：const curTab = inject<Ref<TabType>>('curTab');
 provide('curTab', curTab);
 
-const isSdkInstructionSliderShow = ref(false);
-const isSdkDetailDialogShow = ref(false);
+watch(
+  tableData,
+  () => {
+    updateTableEmptyConfig();
+  },
+  { deep: true },
+);
 
 const gotoDetails = (row: IApiGatewayBasics | ISystem) => {
   router.push({
@@ -357,8 +368,6 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.keyword = '';
 };
 
-const componentSystemList = ref<IBoard[]>([]);
-
 const fetchComponentSystemList = async () => {
   try {
     const res = await getComponentSystemList(board.value) as IBoard[];
@@ -377,29 +386,18 @@ const fetchComponentSystemList = async () => {
 
 const handleNavClick = (cat: ICategory) => {
   const { _navId } = cat;
-  curCatNavId.value = _navId;
-  const catRef = catRefs.value.find(item => item.dataset?._navId === _navId);
-  if (catRef?.scrollIntoView) {
-    catRef.scrollIntoView({ behavior: 'smooth' });
+  curCategoryNavId.value = _navId;
+  const categoryRef = categoryRefs.value.find(item => item.dataset?._navId === _navId);
+  if (categoryRef?.scrollIntoView) {
+    categoryRef.scrollIntoView({ behavior: 'smooth' });
   }
 };
-
-const curSdks = ref<ISdk[]>([]);
 
 const handleSdkDetailClick = (row: IApiGatewayBasics) => {
   curTargetName.value = row.name;
   curSdks.value = row.sdks ?? [];
   isSdkDetailDialogShow.value = true;
 };
-
-watch(
-  () => tableData.value, () => {
-    updateTableEmptyConfig();
-  },
-  {
-    deep: true,
-  },
-);
 
 onBeforeMount(() => {
   const { params } = route;

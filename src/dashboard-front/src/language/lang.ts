@@ -1612,6 +1612,10 @@ const lang: ILANG = {
   '未匹配到资源': ['Resource not matched'],
   '启用 WebSocket': ['Enable WebSocket'],
   '启用 WebSocket：': ['Enable WebSocket: '],
+  '网关详情': ['Gateway detail'],
+  '组件详情': ['Component detail'],
+  'API列表': ['API list'],
+  '权限申请': ['Permission application'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

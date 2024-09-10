@@ -1,7 +1,15 @@
 <template>
   <!--  SDK使用说明 Slider 的内容  -->
   <div class="sdk-wrapper">
-    <LangSelector v-model="language" :margin-bottom="0" @select="handleLangSelect"></LangSelector>
+    <LangSelector
+      v-if="curTab === 'apigw'"
+      v-model="language"
+      :margin-bottom="0"
+      @select="handleLangSelect"
+    />
+    <div v-else class="bk-button-group">
+      <bk-button class="is-selected" style="width: 150px">Python</bk-button>
+    </div>
     <!-- eslint-disable-next-line vue/no-v-html -->
     <div v-if="sdkDoc" class="ag-markdown-view" id="markdown" :key="renderHtmlIndex" v-html="markdownHtml"></div>
     <bk-exception

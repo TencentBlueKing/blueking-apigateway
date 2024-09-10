@@ -1,7 +1,7 @@
 <template>
   <!--  组件搜索器  -->
   <div class="searcher">
-    <bk-dropdown ref="dropdown" :popover-options="popoverOptions">
+    <bk-dropdown ref="dropdown" :popover-options="popoverOptions" :disabled="curVersionList.length < 2">
       <div class="dropdown-trigger-btn">
         <span>{{ curVersion.board_label }}</span>
         <i class="ag-doc-icon doc-down-shape apigateway-icon icon-ag-down-shape"></i>
