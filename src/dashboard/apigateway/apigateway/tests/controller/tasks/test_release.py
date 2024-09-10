@@ -106,7 +106,7 @@ class TestReleaseGatewayByRegistry:
         self.distributor.distribute.return_value = True, ""
 
         assert tasks.release_gateway_by_registry(
-            micro_gateway.id, edge_release.id, micro_gateway_release_history.id, release_history.id
+            micro_gateway.id, micro_gateway_release_history.id, release_history.id
         )
 
         self.distributor_factory.assert_called_once_with(include_gateway_global_config=False)
@@ -123,7 +123,7 @@ class TestReleaseGatewayByRegistry:
         self.distributor.distribute.return_value = True, ""
 
         assert tasks.release_gateway_by_registry(
-            micro_gateway.id, edge_release.id, micro_gateway_release_history.id, release_history.id
+            micro_gateway.id, micro_gateway_release_history.id, release_history.id
         )
 
         self.distributor_factory.assert_called_once_with(include_gateway_global_config=False)
@@ -136,7 +136,6 @@ class TestReleaseGatewayByRegistry:
 
         assert not tasks.release_gateway_by_registry(
             micro_gateway.id,
-            edge_release.id,
             micro_gateway_release_history.id,
             release_history.id,
         )

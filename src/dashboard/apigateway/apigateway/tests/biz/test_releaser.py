@@ -212,7 +212,6 @@ class TestMicroGatewayReleaser:
 
         mock_release_gateway_by_registry.si.assert_called_once_with(
             micro_gateway_id=fake_shared_gateway.id,
-            release_id=fake_release.id,
             micro_gateway_release_history_id=mocker.ANY,
             publish_id=fake_release_history.id,
         )

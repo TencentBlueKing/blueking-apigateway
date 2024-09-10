@@ -18,7 +18,6 @@
 import logging
 import time
 from datetime import datetime
-from typing import Optional
 
 from celery import shared_task
 
@@ -137,36 +136,25 @@ def release_gateway_by_helm(release_id, micro_gateway_release_history_id, userna
 
 
 @shared_task(ignore_result=True)
-def release_gateway_by_registry(
-    micro_gateway_id, release_id, micro_gateway_release_history_id, publish_id: Optional[int] = None
-):
+def release_gateway_by_registry(micro_gateway_id, micro_gateway_release_history_id, publish_id):
     """发布资源到共享网关，为了使得类似环境变量等引用生效，同时会将所有配置都进行同步"""
     logger.info(
-        "release_gateway_by_etcd: release_id=%s, micro_gateway_id=%s, micro_gateway_release_history_id=%s",
-        release_id,
+        "release_gateway_by_etcd: publish_id=%s, micro_gateway_id=%s",
+        publish_id,
         micro_gateway_id,
-        micro_gateway_release_history_id,
     )
-    if not publish_id:
-        logger.error(
-            "release_gateway_by_etcd: release_id=%s, micro_gateway_id=%s, has no publish_id",
-            release_id,
-            micro_gateway_id,
-        )
-        return None
 
     release_history = ReleaseHistory.objects.get(id=publish_id)
     if not release_history:
         logger.error(
-            "release_gateway_by_etcd:release_id=%s,micro_gateway_id=%s,can't find release_history: %s",
-            release_id,
-            micro_gateway_id,
+            "release_gateway_by_etcd:publish_id=%s,micro_gateway_id=%s,can't find release_history",
             publish_id,
+            micro_gateway_id,
         )
         return None
 
-    # 改成了延迟更新发布关联数据，这里的release数据需要构造才行
-    release = Release.objects.save_release(
+    # 改成了延迟更新发布关联数据，这里的release数据需要用release_history相关的数据来获取
+    release = Release.objects.get_or_create_release(
         gateway=release_history.gateway,
         stage=release_history.stage,
         resource_version=release_history.resource_version,
