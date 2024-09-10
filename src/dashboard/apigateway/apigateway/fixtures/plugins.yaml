@@ -216,7 +216,7 @@
           "properties": {
             "allow_origins": {
               "description": "Origins to allow CORS. Use the scheme://host:port format. For example, https://example.com:8081. If you have multiple origins, use a , to list them. If allow_credential is set to false, you can enable CORS for all origins by using *. If allow_credential is set to true, you can forcefully allow CORS on all origins by using ** but it will pose some security issues. allow_origins, allow_origins_by_regex can only be one valid at a time.",
-              "type": "string",      
+              "type": "string",
               "pattern": "^(|\\*|\\*\\*|null|http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+(,http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+)*)$",
               "default": ""
             },
@@ -1449,8 +1449,8 @@
     language: ''
     type:
     - bk-mock
-    notes: 支持模拟路由的响应，可以模拟响应的状态、正文和报头。
-    example: '作用：资源绑定这个插件，用户请求这个资源的时候，返回的是这个插件配置的响应体/状态码以及响应头\n\n响应状态码: 200\n响应体: {"example": {"aaa": "bbb"}}\n响应头: [{"key": "example1", "value": "11"}, {"key": "example2", "value": "22"}]'
+    notes: 支持模拟 API 响应，返回指定格式，并且请求不会转发到上游。
+    example: '作用：返回json response，状态码为 200，并且携带响应头foo:bar\n\n响应状态码: 200\n响应体: {"hello": "world"}\n响应头: Content-Type: application/json\n       foo: bar'
     style: dynamic
     default_value: ''
     config: |-  
@@ -1514,7 +1514,7 @@
     type:
     - bk-mock
     notes: for mocking an API, it returns data in the format specified and the request is not forwarded to the Upstream.
-    example: 'Function: Resource binding this plug-in, when the user requests this resource, the return is the plug-in configuration of the response body/status code and response header \n\n Response status code: 200\n response body: {"example": {"aaa": "bbb"}}\n response header: [{"key": "example1", "value": "11"}, {"key": "example2", "value": "22"}]'
+    example: 'Functions: Return json response with status code 200 and response header foo:bar\n\n Response status code: 200\n Response body: {"hello": "world"}\n Response header: Content-Type: application/json\n       foo: bar'
     style: dynamic
     default_value: ''
     config: |-
