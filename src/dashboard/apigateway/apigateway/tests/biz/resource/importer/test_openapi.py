@@ -186,6 +186,82 @@ class TestOpenAPIManger:
                     ),
                     True,
                 ),
+                # not error, set websocket
+                (
+                    json.dumps(
+                        {
+                            "swagger": "2.0",
+                            "basePath": "/",
+                            "info": {
+                                "version": "0.1",
+                                "title": "API Gateway Swagger",
+                            },
+                            "schemes": ["http"],
+                            "paths": {
+                                "/http/get/mapping/{userId}": {
+                                    "get": {
+                                        "operationId": "http_get_mapping_userid",
+                                        "description": "test",
+                                        "tags": ["pet"],
+                                        "schemes": ["http"],
+                                        "x-bk-apigateway-resource": {
+                                            "isPublic": False,
+                                            "enableWebsocket": True,
+                                            "authConfig": {
+                                                "userVerifiedRequired": "a",
+                                            },
+                                            "backend": {
+                                                "type": "HTTP",
+                                                "path": "/hello/",
+                                                "method": "get",
+                                                "timeout": 30,
+                                            },
+                                        },
+                                    }
+                                }
+                            },
+                        }
+                    ),
+                    True,
+                ),
+                # error, set websocket valid
+                (
+                    json.dumps(
+                        {
+                            "swagger": "2.0",
+                            "basePath": "/",
+                            "info": {
+                                "version": "0.1",
+                                "title": "API Gateway Swagger",
+                            },
+                            "schemes": ["http"],
+                            "paths": {
+                                "/http/get/mapping/{userId}": {
+                                    "get": {
+                                        "operationId": "http_get_mapping_userid",
+                                        "description": "test",
+                                        "tags": ["pet"],
+                                        "schemes": ["http"],
+                                        "x-bk-apigateway-resource": {
+                                            "isPublic": False,
+                                            "enableWebsocket": 1,
+                                            "authConfig": {
+                                                "userVerifiedRequired": "a",
+                                            },
+                                            "backend": {
+                                                "type": "HTTP",
+                                                "path": "/hello/",
+                                                "method": "get",
+                                                "timeout": 30,
+                                            },
+                                        },
+                                    }
+                                }
+                            },
+                        }
+                    ),
+                    True,
+                ),
                 # error, additional properties of x-bk-apigateway-resource authConfig are not allowed
                 (
                     json.dumps(
