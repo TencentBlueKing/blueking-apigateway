@@ -20,6 +20,7 @@ import pytest
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.common.plugin.plugin_convertors import (
     BkCorsConvertor,
+    BkMockConvertor,
     DefaultPluginConvertor,
     HeaderWriteConvertor,
     IPRestrictionConvertor,
@@ -171,6 +172,54 @@ class TestBkCorsConvertor:
     )
     def test_convert(self, data, expected):
         convertor = BkCorsConvertor()
+        result = convertor.convert(data)
+        assert result == expected
+
+
+class TestBkMockConvertor:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {
+                    "response_status": 200,
+                    "response_example": "mock1",
+                    "response_headers": [],
+                },
+                {
+                    "response_status": 200,
+                    "response_example": "mock1",
+                    "response_headers": {},
+                },
+            ),
+            (
+                {
+                    "response_status": 200,
+                    "response_example": "mock1",
+                    "response_headers": [{"key": "mock1", "value": "mock1"}, {"key": "mock2", "value": "mock2"}],
+                },
+                {
+                    "response_status": 200,
+                    "response_example": "mock1",
+                    "response_headers": {"mock1": "mock1", "mock2": "mock2"},
+                },
+            ),
+            (
+                {
+                    "response_status": 200,
+                    "response_example": "mock1",
+                    "response_headers": [{"key": "mock1", "value": "mock1"}, {"key": "mock1", "value": "mock2"}],
+                },
+                {
+                    "response_status": 200,
+                    "response_example": "mock1",
+                    "response_headers": {"mock1": "mock2"},
+                },
+            ),
+        ],
+    )
+    def test_convert(self, data, expected):
+        convertor = BkMockConvertor()
         result = convertor.convert(data)
         assert result == expected
 
