@@ -196,7 +196,11 @@ class ReleaseManager(models.Manager):
             for resource_version_id, stages in released_stages.items()
         }
 
-    def save_release(self, gateway, stage, resource_version, comment, username):
+    def get_or_create_release(self, gateway, stage, resource_version, comment, username):
+        """
+        通过 gateway+stage 去拿release,如果存在就返回旧的，同时更新对象的resource_version，只是不保存，不存在就创建一个新的
+        """
+
         obj, created = self.get_or_create(
             gateway=gateway,
             stage=stage,

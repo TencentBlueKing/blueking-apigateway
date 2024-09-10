@@ -113,7 +113,7 @@ class BaseGatewayReleaser:
         history = self._save_release_history()
         PublishEventReporter.report_config_validate_success_event(history)
 
-        instance = Release.objects.save_release(
+        instance = Release.objects.get_or_create_release(
             gateway=self.gateway,
             stage=self.stage,
             resource_version=self.resource_version,
@@ -186,7 +186,6 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
             status=ReleaseStatusEnum.RELEASING.value,
         )
         return release_gateway_by_registry.si(
-            release_id=release.pk,
             micro_gateway_release_history_id=history.pk,
             micro_gateway_id=shared_gateway.pk,
             publish_id=release_history.pk,
