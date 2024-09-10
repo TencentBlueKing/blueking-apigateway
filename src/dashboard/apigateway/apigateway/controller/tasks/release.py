@@ -39,6 +39,7 @@ from apigateway.core.models import (
     MicroGatewayReleaseHistory,
     Release,
     ReleasedResource,
+    ReleaseHistory,
     ResourceVersion,
     Stage,
 )
@@ -146,7 +147,32 @@ def release_gateway_by_registry(
         micro_gateway_id,
         micro_gateway_release_history_id,
     )
-    release = Release.objects.prefetch_related("stage", "gateway", "resource_version").get(id=release_id)
+    if not publish_id:
+        logger.error(
+            "release_gateway_by_etcd: release_id=%s, micro_gateway_id=%s, has no publish_id",
+            release_id,
+            micro_gateway_id,
+        )
+        return None
+
+    release_history = ReleaseHistory.objects.get(id=publish_id)
+    if not release_history:
+        logger.error(
+            "release_gateway_by_etcd:release_id=%s,micro_gateway_id=%s,can't find release_history: %s",
+            release_id,
+            micro_gateway_id,
+            publish_id,
+        )
+        return None
+
+    # 改成了延迟更新发布关联数据，这里的release数据需要构造才行
+    release = Release.objects.save_release(
+        gateway=release_history.gateway,
+        stage=release_history.stage,
+        resource_version=release_history.resource_version,
+        comment=release_history.comment,
+        username=release_history.created_by,
+    )
     micro_gateway = MicroGateway.objects.get(id=micro_gateway_id, is_shared=True)
     # 如果是共享实例对应的网关发布，同时将对应的实例资源下发
     include_gateway_global_config = release.gateway_id == micro_gateway.gateway_id
