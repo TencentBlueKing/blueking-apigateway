@@ -50,7 +50,7 @@ export const deleteStage = (apigwId: number, stageId: number) => fetch.delete(`$
  * @param apigwId 网关id
  * @param stageId 环境id
  */
-export const getStageBackends = (apigwId: number, stageId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/stages/${stageId}/backends`);
+export const getStageBackends = (apigwId: number, stageId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/stages/${stageId}/backends/`);
 
 /**
  * 获取环境变量
