@@ -35,7 +35,7 @@
                 </div>
               </template>
             </div>
-            <div class="flex-row">
+            <div class="header-aside-wrap">
               <language-toggle></language-toggle>
               <product-info></product-info>
               <user-info v-if="userLoaded" />
@@ -184,39 +184,46 @@ const headerList = computed(() => ([
     link: '',
   },
   {
-    name: t('网关API文档'),
+    name: t('API 文档'),
     id: 3,
-    url: 'apigwDoc',
+    url: 'apiDocs',
     enabled: true,
     link: '',
   },
-  {
-    name: t('组件API文档'),
-    id: 4,
-    url: 'componentDoc',
-    enabled: user.featureFlags?.MENU_ITEM_ESB_API_DOC,
-    link: '',
-  },
-  {
-    name: t('网关API SDK'),
-    id: 5,
-    params: {
-      type: 'apigateway',
-    },
-    url: 'apigwSDK',
-    enabled: user.featureFlags?.ENABLE_SDK,
-    link: '',
-  },
-  {
-    name: t('组件API SDK'),
-    id: 6,
-    params: {
-      type: 'esb',
-    },
-    url: 'esbSDK',
-    enabled: user.featureFlags?.ENABLE_SDK,
-    link: '',
-  },
+  // {
+  //   name: t('网关API文档'),
+  //   id: 3,
+  //   url: 'apigwDoc',
+  //   enabled: true,
+  //   link: '',
+  // },
+  // {
+  //   name: t('组件API文档'),
+  //   id: 4,
+  //   url: 'componentDoc',
+  //   enabled: user.featureFlags?.MENU_ITEM_ESB_API_DOC,
+  //   link: '',
+  // },
+  // {
+  //   name: t('网关API SDK'),
+  //   id: 5,
+  //   params: {
+  //     type: 'apigateway',
+  //   },
+  //   url: 'apigwSDK',
+  //   enabled: user.featureFlags?.ENABLE_SDK,
+  //   link: '',
+  // },
+  // {
+  //   name: t('组件API SDK'),
+  //   id: 6,
+  //   params: {
+  //     type: 'esb',
+  //   },
+  //   url: 'esbSDK',
+  //   enabled: user.featureFlags?.ENABLE_SDK,
+  //   link: '',
+  // },
 ]));
 
 const systemCls = ref('mac');
@@ -339,7 +346,7 @@ const goPage = (routeName: string) => {
     router.push({
       name: routeName,
       params: {
-        id: ['home', 'apigwDoc'].includes(routeName) ? '' : apigwId.value,
+        id: ['home', 'apigwDoc', 'apiDocs'].includes(routeName) ? '' : apigwId.value,
       },
     });
   }
@@ -429,6 +436,12 @@ onMounted(() => {
               }
           }
       }
+    }
+
+    .header-aside-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
     }
   }
 }

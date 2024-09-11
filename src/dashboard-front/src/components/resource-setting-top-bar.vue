@@ -10,7 +10,7 @@
       </div>
     </div>
 
-    <div class="operate-btn-wrapper">
+    <!-- <div class="operate-btn-wrapper">
       <bk-button class="operate-btn" @click="handleShowDiff">
         <i class="apigateway-icon icon-ag-chayiduibi-shixin"></i>
         {{ t('与历史版本对比') }}
@@ -25,14 +25,14 @@
         <i class="apigateway-icon icon-ag-version"></i>
         {{ t('生成版本') }}
       </bk-button>
-    </div>
+    </div> -->
   </div>
 
   <!-- 生成版本 -->
-  <version-sideslider ref="versionSidesliderRef" @done="mitt.emit('on-update-plugin');" />
+  <!-- <version-sideslider ref="versionSidesliderRef" @done="mitt.emit('on-update-plugin');" /> -->
 
   <!-- 版本对比 -->
-  <bk-sideslider
+  <!-- <bk-sideslider
     v-model:isShow="diffSidesliderConf.isShow"
     :title="diffSidesliderConf.title"
     :width="diffSidesliderConf.width"
@@ -43,27 +43,27 @@
         <version-diff ref="diffRef" :source-id="diffSourceId" :target-id="diffTargetId" />
       </div>
     </template>
-  </bk-sideslider>
+  </bk-sideslider> -->
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
-import { useRoute } from 'vue-router';
+// import { ref, reactive, computed } from 'vue';
+// import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { Message } from 'bkui-vue';
-import { getResourceVersionsList } from '@/http';
-import versionDiff from '@/components/version-diff/index.vue';
-import VersionSideslider from '@/views/resource/setting/comps/version-sideslider.vue';
-import mitt from '@/common/event-bus';
+// import { Message } from 'bkui-vue';
+// import { getResourceVersionsList } from '@/http';
+// import versionDiff from '@/components/version-diff/index.vue';
+// import VersionSideslider from '@/views/resource/setting/comps/version-sideslider.vue';
+// import mitt from '@/common/event-bus';
 import { useStage } from '@/store';
 
 const { t } = useI18n();
 const stage = useStage();
 
-const route = useRoute();
-const apigwId = computed(() => +route.params.id);
+// const route = useRoute();
+// const apigwId = computed(() => +route.params.id);
 
-const props = defineProps({
+defineProps({
   latest: {
     type: Boolean,
     default: false,
@@ -83,46 +83,46 @@ const props = defineProps({
 });
 
 // ref
-const versionSidesliderRef = ref(null);
+// const versionSidesliderRef = ref(null);
 // 版本对比抽屉
-const diffSidesliderConf = reactive({
-  isShow: false,
-  width: 1040,
-  title: t('版本资源对比'),
-});
-const diffSourceId = ref();
-const diffTargetId = ref();
+// const diffSidesliderConf = reactive({
+//   isShow: false,
+//   width: 1040,
+//   title: t('版本资源对比'),
+// });
+// const diffSourceId = ref();
+// const diffTargetId = ref();
 
 // 版本对比
-const handleShowDiff = async () => {
-  try {
-    const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 999 });
-    diffSourceId.value = res.results[0]?.id || '';
-    diffSidesliderConf.width = window.innerWidth <= 1280 ? 1040 : 1280;
-    diffSidesliderConf.isShow = true;
-  } catch (e) {
-    Message({
-      message: t('操作失败，请稍后再试！'),
-      theme: 'error',
-      width: 'auto',
-    });
-    console.log(e);
-  }
-};
+// const handleShowDiff = async () => {
+//   try {
+//     const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 999 });
+//     diffSourceId.value = res.results[0]?.id || '';
+//     diffSidesliderConf.width = window.innerWidth <= 1280 ? 1040 : 1280;
+//     diffSidesliderConf.isShow = true;
+//   } catch (e) {
+//     Message({
+//       message: t('操作失败，请稍后再试！'),
+//       theme: 'error',
+//       width: 'auto',
+//     });
+//     console.log(e);
+//   }
+// };
 
 // 生成版本功能
-const handleCreateResourceVersion = async () => {
-  if (!props.latest) {
-    Message({
-      message: t('资源及资源文档无变更, 不需要生成新版本'),
-      theme: 'error',
-      width: 'auto',
-    });
-    return;
-  }
+// const handleCreateResourceVersion = async () => {
+//   if (!props.latest) {
+//     Message({
+//       message: t('资源及资源文档无变更, 不需要生成新版本'),
+//       theme: 'error',
+//       width: 'auto',
+//     });
+//     return;
+//   }
 
-  versionSidesliderRef.value.showReleaseSideslider();
-};
+//   versionSidesliderRef.value.showReleaseSideslider();
+// };
 </script>
 
 <style lang="scss" scoped>

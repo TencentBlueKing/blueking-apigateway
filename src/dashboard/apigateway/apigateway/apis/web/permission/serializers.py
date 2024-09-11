@@ -136,6 +136,9 @@ class AppPermissionExportInputSLZ(serializers.Serializer):
     grant_type = serializers.ChoiceField(
         choices=GrantTypeEnum.get_choices(), allow_blank=True, required=False, help_text="授权类型"
     )
+    grant_dimension = serializers.ChoiceField(
+        help_text="授权维度", required=False, choices=GrantDimensionEnum.get_choices()
+    )
     order_by = serializers.ChoiceField(
         choices=["bk_app_code", "-bk_app_code", "expires", "-expires"],
         allow_blank=True,
@@ -164,7 +167,7 @@ class AppPermissionExportInputSLZ(serializers.Serializer):
 
     def validate(self, data):
         if data["export_type"] == ExportTypeEnum.SELECTED.value and (
-            not data.get("gateway_permission_ids") or not data.get("resource_permission_ids")
+            not data.get("gateway_permission_ids") and not data.get("resource_permission_ids")
         ):
             raise serializers.ValidationError(_("导出已选中权限时，已选中权限不能为空。"))
         return data

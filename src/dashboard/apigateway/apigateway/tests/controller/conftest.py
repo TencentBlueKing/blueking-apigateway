@@ -254,7 +254,7 @@ def edge_resource_inherit_stage_snapshot(edge_resource_version, edge_resource_in
 
 @fixture
 def edge_release(faker, edge_gateway, edge_gateway_stage, edge_resource_version):
-    return Release.objects.save_release(
+    return Release.objects.get_or_create_release(
         edge_gateway,
         edge_gateway_stage,
         edge_resource_version,

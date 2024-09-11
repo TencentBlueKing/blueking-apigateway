@@ -94,6 +94,7 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
                 "bk_app_code": perm.bk_app_code,
                 "expires": perm.expires,
                 "grant_dimension": GrantDimensionEnum.API.value,
+                "id": perm.id,
             }
             for perm in gateway_queryset
         ]
@@ -104,6 +105,7 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
                 "resource_id": perm.resource_id,
                 "expires": perm.expires,
                 "grant_dimension": GrantDimensionEnum.RESOURCE.value,
+                "id": perm.id,
             }
             for perm in resource_queryset
         ]
@@ -239,13 +241,24 @@ class AppPermissionExportApi(AppPermissionQuerySetMixin, generics.CreateAPIView)
             gateway_queryset = self.get_gateway_queryset()
             resource_queryset = self.get_resource_queryset()
         elif data["export_type"] == ExportTypeEnum.FILTERED.value:
+            gateway_queryset = AppGatewayPermissionFilter(self.request.data, queryset=self.get_gateway_queryset()).qs
+            # 如果查询维度为资源 或者 授权类型不为 INITIALIZE(网关维度都为INITIALIZE)或者 查询某个资源 都要忽略掉网关维度的
+            if (
+                data.get("grant_dimension") == GrantDimensionEnum.RESOURCE.value
+                or (data.get("grant_type") and data.get("grant_type") != GrantTypeEnum.INITIALIZE.value)
+                or data.get("resource_id")
+            ):
+                gateway_queryset = []
+
             resource_queryset = AppResourcePermissionFilter(
-                data=data, queryset=self.get_queryset(), request=request
+                self.request.data, queryset=self.get_resource_queryset()
             ).qs
+            if data.get("grant_dimension") == GrantDimensionEnum.API.value:
+                resource_queryset = []
         elif data["export_type"] == ExportTypeEnum.SELECTED.value:
-            if data["resource_permission_ids"]:
+            if data.get("resource_permission_ids"):
                 resource_queryset = self.get_resource_queryset().filter(id__in=data["resource_permission_ids"])
-            if data["gateway_permission_ids"]:
+            if data.get("gateway_permission_ids"):
                 gateway_queryset = self.get_gateway_queryset().filter(id__in=data["gateway_permission_ids"])
 
         app_permissions = self.get_app_permissions(gateway_queryset, resource_queryset)

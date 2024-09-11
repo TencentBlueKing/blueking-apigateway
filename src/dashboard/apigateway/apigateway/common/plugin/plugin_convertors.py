@@ -102,6 +102,23 @@ class BkCorsConvertor(PluginConvertor):
         return config
 
 
+class BkMockConvertor(PluginConvertor):
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.BK_MOCK
+
+    """
+        将config转换如下：
+        {
+            "response_status": 200,
+            "response_example": "......."
+            "response_headers": [{"aaa": "bbb"}, {"ccc": "ddd"}] ==>> "response_headers": {"aaa": "bbb", "ccc": "ddd"}
+        }
+    """
+
+    def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        config["response_headers"] = {item["key"]: item["value"] for item in config["response_headers"]}
+        return config
+
+
 class PluginConvertorFactory:
     plugin_convertors: ClassVar[Dict[PluginTypeCodeEnum, PluginConvertor]] = {
         c.plugin_type_code: c
@@ -109,6 +126,7 @@ class PluginConvertorFactory:
             HeaderWriteConvertor(),
             IPRestrictionConvertor(),
             BkCorsConvertor(),
+            BkMockConvertor(),
         ]
     }
 

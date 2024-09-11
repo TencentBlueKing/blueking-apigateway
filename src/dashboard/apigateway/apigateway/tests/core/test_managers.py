@@ -296,7 +296,7 @@ class TestReleaseManager:
             },
         ]
         for test in data:
-            instance = Release.objects.save_release(
+            instance = Release.objects.get_or_create_release(
                 gateway=gateway,
                 stage=Stage.objects.get(id=test["stage_id"]),
                 resource_version=ResourceVersion.objects.get(id=test["resource_version_id"]),
