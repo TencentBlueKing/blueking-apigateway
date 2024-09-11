@@ -93,6 +93,7 @@
             <ag-dropdown
               :text="t('导入')"
               :dropdown-list="importDropData"
+              v-show="!showBatch"
               @on-change="handleImport"></ag-dropdown>
             <ag-dropdown
               :text="t('导出')"
@@ -471,6 +472,7 @@
             <div class="edit-labels-container">
               <bk-switcher
                 v-model="batchEditData.isUpdateLabels"
+                @change="handleUpdateLabelsChange"
                 theme="primary"
               />
               <SelectCheckBox
@@ -1177,6 +1179,7 @@ const handleBatchConfirm = async () => {
   }
   dialogData.isShow = false;
   batchEditData.value.isUpdateLabels = false;
+  batchEditData.value.labelIds = [];
   Message({
     message: t(`${isBatchDelete.value ? '删除' : '编辑'}成功`),
     theme: 'success',
@@ -1298,6 +1301,12 @@ const handleUpdateLabelSuccess = () => {
 const handleDeleteSuccess = () => {
   getList();
   handleShowList();
+};
+
+const handleUpdateLabelsChange = (v: Boolean) => {
+  if (!v) {
+    batchEditData.value.labelIds = [];
+  }
 };
 
 const handleRowClass = (v: any) => {
