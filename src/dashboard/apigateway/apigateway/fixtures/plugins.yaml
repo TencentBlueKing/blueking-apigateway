@@ -1436,8 +1436,8 @@
 - model: plugin.plugintype
   fields:
     code: bk-mock
-    name: mocking 插件
-    name_en: Mock Plugin
+    name: mocking
+    name_en: mocking
     is_public: true
     scope: resource
     schema:
