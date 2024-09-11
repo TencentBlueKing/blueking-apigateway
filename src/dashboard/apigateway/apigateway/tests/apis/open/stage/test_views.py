@@ -43,7 +43,7 @@ class TestStageViewSet:
 
         # have 2 active stages
         view = views.StageViewSet.as_view({"get": "list"})
-        response = view(request, gateway_id=fake_gateway.id)
+        response = view(request)
         result = get_response_json(response)
 
         assert result["code"] == 0
@@ -66,11 +66,11 @@ class TestStageViewSet:
         s2.save()
 
         view = views.StageViewSet.as_view({"get": "list"})
-        response = view(request, gateway_id=fake_gateway.id)
+        response = view(request)
         result = get_response_json(response)
 
-        assert response.status_code == 200
         assert result["code"] == 0
+        assert response.status_code == 200
         assert result["data"] == [
             {
                 "id": s1.id,
@@ -92,8 +92,8 @@ class TestStageViewSet:
 
         result = get_response_json(response)
 
-        assert response.status_code == 200
         assert result["code"] == 0
+        assert response.status_code == 200
         assert result["data"] == [
             {
                 "id": stage.id,
@@ -138,7 +138,7 @@ class TestStageV1ViewSet:
 class TestStageSyncViewSet:
     def test_sync(self, mocker, unique_gateway_name, request_factory):
         mocker.patch(
-            "apigateway.apis.open.stage.views.OpenAPIGatewayRelatedAppPermission.has_permission",
+            "apigateway.apis.open.stage.views.GatewayRelatedAppPermission.has_permission",
             return_value=True,
         )
 
@@ -183,7 +183,7 @@ class TestStageSyncViewSet:
 
     def test_sync_backends(self, fake_plugin_type_bk_header_rewrite, mocker, unique_gateway_name, request_factory):
         mocker.patch(
-            "apigateway.apis.open.stage.views.OpenAPIGatewayRelatedAppPermission.has_permission",
+            "apigateway.apis.open.stage.views.GatewayRelatedAppPermission.has_permission",
             return_value=True,
         )
 

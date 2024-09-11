@@ -22,7 +22,7 @@ from . import views
 
 urlpatterns = [
     path("", views.GatewayListApi.as_view(), name="openapi.gateway.list"),
-    path("<int:gateway_id>/", views.GatewayRetrieveApi.as_view(), name="openapi.gateway.retrieve"),
+    path("<int:id>/", views.GatewayRetrieveApi.as_view(), name="openapi.gateway.retrieve"),
     path(
         "<slug:gateway_name>/",
         include(

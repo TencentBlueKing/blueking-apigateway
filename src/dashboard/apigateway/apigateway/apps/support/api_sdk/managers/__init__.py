@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.apps.support.api_sdk.managers import golang, java, python
+from apigateway.apps.support.api_sdk.managers import golang, python
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.utils.factory import TypeFactory
 
@@ -23,5 +23,5 @@ SDKManagerFactory = TypeFactory()
 
 SDKManagerFactory.register(ProgrammingLanguageEnum.PYTHON.value, python.SDKManager)
 SDKManagerFactory.register(ProgrammingLanguageEnum.GOLANG.value, golang.SDKManager)
-SDKManagerFactory.register(ProgrammingLanguageEnum.JAVA.value, java.SDKManager)
+
 __all__ = ["SDKManagerFactory"]

@@ -78,12 +78,12 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
         resources = ReleasedResourceHandler.get_public_released_resource_data_list(
             request.gateway.id, stage_name, is_only_public=False
         )
-        label_ids = list({label_id for resource in resources for label_id in resource.gateway_labels})
+        resource_ids = [resource.id for resource in resources]
         output_slz = ResourceOutputSLZ(
             resources,
             many=True,
             context={
-                "labels": ResourceLabelHandler.get_labels_by_ids(label_ids),
+                "labels": ResourceLabelHandler.get_labels(resource_ids),
             },
         )
         return OKJsonResponse(data=output_slz.data)

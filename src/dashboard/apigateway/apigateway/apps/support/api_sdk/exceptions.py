@@ -25,10 +25,6 @@ class GenerateError(SDKException):
     """生成错误"""
 
 
-class SDKRepoConfigError(SDKException):
-    """SKD配置错误"""
-
-
 class DistributeError(SDKException):
     """发布错误"""
 

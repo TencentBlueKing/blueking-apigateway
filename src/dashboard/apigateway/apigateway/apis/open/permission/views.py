@@ -22,7 +22,6 @@ from abc import ABCMeta, abstractmethod
 
 from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.db import transaction
-from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
@@ -30,12 +29,6 @@ from rest_framework.views import APIView
 from apigateway.apis.open.permission.helpers import (
     AppPermissionBuilder,
     ResourcePermissionBuilder,
-)
-from apigateway.apis.open.permissions import (
-    OpenAPIGatewayIdPermission,
-    OpenAPIGatewayNamePermission,
-    OpenAPIGatewayRelatedAppPermission,
-    OpenAPIPermission,
 )
 from apigateway.apps.permission.constants import (
     GrantDimensionEnum,
@@ -52,11 +45,11 @@ from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
+from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Gateway, Resource
 from apigateway.utils.responses import V1OKJsonResponse
 
 from . import serializers
-from .serializers import PaaSAppPermissionApplyV2InputSLZ
 
 logger = logging.getLogger(__name__)
 
@@ -72,10 +65,11 @@ def get_permission_model(dimension: str):
 
 
 class ResourceViewSet(viewsets.ViewSet):
-    permission_classes = [OpenAPIGatewayIdPermission]
+    gateway_permission_exempt = True
+    request_from_gateway_required = True
 
     @swagger_auto_schema(
-        query_serializer=serializers.AppResourcePermissionInputSLZ(),
+        query_serializer=serializers.AppResourcePermissionInputSLZ,
         responses={status.HTTP_200_OK: serializers.AppResourcePermissionOutputSLZ(many=True)},
         tags=["OpenAPI.Permission"],
     )
@@ -104,7 +98,8 @@ class ResourceViewSet(viewsets.ViewSet):
 
 
 class AppGatewayPermissionViewSet(viewsets.GenericViewSet):
-    permission_classes = [OpenAPIGatewayIdPermission]
+    gateway_permission_exempt = True
+    request_from_gateway_required = True
     serializer_class = serializers.AppGatewayPermissionInputSLZ
 
     def allow_apply_by_gateway(self, request, *args, **kwargs):
@@ -174,7 +169,8 @@ class PaaSAppPermissionApplyAPIView(BaseAppPermissionApplyAPIView):
     - 提供给 paas3 开发者中心的接口
     """
 
-    permission_classes = [OpenAPIGatewayIdPermission]
+    gateway_permission_exempt = True
+    request_from_gateway_required = True
 
     def get_serializer_class(self):
         return serializers.PaaSAppPermissionApplyInputSLZ
@@ -189,7 +185,8 @@ class AppPermissionApplyV1APIView(BaseAppPermissionApplyAPIView):
     """
 
     # 使用 GatewayRelatedAppPermission 中设置 request.gateway 的功能，而不需要校验权限
-    permission_classes = [OpenAPIGatewayNamePermission]
+    permission_classes = [GatewayRelatedAppPermission]
+    gateway_permission_exempt = True
 
     def get_serializer_class(self):
         return serializers.AppPermissionApplyV1InputSLZ
@@ -198,7 +195,7 @@ class AppPermissionApplyV1APIView(BaseAppPermissionApplyAPIView):
 class AppPermissionGrantViewSet(viewsets.ViewSet):
     """网关关联应用，主动为应用授权访问网关 API 的权限"""
 
-    permission_classes = [OpenAPIGatewayRelatedAppPermission]
+    permission_classes = [GatewayRelatedAppPermission]
 
     def grant(self, request, *args, **kwargs):
         slz = serializers.GrantAppPermissionInputSLZ(data=request.data)
@@ -227,7 +224,7 @@ class AppPermissionGrantViewSet(viewsets.ViewSet):
 class RevokeAppPermissionViewSet(viewsets.ViewSet):
     """网关关联应用，回收应用访问网关 API 的权限"""
 
-    permission_classes = [OpenAPIGatewayRelatedAppPermission]
+    permission_classes = [GatewayRelatedAppPermission]
 
     def revoke(self, request, *args, **kwargs):
         slz = serializers.RevokeAppPermissionInputSLZ(data=request.data)
@@ -249,7 +246,8 @@ class AppPermissionRenewAPIView(APIView):
     权限续期
     """
 
-    permission_classes = [OpenAPIPermission]
+    gateway_permission_exempt = True
+    request_from_gateway_required = True
 
     def post(self, request, *args, **kwargs):
         slz = serializers.AppPermissionRenewInputSLZ(
@@ -270,6 +268,7 @@ class AppPermissionRenewAPIView(APIView):
                 bk_app_code=data["target_app_code"],
                 resource_ids=resource_ids,
             )
+
             AppResourcePermission.objects.renew_by_resource_ids(
                 gateway=gateway,
                 bk_app_code=data["target_app_code"],
@@ -281,69 +280,8 @@ class AppPermissionRenewAPIView(APIView):
         return V1OKJsonResponse("OK")
 
 
-@method_decorator(
-    name="post",
-    decorator=swagger_auto_schema(
-        request_body=PaaSAppPermissionApplyV2InputSLZ,
-        tags=["OpenAPI.Permission"],
-    ),
-)
-class AppPermissionApplyAPIView(APIView):
-    """
-    权限批量申请(网关+resource)
-    """
-
-    permission_classes = [OpenAPIPermission]
-
-    @transaction.atomic
-    def post(self, request, *args, **kwargs):
-        slz = serializers.PaaSAppPermissionApplyV2InputSLZ(
-            data=request.data,
-            context={
-                "request": request,
-            },
-        )
-        slz.is_valid(raise_exception=True)
-
-        data = slz.validated_data
-
-        record_ids = []
-        for gateway_resources in data.get("gateway_resource_ids"):
-            gateway = Gateway.objects.get(id=gateway_resources["gateway_id"])
-            resource_ids = gateway_resources.get("resource_ids") or []
-            if resource_ids:
-                # 如果传了resource_ids就是按照资源维度申请
-                manager = PermissionDimensionManager.get_manager(GrantDimensionEnum.RESOURCE.value)
-                grant_dimension = str(GrantDimensionEnum.RESOURCE.value)
-            else:
-                manager = PermissionDimensionManager.get_manager(GrantDimensionEnum.API.value)
-                grant_dimension = str(GrantDimensionEnum.API.value)
-
-            record = manager.create_apply_record(
-                data["target_app_code"],
-                gateway,
-                resource_ids,
-                grant_dimension,
-                data["reason"],
-                data.get("expire_days", PermissionApplyExpireDaysEnum.FOREVER.value),
-                request.user.username,
-            )
-            record_ids.append(record.id)
-        try:
-            apply_async_on_commit(send_mail_for_perm_apply, args=record_ids)
-        except Exception:
-            logger.exception("send mail to gateway manager fail. apply_record_ids=%s", record_ids)
-
-        return V1OKJsonResponse(
-            "OK",
-            data={
-                "record_ids": record_ids,
-            },
-        )
-
-
 class AppPermissionViewSet(viewsets.ViewSet):
-    permission_classes = [OpenAPIPermission]
+    request_from_gateway_required = True
 
     def list(self, request, *args, **kwargs):
         """已申请权限列表"""
@@ -358,7 +296,7 @@ class AppPermissionViewSet(viewsets.ViewSet):
 
 
 class AppPermissionRecordViewSet(viewsets.GenericViewSet):
-    permission_classes = [OpenAPIPermission]
+    request_from_gateway_required = True
     serializer_class = serializers.AppPermissionRecordInputSLZ
 
     def list(self, request, *args, **kwargs):

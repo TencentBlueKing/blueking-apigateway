@@ -198,7 +198,6 @@ class TestReleasedResourceListApi:
         self,
         mocker,
         request_factory,
-        request_to_view,
         fake_gateway,
         stage_name,
         mocked_resources,
@@ -219,7 +218,7 @@ class TestReleasedResourceListApi:
         request.app = mock.MagicMock(app_code="test")
 
         view = views.ReleasedResourceListApi.as_view()
-        response = view(request, gateway_id=fake_gateway.id, stage_name=stage_name)
+        response = view(request, stage_name)
         result = get_response_json(response)
 
         assert result["code"] == 0
@@ -246,7 +245,6 @@ class TestReleasedResourceListByGatewayNameApi:
                         "method": "GET",
                         "path": "/test/",
                         "match_subpath": False,
-                        "enable_websocket": False,
                         "app_verified_required": True,
                         "resource_perm_required": True,
                         "user_verified_required": True,
@@ -258,7 +256,6 @@ class TestReleasedResourceListByGatewayNameApi:
                         "method": "POST",
                         "path": "/test/",
                         "match_subpath": False,
-                        "enable_websocket": False,
                         "app_verified_required": False,
                         "resource_perm_required": False,
                         "user_verified_required": False,
@@ -276,7 +273,6 @@ class TestReleasedResourceListByGatewayNameApi:
                             "method": "GET",
                             "url": "http://bkapi.example.com/test/",
                             "match_subpath": False,
-                            "enable_websocket": False,
                             "app_verified_required": True,
                             "resource_perm_required": True,
                             "user_verified_required": True,
@@ -288,7 +284,6 @@ class TestReleasedResourceListByGatewayNameApi:
                             "method": "POST",
                             "url": "http://bkapi.example.com/test/",
                             "match_subpath": False,
-                            "enable_websocket": False,
                             "app_verified_required": False,
                             "resource_perm_required": False,
                             "user_verified_required": False,

@@ -20,8 +20,7 @@
             v-for="item in stageList"
             :id="item.id"
             :key="item.id"
-            :name="getItemName(item)"
-            :disabled="['unreleased', 'failure'].includes(item?.release?.status)"
+            :name="item.name"
           />
         </bk-select>
         <div class="search-source">
@@ -537,18 +536,6 @@ const resourceGroup = computed(() => {
 
   return group;
 });
-
-const getItemName = (item: any) => {
-  if (!['unreleased', 'failure'].includes(item?.release?.status)) {
-    return item.name;
-  }
-  if (item?.release?.status === 'unreleased') {
-    return `${item.name} （未发布）`;
-  }
-  if (item?.release?.status === 'failure') {
-    return `${item.name} （发布失败）`;
-  }
-};
 
 const handleStageChange = (payload: number) => {
   const hasData = stageList.value.find((item: Record<string, number>) => item.id === payload);

@@ -23,14 +23,11 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apis.open.permissions import (
-    OpenAPIGatewayIdPermission,
-    OpenAPIGatewayNamePermission,
-)
 from apigateway.apis.open.released import serializers
 from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_url import ResourceURLHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Release, ReleasedResource
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import V1OKJsonResponse
@@ -44,7 +41,8 @@ from apigateway.utils.responses import V1OKJsonResponse
     ),
 )
 class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
-    permission_classes = [OpenAPIGatewayIdPermission]
+    gateway_permission_exempt = True
+    request_from_gateway_required = True
 
     serializer_class = serializers.ReleasedResourceOutputSLZ
     lookup_field = "id"
@@ -86,7 +84,8 @@ class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
     ),
 )
 class ReleasedResourceListApi(generics.ListAPIView):
-    permission_classes = [OpenAPIGatewayIdPermission]
+    gateway_permission_exempt = True
+    request_from_gateway_required = True
     lookup_field = "id"
 
     def get_queryset(self):
@@ -121,8 +120,11 @@ class ReleasedResourceListApi(generics.ListAPIView):
     ),
 )
 class ReleasedResourceListByGatewayNameApi(generics.ListAPIView):
-    permission_classes = [OpenAPIGatewayNamePermission]
+    gateway_permission_exempt = True
+    request_from_gateway_required = True
     lookup_field = "id"
+
+    permission_classes = [GatewayRelatedAppPermission]
 
     def get_queryset(self):
         return ReleasedResource.objects.filter(gateway=self.request.gateway)

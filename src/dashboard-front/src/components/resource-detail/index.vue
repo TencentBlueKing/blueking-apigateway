@@ -178,15 +178,6 @@
           </div>
         </bk-col>
       </bk-row> -->
-
-      <bk-row :class="{ 'ag-diff': checkDiff('localData.enable_websocket') }">
-        <bk-col :span="4">
-          <label class="ag-key">{{ $t("启用 WebSocket") }}:</label>
-        </bk-col>
-        <bk-col :span="10">
-          <div class="ag-value">{{ localData.enable_websocket ? $t("是") : $t("否") }}</div>
-        </bk-col>
-      </bk-row>
     </bk-container>
 
     <template v-if="localData.proxy?.backend_id">

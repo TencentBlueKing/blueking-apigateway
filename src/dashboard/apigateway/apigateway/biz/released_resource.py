@@ -33,7 +33,6 @@ class ReleasedResourceData:
     description: str = field(default="")
     description_en: Optional[str] = field(default=None)
     match_subpath: bool = field(default=False)
-    enable_websocket: bool = field(default=False)
     is_public: bool = field(default=False)
     allow_apply_permission: bool = field(default=False)
     disabled_stages: List[str] = field(default_factory=list)
@@ -41,7 +40,6 @@ class ReleasedResourceData:
     verified_app_required: bool = field(init=False)
     verified_user_required: bool = field(init=False)
     resource_perm_required: bool = field(init=False)
-    gateway_labels: List[int] = field(default_factory=list)
 
     def __post_init__(self):
         resource_auth_config = json.loads(self.contexts["resource_auth"]["config"])
@@ -59,12 +57,10 @@ class ReleasedResourceData:
             description=released_resource_data.get("description", ""),
             description_en=released_resource_data.get("description_en"),
             match_subpath=released_resource_data.get("match_subpath", False),
-            enable_websocket=released_resource_data.get("enable_websocket", False),
             is_public=released_resource_data["is_public"],
             allow_apply_permission=released_resource_data.get("allow_apply_permission", True),
             disabled_stages=released_resource_data.get("disabled_stages") or [],
             contexts=released_resource_data["contexts"],
-            gateway_labels=released_resource_data["api_labels"],
         )
 
     def is_disabled_in_stage(self, stage_name: str) -> bool:

@@ -374,7 +374,7 @@
       quick-close
       :is-loading="dialogData.loading"
       @confirm="handleBatchConfirm"
-      @closed="handleBatchCancel">
+      @closed="dialogData.isShow = false">
       <div class="delete-content" v-if="isBatchDelete">
         <bk-table
           row-hover="auto"
@@ -386,12 +386,12 @@
         <bk-alert
           class="mt10 mb10"
           theme="warning"
-          :title="t('删除资源后，需要生成新的版本，并发布到目标环境才能生效')"
+          title="删除资源后，需要生成新的版本，并发布到目标环境才能生效"
         />
       </div>
       <div v-else>
         <bk-form>
-          <bk-form-item :label="t('基本信息')">
+          <bk-form-item label="基本信息">
             <bk-checkbox
               v-model="batchEditData.isPublic"
               @change="handlePublicChange">
@@ -402,24 +402,6 @@
               v-model="batchEditData.allowApply">
               {{ t('允许申请权限') }}
             </bk-checkbox>
-          </bk-form-item>
-          <bk-form-item :label="t('是否修改标签')">
-            <div class="edit-labels-container">
-              <bk-switcher
-                v-model="batchEditData.isUpdateLabels"
-                theme="primary"
-              />
-              <SelectCheckBox
-                class="select-labels"
-                v-if="batchEditData.isUpdateLabels"
-                :cur-select-label-ids="[]"
-                :labels-data="labelsData"
-                :bath-edit="true"
-                v-model="batchEditData.labelIds"
-                @update-success="getLabelsData"
-                @label-add-success="getLabelsData">
-              </SelectCheckBox>
-            </div>
           </bk-form-item>
         </bk-form>
       </div>
@@ -662,8 +644,6 @@ const versionConfigs = reactive({
 const batchEditData = ref({
   isPublic: true,
   allowApply: true,
-  isUpdateLabels: false,
-  labelIds: [],
 });
 
 // const showEdit = ref(false);
@@ -984,11 +964,11 @@ const handleBatchOperate = async (data: IDropList) => {
   // 批量删除
   if (data.value === 'delete') {
     isBatchDelete.value = true;
-    dialogData.title = t('确定要删除以下{count}个资源', { count: selections.value.length });
+    dialogData.title = t(`确定要删除以下${selections.value.length}个资源`);
   } else {
     // 批量编辑
     isBatchDelete.value = false;
-    dialogData.title = t('批量编辑资源（共{count}个）', { count: selections.value.length });
+    dialogData.title = t(`批量编辑资源共${selections.value.length}个`);
   }
 };
 
@@ -1046,14 +1026,11 @@ const handleBatchConfirm = async () => {
       ids,
       is_public: batchEditData.value.isPublic,
       allow_apply_permission: batchEditData.value.allowApply,
-      is_update_labels: batchEditData.value.isUpdateLabels,
-      label_ids: batchEditData.value.labelIds,
     };
     // 批量编辑
     await batchEditResources(props.apigwId, params);
   }
   dialogData.isShow = false;
-  batchEditData.value.isUpdateLabels = false;
   Message({
     message: t(`${isBatchDelete.value ? '删除' : '编辑'}成功`),
     theme: 'success',
@@ -1061,11 +1038,6 @@ const handleBatchConfirm = async () => {
   });
   getList();
   resetSelections();
-};
-
-const handleBatchCancel = () => {
-  dialogData.isShow = false;
-  batchEditData.value.isUpdateLabels = false;
 };
 
 // 处理导入跳转
@@ -1293,8 +1265,6 @@ watch(
     if (!filterData.value.order_by) {
       delete filterData.value.order_by;
     }
-    pagination.value.offset = 0;
-    pagination.value.current = 0;
     if (v.length) {
       v.forEach((e: any) => {
         if (e.id === e.name) {
@@ -1670,14 +1640,6 @@ onBeforeMount(() => {
 .plugin-num {
   color: #3a84ff;
   cursor: pointer;
-}
-.edit-labels-container {
-  .select-labels {
-    margin-left: 16px;
-    margin-top: 0px !important;
-    display: inline-block;
-    width: 240px;
-  }
 }
 </style>
 <style lang="scss">

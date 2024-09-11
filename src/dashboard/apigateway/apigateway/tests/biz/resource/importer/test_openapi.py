@@ -712,7 +712,6 @@ class TestOpenAPIExporter:
                 "isPublic": fake_resource_dict["is_public"],
                 "allowApplyPermission": fake_resource_dict["allow_apply_permission"],
                 "matchSubpath": fake_resource_dict["match_subpath"],
-                "enableWebsocket": fake_resource_dict["enable_websocket"],
                 "backend": {
                     "name": fake_resource_dict["backend"]["name"],
                     "method": fake_resource_dict["backend"]["config"]["method"].lower(),
