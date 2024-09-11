@@ -4,7 +4,7 @@
     <bk-dropdown ref="dropdown" :popover-options="popoverOptions" :disabled="curVersionList.length < 2">
       <div class="dropdown-trigger-btn">
         <span>{{ curVersion.board_label }}</span>
-        <i class="ag-doc-icon doc-down-shape apigateway-icon icon-ag-down-shape"></i>
+        <i v-if="curVersionList.length > 1" class="ag-doc-icon doc-down-shape apigateway-icon icon-ag-down-shape"></i>
       </div>
       <template #content>
         <bk-dropdown-menu class="dropdown-trigger-content bk-dropdown-list">
@@ -16,7 +16,7 @@
     </bk-dropdown>
     <div class="input-wrapper bk-dropdown-menu search-result-box">
       <input
-        type="text" v-model="keyword" class="input" :placeholder="t('搜索内部版组件')" @input="handleSearch"
+        type="text" v-model="keyword" class="input" :placeholder="t('请输入 API 名称')" @input="handleSearch"
         @keydown="handleKeyup">
       <div class="bk-dropdown-content is-show left-align" v-if="keyword">
         <bk-loading :loading="isLoading" :opacity="1">

@@ -36,8 +36,11 @@
         </bk-form-item>
         <bk-form-item :label="$t('生成语言')" required property="language">
           <bk-radio-group v-model="formData.language" type="card">
-            <bk-radio-button label="python">Python</bk-radio-button>
-            <bk-radio-button label="java">Java</bk-radio-button>
+            <bk-radio-button
+              v-for="option in languageOptions"
+              :key="option.label"
+              :label="option.label"
+            >{{ option.text }}</bk-radio-button>
           </bk-radio-group>
         </bk-form-item>
       </bk-form>
@@ -67,6 +70,11 @@ const props = defineProps<{
 const baseInfoRef = ref(null);
 // 版本列表
 const versionOpts = ref<any[]>([]);
+const languageOptions = ref([
+  { label: 'python', text: 'Python' },
+  { label: 'golang', text: 'Golang' },
+  { label: 'java', text: 'Java' },
+]);
 
 interface CreateDialog {
   resource_version_id: string;
