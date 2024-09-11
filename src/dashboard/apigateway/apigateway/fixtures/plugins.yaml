@@ -1571,3 +1571,446 @@
         "formData": {},
         "rules": {}
       }
+- model: schema.schema
+  fields:
+    created_time: 2024-09-10 11:48:21.010753+00:00
+    updated_time: 2024-09-10 11:48:21.010788+00:00
+    name: bk-api-breaker
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "schema": {
+          "type": "object",
+          "required": [
+            "break_response_code"
+          ],
+          "properties": {
+            "break_response_code": {
+              "description": "HTTP error code returned when the upstream service is in an unhealthy state.",
+              "title": "Fuse response status code",
+              "type": "integer",
+              "ui:rules": ["required"]
+            },
+            "break_response_body": {
+              "description": "HTTP response body information returned when the upstream service is in an unhealthy state.",
+              "title": "Fuse response body",
+              "type": "string",
+              "maxLength": 100
+            },
+            "break_response_headers": {
+              "description": "The HTTP response header returned when the upstream service is in an unhealthy state.",
+              "type": "array",
+              "minItems": 0,
+              "title": "Fuse response head",
+              "ui:component": {
+                "name": "bfArray"
+              },  
+              "items": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "title": "key",
+                    "description": "You can set the key of the response header. The key of the request header cannot contain a colon (:).",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[\\w-]+$",
+                    "ui:rules": ["required"]
+                  },
+                  "value": {
+                    "title": "value",
+                    "description": "You can set the value of the response header, and the key of the request header cannot contain a colon (:).",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[\\s\\S]*$",
+                    "ui:rules": ["required"]
+                  }
+                }
+              }
+            },
+            "max_breaker_sec": {
+              "description": "Maximum duration of the upstream service meltdown, in seconds.",
+              "title": "Maximum fusing time",
+              "type": "integer",
+              "default": 300,
+              "ui:component": {
+                "name": "bfInput",
+                "min": 3
+              }
+            },
+            "unhealthy": {
+              "description": "HTTP status code and number of abnormal requests when the upstream service is in an unhealthy state.",
+              "title": "Unhealthy state",
+              "type": "object",
+              "properties": {
+                "http_statuses": {
+                  "type": "array",
+                  "title": "Unhealthy status code",
+                  "default": 500,
+                  "pattern": "^5(00|[1-9][0-9])$",
+                  "description": "HTTP status code when the upstream service is in unhealthy state.",
+                  "items": {  
+                    "type": "integer",
+                    "default": 500,
+                    "ui:component": {
+                      "name": "bfInput",
+                      "min": 500,
+                      "max": 599
+                    }
+                  },
+                  "ui:component": {
+                    "name": "bfArray"
+                  }
+                },
+                "failures": {
+                  "description": "Number of unhealthy requests triggered by the upstream service within a certain period.",
+                  "title": "Unhealthy times",
+                  "type": "integer",
+                  "default": 3,
+                  "ui:component": {
+                    "name": "bfInput",
+                    "min": 1
+                  }
+                }
+              }
+            },
+            "healthy": {
+              "description": "HTTP status code and number of consecutive normal requests when the upstream service is in the health state.",
+              "title": "Health state",
+              "type": "object",
+              "properties": {
+                "http_statuses": {
+                  "type": "array",
+                  "title": "Health status code",
+                  "description": "HTTP status code when the upstream service is in the healthy state.",
+                  "items": {
+                    "type": "integer",
+                    "ui:component": {
+                      "name": "bfInput",
+                      "min": 200,
+                      "max": 499
+                    }
+                  },
+                  "ui:component": {
+                    "name": "bfArray"
+                  }
+                },
+                "successes": {
+                  "description": "Number of consecutive normal requests that the upstream service triggers the health status.",
+                  "title": "Healthy number",
+                  "type": "integer",
+                  "default": 3,
+                  "ui:component": {
+                    "name": "bfInput",
+                    "min": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: bk-api-breaker
+    name: API 熔断
+    name_en: API Breaker
+    is_public: true
+    scope: stage
+    schema:
+    - bk-api-breaker
+    - plugin
+    - '0'
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+    - bk-api-breaker
+    notes: API 熔断是根据监测服务的响应时间或错误率来自动的触发熔断机制。一旦这些指标超过预设的阈值，熔断机制将自动启动，迅速终止对故障服务的请求，直至该服务恢复正常。
+    example: "example"
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "required": [
+            "break_response_code"
+          ],
+          "properties": {
+            "break_response_code": {
+              "description": "当上游服务处于不健康状态时返回的 HTTP 错误码。",
+              "title": "熔断响应状态码",
+              "type": "integer",
+              "ui:rules": ["required"]
+            },
+            "break_response_body": {
+              "description": "当上游服务处于不健康状态时返回的 HTTP 响应体信息。",
+              "title": "熔断响应体",
+              "type": "string",
+              "maxLength": 100
+            },
+            "break_response_headers": {
+              "description": "当上游服务处于不健康状态时返回的 HTTP 响应头信息。",
+              "type": "array",
+              "minItems": 0,
+              "title": "熔断响应头",
+              "ui:component": {
+                "name": "bfArray"
+              },  
+              "items": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "title": "键",
+                    "description": "您可以设置响应头的键，请求头的键中不能包含冒号（:）。",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[\\w-]+$",
+                    "ui:rules": ["required"]
+                  },
+                  "value": {
+                    "title": "值",
+                    "description": "您可以设置响应头的值，请求头的键中不能包含冒号（:）。",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[\\s\\S]*$",
+                    "ui:rules": ["required"]
+                  }
+                }
+              }
+            },
+            "max_breaker_sec": {
+              "description": "上游服务熔断的最大持续时间，以秒为单位。",
+              "title": "最大熔断时间",
+              "type": "integer",
+              "default": 300,
+              "ui:component": {
+                "name": "bfInput",
+                "min": 3
+              }
+            },
+            "unhealthy": {
+              "description": "当上游服务处于不健康状态时的HTTP的状态码和异常请求次数.",
+              "title": "不健康状态",
+              "type": "object",
+              "properties": {
+                "http_statuses": {
+                  "type": "array",
+                  "title": "不健康状态码",
+                  "default": 500,
+                  "pattern": "^5(00|[1-9][0-9])$",
+                  "description": "上游服务处于不健康状态时的 HTTP 状态码。",
+                  "items": {  
+                    "type": "integer",
+                    "default": 500,
+                    "ui:component": {
+                      "name": "bfInput",
+                      "min": 500,
+                      "max": 599
+                    }
+                  },
+                  "ui:component": {
+                    "name": "bfArray"
+                  }
+                },
+                "failures": {
+                  "description": "上游服务在一定时间内触发不健康状态的异常请求次数。",
+                  "title": "不健康次数",
+                  "type": "integer",
+                  "default": 3,
+                  "ui:component": {
+                    "name": "bfInput",
+                    "min": 1
+                  }
+                }
+              }
+            },
+            "healthy": {
+              "description": "上游服务处于健康状态时的 HTTP 状态码和连续正常请求次数。",
+              "title": "健康状态",
+              "type": "object",
+              "properties": {
+                "http_statuses": {
+                  "type": "array",
+                  "title": "健康状态码",
+                  "description": "上游服务处于健康状态时的 HTTP 状态码。",
+                  "items": {
+                    "type": "integer",
+                    "ui:component": {
+                      "name": "bfInput",
+                      "min": 200,
+                      "max": 499
+                    }
+                  },
+                  "ui:component": {
+                    "name": "bfArray"
+                  }
+                },
+                "successes": {
+                  "description": "上游服务触发健康状态的连续正常请求次数。",
+                  "title": "健康次数",
+                  "type": "integer",
+                  "default": 3,
+                  "ui:component": {
+                    "name": "bfInput",
+                    "min": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+- model: plugin.pluginform
+  fields:
+    language: en
+    type:
+    - bk-api-breaker
+    notes: aaaa
+    example: "example"
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "required": [
+            "break_response_code"
+          ],
+          "properties": {
+            "break_response_code": {
+              "description": "HTTP error code returned when the upstream service is in an unhealthy state.",
+              "title": "Fuse response status code",
+              "type": "integer",
+              "ui:rules": ["required"]
+            },
+            "break_response_body": {
+              "description": "HTTP response body information returned when the upstream service is in an unhealthy state.",
+              "title": "Fuse response body",
+              "type": "string",
+              "maxLength": 100
+            },
+            "break_response_headers": {
+              "description": "The HTTP response header returned when the upstream service is in an unhealthy state.",
+              "type": "array",
+              "minItems": 0,
+              "title": "Fuse response head",
+              "ui:component": {
+                "name": "bfArray"
+              },  
+              "items": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "title": "key",
+                    "description": "You can set the key of the response header. The key of the request header cannot contain a colon (:).",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[\\w-]+$",
+                    "ui:rules": ["required"]
+                  },
+                  "value": {
+                    "title": "value",
+                    "description": "You can set the value of the response header, and the key of the request header cannot contain a colon (:).",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[\\s\\S]*$",
+                    "ui:rules": ["required"]
+                  }
+                }
+              }
+            },
+            "max_breaker_sec": {
+              "description": "Maximum duration of the upstream service meltdown, in seconds.",
+              "title": "Maximum fusing time",
+              "type": "integer",
+              "default": 300,
+              "ui:component": {
+                "name": "bfInput",
+                "min": 3
+              }
+            },
+            "unhealthy": {
+              "description": "HTTP status code and number of abnormal requests when the upstream service is in an unhealthy state.",
+              "title": "Unhealthy state",
+              "type": "object",
+              "properties": {
+                "http_statuses": {
+                  "type": "array",
+                  "title": "Unhealthy status code",
+                  "default": 500,
+                  "pattern": "^5(00|[1-9][0-9])$",
+                  "description": "HTTP status code when the upstream service is in unhealthy state.",
+                  "items": {  
+                    "type": "integer",
+                    "default": 500,
+                    "ui:component": {
+                      "name": "bfInput",
+                      "min": 500,
+                      "max": 599
+                    }
+                  },
+                  "ui:component": {
+                    "name": "bfArray"
+                  }
+                },
+                "failures": {
+                  "description": "Number of unhealthy requests triggered by the upstream service within a certain period.",
+                  "title": "Unhealthy times",
+                  "type": "integer",
+                  "default": 3,
+                  "ui:component": {
+                    "name": "bfInput",
+                    "min": 1
+                  }
+                }
+              }
+            },
+            "healthy": {
+              "description": "HTTP status code and number of consecutive normal requests when the upstream service is in the health state.",
+              "title": "Health state",
+              "type": "object",
+              "properties": {
+                "http_statuses": {
+                  "type": "array",
+                  "title": "Health status code",
+                  "description": "HTTP status code when the upstream service is in the healthy state.",
+                  "items": {
+                    "type": "integer",
+                    "ui:component": {
+                      "name": "bfInput",
+                      "min": 200,
+                      "max": 499
+                    }
+                  },
+                  "ui:component": {
+                    "name": "bfArray"
+                  }
+                },
+                "successes": {
+                  "description": "Number of consecutive normal requests that the upstream service triggers the health status.",
+                  "title": "Healthy number",
+                  "type": "integer",
+                  "default": 3,
+                  "ui:component": {
+                    "name": "bfInput",
+                    "min": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
