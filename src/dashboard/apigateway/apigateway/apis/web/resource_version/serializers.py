@@ -47,7 +47,6 @@ class ResourceInfoSLZ(serializers.Serializer):
         source="api_labels", required=False, allow_empty=True, child=serializers.IntegerField(), help_text="标签列表"
     )
     match_subpath = serializers.BooleanField(help_text="是否匹配所有子路径", required=False)
-    enable_websocket = serializers.BooleanField(help_text="是否开启 websocket", required=False)
     is_public = serializers.BooleanField(help_text="是否公开", required=False)
     allow_apply_permission = serializers.BooleanField(
         help_text="是否允许应用在开发者中心申请访问资源的权限", required=False

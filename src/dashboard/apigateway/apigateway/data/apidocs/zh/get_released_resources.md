@@ -52,7 +52,6 @@ result = client.api.get_released_resources(
                 "method": "GET",
                 "url": "https://bkapi.example.com/api/echo/prod/echo/",
                 "match_subpath": false,
-                "enable_websocket": false,
                 "app_verified_required": false,
                 "resource_perm_required": false,
                 "user_verified_required": false
@@ -89,7 +88,6 @@ data.results 中字段说明
 | method                 | string   | 资源请求方法                                                        |
 | url                    | string   | 资源请求地址                                                        |
 | match_subpath          | boolean  | 是否匹配子路径，如果匹配，则路径为 /echo/ 时，支持匹配 /echo/other/ |
-| enable_websocket       | boolean  | 是否开启 websocket |
 | app_verified_required  | boolean  | 是否认证应用                                                        |
 | resource_perm_required | boolean  | 是否校验访问权限，如果校验，则应用需申请资源访问权限                |
 | user_verified_required | boolean  | 是否认证用户                                                        |

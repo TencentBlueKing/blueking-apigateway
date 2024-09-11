@@ -16,16 +16,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-
 import pytest
 from django.test import TestCase
 from django_dynamic_fixture import G
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.web.permission import serializers
-from apigateway.apis.web.permission.views import AppPermissionQuerySetMixin
 from apigateway.apps.permission import models
-from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.core.models import Gateway, Resource
 from apigateway.tests.utils.testing import create_request, dummy_time
 
@@ -79,7 +76,7 @@ class TestAppPermissionInputSLZ:
                 slz.is_valid(raise_exception=True)
 
 
-class TestAppPermissionOutputSLZ(TestCase):
+class TestAppGatewayPermissionOutputSLZ(TestCase):
     def test_to_representation(self):
         gateway = G(Gateway)
         resource = G(Resource, gateway=gateway, path="/echo/", method="GET")
@@ -91,6 +88,33 @@ class TestAppPermissionOutputSLZ(TestCase):
             expires=None,
         )
 
+        data = [
+            {
+                "instance": app_api_permission,
+                "expected": {
+                    "id": app_api_permission.id,
+                    "bk_app_code": "test",
+                    "resource_id": 0,
+                    "resource_name": "",
+                    "resource_path": "",
+                    "resource_method": "",
+                    "expires": None,
+                    "grant_type": "initialize",
+                    "renewable": False,
+                },
+            }
+        ]
+
+        for test in data:
+            slz = serializers.AppGatewayPermissionOutputSLZ(instance=test["instance"])
+            self.assertEqual(slz.data, test["expected"])
+
+
+class TestAppResourcePermissionOutputSLZ(TestCase):
+    def test_to_representation(self):
+        gateway = G(Gateway)
+        resource = G(Resource, gateway=gateway, path="/echo/", method="GET")
+
         app_resource_permission = G(
             models.AppResourcePermission,
             gateway=gateway,
@@ -101,40 +125,29 @@ class TestAppPermissionOutputSLZ(TestCase):
         )
         app_resource_permission.resource = resource
 
-        api_permissions = AppGatewayPermission.objects.filter(gateway=gateway).order_by("-id")
-        resource_permissions = AppResourcePermission.objects.filter(gateway=gateway).order_by("-id")
-        permissions = AppPermissionQuerySetMixin().get_app_permissions(api_permissions, resource_permissions)
-        slz = serializers.AppPermissionOutputSLZ(
-            permissions,
-            many=True,
-            context={
-                "resource_map": {resource.id: resource},
-            },
-        )
-        assert slz.data == [
+        data = [
             {
-                "bk_app_code": "test",
-                "resource_id": 0,
-                "resource_name": "",
-                "resource_path": "",
-                "resource_method": "",
-                "expires": None,
-                "grant_dimension": "api",
-                "grant_type": "initialize",
-                "renewable": False,
-            },
-            {
-                "bk_app_code": "test",
-                "resource_id": resource.id,
-                "resource_name": resource.name,
-                "resource_path": resource.path,
-                "resource_method": resource.method,
-                "expires": "2019-01-01 20:30:00",
-                "grant_dimension": "resource",
-                "grant_type": "apply",
-                "renewable": True,
+                "instance": app_resource_permission,
+                "expected": {
+                    "id": app_resource_permission.id,
+                    "bk_app_code": "test",
+                    "resource_id": resource.id,
+                    "resource_name": resource.name,
+                    "resource_path": "/echo/",
+                    "resource_method": "GET",
+                    "expires": dummy_time.str,
+                    "grant_type": "apply",
+                    "renewable": True,
+                },
             },
         ]
+
+        for test in data:
+            context = {}
+            if test["instance"] == app_resource_permission:
+                context["resource_map"] = {app_resource_permission.resource_id: resource}
+            slz = serializers.AppResourcePermissionOutputSLZ(instance=test["instance"], context=context)
+            self.assertEqual(slz.data, test["expected"])
 
 
 class TestAppPermissionIDsSLZ(TestCase):
@@ -149,12 +162,8 @@ class TestAppPermissionIDsSLZ(TestCase):
         data = [
             {
                 "ids": [1, 2],
-                "expire_days": 0,
             },
-            {
-                "ids": [1, 2, 3],
-                "expire_days": 0,
-            },
+            {"ids": [1, 2, 3]},
         ]
         for test in data:
             slz = serializers.AppPermissionIDsSLZ(data=test)

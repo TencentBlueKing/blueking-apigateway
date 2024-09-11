@@ -595,7 +595,6 @@ import {
 } from '@/views/resource/setting/types';
 import TableResToAction from '@/views/resource/setting/comps/table-res-to-action.vue';
 import TableResToUncheck from '@/views/resource/setting/comps/table-res-to-uncheck.vue';
-
 // @ts-ignore
 import { useParentElement } from '@vueuse/core';
 

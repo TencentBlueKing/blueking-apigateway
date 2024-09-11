@@ -31,12 +31,6 @@
         </bk-checkbox>
       </div>
     </bk-form-item>
-    <bk-form-item
-      :label="t('启用 WebSocket')"
-      property="enable_websocket"
-      required>
-      <bk-switcher v-model="frontConfigData.enable_websocket" theme="primary" size="small"></bk-switcher>
-    </bk-form-item>
   </bk-form>
 </template>
 <script setup lang="ts">
@@ -64,7 +58,6 @@ const frontConfigData = ref({
   path: '',
   method: 'GET',
   match_subpath: false,
-  enable_websocket: false,
 });
 
 const cloneData = ref({
@@ -111,8 +104,8 @@ watch(
   () => props.detail,
   (val: any) => {
     if (Object.keys(val).length) {
-      const { path, method, match_subpath, enable_websocket } = val;
-      frontConfigData.value = { path, method, match_subpath, enable_websocket };
+      const { path, method, match_subpath } = val;
+      frontConfigData.value = { path, method, match_subpath };
       if (props.isClone) {
         cloneData.value = { path, method };
         setTimeout(() => {

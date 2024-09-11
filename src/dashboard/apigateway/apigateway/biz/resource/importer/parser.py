@@ -65,7 +65,6 @@ class BaseParser:
                     "method": method,
                     "path": path,
                     "match_subpath": extension_resource.get("matchSubpath", False),
-                    "enable_websocket": extension_resource.get("enableWebsocket", False),
                     "name": operation["operationId"].replace("-", "_"),  # 避免drf生成的带有-的导入不进去
                     "description": self._adapt_description(operation.get("summary"), operation.get("description")),
                     "description_en": extension_resource.get("descriptionEn"),
@@ -355,7 +354,6 @@ class ResourceDataConvertor:
                 "method": "GET",
                 "path": "/v1/test",
                 "match_subpath": False,
-                "enable_websocket": False,
                 "name": "test",
                 "description": "test",
                 "is_public": True,
@@ -414,7 +412,6 @@ class ResourceDataConvertor:
                     method=resource["method"],
                     path=resource["path"],
                     match_subpath=resource.get("match_subpath", False),
-                    enable_websocket=resource.get("enable_websocket", False),
                     is_public=resource.get("is_public", True),
                     allow_apply_permission=resource.get("allow_apply_permission", True),
                     auth_config=ResourceAuthConfig.parse_obj(resource.get("auth_config", {})),
@@ -579,7 +576,6 @@ class BaseExporter:
             "isPublic": resource["is_public"],
             "allowApplyPermission": resource["allow_apply_permission"],
             "matchSubpath": resource.get("match_subpath", False),
-            "enableWebsocket": resource.get("enable_websocket", False),
             "backend": self._adapt_backend(
                 backend,
                 resource.get("proxy_type", ""),

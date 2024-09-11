@@ -22,14 +22,13 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, Release
 from apigateway.utils.responses import OKJsonResponse
 
-from .serializers import GatewayListOutputSLZ, GatewayOutputSLZ, GatewayQueryInputSLZ
+from .serializers import GatewayOutputSLZ, GatewayQueryInputSLZ
 
 
 @method_decorator(
@@ -37,7 +36,7 @@ from .serializers import GatewayListOutputSLZ, GatewayOutputSLZ, GatewayQueryInp
     decorator=swagger_auto_schema(
         operation_description="获取网关列表，仅显示公开的、已发布的网关",
         query_serializer=GatewayQueryInputSLZ,
-        responses={status.HTTP_200_OK: GatewayListOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: GatewayOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Gateway"],
     ),
 )
@@ -63,17 +62,15 @@ class GatewayListApi(generics.ListAPIView):
 
         gateway_ids = [gateway.id for gateway in gateways]
 
-        output_slz = GatewayListOutputSLZ(
+        output_slz = GatewayOutputSLZ(
             gateways,
             many=True,
             context={
                 "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids),
-                "gateway_sdks": GatewaySDKHandler.get_sdks(gateway_ids),
             },
         )
 
-        # NOTE: 需将官方 SDK 放在前面，但官方标记 is_official 不在 Gateway 表中，因此需要获取数据后，再排序分页
-        # FIXME: 性能问题？
+        # 需将官方 SDK 放在前面，但官方标记 is_official 不在 Gateway 表中，因此需要获取数据后，再排序分页
         page = self.paginate_queryset(sorted(output_slz.data, key=lambda x: (-x["is_official"], x["name"])))
         return self.get_paginated_response(page)
 

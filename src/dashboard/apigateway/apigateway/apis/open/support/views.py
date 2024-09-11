@@ -24,10 +24,6 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets
 
-from apigateway.apis.open.permissions import (
-    OpenAPIGatewayRelatedAppPermission,
-    OpenAPIPermission,
-)
 from apigateway.apis.open.support import serializers
 from apigateway.apps.support.api_sdk import exceptions
 from apigateway.apps.support.api_sdk.helper import SDKHelper
@@ -35,6 +31,7 @@ from apigateway.apps.support.api_sdk.models import SDKFactory
 from apigateway.apps.support.models import GatewaySDK
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
+from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Gateway, Release, ResourceVersion
 from apigateway.utils.responses import V1OKJsonResponse
 
@@ -42,7 +39,8 @@ logger = logging.getLogger(__name__)
 
 
 class APISDKV1ViewSet(viewsets.ModelViewSet):
-    permission_classes = [OpenAPIPermission]
+    gateway_permission_exempt = True
+    request_from_gateway_required = True
     serializer_class = serializers.APISDKV1SLZ
     lookup_field = "id"
 
@@ -78,7 +76,7 @@ class APISDKV1ViewSet(viewsets.ModelViewSet):
 
 
 class SDKGenerateViewSet(viewsets.ViewSet):
-    permission_classes = [OpenAPIGatewayRelatedAppPermission]
+    permission_classes = [GatewayRelatedAppPermission]
 
     @transaction.atomic
     @swagger_auto_schema(

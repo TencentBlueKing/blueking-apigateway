@@ -30,12 +30,6 @@ from pydantic import parse_obj_as
 from rest_framework import generics, status
 
 from apigateway.apis.open.gateway import serializers
-from apigateway.apis.open.permissions import (
-    OpenAPIGatewayIdPermission,
-    OpenAPIGatewayNamePermission,
-    OpenAPIGatewayRelatedAppPermission,
-    OpenAPIPermission,
-)
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
@@ -43,6 +37,7 @@ from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_5_MINUTES
 from apigateway.common.contexts import GatewayAuthContext
+from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import JWT, Gateway
 from apigateway.utils.django import get_model_dict
@@ -60,7 +55,7 @@ from apigateway.utils.responses import V1OKJsonResponse
 )
 class GatewayListApi(generics.ListAPIView):
     serializer_class = serializers.GatewayListV1OutputSLZ
-    permission_classes = [OpenAPIPermission]
+    request_from_gateway_required = True
 
     def get_queryset(self):
         return Gateway.objects.all()
@@ -136,9 +131,8 @@ class GatewayListApi(generics.ListAPIView):
     ),
 )
 class GatewayRetrieveApi(generics.RetrieveAPIView):
-    permission_classes = [OpenAPIGatewayIdPermission]
+    request_from_gateway_required = True
     serializer_class = serializers.GatewayRetrieveV1OutputSLZ
-    lookup_url_kwarg = "gateway_id"
     lookup_field = "id"
 
     def get_queryset(self):
@@ -151,7 +145,8 @@ class GatewayRetrieveApi(generics.RetrieveAPIView):
 
 
 class GatewayPublicKeyRetrieveApi(generics.RetrieveAPIView):
-    permission_classes = [OpenAPIGatewayNamePermission]
+    permission_classes = [GatewayRelatedAppPermission]
+    gateway_permission_exempt = True
 
     @swagger_auto_schema(tags=["OpenAPI.Gateway"])
     def get(self, request, gateway_name: str, *args, **kwargs):
@@ -166,9 +161,9 @@ class GatewayPublicKeyRetrieveApi(generics.RetrieveAPIView):
 
 
 class GatewaySyncApi(generics.CreateAPIView):
-    permission_classes = [OpenAPIGatewayRelatedAppPermission]
-    allow_gateway_not_exist = True
+    permission_classes = [GatewayRelatedAppPermission]
     serializer_class = serializers.GatewaySyncInputSLZ
+    allow_gateway_not_exist = True
 
     @swagger_auto_schema(request_body=serializers.GatewaySyncInputSLZ, tags=["OpenAPI.Gateway"])
     @transaction.atomic
@@ -215,7 +210,7 @@ class GatewaySyncApi(generics.CreateAPIView):
 
 
 class GatewayUpdateStatusApi(generics.CreateAPIView):
-    permission_classes = [OpenAPIGatewayRelatedAppPermission]
+    permission_classes = [GatewayRelatedAppPermission]
     serializer_class = serializers.GatewayUpdateStatusInputSLZ
 
     @swagger_auto_schema(request_body=serializers.GatewayUpdateStatusInputSLZ, tags=["OpenAPI.Gateway"])
@@ -241,7 +236,7 @@ class GatewayUpdateStatusApi(generics.CreateAPIView):
 
 
 class GatewayRelatedAppAddApi(generics.CreateAPIView):
-    permission_classes = [OpenAPIGatewayRelatedAppPermission]
+    permission_classes = [GatewayRelatedAppPermission]
     serializer_class = serializers.GatewayRelatedAppsAddInputSLZ
 
     @swagger_auto_schema(request_body=serializers.GatewayRelatedAppsAddInputSLZ, tags=["OpenAPI.Gateway"])

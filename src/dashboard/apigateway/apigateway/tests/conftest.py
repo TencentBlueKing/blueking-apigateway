@@ -1074,7 +1074,6 @@ def fake_resource_dict():
         "method": "POST",
         "path": "/users",
         "match_subpath": False,
-        "enable_websocket": False,
         "name": "add_user",
         "description": "创建新用户",
         "description_en": "Adds a new user",

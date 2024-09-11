@@ -46,21 +46,5 @@ class ResourceLabelHandler:
         return resource_labels
 
     @staticmethod
-    def get_labels_by_ids(label_ids: List[int]) -> Dict[int, List]:
-        queryset = ResourceLabel.objects.filter(api_label_id__in=label_ids).values(
-            "api_label_id", "api_label__name", "resource_id"
-        )
-        resource_labels = defaultdict(list)
-        for label in queryset:
-            resource_labels[label["resource_id"]].append(
-                {
-                    "id": label["api_label_id"],
-                    "name": label["api_label__name"],
-                }
-            )
-
-        return resource_labels
-
-    @staticmethod
     def get_gateway_label_ids(resource_id: int) -> List[int]:
         return list(ResourceLabel.objects.filter(resource_id=resource_id).values_list("api_label_id", flat=True))
