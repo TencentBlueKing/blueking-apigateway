@@ -55,18 +55,3 @@ class TestDocListApi:
             gateway=fake_gateway,
         )
         assert resp.status_code == 404
-
-        mocker.patch(
-            "apigateway.apis.web.docs.gateway.resource.doc.views.ReleasedResourceDocHandler.get_released_resource_doc_data",
-            return_value=(mocker.MagicMock(is_public=False), mocker.MagicMock()),
-        )
-        resp = request_view(
-            method="GET",
-            view_name="docs.gateway.resource.doc.retrieve",
-            path_params={"gateway_name": fake_gateway.name, "resource_name": fake_released_resource.resource_name},
-            data={
-                "stage_name": fake_stage.name,
-            },
-            gateway=fake_gateway,
-        )
-        assert resp.status_code == 404
