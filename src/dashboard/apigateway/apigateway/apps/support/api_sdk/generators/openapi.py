@@ -82,7 +82,3 @@ class PythonTemplateGenerator(OpenAPITemplateGenerator):
 
 class GolangTemplateGenerator(OpenAPITemplateGenerator):
     template_name = "bkapi_golang"
-
-
-class JavaTemplateGenerator(OpenAPITemplateGenerator):
-    template_name = "bkapi_java"

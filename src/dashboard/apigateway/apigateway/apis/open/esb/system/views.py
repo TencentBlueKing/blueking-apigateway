@@ -22,15 +22,13 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.esb.system import serializers
-from apigateway.apis.open.permissions import (
-    OpenAPIPermission,
-)
 from apigateway.apps.esb.bkcore.models import ComponentSystem, ESBChannel
 from apigateway.utils.responses import V1OKJsonResponse
 
 
 class SystemViewSet(viewsets.GenericViewSet):
-    permission_classes = [OpenAPIPermission]
+    gateway_permission_exempt = True
+    request_from_gateway_required = True
 
     def _filter_active_and_public_systems(self, boards: List[str]):
         """

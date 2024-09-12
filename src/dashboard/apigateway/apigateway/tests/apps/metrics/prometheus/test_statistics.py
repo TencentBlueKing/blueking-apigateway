@@ -35,7 +35,9 @@ class TestStatisticsGatewayRequestMetrics:
         ],
     )
     def test_get_query_promql(self, mocker, step, expected):
-        mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
         metrics = statistics.StatisticsGatewayRequestMetrics()
         result = metrics._get_query_promql(step)
@@ -56,7 +58,9 @@ class TestStatisticsGatewayRequestDurationMetrics:
         ],
     )
     def test_get_query_promql(self, mocker, step, expected):
-        mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
         metrics = statistics.StatisticsGatewayRequestDurationMetrics()
         result = metrics._get_query_promql(step)
@@ -77,7 +81,9 @@ class TestStatisticsAppRequestMetrics:
         ],
     )
     def test_get_query_promql(self, mocker, step, expected):
-        mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
         metrics = statistics.StatisticsAppRequestMetrics()
         result = metrics._get_query_promql(step)
@@ -98,7 +104,9 @@ class TestStatisticsAppRequestByResourceMetrics:
         ],
     )
     def test_get_query_promql(self, mocker, step, expected):
-        mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.apps.metrics.prometheus.dimension.BaseDimensionMetrics.default_labels", return_value=[]
+        )
 
         metrics = statistics.StatisticsAppRequestByResourceMetrics()
         result = metrics._get_query_promql(step)

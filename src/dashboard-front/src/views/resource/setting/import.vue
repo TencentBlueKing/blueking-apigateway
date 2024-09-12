@@ -595,7 +595,6 @@ import {
 } from '@/views/resource/setting/types';
 import TableResToAction from '@/views/resource/setting/comps/table-res-to-action.vue';
 import TableResToUncheck from '@/views/resource/setting/comps/table-res-to-uncheck.vue';
-
 // @ts-ignore
 import { useParentElement } from '@vueuse/core';
 
@@ -977,10 +976,11 @@ const handleImportResource = async () => {
         } = e;  // 去掉_unchecked 和 _localId 属性，不要发到后端
         return { ...restOfResource, backend_config: { ...backend.config }, backend_name: backend.name };
       });
-    const params = {
-      import_resources,
-      doc_language: language.value,
-    };
+    const params = { import_resources };
+    // 如果勾选了资源文档，传入 doc_language
+    if (showDoc.value) {
+      Object.assign(params, { doc_language: language.value });
+    }
     await importResource(apigwId, params);
     isImportSucceeded.value = true;
   } catch (err: unknown) {

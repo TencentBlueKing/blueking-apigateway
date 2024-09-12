@@ -146,26 +146,6 @@ paths:
         authConfig:
           userVerifiedRequired: false
         disabledStages: []
-  /api/v1/apis/permissions/apply/:
-    post:
-      operationId: apply_permission
-      description: '批量申请权限(网关+资源)'
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: post
-          path: /backend/api/v1/apis/permissions/apply/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
   /api/v1/apis/{api_id}/:
     get:
       operationId: get_api

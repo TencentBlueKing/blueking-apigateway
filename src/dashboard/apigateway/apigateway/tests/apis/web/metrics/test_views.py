@@ -46,7 +46,7 @@ class TestMetricsSmartTimeRange:
 class TestQueryRangeApi:
     def test_get(self, mocker, fake_stage, request_view):
         mocker.patch(
-            "apigateway.apis.web.metrics.views.MetricsFactory.create_metrics",
+            "apigateway.apis.web.metrics.views.DimensionMetricsFactory.create_dimension_metrics",
             return_value=mocker.Mock(query_range=mocker.Mock(return_value={"foo": "bar"})),
         )
 

@@ -23,11 +23,9 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, serializers, status
 
-from apigateway.apis.open.permissions import (
-    OpenAPIGatewayRelatedAppPermission,
-)
 from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
+from apigateway.common.permissions import GatewayRelatedAppPermission
 from apigateway.core.models import Resource
 from apigateway.utils.responses import V1OKJsonResponse
 
@@ -35,7 +33,7 @@ from .serializers import ResourceImportInputSLZ, ResourceSyncOutputSLZ
 
 
 class ResourceSyncApi(generics.CreateAPIView):
-    permission_classes = [OpenAPIGatewayRelatedAppPermission]
+    permission_classes = [GatewayRelatedAppPermission]
 
     def get_queryset(self):
         return Resource.objects.filter(gateway=self.request.gateway)

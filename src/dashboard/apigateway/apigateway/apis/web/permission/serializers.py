@@ -32,23 +32,7 @@ from apigateway.biz.validators import BKAppCodeValidator, ResourceIDValidator
 from apigateway.utils.time import NeverExpiresTime, to_datetime_from_now
 
 
-class AppPermissionQueryInputSLZ(serializers.Serializer):
-    bk_app_code = serializers.CharField(help_text="应用ID", required=False)
-    keyword = serializers.CharField(help_text="查询关键字", required=False)
-    grant_type = serializers.ChoiceField(choices=GrantTypeEnum.get_choices(), required=False)
-    resource_id = serializers.IntegerField(help_text="资源id", required=False)
-    order_by = serializers.ChoiceField(
-        help_text="排序",
-        choices=[(field, field) for field in ["bk_app_code", "-bk_app_code", "expires", "-expires"]],
-        required=False,
-    )
-    grant_dimension = serializers.ChoiceField(
-        help_text="授权维度", choices=GrantDimensionEnum.get_choices(), required=False
-    )
-    applied_by = serializers.CharField(help_text="申请人", required=False)
-
-
-class AppPermissionOutputSLZ(serializers.Serializer):
+class AppGatewayPermissionOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     bk_app_code = serializers.CharField(max_length=32, required=True, help_text="应用编码")
     resource_id = serializers.SerializerMethodField(help_text="资源ID")
@@ -56,64 +40,43 @@ class AppPermissionOutputSLZ(serializers.Serializer):
     resource_path = serializers.SerializerMethodField(help_text="资源路径")
     resource_method = serializers.SerializerMethodField(help_text="资源方法")
     expires = serializers.SerializerMethodField(help_text="过期时间")
-    grant_dimension = serializers.ChoiceField(help_text="授权维度", choices=GrantDimensionEnum.get_choices())
     grant_type = serializers.ChoiceField(
         choices=GrantTypeEnum.get_choices(), default=GrantTypeEnum.INITIALIZE.value, help_text="授权类型"
     )
     renewable = serializers.SerializerMethodField(help_text="是否可续期")
 
     class Meta:
-        ref_name = "apigateway.apis.web.permission.serializers.AppPermissionOutputSLZ"
+        ref_name = "apigateway.apis.web.permission.serializers.AppGatewayPermissionOutputSLZ"
 
     def get_resource_id(self, obj):
-        resource = self.context.get("resource_map", {}).get(obj.get("resource_id", 0))
-        return resource.id if resource else 0
+        return 0
 
     def get_resource_name(self, obj):
-        resource = self.context.get("resource_map", {}).get(obj.get("resource_id", 0))
-        return resource.name if resource else ""
+        return ""
 
     def get_resource_path(self, obj):
-        resource = self.context.get("resource_map", {}).get(obj.get("resource_id", 0))
-        return resource.path_display if resource else ""
+        return ""
 
     def get_resource_method(self, obj):
-        resource = self.context.get("resource_map", {}).get(obj.get("resource_id", 0))
-        return resource.method if resource else ""
+        return ""
 
     def get_expires(self, obj):
-        expires = (
-            None
-            if (not obj.get("expires") or NeverExpiresTime.is_never_expired(obj.get("expires")))
-            else obj.get("expires")
-        )
+        expires = None if (not obj.expires or NeverExpiresTime.is_never_expired(obj.expires)) else obj.expires
         return serializers.DateTimeField(allow_null=True, required=False).to_representation(expires)
 
     def get_renewable(self, obj):
-        return bool(obj.get("expires") and obj.get("expires") < to_datetime_from_now(days=RENEWABLE_EXPIRE_DAYS))
+        return bool(obj.expires and obj.expires < to_datetime_from_now(days=RENEWABLE_EXPIRE_DAYS))
 
 
-class AppPermissionRenewInputSLZ(serializers.Serializer):
-    gateway_dimension_ids = serializers.ListField(
-        help_text="网关维度权限id列表", child=serializers.IntegerField(), allow_empty=True, required=False
-    )
-    resource_dimension_ids = serializers.ListField(
-        help_text="资源维度权限id列表", child=serializers.IntegerField(), allow_empty=True, required=False
-    )
-    expire_days = serializers.ChoiceField(
-        help_text="有效期",
-        choices=PermissionApplyExpireDaysEnum.get_choices(),
-        required=True,
+class AppGatewayPermissionExportOutputSLZ(AppGatewayPermissionOutputSLZ):
+    grant_type = serializers.CharField(
+        default=GrantTypeEnum.get_choice_label(GrantTypeEnum.INITIALIZE.value), help_text="授权类型"
     )
 
-    def validate(self, data):
-        gateway_dimension_ids = data.get("gateway_dimension_ids", [])
-        resource_dimension_ids = data.get("resource_dimension_ids", [])
-
-        if not gateway_dimension_ids and not resource_dimension_ids:
-            raise serializers.ValidationError("must select one permission")
-
-        return data
+    def get_expires(self, obj):
+        if NeverExpiresTime.is_never_expired(obj.expires):
+            return _("永久有效")
+        return super().get_expires(obj)
 
 
 class AppPermissionInputSLZ(serializers.Serializer):
@@ -149,51 +112,21 @@ class AppPermissionExportInputSLZ(serializers.Serializer):
             "值为 selected，支持 permission_ids 参数"
         ),
     )
-    gateway_permission_ids = serializers.ListField(
+    permission_ids = serializers.ListField(
         child=serializers.IntegerField(),
         allow_empty=True,
         required=False,
-        help_text='gateway维度:export_type 值为已选资源 "selected" 时，此项必填',
-    )
-    resource_permission_ids = serializers.ListField(
-        child=serializers.IntegerField(),
-        allow_empty=True,
-        required=False,
-        help_text='resource维度:export_type 值为已选资源 "selected" 时，此项必填',
+        help_text='export_type 值为已选资源 "selected" 时，此项必填',
     )
 
     def validate(self, data):
-        if data["export_type"] == ExportTypeEnum.SELECTED.value and (
-            not data.get("gateway_permission_ids") or not data.get("resource_permission_ids")
-        ):
+        if data["export_type"] == ExportTypeEnum.SELECTED.value and not data.get("permission_ids"):
             raise serializers.ValidationError(_("导出已选中权限时，已选中权限不能为空。"))
         return data
 
 
-class AppPermissionExportOutputSLZ(AppPermissionOutputSLZ):
-    grant_type = serializers.SerializerMethodField(help_text="过期时间")
-    grant_dimension = serializers.SerializerMethodField(help_text="过期时间")
-
-    def get_grant_type(self, obj):
-        return _(GrantTypeEnum.get_choice_label(obj.get("grant_type", GrantTypeEnum.INITIALIZE.value)))
-
-    def get_grant_dimension(self, obj):
-        return _(GrantDimensionEnum.get_choice_label(obj.get("grant_dimension")))
-
-    def get_expires(self, obj):
-        if NeverExpiresTime.is_never_expired(obj.get("expires")):
-            return _("永久有效")
-        return super().get_expires(obj)
-
-
 class AppPermissionIDsSLZ(serializers.Serializer):
     ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False, required=True)
-    expire_days = serializers.ChoiceField(
-        help_text="有效期",
-        choices=PermissionApplyExpireDaysEnum.get_choices(),
-        required=False,
-        default=PermissionApplyExpireDaysEnum.FOREVER.value,
-    )
 
 
 class AppPermissionApplyOutputSLZ(serializers.ModelSerializer):
@@ -225,6 +158,33 @@ class AppPermissionApplyOutputSLZ(serializers.ModelSerializer):
 
     def get_grant_dimension_display(self, obj):
         return GrantDimensionEnum.get_choice_label(obj.grant_dimension)
+
+
+class AppResourcePermissionOutputSLZ(AppGatewayPermissionOutputSLZ):
+    def get_resource_id(self, obj):
+        resource = self.context.get("resource_map", {}).get(obj.resource_id)
+        return resource.id if resource else 0
+
+    def get_resource_name(self, obj):
+        resource = self.context.get("resource_map", {}).get(obj.resource_id)
+        return resource.name if resource else ""
+
+    def get_resource_path(self, obj):
+        resource = self.context.get("resource_map", {}).get(obj.resource_id)
+        return resource.path_display if resource else ""
+
+    def get_resource_method(self, obj):
+        resource = self.context.get("resource_map", {}).get(obj.resource_id)
+        return resource.method if resource else ""
+
+
+class AppResourcePermissionExportOutputSLZ(AppResourcePermissionOutputSLZ):
+    grant_type = serializers.CharField(source="get_grant_type_display", help_text="授权类型")
+
+    def get_expires(self, obj):
+        if NeverExpiresTime.is_never_expired(obj.expires):
+            return _("永久有效")
+        return super().get_expires(obj)
 
 
 class AppPermissionRecordOutputSLZ(serializers.ModelSerializer):

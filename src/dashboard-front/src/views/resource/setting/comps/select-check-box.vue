@@ -117,8 +117,6 @@ const props = defineProps({
   // 是否强制让 select 进入 focus 态
   // 用于某些场景下 select 框不展示 focus 态样式的问题
   forceFocus: { type: Boolean, default: false },
-  // 批量编辑标签时，不需要更新某一资源的标签列表
-  bathEdit: { type: Boolean, default: false },
 });
 
 const { curSelectLabelIds, resourceId, labelsData, width, isAdd, modelValue } = toRefs(props);
@@ -163,7 +161,7 @@ const handleToggle = async (v: boolean) => {
     _forceFocus.value = false;
   }
   // 新增标签标识
-  if (isAdd.value || props.bathEdit) return;
+  if (isAdd.value) return;
   setTimeout(async () => {
     // 关闭下拉框且
     if (!v) {
@@ -201,7 +199,7 @@ const addOption = async () => {
       width: 'auto',
     });
     optionName.value = '';
-    if (curLabelIds.value.length < 10 && !props.bathEdit) {
+    if (curLabelIds.value.length < 10) {
       curLabelIds.value.push(ret.id);
       if (!isAdd.value) {
         await updateResourcesLabels(apigwId, resourceId.value, { label_ids: curLabelIds.value });

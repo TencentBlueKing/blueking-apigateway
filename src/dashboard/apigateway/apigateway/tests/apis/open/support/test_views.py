@@ -33,7 +33,7 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture()
 def has_related_app_permission(mocker):
     mocker.patch(
-        "apigateway.apis.open.permission.views.OpenAPIGatewayRelatedAppPermission.has_permission",
+        "apigateway.apis.open.permission.views.GatewayRelatedAppPermission.has_permission",
         return_value=True,
     )
 

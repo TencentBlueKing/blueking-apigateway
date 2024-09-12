@@ -31,7 +31,7 @@ class TestResourceVersionListCreateApi:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self, mocker):
         mocker.patch(
-            "apigateway.apis.open.resource_version.views.OpenAPIGatewayRelatedAppPermission.has_permission",
+            "apigateway.apis.open.resource_version.views.GatewayRelatedAppPermission.has_permission",
             return_value=True,
         )
 
@@ -89,7 +89,7 @@ class TestResourceVersionReleaseApi:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self, mocker):
         mocker.patch(
-            "apigateway.apis.open.resource_version.views.OpenAPIGatewayRelatedAppPermission.has_permission",
+            "apigateway.apis.open.resource_version.views.GatewayRelatedAppPermission.has_permission",
             return_value=True,
         )
 

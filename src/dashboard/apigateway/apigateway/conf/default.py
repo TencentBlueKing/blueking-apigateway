@@ -572,16 +572,6 @@ PYPI_MIRRORS_CONFIG = {
 
 PYPI_MIRRORS_REPOSITORY = env.str("PYPI_INDEX_URL", "https://pypi.org/simple/")
 
-# maven 仓库配置
-MAVEN_MIRRORS_CONFIG = {
-    "default": {
-        "repository_url": env.str("DEFAULT_MAVEN_REPOSITORY_URL", ""),
-        "repository_id": env.str("DEFAULT_MAVEN_REPOSITORY_URL", "bkpaas-maven"),
-        "username": env.str("DEFAULT_MAVEN_USERNAME", "bk_apigateway"),
-        "password": env.str("DEFAULT_MAVEN_PASSWORD", "bk_apigateway"),
-    }
-}
-
 # ==============================================================================
 # 蓝鲸通知中心配置
 # ==============================================================================
