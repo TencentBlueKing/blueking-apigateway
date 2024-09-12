@@ -200,6 +200,7 @@ const lang: ILANG = {
   '网关': ['Gateway'],
   '描述': ['Description'],
   '权限期限': ['Expire Time'],
+  '授权期限': ['Permission Expire Time'],
   '状态': ['Status'],
   '普通': ['Normal'],
   '无限制': ['No Limit'],
@@ -211,6 +212,8 @@ const lang: ILANG = {
   '详情': ['Detail'],
   '申请人：': ['Applicant: '],
   '授权维度：': ['Dimension: '],
+  '搜索维度': ['Search Dimension'],
+  '维度': ['Dimension'],
   '按资源': ['By Resource'],
   '按网关': ['By Gateway'],
   '申请理由：': ['Reason: '],
@@ -1071,6 +1074,9 @@ const lang: ILANG = {
   '告警成功': ['Alarm success'],
   '告警失败': ['Alarm failure'],
   '个月': ['months'],
+  '永久': ['Permanent'],
+  '6个月': ['6 months'],
+  '12个月': ['12 months'],
   '最新版本号': ['Latest version'],
   '于 {createdTime} 创建': ['created at {createdTime}'],
   '请选择标签': ['Please select a label'],
@@ -1616,6 +1622,8 @@ const lang: ILANG = {
   '组件详情': ['Component detail'],
   'API列表': ['API list'],
   '权限申请': ['Permission application'],
+  '没有数据': ['No Data'],
+  '请输入 API 名称': ['Please input API name'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
