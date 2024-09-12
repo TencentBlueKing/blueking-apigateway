@@ -26,9 +26,12 @@
         >
           <bk-table-column prop="backend" :label="t('后端服务')">
             <template #default="{ row }">
-              <div class="backend-td" @click="handleEditStage(row.name)">
+              <div
+                class="backend-td"
+                @click="handleCheckStage({ resourceName: row.name, backendName: row.proxy?.backend?.name })"
+              >
                 <bk-button theme="primary" text>
-                  {{ row?.proxy?.backend?.name }}
+                  {{ row.proxy?.backend?.name ?? '--' }}
                 </bk-button>
               </div>
             </template>
@@ -346,10 +349,10 @@ const clearHighlight = () => {
 };
 
 // 查看环境
-const handleEditStage = (name: string) => {
-  setHighlight(name);
+const handleCheckStage = ({ resourceName, backendName }: { resourceName: string, backendName: string }) => {
+  setHighlight(resourceName);
   // 可传入 add | edit | check
-  stageSidesliderRef.value?.handleShowSideslider('check');
+  stageSidesliderRef.value?.handleShowSideslider('check', { backendName });
 };
 
 watch(

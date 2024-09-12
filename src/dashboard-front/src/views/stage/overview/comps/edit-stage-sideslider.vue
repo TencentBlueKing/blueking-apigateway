@@ -258,7 +258,7 @@
               v-for="backend in curStageData.backends"
               :key="backend.name"
             >
-              <p class="title mt15">
+              <p class="title mt15" :class="{ highlighted: backend.name === selectedBackendName }">
                 {{ `后端服务：${backend.name}` }}
               </p>
               <bk-container class="ag-kv-box" :col="14" :margin="6">
@@ -379,6 +379,8 @@ const isAdsorb = ref<boolean>(false);
 const activeKey = ref(['base-info', 'stage-config']);
 const activeIndex = ref([0]);
 const actionType = ref('add');
+// 需要高亮的后端服务名称
+const selectedBackendName = ref('');
 const emit = defineEmits(['hidden']);
 
 // 全局变量
@@ -539,7 +541,7 @@ const addInit = async () => {
   isDialogLoading.value = true;
   // 获取当前网关下的backends(获取后端服务列表)
   const res = await getBackendsListData(apigwId);
-  console.log('获取all后端服务列表', res);
+  // console.log('获取all后端服务列表', res);
   activeIndex.value = [];
   curStageData.value.backends = res.results.map((item: any, index: number) => {
     activeIndex.value.push(index);
@@ -607,7 +609,7 @@ const handleCloseSideSlider = () => {
 };
 
 // 显示侧边栏
-const handleShowSideslider = async (type: string) => {
+const handleShowSideslider = async (type: string, { backendName }: { backendName: string }) => {
   // 数据重置
   handleCloseSideSlider();
   actionType.value = type || 'add';
@@ -627,6 +629,7 @@ const handleShowSideslider = async (type: string) => {
   } else if (type === 'check') {
     isAdd.value = false;
     await checkInit();
+    selectedBackendName.value = backendName;
   }
   isShow.value = true;
 };
@@ -861,9 +864,13 @@ defineExpose({
       font-size: 13px;
       color: #63656e;
       font-weight: bold;
-      padding-bottom: 10px;
+      padding: 5px 0 5px 5px;
       border-bottom: 1px solid #dcdee5;
       margin-bottom: 17px;
+
+      &.highlighted {
+        background-color: #e1ecff;
+      }
     }
     .ag-kv-box {
       .bk-grid-row {
