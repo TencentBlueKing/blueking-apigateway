@@ -609,7 +609,7 @@ const handleCloseSideSlider = () => {
 };
 
 // 显示侧边栏
-const handleShowSideslider = async (type: string, { backendName }: { backendName: string }) => {
+const handleShowSideslider = async (type: string, { backendName = '' } = {}) => {
   // 数据重置
   handleCloseSideSlider();
   actionType.value = type || 'add';
