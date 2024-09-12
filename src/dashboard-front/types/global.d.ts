@@ -17,6 +17,7 @@ declare interface Window {
   BK_SHARED_RES_URL: string
   BK_APP_CODE: string
   BK_NODE_ENV: string
+  BK_ANALYSIS_SCRIPT_SRC: string
 }
 
 declare module "*.svg" {

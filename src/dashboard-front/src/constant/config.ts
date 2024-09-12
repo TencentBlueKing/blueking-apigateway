@@ -10,11 +10,15 @@ const {
   BK_DASHBOARD_FE_URL,
   BK_DOCS_URL_PREFIX_MARKDOWN,
   BK_APIGATEWAY_VERSION,
+  BK_ANALYSIS_SCRIPT_SRC,
 } = window;
 
 export default {
   // 登录
   BK_LOGIN_URL,
+
+  // 访问统计script地址
+  BK_ANALYSIS_SCRIPT_SRC,
 
   // 助手
   HELPER: {
