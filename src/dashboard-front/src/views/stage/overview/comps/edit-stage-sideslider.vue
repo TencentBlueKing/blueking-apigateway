@@ -853,11 +853,11 @@ defineExpose({
     }
   }
 
-  .weights-input {
-    :deep(.bk-input--number-control) {
-      display: none;
-    }
-  }
+  // .weights-input {
+  //   :deep(.bk-input--number-control) {
+  //     display: none;
+  //   }
+  // }
 
   &.check-mode {
     .title {
@@ -893,17 +893,17 @@ defineExpose({
 .weight-input {
   margin-bottom: 0px;
   border-left: 1px solid #c4c6cc !important;
-  :deep(.bk-form-content) {
-    margin-top: -1px;
-  }
+  // :deep(.bk-form-content) {
+  //   margin-top: -1px;
+  // }
 }
 .suffix-slot-cls {
   width: 80px;
-  line-height: 30px;
+  line-height: 28px;
   font-size: 12px;
   color: #63656e;
   text-align: center;
-  height: 30px;
+  height: 28px;
   border: none;
   box-shadow: none !important;
   :deep(.bk-input--text) {
