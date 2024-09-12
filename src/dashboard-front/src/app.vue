@@ -84,13 +84,40 @@ import { getPlatformConfig, setShortcutIcon, setDocumentTitle  } from '@blueking
 import logoWithoutName from '@/images/APIgateway-logo.png';
 import { isChinese } from '@/language/i18n';
 import constantConfig from '@/constant/config';
+import { useScriptTag } from '@vueuse/core';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const { t, locale } = useI18n();
 const router = useRouter();
 const route = useRoute();
-const { BK_DASHBOARD_URL } = window;
 const common = useCommon();
+
+const { BK_DASHBOARD_URL } = window;
+
+// 接入访问统计逻辑，只在上云版执行
+if (constantConfig.BK_ANALYSIS_SCRIPT_SRC) {
+  try {
+    const { BK_ANALYSIS_SCRIPT_SRC } = constantConfig;
+    if (BK_ANALYSIS_SCRIPT_SRC) {
+      useScriptTag(
+        BK_ANALYSIS_SCRIPT_SRC,
+        // script loaded 后的回调
+        () => {
+          window.BKANALYSIS.init({ siteName: 'custom:bk-apigateway:default:default' });
+          console.log('BKANALYSIS init success');
+        },
+        // script 标签的 attrs
+        {
+          attrs: { charset: 'utf-8' },
+        },
+      );
+    } else {
+      console.log('BKANALYSIS script not found');
+    }
+  } catch {
+    console.log('BKANALYSIS init fail');
+  }
+}
 
 const bkuiLocaleData = {
   zhCn,
