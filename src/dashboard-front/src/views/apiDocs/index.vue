@@ -147,6 +147,7 @@
                 <bk-link
                   :href="systemBoard.sdk?.sdk_download_url"
                   :disabled="!systemBoard.sdk?.sdk_download_url"
+                  target="_blank"
                   theme="primary"
                   v-bk-tooltips="{ content: t('SDK未生成，可联系负责人生成SDK'), disabled: systemBoard.sdk?.sdk_download_url }"
                   class="f12"
@@ -258,6 +259,7 @@ import { useQueryList } from '@/hooks';
 import { useI18n } from 'vue-i18n';
 import {
   getComponentSystemList,
+  getESBSDKlist,
   getGatewaysDocs,
 } from '@/http';
 import {
@@ -276,6 +278,7 @@ import {
   IBoard,
   TabType,
   ISystem,
+  IComponentSdk,
 } from '@/views/apiDocs/types';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useTemplateRefsList } from '@vueuse/core';
@@ -370,12 +373,16 @@ const updateTableEmptyConfig = () => {
 
 const fetchComponentSystemList = async () => {
   try {
-    const res = await getComponentSystemList(board.value) as IBoard[];
-    res.forEach((system) => {
+    const systemList = await getComponentSystemList(board.value) as IBoard[];
+    const sdkResponse = await getESBSDKlist(board.value, { language: 'python' }) as IComponentSdk[];
+    const sdkList = sdkResponse || [];
+    systemList.forEach((system) => {
       // 给组件分类添加一个跳转用的 _navId
-      system.categories.forEach((cat) => {
-        cat._navId = `${system.board}-${cat.id}`;
+      system.categories.forEach((category) => {
+        category._navId = `${system.board}-${category.id}`;
       });
+      // 找到组件的 sdk
+      system.sdk = sdkList.find(sdk => sdk.board_label === system.board_label);
       componentSystemList.value.push(system);
       navPanelNamesList.value.push(system.board);
     });

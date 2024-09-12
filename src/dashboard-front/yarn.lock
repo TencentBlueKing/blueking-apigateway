@@ -1148,10 +1148,10 @@
   dependencies:
     xss "^1.0.15"
 
-"@blueking/release-note@0.0.1-beta.14":
-  version "0.0.1-beta.14"
-  resolved "https://registry.yarnpkg.com/@blueking/release-note/-/release-note-0.0.1-beta.14.tgz#cc0ba5c639d045d884817d97111513c44ed9f8e0"
-  integrity sha512-NVmoVp2A0dhBPo8e2AC8+XyuDaVohdpo2yxtBehV8BQ2QKIn3R1772RNejccmaywKuyr/8bHvxlm4DOH9cKOLg==
+"@blueking/release-note@0.0.1-beta.16":
+  version "0.0.1-beta.16"
+  resolved "https://registry.yarnpkg.com/@blueking/release-note/-/release-note-0.0.1-beta.16.tgz#a274c971b848fd13fa3ddebb50d8c848f4bdb397"
+  integrity sha512-+U0C6e5nD16j6MhltEhy4N85NqDhnVH8L/rtvbb0RVBNy6lXEmK7Hxirofq4HXbOk2X6bvs8G7CDmWsl6Xk4HA==
 
 "@blueking/stylelint-config-bk@^2.1.0-beta.10":
   version "2.1.0-beta.10"

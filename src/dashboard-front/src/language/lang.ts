@@ -1623,6 +1623,7 @@ const lang: ILANG = {
   'API列表': ['API list'],
   '权限申请': ['Permission application'],
   '没有数据': ['No Data'],
+  '请输入 API 名称': ['Please input API name'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

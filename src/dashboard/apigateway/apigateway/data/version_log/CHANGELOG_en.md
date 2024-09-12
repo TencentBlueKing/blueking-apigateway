@@ -9,7 +9,7 @@
 - After a successful release, the current environment's version number is updated to prevent page functionality issues in case of release failure
 - Issue with negative duration displayed during the release process
 
-### Feature Enhancements
+### Features
 
 - Import and export enhancements: support for openapi 3.0
 - Improved user experience on the log search page
@@ -93,7 +93,7 @@
 - Incorrect frontend request URL when the notification center is activated
 - Maintenance staff information not displaying correctly in basic information
 
-### Feature Enhancements
+### Features
 
 - Online debugging apps are no longer displayed on the permission list page
 - Global configuration support for BK_SHARED_RES_URL
@@ -103,7 +103,7 @@
 <!-- 2024-06-12 -->
 # V1.13.5 Release Log
 
-### Feature Enhancements
+### Features
 
 - Changes in backend services to trigger deployment updated to asynchronous
 
@@ -121,7 +121,7 @@
 - Fixed issue in Python SDK where package name contained an extra `-`
 - Fixed frontend issues
 
-### Feature Enhancements
+### Features
 
 - Increased retry attempts for distributed lock release
 - Import now supports multiple backends
@@ -138,7 +138,7 @@
 - Fixed frontend issues
 - Fixed eslint issues
 
-### Feature Enhancements
+### Features
 
 - Added detection for releases before version 1.13, prompting users to upgrade to the new version
 - Added environment variables BK_APP_CODE and BK_REPO_URL to dashboard-fe
@@ -152,32 +152,32 @@
 
 - Fixed frontend issues
 
-### Feature Enhancements
+### Features
 
 - Added is_from_logout parameter to logout
 
 ---
 
 <!-- 2024-05-22 -->
-# V1.13.1 Version Update Log
+# V1.13.1 Release Log
 
 ### Bug Fixes
 
 - fix: stage plugins can't be edited
 - fix: menu i18n issue
 
-### Feature Enhancements
+### Features
 
 - Stage resource list is too large to display
 
 ---
 
 <!-- 2024-05-20 -->
-# V1.13.0 Version Update Log
+# V1.13.0 Release Log
 
 ### Bug Fixes
 
-### Feature Enhancements
+### Features
 
 - Refactored backend code for protocol standardization
 - Brand new product page
@@ -185,14 +185,14 @@
 ---
 
 <!-- 2024-01-24 -->
-# V1.12.16 Version Update Log
+# V1.12.16 Release Log
 
 ### Bug Fixes
 
 - Fixed a problem where the esb component could not synchronize successfully (upgraded esb to 2.14.65)
 - Hidden bk-header-rewrite plugin configuration
 
-### Feature Enhancements
+### Features
 
 - Upgraded bk-esb to 2.14.64, including monitoring and bklog changes
 - Added validation: gateway_name/stage_name/resource_name cannot end with `-` or `_`
@@ -200,14 +200,14 @@
 ---
 
 <!-- 2023-12-28 -->
-# V1.12.14 Version Update Log
+# V1.12.14 Release Log
 
 ### Bug Fixes
 
 - Fixed checking for resource_perm_required before checking verified_app_required = True
 - Open API sync stage does not trigger release, allows environment variables to be absent in the gateway
 
-### Feature Enhancements
+### Features
 
 - Upgraded esb to 2.14.61
 - When querying existing permissions of an application, display the status of permissions being applied for
@@ -218,7 +218,7 @@
 ---
 
 <!-- 2023-11-08 -->
-# V1.12.9 Version Update Log
+# V1.12.9 Release Log
 
 ### Bug Fixes
 
@@ -226,7 +226,7 @@
 - Fixed: operator diff not taking effect
 - Fixed: an issue where apisix DNS resolution failure could not be recovered
 
-### Feature Enhancements
+### Features
 
 - API documentation added bk_token description
 - apisix supports graceful shutdown
@@ -236,7 +236,7 @@
 ---
 
 <!-- 2023-09-25 -->
-# V1.12.1 Version Update Log
+# V1.12.1 Release Log
 
 > Official outgoing version
 
