@@ -10,7 +10,7 @@
       </span>
       <copy-shape
         class="tool-icon"
-        v-if="showCopy"
+        v-if="showCopy && !isFullScreen"
         v-bk-tooltips="t('复制')"
         @click="handleCopy" />
       <template v-if="showFullScreen">
