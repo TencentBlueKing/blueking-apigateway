@@ -1632,7 +1632,7 @@
     name: API 熔断
     name_en: API Breaker
     is_public: true
-    scope: stage
+    scope: resource
     schema:
     - api-breaker
     - plugin
