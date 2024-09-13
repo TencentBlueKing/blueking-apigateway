@@ -234,23 +234,10 @@
           </bk-container>
 
           <template v-for="plugin in currentSource.plugins" :key="plugin.id">
-            <p
-              class="title mt15"
-            >
+            <p class="title plugin-display">
               {{ $t("插件") }}: {{ plugin.name }}
             </p>
-            <bk-container class="ag-kv-box" :col="14" :margin="6">
-              <bk-row v-for="key in Object.keys(plugin.config)" :key="key">
-                <bk-col :span="4">
-                  <label class="ag-key">{{ key }}:</label>
-                </bk-col>
-                <bk-col :span="10">
-                  <div class="ag-value">
-                    {{ plugin.config[key] }}
-                  </div>
-                </bk-col>
-              </bk-row>
-            </bk-container>
+            <ConfigDisplayTable :plugin="plugin" />
           </template>
 
         </div>
@@ -266,6 +253,7 @@ import { useI18n } from 'vue-i18n';
 import cookie from 'cookie';
 import { getGatewayLabels } from '@/http';
 import { getMethodsTheme } from '@/common/util';
+import ConfigDisplayTable from '@/views/components/plugin-manage/config-display-table.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -364,9 +352,8 @@ defineExpose({
 }
 .sideslider-content {
   width: 100%;
-  padding: 24px 24px 0px;
+  padding: 24px 24px 12px;
   box-sizing: border-box;
-  height: calc(100vh - 52px);
   overflow-y: auto;
   .log-name {
     font-size: 12px;
@@ -380,6 +367,13 @@ defineExpose({
     padding-bottom: 10px;
     border-bottom: 1px solid #dcdee5;
     margin-bottom: 17px;
+
+    &.plugin-display {
+      margin-top: 36px;
+      margin-bottom: 6px;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
   }
   .ag-kv-box {
     .bk-grid-row {
