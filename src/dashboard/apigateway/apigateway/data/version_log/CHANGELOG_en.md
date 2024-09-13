@@ -1,21 +1,28 @@
-<!-- 2024-08-30 -->
+<!-- 2024-09-13 -->
 # V1.14.0 Release Log
 
 ### Bug Fixes
 
-- Plugins: Header transformation validates duplicate headers
-- Incorrect frontend request URL when the notification center is activated
-- Maintenance staff information not displaying correctly in basic information
-- After a successful release, the current environment's version number is updated to prevent page functionality issues in case of release failure
-- Issue with negative duration displayed during the release process
+- Plugin: Header Rewrite - Validate duplicate headers
+- Incorrect frontend request address after enabling the notification center
+- Issue with maintenance personnel information not displaying
+- After successful publishing, update the associated version number for the current environment to avoid functionality issues on the publish failure page
+- Issue with negative time display during the publishing process
+- Merge issue for plugin display on the environment overview resource list page
+- Disable bk-opentelemetry
 
 ### Features
 
-- Import and export enhancements: support for openapi 3.0
-- Improved user experience on the log search page
-- Enhanced online debugging experience
-- Basic information: support for configuring related_apps
-- Plugins: Header transformation supports settings that include the `$` symbol
+- Optimize import and export configurations to support OpenAPI 3.0
+- Optimize log query page
+- Optimize online debugging page
+- Generate recommended version number when creating a new resource version
+- Update the associated version number only after successful version release
+- Support configuring associated apps in gateway basic information
+- Enable controlled submission of personnel edits in gateway basic information
+- Add `bp-` as one of the official built-in gateway prefixes
+- Plugin: Add `bk_username` field in `file-logger`
+- Plugin: Support `$` for variable retrieval in the "header rewrite" plugin key-value pairs
 
 ---
 
