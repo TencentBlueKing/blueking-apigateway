@@ -1378,58 +1378,22 @@
     type: plugin
     version: '0'
     _schema: |-
-      {  
-        "schema": {
-          "type": "object",
-          "properties": {
-            "response_status": {
+      {
+        "$comment": "this is a mark for our injected plugin schema",
+        "type": "object",
+        "properties": {
+          "response_status":{
               "type": "integer",
               "default": 200,
-              "title": "response_status",
               "minimum": 100
-            },
-            "response_example": {
-              "title": "response_example",
-              "type": "string",
-              "ui:component": {
-                "type": "textarea",
-                "rows": 10
-              }
-            },
-            "response_headers": {
-              "description": "Set the response headers",
-              "title": "response_headers",
-              "type": "array",
-              "ui:component": {
-                "name": "bfArray"
-              },
-              "items": {
-                "properties": {
-                  "key": {
-                    "title": "key",
-                    "description": "You can set the key of the response header. The key of the response header cannot contain a colon (:).",
-                    "type": "string",
-                    "maxLength": 1024,
-                    "pattern": "^[\\w-]+$",
-                    "ui:rules": ["required"]
-                  },
-                  "value": {
-                    "title": "value",
-                    "description": "You can set the value of the response header.",
-                    "type": "string",
-                    "maxLength": 1024,
-                    "pattern": "^[\\s\\S]*$",
-                    "ui:rules": ["required"]
-                  }
-                },
-                "type": "object"
-              }
-            }
+          },
+          "response_example": {
+              "type": "string"
+          },
+          "response_headers": {
+              "type": "object"
           }
-        },
-        "layout": [],
-        "formData": {},
-        "rules": {}
+        }
       }
     description: '-'
     example: '-'
@@ -1563,6 +1527,398 @@
                   }
                 },
                 "type": "object"
+              }
+            }
+          }
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+- model: schema.schema
+  fields:
+    created_time: 2024-09-10 11:48:21.010753+00:00
+    updated_time: 2024-09-10 11:48:21.010788+00:00
+    name: api-breaker
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "$comment": "this is a mark for our injected plugin schema",
+        "type": "object",
+        "properties": {
+          "break_response_code": {
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 599
+          },
+          "break_response_body": {
+            "type": "string"
+          },
+          "break_response_headers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "value": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": ["key","value"]
+            }
+          },
+          "max_breaker_sec": {
+            "type": "integer",
+            "minimum": 3,
+            "default": 300
+          },
+          "unhealthy": {
+            "type": "object",
+            "properties": {
+              "http_statuses": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "integer",
+                  "minimum": 500,
+                  "maximum": 599
+                },
+                "uniqueItems": true,
+                "default": 500
+              },
+              "failures": {
+                "type": "integer",
+                "minimum": 1,
+                "default": 3
+              }
+            },
+            "default": {"http_statuses": [500], "failures": 3}
+          },
+          "healthy": {
+            "type": "object",
+            "properties": {
+              "http_statuses": {
+                "type": "array",
+                "minItems": 0,
+                "items": {
+                  "type": "integer",
+                  "minimum": 200,
+                  "maximum": 499
+                },
+                "uniqueItems": true,
+                "default": 200
+              },
+              "successes": {
+                "type": "integer",
+                "minimum": 1,
+                "default": 3
+              }
+            },
+            "default": {"http_statuses": [200] , "successes": 3}
+          }
+        },
+        "required": ["break_response_code"]
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: api-breaker
+    name: API 熔断
+    name_en: API Breaker
+    is_public: true
+    scope: resource
+    schema:
+    - api-breaker
+    - plugin
+    - '0'
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+    - api-breaker
+    notes: API 熔断是根据监测服务的响应时间或错误率来自动的触发熔断机制。一旦这些指标超过预设的阈值，熔断机制将自动启动，迅速终止对故障服务的请求，直至该服务恢复正常。
+    example: '作用： 当上游服务返回状态码500的时候，并达到预设次数3次时，则认为上游服务处于不健康状态。当上游状态处于不健康状态的时候，返回json response，状态码为555，并且携带响应头foo:bar。\n第一次触发不健康状态时，熔断 2 秒。超过熔断时间后，将重新开始转发请求到上游服务，如果继续返回555状态码，当记数再次达到预设次数3次时，熔断 4 秒。依次类推（2，4，8，16，……），直到达到预设的最大熔断时间300秒。\n当上游服务处于不健康状态时，如果转发请求到上游服务并返回状态码200，并达到4次时，则认为上游服务恢复至健康状态。\n\nbreak_response_body： {"hello": "world"}\nbreak_response_headers： [ { "key": "foo", "value": "bar" } ]\nmax_breaker_sec： 300\nunhealthy： { "http_statuses": [ 500 ], "failures": 3 }\nhealthy： { "http_statuses": [ 200 ], "successes": 3 }\nbreak_response_code： 555'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "required": [
+            "break_response_code"
+          ],
+          "properties": {
+            "break_response_code": {
+              "description": "当上游服务处于不健康状态时返回的 HTTP 错误码。",
+              "title": "熔断响应状态码",
+              "type": "integer",
+              "ui:rules": ["required"]
+            },
+            "break_response_body": {
+              "description": "当上游服务处于不健康状态时返回的 HTTP 响应体信息。",
+              "title": "熔断响应体",
+              "type": "string",
+              "maxLength": 100
+            },
+            "break_response_headers": {
+              "description": "当上游服务处于不健康状态时返回的 HTTP 响应头信息。",
+              "type": "array",
+              "minItems": 0,
+              "title": "熔断响应头",
+              "ui:component": {
+                "name": "bfArray"
+              },  
+              "items": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "title": "键",
+                    "description": "您可以设置响应头的键，请求头的键中不能包含冒号（:）。",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[\\w-]+$",
+                    "ui:rules": ["required"]
+                  },
+                  "value": {
+                    "title": "值",
+                    "description": "您可以设置响应头的值，请求头的键中不能包含冒号（:）。",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[\\s\\S]*$",
+                    "ui:rules": ["required"]
+                  }
+                }
+              }
+            },
+            "max_breaker_sec": {
+              "description": "上游服务熔断的最大持续时间，以秒为单位。",
+              "title": "最大熔断时间",
+              "type": "integer",
+              "default": 300,
+              "ui:component": {
+                "name": "bfInput",
+                "min": 3
+              }
+            },
+            "unhealthy": {
+              "description": "当上游服务处于不健康状态时的HTTP的状态码和异常请求次数.",
+              "title": "不健康状态",
+              "type": "object",
+              "properties": {
+                "http_statuses": {
+                  "type": "array",
+                  "title": "不健康状态码",
+                  "minItems": 1,
+                  "description": "上游服务处于不健康状态时的 HTTP 状态码。",
+                  "items": {  
+                    "type": "integer",
+                    "default": 500,
+                    "ui:component": {
+                      "name": "bfInput",
+                      "min": 500,
+                      "max": 599
+                    }
+                  },
+                  "ui:component": {
+                    "name": "bfArray"
+                  }
+                },
+                "failures": {
+                  "description": "上游服务在一定时间内触发不健康状态的异常请求次数。",
+                  "title": "不健康次数",
+                  "type": "integer",
+                  "default": 3,
+                  "ui:component": {
+                    "name": "bfInput",
+                    "min": 1
+                  }
+                }
+              }
+            },
+            "healthy": {
+              "description": "上游服务处于健康状态时的 HTTP 状态码和连续正常请求次数。",
+              "title": "健康状态",
+              "type": "object",
+              "properties": {
+                "http_statuses": {
+                  "type": "array",
+                  "title": "健康状态码",
+                  "minItems": 1,
+                  "description": "上游服务处于健康状态时的 HTTP 状态码。",
+                  "items": {
+                    "type": "integer",
+                    "default": 200,
+                    "ui:component": {
+                      "name": "bfInput",
+                      "min": 200,
+                      "max": 499
+                    }
+                  },
+                  "ui:component": {
+                    "name": "bfArray"
+                  }
+                },
+                "successes": {
+                  "description": "上游服务触发健康状态的连续正常请求次数。",
+                  "title": "健康次数",
+                  "type": "integer",
+                  "default": 3,
+                  "ui:component": {
+                    "name": "bfInput",
+                    "min": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+- model: plugin.pluginform
+  fields:
+    language: en
+    type:
+    - api-breaker
+    notes: API circuit breakers automatically trigger circuit breakers based on the response time or error rate of the monitoring service. Once these indicators exceed the preset threshold, the circuit breaker will automatically activate, quickly terminating the request for the faulty service until the service returns to normal.
+    example: 'Function: When the upstream service returns the status code 500 and reaches the preset number of 3 times, the upstream service is considered to be in an unhealthy state. When the upstream state is unhealthy, return json response with status code 555 and response header foo:bar. When the unhealthy state is triggered for the first time, fuse for 2 seconds. After the fuse time is exceeded, the request will be forwarded to the upstream service again. If the 555 status code continues to be returned, the fuse will be broken for 4 seconds when the count reaches the preset number of 3 times again. And so on (2,4,8,16,...) Until the preset maximum fuse break time of 300 seconds is reached. When the upstream service is in an unhealthy state, if the request is forwarded to the upstream service and the status code 200 is returned for 4 times, the upstream service is considered to be restored to a healthy state. \n\nbreak_response_body: {"hello": "world"}\nbreak_response_headers: [{"key": "foo", "value": "bar"}]\nmax_breaker_sec: 300\nunhealthy: {"http_statuses": [500], "failures": 3}\nhealthy: {"http_statuses": [200], "successes": 3}\nbreak_response_code: 555'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "required": [
+            "break_response_code"
+          ],
+          "properties": {
+            "break_response_code": {
+              "description": "HTTP error code returned when the upstream service is in an unhealthy state.",
+              "title": "Fuse response status code",
+              "type": "integer",
+              "ui:rules": ["required"]
+            },
+            "break_response_body": {
+              "description": "HTTP response body information returned when the upstream service is in an unhealthy state.",
+              "title": "Fuse response body",
+              "type": "string",
+              "maxLength": 100
+            },
+            "break_response_headers": {
+              "description": "The HTTP response header returned when the upstream service is in an unhealthy state.",
+              "type": "array",
+              "minItems": 0,
+              "title": "Fuse response head",
+              "ui:component": {
+                "name": "bfArray"
+              },  
+              "items": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "title": "key",
+                    "description": "You can set the key of the response header. The key of the request header cannot contain a colon (:).",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[\\w-]+$",
+                    "ui:rules": ["required"]
+                  },
+                  "value": {
+                    "title": "value",
+                    "description": "You can set the value of the response header, and the key of the request header cannot contain a colon (:).",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[\\s\\S]*$",
+                    "ui:rules": ["required"]
+                  }
+                }
+              }
+            },
+            "max_breaker_sec": {
+              "description": "Maximum duration of the upstream service meltdown, in seconds.",
+              "title": "Maximum fusing time",
+              "type": "integer",
+              "default": 300,
+              "ui:component": {
+                "name": "bfInput",
+                "min": 3
+              }
+            },
+            "unhealthy": {
+              "description": "HTTP status code and number of abnormal requests when the upstream service is in an unhealthy state.",
+              "title": "Unhealthy state",
+              "type": "object",
+              "properties": {
+                "http_statuses": {
+                  "type": "array",
+                  "title": "Unhealthy status code",
+                  "minItems": 1,
+                  "description": "HTTP status code when the upstream service is in unhealthy state.",
+                  "items": {  
+                    "type": "integer",
+                    "default": 500,
+                    "ui:component": {
+                      "name": "bfInput",
+                      "min": 500,
+                      "max": 599
+                    }
+                  },
+                  "ui:component": {
+                    "name": "bfArray"
+                  }
+                },
+                "failures": {
+                  "description": "Number of unhealthy requests triggered by the upstream service within a certain period.",
+                  "title": "Unhealthy times",
+                  "type": "integer",
+                  "default": 3,
+                  "ui:component": {
+                    "name": "bfInput",
+                    "min": 1
+                  }
+                }
+              }
+            },
+            "healthy": {
+              "description": "HTTP status code and number of consecutive normal requests when the upstream service is in the health state.",
+              "title": "Health state",
+              "type": "object",
+              "properties": {
+                "http_statuses": {
+                  "type": "array",
+                  "title": "Health status code",
+                  "minItems": 1,
+                  "description": "HTTP status code when the upstream service is in the healthy state.",
+                  "items": {
+                    "type": "integer",
+                    "default": 200,
+                    "ui:component": {
+                      "name": "bfInput",
+                      "min": 200,
+                      "max": 499
+                    }
+                  },
+                  "ui:component": {
+                    "name": "bfArray"
+                  }
+                },
+                "successes": {
+                  "description": "Number of consecutive normal requests that the upstream service triggers the health status.",
+                  "title": "Healthy number",
+                  "type": "integer",
+                  "default": 3,
+                  "ui:component": {
+                    "name": "bfInput",
+                    "min": 1
+                  }
+                }
               }
             }
           }
