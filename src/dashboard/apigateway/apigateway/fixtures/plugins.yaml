@@ -1734,7 +1734,7 @@
                   }
                 },
                 "failures": {
-                  "description": "上游服务在一定时间内触发不健康状态的异常请求次数，最少 1 次。",
+                  "description": "上游服务在一定时间内触发不健康状态的异常请求次数。",
                   "title": "不健康次数",
                   "type": "integer",
                   "default": 3,
@@ -1769,7 +1769,7 @@
                   }
                 },
                 "successes": {
-                  "description": "上游服务触发健康状态的连续正常请求次数，最少 1 次。",
+                  "description": "上游服务触发健康状态的连续正常请求次数。",
                   "title": "健康次数",
                   "type": "integer",
                   "default": 3,
@@ -1883,7 +1883,7 @@
                   }
                 },
                 "failures": {
-                  "description": "The number of abnormal requests triggered by the upstream service in an unhealthy state within a certain period is at least one.",
+                  "description": "Number of unhealthy requests triggered by the upstream service within a certain period.",
                   "title": "Unhealthy times",
                   "type": "integer",
                   "default": 3,
@@ -1918,7 +1918,7 @@
                   }
                 },
                 "successes": {
-                  "description": "Indicates the number of consecutive normal requests triggered by the upstream service. The value is at least one.",
+                  "description": "Number of consecutive normal requests that the upstream service triggers the health status.",
                   "title": "Healthy number",
                   "type": "integer",
                   "default": 3,
