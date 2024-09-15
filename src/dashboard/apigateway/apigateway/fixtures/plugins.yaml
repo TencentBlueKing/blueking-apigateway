@@ -1629,8 +1629,8 @@
 - model: plugin.plugintype
   fields:
     code: api-breaker
-    name: API 熔断
-    name_en: API Breaker
+    name: 熔断
+    name_en: Circuit Breaker
     is_public: true
     scope: resource
     schema:
@@ -1658,13 +1658,17 @@
               "description": "当上游服务处于不健康状态时返回的 HTTP 错误码。",
               "title": "熔断响应状态码",
               "type": "integer",
+              "default": 502,
               "ui:rules": ["required"]
             },
             "break_response_body": {
               "description": "当上游服务处于不健康状态时返回的 HTTP 响应体信息。",
               "title": "熔断响应体",
               "type": "string",
-              "maxLength": 100
+              "ui:component": {
+                "type": "textarea",
+                "rows": 10
+              }
             },
             "break_response_headers": {
               "description": "当上游服务处于不健康状态时返回的 HTTP 响应头信息。",
@@ -1697,7 +1701,7 @@
               }
             },
             "max_breaker_sec": {
-              "description": "上游服务熔断的最大持续时间，以秒为单位。",
+              "description": "上游服务熔断的最大持续时间，以秒为单位，最小 3 秒。",
               "title": "最大熔断时间",
               "type": "integer",
               "default": 300,
@@ -1802,6 +1806,7 @@
             "break_response_code": {
               "description": "HTTP error code returned when the upstream service is in an unhealthy state.",
               "title": "Fuse response status code",
+              "default": 502,
               "type": "integer",
               "ui:rules": ["required"]
             },
@@ -1809,7 +1814,10 @@
               "description": "HTTP response body information returned when the upstream service is in an unhealthy state.",
               "title": "Fuse response body",
               "type": "string",
-              "maxLength": 100
+              "ui:component": {
+                "type": "textarea",
+                "rows": 10
+              }
             },
             "break_response_headers": {
               "description": "The HTTP response header returned when the upstream service is in an unhealthy state.",
@@ -1842,7 +1850,7 @@
               }
             },
             "max_breaker_sec": {
-              "description": "Maximum duration of the upstream service meltdown, in seconds.",
+              "description": "The maximum duration of the upstream service meltdown, in seconds. The minimum duration is 3 seconds.",
               "title": "Maximum fusing time",
               "type": "integer",
               "default": 300,
