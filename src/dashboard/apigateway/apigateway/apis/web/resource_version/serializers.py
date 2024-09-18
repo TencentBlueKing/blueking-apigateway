@@ -86,22 +86,18 @@ class ResourceInfoSLZ(serializers.Serializer):
         if not self.context["is_schema_v2"]:
             return list(stage_plugins.values())
 
-        # 根据 rules 配置确定是否资源插件配置覆盖环境插件配置
-        rules = PLUGIN_MERGE_TYPE
-
         plugins = []
-
         override_plugins = set()
-
         for plugin in obj.get("plugins", []):
             plugin_type = plugin["type"]
             plugin["binding_type"] = PluginBindingScopeEnum.RESOURCE.value
 
+            # 根据 rules 配置确定是否资源插件配置覆盖环境插件配置
             # 如果类型是merge， 同一个类型的环境 + 资源插件将会同时存在
             # 如果类型是override， 同一个类型的环境插件将会被资源插件覆盖
-            if stage_plugins.get(plugin_type) and rules.get(plugin_type, "") == "override":
+            if not (stage_plugins.get(plugin_type) and PLUGIN_MERGE_TYPE.get(plugin_type, "") == "merge"):
                 override_plugins.add(plugin_type)
-                continue
+
             plugins.append(plugin)
 
         plugins.extend(
