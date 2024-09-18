@@ -1,3 +1,23 @@
+<!-- 2024-09-30 -->
+# V1.13.17 Release Log
+
+### Bug Fixes
+
+- Fixed product documentation redirect URL
+
+---
+
+<!-- 2024-09-13 -->
+# V1.13.16 Release Log
+
+### Bug Fixes
+
+- Fix issue where manual date input in the time picker is invalid
+- Fix parameter passing errors in plugins; fix parameter passing errors in resource documentation import; fix authentication information errors in component documentation
+- Standardize top bar style and content
+
+---
+
 <!-- 2024-08-15 -->
 # V1.13.15 Release Log
 
