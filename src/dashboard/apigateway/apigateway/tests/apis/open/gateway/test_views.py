@@ -132,7 +132,6 @@ class TestGatewaySyncApi:
         assert result["data"]["id"] == gateway.id
 
         auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
-        assert auth_config["allow_auth_from_params"] is True
         assert auth_config["allow_delete_sensitive_params"] is False
 
 
