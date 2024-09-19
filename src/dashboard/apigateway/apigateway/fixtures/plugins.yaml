@@ -1935,3 +1935,161 @@
         "formData": {},
         "rules": {}
       }
+- model: schema.schema
+  fields:
+    created_time: 2024-09-03 15:32:21.010753+00:00
+    updated_time: 2024-09-03 15:32:21.010753+00:00
+    name: request-validation
+    type: plugin
+    version: '0'
+    _schema: |-
+      {  
+        "$schema": "http://json-schema.org/draft-07/schema#",  
+        "title": "MetaDataSchema",  
+        "type": "object",  
+        "properties": {  
+          "header_schema": {  
+            "type": "object",  
+            "description": "header 数据的 schema 数据结构。",  
+            "additionalProperties": true  
+          },  
+          "body_schema": {  
+            "type": "object",  
+            "description": "body 数据的 schema 数据结构。",  
+            "additionalProperties": true  
+          },  
+          "rejected_code": {  
+            "type": "integer",  
+            "description": "当请求被拒绝时要返回的状态码。",  
+            "default": 400,  
+            "minimum": 200,  
+            "maximum": 599  
+          },  
+          "rejected_msg": {  
+            "type": "string",  
+            "description": "当请求被拒绝时返回的信息。"  
+          }  
+        },  
+        "anyOf": [  
+          { "required": ["header_schema"] },  
+          { "required": ["body_schema"] }  
+        ],  
+        "required": []
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: request-validation
+    name: 请求验证
+    name_en: request_validation
+    is_public: true
+    scope: resource
+    schema:
+    - request-validation
+    - plugin
+    - '0'
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+    - request-validation
+    notes: request-validation 插件用于提前验证向上游服务转发的请求。该插件使用 JSON Schema 机制进行数据验证，可以验证请求的 Body 以及 Header 的数据。
+    example: '作用： 当请求时没有填入boolean_payload为 True 参数，则返回 400 拒绝状态码和 foo 拒绝信息\n\n"header_schema": {}\n"body_schema": {"type": "object","required": ["bool_payload"],"properties": {"bool_payload": {"type": "boolean","default": true}}}\n"rejected_code": 400\n"rejected_msg": "foo"'
+    style: dynamic
+    default_value: ''
+    config: |-  
+      {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "header_schema": {
+              "type": "string",
+              "maxLength": 51200,
+              "title": "请求头概要",
+              "ui:component": {
+                "type": "textarea",
+                "rows": 10
+              }
+            },              
+            "body_schema": {
+              "type": "string",
+              "maxLength": 51200,
+              "title": "请求体概要",
+              "ui:component": {
+                "type": "textarea",
+                "rows": 10
+              }
+            },
+            "rejected_code": {
+              "type": "integer",
+              "default": 400,
+              "title": "拒绝状态码",
+              "minimum": 200
+            },
+            "rejected_msg": {
+              "title": "拒绝信息",
+              "type": "string",
+              "ui:component": {
+                "type": "textarea",
+                "rows": 10
+              }
+            }
+          } 
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+- model: plugin.pluginform
+  fields:
+    language: 'en'
+    type:
+    - request-validation
+    notes: The request-validation plug-in is used to validate requests forwarded to upstream services in advance. The plug-in uses the JSON Schema mechanism for data validation, which validates the requested Body and Header data.
+    example: 'Functions: When the boolean_payload argument is not filled as True at the time of the request, 400 reject status code and foo reject information are returned \n\n"header_schema": {}\n"body_schema": {"type": "object","required": ["bool_payload"],"properties": {"bool_payload": {"type": "boolean","default": true}}}\n"rejected_code": 400\n"rejected_msg": "foo"'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "header_schema": {
+              "type": "string",
+              "maxLength": 51200,
+              "title": "header_schema",
+              "ui:component": {
+                "type": "textarea",
+                "rows": 10
+              }
+            },              
+            "body_schema": {
+              "type": "string",
+              "maxLength": 51200,
+              "title": "body_schema",
+              "ui:component": {
+                "type": "textarea",
+                "rows": 10
+              }
+            },
+            "rejected_code": {
+              "type": "integer",
+              "default": 400,
+              "title": "rejected_code",
+              "minimum": 200
+            },
+            "rejected_msg": {
+              "title": "rejected_msg",
+              "type": "string",
+              "ui:component": {
+                "type": "textarea",
+                "rows": 10
+              }
+            }
+          } 
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }

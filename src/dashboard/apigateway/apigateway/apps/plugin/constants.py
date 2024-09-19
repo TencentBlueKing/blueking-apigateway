@@ -32,6 +32,7 @@ class PluginTypeCodeEnum(StructuredEnum):
     )
     BK_MOCK = EnumField("bk-mock", label=_("mocking 插件"))
     BK_API_BREAKER = EnumField("api-breaker", label=_("API 熔断"))
+    BK_REQUEST_VALIDATION = EnumField("request-validation", label=_("验证请求"))
 
 
 class PluginTypeScopeEnum(StructuredEnum):

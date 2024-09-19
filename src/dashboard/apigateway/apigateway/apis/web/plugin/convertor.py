@@ -30,6 +30,7 @@ NOTE:
 2. 存量已经编写了 convertor 的插件暂时不动
 """
 
+import json
 from typing import ClassVar, Dict
 
 from django.utils.translation import gettext as _
@@ -129,10 +130,48 @@ class IPRestrictionYamlConvertor(BasePluginYamlConvertor):
         return payload
 
 
+class RequestValidationYamlConvertor(BasePluginYamlConvertor):
+    def to_internal_value(self, payload: str) -> str:
+        loaded_data = yaml_loads(payload)
+        result: Dict[str, dict] = {}
+
+        if loaded_data["header_schema"]:
+            header_schema_result = json.loads(loaded_data["header_schema"])
+            result["header_schema"] = header_schema_result
+
+        if loaded_data["body_schema"]:
+            body_schema_result = json.loads(loaded_data["body_schema"])
+            result["body_schema"] = body_schema_result
+
+        result["rejected_code"] = loaded_data["rejected_code"]
+        result["rejected_msg"] = loaded_data["rejected_msg"]
+
+        return json.dumps(result)
+
+    def to_representation(self, payload: str) -> str:
+        data = json.loads(payload)
+
+        header_schema_str = ""
+        if "header_schema" in data:
+            header_schema_str = json.dumps(data["header_schema"])
+
+        body_schema_str = ""
+        if "body_schema" in data:
+            body_schema_str = json.dumps(data["body_schema"])
+
+        return (
+            f"header_schema: '{header_schema_str}'\n"
+            f"body_schema: '{body_schema_str}'\n"
+            f"rejected_code: {data['rejected_code']}\n"
+            f"rejected_msg: {data['rejected_msg']}"
+        )
+
+
 class PluginConfigYamlConvertor:
     type_code_to_convertor: ClassVar[Dict[str, BasePluginYamlConvertor]] = {
         PluginTypeCodeEnum.BK_RATE_LIMIT.value: RateLimitYamlConvertor(),
         PluginTypeCodeEnum.BK_IP_RESTRICTION.value: IPRestrictionYamlConvertor(),
+        PluginTypeCodeEnum.BK_REQUEST_VALIDATION.value: RequestValidationYamlConvertor(),
     }
 
     def __init__(self, type_code: str):
