@@ -70,7 +70,7 @@ export default {
 
   DOC: {
     // 使用指南
-    GUIDE: `${BK_DOCS_URL_PREFIX_MARKDOWN}`,
+    GUIDE: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/README.md`,
 
     // “请求流水查询规则”
     QUERY_USE: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/reference/log-search-specification.md`,
