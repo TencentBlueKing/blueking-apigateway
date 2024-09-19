@@ -1634,6 +1634,16 @@ const lang: ILANG = {
   '类别': ['Type'],
   '次数': ['Rates'],
   '时间范围': ['Period'],
+  '熔断响应体': ['Break Response Body'],
+  '熔断响应状态码': ['Break Response Code'],
+  '熔断响应头': ['Break Response Headers'],
+  '健康状态': ['Healthy'],
+  '最大熔断时间': ['Max Breaker Seconds'],
+  '不健康状态': ['Unhealthy'],
+  '健康次数': ['Successes'],
+  '不健康次数': ['Failures'],
+  '响应体': ['Response Example'],
+  '响应头': ['Response Headers'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
