@@ -33,62 +33,6 @@ def micro_gateway_release_history():
     return G(MicroGatewayReleaseHistory)
 
 
-class TestReleaseGaterwayByHelm:
-    @pytest.fixture(autouse=True)
-    def setup(self, mocker):
-        self.distributor = mocker.MagicMock()
-        self.distributor_factory = mocker.patch("apigateway.controller.tasks.release.HelmDistributor")
-        self.distributor_factory.return_value = self.distributor
-
-        self.chart_helper = mocker.MagicMock()
-        self.chart_helper_factory = mocker.patch("apigateway.controller.tasks.release.ChartHelper")
-        self.chart_helper_factory.return_value = self.chart_helper
-
-        self.release_helper = mocker.MagicMock()
-        self.release_helper_factory = mocker.patch("apigateway.controller.tasks.release.ReleaseHelper")
-        self.release_helper_factory.return_value = self.release_helper
-
-    def test_micro_gateway_not_exist(self, edge_release, micro_gateway_release_history):
-        edge_release.stage.micro_gateway.delete()
-
-        assert not tasks.release_gateway_by_helm(
-            edge_release.id, micro_gateway_release_history.id, "user", {"bk_ticket": "access_token"}
-        )
-
-    def test_success(self, mocker, edge_release, micro_gateway, micro_gateway_release_history):
-        self.distributor.distribute.return_value = True, ""
-
-        username = "user"
-        access_token = "access_token"
-        assert tasks.release_gateway_by_helm(
-            edge_release.id, micro_gateway_release_history.id, username, {"bk_ticket": access_token}
-        )
-
-        self.chart_helper_factory.assert_called_once_with(user_credentials={"bk_ticket": access_token})
-        self.release_helper_factory.assert_called_once_with(user_credentials={"bk_ticket": access_token})
-        self.distributor_factory.assert_called_once_with(
-            chart_helper=self.chart_helper,
-            release_helper=self.release_helper,
-            generate_chart=True,
-            operator=username,
-        )
-
-        micro_gateway_release_history.refresh_from_db()
-        micro_gateway_release_history.status = ReleaseStatusEnum.SUCCESS.value
-
-    def test_fail(self, mocker, edge_release, micro_gateway, micro_gateway_release_history):
-        self.distributor.distribute.return_value = False, "Fail"
-
-        username = "user"
-        access_token = "access_token"
-        assert not tasks.release_gateway_by_helm(
-            edge_release.id, micro_gateway_release_history.id, username, {"bk_ticket": access_token}
-        )
-
-        micro_gateway_release_history.refresh_from_db()
-        micro_gateway_release_history.status = ReleaseStatusEnum.FAILURE.value
-
-
 class TestReleaseGatewayByRegistry:
     @pytest.fixture(autouse=True)
     def setup(self, mocker):

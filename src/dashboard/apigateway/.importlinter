@@ -37,4 +37,3 @@ ignore_imports =
     apigateway.common.audit.shortcuts -> apigateway.apps.audit.signals
     apigateway.common.release.publish -> apigateway.controller.tasks
     apigateway.common.release.publish -> apigateway.controller.constants
-    apigateway.components.bcs_helper -> apigateway.common.user_credentials

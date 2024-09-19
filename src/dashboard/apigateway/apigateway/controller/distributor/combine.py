@@ -20,7 +20,6 @@ from typing import Callable, Optional, Tuple, Type
 
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.etcd import EtcdDistributor
-from apigateway.controller.distributor.helm import HelmDistributor
 from apigateway.core.models import MicroGateway, Release, Stage
 
 logger = logging.getLogger(__name__)
@@ -29,10 +28,8 @@ logger = logging.getLogger(__name__)
 class CombineDistributor(BaseDistributor):
     def __init__(
         self,
-        helm_distributor_type: Type[HelmDistributor] = HelmDistributor,
         etcd_distributor_type: Type[EtcdDistributor] = EtcdDistributor,
     ):
-        self.helm_distributor_type = helm_distributor_type
         self.etcd_distributor_type = etcd_distributor_type
 
     def foreach_distributor(
@@ -44,6 +41,8 @@ class CombineDistributor(BaseDistributor):
         """遍历所有的 distributor 并调用回调，除了传入的微网关实例，会判断是否需要同时调用自身托管的实例"""
         # 只处理共享网关
         assert micro_gateway.is_shared
+
+        # FIXME: refactor here
 
         managed_micro_gateway = stage.micro_gateway
         # 如果微网关不存在, 只发布default共享网关
@@ -65,8 +64,9 @@ class CombineDistributor(BaseDistributor):
             return
 
         # 发布专享网关
-        if managed_micro_gateway.is_managed:
-            callback(self.helm_distributor_type(generate_chart=False), managed_micro_gateway)
+        # 2024-09-19 remove helm distributor, no need to use bcs distribute the helm chart
+        # if managed_micro_gateway.is_managed:
+        #     callback(self.helm_distributor_type(generate_chart=False), managed_micro_gateway)
 
     def distribute(
         self,

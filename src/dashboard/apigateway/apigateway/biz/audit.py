@@ -184,37 +184,6 @@ class Auditor:
         )
 
     @staticmethod
-    def record_micro_gateway_op_success(
-        op_type: OpTypeEnum,
-        username: str,
-        gateway_id: int,
-        instance_id: int,
-        instance_name: str,
-        data_before: Union[list, dict, str, None] = None,
-        data_after: Union[list, dict, str, None] = None,
-        comment: Optional[str] = None,
-    ):
-        if comment is None:
-            comment = {
-                OpTypeEnum.CREATE: "创建微网关实例",
-                OpTypeEnum.MODIFY: "更新微网关实例",
-                OpTypeEnum.DELETE: "删除微网关实例",
-            }.get(op_type, "-")
-
-        record_audit_log(
-            username=username,
-            op_type=op_type.value,
-            op_status=OpStatusEnum.SUCCESS.value,
-            op_object_group=gateway_id,
-            op_object_type=OpObjectTypeEnum.MICRO_GATEWAY.value,
-            op_object_id=instance_id,
-            op_object=instance_name,
-            data_before=data_before,
-            data_after=data_after,
-            comment=comment,
-        )
-
-    @staticmethod
     def record_plugin_op_success(
         op_type: OpTypeEnum,
         username: str,

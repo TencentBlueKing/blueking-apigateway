@@ -43,7 +43,6 @@ class OpObjectTypeEnum(StructuredEnum):
     RESOURCE_VERSION = EnumField("resource_version", label=_("资源版本"))
     RELEASE = EnumField("release", label=_("发布"))
     GATEWAY_LABEL = EnumField("gateway_label", label=_("网关标签"))
-    MICRO_GATEWAY = EnumField("micro_gateway", label=_("微网关"))
     PLUGIN = EnumField("plugin", label=_("插件"))
     RESOURCE_DOC = EnumField("resource_doc", label=_("资源文档"))
 

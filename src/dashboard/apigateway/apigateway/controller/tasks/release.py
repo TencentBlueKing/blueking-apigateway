@@ -28,9 +28,6 @@ from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.etcd import EtcdDistributor
-from apigateway.controller.distributor.helm import HelmDistributor
-from apigateway.controller.helm.chart import ChartHelper
-from apigateway.controller.helm.release import ReleaseHelper
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
 from apigateway.core.constants import ReleaseHistoryStatusEnum, ReleaseStatusEnum, StageStatusEnum
 from apigateway.core.models import (
@@ -95,44 +92,6 @@ def _release_gateway(
         raise
 
     return True
-
-
-@shared_task(ignore_result=True)
-def release_gateway_by_helm(release_id, micro_gateway_release_history_id, username, user_credentials):
-    """发布资源到专享网关"""
-    logger.info(
-        "release_gateway_by_helm: release_id=%s, micro_gateway_release_history_id=%s",
-        release_id,
-        micro_gateway_release_history_id,
-    )
-    release = Release.objects.prefetch_related("stage", "gateway", "resource_version").get(id=release_id)
-    stage = release.stage
-    micro_gateway = stage.micro_gateway
-    procedure_logger = ReleaseProcedureLogger(
-        "release_gateway_by_helm",
-        logger=logger,
-        gateway=release.gateway,
-        stage=stage,
-        micro_gateway=micro_gateway,
-    )
-    # 环境未绑定微网关
-    if not micro_gateway:
-        procedure_logger.warning("stage not bound to a micro-gateway, cannot release by helm.")
-        return False
-
-    # BkGatewayConfig 随着 micro-gateway 的 release 下发，所以无需包含
-    return _release_gateway(
-        distributor=HelmDistributor(
-            chart_helper=ChartHelper(user_credentials=user_credentials),
-            release_helper=ReleaseHelper(user_credentials=user_credentials),
-            generate_chart=True,
-            operator=username,
-        ),
-        micro_gateway_release_history_id=micro_gateway_release_history_id,
-        release=release,
-        micro_gateway=micro_gateway,
-        procedure_logger=procedure_logger,
-    )
 
 
 @shared_task(ignore_result=True)

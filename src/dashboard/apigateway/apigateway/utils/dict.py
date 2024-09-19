@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict, Iterable, List, Optional, Type
+from typing import Any, Dict
 
 
 def deep_update(mapping: Dict[str, Any], *updating_mappings: Dict[str, Any]) -> Dict[str, Any]:
@@ -40,39 +40,3 @@ def update_existing(mapping: Dict[str, Any], **update: Any) -> Dict[str, Any]:
     updated_mapping = mapping.copy()
     updated_mapping.update({k: v for k, v in update.items() if k in updated_mapping})
     return updated_mapping
-
-
-def get_item_by_path(item: Any, paths: Iterable[str], default=None) -> Any:
-    """根据路径获取指定的值"""
-
-    for path in paths:
-        try:
-            item = item[path]
-        except (IndexError, KeyError):
-            return default
-        except Exception:
-            raise
-
-    return item
-
-
-def set_item_by_path(item: Any, paths: List[str], value: Any, missing_type: Optional[Type] = None):
-    """根据路径设置值"""
-    if not paths:
-        raise ValueError("No paths specified")
-
-    if missing_type is None:
-        missing_type = type(item)
-
-    key = paths[-1]
-    for path in paths[:-1]:
-        try:
-            item = item[path]
-        except (IndexError, KeyError):
-            # 当不存在时默认创建
-            item[path] = missing_type()  # type: ignore
-            item = item[path]
-        except Exception:
-            raise
-
-    item[key] = value
