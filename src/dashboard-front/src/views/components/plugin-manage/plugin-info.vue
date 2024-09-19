@@ -123,7 +123,8 @@
         ></i>
       </header>
       <main class="example-main">
-        <pre class="example-pre">{{ exampleContent }}</pre>
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <pre class="example-pre" v-html="exampleHtml"></pre>
       </main>
     </aside>
   </div>
@@ -211,6 +212,11 @@ const isBound = computed(() => {
   return function (obj: any) {
     return props?.bindingPlugins?.some((item: { code: string; }) => item.code === obj.code);
   };
+});
+
+// 把后端返回的带 \n 的文本块转换成换行标签，当做 html 渲染
+const exampleHtml = computed(() => {
+  return exampleContent.value.replace(/\\n/gm, '<br/>');
 });
 
 // 上一页
