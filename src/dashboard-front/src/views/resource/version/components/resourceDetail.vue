@@ -312,18 +312,7 @@
                             >
                               {{ $t("插件") }}: {{ plugin.name }}
                             </p>
-                            <bk-container class="ag-kv-box" :col="14" :margin="6">
-                              <bk-row v-for="key in Object.keys(plugin.config)" :key="key">
-                                <bk-col :span="4">
-                                  <label class="ag-key">{{ key }}:</label>
-                                </bk-col>
-                                <bk-col :span="10">
-                                  <div class="ag-value">
-                                    {{ plugin.config[key] }}
-                                  </div>
-                                </bk-col>
-                              </bk-row>
-                            </bk-container>
+                            <ConfigDisplayTable :plugin="plugin" first-col-width="auto" />
                           </template>
                         </template>
                       </div>
@@ -347,6 +336,7 @@ import cookie from 'cookie';
 // import { RightShape, AngleUpFill } from "bkui-vue/lib/icon";
 import { getResourceVersionsInfo, getGatewayLabels } from '@/http';
 import { getMethodsTheme } from '@/common/util';
+import ConfigDisplayTable from '@/views/components/plugin-manage/config-display-table.vue';
 
 const { t } = useI18n();
 const route = useRoute();

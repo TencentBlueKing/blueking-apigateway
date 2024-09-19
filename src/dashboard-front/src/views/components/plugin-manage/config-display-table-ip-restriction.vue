@@ -33,6 +33,7 @@ interface IIpRestrictionTableRow extends IBaseTableRow {
 
 interface IProps {
   plugin: IPlugin<IIpRestrictionConfig>
+  firstColWidth: string
 }
 
 const { t } = useI18n();
@@ -44,7 +45,10 @@ const ipTypeTextMap: Record<string, string> = {
 
 const props = defineProps<IProps>();
 
-const { plugin } = toRefs(props);
+const {
+  plugin,
+  firstColWidth,
+} = toRefs(props);
 
 // ip访问限制插件表格列
 const tableCols = ref<IColumn[]>([
@@ -52,7 +56,7 @@ const tableCols = ref<IColumn[]>([
     label: t('类型'),
     align: 'right',
     field: 'type',
-    width: '200',
+    width: firstColWidth.value,
     index: 0,
   },
   {

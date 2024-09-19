@@ -28,6 +28,7 @@ interface IGenericConfig {
 
 interface IProps {
   plugin: IPlugin<IGenericConfig>
+  firstColWidth: string
 }
 
 const { t } = useI18n();
@@ -52,7 +53,10 @@ const rowKeyTextMap: Record<string, string> = {
 
 const props = defineProps<IProps>();
 
-const { plugin } = toRefs(props);
+const {
+  plugin,
+  firstColWidth,
+} = toRefs(props);
 
 // 通用表格列
 const tableCols = ref<IColumn[]>([
@@ -60,7 +64,7 @@ const tableCols = ref<IColumn[]>([
     label: t('键'),
     align: 'right',
     field: 'key',
-    width: '200',
+    width: firstColWidth.value,
     index: 0,
     rowspan: ({ row }) => row.rowSpan,
   },

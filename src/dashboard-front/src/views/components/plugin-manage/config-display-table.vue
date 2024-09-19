@@ -3,8 +3,10 @@
   <component
     :is="tableComponent"
     :plugin="plugin"
+    :first-col-width="firstColWidth"
     :cell-style="getFirstColCellStyle"
     :border="['outer', 'col']"
+    show-overflow-tooltip
   />
 </template>
 
@@ -25,6 +27,7 @@ import {
 
 interface IProps {
   plugin: IPlugin<unknown>
+  firstColWidth?: string
 }
 
 // Header转换插件、频率控制插件、IP访问限制插件配置展示表格
@@ -41,9 +44,13 @@ const props = withDefaults(defineProps<IProps>(), {
     name: '',
     config: {},
   }),
+  firstColWidth: '200',
 });
 
-const { plugin } = toRefs(props);
+const {
+  plugin,
+  firstColWidth,
+} = toRefs(props);
 
 // 根据 code 或 type 动态获取表格组件
 const tableComponent = computed(() => {

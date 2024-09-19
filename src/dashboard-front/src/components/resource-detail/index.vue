@@ -668,21 +668,7 @@
         <p class="title mt15" :class="{ 'ag-diff': checkPluginsDiff() }">
           {{ $t('插件:{name}', { name: plugin.name }) }}
         </p>
-        <bk-container class="ag-kv-box" :col="14" :margin="6">
-          <bk-row
-            v-for="key in Object.keys(plugin.config)"
-            :key="key"
-          >
-            <bk-col :span="5">
-              <label class="ag-key">{{ key }}:</label>
-            </bk-col>
-            <bk-col :span="9">
-              <div class="ag-value">
-                {{ plugin.config[key] || "--" }}
-              </div>
-            </bk-col>
-          </bk-row>
-        </bk-container>
+        <ConfigDisplayTable :plugin="plugin" first-col-width="auto" />
       </template>
     </div>
     <!-- </template> -->
@@ -695,6 +681,7 @@ import cookie from 'cookie';
 // import dayjs from 'dayjs';
 import { useI18n } from 'vue-i18n';
 import { useCommon } from '@/store';
+import ConfigDisplayTable from '@/views/components/plugin-manage/config-display-table.vue';
 
 const common = useCommon();
 

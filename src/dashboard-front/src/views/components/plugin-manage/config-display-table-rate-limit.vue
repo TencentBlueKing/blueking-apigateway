@@ -36,6 +36,7 @@ interface IRateLimitTableRow extends IBaseTableRow {
 
 interface IProps {
   plugin: IPlugin<IRateLimitConfig>
+  firstColWidth: string
 }
 
 const { t } = useI18n();
@@ -49,7 +50,10 @@ const periodTextMap: Record<number, string> = {
 
 const props = defineProps<IProps>();
 
-const { plugin } = toRefs(props);
+const {
+  plugin,
+  firstColWidth,
+} = toRefs(props);
 
 // 频率控制插件表格列
 const tableCols = ref<IColumn[]>([
@@ -57,7 +61,7 @@ const tableCols = ref<IColumn[]>([
     label: t('类别'),
     align: 'right',
     field: 'type',
-    width: '200',
+    width: firstColWidth.value,
     index: 0,
     rowspan: ({ row }) => row.rowSpan,
   },
