@@ -19,7 +19,7 @@ import json
 from json import JSONDecodeError
 from typing import Dict, Optional
 
-from jsonschema import Draft7Validator, ValidationError
+from jsonschema import Draft7Validator, ValidationError, validate
 
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.utils.yaml import yaml_loads
@@ -53,9 +53,7 @@ class PluginConfigYamlValidator:
                 validator.validate(payload_dict)
             else:
                 converted_payload = convertor.convert(yaml_loads(payload))
-                # 假设这里有一个validate函数可以验证schema
-                validate_function = ...  # 需要替换为实际的验证函数
-                validate_function(instance=converted_payload, schema=schema)
+                validate(instance=converted_payload, schema=schema)
         except JSONDecodeError as e:
             raise ValueError(f"Invalid JSON format: {e}")
         except ValidationError as e:
