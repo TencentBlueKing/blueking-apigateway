@@ -1,120 +1,138 @@
 <template>
   <div class="plugin-info">
-    <div class="info-alert mb20" v-if="!isAdd && isStage">
-      <bk-alert theme="warning" :title="t(editAlert)"></bk-alert>
-    </div>
-    <div class="info-header">
-      <span class="cur-icon">{{ pluginCodeFirst(curPluginInfo?.code) }}</span>
-      <div class="cur-text">
-        <div class="cur-info">
-          <span class="cur-name">{{ curPluginInfo?.name }}</span>
-          <ul class="cur-binding-info">
-            <li>
-              {{ t('当前版本：') }}
-              <span class="cur-version">{{ t('1.0.0') }}</span>
-            </li>
-            <li>
-              {{ t('已绑定的资源：') }}
-              <span :class="[curPluginInfo?.related_scope_count?.resource === 0 ? 'empty' : 'bound',]">
-                {{ curPluginInfo?.related_scope_count?.resource }}
-              </span>
-            </li>
-            <li>
-              {{ t('已绑定的环境：') }}
-              <span :class="[curPluginInfo?.related_scope_count?.stage === 0 ? 'empty' : 'bound',]">
-                {{ curPluginInfo?.related_scope_count?.stage }}
-              </span>
-            </li>
-          </ul>
-        </div>
-        <div class="cur-describe">
-          {{ curPluginInfo?.notes }}
-        </div>
+    <main class="plugin-form-content" :class="{ 'pr20': isExampleVisible }">
+      <div class="info-alert mb20" v-if="!isAdd && isStage">
+        <bk-alert theme="warning" :title="t(editAlert)"></bk-alert>
       </div>
-      <div class="choose-plugin" v-show="isAdd" @click="showChoosePlugin = !showChoosePlugin">
-        <transfer />
-        <span>{{ t('切换插件') }}</span>
-      </div>
-    </div>
-    <bk-select
-      class="choose-plugin-select"
-      v-model="choosePlugin"
-      :clearable="false"
-      @change="handleChoosePlugin"
-      v-show="showChoosePlugin"
-    >
-      <bk-option
-        v-for="item in pluginList"
-        :id="item.code"
-        :key="item.code"
-        :name="item.name"
-        :disabled="isBound(item)"
-      />
-    </bk-select>
-    <div class="info-form-container mt20">
-      <!-- <bk-form ref="formRef" class="info-form" :model="configFormData" :rules="rules" form-type="vertical">
-        <bk-form-item :label="t('名称')" property="name" required>
-          <bk-input v-model="configFormData.name" :placeholder="t('请输入')" />
-        </bk-form-item>
-        <bk-loading :loading="isPluginFormLoading">
-          <bk-form-item class="mt20" v-if="infoNotes">
-            <bk-alert theme="info" :title="t(infoNotes)"></bk-alert>
-          </bk-form-item>
-        </bk-loading>
-      </bk-form> -->
-
-      <bk-alert
-        theme="warning"
-        :title="t('allow_origins 与 allow_origins_by_regex 不能同时为空')"
-        v-show="typeId === 1"
-      />
-
-      <!-- 免用户认证应用白名单策略 -->
-      <div v-if="formStyle === 'raw'">
-        <div class="white-list">
-          <whitelist-table
-            ref="whitelist"
-            :type="type"
-            :yaml-str="editPlugin?.yaml || ''"
+      <div class="info-header">
+        <header class="choose-plugin">
+          <div class="cur-icon">{{ pluginCodeFirst(curPluginInfo?.code) }}</div>
+          <div v-show="isAdd" @click="showChoosePlugin = true">{{ t('切换插件') }}</div>
+          <bk-select
+            v-show="showChoosePlugin"
+            v-model="choosePlugin"
+            :clearable="false"
+            ref="pluginSelectRef"
+            class="choose-plugin-select"
+            @change="handleChoosePlugin"
+            @blur="() => showChoosePlugin = false"
           >
-          </whitelist-table>
+            <bk-option
+              v-for="item in pluginList"
+              :id="item.code"
+              :key="item.code"
+              :name="item.name"
+              :disabled="isBound(item)"
+            />
+          </bk-select>
+        </header>
+        <main class="cur-text">
+          <div class="cur-info">
+            <span class="cur-name">{{ curPluginInfo?.name }}</span>
+            <ul class="cur-binding-info">
+              <li>
+                {{ t('当前版本：') }}
+                <span class="cur-version">{{ t('1.0.0') }}</span>
+              </li>
+              <li>
+                {{ t('已绑定的资源：') }}
+                <span :class="[curPluginInfo?.related_scope_count?.resource === 0 ? 'empty' : 'bound',]">
+                  {{ curPluginInfo?.related_scope_count?.resource }}
+                </span>
+              </li>
+              <li>
+                {{ t('已绑定的环境：') }}
+                <span :class="[curPluginInfo?.related_scope_count?.stage === 0 ? 'empty' : 'bound',]">
+                  {{ curPluginInfo?.related_scope_count?.stage }}
+                </span>
+              </li>
+            </ul>
+          </div>
+          <div class="cur-describe">
+            {{ curPluginInfo?.notes }}
+          </div>
+        </main>
+        <aside class="plugin-example-btn" @click="toggleShowExample">{{ t('查看填写示例') }}</aside>
+      </div>
+      <div class="info-form-container mt20">
+        <!-- <bk-form ref="formRef" class="info-form" :model="configFormData" :rules="rules" form-type="vertical">
+          <bk-form-item :label="t('名称')" property="name" required>
+            <bk-input v-model="configFormData.name" :placeholder="t('请输入')" />
+          </bk-form-item>
+          <bk-loading :loading="isPluginFormLoading">
+            <bk-form-item class="mt20" v-if="infoNotes">
+              <bk-alert theme="info" :title="t(infoNotes)"></bk-alert>
+            </bk-form-item>
+          </bk-loading>
+        </bk-form> -->
+
+        <bk-alert
+          theme="warning"
+          :title="t('allow_origins 与 allow_origins_by_regex 不能同时为空')"
+          v-show="typeId === 1"
+        />
+
+        <!-- 免用户认证应用白名单策略 -->
+        <div v-if="formStyle === 'raw'">
+          <div class="white-list">
+            <whitelist-table
+              ref="whitelist"
+              :type="type"
+              :yaml-str="editPlugin?.yaml || ''"
+            >
+            </whitelist-table>
+          </div>
+        </div>
+        <BkSchemaForm
+          v-else
+          class="mt20 plugin-form"
+          v-model="schemaFormData"
+          :schema="formConfig.schema"
+          :layout="formConfig.layout"
+          :rules="formConfig.rules"
+          ref="formRef">
+        </BkSchemaForm>
+      </div>
+      <div class="info-btn mt20">
+        <div class="last-step">
+          <bk-pop-confirm
+            :title="t('确认{optType}插件（{name}）到 {stage} 环境？',
+                      { optType: isAdd ? t('添加') : t('修改'),
+                        name: curPluginInfo?.name,
+                        stage: stageStore?.curStageData?.name })"
+            :content="t('插件配置变更后，将立即影响线上环境，请确认。')"
+            trigger="click"
+            @confirm="handleAdd"
+            v-if="isStage"
+          >
+            <bk-button theme="primary" class="default-btn">{{ t('确定') }}</bk-button>
+          </bk-pop-confirm>
+          <bk-button v-else @click="handleAdd" theme="primary" class="default-btn">{{ t('确定') }}</bk-button>
+          <bk-button @click="handlePre" class="prev-btn ml8" v-if="isAdd">{{ t('上一步') }}</bk-button>
+          <bk-button @click="handleCancel" class="default-btn ml8">{{ t('取消') }}</bk-button>
         </div>
       </div>
-      <BkSchemaForm
-        v-else
-        class="mt20 plugin-form"
-        v-model="schemaFormData"
-        :schema="formConfig.schema"
-        :layout="formConfig.layout"
-        :rules="formConfig.rules"
-        ref="formRef">
-      </BkSchemaForm>
-    </div>
-    <div class="info-btn mt20">
-      <div class="last-step">
-        <bk-pop-confirm
-          :title="t('确认{optType}插件（{name}）到 {stage} 环境？',
-                    { optType: isAdd ? t('添加') : t('修改'),
-                      name: curPluginInfo?.name,
-                      stage: stageStore?.curStageData?.name })"
-          :content="t('插件配置变更后，将立即影响线上环境，请确认。')"
-          trigger="click"
-          @confirm="handleAdd"
-          v-if="isStage"
-        >
-          <bk-button theme="primary" class="default-btn">{{ t('确定') }}</bk-button>
-        </bk-pop-confirm>
-        <bk-button v-else @click="handleAdd" theme="primary" class="default-btn">{{ t('确定') }}</bk-button>
-        <bk-button @click="handlePre" class="prev-btn ml8" v-if="isAdd">{{ t('上一步') }}</bk-button>
-        <bk-button @click="handleCancel" class="default-btn ml8">{{ t('取消') }}</bk-button>
-      </div>
-    </div>
+    </main>
+    <!--  右侧插件使用示例  -->
+    <aside v-if="isExampleVisible" class="plugin-example-content">
+      <header class="example-content-header">
+        <span class="header-title">{{ t('插件配置示例') }}</span>
+        <i
+          class="close-btn apigateway-icon icon-ag-icon-close f24"
+          @click="toggleShowExample"
+        ></i>
+      </header>
+      <main class="example-main">
+        <pre class="example-pre">{{ exampleContent }}</pre>
+      </main>
+    </aside>
   </div>
 </template>
 
 <script setup lang="ts">
 import {
   computed,
+  onBeforeUnmount,
   ref,
   toRefs,
 } from 'vue';
@@ -126,13 +144,13 @@ import createForm from '@blueking/bkui-form';
 import { json2yaml, yaml2json } from '@/common/util';
 import whitelistTable from './whitelist-table.vue';
 import { useStage } from '@/store';
-import { Transfer } from 'bkui-vue/lib/icon';
+import { onClickOutside } from '@vueuse/core';
 
 const stageStore = useStage();
 const BkSchemaForm = createForm();
 
 const { t } = useI18n();
-const emit = defineEmits(['on-change', 'choose-plugin']);
+const emit = defineEmits(['on-change', 'choose-plugin', 'show-example']);
 
 const schemaFormData = ref({});
 const formConfig = ref({
@@ -182,6 +200,12 @@ const pluginCodeFirst = computed(() => {
 });
 const typeId = ref<number>();
 const formStyle = ref<string>();
+// 右侧插件使用示例是否可见
+const isExampleVisible = ref(false);
+// 右侧插件使用示例内容
+const exampleContent = ref('');
+// 插件切换 select
+const pluginSelectRef = ref<HTMLElement | null>(null);
 
 const isBound = computed(() => {
   return function (obj: any) {
@@ -478,6 +502,7 @@ const getSchemaFormData = async (code: string) => {
     formConfig.value = res.config;
     typeId.value = res.type_id;
     formStyle.value = res.style;
+    exampleContent.value = res.example || '';
 
     if (!isAdd.value) {
       const yamlData = yaml2json(props.editPlugin.yaml).data;
@@ -497,6 +522,16 @@ const handleChoosePlugin = () => {
   }
 };
 
+// 切换使用示例可见状态
+// 初次渲染若内容为空就去请求一次内容
+const toggleShowExample = async () => {
+  if (!exampleContent.value) {
+    await getSchemaFormData(choosePlugin.value);
+  }
+  isExampleVisible.value = !isExampleVisible.value;
+  emit('show-example', { isVisible: isExampleVisible.value });
+};
+
 const init = async () => {
   isStage.value = props.scopeInfo.scopeType === 'stage';
   isAdd.value = props.type === 'add';
@@ -505,34 +540,109 @@ const init = async () => {
   getSchemaFormData(code);
 };
 init();
+
+// 点击了插件 select 区域外且未 focus 到该组件时，隐藏整个 select
+onClickOutside(pluginSelectRef, () => {
+  if (pluginSelectRef.value?.isFocus === false) {
+    showChoosePlugin.value = false;
+  }
+});
+
+// 离开时重置使用示例可见状态恢复父组件的宽度
+onBeforeUnmount(() => {
+  emit('show-example', { isVisible: false });
+});
 </script>
 
 <style lang="scss" scoped>
+.plugin-info {
+  display: flex;
+
+  .plugin-form-content {
+    flex-grow: 1;
+  }
+
+  .plugin-example-content {
+    flex-shrink: 0;
+    padding: 0 0 20px 20px;
+    width: 400px;
+    border-left: 1px solid #dcdee5;
+
+    .example-content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+
+      .header-title {
+        height: 24px;
+        font-size: 16px;
+        color: #313238;
+        line-height: 24px;
+      }
+
+      .close-btn {
+        color: #979BA5;
+        cursor: pointer;
+
+        &:hover {
+          color: #63656e;
+        }
+      }
+    }
+
+    .example-main {
+
+      .example-pre {
+        line-height: 22px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-family: inherit;
+        color: #4D4F56;
+      }
+    }
+  }
+}
+
 .info-header {
   background-color: #f5f7fa;;
   border-radius: 2px;
-  padding: 8px 16px;
+  padding: 12px 24px;
   display: flex;
-  position: relative;
+  align-items: flex-start;
+  gap: 24px;
 
-  .cur-icon {
-    display: inline-block;
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background-color: #f0f1f5;
-    color: #3a84f6;
-    text-align: center;
-    line-height: 72px;
-    font-weight: 700;
-    font-size: 28px;
-    margin-right: 18px;
+  .choose-plugin {
+    flex-shrink: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-content: center;
+    gap: 4px;
+    font-size: 14px;
+    color: #3A84FF;
+    cursor: pointer;
+
+    .cur-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #EAEBF0;
+      color: #3a84f6;
+      text-align: center;
+      line-height: 56px;
+      font-weight: 700;
+      font-size: 28px;
+    }
   }
 
   .cur-text {
+    flex-grow: 1;
+
     .cur-info {
-      margin-top: 16px;
-      margin-bottom: 12px;
+      margin-top: 12px;
+      margin-bottom: 10px;
       display: flex;
       align-items: center;
       .cur-name {
@@ -555,7 +665,7 @@ init();
         }
 
         .empty {
-          color: #63656e;
+          color: #3a84ff;
           font-weight: 700;
         }
 
@@ -571,19 +681,11 @@ init();
     }
   }
 
-  .choose-plugin {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    right: 24px;
-    font-size: 14px;
+  .plugin-example-btn {
+    margin-top: 16px;
+    flex-shrink: 0;
     color: #3A84FF;
-    display: flex;
-    align-content: center;
     cursor: pointer;
-    span {
-      margin-left: 4px;
-    }
   }
 }
 .plugin-form {
@@ -609,7 +711,12 @@ init();
 }
 
 .choose-plugin-select {
-  margin-top: 4px;
+  position: absolute;
+  left: 0;
+  top: 85px;
+  width: 300px;
+  z-index: 1;
+
   :deep(.bk-input) {
     border: 1px solid #DCDEE5;
     .angle-up {

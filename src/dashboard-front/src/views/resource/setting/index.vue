@@ -119,7 +119,7 @@
                 class="operate-btn"
                 @click="handleCreateResourceVersion"
                 v-bk-tooltips="{
-                  content: t('资源有更新，可生产新版本'),
+                  content: t('资源有更新，可生成新版本'),
                 }"
               >
                 <i class="apigateway-icon icon-ag-version"></i>

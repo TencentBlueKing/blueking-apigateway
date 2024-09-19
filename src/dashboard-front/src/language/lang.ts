@@ -1624,6 +1624,16 @@ const lang: ILANG = {
   '权限申请': ['Permission application'],
   '没有数据': ['No Data'],
   '请输入 API 名称': ['Please input API name'],
+  '插件配置示例': ['Plugin config example'],
+  '查看填写示例': ['Show config example'],
+  '资源有更新，可生成新版本': ['New version can be generated'],
+  '特殊频率限制': ['Special rate limit'],
+  '白名单': ['Whitelist'],
+  '黑名单': ['Blacklist'],
+  '行为': ['Action'],
+  '类别': ['Type'],
+  '次数': ['Rates'],
+  '时间范围': ['Period'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

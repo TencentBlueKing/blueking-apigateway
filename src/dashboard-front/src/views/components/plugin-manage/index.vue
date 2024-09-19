@@ -35,13 +35,7 @@
           </template>
           <template #content="slotProps">
             <div>
-              <!-- {{ slotProps.config }} -->
-              <div v-for="(item, key) in slotProps.config" :key="key">
-                <div class="flex-row align-items-center">
-                  <div class="form-key-cls">{{key}}：</div>
-                  <div class="form-val-cls">{{item}}</div>
-                </div>
-              </div>
+              <ConfigDisplayTable :plugin="slotProps" />
             </div>
           </template>
         </bk-collapse>
@@ -49,7 +43,13 @@
     </bk-loading>
 
     <!-- 添加插件 -->
-    <bk-sideslider v-model:isShow="isVisible" :title="t('添加插件')" quick-close ext-cls="plugin-add-slider" width="960">
+    <bk-sideslider
+      v-model:isShow="isVisible"
+      :title="t('添加插件')"
+      quick-close
+      ext-cls="plugin-add-slider"
+      :width="pluginSliderWidth"
+    >
       <template #default>
         <bk-steps
           :cur-step="state.curStep"
@@ -171,7 +171,9 @@
               :plugin-list="pluginListDate"
               :binding-plugins="curBindingPlugins"
               @choose-plugin="handleChoosePlugin"
-              @on-change="handleOperate">
+              @on-change="handleOperate"
+              @show-example="handlePluginExampleToggle"
+            >
             </pluginInfo>
           </div>
         </div>
@@ -211,7 +213,12 @@ import pluginInfo from './plugin-info.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import mitt from '@/common/event-bus';
 import { InfoBox, Message } from 'bkui-vue';
-import { ref, reactive, computed, watch } from 'vue';
+import {
+  ref,
+  reactive,
+  computed,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useCommon } from '@/store';
 import { useRoute, useRouter } from 'vue-router';
@@ -222,6 +229,7 @@ import {
   getPluginConfig,
   deletePluginConfig,
 } from '@/http';
+import ConfigDisplayTable from '@/views/components/plugin-manage/config-display-table.vue';
 
 const props = defineProps({
   resourceId: {
@@ -271,6 +279,8 @@ const tableEmptyConf = ref({
   keyword: '',
   isAbnormal: false,
 });
+// 控制插件 slider 宽度，会在展示插件使用示例时变宽
+const pluginSliderWidth = ref(960);
 
 // 监听是否成功添加
 watch(
@@ -307,6 +317,11 @@ const handleOperate = (operate: string) => {
     default:
       break;
   }
+};
+
+// 处理插件使用示例内容是否可见的逻辑
+const handlePluginExampleToggle = ({ isVisible }: { isVisible: boolean }) => {
+  pluginSliderWidth.value = isVisible ? 1360 : 960;
 };
 
 const activeIndex = computed(() => Object.keys(curBindingPlugins.value)?.map((item: string) => Number(item)));
