@@ -29,7 +29,27 @@
         var BK_DASHBOARD_URL = '<%= process.env.BK_DASHBOARD_URL %>'
         var BK_DASHBOARD_CSRF_COOKIE_NAME = '<%= process.env.BK_DASHBOARD_CSRF_COOKIE_NAME %>'
         var BK_LIST_USERS_API_URL = `${BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fs_list_users/` // 人员选择器接口地址，可选填
-        var BK_DOCS_URL_PREFIX_MARKDOWN = `${BK_DOCS_URL_PREFIX}/markdown/APIGateway`
+        var BK_DOCS_URL_PREFIX_MARKDOWN = '';
+        // 执行一个立即执行函数获取 BK_DOCS_URL_PREFIX_MARKDOWN 的值
+        // 避免了声明会暴露到全局的变量
+        (function() {
+          const langMap = {
+            'zh-cn': 'ZH',
+            'en': 'EN',
+          }
+          function getCookieValue(name) {
+            const regex = new RegExp(`(^| )${name}=([^;]+)`);
+            const match = document.cookie.match(regex);
+            return match ? match[2] : '';
+          }
+          // 当前 cookie 中使用的语言 zh-cn | en
+          const currentLang = getCookieValue('blueking_language') || 'zh-cn';
+          // 获取文档语言 ZH | EN
+          const lang = langMap[currentLang];
+          // 获取当前版本的 major 和 minor 版本，如：1.13.1 -> 1.13
+          const docVersion = BK_APIGATEWAY_VERSION.split('.').slice(0, 2).join('.');
+          BK_DOCS_URL_PREFIX_MARKDOWN = `${BK_DOCS_URL_PREFIX}/markdown/${lang}/APIGateway/${docVersion}`
+        })()
         var BK_APP_HOST = '<%= process.env.BK_APP_HOST %>'
         var BK_ANALYSIS_SCRIPT_SRC = '<%= process.env.BK_ANALYSIS_SCRIPT_SRC %>'
         </script>
