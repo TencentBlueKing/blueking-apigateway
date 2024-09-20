@@ -180,7 +180,7 @@
             :max-height="660"
             remote-pagination
             :pagination="pagination"
-            :key="tableDataKey"
+            row-key="id"
             :show-overflow-tooltip="true"
             @page-limit-change="handlePageSizeChange"
             @page-value-change="handlePageChange"
@@ -798,9 +798,6 @@ const handleMethodFilter = () => true;
 
 // const curSelectMethod = ref('ALL');
 
-// const tableKey =  ref(-1);
-const tableDataKey = ref(-1);
-
 // const renderMethodsLabel = () => {
 //   return h('div', { class: 'resource-setting-custom-label' }, [
 //     h(
@@ -848,7 +845,6 @@ const labelsList = computed(() => {
   if (!labelsData?.value.length) {
     return [];
   }
-  tableDataKey.value = +new Date();
   return labelsData.value?.map((item: any) => {
     return {
       text: item.name,
@@ -1074,7 +1070,6 @@ const handleShowBatch = () => {
 const handleOutBatch = () => {
   showBatch.value = false;
   selections.value = [];
-  tableDataKey.value = +new Date();
 };
 
 // 版本对比
@@ -1454,12 +1449,10 @@ watch(
 
       if (filter?.length && (choose?.join(',') !== filter?.join(','))) { // 值有变化时，同步给表头筛选
         chooseMethod.value = filterData.value?.method?.split(',');
-        tableDataKey.value = +new Date();
       }
 
       if (!filter?.length && chooseMethod.value?.length) { // 清空筛选时，同步给表头筛选
         chooseMethod.value = [];
-        tableDataKey.value = +new Date();
       }
     });
 
