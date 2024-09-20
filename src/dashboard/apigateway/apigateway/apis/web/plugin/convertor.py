@@ -171,7 +171,7 @@ class PluginConfigYamlConvertor:
     type_code_to_convertor: ClassVar[Dict[str, BasePluginYamlConvertor]] = {
         PluginTypeCodeEnum.BK_RATE_LIMIT.value: RateLimitYamlConvertor(),
         PluginTypeCodeEnum.BK_IP_RESTRICTION.value: IPRestrictionYamlConvertor(),
-        PluginTypeCodeEnum.BK_REQUEST_VALIDATION.value: RequestValidationYamlConvertor(),
+        PluginTypeCodeEnum.REQUEST_VALIDATION.value: RequestValidationYamlConvertor(),
     }
 
     def __init__(self, type_code: str):

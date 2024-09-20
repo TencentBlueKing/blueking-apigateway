@@ -1969,12 +1969,7 @@
             "type": "string",  
             "description": "当请求被拒绝时返回的信息。"  
           }  
-        },  
-        "anyOf": [  
-          { "required": ["header_schema"] },  
-          { "required": ["body_schema"] }  
-        ],  
-        "required": []
+        }
       }
     description: '-'
     example: '-'

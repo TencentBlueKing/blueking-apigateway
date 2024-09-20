@@ -156,24 +156,29 @@ class RequestValidationChecker(BaseChecker):
             "type": "object",
             "properties": {
                 "type": {"type": "string"},
-                "required": {"type": "string"},
+                "required": {"type": "array", "items": {"type": "string"}},
                 "properties": {"type": "object"},
             },
-            "required": ["name", "age"],
+            "required": ["type", "required", "properties"],
         }
         loaded_data = yaml_loads(payload)
         if not loaded_data:
             raise ValueError("yaml can not be empty")
-        if loaded_data["body_schema"]:
-            body_schema = loaded_data["body_schema"]
+        body_schema = loaded_data.get("body_schema", {})
+        header_schema = loaded_data.get("header_schema", {})
+
+        if not body_schema and not header_schema:
+            raise ValueError("header_schema and body_schema must have a value")
+
+        if body_schema:
             try:
                 validate(instance=body_schema, schema=schema)
             except ValidationError:
                 raise ValueError("The body_schema field does not conform to jsonschema")
 
-        # 示例中没有 header_schema 中的示例，暂时共用一套schema 去校验
-        if loaded_data["header_schema"]:
-            header_schema = loaded_data["header_schema"]
+        # 示例中没有 header_schema 中的示例，暂时共用一套 schema 去校验
+
+        if header_schema:
             try:
                 validate(instance=header_schema, schema=schema)
             except ValidationError:
