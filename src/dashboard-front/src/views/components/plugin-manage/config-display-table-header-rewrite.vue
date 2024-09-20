@@ -33,13 +33,17 @@ interface IHeaderRewriteTableRow extends IBaseTableRow {
 
 interface IProps {
   plugin: IPlugin<IHeaderRewriteConfig>
+  firstColWidth: string
 }
 
 const { t } = useI18n();
 
 const props = defineProps<IProps>();
 
-const { plugin } = toRefs(props);
+const {
+  plugin,
+  firstColWidth,
+} = toRefs(props);
 
 // header转换插件表格列
 const tableCols = ref<IColumn[]>([
@@ -47,7 +51,7 @@ const tableCols = ref<IColumn[]>([
     label: t('行为'),
     align: 'right',
     field: 'action',
-    width: '200',
+    width: firstColWidth.value,
     index: 0,
     rowspan: ({ row }) => row.rowSpan,
   },
