@@ -5,6 +5,7 @@
     :arrow="false"
     :padding="0"
     :always="false"
+    disable-outside-click
   >
     <div class="info-icon">
       <span class="icon apigateway-icon icon-ag-help-document-fill f18"></span>
