@@ -414,7 +414,8 @@ onMounted(() => {
   :deep(.bk-navigation-wrapper) {
     .container-content{
       padding: 0px !important;
-      min-width: 1280px;
+      // 最小宽度应为 1280px 减去左侧菜单栏展开时的宽度 260px，即为 1020px
+      min-width: 1020px;
     }
   }
 

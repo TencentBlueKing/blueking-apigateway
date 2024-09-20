@@ -149,13 +149,13 @@
             {{ t('退出批量编辑') }}
           </bk-button>
         </div>
-        <div class="flex-1 flex-row justify-content-end">
+        <div class="search-select-wrap">
           <bk-search-select
             v-show="!isDetail"
             v-model="searchValue"
             :data="searchData"
             unique-select
-            style="width: 450px; background:#fff"
+            style="width: 100%; background:#fff"
             :placeholder="t('请输入资源名称或选择条件搜索, 按Enter确认')"
             :value-split-code="'+'"
           />
@@ -581,7 +581,7 @@ import PluginManage from '@/views/components/plugin-manage/index.vue';
 import ResourcesDoc from '@/views/components/resources-doc/index.vue';
 import TableEmpty from '@/components/table-empty.vue';
 // import RenderCustomColumn from '@/components/custom-table-header-filter';
-import ResourceSettingTopBar from '@/components/resource-setting-top-bar.vue';
+import ResourceSettingTopBar from '@/views/resource/setting/comps/resource-setting-top-bar.vue';
 import mitt from '@/common/event-bus';
 import { IDialog, IDropList, MethodsEnum } from '@/types';
 import { is24HoursAgo } from '@/common/util';
@@ -1616,8 +1616,15 @@ onBeforeMount(() => {
     }
   }
   .operate{
+    gap: 8px;
+
     &-input{
       width: 450px;
+    }
+
+    .search-select-wrap {
+      flex-grow: 1;
+      max-width: 450px;
     }
   }
   .left-wraper{

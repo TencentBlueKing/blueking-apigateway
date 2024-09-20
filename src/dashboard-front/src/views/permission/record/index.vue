@@ -17,8 +17,18 @@
             </bk-option>
           </bk-select>
         </bk-form-item>
-        <bk-form-item :label="t('蓝鲸应用ID')" class="mb15" label-width="119">
-          <bk-input clearable v-model="filterData.bk_app_code" :placeholder="t('请输入应用ID，按Enter搜索')" class="w320">
+        <bk-form-item
+          :label="t('蓝鲸应用ID')"
+          class="mb15"
+          label-width="119"
+          style="flex-grow: 1;"
+        >
+          <bk-input
+            v-model="filterData.bk_app_code"
+            :placeholder="t('请输入应用ID，按Enter搜索')"
+            clearable
+            style="max-width: 320px;"
+          >
           </bk-input>
         </bk-form-item>
       </bk-form>
