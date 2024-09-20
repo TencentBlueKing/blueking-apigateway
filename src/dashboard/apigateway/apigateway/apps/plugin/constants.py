@@ -31,8 +31,8 @@ class PluginTypeCodeEnum(StructuredEnum):
         "bk-verified-user-exempted-apps", label=_("免用户认证应用白名单(不推荐)")
     )
     BK_MOCK = EnumField("bk-mock", label=_("mocking 插件"))
-    BK_API_BREAKER = EnumField("api-breaker", label=_("API 熔断"))
-    BK_REQUEST_VALIDATION = EnumField("request-validation", label=_("验证请求"))
+    API_BREAKER = EnumField("api-breaker", label=_("API 熔断"))
+    REQUEST_VALIDATION = EnumField("request-validation", label=_("请求校验"))
 
 
 class PluginTypeScopeEnum(StructuredEnum):

@@ -15,13 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
-from json import JSONDecodeError
 from typing import Dict, Optional
 
-from jsonschema import Draft7Validator, ValidationError, validate
+from jsonschema import ValidationError as JsonSchemaValidationError
+from jsonschema import validate
 
-from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.utils.yaml import yaml_loads
 
 from .plugin_checkers import PluginConfigYamlChecker
@@ -42,27 +40,13 @@ class PluginConfigYamlValidator:
         :param schema: 插件 schema 规则
         """
         # 校验 schema 规则
-        if not schema:
-            raise ValueError("No schema provided for validation")
+        if schema:
+            convertor = PluginConvertorFactory.get_convertor(plugin_type_code)
+            try:
+                validate(convertor.convert(yaml_loads(payload)), schema=schema)
+            except JsonSchemaValidationError as err:
+                raise ValueError(f"{err.message}, path {list(err.absolute_path)}")
 
-        convertor = PluginConvertorFactory.get_convertor(plugin_type_code)
-        try:
-            if plugin_type_code == PluginTypeCodeEnum.BK_REQUEST_VALIDATION.value:
-                payload_dict = json.loads(payload)
-                validator = Draft7Validator(schema)
-                validator.validate(payload_dict)
-            else:
-                converted_payload = convertor.convert(yaml_loads(payload))
-                validate(instance=converted_payload, schema=schema)
-        except JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON format: {e}")
-        except ValidationError as e:
-            raise ValueError(
-                f"Validation failed: {e.message if hasattr(e, 'message') else e.text}, path {list(e.path) if hasattr(e, 'path') else 'not available'}"
-            )
-        except Exception as err:
-            raise ValueError(f"Unexpected error during validation: {err}")
-
-            # 校验 apisix 额外规则
+        # 校验 apisix 额外规则
         checker = PluginConfigYamlChecker(plugin_type_code)
         checker.check(payload)

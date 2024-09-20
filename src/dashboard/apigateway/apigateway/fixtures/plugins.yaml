@@ -1981,10 +1981,10 @@
 - model: plugin.plugintype
   fields:
     code: request-validation
-    name: 请求验证
+    name: 请求校验
     name_en: request_validation
     is_public: true
-    scope: resource
+    scope: stage
     schema:
     - request-validation
     - plugin
@@ -2007,6 +2007,7 @@
               "type": "string",
               "maxLength": 51200,
               "title": "请求头概要",
+              "description": "header 数据的 schema 数据结构",
               "ui:component": {
                 "type": "textarea",
                 "rows": 10
@@ -2016,6 +2017,7 @@
               "type": "string",
               "maxLength": 51200,
               "title": "请求体概要",
+              "description": "body 数据的 schema 数据结构",
               "ui:component": {
                 "type": "textarea",
                 "rows": 10
@@ -2059,6 +2061,7 @@
               "type": "string",
               "maxLength": 51200,
               "title": "header_schema",
+              "description": "header data schema data structure.",
               "ui:component": {
                 "type": "textarea",
                 "rows": 10
@@ -2067,6 +2070,7 @@
             "body_schema": {
               "type": "string",
               "maxLength": 51200,
+              "description": "body data schema data structure.",
               "title": "body_schema",
               "ui:component": {
                 "type": "textarea",

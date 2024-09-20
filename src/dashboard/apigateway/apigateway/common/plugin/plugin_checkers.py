@@ -30,6 +30,7 @@ from collections import Counter
 from typing import ClassVar, Dict, List, Optional
 
 from django.utils.translation import gettext as _
+from jsonschema import ValidationError, validate
 
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.utils.yaml import yaml_loads
@@ -149,11 +150,42 @@ class BkIPRestrictionChecker(BaseChecker):
             raise ValueError("whitelist and blacklist can not be empty at the same time")
 
 
+class RequestValidationChecker(BaseChecker):
+    def check(self, payload: str):
+        schema = {
+            "type": "object",
+            "properties": {
+                "type": {"type": "string"},
+                "required": {"type": "string"},
+                "properties": {"type": "object"},
+            },
+            "required": ["name", "age"],
+        }
+        loaded_data = yaml_loads(payload)
+        if not loaded_data:
+            raise ValueError("yaml can not be empty")
+        if loaded_data["body_schema"]:
+            body_schema = loaded_data["body_schema"]
+            try:
+                validate(instance=body_schema, schema=schema)
+            except ValidationError:
+                raise ValueError("The body_schema field does not conform to jsonschema")
+
+        # 示例中没有 header_schema 中的示例，暂时共用一套schema 去校验
+        if loaded_data["header_schema"]:
+            header_schema = loaded_data["header_schema"]
+            try:
+                validate(instance=header_schema, schema=schema)
+            except ValidationError:
+                raise ValueError("The header_schema field does not conform to jsonschema")
+
+
 class PluginConfigYamlChecker:
     type_code_to_checker: ClassVar[Dict[str, BaseChecker]] = {
         PluginTypeCodeEnum.BK_CORS.value: BkCorsChecker(),
         PluginTypeCodeEnum.BK_HEADER_REWRITE.value: HeaderRewriteChecker(),
         PluginTypeCodeEnum.BK_IP_RESTRICTION.value: BkIPRestrictionChecker(),
+        PluginTypeCodeEnum.REQUEST_VALIDATION.value: RequestValidationChecker(),
     }
 
     def __init__(self, type_code: str):
