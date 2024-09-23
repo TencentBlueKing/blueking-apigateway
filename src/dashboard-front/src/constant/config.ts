@@ -1,4 +1,5 @@
 import i18n, { isChinese } from '@/language/i18n';
+import cookie from 'cookie';
 
 const { t } = i18n.global;
 // 当前年份
@@ -8,9 +9,28 @@ const {
   BK_LIST_USERS_API_URL,
   BK_API_RESOURCE_URL_TMPL,
   BK_DASHBOARD_FE_URL,
-  BK_DOCS_URL_PREFIX_MARKDOWN,
   BK_APIGATEWAY_VERSION,
+  BK_DOCS_URL_PREFIX,
 } = window;
+let { BK_DOCS_URL_PREFIX_MARKDOWN } = window;
+
+// 根据文档前缀、语言和版本拼接 BK_DOCS_URL_PREFIX_MARKDOWN 的值
+// 执行一个立即执行函数获取，避免了声明会暴露到全局的变量
+(function () {
+  const langMap: Record<string, string> = {
+    'zh-cn': 'ZH',
+    en: 'EN',
+  };
+  // 当前 cookie 中使用的语言 zh-cn | en
+  const currentLang = cookie.parse(document.cookie).blueking_language || 'zh-cn';
+  // 获取文档语言 ZH | EN
+  const lang = langMap[currentLang];
+  // 获取当前版本的 major 和 minor 版本，如：1.13.1 -> 1.13
+  const docVersion = BK_APIGATEWAY_VERSION.split('.')
+    .slice(0, 2)
+    .join('.');
+  BK_DOCS_URL_PREFIX_MARKDOWN = `${BK_DOCS_URL_PREFIX}/markdown/${lang}/APIGateway/${docVersion}`;
+}());
 
 export default {
   // 登录
@@ -70,7 +90,7 @@ export default {
 
   DOC: {
     // 使用指南
-    GUIDE: `${BK_DOCS_URL_PREFIX_MARKDOWN}`,
+    GUIDE: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/README.md`,
 
     // “请求流水查询规则”
     QUERY_USE: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/reference/log-search-specification.md`,
