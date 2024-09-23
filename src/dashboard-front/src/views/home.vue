@@ -286,7 +286,7 @@ const rules = {
         const reg = /^[a-z][a-z0-9-]*$/;
         return reg.test(value);
       },
-      message: '由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符',
+      message: t('由小写字母、数字、连接符（-）组成，首字符必须是小写字母，长度大于3小于30个字符'),
       trigger: 'change',
     },
   ],
