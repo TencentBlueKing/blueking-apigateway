@@ -28,7 +28,7 @@
                 v-if="slotProps.name === curHoverHead">
               </span>
               <span
-                class="icon apigateway-icon icon-ag-delet " @click="handleDeletePlugin(slotProps)"
+                class="icon apigateway-icon icon-ag-delet " @click.stop="handleDeletePlugin(slotProps)"
                 v-if="slotProps.name === curHoverHead">
               </span>
             </span>
