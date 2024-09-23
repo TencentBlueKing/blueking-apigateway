@@ -30,7 +30,6 @@ from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
-from apigateway.biz.iam import IAMHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
@@ -193,15 +192,8 @@ class GatewayHandler:
         if app_codes_to_binding is not None:
             GatewayAppBindingHandler.update_gateway_app_bindings(gateway, app_codes_to_binding)
 
-        # 7. 在权限中心注册分级管理员，创建用户组
-        if settings.USE_BK_IAM_PERMISSION:
-            IAMHandler.register_grade_manager_and_builtin_user_groups(gateway)
-
     @staticmethod
     def delete_gateway(gateway_id: int):
-        # 0. 删除权限中心中网关的分级管理员和用户组
-        IAMHandler.delete_grade_manager_and_builtin_user_groups(gateway_id)
-
         # 1. delete gateway context
 
         Context.objects.delete_by_scope_ids(
