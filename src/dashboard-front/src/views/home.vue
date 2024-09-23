@@ -495,6 +495,9 @@ watch(
     }
   }
   .select-cls {
+    flex-shrink: 0;
+    width: 126px;
+
     :deep(.bk-select-trigger) {
       background-color: #fff;
     }
