@@ -328,7 +328,10 @@ const activeIndex = computed(() => Object.keys(curBindingPlugins.value)?.map((it
 
 const pluginCodeFirst = computed(() => {
   return function (code: string) {
-    return code.charAt(3).toUpperCase();
+    if (code.startsWith('bk-')) {
+      return code.charAt(3).toUpperCase();
+    }
+    return code.charAt(0).toUpperCase();
   };
 });
 
