@@ -109,8 +109,8 @@
     language: ''
     type:
     - bk-cors
-    notes: cors 插件支持为后端服务增加 CORS（Cross-Origin Resource Sharing，跨域资源共享）的返回头。
-    example: "作用：允许https://a.example.com:8081, https://b.example.com:8081 这两个站点发起跨域请求\n\nallow_origins: \nallow_origins_by_regex: ^https://.*\\.example\\.com:8081$\nallow_methods: GET,POST,PUT,PATCH,HEAD,DELETE,OPTIONS\nallow_headers: **\nexpose_headers: \nmax_age: 86400\nallow_credential: false"
+    notes: 为 API 增加 CORS（Cross-Origin Resource Sharing，跨域资源共享）的返回头。
+    example: "作用：允许 https://a.example.com:8081, https://b.example.com:8081 这两个站点发起跨域请求\n\nallow_origins: \nallow_origins_by_regex: ^https://.*\\.example\\.com:8081$\nallow_methods: GET,POST,PUT,PATCH,HEAD,DELETE,OPTIONS\nallow_headers: **\nexpose_headers: \nmax_age: 86400\nallow_credential: false"
     style: dynamic
     default_value: ''
     config: |-
@@ -201,7 +201,7 @@
     type:
     - bk-cors
     notes: The cors Plugins lets you enable CORS easily.
-    example: "Function: allows https://a.example.com:8081, https://b.example.com:8081 this two site launch cross-domain request\n\nallow_origins: \nallow_origins_by_regex: ^https://.*\\.example\\.com:8081$\nallow_methods: GET,POST,PUT,PATCH,HEAD,DELETE,OPTIONS\nallow_headers: **\nexpose_headers: \nmax_age: 86400\nallow_credential: false"
+    example: "Purpose: allows https://a.example.com:8081, https://b.example.com:8081 this two site launch cross-domain request\n\nallow_origins: \nallow_origins_by_regex: ^https://.*\\.example\\.com:8081$\nallow_methods: GET,POST,PUT,PATCH,HEAD,DELETE,OPTIONS\nallow_headers: **\nexpose_headers: \nmax_age: 86400\nallow_credential: false"
     style: dynamic
     default_value: ''
     config: |-
@@ -342,8 +342,8 @@
     language: ''
     type:
     - bk-header-rewrite
-    notes: Header 转换插件支持对请求添加或删除请求头。注意设置的值中如果包含`$`符号，会被认为是变量被变量的值替换（不存在的变量值为空）; `$arg_foo`可获取 query string中`foo`的值, `$http_bar`可以获取 header 中 `bar`的值。
-    example: "作用：设置header `X-Api-Version: 1`， 并且删除header `X-test`\n\n设置: X-Api-Version: 1\n删除: X-test"
+    notes: "对请求添加或删除请求头。\n注意设置的值中支持`$`符号，（变量，不存在则为空）; `$arg_foo`获取 query string中`foo`的值, `$http_bar`可以获取 header 中 `bar`的值。"
+    example: "作用：设置 header `X-Api-Version: 1`， 并且删除 header `X-test`\n\n设置: X-Api-Version: 1\n删除: X-test"
     style: dynamic
     default_value: ''
     config: |-
@@ -430,8 +430,8 @@
     language: en
     type:
     - bk-header-rewrite
-    notes: Header transformation plugins allow you to easily add or remove request headers. If a value for a setting contains the $ symbol, it will be treated as a variable and its value will be replaced (with the variable’s value or empty if the variable does not exist). `$arg_foo` can fetch the value of `foo` from the query string, and `$http_bar` can fetch the value of `bar` from the header.
-    example: "Function: Set header 'X-Api-Version: 1' and delete header 'X-test'\n\nSettings: X-Api-Version: 1\nDelete: X-test"
+    notes: Allow you to easily add or remove request headers. If a value for a setting contains the $ symbol, it will be treated as a variable and its value will be replaced (with the variable’s value or empty if the variable does not exist). `$arg_foo` can fetch the value of `foo` from the query string, and `$http_bar` can fetch the value of `bar` from the header.
+    example: "Purpose: Set header 'X-Api-Version: 1' and delete header 'X-test'\n\nSettings: X-Api-Version: 1\nDelete: X-test"
     style: dynamic
     default_value: ''
     config: |-
@@ -646,10 +646,8 @@
     type:
     - bk-ip-restriction
     notes: |-
-      该插件可以通过将 IP 地址列入白名单或黑名单来限制对资源的访问。
-      支持对单个 IP 地址、多个 IP 地址和类似 1.1.1.0/24 的 CIDR（无类别域间路由）范围的限制。
-      每行一条数据, 并且支持空行及注释行（以 # 开头）。
-    example: "作用：仅允许 IP 192.168.1.1 和 192.168.1.1 请求当前接口\n\n类型：白名单\n白名单： # comment\n       192.168.1.1\n       192.168.1.2"
+      通过将 IP 地址列入白名单或黑名单来限制对资源的访问。支持 CIDR。每行一条数据, 并且支持空行及注释行（以 # 开头）。
+    example: "作用：仅允许 IP 192.168.1.1 和 192.168.1.1 请求当前接口\n\n类型：白名单\n白名单： \n      # comment\n       192.168.1.1\n       192.168.1.2"
     style: dynamic
     default_value: ''
     config: |-
@@ -708,10 +706,8 @@
     type:
     - bk-ip-restriction
     notes: |-
-      This plugin allows you to restrict access to a Resource by either whitelisting or blacklisting IP addresses.
-      Single IPs, multiple IPs or even IP ranges in CIDR notation like 1.1.1.0/24 can be used.
-      One piece of data per line, and supports blank lines and comment lines (beginning with #).
-    example: "Function: Only IP 192.168.1.1 and 192.168.1.1 are allowed to request the current interface\n\nType: whitelist\nWhitelist: # comment\n       192.168.1.1\n       192.168.1.2"
+      This plugin allows you to restrict access to a Resource by either whitelisting or blacklisting IP addresses. Support CIDR. One piece of data per line, and supports blank lines and comment lines (beginning with #).
+    example: "Purpose: Only IP 192.168.1.1 and 192.168.1.1 are allowed to request the current interface\n\nType: whitelist\nWhitelist: \n       # comment\n       192.168.1.1\n       192.168.1.2"
     style: dynamic
     default_value: ''
     config: |-
@@ -839,10 +835,8 @@
     language: ''
     type:
     - bk-rate-limit
-    notes: |-
-      默认频率限制，表示单个应用的默认频率限制；特殊应用频率限制，对指定应用设置单独的频率限制。频率控制插件，在环境上配置表示对应用访问环境下所有资源的总访问频率进行限制，
-      在资源上配置，表示对应用访问单个资源的频率进行限制， 如果在环境和资源上都配置，两个都会生效，先校验资源的频率限制，再校验环境的频率限制。
-    example: "作用：默认每个应用 100 次/秒，应用demo 200 次/秒\n\n默认频率限制： 次数: 100 时间范围: 秒\n特殊应用频率限制： 次数: 200  时间范围: 秒  蓝鲸应用ID: demo"
+    notes: "对请求进行频率限制。\n如果在环境和资源上都配置，两个都会生效，并且在环境上配置表示对应用访问环境下所有资源的总访问频率进行限制。"
+    example: "作用：默认每个应用 100 次/秒，应用 demo 200 次/秒\n\n默认频率限制： 次数: 100 时间范围: 秒\n特殊应用频率限制： 次数: 200  时间范围: 秒  蓝鲸应用ID: demo"
     style: dynamic
     default_value: ''
     config: |-
@@ -1057,12 +1051,10 @@
     language: en
     type:
     - bk-rate-limit
-    notes: The default rate limit indicates the default rate limit for a single app;
-      the special app rate limit sets a separate rate limit for a specified app. Rate
-      Limit plugin, when binding a stage, indicates the total rate limit of all resources
-      in the stage by the app; when binding a resource, indicates the rate limit of
-      an app on the single resource.
-    example: "Function: By default, each application is performed 100 times/second, and demo is performed 200 times/second\n\nDefault frequency limit: Times: 100 Time range: seconds\nSpecial application frequency limit: Times: 200  Time range: seconds Blue  Whale application ID: demo"
+    notes: rate limit for requests, including default rate limit, which represents the default rate limit for a single application;
+      special application rate limit, which sets a separate rate limit for a specified application.
+      If both are configured on the stage and resource, both will take effect, and the configuration on the stage indicates the total access rate limit of all resources under the stage.
+    example: "Purpose: By default, each application is performed 100 times/second, and demo is performed 200 times/second\n\nDefault frequency limit: Times: 100 Time range: seconds\nSpecial application frequency limit: Times: 200  Time range: seconds Blue  Whale application ID: demo"
     style: dynamic
     default_value: ''
     config: |-
@@ -1413,64 +1405,64 @@
     language: ''
     type:
     - bk-mock
-    notes: 支持模拟 API 响应，返回指定格式，并且请求不会转发到上游。
-    example: '作用：返回json response，状态码为 200，并且携带响应头foo:bar\n\n响应状态码: 200\n响应体: {"hello": "world"}\n响应头: Content-Type: application/json\n       foo: bar'
+    notes: 模拟 API 响应，返回指定格式，并且请求不会转发到上游。
+    example: '作用：返回 json response，状态码为 200，并且携带响应头 foo:bar\n\n响应状态码: 200\n响应体: {"hello": "world"}\n响应头: \n      Content-Type: application/json\n      foo: bar'
     style: dynamic
     default_value: ''
-    config: |-  
-      {  
-        "schema": {  
-          "type": "object",  
-          "properties": {  
-            "response_status": {  
-              "type": "integer",  
-              "default": 200,  
-              "title": "响应状态码",  
-              "minimum": 100  
-            },  
-            "response_example": {  
-              "title": "响应体",  
-              "type": "string",  
-              "ui:component": {  
-                "type": "textarea",  
-                "rows": 10  
-              }  
-            },  
-            "response_headers": {  
-              "description": "设置响应头",  
-              "items": {  
-                "properties": {  
-                  "key": {  
-                    "title": "键",  
-                    "description": "You can set the key of the request header. The key of the request header cannot contain a colon (:).",  
-                    "type": "string",  
-                    "maxLength": 1024,  
-                    "pattern": "^[\\w-]+$",  
-                    "ui:rules": ["required"]  
-                  },  
-                  "value": {  
-                    "title": "值",  
-                    "description": "You can set the value of the request header.",  
-                    "type": "string",  
-                    "maxLength": 1024,  
-                    "pattern": "^[\\s\\S]*$",  
-                    "ui:rules": ["required"]  
-                  }  
-                },  
-                "type": "object"  
-              },  
-              "minItems": 0,  
-              "title": "响应头",  
-              "type": "array",  
-              "ui:component": {  
-                "name": "bfArray"  
-              }  
-            }  
-          }  
-        },  
-        "layout": [],  
-        "formData": {},  
-        "rules": {}  
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "response_status": {
+              "type": "integer",
+              "default": 200,
+              "title": "响应状态码",
+              "minimum": 100
+            },
+            "response_example": {
+              "title": "响应体",
+              "type": "string",
+              "ui:component": {
+                "type": "textarea",
+                "rows": 10
+              }
+            },
+            "response_headers": {
+              "description": "设置响应头",
+              "items": {
+                "properties": {
+                  "key": {
+                    "title": "键",
+                    "description": "You can set the key of the request header. The key of the request header cannot contain a colon (:).",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[\\w-]+$",
+                    "ui:rules": ["required"]
+                  },
+                  "value": {
+                    "title": "值",
+                    "description": "You can set the value of the request header.",
+                    "type": "string",
+                    "maxLength": 1024,
+                    "pattern": "^[\\s\\S]*$",
+                    "ui:rules": ["required"]
+                  }
+                },
+                "type": "object"
+              },
+              "minItems": 0,
+              "title": "响应头",
+              "type": "array",
+              "ui:component": {
+                "name": "bfArray"
+              }
+            }
+          }
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
       }
 - model: plugin.pluginform
   fields:
@@ -1478,11 +1470,11 @@
     type:
     - bk-mock
     notes: for mocking an API, it returns data in the format specified and the request is not forwarded to the Upstream.
-    example: 'Functions: Return json response with status code 200 and response header foo:bar\n\n Response status code: 200\n Response body: {"hello": "world"}\n Response header: Content-Type: application/json\n       foo: bar'
+    example: 'Purpose: Return json response with status code 200 and response header foo:bar\n\nResponse status code: 200\nResponse body: {"hello": "world"}\nResponse header: \n      Content-Type: application/json\n      foo: bar'
     style: dynamic
     default_value: ''
     config: |-
-      {  
+      {
         "schema": {
           "type": "object",
           "properties": {
@@ -1642,8 +1634,8 @@
     language: ''
     type:
     - api-breaker
-    notes: API 熔断是根据监测服务的响应时间或错误率来自动的触发熔断机制。一旦这些指标超过预设的阈值，熔断机制将自动启动，迅速终止对故障服务的请求，直至该服务恢复正常。
-    example: '作用： 当上游服务返回状态码500的时候，并达到预设次数3次时，则认为上游服务处于不健康状态。当上游状态处于不健康状态的时候，返回json response，状态码为555，并且携带响应头foo:bar。\n第一次触发不健康状态时，熔断 2 秒。超过熔断时间后，将重新开始转发请求到上游服务，如果继续返回555状态码，当记数再次达到预设次数3次时，熔断 4 秒。依次类推（2，4，8，16，……），直到达到预设的最大熔断时间300秒。\n当上游服务处于不健康状态时，如果转发请求到上游服务并返回状态码200，并达到4次时，则认为上游服务恢复至健康状态。\n\nbreak_response_body： {"hello": "world"}\nbreak_response_headers： [ { "key": "foo", "value": "bar" } ]\nmax_breaker_sec： 300\nunhealthy： { "http_statuses": [ 500 ], "failures": 3 }\nhealthy： { "http_statuses": [ 200 ], "successes": 3 }\nbreak_response_code： 555'
+    notes: 实现了 API 熔断机制，帮助开发者保护后端服务。
+    example: '作用： 当后端服务返回状态码 500 或 503，并达到3次，则触发熔断，返回响应体 helloworld，状态码为 502，并且携带响应头 foo:bar。\n第一次触发不健康状态时，熔断 2 秒。超过熔断时间后，将重新开始转发请求到上游服务，如果继续返回 500 状态码，当计数再次达到3次时，熔断 4 秒。依次类推（2，4，8，16，……），直到达到预设的最大熔断时间 300 秒。\n当上游服务处于不健康状态时，如果后端服务返回状态码 200，并达到 2 次时，则认为上游服务恢复至健康状态。\n\n\nbreak_response_code： 502\nbreak_response_body： helloworld\nbreak_response_headers： [ { "key": "foo", "value": "bar" } ]\nmax_breaker_sec： 300\nunhealthy： { "http_statuses": [ 500, 503 ], "failures": 3 }\nhealthy： { "http_statuses": [ 200 ], "successes": 2 }'
     style: dynamic
     default_value: ''
     config: |-
@@ -1677,7 +1669,7 @@
               "title": "熔断响应头",
               "ui:component": {
                 "name": "bfArray"
-              },  
+              },
               "items": {
                 "type": "object",
                 "properties": {
@@ -1720,9 +1712,9 @@
                   "title": "不健康状态码",
                   "minItems": 1,
                   "description": "上游服务处于不健康状态时的 HTTP 状态码。",
-                  "items": {  
+                  "items": {
                     "type": "integer",
-                    "default": 500,
+                    "default": 503,
                     "ui:component": {
                       "name": "bfInput",
                       "min": 500,
@@ -1791,8 +1783,8 @@
     language: en
     type:
     - api-breaker
-    notes: API circuit breakers automatically trigger circuit breakers based on the response time or error rate of the monitoring service. Once these indicators exceed the preset threshold, the circuit breaker will automatically activate, quickly terminating the request for the faulty service until the service returns to normal.
-    example: 'Function: When the upstream service returns the status code 500 and reaches the preset number of 3 times, the upstream service is considered to be in an unhealthy state. When the upstream state is unhealthy, return json response with status code 555 and response header foo:bar. When the unhealthy state is triggered for the first time, fuse for 2 seconds. After the fuse time is exceeded, the request will be forwarded to the upstream service again. If the 555 status code continues to be returned, the fuse will be broken for 4 seconds when the count reaches the preset number of 3 times again. And so on (2,4,8,16,...) Until the preset maximum fuse break time of 300 seconds is reached. When the upstream service is in an unhealthy state, if the request is forwarded to the upstream service and the status code 200 is returned for 4 times, the upstream service is considered to be restored to a healthy state. \n\nbreak_response_body: {"hello": "world"}\nbreak_response_headers: [{"key": "foo", "value": "bar"}]\nmax_breaker_sec: 300\nunhealthy: {"http_statuses": [500], "failures": 3}\nhealthy: {"http_statuses": [200], "successes": 3}\nbreak_response_code: 555'
+    notes: API circuit breaker functionality to protect Upstream services.
+    example: 'Purpose: When the backend service returns a status code of 502 and this happens 3 times, a circuit breaker is triggered. It will return a response body with “helloworld”, a status code of 502, and a response header of foo:bar.\nThe first time the unhealthy state is triggered, the circuit breaker lasts for 2 seconds. After the circuit breaker time elapses, requests will be forwarded to the upstream service again. If it continues to return a status code of 502 and the count reaches 3 times again, the circuit breaker time is extended to 4 seconds. This pattern continues (2, 4, 8, 16, …) until the preset maximum circuit breaker time of 300 seconds is reached. \nWhen the upstream service is in an unhealthy state, if a forwarded request returns a status code of 200 and this happens 2 times, the upstream service is considered to have recovered to a healthy state. \n\n\nbreak_response_code： 502\nbreak_response_body： helloworld\nbreak_response_headers： [ { "key": "foo", "value": "bar" } ]\nmax_breaker_sec： 300\nunhealthy： { "http_statuses": [ 500, 503 ], "failures": 3 }\nhealthy： { "http_statuses": [ 200 ], "successes": 2 }'
     style: dynamic
     default_value: ''
     config: |-
@@ -1826,7 +1818,7 @@
               "title": "Fuse response head",
               "ui:component": {
                 "name": "bfArray"
-              },  
+              },
               "items": {
                 "type": "object",
                 "properties": {
@@ -1869,7 +1861,7 @@
                   "title": "Unhealthy status code",
                   "minItems": 1,
                   "description": "HTTP status code when the upstream service is in unhealthy state.",
-                  "items": {  
+                  "items": {
                     "type": "integer",
                     "default": 500,
                     "ui:component": {
