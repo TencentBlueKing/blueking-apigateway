@@ -24,7 +24,6 @@ from celery import shared_task
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.common.event.event import PublishEventReporter
-from apigateway.common.release.history import get_status
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.etcd import EtcdDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
@@ -178,7 +177,7 @@ def update_release_data_after_success(
             continue
 
         # 判断状态
-        publish_status = get_status(latest_event)
+        publish_status = latest_event.get_release_history_status()
 
         if publish_status == ReleaseHistoryStatusEnum.SUCCESS.value:
             doing = False

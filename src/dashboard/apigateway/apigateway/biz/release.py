@@ -21,7 +21,6 @@ from typing import Any, Dict, List
 
 from django.db.models import Max
 
-from apigateway.common.release.history import get_status
 from apigateway.core.constants import (
     EVENT_FAIL_INTERVAL_TIME,
     GatewayStatusEnum,
@@ -130,7 +129,7 @@ class ReleaseHandler:
                 state["status"] = release_history.status
             else:
                 latest_event = publish_id_to_latest_event_map[publish_id]
-                state["status"] = get_status(latest_event)
+                state["status"] = latest_event.get_release_history_status()
 
             stage_publish_status[stage_id] = state
 

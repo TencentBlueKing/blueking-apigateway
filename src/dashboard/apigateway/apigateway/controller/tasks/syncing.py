@@ -24,7 +24,6 @@ from celery import shared_task
 
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.common.event.event import PublishEventReporter
-from apigateway.common.release.history import get_status
 from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.combine import CombineDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
@@ -193,7 +192,9 @@ def wait_another_release_done(release_history: ReleaseHistory):
         )
         latest_event = other_latest_release_event_map.get(other_latest_release.id, None)
         if latest_event:
-            has_another_release_doing = get_status(latest_event) == ReleaseHistoryStatusEnum.DOING.value
+            has_another_release_doing = (
+                latest_event.get_release_history_status() == ReleaseHistoryStatusEnum.DOING.value
+            )
             continue
         # 如果还没生成事件，就判断之间的时间间隔
         release_interval = release_history.created_time - other_latest_release.created_time

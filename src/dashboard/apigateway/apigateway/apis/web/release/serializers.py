@@ -23,7 +23,6 @@ from rest_framework import serializers
 
 from apigateway.common.fields import CurrentGatewayDefault, TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.common.release.history import get_status
 from apigateway.core.constants import (
     PublishEventEnum,
     PublishEventNameTypeEnum,
@@ -113,7 +112,7 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
             return obj.status
 
         # 通过最新的 event 获取 release_history 状态
-        return get_status(event)
+        return event.get_release_history_status()
 
     def get_duration(self, obj: ReleaseHistory) -> int:
         # 获取最新事件
