@@ -176,7 +176,7 @@ class TestReleaseHistoryOutputSLZ:
         slz = ReleaseHistoryOutputSLZ(
             release_history,
             context={
-                "release_history_events_map": ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
+                "release_history_events_map": PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
                     [release_history.id]
                 ),
             },
@@ -198,7 +198,7 @@ class TestPublishEventQueryOutputSLZ:
         slz = ReleaseHistoryEventRetrieveOutputSLZ(
             fake_release_history,
             context={
-                "release_history_events_map": ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
+                "release_history_events_map": PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
                     [fake_release_history.id]
                 ),
                 "release_history_events": ReleaseHandler.list_publish_events_by_release_history_id(

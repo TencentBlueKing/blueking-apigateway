@@ -110,7 +110,7 @@ class BaseGatewayReleaser:
 
         # save release history
         history = self._save_release_history()
-        PublishEventReporter.report_config_validate_success_event(history)
+        PublishEventReporter.report_config_validate_success(history)
 
         instance = Release.objects.get_or_create_release(
             gateway=self.gateway,
@@ -147,7 +147,7 @@ class BaseGatewayReleaser:
         except (ValidationError, ReleaseValidationError, NonRelatedMicroGatewayError) as err:
             message = err.detail[0] if isinstance(err, ValidationError) else str(err)
             history = self._save_release_history()
-            PublishEventReporter.report_config_validate_fail_event(history, message)
+            PublishEventReporter.report_config_validate_failure(history, message)
             raise ReleaseError(message) from err
 
     def _validate(self):
@@ -192,7 +192,7 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
 
     def _create_release_task(self, release: Release, release_history: ReleaseHistory):
         # create publish event
-        PublishEventReporter.report_create_publish_task_doing_event(release_history)
+        PublishEventReporter.report_create_publish_task_doing(release_history)
         # NOTE: 发布专享网关时，不再将资源同时发布到共享网关
         micro_gateway = release.stage.micro_gateway
         # FIXME: refactor here

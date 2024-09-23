@@ -39,6 +39,3 @@ MAX_BACKEND_TIMEOUT_IN_SECOND = settings.MAX_BACKEND_TIMEOUT_IN_SECOND
 
 # stage var
 STAGE_VAR_FOR_PATH_PATTERN = re.compile(r"^[\w/.-]*$")
-
-# release gateway interval
-RELEASE_GATEWAY_INTERVAL_SECOND = 15

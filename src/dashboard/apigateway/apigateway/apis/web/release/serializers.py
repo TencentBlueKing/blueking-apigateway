@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -21,9 +21,9 @@ from django.http import Http404
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from apigateway.biz.release import ReleaseHandler
 from apigateway.common.fields import CurrentGatewayDefault, TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
+from apigateway.common.release.history import get_status
 from apigateway.core.constants import (
     PublishEventEnum,
     PublishEventNameTypeEnum,
@@ -35,8 +35,8 @@ from apigateway.core.models import PublishEvent, ReleaseHistory, ResourceVersion
 
 class ReleaseInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
-    stage_id = serializers.IntegerField(required=True, help_text="环境id")
-    resource_version_id = serializers.IntegerField(required=True, help_text="资源版本id")
+    stage_id = serializers.IntegerField(required=True, help_text="环境 id")
+    resource_version_id = serializers.IntegerField(required=True, help_text="资源版本 id")
     comment = serializers.CharField(allow_blank=True, required=False, help_text="发布日志")
 
     def validate_stage_id(self, value):
@@ -73,7 +73,7 @@ class ResourceOutputSLZ(serializers.Serializer):
 
 
 class ReleaseResourceSchemaOutputSLZ(serializers.Serializer):
-    resource_id = serializers.IntegerField(allow_null=False, required=True, help_text="资源id")
+    resource_id = serializers.IntegerField(allow_null=False, required=True, help_text="资源 id")
     body_schema = serializers.JSONField(required=False, help_text="request_body schema")
     body_example = serializers.JSONField(required=False, help_text="request_body example")
     parameter_schema = serializers.JSONField(required=False, help_text="parameters schema")
@@ -82,25 +82,25 @@ class ReleaseResourceSchemaOutputSLZ(serializers.Serializer):
 
 class ReleaseHistoryQueryInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(allow_blank=True, required=False, help_text="查询参数关键字")
-    stage_id = serializers.IntegerField(allow_null=True, required=False, help_text="环境id")
+    stage_id = serializers.IntegerField(allow_null=True, required=False, help_text="环境 id")
     created_by = serializers.CharField(allow_blank=True, required=False, help_text="创建者")
     time_start = TimestampField(allow_null=True, required=False, help_text="开始时间")
     time_end = TimestampField(allow_null=True, required=False, help_text="结束时间")
 
 
 class ReleaseStageSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True, help_text="环境id")
-    name = serializers.CharField(allow_blank=True, required=False, help_text="环境name")
+    id = serializers.IntegerField(read_only=True, help_text="环境 id")
+    name = serializers.CharField(allow_blank=True, required=False, help_text="环境 name")
 
 
 class ReleaseHistoryOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True, help_text="发布历史id")
+    id = serializers.IntegerField(read_only=True, help_text="发布历史 id")
     stage = ReleaseStageSLZ()
     resource_version_display = serializers.SerializerMethodField(read_only=True, help_text="发布资源版本")
     created_time = serializers.DateTimeField(read_only=True, help_text="发布创建事件")
     created_by = serializers.CharField(read_only=True, help_text="发布人")
     source = serializers.CharField(read_only=True, help_text="发布来源")
-    duration = serializers.SerializerMethodField(read_only=True, help_text="发布耗时(s)")
+    duration = serializers.SerializerMethodField(read_only=True, help_text="发布耗时 (s)")
     status = serializers.SerializerMethodField(read_only=True, help_text="发布状态")
 
     def get_resource_version_display(self, obj: ReleaseHistory) -> str:
@@ -112,8 +112,8 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
             # 兼容历史数据
             return obj.status
 
-        # 通过最新的event获取release_history状态
-        return ReleaseHandler.get_status(event)
+        # 通过最新的 event 获取 release_history 状态
+        return get_status(event)
 
     def get_duration(self, obj: ReleaseHistory) -> int:
         # 获取最新事件
@@ -121,20 +121,20 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
         if not event:
             return 0
 
-        # 如果失败，返回event的创建时间和release_history创建时间之差
+        # 如果失败，返回 event 的创建时间和 release_history 创建时间之差
         if event.status == PublishEventStatusEnum.FAILURE.value or (
             event.status != PublishEventStatusEnum.DOING.value
             and event.name == PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
         ):
             return int((event.created_time - obj.created_time).total_seconds())
 
-        # 0代表还没到达终态
+        # 0 代表还没到达终态
         return 0
 
 
 class ReleaseHistoryEventInfoSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True, help_text="发布事件id")
-    release_history_id = serializers.IntegerField(source="publish_id", allow_null=False, help_text="发布历史id")
+    id = serializers.IntegerField(read_only=True, help_text="发布事件 id")
+    release_history_id = serializers.IntegerField(source="publish_id", allow_null=False, help_text="发布历史 id")
     name = serializers.SerializerMethodField(read_only=True, help_text="发布事件节点名称")
     step = serializers.IntegerField(read_only=True, help_text="发布事件节点所属步骤")
     status = serializers.ChoiceField(

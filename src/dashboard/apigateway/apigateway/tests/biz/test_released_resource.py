@@ -103,20 +103,6 @@ class TestReleasedResource:
 
 
 class TestReleasedResourceHandler:
-    def test_clear_unreleased_resource(self, fake_gateway, fake_stage):
-        rv1 = G(ResourceVersion, gateway=fake_gateway)
-        rv2 = G(ResourceVersion, gateway=fake_gateway)
-
-        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv1)
-
-        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv1.id, data={})
-        G(ReleasedResource, gateway=fake_gateway, resource_version_id=rv2.id, data={})
-
-        ReleasedResourceHandler.clear_unreleased_resource(fake_gateway.id)
-
-        assert ReleasedResource.objects.filter(resource_version_id=rv1.id).exists()
-        assert not ReleasedResource.objects.filter(resource_version_id=rv2.id).exists()
-
     def test_get_stage_release(self, fake_gateway):
         stage_prod = G(Stage, gateway=fake_gateway, name="prod", status=1)
         stage_test = G(Stage, gateway=fake_gateway, name="test", status=1)

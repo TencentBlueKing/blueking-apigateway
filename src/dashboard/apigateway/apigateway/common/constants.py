@@ -44,3 +44,7 @@ class LanguageCodeEnum(StructuredEnum):
 # )
 
 HEADER_BKAPI_AUTHORIZATION = "X-Bkapi-Authorization"
+
+
+# release gateway interval
+RELEASE_GATEWAY_INTERVAL_SECOND = 15

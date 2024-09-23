@@ -376,7 +376,12 @@ class ReleaseHistoryManager(models.Manager):
 
 
 class PublishEventManager(models.Manager):
-    pass
+    def get_release_history_id_to_latest_publish_event_map(self, release_history_ids: List[int]):
+        """通过 release_history_ids 查询最新的一个发布事件"""
+        # 需要按照 "publish_id", "step", "status" 升序 (django 默认 ASC) 排列，正确排列每个事件节点的不同状态事件
+        publish_events = self.filter(publish_id__in=release_history_ids).order_by("publish_id", "step", "status")
+        # here only get the latest publish event for each publish_id
+        return {event.publish_id: event for event in publish_events}
 
 
 class ContextManager(models.Manager):

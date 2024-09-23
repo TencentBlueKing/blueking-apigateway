@@ -102,15 +102,6 @@ def get_released_resource_data(gateway: Gateway, stage: Stage, resource_id: int)
 class ReleasedResourceHandler:
     # TODO 待重构
     @staticmethod
-    def clear_unreleased_resource(gateway_id: int) -> None:
-        """清理未发布的资源，如已发布版本被新版本替换的情况"""
-        resource_version_ids = Release.objects.get_released_resource_version_ids(gateway_id)
-        ReleasedResource.objects.filter(gateway_id=gateway_id).exclude(
-            resource_version_id__in=resource_version_ids
-        ).delete()
-
-    # TODO 待重构
-    @staticmethod
     def get_stage_release(gateway, stage_ids=None):
         """
         获取环境部署信息

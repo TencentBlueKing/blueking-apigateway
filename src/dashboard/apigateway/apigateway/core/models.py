@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -609,6 +609,15 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
     @property
     def is_last(self):
         return self.name == PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
+
+    @property
+    def is_running(self):
+        """通过最新的一个 event 判断当前发布是否还在继续执行"""
+
+        # 如果不是最后一个事件，如果是 success 的话说明也是 running
+        return self.status == PublishEventStatusEnum.DOING.value or (
+            self.status == PublishEventStatusEnum.SUCCESS.value and not self.is_last
+        )
 
     def __str__(self):
         return f"<PublishEvent: {self.gateway_id}/{self.stage_id}/{self.publish_id}/{self.name}>/{self.status}"
