@@ -39,7 +39,7 @@ const showHistory = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-width: 1280px;
+  //min-width: 1280px;
   .top-title-wrapper {
     display: flex;
     align-items: center;

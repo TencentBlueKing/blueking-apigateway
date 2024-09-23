@@ -381,7 +381,7 @@ defineExpose({
   background: #fff;
   // border-bottom: 1px solid #dcdee5;
   // box-shadow: 0 3px 4px rgba(64,112,203,0.05882);
-  min-width: 1280px;
+  //min-width: 1280px;
 
   .top-title-wrapper {
     display: flex;
