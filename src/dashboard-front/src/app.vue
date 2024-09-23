@@ -92,7 +92,11 @@ const router = useRouter();
 const route = useRoute();
 const common = useCommon();
 
-const { BK_DASHBOARD_URL } = window;
+const {
+  BK_DASHBOARD_URL,
+  BK_APIGATEWAY_VERSION,
+  BK_DOCS_URL_PREFIX,
+} = window;
 
 // 接入访问统计逻辑，只在上云版执行
 if (constantConfig.BK_ANALYSIS_SCRIPT_SRC) {
@@ -162,6 +166,20 @@ const getWebsiteConfig = async () => {
   common.setWebsiteConfig(websiteConfig.value);
 };
 getWebsiteConfig();
+
+// 根据文档前缀、语言和版本拼接 BK_DOCS_URL_PREFIX_MARKDOWN 的值
+const setDocUrl = () => {
+  const langMap: Record<string, string> = {
+    'zh-cn': 'ZH',
+    en: 'EN',
+  };
+  // 获取文档语言 ZH | EN
+  const lang = langMap[locale.value];
+  // 获取当前版本的 major 和 minor 版本，如：1.13.1 -> 1.13
+  const docVersion = BK_APIGATEWAY_VERSION.split('.').slice(0, 2).join('.');
+  window.BK_DOCS_URL_PREFIX_MARKDOWN = `${BK_DOCS_URL_PREFIX}/markdown/${lang}/APIGateway/${docVersion}`;
+};
+setDocUrl();
 
 const appLogo = computed(() => {
   return logoWithoutName;

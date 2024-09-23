@@ -7,6 +7,7 @@ declare interface Window {
   BK_LIST_USERS_API_URL: string
   BK_API_RESOURCE_URL_TMPL: string
   BK_DASHBOARD_FE_URL: string
+  BK_DOCS_URL_PREFIX: string
   BK_DOCS_URL_PREFIX_MARKDOWN: string
   BK_APIGATEWAY_VERSION: string
   GLOBAL_CONFIG: any
@@ -18,6 +19,7 @@ declare interface Window {
   BK_APP_CODE: string
   BK_NODE_ENV: string
   BK_ANALYSIS_SCRIPT_SRC: string
+  BKANALYSIS?: unknown
 }
 
 declare module "*.svg" {
