@@ -102,7 +102,9 @@ const tableData = computed(() => {
       });
     }
   });
-  specialData[0].rowSpan = specialData.length;
+  if (specialData.length > 0) {
+    specialData[0].rowSpan = specialData.length;
+  }
   return [...defaultData, ...specialData];
 });
 
