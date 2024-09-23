@@ -141,54 +141,6 @@ class TestMicroGatewayReleaser:
             ),
         )
 
-    def test_do_release_edge_gateway(
-        self,
-        mocker,
-        celery_task_eager_mode,
-        fake_gateway,
-        fake_stage,
-        fake_resource_version,
-        fake_shared_gateway,
-        fake_edge_gateway,
-        fake_release,
-        fake_release_history,
-        fake_publish_success_event,
-        celery_mock_task,
-    ):
-        mock_release_gateway_by_helm = mocker.patch(
-            "apigateway.biz.releaser.release_gateway_by_helm",
-            wraps=celery_mock_task,
-        )
-        releaser = MicroGatewayReleaser(
-            gateway=fake_gateway,
-            stage=fake_stage,
-            resource_version=fake_resource_version,
-            user_credentials=UserCredentials(
-                credentials="access_token",
-            ),
-        )
-
-        releaser._do_release(fake_release, fake_release_history)
-
-        mock_release_gateway_by_helm.si.assert_called_once_with(
-            release_id=fake_release.pk,
-            micro_gateway_release_history_id=mocker.ANY,
-            username=releaser.username,
-            user_credentials={"bk_token": "access_token"},
-        )
-
-        assert ReleaseHistory.objects.filter(
-            id=fake_release_history.id,
-        ).exists()
-
-        qs = MicroGatewayReleaseHistory.objects.filter(
-            gateway=fake_gateway,
-            stage=fake_stage,
-            release_history=fake_release_history,
-        )
-
-        assert qs.filter(micro_gateway=fake_edge_gateway).exists()
-
     def test_do_release_shared_gateway(
         self,
         mocker,

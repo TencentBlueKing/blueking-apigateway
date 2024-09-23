@@ -51,8 +51,6 @@ urlpatterns = [
     path("backend/esb/", include("apigateway.apps.esb.urls")),
     # iam provider
     path("backend/api/iam/", include("apigateway.apis.iam.urls")),
-    # edge-controller
-    path("backend/api/v1/edge-controller/", include("apigateway.apis.controller.urls")),
     # open api
     path("backend/api/v1/", include("apigateway.apis.open.urls")),
     # api-support backend/docs urls
@@ -77,8 +75,6 @@ urlpatterns = [
     path("backend/gateways/<int:gateway_id>/resource-versions/", include("apigateway.apis.web.resource_version.urls")),
     path("backend/gateways/<int:gateway_id>/sdks/", include("apigateway.apis.web.sdk.urls")),
     path("backend/gateways/<int:gateway_id>/audits/", include("apigateway.apis.web.audit.urls")),
-    # TODO: refactor or remove
-    path("backend/gateways/<int:gateway_id>/micro-gateways/", include("apigateway.apps.micro_gateway.urls")),
     # todo 不应该放在顶层，后续要想办法挪到下层
     path(
         "backend/gateways/monitors/alarm/records/summary/",

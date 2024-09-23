@@ -38,22 +38,6 @@ T = TypeVar("T", bound=MicroGatewayConfigStructureMixin)
 
 
 @dataclass
-class MicroGatewayBcsInfo(MicroGatewayConfigStructureMixin):
-    """微网关实例配置中的 bcs 配置"""
-
-    _micro_gateway_config_key = "bcs"
-
-    project_name: str
-    project_id: str
-    cluster_id: str
-    namespace: str
-    chart_version: str
-    release_name: str
-    release_revision: int = -1
-    chart_name: str = ""
-
-
-@dataclass
 class MicroGatewayJWTAuth(MicroGatewayConfigStructureMixin):
     """微网关实例配置中的 jwt 认证配置"""
 

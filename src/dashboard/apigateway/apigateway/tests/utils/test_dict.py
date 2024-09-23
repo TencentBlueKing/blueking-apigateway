@@ -15,14 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from collections import OrderedDict
 
 import pytest
 
 from apigateway.utils.dict import (
     deep_update,
-    get_item_by_path,
-    set_item_by_path,
     update_existing,
 )
 
@@ -97,82 +94,3 @@ def test_update_existing_is_not_mutating():
     updated_mapping = update_existing(mapping, key=0)
     assert updated_mapping == {"key": 0}
     assert mapping == {"key": {"inner_key": 1}}
-
-
-@pytest.mark.parametrize(
-    "paths, expected",
-    [
-        (["key1"], True),
-        (["no_exists"], None),
-        (["key2", "inner_key1"], {"deep_key": 1}),
-        (["key2", "inner_key1", "deep_key"], 1),
-        (["key2", "inner_key2"], ["a", "b"]),
-        (["key2", "inner_key2", 1], "b"),
-    ],
-)
-def test_get_item_by_path(paths, expected):
-    item = {
-        "key1": True,
-        "key2": {
-            "inner_key1": {
-                "deep_key": 1,
-            },
-            "inner_key2": ["a", "b"],
-        },
-    }
-
-    assert get_item_by_path(item, paths) == expected
-
-
-def test_get_item_by_path_exceptional():
-    with pytest.raises(TypeError):
-        get_item_by_path(1, ["x"])
-
-
-@pytest.mark.parametrize(
-    "paths, value",
-    [
-        (["key1"], False),
-        (["no_exists"], 2),
-        (["no_exists", "with_inner_key"], 3),
-        (["key2", "inner_key1"], [2]),
-        (["key2", "inner_key1", "deep_key"], 2),
-        (["key2", "inner_key2"], None),
-        (["key2", "inner_key2", 1], "c"),
-    ],
-)
-def test_set_item_by_path(paths, value):
-    item = {
-        "key1": True,
-        "key2": {
-            "inner_key1": {
-                "deep_key": 1,
-            },
-            "inner_key2": ["a", "b"],
-        },
-    }
-    set_item_by_path(item, paths, value)
-    assert get_item_by_path(item, paths) == value
-
-
-@pytest.mark.parametrize(
-    "paths, value, type_,missing_type",
-    [
-        (["key"], 1, dict, dict),
-        (["key1", "key2"], 1, dict, dict),
-        (["key"], 1, dict, OrderedDict),
-        (["key1", "key2"], 1, dict, OrderedDict),
-        (["key"], 1, OrderedDict, OrderedDict),
-        (["key1", "key2"], 1, OrderedDict, OrderedDict),
-        (["key"], 1, OrderedDict, dict),
-        (["key1", "key2"], 1, OrderedDict, dict),
-        (["key"], 1, dict, None),
-        (["key1", "key2"], 1, dict, None),
-        (["key"], 1, OrderedDict, None),
-        (["key1", "key2"], 1, OrderedDict, None),
-    ],
-)
-def test_set_item_by_path_with_missing_type(paths, value, type_, missing_type):
-    item = type_()
-    set_item_by_path(item, paths, value, missing_type=missing_type)
-    assert get_item_by_path(item, paths) == value

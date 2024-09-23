@@ -16,21 +16,17 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-from ddf import G
 
 from apigateway.controller.distributor.combine import CombineDistributor
-from apigateway.core.models import MicroGateway
 
 
 class TestDistributor:
     @pytest.fixture(autouse=True)
     def setup_fixture(self, mocker):
         self.helm_distributor = mocker.MagicMock()
-        self.helm_distributor_type = mocker.MagicMock(return_value=self.helm_distributor)
         self.etcd_distributor = mocker.MagicMock()
         self.etcd_distributor_type = mocker.MagicMock(return_value=self.etcd_distributor)
         self.distributor = CombineDistributor(
-            helm_distributor_type=self.helm_distributor_type,
             etcd_distributor_type=self.etcd_distributor_type,
         )
 
@@ -40,24 +36,6 @@ class TestDistributor:
 
         self.distributor.foreach_distributor(stage, micro_gateway, callback)
         assert not orders
-
-    def test_foreach_distributor_for_managed_edge_gateway(self, mocker, edge_gateway_stage, micro_gateway):
-        edge_gateway_stage.micro_gateway = G(
-            MicroGateway,
-            is_shared=False,
-            is_managed=True,
-        )
-        edge_gateway_stage.save()
-
-        callback = mocker.MagicMock()
-        self.distributor.foreach_distributor(edge_gateway_stage, micro_gateway, callback)
-
-        assert callback.call_count == 1
-        # callback.assert_any_call(self.etcd_distributor, micro_gateway)
-        callback.assert_any_call(self.helm_distributor, edge_gateway_stage.micro_gateway)
-
-        self.helm_distributor_type.assert_called_once_with(generate_chart=False)
-        # self.etcd_distributor_type.assert_called_once_with(include_gateway_global_config=False)
 
     def test_foreach_distributor_managed_shared_gateway(self, mocker, edge_gateway_stage, micro_gateway):
         assert edge_gateway_stage.micro_gateway == micro_gateway

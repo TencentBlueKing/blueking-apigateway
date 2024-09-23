@@ -31,7 +31,6 @@ from apigateway.biz.validators import PublishValidator, ReleaseValidationError
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.common.user_credentials import UserCredentials
 from apigateway.controller.tasks import (
-    release_gateway_by_helm,
     release_gateway_by_registry,
     update_release_data_after_success,
 )
@@ -191,36 +190,16 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
             publish_id=release_history.pk,
         )  # type: ignore
 
-    def _create_release_task_for_micro_gateway(self, release: Release, release_history: ReleaseHistory):
-        stage = release.stage
-        micro_gateway = stage.micro_gateway
-        if not micro_gateway or not micro_gateway.is_managed:
-            return None
-
-        history = MicroGatewayReleaseHistory.objects.create(
-            gateway=release.gateway,
-            stage=stage,
-            micro_gateway=micro_gateway,
-            release_history=release_history,
-            status=ReleaseStatusEnum.RELEASING.value,
-        )
-
-        return release_gateway_by_helm.si(
-            release_id=release.pk,
-            micro_gateway_release_history_id=history.pk,
-            username=self.username,
-            user_credentials=self.user_credentials.to_dict() if self.user_credentials else None,
-        )  # type: ignore
-
     def _create_release_task(self, release: Release, release_history: ReleaseHistory):
         # create publish event
         PublishEventReporter.report_create_publish_task_doing_event(release_history)
         # NOTE: 发布专享网关时，不再将资源同时发布到共享网关
         micro_gateway = release.stage.micro_gateway
+        # FIXME: refactor here
         if not micro_gateway or micro_gateway.is_shared:
             return self._create_release_task_for_shared_gateway(release, release_history)
 
-        return self._create_release_task_for_micro_gateway(release, release_history)
+        raise ValueError("not support release for micro gateway")
 
     def _do_release(self, release: Release, release_history: ReleaseHistory):
         release_success_callback = update_release_data_after_success.si(
