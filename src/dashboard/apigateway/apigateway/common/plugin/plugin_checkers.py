@@ -30,7 +30,7 @@ from collections import Counter
 from typing import ClassVar, Dict, List, Optional
 
 from django.utils.translation import gettext as _
-from jsonschema import ValidationError, validate
+from jsonschema import Draft7Validator
 
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.utils.yaml import yaml_loads
@@ -161,28 +161,33 @@ class RequestValidationChecker(BaseChecker):
             },
             "required": ["type", "required", "properties"],
         }
+
         loaded_data = yaml_loads(payload)
         if not loaded_data:
             raise ValueError("yaml can not be empty")
+
         body_schema = loaded_data.get("body_schema", {})
         header_schema = loaded_data.get("header_schema", {})
 
         if not body_schema and not header_schema:
             raise ValueError("header_schema and body_schema must have a value")
 
-        if body_schema:
-            try:
-                validate(instance=body_schema, schema=schema)
-            except ValidationError:
-                raise ValueError("The body_schema field does not conform to jsonschema")
+        validators = {
+            "body_schema": Draft7Validator(schema),
+            "header_schema": Draft7Validator(schema),
+        }
 
-        # 示例中没有 header_schema 中的示例，暂时共用一套 schema 去校验
+        def validate_schema(schema_name, data):
+            validator = validators[schema_name]
+            errors = list(validator.iter_errors(data))
+            if errors:
+                raise ValueError(f"The {schema_name} field does not conform to jsonschema: {errors}")
+
+        if body_schema:
+            validate_schema("body_schema", body_schema)
 
         if header_schema:
-            try:
-                validate(instance=header_schema, schema=schema)
-            except ValidationError:
-                raise ValueError("The header_schema field does not conform to jsonschema")
+            validate_schema("header_schema", header_schema)
 
 
 class PluginConfigYamlChecker:
