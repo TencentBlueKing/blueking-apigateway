@@ -1,5 +1,11 @@
 <template>
-  <bk-form ref="backRef" :model="backConfigData" :rules="rules" class="back-config-container">
+  <bk-form
+    ref="backRef"
+    :model="backConfigData"
+    :rules="rules"
+    class="back-config-container"
+    @validate="setInvalidPropId"
+  >
     <bk-form-item
       :label="t('服务')"
       required
@@ -28,7 +34,7 @@
         </bk-option>
       </bk-select>
       <bk-button theme="primary" class="ml10" v-if="isEditService" @click="editService">
-        编辑服务
+        {{ t('编辑服务') }}
       </bk-button>
     </bk-form-item>
     <bk-alert
@@ -107,6 +113,7 @@
           :placeholder="t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名')"
           clearable
           class="w568"
+          id="back-config-path"
           @change="isPathValid = false"
           @input="isPathValid = false"
         />
@@ -254,6 +261,9 @@ const rules = {
 
 // 后端地址是否校验通过
 const isPathValid = ref(false);
+
+// 错误表单项的 #id
+const invalidFormElementIds = ref<string[]>([]);
 
 // 提示默认超时时间
 const formatDefaultTime = computed(() => {
@@ -514,7 +524,20 @@ const init = async () => {
   }
 };
 
+// 监听表单校验时间，收集 #id
+const setInvalidPropId = (property: string, result: boolean) => {
+  if (!result) {
+    let _property = '';
+    if (property.includes('.')) {
+      const paths = property.split('.');
+      _property = paths[paths.length - 1];
+    }
+    invalidFormElementIds.value.push(`back-config-${_property}`);
+  }
+};
+
 const validate = async () => {
+  invalidFormElementIds.value = [];
   let isHost = true;
   for (let i = 0; i < servicesConfigs.value?.length; i++) {
     const item = servicesConfigs.value[i];
@@ -559,6 +582,7 @@ onMounted(() => {
 
 defineExpose({
   backConfigData,
+  invalidFormElementIds,
   validate,
 });
 </script>
