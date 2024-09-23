@@ -19,7 +19,7 @@
 import pytest
 from django.conf import settings
 
-from apigateway.common.release.publish import (
+from apigateway.controller.publisher.publish import (
     _is_gateway_ok_for_releasing,
     _save_release_history,
     _trigger_revoke_publish_for_disable,

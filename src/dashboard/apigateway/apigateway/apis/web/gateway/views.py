@@ -32,7 +32,7 @@ from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
-from apigateway.common.release.publish import trigger_gateway_publish
+from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.django import get_model_dict
