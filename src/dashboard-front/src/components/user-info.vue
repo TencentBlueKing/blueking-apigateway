@@ -16,6 +16,7 @@ const userInfo = ref(user.user);
     placement="bottom"
     theme="light"
     :arrow="false"
+    disable-outside-click
   >
     <div class="user-name">
       {{ userInfo.username }}
@@ -25,7 +26,8 @@ const userInfo = ref(user.user);
       <div
         class="logout"
         @click="logout"
-      >{{t('退出登录')}}</div>
+      >{{ t('退出登录') }}
+      </div>
     </template>
   </bk-popover>
 </template>
@@ -35,20 +37,23 @@ const userInfo = ref(user.user);
   z-index: 1000;
   font-size: 14px;
 }
+
 .user-name {
   padding-left: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
 }
+
 .user-name:hover {
   color: #fff;
 }
+
 .logout {
   display: inline-block;
   text-align: center;
   width: 80px;
   cursor: pointer;
-  color: #63656E;
+  color: #63656e;
 }
 </style>

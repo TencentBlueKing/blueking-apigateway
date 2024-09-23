@@ -1,17 +1,29 @@
 <template>
   <bk-popover
-    theme="light" placement="bottom" :arrow="false" :padding="0">
+    theme="light"
+    placement="bottom"
+    :arrow="false"
+    :padding="0"
+    disable-outside-click
+  >
     <div class="toggle-language-icon">
       <span
         class="icon apigateway-icon f22"
-        :class="locale === 'en' ? 'icon-ag-toggle-english' : 'icon-ag-toggle-chinese'"></span>
+        :class="locale === 'en' ? 'icon-ag-toggle-english' : 'icon-ag-toggle-chinese'"
+      ></span>
     </div>
     <template #content>
-      <div class="language-item" @click="toggleLanguage('chinese')">
+      <div
+        class="language-item"
+        @click="toggleLanguage('chinese')"
+      >
         <span class="icon apigateway-icon icon-ag-toggle-chinese"></span>
         <span>中文</span>
       </div>
-      <div class="language-item" @click="toggleLanguage('english')">
+      <div
+        class="language-item"
+        @click="toggleLanguage('english')"
+      >
         <span class="icon apigateway-icon icon-ag-toggle-english"></span>
         <span>English</span>
       </div>
@@ -20,7 +32,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import {
+  ref,
+  onMounted,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import jsCookie from 'js-cookie';
@@ -75,15 +90,18 @@ onMounted(() => {
   align-items: center;
   border-radius: 50%;
   cursor: pointer;
+
   .icon {
     font-size: 16px;
     vertical-align: middle;
   }
 }
+
 .toggle-language-icon:hover {
   background-color: #303d55;
   color: #fff;
 }
+
 .language-item {
   display: block;
   color: #63656e;
@@ -91,15 +109,18 @@ onMounted(() => {
   margin-top: 5px;
   font-size: 12px;
   cursor: pointer;
+
   .icon {
     font-size: 18px;
     vertical-align: bottom;
   }
 }
+
 .language-item:hover {
   background-color: #f3f6f9;
 }
+
 .language-item:nth-of-type(1) {
-  margin-top: 0px;
+  margin-top: 0;
 }
 </style>
