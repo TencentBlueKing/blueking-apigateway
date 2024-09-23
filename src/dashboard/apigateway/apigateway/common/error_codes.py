@@ -124,7 +124,6 @@ error_codes.add_codes(
             _("用户未登录或登录态失效，请使用登录链接重新登录"),
             status_code=status.HTTP_401_UNAUTHORIZED,
         ),
-        ErrorCode("IAM_NO_PERMISSION", 40403, _("没有访问权限"), status_code=status.HTTP_403_FORBIDDEN),
         ErrorCode("NO_PERMISSION", 40403, _("没有相关权限"), status_code=status.HTTP_403_FORBIDDEN),
         ErrorCode("NOT_FOUND", 40000, _("数据不存在"), status_code=status.HTTP_404_NOT_FOUND),
         ErrorCode(

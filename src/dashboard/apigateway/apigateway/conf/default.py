@@ -92,10 +92,6 @@ INSTALLED_APPS = [
     "apigw_manager.apigw",
     "apigateway.controller",
     "apigateway.healthz",
-    "apigateway.iam",
-    # TODO: 待启用 IAM 鉴权后，需启用以下两个 django app
-    # "apigateway.iam.apigw_iam_migration",
-    # "iam.contrib.iam_migration",
     # 蓝鲸通知中心
     "bk_notice_sdk",
 ]
@@ -535,23 +531,6 @@ BK_LOGIN_PLAIN_WINDOW_WIDTH = env.int("BK_LOGIN_PLAIN_WINDOW_WIDTH", default=700
 BK_LOGIN_PLAIN_WINDOW_HEIGHT = env.int("BK_LOGIN_PLAIN_WINDOW_HEIGHT", default=550)
 
 # ==============================================================================
-# bk-iam 配置
-# ==============================================================================
-# 使用权限中心数据进行鉴权（创建网关时，会创建分级管理员、用户组，校验权限时依赖权限中心）
-# TODO: 待启用 IAM 鉴权时，将默认值改为 True
-USE_BK_IAM_PERMISSION = env.bool("USE_BK_IAM_PERMISSION", False)
-
-BK_IAM_SYSTEM_ID = "bk_apigateway"
-BK_IAM_USE_APIGATEWAY = True
-BK_IAM_GATEWAY_STAGE = BK_API_DEFAULT_STAGE_MAPPINGS.get("bk-iam", "prod")
-BK_IAM_APIGATEWAY_URL = f"{BK_API_URL_TMPL.format(api_name='bk-iam')}/{BK_IAM_GATEWAY_STAGE}"
-BK_IAM_MIGRATION_JSON_PATH = "data/iam"
-BK_IAM_MIGRATION_APP_NAME = "apigateway.iam.apigw_iam_migration"
-BK_IAM_RESOURCE_API_HOST = env.str("BK_IAM_RESOURCE_API_HOST", DASHBOARD_URL)
-# 跳过注册权限模型到权限中心（注意：仅跳过注册权限模型，不关注权限校验是否依赖权限中心）
-BK_IAM_SKIP = env.bool("BK_IAM_SKIP", False)
-
-# ==============================================================================
 # bkrepo 配置
 # ==============================================================================
 BKREPO_ENDPOINT_URL = env.str("BKREPO_ENDPOINT_URL", "")
@@ -672,21 +651,6 @@ OTEL_INSTRUMENT_DB_API = env.bool("DASHBOARD_OTEL_INSTRUMENT_DB_API", default=Fa
 OTEL_INSTRUMENT_CELERY = env.bool("DASHBOARD_OTEL_INSTRUMENT_CELERY", default=False)
 OTEL_INSTRUMENT_REDIS = env.bool("DASHBOARD_OTEL_INSTRUMENT_REDIS", default=False)
 
-# ==============================================================================
-# 微网关 chart 信息
-# ==============================================================================
-BCS_MICRO_GATEWAY_CHART_NAME = "bk-micro-gateway"
-BCS_MICRO_GATEWAY_CHART_VERSION = env.str("BCS_MICRO_GATEWAY_CHART_VERSION", "v1.12.7")
-BCS_MICRO_GATEWAY_IMAGE_REGISTRY = env.str("BCS_MICRO_GATEWAY_IMAGE_REGISTRY", "")
-BCS_MICRO_GATEWAY_SENTRY_DSN = env.str("BCS_MICRO_GATEWAY_SENTRY_DSN", "")
-
-# 公共 chart 仓库
-BCS_PUBLIC_CHART_PROJECT = "bcs-public-project"
-BCS_PUBLIC_CHART_REPOSITORY = "public-repo"
-BCS_REPOSITORY_URL = env.str("BCS_REPOSITORY_URL", "")
-
-# BCS 为网关分配的认证 Token
-BCS_API_GATEWAY_TOKEN = env.str("BCS_API_GATEWAY_TOKEN", "")
 
 # 网关部署集群所属业务 ID，影响从蓝鲸监控拉取 Prometheus 数据等功能；开源环境默认部署在蓝鲸业务 (业务 ID=2)
 BCS_CLUSTER_BK_BIZ_ID = env.str("BCS_CLUSTER_BK_BIZ_ID", "2")

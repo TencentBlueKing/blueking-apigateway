@@ -49,8 +49,6 @@ urlpatterns = [
     path("backend/accounts/", include("apigateway.account.urls")),
     # esb
     path("backend/esb/", include("apigateway.apps.esb.urls")),
-    # iam provider
-    path("backend/api/iam/", include("apigateway.apis.iam.urls")),
     # open api
     path("backend/api/v1/", include("apigateway.apis.open.urls")),
     # api-support backend/docs urls

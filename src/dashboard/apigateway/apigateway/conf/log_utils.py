@@ -59,7 +59,7 @@ def build_logging_config(log_level: str, to_console: bool, file_directory: Optio
     }
     # 生成指定 Logger 对应的 Handlers
     logger_handlers_map: Dict[str, List[str]] = {}
-    for logger_name in ["root", "component", "iam", "mysql", "celery"]:
+    for logger_name in ["root", "component", "mysql", "celery"]:
         handlers = []
 
         if to_console:
@@ -116,11 +116,6 @@ def build_logging_config(log_level: str, to_console: bool, file_directory: Optio
             },
             "bkapi_client_core": {
                 "handlers": [*logger_handlers_map["component"], "sentry"],
-                "level": log_level,
-                "propagate": False,
-            },
-            "iam": {
-                "handlers": [*logger_handlers_map["iam"], "sentry"],
                 "level": log_level,
                 "propagate": False,
             },
