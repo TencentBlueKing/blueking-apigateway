@@ -8,7 +8,7 @@ authors = []
 python = ">=3.10,<3.11"
 django = "3.2.25"
 djangorestframework = "3.14.0"
-mysqlclient = "2.1.1"
+pymysql = "1.1.1"
 # celery = "5.1.2"
 celery = "4.4.7"
 # django-celery-beat = "2.2.1"
@@ -110,6 +110,7 @@ types-cachetools = "5.3.0.7"
 types-pytz = "2024.1.0.20240203"
 types-docutils = "0.20.0.20240317"
 types-PyYAML = "6.0.12.20240311"
+types-PyMySQL = "1.1.0.20240524"
 import-linter = "^2.0"
 
 [[tool.poetry.source]]

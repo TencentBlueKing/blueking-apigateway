@@ -19,9 +19,9 @@
 
 from django.conf import settings
 
-from common.djmysql_pool import patch_mysql
-
 if getattr(settings, "MYSQL_POOL_ENABLED", True):
-    patch_mysql(pool_options=settings.DJ_POOL_OPTIONS)
+    # 2024-09-24 use pymysql instead of mysql-client, so can't patch mysql
+    pass
+    # patch_mysql(pool_options=settings.DJ_POOL_OPTIONS)
 
 default_app_config = "esb.apps.ESBAppConfig"
