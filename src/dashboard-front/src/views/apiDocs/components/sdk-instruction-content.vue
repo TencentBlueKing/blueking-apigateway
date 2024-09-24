@@ -5,6 +5,8 @@
       v-if="curTab === 'apigw'"
       v-model="language"
       :margin-bottom="0"
+      :sdk-languages="['python', 'java', 'golang']"
+      :lang-list="['python', 'java', 'golang']"
       @select="handleLangSelect"
     />
     <div v-else class="bk-button-group">
