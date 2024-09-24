@@ -2,7 +2,7 @@ ARG IMAGE=python
 ARG TAG=3.10.12-slim-bullseye
 FROM ${IMAGE}:${TAG}
 
-RUN apt-get update && apt-get install -y libssl-dev default-libmysqlclient-dev libffi-dev \
+RUN apt-get update && apt-get install -y libssl-dev libffi-dev \
     build-essential libc6-dev libjpeg-dev zlib1g-dev vim procps default-mysql-client curl
 
 ARG PYPI="https://pypi.org/simple/"
