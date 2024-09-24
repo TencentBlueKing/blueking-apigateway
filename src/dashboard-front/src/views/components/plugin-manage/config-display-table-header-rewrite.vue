@@ -89,8 +89,12 @@ const tableData = computed(() => {
       });
     }
   });
-  setterData[0].rowSpan = setterData.length;
-  removerData[0].rowSpan = removerData.length;
+  if (setterData.length > 0) {
+    setterData[0].rowSpan = setterData.length;
+  }
+  if (removerData.length > 0) {
+    removerData[0].rowSpan = removerData.length;
+  }
   return [...setterData, ...removerData];
 });
 
