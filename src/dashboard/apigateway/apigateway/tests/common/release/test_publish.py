@@ -61,7 +61,9 @@ class TestTriggerGatewayPublish:
         source = PublishSourceEnum.BACKEND_UPDATE
         ok, msg = _is_gateway_ok_for_releasing(fake_release, source)
         assert ok is False
-        assert f"The version [{fake_release.resource_version.object_display}] is too old" in msg
+        assert (
+            f"The data structure of version 【{fake_release.resource_version.object_display}】 is incompatible" in msg
+        )
 
     def test__is_gateway_ok_for_releasing_with_valid_release(self, fake_release_v2):
         source = PublishSourceEnum.CLI_SYNC
