@@ -28,7 +28,7 @@
                 v-if="slotProps.name === curHoverHead">
               </span>
               <span
-                class="icon apigateway-icon icon-ag-delet " @click="handleDeletePlugin(slotProps)"
+                class="icon apigateway-icon icon-ag-delet " @click.stop="handleDeletePlugin(slotProps)"
                 v-if="slotProps.name === curHoverHead">
               </span>
             </span>
@@ -173,8 +173,7 @@
               @choose-plugin="handleChoosePlugin"
               @on-change="handleOperate"
               @show-example="handlePluginExampleToggle"
-            >
-            </pluginInfo>
+            />
           </div>
         </div>
       </template>
@@ -194,14 +193,20 @@
     <bk-sideslider
       v-model:isShow="isEditVisible"
       :title="t('修改插件')"
-      quick-close ext-cls="plugin-add-slider"
-      width="960">
+      quick-close
+      ext-cls="plugin-add-slider"
+      :width="pluginSliderWidth"
+    >
       <template #default>
         <div class="plugin-config pl40 pr40 pt20 pb20">
           <pluginInfo
-            :cur-plugin="curChoosePlugin" :scope-info="curScopeInfo" :edit-plugin="curEditPlugin"
-            :type="curType" @on-change="handleOperate">
-          </pluginInfo>
+            :cur-plugin="curChoosePlugin"
+            :scope-info="curScopeInfo"
+            :edit-plugin="curEditPlugin"
+            :type="curType"
+            @on-change="handleOperate"
+            @show-example="handlePluginExampleToggle"
+          />
         </div>
       </template>
     </bk-sideslider>
