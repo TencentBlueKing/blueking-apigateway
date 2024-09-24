@@ -64,6 +64,14 @@ def _is_gateway_ok_for_releasing(release: Release, source: PublishSourceEnum) ->
             msg = f"release(id={release.pk})  stage(name={release.stage.name}) is not active, ignored"
             return False, msg
 
+    # 校验版本,现在只支持v2发布
+    if not release.resource_version.is_schema_v2:
+        msg = (
+            f"The version [{release.resource_version.object_display}] is too old and is not allowed to be published."
+            f"Please create a new version and publish it again."
+        )
+        return False, msg
+
     return True, ""
 
 

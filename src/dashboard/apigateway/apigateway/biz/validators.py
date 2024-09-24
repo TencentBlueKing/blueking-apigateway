@@ -235,6 +235,14 @@ class PublishValidator:
             }
         )
 
+    def _validate_resource_version_schema(self):
+        if not self.resource_version.is_schema_v2:
+            raise ReleaseValidationError(
+                _("版本【{resource_version}】太旧，不允许发布，请新建版本再发布").format(
+                    resource_version=self.resource_version.object_display
+                )
+            )
+
     def _validate_gateway_status(self):
         if self.gateway.status != GatewayStatusEnum.ACTIVE.value:
             raise ReleaseValidationError(
@@ -252,6 +260,7 @@ class PublishValidator:
         self._validate_stage_plugins()
 
         if self.resource_version:
+            self._validate_resource_version_schema()
             self._validate_stage_vars(self.stage, self.resource_version.id)
 
 
