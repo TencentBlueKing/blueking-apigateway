@@ -570,8 +570,17 @@ watch(
     filterData.value = {};
     let isEmpty = false;
     if (v) {
+      // 把纯文本搜索项转换成查询参数
+      const textItem = v.find(val => val.type === 'text');
+
+      if (textItem) {
+        filterData.value.keyword = textItem.name || '';
+      }
+
       v.forEach((item) => {
-        filterData.value[item.id] = item.values[0].id;
+        if (item.values) {
+          filterData.value[item.id] = item.values[0].id;
+        }
       });
       isEmpty = v.length === 0;
     }
@@ -666,12 +675,10 @@ const handleExport = async ({ value }: { value: 'all' | 'selected' | 'filtered' 
       }
       break;
     case 'filtered':
-      filterValues.value?.forEach((item) => {
-        const value = item.values[0];
-        if (value) {
-          exportParams.value[item.id] = String(value.id);
-        }
-      });
+      exportParams.value = {
+        ...exportParams.value,
+        ...filterData.value,
+      };
       break;
     case 'all':
       if (tableData.value.length < 1) {
@@ -920,7 +927,7 @@ const updateTableEmptyConfig = () => {
     ...filterData.value,
   };
   filterValues.value?.forEach((item) => {
-    searchParams[item.id] = item.values[0]?.id;
+    searchParams[item.id] = item.values ? item.values[0]?.id : '';
   });
   const list = Object.values(searchParams).filter(item => item !== '');
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
