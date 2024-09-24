@@ -22,6 +22,7 @@ from apigateway.apis.web.plugin.convertor import (
     IPRestrictionYamlConvertor,
     PluginConfigYamlConvertor,
     RateLimitYamlConvertor,
+    RequestValidationYamlConvertor,
 )
 from apigateway.utils.yaml import yaml_dumps, yaml_loads
 
@@ -138,6 +139,72 @@ class TestIPRestrictionYamlConvertor:
     )
     def test_to_representation(self, data, expected):
         convertor = IPRestrictionYamlConvertor()
+        result = convertor.to_representation(data)
+        assert result == expected
+
+
+class TestRequestValidationYamlConvertor:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                """header_schema: '{"aa": "bb"}'
+body_schema: '{"aa": "bb"}'
+rejected_code: 400
+rejected_msg: foo""",
+                '{"header_schema": {"aa": "bb"}, "body_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": '
+                '"foo"}',
+            ),
+            (
+                """header_schema: '{"aa":"bb"}'
+body_schema: ''
+rejected_code: 400
+rejected_msg: foo""",
+                '{"header_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": "foo"}',
+            ),
+            (
+                """header_schema: ''
+body_schema: '{"aa":"bb"}'
+rejected_code: 400
+rejected_msg: foo""",
+                '{"body_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": "foo"}',
+            ),
+        ],
+    )
+    def test_to_internal_value(self, data, expected):
+        convertor = RequestValidationYamlConvertor()
+        result = convertor.to_internal_value(data)
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                '{"header_schema": {"aa": "bb"}, "body_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": '
+                '"foo"}',
+                """header_schema: '{"aa": "bb"}'
+body_schema: '{"aa": "bb"}'
+rejected_code: 400
+rejected_msg: foo""",
+            ),
+            (
+                '{"header_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": "foo"}',
+                """header_schema: '{"aa": "bb"}'
+body_schema: ''
+rejected_code: 400
+rejected_msg: foo""",
+            ),
+            (
+                '{"body_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": "foo"}',
+                """header_schema: ''
+body_schema: '{"aa": "bb"}'
+rejected_code: 400
+rejected_msg: foo""",
+            ),
+        ],
+    )
+    def test_to_representation(self, data, expected):
+        convertor = RequestValidationYamlConvertor()
         result = convertor.to_representation(data)
         assert result == expected
 

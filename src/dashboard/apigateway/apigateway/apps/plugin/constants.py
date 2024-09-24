@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import requests
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.utils.translation import gettext_lazy as _
 
@@ -31,7 +32,8 @@ class PluginTypeCodeEnum(StructuredEnum):
         "bk-verified-user-exempted-apps", label=_("免用户认证应用白名单(不推荐)")
     )
     BK_MOCK = EnumField("bk-mock", label=_("mocking 插件"))
-    BK_API_BREAKER = EnumField("api-breaker", label=_("API 熔断"))
+    API_BREAKER = EnumField("api-breaker", label=_("API 熔断"))
+    REQUEST_VALIDATION = EnumField("request-validation", label=_("请求校验"))
 
 
 class PluginTypeScopeEnum(StructuredEnum):
@@ -55,3 +57,7 @@ class PluginStyleEnum(StructuredEnum):
 class PluginBindingSourceEnum(StructuredEnum):
     YAML_IMPORT = EnumField("yaml_import", label=_("yaml导入"))
     USER_CREATE = EnumField("user_create", label=_("用户创建"))
+
+
+Draft7SchemaUrl = "http://json-schema.org/draft-07/schema#"
+Draft7Schema = requests.get(Draft7SchemaUrl).json()

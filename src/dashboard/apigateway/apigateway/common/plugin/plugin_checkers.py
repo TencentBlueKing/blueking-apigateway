@@ -29,9 +29,10 @@ from abc import ABC, abstractmethod
 from collections import Counter
 from typing import ClassVar, Dict, List, Optional
 
+import jsonschema
 from django.utils.translation import gettext as _
 
-from apigateway.apps.plugin.constants import PluginTypeCodeEnum
+from apigateway.apps.plugin.constants import Draft7Schema, PluginTypeCodeEnum
 from apigateway.utils.yaml import yaml_loads
 
 
@@ -149,11 +150,37 @@ class BkIPRestrictionChecker(BaseChecker):
             raise ValueError("whitelist and blacklist can not be empty at the same time")
 
 
+class RequestValidationChecker(BaseChecker):
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
+        if not loaded_data:
+            raise ValueError("yaml can not be empty")
+
+        body_schema = loaded_data.get("body_schema", {})
+        header_schema = loaded_data.get("header_schema", {})
+
+        if not body_schema and not header_schema:
+            raise ValueError("header_schema and body_schema must have a value")
+
+        def validate_json_schema(schema_name, json_schema, draft_schema):
+            try:
+                jsonschema.validate(instance=json_schema, schema=draft_schema)
+            except jsonschema.exceptions.ValidationError as err:
+                raise ValueError(f"Your {schema_name} Schema is not valid: {err}")
+
+        if body_schema:
+            validate_json_schema("body_schema", body_schema, Draft7Schema)
+
+        if header_schema:
+            validate_json_schema("header_schema", header_schema, Draft7Schema)
+
+
 class PluginConfigYamlChecker:
     type_code_to_checker: ClassVar[Dict[str, BaseChecker]] = {
         PluginTypeCodeEnum.BK_CORS.value: BkCorsChecker(),
         PluginTypeCodeEnum.BK_HEADER_REWRITE.value: HeaderRewriteChecker(),
         PluginTypeCodeEnum.BK_IP_RESTRICTION.value: BkIPRestrictionChecker(),
+        PluginTypeCodeEnum.REQUEST_VALIDATION.value: RequestValidationChecker(),
     }
 
     def __init__(self, type_code: str):

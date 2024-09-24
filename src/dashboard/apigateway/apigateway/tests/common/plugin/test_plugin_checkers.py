@@ -24,6 +24,7 @@ from apigateway.common.plugin.plugin_checkers import (
     BkIPRestrictionChecker,
     HeaderRewriteChecker,
     PluginConfigYamlChecker,
+    RequestValidationChecker,
 )
 from apigateway.utils.yaml import yaml_dumps
 
@@ -330,5 +331,53 @@ class TestHeaderRewriteChecker:
     def test_check_plugin(self, type_code, data, ctx):
         checker = PluginConfigYamlChecker(type_code)
 
+        with ctx:
+            checker.check(yaml_dumps(data))
+
+
+class TestRequestValidationChecker:
+    @pytest.mark.parametrize(
+        "data, ctx",
+        [
+            (
+                {
+                    "header_schema": {
+                        "type": "object",
+                        "required": ["bool_payload"],
+                        "properties": {"bool_payload": {"type": "boolean", "default": True}},
+                    },
+                    "rejected_code": 400,
+                    "rejected_msg": "foo",
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "body_schema": {
+                        "type": "object",
+                        "required": ["bool_payload"],
+                        "properties": {"bool_payload": {"type": "boolean", "default": True}},
+                    },
+                    "rejected_code": 400,
+                    "rejected_msg": "foo",
+                },
+                does_not_raise(),
+            ),
+            (
+                {"header_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": "foo"},
+                pytest.raises(ValueError),
+            ),
+            (
+                {"body_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": "foo"},
+                pytest.raises(ValueError),
+            ),
+            (
+                {"rejected_code": 400, "rejected_msg": "foo"},
+                pytest.raises(ValueError),
+            ),
+        ],
+    )
+    def test_check(self, data, ctx):
+        checker = RequestValidationChecker()
         with ctx:
             checker.check(yaml_dumps(data))
