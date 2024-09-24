@@ -106,8 +106,14 @@
 
     <!-- 主动授权sideslider -->
     <bk-sideslider
-      class="auth-sideslider" :title="authSliderConf.title" :width="800"
-      v-model:isShow="authSliderConf.isShow" quick-close :before-close="handleBeforeClose" @hidden="handleHidden">
+      v-model:isShow="authSliderConf.isShow"
+      :title="authSliderConf.title"
+      :width="800"
+      quick-close
+      :before-close="handleBeforeClose"
+      class="auth-sideslider"
+      @hidden="handleHidden"
+    >
       <template #default>
         <p class="ag-span-title"> {{ t('你将对指定的蓝鲸应用添加访问资源的权限') }} </p>
         <bk-form class="mb30 ml15" :label-width="120" :model="curAuthData">
@@ -167,17 +173,6 @@
         </div>
       </template>
     </bk-sideslider>
-
-    <!-- 提示dialog -->
-    <bk-dialog ext-cls="attention-dialog" :is-show="isVisible" :title="''" :theme="'primary'">
-      <p class="title">{{ t('确认离开当前页？') }}</p>
-      <p class="sub-title">{{ t('离开将会导致未保存信息丢失') }}</p>
-      <div class="btn">
-        <bk-button theme="primary" class="mr5 w88" @click="handleDialogLeave">{{ t('离开') }}</bk-button>
-        <bk-button class="w88" @click="handleDialogCancel">{{ t('取消') }}</bk-button>
-      </div>
-      <template #footer></template>
-    </bk-dialog>
 
     <!-- 删除dialog -->
     <bk-dialog
@@ -386,7 +381,10 @@
 
 <script setup lang="ts">
 import { isEqual } from 'lodash';
-import { Message } from 'bkui-vue';
+import {
+  InfoBox,
+  Message,
+} from 'bkui-vue';
 import {
   computed,
   reactive,
@@ -458,7 +456,6 @@ const {
 
 const isExportDropdownShow = ref(false);
 const resourceList = ref<IResource[]>([]);
-const isVisible = ref(false);
 const isBatchApplyLoading = ref(false);
 const curPermission = ref<Partial<IPermission>>({ bk_app_code: '', detail: [], id: -1 });
 const curSelections = ref([]);
@@ -805,21 +802,23 @@ const handleBeforeClose = () => {
   };
   const isSame = isEqual(initData, curAuthData.value);
   if (!isSame) {
-    isVisible.value = true;
-    return;
+    InfoBox({
+      title: t('确认离开当前页？'),
+      subTitle: t('离开将会导致未保存信息丢失'),
+      confirmText: t('离开'),
+      cancelText: t('取消'),
+      onConfirm() {
+        authSliderConf.isShow = false;
+      },
+      onClosed() {
+        return false;
+      },
+    });
+  } else {
+    authSliderConf.isShow = false;
   }
-  authSliderConf.isShow = false;
 };
-// 提示dialog离开btn
-const handleDialogLeave = () => {
-  isVisible.value = false;
-  authSliderConf.isShow = false;
-};
-// 提示dialog取消btn
-const handleDialogCancel = () => {
-  isVisible.value = false;
-  authSliderConf.isShow = true;
-};
+
 // 选择授权的资源数量发生改变触发
 const handleResourceChange = (sourceList: IResource[], targetList: IResource[], targetValueList: number[]) => {
   curAuthData.value.resource_ids = targetValueList;
