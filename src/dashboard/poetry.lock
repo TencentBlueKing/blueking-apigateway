@@ -4181,6 +4181,22 @@ url = "https://mirrors.cloud.tencent.com/pypi/simple"
 reference = "tencent"
 
 [[package]]
+name = "types-pymysql"
+version = "1.1.0.20240524"
+description = "Typing stubs for PyMySQL"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "types-PyMySQL-1.1.0.20240524.tar.gz", hash = "sha256:93058fef2077c407e29bdcd1a7dfbbf06a59324a5440df30dd002f572199ac17"},
+    {file = "types_PyMySQL-1.1.0.20240524-py3-none-any.whl", hash = "sha256:8be5be228bf6376f9055ec03bec0dfa6f1a84163f9a89305db446f0b31f87be3"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.cloud.tencent.com/pypi/simple"
+reference = "tencent"
+
+[[package]]
 name = "types-python-dateutil"
 version = "2.9.0.20240316"
 description = "Typing stubs for python-dateutil"
@@ -4642,4 +4658,4 @@ reference = "tencent"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "e9dae0e9150850a57fb89e0b2791a88b56744dc45ee313bea062f0b58d9fc251"
+content-hash = "57597a6516a1850b8e62dc8c40fe82cfad2dba42e0ec552be2c5180ac9a1f9ce"
