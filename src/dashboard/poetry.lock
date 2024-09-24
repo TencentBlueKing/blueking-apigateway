@@ -2298,27 +2298,6 @@ url = "https://mirrors.cloud.tencent.com/pypi/simple"
 reference = "tencent"
 
 [[package]]
-name = "mysqlclient"
-version = "2.1.1"
-description = "Python interface to MySQL"
-optional = false
-python-versions = ">=3.5"
-files = [
-    {file = "mysqlclient-2.1.1-cp310-cp310-win_amd64.whl", hash = "sha256:c1ed71bd6244993b526113cca3df66428609f90e4652f37eb51c33496d478b37"},
-    {file = "mysqlclient-2.1.1-cp311-cp311-win_amd64.whl", hash = "sha256:c812b67e90082a840efb82a8978369e6e69fc62ce1bda4ca8f3084a9d862308b"},
-    {file = "mysqlclient-2.1.1-cp38-cp38-win_amd64.whl", hash = "sha256:0d1cd3a5a4d28c222fa199002810e8146cffd821410b67851af4cc80aeccd97c"},
-    {file = "mysqlclient-2.1.1-cp39-cp39-win_amd64.whl", hash = "sha256:b355c8b5a7d58f2e909acdbb050858390ee1b0e13672ae759e5e784110022994"},
-    {file = "mysqlclient-2.1.1-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:996924f3483fd36a34a5812210c69e71dea5a3d5978d01199b78b7f6d485c855"},
-    {file = "mysqlclient-2.1.1-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:dea88c8d3f5a5d9293dfe7f087c16dd350ceb175f2f6631c9cf4caf3e19b7a96"},
-    {file = "mysqlclient-2.1.1.tar.gz", hash = "sha256:828757e419fb11dd6c5ed2576ec92c3efaa93a0f7c39e263586d1ee779c3d782"},
-]
-
-[package.source]
-type = "legacy"
-url = "https://mirrors.cloud.tencent.com/pypi/simple"
-reference = "tencent"
-
-[[package]]
 name = "nodeenv"
 version = "1.6.0"
 description = "Node.js virtual environment builder"
@@ -3399,6 +3378,26 @@ files = [
 crypto = ["cryptography (>=1.4)"]
 flake8 = ["flake8", "flake8-import-order", "pep8-naming"]
 test = ["pytest (>=4.0.1,<5.0.0)", "pytest-cov (>=2.6.0,<3.0.0)", "pytest-runner (>=4.2,<5.0.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.cloud.tencent.com/pypi/simple"
+reference = "tencent"
+
+[[package]]
+name = "pymysql"
+version = "1.1.1"
+description = "Pure Python MySQL Driver"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "PyMySQL-1.1.1-py3-none-any.whl", hash = "sha256:4de15da4c61dc132f4fb9ab763063e693d521a80fd0e87943b9a453dd4c19d6c"},
+    {file = "pymysql-1.1.1.tar.gz", hash = "sha256:e127611aaf2b417403c60bf4dc570124aeb4a57f5f37b8e95ae399a42f904cd0"},
+]
+
+[package.extras]
+ed25519 = ["PyNaCl (>=1.4.0)"]
+rsa = ["cryptography"]
 
 [package.source]
 type = "legacy"
@@ -5029,4 +5028,4 @@ reference = "tencent"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "0f46e6e5722f82b0b1365af7f02d2173bfcb3afb4e8602ce71eaff55ba5719ef"
+content-hash = "7e3a7c493bfee72d479a6f9d4f5052715a3fbcf861d4df05c12509ec3a79aecf"
