@@ -1,6 +1,12 @@
 
 <template>
-  <bk-form ref="formRef" :model="formData" :rules="rules" class="resource-baseinfo">
+  <bk-form
+    ref="formRef"
+    :model="formData"
+    :rules="rules"
+    class="resource-baseinfo"
+    @validate="setInvalidPropId"
+  >
     <bk-form-item
       :label="t('名称')"
       property="name"
@@ -9,6 +15,7 @@
         v-model="formData.name"
         :placeholder="t('由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符')"
         class="name"
+        id="base-info-name"
         clearable
       />
       <div class="common-form-tips">
@@ -142,6 +149,9 @@ const rules = {
 
 const resourcePermRequiredBackup = ref(false);
 
+// 错误表单项的 #id
+const invalidFormElementIds = ref<string[]>([]);
+
 watch(
   () => props.detail,
   (val: any) => {
@@ -182,13 +192,22 @@ const init = async () => {
   labelsData.value = res;
 };
 
+// 监听表单校验时间，收集 #id
+const setInvalidPropId = (property: string, result: boolean) => {
+  if (!result) {
+    invalidFormElementIds.value.push(`base-info-${property}`);
+  }
+};
+
 const validate = async () => {
+  invalidFormElementIds.value = [];
   await formRef.value?.validate();
 };
 
 init();
 defineExpose({
   formData,
+  invalidFormElementIds,
   validate,
 });
 </script>

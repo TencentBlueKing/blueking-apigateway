@@ -114,11 +114,33 @@ const getResourceDetails = async () => {
 
 // 提交
 const handleSubmit = async () => {
-  await Promise.all([
-    baseInfoRef.value?.validate(),
-    frontConfigRef.value?.validate(),
-    backConfigRef.value?.validate(),
-  ]);
+  try {
+    // 校验表单数据
+    await Promise.all([
+      baseInfoRef.value?.validate(),
+      frontConfigRef.value?.validate(),
+      backConfigRef.value?.validate(),
+    ]);
+  } catch {
+    // 校验失败，获取非法表单项的 #id
+    const invalidFormElementIds = [
+      ...baseInfoRef.value?.invalidFormElementIds,
+      ...frontConfigRef.value?.invalidFormElementIds,
+      ...backConfigRef.value?.invalidFormElementIds,
+    ];
+    if (invalidFormElementIds.length) {
+      // 根据表单项 #id 获取元素，滚动到视图中间，并 focus
+      const el = document.querySelector(`#${invalidFormElementIds[0]}`);
+      if (el) {
+        el.scrollIntoView({
+          behavior: 'smooth', // 平滑滚动
+          block: 'center',
+        });
+        el.focus?.();
+      }
+    }
+    return;
+  }
   const baseFormData = baseInfoRef.value.formData;
   const frontFormData = frontConfigRef.value.frontConfigData;
   const backFormData = backConfigRef.value.backConfigData;

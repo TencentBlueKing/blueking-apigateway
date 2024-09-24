@@ -1,9 +1,16 @@
 
 <template>
-  <bk-form ref="frontRef" :model="frontConfigData" :rules="rules" class="front-config-container">
+  <bk-form
+    ref="frontRef"
+    :model="frontConfigData"
+    :rules="rules"
+    class="front-config-container"
+    @validate="setInvalidPropId"
+  >
     <bk-form-item
       :label="t('请求方法')"
       property="method"
+      id="front-config-method"
       required>
       <bk-select
         :input-search="false"
@@ -25,6 +32,7 @@
           clearable
           @input="clearValidate"
           class="w700"
+          id="front-config-path"
         />
         <bk-checkbox class="ml12" v-model="frontConfigData.match_subpath">
           {{ t('匹配所有子路径') }}
@@ -107,6 +115,9 @@ const rules = ref<any>({
   ],
 });
 
+// 错误表单项的 #id
+const invalidFormElementIds = ref<string[]>([]);
+
 watch(
   () => props.detail,
   (val: any) => {
@@ -132,7 +143,15 @@ watch(
   { deep: true },
 );
 
+// 监听表单校验时间，收集 #id
+const setInvalidPropId = (property: string, result: boolean) => {
+  if (!result) {
+    invalidFormElementIds.value.push(`front-config-${property}`);
+  }
+};
+
 const validate = async () => {
+  invalidFormElementIds.value = [];
   await frontRef.value?.validate();
 };
 
@@ -143,6 +162,7 @@ const clearValidate = () => {
 
 defineExpose({
   frontConfigData,
+  invalidFormElementIds,
   validate,
 });
 </script>
