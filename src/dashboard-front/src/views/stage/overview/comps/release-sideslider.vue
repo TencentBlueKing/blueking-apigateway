@@ -80,7 +80,7 @@
                         <div
                           :class="[
                             'version-options',
-                            { 'version-options-disabled': item.id === curVersionId },
+                            { 'version-options-disabled': item.id === curVersionId || item.schema_version === '1.0' },
                           ]"
                           @click.stop="handleVersionChange(item)"
                         >
@@ -88,7 +88,7 @@
                             {{ item.version }}
                           </span>
                           <span class="version-tips" v-if="item.schema_version === '1.0'">
-                            ({{ t('老版本，未包含后端服务等信息，发布可能会导致数据不一致，谨慎使用') }})
+                            ({{ t('老版本，未包含后端服务等信息，发布可能会导致数据不一致，请新建版本再发布') }})
                           </span>
                           <span v-if="chooseAssets?.resource_version?.version === item.version" class="cur-version">
                             <bk-tag theme="info">
@@ -436,7 +436,8 @@ const getResourceVersions = async () => {
 };
 
 const handleVersionChange = async (payload: any) => {
-  if (payload.id === curVersionId.value) return;
+  // 检查是否为 v1 版本，是的话不能发布，禁止选中
+  if (payload.id === curVersionId.value || payload.schema_version === '1.0') return;
 
   if (!payload.id) {
     diffData.value = {
