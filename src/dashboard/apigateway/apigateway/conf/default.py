@@ -31,6 +31,7 @@ import os
 from typing import List
 from urllib.parse import quote
 
+import pymysql
 from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.encoding import force_bytes
@@ -40,6 +41,10 @@ from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
 from apigateway.conf.log_utils import get_logging_config, makedirs_when_not_exists
 from apigateway.conf.utils import get_default_keepalive_options
+
+pymysql.install_as_MySQLdb()
+# Patch version info to forcedly pass Django client check
+pymysql.version_info = 1, 4, 2, "final", 0
 
 env = Env()
 
