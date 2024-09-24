@@ -3,7 +3,7 @@ ARG TAG=3.10.12-slim-bullseye
 FROM ${IMAGE}:${TAG}
 
 RUN apt-get update && apt-get install -y libssl-dev libffi-dev \
-    build-essential libc6-dev libjpeg-dev zlib1g-dev vim procps curl zip unzip
+    build-essential libc6-dev libjpeg-dev zlib1g-dev vim procps default-mysql-client curl zip unzip
 
 # install kona-jdk maven
 RUN curl -s "https://get.sdkman.io" | bash 
