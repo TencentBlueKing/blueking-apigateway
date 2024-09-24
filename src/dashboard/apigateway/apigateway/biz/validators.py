@@ -238,7 +238,7 @@ class PublishValidator:
     def _validate_resource_version_schema(self):
         if not self.resource_version.is_schema_v2:
             raise ReleaseValidationError(
-                _("版本【{resource_version}】太旧，不允许发布，请新建版本再发布").format(
+                _("版本【{resource_version}】数据结构已经不兼容，不允许发布，请在【资源配置】中新建版本再发布").format(
                     resource_version=self.resource_version.object_display
                 )
             )
