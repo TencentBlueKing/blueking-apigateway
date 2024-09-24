@@ -353,6 +353,30 @@ class TestRequestValidationChecker:
             ),
             (
                 {
+                    "header_schema": {
+                        "type": "aa",  # 这里会报错
+                        "required": ["bool_payload"],
+                        "properties": {"bool_payload": {"type": "boolean", "default": True}},
+                    },
+                    "rejected_code": 400,
+                    "rejected_msg": "foo",
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "header_schema": {
+                        "type": "object",
+                        "required": "aa",  # 这里会报错
+                        "properties": {"bool_payload": {"type": "boolean", "default": True}},
+                    },
+                    "rejected_code": 400,
+                    "rejected_msg": "foo",
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
                     "body_schema": {
                         "type": "object",
                         "required": ["bool_payload"],
@@ -362,14 +386,6 @@ class TestRequestValidationChecker:
                     "rejected_msg": "foo",
                 },
                 does_not_raise(),
-            ),
-            (
-                {"header_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": "foo"},
-                pytest.raises(ValueError),
-            ),
-            (
-                {"body_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": "foo"},
-                pytest.raises(ValueError),
             ),
             (
                 {"rejected_code": 400, "rejected_msg": "foo"},
