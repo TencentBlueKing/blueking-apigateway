@@ -329,6 +329,7 @@ const lang: ILANG = {
   '操作者': ['Operator'],
   '未知': ['Unknown'],
   '由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符': ['Consists of lowercase letters, numbers, hyphens(-), the first character must be a letter, length 3 to 30'],
+  '由小写字母、数字、连接符（-）组成，首字符必须是小写字母，长度大于3小于30个字符': ['Consists of lowercase letters, numbers, hyphens(-), the first character must be a lowercase letter, length 3 to 30'],
   '网关唯一标识，创建后不可修改': ['Unique gateway identifier, cannot be modified after creation'],
   '请输入描述': ['Please input description'],
   '托管方式': ['Hosting Type'],
