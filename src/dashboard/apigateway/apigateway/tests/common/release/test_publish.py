@@ -57,9 +57,17 @@ class TestTriggerGatewayPublish:
         assert ok is False
         assert f"stage(name={fake_stage.name}) is not active, ignored" in msg
 
-    def test__is_gateway_ok_for_releasing_with_valid_release(self, fake_release):
-        source = PublishSourceEnum.CLI_SYNC
+    def test__is_gateway_ok_for_releasing_with_resource_version_v1(self, fake_stage, fake_release):
+        source = PublishSourceEnum.BACKEND_UPDATE
         ok, msg = _is_gateway_ok_for_releasing(fake_release, source)
+        assert ok is False
+        assert (
+            f"The data structure of version 【{fake_release.resource_version.object_display}】 is incompatible" in msg
+        )
+
+    def test__is_gateway_ok_for_releasing_with_valid_release(self, fake_release_v2):
+        source = PublishSourceEnum.CLI_SYNC
+        ok, msg = _is_gateway_ok_for_releasing(fake_release_v2, source)
         assert ok is True
         assert msg == ""
 
@@ -70,20 +78,20 @@ class TestTriggerGatewayPublish:
         assert release_history.gateway.pk == fake_release.gateway_id
         assert release_history.stage.pk == fake_release.stage_id
 
-    def test__trigger_rolling_publish(self, fake_shared_gateway, fake_release):
+    def test__trigger_rolling_publish(self, fake_shared_gateway, fake_release_v2):
         fake_shared_gateway.id = settings.DEFAULT_MICRO_GATEWAY_ID
         fake_shared_gateway.save()
         source = PublishSourceEnum.BACKEND_UPDATE
-        release_list = [fake_release]
+        release_list = [fake_release_v2]
         self.distributor.distribute.return_value = True, ""
         _trigger_rolling_publish(source, "test", release_list, True)
         self.distributor.distribute.assert_called()
 
-    def test__trigger_revoke_publish_for_disable_with_valid_release(self, fake_shared_gateway, fake_release):
+    def test__trigger_revoke_publish_for_disable_with_valid_release(self, fake_shared_gateway, fake_release_v2):
         fake_shared_gateway.id = settings.DEFAULT_MICRO_GATEWAY_ID
         fake_shared_gateway.save()
         source = PublishSourceEnum.GATEWAY_DISABLE
-        release_list = [fake_release]
+        release_list = [fake_release_v2]
         self.distributor.revoke.return_value = True, ""
         _trigger_revoke_publish_for_disable(source, "test", release_list, True)
         self.distributor.revoke.assert_called()
