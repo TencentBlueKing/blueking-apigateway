@@ -151,6 +151,12 @@ class BkIPRestrictionChecker(BaseChecker):
 
 
 class RequestValidationChecker(BaseChecker):
+    def _validate_json_schema(self, schema_name: str, json_schema: str):
+        try:
+            jsonschema.validate(instance=json_schema, schema=Draft7Schema)
+        except jsonschema.exceptions.ValidationError as err:
+            raise ValueError(f"Your {schema_name} Schema is not valid: {err}")
+
     def check(self, payload: str):
         loaded_data = yaml_loads(payload)
         if not loaded_data:
@@ -162,17 +168,11 @@ class RequestValidationChecker(BaseChecker):
         if not body_schema and not header_schema:
             raise ValueError("header_schema and body_schema must have a value")
 
-        def validate_json_schema(schema_name, json_schema, draft_schema):
-            try:
-                jsonschema.validate(instance=json_schema, schema=draft_schema)
-            except jsonschema.exceptions.ValidationError as err:
-                raise ValueError(f"Your {schema_name} Schema is not valid: {err}")
-
         if body_schema:
-            validate_json_schema("body_schema", body_schema, Draft7Schema)
+            self._validate_json_schema("body_schema", body_schema)
 
         if header_schema:
-            validate_json_schema("header_schema", header_schema, Draft7Schema)
+            self._validate_json_schema("header_schema", header_schema)
 
 
 class PluginConfigYamlChecker:
