@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { InfoBox } from 'bkui-vue';
+import mitt from '@/common/event-bus';
 
 export function useSidebar() {
   const { t } = useI18n();
@@ -32,6 +33,7 @@ export function useSidebar() {
           confirmText: t('离开'),
           cancelText: t('取消'),
           onConfirm() {
+            mitt.emit('on-leave-page-change', {});
             resolve(true);
             // isBackDialogShow.value = false;
           },
