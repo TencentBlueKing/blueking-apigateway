@@ -185,21 +185,24 @@ rejected_msg: foo""",
                 """header_schema: '{"aa": "bb"}'
 body_schema: '{"aa": "bb"}'
 rejected_code: 400
-rejected_msg: foo""",
+rejected_msg: foo
+""",
             ),
             (
                 '{"header_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": "foo"}',
                 """header_schema: '{"aa": "bb"}'
 body_schema: ''
 rejected_code: 400
-rejected_msg: foo""",
+rejected_msg: foo
+""",
             ),
             (
                 '{"body_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": "foo"}',
                 """header_schema: ''
 body_schema: '{"aa": "bb"}'
 rejected_code: 400
-rejected_msg: foo""",
+rejected_msg: foo
+""",
             ),
         ],
     )
