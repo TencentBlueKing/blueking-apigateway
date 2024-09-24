@@ -662,16 +662,18 @@
       </bk-row>
     </bk-container>
 
-    <!-- <template v-if="localData.proxy?.banckend_id"> -->
-    <div :class="{ 'container-diff': checkPluginsDiff() }" v-if="localData.plugins?.length">
-      <template v-for="plugin in localData.plugins" :key="plugin.id">
+    <!--  插件  -->
+    <div
+      v-if="props.diffData?.plugins && Object.keys(props.diffData.plugins).length"
+      :class="{ 'container-diff': checkPluginsDiff() }"
+    >
+      <template v-for="plugin in props.diffData.plugins" :key="plugin.id">
         <p class="title mt15" :class="{ 'ag-diff': checkPluginsDiff() }">
           {{ $t('插件:{name}', { name: plugin.name }) }}
         </p>
         <ConfigDisplayTable :plugin="plugin" first-col-width="auto" />
       </template>
     </div>
-    <!-- </template> -->
   </div>
 </template>
 
