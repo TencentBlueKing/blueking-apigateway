@@ -97,37 +97,37 @@ export default {
     GUIDE: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/README.md`,
 
     // “请求流水查询规则”
-    QUERY_USE: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/reference/log-search-specification.md`,
+    QUERY_USE: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/Explanation/access-log.md`,
 
     // 蓝鲸用户认证
-    USER_VERIFY: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/use-api/bk-user.md`,
+    USER_VERIFY: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/Explanation/authorization.md`,
 
     // API资源模板变量
-    TEMPLATE_VARS: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/reference/template-vars.md`,
+    TEMPLATE_VARS: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/Explanation/template-var.md`,
 
     // 网关认证
-    AUTH: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/reference/authorization.md`,
+    AUTH: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/Explanation/authorization.md`,
 
     // Swagger说明文档
-    SWAGGER: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/reference/swagger.md`,
+    SWAGGER: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/HowTo/Connect/swagger-explain.md`,
 
     // 跨域资源共享(CORS)
-    CORS: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/plugins/cors.md`,
+    CORS: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/HowTo/Plugins/cors.md`,
 
     // 断路器
-    BREAKER: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/plugins/circuit-breaker.md`,
+    BREAKER: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/HowTo/Plugins/circuit-breaker.md`,
 
     // 频率控制
-    RATELIMIT: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/plugins/rate-limit.md`,
+    RATELIMIT: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/HowTo/Plugins/rate-limit.md`,
 
     // JWT
-    JWT: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/reference/authorization.md`,
+    JWT: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/Explanation/jwt.md`,
 
     // 用户类型
-    USER_TYPE: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/reference/user-type.md`,
+    USER_TYPE: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/README.md`,
 
     // API网关错误码
-    ERROR_CODE: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/faq/error-codes.md`,
+    ERROR_CODE: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/FAQ/error-response.md`,
 
     // 组件频率控制
     COMPONENT_RATE_LIMIT: `${BK_DOCS_URL_PREFIX_MARKDOWN}/component/reference/rate-limit.md`,
@@ -136,13 +136,13 @@ export default {
     COMPONENT_CREATE_API: `${BK_DOCS_URL_PREFIX_MARKDOWN}/component/quickstart/create-api.md`,
 
     // 文档导入详情
-    IMPORT_RESOURCE_DOCS: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/howto/import-resource-docs.md`,
+    IMPORT_RESOURCE_DOCS: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/HowTo/Connect/manage-document.md`,
 
     // 实例类型
     INSTANCE_TYPE: `${BK_DOCS_URL_PREFIX_MARKDOWN}/`,
 
     // 调用API
-    USER_API: `${BK_DOCS_URL_PREFIX_MARKDOWN}/apigateway/use-api/use-apigw-api.md`,
+    USER_API: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/HowTo/call-gateway-api.md`,
 
     // 升级到 1.13 的指引说明
     UPGRADE_TO_113_TIP: '',
