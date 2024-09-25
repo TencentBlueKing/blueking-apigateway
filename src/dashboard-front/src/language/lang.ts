@@ -1532,6 +1532,7 @@ const lang: ILANG = {
   '请尽快更新，以避免插件、后端服务等信息在页面修改后但实际并未生效的问题。': ['Please update as soon as possible to avoid problems such as plug-ins and back-end services that do not take effect after the page changes.'],
   'API 网关在 2024-05-30 推出了 1.13 大版本更新。新版本中引入了后端服务，并将访问策略转换为插件形式，同时优化了环境、资源与插件之间的绑定关系。': ['API Gateway has released major version 1.13 update in 2024-05-30. The new version introduces back-end services, transforms access policies into plug-ins, and optimizes the binding relationships between environments, resources, and plug-ins.'],
   '老版本，未包含后端服务等信息，发布可能会导致数据不一致，谨慎使用': ['The release of the earlier version, which does not contain information such as back-end services, may result in data inconsistency'],
+  '老版本，未包含后端服务等信息，发布可能会导致数据不一致，请新建版本再发布': ['The release of the earlier version, which does not contain information such as back-end services, may result in data inconsistency, please generate new version'],
   '蓝鲸应用认证，用户认证': ['BlueKing app authentication, User Verified'],
   '确认回滚': ['Acknowledge rollback'],
   '发布后，将回滚至 {version} 版本': ['When published, it is rolled back to the {version} version'],
