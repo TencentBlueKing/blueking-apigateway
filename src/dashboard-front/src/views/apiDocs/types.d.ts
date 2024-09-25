@@ -1,5 +1,5 @@
 type TabType = 'apigw' | 'component';
-type LanguageType = 'python' | 'java';
+type LanguageType = 'python' | 'java' | 'golang';
 
 interface INavItem {
   id: number | string;

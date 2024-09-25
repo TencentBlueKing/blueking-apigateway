@@ -19,10 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ref,
-  toRefs,
-} from 'vue';
+import { toRefs } from 'vue';
 import { useChangeCase } from '@vueuse/integrations/useChangeCase';
 import { LanguageType } from '@/views/apiDocs/types';
 import { useI18n } from 'vue-i18n';
@@ -37,23 +34,30 @@ interface IProps {
   width: number;
   marginBottom: number;
   sdkLanguages: LanguageType[],
+  langList: LanguageType[],
 }
 
 const props = withDefaults(defineProps<IProps>(), {
   width: 150,  // 按钮宽度
   marginBottom: 24,
+  // 文档包含的sdk语言列表
   sdkLanguages: () => [
+    'python',
+    'java',
+  ],
+  // 可供选择的语言列表
+  langList: () => [
     'python',
     'java',
   ],
 });
 
-const { width, marginBottom, sdkLanguages } = toRefs(props);
-
-const langList = ref<LanguageType[]>([
-  'python',
-  'java',
-]);
+const {
+  width,
+  marginBottom,
+  sdkLanguages,
+  langList,
+} = toRefs(props);
 
 const emit = defineEmits<{
   'select': [language: LanguageType]
@@ -70,7 +74,3 @@ const handleSelect = (lang: LanguageType) => {
 };
 
 </script>
-
-<style scoped lang="scss">
-
-</style>

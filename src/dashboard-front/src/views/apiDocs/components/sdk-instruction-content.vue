@@ -5,6 +5,8 @@
       v-if="curTab === 'apigw'"
       v-model="language"
       :margin-bottom="0"
+      :sdk-languages="['python', 'java', 'golang']"
+      :lang-list="['python', 'java', 'golang']"
       @select="handleLangSelect"
     />
     <div v-else class="bk-button-group">
@@ -32,7 +34,7 @@ import {
 } from 'vue';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
-import 'highlight.js/styles/monokai-sublime.css';
+import 'highlight.js/styles/github.min.css';
 
 import { copy } from '@/common/util';
 
@@ -71,7 +73,7 @@ const md = new MarkdownIt({
   highlight(str: string, lang: string) {
     if (lang && hljs.getLanguage(lang)) {
       try {
-        return hljs.highlight(lang, str, true).value;
+        return hljs.highlight(str, { language: lang, ignoreIllegals: true }).value;
       } catch (__) {
       }
     }
@@ -356,21 +358,6 @@ $code-color: #63656e;
     .hljs {
       margin: -10px;
     }
-  }
-}
-
-:deep(.code-box) {
-  // 代码块高亮字体颜色
-  .hljs-string {
-    color: #ff9c01;
-  }
-
-  .hljs-keyword {
-    color: #ea3636;
-  }
-
-  .hljs-comment {
-    color: #c4c6cc;
   }
 }
 </style>
