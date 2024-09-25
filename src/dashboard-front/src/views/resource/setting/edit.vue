@@ -38,7 +38,7 @@
           </div>
         </template>
         <template #content>
-          <BackConfig ref="backConfigRef" :detail="resourceDetail"></BackConfig>
+          <BackConfig ref="backConfigRef" :detail="resourceDetail" @service-init="setupFormDataBack"></BackConfig>
         </template>
       </bk-collapse-panel>
     </bk-collapse>
@@ -167,17 +167,24 @@ const handleCancel = async () => {
   }
 };
 
-onMounted(async () => {
-  await init();
+// 设置离开界面时检查是否有修改过表单时用的数据
+// 页面加载完会默认执行一次，等 back-config 初始化数据之后会再执行一次，避免了错误判断表单是否已修改过的bug
+const setupFormDataBack = () => {
   formDataBack.value = {
     baseFormData: baseInfoRef.value?.formData,
     frontFormData: frontConfigRef.value?.frontConfigData,
     backFormData: backConfigRef.value?.backConfigData,
   };
-  mitt.emit('on-leave-page-change', formDataBack.value);
+
   nextTick(() => {
+    mitt.emit('on-leave-page-change', formDataBack.value);
     initSidebarFormData(formDataBack.value);
   });
+};
+
+onMounted(async () => {
+  await init();
+  setupFormDataBack();
 });
 </script>
 <style lang="scss" scoped>
