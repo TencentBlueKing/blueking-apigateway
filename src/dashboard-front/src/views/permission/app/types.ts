@@ -16,6 +16,7 @@ interface IFilterValues {
   id: number | string
   name: string
   values: FilterValue[]
+  type?: string
 }
 
 type FilterValue = { id: number | string, name: string };
