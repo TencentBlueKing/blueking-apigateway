@@ -1,3 +1,18 @@
+<!-- 2024-09-25 -->
+# V1.14.1 Release Log
+
+### Bug Fixes
+
+- Environment Overview: Resource plugin list merge takes too long
+- Fixed issue where a prompt dialog still appears after leaving a page with an edited form
+
+### Features
+
+- Prohibit selecting and publishing schema v1 resource versions
+- Standardize documentation center redirect links
+
+---
+
 <!-- 2024-09-13 -->
 # V1.14.0 Release Log
 
