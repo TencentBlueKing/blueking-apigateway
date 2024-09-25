@@ -4,7 +4,6 @@
   <bk-table
     :data="tableData"
     :columns="tableCols"
-    :thead="{ isShow: false }"
     v-bind="$attrs"
   />
 </template>
@@ -19,6 +18,7 @@ import {
   IBaseTableRow,
   IColumn,
   IPlugin,
+  ValueRenderType,
 } from '@/views/components/plugin-manage/types';
 import { useI18n } from 'vue-i18n';
 
@@ -29,6 +29,7 @@ interface IGenericConfig {
 interface IProps {
   plugin: IPlugin<IGenericConfig>
   firstColWidth: string
+  valueRender: ValueRenderType
 }
 
 const { t } = useI18n();
@@ -71,6 +72,7 @@ const tableCols = ref<IColumn[]>([
   {
     label: t('值'),
     field: 'value',
+    render: props.valueRender,
   },
 ]);
 
@@ -100,3 +102,11 @@ const tableData = computed(() => {
 });
 
 </script>
+
+<style lang="scss" scoped>
+:deep(.multi-line-table-cell-pre) {
+  line-height: 1.4 !important;
+  font: inherit;
+  color: inherit;
+}
+</style>
