@@ -25,7 +25,7 @@ from celery import shared_task
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
-from apigateway.controller.distributor.combine import CombineDistributor
+from apigateway.controller.distributor.etcd import EtcdDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
 from apigateway.core.constants import (
     PublishSourceEnum,
@@ -41,12 +41,10 @@ logger = logging.getLogger(__name__)
 @shared_task(ignore_result=True)
 def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
     """滚动同步微网关配置，不会生成新的版本"""
-
     release = Release.objects.get(id=release_id)
 
     is_cli_sync = publish_id is NO_NEED_REPORT_EVENT_PUBLISH_ID
     release_history = None if is_cli_sync else ReleaseHistory.objects.get(id=publish_id)
-
     # 事件上报要以 release 维度的 stage 来上报
     if release_history:
         release_history.stage = release.stage
@@ -54,14 +52,12 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
         wait_another_release_done(release_history)
 
     PublishEventReporter.report_create_publish_task_success(release_history)
-
     logger.info("rolling_update_release[gateway_id=%d] begin", gateway_id)
 
     shared_gateway = MicroGateway.objects.get_default_shared_gateway()
-    distributor = CombineDistributor()
+    distributor = EtcdDistributor(include_gateway_global_config=False)
 
     release_task_id = str(uuid.uuid4())
-
     procedure_logger = ReleaseProcedureLogger(
         "rolling_update_release",
         logger=logger,
@@ -73,8 +69,8 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
     )
 
     PublishEventReporter.report_distribute_config_doing(release_history)
-
     procedure_logger.info("distribute begin")
+
     is_success, err_msg = distributor.distribute(
         release,
         micro_gateway=shared_gateway,
@@ -86,7 +82,6 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
         if not is_cli_sync:
             PublishEventReporter.report_distribute_config_failure(release_history, err_msg)
         procedure_logger.info(msg)
-
     else:
         # 更新 release 的发布时间和发布人
         release.updated_time = now_datetime()
@@ -113,7 +108,7 @@ def revoke_release(release_id: int, publish_id: int):
 
     shared_gateway = MicroGateway.objects.get_default_shared_gateway()
 
-    distributor = CombineDistributor()
+    distributor = EtcdDistributor(include_gateway_global_config=False)
     if publish_id == DELETE_PUBLISH_ID:
         is_success, err_msg = distributor.revoke(release, shared_gateway, str(uuid.uuid4()), publish_id=publish_id)
         if not is_success:

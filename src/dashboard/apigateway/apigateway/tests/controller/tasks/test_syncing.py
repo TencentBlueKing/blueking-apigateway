@@ -29,7 +29,7 @@ class TestRollingUpdateRelease:
     @pytest.fixture(autouse=True)
     def setup(self, mocker):
         self.distributor = mocker.MagicMock()
-        mocker.patch("apigateway.controller.tasks.syncing.CombineDistributor", return_value=self.distributor)
+        mocker.patch("apigateway.controller.tasks.syncing.EtcdDistributor", return_value=self.distributor)
 
     def test_for_edge_gateway(self, edge_gateway, edge_release, micro_gateway):
         edge_micro_gateway = G(MicroGateway, is_shared=False)
@@ -69,7 +69,7 @@ class TestRevokeRelease:
     def test_revoke(self, mocker, fake_stage, fake_release, fake_release_history, micro_gateway):
         self.distributor = mocker.MagicMock()
         self.distributor.revoke.return_value = True, ""
-        mocker.patch("apigateway.controller.tasks.syncing.CombineDistributor", return_value=self.distributor)
+        mocker.patch("apigateway.controller.tasks.syncing.EtcdDistributor", return_value=self.distributor)
         mocker.patch(
             "apigateway.controller.tasks.syncing.ReleaseProcedureLogger",
             return_value=mocker.MagicMock(release_task_id="12345abcdef"),

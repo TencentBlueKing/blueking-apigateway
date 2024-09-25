@@ -32,7 +32,7 @@ class TestTriggerGatewayPublish:
     @pytest.fixture(autouse=True)
     def setup(self, mocker):
         self.distributor = mocker.MagicMock()
-        mocker.patch("apigateway.controller.tasks.syncing.CombineDistributor", return_value=self.distributor)
+        mocker.patch("apigateway.controller.tasks.syncing.EtcdDistributor", return_value=self.distributor)
 
     def test__is_gateway_ok_for_releasing_with_none_release(self):
         release = None

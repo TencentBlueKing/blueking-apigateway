@@ -34,8 +34,6 @@ from apigateway.core.models import Gateway, Release, ReleaseHistory
 
 logger = logging.getLogger(__name__)
 
-# FIXME: refactor here
-
 
 def _is_gateway_ok_for_releasing(release: Release, source: PublishSourceEnum) -> Tuple[bool, str]:
     """网关发布校验"""
@@ -97,7 +95,6 @@ def _trigger_rolling_publish(
         else:
             # 如果不是手动同步就需要生成发布历史
             release_history = _save_release_history(release, source, author)
-
             publish_id = release_history.pk
 
         # 发布 check

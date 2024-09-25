@@ -21,12 +21,12 @@ from django_dynamic_fixture import G
 
 from apigateway.biz.resource import ResourceHandler
 from apigateway.core import models
-from apigateway.core.constants import GatewayStatusEnum
+from apigateway.core.constants import GatewayStatusEnum, PublishEventNameTypeEnum, PublishEventStatusEnum
 
 pytestmark = pytest.mark.django_db
 
 
-class TestAPI:
+class TestGateway:
     @pytest.mark.parametrize(
         "status, is_public, expected",
         [
@@ -46,3 +46,32 @@ class TestResource:
         snapshot = ResourceHandler.snapshot(fake_resource, as_dict=True)
         assert snapshot
         assert isinstance(snapshot, dict)
+
+
+class TestPublishEvent:
+    @pytest.mark.parametrize(
+        "name, expected",
+        [
+            (PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value, False),
+            (PublishEventNameTypeEnum.LOAD_CONFIGURATION.value, True),
+        ],
+    )
+    def test_is_last(self, name, expected):
+        gateway = G(models.PublishEvent, name=name)
+        assert gateway.is_last == expected
+
+    @pytest.mark.parametrize(
+        "name, status, expected",
+        [
+            # doing
+            (PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value, PublishEventStatusEnum.DOING.value, True),
+            (PublishEventNameTypeEnum.LOAD_CONFIGURATION.value, PublishEventStatusEnum.DOING.value, True),
+            # not doing
+            (PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value, PublishEventStatusEnum.PENDING.value, False),
+            # not is_last and success
+            (PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value, PublishEventStatusEnum.SUCCESS.value, True),
+        ],
+    )
+    def test_is_running(self, name, status, expected):
+        gateway = G(models.PublishEvent, name=name, status=status)
+        assert gateway.is_running == expected
