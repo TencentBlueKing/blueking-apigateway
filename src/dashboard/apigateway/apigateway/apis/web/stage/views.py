@@ -28,7 +28,7 @@ from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.common.release.publish import trigger_gateway_publish
+from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import BackendConfig, Stage
 from apigateway.utils.django import get_model_dict

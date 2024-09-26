@@ -51,7 +51,7 @@ class PublishEventReporter:
         )
 
     @classmethod
-    def report_config_validate_doing_event(cls, publish: Optional[ReleaseHistory]):
+    def report_config_validate_doing(cls, publish: Optional[ReleaseHistory]):
         """
         dashboard 配置参数校验事件上报
         """
@@ -62,7 +62,7 @@ class PublishEventReporter:
         cls._report_event(publish, name, status, detail)
 
     @classmethod
-    def report_config_validate_success_event(cls, publish: Optional[ReleaseHistory]):
+    def report_config_validate_success(cls, publish: Optional[ReleaseHistory]):
         """
         dashboard 配置参数校验成功事件上报
         """
@@ -73,7 +73,7 @@ class PublishEventReporter:
         cls._report_event(publish, name, status, detail)
 
     @classmethod
-    def report_config_validate_fail_event(cls, publish: Optional[ReleaseHistory], msg: str):
+    def report_config_validate_failure(cls, publish: Optional[ReleaseHistory], msg: str):
         """
         dashboard 配置参数校验失败事件上报
         """
@@ -86,7 +86,7 @@ class PublishEventReporter:
         cls._report_event(publish, name, status, detail)
 
     @classmethod
-    def report_create_publish_task_doing_event(cls, publish: Optional[ReleaseHistory]):
+    def report_create_publish_task_doing(cls, publish: Optional[ReleaseHistory]):
         """
         dashboard 创建发布任务事件上报
         """
@@ -97,7 +97,7 @@ class PublishEventReporter:
         cls._report_event(publish, name, status, detail)
 
     @classmethod
-    def report_create_publish_task_success_event(cls, publish: Optional[ReleaseHistory]):
+    def report_create_publish_task_success(cls, publish: Optional[ReleaseHistory]):
         """
         dashboard 创建发布任务成功事件上报
         """
@@ -108,7 +108,7 @@ class PublishEventReporter:
         cls._report_event(publish, name, status, detail)
 
     @classmethod
-    def report_distribute_configuration_doing_event(cls, publish: Optional[ReleaseHistory]):
+    def report_distribute_config_doing(cls, publish: Optional[ReleaseHistory]):
         """
         dashboard 下发配置执行事件上报
         """
@@ -119,7 +119,7 @@ class PublishEventReporter:
         cls._report_event(publish, name, status, detail)
 
     @classmethod
-    def report_distribute_configuration_success_event(cls, publish: Optional[ReleaseHistory]):
+    def report_distribute_config_success(cls, publish: Optional[ReleaseHistory]):
         """
         dashboard 下发配置成功事件上报
         """
@@ -130,7 +130,7 @@ class PublishEventReporter:
         cls._report_event(publish, name, status, detail)
 
     @classmethod
-    def report_distribute_configuration_failure_event(cls, publish: Optional[ReleaseHistory], msg: str):
+    def report_distribute_config_failure(cls, publish: Optional[ReleaseHistory], msg: str):
         """
         dashboard 下发配置失败事件上报
         """

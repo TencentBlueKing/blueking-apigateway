@@ -21,7 +21,7 @@ from typing import List, Optional
 
 from django.core.management.base import BaseCommand, CommandError
 
-from apigateway.common.release import publish
+from apigateway.controller.publisher import publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
 

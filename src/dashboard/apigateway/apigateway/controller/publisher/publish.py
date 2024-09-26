@@ -95,18 +95,17 @@ def _trigger_rolling_publish(
         else:
             # 如果不是手动同步就需要生成发布历史
             release_history = _save_release_history(release, source, author)
-
             publish_id = release_history.pk
 
         # 发布 check
         ok, msg = _is_gateway_ok_for_releasing(release, source)
         if not ok:
             logger.warning(msg)
-            PublishEventReporter.report_config_validate_fail_event(release_history, msg)
+            PublishEventReporter.report_config_validate_failure(release_history, msg)
             continue
 
-        PublishEventReporter.report_config_validate_success_event(release_history)
-        PublishEventReporter.report_create_publish_task_doing_event(release_history)
+        PublishEventReporter.report_config_validate_success(release_history)
+        PublishEventReporter.report_create_publish_task_doing(release_history)
 
         # 开始发布
         if is_sync:
@@ -138,11 +137,11 @@ def _trigger_revoke_publish_for_disable(
         # 上报发布配置校验事件
         if not ok:
             logging.warning(msg)
-            PublishEventReporter.report_config_validate_fail_event(release_history, msg)
+            PublishEventReporter.report_config_validate_failure(release_history, msg)
             continue
 
-        PublishEventReporter.report_config_validate_success_event(release_history)
-        PublishEventReporter.report_create_publish_task_doing_event(release_history)
+        PublishEventReporter.report_config_validate_success(release_history)
+        PublishEventReporter.report_create_publish_task_doing(release_history)
 
         # 开始发布
         if is_sync:

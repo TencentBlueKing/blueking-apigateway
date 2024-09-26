@@ -35,7 +35,6 @@ from apigateway.controller.crds.v1beta1.convertors.plugin_metadata import Plugin
 from apigateway.controller.crds.v1beta1.convertors.resource import HttpResourceConvertor
 from apigateway.controller.crds.v1beta1.convertors.service import ServiceConvertor
 from apigateway.controller.crds.v1beta1.convertors.stage import StageConvertor
-from apigateway.controller.registry.dict import DictRegistry
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import MicroGateway, Proxy, Release, ResourceVersion
 from apigateway.utils.yaml import yaml_dumps
@@ -321,19 +320,6 @@ def resource_type():
 @fixture
 def fake_custom_resource(faker, resource_type):
     return resource_type(metadata={"name": faker.pystr()}, value=faker.pystr())
-
-
-@fixture
-def dict_registry():
-    return DictRegistry(namespace="")
-
-
-@fixture
-def mock_etcd_registry(mocker):
-    registry = DictRegistry(namespace="")
-    mocker.patch("apigateway.controller.registry.etcd.EtcdRegistry", return_value=registry)
-
-    return registry
 
 
 @pytest.fixture

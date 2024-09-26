@@ -35,8 +35,8 @@ from apigateway.apps.plugin.constants import (
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 from apigateway.biz.audit import Auditor
 from apigateway.common.error_codes import error_codes
-from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.common.renderers import BkStandardApiJSONRenderer
+from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Resource, Stage
 from apigateway.utils.django import get_model_dict

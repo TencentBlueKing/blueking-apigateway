@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 import json
 import logging
 import uuid
+from datetime import datetime
 from typing import List
 
 from django.db import models
@@ -30,6 +31,7 @@ from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin
 from apigateway.core import managers
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
+    EVENT_FAIL_INTERVAL_TIME,
     RESOURCE_METHOD_CHOICES,
     APIHostingTypeEnum,
     BackendTypeEnum,
@@ -42,6 +44,7 @@ from apigateway.core.constants import (
     PublishEventNameTypeEnum,
     PublishEventStatusEnum,
     PublishSourceEnum,
+    ReleaseHistoryStatusEnum,
     ReleaseStatusEnum,
     ResourceVersionSchemaEnum,
     StageStatusEnum,
@@ -609,6 +612,41 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
     @property
     def is_last(self):
         return self.name == PublishEventNameTypeEnum.LOAD_CONFIGURATION.value
+
+    @property
+    def is_running(self):
+        """通过最新的一个 event 判断当前发布是否还在继续执行"""
+
+        # 如果不是最后一个事件，如果是 success 的话说明也是 running
+        return self.status == PublishEventStatusEnum.DOING.value or (
+            self.status == PublishEventStatusEnum.SUCCESS.value and not self.is_last
+        )
+
+    def get_release_history_status(self):
+        """通过 end event 来返回 release_history 状态"""
+        # 如果状态是 Doing 并且该状态已经过去了 10min，这种也认失败
+        now = datetime.now().timestamp()
+        if self.status == PublishEventStatusEnum.DOING.value and now - self.created_time.timestamp() > 600:
+            return ReleaseHistoryStatusEnum.FAILURE.value
+
+        # 如果是成功但不是最后一个节点并且该状态已经过去了 10min，这种也认失败
+        if (
+            self.status == PublishEventStatusEnum.SUCCESS.value and not self.is_last
+        ) and now - self.created_time.timestamp() > EVENT_FAIL_INTERVAL_TIME:
+            return ReleaseHistoryStatusEnum.FAILURE.value
+
+        # 如果还在执行中
+        if self.is_running:
+            return ReleaseHistoryStatusEnum.DOING.value
+
+        # 如已经结束
+        if self.status == PublishEventStatusEnum.SUCCESS.value:
+            return ReleaseHistoryStatusEnum.SUCCESS.value
+
+        if self.status == PublishEventStatusEnum.FAILURE.value:
+            return ReleaseHistoryStatusEnum.FAILURE.value
+
+        return ReleaseHistoryStatusEnum.DOING.value
 
     def __str__(self):
         return f"<PublishEvent: {self.gateway_id}/{self.stage_id}/{self.publish_id}/{self.name}>/{self.status}"

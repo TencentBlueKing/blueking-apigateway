@@ -33,7 +33,7 @@ from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.user_credentials import get_user_credentials_from_request
-from apigateway.core.models import Release, ReleaseHistory
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory
 from apigateway.utils import openapi
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
@@ -186,7 +186,7 @@ class ReleaseCreateApi(generics.CreateAPIView):
         slz = ReleaseHistoryOutputSLZ(
             history,
             context={
-                "release_history_events_map": ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
+                "release_history_events_map": PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
                     [history.id]
                 ),
             },
@@ -231,7 +231,7 @@ class ReleaseHistoryListApi(generics.ListAPIView):
             page,
             many=True,
             context={
-                "release_history_events_map": ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
+                "release_history_events_map": PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
                     [release_history.id for release_history in page]
                 ),
             },
@@ -264,7 +264,7 @@ class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
         slz = slz_class(
             instance,
             context={
-                "release_history_events_map": ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
+                "release_history_events_map": PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
                     [instance.id]
                 ),
             },
@@ -293,7 +293,7 @@ class RelishHistoryEventsRetrieveAPI(generics.RetrieveAPIView):
             release_history,
             context={
                 "release_history_events": ReleaseHandler.list_publish_events_by_release_history_id(release_history.id),
-                "release_history_events_map": ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
+                "release_history_events_map": PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
                     [release_history.id]
                 ),
             },

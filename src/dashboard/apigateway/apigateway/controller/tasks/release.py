@@ -1,6 +1,6 @@
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -22,9 +22,7 @@ from datetime import datetime
 from celery import shared_task
 
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
-from apigateway.biz.constants import RELEASE_GATEWAY_INTERVAL_SECOND
-from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.released_resource import ReleasedResourceHandler
+from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.etcd import EtcdDistributor
@@ -33,6 +31,7 @@ from apigateway.core.constants import ReleaseHistoryStatusEnum, ReleaseStatusEnu
 from apigateway.core.models import (
     MicroGateway,
     MicroGatewayReleaseHistory,
+    PublishEvent,
     Release,
     ReleasedResource,
     ReleaseHistory,
@@ -60,10 +59,8 @@ def _release_gateway(
     # 表明发布已开始
     release_history_qs.update(status=ReleaseStatusEnum.RELEASING.value)
     # add publish event
-    PublishEventReporter.report_create_publish_task_success_event(latest_micro_gateway_release_history.release_history)
-    PublishEventReporter.report_distribute_configuration_doing_event(
-        latest_micro_gateway_release_history.release_history
-    )
+    PublishEventReporter.report_create_publish_task_success(latest_micro_gateway_release_history.release_history)
+    PublishEventReporter.report_distribute_config_doing(latest_micro_gateway_release_history.release_history)
     try:
         is_success, fail_msg = distributor.distribute(
             release=release,
@@ -72,12 +69,12 @@ def _release_gateway(
             publish_id=latest_micro_gateway_release_history.release_history_id,
         )
         if is_success:
-            PublishEventReporter.report_distribute_configuration_success_event(
+            PublishEventReporter.report_distribute_config_success(
                 latest_micro_gateway_release_history.release_history,
             )
 
         else:
-            PublishEventReporter.report_distribute_configuration_failure_event(
+            PublishEventReporter.report_distribute_config_failure(
                 latest_micro_gateway_release_history.release_history, fail_msg
             )
             return False
@@ -85,7 +82,7 @@ def _release_gateway(
         # 记录失败原因
         procedure_logger.exception("release failed")
         # 上报失败事件
-        PublishEventReporter.report_distribute_configuration_failure_event(
+        PublishEventReporter.report_distribute_config_failure(
             latest_micro_gateway_release_history.release_history, f"error: {err}"
         )
         # 异常抛出，让 celery 停止编排
@@ -112,7 +109,7 @@ def release_gateway_by_registry(micro_gateway_id, micro_gateway_release_history_
         )
         return None
 
-    # 改成了延迟更新发布关联数据，这里的release数据需要用release_history相关的数据来获取
+    # 改成了延迟更新发布关联数据，这里的 release 数据需要用 release_history 相关的数据来获取
     release = Release.objects.get_or_create_release(
         gateway=release_history.gateway,
         stage=release_history.stage,
@@ -151,12 +148,12 @@ def update_release_data_after_success(
     发布后不断检查发布状态如果成功才更新相关数据
     """
 
-    # 检测发布状态,只有最终发布成功才更新
+    # 检测发布状态，只有最终发布成功才更新
     doing = True
     start_time = datetime.now().timestamp()
     wait_times = 0
     while doing:
-        # 如果等待时间超过10*RELEASE_GATEWAY_INTERVAL_SECOND就退出等待
+        # 如果等待时间超过 10*RELEASE_GATEWAY_INTERVAL_SECOND 就退出等待
         now = datetime.now().timestamp()
         if now - start_time > 10 * RELEASE_GATEWAY_INTERVAL_SECOND:
             logger.error(
@@ -168,7 +165,9 @@ def update_release_data_after_success(
 
         time.sleep(1 * wait_times)
         wait_times += 1
-        latest_release_event_map = ReleaseHandler.get_release_history_id_to_latest_publish_event_map([publish_id])
+        latest_release_event_map = PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
+            [publish_id]
+        )
         latest_event = latest_release_event_map.get(publish_id)
 
         if not latest_event:
@@ -178,7 +177,7 @@ def update_release_data_after_success(
             continue
 
         # 判断状态
-        publish_status = ReleaseHandler.get_status(latest_event)
+        publish_status = latest_event.get_release_history_status()
 
         if publish_status == ReleaseHistoryStatusEnum.SUCCESS.value:
             doing = False
@@ -219,7 +218,7 @@ def update_release_data_after_success(
 
     # update_and_clear_released_resources
     ReleasedResource.objects.save_released_resource(resource_version)
-    ReleasedResourceHandler.clear_unreleased_resource(release.gateway.id)
+    clear_unreleased_resource(release.gateway.id)
 
     # update_and_clear_released_resource_docs()
     resource_doc_version = ResourceDocVersion.objects.get_by_resource_version_id(
@@ -228,3 +227,11 @@ def update_release_data_after_success(
     )
     ReleasedResourceDoc.objects.save_released_resource_doc(resource_doc_version)
     ReleasedResourceDoc.objects.clear_unreleased_resource_doc(release.gateway.id)
+
+
+def clear_unreleased_resource(gateway_id: int) -> None:
+    """清理未发布的资源，如已发布版本被新版本替换的情况"""
+    resource_version_ids = Release.objects.get_released_resource_version_ids(gateway_id)
+    ReleasedResource.objects.filter(gateway_id=gateway_id).exclude(
+        resource_version_id__in=resource_version_ids
+    ).delete()
