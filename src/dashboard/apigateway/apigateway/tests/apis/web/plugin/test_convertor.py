@@ -19,6 +19,7 @@ import pytest
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.web.plugin.convertor import (
+    FaultInjectionYamlConvertor,
     IPRestrictionYamlConvertor,
     PluginConfigYamlConvertor,
     RateLimitYamlConvertor,
@@ -210,6 +211,99 @@ rejected_msg: foo
         convertor = RequestValidationYamlConvertor()
         result = convertor.to_representation(data)
         assert result == expected
+
+
+class TestFaultInjectionYamlConvertor:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                # 全部都有数据的情况
+                """{'abort': {'body': 'aaa', 'vars': ['[ "arg_name","==","jack" ]'], 'http_status': 200, 'percentage': 100}, 'delay': {'duration': '5', 'vars': ['[ "arg_name","==","jack" ]'], 'percentage': 100}}""",
+                """abort:
+  body: aaa
+  http_status: 200
+  percentage: 100
+  vars:
+  - - - arg_name
+      - ==
+      - jack
+delay:
+  duration: 5.0
+  percentage: 100
+  vars:
+  - - - arg_name
+      - ==
+      - jack
+""",
+            ),
+            (
+                # delay 没有数据的时候，会不会直接没有这个的配置
+                """{'abort': {'body': 'aaa', 'vars': ['[ "arg_name","==","jack" ]'], 'http_status': 200, 'percentage': 100}, 'delay': {'duration': '', 'vars': []}}""",
+                """abort:
+  body: aaa
+  http_status: 200
+  percentage: 100
+  vars:
+  - - - arg_name
+      - ==
+      - jack
+""",
+            ),
+            (
+                # abort 没有数据的时候
+                """{'abort': {'body': '', 'vars': []}, 'delay': {'duration': '5', 'vars': ['[ "arg_name","==","jack" ]'], 'percentage': 100}}""",
+                """delay:
+  duration: 5.0
+  percentage: 100
+  vars:
+  - - - arg_name
+      - ==
+      - jack
+""",
+            ),
+        ],
+    )
+    def test_to_internal_value(self, data, expected):
+        convertor = FaultInjectionYamlConvertor()
+        result = convertor.to_internal_value(data)
+        assert result == expected
+
+
+#     @pytest.mark.parametrize(
+#         "data, expected",
+#         [
+#             (
+#                 '{"header_schema": {"aa": "bb"}, "body_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": '
+#                 '"foo"}',
+#                 """header_schema: '{"aa": "bb"}'
+# body_schema: '{"aa": "bb"}'
+# rejected_code: 400
+# rejected_msg: foo
+# """,
+#             ),
+#             (
+#                 '{"header_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": "foo"}',
+#                 """header_schema: '{"aa": "bb"}'
+# body_schema: ''
+# rejected_code: 400
+# rejected_msg: foo
+# """,
+#             ),
+#             (
+#                 '{"body_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": "foo"}',
+#                 """header_schema: ''
+# body_schema: '{"aa": "bb"}'
+# rejected_code: 400
+# rejected_msg: foo
+# """,
+#             ),
+#         ],
+#     )
+#     def test_to_representation(self, data, expected):
+#         convertor = RequestValidationYamlConvertor()
+#         result = convertor.to_representation(data)
+#         assert result == expected
 
 
 class TestPluginConfigYamlConvertor:

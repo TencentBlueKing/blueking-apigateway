@@ -33,6 +33,7 @@ class PluginTypeCodeEnum(StructuredEnum):
     BK_MOCK = EnumField("bk-mock", label=_("mocking 插件"))
     API_BREAKER = EnumField("api-breaker", label=_("API 熔断"))
     REQUEST_VALIDATION = EnumField("request-validation", label=_("请求校验"))
+    FAULT_INJECTION = EnumField("fault-injection", label=_("故障注入"))
 
 
 class PluginTypeScopeEnum(StructuredEnum):
@@ -133,3 +134,7 @@ Draft7Schema = {
     },
     "default": True,
 }
+
+VARS_ALLOWED_COMPARISON_SYMBOLS = {"==", "~=", ">", ">=", "<", "<=", "~~", "~*", "in", "has", "!", "ipmatch"}
+
+VARS_ALLOWED_LOGICAL_SYMBOLS = {"AND", "OR", "!AND", "!OR"}

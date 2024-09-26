@@ -22,6 +22,7 @@ import pytest
 from apigateway.common.plugin.plugin_checkers import (
     BkCorsChecker,
     BkIPRestrictionChecker,
+    FaultInjectionChecker,
     HeaderRewriteChecker,
     PluginConfigYamlChecker,
     RequestValidationChecker,
@@ -395,5 +396,195 @@ class TestRequestValidationChecker:
     )
     def test_check(self, data, ctx):
         checker = RequestValidationChecker()
+        with ctx:
+            checker.check(yaml_dumps(data))
+
+
+class TestFaultInjectionChecker:
+    @pytest.mark.parametrize(
+        "data, ctx",
+        [
+            (
+                {
+                    "abort": {
+                        "body": "aaa",
+                        "vars": [[["arg_name", "==", "jack"]]],
+                        "http_status": 200,
+                        "percentage": 100,
+                    },
+                    "delay": {"duration": 5.0, "vars": [[["arg_name", "==", "jack"]]], "percentage": 100},
+                },
+                # 不报错的情况
+                does_not_raise(),
+            ),
+            (
+                {
+                    "abort": {
+                        "body": "aaa",
+                        "vars": [[["arg_name", "1=", "jack"]]],
+                        "http_status": 200,
+                        "percentage": 100,
+                    },
+                    "delay": {"duration": 5.0, "vars": [[["arg_name", "==", "jack"]]], "percentage": 100},
+                },
+                # abort的vars的 1= 符号报错
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "abort": {
+                        "body": "aaa",
+                        "vars": [[["arg_name", "==", "jack"]]],
+                        "http_status": 100,
+                        "percentage": 100,
+                    },
+                    "delay": {"duration": 5.0, "vars": [[["arg_name", "==", "jack"]]], "percentage": 100},
+                },
+                # abort的http_status 状态码小于200报错
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "abort": {
+                        "body": "aaa",
+                        "vars": [[["arg_name", "==", "jack"]]],
+                        "http_status": 200,
+                        "percentage": 101,
+                    },
+                    "delay": {"duration": 5.0, "vars": [[["arg_name", "==", "jack"]]], "percentage": 100},
+                },
+                # abort的percentage 中断百分比不能大于100或者小于0
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "abort": {
+                        "body": "aaa",
+                        "vars": [[["arg_name", "==", "jack"]]],
+                        "http_status": 200,
+                        "percentage": 100,
+                    },
+                    "delay": {"duration": 5.0, "vars": [[["arg_name", "1=", "jack"]]], "percentage": 100},
+                },
+                # delay的 vars 的 1= 符号不属于比较符号符里
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "abort": {
+                        "body": "aaa",
+                        "vars": [[["arg_name", "==", "jack"]]],
+                        "http_status": 200,
+                        "percentage": 100,
+                    },
+                    "delay": {"duration": 5.0, "vars": [[["arg_name", "==", "jack"]]], "percentage": 101},
+                },
+                # delay 的 percentage 不能大于100或者小于0
+                pytest.raises(ValueError),
+            ),
+            # (
+            #     {
+            #         "abort": {
+            #             "body": "aaa",
+            #             "vars": [
+            #                 [
+            #                     [
+            #                         "AND",
+            #                         ["arg_version", "==", "v2"],
+            #                         ["OR", ["arg_action", "==", "signup"], ["arg_action", "==", "subscribe"]],
+            #                     ],
+            #                 ]
+            #             ],
+            #             "http_status": 200,
+            #             "percentage": 100,
+            #         }
+            #     },
+            #     # 不报错的情况(有逻辑运算符的情况)
+            #     does_not_raise(),
+            # ),
+            # (
+            #     {
+            #         "abort": {
+            #             "body": "aaa",
+            #             "vars": [
+            #                 [
+            #                     "AAD",  # 这里报错
+            #                     ["arg_version", "==", "v2"],
+            #                     ["OR", ["arg_action", "==", "signup"], ["arg_action", "==", "subscribe"]],
+            #                 ]
+            #             ],
+            #             "http_status": 200,
+            #             "percentage": 100,
+            #         }
+            #     },
+            #     pytest.raises(ValueError),
+            # ),
+            # (
+            #     {
+            #         "abort": {
+            #             "body": "aaa",
+            #             "vars": [
+            #                 [
+            #                     "AND",
+            #                     ["arg_version", "==", "v2"],
+            #                     [
+            #                         "OO",
+            #                         ["arg_action", "==", "signup"],
+            #                         ["arg_action", "==", "subscribe"],
+            #                     ],  # OO报错，不在逻辑运算符中
+            #                 ]
+            #             ],
+            #             "http_status": 200,
+            #             "percentage": 100,
+            #         }
+            #     },
+            #     pytest.raises(ValueError),
+            # ),
+            (
+                {
+                    "abort": {
+                        "body": "aaa",
+                        "vars": [[["arg_height", "!", ">", 15]]],
+                        "http_status": 200,
+                        "percentage": 100,
+                    }
+                },
+                # 不报错的情况(数组里面有4个的数据的情况)
+                does_not_raise(),
+            ),
+            (
+                {
+                    "abort": {
+                        "body": "aaa",
+                        "vars": [
+                            [
+                                ["arg_height", "a", ">", 15]  # 第二位的 a 不是比较运算符
+                            ]
+                        ],
+                        "http_status": 200,
+                        "percentage": 100,
+                    }
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "abort": {
+                        "body": "aaa",
+                        "vars": [
+                            [
+                                ["arg_height", "!", "b", 15]  # 第三位的 b 不是逻辑运算符
+                            ]
+                        ],
+                        "http_status": 200,
+                        "percentage": 100,
+                    }
+                },
+                pytest.raises(ValueError),
+            ),
+        ],
+    )
+    def test_check(self, data, ctx):
+        checker = FaultInjectionChecker()
         with ctx:
             checker.check(yaml_dumps(data))
