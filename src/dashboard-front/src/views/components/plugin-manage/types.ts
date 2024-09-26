@@ -14,6 +14,7 @@ interface IColumn<T = IBaseTableRow> {
   align?: string
   rowspan?: ({ row }: { row: T }) => number
   index?: number
+  render?: ValueRenderType
 }
 
 interface IBaseTableRow {
@@ -22,8 +23,11 @@ interface IBaseTableRow {
   rowSpan?: number
 }
 
+type ValueRenderType<T = IBaseTableRow> = () => (props: { row: T }) => unknown;
+
 export {
   IPlugin,
   IColumn,
   IBaseTableRow,
+  ValueRenderType,
 };

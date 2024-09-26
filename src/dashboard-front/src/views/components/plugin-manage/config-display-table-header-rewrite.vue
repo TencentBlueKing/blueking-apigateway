@@ -4,7 +4,6 @@
   <bk-table
     :data="tableData"
     :columns="tableCols"
-    :thead="{ isShow: false }"
     v-bind="$attrs"
   />
 </template>
