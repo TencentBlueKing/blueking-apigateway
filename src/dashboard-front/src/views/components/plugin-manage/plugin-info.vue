@@ -49,7 +49,7 @@
             </ul>
           </div>
           <div class="cur-describe">
-            {{ curPluginInfo?.notes }}
+            {{ curPluginInfo?.notes || infoNotes }}
           </div>
         </main>
         <aside class="plugin-example-btn" @click="toggleShowExample">{{ t('查看填写示例') }}</aside>
