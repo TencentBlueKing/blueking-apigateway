@@ -246,6 +246,43 @@ def fake_resource(faker, fake_gateway, fake_backend):
 
 
 @pytest.fixture
+def fake_resource_echo(faker, fake_gateway, fake_backend):
+    resource = G(
+        Resource,
+        gateway=fake_gateway,
+        name="echo",
+        method="GET",
+        path="/echo",
+    )
+    ResourceHandler.save_auth_config(
+        resource.id,
+        {
+            "skip_auth_verification": False,
+            "auth_verified_required": True,
+            "app_verified_required": True,
+            "resource_perm_required": True,
+        },
+    )
+    G(
+        Proxy,
+        type=ProxyTypeEnum.HTTP.value,
+        resource=resource,
+        backend=fake_backend,
+        _config=json.dumps(
+            {
+                "method": faker.http_method(),
+                "path": faker.uri_path(),
+                "match_subpath": False,
+                "timeout": faker.random_int(),
+            }
+        ),
+        schema=SchemaFactory().get_proxy_schema(ProxyTypeEnum.HTTP.value),
+    )
+
+    return resource
+
+
+@pytest.fixture
 def fake_resource1(faker, fake_resource):
     resource = deepcopy(fake_resource)
     resource.pk = None
@@ -972,7 +1009,27 @@ def fake_resource_swagger():
                             },
                         },
                     },
-                }
+                },
+                "/echo": {
+                    "get": {
+                        "operationId": "echo",
+                        "description": "test",
+                        "tags": ["pet"],
+                        "schemes": ["http"],
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "allowApplyPermission": True,
+                            "matchSubpath": True,
+                            "backend": {
+                                "name": "default",
+                                "path": "/hello/2",
+                                "method": "get",
+                                "matchSubpath": True,
+                                "timeout": 30,
+                            },
+                        },
+                    },
+                },
             },
         }
     )

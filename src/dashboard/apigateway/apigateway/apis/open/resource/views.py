@@ -54,7 +54,11 @@ class ResourceSyncApi(generics.CreateAPIView):
         slz.is_valid(raise_exception=True)
 
         try:
-            openapi_manager = OpenAPIImportManager.load_from_content(request.gateway, slz.validated_data["content"])
+            openapi_manager = OpenAPIImportManager.load_from_content(
+                request.gateway,
+                slz.validated_data["content"],
+                need_delete_unspecified_resources=slz.validated_data["delete"],
+            )
         except Exception as err:
             raise serializers.ValidationError(
                 {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)}
@@ -75,6 +79,8 @@ class ResourceSyncApi(generics.CreateAPIView):
             gateway=request.gateway,
             resources=openapi_manager.get_resource_list(),
             username=request.user.username,
+            selected_resources=None,
+            need_delete_unspecified_resources=slz.validated_data["delete"],
         )
         importer.import_resources()
 
