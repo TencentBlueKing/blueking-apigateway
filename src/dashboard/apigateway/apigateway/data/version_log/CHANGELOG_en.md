@@ -1,3 +1,13 @@
+<!-- 2024-09-26 -->
+# V1.14.2 Release Log
+
+### Bug Fixes
+
+- Fixed incorrect official documentation link for resource import
+- Added support for delete operation in OpenAPI resource synchronization
+
+---
+
 <!-- 2024-09-25 -->
 # V1.14.1 Release Log
 
