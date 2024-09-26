@@ -18,9 +18,14 @@
 #
 import os
 
+import pymysql
 from tencent_apigateway_common.env import Env
 
 from conf.log_utils import get_logging_config, makedirs_when_not_exists
+
+pymysql.install_as_MySQLdb()
+# Patch version info to forcedly pass Django client check
+pymysql.version_info = 1, 4, 2, "final", 0
 
 env = Env()
 
