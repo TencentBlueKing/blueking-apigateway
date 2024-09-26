@@ -207,6 +207,9 @@ const props = defineProps({
   },
 });
 
+// 获取到服务数据后抛出一个事件
+const emit = defineEmits(['service-init']);
+
 const backRef = ref(null);
 const frontPath = ref('');
 const { t } = useI18n();
@@ -243,6 +246,7 @@ const timeInputRef = ref(null)
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
 const addBackendServiceRef = ref(null);
+const isServiceInit = ref(false);
 
 const rules = {
   'config.path': [
@@ -432,6 +436,11 @@ const handleServiceChange = async (backendId: number) => {
     }
     [servicesConfigs.value, servicesConfigsStorage.value] = [cloneDeep(res.configs || []), cloneDeep(resStorage.configs || [])];
     backConfigData.value.name = res.name;
+    // 第一次加载服务数据后，抛出事件
+    if (!isServiceInit.value) {
+      emit('service-init');
+      isServiceInit.value = true;
+    }
   } catch {
     console.log("=>(back-config.vue:415) handleServiceChange error");
   }
