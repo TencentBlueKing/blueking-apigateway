@@ -25,6 +25,8 @@ class TestResourceSyncApi:
         fake_gateway,
         fake_default_backend,
         fake_resource_swagger,
+        fake_resource,
+        fake_resource_echo,
         ignore_related_app_permission,
     ):
         resp = request_view(
@@ -42,6 +44,8 @@ class TestResourceSyncApi:
         assert resp.status_code == 200
         assert result["code"] == 0
         assert len(result["data"]["added"]) == 1
+        assert len(result["data"]["deleted"]) == 1
+        assert len(result["data"]["updated"]) == 1
 
     def test_sync_with_err_swagger(
         self,

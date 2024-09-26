@@ -46,16 +46,19 @@ class OpenAPIImportManager:
     资源配置导入manager
     """
 
-    def __init__(self, gateway: Gateway, data: Dict[str, Any]):
+    def __init__(self, gateway: Gateway, data: Dict[str, Any], need_delete_unspecified_resources=False):
         self.version = None
         self.data = data
         self.gateway = gateway
         self._raw_resource_list: List[Dict[str, Any]] = []
         self._resource_list: List[ResourceData] = []
         self.parser = None
+        self.need_delete_unspecified_resources = need_delete_unspecified_resources
 
     @classmethod
-    def load_from_content(cls, gateway: Gateway, content: str) -> "OpenAPIImportManager":
+    def load_from_content(
+        cls, gateway: Gateway, content: str, need_delete_unspecified_resources=False
+    ) -> "OpenAPIImportManager":
         content_format = cls.guess_content_format(content)
         # 显式地为 loads_func 提供一个类型注解
         loads_func: Callable[[str], Dict[str, Any]] = yaml_loads
@@ -66,6 +69,7 @@ class OpenAPIImportManager:
         return cls(
             gateway=gateway,
             data=loads_func(content),
+            need_delete_unspecified_resources=need_delete_unspecified_resources,
         )
 
     @classmethod
@@ -111,7 +115,7 @@ class OpenAPIImportManager:
         validator = ResourceImportValidator(
             gateway=self.gateway,
             resource_data_list=self._resource_list,
-            need_delete_unspecified_resources=False,
+            need_delete_unspecified_resources=self.need_delete_unspecified_resources,
         )
 
         return validator.validate()
