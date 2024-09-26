@@ -28,7 +28,7 @@
           </ul>
         </div>
         <div class="cur-describe">
-          {{ curPluginInfo?.notes }}
+          {{ curPluginInfo?.notes || infoNotes }}
         </div>
       </div>
       <div class="choose-plugin" v-show="isAdd" @click="showChoosePlugin = !showChoosePlugin">
