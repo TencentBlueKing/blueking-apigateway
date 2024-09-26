@@ -434,6 +434,11 @@ def fake_release(fake_gateway, fake_stage, fake_resource_version):
 
 
 @pytest.fixture
+def fake_release_v2(fake_gateway, fake_stage, fake_resource_version_v2):
+    return G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version_v2)
+
+
+@pytest.fixture
 def fake_release_history(fake_gateway, fake_stage, fake_resource_version):
     return G(
         ReleaseHistory,
