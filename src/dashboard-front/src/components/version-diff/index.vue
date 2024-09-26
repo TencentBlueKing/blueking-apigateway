@@ -529,12 +529,12 @@ const handleClear = () => {
   searchKeyword.value = '';
 };
 
-const handleSwitch = () => {
+const handleSwitch = async () => {
   [localSourceId.value, localTargetId.value] = [
     localTargetId.value,
     localSourceId.value,
   ];
-  getDiffData();
+  await getDiffData();
 };
 
 const checkMatch = (item: any, type: any) => {
@@ -606,31 +606,27 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.keyword = '';
 };
 
-const handleClearFilterKey = () => {
+const handleClearFilterKey = async () => {
   searchParams.keyword = '';
   searchParams.diffType = '';
   searchKeyword.value = '';
-  getDiffData();
+  await getDiffData();
   updateTableEmptyConfig();
 };
 
-const handleVersionChange = () => {
+const handleVersionChange = async () => {
   searchParams.keyword = '';
   searchParams.diffType = '';
   searchParams.onlyUpdated = false;
-
   searchKeyword.value = '';
-  getDiffData();
+  await getDiffData();
 };
 
 const getDiffData = async () => {
-  // if (!localSourceId.value) {
-  //   return false;
-  // }
-
-  if (isDataLoading.value) {
+  if (isDataLoading.value || !localSourceId.value) {
     return false;
   }
+
   isDataLoading.value = true;
 
   diffData.add = [];
@@ -763,12 +759,12 @@ const localTargetTriggerLabel = computed(() => {
 
 watch(
   () => [props.sourceId, props.targetId],
-  (newArr) => {
+  async (newArr) => {
     const [sourceId, targetId] = newArr;
     localSourceId.value = sourceId;
     localTargetId.value = targetId || 'current';
     isDataLoading.value = false;
-    getDiffData();
+    await getDiffData();
   },
 );
 
