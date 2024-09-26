@@ -663,15 +663,14 @@
     </bk-container>
 
     <!--  插件  -->
-    <div
-      v-if="props.diffData?.plugins && Object.keys(props.diffData.plugins).length"
-      :class="{ 'container-diff': checkPluginsDiff() }"
-    >
-      <template v-for="plugin in props.diffData.plugins" :key="plugin.id">
-        <p class="title mt15" :class="{ 'ag-diff': checkPluginsDiff() }">
-          {{ $t('插件:{name}', { name: plugin.name }) }}
-        </p>
-        <ConfigDisplayTable :plugin="plugin" first-col-width="auto" />
+    <div v-if="localData.plugins?.length">
+      <template v-for="plugin in localData.plugins" :key="plugin.id">
+        <div :class="{ 'container-diff': checkPluginDiff(plugin) }">
+          <p class="title mt15">
+            {{ $t('插件:{name}', { name: plugin.name }) }}
+          </p>
+          <ConfigDisplayTable :plugin="plugin" first-col-width="auto" />
+        </div>
       </template>
     </div>
   </div>
@@ -882,9 +881,11 @@ const checkDiff = (path: any) => {
 //   );
 // };
 
-const checkPluginsDiff = () => {
+const checkPluginDiff = (plugin: any) => {
+  // 检查传入的 plugin 是否记录在 diffMap 中
+  const diffMapPluginKey = `localData.plugins.${plugin.code || plugin.type}`;
   const keys = Object.keys(diffMap.value);
-  return keys.some(item => item.startsWith('localData.plugins'));
+  return keys.some(item => item.startsWith(diffMapPluginKey));
 };
 
 // 网关标签
