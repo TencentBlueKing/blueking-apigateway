@@ -29,6 +29,7 @@ class ResourceSyncOutputSLZ(serializers.Serializer):
 class ResourceImportInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     content = serializers.CharField(allow_blank=False, required=True, help_text="导入内容，yaml/json 格式字符串")
+    delete = serializers.BooleanField(required=False, default=False)
 
     class Meta:
         ref_name = "apis.open.resource.ResourceImportInputSLZ"
