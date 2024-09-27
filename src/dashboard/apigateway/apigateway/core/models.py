@@ -742,15 +742,8 @@ class MicroGateway(ConfigModelMixin):
         """微网关实例 ID"""
         return str(self.pk)
 
-    def query_related_gateways(self):
-        if not self.is_shared:
-            return Gateway.objects.filter(id=self.gateway_id)
 
-        return Gateway.objects.filter(
-            hosting_type=APIHostingTypeEnum.MICRO.value,
-        )
-
-
+# FIXME: remove this model
 class MicroGatewayReleaseHistory(models.Model):
     """微网关资源发布历史，不同于 ReleaseHistory，这里关注的是单个实例"""
 

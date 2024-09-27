@@ -20,7 +20,7 @@ import itertools
 import json
 import operator
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
 
 from cachetools import TTLCache, cached
 from django.conf import settings
@@ -393,11 +393,5 @@ class ContextManager(models.Manager):
 
 
 class MicroGatewayManager(models.Manager):
-    def get_id_to_fields(self, ids: Iterable[str]) -> Dict[str, Dict[str, Any]]:
-        if not ids:
-            return {}
-
-        return {item["id"]: item for item in self.filter(id__in=ids).values("id", "name")}
-
     def get_default_shared_gateway(self):
         return self.get(is_shared=True, id=settings.DEFAULT_MICRO_GATEWAY_ID)

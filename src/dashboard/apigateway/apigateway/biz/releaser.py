@@ -34,11 +34,10 @@ from apigateway.controller.tasks import (
     release_gateway_by_registry,
     update_release_data_after_success,
 )
-from apigateway.core.constants import PublishSourceEnum, ReleaseStatusEnum
+from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import (
     Gateway,
     MicroGateway,
-    MicroGatewayReleaseHistory,
     Release,
     ReleaseHistory,
     ResourceVersion,
@@ -177,15 +176,7 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
         if not shared_gateway:
             return None
 
-        history = MicroGatewayReleaseHistory.objects.create(
-            gateway=release.gateway,
-            stage=release.stage,
-            micro_gateway=shared_gateway,
-            release_history=release_history,
-            status=ReleaseStatusEnum.RELEASING.value,
-        )
         return release_gateway_by_registry.si(
-            micro_gateway_release_history_id=history.pk,
             micro_gateway_id=shared_gateway.pk,
             publish_id=release_history.pk,
         )  # type: ignore

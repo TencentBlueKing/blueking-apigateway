@@ -27,10 +27,9 @@ from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.etcd import EtcdDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
-from apigateway.core.constants import ReleaseHistoryStatusEnum, ReleaseStatusEnum, StageStatusEnum
+from apigateway.core.constants import ReleaseHistoryStatusEnum, StageStatusEnum
 from apigateway.core.models import (
     MicroGateway,
-    MicroGatewayReleaseHistory,
     PublishEvent,
     Release,
     ReleasedResource,
@@ -45,46 +44,38 @@ logger = logging.getLogger(__name__)
 
 def _release_gateway(
     distributor: BaseDistributor,
-    micro_gateway_release_history_id: int,
     release: Release,
+    release_history: ReleaseHistory,
     micro_gateway: MicroGateway,
     procedure_logger: ReleaseProcedureLogger,
 ):
     """发布资源到微网关"""
     procedure_logger.info(
-        f"release begin, micro_gateway_release_history_id({micro_gateway_release_history_id})"  # noqa: G004
+        f"release begin, release_history_id ({release_history.id})"  # noqa: G004
     )
-    release_history_qs = MicroGatewayReleaseHistory.objects.filter(id=micro_gateway_release_history_id)
-    latest_micro_gateway_release_history = release_history_qs.last()
-    # 表明发布已开始
-    release_history_qs.update(status=ReleaseStatusEnum.RELEASING.value)
     # add publish event
-    PublishEventReporter.report_create_publish_task_success(latest_micro_gateway_release_history.release_history)
-    PublishEventReporter.report_distribute_config_doing(latest_micro_gateway_release_history.release_history)
+    PublishEventReporter.report_create_publish_task_success(release_history)
+    PublishEventReporter.report_distribute_config_doing(release_history)
     try:
         is_success, fail_msg = distributor.distribute(
             release=release,
             micro_gateway=micro_gateway,
             release_task_id=procedure_logger.release_task_id,
-            publish_id=latest_micro_gateway_release_history.release_history_id,
+            publish_id=release_history.id,
         )
         if is_success:
             PublishEventReporter.report_distribute_config_success(
-                latest_micro_gateway_release_history.release_history,
+                release_history,
             )
 
         else:
-            PublishEventReporter.report_distribute_config_failure(
-                latest_micro_gateway_release_history.release_history, fail_msg
-            )
+            PublishEventReporter.report_distribute_config_failure(release_history, fail_msg)
             return False
     except Exception as err:
         # 记录失败原因
         procedure_logger.exception("release failed")
         # 上报失败事件
-        PublishEventReporter.report_distribute_config_failure(
-            latest_micro_gateway_release_history.release_history, f"error: {err}"
-        )
+        PublishEventReporter.report_distribute_config_failure(release_history, f"error: {err}")
         # 异常抛出，让 celery 停止编排
         raise
 
@@ -92,7 +83,7 @@ def _release_gateway(
 
 
 @shared_task(ignore_result=True)
-def release_gateway_by_registry(micro_gateway_id, micro_gateway_release_history_id, publish_id):
+def release_gateway_by_registry(micro_gateway_id, publish_id):
     """发布资源到共享网关，为了使得类似环境变量等引用生效，同时会将所有配置都进行同步"""
     logger.info(
         "release_gateway_by_etcd: publish_id=%s, micro_gateway_id=%s",
@@ -126,15 +117,15 @@ def release_gateway_by_registry(micro_gateway_id, micro_gateway_release_history_
         gateway=release.gateway,
         stage=release.stage,
         micro_gateway=micro_gateway,
-        release_task_id=micro_gateway_release_history_id,
+        release_task_id=publish_id,
         publish_id=publish_id,
     )
     return _release_gateway(
         distributor=EtcdDistributor(
             include_gateway_global_config=include_gateway_global_config,
         ),
-        micro_gateway_release_history_id=micro_gateway_release_history_id,
         release=release,
+        release_history=release_history,
         micro_gateway=micro_gateway,
         procedure_logger=procedure_logger,
     )

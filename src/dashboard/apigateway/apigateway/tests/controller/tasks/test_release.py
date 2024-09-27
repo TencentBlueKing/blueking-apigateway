@@ -20,10 +20,8 @@ from ddf import G
 
 from apigateway.controller import tasks
 from apigateway.controller.tasks.release import clear_unreleased_resource
-from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import (
     Gateway,
-    MicroGatewayReleaseHistory,
     Release,
     ReleasedResource,
     ReleaseHistory,
@@ -36,11 +34,6 @@ def release_history():
     return G(ReleaseHistory)
 
 
-@pytest.fixture()
-def micro_gateway_release_history():
-    return G(MicroGatewayReleaseHistory)
-
-
 class TestReleaseGatewayByRegistry:
     @pytest.fixture(autouse=True)
     def setup(self, mocker):
@@ -49,51 +42,33 @@ class TestReleaseGatewayByRegistry:
             "apigateway.controller.tasks.release.EtcdDistributor", return_value=self.distributor
         )
 
-    def test_success_for_shared_gateway(
-        self, mocker, edge_release, micro_gateway, micro_gateway_release_history, release_history
-    ):
+    def test_success_for_shared_gateway(self, mocker, edge_release, micro_gateway, release_history):
         edge_release.gateway = G(Gateway)
         edge_release.save()
 
         self.distributor.distribute.return_value = True, ""
 
-        assert tasks.release_gateway_by_registry(
-            micro_gateway.id, micro_gateway_release_history.id, release_history.id
-        )
+        assert tasks.release_gateway_by_registry(micro_gateway.id, release_history.id)
 
         self.distributor_factory.assert_called_once_with(include_gateway_global_config=False)
 
-        micro_gateway_release_history.refresh_from_db()
-        micro_gateway_release_history.status = ReleaseStatusEnum.SUCCESS.value
-
-    def test_success_for_owned_gateway(
-        self, mocker, edge_release, micro_gateway, micro_gateway_release_history, release_history
-    ):
+    def test_success_for_owned_gateway(self, mocker, edge_release, micro_gateway, release_history):
         edge_release.gateway = micro_gateway.gateway
         edge_release.save()
 
         self.distributor.distribute.return_value = True, ""
 
-        assert tasks.release_gateway_by_registry(
-            micro_gateway.id, micro_gateway_release_history.id, release_history.id
-        )
+        assert tasks.release_gateway_by_registry(micro_gateway.id, release_history.id)
 
         self.distributor_factory.assert_called_once_with(include_gateway_global_config=False)
 
-        micro_gateway_release_history.refresh_from_db()
-        micro_gateway_release_history.status = ReleaseStatusEnum.SUCCESS.value
-
-    def test_fail(self, mocker, edge_release, micro_gateway, micro_gateway_release_history, release_history):
+    def test_fail(self, mocker, edge_release, micro_gateway, release_history):
         self.distributor.distribute.return_value = False, "Fail"
 
         assert not tasks.release_gateway_by_registry(
             micro_gateway.id,
-            micro_gateway_release_history.id,
             release_history.id,
         )
-
-        micro_gateway_release_history.refresh_from_db()
-        micro_gateway_release_history.status = ReleaseStatusEnum.FAILURE.value
 
     def test_clear_unreleased_resource(self, fake_gateway, fake_stage):
         rv1 = G(ResourceVersion, gateway=fake_gateway)
