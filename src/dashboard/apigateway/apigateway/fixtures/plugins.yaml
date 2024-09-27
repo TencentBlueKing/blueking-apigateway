@@ -2125,7 +2125,7 @@
                 "title": "中断vars",
                 "description": "执行故障注入的规则，当规则匹配通过后才会执行故障注。vars 是一个表达式的列表，来自 lua-resty-expr。",
                 "items": {
-                  "type": "string",
+                  "type": "array",
                   "ui:component": {
                     "name": "bfInput"
                   }
@@ -2141,11 +2141,6 @@
             "title": "delay",
             "type": "object",
             "properties": {
-              "duration": {
-                "title": "延迟时间",
-                "description": "延迟时间，可以指定小数",
-                "type": "string"
-              },
               "percentage": {
                 "description": "将被延迟的请求占比",
                 "title": "延迟请求占比",
@@ -2156,7 +2151,7 @@
                 "title": "延迟vars",
                 "description": "执行请求延迟的规则，当规则匹配通过后才会延迟请求。vars 是一个表达式列表，来自 lua-resty-expr。",
                 "items": {
-                  "type": "string",
+                  "type": "array",
                   "ui:component": {
                     "name": "bfInput"
                   }
@@ -2168,6 +2163,7 @@
             }
           }
         }
+      }
     description: '-'
     example: '-'
 - model: plugin.plugintype

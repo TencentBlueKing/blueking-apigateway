@@ -192,58 +192,74 @@ class FaultInjectionChecker(BaseChecker):
         if not abort_data and not delay_data:
             raise ValueError("At least one of the conditions 'abort' or 'delay' must be configured.")
 
-        self._check_section(abort_data, "abort")
-        self._check_section(delay_data, "delay")
+        if abort_data:
+            self._check_abort(abort_data)
 
-    def _check_section(self, data, config_type):
-        if data:
-            self._check_http_status(data.get("http_status"), config_type)
-            self._check_duration(data.get("duration"), config_type)
-            self._check_percentage(data.get("percentage"), config_type)
-            self._check_vars_struct(data.get("vars"))
+        if delay_data:
+            self._check_delay(delay_data)
 
-    def _check_http_status(self, http_status, config_type):
-        if http_status and int(http_status) < 200:
-            raise ValueError(f"The http_status of '{config_type}' must be greater than 200.")
+    def _check_abort(self, abort_data: Dict):
+        if abort_data.get("http_status"):
+            if int(abort_data.get("http_status")) < 200:
+                raise ValueError(f"The http_status is '{abort_data['http_status']}' must be greater than 200.")
+        elif abort_data.get("percentage") or abort_data.get("vars") or abort_data.get("body"):
+            raise ValueError("http_status must be entered in abort.")
+        if abort_data.get("percentage"):
+            self._check_percentage(abort_data.get("percentage"), "abort")
+        if abort_data.get("vars"):
+            self._check_vars(abort_data.get("vars"))
 
-    def _check_duration(self, duration, config_type):
-        if duration:
+    def _check_delay(self, delay_data: Dict):
+        if delay_data.get("duration"):
             try:
-                float(duration)
+                float(delay_data.get("duration"))
             except ValueError:
-                raise ValueError(f"Invalid duration value: {duration}")
+                raise ValueError(f"Invalid duration value: {delay_data.get('duration')}")
+        elif delay_data.get("percentage") or delay_data.get("vars"):
+            raise ValueError("http status must be entered in abort.")
+        if delay_data.get("percentage"):
+            self._check_percentage(delay_data.get("percentage"), "delay")
+        if delay_data.get("vars"):
+            self._check_vars(delay_data.get("vars"))
 
     def _check_percentage(self, percentage, config_type):
         if percentage and not (0 < int(percentage) <= 100):
             raise ValueError(f"The percentage of {config_type} must be greater than 0 and less than or equal to 100.")
 
-    def _check_vars_struct(self, vars_list):
+    def _check_vars(self, vars_list):
         if vars_list:
             for item in vars_list:
                 self._check_vars_details(item)
 
     def _check_vars_details(self, item):
         if isinstance(item, list):
+            # 如果item = 1 且是 list, 则再循环
             if len(item) == 1 and isinstance(item[0], list):
                 self._check_vars_details(item[0])
+            # 如果item = 2 且都是 list, 则再循环
+            elif len(item) == 2 and isinstance(item[0], list) and isinstance(item[1], list):
+                self._check_vars_details(item[0])
+                self._check_vars_details(item[1])
+            # 如果item的长度为3的时候
             elif len(item) == 3:
-                if (
-                    isinstance(item[0], str)
-                    and item[0] not in VARS_ALLOWED_LOGICAL_SYMBOLS
-                    and isinstance(item[1], list)
-                ):
-                    raise ValueError(f"The first element of '{item[0]}' is not a logical symbol.")
+                # 示例  ["逻辑运算符", [], []]    需要判断第一个符不符合逻辑运算符, 然后后面两个列表需要再循环判断
+                if isinstance(item[0], str) and isinstance(item[1], list) and isinstance(item[2], list):
+                    if item[0] not in VARS_ALLOWED_LOGICAL_SYMBOLS:
+                        raise ValueError(f"The first element of '{item[0]}' is not a logical symbol.")
+                    self._check_vars_details(item[1])
+                    self._check_vars_details(item[2])
+                # 示例  ["","比较运算符",""]     需要判断第二个符不符合比较运算符
                 if isinstance(item[1], str) and item[1] not in VARS_ALLOWED_COMPARISON_SYMBOLS:
                     raise ValueError(f"The second element of '{item}' is not a comparison symbol.")
+            # 也有例子是4位的,比如说 ["", "比较运算符", "比较运算符", ""]           需要判断第二个和第三个符不符合比较运算符
             elif len(item) == 4:
                 if (item[1] not in VARS_ALLOWED_COMPARISON_SYMBOLS and isinstance(item[1], str)) or (
                     item[2] not in VARS_ALLOWED_COMPARISON_SYMBOLS and isinstance(item[2], str)
                 ):
                     raise ValueError(f"The second or third element of '{item}' is not a valid symbol.")
+            # 到这里已经是超了数量了
             else:
                 raise ValueError(f"The length of '{item}' is not 3 or 4.")
-        elif isinstance(item, str) and item not in VARS_ALLOWED_LOGICAL_SYMBOLS:
-            raise ValueError(f"'{item}' is not a valid symbol.")
 
 
 class PluginConfigYamlChecker:

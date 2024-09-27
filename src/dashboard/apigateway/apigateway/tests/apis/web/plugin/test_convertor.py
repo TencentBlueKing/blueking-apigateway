@@ -221,8 +221,8 @@ class TestFaultInjectionYamlConvertor:
                 # 全部都有数据的情况
                 """{'abort': {'body': 'aaa', 'vars': ['[ "arg_name","==","jack" ]'], 'http_status': 200, 'percentage': 100}, 'delay': {'duration': '5', 'vars': ['[ "arg_name","==","jack" ]'], 'percentage': 100}}""",
                 """abort:
-  body: aaa
   http_status: 200
+  body: aaa
   percentage: 100
   vars:
   - - - arg_name
@@ -241,8 +241,8 @@ delay:
                 # delay 没有数据的时候，会不会直接没有这个的配置
                 """{'abort': {'body': 'aaa', 'vars': ['[ "arg_name","==","jack" ]'], 'http_status': 200, 'percentage': 100}, 'delay': {'duration': '', 'vars': []}}""",
                 """abort:
-  body: aaa
   http_status: 200
+  body: aaa
   percentage: 100
   vars:
   - - - arg_name
@@ -269,41 +269,109 @@ delay:
         result = convertor.to_internal_value(data)
         assert result == expected
 
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                """abort:
+  http_status: 200
+  body: aaa
+  percentage: 100
+  vars:
+  - - - arg_name
+      - ==
+      - jack
+delay:
+  duration: 5.0
+  percentage: 100
+  vars:
+  - - - arg_name
+      - ==
+      - jack
+""",
+                """abort:
+  body: aaa
+  http_status: 200
+  percentage: 100
+  vars:
+  - "['arg_name', '==', 'jack']"
+delay:
+  duration: 5.0
+  percentage: 100
+  vars:
+  - "['arg_name', '==', 'jack']"
+""",
+            ),
+            (
+                """delay:
+  duration: 5.0
+  percentage: 100
+  vars:
+  - - - arg_name
+      - ==
+      - jack
+""",
+                """delay:
+  duration: 5.0
+  percentage: 100
+  vars:
+  - "['arg_name', '==', 'jack']"
+""",
+            ),
+            (
+                """abort:
+  http_status: 200
+  body: aaa
+  percentage: 100
+  vars:
+  - - - arg_name
+      - ==
+      - jack
+""",
+                """abort:
+  body: aaa
+  http_status: 200
+  percentage: 100
+  vars:
+  - "['arg_name', '==', 'jack']"
+""",
+            ),
+        ],
+    )
+    def test_to_representation(self, data, expected):
+        convertor = FaultInjectionYamlConvertor()
+        result = convertor.to_representation(data)
+        assert result == expected
 
-#     @pytest.mark.parametrize(
-#         "data, expected",
-#         [
-#             (
-#                 '{"header_schema": {"aa": "bb"}, "body_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": '
-#                 '"foo"}',
-#                 """header_schema: '{"aa": "bb"}'
-# body_schema: '{"aa": "bb"}'
-# rejected_code: 400
-# rejected_msg: foo
-# """,
-#             ),
-#             (
-#                 '{"header_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": "foo"}',
-#                 """header_schema: '{"aa": "bb"}'
-# body_schema: ''
-# rejected_code: 400
-# rejected_msg: foo
-# """,
-#             ),
-#             (
-#                 '{"body_schema": {"aa": "bb"}, "rejected_code": 400, "rejected_msg": "foo"}',
-#                 """header_schema: ''
-# body_schema: '{"aa": "bb"}'
-# rejected_code: 400
-# rejected_msg: foo
-# """,
-#             ),
-#         ],
-#     )
-#     def test_to_representation(self, data, expected):
-#         convertor = RequestValidationYamlConvertor()
-#         result = convertor.to_representation(data)
-#         assert result == expected
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (["['arg_height', '!', 15]"], [[["arg_height", "!", 15]]]),
+            (
+                ['[ "arg_age","==",18 ]', '[ "arg_age","==",19 ],[ "arg_age","==",20 ]'],
+                [[["arg_age", "==", 18]], [["arg_age", "==", 19], ["arg_age", "==", 20]]],
+            ),
+        ],
+    )
+    def test_vars_convert_to_internal_list(self, data, expected):
+        convertor = FaultInjectionYamlConvertor()
+        result = convertor._vars_convert_to_internal_list(data)
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            ([[["arg_height", "!", 15]]], ["['arg_height', '!', 15]"]),
+            (
+                [[["arg_age", "==", 18]], [["arg_age", "==", 19], ["arg_age", "==", 20]]],
+                ["['arg_age', '==', 18]", "['arg_age', '==', 19], ['arg_age', '==', 20]"],
+            ),
+        ],
+    )
+    def test_vars_convert_to_representation_list(self, data, expected):
+        convertor = FaultInjectionYamlConvertor()
+        result = convertor._vars_convert_to_representation_list(data)
+        assert result == expected
 
 
 class TestPluginConfigYamlConvertor:

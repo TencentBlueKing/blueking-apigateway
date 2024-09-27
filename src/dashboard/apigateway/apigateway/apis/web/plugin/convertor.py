@@ -171,17 +171,25 @@ class RequestValidationYamlConvertor(BasePluginYamlConvertor):
 
 
 class FaultInjectionYamlConvertor(BasePluginYamlConvertor):
+    # 这个前端传来的数据转换为存储数据的方法
+
     def _vars_convert_to_internal_list(self, input_list):
         # 解析每个字符串元素，并将它们转换为列表
+        # 如果是 单独一条的数据，示例： ["['arg_height', '!', 15]"]  =>  [[['arg_height', '!', 15]]]
+        # 如果是 多条的数据， 示例： ['[ "arg_age","==",18 ]', '[ "arg_age","==",19 ],[ "arg_age","==",20 ]']
+        #                转换为： [[['arg_age', '==',18 ]], [['arg_age', '==', 19],['arg_age', '==', 20]]]
         parsed_lists = []
         for item in input_list:
-            if item.count(",") > 3:
+            if (
+                item.count(",") > 3
+            ):  # 判断逗号是不是大于3个, 如果是ast.literal_eval()方法转换为元组(a,b),所以需要加个list()进行转换
                 parsed_lists.append(list(ast.literal_eval(item)))
-            else:
+            else:  # 如果逗号小于3个，则判断它是一条数据
                 parsed_lists.append([ast.literal_eval(item)])
 
         return parsed_lists
 
+    # 这个方法和上面的方法反着来，为了展示出vars数据
     def _vars_convert_to_representation_list(self, input_list):
         # 初始化一个空列表来存储字符串表示
         parsed_lists = []
@@ -194,51 +202,61 @@ class FaultInjectionYamlConvertor(BasePluginYamlConvertor):
 
         return parsed_lists
 
-    def _process_data(self, data: Dict[str, Any], result_dict: Dict[str, Any], key: str) -> None:
-        processed_data = {}
-        for data_key in ["body", "http_status", "percentage"]:
-            if data.get(data_key):
-                processed_data[data_key] = data[data_key]
-        if data.get("vars"):
-            processed_data["vars"] = self._vars_convert_to_internal_list(data["vars"])
-        if processed_data:
-            result_dict[key] = processed_data
+    def _internal_abort_value(self, abort: Dict) -> Dict:
+        abort_dict: Dict[str, Any] = {}
+        if abort.get("http_status"):
+            abort_dict["http_status"] = abort["http_status"]
+        if abort.get("body"):
+            abort_dict["body"] = abort["body"]
+        if abort.get("percentage"):
+            abort_dict["percentage"] = abort["percentage"]
+        if abort.get("vars"):
+            abort_dict["vars"] = self._vars_convert_to_internal_list(abort.get("vars"))
+        return abort_dict
+
+    def _internal_delay_value(self, delay: Dict) -> Dict:
+        delay_dict: Dict[str, Any] = {}
+        if delay.get("duration"):
+            # 因为这个是小数，没有办法去用number，float接，所以用字符串接，在转换的时候顺便校验一下是否是 float
+            try:
+                delay_dict["duration"] = float(delay["duration"])
+            except ValueError:
+                raise ValueError(f"Invalid duration value: {delay_dict['duration']}")
+        if delay.get("percentage"):
+            delay_dict["percentage"] = delay["percentage"]
+        if delay.get("vars"):
+            delay_dict["vars"] = self._vars_convert_to_internal_list(delay.get("vars"))
+        return delay_dict
 
     def to_internal_value(self, payload: str) -> str:
         loaded_data = yaml_loads(payload)
         result: Dict[str, Dict] = {}
 
-        for section in ["abort", "delay"]:
-            if loaded_data.get(section):
-                section_data = loaded_data[section]
-                processed_section = {}
-                if section_data.get("body"):
-                    processed_section["body"] = section_data.get("body")
-                if section_data.get("http_status"):
-                    processed_section["http_status"] = section_data.get("http_status")
-                for key in ["duration", "percentage"]:
-                    if section_data.get(key):
-                        if key == "percentage":
-                            processed_section[key] = section_data[key]
-                        else:
-                            try:
-                                processed_section[key] = float(section_data[key])
-                            except ValueError:
-                                raise ValueError(f"Invalid duration value: {section_data[key]}")
-                if section_data.get("vars"):
-                    processed_section["vars"] = self._vars_convert_to_internal_list(section_data["vars"])
-                if processed_section:
-                    result[section] = processed_section
+        abort = loaded_data.get("abort")
+        delay = loaded_data.get("delay")
+
+        if abort:
+            abort_dict = self._internal_abort_value(abort)
+            if abort_dict:
+                result["abort"] = abort_dict
+
+        if delay:
+            delay_dict = self._internal_delay_value(delay)
+            if delay_dict:
+                result["delay"] = delay_dict
 
         return yaml_dumps(result)
 
     def to_representation(self, payload: str) -> str:
         loaded_data = yaml_loads(payload)
+        abort_data = loaded_data.get("abort")
+        delay_data = loaded_data.get("delay")
+
         result: Dict[str, Dict] = {}
         abort_dict: Dict[str, Any] = {}
         delay_dict: Dict[str, Any] = {}
-        if loaded_data.get("abort"):
-            abort_data = loaded_data["abort"]
+
+        if abort_data:
             for key in ["body", "http_status", "percentage"]:
                 if abort_data.get(key):
                     abort_dict[key] = abort_data[key]
@@ -248,17 +266,10 @@ class FaultInjectionYamlConvertor(BasePluginYamlConvertor):
 
             result["abort"] = abort_dict
 
-        if loaded_data.get("delay"):
-            delay_data = loaded_data["delay"]
+        if delay_data:
             for key in ["duration", "percentage"]:
                 if delay_data.get(key):
-                    if key == "duration" and isinstance(delay_data.get(key), str):
-                        try:
-                            delay_dict[key] = float(delay_data[key])
-                        except ValueError:
-                            raise ValueError(f"Invalid duration value: {delay_data[key]}")
-                    else:
-                        delay_dict[key] = delay_data.get(key)
+                    delay_dict[key] = delay_data.get(key)
             if delay_data.get("vars"):
                 delay_vars = delay_data["vars"]
                 delay_dict["vars"] = self._vars_convert_to_representation_list(delay_vars)
