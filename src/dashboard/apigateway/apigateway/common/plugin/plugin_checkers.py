@@ -200,7 +200,7 @@ class FaultInjectionChecker(BaseChecker):
 
     def _check_abort(self, abort_data: Dict):
         if abort_data.get("http_status"):
-            if int(abort_data.get("http_status")) < 200:
+            if int(abort_data["http_status"]) < 200:
                 raise ValueError(f"The http_status is '{abort_data['http_status']}' must be greater than 200.")
         elif abort_data.get("percentage") or abort_data.get("vars") or abort_data.get("body"):
             raise ValueError("http_status must be entered in abort.")
@@ -212,9 +212,9 @@ class FaultInjectionChecker(BaseChecker):
     def _check_delay(self, delay_data: Dict):
         if delay_data.get("duration"):
             try:
-                float(delay_data.get("duration"))
+                float(delay_data["duration"])
             except ValueError:
-                raise ValueError(f"Invalid duration value: {delay_data.get('duration')}")
+                raise ValueError(f"Invalid duration value: {delay_data['duration']}")
         elif delay_data.get("percentage") or delay_data.get("vars"):
             raise ValueError("http status must be entered in abort.")
         if delay_data.get("percentage"):
