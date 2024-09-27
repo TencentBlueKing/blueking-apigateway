@@ -68,7 +68,7 @@ import { ref, onBeforeUnmount } from 'vue';
 import { useCommon } from '@/store';
 import { getApigwMetrics } from '@/http';
 import { useI18n } from 'vue-i18n';
-import { SearchParamsType } from './type';
+import { SearchParamsType, ChartDataType } from './type';
 import mitt from '@/common/event-bus';
 import Top from './components/top.vue';
 import LineChart from './components/line-chart.vue';
@@ -89,7 +89,7 @@ const metricsList = ref<string[]>([
   'failed_500_requests', // 一段时间内 500 状态码请求数量（用于计算健康率）
   'response_time', // 每个资源的响应耗时分布 50th 80th 90th 取 top10 资源 (response_time_50th response_time_80th response_time_90th)
 ]);
-const chartData = ref<any>({
+const chartData = ref<ChartDataType>({
   response_time: {},
 });
 

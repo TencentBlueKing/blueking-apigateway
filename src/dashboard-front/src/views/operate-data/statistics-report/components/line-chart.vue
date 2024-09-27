@@ -7,6 +7,7 @@ import { shallowRef, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import * as echarts from 'echarts';
 import { merge } from 'lodash';
 import { userChartIntervalOption } from '@/hooks';
+import { SeriesItemType } from '../type';
 
 const props = defineProps({
   instanceId: { // 生成图表的元素id
@@ -23,15 +24,13 @@ const props = defineProps({
   },
 });
 
-const {
-  getChartIntervalOption,
-} = userChartIntervalOption();
+const { getChartIntervalOption } = userChartIntervalOption();
 
 const myChart = shallowRef();
 
 onMounted(() => {
   const chartDom = document.getElementById(props.instanceId);
-  myChart.value = echarts.init(chartDom);
+  myChart.value = echarts.init(chartDom as HTMLDivElement);
 
   window.addEventListener('resize', chartResize);
 });
@@ -49,9 +48,7 @@ watch(
     }
     renderChart();
   },
-  {
-    deep: true,
-  },
+  { deep: true },
 );
 
 const chartResize = () => {
@@ -61,7 +58,7 @@ const chartResize = () => {
 };
 
 const getChartOption = () => {
-  const baseOption: any = {
+  const baseOption: echarts.EChartOption = {
     color: ['#FFB43D', '#4BC7AD', '#FF7756', '#B5E0AB', '#D66F6B', '#3E96C2', '#FFA66B', '#85CCA8', '#FFC685', '#3762B8'],
     title: {
       text: props.title,
@@ -149,7 +146,7 @@ const getChartOption = () => {
     },
   };
 
-  const chartOption: any = {
+  const chartOption: echarts.EChartOption = {
     yAxis: {},
     series: [],
     tooltip: {},
@@ -160,12 +157,12 @@ const getChartOption = () => {
   let moreOption = {};
 
   if (props.instanceId !== 'response_time') {
-    props.chartData?.series?.forEach((item: any) => {
+    props.chartData?.series?.forEach((item: SeriesItemType) => {
       let datapoints = item.datapoints || [];
-      datapoints = datapoints.filter((value: any) => !isNaN(Math.round(value[0])));
+      datapoints = datapoints.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
       chartOption.series.push(merge({}, baseOption.series[0], {
         name: item.target,
-        data: datapoints.map((item: any) => ([
+        data: datapoints.map((item: Array<number>) => ([
           item[1],
           item[0],
         ])),
@@ -182,14 +179,14 @@ const getChartOption = () => {
       (props.chartData?.response_time_80th?.series[0] || {})?.datapoints || [],
       (props.chartData?.response_time_50th?.series[0] || {})?.datapoints || [],
     ];
-    const serieNames = ['90%', '80%', '50%'];
-    datapoints.forEach((data: any, index: number) => {
-      const values = data.filter((value: any) => !isNaN(Math.round(value[0])));
+    const seriesNames = ['90%', '80%', '50%'];
+    datapoints.forEach((data: Array<Array<number>>, index: number) => {
+      const values = data.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
       chartOption.series.push(merge({}, baseOption.series[0], {
-        name: serieNames[index],
-        data: values.map((item: any) => ([
+        name: seriesNames[index],
+        data: values.map((item: Array<number>) => ([
           item[1],
-          item[0],
+          Math.round(item[0]),
         ])),
       }));
     });
@@ -206,15 +203,16 @@ const getChartOption = () => {
   return merge(baseOption, chartOption, moreOption);
 };
 
-const getChartMoreOption = (seriesData: any) => {
+const getChartMoreOption = (seriesData: Array<Array<number>>) => {
   // 1. 根据data的最大值，动态计算出max合适值和interval配置
-  // const serieData = seriesData.map((item: any) => Math.round(item[0])).filter((item: any) => !isNaN(item));
+  // const serieData = seriesData.map((item: Array<number>) => Math.round(item[0]))
+  // .filter((item: number) => !isNaN(item));
   // const maxNumber = Math.max(...serieData);
   // const yAxisIntervalOption = getChartIntervalOption(maxNumber, 'number', 'yAxis');
 
   // 2. 根据时间值计算xAxis显示年/月/日/时间部分
-  const xAxisData = seriesData.map((item: any) => Math.round(item[1]));
-  xAxisData.sort((a: any, b: any) => a - b);
+  const xAxisData = seriesData.map((item: Array<number>) => Math.round(item[1]));
+  xAxisData.sort((a: number, b: number) => a - b);
   // timeDuration 需要秒为单位
   const timeDuration = Math.round((xAxisData[xAxisData.length - 1] - xAxisData[0]) / 1000);
   const xAxisIntervalOption = getChartIntervalOption(timeDuration, 'time', 'xAxis');

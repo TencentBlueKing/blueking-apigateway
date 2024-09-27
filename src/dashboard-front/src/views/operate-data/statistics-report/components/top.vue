@@ -110,6 +110,8 @@ import { getApigwStages, getApigwResources } from '@/http';
 import DatePicker from '@blueking/date-picker';
 import '@blueking/date-picker/vue3/vue3.css';
 import { SearchParamsType } from '../type';
+import { IStageData } from '@/views/stage/overview/types/stage';
+import { ResourcesItem } from '@/views/resource/setting/types';
 
 const { t } = useI18n();
 const stage = useStage();
@@ -127,10 +129,14 @@ const stageToggle = ref<boolean>(false);
 const dateTime = ref(['now-10m', 'now']);
 const formatTime = ref<string[]>([dayjs().subtract(10, 'minute')
   .format('YYYY-MM-DD HH:mm:ss'), dayjs().format('YYYY-MM-DD HH:mm:ss')]);
-const stageList = ref<any>([]);
-const resourceList = ref<any>([]);
+const stageList = ref<IStageData[]>([]);
+const resourceList = ref<ResourcesItem[]>([]);
 const interval = ref<string>('off');
-const intervalList = ref<any>([
+type IntervalItem = {
+  label: string;
+  value: string;
+};
+const intervalList = ref<IntervalItem[]>([
   {
     label: 'Off',
     value: 'off',
@@ -190,7 +196,7 @@ const getStageName = computed(() => (id: string | number) => {
   if (id === 0) return '';
 
   let name = '';
-  const stage = stageList.value?.filter((stage: any) => stage.id === id)[0];
+  const stage = stageList.value?.filter((stage: IStageData) => stage.id === id)[0];
   if (stage) {
     name = stage.name;
   }
@@ -204,8 +210,8 @@ const getStages = async () => {
   };
 
   try {
-    const res = await getApigwStages(apigwId, pageParams);
-    stageList.value = res;
+    const response = await getApigwStages(apigwId, pageParams);
+    stageList.value = response;
     searchParams.stage_id = stageList.value[0]?.id;
   } catch (e) {
     // isDataLoading.value = false;
@@ -221,8 +227,8 @@ const getResources = async () => {
   };
 
   try {
-    const res = await getApigwResources(apigwId, pageParams);
-    resourceList.value = res.results;
+    const response = await getApigwResources(apigwId, pageParams);
+    resourceList.value = response.results;
   } catch (e) {
     console.log(e);
     // isDataLoading.value = false;
