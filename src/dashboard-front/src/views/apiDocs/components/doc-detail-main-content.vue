@@ -237,6 +237,8 @@ $code-color: #63656e;
     }
 
     .detail-main {
+      container-type: inline-size;
+
       .res-basics,
       .res-detail-content {
         padding: 24px;
@@ -250,6 +252,12 @@ $code-color: #63656e;
         display: grid;
         grid-template-columns: 280px 280px;
         grid-template-rows: 40px 40px;
+
+        @container (width < 640px) {
+          padding-block: 12px;
+          grid-template-columns: 1fr;
+          grid-template-rows: 40px 40px 40px 40px;
+        }
 
         .basic-cell {
           display: flex;
