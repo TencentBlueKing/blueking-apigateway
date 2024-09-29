@@ -55,9 +55,9 @@
                       :class="{ 'active': curComponentName === component.name }"
                       @click="handleShowDoc(component)">
                       <!-- eslint-disable-next-line vue/no-v-html -->
-                      <p class="name" v-html="hightlight(component.name)" v-bk-overflow-tips></p>
+                      <p class="name" v-dompurify-html="hightlight(component.name)" v-bk-overflow-tips></p>
                       <!-- eslint-disable-next-line vue/no-v-html -->
-                      <p class="label" v-html="hightlight(component.description) || t('暂无描述')" v-bk-overflow-tips>
+                      <p class="label" v-dompurify-html="hightlight(component.description) || t('暂无描述')" v-bk-overflow-tips>
                       </p>
                     </li>
                   </ul>

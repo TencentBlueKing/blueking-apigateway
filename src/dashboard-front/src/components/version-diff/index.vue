@@ -217,7 +217,7 @@
                   <DownShape class="expand-icon" v-else />
                   <span
                     class="vm resource-title"
-                    v-html="renderTitle(addItem)"
+                    v-dompurify-html="renderTitle(addItem)"
                     :title="`【${addItem?.method}】${addItem?.path}`"
                   ></span>
                 </div>
@@ -249,7 +249,7 @@
                   <DownShape class="expand-icon" v-else />
                   <span
                     class="vm resource-title"
-                    v-html="renderTitle(deleteItem)"
+                    v-dompurify-html="renderTitle(deleteItem)"
                     :title="`【${deleteItem?.method}】${deleteItem?.path}`"
                   ></span>
                 </div>
@@ -275,7 +275,7 @@
                   <DownShape class="expand-icon" v-else />
                   <span
                     class="vm resource-title"
-                    v-html="renderTitle(deleteItem)"
+                    v-dompurify-html="renderTitle(deleteItem)"
                     :title="`【${deleteItem?.method}】${deleteItem?.path}`"
                   ></span>
                 </div>
@@ -311,7 +311,7 @@
                   <DownShape class="expand-icon" v-else />
                   <span
                     class="vm resource-title"
-                    v-html="renderTitle(updateItem.source)"
+                    v-dompurify-html="renderTitle(updateItem.source)"
                     :title="`【${updateItem?.source?.method}】${updateItem?.source?.path}`"
                   ></span>
                 </div>
@@ -340,7 +340,7 @@
                   <DownShape class="expand-icon" v-else />
                   <span
                     class="vm resource-title"
-                    v-html="renderTitle(updateItem.target)"
+                    v-dompurify-html="renderTitle(updateItem.target)"
                     :title="`【${updateItem?.target?.method}】${updateItem?.target?.path}`"
                   ></span>
                 </div>
