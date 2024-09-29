@@ -58,7 +58,7 @@
                 </p>
               </div>
               <!-- eslint-disable vue/no-v-html -->
-              <div class="ag-markdown-view" v-html="markdownHtml" v-show="!isEdited"></div>
+              <div class="ag-markdown-view" v-dompurify-html="markdownHtml" v-show="!isEdited"></div>
               <div class="ag-markdown-editor" v-show="isEdited">
                 <mavon-editor
                   ref="markdownRef"

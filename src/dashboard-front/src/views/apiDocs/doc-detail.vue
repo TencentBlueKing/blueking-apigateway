@@ -113,10 +113,10 @@
                         @click="handleApiClick(api.id)"
                       >
                         <!-- eslint-disable-next-line vue/no-v-html -->
-                        <header class="res-item-name" v-html="getHighlightedHtml(api.name)" v-bk-overflow-tips
+                        <header class="res-item-name" v-dompurify-html="getHighlightedHtml(api.name)" v-bk-overflow-tips
                         ></header>
                         <!-- eslint-disable-next-line vue/no-v-html -->
-                        <main class="res-item-desc" v-html="getHighlightedHtml(api.description)"></main>
+                        <main class="res-item-desc" v-dompurify-html="getHighlightedHtml(api.description)"></main>
                       </article>
                     </template>
                     <template v-else-if="keyword">

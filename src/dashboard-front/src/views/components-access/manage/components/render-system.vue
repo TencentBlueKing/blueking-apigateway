@@ -33,7 +33,7 @@
             <p class="name">
               <span class="title-wrapper">
                 <!-- eslint-disable-next-line vue/no-v-html -->
-                <span v-html="highlight(item)"></span>
+                <span v-dompurify-html="highlight(item)"></span>
               </span>
               <span v-if="item.is_official" class="tag">
                 {{ t('官方') }}
@@ -41,7 +41,7 @@
               <span class="count fr">{{ item.component_count }}</span>
             </p>
             <!-- eslint-disable-next-line vue/no-v-html -->
-            <p class="desc" v-html="highlightDesc(item)"></p>
+            <p class="desc" v-dompurify-html="highlightDesc(item)"></p>
           </div>
         </template>
         <template v-else>

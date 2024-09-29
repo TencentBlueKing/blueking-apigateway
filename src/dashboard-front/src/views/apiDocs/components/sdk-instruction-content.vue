@@ -13,7 +13,7 @@
       <bk-button class="is-selected" style="width: 150px">Python</bk-button>
     </div>
     <!-- eslint-disable-next-line vue/no-v-html -->
-    <div v-if="sdkDoc" class="ag-markdown-view" id="markdown" :key="renderHtmlIndex" v-html="markdownHtml"></div>
+    <div v-if="sdkDoc" class="ag-markdown-view" id="markdown" :key="renderHtmlIndex" v-dompurify-html="markdownHtml"></div>
     <bk-exception
       v-else
       class="exception-wrap-item exception-part"

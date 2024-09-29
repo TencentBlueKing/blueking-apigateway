@@ -52,7 +52,7 @@
         <!--  API markdown 文档  -->
         <article v-if="markdownHtml" class="res-detail-content">
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <div class="ag-markdown-view" id="resMarkdown" v-html="markdownHtml"></div>
+          <div class="ag-markdown-view" id="resMarkdown" v-dompurify-html="markdownHtml"></div>
         </article>
       </main>
     </main>

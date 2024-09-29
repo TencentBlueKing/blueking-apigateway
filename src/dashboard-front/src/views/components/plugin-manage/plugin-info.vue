@@ -124,7 +124,7 @@
       </header>
       <main class="example-main">
         <!-- eslint-disable-next-line vue/no-v-html -->
-        <pre class="example-pre" v-html="exampleHtml"></pre>
+        <pre class="example-pre" v-dompurify-html="exampleHtml"></pre>
       </main>
     </aside>
   </div>
