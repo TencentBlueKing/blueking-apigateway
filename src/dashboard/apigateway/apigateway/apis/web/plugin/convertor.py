@@ -189,14 +189,15 @@ class FaultInjectionYamlConvertor(BasePluginYamlConvertor):
 
         return parsed_lists
 
-    # 这个方法和上面的方法反着来，为了展示出vars数据
     def _vars_convert_to_representation_list(self, input_list):
-        # 初始化一个空列表来存储字符串表示
+        # 如果是 单独一条的数据，示例： [[['arg_height', '!', 15]]]  =>  ["['arg_height', '!', 15]"]
+        # 如果是 多条的数据， 示例： [[['arg_age', '==',18 ]], [['arg_age', '==', 19],['arg_age', '==', 20]]]
+        #                转换为： ['[ "arg_age","==",18 ]', '[ "arg_age","==",19 ],[ "arg_age","==",20 ]'] 以便给前端展示字符串数组
         parsed_lists = []
 
         for item in input_list:
             # 将子列表的元素转换为字符串，并用逗号分隔
-            item_str = ", ".join(str(one) for one in item)
+            item_str = ", ".join(str(one) for one in item)  # 获取每一个item里面每一项的
             # 将转换后的字符串添加到列表中
             parsed_lists.append(item_str)
 
@@ -267,8 +268,7 @@ class FaultInjectionYamlConvertor(BasePluginYamlConvertor):
                 if delay_data.get(key):
                     delay_dict[key] = delay_data.get(key)
             if delay_data.get("vars"):
-                delay_vars = delay_data["vars"]
-                delay_dict["vars"] = self._vars_convert_to_representation_list(delay_vars)
+                delay_dict["vars"] = self._vars_convert_to_representation_list(delay_data["vars"])
 
             result["delay"] = delay_dict
 

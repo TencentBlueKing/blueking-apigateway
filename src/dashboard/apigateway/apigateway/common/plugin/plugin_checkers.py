@@ -228,6 +228,10 @@ class FaultInjectionChecker(BaseChecker):
             for item in vars_list:
                 self._check_vars_details(item)
 
+    # 功能: 检查vars下的每个子集
+    # 检查功能如下: 确保列表的长度符合预期（3或4）。
+    #             确保列表中特定位置的元素是字符串，并且这些字符串是允许的逻辑或比较运算符。
+    #             如果任何条件不满足，就抛出异常。
     def _check_vars_details(self, item):
         if isinstance(item, list):
             # 如果item = 1 且是 list, 则再循环
