@@ -219,7 +219,7 @@ class TestFaultInjectionYamlConvertor:
         [
             (
                 # 全部都有数据的情况
-                """{'abort': {'body': 'aaa', 'vars': ['[ "arg_name","==","jack" ]'], 'http_status': 200, 'percentage': 100}, 'delay': {'duration': '5', 'vars': ['[ "arg_name","==","jack" ]'], 'percentage': 100}}""",
+                """{'abort': {'body': 'aaa', 'vars': ['[ "arg_name","==","jack" ]'], 'http_status': 200, 'percentage': 100}, 'delay': {'duration': 5, 'vars': ['[ "arg_name","==","jack" ]'], 'percentage': 100}}""",
                 """abort:
   http_status: 200
   body: aaa
@@ -229,7 +229,7 @@ class TestFaultInjectionYamlConvertor:
       - ==
       - jack
 delay:
-  duration: 5.0
+  duration: 5
   percentage: 100
   vars:
   - - - arg_name
@@ -252,9 +252,9 @@ delay:
             ),
             (
                 # abort 没有数据的时候
-                """{'abort': {'body': '', 'vars': []}, 'delay': {'duration': '5', 'vars': ['[ "arg_name","==","jack" ]'], 'percentage': 100}}""",
+                """{'abort': {'body': '', 'vars': []}, 'delay': {'duration': 5, 'vars': ['[ "arg_name","==","jack" ]'], 'percentage': 100}}""",
                 """delay:
-  duration: 5.0
+  duration: 5
   percentage: 100
   vars:
   - - - arg_name
@@ -282,7 +282,7 @@ delay:
       - ==
       - jack
 delay:
-  duration: 5.0
+  duration: 5
   percentage: 100
   vars:
   - - - arg_name
@@ -296,7 +296,7 @@ delay:
   vars:
   - "['arg_name', '==', 'jack']"
 delay:
-  duration: 5.0
+  duration: 5
   percentage: 100
   vars:
   - "['arg_name', '==', 'jack']"
@@ -304,7 +304,7 @@ delay:
             ),
             (
                 """delay:
-  duration: 5.0
+  duration: 5
   percentage: 100
   vars:
   - - - arg_name
@@ -312,7 +312,7 @@ delay:
       - jack
 """,
                 """delay:
-  duration: 5.0
+  duration: 5
   percentage: 100
   vars:
   - "['arg_name', '==', 'jack']"

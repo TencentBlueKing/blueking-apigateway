@@ -2118,7 +2118,9 @@
               "percentage": {
                 "description": "将被中断的请求占比",
                 "title": "中断请求占比",
-                "type": "integer"
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
               },
               "vars": {
                 "type": "array",
@@ -2141,10 +2143,17 @@
             "title": "delay",
             "type": "object",
             "properties": {
+              "duration": {
+                "title": "延迟时间",
+                "description": "延迟时间，只能填入整数",
+                "type": "number"
+              },
               "percentage": {
                 "description": "将被延迟的请求占比",
                 "title": "延迟请求占比",
-                "type": "integer"
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
               },
               "vars": {
                 "type": "array",
@@ -2183,7 +2192,7 @@
     type:
     - fault-injection
     notes: fault-injection 插件是故障注入插件，该插件可以和其他插件一起使用，并在其他插件执行前被执行。
-    example: 'example'
+    example: '作用： 当请求参数 name 不等于 jack 的时候，则返回 400 拒绝状态码和状态信息\n\n"abort": {\n    "http_status": 400,\n    "body": "not valid request params"\n    "vars": ['["arg_name", "==", "jack"]']\n}\n'
     style: dynamic
     default_value: ''
     config: |-
@@ -2213,7 +2222,9 @@
                 "percentage": {
                   "description": "将被中断的请求占比",
                   "title": "中断请求占比",
-                  "type": "integer"
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
                 },
                 "vars": {
                   "type": "array",
@@ -2238,13 +2249,15 @@
               "properties": {
                 "duration": {
                   "title": "延迟时间",
-                  "description": "延迟时间，可以指定小数",
-                  "type": "string"
+                  "description": "延迟时间，只能填入整数",
+                  "type": "number"
                 },
                 "percentage": {
                   "description": "将被延迟的请求占比",
                   "title": "延迟请求占比",
-                  "type": "integer"
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
                 },
                 "vars": {
                   "type": "array",
@@ -2274,7 +2287,7 @@
     type:
     - fault-injection
     notes: The fault-injection plug-in is a fault injection plug-in that can be used with other plug-ins and executed before the other plug-ins are executed.
-    example: 'example'
+    example: 'Purpose: When the request parameter name is not equal to jack, return 400 reject status code and status information \n\n"abort": {\n "http_status": 400,\n "body": "not valid request params"\n "vars": ['["arg_name", "==", "jack"]']\n}\n'
     style: dynamic
     default_value: ''
     config: |-
@@ -2304,7 +2317,9 @@
                 "percentage": {
                   "description": "The proportion of requests that will be interrupted.",
                   "title": "Proportion of interrupt requests",
-                  "type": "integer"
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
                 },
                 "vars": {
                   "type": "array",
@@ -2329,13 +2344,15 @@
               "properties": {
                 "duration": {
                   "title": "Delay time",
-                  "description": "The delay time can be specified as decimal",
+                  "description": "The delay time can only be filled with integers",
                   "type": "string"
                 },
                 "percentage": {
                   "description": "The percentage of requests that will be delayed",
                   "title": "Proportion of Delayed requests",
-                  "type": "integer"
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
                 },
                 "vars": {
                   "type": "array",

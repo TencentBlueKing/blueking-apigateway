@@ -217,11 +217,7 @@ class FaultInjectionYamlConvertor(BasePluginYamlConvertor):
     def _internal_delay_value(self, delay: Dict) -> Dict:
         delay_dict: Dict[str, Any] = {}
         if delay.get("duration"):
-            # 因为这个是小数，没有办法去用number，float接，所以用字符串接，在转换的时候顺便校验一下是否是 float
-            try:
-                delay_dict["duration"] = float(delay["duration"])
-            except ValueError:
-                raise ValueError(f"Invalid duration value: {delay_dict['duration']}")
+            delay_dict["duration"] = delay["duration"]
         if delay.get("percentage"):
             delay_dict["percentage"] = delay["percentage"]
         if delay.get("vars"):

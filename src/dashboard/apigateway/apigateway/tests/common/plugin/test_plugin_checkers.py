@@ -458,24 +458,14 @@ class TestFaultInjectionChecker:
                 pytest.raises(ValueError),
             ),
             (
-                {"delay": {"duration": 5.0, "vars": [[["arg_name", "==", "jack"]]], "percentage": 100}},
+                {"delay": {"duration": 5, "vars": [[["arg_name", "==", "jack"]]], "percentage": 100}},
                 # 不报错的情况
                 does_not_raise(),
             ),
             (
                 {
                     "delay": {
-                        "duration": "aaa",  # 这里转换不了 float 报错
-                        "vars": [[["arg_name", "==", "jack"]]],
-                        "percentage": 100,
-                    }
-                },
-                pytest.raises(ValueError),
-            ),
-            (
-                {
-                    "delay": {
-                        "duration": 5.0,
+                        "duration": 5,
                         "vars": [[["arg_name", "==", "jack"]]],
                         "percentage": -1,  # 小于0报错
                     }
@@ -485,7 +475,7 @@ class TestFaultInjectionChecker:
             (
                 {
                     "delay": {
-                        "duration": 5.0,
+                        "duration": 5,
                         "vars": [[["arg_name", "==", "jack"]]],
                         "percentage": 101,  # 大于100报错
                     }
