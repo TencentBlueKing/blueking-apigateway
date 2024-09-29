@@ -885,7 +885,12 @@ const checkPluginDiff = (plugin: any) => {
   // 检查传入的 plugin 是否记录在 diffMap 中
   const diffMapPluginKey = `localData.plugins.${plugin.code || plugin.type}`;
   const keys = Object.keys(diffMap.value);
-  return keys.some(item => item.startsWith(diffMapPluginKey));
+  const hasMatchingDiffMapKey = keys.some(item => item.startsWith(diffMapPluginKey));
+  // 检查传入的 plugin 是否存在于 curResource.diff.plugins 中
+  const diffPlugins = props.curResource?.diff?.plugins ?? {};
+  const hasMatchingDiffPluginCode = Object.keys(diffPlugins)
+    .some((pluginCode: string) => pluginCode === (plugin.type || plugin.code));
+  return hasMatchingDiffMapKey || hasMatchingDiffPluginCode;
 };
 
 // 网关标签
