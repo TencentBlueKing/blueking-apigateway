@@ -188,7 +188,7 @@
       @closed="delApigwDialog.isShow = false">
       <div class="ps-form">
         <!-- eslint-disable-next-line vue/no-v-html -->
-        <div class="form-tips" v-html="delTips" />
+        <div class="form-tips" v-dompurify-html="delTips" />
         <div class="mt15">
           <bk-input v-model="formRemoveConfirmApigw"></bk-input>
         </div>

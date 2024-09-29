@@ -29,9 +29,9 @@
                 <a href="javascript:;">
                   <p class="name">
                     <!-- eslint-disable-next-line vue/no-v-html -->
-                    <strong class="mr5" v-html="hightlightSystemName(item)"></strong>
+                    <strong class="mr5" v-dompurify-html="hightlightSystemName(item)"></strong>
                     <!-- eslint-disable-next-line vue/no-v-html -->
-                    <span v-html="hightlight(item)"></span>
+                    <span v-dompurify-html="hightlight(item)"></span>
                   </p>
                   <p class="desc">{{ item.description || t('暂无描述') }}</p>
                 </a>

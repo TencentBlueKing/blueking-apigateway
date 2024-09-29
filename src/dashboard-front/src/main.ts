@@ -16,6 +16,7 @@ import bkui from 'bkui-vue';
 import 'bkui-vue/dist/style.css';
 // 图标
 import './assets/iconfont/style.css';
+import VueDOMPurifyHTML from 'vue-dompurify-html';
 
 const app = createApp(App);
 app.config.globalProperties.GLOBAL_CONFIG = globalConfig;
@@ -29,4 +30,5 @@ app.use(i18n)
   // .directive('overflowTitle', overflowTitle)
   // .directive('bkTooltips', bkTooltips)
   .use(mavonEditor)
+  .use(VueDOMPurifyHTML)
   .mount('.app');

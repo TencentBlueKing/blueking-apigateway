@@ -140,7 +140,7 @@
       </div>
       Copyright © 2012-{{curYear}} Tencent BlueKing. All Rights Reserved. V{{GLOBAL_CONFIG.FOOT_INFO.VERSION}} -->
       <!-- eslint-disable-next-line vue/no-v-html -->
-      <p class="contact" v-html="contact"></p>
+      <p class="contact" v-dompurify-html="contact"></p>
       <p class="copyright">{{copyright}}</p>
     </div>
 

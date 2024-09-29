@@ -54,7 +54,7 @@
             </div>
           </div>
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <div class="ag-markdown-view" id="markdown" :key="renderHtmlIndex" v-html="curComponent.markdownHtml"></div>
+          <div class="ag-markdown-view" id="markdown" :key="renderHtmlIndex" v-dompurify-html="curComponent.markdownHtml"></div>
         </bk-tab-panel>
         <bk-tab-panel
           :name="'sdk '"
@@ -77,7 +77,7 @@
             </div>
             <h3 class="f16 mt30 fw700 mt15 mb15 balck">{{ t('SDK使用样例') }}</h3>
             <!-- eslint-disable-next-line vue/no-v-html -->
-            <div class="ag-markdown-view mt20" :key="renderHtmlIndex" v-html="sdkMarkdownHtml"></div>
+            <div class="ag-markdown-view mt20" :key="renderHtmlIndex" v-dompurify-html="sdkMarkdownHtml"></div>
           </div>
         </bk-tab-panel>
       </bk-tab>
