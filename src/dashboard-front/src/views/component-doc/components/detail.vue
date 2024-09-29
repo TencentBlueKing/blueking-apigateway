@@ -85,7 +85,10 @@
                           params: { version: curVersionData.board, id: item.name }
                         }">
                         <!-- eslint-disable-next-line vue/no-v-html -->
-                        <span v-dompurify-html="hightlight(item.description, 'panel')" @click="isNavPanelShow = false"></span>
+                        <span
+                          v-dompurify-html="hightlight(item.description, 'panel')"
+                          @click="isNavPanelShow = false"
+                        ></span>
                       </router-link>
                       <p class="desc">
                         <!-- eslint-disable-next-line vue/no-v-html -->

@@ -42,7 +42,11 @@
           </p>
         </div>
         <!-- eslint-disable vue/no-v-html -->
-        <div class="ag-markdown-view" v-dompurify-html="markdownHtml" v-show="!isEdited"></div>
+        <div
+          class="ag-markdown-view"
+          v-dompurify-html="markdownHtml"
+          v-show="!isEdited"
+        ></div>
         <div class="ag-markdown-editor">
           <mavon-editor
             ref="markdownRef"
