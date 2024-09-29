@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from django.db import transaction
 from django.utils.translation import gettext as _
@@ -25,7 +25,7 @@ from rest_framework import serializers
 
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, DEFAULT_STAGE_NAME, PublishSourceEnum, StageStatusEnum
-from apigateway.core.models import Backend, BackendConfig, MicroGateway, Release, Stage
+from apigateway.core.models import Backend, BackendConfig, Release, Stage
 from apigateway.utils.time import now_datetime
 
 
@@ -152,27 +152,6 @@ class StageHandler:
         backend_config.save()
 
         return stage
-
-    # TODO: move into get_id_to_micro_gateway_fields?
-    @staticmethod
-    def get_id_to_micro_gateway_id(gateway_id: int) -> Dict[int, Optional[str]]:
-        return dict(Stage.objects.filter(gateway_id=gateway_id).values_list("id", "micro_gateway_id"))
-
-    @staticmethod
-    def get_id_to_micro_gateway_fields(gateway_id: int) -> Dict[int, Optional[Dict[str, Any]]]:
-        id_to_micro_gateway_id = StageHandler().get_id_to_micro_gateway_id(gateway_id)
-        result: Dict[int, Optional[Dict[str, Any]]] = {i: None for i in id_to_micro_gateway_id}
-
-        valid_micro_gateway_ids = {i for i in id_to_micro_gateway_id.values() if i is not None}
-        if not valid_micro_gateway_ids:
-            return result
-
-        micro_gateway_id_to_fields = MicroGateway.objects.get_id_to_fields(valid_micro_gateway_ids)
-        for id_, micro_gateway_id in id_to_micro_gateway_id.items():
-            if micro_gateway_id is not None:
-                result[id_] = micro_gateway_id_to_fields.get(micro_gateway_id)
-
-        return result
 
     @staticmethod
     def get_stage_ids(gateway, stage_names: List[str]) -> List[int]:

@@ -44,7 +44,7 @@ from apigateway.core.constants import (
     STAGE_NAME_PATTERN,
     LoadBalanceTypeEnum,
 )
-from apigateway.core.models import Backend, BackendConfig, MicroGateway, Stage
+from apigateway.core.models import Backend, BackendConfig, Stage
 
 from .constants import DOMAIN_PATTERN, HEADER_KEY_PATTERN
 
@@ -402,16 +402,6 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         self._sync_plugins(instance.gateway_id, instance.id, validated_data.get("plugin_configs", None))
 
         return instance
-
-    def validate_micro_gateway_id(self, value) -> Optional[uuid.UUID]:
-        if value is None:
-            return None
-
-        gateway = self.context["request"].gateway
-        if not MicroGateway.objects.filter(gateway=gateway, id=value).exists():
-            raise serializers.ValidationError(_("微网关实例不存在，id={value}。").format(value=value))
-
-        return value
 
     def _validate_micro_gateway_stage_unique(self, micro_gateway_id: Optional[uuid.UUID]):
         """校验 micro_gateway 仅绑定到一个环境"""

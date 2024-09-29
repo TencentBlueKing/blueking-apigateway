@@ -21,44 +21,13 @@ import pytest
 from django_dynamic_fixture import G
 
 from apigateway.biz.stage import StageHandler
-from apigateway.core.models import Gateway, MicroGateway, Stage
+from apigateway.core.models import Gateway
 
 
 class TestStageHandler:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self):
         self.gateway = G(Gateway)
-
-    def test_get_id_to_micro_gateway_id(self):
-        gateway = G(Gateway)
-
-        micro_gateway = G(MicroGateway, gateway=gateway)
-
-        s1 = G(Stage, gateway=gateway)
-        s2 = G(Stage, gateway=gateway, micro_gateway=micro_gateway)
-
-        result = StageHandler().get_id_to_micro_gateway_id(gateway.id)
-        assert result == {
-            s1.id: None,
-            s2.id: micro_gateway.id,
-        }
-
-    def test_get_id_to_micro_gateway_fields(self):
-        gateway = G(Gateway)
-
-        micro_gateway = G(MicroGateway, gateway=gateway)
-
-        s1 = G(Stage, gateway=gateway)
-        s2 = G(Stage, gateway=gateway, micro_gateway=micro_gateway)
-
-        result = StageHandler().get_id_to_micro_gateway_fields(gateway.id)
-        assert result == {
-            s1.id: None,
-            s2.id: {
-                "id": micro_gateway.id,
-                "name": micro_gateway.name,
-            },
-        }
 
     @pytest.mark.parametrize(
         "stage_names, expected, will_error",

@@ -23,7 +23,6 @@ from ddf import G
 
 from apigateway.biz.releaser import (
     BaseGatewayReleaser,
-    MicroGatewayReleaseHistory,
     MicroGatewayReleaser,
     ReleaseError,
     ReleaseValidationError,
@@ -164,17 +163,9 @@ class TestMicroGatewayReleaser:
 
         mock_release_gateway_by_registry.si.assert_called_once_with(
             micro_gateway_id=fake_shared_gateway.id,
-            micro_gateway_release_history_id=mocker.ANY,
             publish_id=fake_release_history.id,
         )
 
         assert ReleaseHistory.objects.filter(
             id=fake_release_history.id,
-        ).exists()
-
-        assert MicroGatewayReleaseHistory.objects.filter(
-            gateway=fake_gateway,
-            stage=fake_stage,
-            micro_gateway=fake_shared_gateway,
-            release_history=fake_release_history,
         ).exists()

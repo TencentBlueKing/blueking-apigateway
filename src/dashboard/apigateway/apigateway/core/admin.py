@@ -26,7 +26,6 @@ from apigateway.core.models import (
     Gateway,
     GatewayRelatedApp,
     MicroGateway,
-    MicroGatewayReleaseHistory,
     Proxy,
     PublishEvent,
     Release,
@@ -137,13 +136,6 @@ class MicroGatewayAdmin(admin.ModelAdmin):
     list_display = ["id", "gateway", "name", "is_shared", "status", "updated_time"]
 
 
-class MicroGatewayReleaseHistoryAdmin(admin.ModelAdmin):
-    list_display = ["id", "gateway", "stage", "micro_gateway", "status"]
-    search_fields = ["gateway__id", "gateway__name"]
-    list_filter = ["gateway"]
-    raw_id_fields = ["release_history"]
-
-
 class BackendAdmin(admin.ModelAdmin):
     list_display = ["id", "gateway", "type", "name", "description"]
     search_fields = ["name", "gateway__id", "gateway__name", "description"]
@@ -170,6 +162,5 @@ admin.site.register(Context, ContextAdmin)
 admin.site.register(JWT, JWTAdmin)
 admin.site.register(GatewayRelatedApp, GatewayRelatedAppAdmin)
 admin.site.register(MicroGateway, MicroGatewayAdmin)
-admin.site.register(MicroGatewayReleaseHistory, MicroGatewayReleaseHistoryAdmin)
 admin.site.register(Backend, BackendAdmin)
 admin.site.register(BackendConfig, BackendConfigAdmin)
