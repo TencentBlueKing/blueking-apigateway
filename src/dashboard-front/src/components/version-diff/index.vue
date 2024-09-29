@@ -521,8 +521,8 @@ const handleToggle = (item: any) => {
   item.isExpanded = !item.isExpanded;
 };
 
-const handleSearch = () => {
-  searchKeyword.value = searchParams.keyword;
+const handleSearch = (keyword?: string) => {
+  searchKeyword.value = keyword || '';
 };
 
 const handleClear = () => {
