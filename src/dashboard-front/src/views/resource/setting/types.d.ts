@@ -60,6 +60,29 @@ interface ILocalImportedResource extends Partial<IImportedResource> {
   _unchecked: boolean;
 }
 
+interface ResourcesItem {
+  id: number;
+  name: string;
+  description: string;
+  method: string;
+  path: string;
+  created_time: string;
+  updated_time: string;
+  backend: {
+    id: number;
+    name: string;
+  },
+  labels: [
+    {
+      id: number;
+      name: string;
+    }
+  ],
+  docs: Array<unknown>,
+  has_updated: false,
+  plugin_count: number;
+}
+
 export {
   ActionType,
   IBackend,
@@ -69,4 +92,5 @@ export {
   IPublicConfig,
   IImportedResource,
   ILocalImportedResource,
+  ResourcesItem,
 };
