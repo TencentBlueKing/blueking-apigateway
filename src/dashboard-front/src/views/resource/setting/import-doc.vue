@@ -291,6 +291,9 @@ const handleUploadSuccess = async (e: any, file: any) => {
 
 // 上传完成的方法
 const handleUploadDone = async (response: any) => {
+  if (response[0].status === 'fail') {
+    return Message({ theme: 'error', message: t('上传失败') });
+  }
   const res = response[0].response.data;
   const data = res.map((e: any) => ({ ...e, ...e.resource, ...e.resource_doc }));
   tableData.value = data;
