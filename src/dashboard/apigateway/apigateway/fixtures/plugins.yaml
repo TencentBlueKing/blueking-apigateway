@@ -2205,7 +2205,7 @@
               "title": "abort",
               "type": "object",
               "properties": {
-                "http_status": {
+                "http_status": {  
                   "description": "返回给客户端的 HTTP 状态码",
                   "title": "中断状态码",
                   "type": "integer"
