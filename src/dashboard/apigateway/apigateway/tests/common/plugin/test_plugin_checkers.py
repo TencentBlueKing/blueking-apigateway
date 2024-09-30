@@ -22,6 +22,7 @@ import pytest
 from apigateway.common.plugin.plugin_checkers import (
     BkCorsChecker,
     BkIPRestrictionChecker,
+    FaultInjectionChecker,
     HeaderRewriteChecker,
     PluginConfigYamlChecker,
     RequestValidationChecker,
@@ -397,3 +398,203 @@ class TestRequestValidationChecker:
         checker = RequestValidationChecker()
         with ctx:
             checker.check(yaml_dumps(data))
+
+
+class TestFaultInjectionChecker:
+    @pytest.mark.parametrize(
+        "data, ctx",
+        [
+            (
+                {
+                    "abort": {
+                        "body": "aaa",
+                        "vars": [[["arg_name", "==", "jack"]]],
+                        "http_status": 200,
+                        "percentage": 100,
+                    }
+                },
+                # 不报错的情况
+                does_not_raise(),
+            ),
+            (
+                {
+                    "abort": {
+                        "body": "aaa",
+                        "vars": [[["arg_name", "==", "jack"]]],
+                        "http_status": 199,  # 小于200报错
+                        "percentage": 100,
+                    }
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "abort": {
+                        "body": "aaa",
+                        "vars": [[["arg_name", "==", "jack"]]],
+                        "http_status": 200,
+                        "percentage": -1,  # 这个的值 < 0
+                    }
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "abort": {
+                        "body": "aaa",
+                        "vars": [[["arg_name", "==", "jack"]]],
+                        "http_status": 200,
+                        "percentage": 101,  # 这个的值 > 100
+                    }
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "abort": {
+                        "body": "aaa"  # 如果别的项有值,那么 http_status 也必须有值
+                    }
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {"delay": {"duration": 5, "vars": [[["arg_name", "==", "jack"]]], "percentage": 100}},
+                # 不报错的情况
+                does_not_raise(),
+            ),
+            (
+                {
+                    "delay": {
+                        "duration": 5,
+                        "vars": [[["arg_name", "==", "jack"]]],
+                        "percentage": -1,  # 小于0报错
+                    }
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "delay": {
+                        "duration": 5,
+                        "vars": [[["arg_name", "==", "jack"]]],
+                        "percentage": 101,  # 大于100报错
+                    }
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "delay": {
+                        "percentage": 101  # 如果任意有值, duration必须有值
+                    }
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {},  # 必须要配置 abort 或者是 delay 其中一个
+                pytest.raises(ValueError),
+            ),
+        ],
+    )
+    def test_check(self, data, ctx):
+        checker = FaultInjectionChecker()
+        with ctx:
+            checker.check(yaml_dumps(data))
+
+    @pytest.mark.parametrize(
+        "data, ctx",
+        [
+            ([-1, "abort"], pytest.raises(ValueError)),
+            ([101, "abort"], pytest.raises(ValueError)),
+            ([0, "abort"], does_not_raise()),
+            ([100, "abort"], does_not_raise()),
+        ],
+    )
+    def test_check_percentage(self, data, ctx):
+        checker = FaultInjectionChecker()
+        with ctx:
+            checker._check_percentage(data[0], data[1])
+
+    @pytest.mark.parametrize(
+        "data, ctx",
+        [
+            ([[["arg_name", "==", "jack"]]], does_not_raise()),
+            (
+                [[["arg_name", "a=", "jack"]]],  # 符号报错
+                pytest.raises(ValueError),
+            ),
+            ([[["arg_height", "!", ">", 15]]], does_not_raise()),
+            (
+                [[["arg_height", "a", ">", 15]]],  # 第一个符号报错
+                pytest.raises(ValueError),
+            ),
+            (
+                [[["arg_height", "!", "a", 15]]],  # 第二个符号报错
+                pytest.raises(ValueError),
+            ),
+            (
+                [
+                    [
+                        [
+                            "AND",
+                            ["arg_version", "==", "v2"],
+                            ["OR", ["arg_action", "==", "signup"], ["arg_action", "==", "subscribe"]],
+                        ],
+                    ]
+                ],
+                does_not_raise(),
+            ),
+            (
+                [
+                    [
+                        [
+                            "AAD",  # 符号报错
+                            ["arg_version", "==", "v2"],
+                            ["OR", ["arg_action", "==", "signup"], ["arg_action", "==", "subscribe"]],
+                        ],
+                    ]
+                ],
+                pytest.raises(ValueError),
+            ),
+            (
+                [
+                    [
+                        [
+                            "AND",
+                            ["arg_version", "==", "v2"],
+                            ["OO", ["arg_action", "==", "signup"], ["arg_action", "==", "subscribe"]],  # OO 符号报错
+                        ],
+                    ]
+                ],
+                pytest.raises(ValueError),
+            ),
+            (
+                [
+                    [
+                        [
+                            "AND",
+                            ["arg_version", "==", "v2"],
+                            ["OR", ["arg_action", "A=", "signup"], ["arg_action", "==", "subscribe"]],  # A= 符号报错
+                        ],
+                    ]
+                ],
+                pytest.raises(ValueError),
+            ),
+            (
+                [
+                    [
+                        [
+                            "AND",
+                            ["arg_version", "==", "v2"],
+                            ["OR", ["arg_action", "==", "signup"], ["arg_action", "A=", "subscribe"]],  # A= 符号报错
+                        ],
+                    ]
+                ],
+                pytest.raises(ValueError),
+            ),
+        ],
+    )
+    def test_check_vars(self, data, ctx):
+        checker = FaultInjectionChecker()
+        with ctx:
+            checker._check_vars(data)

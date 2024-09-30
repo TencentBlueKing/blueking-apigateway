@@ -2083,3 +2083,296 @@
         "formData": {},
         "rules": {}
       }
+- model: schema.schema
+  fields:
+    created_time: 2024-09-10 11:48:21.010753+00:00
+    updated_time: 2024-09-10 11:48:21.010788+00:00
+    name: fault-injection
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "$comment": "this is a mark for our injected plugin schema",
+        "type": "object",
+        "properties": {
+          "abort": {
+            "description": "中断状态",
+            "title": "abort",
+            "type": "object",
+            "properties": {
+              "http_status": {
+                "description": "返回给客户端的 HTTP 状态码",
+                "title": "中断状态码",
+                "type": "integer",
+                "minimum": 200
+              },
+              "body": {
+                "description": "返回给客户端的响应数据。支持使用 NGINX 变量，如 client addr: $remote_addr\n",
+                "title": "中断响应体",
+                "type": "string",
+                "ui:component": {
+                  "type": "textarea",
+                  "rows": 10
+                }
+              },
+              "percentage": {
+                "description": "将被中断的请求占比",
+                "title": "中断请求占比",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "vars": {
+                "type": "array",
+                "title": "中断vars",
+                "description": "执行故障注入的规则，当规则匹配通过后才会执行故障注。vars 是一个表达式的列表，来自 lua-resty-expr。",
+                "items": {
+                  "type": "array",
+                  "ui:component": {
+                    "name": "bfInput"
+                  }
+                },
+                "ui:component": {
+                  "name": "bfArray"
+                }
+              }
+            }
+          },
+          "delay": {
+            "description": "延迟状态",
+            "title": "delay",
+            "type": "object",
+            "properties": {
+              "duration": {
+                "title": "延迟时间",
+                "description": "延迟时间，只能填入整数",
+                "type": "number"
+              },
+              "percentage": {
+                "description": "将被延迟的请求占比",
+                "title": "延迟请求占比",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "vars": {
+                "type": "array",
+                "title": "延迟vars",
+                "description": "执行请求延迟的规则，当规则匹配通过后才会延迟请求。vars 是一个表达式列表，来自 lua-resty-expr。",
+                "items": {
+                  "type": "array",
+                  "ui:component": {
+                    "name": "bfInput"
+                  }
+                },
+                "ui:component": {
+                  "name": "bfArray"
+                }
+              }
+            }
+          }
+        }
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: fault-injection
+    name: 故障注入
+    name_en: fault-injection
+    is_public: true
+    scope: resource
+    schema:
+    - fault-injection
+    - plugin
+    - '0'
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+    - fault-injection
+    notes: fault-injection 插件是故障注入插件，该插件可以和其他插件一起使用，并在其他插件执行前被执行。
+    example: '作用： 当请求参数 name 不等于 jack 的时候，则返回 400 拒绝状态码和状态信息\n\n"abort": {\n    "http_status": 400,\n    "body": "not valid request params"\n    "vars": ['["arg_name", "==", "jack"]']\n}\n'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "abort": {
+              "description": "中断状态",
+              "title": "abort",
+              "type": "object",
+              "properties": {
+                "http_status": {  
+                  "description": "返回给客户端的 HTTP 状态码",
+                  "title": "中断状态码",
+                  "type": "integer"
+                },
+                "body": {
+                  "description": "返回给客户端的响应数据。支持使用 NGINX 变量，如 client addr: $remote_addr\n",
+                  "title": "中断响应体",
+                  "type": "string",
+                  "ui:component": {
+                    "type": "textarea",
+                    "rows": 10
+                  }
+                },
+                "percentage": {
+                  "description": "将被中断的请求占比",
+                  "title": "中断请求占比",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "vars": {
+                  "type": "array",
+                  "title": "中断vars",
+                  "description": "执行故障注入的规则，当规则匹配通过后才会执行故障注。vars 是一个表达式的列表，来自 lua-resty-expr。",
+                  "items": {
+                    "type": "string",
+                    "ui:component": {
+                      "name": "bfInput"
+                    }
+                  },
+                  "ui:component": {
+                    "name": "bfArray"
+                  }
+                }
+              }
+            },
+            "delay": {
+              "description": "延迟状态",
+              "title": "delay",
+              "type": "object",
+              "properties": {
+                "duration": {
+                  "title": "延迟时间",
+                  "description": "延迟时间，只能填入整数",
+                  "type": "number"
+                },
+                "percentage": {
+                  "description": "将被延迟的请求占比",
+                  "title": "延迟请求占比",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "vars": {
+                  "type": "array",
+                  "title": "延迟vars",
+                  "description": "执行请求延迟的规则，当规则匹配通过后才会延迟请求。vars 是一个表达式列表，来自 lua-resty-expr。",
+                  "items": {
+                    "type": "string",
+                    "ui:component": {
+                      "name": "bfInput"
+                    }
+                  },
+                  "ui:component": {
+                    "name": "bfArray"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+- model: plugin.pluginform
+  fields:
+    language: en
+    type:
+    - fault-injection
+    notes: The fault-injection plug-in is a fault injection plug-in that can be used with other plug-ins and executed before the other plug-ins are executed.
+    example: 'Purpose: When the request parameter name is not equal to jack, return 400 reject status code and status information \n\n"abort": {\n "http_status": 400,\n "body": "not valid request params"\n "vars": ['["arg_name", "==", "jack"]']\n}\n'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "abort": {
+              "description": "Interrupted state",
+              "title": "abort",
+              "type": "object",
+              "properties": {
+                "http_status": {
+                  "description": "Returns the HTTP status code to the client.",
+                  "title": "Interrupt status code",
+                  "type": "integer"
+                },
+                "body": {
+                  "description": "Response data is returned to the client. NGINX variables such as client addr: $remote_addr\n are supported",
+                  "title": "Interrupt responder",
+                  "type": "string",
+                  "ui:component": {
+                    "type": "textarea",
+                    "rows": 10
+                  }
+                },
+                "percentage": {
+                  "description": "The proportion of requests that will be interrupted.",
+                  "title": "Proportion of interrupt requests",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "vars": {
+                  "type": "array",
+                  "title": "Interrupt vars",
+                  "description": "The fault injection rule is executed. The fault note is executed only after the rule matches. vars is a list of expressions from lua-resty-expr.",
+                  "items": {
+                    "type": "string",
+                    "ui:component": {
+                      "name": "bfInput"
+                    }
+                  },
+                  "ui:component": {
+                    "name": "bfArray"
+                  }
+                }
+              }
+            },
+            "delay": {
+              "description": "Delay status",
+              "title": "delay",
+              "type": "object",
+              "properties": {
+                "duration": {
+                  "title": "Delay time",
+                  "description": "The delay time can only be filled with integers",
+                  "type": "string"
+                },
+                "percentage": {
+                  "description": "The percentage of requests that will be delayed",
+                  "title": "Proportion of Delayed requests",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "vars": {
+                  "type": "array",
+                  "title": "Delay vars",
+                  "description": "Execute the request delay rule. The request is delayed only when the rule matches. vars is a list of expressions from lua-resty-expr.",
+                  "items": {
+                    "type": "string",
+                    "ui:component": {
+                      "name": "bfInput"
+                    }
+                  },
+                  "ui:component": {
+                    "name": "bfArray"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }

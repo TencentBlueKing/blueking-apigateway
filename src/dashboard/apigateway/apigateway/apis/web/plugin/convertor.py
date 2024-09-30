@@ -30,6 +30,7 @@ NOTE:
 2. 存量已经编写了 convertor 的插件暂时不动
 """
 
+import ast
 import json
 from typing import Any, ClassVar, Dict
 
@@ -169,11 +170,117 @@ class RequestValidationYamlConvertor(BasePluginYamlConvertor):
         return yaml_dumps(result)
 
 
+class FaultInjectionYamlConvertor(BasePluginYamlConvertor):
+    # 这个前端传来的数据转换为存储数据的方法
+
+    def _vars_convert_to_internal_list(self, input_list):
+        # 解析每个字符串元素，并将它们转换为列表
+        # 如果是 单独一条的数据，示例： ["['arg_height', '!', 15]"]  =>  [[['arg_height', '!', 15]]]
+        # 如果是 多条的数据， 示例： ['[ "arg_age","==",18 ]', '[ "arg_age","==",19 ],[ "arg_age","==",20 ]']
+        #                转换为： [[['arg_age', '==',18 ]], [['arg_age', '==', 19],['arg_age', '==', 20]]]
+        parsed_lists = []
+        for item in input_list:
+            if (
+                item.count(",") > 3
+            ):  # 判断逗号是不是大于3个, 如果是ast.literal_eval()方法转换为元组(a,b),所以需要加个list()进行转换
+                parsed_lists.append(list(ast.literal_eval(item)))
+            else:  # 如果逗号小于3个，则判断它是一条数据
+                parsed_lists.append([ast.literal_eval(item)])
+
+        return parsed_lists
+
+    def _vars_convert_to_representation_list(self, input_list):
+        # 如果是 单独一条的数据，示例： [[['arg_height', '!', 15]]]  =>  ["['arg_height', '!', 15]"]
+        # 如果是 多条的数据， 示例： [[['arg_age', '==',18 ]], [['arg_age', '==', 19],['arg_age', '==', 20]]]
+        #                转换为： ['[ "arg_age","==",18 ]', '[ "arg_age","==",19 ],[ "arg_age","==",20 ]'] 以便给前端展示字符串数组
+        parsed_lists = []
+
+        for item in input_list:
+            # 将子列表的元素转换为字符串，并用逗号分隔
+            item_str = ", ".join(str(one) for one in item)  # 获取每一个item里面每一项的
+            # 将转换后的字符串添加到列表中
+            parsed_lists.append(item_str)
+
+        return parsed_lists
+
+    def _internal_abort_value(self, abort: Dict) -> Dict:
+        abort_dict: Dict[str, Any] = {}
+        if abort.get("http_status"):
+            abort_dict["http_status"] = abort["http_status"]
+        if abort.get("body"):
+            abort_dict["body"] = abort["body"]
+        if abort.get("percentage"):
+            abort_dict["percentage"] = abort["percentage"]
+        if abort.get("vars"):
+            abort_dict["vars"] = self._vars_convert_to_internal_list(abort.get("vars"))
+        return abort_dict
+
+    def _internal_delay_value(self, delay: Dict) -> Dict:
+        delay_dict: Dict[str, Any] = {}
+        if delay.get("duration"):
+            delay_dict["duration"] = delay["duration"]
+        if delay.get("percentage"):
+            delay_dict["percentage"] = delay["percentage"]
+        if delay.get("vars"):
+            delay_dict["vars"] = self._vars_convert_to_internal_list(delay.get("vars"))
+        return delay_dict
+
+    def to_internal_value(self, payload: str) -> str:
+        loaded_data = yaml_loads(payload)
+        result: Dict[str, Dict] = {}
+
+        abort = loaded_data.get("abort")
+        delay = loaded_data.get("delay")
+
+        if abort:
+            abort_dict = self._internal_abort_value(abort)
+            if abort_dict:
+                result["abort"] = abort_dict
+
+        if delay:
+            delay_dict = self._internal_delay_value(delay)
+            if delay_dict:
+                result["delay"] = delay_dict
+
+        return yaml_dumps(result)
+
+    def to_representation(self, payload: str) -> str:
+        loaded_data = yaml_loads(payload)
+        abort_data = loaded_data.get("abort")
+        delay_data = loaded_data.get("delay")
+
+        result: Dict[str, Dict] = {}
+        abort_dict: Dict[str, Any] = {}
+        delay_dict: Dict[str, Any] = {}
+
+        if abort_data:
+            for key in ["body", "http_status", "percentage"]:
+                if abort_data.get(key):
+                    abort_dict[key] = abort_data[key]
+            if abort_data.get("vars"):
+                abort_vars = abort_data["vars"]
+                abort_dict["vars"] = self._vars_convert_to_representation_list(abort_vars)
+
+            result["abort"] = abort_dict
+
+        if delay_data:
+            for key in ["duration", "percentage"]:
+                if delay_data.get(key):
+                    delay_dict[key] = delay_data.get(key)
+            if delay_data.get("vars"):
+                delay_dict["vars"] = self._vars_convert_to_representation_list(delay_data["vars"])
+
+            result["delay"] = delay_dict
+
+        return yaml_dumps(result)
+
+
 class PluginConfigYamlConvertor:
     type_code_to_convertor: ClassVar[Dict[str, BasePluginYamlConvertor]] = {
         PluginTypeCodeEnum.BK_RATE_LIMIT.value: RateLimitYamlConvertor(),
         PluginTypeCodeEnum.BK_IP_RESTRICTION.value: IPRestrictionYamlConvertor(),
         PluginTypeCodeEnum.REQUEST_VALIDATION.value: RequestValidationYamlConvertor(),
+        PluginTypeCodeEnum.FAULT_INJECTION.value: FaultInjectionYamlConvertor(),
     }
 
     def __init__(self, type_code: str):
