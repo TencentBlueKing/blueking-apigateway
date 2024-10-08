@@ -324,6 +324,7 @@
                     v-show="updateItem.isExpanded"
                     :diff-data="updateItem.target.diff"
                     :only-show-diff="searchParams.onlyUpdated"
+                    is-source
                   ></resource-detail>
                   <!-- </bk-transition> -->
                 </div>
