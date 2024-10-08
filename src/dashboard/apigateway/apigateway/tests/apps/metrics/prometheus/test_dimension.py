@@ -217,7 +217,7 @@ class TestResourceRequestsMetrics:
             assert result == test["expected"], result
 
 
-class TestResponseTime100thMetrics:
+class TestResponseTime90thMetrics:
     def test_get_query_promql(self, mocker):
         mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
 
@@ -232,7 +232,7 @@ class TestResponseTime100thMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    "histogram_quantile(1.0, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
+                    "histogram_quantile(0.9, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
                     'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, resource_name))'
                 ),
             },
@@ -246,14 +246,14 @@ class TestResponseTime100thMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    "histogram_quantile(1.0, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
+                    "histogram_quantile(0.9, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
                     'api_name="foo", stage_name="prod"}[1m])) '
                     "by (le, resource_name))"
                 ),
             },
         ]
         for test in data:
-            metrics = dimension.ResponseTime100thMetrics()
+            metrics = dimension.ResponseTime90thMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
@@ -402,8 +402,8 @@ class TestMetricsFactory:
                 "expected": dimension.ResourceRequestsMetrics,
             },
             {
-                "metrics": "response_time_100th",
-                "expected": dimension.ResponseTime100thMetrics,
+                "metrics": "response_time_90th",
+                "expected": dimension.ResponseTime90thMetrics,
             },
             {
                 "metrics": "ingress",

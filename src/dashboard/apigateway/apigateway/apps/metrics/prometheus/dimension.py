@@ -194,9 +194,9 @@ class ResourceRequestsMetrics(BaseMetrics):
         )
 
 
-class ResponseTime100thMetrics(BaseMetrics):
-    metrics = MetricsEnum.RESPONSE_TIME_100TH
-    quantile = 1.0
+class ResponseTime90thMetrics(BaseMetrics):
+    metrics = MetricsEnum.RESPONSE_TIME_90TH
+    quantile = 0.9
 
     def _get_query_promql(
         self,
@@ -331,7 +331,7 @@ MetricsFactory.register(RequestsTotalMetrics)
 MetricsFactory.register(Non200StatusMetrics)
 MetricsFactory.register(AppRequestsMetrics)
 MetricsFactory.register(ResourceRequestsMetrics)
-MetricsFactory.register(ResponseTime100thMetrics)
+MetricsFactory.register(ResponseTime90thMetrics)
 MetricsFactory.register(IngressMetrics)
 MetricsFactory.register(EgressMetrics)
 MetricsFactory.register(Failed500RequestsMetrics)
