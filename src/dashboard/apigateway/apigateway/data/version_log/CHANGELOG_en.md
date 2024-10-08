@@ -1,4 +1,23 @@
-<!-- 2024-09-30 -->
+<!-- 2024-10-08 -->
+# V1.13.19 Release Log
+
+### Bug Fixes
+
+- Error notification for failed ZIP uploads during document import
+- XSS vulnerability fix
+
+---
+
+<!-- 2024-09-26 -->
+# V1.13.18 Release Log
+
+### Bug Fixes
+
+- Product documentation redirect URL
+
+---
+
+<!-- 2024-09-25 -->
 # V1.13.17 Release Log
 
 ### Bug Fixes
