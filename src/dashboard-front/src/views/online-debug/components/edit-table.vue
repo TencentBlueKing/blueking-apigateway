@@ -14,30 +14,29 @@
           {{ row?.name }}
         </div> -->
         <!-- <template v-else> -->
-        <bk-popover
+        <!-- <bk-popover
           placement="top-start"
           trigger="click"
           theme="light"
           :is-show="isShowVarPopover"
           :content="t('变量名由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符') "
           :popover-delay="[300, 0]"
-        >
-          <bk-form :ref="(el) => setRefs(el, `name-${index}`)" :model="row" label-width="0">
-            <bk-form-item
-              :rules="varRules.name"
-              property="name"
-              error-display-type="tooltips"
-              class="table-form-item">
-              <bk-input
-                v-model="row.name"
-                :clearable="false"
-                class="edit-input"
-                @blur="handleCellBlur(index)"
-                :ref="(el) => setInputRefs(el, `name-input-${index}-${column?.index}`)"
-              />
-            </bk-form-item>
-          </bk-form>
-        </bk-popover>
+        > -->
+        <bk-form :ref="(el) => setRefs(el, `name-${index}`)" :model="row" label-width="0">
+          <bk-form-item
+            property="name"
+            error-display-type="tooltips"
+            class="table-form-item">
+            <bk-input
+              v-model="row.name"
+              :clearable="false"
+              class="edit-input"
+              @blur="handleCellBlur(index)"
+              :ref="(el) => setInputRefs(el, `name-input-${index}-${column?.index}`)"
+            />
+          </bk-form-item>
+        </bk-form>
+        <!-- </bk-popover> -->
         <!-- </template> -->
 
       </template>
@@ -50,7 +49,6 @@
         <!-- <template v-else> -->
         <bk-form :ref="(el) => setRefs(el, `value-${index}`)" :model="row" label-width="0">
           <bk-form-item
-            :rules="varRules.value"
             property="value"
             error-display-type="tooltips"
             class="table-form-item">
@@ -176,7 +174,7 @@ const props = defineProps({
 
 const emit = defineEmits(['change']);
 
-const isShowVarPopover = ref(false);
+// const isShowVarPopover = ref(false);
 
 const formRefs = ref(new Map());
 const setRefs = (el: any, name: string) => {
@@ -247,32 +245,31 @@ const handleCellClick = async ({ event, column, rowIndex }: any) => {
   });
 };
 
-const validateRow = async (index: number) => {
-  let flag = true;
-  await formRefs.value?.get(`name-${index}`)?.validate()
-    .then(() => {}, () => {
-      flag = false;
-    });
-  await formRefs.value?.get(`value-${index}`)?.validate()
-    .then(() => {}, () => {
-      flag = false;
-    });
-  await formRefs.value?.get(`type-${index}`)?.validate()
-    .then(() => {}, () => {
-      flag = false;
-    });
-  await formRefs.value?.get(`instructions-${index}`)?.validate()
-    .then(() => {}, () => {
-      flag = false;
-    });
+// const validateRow = async (index: number) => {
+//   let flag = true;
+//   await formRefs.value?.get(`name-${index}`)?.validate()
+//     .then(() => {}, () => {
+//       flag = false;
+//     });
+//   await formRefs.value?.get(`value-${index}`)?.validate()
+//     .then(() => {}, () => {
+//       flag = false;
+//     });
+//   await formRefs.value?.get(`type-${index}`)?.validate()
+//     .then(() => {}, () => {
+//       flag = false;
+//     });
+//   await formRefs.value?.get(`instructions-${index}`)?.validate()
+//     .then(() => {}, () => {
+//       flag = false;
+//     });
 
-  return flag;
-};
+//   return flag;
+// };
 
 const handleCellBlur = async (index: number) => {
-  if (await validateRow(index)) {
-    tableData.value[index].isEdit = false;
-  }
+  // if (await validateRow(index)) {}
+  tableData.value[index].isEdit = false;
 };
 
 const handleTypeChange = (index: number, v: boolean) => {
@@ -317,56 +314,56 @@ const getTableData = () => {
   return tableData.value;
 };
 
-const varRules = {
-  name: [
-    {
-      required: true,
-      message: t('必填项'),
-      trigger: 'blur',
-    },
-    {
-      validator(value: any) {
-        const reg = /^[a-zA-Z][a-zA-Z0-9_]{0,49}$/;
-        return reg.test(value);
-      },
-      message: t('由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符'),
-      trigger: 'blur',
-    },
-    {
-      validator(value: any) {
-        // 去重
-        const alikeArr: any = tableData.value?.filter((item: any) => item.name === value);
-        if (alikeArr?.length > 1) {
-          return false;
-        }
-        return true;
-      },
-      message: t('变量名不可重复'),
-      trigger: 'blur',
-    },
-  ],
-  value: [
-    {
-      required: true,
-      message: t('必填项'),
-      trigger: 'blur',
-    },
-  ],
-  // type: [
-  //   {
-  //     required: true,
-  //     message: t('必填项'),
-  //     trigger: 'change',
-  //   },
-  // ],
-  // instructions: [
-  //   {
-  //     required: false,
-  //     message: t('必填项'),
-  //     trigger: 'blur',
-  //   },
-  // ],
-};
+// const varRules = {
+//   name: [
+//     {
+//       required: true,
+//       message: t('必填项'),
+//       trigger: 'blur',
+//     },
+//     {
+//       validator(value: any) {
+//         const reg = /^[a-zA-Z][a-zA-Z0-9_]{0,49}$/;
+//         return reg.test(value);
+//       },
+//       message: t('由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符'),
+//       trigger: 'blur',
+//     },
+//     {
+//       validator(value: any) {
+//         // 去重
+//         const alikeArr: any = tableData.value?.filter((item: any) => item.name === value);
+//         if (alikeArr?.length > 1) {
+//           return false;
+//         }
+//         return true;
+//       },
+//       message: t('变量名不可重复'),
+//       trigger: 'blur',
+//     },
+//   ],
+//   value: [
+//     {
+//       required: true,
+//       message: t('必填项'),
+//       trigger: 'blur',
+//     },
+//   ],
+//   // type: [
+//   //   {
+//   //     required: true,
+//   //     message: t('必填项'),
+//   //     trigger: 'change',
+//   //   },
+//   // ],
+//   // instructions: [
+//   //   {
+//   //     required: false,
+//   //     message: t('必填项'),
+//   //     trigger: 'blur',
+//   //   },
+//   // ],
+// };
 
 watch(
   () => props.list,
