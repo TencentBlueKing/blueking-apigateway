@@ -555,14 +555,15 @@ const handleChoosePlugin = (obj: any) => {
 };
 
 // enter搜索
-const handleSearch = () => {
+const handleSearch = async (keyword?: string) => {
+  searchValue.value = keyword || '';
   const params = {
+    keyword,
     scope_type: scopeType.value,
     scope_id: scopeId.value,
-    keyword: searchValue.value,
   };
   try {
-    getPluginListDetails(params);
+    await getPluginListDetails(params);
     updateTableEmptyConfig();
     tableEmptyConf.value.isAbnormal = false;
   } catch (error) {
