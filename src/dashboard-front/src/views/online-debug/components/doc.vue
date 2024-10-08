@@ -56,7 +56,12 @@
             </div>
           </div>
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <div class="ag-markdown-view" id="markdown" :key="renderHtmlIndex" v-html="curComponent.markdownHtml"></div>
+          <div
+            class="ag-markdown-view"
+            id="markdown"
+            :key="renderHtmlIndex"
+            v-dompurify-html="curComponent.markdownHtml"
+          ></div>
         </bk-tab-panel>
         <!-- <bk-tab-panel
           :name="'sdk'"

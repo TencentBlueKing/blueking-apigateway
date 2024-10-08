@@ -28,7 +28,7 @@
                     @click="changeCurrentSource(item)"
                   >
                     <bk-overflow-title type="tips">
-                      <span v-html="renderTitle(item.name)"></span>
+                      <span v-dompurify-html="renderTitle(item.name)"></span>
                     </bk-overflow-title>
                   </div>
                 </template>
