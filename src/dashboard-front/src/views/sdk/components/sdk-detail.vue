@@ -96,7 +96,7 @@
           <!-- <bk-button disabled>GO</bk-button> -->
         </div>
         <!-- eslint-disable-next-line vue/no-v-html -->
-        <div class="ag-markdown-view" id="markdown" :key="renderHtmlIndex" v-html="markdownHtml"></div>
+        <div class="ag-markdown-view" id="markdown" :key="renderHtmlIndex" v-dompurify-html="markdownHtml"></div>
       </bk-tab-panel>
     </bk-tab>
 

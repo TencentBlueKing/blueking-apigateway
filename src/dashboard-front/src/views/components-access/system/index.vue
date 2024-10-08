@@ -128,7 +128,7 @@
         <div
           class="ft13"
           style="margin: 8px 0"
-          v-html="systemDelTips"
+          v-dompurify-html="systemDelTips"
         ></div>
         <bk-input v-model="formRemoveConfirmCode" />
         <div class="mt10 ft13">

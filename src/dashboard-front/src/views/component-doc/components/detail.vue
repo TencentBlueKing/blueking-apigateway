@@ -33,9 +33,9 @@
               :class="{ 'active': curComponentName === component.name }" v-for="component of curComponentList"
               :key="component.id" @click="handleShowDoc(component)">
               <!-- eslint-disable-next-line vue/no-v-html -->
-              <p class="name" v-html="hightlight(component.name, 'api')"></p>
+              <p class="name" v-dompurify-html="hightlight(component.name, 'api')"></p>
               <!-- eslint-disable-next-line vue/no-v-html -->
-              <p class="label" v-html="hightlight(component.description, 'api')"></p>
+              <p class="label" v-dompurify-html="hightlight(component.description, 'api')"></p>
             </li>
           </ul>
           <template v-else-if="keyword">
@@ -85,11 +85,14 @@
                           params: { version: curVersionData.board, id: item.name }
                         }">
                         <!-- eslint-disable-next-line vue/no-v-html -->
-                        <span v-html="hightlight(item.description, 'panel')" @click="isNavPanelShow = false"></span>
+                        <span
+                          v-dompurify-html="hightlight(item.description, 'panel')"
+                          @click="isNavPanelShow = false"
+                        ></span>
                       </router-link>
                       <p class="desc">
                         <!-- eslint-disable-next-line vue/no-v-html -->
-                        <span v-html="hightlight(item.name, 'panel')"></span>
+                        <span v-dompurify-html="hightlight(item.name, 'panel')"></span>
                       </p>
                     </li>
                   </ul>

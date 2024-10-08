@@ -6,7 +6,7 @@
     <div class="access-log-container">
       <div class="detail-panel" v-show="!hasError">
         <div class="panel-hd">
-          <h2 class="title" v-html="titleInfo"></h2>
+          <h2 class="title" v-dompurify-html="titleInfo"></h2>
           <small class="time">{{transformTime(+routeQuery.bk_timestamp)}}</small>
         </div>
         <div class="panel-bd">
