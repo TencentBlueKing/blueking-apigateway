@@ -1655,6 +1655,7 @@ const lang: ILANG = {
   '不健康次数': ['Failures'],
   '响应体': ['Response Example'],
   '响应头': ['Response Headers'],
+  '上传失败': ['Upload failed'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
