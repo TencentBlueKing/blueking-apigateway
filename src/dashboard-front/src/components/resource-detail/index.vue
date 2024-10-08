@@ -665,7 +665,7 @@
     <!--  插件  -->
     <div v-if="localData.plugins?.length">
       <template v-for="plugin in localData.plugins" :key="plugin.id">
-        <div :class="{ 'container-diff': checkPluginDiff(plugin) }">
+        <div class="container-diff" :class="getPluginDiffClass(plugin)">
           <p class="title mt15">
             {{ $t('插件:{name}', { name: plugin.name }) }}
           </p>
@@ -706,6 +706,11 @@ const props = defineProps({
   backendsList: {
     type: Array,
     default: [],
+  },
+  // 是否作为旧版本资源展示
+  isSource: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -881,16 +886,35 @@ const checkDiff = (path: any) => {
 //   );
 // };
 
-const checkPluginDiff = (plugin: any) => {
+const getPluginDiffClass = (plugin: any) => {
   // 检查传入的 plugin 是否记录在 diffMap 中
   const diffMapPluginKey = `localData.plugins.${plugin.code || plugin.type}`;
-  const keys = Object.keys(diffMap.value);
-  const hasMatchingDiffMapKey = keys.some(item => item.startsWith(diffMapPluginKey));
-  // 检查传入的 plugin 是否存在于 curResource.diff.plugins 中
+  const isPluginUpdated = Object.keys(diffMap.value).some(item => item.startsWith(diffMapPluginKey));
+
+  // 插件在 diffMap 中，属于更新的内容，给予 item-updated 样式
+  if (isPluginUpdated) {
+    return 'item-updated';
+  }
+
+  // 插件不在 diffMap 中，检查传入的 plugin 是否存在于 curResource.diff.plugins 中
+  // 如果存在，说明属于新增或删除的插件，如果不存在说明没有变动
   const diffPlugins = props.curResource?.diff?.plugins ?? {};
-  const hasMatchingDiffPluginCode = Object.keys(diffPlugins)
+  const isPluginAddedOrDeleted = Object.keys(diffPlugins)
     .some((pluginCode: string) => pluginCode === (plugin.type || plugin.code));
-  return hasMatchingDiffMapKey || hasMatchingDiffPluginCode;
+
+  // 属于新增或删除的插件
+  if (isPluginAddedOrDeleted) {
+    // 传入了 isSource，表示当前 resource 作为旧数据展示，插件的变动属于被删除的内容，给予 item-deleted 样式
+    if (props.isSource) {
+      return 'item-deleted';
+    }
+
+    // 当前 resource 作为新数据展示，插件的变动属于新添加的内容，给予 item-deleted 样式
+    return 'item-added';
+  }
+
+  // 插件没有变更，返回空 class，不改变样式
+  return '';
 };
 
 // 网关标签
@@ -1050,9 +1074,20 @@ initLocalData();
 }
 
 .container-diff {
-  background: rgba(255, 156, 1, 0.1);
   padding: 2px 8px;
   margin: 18px 0;
+
+  &.item-added {
+    background-color: rgba(45, 203, 86, 0.1);
+  }
+
+  &.item-updated {
+    background-color: rgba(255, 156, 1, 0.1);
+  }
+
+  &.item-deleted {
+    background-color: rgba(234, 54, 54, 0.1);
+  }
 }
 .ag-kv-box {
   &.box-diff {
