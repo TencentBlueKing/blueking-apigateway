@@ -5,11 +5,11 @@
         <p class="ag-table-change">
           {{ t('请确认以下组件对应网关资源的变更：') }}
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <span v-html="addInfo"></span>
+          <span v-dompurify-html="addInfo"></span>
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <span v-html="updateInfo"></span>
+          <span v-dompurify-html="updateInfo"></span>
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <span v-html="deleteInfo"></span>
+          <span v-dompurify-html="deleteInfo"></span>
         </p>
         <bk-input
           :clearable="true"

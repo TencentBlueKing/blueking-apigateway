@@ -8,6 +8,7 @@ import globalConfig from '@/constant/config';
 import directive from '@/directive/index';
 import mavonEditor from 'mavon-editor';
 import 'mavon-editor/dist/css/index.css';
+import VueDOMPurifyHTML from 'vue-dompurify-html';
 
 // 全量引入 bkui-vue
 import bkui from 'bkui-vue';
@@ -29,4 +30,5 @@ app.use(i18n)
   // .directive('overflowTitle', overflowTitle)
   // .directive('bkTooltips', bkTooltips)
   .use(mavonEditor)
+  .use(VueDOMPurifyHTML)
   .mount('.app');
