@@ -194,7 +194,8 @@ class ResourceRequestsMetrics(BaseMetrics):
         )
 
 
-class BaseResponseTimePercentileMetrics(BaseMetrics):
+class ResponseTime100thMetrics(BaseMetrics):
+    metrics = MetricsEnum.RESPONSE_TIME_100TH
     quantile = 1.0
 
     def _get_query_promql(
@@ -218,23 +219,8 @@ class BaseResponseTimePercentileMetrics(BaseMetrics):
             f"histogram_quantile({self.quantile}, "
             f"sum(rate({self.metric_name_prefix}apigateway_api_request_duration_milliseconds_bucket{{"
             f"{labels}"
-            f"}}[{step}])) by (le, api_name))"
+            f"}}[{step}])) by (le, resource_name))"
         )
-
-
-class ResponseTime50thMetrics(BaseResponseTimePercentileMetrics):
-    metrics = MetricsEnum.RESPONSE_TIME_50TH
-    quantile = 0.50
-
-
-class ResponseTime80thMetrics(BaseResponseTimePercentileMetrics):
-    metrics = MetricsEnum.RESPONSE_TIME_80TH
-    quantile = 0.80
-
-
-class ResponseTime90thMetrics(BaseResponseTimePercentileMetrics):
-    metrics = MetricsEnum.RESPONSE_TIME_90TH
-    quantile = 0.90
 
 
 class IngressMetrics(BaseMetrics):
@@ -345,9 +331,7 @@ MetricsFactory.register(RequestsTotalMetrics)
 MetricsFactory.register(Non200StatusMetrics)
 MetricsFactory.register(AppRequestsMetrics)
 MetricsFactory.register(ResourceRequestsMetrics)
-MetricsFactory.register(ResponseTime50thMetrics)
-MetricsFactory.register(ResponseTime80thMetrics)
-MetricsFactory.register(ResponseTime90thMetrics)
+MetricsFactory.register(ResponseTime100thMetrics)
 MetricsFactory.register(IngressMetrics)
 MetricsFactory.register(EgressMetrics)
 MetricsFactory.register(Failed500RequestsMetrics)
