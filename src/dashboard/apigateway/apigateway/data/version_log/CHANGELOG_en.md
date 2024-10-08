@@ -1,3 +1,14 @@
+<!-- 2024-10-08 -->
+# V1.14.3 Release Log
+
+### Bug Fixes
+
+- Fixed the issue where the description disappears when editing a plugin
+- Error notification for failed ZIP uploads during document import
+- XSS vulnerability fix
+
+---
+
 <!-- 2024-09-26 -->
 # V1.14.2 Release Log
 
