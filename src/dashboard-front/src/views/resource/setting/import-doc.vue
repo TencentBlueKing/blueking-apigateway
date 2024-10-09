@@ -221,6 +221,16 @@ import { useCommon } from '@/store';
 import cookie from 'cookie';
 import { useSelection, useGetGlobalProperties } from '@/hooks';
 import TmplExampleSideslider from '@/views/resource/setting/comps/tmpl-example-sideslider.vue';
+import { UploadFile } from 'bkui-vue/lib/upload/upload.type';
+
+interface IFile extends UploadFile {
+  response?: {
+    data: {
+      resource: object,
+      resource_doc: object,
+    }[]
+  }
+}
 
 const { t } = useI18n();
 const common = useCommon();
@@ -290,14 +300,15 @@ const handleUploadSuccess = async (e: any, file: any) => {
 };
 
 // 上传完成的方法
-const handleUploadDone = async (response: any) => {
-  if (response[0].status === 'fail') {
+const handleUploadDone = async (fileList: IFile[]) => {
+  const file = fileList[fileList.length - 1];
+  if (!file.response) {
     return Message({ theme: 'error', message: t('上传失败') });
   }
-  const res = response[0].response.data;
-  const data = res.map((e: any) => ({ ...e, ...e.resource, ...e.resource_doc }));
+  const res = file.response.data;
+  const data = res.map(e => ({ ...e, ...e.resource, ...e.resource_doc }));
   tableData.value = data;
-  checkData.value = data.filter((e: any) => !!e.resource); // 有资源文档的才默认选中
+  checkData.value = data.filter(e => !!e.resource); // 有资源文档的才默认选中
   curView.value = 'resources';
   nextTick(() => {
     selections.value = JSON.parse(JSON.stringify(checkData.value));
