@@ -1,3 +1,12 @@
+<!-- 2024-10-09 -->
+# V1.14.4 Release Log
+
+### Bug Fixes
+
+- Fixed incorrect validation in online debugging
+
+---
+
 <!-- 2024-10-08 -->
 # V1.14.3 Release Log
 
