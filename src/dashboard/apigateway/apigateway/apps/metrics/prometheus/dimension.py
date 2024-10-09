@@ -21,7 +21,7 @@ from typing import ClassVar, Dict, Optional, Type
 
 from django.conf import settings
 
-from apigateway.apps.metrics.constants import MetricsEnum
+from apigateway.apps.metrics.constants import MetricsNumberEnum, MetricsRangeEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.prometheus import prometheus_component
 
@@ -29,7 +29,7 @@ from .base import BasePrometheusMetrics
 
 
 class BaseMetrics(BasePrometheusMetrics):
-    metrics: ClassVar[MetricsEnum]
+    metrics: ClassVar[str]
 
     @abstractmethod
     def _get_query_promql(
@@ -68,7 +68,7 @@ class BaseMetrics(BasePrometheusMetrics):
 
 
 class RequestsMetrics(BaseMetrics):
-    metrics = MetricsEnum.REQUESTS
+    metrics = MetricsRangeEnum.REQUESTS
 
     def _get_query_promql(
         self,
@@ -90,31 +90,8 @@ class RequestsMetrics(BaseMetrics):
         return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
 
 
-class RequestsTotalMetrics(BaseMetrics):
-    metrics = MetricsEnum.REQUESTS_TOTAL
-
-    def _get_query_promql(
-        self,
-        gateway_name: str,
-        stage_name: str,
-        step: str,
-        stage_id: Optional[int],
-        resource_id: Optional[int],
-        resource_name: Optional[str],
-    ) -> str:
-        labels = self._get_labels_expression(
-            [
-                *self.default_labels,
-                ("api_name", "=", gateway_name),
-                ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
-            ]
-        )
-        return f"sum({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}})"
-
-
 class Non200StatusMetrics(BaseMetrics):
-    metrics = MetricsEnum.NON_200_STATUS
+    metrics = MetricsRangeEnum.NON_200_STATUS
 
     def _get_query_promql(
         self,
@@ -142,7 +119,7 @@ class Non200StatusMetrics(BaseMetrics):
 
 
 class AppRequestsMetrics(BaseMetrics):
-    metrics = MetricsEnum.APP_REQUESTS
+    metrics = MetricsRangeEnum.APP_REQUESTS
 
     def _get_query_promql(
         self,
@@ -168,7 +145,7 @@ class AppRequestsMetrics(BaseMetrics):
 
 
 class ResourceRequestsMetrics(BaseMetrics):
-    metrics = MetricsEnum.RESOURCE_REQUESTS
+    metrics = MetricsRangeEnum.RESOURCE_REQUESTS
 
     def _get_query_promql(
         self,
@@ -195,7 +172,7 @@ class ResourceRequestsMetrics(BaseMetrics):
 
 
 class ResponseTime90thMetrics(BaseMetrics):
-    metrics = MetricsEnum.RESPONSE_TIME_90TH
+    metrics = MetricsRangeEnum.RESPONSE_TIME_90TH
     quantile = 0.9
 
     def _get_query_promql(
@@ -224,7 +201,7 @@ class ResponseTime90thMetrics(BaseMetrics):
 
 
 class IngressMetrics(BaseMetrics):
-    metrics = MetricsEnum.INGRESS
+    metrics = MetricsRangeEnum.INGRESS
 
     def _get_query_promql(
         self,
@@ -253,7 +230,7 @@ class IngressMetrics(BaseMetrics):
 
 
 class EgressMetrics(BaseMetrics):
-    metrics = MetricsEnum.EGRESS
+    metrics = MetricsRangeEnum.EGRESS
 
     def _get_query_promql(
         self,
@@ -282,9 +259,32 @@ class EgressMetrics(BaseMetrics):
         )
 
 
-# 500 状态码的请求为了提供计算健康率
-class Failed500RequestsMetrics(BaseMetrics):
-    metrics = MetricsEnum.FAILED_500_REQUESTS
+class RequestsTotalMetrics(BaseMetrics):
+    metrics = MetricsNumberEnum.REQUESTS_TOTAL
+
+    def _get_query_promql(
+        self,
+        gateway_name: str,
+        stage_name: str,
+        step: str,
+        stage_id: Optional[int],
+        resource_id: Optional[int],
+        resource_name: Optional[str],
+    ) -> str:
+        labels = self._get_labels_expression(
+            [
+                *self.default_labels,
+                ("api_name", "=", gateway_name),
+                ("stage_name", "=", stage_name),
+                ("resource_name", "=", resource_name),
+            ]
+        )
+        return f"sum({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}})"
+
+
+# 计算健康率
+class HealthRateMetrics(BaseMetrics):
+    metrics = MetricsNumberEnum.HEALTH_RATE
 
     def _get_query_promql(
         self,
@@ -308,12 +308,12 @@ class Failed500RequestsMetrics(BaseMetrics):
         return f"sum({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}})"
 
 
-class MetricsFactory:
+class MetricsRangeFactory:
     # map: metrics -> metrics_class
-    _registry: Dict[MetricsEnum, Type[BaseMetrics]] = {}
+    _registry: Dict[MetricsRangeEnum, Type[BaseMetrics]] = {}
 
     @classmethod
-    def create_metrics(cls, metrics: MetricsEnum) -> BaseMetrics:
+    def create_metrics(cls, metrics: MetricsRangeEnum) -> BaseMetrics:
         _class = cls._registry.get(metrics)
         if not _class:
             raise error_codes.INVALID_ARGUMENT.format(f"unsupported metrics={metrics.value}")
@@ -321,17 +321,36 @@ class MetricsFactory:
 
     @classmethod
     def register(cls, metrics_class: Type[BaseMetrics]):
-        if not hasattr(metrics_class, "metrics") or not isinstance(metrics_class.metrics, MetricsEnum):
-            raise ValueError("metrics_class must have a 'metrics' ClassVar of type MetricsEnum")
+        if not hasattr(metrics_class, "metrics") or not isinstance(metrics_class.metrics, MetricsRangeEnum):
+            raise ValueError("metrics_class must have a 'metrics' ClassVar of type MetricsRangeEnum")
         cls._registry[metrics_class.metrics] = metrics_class
 
 
-MetricsFactory.register(RequestsMetrics)
-MetricsFactory.register(RequestsTotalMetrics)
-MetricsFactory.register(Non200StatusMetrics)
-MetricsFactory.register(AppRequestsMetrics)
-MetricsFactory.register(ResourceRequestsMetrics)
-MetricsFactory.register(ResponseTime90thMetrics)
-MetricsFactory.register(IngressMetrics)
-MetricsFactory.register(EgressMetrics)
-MetricsFactory.register(Failed500RequestsMetrics)
+class MetricsNumberFactory:
+    # map: metrics -> metrics_class
+    _registry: Dict[MetricsNumberEnum, Type[BaseMetrics]] = {}
+
+    @classmethod
+    def create_metrics(cls, metrics: MetricsNumberEnum) -> BaseMetrics:
+        _class = cls._registry.get(metrics)
+        if not _class:
+            raise error_codes.INVALID_ARGUMENT.format(f"unsupported metrics={metrics.value}")
+        return _class()
+
+    @classmethod
+    def register(cls, metrics_class: Type[BaseMetrics]):
+        if not hasattr(metrics_class, "metrics") or not isinstance(metrics_class.metrics, MetricsNumberEnum):
+            raise ValueError("metrics_class must have a 'metrics' ClassVar of type MetricsNumberEnum")
+        cls._registry[metrics_class.metrics] = metrics_class
+
+
+MetricsRangeFactory.register(RequestsMetrics)
+MetricsRangeFactory.register(Non200StatusMetrics)
+MetricsRangeFactory.register(AppRequestsMetrics)
+MetricsRangeFactory.register(ResourceRequestsMetrics)
+MetricsRangeFactory.register(ResponseTime90thMetrics)
+MetricsRangeFactory.register(IngressMetrics)
+MetricsRangeFactory.register(EgressMetrics)
+
+MetricsNumberFactory.register(RequestsTotalMetrics)
+MetricsNumberFactory.register(HealthRateMetrics)

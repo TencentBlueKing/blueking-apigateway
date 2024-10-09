@@ -19,7 +19,7 @@
 
 import pytest
 
-from apigateway.apis.web.metrics.views import MetricsSmartTimeRange
+from apigateway.apis.web.metrics.views import MetricsSmartTimeRange, QueryNumberApi
 
 
 class TestMetricsSmartTimeRange:
@@ -46,7 +46,7 @@ class TestMetricsSmartTimeRange:
 class TestQueryRangeApi:
     def test_get(self, mocker, fake_stage, request_view):
         mocker.patch(
-            "apigateway.apis.web.metrics.views.MetricsFactory.create_metrics",
+            "apigateway.apis.web.metrics.views.MetricsRangeFactory.create_metrics",
             return_value=mocker.Mock(query_range=mocker.Mock(return_value={"foo": "bar"})),
         )
 
@@ -80,3 +80,110 @@ class TestQueryRangeApi:
             },
         )
         assert response.status_code == 404
+
+
+class TestQueryNumberApi:
+    def test_get(self, mocker, fake_stage, request_view):
+        mocker.patch(
+            "apigateway.apis.web.metrics.views.MetricsNumberFactory.create_metrics",
+            return_value=mocker.Mock(
+                query_range=mocker.Mock(
+                    return_value={"result": True, "code": 200, "message": "OK", "data": {"metrics": [], "series": []}}
+                )
+            ),
+        )
+
+        response = request_view(
+            "GET",
+            "metrics.query_number",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "stage_id": fake_stage.id,
+                "metrics": "requests_total",
+                "time_range": 300,
+            },
+        )
+        result = response.json()
+        assert response.status_code == 200
+        assert result["data"] == 0  # 没有数据的情况
+
+        # stage not found
+        response = request_view(
+            "GET",
+            "metrics.query_number",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "stage_id": 0,
+                "metrics": "requests_total",
+                "time_range": 300,
+            },
+        )
+        assert response.status_code == 404
+
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (None, 0),
+            (
+                {
+                    "result": True,
+                    "code": 200,
+                    "message": "OK",
+                    "data": {"metrics": [], "series": []},
+                },
+                0,
+            ),
+            (
+                {
+                    "result": True,
+                    "code": 200,
+                    "message": "OK",
+                    "data": {
+                        "metrics": [],
+                        "series": [
+                            {
+                                "datapoints": [
+                                    [None, 1708290000000],
+                                    [5, 1727161200000],
+                                    [22, 1727164800000],
+                                    [26, 1727197200000],
+                                    [26, 1727200800000],
+                                ]
+                            }
+                        ],
+                    },
+                },
+                26,
+            ),
+            (
+                {
+                    "result": True,
+                    "code": 200,
+                    "message": "OK",
+                    "data": {
+                        "metrics": [],
+                        "series": [
+                            {
+                                "datapoints": [
+                                    [4, 1708290000000],
+                                    [5, 1727161200000],
+                                    [22, 1727164800000],
+                                    [26, 1727197200000],
+                                    [None, 1727200800000],
+                                ]
+                            }
+                        ],
+                    },
+                },
+                22,
+            ),
+        ],
+    )
+    def test_get_data_differ_number(self, data, expected):
+        view = QueryNumberApi()
+        result = view._get_data_differ_number(data)
+        assert result == expected

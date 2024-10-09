@@ -19,13 +19,16 @@
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 
 
-class MetricsEnum(StructuredEnum):
+class MetricsRangeEnum(StructuredEnum):
     REQUESTS = EnumField("requests")
-    REQUESTS_TOTAL = EnumField("requests_total")
     NON_200_STATUS = EnumField("non_200_status")
     APP_REQUESTS = EnumField("app_requests")
     RESOURCE_REQUESTS = EnumField("resource_requests")
     RESPONSE_TIME_90TH = EnumField("response_time_90th")
     INGRESS = EnumField("ingress")
     EGRESS = EnumField("egress")
-    FAILED_500_REQUESTS = EnumField("failed_500_requests")
+
+
+class MetricsNumberEnum(StructuredEnum):
+    REQUESTS_TOTAL = EnumField("requests_total")
+    HEALTH_RATE = EnumField("health_rate")
