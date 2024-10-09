@@ -217,88 +217,6 @@ class TestResourceRequestsMetrics:
             assert result == test["expected"], result
 
 
-class TestResponseTime50thMetrics:
-    def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
-
-        data = [
-            {
-                "params": {
-                    "gateway_name": "foo",
-                    "stage_name": "prod",
-                    "stage_id": 1,
-                    "resource_id": 1,
-                    "resource_name": "get_foo",
-                    "step": "1m",
-                },
-                "expected": (
-                    "histogram_quantile(0.5, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, api_name))'
-                ),
-            },
-            {
-                "params": {
-                    "gateway_name": "foo",
-                    "stage_name": "prod",
-                    "stage_id": 1,
-                    "resource_id": 1,
-                    "resource_name": None,
-                    "step": "1m",
-                },
-                "expected": (
-                    "histogram_quantile(0.5, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'api_name="foo", stage_name="prod"}[1m])) '
-                    "by (le, api_name))"
-                ),
-            },
-        ]
-        for test in data:
-            metrics = dimension.ResponseTime50thMetrics()
-            result = metrics._get_query_promql(**test["params"])
-            assert result == test["expected"], result
-
-
-class TestResponseTime80thMetrics:
-    def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
-
-        data = [
-            {
-                "params": {
-                    "gateway_name": "foo",
-                    "stage_name": "prod",
-                    "stage_id": 1,
-                    "resource_id": 1,
-                    "resource_name": "get_foo",
-                    "step": "1m",
-                },
-                "expected": (
-                    "histogram_quantile(0.8, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, api_name))'
-                ),
-            },
-            {
-                "params": {
-                    "gateway_name": "foo",
-                    "stage_name": "prod",
-                    "stage_id": 1,
-                    "resource_id": 1,
-                    "resource_name": None,
-                    "step": "1m",
-                },
-                "expected": (
-                    "histogram_quantile(0.8, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'api_name="foo", stage_name="prod"}[1m])) '
-                    "by (le, api_name))"
-                ),
-            },
-        ]
-        for test in data:
-            metrics = dimension.ResponseTime80thMetrics()
-            result = metrics._get_query_promql(**test["params"])
-            assert result == test["expected"], result
-
-
 class TestResponseTime90thMetrics:
     def test_get_query_promql(self, mocker):
         mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
@@ -315,7 +233,7 @@ class TestResponseTime90thMetrics:
                 },
                 "expected": (
                     "histogram_quantile(0.9, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, api_name))'
+                    'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, resource_name))'
                 ),
             },
             {
@@ -330,7 +248,7 @@ class TestResponseTime90thMetrics:
                 "expected": (
                     "histogram_quantile(0.9, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
                     'api_name="foo", stage_name="prod"}[1m])) '
-                    "by (le, api_name))"
+                    "by (le, resource_name))"
                 ),
             },
         ]
@@ -482,14 +400,6 @@ class TestMetricsFactory:
             {
                 "metrics": "resource_requests",
                 "expected": dimension.ResourceRequestsMetrics,
-            },
-            {
-                "metrics": "response_time_50th",
-                "expected": dimension.ResponseTime50thMetrics,
-            },
-            {
-                "metrics": "response_time_80th",
-                "expected": dimension.ResponseTime80thMetrics,
             },
             {
                 "metrics": "response_time_90th",

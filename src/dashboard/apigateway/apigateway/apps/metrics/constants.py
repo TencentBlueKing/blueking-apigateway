@@ -25,8 +25,6 @@ class MetricsEnum(StructuredEnum):
     NON_200_STATUS = EnumField("non_200_status")
     APP_REQUESTS = EnumField("app_requests")
     RESOURCE_REQUESTS = EnumField("resource_requests")
-    RESPONSE_TIME_50TH = EnumField("response_time_50th")
-    RESPONSE_TIME_80TH = EnumField("response_time_80th")
     RESPONSE_TIME_90TH = EnumField("response_time_90th")
     INGRESS = EnumField("ingress")
     EGRESS = EnumField("egress")

@@ -58,7 +58,6 @@ class TestQueryRangeApi:
             },
             data={
                 "stage_id": fake_stage.id,
-                "dimension": "all",
                 "metrics": "requests",
                 "time_range": 300,
             },
@@ -76,7 +75,6 @@ class TestQueryRangeApi:
             },
             data={
                 "stage_id": 0,
-                "dimension": "all",
                 "metrics": "requests",
                 "time_range": 300,
             },
