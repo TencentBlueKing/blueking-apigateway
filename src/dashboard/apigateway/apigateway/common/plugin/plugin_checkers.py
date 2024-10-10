@@ -24,6 +24,7 @@
 """
 
 import ipaddress
+import json
 import re
 from abc import ABC, abstractmethod
 from collections import Counter
@@ -158,20 +159,27 @@ class BkIPRestrictionChecker(BaseChecker):
 class RequestValidationChecker(BaseChecker):
     def _validate_json_schema(self, schema_name: str, json_schema: str):
         try:
-            jsonschema.validate(instance=json_schema, schema=Draft7Schema)
+            data = json.loads(json_schema)
+        except json.JSONDecodeError:
+            raise ValueError(f"Your {schema_name} Schema is not a valid JSON.")
+
+        try:
+            jsonschema.validate(instance=data, schema=Draft7Schema)
         except jsonschema.exceptions.ValidationError as err:
             raise ValueError(f"Your {schema_name} Schema is not valid: {err}")
+
+        # FIXME: check the valid json schema
 
     def check(self, payload: str):
         loaded_data = yaml_loads(payload)
         if not loaded_data:
             raise ValueError("yaml can not be empty")
 
-        body_schema = loaded_data.get("body_schema", {})
-        header_schema = loaded_data.get("header_schema", {})
+        body_schema = loaded_data.get("body_schema")
+        header_schema = loaded_data.get("header_schema")
 
         if not body_schema and not header_schema:
-            raise ValueError("header_schema and body_schema must have a value")
+            raise ValueError("header_schema or body_schema should be configured at least one.")
 
         if body_schema:
             self._validate_json_schema("body_schema", body_schema)

@@ -18,6 +18,7 @@
 
 # PluginConfig 中前端表单数据，转换成 apisix 插件配置
 
+import json
 from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, List, Union
 
@@ -119,6 +120,48 @@ class BkMockConvertor(PluginConvertor):
         return config
 
 
+class RequestValidationConvertor(PluginConvertor):
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.REQUEST_VALIDATION
+
+    def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        new_config = {}
+
+        if config.get("header_schema"):
+            new_config["header_schema"] = json.loads(config["header_schema"])
+
+        if config.get("body_schema"):
+            new_config["body_schema"] = json.loads(config["body_schema"])
+
+        new_config["rejected_code"] = config.get("rejected_code", 400)
+
+        if config.get("rejected_msg"):
+            new_config["rejected_msg"] = config["rejected_msg"]
+
+        return new_config
+
+
+class FaultInjectionConvertor(PluginConvertor):
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.FAULT_INJECTION
+
+    def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        return config
+        # new_config = {}
+
+        # if config.get("abort"):
+        #     new_config["abort"] = {
+        #         "http_status": config["abort"]["http_status"],
+        #         "percentage": config["abort"]["percentage"],
+        #     }
+
+        # if config.get("delay"):
+        #     new_config["delay"] = {
+        #         "duration": config["delay"]["duration"],
+        #         "percentage": config["delay"]["percentage"],
+        #     }
+
+        # return new_config
+
+
 class PluginConvertorFactory:
     plugin_convertors: ClassVar[Dict[PluginTypeCodeEnum, PluginConvertor]] = {
         c.plugin_type_code: c
@@ -127,6 +170,7 @@ class PluginConvertorFactory:
             IPRestrictionConvertor(),
             BkCorsConvertor(),
             BkMockConvertor(),
+            RequestValidationConvertor(),
         ]
     }
 

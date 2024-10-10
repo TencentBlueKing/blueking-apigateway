@@ -1371,19 +1371,18 @@
     version: '0'
     _schema: |-
       {
-        "$comment": "this is a mark for our injected plugin schema",
         "type": "object",
         "properties": {
-          "response_status":{
-              "type": "integer",
-              "default": 200,
-              "minimum": 100
+          "response_status": {
+            "type": "integer",
+            "default": 200,
+            "minimum": 100
           },
           "response_example": {
-              "type": "string"
+            "type": "string"
           },
           "response_headers": {
-              "type": "object"
+            "type": "object"
           }
         }
       }
@@ -1536,7 +1535,6 @@
     version: '0'
     _schema: |-
       {
-        "$comment": "this is a mark for our injected plugin schema",
         "type": "object",
         "properties": {
           "break_response_code": {
@@ -1561,7 +1559,7 @@
                   "minLength": 1
                 }
               },
-              "required": ["key","value"]
+              "required": ["key", "value"]
             }
           },
           "max_breaker_sec": {
@@ -1581,7 +1579,7 @@
                   "maximum": 599
                 },
                 "uniqueItems": true,
-                "default": 500
+                "default": [500]
               },
               "failures": {
                 "type": "integer",
@@ -1589,21 +1587,24 @@
                 "default": 3
               }
             },
-            "default": {"http_statuses": [500], "failures": 3}
+            "default": {
+              "http_statuses": [500],
+              "failures": 3
+            }
           },
           "healthy": {
             "type": "object",
             "properties": {
               "http_statuses": {
                 "type": "array",
-                "minItems": 0,
+                "minItems": 1,
                 "items": {
                   "type": "integer",
                   "minimum": 200,
                   "maximum": 499
                 },
                 "uniqueItems": true,
-                "default": 200
+                "default": [200]
               },
               "successes": {
                 "type": "integer",
@@ -1611,7 +1612,10 @@
                 "default": 3
               }
             },
-            "default": {"http_statuses": [200] , "successes": 3}
+            "default": {
+              "http_statuses": [200],
+              "successes": 3
+            }
           }
         },
         "required": ["break_response_code"]
@@ -1935,32 +1939,35 @@
     type: plugin
     version: '0'
     _schema: |-
-      {  
-        "$comment": "this is a mark for our injected plugin schema",
+      {
         "type": "object",
         "properties": {
           "header_schema": {
-            "type": "object",
-            "description": "header 数据的 schema 数据结构。",
-            "additionalProperties": true
+            "type": "object"
           },
           "body_schema": {
-            "type": "object",
-            "description": "body 数据的 schema 数据结构。",
-            "additionalProperties": true
+            "type": "object"
           },
           "rejected_code": {
             "type": "integer",
-            "description": "当请求被拒绝时要返回的状态码。",
-            "default": 400,
             "minimum": 200,
-            "maximum": 599
+            "maximum": 599,
+            "default": 400
           },
           "rejected_msg": {
             "type": "string",
-            "description": "当请求被拒绝时返回的信息。"
+            "minLength": 1,
+            "maxLength": 256
           }
-        }
+        },
+        "anyOf": [
+          {
+            "required": ["header_schema"]
+          },
+          {
+            "required": ["body_schema"]
+          }
+        ]
       }
     description: '-'
     example: '-'
@@ -1984,7 +1991,7 @@
     example: '作用： 当请求体中没有包含 boolean_payload 时，则返回 400 拒绝状态码和拒绝信息\n\n"header_schema": {}\n"body_schema": {"type": "object","required": ["bool_payload"],"properties": {"bool_payload": {"type": "boolean"}}}\n"rejected_code": 400\n"rejected_msg": "not valid request body"'
     style: dynamic
     default_value: ''
-    config: |-  
+    config: |-
       {
         "schema": {
           "type": "object",
@@ -1998,7 +2005,7 @@
                 "type": "textarea",
                 "rows": 10
               }
-            },              
+            },
             "body_schema": {
               "type": "string",
               "maxLength": 51200,
@@ -2023,7 +2030,7 @@
                 "rows": 10
               }
             }
-          } 
+          }
         },
         "layout": [],
         "formData": {},
@@ -2052,7 +2059,7 @@
                 "type": "textarea",
                 "rows": 10
               }
-            },              
+            },
             "body_schema": {
               "type": "string",
               "maxLength": 51200,
@@ -2077,7 +2084,7 @@
                 "rows": 10
               }
             }
-          } 
+          }
         },
         "layout": [],
         "formData": {},
@@ -2092,86 +2099,58 @@
     version: '0'
     _schema: |-
       {
-        "$comment": "this is a mark for our injected plugin schema",
         "type": "object",
         "properties": {
           "abort": {
-            "description": "中断状态",
-            "title": "abort",
             "type": "object",
             "properties": {
               "http_status": {
-                "description": "返回给客户端的 HTTP 状态码",
-                "title": "中断状态码",
                 "type": "integer",
                 "minimum": 200
               },
               "body": {
-                "description": "返回给客户端的响应数据。支持使用 NGINX 变量，如 client addr: $remote_addr\n",
-                "title": "中断响应体",
                 "type": "string",
-                "ui:component": {
-                  "type": "textarea",
-                  "rows": 10
-                }
+                "minLength": 0
               },
               "percentage": {
-                "description": "将被中断的请求占比",
-                "title": "中断请求占比",
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 100
               },
               "vars": {
                 "type": "array",
-                "title": "中断vars",
-                "description": "执行故障注入的规则，当规则匹配通过后才会执行故障注。vars 是一个表达式的列表，来自 lua-resty-expr。",
+                "maxItems": 20,
                 "items": {
-                  "type": "array",
-                  "ui:component": {
-                    "name": "bfInput"
-                  }
-                },
-                "ui:component": {
-                  "name": "bfArray"
+                  "type": "array"
                 }
               }
-            }
+            },
+            "required": ["http_status"]
           },
           "delay": {
-            "description": "延迟状态",
-            "title": "delay",
             "type": "object",
             "properties": {
               "duration": {
-                "title": "延迟时间",
-                "description": "延迟时间，只能填入整数",
-                "type": "number"
+                "type": "number",
+                "minimum": 0
               },
               "percentage": {
-                "description": "将被延迟的请求占比",
-                "title": "延迟请求占比",
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 100
               },
               "vars": {
                 "type": "array",
-                "title": "延迟vars",
-                "description": "执行请求延迟的规则，当规则匹配通过后才会延迟请求。vars 是一个表达式列表，来自 lua-resty-expr。",
+                "maxItems": 20,
                 "items": {
-                  "type": "array",
-                  "ui:component": {
-                    "name": "bfInput"
-                  }
-                },
-                "ui:component": {
-                  "name": "bfArray"
+                  "type": "array"
                 }
               }
-            }
+            },
+            "required": ["duration"]
           }
-        }
+        },
+        "minProperties": 1
       }
     description: '-'
     example: '-'
@@ -2192,7 +2171,7 @@
     type:
     - fault-injection
     notes: fault-injection 插件是故障注入插件，该插件可以和其他插件一起使用，并在其他插件执行前被执行。
-    example: '作用： 当请求参数 name 不等于 jack 的时候，则返回 400 拒绝状态码和状态信息\n\n"abort": {\n    "http_status": 400,\n    "body": "not valid request params"\n    "vars": ['["arg_name", "==", "jack"]']\n}\n'
+    example: '作用： 当请求参数 name 不等于 jack 的时候，则返回 400 拒绝状态码和状态信息\n\n"abort": {\n    "http_status": 400,\n    "body": "not valid request params",\n    "vars": [["arg_name", "==", "jack"]]\n}\n'
     style: dynamic
     default_value: ''
     config: |-
@@ -2205,7 +2184,7 @@
               "title": "abort",
               "type": "object",
               "properties": {
-                "http_status": {  
+                "http_status": {
                   "description": "返回给客户端的 HTTP 状态码",
                   "title": "中断状态码",
                   "type": "integer"
@@ -2220,24 +2199,19 @@
                   }
                 },
                 "percentage": {
-                  "description": "将被中断的请求占比",
+                  "description": "将被中断的请求占比，0-100",
                   "title": "中断请求占比",
                   "type": "integer",
                   "minimum": 0,
                   "maximum": 100
                 },
                 "vars": {
-                  "type": "array",
-                  "title": "中断vars",
+                  "type": "string",
+                  "title": "执行故障注入的规则",
                   "description": "执行故障注入的规则，当规则匹配通过后才会执行故障注。vars 是一个表达式的列表，来自 lua-resty-expr。",
-                  "items": {
-                    "type": "string",
-                    "ui:component": {
-                      "name": "bfInput"
-                    }
-                  },
                   "ui:component": {
-                    "name": "bfArray"
+                    "type": "textarea",
+                    "rows": 10
                   }
                 }
               }
@@ -2249,28 +2223,23 @@
               "properties": {
                 "duration": {
                   "title": "延迟时间",
-                  "description": "延迟时间，只能填入整数",
+                  "description": "延迟时间，单位秒，只能填入整数",
                   "type": "number"
                 },
                 "percentage": {
-                  "description": "将被延迟的请求占比",
+                  "description": "将被延迟的请求占比，0-100",
                   "title": "延迟请求占比",
                   "type": "integer",
                   "minimum": 0,
                   "maximum": 100
                 },
                 "vars": {
-                  "type": "array",
-                  "title": "延迟vars",
+                  "type": "string",
+                  "title": "延迟规则",
                   "description": "执行请求延迟的规则，当规则匹配通过后才会延迟请求。vars 是一个表达式列表，来自 lua-resty-expr。",
-                  "items": {
-                    "type": "string",
-                    "ui:component": {
-                      "name": "bfInput"
-                    }
-                  },
                   "ui:component": {
-                    "name": "bfArray"
+                    "type": "textarea",
+                    "rows": 10
                   }
                 }
               }
@@ -2287,7 +2256,7 @@
     type:
     - fault-injection
     notes: The fault-injection plug-in is a fault injection plug-in that can be used with other plug-ins and executed before the other plug-ins are executed.
-    example: 'Purpose: When the request parameter name is not equal to jack, return 400 reject status code and status information \n\n"abort": {\n "http_status": 400,\n "body": "not valid request params"\n "vars": ['["arg_name", "==", "jack"]']\n}\n'
+    example: 'Purpose: When the request parameter name is not equal to jack, return 400 reject status code and status information \n\n"abort": {\n "http_status": 400,\n "body": "not valid request params",\n "vars": [["arg_name", "==", "jack"]]\n}\n'
     style: dynamic
     default_value: ''
     config: |-
@@ -2322,17 +2291,12 @@
                   "maximum": 100
                 },
                 "vars": {
-                  "type": "array",
-                  "title": "Interrupt vars",
+                  "type": "string",
+                  "title": "Interrupt rules",
                   "description": "The fault injection rule is executed. The fault note is executed only after the rule matches. vars is a list of expressions from lua-resty-expr.",
-                  "items": {
-                    "type": "string",
-                    "ui:component": {
-                      "name": "bfInput"
-                    }
-                  },
                   "ui:component": {
-                    "name": "bfArray"
+                    "type": "textarea",
+                    "rows": 10
                   }
                 }
               }
@@ -2355,17 +2319,12 @@
                   "maximum": 100
                 },
                 "vars": {
-                  "type": "array",
-                  "title": "Delay vars",
+                  "type": "string",
+                  "title": "Delay rules",
                   "description": "Execute the request delay rule. The request is delayed only when the rule matches. vars is a list of expressions from lua-resty-expr.",
-                  "items": {
-                    "type": "string",
-                    "ui:component": {
-                      "name": "bfInput"
-                    }
-                  },
                   "ui:component": {
-                    "name": "bfArray"
+                    "type": "textarea",
+                    "rows": 10
                   }
                 }
               }
