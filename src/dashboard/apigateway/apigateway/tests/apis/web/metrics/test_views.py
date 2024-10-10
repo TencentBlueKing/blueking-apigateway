@@ -46,7 +46,7 @@ class TestMetricsSmartTimeRange:
 class TestQueryRangeApi:
     def test_get(self, mocker, fake_stage, request_view):
         mocker.patch(
-            "apigateway.apis.web.metrics.views.MetricsFactory.create_metrics",
+            "apigateway.apis.web.metrics.views.MetricsRangeFactory.create_metrics",
             return_value=mocker.Mock(query_range=mocker.Mock(return_value={"foo": "bar"})),
         )
 
@@ -76,6 +76,45 @@ class TestQueryRangeApi:
             data={
                 "stage_id": 0,
                 "metrics": "requests",
+                "time_range": 300,
+            },
+        )
+        assert response.status_code == 404
+
+
+class TestQueryInstantApi:
+    def test_get(self, mocker, fake_stage, request_view):
+        mocker.patch(
+            "apigateway.apis.web.metrics.views.MetricsInstantFactory.create_metrics",
+            return_value=mocker.Mock(query_instant=mocker.Mock(return_value={"instant": 0})),
+        )
+
+        response = request_view(
+            "GET",
+            "metrics.query_instant",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "stage_id": fake_stage.id,
+                "metrics": "requests_total",
+                "time_range": 300,
+            },
+        )
+        result = response.json()
+        assert response.status_code == 200
+        assert result["data"] == {"instant": 0}  # 没有数据的情况
+
+        # stage not found
+        response = request_view(
+            "GET",
+            "metrics.query_instant",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "stage_id": 0,
+                "metrics": "requests_total",
                 "time_range": 300,
             },
         )

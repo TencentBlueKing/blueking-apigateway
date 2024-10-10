@@ -21,7 +21,7 @@ from django.test import TestCase
 from apigateway.apis.web.metrics import serializers
 
 
-class TestMetricsQuerySLZ(TestCase):
+class TestMetricsQueryRangeSLZ(TestCase):
     def test_validate(self):
         data = [
             {
@@ -44,6 +44,34 @@ class TestMetricsQuerySLZ(TestCase):
             },
         ]
         for test in data:
-            slz = serializers.MetricsQueryInputSLZ(data=test["data"])
+            slz = serializers.MetricsQueryRangeInputSLZ(data=test["data"])
+            slz.is_valid()
+            self.assertEqual(slz.validated_data, test["expected"])
+
+
+class TestMetricsQueryInstantSLZ(TestCase):
+    def test_validate(self):
+        data = [
+            {
+                "data": {
+                    "stage_id": 1,
+                    "resource_id": 1,
+                    "metrics": "requests_total",
+                    "time_start": 1,
+                    "time_end": 2,
+                    "time_range": 1,
+                },
+                "expected": {
+                    "stage_id": 1,
+                    "resource_id": 1,
+                    "metrics": "requests_total",
+                    "time_start": 1,
+                    "time_end": 2,
+                    "time_range": 1,
+                },
+            },
+        ]
+        for test in data:
+            slz = serializers.MetricsQueryInstantInputSLZ(data=test["data"])
             slz.is_valid()
             self.assertEqual(slz.validated_data, test["expected"])

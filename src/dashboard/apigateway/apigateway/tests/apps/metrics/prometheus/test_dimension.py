@@ -16,45 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.apps.metrics.constants import MetricsEnum
+import pytest
+
+from apigateway.apps.metrics.constants import MetricsInstantEnum, MetricsRangeEnum
 from apigateway.apps.metrics.prometheus import dimension
-
-
-class TestRequestTotalMetrics:
-    def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
-
-        data = [
-            {
-                "params": {
-                    "gateway_name": "foo",
-                    "stage_id": 1,
-                    "stage_name": "prod",
-                    "resource_id": 1,
-                    "resource_name": "get_foo",
-                    "step": "1m",
-                },
-                "expected": (
-                    'sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"})'
-                ),
-            },
-            {
-                "params": {
-                    "gateway_name": "foo",
-                    "stage_name": "prod",
-                    "stage_id": 1,
-                    "resource_id": 1,
-                    "resource_name": None,
-                    "step": "1m",
-                },
-                "expected": ('sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", ' 'stage_name="prod"})'),
-            },
-        ]
-        for test in data:
-            metrics = dimension.RequestsTotalMetrics()
-            result = metrics._get_query_promql(**test["params"])
-            assert result == test["expected"]
 
 
 class TestRequestsMetrics:
@@ -338,7 +303,44 @@ class TestEgressMetrics:
             assert result == test["expected"], result
 
 
-class TestFailed500RequestsMetrics:
+class TestRequestTotalMetrics:
+    def test_get_query_promql(self, mocker):
+        mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+
+        data = [
+            {
+                "params": {
+                    "gateway_name": "foo",
+                    "stage_id": 1,
+                    "stage_name": "prod",
+                    "resource_id": 1,
+                    "resource_name": "get_foo",
+                    "step": "1m",
+                },
+                "expected": (
+                    'sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
+                    'stage_name="prod", resource_name="get_foo"})'
+                ),
+            },
+            {
+                "params": {
+                    "gateway_name": "foo",
+                    "stage_name": "prod",
+                    "stage_id": 1,
+                    "resource_id": 1,
+                    "resource_name": None,
+                    "step": "1m",
+                },
+                "expected": ('sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", ' 'stage_name="prod"})'),
+            },
+        ]
+        for test in data:
+            metrics = dimension.RequestsTotalMetrics()
+            result = metrics._get_query_promql(**test["params"])
+            assert result == test["expected"]
+
+
+class TestHealthRateMetrics:
     def test_get_query_promql(self, mocker):
         mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
 
@@ -373,21 +375,17 @@ class TestFailed500RequestsMetrics:
             },
         ]
         for test in data:
-            metrics = dimension.Failed500RequestsMetrics()
+            metrics = dimension.HealthRateMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
 
-class TestMetricsFactory:
+class TestMetricsRangeFactory:
     def test_create_metrics(self):
         data = [
             {
                 "metrics": "requests",
                 "expected": dimension.RequestsMetrics,
-            },
-            {
-                "metrics": "requests_total",
-                "expected": dimension.RequestsTotalMetrics,
             },
             {
                 "metrics": "non_200_status",
@@ -413,13 +411,93 @@ class TestMetricsFactory:
                 "metrics": "egress",
                 "expected": dimension.EgressMetrics,
             },
+        ]
+        for test in data:
+            result = dimension.MetricsRangeFactory.create_metrics(
+                MetricsRangeEnum(test["metrics"]),
+            )
+            assert isinstance(result, test["expected"])
+
+
+class TestMetricsInstantFactory:
+    def test_create_metrics(self):
+        data = [
             {
-                "metrics": "failed_500_requests",
-                "expected": dimension.Failed500RequestsMetrics,
+                "metrics": "requests_total",
+                "expected": dimension.RequestsTotalMetrics,
+            },
+            {
+                "metrics": "health_rate",
+                "expected": dimension.HealthRateMetrics,
             },
         ]
         for test in data:
-            result = dimension.MetricsFactory.create_metrics(
-                MetricsEnum(test["metrics"]),
+            result = dimension.MetricsInstantFactory.create_metrics(
+                MetricsInstantEnum(test["metrics"]),
             )
             assert isinstance(result, test["expected"])
+
+
+class TestBaseMetrics:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (None, 0),
+            (
+                {
+                    "result": True,
+                    "code": 200,
+                    "message": "OK",
+                    "data": {"metrics": [], "series": []},
+                },
+                0,
+            ),
+            (
+                {
+                    "result": True,
+                    "code": 200,
+                    "message": "OK",
+                    "data": {
+                        "metrics": [],
+                        "series": [
+                            {
+                                "datapoints": [
+                                    [None, 1708290000000],
+                                    [5, 1727161200000],
+                                    [22, 1727164800000],
+                                    [26, 1727197200000],
+                                    [26, 1727200800000],
+                                ]
+                            }
+                        ],
+                    },
+                },
+                26,
+            ),
+            (
+                {
+                    "result": True,
+                    "code": 200,
+                    "message": "OK",
+                    "data": {
+                        "metrics": [],
+                        "series": [
+                            {
+                                "datapoints": [
+                                    [4, 1708290000000],
+                                    [5, 1727161200000],
+                                    [22, 1727164800000],
+                                    [26, 1727197200000],
+                                    [None, 1727200800000],
+                                ]
+                            }
+                        ],
+                    },
+                },
+                22,
+            ),
+        ],
+    )
+    def test_get_data_differ_number(self, data, expected):
+        result = dimension.get_data_differ_number(data)
+        assert result == expected

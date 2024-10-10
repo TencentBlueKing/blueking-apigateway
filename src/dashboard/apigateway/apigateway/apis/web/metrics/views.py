@@ -22,13 +22,13 @@ from django.http import Http404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apps.metrics.constants import MetricsEnum
-from apigateway.apps.metrics.prometheus.dimension import MetricsFactory
+from apigateway.apps.metrics.constants import MetricsInstantEnum, MetricsRangeEnum
+from apigateway.apps.metrics.prometheus.dimension import MetricsInstantFactory, MetricsRangeFactory
 from apigateway.core.models import Resource, Stage
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.time import SmartTimeRange
 
-from .serializers import MetricsQueryInputSLZ
+from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ
 
 
 class MetricsSmartTimeRange(SmartTimeRange):
@@ -76,13 +76,13 @@ class MetricsSmartTimeRange(SmartTimeRange):
 
 class QueryRangeApi(generics.ListAPIView):
     @swagger_auto_schema(
-        query_serializer=MetricsQueryInputSLZ,
+        query_serializer=MetricsQueryRangeInputSLZ,
         responses={status.HTTP_200_OK: ""},
         operation_description="查询 metrics",
         tags=["WebAPI.Metrics"],
     )
     def get(self, request, *args, **kwargs):
-        slz = MetricsQueryInputSLZ(data=request.query_params)
+        slz = MetricsQueryRangeInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -106,7 +106,7 @@ class QueryRangeApi(generics.ListAPIView):
         time_start, time_end = smart_time_range.get_head_and_tail()
         step = smart_time_range.get_recommended_step()
 
-        metrics = MetricsFactory.create_metrics(MetricsEnum(data["metrics"]))
+        metrics = MetricsRangeFactory.create_metrics(MetricsRangeEnum(data["metrics"]))
 
         data = metrics.query_range(
             gateway_name=request.gateway.name,
@@ -119,3 +119,69 @@ class QueryRangeApi(generics.ListAPIView):
             step=step,
         )
         return OKJsonResponse(data=data)
+
+
+class QueryInstantApi(generics.ListAPIView):
+    @swagger_auto_schema(
+        query_serializer=MetricsQueryInstantInputSLZ,
+        responses={status.HTTP_200_OK: ""},
+        operation_description="查询 metrics",
+        tags=["WebAPI.Metrics"],
+    )
+    def get(self, request, *args, **kwargs):
+        slz = MetricsQueryInstantInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+        stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
+        if not stage_name:
+            raise Http404
+        resource_name = None
+        if data.get("resource_id"):
+            resource_name = (
+                Resource.objects.filter(gateway=request.gateway, id=data["resource_id"])
+                .values_list("name", flat=True)
+                .first()
+            )
+
+        smart_time_range = MetricsSmartTimeRange(
+            data.get("time_start"),
+            data.get("time_end"),
+            data.get("time_range"),
+        )
+        time_start, time_end = smart_time_range.get_head_and_tail()
+        step = smart_time_range.get_recommended_step()
+
+        # 暂时只有总数和健康率，所以总数是必需需要计算的
+        metrics = MetricsInstantFactory.create_metrics(MetricsInstantEnum.REQUESTS_TOTAL)
+        requests_total_result = metrics.query_instant(
+            gateway_name=request.gateway.name,
+            stage_id=data.get("stage_id", 0),
+            stage_name=stage_name,
+            resource_id=data.get("resource_id", 0),
+            resource_name=resource_name,
+            start=time_start,
+            end=time_end,
+            step=step,
+        )
+        if requests_total_result.get("instant") != 0 and data["metrics"] == MetricsInstantEnum.HEALTH_RATE.value:
+            health_rate_result = {}
+
+            # 获取 500 状态码 数量以求健康率
+            metrics = MetricsInstantFactory.create_metrics(MetricsInstantEnum.HEALTH_RATE)
+            health_rate_data = metrics.query_instant(
+                gateway_name=request.gateway.name,
+                stage_id=data.get("stage_id", 0),
+                stage_name=stage_name,
+                resource_id=data.get("resource_id", 0),
+                resource_name=resource_name,
+                start=time_start,
+                end=time_end,
+                step=step,
+            )
+
+            # 健康率 = 1 - (500 状态码数量 / 请求总数)
+            health_rate = 1 - (health_rate_data["instant"] / requests_total_result["instant"])
+            health_rate_result["instant"] = health_rate
+            return OKJsonResponse(data=health_rate_result)
+
+        return OKJsonResponse(data=requests_total_result)
