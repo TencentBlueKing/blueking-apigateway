@@ -28,7 +28,7 @@
     "@blueking/platform-config": "^1.0.3",
     "@blueking/release-note": "0.0.1-beta.16",
     "art-template": "^4.13.2",
-    "bkui-vue": "1.0.3-beta.58",
+    "bkui-vue": "2.0.1-beta.70.search.1",
     "connect-history-api-fallback": "^2.0.0",
     "cookie": "^0.5.0",
     "cookie-parser": "^1.4.5",
