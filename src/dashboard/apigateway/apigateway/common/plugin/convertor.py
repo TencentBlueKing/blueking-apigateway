@@ -108,7 +108,7 @@ class BkMockConvertor(PluginConvertor):
     plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.BK_MOCK
 
     """
-        将config转换如下：
+        将 config 转换如下：
         {
             "response_status": 200,
             "response_example": "......."

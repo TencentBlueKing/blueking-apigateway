@@ -37,7 +37,7 @@ from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
-from apigateway.common.plugin.plugin_validators import PluginConfigYamlValidator
+from apigateway.common.plugin.validator import PluginConfigYamlValidator
 from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
