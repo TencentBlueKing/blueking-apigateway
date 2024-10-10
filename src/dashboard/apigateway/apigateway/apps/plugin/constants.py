@@ -134,7 +134,3 @@ Draft7Schema = {
     },
     "default": True,
 }
-
-VARS_ALLOWED_COMPARISON_SYMBOLS = {"==", "~=", ">", ">=", "<", "<=", "~~", "~*", "in", "has", "!", "ipmatch"}
-
-VARS_ALLOWED_LOGICAL_SYMBOLS = {"AND", "OR", "!AND", "!OR"}

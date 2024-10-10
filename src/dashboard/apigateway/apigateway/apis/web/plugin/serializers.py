@@ -181,5 +181,4 @@ class ScopePluginConfigListOutputSLZ(serializers.Serializer):
 
     def get_related_scope_count(self, obj):
         related_scope_count = self.context.get("type_related_scope_count", {})
-        print("the related_scope_count:", related_scope_count)
         return related_scope_count.get(obj["code"], {"stage": 0, "resource": 0})
