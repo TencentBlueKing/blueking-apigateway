@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
 from contextlib import nullcontext as does_not_raise
 
 import pytest
@@ -342,11 +343,13 @@ class TestRequestValidationChecker:
         [
             (
                 {
-                    "header_schema": {
-                        "type": "object",
-                        "required": ["bool_payload"],
-                        "properties": {"bool_payload": {"type": "boolean", "default": True}},
-                    },
+                    "header_schema": json.dumps(
+                        {
+                            "type": "object",
+                            "required": ["bool_payload"],
+                            "properties": {"bool_payload": {"type": "boolean", "default": True}},
+                        }
+                    ),
                     "rejected_code": 400,
                     "rejected_msg": "foo",
                 },
@@ -354,11 +357,13 @@ class TestRequestValidationChecker:
             ),
             (
                 {
-                    "header_schema": {
-                        "type": "aa",  # 这里会报错
-                        "required": ["bool_payload"],
-                        "properties": {"bool_payload": {"type": "boolean", "default": True}},
-                    },
+                    "header_schema": json.dumps(
+                        {
+                            "type": "aa",  # 这里会报错
+                            "required": ["bool_payload"],
+                            "properties": {"bool_payload": {"type": "boolean", "default": True}},
+                        }
+                    ),
                     "rejected_code": 400,
                     "rejected_msg": "foo",
                 },
@@ -366,11 +371,13 @@ class TestRequestValidationChecker:
             ),
             (
                 {
-                    "header_schema": {
-                        "type": "object",
-                        "required": "aa",  # 这里会报错
-                        "properties": {"bool_payload": {"type": "boolean", "default": True}},
-                    },
+                    "header_schema": json.dumps(
+                        {
+                            "type": "object",
+                            "required": "aa",  # 这里会报错
+                            "properties": {"bool_payload": {"type": "boolean", "default": True}},
+                        }
+                    ),
                     "rejected_code": 400,
                     "rejected_msg": "foo",
                 },
@@ -378,11 +385,13 @@ class TestRequestValidationChecker:
             ),
             (
                 {
-                    "body_schema": {
-                        "type": "object",
-                        "required": ["bool_payload"],
-                        "properties": {"bool_payload": {"type": "boolean", "default": True}},
-                    },
+                    "body_schema": json.dumps(
+                        {
+                            "type": "object",
+                            "required": ["bool_payload"],
+                            "properties": {"bool_payload": {"type": "boolean", "default": True}},
+                        }
+                    ),
                     "rejected_code": 400,
                     "rejected_msg": "foo",
                 },
