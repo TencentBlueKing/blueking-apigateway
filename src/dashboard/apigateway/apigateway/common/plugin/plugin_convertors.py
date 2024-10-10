@@ -18,6 +18,7 @@
 
 # PluginConfig 中前端表单数据，转换成 apisix 插件配置
 
+import ast
 import json
 from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, List, Union
@@ -144,22 +145,17 @@ class FaultInjectionConvertor(PluginConvertor):
     plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.FAULT_INJECTION
 
     def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        if config.get("abort"):
+            abort = config["abort"]
+            if abort.get("vars"):
+                abort["vars"] = ast.literal_eval(abort["vars"])
+
+        if config.get("delay"):
+            delay = config["delay"]
+            if delay.get("vars"):
+                delay["vars"] = ast.literal_eval(delay["vars"])
+
         return config
-        # new_config = {}
-
-        # if config.get("abort"):
-        #     new_config["abort"] = {
-        #         "http_status": config["abort"]["http_status"],
-        #         "percentage": config["abort"]["percentage"],
-        #     }
-
-        # if config.get("delay"):
-        #     new_config["delay"] = {
-        #         "duration": config["delay"]["duration"],
-        #         "percentage": config["delay"]["percentage"],
-        #     }
-
-        # return new_config
 
 
 class PluginConvertorFactory:
@@ -171,6 +167,7 @@ class PluginConvertorFactory:
             BkCorsConvertor(),
             BkMockConvertor(),
             RequestValidationConvertor(),
+            FaultInjectionConvertor(),
         ]
     }
 
