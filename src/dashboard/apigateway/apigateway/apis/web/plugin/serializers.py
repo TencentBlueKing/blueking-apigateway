@@ -27,7 +27,7 @@ from apigateway.apis.web.plugin.convertor import PluginConfigYamlConvertor
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginConfig, PluginForm, PluginType
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.common.plugin.plugin_validators import PluginConfigYamlValidator
+from apigateway.common.plugin.validator import PluginConfigYamlValidator
 
 
 class PluginTypeOutputSLZ(serializers.ModelSerializer):
@@ -181,5 +181,4 @@ class ScopePluginConfigListOutputSLZ(serializers.Serializer):
 
     def get_related_scope_count(self, obj):
         related_scope_count = self.context.get("type_related_scope_count", {})
-        print("the related_scope_count:", related_scope_count)
         return related_scope_count.get(obj["code"], {"stage": 0, "resource": 0})

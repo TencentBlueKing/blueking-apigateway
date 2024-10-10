@@ -18,7 +18,7 @@
 import pytest
 
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
-from apigateway.common.plugin.plugin_convertors import (
+from apigateway.common.plugin.convertor import (
     BkCorsConvertor,
     BkMockConvertor,
     DefaultPluginConvertor,

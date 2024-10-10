@@ -15,11 +15,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
 from contextlib import nullcontext as does_not_raise
 
 import pytest
 
-from apigateway.common.plugin.plugin_checkers import (
+from apigateway.common.plugin.checker import (
     BkCorsChecker,
     BkIPRestrictionChecker,
     FaultInjectionChecker,
@@ -342,11 +343,13 @@ class TestRequestValidationChecker:
         [
             (
                 {
-                    "header_schema": {
-                        "type": "object",
-                        "required": ["bool_payload"],
-                        "properties": {"bool_payload": {"type": "boolean", "default": True}},
-                    },
+                    "header_schema": json.dumps(
+                        {
+                            "type": "object",
+                            "required": ["bool_payload"],
+                            "properties": {"bool_payload": {"type": "boolean", "default": True}},
+                        }
+                    ),
                     "rejected_code": 400,
                     "rejected_msg": "foo",
                 },
@@ -354,11 +357,13 @@ class TestRequestValidationChecker:
             ),
             (
                 {
-                    "header_schema": {
-                        "type": "aa",  # 这里会报错
-                        "required": ["bool_payload"],
-                        "properties": {"bool_payload": {"type": "boolean", "default": True}},
-                    },
+                    "header_schema": json.dumps(
+                        {
+                            "type": "aa",  # 这里会报错
+                            "required": ["bool_payload"],
+                            "properties": {"bool_payload": {"type": "boolean", "default": True}},
+                        }
+                    ),
                     "rejected_code": 400,
                     "rejected_msg": "foo",
                 },
@@ -366,11 +371,13 @@ class TestRequestValidationChecker:
             ),
             (
                 {
-                    "header_schema": {
-                        "type": "object",
-                        "required": "aa",  # 这里会报错
-                        "properties": {"bool_payload": {"type": "boolean", "default": True}},
-                    },
+                    "header_schema": json.dumps(
+                        {
+                            "type": "object",
+                            "required": "aa",  # 这里会报错
+                            "properties": {"bool_payload": {"type": "boolean", "default": True}},
+                        }
+                    ),
                     "rejected_code": 400,
                     "rejected_msg": "foo",
                 },
@@ -378,11 +385,13 @@ class TestRequestValidationChecker:
             ),
             (
                 {
-                    "body_schema": {
-                        "type": "object",
-                        "required": ["bool_payload"],
-                        "properties": {"bool_payload": {"type": "boolean", "default": True}},
-                    },
+                    "body_schema": json.dumps(
+                        {
+                            "type": "object",
+                            "required": ["bool_payload"],
+                            "properties": {"bool_payload": {"type": "boolean", "default": True}},
+                        }
+                    ),
                     "rejected_code": 400,
                     "rejected_msg": "foo",
                 },
@@ -408,7 +417,7 @@ class TestFaultInjectionChecker:
                 {
                     "abort": {
                         "body": "aaa",
-                        "vars": [[["arg_name", "==", "jack"]]],
+                        "vars": '[[["arg_name", "==", "jack"]]]',
                         "http_status": 200,
                         "percentage": 100,
                     }
@@ -420,7 +429,7 @@ class TestFaultInjectionChecker:
                 {
                     "abort": {
                         "body": "aaa",
-                        "vars": [[["arg_name", "==", "jack"]]],
+                        "vars": '[[["arg_name", "==", "jack"]]]',
                         "http_status": 199,  # 小于200报错
                         "percentage": 100,
                     }
@@ -431,7 +440,7 @@ class TestFaultInjectionChecker:
                 {
                     "abort": {
                         "body": "aaa",
-                        "vars": [[["arg_name", "==", "jack"]]],
+                        "vars": '[[["arg_name", "==", "jack"]]]',
                         "http_status": 200,
                         "percentage": -1,  # 这个的值 < 0
                     }
@@ -442,7 +451,7 @@ class TestFaultInjectionChecker:
                 {
                     "abort": {
                         "body": "aaa",
-                        "vars": [[["arg_name", "==", "jack"]]],
+                        "vars": '[[["arg_name", "==", "jack"]]]',
                         "http_status": 200,
                         "percentage": 101,  # 这个的值 > 100
                     }
@@ -458,7 +467,7 @@ class TestFaultInjectionChecker:
                 pytest.raises(ValueError),
             ),
             (
-                {"delay": {"duration": 5, "vars": [[["arg_name", "==", "jack"]]], "percentage": 100}},
+                {"delay": {"duration": 5, "vars": '[[["arg_name", "==", "jack"]]]', "percentage": 100}},
                 # 不报错的情况
                 does_not_raise(),
             ),
@@ -466,7 +475,7 @@ class TestFaultInjectionChecker:
                 {
                     "delay": {
                         "duration": 5,
-                        "vars": [[["arg_name", "==", "jack"]]],
+                        "vars": '[[["arg_name", "==", "jack"]]]',
                         "percentage": -1,  # 小于0报错
                     }
                 },
@@ -476,7 +485,7 @@ class TestFaultInjectionChecker:
                 {
                     "delay": {
                         "duration": 5,
-                        "vars": [[["arg_name", "==", "jack"]]],
+                        "vars": '[[["arg_name", "==", "jack"]]]',
                         "percentage": 101,  # 大于100报错
                     }
                 },
@@ -500,101 +509,3 @@ class TestFaultInjectionChecker:
         checker = FaultInjectionChecker()
         with ctx:
             checker.check(yaml_dumps(data))
-
-    @pytest.mark.parametrize(
-        "data, ctx",
-        [
-            ([-1, "abort"], pytest.raises(ValueError)),
-            ([101, "abort"], pytest.raises(ValueError)),
-            ([0, "abort"], does_not_raise()),
-            ([100, "abort"], does_not_raise()),
-        ],
-    )
-    def test_check_percentage(self, data, ctx):
-        checker = FaultInjectionChecker()
-        with ctx:
-            checker._check_percentage(data[0], data[1])
-
-    @pytest.mark.parametrize(
-        "data, ctx",
-        [
-            ([[["arg_name", "==", "jack"]]], does_not_raise()),
-            (
-                [[["arg_name", "a=", "jack"]]],  # 符号报错
-                pytest.raises(ValueError),
-            ),
-            ([[["arg_height", "!", ">", 15]]], does_not_raise()),
-            (
-                [[["arg_height", "a", ">", 15]]],  # 第一个符号报错
-                pytest.raises(ValueError),
-            ),
-            (
-                [[["arg_height", "!", "a", 15]]],  # 第二个符号报错
-                pytest.raises(ValueError),
-            ),
-            (
-                [
-                    [
-                        [
-                            "AND",
-                            ["arg_version", "==", "v2"],
-                            ["OR", ["arg_action", "==", "signup"], ["arg_action", "==", "subscribe"]],
-                        ],
-                    ]
-                ],
-                does_not_raise(),
-            ),
-            (
-                [
-                    [
-                        [
-                            "AAD",  # 符号报错
-                            ["arg_version", "==", "v2"],
-                            ["OR", ["arg_action", "==", "signup"], ["arg_action", "==", "subscribe"]],
-                        ],
-                    ]
-                ],
-                pytest.raises(ValueError),
-            ),
-            (
-                [
-                    [
-                        [
-                            "AND",
-                            ["arg_version", "==", "v2"],
-                            ["OO", ["arg_action", "==", "signup"], ["arg_action", "==", "subscribe"]],  # OO 符号报错
-                        ],
-                    ]
-                ],
-                pytest.raises(ValueError),
-            ),
-            (
-                [
-                    [
-                        [
-                            "AND",
-                            ["arg_version", "==", "v2"],
-                            ["OR", ["arg_action", "A=", "signup"], ["arg_action", "==", "subscribe"]],  # A= 符号报错
-                        ],
-                    ]
-                ],
-                pytest.raises(ValueError),
-            ),
-            (
-                [
-                    [
-                        [
-                            "AND",
-                            ["arg_version", "==", "v2"],
-                            ["OR", ["arg_action", "==", "signup"], ["arg_action", "A=", "subscribe"]],  # A= 符号报错
-                        ],
-                    ]
-                ],
-                pytest.raises(ValueError),
-            ),
-        ],
-    )
-    def test_check_vars(self, data, ctx):
-        checker = FaultInjectionChecker()
-        with ctx:
-            checker._check_vars(data)

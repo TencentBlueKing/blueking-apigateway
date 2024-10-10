@@ -342,8 +342,8 @@
     language: ''
     type:
     - bk-header-rewrite
-    notes: "对请求添加或删除请求头。\n注意设置的值中支持`$`符号，（变量，不存在则为空）; `$arg_foo`获取 query string中`foo`的值, `$http_bar`可以获取 header 中 `bar`的值。"
-    example: "作用：设置 header `X-Api-Version: 1`， 并且删除 header `X-test`\n\n设置: X-Api-Version: 1\n删除: X-test"
+    notes: "对请求添加或删除请求头。\n注意设置的值中支持`$`符号，（变量，不存在则为空）; `$arg_foo`获取 query string 中`foo`的值，`$http_bar`可以获取 header 中 `bar`的值。"
+    example: "作用：设置 header `X-Api-Version: 1`，并且删除 header `X-test`\n\n设置：X-Api-Version: 1\n删除：X-test"
     style: dynamic
     default_value: ''
     config: |-
@@ -836,7 +836,7 @@
     type:
     - bk-rate-limit
     notes: "对请求进行频率限制。\n如果在环境和资源上都配置，两个都会生效，并且在环境上配置表示对应用访问环境下所有资源的总访问频率进行限制。"
-    example: "作用：默认每个应用 100 次/秒，应用 demo 200 次/秒\n\n默认频率限制： 次数: 100 时间范围: 秒\n特殊应用频率限制： 次数: 200  时间范围: 秒  蓝鲸应用ID: demo"
+    example: "作用：默认每个应用 100 次/秒，应用 demo 200 次/秒\n\n默认频率限制：次数：100 时间范围：秒\n特殊应用频率限制：次数：200  时间范围：秒  蓝鲸应用 ID: demo"
     style: dynamic
     default_value: ''
     config: |-
@@ -1371,19 +1371,18 @@
     version: '0'
     _schema: |-
       {
-        "$comment": "this is a mark for our injected plugin schema",
         "type": "object",
         "properties": {
-          "response_status":{
-              "type": "integer",
-              "default": 200,
-              "minimum": 100
+          "response_status": {
+            "type": "integer",
+            "default": 200,
+            "minimum": 100
           },
           "response_example": {
-              "type": "string"
+            "type": "string"
           },
           "response_headers": {
-              "type": "object"
+            "type": "object"
           }
         }
       }
@@ -1406,7 +1405,7 @@
     type:
     - bk-mock
     notes: 模拟 API 响应，返回指定格式，并且请求不会转发到上游。
-    example: '作用：返回 json response，状态码为 200，并且携带响应头 foo:bar\n\n响应状态码: 200\n响应体: {"hello": "world"}\n响应头: \n      Content-Type: application/json\n      foo: bar'
+    example: '作用：返回 json response，状态码为 200，并且携带响应头 foo:bar\n\n响应状态码：200\n响应体：{"hello": "world"}\n响应头：\n      Content-Type: application/json\n      foo: bar'
     style: dynamic
     default_value: ''
     config: |-
@@ -1536,7 +1535,6 @@
     version: '0'
     _schema: |-
       {
-        "$comment": "this is a mark for our injected plugin schema",
         "type": "object",
         "properties": {
           "break_response_code": {
@@ -1561,7 +1559,7 @@
                   "minLength": 1
                 }
               },
-              "required": ["key","value"]
+              "required": ["key", "value"]
             }
           },
           "max_breaker_sec": {
@@ -1581,7 +1579,7 @@
                   "maximum": 599
                 },
                 "uniqueItems": true,
-                "default": 500
+                "default": [500]
               },
               "failures": {
                 "type": "integer",
@@ -1589,21 +1587,24 @@
                 "default": 3
               }
             },
-            "default": {"http_statuses": [500], "failures": 3}
+            "default": {
+              "http_statuses": [500],
+              "failures": 3
+            }
           },
           "healthy": {
             "type": "object",
             "properties": {
               "http_statuses": {
                 "type": "array",
-                "minItems": 0,
+                "minItems": 1,
                 "items": {
                   "type": "integer",
                   "minimum": 200,
                   "maximum": 499
                 },
                 "uniqueItems": true,
-                "default": 200
+                "default": [200]
               },
               "successes": {
                 "type": "integer",
@@ -1611,7 +1612,10 @@
                 "default": 3
               }
             },
-            "default": {"http_statuses": [200] , "successes": 3}
+            "default": {
+              "http_statuses": [200],
+              "successes": 3
+            }
           }
         },
         "required": ["break_response_code"]
@@ -1635,7 +1639,7 @@
     type:
     - api-breaker
     notes: 实现了 API 熔断机制，帮助开发者保护后端服务。
-    example: '作用： 当后端服务返回状态码 500 或 503，并达到3次，则触发熔断，返回响应体 helloworld，状态码为 502，并且携带响应头 foo:bar。\n第一次触发不健康状态时，熔断 2 秒。超过熔断时间后，将重新开始转发请求到上游服务，如果继续返回 500 状态码，当计数再次达到3次时，熔断 4 秒。依次类推（2，4，8，16，……），直到达到预设的最大熔断时间 300 秒。\n当上游服务处于不健康状态时，如果后端服务返回状态码 200，并达到 2 次时，则认为上游服务恢复至健康状态。\n\n\nbreak_response_code： 502\nbreak_response_body： helloworld\nbreak_response_headers： [ { "key": "foo", "value": "bar" } ]\nmax_breaker_sec： 300\nunhealthy： { "http_statuses": [ 500, 503 ], "failures": 3 }\nhealthy： { "http_statuses": [ 200 ], "successes": 2 }'
+    example: '作用：当后端服务返回状态码 500 或 503，并达到 3 次，则触发熔断，返回响应体 helloworld，状态码为 502，并且携带响应头 foo:bar。\n第一次触发不健康状态时，熔断 2 秒。超过熔断时间后，将重新开始转发请求到上游服务，如果继续返回 500 状态码，当计数再次达到 3 次时，熔断 4 秒。依次类推（2，4，8，16，……），直到达到预设的最大熔断时间 300 秒。\n当上游服务处于不健康状态时，如果后端服务返回状态码 200，并达到 2 次时，则认为上游服务恢复至健康状态。\n\n\nbreak_response_code：502\nbreak_response_body：helloworld\nbreak_response_headers： [ { "key": "foo", "value": "bar" } ]\nmax_breaker_sec：300\nunhealthy： { "http_statuses": [ 500, 503 ], "failures": 3 }\nhealthy： { "http_statuses": [ 200 ], "successes": 2 }'
     style: dynamic
     default_value: ''
     config: |-
@@ -1703,7 +1707,7 @@
               }
             },
             "unhealthy": {
-              "description": "当上游服务处于不健康状态时的HTTP的状态码和异常请求次数.",
+              "description": "当上游服务处于不健康状态时的 HTTP 的状态码和异常请求次数。",
               "title": "不健康状态",
               "type": "object",
               "properties": {
@@ -1784,7 +1788,7 @@
     type:
     - api-breaker
     notes: API circuit breaker functionality to protect Upstream services.
-    example: 'Purpose: When the backend service returns a status code of 502 and this happens 3 times, a circuit breaker is triggered. It will return a response body with “helloworld”, a status code of 502, and a response header of foo:bar.\nThe first time the unhealthy state is triggered, the circuit breaker lasts for 2 seconds. After the circuit breaker time elapses, requests will be forwarded to the upstream service again. If it continues to return a status code of 502 and the count reaches 3 times again, the circuit breaker time is extended to 4 seconds. This pattern continues (2, 4, 8, 16, …) until the preset maximum circuit breaker time of 300 seconds is reached. \nWhen the upstream service is in an unhealthy state, if a forwarded request returns a status code of 200 and this happens 2 times, the upstream service is considered to have recovered to a healthy state. \n\n\nbreak_response_code： 502\nbreak_response_body： helloworld\nbreak_response_headers： [ { "key": "foo", "value": "bar" } ]\nmax_breaker_sec： 300\nunhealthy： { "http_statuses": [ 500, 503 ], "failures": 3 }\nhealthy： { "http_statuses": [ 200 ], "successes": 2 }'
+    example: 'Purpose: When the backend service returns a status code of 502 and this happens 3 times, a circuit breaker is triggered. It will return a response body with “helloworld”, a status code of 502, and a response header of foo:bar.\nThe first time the unhealthy state is triggered, the circuit breaker lasts for 2 seconds. After the circuit breaker time elapses, requests will be forwarded to the upstream service again. If it continues to return a status code of 502 and the count reaches 3 times again, the circuit breaker time is extended to 4 seconds. This pattern continues (2, 4, 8, 16, …) until the preset maximum circuit breaker time of 300 seconds is reached. \nWhen the upstream service is in an unhealthy state, if a forwarded request returns a status code of 200 and this happens 2 times, the upstream service is considered to have recovered to a healthy state. \n\n\nbreak_response_code: 502\nbreak_response_body: helloworld\nbreak_response_headers: [ { "key": "foo", "value": "bar" } ]\nmax_breaker_sec: 300\nunhealthy: { "http_statuses": [ 500, 503 ], "failures": 3 }\nhealthy: { "http_statuses": [ 200 ], "successes": 2 }'
     style: dynamic
     default_value: ''
     config: |-
@@ -1935,32 +1939,35 @@
     type: plugin
     version: '0'
     _schema: |-
-      {  
-        "$comment": "this is a mark for our injected plugin schema",
+      {
         "type": "object",
         "properties": {
           "header_schema": {
-            "type": "object",
-            "description": "header 数据的 schema 数据结构。",
-            "additionalProperties": true
+            "type": "object"
           },
           "body_schema": {
-            "type": "object",
-            "description": "body 数据的 schema 数据结构。",
-            "additionalProperties": true
+            "type": "object"
           },
           "rejected_code": {
             "type": "integer",
-            "description": "当请求被拒绝时要返回的状态码。",
-            "default": 400,
             "minimum": 200,
-            "maximum": 599
+            "maximum": 599,
+            "default": 400
           },
           "rejected_msg": {
             "type": "string",
-            "description": "当请求被拒绝时返回的信息。"
+            "minLength": 1,
+            "maxLength": 256
           }
-        }
+        },
+        "anyOf": [
+          {
+            "required": ["header_schema"]
+          },
+          {
+            "required": ["body_schema"]
+          }
+        ]
       }
     description: '-'
     example: '-'
@@ -1981,10 +1988,10 @@
     type:
     - request-validation
     notes: 用于提前验证向上游服务转发的请求。该插件使用 JSON Schema 机制进行数据验证，可以验证请求的 Body 以及 Header 的数据。
-    example: '作用： 当请求体中没有包含 boolean_payload 时，则返回 400 拒绝状态码和拒绝信息\n\n"header_schema": {}\n"body_schema": {"type": "object","required": ["bool_payload"],"properties": {"bool_payload": {"type": "boolean"}}}\n"rejected_code": 400\n"rejected_msg": "not valid request body"'
+    example: '作用：当请求体中没有包含 boolean_payload 时，则返回 400 拒绝状态码和拒绝信息\n\n"header_schema": {}\n"body_schema": {"type": "object","required": ["bool_payload"],"properties": {"bool_payload": {"type": "boolean"}}}\n"rejected_code": 400\n"rejected_msg": "not valid request body"'
     style: dynamic
     default_value: ''
-    config: |-  
+    config: |-
       {
         "schema": {
           "type": "object",
@@ -1998,7 +2005,7 @@
                 "type": "textarea",
                 "rows": 10
               }
-            },              
+            },
             "body_schema": {
               "type": "string",
               "maxLength": 51200,
@@ -2023,7 +2030,7 @@
                 "rows": 10
               }
             }
-          } 
+          }
         },
         "layout": [],
         "formData": {},
@@ -2052,7 +2059,7 @@
                 "type": "textarea",
                 "rows": 10
               }
-            },              
+            },
             "body_schema": {
               "type": "string",
               "maxLength": 51200,
@@ -2077,7 +2084,7 @@
                 "rows": 10
               }
             }
-          } 
+          }
         },
         "layout": [],
         "formData": {},
@@ -2092,86 +2099,58 @@
     version: '0'
     _schema: |-
       {
-        "$comment": "this is a mark for our injected plugin schema",
         "type": "object",
         "properties": {
           "abort": {
-            "description": "中断状态",
-            "title": "abort",
             "type": "object",
             "properties": {
               "http_status": {
-                "description": "返回给客户端的 HTTP 状态码",
-                "title": "中断状态码",
                 "type": "integer",
                 "minimum": 200
               },
               "body": {
-                "description": "返回给客户端的响应数据。支持使用 NGINX 变量，如 client addr: $remote_addr\n",
-                "title": "中断响应体",
                 "type": "string",
-                "ui:component": {
-                  "type": "textarea",
-                  "rows": 10
-                }
+                "minLength": 0
               },
               "percentage": {
-                "description": "将被中断的请求占比",
-                "title": "中断请求占比",
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 100
               },
               "vars": {
                 "type": "array",
-                "title": "中断vars",
-                "description": "执行故障注入的规则，当规则匹配通过后才会执行故障注。vars 是一个表达式的列表，来自 lua-resty-expr。",
+                "maxItems": 20,
                 "items": {
-                  "type": "array",
-                  "ui:component": {
-                    "name": "bfInput"
-                  }
-                },
-                "ui:component": {
-                  "name": "bfArray"
+                  "type": "array"
                 }
               }
-            }
+            },
+            "required": ["http_status"]
           },
           "delay": {
-            "description": "延迟状态",
-            "title": "delay",
             "type": "object",
             "properties": {
               "duration": {
-                "title": "延迟时间",
-                "description": "延迟时间，只能填入整数",
-                "type": "number"
+                "type": "number",
+                "minimum": 0
               },
               "percentage": {
-                "description": "将被延迟的请求占比",
-                "title": "延迟请求占比",
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 100
               },
               "vars": {
                 "type": "array",
-                "title": "延迟vars",
-                "description": "执行请求延迟的规则，当规则匹配通过后才会延迟请求。vars 是一个表达式列表，来自 lua-resty-expr。",
+                "maxItems": 20,
                 "items": {
-                  "type": "array",
-                  "ui:component": {
-                    "name": "bfInput"
-                  }
-                },
-                "ui:component": {
-                  "name": "bfArray"
+                  "type": "array"
                 }
               }
-            }
+            },
+            "required": ["duration"]
           }
-        }
+        },
+        "minProperties": 1
       }
     description: '-'
     example: '-'
@@ -2192,7 +2171,7 @@
     type:
     - fault-injection
     notes: fault-injection 插件是故障注入插件，该插件可以和其他插件一起使用，并在其他插件执行前被执行。
-    example: '作用： 当请求参数 name 不等于 jack 的时候，则返回 400 拒绝状态码和状态信息\n\n"abort": {\n    "http_status": 400,\n    "body": "not valid request params"\n    "vars": ['["arg_name", "==", "jack"]']\n}\n'
+    example: '作用：当请求参数 name 等于 jack 的时候，则返回 400 拒绝状态码和响应内容\n\n"abort": {\n    "http_status": 400,\n    "body": "not valid request params",\n    "vars": [["arg_name", "==", "jack"]]\n}\n'
     style: dynamic
     default_value: ''
     config: |-
@@ -2205,7 +2184,7 @@
               "title": "abort",
               "type": "object",
               "properties": {
-                "http_status": {  
+                "http_status": {
                   "description": "返回给客户端的 HTTP 状态码",
                   "title": "中断状态码",
                   "type": "integer"
@@ -2220,24 +2199,19 @@
                   }
                 },
                 "percentage": {
-                  "description": "将被中断的请求占比",
+                  "description": "将被中断的请求占比，0-100",
                   "title": "中断请求占比",
                   "type": "integer",
                   "minimum": 0,
                   "maximum": 100
                 },
                 "vars": {
-                  "type": "array",
-                  "title": "中断vars",
+                  "type": "string",
+                  "title": "执行故障注入的规则",
                   "description": "执行故障注入的规则，当规则匹配通过后才会执行故障注。vars 是一个表达式的列表，来自 lua-resty-expr。",
-                  "items": {
-                    "type": "string",
-                    "ui:component": {
-                      "name": "bfInput"
-                    }
-                  },
                   "ui:component": {
-                    "name": "bfArray"
+                    "type": "textarea",
+                    "rows": 10
                   }
                 }
               }
@@ -2249,28 +2223,23 @@
               "properties": {
                 "duration": {
                   "title": "延迟时间",
-                  "description": "延迟时间，只能填入整数",
+                  "description": "延迟时间，单位秒，只能填入整数",
                   "type": "number"
                 },
                 "percentage": {
-                  "description": "将被延迟的请求占比",
+                  "description": "将被延迟的请求占比，0-100",
                   "title": "延迟请求占比",
                   "type": "integer",
                   "minimum": 0,
                   "maximum": 100
                 },
                 "vars": {
-                  "type": "array",
-                  "title": "延迟vars",
+                  "type": "string",
+                  "title": "延迟规则",
                   "description": "执行请求延迟的规则，当规则匹配通过后才会延迟请求。vars 是一个表达式列表，来自 lua-resty-expr。",
-                  "items": {
-                    "type": "string",
-                    "ui:component": {
-                      "name": "bfInput"
-                    }
-                  },
                   "ui:component": {
-                    "name": "bfArray"
+                    "type": "textarea",
+                    "rows": 10
                   }
                 }
               }
@@ -2287,7 +2256,7 @@
     type:
     - fault-injection
     notes: The fault-injection plug-in is a fault injection plug-in that can be used with other plug-ins and executed before the other plug-ins are executed.
-    example: 'Purpose: When the request parameter name is not equal to jack, return 400 reject status code and status information \n\n"abort": {\n "http_status": 400,\n "body": "not valid request params"\n "vars": ['["arg_name", "==", "jack"]']\n}\n'
+    example: 'Purpose: When the request parameter name is equal to jack, return 400 reject status code and response body \n\n"abort": {\n "http_status": 400,\n "body": "not valid request params",\n "vars": [["arg_name", "==", "jack"]]\n}\n'
     style: dynamic
     default_value: ''
     config: |-
@@ -2322,17 +2291,12 @@
                   "maximum": 100
                 },
                 "vars": {
-                  "type": "array",
-                  "title": "Interrupt vars",
+                  "type": "string",
+                  "title": "Interrupt rules",
                   "description": "The fault injection rule is executed. The fault note is executed only after the rule matches. vars is a list of expressions from lua-resty-expr.",
-                  "items": {
-                    "type": "string",
-                    "ui:component": {
-                      "name": "bfInput"
-                    }
-                  },
                   "ui:component": {
-                    "name": "bfArray"
+                    "type": "textarea",
+                    "rows": 10
                   }
                 }
               }
@@ -2355,17 +2319,12 @@
                   "maximum": 100
                 },
                 "vars": {
-                  "type": "array",
-                  "title": "Delay vars",
+                  "type": "string",
+                  "title": "Delay rules",
                   "description": "Execute the request delay rule. The request is delayed only when the rule matches. vars is a list of expressions from lua-resty-expr.",
-                  "items": {
-                    "type": "string",
-                    "ui:component": {
-                      "name": "bfInput"
-                    }
-                  },
                   "ui:component": {
-                    "name": "bfArray"
+                    "type": "textarea",
+                    "rows": 10
                   }
                 }
               }

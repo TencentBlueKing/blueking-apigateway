@@ -27,7 +27,7 @@ from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.resource.importer.schema import SchemaValidateErr
 from apigateway.biz.resource.models import ResourceData
-from apigateway.common.plugin.plugin_validators import PluginConfigYamlValidator
+from apigateway.common.plugin.validator import PluginConfigYamlValidator
 from apigateway.core.constants import HTTP_METHOD_ANY
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.utils.list import get_duplicate_items

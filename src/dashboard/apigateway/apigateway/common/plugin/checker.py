@@ -23,7 +23,9 @@
 - apisix 插件的 check_schema 除校验 schema 外，可能还有一些额外的校验，这些插件配置的额外校验，放在此模块处理
 """
 
+import ast
 import ipaddress
+import json
 import re
 from abc import ABC, abstractmethod
 from collections import Counter
@@ -33,12 +35,12 @@ import jsonschema
 from django.utils.translation import gettext as _
 
 from apigateway.apps.plugin.constants import (
-    VARS_ALLOWED_COMPARISON_SYMBOLS,
-    VARS_ALLOWED_LOGICAL_SYMBOLS,
     Draft7Schema,
     PluginTypeCodeEnum,
 )
 from apigateway.utils.yaml import yaml_loads
+
+VARS_ALLOWED_COMPARISON_SYMBOLS = {"==", "~=", ">", ">=", "<", "<=", "~~", "~*", "in", "has", "!", "ipmatch"}
 
 
 class BaseChecker(ABC):
@@ -60,7 +62,7 @@ class BkCorsChecker(BaseChecker):
         if loaded_data.get("allow_credential"):
             for key in ["allow_origins", "allow_methods", "allow_headers", "expose_headers"]:
                 if loaded_data.get(key) == "*":
-                    raise ValueError(_("当 'allow_credential' 为 True 时, {key} 不能为 '*'。").format(key=key))
+                    raise ValueError(_("当 'allow_credential' 为 True 时，{key} 不能为 '*'。").format(key=key))
 
         # 非 apisix check_schema 中逻辑，根据业务需要添加的校验逻辑
         if not (loaded_data.get("allow_origins") or loaded_data.get("allow_origins_by_regex")):
@@ -158,20 +160,27 @@ class BkIPRestrictionChecker(BaseChecker):
 class RequestValidationChecker(BaseChecker):
     def _validate_json_schema(self, schema_name: str, json_schema: str):
         try:
-            jsonschema.validate(instance=json_schema, schema=Draft7Schema)
+            data = json.loads(json_schema)
+        except json.JSONDecodeError:
+            raise ValueError(f"Your {schema_name} Schema is not a valid JSON.")
+
+        try:
+            jsonschema.validate(instance=data, schema=Draft7Schema)
         except jsonschema.exceptions.ValidationError as err:
             raise ValueError(f"Your {schema_name} Schema is not valid: {err}")
+
+        # FIXME: check the valid json schema
 
     def check(self, payload: str):
         loaded_data = yaml_loads(payload)
         if not loaded_data:
             raise ValueError("yaml can not be empty")
 
-        body_schema = loaded_data.get("body_schema", {})
-        header_schema = loaded_data.get("header_schema", {})
+        body_schema = loaded_data.get("body_schema")
+        header_schema = loaded_data.get("header_schema")
 
         if not body_schema and not header_schema:
-            raise ValueError("header_schema and body_schema must have a value")
+            raise ValueError("header_schema or body_schema should be configured at least one.")
 
         if body_schema:
             self._validate_json_schema("body_schema", body_schema)
@@ -193,73 +202,71 @@ class FaultInjectionChecker(BaseChecker):
             raise ValueError("At least one of the conditions 'abort' or 'delay' must be configured.")
 
         if abort_data:
-            self._check_abort(abort_data)
+            http_status = abort_data.get("http_status")
+            if not http_status:
+                raise ValueError("http_status is required in abort.")
+            if int(http_status) < 200:
+                raise ValueError("http_status must be greater than 200.")
+
+            percentage = abort_data.get("percentage")
+            if percentage and not (0 < int(percentage) <= 100):
+                raise ValueError("The percentage of abort must be greater than 0 and less than or equal to 100.")
+
+            abort_vars = abort_data.get("vars")
+            check_vars(abort_vars, "abort")
 
         if delay_data:
-            self._check_delay(delay_data)
+            duration = delay_data.get("duration")
+            if not duration:
+                raise ValueError("duration is required in delay.")
 
-    def _check_abort(self, abort_data: Dict):
-        http_status = abort_data.get("http_status")
-        if http_status is None or http_status == 0:
-            raise ValueError("http_status must be entered in abort.")
-        if int(abort_data["http_status"]) < 200:
-            raise ValueError(f"The http_status is '{abort_data['http_status']}' must be greater than 200.")
-        if abort_data.get("percentage"):
-            self._check_percentage(abort_data.get("percentage"), "abort")
-        if abort_data.get("vars"):
-            self._check_vars(abort_data.get("vars"))
+            percentage = delay_data.get("percentage")
+            if percentage and not (0 < int(percentage) <= 100):
+                raise ValueError("The percentage of delay must be greater than 0 and less than or equal to 100.")
 
-    def _check_delay(self, delay_data: Dict):
-        duration = delay_data.get("duration")
-        if duration is None or duration == 0:
-            raise ValueError("duration must be entered in delay and cannot be zero.")
-        if delay_data.get("percentage"):
-            self._check_percentage(delay_data.get("percentage"), "delay")
-        if delay_data.get("vars"):
-            self._check_vars(delay_data.get("vars"))
+            delay_vars = delay_data.get("vars")
+            check_vars(delay_vars, "delay")
 
-    def _check_percentage(self, percentage, config_type):
-        if percentage and not (0 < int(percentage) <= 100):
-            raise ValueError(f"The percentage of {config_type} must be greater than 0 and less than or equal to 100.")
 
-    def _check_vars(self, vars_list):
-        if vars_list:
-            for item in vars_list:
-                self._check_vars_details(item)
+def check_vars(vars, location):
+    """check vars of lua-resty-expr
+    vars = `[
+        [
+            [ "arg_name","==","jack" ],
+            [ "arg_age","==",18 ]
+        ],
+        [
+            [ "arg_name2","==111","allen" ]
+        ]
+    ]`
 
-    # 功能: 检查vars下的每个子集
-    # 检查功能如下: 确保列表的长度符合预期（3或4）。
-    #             确保列表中特定位置的元素是字符串，并且这些字符串是允许的逻辑或比较运算符。
-    #             如果任何条件不满足，就抛出异常。
-    def _check_vars_details(self, item):
-        if isinstance(item, list):
-            # 如果item = 1 且是 list, 则再循环
-            if len(item) == 1 and isinstance(item[0], list):
-                self._check_vars_details(item[0])
-            # 如果item = 2 且都是 list, 则再循环
-            elif len(item) == 2 and isinstance(item[0], list) and isinstance(item[1], list):
-                self._check_vars_details(item[0])
-                self._check_vars_details(item[1])
-            # 如果item的长度为3的时候
-            elif len(item) == 3:
-                # 示例  ["逻辑运算符", [], []]    需要判断第一个符不符合逻辑运算符, 然后后面两个列表需要再循环判断
-                if isinstance(item[0], str) and isinstance(item[1], list) and isinstance(item[2], list):
-                    if item[0] not in VARS_ALLOWED_LOGICAL_SYMBOLS:
-                        raise ValueError(f"The first element of '{item[0]}' is not a logical symbol.")
-                    self._check_vars_details(item[1])
-                    self._check_vars_details(item[2])
-                # 示例  ["","比较运算符",""]     需要判断第二个符不符合比较运算符
-                if isinstance(item[1], str) and item[1] not in VARS_ALLOWED_COMPARISON_SYMBOLS:
-                    raise ValueError(f"The second element of '{item}' is not a comparison symbol.")
-            # 也有例子是4位的,比如说 ["", "比较运算符", "比较运算符", ""]           需要判断第二个和第三个符不符合比较运算符
-            elif len(item) == 4:
-                if (item[1] not in VARS_ALLOWED_COMPARISON_SYMBOLS and isinstance(item[1], str)) or (
-                    item[2] not in VARS_ALLOWED_COMPARISON_SYMBOLS and isinstance(item[2], str)
-                ):
-                    raise ValueError(f"The second or third element of '{item}' is not a valid symbol.")
-            # 到这里已经是超了数量了
+    """
+    parsed_vars = []
+    try:
+        parsed_vars = ast.literal_eval(vars)
+    except Exception as e:
+        raise ValueError(f"The vars of {location} is not valid, error: {e}")
+
+    # 第一层 parsed_vars = [ [a], [] ]
+    if not isinstance(parsed_vars, list):
+        raise TypeError(f"The vars of {location} should be list")
+
+    for index, v in enumerate(parsed_vars):
+        # 中间层  v = [a]
+        if not isinstance(v, list):
+            raise TypeError(f"The vars of {location} at index {index} should be list")
+
+        for i, item in enumerate(v):
+            # 最内侧 a  = [ "arg_name","==","jack" ]
+            if isinstance(item, list):
+                if len(item) != 3:
+                    raise ValueError(f"The vars of {location} at index [{index}][{i}] should have 3 elements")
+                if item[1] not in VARS_ALLOWED_COMPARISON_SYMBOLS:
+                    raise ValueError(
+                        f"The vars of {location} at index [{index}][{i}] should have a valid comparison symbol"
+                    )
             else:
-                raise ValueError(f"The length of '{item}' is not 3 or 4.")
+                raise TypeError(f"The vars of {location} at index [{index}][{i}] should be list")
 
 
 class PluginConfigYamlChecker:

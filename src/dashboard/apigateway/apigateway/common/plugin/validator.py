@@ -22,15 +22,15 @@ from jsonschema import validate
 
 from apigateway.utils.yaml import yaml_loads
 
-from .plugin_checkers import PluginConfigYamlChecker
-from .plugin_convertors import PluginConvertorFactory
+from .checker import PluginConfigYamlChecker
+from .convertor import PluginConvertorFactory
 
 
 class PluginConfigYamlValidator:
     """
     插件配置校验
     - 1. 符合 schema 规则
-    - 2. 符合 apisix 额外校验规则 (plugin_checkers 中规则)
+    - 2. 符合 apisix 额外校验规则 (checkers 中规则)
     """
 
     def validate(self, plugin_type_code: str, payload: str, schema: Optional[Dict] = None):
