@@ -49,7 +49,7 @@ class TestMetricsQueryRangeSLZ(TestCase):
             self.assertEqual(slz.validated_data, test["expected"])
 
 
-class TestMetricsQueryNumberSLZ(TestCase):
+class TestMetricsQueryInstantSLZ(TestCase):
     def test_validate(self):
         data = [
             {
@@ -72,6 +72,6 @@ class TestMetricsQueryNumberSLZ(TestCase):
             },
         ]
         for test in data:
-            slz = serializers.MetricsQueryNumberInputSLZ(data=test["data"])
+            slz = serializers.MetricsQueryInstantInputSLZ(data=test["data"])
             slz.is_valid()
             self.assertEqual(slz.validated_data, test["expected"])

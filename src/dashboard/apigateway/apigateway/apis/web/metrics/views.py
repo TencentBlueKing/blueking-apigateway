@@ -22,13 +22,13 @@ from django.http import Http404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apps.metrics.constants import MetricsNumberEnum, MetricsRangeEnum
-from apigateway.apps.metrics.prometheus.dimension import MetricsNumberFactory, MetricsRangeFactory
+from apigateway.apps.metrics.constants import MetricsInstantEnum, MetricsRangeEnum
+from apigateway.apps.metrics.prometheus.dimension import MetricsInstantFactory, MetricsRangeFactory
 from apigateway.core.models import Resource, Stage
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.time import SmartTimeRange
 
-from .serializers import MetricsQueryNumberInputSLZ, MetricsQueryRangeInputSLZ
+from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ
 
 
 class MetricsSmartTimeRange(SmartTimeRange):
@@ -121,15 +121,15 @@ class QueryRangeApi(generics.ListAPIView):
         return OKJsonResponse(data=data)
 
 
-class QueryNumberApi(generics.ListAPIView):
+class QueryInstantApi(generics.ListAPIView):
     @swagger_auto_schema(
-        query_serializer=MetricsQueryNumberInputSLZ,
+        query_serializer=MetricsQueryInstantInputSLZ,
         responses={status.HTTP_200_OK: ""},
         operation_description="查询 metrics",
         tags=["WebAPI.Metrics"],
     )
     def get(self, request, *args, **kwargs):
-        slz = MetricsQueryNumberInputSLZ(data=request.query_params)
+        slz = MetricsQueryInstantInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
         stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
@@ -152,9 +152,8 @@ class QueryNumberApi(generics.ListAPIView):
         step = smart_time_range.get_recommended_step()
 
         # 暂时只有总数和健康率，所以总数是必需需要计算的
-        metrics = MetricsNumberFactory.create_metrics(MetricsNumberEnum.REQUESTS_TOTAL)
-
-        request_total_data = metrics.query_range(
+        metrics = MetricsInstantFactory.create_metrics(MetricsInstantEnum.REQUESTS_TOTAL)
+        requests_total_result = metrics.query_instant(
             gateway_name=request.gateway.name,
             stage_id=data.get("stage_id", 0),
             stage_name=stage_name,
@@ -164,15 +163,12 @@ class QueryNumberApi(generics.ListAPIView):
             end=time_end,
             step=step,
         )
-        # 计算总数
-        request_total_number = self._get_data_differ_number(request_total_data)
+        if requests_total_result.get("instant") != 0 and data["metrics"] == MetricsInstantEnum.HEALTH_RATE.value:
+            health_rate_result = {}
 
-        if data["metrics"] == MetricsNumberEnum.HEALTH_RATE.value:
-            # 总数为0直接返回0
-            if request_total_number == 0:
-                return OKJsonResponse(data=0)
-            metrics = MetricsNumberFactory.create_metrics(data["metrics"])
-            failed_500_status_data = metrics.query_range(
+            # 获取 500 状态码 数量以求健康率
+            metrics = MetricsInstantFactory.create_metrics(MetricsInstantEnum.HEALTH_RATE)
+            health_rate_data = metrics.query_instant(
                 gateway_name=request.gateway.name,
                 stage_id=data.get("stage_id", 0),
                 stage_name=stage_name,
@@ -182,45 +178,10 @@ class QueryNumberApi(generics.ListAPIView):
                 end=time_end,
                 step=step,
             )
-            failed_500_status_number = self._get_data_differ_number(failed_500_status_data)
-            # 健康率 = 1 - （500 状态码请求数/总请求数）
-            return OKJsonResponse(data=1 - (failed_500_status_number / request_total_number))
 
-        return OKJsonResponse(data=request_total_number)
+            # 健康率 = 1 - (500 状态码数量 / 请求总数)
+            health_rate = 1 - (health_rate_data["instant"] / requests_total_result["instant"])
+            health_rate_result["instant"] = health_rate
+            return OKJsonResponse(data=health_rate_result)
 
-    def _get_data_differ_number(self, data: dict) -> int:
-        # 检查传入的数据是否为None或不是字典
-        if data is None or not isinstance(data, dict):
-            return 0
-
-        # 检查'data'键和'series'列表的存在性和非空性
-        # 返回的没有没有数据的情况是这样的 {"result": true, "code": 200, "message": "OK", "data": {"metrics": [], "series": []}}
-        if (
-            "data" in data
-            and isinstance(data["data"], dict)
-            and "series" in data["data"]
-            and isinstance(data["data"]["series"], list)
-            and len(data["data"]["series"]) > 0
-        ):
-            # 获取'datapoints'列表
-            datapoints = data["data"]["series"][0].get("datapoints", [])
-
-            # 检查'datapoints'列表非空并且至少有两个数据点
-            if len(datapoints) > 1:
-                # 获取最后一条数据点和第一条数据点
-                last_value = datapoints[-1][0]
-                first_value = datapoints[0][0]
-
-                # 如果 first_value 为 None，将 first_value 设为 0
-                # 示例: {"result": true, "code": 200, "message": "OK", "data": {"metrics": [], "series": [{"datapoints": [[null, 1708290000000], [9, 1727161200000], [41, 1728370800000], [41, 1728374400000]]}]}}
-                first_number = 0 if first_value is None else first_value
-
-                # 如果 last_value 为 None，将 last_value 设为倒数第二条数据点的值
-                # 示例：{"result": true, "code": 200, "message": "OK", "data": {"metrics": [], "series": [{"datapoints": [[30, 1728291600000], [44, 1728460800000], [44, 1728464400000], [null, 1758373200000]]}]}}
-                last_number = datapoints[-2][0] if last_value is None and len(datapoints) > 1 else last_value
-
-                # 返回计算的差值，并确保结果是整数
-                return int(last_number) - int(first_number)
-
-        # 如果没有有效数据，返回0
-        return 0
+        return OKJsonResponse(data=requests_total_result)

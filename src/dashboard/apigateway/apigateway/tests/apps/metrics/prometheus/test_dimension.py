@@ -16,7 +16,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.apps.metrics.constants import MetricsNumberEnum, MetricsRangeEnum
+import pytest
+
+from apigateway.apps.metrics.constants import MetricsInstantEnum, MetricsRangeEnum
 from apigateway.apps.metrics.prometheus import dimension
 
 
@@ -417,7 +419,7 @@ class TestMetricsRangeFactory:
             assert isinstance(result, test["expected"])
 
 
-class TestMetricsNumberFactory:
+class TestMetricsInstantFactory:
     def test_create_metrics(self):
         data = [
             {
@@ -430,7 +432,72 @@ class TestMetricsNumberFactory:
             },
         ]
         for test in data:
-            result = dimension.MetricsNumberFactory.create_metrics(
-                MetricsNumberEnum(test["metrics"]),
+            result = dimension.MetricsInstantFactory.create_metrics(
+                MetricsInstantEnum(test["metrics"]),
             )
             assert isinstance(result, test["expected"])
+
+
+class TestBaseMetrics:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (None, 0),
+            (
+                {
+                    "result": True,
+                    "code": 200,
+                    "message": "OK",
+                    "data": {"metrics": [], "series": []},
+                },
+                0,
+            ),
+            (
+                {
+                    "result": True,
+                    "code": 200,
+                    "message": "OK",
+                    "data": {
+                        "metrics": [],
+                        "series": [
+                            {
+                                "datapoints": [
+                                    [None, 1708290000000],
+                                    [5, 1727161200000],
+                                    [22, 1727164800000],
+                                    [26, 1727197200000],
+                                    [26, 1727200800000],
+                                ]
+                            }
+                        ],
+                    },
+                },
+                26,
+            ),
+            (
+                {
+                    "result": True,
+                    "code": 200,
+                    "message": "OK",
+                    "data": {
+                        "metrics": [],
+                        "series": [
+                            {
+                                "datapoints": [
+                                    [4, 1708290000000],
+                                    [5, 1727161200000],
+                                    [22, 1727164800000],
+                                    [26, 1727197200000],
+                                    [None, 1727200800000],
+                                ]
+                            }
+                        ],
+                    },
+                },
+                22,
+            ),
+        ],
+    )
+    def test_get_data_differ_number(self, data, expected):
+        result = dimension.get_data_differ_number(data)
+        assert result == expected

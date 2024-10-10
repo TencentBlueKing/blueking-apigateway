@@ -29,6 +29,6 @@ class MetricsRangeEnum(StructuredEnum):
     EGRESS = EnumField("egress")
 
 
-class MetricsNumberEnum(StructuredEnum):
+class MetricsInstantEnum(StructuredEnum):
     REQUESTS_TOTAL = EnumField("requests_total")
     HEALTH_RATE = EnumField("health_rate")
