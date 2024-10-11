@@ -1,3 +1,13 @@
+<!-- 2024-10-11 -->
+# V1.13.20 Release Log
+
+### Bug Fixes
+
+- Fixed the issue with resource documentation upload failure
+- Updated bkui version
+
+---
+
 <!-- 2024-10-08 -->
 # V1.13.19 Release Log
 
