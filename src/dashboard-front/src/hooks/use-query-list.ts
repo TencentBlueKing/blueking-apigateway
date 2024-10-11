@@ -7,11 +7,18 @@ import {
   ref,
   onMounted,
   watch,
+  Ref,
 } from 'vue';
 import { IPagination } from '@/types';
 import { useCommon } from '@/store';
 
-export function useQueryList(apiMethod: Function, filterData?: any, id?: number, filterNoResetPage?: boolean) {
+export function useQueryList(
+  apiMethod: (...args: any[]) => Promise<unknown>,
+  filterData?: Ref<Record<string, any>>,
+  id?: number,
+  filterNoResetPage?: boolean,
+  initialPagination: Partial<IPagination> = {},
+) {
   const common = useCommon();
   const { apigwId } = common;
   const initPagination: IPagination = {
@@ -23,6 +30,7 @@ export function useQueryList(apiMethod: Function, filterData?: any, id?: number,
     abnormal: false,
     // 每页页数选项，这个也是 table 组件的默认值
     limitList: [10, 20, 50, 100],
+    ...initialPagination,
   };
 
   const pagination = ref<IPagination>({ ...initPagination });

@@ -744,9 +744,6 @@ const labelsList = computed(() => {
   });
 });
 
-// 当前视口高度能展示最多多少条表格数据
-const maxTableLimit = ref(10);
-
 // 计算当前视口高度下能展示多少表格行
 const calcMaxTableLimit = (lineHeight = 42, heightTaken = 347) => {
   const viewportHeight = window.innerHeight;
@@ -755,7 +752,8 @@ const calcMaxTableLimit = (lineHeight = 42, heightTaken = 347) => {
   return limit > 0 ? limit : 1;
 };
 
-maxTableLimit.value = calcMaxTableLimit();
+// 当前视口高度能展示最多多少条表格数据
+const maxTableLimit = calcMaxTableLimit();
 
 // 列表hooks
 const {
@@ -765,12 +763,10 @@ const {
   handlePageChange,
   handlePageSizeChange,
   getList,
-} = useQueryList(getResourceListData, filterData, 0, true);
-
-// 注意，pagination 的 limit 必须在 limitList 里才能生效
-// 所以要先放进 limitList 里
-pagination.value.limitList.unshift(maxTableLimit.value);
-pagination.value.limit = maxTableLimit.value;
+} = useQueryList(getResourceListData, filterData, 0, false, {
+  limitList: [maxTableLimit, 10, 20, 50, 100],
+  limit: maxTableLimit,
+});
 
 // checkbox hooks
 const {
@@ -1387,7 +1383,7 @@ onMounted(() => {
   dragTwoColDiv('resourceId', 'resourceLf', 'resourceLine'/* , 'resourceRg' */);
   // 监听其他组件是否触发了资源更新，获取最新的列表数据
   mitt.on('on-update-plugin', () => {
-    pagination.value = Object.assign(pagination.value, { current: 0, limit: maxTableLimit.value });
+    pagination.value = Object.assign(pagination.value, { current: 0, limit: maxTableLimit });
     getList();
     handleShowVersion();
   });
