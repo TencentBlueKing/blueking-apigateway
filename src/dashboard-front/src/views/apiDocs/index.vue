@@ -289,6 +289,9 @@ const router = useRouter();
 
 const filterData = ref({ keyword: '' });
 
+// 当前视口高度能展示最多多少条表格数据
+const maxTableLimit = useMaxTableLimit(271);
+
 const {
   tableData,
   pagination,
@@ -296,19 +299,13 @@ const {
   handlePageChange,
   handlePageSizeChange,
   getList,
-} = useQueryList(getGatewaysDocs, filterData, null, true);
+} = useQueryList(getGatewaysDocs, filterData, null, false, {
+  limitList: [maxTableLimit, 10, 20, 50, 100],
+  limit: maxTableLimit,
+});
 
 // 组件分类模板引用列表
 const categoryRefs = useTemplateRefsList<HTMLElement>();
-
-// 当前视口高度能展示最多多少条表格数据
-const maxTableLimit = ref(10);
-maxTableLimit.value = useMaxTableLimit(271);
-
-// 注意，pagination 的 limit 必须在 limitList 里才能生效
-// 所以要先放进 limitList 里
-pagination.value.limitList.unshift(maxTableLimit.value);
-pagination.value.limit = maxTableLimit.value;
 
 const tableEmptyConf = ref<{ keyword: string, isAbnormal: boolean }>({
   keyword: '',
