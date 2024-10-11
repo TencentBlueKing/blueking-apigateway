@@ -207,13 +207,14 @@
                 v-for="systemBoard in componentSystemList"
                 :key="systemBoard.board"
                 :name="systemBoard.board"
+                :model-value="isActiveNavPanel(systemBoard.board)"
               >
                 <template #header>
                   <div class="panel-header">
                     <main class="flex-row align-items-center">
                       <angle-up-fill
                         :class="[
-                          navPanelNamesList.includes(systemBoard.board) ? 'panel-header-show' : 'panel-header-hide'
+                          isActiveNavPanel(systemBoard.board) ? 'panel-header-show' : 'panel-header-hide'
                         ]"
                       />
                       <div class="title ml4">
@@ -401,6 +402,11 @@ const handleSdkDetailClick = (row: IApiGatewayBasics) => {
   curTargetName.value = row.name;
   curSdks.value = row.sdks ?? [];
   isSdkDetailDialogShow.value = true;
+};
+
+// 判断导航目录是否为已展开状态
+const isActiveNavPanel = (panelName: string) => {
+  return navPanelNamesList.value.includes(panelName);
 };
 
 onBeforeMount(() => {

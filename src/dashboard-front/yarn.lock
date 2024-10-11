@@ -1113,6 +1113,11 @@
   dependencies:
     chalk "^4.1.0"
 
+"@blueking/date-picker@^2.0.0-beta.27":
+  version "2.0.0-beta.33"
+  resolved "https://registry.yarnpkg.com/@blueking/date-picker/-/date-picker-2.0.0-beta.33.tgz#cace8d525ed2f15f09b753c46bc2fa8decaa98b7"
+  integrity sha512-CiG9stqgzhqZp0NpT5nE53QaMIRUFBokjyHC19b7cp5KQYClvUN+nfv6anPQCLXOEorhTEv2iVqNfFqpusrIRA==
+
 "@blueking/eslint-config-bk@^2.1.0-beta.18":
   version "2.1.0-beta.18"
   resolved "https://registry.npmjs.org/@blueking/eslint-config-bk/-/eslint-config-bk-2.1.0-beta.18.tgz"
