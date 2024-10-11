@@ -1,5 +1,6 @@
 import fetch from './fetch';
 import { json2Query, blobDownLoad } from '@/common/util';
+import { SearchParamsType } from '@/views/operate-data/statistics-report/type';
 
 const { BK_DASHBOARD_URL } = window;
 
@@ -8,6 +9,12 @@ const { BK_DASHBOARD_URL } = window;
  * @param apigwId 网关id
  */
 export const getApigwMetrics = (apigwId: number, params: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/metrics/query-range/?${json2Query(params)}`);
+
+/**
+ *  请求总数健康率
+ * @param apigwId 网关id
+ */
+export const getApigwMetricsInstant = (apigwId: number, params: SearchParamsType) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/metrics/query-instant/?${json2Query(params)}`);
 
 /**
  *  获取流程日志列表
