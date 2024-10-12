@@ -38,6 +38,7 @@ class ReleasedResourceOutputSLZ(serializers.Serializer):
     name = serializers.CharField(read_only=True)
     method = serializers.CharField(read_only=True)
     path = serializers.CharField(read_only=True)
+    schema = serializers.DictField(help_text="参数协议")
 
 
 class ReleasedResourceListV1OutputSLZ(ResourceV1SLZ):

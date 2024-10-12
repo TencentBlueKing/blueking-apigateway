@@ -1,6 +1,6 @@
 release:
-  version: 1.2.1
-  title: 网关资源文档更新
+  version: 1.2.2
+  title: 新增
   comment: 网关资源文档更新
 
 apigateway:
