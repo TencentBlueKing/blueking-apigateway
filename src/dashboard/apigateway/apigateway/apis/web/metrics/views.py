@@ -60,7 +60,7 @@ class QueryRangeApi(generics.ListAPIView):
             data.get("time_range"),
         )
         time_start, time_end = smart_time_range.get_head_and_tail()
-        step = smart_time_range.get_recommended_step()
+        step = smart_time_range.get_interval()
 
         metrics = MetricsRangeFactory.create_metrics(MetricsRangeEnum(data["metrics"]))
 
