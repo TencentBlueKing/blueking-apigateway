@@ -64,10 +64,10 @@ const logCodeViewer: any = ref<InstanceType<typeof editorMonaco>>();
 
 const logDetails = ref<any>();
 const state = reactive({
-  objectSteps: [],
+  objectSteps: [] as IStep[],
   totalDuration: 0,
 });
-const logBody = ref<string>('');
+const logBody = ref('');
 
 let timeId: any = null;
 
@@ -85,89 +85,95 @@ let timeId: any = null;
 //   logBody.value = detail || '';
 // };
 
+interface IStep {
+  name?: string;
+  description?: string;
+  step?: number;
+  size?: string;
+  color?: string;
+  filled?: boolean;
+  tag?: string;
+  content?: string;
+  icon?: typeof Spinner;
+  status?: 'doing' | 'success' | 'failure';
+  duration?: number;
+}
+
 // 获取日志列表
 const getLogsList = async () => {
   try {
-    const res = await getLogs(apigwId.value, props.historyId);
-    if (res.status !== 'doing') {
+    const response = await getLogs(apigwId.value, props.historyId);
+    if (response.status !== 'doing') {
       clearInterval(timeId);
     }
-    logDetails.value = res;
+    logDetails.value = response;
 
     // 整理步骤
-    const steps: any = [];
     state.objectSteps = [];
     state.totalDuration = 0;
-    const subStep = res?.events[res?.events?.length - 1]?.step || 0;
-    let allDetail = '';
+    logBody.value = '';
 
-    res?.events_template?.forEach((item: any, index: number) => {
-      item.size = 'large';
+    const events = response.events || [];
+    const eventTemplates = response.events_template || [];
 
-      if (item?.step < subStep) {
-        item.color = 'green';
-        item.filled = true;
-      } else if (item?.step === subStep) {
-        if (res?.status === 'success') {
-          item.color = 'green';
-          item.filled = true;
-        } else if (res?.status === 'doing') {
-          item.color = 'blue';
-          item.icon = Spinner;
-        } else {
-          item.color = 'red';
-        }
-      }
+    // 生成步骤节点
+    state.objectSteps = eventTemplates.map((eventTemplate) => {
+      const step: IStep = {
+        size: 'large',
+        tag: eventTemplate.description,
+      };
+      const currentEvents = events.filter(event => event.step === eventTemplate.step);
 
-      steps[index] = { ...item, tag: item.description };
-
-      const children: any = [];
-      res?.events?.forEach((subItem: any) => {
-        if (item?.step === subItem?.step) {
-          children.push(subItem);
-        }
-      });
-
-      // 计算耗时，第一个节点用自身的 endTime - startTime，后面的节点用自身节点的 endTime - 前一个节点的 endTime
-      let firstChild: any = {};
-      if (index === 0) {
-        [firstChild] = children;
+      // 根据步骤状态赋予不同的图标样式
+      if (currentEvents.some(event => event.status === 'failure')) {
+        step.color = 'red';
+        step.status = 'failure';
+      } else if (currentEvents.some(event => event.status === 'success')) {
+        step.color = 'green';
+        step.filled = true;
+        step.status = 'success';
       } else {
-        firstChild = steps[index - 1]?.children[1];
+        step.color = 'blue';
+        step.icon = Spinner;
+        step.status = 'doing';
       }
-      const lastChild = children[children.length - 1];
 
-      const date1 = dayjs(firstChild?.created_time);
+      // 计算每个步骤使用的时间
+      const startTime = dayjs(currentEvents.find(event => event.status === 'doing')?.created_time);
+      let duration = 0;
+      const nextEvents = events.filter(event => event.step === eventTemplate.step + 1);
 
-      // 如果失败了，那么 lastChild 不存在，此时 dayjs(lastChild) 就是 dayjs(null) 或 dayjs(undefined) 就是当前的时间
-      const date2 = dayjs(lastChild?.created_time || firstChild?.created_time);
+      // 当前步骤未完成，则计算当前步骤已使用的时间
+      if (step.status === 'doing') {
+        duration = dayjs().diff(startTime, 's', true) || 0;
+      } else {
+        // 如果当前步骤已结束，则用下一个步骤的开始时间计算时间差
+        if (nextEvents.length) {
+          const endTime = dayjs(nextEvents.find(event => event.status === 'doing')?.created_time);
+          duration = endTime.diff(startTime, 's', true) || 0;
+        } else {
+          // 没有下一个步骤就用当前步骤自己的 created_time 计算时间差
+          const endTime = dayjs(currentEvents.find(event => event.status === 'success' || event.status === 'failure')?.created_time);
+          duration = endTime.diff(startTime, 's', true) || 0;
+        }
+      }
 
-      const duration = date2.diff(date1, 's', true);
+      // 步骤展示文本
+      step.content = `<span style="font-size: 12px;">${duration} s</span>`;
+      step.duration = duration;
+      // 计算总耗时
       state.totalDuration += duration;
 
-      const itemLogs: string[] = [];
-      children?.forEach((c: any) => {
-        itemLogs?.push(`${c.created_time}  ${c.name}  ${c.status}`);
-        if (c.detail?.err_msg && c.status === 'failure') {
-          itemLogs?.push(`  err_msg: ${c.detail?.err_msg}`);
-        }
-      });
+      // 步骤日志
+      const stepLogs = currentEvents.map(event => (event.status === 'failure'
+        ? `  err_msg: ${event.detail?.err_msg ?? 'unknown error'}`
+        : `${event.created_time}  ${event.name}  ${event.status}`));
 
-      steps[index].children = children;
-      steps[index].content = `<span style="font-size: 12px;">${duration} s</span>`;
-      steps[index].detail = itemLogs.join('\n');
-
-      if (allDetail) {
-        allDetail = `${allDetail}\n\n${steps[index].detail}`;
-      } else {
-        allDetail = steps[index].detail;
-      }
+      logBody.value += `${stepLogs.join('\n')}\n\n`;
+      return step;
     });
-    state.objectSteps = steps;
-    logBody.value = allDetail || '';
   } catch (e) {
     clearInterval(timeId);
-    console.log(e);
   }
 };
 
