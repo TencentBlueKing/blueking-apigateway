@@ -133,9 +133,13 @@ const getLogsList = async () => {
         step.filled = true;
         step.status = 'success';
       } else {
-        step.color = 'blue';
-        step.icon = Spinner;
         step.status = 'doing';
+        // 给已结束步骤的下一个在 doing 状态的步骤显示加载图标
+        const prevEvents = events.filter(event => event.step === eventTemplate.step - 1);
+        if (prevEvents.find(event => event.status === 'success' || event.status === 'failure')) {
+          step.color = 'blue';
+          step.icon = Spinner;
+        }
       }
 
       // 计算每个步骤使用的时间
