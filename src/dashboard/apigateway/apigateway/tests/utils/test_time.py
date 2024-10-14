@@ -116,6 +116,6 @@ class TestMetricsSmartTimeRange:
             (20000, "12h"),
         ],
     )
-    def test_get_recommended_step(self, time_range_minutes, expected):
+    def test_get_get_interval(self, time_range_minutes, expected):
         smart_time_range = MetricsSmartTimeRange(time_range=time_range_minutes * 60)
         assert smart_time_range.get_interval() == expected
