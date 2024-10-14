@@ -1,13 +1,22 @@
 <template>
-  <div class="line-chart" :id="instanceId"></div>
+  <div v-show="!isEmpty" class="line-chart" :id="instanceId"></div>
+  <div v-show="isEmpty" class="ap-nodata">
+    <TableEmpty
+      :keyword="tableEmptyConf.keyword"
+      :abnormal="tableEmptyConf.isAbnormal"
+      @reacquire="handleInit"
+      @clear-filter="handleClearFilterKey"
+    />
+  </div>
 </template>
 
 <script lang="ts" setup>
-import { shallowRef, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, shallowRef, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import * as echarts from 'echarts';
 import { merge } from 'lodash';
 import { userChartIntervalOption } from '@/hooks';
-import { SeriesItemType } from '../type';
+import { SeriesItemType, SearchParamsType } from '../type';
+import TableEmpty from '@/components/table-empty.vue';
 
 const props = defineProps({
   instanceId: { // 生成图表的元素id
@@ -24,9 +33,17 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(['clear-params', 'report-init']);
+
 const { getChartIntervalOption } = userChartIntervalOption();
 
 const myChart = shallowRef();
+const searchParams = ref<SearchParamsType>();
+const isEmpty = ref<boolean>(false);
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
+});
 
 onMounted(() => {
   const chartDom = document.getElementById(props.instanceId);
@@ -42,14 +59,37 @@ onBeforeUnmount(() => {
 watch(
   () => props.chartData,
   (data) => {
-    if (props.instanceId === 'response_time'
-    && (!data.response_time_50th || !data.response_time_80th || !data.response_time_90th)) {
-      return;
+    if (!data?.series?.length) {
+      isEmpty.value = true;
+      updateTableEmptyConfig();
+    } else {
+      isEmpty.value = false;
+      renderChart();
     }
-    renderChart();
   },
   { deep: true },
 );
+
+const handleClearFilterKey = () => {
+  emit('clear-params');
+};
+
+const handleInit = () => {
+  emit('report-init');
+};
+
+const updateTableEmptyConfig = () => {
+  const list = Object.values(searchParams.value).filter(item => !!item);
+  if (list.length > 0) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  if (searchParams.value.stage_id) {
+    tableEmptyConf.value.keyword = '$CONSTANT';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
 
 const chartResize = () => {
   nextTick(() => {
@@ -161,11 +201,19 @@ const getChartOption = () => {
       let datapoints = item.datapoints || [];
       datapoints = datapoints.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
       chartOption.series.push(merge({}, baseOption.series[0], {
-        name: item.target,
-        data: datapoints.map((item: Array<number>) => ([
-          item[1],
-          item[0],
-        ])),
+        name: props.instanceId !== 'app_requests' ? item.target : item.target?.split(',')[1],
+        data: datapoints.map((item) => {
+          if (props.instanceId === 'ingress' || props.instanceId === 'egress') {
+            return [
+              item[1],
+              (item[0] / 1024).toFixed(2),
+            ];
+          }
+          return [
+            item[1],
+            item[0],
+          ];
+        }),
       }));
       moreOption = getChartMoreOption(datapoints);
     });
@@ -173,14 +221,21 @@ const getChartOption = () => {
       chartOption.legend.show = false;
       chartOption.grid.right = '10%';
     }
+
+    if (props.instanceId === 'ingress' || props.instanceId === 'egress') {
+      chartOption.yAxis.axisLabel = {
+        formatter: '{value} KB',
+      };
+    }
   } else {
     const datapoints = [
       (props.chartData?.response_time_90th?.series[0] || {})?.datapoints || [],
       (props.chartData?.response_time_80th?.series[0] || {})?.datapoints || [],
       (props.chartData?.response_time_50th?.series[0] || {})?.datapoints || [],
     ];
-    const seriesNames = ['90%', '80%', '50%'];
-    datapoints.forEach((data: Array<Array<number>>, index: number) => {
+    // const seriesNames = ['90%', '80%', '50%'];
+    const seriesNames = ['90%'];
+    datapoints.forEach((data, index: number) => {
       const values = data.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
       chartOption.series.push(merge({}, baseOption.series[0], {
         name: seriesNames[index],
@@ -225,9 +280,17 @@ const renderChart = () => {
   nextTick(() => {
     const option = getChartOption();
     myChart.value?.setOption(option, { notMerge: true });
+    chartResize();
   });
 };
 
+const syncParams = (params: SearchParamsType) => {
+  searchParams.value = params;
+};
+
+defineExpose({
+  syncParams,
+});
 </script>
 
 <style lang="scss" scoped>

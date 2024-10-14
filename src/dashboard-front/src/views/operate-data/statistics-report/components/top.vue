@@ -71,7 +71,7 @@
           :input-search="false"
           :clearable="false"
           :filterable="false"
-          @change="handleSearchChange"
+          @change="handleRefreshChange"
         >
           <template #trigger="{ selected }">
             <div class="refresh-time-trigger">
@@ -101,10 +101,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useStage, useCommon } from '@/store';
-import mitt from '@/common/event-bus';
 import dayjs from 'dayjs';
 import { getApigwStages, getApigwResources } from '@/http';
 import DatePicker from '@blueking/date-picker';
@@ -118,7 +117,9 @@ const stage = useStage();
 const common = useCommon();
 const { apigwId } = common;
 
-const searchParams = reactive<SearchParamsType>({
+const emit = defineEmits(['search-change', 'refresh-change']);
+
+const searchParams = ref<SearchParamsType>({
   stage_id: 0,
   resource_id: '',
   time_start: 0,
@@ -212,7 +213,7 @@ const getStages = async () => {
   try {
     const response = await getApigwStages(apigwId, pageParams);
     stageList.value = response;
-    searchParams.stage_id = stageList.value[0]?.id;
+    searchParams.value.stage_id = stageList.value[0]?.id;
   } catch (e) {
     // isDataLoading.value = false;
   }
@@ -245,13 +246,38 @@ const handleValueChange = (value: string[], info: InfoTypeItem[]) => {
   handleSearchChange();
 };
 
-const handleSearchChange = () => {
+const getParams = () => {
   const [time_start, time_end] = formatTime.value;
   if (time_start && time_end) {
-    searchParams.time_start = dayjs(time_start).unix();
-    searchParams.time_end = dayjs(time_end).unix();
+    searchParams.value.time_start = dayjs(time_start).unix();
+    searchParams.value.time_end = dayjs(time_end).unix();
   }
-  mitt.emit('search-change', searchParams);
+
+  return searchParams.value;
+};
+
+const handleSearchChange = () => {
+  emit('search-change', getParams());
+};
+
+const handleRefreshChange = () => {
+  emit('refresh-change', interval.value);
+};
+
+const reset = () => {
+  searchParams.value = {
+    stage_id: stageList.value[0]?.id,
+    resource_id: '',
+    time_start: 0,
+    time_end: 0,
+    metrics: '',
+  };
+  dateTime.value = ['now-10m', 'now'];
+  formatTime.value = [dayjs().subtract(10, 'minute')
+    .format('YYYY-MM-DD HH:mm:ss'),
+  dayjs().format('YYYY-MM-DD HH:mm:ss')];
+
+  emit('search-change', getParams());
 };
 
 const init = async () => {
@@ -263,6 +289,10 @@ const init = async () => {
 
 init();
 
+defineExpose({
+  reset,
+  init,
+});
 </script>
 
 <style lang="scss" scoped>

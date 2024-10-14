@@ -1520,6 +1520,7 @@ const lang: ILANG = {
   '标签修改成功': ['Label modified successfully'],
   '删除标签成功': ['Label deleted successfully'],
   '--': ['--'],
+  '健康率': ['Health rate'],
   '资源响应耗时分布': ['Resource Response Time Distribution'],
   'top10 资源 egress 带宽占用': ['Top10 Resource Egress Bandwidth Usage'],
   'top10 资源 ingress 带宽占用': ['Top10 Resource Ingress Bandwidth Usage'],
