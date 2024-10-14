@@ -70,6 +70,9 @@ class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
         if not resource or not resource["is_public"]:
             raise Http404
 
+        # 查询资源schema
+        resource["schema"] = ResourceVersionHandler.get_resource_schema(resource_version_id, resource["id"])
+
         return resource
 
     def retrieve(self, request, *args, **kwargs):

@@ -30,7 +30,7 @@ pytestmark = pytest.mark.django_db
 
 class TestReleasedResourceRetrieveApi:
     @pytest.mark.parametrize(
-        "mocked_resource_version_id, mocked_resource, will_error, expected",
+        "mocked_resource_version_id, mocked_resource,mocked_resource_schema_version, will_error, expected",
         [
             (
                 1,
@@ -41,12 +41,62 @@ class TestReleasedResourceRetrieveApi:
                     "method": "GET",
                     "path": "/test/",
                 },
+                {},
+                False,
+                {"id": 1, "name": "test", "method": "GET", "path": "/test/", "schema": {}},
+            ),
+            (
+                1,
+                {"is_public": True, "id": 1, "name": "test", "method": "GET", "path": "/test/"},
+                {
+                    "parameters": [
+                        {
+                            "name": "status",
+                            "in": "query",
+                            "description": "Status values that need to be considered for filter",
+                            "required": False,
+                            "explode": True,
+                            "schema": {"type": "string", "default": "available", "enum": ["test"], "example": "test"},
+                        },
+                        {
+                            "name": "api_key",
+                            "in": "header",
+                            "description": "",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        },
+                    ],
+                },
                 False,
                 {
                     "id": 1,
                     "name": "test",
                     "method": "GET",
                     "path": "/test/",
+                    "schema": {
+                        "parameters": [
+                            {
+                                "name": "status",
+                                "in": "query",
+                                "description": "Status values that need to be considered for filter",
+                                "required": False,
+                                "explode": True,
+                                "schema": {
+                                    "type": "string",
+                                    "default": "available",
+                                    "enum": ["test"],
+                                    "example": "test",
+                                },
+                            },
+                            {
+                                "name": "api_key",
+                                "in": "header",
+                                "description": "",
+                                "required": True,
+                                "schema": {"type": "string"},
+                            },
+                        ],
+                    },
                 },
             ),
             # resource_version_id is None
@@ -59,6 +109,7 @@ class TestReleasedResourceRetrieveApi:
                     "method": "GET",
                     "path": "/test/",
                 },
+                {},
                 True,
                 None,
             ),
@@ -66,6 +117,7 @@ class TestReleasedResourceRetrieveApi:
             (
                 1,
                 None,
+                {},
                 True,
                 None,
             ),
@@ -79,6 +131,7 @@ class TestReleasedResourceRetrieveApi:
                     "method": "GET",
                     "path": "/test/",
                 },
+                {},
                 True,
                 None,
             ),
@@ -91,6 +144,7 @@ class TestReleasedResourceRetrieveApi:
         fake_gateway,
         mocked_resource_version_id,
         mocked_resource,
+        mocked_resource_schema_version,
         will_error,
         expected,
     ):
@@ -101,6 +155,11 @@ class TestReleasedResourceRetrieveApi:
         get_released_resource_mock = mocker.patch(
             "apigateway.apis.open.released.views.ReleasedResource.objects.get_released_resource",
             return_value=mocked_resource,
+        )
+
+        get_released_resource_schema_version_mock = mocker.patch(
+            "apigateway.apis.open.released.views.ResourceVersionHandler.get_resource_schema",
+            return_value=mocked_resource_schema_version,
         )
 
         request = request_factory.get("/backend/api/v1/demo/")

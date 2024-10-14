@@ -200,3 +200,40 @@ class SmartTimeRange:
     def get_interval(self):
         time_start, time_end = self.get_head_and_tail()
         return calculate_interval(time_start, time_end)
+
+
+class MetricsSmartTimeRange(SmartTimeRange):
+    def get_interval(self) -> str:
+        """
+        根据 time_start, time_end，获取推荐的步长
+
+        step via the gap of query time
+        1m  <- 1h
+        5m  <- 6h
+        10m <- 12h
+        30m <- 24h
+        1h  <- 72h
+        3h  <- 7d
+        12h <- >7d
+        """
+        time_start, time_end = self.get_head_and_tail()
+
+        step_options = ["1m", "5m", "10m", "30m", "1h", "3h", "12h"]
+
+        gap_minutes = math.ceil((time_end - time_start) / 60)
+        if gap_minutes <= 60:
+            index = 0
+        elif gap_minutes <= 360:
+            index = 1
+        elif gap_minutes <= 720:
+            index = 2
+        elif gap_minutes <= 1440:
+            index = 3
+        elif gap_minutes <= 4320:
+            index = 4
+        elif gap_minutes <= 10080:
+            index = 5
+        else:
+            index = 6
+
+        return step_options[index]
