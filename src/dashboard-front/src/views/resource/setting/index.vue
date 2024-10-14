@@ -561,7 +561,10 @@
 import { reactive, ref, watch, onMounted, onBeforeMount, shallowRef, h, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
-import { cloneDeep, differenceBy } from 'lodash';
+import {
+  cloneDeep,
+  differenceBy,
+} from 'lodash';
 import { Message } from 'bkui-vue';
 
 import { useQueryList, useSelection } from '@/hooks';
