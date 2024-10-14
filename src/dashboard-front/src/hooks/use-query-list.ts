@@ -11,6 +11,10 @@ import {
 } from 'vue';
 import { IPagination } from '@/types';
 import { useCommon } from '@/store';
+import {
+  sortBy,
+  sortedUniq,
+} from 'lodash';
 
 export function useQueryList<T>(
   apiMethod: (...args: any[]) => Promise<unknown>,
@@ -30,8 +34,11 @@ export function useQueryList<T>(
     abnormal: false,
     // 每页页数选项，这个也是 table 组件的默认值
     limitList: [10, 20, 50, 100],
+    // 当前页码
+    current: 1,
     ...initialPagination,
   };
+  initPagination.limitList = sortedUniq(sortBy(initPagination.limitList));
 
   const pagination = ref<IPagination>({ ...initPagination });
   const isLoading = ref(false);
@@ -67,13 +74,19 @@ export function useQueryList<T>(
   // 页码变化发生的事件
   const handlePageChange = (current: number) => {
     pagination.value.offset = pagination.value.limit * (current - 1);
+    pagination.value.current = current;
     fetchList();
   };
 
   // 条数变化发生的事件
   const handlePageSizeChange = (limit: number) => {
     pagination.value.limit = limit;
-    fetchList();
+    pagination.value.offset = limit * (pagination.value.current - 1);
+
+    // 页码没变化的情况下需要手动请求一次数据
+    if (pagination.value.offset <= pagination.value.count) {
+      fetchList();
+    }
   };
 
   // 监听筛选条件的变化
