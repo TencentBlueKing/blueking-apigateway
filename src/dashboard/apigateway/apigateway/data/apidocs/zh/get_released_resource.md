@@ -262,6 +262,6 @@ result = client.api.get_released_resources(
 |--------| -------- |------------------|
 | requestBody     | object      | 资源请求body协议       |
 | parameters     | object      | 资源请求parameters协议 |
-| responses   | string   | 资源response协议     |
+| responses   | object   | 资源response协议     |
 
 > schema格式与 openapi3.0 的保持一致：具体见：[OpenAPI Specification](https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.1.md)
