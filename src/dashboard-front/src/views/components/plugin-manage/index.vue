@@ -71,8 +71,11 @@
                   :class="[isBound(item) ? 'plugin disabled' : 'plugin ']" v-for="item in pluginListDate"
                   :key="item.id" @click="handleChoosePlugin(item)" @mouseenter="handlePluginHover((item.code))">
                   <div class="plungin-head">
-                    <span class="plugin-icon">
-                      {{ pluginCodeFirst(item.code) }}
+                    <span v-if="pluginIconList.includes(item.code || item.type)" class="plugin-icon">
+                      <i :class="`apigateway-icon icon-ag-plugin-${item.code || item.type}`" class="f48"></i>
+                    </span>
+                    <span v-else class="plugin-icon">
+                      {{ pluginCodeFirst(item.code || item.type) }}
                     </span>
                     <span v-show="isBound(item)" class="bindding-text">
                       {{ t('已添加') }}
@@ -235,6 +238,7 @@ import {
   deletePluginConfig,
 } from '@/http';
 import ConfigDisplayTable from '@/views/components/plugin-manage/config-display-table.vue';
+import pluginIconList from '@/common/plugin-icon-list';
 
 const props = defineProps({
   resourceId: {
@@ -250,7 +254,6 @@ const router = useRouter();
 const common = useCommon();
 
 const { apigwId } = common; // 网关id
-
 const scopeType = ref<string>('');
 const scopeId = ref<number>(-1);
 const isBindingListLoading = ref(false);

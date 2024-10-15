@@ -410,3 +410,51 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-geshihua:before {
 	content: "\e18e";
 }
+.icon-ag-plugin-fault-injection:before {
+	content: "\e190";
+}
+.icon-ag-plugin-proxy-cache:before {
+	content: "\e194";
+}
+.icon-ag-plugin-proxy-mirror:before {
+	content: "\e191";
+}
+.icon-ag-plugin-bk-cors:before {
+	content: "\e196";
+}
+.icon-ag-plugin-bk-rate-limit:before {
+	content: "\e192";
+}
+.icon-ag-plugin-request-validation:before {
+	content: "\e193";
+}
+.icon-ag-plugin-api-breaker:before {
+	content: "\e195";
+}
+.icon-ag-plugin-response-rewrite:before {
+	content: "\e197";
+}
+.icon-ag-plugin-user-restriction:before {
+	content: "\e19a";
+}
+.icon-ag-plugin-redirect:before {
+	content: "\e199";
+}
+.icon-ag-plugin-csrf:before {
+	content: "\e198";
+}
+.icon-ag-plugin-bk-ip-restriction:before {
+	content: "\e19b";
+}
+.icon-ag-plugin-bk-mock:before {
+	content: "\e19c";
+}
+.icon-ag-plugin-serverless:before {
+	content: "\e19d";
+}
+.icon-ag-plugin-uri-blocker:before {
+	content: "\e19e";
+}
+.icon-ag-plugin-bk-header-rewrite:before {
+	content: "\e19f";
+}
