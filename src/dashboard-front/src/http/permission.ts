@@ -35,7 +35,7 @@ export interface IFilterParams {
 export interface IAuthData {
   bk_app_code: string;
   expire_type: string;
-  expire_days: number;
+  expire_days: number | null;
   resource_ids: number[];
   dimension: string;
 }

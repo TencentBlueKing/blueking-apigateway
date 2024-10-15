@@ -123,14 +123,14 @@
           </bk-form-item>
           <bk-form-item :label="t('有效时间')" :required="true">
             <bk-radio-group v-model="curAuthData.expire_type">
-              <bk-radio label="custom" class="mr15">
+              <bk-radio label="permanent" class="mr15"> {{ t('永久有效') }} </bk-radio>
+              <bk-radio label="custom">
                 <bk-input
                   type="number" :min="0" v-model="curAuthData.expire_days" class="mr5 w85"
                   @focus="curAuthData.expire_type = 'custom'">
                 </bk-input>
                 {{ t('天') }}
               </bk-radio>
-              <bk-radio label="None"> {{ t('永久有效') }} </bk-radio>
             </bk-radio-group>
           </bk-form-item>
         </bk-form>
@@ -479,8 +479,8 @@ const authSliderConf = reactive({
 // 当前授权数据
 const curAuthData = ref<IAuthData>({
   bk_app_code: '',
-  expire_type: 'custom',
-  expire_days: 180,
+  expire_type: 'permanent',
+  expire_days: null,
   resource_ids: [],
   dimension: 'api',
 });
@@ -788,8 +788,8 @@ const handleRemovePermission = async () => {
 const initAuthData = () => {
   curAuthData.value = {
     bk_app_code: '',
-    expire_type: 'custom',
-    expire_days: 180,
+    expire_type: 'permanent',
+    expire_days: null,
     resource_ids: [],
     dimension: 'api',
   };
@@ -800,10 +800,10 @@ const handleAuthShow = () => {
 };
 // 主动授权关闭前
 const handleBeforeClose = () => {
-  const initData = {
+  const initData: IAuthData = {
     bk_app_code: '',
-    expire_type: 'custom',
-    expire_days: 180,
+    expire_type: 'permanent',
+    expire_days: null,
     resource_ids: [] as number[],
     dimension: 'api',
   };
@@ -837,7 +837,7 @@ const handleHidden = () => {
 // 主动授权 不同选项，数据的更改
 const formatData = () => {
   const params: IAuthData = JSON.parse(JSON.stringify(curAuthData.value));
-  if (params.expire_type === 'None') {
+  if (params.expire_type === 'permanent') {
     params.expire_days = null;
   }
   if (params.dimension === 'api') {
