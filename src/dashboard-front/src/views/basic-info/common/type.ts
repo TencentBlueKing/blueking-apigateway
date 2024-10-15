@@ -5,6 +5,7 @@ export interface BasicInfoParams {
   description_en?: string
   public_key_fingerprint?: string
   bk_app_codes: string
+  related_app_codes: string
   docs_url: string
   api_domain?: string
   developers?: string[]

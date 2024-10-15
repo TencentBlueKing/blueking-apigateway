@@ -272,6 +272,19 @@
           />
           <span class="common-form-tips">{{ t('仅影响 HomePage 中运维开发分数的计算') }}</span>
         </bk-form-item>
+        <bk-form-item
+          :label="t('管理网关的应用列表 ')"
+          property="related_app_codes"
+        >
+          <bk-tag-input
+            v-model="basicInfoDetailData.related_app_codes"
+            :placeholder="t('请输入蓝鲸应用ID，并按enter确认')"
+            allow-create
+            has-delete-icon
+            collapse-tags
+          />
+          <span class="common-form-tips">{{ t('允许列表中的应用使用 sdk 或者开放 API 调用网关接口，同步环境/资源以及发布版本') }}</span>
+        </bk-form-item>
       </bk-form>
     </bk-dialog>
   </div>
@@ -344,6 +357,7 @@ const basicInfoData = ref<BasicInfoParams>({
   description_en: '',
   public_key_fingerprint: '',
   bk_app_codes: '',
+  related_app_codes: '',
   docs_url: '',
   api_domain: '',
   created_by: '',
