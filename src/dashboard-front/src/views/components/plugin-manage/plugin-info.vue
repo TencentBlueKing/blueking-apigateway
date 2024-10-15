@@ -6,7 +6,10 @@
       </div>
       <div class="info-header">
         <header class="choose-plugin">
-          <div class="cur-icon">{{ pluginCodeFirst(curPluginInfo?.code) }}</div>
+          <div v-if="pluginIconList.includes(curPluginInfo?.code)" class="cur-icon">
+            <i :class="`apigateway-icon icon-ag-plugin-${curPluginInfo?.code}`" class="f48"></i>
+          </div>
+          <div v-else class="cur-icon">{{ pluginCodeFirst(curPluginInfo?.code) }}</div>
           <div v-show="isAdd" @click="showChoosePlugin = true">{{ t('切换插件') }}</div>
           <bk-select
             v-show="showChoosePlugin"
@@ -146,6 +149,7 @@ import { json2yaml, yaml2json } from '@/common/util';
 import whitelistTable from './whitelist-table.vue';
 import { useStage } from '@/store';
 import { onClickOutside } from '@vueuse/core';
+import pluginIconList from '@/common/plugin-icon-list';
 
 const stageStore = useStage();
 const BkSchemaForm = createForm();
