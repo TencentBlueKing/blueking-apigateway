@@ -20,17 +20,19 @@ from django.urls import include, path
 
 from . import views
 
-urlpatterns = [
-    path("", views.GatewayListApi.as_view(), name="openapi.gateway.list"),
-    path("<int:gateway_id>/", views.GatewayRetrieveApi.as_view(), name="openapi.gateway.retrieve"),
+v1_open_api_patterns = [
     path(
         "<slug:gateway_name>/",
         include(
             [
-                path("sync/", views.GatewaySyncApi.as_view(), name="openapi.gateway.sync"),
-                path("status/", views.GatewayUpdateStatusApi.as_view(), name="openapi.gateway.update_status"),
+                path("sync/", views.GatewayRelatedAppSyncApi.as_view(), name="openapi.gateway.sync"),
                 path(
-                    "public_key/", views.GatewayPublicKeyRetrieveApi.as_view(), name="openapi.gateway.get_public_key"
+                    "status/", views.GatewayRelatedAppUpdateStatusApi.as_view(), name="openapi.gateway.update_status"
+                ),
+                path(
+                    "public_key/",
+                    views.GatewayNamePublicKeyRetrieveApi.as_view(),
+                    name="openapi.gateway.get_public_key",
                 ),
                 path(
                     "related-apps/", views.GatewayRelatedAppAddApi.as_view(), name="openapi.gateway.add_related_apps"
@@ -39,3 +41,32 @@ urlpatterns = [
         ),
     ),
 ]
+
+v1_inner_api_patterns = [
+    path(
+        "<int:gateway_id>/",
+        include(
+            [
+                path("", views.GatewayIdRetrieveApi.as_view(), name="openapi.gateway.retrieve"),
+                # update maintainers, only for bk-apigateway-inner, for paasv3
+                path(
+                    "maintainers/",
+                    views.GatewayIdMaintainerUpdateApi.as_view(),
+                    name="openapi.gateway.update_maintainers",
+                ),
+                # update status, only for bk-apigateway-inner, for paasv3
+                path("status/", views.GatewayIdUpdateStatusApi.as_view(), name="openapi.gateway.id.update_status"),
+            ]
+        ),
+    ),
+]
+
+urlpatterns = (
+    [
+        # -- type: open api
+        # -- type: inner api
+        path("", views.GatewayListApi.as_view(), name="openapi.gateway.list"),
+    ]
+    + v1_open_api_patterns
+    + v1_inner_api_patterns
+)

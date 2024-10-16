@@ -135,7 +135,7 @@ class GatewayListApi(generics.ListAPIView):
         tags=["OpenAPI.Gateway"],
     ),
 )
-class GatewayRetrieveApi(generics.RetrieveAPIView):
+class GatewayIdRetrieveApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIGatewayIdPermission]
     serializer_class = serializers.GatewayRetrieveV1OutputSLZ
     lookup_url_kwarg = "gateway_id"
@@ -150,7 +150,7 @@ class GatewayRetrieveApi(generics.RetrieveAPIView):
         return V1OKJsonResponse(data=slz.data)
 
 
-class GatewayPublicKeyRetrieveApi(generics.RetrieveAPIView):
+class GatewayNamePublicKeyRetrieveApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIGatewayNamePermission]
 
     @swagger_auto_schema(tags=["OpenAPI.Gateway"])
@@ -165,7 +165,7 @@ class GatewayPublicKeyRetrieveApi(generics.RetrieveAPIView):
         )
 
 
-class GatewaySyncApi(generics.CreateAPIView):
+class GatewayRelatedAppSyncApi(generics.CreateAPIView):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
     allow_gateway_not_exist = True
     serializer_class = serializers.GatewaySyncInputSLZ
@@ -214,7 +214,7 @@ class GatewaySyncApi(generics.CreateAPIView):
         )
 
 
-class GatewayUpdateStatusApi(generics.CreateAPIView):
+class GatewayRelatedAppUpdateStatusApi(generics.CreateAPIView):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
     serializer_class = serializers.GatewayUpdateStatusInputSLZ
 
@@ -238,6 +238,10 @@ class GatewayUpdateStatusApi(generics.CreateAPIView):
         )
 
         return V1OKJsonResponse()
+
+
+class GatewayIdUpdateStatusApi(GatewayRelatedAppUpdateStatusApi):
+    permission_classes = [OpenAPIGatewayIdPermission]
 
 
 class GatewayRelatedAppAddApi(generics.CreateAPIView):
@@ -268,6 +272,38 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
             instance_name=gateway.name,
             data_before={"related_app_codes": related_app_codes},
             data_after={"added_related_app_codes": list(missing_app_codes)},
+        )
+
+        return V1OKJsonResponse()
+
+
+class GatewayIdMaintainerUpdateApi(generics.UpdateAPIView):
+    permission_classes = [OpenAPIGatewayIdPermission]
+    serializer_class = serializers.GatewayMaintainerUpdateInputSLZ
+
+    @swagger_auto_schema(request_body=serializers.GatewayMaintainerUpdateInputSLZ, tags=["OpenAPI.Gateway"])
+    def put(self, request, *args, **kwargs):
+        slz = self.get_serializer(request.gateway, data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        maintainers = slz.validated_data["maintainers"]
+
+        # record audit log
+        gateway = request.gateway
+
+        data_before = gateway.maintainers
+        gateway.maintainers = maintainers
+        gateway.save()
+
+        username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+        Auditor.record_gateway_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=username,
+            gateway_id=gateway.id,
+            instance_id=gateway.id,
+            instance_name=gateway.name,
+            data_before={"maintainers": data_before},
+            data_after={"maintainers": maintainers},
         )
 
         return V1OKJsonResponse()

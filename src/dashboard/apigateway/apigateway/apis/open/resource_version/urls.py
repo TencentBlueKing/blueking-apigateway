@@ -20,7 +20,7 @@ from django.urls import include, path
 
 from apigateway.apis.open.resource_version import views
 
-urlpatterns = [
+v1_open_api_patterns = [
     path(
         "apis/<slug:gateway_name>/resource_versions/",
         include(
@@ -32,3 +32,5 @@ urlpatterns = [
         ),
     )
 ]
+
+urlpatterns = v1_open_api_patterns

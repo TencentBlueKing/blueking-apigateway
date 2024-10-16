@@ -31,54 +31,7 @@ from apigateway.utils.yaml import yaml_dumps
 pytestmark = pytest.mark.django_db
 
 
-class TestStageViewSet:
-    def test_list(self, request_factory, fake_gateway):
-        request = request_factory.get("/")
-        request.gateway = fake_gateway
-        request.app = mock.MagicMock(app_code="test")
-
-        s1 = G(Stage, name="prod", gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
-        s2 = G(Stage, name="test", gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
-        G(Stage, name="stag", gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value, is_public=False)
-
-        # have 2 active stages
-        view = views.StageViewSet.as_view({"get": "list"})
-        response = view(request, gateway_id=fake_gateway.id)
-        result = get_response_json(response)
-
-        assert result["code"] == 0
-        assert response.status_code == 200
-        assert result["data"] == [
-            {
-                "id": s1.id,
-                "name": s1.name,
-                "description": s1.description,
-            },
-            {
-                "id": s2.id,
-                "name": s2.name,
-                "description": s2.description,
-            },
-        ]
-
-        # have 1 active stages
-        s2.status = StageStatusEnum.INACTIVE.value
-        s2.save()
-
-        view = views.StageViewSet.as_view({"get": "list"})
-        response = view(request, gateway_id=fake_gateway.id)
-        result = get_response_json(response)
-
-        assert response.status_code == 200
-        assert result["code"] == 0
-        assert result["data"] == [
-            {
-                "id": s1.id,
-                "name": s1.name,
-                "description": s1.description,
-            },
-        ]
-
+class TestStageListViewSet:
     def test_list_by_gateway_name(self, request_to_view, request_factory, fake_gateway):
         request = request_factory.get("")
         request.gateway = fake_gateway

@@ -20,10 +20,12 @@ from django.urls import path
 
 from apigateway.apis.open.resource import views
 
-urlpatterns = [
+v1_open_api_patterns = [
     path(
         "apis/<slug:gateway_name>/resources/sync/",
         views.ResourceSyncApi.as_view(),
         name="openapi.resource.sync",
     ),
 ]
+
+urlpatterns = v1_open_api_patterns

@@ -19,8 +19,7 @@ from django.urls import include, path
 
 from . import views
 
-urlpatterns = [
-    # for apigw-manager
+v1_open_api_patterns = [
     path(
         "apis/<slug:gateway_name>/resource-docs/import/",
         include(
@@ -39,3 +38,6 @@ urlpatterns = [
         ),
     )
 ]
+
+
+urlpatterns = v1_open_api_patterns
