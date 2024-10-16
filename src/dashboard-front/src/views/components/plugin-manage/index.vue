@@ -72,7 +72,9 @@
                   :key="item.id" @click="handleChoosePlugin(item)" @mouseenter="handlePluginHover((item.code))">
                   <div class="plungin-head">
                     <span v-if="pluginIconList.includes(item.code || item.type)" class="plugin-icon">
-                      <i :class="`apigateway-icon icon-ag-plugin-${item.code || item.type}`" class="f48"></i>
+                      <svg class="icon svg-icon">
+                        <use :xlink:href="`#icon-ag-plugin-${item.code || item.type}`"></use>
+                      </svg>
                     </span>
                     <span v-else class="plugin-icon">
                       {{ pluginCodeFirst(item.code || item.type) }}
@@ -692,6 +694,11 @@ init();
           line-height: 48px;
           font-weight: 700;
           font-size: 24px;
+
+          .svg-icon {
+            width: 48px;
+            height: 48px;
+          }
         }
 
         .bindding-text {
