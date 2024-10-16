@@ -7,7 +7,9 @@
       <div class="info-header">
         <header class="choose-plugin">
           <div v-if="pluginIconList.includes(curPluginInfo?.code)" class="cur-icon">
-            <i :class="`apigateway-icon icon-ag-plugin-${curPluginInfo?.code}`" class="f48"></i>
+            <svg class="icon svg-icon">
+              <use :xlink:href="`#icon-ag-plugin-${curPluginInfo.code}`"></use>
+            </svg>
           </div>
           <div v-else class="cur-icon">{{ pluginCodeFirst(curPluginInfo?.code) }}</div>
           <div v-show="isAdd" @click="showChoosePlugin = true">{{ t('切换插件') }}</div>
@@ -644,6 +646,11 @@ onBeforeUnmount(() => {
       line-height: 56px;
       font-weight: 700;
       font-size: 28px;
+
+      .svg-icon {
+        width: 56px;
+        height: 56px;
+      }
     }
   }
 
