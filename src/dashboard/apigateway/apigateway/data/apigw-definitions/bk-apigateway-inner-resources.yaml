@@ -26,46 +26,6 @@ paths:
         authConfig:
           userVerifiedRequired: false
         disabledStages: []
-  /api/v1/apis/latest-sdks/:
-    get:
-      operationId: get_latest_sdks
-      description: 获取网关最新的SDK
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: get
-          path: /backend/api/v1/apis/latest-sdks/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
-  /api/v1/apis/metrics/statistics/query-api-metrics/:
-    get:
-      operationId: query_api_metrics
-      description: ''
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: true
-        allowApplyPermission: true
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: get
-          path: /backend/api/v1/apis/metrics/statistics/query-api-metrics/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
   /api/v1/apis/permissions/app-permissions/:
     get:
       operationId: list_app_resource_permissions
@@ -146,26 +106,6 @@ paths:
         authConfig:
           userVerifiedRequired: false
         disabledStages: []
-  /api/v1/apis/permissions/apply/:
-    post:
-      operationId: apply_permission
-      description: '批量申请权限(网关+资源)'
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: post
-          path: /backend/api/v1/apis/permissions/apply/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
   /api/v1/apis/{api_id}/:
     get:
       operationId: get_api
@@ -179,6 +119,46 @@ paths:
           type: HTTP
           method: get
           path: /backend/api/v1/apis/{api_id}/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+        disabledStages: []
+  /api/v1/apis/{api_id}/maintainers/:
+    put:
+      operationId: put_gateway_maintainers
+      description: ''
+      tags: []
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: put
+          path: /backend/api/v1/apis/{api_id}/maintainers/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+        disabledStages: []
+  /api/v1/apis/{api_id}/status/:
+    put:
+      operationId: put_gateway_status
+      description: ''
+      tags: []
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: put
+          path: /backend/api/v1/apis/{api_id}/status/
           matchSubpath: false
           timeout: 0
           upstreams: {}
@@ -206,66 +186,6 @@ paths:
         authConfig:
           userVerifiedRequired: false
         disabledStages: []
-  /api/v1/apis/{api_id}/permissions/app-permissions/allow-apply-by-api/:
-    get:
-      operationId: allow_apply_by_api
-      description: 是否允许按网关申请资源权限
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: get
-          path: /backend/api/v1/apis/{api_id}/permissions/app-permissions/allow-apply-by-api/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
-  /api/v1/apis/{api_id}/permissions/app-permissions/apply/:
-    post:
-      operationId: apply_resource_permission
-      description: ''
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: post
-          path: /backend/api/v1/apis/{api_id}/permissions/app-permissions/apply/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
-  /api/v1/apis/{api_id}/permissions/app-permissions/renew/:
-    post:
-      operationId: renew_resource_permission
-      description: ''
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: post
-          path: /backend/api/v1/apis/{api_id}/permissions/app-permissions/renew/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
   /api/v1/apis/{api_id}/permissions/apply/:
     post:
       operationId: apply_resource_permission_2
@@ -286,26 +206,6 @@ paths:
         authConfig:
           userVerifiedRequired: false
         disabledStages: []
-  /api/v1/apis/{api_id}/permissions/renew/:
-    post:
-      operationId: renew_resource_permission_2
-      description: ''
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: post
-          path: /backend/api/v1/apis/{api_id}/permissions/app-permissions/renew/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
   /api/v1/apis/{api_id}/permissions/resources/:
     get:
       operationId: get_api_resources
@@ -319,164 +219,6 @@ paths:
           type: HTTP
           method: get
           path: /backend/api/v1/apis/{api_id}/permissions/resources/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
-  /api/v1/apis/{api_id}/released/stages/{stage_name}/resources/:
-    get:
-      operationId: released_resources
-      description: ''
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: true
-        allowApplyPermission: true
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: get
-          path: /backend/api/v1/apis/{api_id}/released/stages/{stage_name}/resources/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
-  /api/v1/apis/{api_id}/released/stages/{stage_name}/resources/{resource_name}/:
-    get:
-      operationId: get_released_resource
-      description: ''
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: true
-        allowApplyPermission: true
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: get
-          path: /backend/api/v1/apis/{api_id}/released/stages/{stage_name}/resources/{resource_name}/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
-  /api/v1/apis/{api_id}/resources/:
-    get:
-      operationId: get_api_v1_apis_api_id_resources
-      description: ''
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: get
-          path: /backend/api/v1/apis/{api_id}/resources/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
-    post:
-      operationId: post_api_v1_apis_api_id_resources
-      description: ''
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: post
-          path: /backend/api/v1/apis/{api_id}/resources/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
-  /api/v1/apis/{api_id}/resources/released/:
-    get:
-      operationId: get_api_v1_apis_api_id_resources_released
-      description: ''
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: get
-          path: /backend/api/v1/apis/{api_id}/resources/released/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
-  /api/v1/apis/{api_id}/resources/{resource_id}/:
-    delete:
-      operationId: delete_api_v1_apis_api_id_resources_resource_id
-      description: ''
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: delete
-          path: /backend/api/v1/apis/{api_id}/resources/{resource_id}/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
-    get:
-      operationId: get_api_v1_apis_api_id_resources_resource_id
-      description: ''
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: false
-        allowApplyPermission: false
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: get
-          path: /backend/api/v1/apis/{api_id}/resources/{resource_id}/
-          matchSubpath: false
-          timeout: 0
-          upstreams: {}
-          transformHeaders: {}
-        authConfig:
-          userVerifiedRequired: false
-        disabledStages: []
-  /api/v1/apis/{api_id}/stages/:
-    get:
-      operationId: list_stages
-      description: 网关下资源
-      tags: []
-      x-bk-apigateway-resource:
-        isPublic: true
-        allowApplyPermission: true
-        matchSubpath: false
-        backend:
-          type: HTTP
-          method: get
-          path: /backend/api/v1/apis/{api_id}/stages/
           matchSubpath: false
           timeout: 0
           upstreams: {}

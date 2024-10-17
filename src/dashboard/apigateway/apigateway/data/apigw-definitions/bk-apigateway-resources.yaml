@@ -182,7 +182,7 @@ paths:
         disabledStages: []
         descriptionEn:
 
-  /api/v1/apis/{api_id}/released/stages/{stage_name}/resources/{resource_name}/:
+  /api/v1/apis/{api_name}/released/stages/{stage_name}/resources/{resource_name}/:
     get:
       operationId: get_released_resource
       description: 查询发布资源详情(包含接口参数)
@@ -194,7 +194,7 @@ paths:
         backend:
           type: HTTP
           method: get
-          path: /backend/api/v1/apis/{api_id}/released/stages/{stage_name}/resources/{resource_name}/
+          path: /backend/api/v1/apis/{api_name}/released/stages/{stage_name}/resources/{resource_name}/
           matchSubpath: false
           timeout: 0
           upstreams: {}

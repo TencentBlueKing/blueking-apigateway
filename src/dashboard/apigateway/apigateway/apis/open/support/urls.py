@@ -20,11 +20,12 @@ from django.urls import path
 
 from . import views
 
-urlpatterns = [
-    # for apigw-manager
+v1_open_api_patterns = [
     path(
         "apis/<slug:gateway_name>/sdk/",
         views.SDKGenerateViewSet.as_view({"post": "generate"}),
         name="openapi.support.sdk.generate",
     ),
 ]
+
+urlpatterns = v1_open_api_patterns
