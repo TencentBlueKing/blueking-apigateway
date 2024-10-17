@@ -133,7 +133,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import { ref, watch, nextTick } from 'vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useI18n } from 'vue-i18n';
 import editorMonaco from '@/components/ag-editor.vue';
@@ -193,17 +193,19 @@ const stopPropa = (e: Event) => {
 };
 
 const formatBody = () => {
-  resourceEditorRef.value?.updateOptions({
-    readOnly: false,
-  });
-  setTimeout(() => {
-    resourceEditorRef.value?.handleFormat();
-  });
-  setTimeout(() => {
+  nextTick(() => {
     resourceEditorRef.value?.updateOptions({
-      readOnly: true,
+      readOnly: false,
     });
-  }, 200);
+    setTimeout(() => {
+      resourceEditorRef.value?.handleFormat();
+    });
+    setTimeout(() => {
+      resourceEditorRef.value?.updateOptions({
+        readOnly: true,
+      });
+    }, 200);
+  });
 };
 
 const handleBodyTypeChange = (type: string) => {
