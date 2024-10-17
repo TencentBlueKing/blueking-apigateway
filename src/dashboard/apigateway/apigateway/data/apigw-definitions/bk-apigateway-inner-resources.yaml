@@ -126,6 +126,46 @@ paths:
         authConfig:
           userVerifiedRequired: false
         disabledStages: []
+  /api/v1/apis/{api_id}/maintainers/:
+    put:
+      operationId: put_gateway_maintainers
+      description: ''
+      tags: []
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: put
+          path: /backend/api/v1/apis/{api_id}/maintainers/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+        disabledStages: []
+  /api/v1/apis/{api_id}/status/:
+    put:
+      operationId: put_gateway_status
+      description: ''
+      tags: []
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          type: HTTP
+          method: put
+          path: /backend/api/v1/apis/{api_id}/status/
+          matchSubpath: false
+          timeout: 0
+          upstreams: {}
+          transformHeaders: {}
+        authConfig:
+          userVerifiedRequired: false
+        disabledStages: []
   /api/v1/apis/{api_id}/permissions/allow-apply-by-api/:
     get:
       operationId: allow_apply_by_api_2

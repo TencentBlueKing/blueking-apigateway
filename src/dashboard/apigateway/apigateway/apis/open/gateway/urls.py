@@ -25,13 +25,13 @@ v1_open_api_patterns = [
         "<slug:gateway_name>/",
         include(
             [
-                path("sync/", views.GatewayRelatedAppSyncApi.as_view(), name="openapi.gateway.sync"),
+                path("sync/", views.GatewaySyncApi.as_view(), name="openapi.gateway.sync"),
                 path(
                     "status/", views.GatewayRelatedAppUpdateStatusApi.as_view(), name="openapi.gateway.update_status"
                 ),
                 path(
                     "public_key/",
-                    views.GatewayNamePublicKeyRetrieveApi.as_view(),
+                    views.GatewayPublicKeyRetrieveApi.as_view(),
                     name="openapi.gateway.get_public_key",
                 ),
                 path(
@@ -48,13 +48,11 @@ v1_inner_api_patterns = [
         include(
             [
                 path("", views.GatewayIdRetrieveApi.as_view(), name="openapi.gateway.retrieve"),
-                # update maintainers, only for bk-apigateway-inner, for paasv3
                 path(
                     "maintainers/",
-                    views.GatewayIdMaintainerUpdateApi.as_view(),
+                    views.GatewayMaintainerUpdateApi.as_view(),
                     name="openapi.gateway.update_maintainers",
                 ),
-                # update status, only for bk-apigateway-inner, for paasv3
                 path("status/", views.GatewayIdUpdateStatusApi.as_view(), name="openapi.gateway.id.update_status"),
             ]
         ),
@@ -67,6 +65,8 @@ urlpatterns = (
         # -- type: inner api
         path("", views.GatewayListApi.as_view(), name="openapi.gateway.list"),
     ]
-    + v1_open_api_patterns
+    # while the /apis/:gateway_id/status/ and /apis/:gateway_name/status/ use the same url, and gateway_id is int
+    # so, the inner api should in front of open api
     + v1_inner_api_patterns
+    + v1_open_api_patterns
 )
