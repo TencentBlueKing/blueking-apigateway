@@ -4,9 +4,9 @@
       <div class="edit-wrapper">
         <div class="edit-content">
           <slot>
-            <template v-if="displayValue.length">
-              <span v-for="(item, index) in displayValue" :key="index" class="member-item">
-                {{ displayValue.length > 1 && index !== displayValue.length - 1 ? `${item}，` : item }}
+            <template v-if="membersText">
+              <span class="member-item" v-bk-tooltips="{ content: membersText, placement: 'top-start' }">
+                {{ membersText }}
               </span>
             </template>
             <template v-else>--</template>
@@ -170,6 +170,10 @@ const isEditMode = computed(() => {
   return props.mode === 'edit';
 });
 
+const membersText = computed(() => {
+  return displayValue.value.join(', ');
+});
+
 watch(
   () => props.content,
   (payload: any[]) => {
@@ -219,13 +223,12 @@ onBeforeMount(() => {
       line-height: 32px;
 
       .member-item {
-        display: inline-block;
-        // padding: 0 10px;
-        // margin: 2px 0 2px 6px;
         line-height: 32px;
-        // border-radius: 2px;
-        // background: #f0f1f5;
         font-size: 12px;
+        width: calc(100% - 25px);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
 
         i {
           font-size: 18px;
