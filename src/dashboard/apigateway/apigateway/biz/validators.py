@@ -261,6 +261,7 @@ class PublishValidator:
 
         if self.resource_version:
             self._validate_resource_version_schema()
+            # FIXME: 这里需要遍历所有的资源版本资源，进行校验，比较损耗性能
             self._validate_stage_vars(self.stage, self.resource_version.id)
 
 

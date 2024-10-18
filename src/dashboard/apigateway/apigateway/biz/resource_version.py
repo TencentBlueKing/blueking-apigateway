@@ -40,7 +40,7 @@ from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_openapi_schema import ResourceOpenAPISchemaVersionHandler
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
-from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
+from apigateway.common.constants import CACHE_TIME_5_MINUTES
 from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Gateway, Proxy, Release, Resource, ResourceVersion, Stage
 from apigateway.utils import time as time_utils
@@ -235,7 +235,7 @@ class ResourceVersionHandler:
     # TODO: 缓存优化：可使用 django cache(with database backend) or dogpile 缓存
     # 版本中包含的配置不会变化，但是处理逻辑可能调整，因此，缓存需支持版本
     @staticmethod
-    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_24_HOURS))
+    @cached(cache=TTLCache(maxsize=300, ttl=CACHE_TIME_5_MINUTES))
     def get_used_stage_vars(gateway_id: int, id: int):
         resource_version = ResourceVersion.objects.filter(gateway_id=gateway_id, id=id).first()
         if not resource_version:
