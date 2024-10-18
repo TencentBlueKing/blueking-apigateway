@@ -20,8 +20,6 @@ import time
 from datetime import datetime
 from typing import Any, Dict, List
 
-from django.db.models import Max
-
 from apigateway.biz.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.core.constants import (
     EVENT_FAIL_INTERVAL_TIME,
@@ -147,15 +145,16 @@ class ReleaseHandler:
         """批量查询 stage 的当前状态 (发布状态+publish_id+发布版本)"""
         """return {"stage_id":{"status"/"publish_id"}}"""
 
-        # 获取多个 stage_id 对应的最新的 ReleaseHistory 记录的 id
-        latest_release_history_ids = (
-            ReleaseHistory.objects.filter(stage_id__in=stage_ids)
-            .annotate(latest_created_time=Max("created_time"))
-            .values_list("id", flat=True)
-        )
-
-        # 查询最新的 ReleaseHistory 记录
-        latest_release_histories = ReleaseHistory.objects.filter(id__in=latest_release_history_ids).all()
+        # 获取多个 stage_id 对应的最新的 ReleaseHistory 记录
+        # FIXME: 每个对应的release如果直接关联了对应的release_history就不需要通过这种方式去查了
+        latest_release_histories = []
+        latest_release_history_ids = []
+        for stage_id in stage_ids:
+            latest_release_history = ReleaseHistory.objects.filter(stage_id=stage_id).order_by("-id").first()
+            if not latest_release_history:
+                continue
+            latest_release_histories.append(latest_release_history)
+            latest_release_history_ids.append(latest_release_history.id)
 
         # 查询发布历史对应的最新发布事件
         publish_id_to_latest_event_map = ReleaseHandler.get_release_history_id_to_latest_publish_event_map(
