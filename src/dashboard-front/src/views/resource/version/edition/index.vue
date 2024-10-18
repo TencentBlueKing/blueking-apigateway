@@ -182,6 +182,7 @@ import versionDiff from '@/components/version-diff/index.vue';
 import { useResourceVersion, useUser } from '@/store';
 import releaseSideslider from '@/views/stage/overview/comps/release-sideslider.vue';
 import TableEmpty from '@/components/table-empty.vue';
+import { orderBy } from 'lodash';
 
 const props = defineProps({
   version: {
@@ -255,8 +256,10 @@ const diffTargetId = ref();
 const handleShowDiff = () => {
   diffSidesliderConf.width = window.innerWidth <= 1280 ? 1040 : 1280;
 
+  // 调整展示顺序，旧的版本(id 较小的那个)放左边，新的版本放右边
+  const selectedResources = orderBy(selections.value, 'id');
   // 选中一项，与最近版本对比；选中两项，则二者对比
-  const [diffSource, diffTarget] = selections.value;
+  const [diffSource, diffTarget] = selectedResources;
   diffSourceId.value = diffSource?.id;
   diffTargetId.value = diffTarget?.id || '';
 
