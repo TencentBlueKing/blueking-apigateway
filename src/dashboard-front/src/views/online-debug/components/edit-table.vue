@@ -4,12 +4,15 @@
     ref="bkTableRef"
     row-hover="auto"
     :data="tableData"
+    :checked="checkedList"
+    @select="handleSelect"
+    @select-all="handleSelectAll"
     @cell-click="handleCellClick"
     :cell-class="getCellClass"
     border="outer">
     <bk-table-column :width="55" type="selection" align="center" />
     <bk-table-column :label="t('参数名')" prop="name">
-      <template #default="{ row, index }">
+      <template #default="{ row, column, index }">
         <!-- <div class="td-text" v-if="!row?.isEdit">
           {{ row?.name }}
         </div> -->
@@ -165,9 +168,40 @@ import { Message } from 'bkui-vue';
 
 const { t } = useI18n();
 
+interface RowType {
+  id?: number;
+  name: string;
+  value: string;
+  type: string;
+  instructions: string;
+  isEdit?: boolean;
+  editType?: boolean;
+  required?: boolean;
+  options?: unknown;
+  default?: string;
+}
+
+interface SelectPayload {
+  row: RowType;
+  index: number;
+  checked: boolean;
+  data: RowType[];
+}
+
+interface CellClickPayload {
+  event: Event;
+  row: RowType;
+  column: {
+    field: string;
+    index: number;
+  };
+  rowIndex: number;
+  columnIndex: number;
+}
+
 const props = defineProps({
   list: {
-    type: Array,
+    type: Array<RowType>,
     default: [],
   },
 });
@@ -177,14 +211,14 @@ const emit = defineEmits(['change']);
 // const isShowVarPopover = ref(false);
 
 const formRefs = ref(new Map());
-const setRefs = (el: any, name: string) => {
+const setRefs = (el: Element, name: string) => {
   if (el) {
     formRefs.value?.set(name, el);
   }
 };
 
 const formInputRef = ref(new Map());
-const setInputRefs = (el: any, name: string) => {
+const setInputRefs = (el: Element, name: string) => {
   if (el) {
     formInputRef.value?.set(name, el);
   }
@@ -200,9 +234,9 @@ const getDefaultTbRow = () => {
   };
 };
 
-const tableData = ref<any>(props?.list?.length ? props.list : [getDefaultTbRow()]);
-
-const typeList = ref<any[]>([
+const tableData = ref<RowType[]>(props?.list?.length ? props.list : [getDefaultTbRow()]);
+const checkedList = ref<RowType[]>([]);
+const typeList = ref<{label: string, value: string}[]>([
   {
     label: 'string',
     value: 'string',
@@ -217,14 +251,14 @@ const typeList = ref<any[]>([
   },
 ]);
 
-const getCellClass = (payload: any) => {
+const getCellClass = (payload: {index: number;}) => {
   if (payload.index !== 5) {
     return 'custom-table-cell';
   }
   return '';
 };
 
-const handleCellClick = async ({ event, column, rowIndex }: any) => {
+const handleCellClick = async ({ event, column, rowIndex }: CellClickPayload) => {
   event.stopPropagation();
   const { field, index } = column;
   if (!field) {
@@ -277,10 +311,14 @@ const handleTypeChange = (index: number, v: boolean) => {
 };
 
 const addRow = (index: number) => {
-  tableData.value?.splice(index + 1, 0, getDefaultTbRow());
+  const row = { ...getDefaultTbRow(), id: +new Date() };
+  tableData.value?.splice(index + 1, 0, row);
+  checkedList.value = [...checkedList.value, row];
 };
 
 const delRow = (index: number) => {
+  const row = tableData.value[index];
+  checkedList.value = checkedList.value.filter(item => item.id !== row.id);
   tableData.value?.splice(index, 1);
 };
 
@@ -288,8 +326,8 @@ const validate = async () => {
   const list = tableData.value;
   let flag = true;
 
-  list?.forEach(async (item: any) => {
-    if (item.required) {
+  list?.forEach(async (item: RowType) => {
+    if (item?.required) {
       if (!item.name) {
         flag = false;
         Message({
@@ -311,7 +349,24 @@ const validate = async () => {
 };
 
 const getTableData = () => {
-  return tableData.value;
+  return checkedList.value;
+};
+
+const handleSelect = ({ row, checked }: SelectPayload) => {
+  if (checked) {
+    checkedList.value = [...checkedList.value, row];
+  } else {
+    const { id } = row;
+    checkedList.value = checkedList.value?.filter(item => item.id !== id);
+  }
+};
+
+const handleSelectAll = ({ checked, data }: SelectPayload) => {
+  if (checked) {
+    checkedList.value = data;
+  } else {
+    checkedList.value = [];
+  }
 };
 
 // const varRules = {
@@ -368,12 +423,12 @@ const getTableData = () => {
 watch(
   () => props.list,
   (v) => {
-    // console.log('table: ', v);
-    const list: any[] = [];
+    const list: RowType[] = [];
     v?.forEach((item: any) => {
       list.push({
         isEdit: false,
         editType: false,
+        id: +new Date(),
         name: item.name,
         value: item.schema?.default || '',
         instructions: item.description,
@@ -385,10 +440,12 @@ watch(
     });
 
     if (!list?.length) {
-      tableData.value = [getDefaultTbRow()];
+      tableData.value = [{ ...getDefaultTbRow(), id: +new Date() }];
     } else {
       tableData.value = list;
     }
+
+    checkedList.value = [...tableData.value];
   },
   {
     deep: true,
@@ -398,9 +455,10 @@ watch(
 
 watch(
   () => tableData.value,
-  (v) => {
-    const list = v?.filter((item: any) => item.name);
-    emit('change', list);
+  () => {
+    // const list = v?.filter((item: RowType) => item.name);
+    // checkedList.value = cloneDeep([...tableData.value]);
+    emit('change', checkedList.value);
   },
   {
     deep: true,
