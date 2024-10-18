@@ -177,7 +177,6 @@
           <bk-table
             class="table-layout"
             :data="tableData"
-            :max-height="660"
             remote-pagination
             :pagination="pagination"
             row-key="id"
