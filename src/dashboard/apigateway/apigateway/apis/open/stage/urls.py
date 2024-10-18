@@ -20,8 +20,7 @@ from django.urls import path
 
 from . import views
 
-urlpatterns = [
-    path("apis/<int:gateway_id>/stages/", views.StageViewSet.as_view({"get": "list"}), name="openapi.stage.list"),
+v1_open_api_patterns = [
     path(
         "apis/<slug:gateway_name>/stages/",
         views.StageListViewSet.as_view({"get": "list"}),
@@ -38,3 +37,5 @@ urlpatterns = [
         name="openapi.stage.sync",
     ),
 ]
+
+urlpatterns = v1_open_api_patterns

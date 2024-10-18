@@ -16,16 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from unittest import mock
 
 import pytest
-from ddf import G
 
-from apigateway.apis.open.support import views
 from apigateway.apps.support.api_sdk.helper import SDKInfo
-from apigateway.apps.support.models import GatewaySDK
-from apigateway.core.models import Gateway, ResourceVersion
-from apigateway.tests.utils.testing import get_response_json
 
 pytestmark = pytest.mark.django_db
 
@@ -36,96 +30,6 @@ def has_related_app_permission(mocker):
         "apigateway.apis.open.permission.views.OpenAPIGatewayRelatedAppPermission.has_permission",
         return_value=True,
     )
-
-
-class TestAPISDKV1ViewSet:
-    def test_list_latest_sdk(self, mocker, request_factory, faker):
-        fake_gateway = G(Gateway, is_public=True, status=1)
-        resource_version = G(ResourceVersion, gateway=fake_gateway)
-        sdk = G(
-            GatewaySDK,
-            gateway=fake_gateway,
-            resource_version=resource_version,
-            language="python",
-            is_recommended=True,
-            url=faker.url(),
-            _config="{}",
-        )
-
-        mocker.patch(
-            "apigateway.apis.open.support.views.Gateway.objects.all",
-            return_value=[fake_gateway],
-        )
-        mocker.patch(
-            "apigateway.apis.open.support.views.GatewayAuthContext.filter_scope_id_config_map",
-            return_value={
-                fake_gateway.id: {
-                    "user_auth_type": "test",
-                }
-            },
-        )
-        mocker.patch(
-            "apigateway.apis.open.support.views.Release.objects.get_released_stages",
-            return_value={
-                resource_version.id: [
-                    {
-                        "id": 1,
-                        "name": "prod",
-                    },
-                ]
-            },
-        )
-        mocker.patch(
-            "apigateway.apis.open.support.views.ResourceVersion.objects.get_id_to_fields_map",
-            return_value={
-                resource_version.id: {
-                    "id": resource_version.id,
-                    "name": "test",
-                    "title": "title",
-                    "version": "1.0.1",
-                },
-            },
-        )
-
-        request = request_factory.get(
-            "/api/v1/apis/latest-sdks/",
-            data={
-                "api_id": fake_gateway.id,
-                "language": "python",
-            },
-        )
-        request.app = mock.MagicMock(app_code="test")
-
-        view = views.APISDKV1ViewSet.as_view({"get": "list_latest_sdks"})
-        response = view(request)
-
-        result = get_response_json(response)
-        assert result["code"] == 0
-
-        result = result["data"][0]
-        assert result == {
-            "api_id": fake_gateway.id,
-            "api_name": fake_gateway.name,
-            "api_description": fake_gateway.description,
-            "user_auth_type": "test",
-            "language": "python",
-            "version_number": sdk.version_number,
-            "download_url": sdk.url,
-            "sdk_version_number": sdk.version_number,
-            "sdk_download_url": sdk.url,
-            "sdk_name": sdk.name,
-            "sdk_created_time": result["sdk_created_time"],
-            "sdk_install_command": "",
-            "resource_version_name": "test",
-            "resource_version_title": "title",
-            "resource_version_display": "1.0.1",
-            "released_stages": [
-                {
-                    "id": 1,
-                    "name": "prod",
-                },
-            ],
-        }
 
 
 class TestSDKGenerateViewSet:

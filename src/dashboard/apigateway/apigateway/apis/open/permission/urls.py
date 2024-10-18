@@ -20,8 +20,7 @@ from django.urls import path
 
 from apigateway.apis.open.permission import views
 
-urlpatterns = [
-    # For gateway manage permissions
+v1_open_api_patterns = [
     path(
         "apis/<slug:gateway_name>/permissions/apply/",
         views.AppPermissionApplyV1APIView.as_view(),
@@ -37,7 +36,9 @@ urlpatterns = [
         views.RevokeAppPermissionViewSet.as_view({"delete": "revoke"}),
         name="openapi.permission.revoke",
     ),
-    # For app api permission management in paas developer center
+]
+
+v1_inner_api_patterns = [
     path(
         "apis/<int:gateway_id>/permissions/resources/",
         views.ResourceViewSet.as_view({"get": "list"}),
@@ -53,20 +54,9 @@ urlpatterns = [
         views.PaaSAppPermissionApplyAPIView.as_view(),
         name="openapi.permission.apply.paas",
     ),
-    # TODO：这个应该没有人调用，需要确认下然后删除
-    path(
-        "apis/<int:gateway_id>/permissions/app-permissions/renew/",
-        views.AppPermissionRenewAPIView.as_view(),
-        name="openapi.permission.renew.deprecated",
-    ),
     path(
         "apis/permissions/renew/",
         views.AppPermissionRenewAPIView.as_view(),
-        name="openapi.permission.renew",
-    ),
-    path(
-        "apis/permissions/apply/",
-        views.AppPermissionApplyAPIView.as_view(),
         name="openapi.permission.renew",
     ),
     path(
@@ -85,3 +75,5 @@ urlpatterns = [
         name="openapi.permission.app-record-detail",
     ),
 ]
+
+urlpatterns = v1_open_api_patterns + v1_inner_api_patterns

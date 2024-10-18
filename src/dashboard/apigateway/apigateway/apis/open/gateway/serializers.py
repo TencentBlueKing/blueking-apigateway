@@ -74,6 +74,10 @@ class UserConfigSLZ(serializers.Serializer):
     from_username = serializers.BooleanField(required=False)
 
 
+class GatewayMaintainerUpdateInputSLZ(serializers.Serializer):
+    maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=False, required=True)
+
+
 class GatewaySyncInputSLZ(serializers.ModelSerializer):
     name = serializers.RegexField(
         GATEWAY_NAME_PATTERN,
