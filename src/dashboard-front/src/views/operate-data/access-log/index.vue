@@ -222,7 +222,10 @@ import echarts from 'echarts';
 import 'echarts/lib/chart/bar';
 import 'echarts/lib/component/tooltip';
 import { ref, computed, nextTick, onMounted, onBeforeUnmount, markRaw } from 'vue';
-import { merge } from 'lodash';
+import {
+  merge,
+  uniq,
+} from 'lodash';
 import { copy } from '@/common/util';
 import { SearchParamsInterface } from './common/type';
 import { useCommon, useAccessLog } from '@/store';
@@ -244,6 +247,7 @@ import {
   Funnel,
 } from 'bkui-vue/lib/icon';
 import { Message } from 'bkui-vue';
+import { useStorage } from '@vueuse/core';
 
 const { t } = i18n.global;
 const { getChartIntervalOption } = userChartIntervalOption();
@@ -251,6 +255,8 @@ const commonStore = useCommon();
 const AccessLogStore = useAccessLog();
 // const globalProperties = useGetGlobalProperties();
 // const { GLOBAL_CONFIG } = globalProperties;
+// 从localStorage 提取搜索历史
+const queryHistory = useStorage('access-log-query-history', []);
 const activeIndex = ref<number[]>([1, 2, 3]);
 const keyword = ref('');
 const chartInstance = ref(null);
@@ -711,6 +717,9 @@ const handleSearch = (value: string) => {
   keyword.value = value;
   searchParams.value.query = keyword.value;
   pagination.value.current = 1;
+  // 写入搜索历史
+  queryHistory.value.unshift(value);
+  queryHistory.value = uniq(queryHistory.value).slice(0, 10);
   getSearchData();
 };
 
