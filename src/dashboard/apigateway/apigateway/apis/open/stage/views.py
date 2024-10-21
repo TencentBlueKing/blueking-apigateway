@@ -22,7 +22,6 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 
 from apigateway.apis.open.permissions import (
-    OpenAPIGatewayIdPermission,
     OpenAPIGatewayNamePermission,
     OpenAPIGatewayRelatedAppPermission,
 )
@@ -35,33 +34,6 @@ from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Stage
 from apigateway.utils.django import get_model_dict, get_object_or_None
 from apigateway.utils.responses import V1OKJsonResponse
-
-
-class StageViewSet(viewsets.ModelViewSet):
-    permission_classes = [OpenAPIGatewayIdPermission]
-
-    serializer_class = serializers.StageV1SLZ
-    # lookup_field = "id"
-
-    def get_queryset(self):
-        return Stage.objects.filter(gateway=self.request.gateway)
-
-    @swagger_auto_schema(
-        responses={status.HTTP_200_OK: serializers.StageV1SLZ(many=True)},
-        tags=["OpenAPI.Stage"],
-    )
-    def list(self, request, *args, **kwargs):
-        if not request.gateway.is_active_and_public:
-            raise Http404
-
-        queryset = self.get_queryset()
-        queryset = queryset.filter(
-            status=StageStatusEnum.ACTIVE.value,
-            is_public=True,
-        )
-
-        slz = self.get_serializer(queryset, many=True)
-        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class StageListViewSet(viewsets.ModelViewSet):

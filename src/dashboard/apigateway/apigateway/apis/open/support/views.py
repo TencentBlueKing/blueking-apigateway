@@ -26,55 +26,15 @@ from rest_framework import viewsets
 
 from apigateway.apis.open.permissions import (
     OpenAPIGatewayRelatedAppPermission,
-    OpenAPIPermission,
 )
 from apigateway.apis.open.support import serializers
 from apigateway.apps.support.api_sdk import exceptions
 from apigateway.apps.support.api_sdk.helper import SDKHelper
-from apigateway.apps.support.api_sdk.models import SDKFactory
-from apigateway.apps.support.models import GatewaySDK
-from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
-from apigateway.core.models import Gateway, Release, ResourceVersion
+from apigateway.core.models import ResourceVersion
 from apigateway.utils.responses import V1OKJsonResponse
 
 logger = logging.getLogger(__name__)
-
-
-class APISDKV1ViewSet(viewsets.ModelViewSet):
-    permission_classes = [OpenAPIPermission]
-    serializer_class = serializers.APISDKV1SLZ
-    lookup_field = "id"
-
-    def get_queryset(self):
-        return GatewaySDK.objects.all()
-
-    def list_latest_sdks(self, request, *args, **kwargs):
-        slz = serializers.APISDKQueryV1SLZ(data=request.query_params)
-        slz.is_valid(raise_exception=True)
-
-        data = slz.validated_data
-
-        queryset = GatewaySDK.objects.filter_recommended_sdks(
-            data["language"],
-            gateway_id=data.get("api_id"),
-        )
-
-        resource_version_ids = list(set(queryset.values_list("resource_version_id", flat=True)))
-
-        slz = serializers.APISDKV1SLZ(
-            [SDKFactory.create(i) for i in queryset],
-            many=True,
-            context={
-                "gateway_id_map": {gateway.id: gateway for gateway in Gateway.objects.all()},
-                "gateway_id_config_map": GatewayAuthContext().filter_scope_id_config_map(),
-                "released_stages": Release.objects.get_released_stages(resource_version_ids=resource_version_ids),
-                "resource_versions": ResourceVersion.objects.get_id_to_fields_map(
-                    resource_version_ids=resource_version_ids,
-                ),
-            },
-        )
-        return V1OKJsonResponse("OK", data=slz.data)
 
 
 class SDKGenerateViewSet(viewsets.ViewSet):

@@ -169,7 +169,7 @@ class TestReleasedResourceRetrieveApi:
         resource_name = mocked_resource and mocked_resource["name"]
 
         view = views.ReleasedResourceRetrieveApi.as_view()
-        response = view(request, gateway_id=fake_gateway.id, stage_name=stage_name, resource_name=resource_name)
+        response = view(request, gateway_name=fake_gateway.name, stage_name=stage_name, resource_name=resource_name)
         result = get_response_json(response)
 
         if will_error:
@@ -188,107 +188,6 @@ class TestReleasedResourceRetrieveApi:
             mocked_resource_version_id,
             resource_name,
         )
-
-
-class TestReleasedResourceListApi:
-    @pytest.mark.parametrize(
-        "stage_name, mocked_resources, mocked_labels, expected",
-        [
-            (
-                "prod",
-                [
-                    {
-                        "id": 1,
-                        "name": "test",
-                        "description": "test",
-                        "method": "GET",
-                        "path": "/test/",
-                        "app_verified_required": True,
-                        "resource_perm_required": True,
-                        "user_verified_required": True,
-                    },
-                    {
-                        "id": 2,
-                        "name": "test",
-                        "description": "test",
-                        "method": "POST",
-                        "path": "/test/",
-                        "app_verified_required": False,
-                        "resource_perm_required": False,
-                        "user_verified_required": False,
-                    },
-                ],
-                {
-                    1: ["a", "b"],
-                },
-                {
-                    "count": 2,
-                    "has_next": False,
-                    "has_previous": False,
-                    "results": [
-                        {
-                            "id": 1,
-                            "name": "test",
-                            "description": "test",
-                            "method": "GET",
-                            "path": "/test/",
-                            "app_verified_required": True,
-                            "resource_perm_required": True,
-                            "user_verified_required": True,
-                            "labels": ["a", "b"],
-                        },
-                        {
-                            "id": 2,
-                            "name": "test",
-                            "description": "test",
-                            "method": "POST",
-                            "path": "/test/",
-                            "app_verified_required": False,
-                            "resource_perm_required": False,
-                            "user_verified_required": False,
-                            "labels": [],
-                        },
-                    ],
-                },
-            )
-        ],
-    )
-    def test_list(
-        self,
-        mocker,
-        request_factory,
-        request_to_view,
-        fake_gateway,
-        stage_name,
-        mocked_resources,
-        mocked_labels,
-        expected,
-    ):
-        get_released_public_resources_mock = mocker.patch(
-            "apigateway.apis.open.released.views.ResourceVersionHandler.get_released_public_resources",
-            return_value=mocked_resources,
-        )
-        get_labels_mock = mocker.patch(
-            "apigateway.apis.open.released.views.ResourceLabelHandler.get_labels",
-            return_value=mocked_labels,
-        )
-
-        request = request_factory.get("/backend/api/v1/demo/")
-        request.gateway = fake_gateway
-        request.app = mock.MagicMock(app_code="test")
-
-        view = views.ReleasedResourceListApi.as_view()
-        response = view(request, gateway_id=fake_gateway.id, stage_name=stage_name)
-        result = get_response_json(response)
-
-        assert result["code"] == 0
-        assert result["data"] == expected
-
-        get_released_public_resources_mock.assert_called_once_with(
-            fake_gateway.id,
-            stage_name=stage_name,
-        )
-        get_labels_mock.assert_called_once_with([r["id"] for r in mocked_resources])
 
 
 class TestReleasedResourceListByGatewayNameApi:
