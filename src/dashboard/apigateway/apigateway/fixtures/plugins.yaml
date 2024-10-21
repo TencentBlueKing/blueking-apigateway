@@ -1996,21 +1996,21 @@
         "schema": {
           "type": "object",
           "properties": {
-            "header_schema": {
+            "body_schema": {
               "type": "string",
               "maxLength": 51200,
-              "title": "请求头概要",
-              "description": "header 数据的 schema 数据结构",
+              "title": "请求体 JSON Schema",
+              "description": "request body 数据的 JSON Schema",
               "ui:component": {
                 "type": "textarea",
                 "rows": 10
               }
             },
-            "body_schema": {
+            "header_schema": {
               "type": "string",
               "maxLength": 51200,
-              "title": "请求体概要",
-              "description": "body 数据的 schema 数据结构",
+              "title": "请求头 JSON Schema",
+              "description": "request header 数据的 JSON Schema",
               "ui:component": {
                 "type": "textarea",
                 "rows": 10
@@ -2050,21 +2050,21 @@
         "schema": {
           "type": "object",
           "properties": {
-            "header_schema": {
+            "body_schema": {
               "type": "string",
               "maxLength": 51200,
-              "title": "header_schema",
-              "description": "header data schema data structure.",
+              "description": "request body JSON Schema",
+              "title": "body JSON Schema",
               "ui:component": {
                 "type": "textarea",
                 "rows": 10
               }
             },
-            "body_schema": {
+            "header_schema": {
               "type": "string",
               "maxLength": 51200,
-              "description": "body data schema data structure.",
-              "title": "body_schema",
+              "title": "header JSON Schema",
+              "description": "request header JSON Schema",
               "ui:component": {
                 "type": "textarea",
                 "rows": 10
