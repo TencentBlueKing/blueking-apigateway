@@ -126,6 +126,7 @@ class StageOutputSLZ(serializers.ModelSerializer):
 
         publish_validator = PublishValidator(obj.gateway, obj)
         try:
+            # FIXME: 这里需要注意环境变量校验：每次都会去变量所有的资源，比较损耗性能
             publish_validator()
         except (ValidationError, ReleaseValidationError) as err:
             validate_err_message = err.detail[0] if isinstance(err, ValidationError) else str(err)
