@@ -23,7 +23,7 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 from django.utils.translation import gettext as _
-from openapi_spec_validator.versions import OPENAPIV31
+from openapi_spec_validator.versions import OPENAPIV30, OPENAPIV31
 from pydantic import parse_obj_as
 
 from apigateway.biz.constants import OpenAPIFormatEnum
@@ -47,7 +47,7 @@ class BaseParser:
     """
 
     _openapi_data: Dict[str, Any]
-    _openapi_version: str
+    _openapi_version: Optional[str] = str(OPENAPIV30)
 
     def get_resources(self) -> List[Dict[str, Any]]:
         resources = []
@@ -528,6 +528,10 @@ class BaseExporter:
 
             # schema
             schema = resource.get("openapi_schema", {})
+
+            # remove openapi version
+            if "version" in schema:
+                del schema["version"]
 
             operation.update(schema)
 
