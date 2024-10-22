@@ -560,9 +560,9 @@ PYPI_MIRRORS_REPOSITORY = env.str("PYPI_INDEX_URL", "https://pypi.org/simple/")
 MAVEN_MIRRORS_CONFIG = {
     "default": {
         "repository_url": env.str("DEFAULT_MAVEN_REPOSITORY_URL", ""),
-        "repository_id": env.str("DEFAULT_MAVEN_REPOSITORY_ID", "bkapi"),
-        "username": env.str("DEFAULT_MAVEN_USERNAME", ""),
-        "password": env.str("DEFAULT_MAVEN_PASSWORD", ""),
+        "repository_id": env.str("DEFAULT_MAVEN_REPOSITORY_ID", "bkpaas-maven"),
+        "username": env.str("DEFAULT_MAVEN_USERNAME", "bk_apigateway"),
+        "password": env.str("DEFAULT_MAVEN_PASSWORD", "bk_apigateway"),
     }
 }
 
