@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 from django.utils.translation import gettext as _
+from openapi_spec_validator.versions import OPENAPIV31
 from pydantic import parse_obj_as
 
 from apigateway.biz.constants import OpenAPIFormatEnum
@@ -46,6 +47,7 @@ class BaseParser:
     """
 
     _openapi_data: Dict[str, Any]
+    _openapi_version: str
 
     def get_resources(self) -> List[Dict[str, Any]]:
         resources = []
@@ -108,7 +110,7 @@ class BaseParser:
           }
         }
         """
-        openapi_schema = {}
+        openapi_schema = {"version": self._openapi_version}
         request_body = self._get_request_body(operation)
         if len(request_body) > 0:
             openapi_schema["requestBody"] = request_body
@@ -331,7 +333,7 @@ class OpenAPIV3Parser(BaseParser):
         return parsed_url.path
 
     def _get_openapi_schema(self, operation: Dict[str, Any]):
-        openapi_schema = {}
+        openapi_schema = {"version": self._openapi_version}
         if "parameters" in operation:
             openapi_schema["parameters"] = operation.get("parameters", [])
 
@@ -472,8 +474,12 @@ class BaseExporter:
         return yaml_export_dumps(content)
 
     def _get_openapi_content(self, resources: list) -> Dict[str, Any]:
+        openapi_version = "3.0.1"
+        if resources and resources[0].get("openapi_schema", {}).get("version") == str(OPENAPIV31):
+            openapi_version = "3.1.0"
+
         return {
-            "openapi": "3.0.1",
+            "openapi": openapi_version,
             "servers": [{"url": "/"}],
             "info": {
                 "version": self.api_version,
