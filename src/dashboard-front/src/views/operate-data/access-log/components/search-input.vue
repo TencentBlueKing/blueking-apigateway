@@ -70,26 +70,46 @@
         </div>
       </template>
     </bk-popover>
-    <bk-input
-      class="search-input"
-      v-model="localValue"
-      :placeholder="localPlaceholder"
-      @enter="handleEnter"
-      style="">
-      <!-- <template #suffix>
-        <bk-button theme="primary" class="search-input-button" @click="handleSearch"> {{ t("搜索") }} </bk-button>
-      </template> -->
-    </bk-input>
+    <bk-dropdown :popover-options="popoverOptions" style="width: 100%;">
+      <bk-input
+        class="search-input"
+        v-model="localValue"
+        :placeholder="localPlaceholder"
+        clearable
+        @enter="handleEnter"
+      >
+        <!-- <template #suffix>
+          <bk-button theme="primary" class="search-input-button" @click="handleSearch"> {{ t("搜索") }} </bk-button>
+        </template> -->
+      </bk-input>
+      <template #content>
+        <bk-dropdown-menu>
+          <bk-dropdown-item
+            v-for="item in queryHistory"
+            :key="item"
+            @click="handleHistoryClick(item)"
+          >
+            {{ item }}
+          </bk-dropdown-item>
+        </bk-dropdown-menu>
+      </template>
+    </bk-dropdown>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import {
+  ref,
+  watch,
+} from 'vue';
 import i18n from '@/language/i18n';
 import { useGetGlobalProperties } from '@/hooks';
+import { useStorage } from '@vueuse/core';
 const { t } = i18n.global;
 
 const globalProperties = useGetGlobalProperties();
+// 从本地存储获取搜索历史
+const queryHistory = useStorage('access-log-query-history', []);
 const { GLOBAL_CONFIG } = globalProperties;
 
 const props = defineProps({
@@ -109,6 +129,11 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modeValue', 'search', 'choose']);
 
+const popoverOptions = {
+  trigger: 'click',
+  placement: 'bottom-start',
+};
+
 const searchInputRef = ref(null);
 const localValue = ref('');
 const localPlaceholder = ref('');
@@ -116,14 +141,6 @@ localPlaceholder.value = props.placeholder || t('请输入查询语句');
 const searchUsage = ref({
   showed: false,
 });
-
-const handleEnter = () => {
-  emit('search', localValue.value);
-};
-
-// const handleSearch = () => {
-//   emit('search', localValue.value);
-// };
 
 watch(
   () => props.modeValue,
@@ -152,6 +169,14 @@ const handleClickUsageValue = (innerText: string) => {
     innerText = '(app_code: "app-template" AND client_ip: "1.0.0.1") OR resource_name: get_user';
   }
   emit('choose', innerText);
+};
+
+const handleEnter = () => {
+  emit('search', localValue.value);
+};
+
+const handleHistoryClick = (item: string) => {
+  localValue.value = item;
 };
 
 defineExpose({
