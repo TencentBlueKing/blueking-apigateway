@@ -97,7 +97,10 @@ class ReleasedResourceDocManager(models.Manager):
             )
             for doc in resource_doc_version.data
         ]
-        self.bulk_create(resource_doc_to_add, batch_size=RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE)
+        # 异步同时更新会存在一些冲突问题
+        self.bulk_create(
+            resource_doc_to_add, batch_size=RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE, ignore_conflicts=True
+        )
 
     def clear_unreleased_resource_doc(self, gateway_id: int) -> None:
         """清理未发布的资源文档，如已发布版本被新版本替代的情况"""

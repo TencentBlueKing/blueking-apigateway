@@ -267,7 +267,8 @@ class ReleasedResourceManager(models.Manager):
             )
             for resource in resource_version.data
         ]
-        self.bulk_create(resource_to_add, batch_size=RELEASED_RESOURCE_CREATE_BATCH_SIZE)
+        # 异步同时更新会存在一些冲突问题
+        self.bulk_create(resource_to_add, batch_size=RELEASED_RESOURCE_CREATE_BATCH_SIZE, ignore_conflicts=True)
 
     def get_released_resource(self, gateway_id: int, resource_version_id: int, resource_name: str) -> Optional[dict]:
         released_resource = self.filter(
