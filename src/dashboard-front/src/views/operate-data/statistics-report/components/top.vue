@@ -306,7 +306,7 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-width: 1280px;
+
   .top-left-wrapper {
     display: flex;
     align-items: center;
