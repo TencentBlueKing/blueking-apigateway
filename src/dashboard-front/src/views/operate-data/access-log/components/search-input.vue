@@ -70,7 +70,7 @@
         </div>
       </template>
     </bk-popover>
-    <bk-dropdown :popover-options="popoverOptions" style="width: 100%;">
+    <bk-dropdown :popover-options="popoverOptions" :disabled="queryHistory.length === 0" style="width: 100%;">
       <bk-input
         class="search-input"
         v-model="localValue"
