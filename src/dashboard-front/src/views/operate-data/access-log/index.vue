@@ -224,6 +224,7 @@ import 'echarts/lib/component/tooltip';
 import { ref, computed, nextTick, onMounted, onBeforeUnmount, markRaw } from 'vue';
 import {
   merge,
+  trim,
   uniq,
 } from 'lodash';
 import { copy } from '@/common/util';
@@ -717,9 +718,11 @@ const handleSearch = (value: string) => {
   keyword.value = value;
   searchParams.value.query = keyword.value;
   pagination.value.current = 1;
-  // 写入搜索历史
-  queryHistory.value.unshift(value);
-  queryHistory.value = uniq(queryHistory.value).slice(0, 10);
+  // 若是非空字符串则写入搜索历史
+  if (trim(value) !== '') {
+    queryHistory.value.unshift(value);
+    queryHistory.value = uniq(queryHistory.value).slice(0, 10);
+  }
   getSearchData();
 };
 
