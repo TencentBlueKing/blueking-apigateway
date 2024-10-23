@@ -140,7 +140,7 @@ class LogSearchClient:
         s = s.source(fields=ES_OUTPUT_FIELDS)
         if limit is None:
             return s[offset:]
-        return s[:limit]
+        return s[offset : offset + limit]
 
     def _build_date_histogram_search(self) -> Search:
         assert self._smart_time_range
