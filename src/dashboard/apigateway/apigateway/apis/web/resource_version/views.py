@@ -271,5 +271,5 @@ class NextResourceVersionRetrieveApi(generics.RetrieveAPIView):
                 data={"version": new_version_str},
             )
         return OKJsonResponse(
-            data={"version": ""},
+            data={"version": "1.0.0"},
         )
