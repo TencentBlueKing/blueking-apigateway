@@ -111,7 +111,8 @@ class LogSearchClient:
             s = s.filter("term", **self._include_conditions)
 
         if self._exclude_conditions:
-            s = s.exclude("term", **self._exclude_conditions)
+            for key, val in self._exclude_conditions.items():
+                s = s.exclude("term", **{key: val})
 
         # time range
         if self._smart_time_range:
