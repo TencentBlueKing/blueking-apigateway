@@ -25,7 +25,10 @@
                   :title="system.description"
                   @click="handleSystemChange(system)"
                 >
-                  <span class="f14">{{ system.description }}</span>
+                  <span class="f14">
+                    <span class="ag-strong fw-normal mr5">{{ system.description }}</span>
+                    ({{ system.name }})
+                  </span>
                 </bk-dropdown-item>
               </bk-dropdown-menu>
             </template>
