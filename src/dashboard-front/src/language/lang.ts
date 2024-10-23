@@ -231,6 +231,7 @@ const lang: ILANG = {
   '暂无描述': ['No Description Available'],
   '提交': ['Submit'],
   '导出': ['Export'],
+  '导出全部': ['Export All'],
   '更多': ['More'],
   '接口异常': ['Interface Error'],
   '环境': ['Stage'],
