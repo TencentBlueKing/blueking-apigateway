@@ -172,7 +172,7 @@ class LogExportApi(generics.RetrieveAPIView):
             time_range=data.get("time_range"),
         )
         total_count, logs = client.search_logs(
-            offset=data.get("offset", 0),
+            offset=0,
             limit=limit,
         )
 
