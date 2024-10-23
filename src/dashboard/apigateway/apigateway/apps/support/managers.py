@@ -97,7 +97,7 @@ class ReleasedResourceDocManager(models.Manager):
             )
             for doc in resource_doc_version.data
         ]
-        # 异步同时更新会存在一些冲突问题
+        # 异步同时(多个stage同时发布同一版本)更新会存在一些冲突问题
         self.bulk_create(
             resource_doc_to_add, batch_size=RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE, ignore_conflicts=True
         )
