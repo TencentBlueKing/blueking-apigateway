@@ -50,7 +50,7 @@
         >
           <bk-table-column type="selection" width="60" align="center"></bk-table-column>
           <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
-          <bk-table-column :label="t('搜索维度')">
+          <bk-table-column :label="t('授权维度')">
             <template #default="{ row }: { row: IPermission }">
               <span class="ag-auto-text">
                 {{ getSearchDimensionText(row.grant_dimension) }}
