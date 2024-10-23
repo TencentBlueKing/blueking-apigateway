@@ -480,6 +480,7 @@ class TestResourceImportCheckApi:
                         },
                         "labels": ["pet"],
                         "openapi_schema": {
+                            "version": "OpenAPIV2.0",
                             "parameters": [
                                 {
                                     "name": "userId",
@@ -488,7 +489,7 @@ class TestResourceImportCheckApi:
                                     "description": "ID of User",
                                     "schema": {"type": "integer", "format": "int64"},
                                 }
-                            ]
+                            ],
                         },
                         "plugin_configs": None,
                     }
@@ -555,7 +556,9 @@ class TestResourceImportCheckApi:
                             "config": {"method": "GET", "path": "/hello/", "match_subpath": False, "timeout": 30},
                         },
                         "labels": ["pet"],
-                        "openapi_schema": {},
+                        "openapi_schema": {
+                            "version": "OpenAPIV2.0",
+                        },
                         "plugin_configs": None,
                     }
                 ],

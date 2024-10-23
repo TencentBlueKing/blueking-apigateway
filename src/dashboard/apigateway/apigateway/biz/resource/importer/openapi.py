@@ -150,9 +150,9 @@ class OpenAPIImportManager:
 
     def _get_parser(self, parse_result) -> BaseParser:
         if self.version == OPENAPIV2:
-            return BaseParser(parse_result.specification)
+            return BaseParser(parse_result.specification, str(self.version))
 
-        return OpenAPIV3Parser(parse_result.specification)
+        return OpenAPIV3Parser(parse_result.specification, str(self.version))
 
     def get_resource_list(self, raw=False):
         """
