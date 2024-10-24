@@ -120,6 +120,7 @@ const getChartOption = () => {
       boundaryGap: false,
       axisLabel: { // 坐标轴刻度标签的相关设置
         color: '#666666',
+        rotate: 35,
       },
       axisLine: { // 坐标轴轴线相关设置
         lineStyle: {
@@ -168,8 +169,12 @@ const getChartOption = () => {
       show: true,
       type: 'scroll',
       orient: 'vertical', // 垂直排列
-      right: 24,
+      right: 10,
       top: 30,     // 垂直居中
+      height: 302,
+      pageIconSize: 12, // 翻页按钮的大小
+      pageIconColor: '#63656E', // 翻页按钮的颜色
+      pageIconInactiveColor: '#C4C6CC', // 翻页按钮不激活时（即翻页到头时）的颜色
       textStyle: {       // 图例文字的样式设置
         fontSize: 12,
         color: '#63656E',
@@ -201,7 +206,7 @@ const getChartOption = () => {
       let datapoints = item.datapoints || [];
       datapoints = datapoints.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
       chartOption.series.push(merge({}, baseOption.series[0], {
-        name: props.instanceId !== 'app_requests' ? item.target : item.target?.split(',')[1],
+        name: (item.target?.split('=')[1])?.replace(/"/g, ''),
         data: datapoints.map((item) => {
           if (props.instanceId === 'ingress' || props.instanceId === 'egress') {
             return [
@@ -219,12 +224,24 @@ const getChartOption = () => {
     });
     if (props.instanceId === 'requests') {
       chartOption.legend.show = false;
-      chartOption.grid.right = '10%';
+      chartOption.grid.left = '14%';
+      chartOption.grid.right = '8%';
+    }
+
+    if (props.instanceId === 'non_200_status') {
+      chartOption.grid.left = '14%';
+      chartOption.grid.right = 80;
     }
 
     if (props.instanceId === 'ingress' || props.instanceId === 'egress') {
       chartOption.yAxis.axisLabel = {
         formatter: '{value} KB',
+      };
+    }
+
+    if (props.instanceId === 'response_time_90th') {
+      chartOption.yAxis.axisLabel = {
+        formatter: '{value} ms',
       };
     }
   } else {
