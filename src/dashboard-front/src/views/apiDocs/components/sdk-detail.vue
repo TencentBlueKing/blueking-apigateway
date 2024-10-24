@@ -9,6 +9,14 @@
         <span class="column-value" v-bk-overflow-tips>{{ sdk.name || sdk.sdk_name || '--' }}</span>
       </div>
     </div>
+    <div v-if="sdk.sdk_description" class="row-item mb10">
+      <div class="key">
+        <span class="column-key"> {{ t('SDK描述') }}: </span>
+      </div>
+      <div class="value">
+        <span class="column-value" v-bk-overflow-tips>{{ sdk.sdk_description || '--' }}</span>
+      </div>
+    </div>
     <div class="row-item mb10">
       <div class="key">
         <span class="column-key"> {{ t('SDK版本') }}: </span>
@@ -180,6 +188,8 @@ const handleDownload = () => {
 .column-value {
   display: -webkit-box;
   -webkit-line-clamp: 1;
+  line-clamp: 1;
+  word-break: break-all;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
