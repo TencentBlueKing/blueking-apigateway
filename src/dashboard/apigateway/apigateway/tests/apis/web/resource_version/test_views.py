@@ -333,4 +333,4 @@ class TestResourceVersionGetApi:
         )
         assert resp.status_code == 200
         result = resp.json()
-        assert result == {"data": {"version": ""}}
+        assert result == {"data": {"version": "1.0.0"}}
