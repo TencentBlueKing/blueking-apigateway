@@ -100,17 +100,14 @@ def get_data_differ_number(data: dict) -> int:
     if data is None or not isinstance(data, dict):
         return 0
 
+    if "data" in data:
+        data = data["data"]
+
     # 检查'data'键和'series'列表的存在性和非空性
     # 返回的没有没有数据的情况是这样的 {"result": true, "code": 200, "message": "OK", "data": {"metrics": [], "series": []}}
-    if (
-        "data" in data
-        and isinstance(data["data"], dict)
-        and "series" in data["data"]
-        and isinstance(data["data"]["series"], list)
-        and len(data["data"]["series"]) > 0
-    ):
+    if isinstance(data, dict) and "series" in data and isinstance(data["series"], list) and len(data["series"]) > 0:
         # 获取'datapoints'列表
-        datapoints = data["data"]["series"][0].get("datapoints", [])
+        datapoints = data["series"][0].get("datapoints", [])
 
         # 检查'datapoints'列表非空并且至少有两个数据点
         if len(datapoints) > 1:
@@ -201,12 +198,13 @@ class AppRequestsMetrics(BaseMetrics):
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
+                ("resource_name", "=", resource_name),
             ]
         )
         return (
             f"topk(10, sum(increase({self.metric_name_prefix}apigateway_app_requests_total{{"
             f"{labels}"
-            f"}}[{step}])) by (api_name, app_code))"
+            f"}}[{step}])) by (app_code))"
         )
 
 
@@ -233,7 +231,7 @@ class ResourceRequestsMetrics(BaseMetrics):
         return (
             f"topk(10, sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{"
             f"{labels}"
-            f"}}[{step}])) by (resource_name, matched_uri))"
+            f"}}[{step}])) by (resource_name))"
         )
 
 
