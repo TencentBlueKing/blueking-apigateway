@@ -324,7 +324,7 @@
             :loading="isBatchApplyLoading"
             @click="handleBatchConfirm"
           > {{ t('确定') }} </bk-button>
-          <bk-button class="ml8" @click="batchApplySliderConf.isShow = false"> {{ t('取消') }} </bk-button>
+          <bk-button class="ml8" @click="handleBatchApplySliderClose"> {{ t('取消') }}</bk-button>
         </div>
       </template>
     </bk-sideslider>
@@ -373,7 +373,7 @@
             <bk-button theme="primary" :disabled="true"> {{ t('确定') }} </bk-button>
           </bk-popover>
         </template>
-        <bk-button @click="isApplyDialogShow = false"> {{ t('取消') }} </bk-button>
+        <bk-button @click="handleApplyDialogClose"> {{ t('取消') }}</bk-button>
       </template>
     </bk-dialog>
   </div>
@@ -961,6 +961,16 @@ const getExpTimeAfterRenew = (permission: IPermission, days?: number) => {
     });
     return '--';
   }
+};
+
+const handleApplyDialogClose = () => {
+  expireDays.value = 0;
+  isApplyDialogShow.value = false;
+};
+
+const handleBatchApplySliderClose = () => {
+  expireDays.value = 0;
+  batchApplySliderConf.isShow = false;
 };
 
 const init = () => {
