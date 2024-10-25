@@ -17,6 +17,7 @@
 #
 from rest_framework import serializers
 
+from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.common.fields import CurrentGatewayDefault
 
 
@@ -30,6 +31,12 @@ class ResourceImportInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     content = serializers.CharField(allow_blank=False, required=True, help_text="导入内容，yaml/json 格式字符串")
     delete = serializers.BooleanField(required=False, default=False)
+    doc_language = serializers.ChoiceField(
+        choices=DocLanguageEnum.get_choices(),
+        allow_blank=True,
+        required=False,
+        help_text="文档语言，en: 英文，zh: 中文",
+    )
 
     class Meta:
         ref_name = "apis.open.resource.ResourceImportInputSLZ"

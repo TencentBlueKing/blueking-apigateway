@@ -26,8 +26,11 @@ from rest_framework import generics, serializers, status
 from apigateway.apis.open.permissions import (
     OpenAPIGatewayRelatedAppPermission,
 )
+from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
+from apigateway.biz.resource_doc.importer import DocImporter
+from apigateway.biz.resource_doc.importer.parsers import OpenAPIParser
 from apigateway.core.models import Resource
 from apigateway.utils.responses import V1OKJsonResponse
 
@@ -42,7 +45,7 @@ class ResourceSyncApi(generics.CreateAPIView):
 
     @swagger_auto_schema(
         request_body=ResourceImportInputSLZ,
-        responses={status.HTTP_200_OK: ResourceSyncOutputSLZ},
+        responses={status.HTTP_200_OK: ResourceSyncOutputSLZ()},
         tags=["OpenAPI.Resource"],
     )
     @transaction.atomic
@@ -85,6 +88,18 @@ class ResourceSyncApi(generics.CreateAPIView):
             need_delete_unspecified_resources=slz.validated_data["delete"],
         )
         importer.import_resources()
+
+        # 如果生成文档还要再生成文档
+        if slz.validated_data.get("doc_language"):
+            parser = OpenAPIParser(gateway_id=request.gateway.id)
+            docs = parser.parse(
+                swagger=slz.validated_data["content"],
+                language=DocLanguageEnum(slz.validated_data["doc_language"]),
+            )
+            doc_importer = DocImporter(
+                gateway_id=request.gateway.id,
+            )
+            doc_importer.import_docs(docs=docs)
 
         # 分析出已创建或更新的资源
         added = []
