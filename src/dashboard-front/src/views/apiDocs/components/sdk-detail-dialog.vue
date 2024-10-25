@@ -1,5 +1,5 @@
 <template>
-  <!--  网关 SDK 详情弹窗  -->
+  <!--  查看 SDK 弹窗  -->
   <bk-dialog
     v-model:is-show="isShow"
     :title="title"
@@ -9,7 +9,11 @@
   >
     <main class="dialog-content">
       <div class="dialog-main">
-        <LangSelector v-model="language" :sdk-languages="sdks.map(item => item.language)"></LangSelector>
+        <LangSelector
+          v-model="language"
+          :sdk-languages="sdks.map(item => item.language)"
+          :lang-list="languages"
+        />
         <SdkDetail :sdk="curSdk" is-apigw></SdkDetail>
       </div>
     </main>
@@ -40,15 +44,16 @@ const isShow = defineModel<boolean>({
 
 interface IProps {
   sdks: ISdk[];
-  apigwName: string;
+  targetName: string;
+  languages: LanguageType[];
 }
 
 const props = withDefaults(defineProps<IProps>(), {
   sdks: () => [],
-  apigwName: '',
+  targetName: '',
 });
 
-const { sdks, apigwName } = toRefs(props);
+const { sdks, targetName, languages } = toRefs(props);
 
 const language = ref<LanguageType>('python');
 
@@ -57,7 +62,7 @@ const curSdk = computed(() => {
 });
 
 const title = computed(() => {
-  return apigwName.value ? t('网关 API SDK: {name}', { name: apigwName.value }) : t('网关 API SDK');
+  return targetName.value ? t('{name} SDK', { name: targetName.value }) : t('查看 SDK');
 });
 
 </script>
