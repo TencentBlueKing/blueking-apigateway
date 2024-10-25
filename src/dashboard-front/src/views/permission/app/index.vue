@@ -247,7 +247,8 @@
                       :width="392"
                     >
                       <template #default="{ row }">
-                        {{ row.expires || '--' }}
+                        <span v-if="row.expires">{{ row.expires }}</span>
+                        <span v-else class="ag-strong warning">{{ t('永久') }}</span>
                         <span class="ag-strong default" v-if="!row.renewable && row.expires">
                           {{ t('(有效期大于30天)') }}
                         </span>
@@ -289,7 +290,8 @@
                       :width="392"
                     >
                       <template #default="{ row }">
-                        {{ row.expires || '--' }}
+                        <span v-if="row.expires">{{ row.expires }}</span>
+                        <span v-else class="ag-strong warning">{{ t('永久') }}</span>
                         <span class="ag-strong default" v-if="!row.renewable && row.expires">
                           {{ t('(有效期大于30天)') }}
                         </span>
@@ -340,7 +342,8 @@
           </bk-table-column>
           <bk-table-column :label="t('续期前的过期时间')">
             <template #default="{ row }">
-              {{ row.expires || '--' }}
+              <span v-if="row.expires">{{ row.expires }}</span>
+              <span v-else class="ag-strong warning">{{ t('永久') }}</span>
               <span class="ag-strong default" v-if="!row.renewable && row.expires">
                 {{ t('(有效期大于30天)') }}
               </span>
