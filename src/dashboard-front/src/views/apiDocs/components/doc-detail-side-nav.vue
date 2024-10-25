@@ -4,7 +4,7 @@
     <li v-for="nav of list" :key="nav.id">
       <span
         class="nav"
-        :class="{ active: curNav?.id === nav.id }"
+        :class="{ active: activeId === nav.id }"
         @click="handleAnchor(nav)"
       >
         {{ nav.name }}
@@ -21,8 +21,8 @@ import {
 } from 'vue';
 import { INavItem } from '@/views/apiDocs/types';
 
-const curNav = defineModel<INavItem | null>({
-  default: (): INavItem | null => null,
+const activeId = defineModel<string>({
+  default: '',
 });
 
 const props = defineProps({
@@ -37,9 +37,9 @@ const props = defineProps({
 const { list } = toRefs(props);
 
 const handleAnchor = (nav: INavItem) => {
-  const element = document.getElementById(nav.name);
+  const element = document.getElementById(nav.id);
   if (element) {
-    curNav.value = nav;
+    activeId.value = nav.id;
     element.scrollIntoView({
       behavior: 'smooth', // 平滑滚动
       block: 'start', // 元素顶部与视口顶部对齐
@@ -47,8 +47,9 @@ const handleAnchor = (nav: INavItem) => {
   }
 };
 
-watch(() => props.list, () => {
-  curNav.value = null;
+// 目录变更时，默认高亮第一个目录
+watch(list, () => {
+  activeId.value = list.value[0]?.id || '';
 }, { deep: true });
 
 </script>

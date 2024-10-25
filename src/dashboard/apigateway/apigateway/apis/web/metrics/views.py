@@ -32,7 +32,7 @@ from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ
 
 class QueryRangeApi(generics.ListAPIView):
     @swagger_auto_schema(
-        query_serializer=MetricsQueryRangeInputSLZ,
+        query_serializer=MetricsQueryRangeInputSLZ(),
         responses={status.HTTP_200_OK: ""},
         operation_description="查询 metrics",
         tags=["WebAPI.Metrics"],
@@ -79,7 +79,7 @@ class QueryRangeApi(generics.ListAPIView):
 
 class QueryInstantApi(generics.ListAPIView):
     @swagger_auto_schema(
-        query_serializer=MetricsQueryInstantInputSLZ,
+        query_serializer=MetricsQueryInstantInputSLZ(),
         responses={status.HTTP_200_OK: ""},
         operation_description="查询 metrics",
         tags=["WebAPI.Metrics"],
@@ -138,7 +138,9 @@ class QueryInstantApi(generics.ListAPIView):
 
             # 健康率 = 1 - (500 状态码数量 / 请求总数)
             health_rate = 1 - (health_rate_data["instant"] / requests_total_result["instant"])
-            health_rate_result["instant"] = health_rate
+            percent = health_rate * 100
+            # 保留2位小数
+            health_rate_result["instant"] = f"{percent:.2f}"
             return OKJsonResponse(data=health_rate_result)
 
         return OKJsonResponse(data=requests_total_result)

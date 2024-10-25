@@ -25,7 +25,10 @@
                   :title="system.description"
                   @click="handleSystemChange(system)"
                 >
-                  <span class="f14">{{ system.description }}</span>
+                  <span class="f14">
+                    <span class="ag-strong fw-normal mr5">{{ system.description }}</span>
+                    ({{ system.name }})
+                  </span>
                 </bk-dropdown-item>
               </bk-dropdown-menu>
             </template>
@@ -224,6 +227,7 @@ import DocDetailSideContent from '@/views/apiDocs/components/doc-detail-side-con
 import SdkInstructionSlider from '@/views/apiDocs/components/sdk-instruction-slider.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
+import hljs from 'highlight.js';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -398,6 +402,16 @@ const md = new MarkdownIt({
   linkify: false,
   html: true,
   breaks: true,
+  highlight(str: string, lang: string) {
+    try {
+      if (lang && hljs.getLanguage(lang)) {
+        return hljs.highlight(str, { language: lang, ignoreIllegals: true }).value;
+      }
+    } catch {
+      return str;
+    }
+    return str;
+  },
 });
 
 // markdown 解析器自定义规则，用于给 ### 标题添加 id，导航要用
@@ -412,8 +426,13 @@ md.renderer.rules.heading_open = function (tokens, idx, options, env, self) {
       headingText = `${headingText}${count}`;
       count = count + 1;
     }
-    curToken.attrPush(['id', headingText]);
-    navList.value.push({ id: headingText, name: headingText });
+    // 给标题元素ID一个前缀，便于导航目录识别
+    const idPrefix = 'doc-heading-';
+    curToken.attrPush([
+      'id',
+      `${idPrefix}${headingText}`,
+    ]);
+    navList.value.push({ id: `${idPrefix}${headingText}`, name: headingText });
   }
   return self.renderToken(tokens, idx, options);
 };

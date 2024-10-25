@@ -118,7 +118,7 @@ class TestAppRequestsMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_app_requests_total{api_name="foo", '
-                    'stage_name="prod"}[1m])) by (api_name, app_code))'
+                    'stage_name="prod", resource_name="get_foo"}[1m])) by (app_code))'
                 ),
             },
             {
@@ -132,7 +132,7 @@ class TestAppRequestsMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_app_requests_total{api_name="foo", '
-                    'stage_name="prod"}[1m])) by (api_name, app_code))'
+                    'stage_name="prod"}[1m])) by (app_code))'
                 ),
             },
         ]
@@ -158,7 +158,7 @@ class TestResourceRequestsMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"}[1m])) by (resource_name, matched_uri))'
+                    'stage_name="prod", resource_name="get_foo"}[1m])) by (resource_name))'
                 ),
             },
             {
@@ -172,7 +172,7 @@ class TestResourceRequestsMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod"}[1m])) by (resource_name, matched_uri))'
+                    'stage_name="prod"}[1m])) by (resource_name))'
                 ),
             },
         ]
