@@ -938,6 +938,7 @@ const lang: ILANG = {
   '发布时间：': ['Release Time:'],
   '你可能想进行以下操作：': ['You may want to perform the following actions:'],
   '在线调试 API 资源': ['Online debugging APIs'],
+  '至少需要保留一行！': ['You need to keep at least one line! '],
   '查看 API 文档': ['View api doc'],
   '为蓝鲸应用主动授权': ['Add permissions for app'],
   '生成 API 资源 SDK': ['Generate SDK'],

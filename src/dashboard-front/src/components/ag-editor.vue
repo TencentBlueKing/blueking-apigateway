@@ -329,17 +329,21 @@ defineExpose({
 
 </script>
 <style scoped lang="scss">
-.codemirror,
-.monaco-editor {
-  width: 100%;
-  height: 100%;
-}
 .codemirror {
   position: relative;
+  width: 100%;
+  height: calc(100% - 26px);
+  .monaco-editor {
+    position: absolute;
+    top: 26px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
   .tools {
     position: absolute;
     top: 5px;
-    right: 28px;
+    right: 14px;
     display: flex;
     align-items: center;
     .tool-icon {
