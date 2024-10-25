@@ -366,8 +366,13 @@ md.renderer.rules.heading_open = function (tokens, idx, options, env, self) {
       headingText = `${headingText}${count}`;
       count = count + 1;
     }
-    curToken.attrPush(['id', headingText]);
-    navList.value.push({ id: headingText, name: headingText });
+    // 给标题元素ID一个前缀，便于导航目录识别
+    const idPrefix = 'doc-heading-';
+    curToken.attrPush([
+      'id',
+      `${idPrefix}${headingText}`,
+    ]);
+    navList.value.push({ id: `${idPrefix}${headingText}`, name: headingText });
   }
   return self.renderToken(tokens, idx, options);
 };

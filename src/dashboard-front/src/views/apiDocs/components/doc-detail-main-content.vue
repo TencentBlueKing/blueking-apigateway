@@ -51,14 +51,13 @@
         </article>
         <!--  API markdown 文档  -->
         <article v-if="markdownHtml" class="res-detail-content">
-          <!-- eslint-disable-next-line vue/no-v-html -->
           <div class="ag-markdown-view" id="resMarkdown" v-dompurify-html="markdownHtml"></div>
         </article>
       </main>
     </main>
     <!--  右侧导航栏  -->
     <aside class="detail-nav-box">
-      <DocDetailSideNav :list="navList"></DocDetailSideNav>
+      <DocDetailSideNav :list="navList" v-model="activeDocHeadingId"></DocDetailSideNav>
     </aside>
   </div>
 </template>
@@ -82,7 +81,11 @@ import {
 } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { copy } from '@/common/util';
-import { useScroll } from '@vueuse/core';
+import {
+  useElementBounding,
+  useScroll,
+} from '@vueuse/core';
+import { minBy } from 'lodash';
 
 const { t } = useI18n();
 
@@ -113,7 +116,21 @@ const {
 } = toRefs(props);
 
 const detailWrapRef = ref<HTMLElement | null>(null);
-const { y } = useScroll(detailWrapRef);
+// API 文档大标题元素集合
+const docHeadingElements = ref<HTMLElement[]>([]);
+// 当前应该高亮右侧导航的文档标题ID
+const activeDocHeadingId = ref('');
+const { y } = useScroll(detailWrapRef, {
+  // 监听 API 文档容器的滚动结束事件，获取距离容器最上方且可见的标题元素
+  onStop: () => {
+    const topVisibleHeading = minBy(docHeadingElements.value, (el) => {
+      const { top } = useElementBounding(el);
+      const offsetTop = top.value - 100;
+      return offsetTop > 0 ? offsetTop : Infinity;
+    });
+    activeDocHeadingId.value = topVisibleHeading?.id || '';
+  },
+});
 
 const appVerifiedTooltips = computed(() => {
   if (curTab.value === 'apigw') return t('应用访问该网关API时，是否需提供应用认证信息');
@@ -146,6 +163,7 @@ watch(api, () => {
 });
 
 const initMarkdownHtml = (box: string) => {
+  docHeadingElements.value = [];
   nextTick(() => {
     const markdownDom = document.getElementById(box);
     // 复制代码
@@ -168,6 +186,8 @@ const initMarkdownHtml = (box: string) => {
       item?.parentNode?.replaceChild(parentDiv, item);
       parentDiv?.appendChild(item);
     });
+    // 获取文档中的标题元素，它们的 id 以 doc-heading- 开头
+    docHeadingElements.value = Array.from(document.querySelectorAll('.target-detail [id^=doc-heading-]'));
 
     setTimeout(() => {
       const copyDoms = Array.from(document.getElementsByClassName('ag-copy-btn'));
