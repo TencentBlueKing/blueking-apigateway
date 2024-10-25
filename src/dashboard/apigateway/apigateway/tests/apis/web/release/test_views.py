@@ -29,7 +29,7 @@ from openapi_schema_to_json_schema import to_json_schema
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
-from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage, ReleasedResource
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, dummy_time
 
 pytestmark = pytest.mark.django_db
