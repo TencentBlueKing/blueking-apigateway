@@ -108,19 +108,33 @@
                   <!--  API 列表  -->
                   <main class="resource-list custom-scroll-bar">
                     <template v-if="filteredApiList.length">
-                      <article
-                        class="resource-item"
-                        v-for="api in filteredApiList"
-                        :key="api.id"
-                        :class="{ active: api.id === curApi?.id }"
-                        @click="handleApiClick(api.id)"
-                      >
-                        <!-- eslint-disable-next-line vue/no-v-html -->
-                        <header class="res-item-name" v-dompurify-html="getHighlightedHtml(api.name)" v-bk-overflow-tips
-                        ></header>
-                        <!-- eslint-disable-next-line vue/no-v-html -->
-                        <main class="res-item-desc" v-dompurify-html="getHighlightedHtml(api.description)"></main>
-                      </article>
+                      <bk-collapse class="api-group-collapse" v-model="activeGroupPanelNames">
+                        <bk-collapse-panel v-for="group of apiGroupList" :key="group.id" :name="group.name">
+                          <template #header>
+                            <div class="api-group-collapse-header">
+                              <angle-up-fill
+                                class="menu-header-icon"
+                                :class="{ fold: !activeGroupPanelNames.includes(group.name) }"
+                              />
+                              <div class="api-group-collapse-title">{{ group.name }}</div>
+                            </div>
+                          </template>
+                          <template #content>
+                            <article
+                              class="resource-item"
+                              v-for="api in group.apiList"
+                              :key="api.id"
+                              :class="{ active: api.id === curApi?.id }"
+                              @click="handleApiClick(api.id)"
+                            >
+                              <header
+                                class="res-item-name" v-dompurify-html="getHighlightedHtml(api.name)" v-bk-overflow-tips
+                              ></header>
+                              <main class="res-item-desc" v-dompurify-html="getHighlightedHtml(api.description)"></main>
+                            </article>
+                          </template>
+                        </bk-collapse-panel>
+                      </bk-collapse>
                     </template>
                     <template v-else-if="keyword">
                       <TableEmpty
@@ -173,6 +187,7 @@ import {
   onBeforeMount,
   provide,
   ref,
+  watch,
 } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
@@ -211,6 +226,7 @@ import DocDetailMainContent from '@/views/apiDocs/components/doc-detail-main-con
 import DocDetailSideContent from '@/views/apiDocs/components/doc-detail-side-content.vue';
 import SdkInstructionSlider from '@/views/apiDocs/components/sdk-instruction-slider.vue';
 import TableEmpty from '@/components/table-empty.vue';
+import { AngleUpFill } from 'bkui-vue/lib/icon';
 import hljs from 'highlight.js';
 
 const { t } = useI18n();
@@ -242,6 +258,7 @@ const outerResizeLayoutRef = ref<InstanceType<typeof ResizeLayout> | null>(null)
 const isAsideVisible = ref(true);
 const isLoading = ref(false);
 const keyword = ref('');  // 筛选器输入框的搜索关键字
+const activeGroupPanelNames = ref<string[]>([]);  // API分类 collapse 展开的 panel
 
 const searchPlaceholder = computed(() => {
   return t(
@@ -254,7 +271,32 @@ const searchPlaceholder = computed(() => {
 });
 
 const filteredApiList = computed(() => {
-  return apiList.value.filter(res => res.name.includes(keyword.value) || res.description.includes(keyword.value));
+  const regex = new RegExp(keyword.value, 'i');
+  return apiList.value.filter(api => regex.test(api.name) || regex.test(api.description));
+});
+
+// API 分类列表
+const apiGroupList = computed(() => {
+  return filteredApiList.value.reduce((groupList, api) => {
+    const { id, name } = api.labels[0];
+    const group = groupList.find(item => item.id === id);
+
+    if (group) {
+      group.apiList.push(api);
+    } else {
+      groupList.push({
+        id,
+        name,
+        apiList: [api],
+      });
+    }
+    return groupList;
+  }, [] as { id: number, name: string, apiList: typeof apiList.value }[]);
+});
+
+// 分类列表变化时更新 collapse 展开状态
+watch(apiGroupList, () => {
+  activeGroupPanelNames.value = apiGroupList.value.map(item => item.name);
 });
 
 const allSystemList = computed(() => {
@@ -327,6 +369,13 @@ const fetchApiList = async () => {
       res = await getSystemAPIList(board.value, curTargetName.value) as (IResource & IComponent)[];
     }
     apiList.value = res ?? [];
+    // 为 api 添加默认分类
+    apiList.value.forEach((api) => {
+      if (!api.labels?.length) {
+        api.labels = [{ id: -1, name: t('默认分类') }];
+      }
+    });
+
     if (curComponentApiName.value) {
       curApi.value = apiList.value.find(api => api.name === curComponentApiName.value) ?? null;
     } else {
@@ -414,7 +463,7 @@ const handleStageChange = async () => {
 
 const getHighlightedHtml = (value: string) => {
   if (keyword.value) {
-    return value.replace(new RegExp(`(${keyword.value})`), '<em class="ag-keyword">$1</em>');
+    return value.replace(new RegExp(`(${keyword.value})`, 'i'), '<em class="ag-keyword">$1</em>');
   }
   return value;
 };
@@ -606,6 +655,107 @@ onBeforeMount(() => {
     .resource-list {
       height: calc(100vh - 282px);
       overflow-y: scroll;
+
+      .api-group-collapse {
+        max-height: 100%;
+        overflow: auto;
+
+        :deep(.bk-collapse-item) {
+          margin-bottom: 12px;
+        }
+
+        :deep(.icon-angle-right) {
+          display: none;
+        }
+
+        &::-webkit-scrollbar {
+          width: 4px;
+          background-color: lighten(#c4c6cc, 80%);
+        }
+
+        &::-webkit-scrollbar-thumb {
+          height: 5px;
+          border-radius: 2px;
+          background-color: #c4c6cc;
+        }
+
+        .custom-icon {
+          margin: -3px 6px 0 0;
+          font-size: 13px;
+          vertical-align: middle;
+          display: inline-block;
+        }
+
+        .api-group-collapse-header {
+          padding: 4px 6px;
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+
+          .api-group-collapse-title {
+            color: #63656e;
+            margin-left: 4px;
+            font-weight: bold;
+          }
+
+          .menu-header-icon {
+            transition: all .2s;
+            color: #979ba5;
+            font-size: 14px;
+
+            &.fold {
+              transform: rotate(-90deg);
+            }
+          }
+        }
+
+        :deep(.bk-collapse-content) {
+          padding: 2px 0;
+        }
+
+        .component-list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+
+          > li {
+            font-size: 12px;
+            position: relative;
+            padding: 6px 36px 6px 56px;
+            cursor: pointer;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
+            &:hover,
+            &.active {
+              background: #f0f5ff;
+
+              .name,
+              .label {
+                color: #3a84ff;
+              }
+            }
+          }
+
+          .name {
+            color: #63656e;
+            font-weight: 700;
+          }
+
+          .label {
+            color: #979ba5;
+          }
+
+          .name,
+          .label {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            line-height: 20px;
+          }
+        }
+      }
 
       .resource-item {
         padding-left: 24px;
