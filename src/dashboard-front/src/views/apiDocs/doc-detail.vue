@@ -211,6 +211,7 @@ import DocDetailMainContent from '@/views/apiDocs/components/doc-detail-main-con
 import DocDetailSideContent from '@/views/apiDocs/components/doc-detail-side-content.vue';
 import SdkInstructionSlider from '@/views/apiDocs/components/sdk-instruction-slider.vue';
 import TableEmpty from '@/components/table-empty.vue';
+import hljs from 'highlight.js';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -352,6 +353,16 @@ const md = new MarkdownIt({
   linkify: false,
   html: true,
   breaks: true,
+  highlight(str: string, lang: string) {
+    try {
+      if (lang && hljs.getLanguage(lang)) {
+        return hljs.highlight(str, { language: lang, ignoreIllegals: true }).value;
+      }
+    } catch {
+      return str;
+    }
+    return str;
+  },
 });
 
 // markdown 解析器自定义规则，用于给 ### 标题添加 id，导航要用
