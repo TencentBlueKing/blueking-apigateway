@@ -29,7 +29,7 @@ from openapi_schema_to_json_schema import to_json_schema
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
 from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
-from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage, ReleasedResource
 from apigateway.tests.utils.testing import create_gateway, dummy_time
 
 pytestmark = pytest.mark.django_db
@@ -90,6 +90,49 @@ class TestReleaseCreateApi:
             assert history_qs.count() == 1
 
             assert resp.status_code == 200, result
+
+
+class TestReleaseAvailableResourceListApi:
+    def test_list(self, request_view, fake_gateway, fake_stage):
+        stage_1 = G(Stage, gateway=fake_gateway, name="prod", status=0)
+        resource_version = G(ResourceVersion, gateway=fake_gateway, _data=json.dumps([{
+            "id": 1,
+            "name": "test",
+            "method": "get",
+            "path": "/test/",
+            "description": "test...",
+            "description_en": "",
+            "match_subpath": "",
+            "is_public": True,
+            "allow_apply_permission": True,
+            "disabled_stages": [],
+            "contexts": {
+                "resource_auth": {
+                    "config": json.dumps({
+                        "app_verified_required": True,
+                        "skip_auth_verification": True,
+                        "auth_verified_required": True,
+                        "resource_perm_required": True
+                    })
+                }
+            },
+            "api_labels": "",
+        }]))
+
+        G(Release, gateway=fake_gateway, stage=stage_1, resource_version=resource_version)
+
+        response = request_view(
+            method="GET",
+            view_name="gateway.releases.available_resources",
+            path_params={"gateway_id": fake_gateway.id, "stage_id": stage_1.id},
+        )
+
+        result = response.json()
+
+        assert response.status_code == 200
+        assert result == {'data': [{'id': 1, 'name': 'test', 'description': 'test...', 'method': 'get',
+                                    'path': '/test/', 'verified_user_required': False, 'verified_app_required': True,
+                                    'resource_perm_required': True, 'is_public': True, 'labels': []}]}
 
 
 class TestReleaseResourceSchemaRetrieve:

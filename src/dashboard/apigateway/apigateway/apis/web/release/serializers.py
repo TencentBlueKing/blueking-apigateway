@@ -62,6 +62,7 @@ class ResourceOutputSLZ(serializers.Serializer):
     verified_user_required = serializers.BooleanField(read_only=True, help_text="是否需要认证用户")
     verified_app_required = serializers.BooleanField(read_only=True, help_text="是否需要认证应用")
     resource_perm_required = serializers.BooleanField(read_only=True, help_text="是否验证应用访问资源的权限")
+    is_public = serializers.BooleanField(read_only=True, help_text="是否公开")
     labels = serializers.SerializerMethodField(help_text="资源标签列表")
 
     class Meta:
