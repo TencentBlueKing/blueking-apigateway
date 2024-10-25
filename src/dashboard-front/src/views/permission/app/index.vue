@@ -3,20 +3,12 @@
     <div class="header mb5">
       <div class="header-btn flex-1 flex-row align-items-center">
         <span class="mr10" v-bk-tooltips="{ content: t('请选择待续期的权限'), disabled: selections.length }">
-          <bk-button theme="primary" class="mr5" @click="handleBatchApplyPermission" :disabled="!selections.length">
+          <bk-button theme="primary" :disabled="!selections.length" @click="handleBatchApplyPermission">
             {{ t('批量续期') }}
           </bk-button>
         </span>
-        <bk-dropdown-menu
-          trigger="click"
-          class="mr5"
-          @show="() => isExportDropdownShow = true"
-          @hide="() => isExportDropdownShow = false"
-          font-size="medium"
-        >
-          <ag-dropdown :text="t('导出')" :dropdown-list="exportDropData" @on-change="handleExport"></ag-dropdown>
-        </bk-dropdown-menu>
-        <bk-button class=" mr10" @click="handleAuthShow"> {{ t('主动授权') }} </bk-button>
+        <bk-button class="mr10" :disabled="!tableData.length" @click="handleExport">{{ t('导出全部') }}</bk-button>
+        <bk-button class="mr10" @click="handleAuthShow"> {{ t('主动授权') }}</bk-button>
       </div>
       <bk-form class="flex-row ">
         <bk-form-item label="" class="mb0" label-width="10">
@@ -415,7 +407,6 @@ import {
 import { IDropList } from '@/types';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import ExpDaySelector from '@/views/permission/app/comps/exp-day-selector.vue';
-import agDropdown from '@/components/ag-dropdown.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import {
   IFilterValues,
@@ -454,7 +445,6 @@ const {
   resetSelections,
 } = useSelection();
 
-const isExportDropdownShow = ref(false);
 const resourceList = ref<IResource[]>([]);
 const isBatchApplyLoading = ref(false);
 const curPermission = ref<Partial<IPermission>>({ bk_app_code: '', detail: [], id: -1 });
@@ -504,7 +494,7 @@ const removeDialogConf = reactive({
 });
 // 导出参数
 const exportParams = ref<IExportParams>({
-  export_type: '',
+  export_type: 'all',
 });
 
 const filterValues = ref<IFilterValues[]>([]);
@@ -660,33 +650,7 @@ const getApigwResources = async () => {
 };
 
 // 导出
-const handleExport = async ({ value }: { value: 'all' | 'selected' | 'filtered' }) => {
-  exportParams.value.export_type = value;
-  switch (value) {
-    case 'selected':
-      if (selections.value.some(p => p.grant_dimension === 'resource')) {
-        exportParams.value.resource_permission_ids = selections.value.filter(p => p.grant_dimension === 'resource').map(e => e.id);
-      }
-      if (selections.value.some(p => p.grant_dimension === 'api')) {
-        exportParams.value.gateway_permission_ids = selections.value.filter(p => p.grant_dimension === 'api').map(e => e.id);
-      }
-      break;
-    case 'filtered':
-      exportParams.value = {
-        ...exportParams.value,
-        ...filterData.value,
-      };
-      break;
-    case 'all':
-      if (tableData.value.length < 1) {
-        Message({
-          message: t('没有数据'),
-          theme: 'warning',
-        });
-        return;
-      }
-      break;
-  }
+const handleExport = async () => {
   try {
     const response = await exportPermissionList(apigwId, exportParams.value);
     if (response.success) {
@@ -703,7 +667,7 @@ const handleExport = async ({ value }: { value: 'all' | 'selected' | 'filtered' 
     });
   } finally {
     exportParams.value = {
-      export_type: '',
+      export_type: 'all',
     };
   }
 };
