@@ -1,7 +1,7 @@
 release:
-  version: 1.2.2
-  title: 新增获取网关发布资源详情接口
-  comment: 新增获取网关发布资源详情接口
+  version: 1.2.3
+  title: 资源同步新增文档生成
+  comment: 资源同步新增文档生成
 
 apigateway:
   description: 蓝鲸 API 网关（BlueKing API Gateway）是一种高性能、高可用的 API 托管服务。网关提供了该服务的基础通用接口，包含网关、资源、环境、版本发布、权限等相关接口。(官方内置网关, 请勿修改!)

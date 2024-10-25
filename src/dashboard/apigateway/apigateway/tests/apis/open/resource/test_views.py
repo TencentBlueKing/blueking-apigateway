@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from apigateway.apps.support.models import ResourceDoc
 
 
 class TestResourceSyncApi:
@@ -66,3 +67,34 @@ class TestResourceSyncApi:
             gateway=fake_gateway,
         )
         assert resp.status_code != 200
+
+    def test_sync_gen_doc(
+        self,
+        request_view,
+        fake_gateway,
+        fake_default_backend,
+        fake_resource_swagger,
+        fake_resource,
+        fake_resource_echo,
+        ignore_related_app_permission,
+    ):
+        resp = request_view(
+            method="POST",
+            view_name="openapi.resource.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "content": fake_resource_swagger,
+                "delete": True,
+                "doc_language": "en",
+            },
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["code"] == 0
+        assert len(result["data"]["added"]) == 1
+        assert len(result["data"]["deleted"]) == 1
+        assert len(result["data"]["updated"]) == 1
+
+        assert len(ResourceDoc.objects.filter(gateway_id=fake_gateway.id, language="en").all()) == 2
