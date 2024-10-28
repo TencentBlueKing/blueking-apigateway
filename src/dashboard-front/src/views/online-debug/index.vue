@@ -31,7 +31,7 @@
             type="search"
           />
         </div>
-        <bk-collapse class="my-menu" v-model="activeName" v-if="Object.keys(resourceGroup).length">
+        <bk-collapse class="my-menu" v-model="activeName" v-if="resourceGroupLength">
           <template v-for="group of resourceGroup">
             <bk-collapse-panel
               v-if="group?.resources?.length"
@@ -79,7 +79,7 @@
       </div>
     </template>
     <template #main>
-      <div class="resize-main">
+      <div class="resize-main" v-show="resourceGroupLength">
         <div class="request-setting">
           <bk-collapse
             class="request-setting-collapse"
@@ -225,7 +225,7 @@
 
                             <div class="edit-user-tips">
                               <info-line class="icon" />
-                              <span class="tips">{{ t('默认测试应用，网关自动为其短期授权；自定义应用，需主动为应用授权资源访问权限') }}</span>
+                              <span class="tips">{{ t('默认用户认证，将默认从 Cookies 中获取用户认证信息；自定义用户认证，可自定义用户认证信息') }}</span>
                             </div>
                             <!-- <div class="edit-user-btns">
                           <bk-button theme="primary" @click="saveUserAuthEdit">{{ t('保存') }}</bk-button>
@@ -277,11 +277,20 @@
           </template>
         </bk-resize-layout>
       </div>
+
+      <div class="exception-part" v-show="!resourceGroupLength">
+        <bk-exception
+          class="exception-wrap-item"
+          :description="t('暂无数据')"
+          scene="part"
+          type="empty"
+        />
+      </div>
     </template>
   </bk-resize-layout>
 
   <!-- 查看文档侧栏 -->
-  <bk-sideslider v-model:isShow="isShowDoc" :width="960" quick-close>
+  <bk-sideslider v-model:is-show="isShowDoc" :width="960" quick-close>
     <template #header>
       <div class="custom-side-header">
         <div class="title">{{ t('查看文档详情') }}</div>
@@ -289,7 +298,7 @@
         <div class="subtitle">{{ curResource?.name }}</div>
 
         <div class="opt-btns">
-          <share class="opt-share" />
+          <share class="opt-share" v-show="curResource?.is_public" @click="openTab(curResource?.name)" />
           <close-line class="opt-close" @click="isShowDoc = false" />
         </div>
       </div>
@@ -312,6 +321,7 @@ import responseContent from '@/views/online-debug/components/response-content.vu
 import doc from '@/views/online-debug/components/doc.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import { useCommon } from '@/store';
+import { useRouter } from 'vue-router';
 import { Message } from 'bkui-vue';
 import {
   getStages,
@@ -324,6 +334,7 @@ import {
 
 const { t } = useI18n();
 const common = useCommon();
+const router = useRouter();
 
 const isLoading = ref<boolean>(false);
 const keyword = ref<string>('');
@@ -540,6 +551,10 @@ const resourceGroup = computed(() => {
   }
 
   return group;
+});
+
+const resourceGroupLength = computed(() => {
+  return Object.keys(resourceGroup.value)?.length;
 });
 
 const getItemName = (item: any) => {
@@ -842,6 +857,21 @@ const handleSend = async (e: Event) => {
 const viewDoc = (e: Event) => {
   e?.stopPropagation();
   isShowDoc.value = true;
+};
+
+const openTab = (name?: string) => {
+  if (!name) {
+    return;
+  }
+  const routeData = router.resolve({
+    name: 'apiDocDetail',
+    params: {
+      curTab: 'apigw',
+      targetName: common?.apigwName,
+      componentName: name,
+    },
+  });
+  window.open(routeData.href, '_blank');
 };
 
 const init = async () => {
@@ -1197,5 +1227,15 @@ watch(
   display: flex;
   flex-direction: column;
   height: 100%;
+}
+.exception-part {
+  background-color: #fff;
+  height: 100%;
+  margin: 24px;
+  box-sizing: border-box;
+  .exception-wrap-item {
+    height: 100%;
+    justify-content: center;
+  }
 }
 </style>

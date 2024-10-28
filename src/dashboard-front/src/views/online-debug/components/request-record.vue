@@ -1,6 +1,6 @@
 <template>
   <bk-sideslider
-    v-model:isShow="isShow"
+    v-model:is-show="isShow"
     :title="t('调用历史')"
     :width="960"
     class="sutra-scrollbar"
@@ -44,6 +44,7 @@
             :data="tableList"
             :row-style="{ cursor: 'pointer' }"
             :show-overflow-tooltip="true"
+            :cell-class="getCellClass"
           >
             <bk-table-column :label="t('资源名称')" prop="resource_name"></bk-table-column>
             <bk-table-column :label="t('响应状态码')" prop="status_code">
@@ -122,6 +123,7 @@ const tableEmptyConf = reactive<any>({
   keyword: '',
   isAbnormal: false,
 });
+let expandIds: number[] = [];
 
 const updateTableEmptyConfig = () => {
   // if (!curPagination.value.count) {
@@ -177,6 +179,7 @@ const handleRowClick = async (e: Event, row: Record<string, any>) => {
     await getDetails(row.id, row);
   } else {
     row.isExpand = !row.isExpand;
+    expandIds = expandIds.filter((id: number) => id !== row.id);
     nextTick(() => {
       tableRef.value.setRowExpand(row,  row.isExpand);
     });
@@ -215,9 +218,17 @@ const getDetails = async (id: number, row: Record<string, any>) => {
 
   row.editorText = res?.response?.data?.curl;
   row.isExpand = !row.isExpand;
+  expandIds.push(id);
   nextTick(() => {
     tableRef.value.setRowExpand(row,  row.isExpand);
   });
+};
+
+const getCellClass = (_column: any, _index: number, row: any) => {
+  if (expandIds.includes(row.id)) {
+    return 'td-highlight-bg';
+  }
+  return '';
 };
 
 defineExpose({
@@ -260,5 +271,11 @@ defineExpose({
   :deep(.bk-table-body) {
     scrollbar-gutter: auto;
   }
+}
+</style>
+
+<style>
+.td-highlight-bg {
+  background: #f5f7fa !important;
 }
 </style>
