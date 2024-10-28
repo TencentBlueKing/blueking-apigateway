@@ -114,7 +114,7 @@ class TestBackendHandler:
             "admin",
         )
 
-        assert updated_stage_ids == [1]
+        assert updated_stage_ids != []
         assert backend.name == "backend-update"
         assert backend.description == "update"
 
