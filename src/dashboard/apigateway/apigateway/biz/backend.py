@@ -21,7 +21,7 @@ from django.db import transaction
 
 from apigateway.common.release.publish import trigger_gateway_publish
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, PublishSourceEnum
-from apigateway.core.models import Backend, BackendConfig, Proxy
+from apigateway.core.models import Backend, BackendConfig, Proxy, Resource
 from apigateway.utils.time import now_datetime
 
 
@@ -77,7 +77,12 @@ class BackendHandler:
             new_config = {key: value for key, value in config.items() if key != "stage_id"}
             if new_config == backend_config.config:
                 continue
-            updated_stage_ids.append(config["stage_id"])
+
+            resource_ids = Resource.objects.filter(gateway_id=backend.gateway.id).values_list('id')
+
+            if Proxy.objects.filter(resource_id__in=resource_ids, backend_id=backend.id).count() >= 1:
+                updated_stage_ids.append(config["stage_id"])
+
             backend_config.config = new_config
             backend_config.updated_by = updated_by
             backend_config.updated_time = now
