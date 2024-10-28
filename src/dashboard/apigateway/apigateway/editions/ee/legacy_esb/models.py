@@ -424,6 +424,45 @@ class ESBBuffetComponent(models.Model):
         except Exception:
             return {}
 
+    def to_resource(self):
+        from apigateway.core.constants import LoadBalanceTypeEnum, ProxyTypeEnum
+
+        return {
+            "name": self._name,
+            "description": self.description,
+            "method": self._convert_method(self.registed_http_method),
+            "path": self.registed_path,
+            "is_public": False,
+            "allow_apply_permission": False,
+            "labels": [],
+            "backend": {
+                "config": {
+                    "type": ProxyTypeEnum.HTTP.value,
+                    "method": self._convert_method(self.dest_http_method),
+                    "path": self._backend_path,
+                    "timeout": min(self._timeout, _MAX_APIGATEWAY_TIMEOUT),
+                    "upstreams": {
+                        "loadbalance": LoadBalanceTypeEnum.RR.value,
+                        "hosts": [
+                            {
+                                "host": self._backend_host,
+                                "weight": 100,
+                            }
+                        ],
+                    },
+                    "transform_headers": {
+                        "set": self._enrich_extra_headers(),
+                    },
+                }
+            },
+            "auth_config": {
+                "auth_verified_required": False,
+                "app_verified_required": False,
+                "resource_perm_required": False,
+            },
+            "disabled_stages": [],
+        }
+
 
 class ESBBuffetMapping(models.Model):
     """ESB 组件自助接入，参数mapping"""
