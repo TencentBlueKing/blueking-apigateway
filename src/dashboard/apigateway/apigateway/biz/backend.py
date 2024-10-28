@@ -72,12 +72,15 @@ class BackendHandler:
 
         backend_configs = []
         now = now_datetime()
+        resource_count = Proxy.objects.filter(backend_id=backend.id).count()
+
         for config in data["configs"]:
             backend_config = stage_configs[config["stage_id"]]
             new_config = {key: value for key, value in config.items() if key != "stage_id"}
             if new_config == backend_config.config:
                 continue
-            updated_stage_ids.append(config["stage_id"])
+            if resource_count:
+                updated_stage_ids.append(config["stage_id"])
             backend_config.config = new_config
             backend_config.updated_by = updated_by
             backend_config.updated_time = now
