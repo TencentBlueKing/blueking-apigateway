@@ -40,7 +40,6 @@ import {
 } from 'vue';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
-import 'highlight.js/styles/github.min.css';
 
 import { copy } from '@/common/util';
 
@@ -77,14 +76,14 @@ const md = new MarkdownIt({
   html: true,
   breaks: true,
   highlight(str: string, lang: string) {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
+    try {
+      if (lang && hljs.getLanguage(lang)) {
         return hljs.highlight(str, { language: lang, ignoreIllegals: true }).value;
-      } catch (__) {
       }
+    } catch {
+      return str;
     }
-
-    return '';
+    return str;
   },
 });
 

@@ -3,20 +3,12 @@
     <div class="header mb5">
       <div class="header-btn flex-1 flex-row align-items-center">
         <span class="mr10" v-bk-tooltips="{ content: t('请选择待续期的权限'), disabled: selections.length }">
-          <bk-button theme="primary" class="mr5" @click="handleBatchApplyPermission" :disabled="!selections.length">
+          <bk-button theme="primary" :disabled="!selections.length" @click="handleBatchApplyPermission">
             {{ t('批量续期') }}
           </bk-button>
         </span>
-        <bk-dropdown-menu
-          trigger="click"
-          class="mr5"
-          @show="() => isExportDropdownShow = true"
-          @hide="() => isExportDropdownShow = false"
-          font-size="medium"
-        >
-          <ag-dropdown :text="t('导出')" :dropdown-list="exportDropData" @on-change="handleExport"></ag-dropdown>
-        </bk-dropdown-menu>
-        <bk-button class=" mr10" @click="handleAuthShow"> {{ t('主动授权') }} </bk-button>
+        <bk-button class="mr10" :disabled="!tableData.length" @click="handleExport">{{ t('导出全部') }}</bk-button>
+        <bk-button class="mr10" @click="handleAuthShow"> {{ t('主动授权') }}</bk-button>
       </div>
       <bk-form class="flex-row ">
         <bk-form-item label="" class="mb0" label-width="10">
@@ -50,7 +42,7 @@
         >
           <bk-table-column type="selection" width="60" align="center"></bk-table-column>
           <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
-          <bk-table-column :label="t('搜索维度')">
+          <bk-table-column :label="t('授权维度')">
             <template #default="{ row }: { row: IPermission }">
               <span class="ag-auto-text">
                 {{ getSearchDimensionText(row.grant_dimension) }}
@@ -255,7 +247,8 @@
                       :width="392"
                     >
                       <template #default="{ row }">
-                        {{ row.expires || '--' }}
+                        <span v-if="row.expires">{{ row.expires }}</span>
+                        <span v-else class="ag-strong warning">{{ t('永久') }}</span>
                         <span class="ag-strong default" v-if="!row.renewable && row.expires">
                           {{ t('(有效期大于30天)') }}
                         </span>
@@ -297,7 +290,8 @@
                       :width="392"
                     >
                       <template #default="{ row }">
-                        {{ row.expires || '--' }}
+                        <span v-if="row.expires">{{ row.expires }}</span>
+                        <span v-else class="ag-strong warning">{{ t('永久') }}</span>
                         <span class="ag-strong default" v-if="!row.renewable && row.expires">
                           {{ t('(有效期大于30天)') }}
                         </span>
@@ -324,7 +318,7 @@
             :loading="isBatchApplyLoading"
             @click="handleBatchConfirm"
           > {{ t('确定') }} </bk-button>
-          <bk-button class="ml8" @click="batchApplySliderConf.isShow = false"> {{ t('取消') }} </bk-button>
+          <bk-button class="ml8" @click="handleBatchApplySliderClose"> {{ t('取消') }}</bk-button>
         </div>
       </template>
     </bk-sideslider>
@@ -348,7 +342,8 @@
           </bk-table-column>
           <bk-table-column :label="t('续期前的过期时间')">
             <template #default="{ row }">
-              {{ row.expires || '--' }}
+              <span v-if="row.expires">{{ row.expires }}</span>
+              <span v-else class="ag-strong warning">{{ t('永久') }}</span>
               <span class="ag-strong default" v-if="!row.renewable && row.expires">
                 {{ t('(有效期大于30天)') }}
               </span>
@@ -373,7 +368,7 @@
             <bk-button theme="primary" :disabled="true"> {{ t('确定') }} </bk-button>
           </bk-popover>
         </template>
-        <bk-button @click="isApplyDialogShow = false"> {{ t('取消') }} </bk-button>
+        <bk-button @click="handleApplyDialogClose"> {{ t('取消') }}</bk-button>
       </template>
     </bk-dialog>
   </div>
@@ -415,7 +410,6 @@ import {
 import { IDropList } from '@/types';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import ExpDaySelector from '@/views/permission/app/comps/exp-day-selector.vue';
-import agDropdown from '@/components/ag-dropdown.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import {
   IFilterValues,
@@ -454,7 +448,6 @@ const {
   resetSelections,
 } = useSelection();
 
-const isExportDropdownShow = ref(false);
 const resourceList = ref<IResource[]>([]);
 const isBatchApplyLoading = ref(false);
 const curPermission = ref<Partial<IPermission>>({ bk_app_code: '', detail: [], id: -1 });
@@ -504,23 +497,23 @@ const removeDialogConf = reactive({
 });
 // 导出参数
 const exportParams = ref<IExportParams>({
-  export_type: '',
+  export_type: 'all',
 });
 
 const filterValues = ref<IFilterValues[]>([]);
 const componentKey = ref(0);
 const filterConditions = ref([
   {
-    name: t('维度'),
+    name: t('授权维度'),
     id: 'grant_dimension',
     children: [
       {
         id: 'resource',
-        name: t('资源'),
+        name: t('按资源'),
       },
       {
         id: 'api',
-        name: t('网关'),
+        name: t('按网关'),
       },
     ],
     onlyRecommendChildren: true,
@@ -660,33 +653,7 @@ const getApigwResources = async () => {
 };
 
 // 导出
-const handleExport = async ({ value }: { value: 'all' | 'selected' | 'filtered' }) => {
-  exportParams.value.export_type = value;
-  switch (value) {
-    case 'selected':
-      if (selections.value.some(p => p.grant_dimension === 'resource')) {
-        exportParams.value.resource_permission_ids = selections.value.filter(p => p.grant_dimension === 'resource').map(e => e.id);
-      }
-      if (selections.value.some(p => p.grant_dimension === 'api')) {
-        exportParams.value.gateway_permission_ids = selections.value.filter(p => p.grant_dimension === 'api').map(e => e.id);
-      }
-      break;
-    case 'filtered':
-      exportParams.value = {
-        ...exportParams.value,
-        ...filterData.value,
-      };
-      break;
-    case 'all':
-      if (tableData.value.length < 1) {
-        Message({
-          message: t('没有数据'),
-          theme: 'warning',
-        });
-        return;
-      }
-      break;
-  }
+const handleExport = async () => {
   try {
     const response = await exportPermissionList(apigwId, exportParams.value);
     if (response.success) {
@@ -703,7 +670,7 @@ const handleExport = async ({ value }: { value: 'all' | 'selected' | 'filtered' 
     });
   } finally {
     exportParams.value = {
-      export_type: '',
+      export_type: 'all',
     };
   }
 };
@@ -961,6 +928,16 @@ const getExpTimeAfterRenew = (permission: IPermission, days?: number) => {
     });
     return '--';
   }
+};
+
+const handleApplyDialogClose = () => {
+  expireDays.value = 0;
+  isApplyDialogShow.value = false;
+};
+
+const handleBatchApplySliderClose = () => {
+  expireDays.value = 0;
+  batchApplySliderConf.isShow = false;
 };
 
 const init = () => {

@@ -2,7 +2,7 @@ type TabType = 'apigw' | 'component';
 type LanguageType = 'python' | 'java' | 'golang';
 
 interface INavItem {
-  id: number | string;
+  id: string;
   name: string;
 }
 
@@ -48,7 +48,7 @@ interface IResource {
   verified_app_required: boolean;
   resource_perm_required: boolean;
   allow_apply_permission: boolean;
-  labels: string[];
+  labels: { id: number, name: string }[];
 }
 
 interface IStage {

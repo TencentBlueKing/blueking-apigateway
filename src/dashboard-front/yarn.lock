@@ -3043,9 +3043,9 @@ caniuse-api@^3.0.0:
     lodash.uniq "^4.5.0"
 
 caniuse-lite@^1.0.0, caniuse-lite@^1.0.30001578, caniuse-lite@^1.0.30001587:
-  version "1.0.30001651"
-  resolved "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001651.tgz"
-  integrity sha512-9Cf+Xv1jJNe1xPZLGuUXLNkE1BoDkqRqYyFJ9TDYSqhduqA4hu4oR9HluGoWYQC/aj8WHjsGVV+bwkh0+tegRg==
+  version "1.0.30001669"
+  resolved "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001669.tgz"
+  integrity sha512-DlWzFDJqstqtIVx1zeSpIMLjunf5SmwOw0N2Ck/QSQdS8PLS4+9HrLaYei4w8BIAL7IB/UEDu889d8vhCTPA0w==
 
 case-sensitive-paths-webpack-plugin@^2.4.0:
   version "2.4.0"
@@ -3561,6 +3561,11 @@ cuint@^0.2.2:
   version "0.2.2"
   resolved "https://registry.npmjs.org/cuint/-/cuint-0.2.2.tgz"
   integrity sha512-d4ZVpCW31eWwCMe1YT3ur7mUDnTXbgwyzaL320DrcRT45rfjYxkt5QWLrmOJ+/UEAI2+fQgKe/fCjR8l4TpRgw==
+
+cz-git@^1.10.1:
+  version "1.10.1"
+  resolved "https://registry.yarnpkg.com/cz-git/-/cz-git-1.10.1.tgz#762a70488155f9ea4f2080508e99cb995ec7eaae"
+  integrity sha512-pBudDYUEqSOgt5cAlAk6BDs/h99lxfiii+1KCxfuVNOgcpn+yz7AejDjdBEJ+XDt7MOeAvcpYW3gi7C7il+IFA==
 
 dashdash@^1.12.0:
   version "1.14.1"

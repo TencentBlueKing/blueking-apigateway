@@ -17,6 +17,8 @@ import bkui from 'bkui-vue';
 import 'bkui-vue/dist/style.css';
 // 图标
 import './assets/iconfont/style.css';
+// highlight.js 代码高亮风格
+import 'highlight.js/styles/github.min.css';
 
 const app = createApp(App);
 app.config.globalProperties.GLOBAL_CONFIG = globalConfig;

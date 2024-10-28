@@ -34,12 +34,6 @@
             <i class="apigateway-icon icon-ag-document f14"></i>
             {{ t('SDK 使用说明') }}
           </bk-link>
-          <!-- <bk-button
-            theme="primary"
-            @click="handleGoApigw"
-          >
-            {{ t('网关管理') }}
-          </bk-button> -->
         </header>
         <!--  网关列表  -->
         <main class="docs-list">
@@ -81,22 +75,6 @@
                   {{ row.maintainers?.join(', ') || '--' }}
                 </template>
               </bk-table-column>
-              <!--  <bk-table-column
-                :label="t('SDK 包名称')"
-                field="maintainers"
-              >
-                <template #default="{ row }">
-                  {{ row?.sdk?.name || '&#45;&#45;' }}
-                </template>
-              </bk-table-column>
-              <bk-table-column
-                :label="t('SDK 最新版本')"
-                field="maintainers"
-              >
-                <template #default="{ row }">
-                  {{ row?.sdk?.version || '&#45;&#45;' }}
-                </template>
-              </bk-table-column>-->
               <bk-table-column
                 :label="t('操作')"
                 width="180"
@@ -112,12 +90,6 @@
                   >
                     {{ t('查看 SDK') }}
                   </bk-button>
-                  <!--                  <a-->
-                  <!--                    class="ag-link pl10 pr10"-->
-                  <!--        :href="row?.sdk_download_url ?? ''"-->
-                  <!--                  >-->
-                  <!--                    {{ t('下载 SDK') }}-->
-                  <!--                  </a>-->
                 </template>
               </bk-table-column>
               <template #empty>
@@ -140,10 +112,6 @@
             <header class="top-bar">
               <main class="bar-title">
                 <span class="title">{{ systemBoard.board_label }}</span>
-                <bk-link theme="primary" class="f12" @click.prevent="isSdkInstructionSliderShow = true">
-                  <i class="apigateway-icon icon-ag-document f14"></i>
-                  {{ t('查看 SDK') }}
-                </bk-link>
                 <bk-link
                   :href="systemBoard.sdk?.sdk_download_url"
                   :disabled="!systemBoard.sdk?.sdk_download_url"
@@ -151,13 +119,21 @@
                   theme="primary"
                   v-bk-tooltips="{ content: t('SDK未生成，可联系负责人生成SDK'), disabled: systemBoard.sdk?.sdk_download_url }"
                   class="f12"
+                  @click.prevent="handleESBSdkDetailClick(systemBoard)"
                 >
-                  <i class="apigateway-icon icon-ag-download f14"></i>
-                  {{ t('下载 SDK') }}
+                  {{ t('查看 SDK') }}
                 </bk-link>
               </main>
-              <aside v-if="componentSystemList.length > 0">
-                <ComponentSearcher class="ag-searcher-box" :version-list="componentSystemList"></ComponentSearcher>
+              <aside class="bar-aside">
+                <ComponentSearcher
+                  v-if="componentSystemList.length > 0"
+                  class="ag-searcher-box"
+                  :version-list="componentSystemList"
+                />
+                <bk-link theme="primary" class="f12" @click.prevent="isSdkInstructionSliderShow = true">
+                  <i class="apigateway-icon icon-ag-document f14"></i>
+                  {{ t('SDK 使用说明') }}
+                </bk-link>
               </aside>
             </header>
             <!--  组件  -->
@@ -243,8 +219,11 @@
     </main>
     <!--  SDK使用说明 Slider  -->
     <SdkInstructionSlider v-model="isSdkInstructionSliderShow"></SdkInstructionSlider>
-    <!--  网关 SDK 地址 dialog  -->
-    <SdkDetailDialog v-model="isSdkDetailDialogShow" :sdks="curSdks" :apigw-name="curTargetName"></SdkDetailDialog>
+    <!--  网关/组件 SDK 地址 dialog  -->
+    <SdkDetailDialog
+      v-model="isSdkDetailDialogShow" :sdks="curSdks" :languages="curTab === 'component' ? ['python'] : undefined"
+      :target-name="curTargetName"
+    ></SdkDetailDialog>
   </div>
 </template>
 
@@ -372,8 +351,13 @@ const updateTableEmptyConfig = () => {
 const fetchComponentSystemList = async () => {
   try {
     const systemList = await getComponentSystemList(board.value) as IBoard[];
-    const sdkResponse = await getESBSDKlist(board.value, { language: 'python' }) as IComponentSdk[];
+    // esb 的 sdk 语言，目前只有 python
+    const language = 'python';
+    const sdkResponse = await getESBSDKlist(board.value, { language }) as IComponentSdk[];
     const sdkList = sdkResponse || [];
+    sdkList.forEach((sdk) => {
+      sdk.language = language;
+    });
     systemList.forEach((system) => {
       // 给组件分类添加一个跳转用的 _navId
       system.categories.forEach((category) => {
@@ -401,6 +385,12 @@ const handleNavClick = (cat: ICategory) => {
 const handleSdkDetailClick = (row: IApiGatewayBasics) => {
   curTargetName.value = row.name;
   curSdks.value = row.sdks ?? [];
+  isSdkDetailDialogShow.value = true;
+};
+
+const handleESBSdkDetailClick = (board: IBoard) => {
+  curTargetName.value = board.sdk?.board_label ?? '';
+  curSdks.value = board.sdk ? [board.sdk] : [];
   isSdkDetailDialogShow.value = true;
 };
 
@@ -510,6 +500,12 @@ $primary-color: #3a84ff;
                 letter-spacing: 0;
                 line-height: 24px;
               }
+            }
+
+            .bar-aside {
+              display: flex;
+              align-items: center;
+              gap: 12px;
             }
           }
 
