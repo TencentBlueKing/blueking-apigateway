@@ -504,16 +504,16 @@ const filterValues = ref<IFilterValues[]>([]);
 const componentKey = ref(0);
 const filterConditions = ref([
   {
-    name: t('维度'),
+    name: t('授权维度'),
     id: 'grant_dimension',
     children: [
       {
         id: 'resource',
-        name: t('资源'),
+        name: t('按资源'),
       },
       {
         id: 'api',
-        name: t('网关'),
+        name: t('按网关'),
       },
     ],
     onlyRecommendChildren: true,
