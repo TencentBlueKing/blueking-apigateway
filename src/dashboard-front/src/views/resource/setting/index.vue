@@ -1075,7 +1075,13 @@ const handleOutBatch = () => {
 const handleShowDiff = async () => {
   try {
     const res = await getResourceVersionsList(props.apigwId, { offset: 0, limit: 999 });
-    diffSourceId.value = res.results[0]?.id || '';
+    // 如果是此网关的第一个版本（版本号为 1.0.0），则与空网关版本对比（版本ID为0）
+    if (res.results[0]?.version === '1.0.0') {
+      diffTargetId.value = res.results[0].id;
+      diffSourceId.value = 0;
+    } else {
+      diffSourceId.value = res.results[0]?.id || '';
+    }
     diffSidesliderConf.width = window.innerWidth <= 1280 ? 1040 : 1280;
     diffSidesliderConf.isShow = true;
   } catch (e) {
