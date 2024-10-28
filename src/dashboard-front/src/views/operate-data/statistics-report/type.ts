@@ -44,3 +44,15 @@ export interface ChartDataType {
   response_time?: ChartsSires;
   response_time_90th?: ChartsSires;
 }
+
+export interface ChartDataLoading {
+  requests_total?: boolean;
+  health_rate?: boolean;
+  requests?: boolean;
+  non_200_status?: boolean;
+  app_requests?: boolean;
+  resource_requests?: boolean;
+  ingress?: boolean;
+  egress?: boolean;
+  response_time_90th?: boolean;
+}

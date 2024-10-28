@@ -53,7 +53,7 @@
             v-for="option in resourceList"
             :key="option.id"
             :id="option.id"
-            :name="`${option.method} ${option.path}`">
+            :name="option.name">
           </bk-option>
         </bk-select>
       </div>
@@ -306,7 +306,7 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: space-between;
-
+  // min-width: 1280px;
   .top-left-wrapper {
     display: flex;
     align-items: center;
@@ -357,6 +357,7 @@ defineExpose({
     display: flex;
     align-items: center;
     .source-choose {
+      width: 280px;
       .label {
         font-size: 12px;
         color: #63656E;

@@ -1531,6 +1531,7 @@ const lang: ILANG = {
   '非 200 请求数趋势': ['Non-200 Request Count Trend'],
   '总请求数趋势': ['Total Request Count Trend'],
   '总请求数': ['Total Requests'],
+  '资源 90th 响应耗时分布': ['Resource 90th Response Time  Distribution'],
   '去发布': ['Go to Publish'],
   '生成版本并发布': ['Build the version and publish it'],
   'API 网关 1.13 版本现已发布，为避免插件、后端服务等信息在页面修改后但实际并未生效的问题，请尽快生成并发布新版本至所有环境。': ['API Gateway version 1.13 has been released. In order to avoid the problem that plug-ins, back-end services and other information are modified on the page but do not take effect, please generate and release the new version to all environments as soon as possible.'],
