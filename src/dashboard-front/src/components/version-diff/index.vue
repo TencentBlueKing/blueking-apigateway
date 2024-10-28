@@ -624,7 +624,8 @@ const handleVersionChange = async () => {
 };
 
 const getDiffData = async () => {
-  if (isDataLoading.value || !localSourceId.value) {
+  // localSourceId 可以为 0
+  if (isDataLoading.value || localSourceId.value === '') {
     return false;
   }
 
