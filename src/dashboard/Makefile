@@ -3,7 +3,7 @@ FORCE:
 .PHONY: init
 init:
 	pip install -U pip setuptools
-	pip install poetry==1.8.2
+	pip install poetry==1.8.4
 	poetry install
 	pip install pre-commit
 	pre-commit install

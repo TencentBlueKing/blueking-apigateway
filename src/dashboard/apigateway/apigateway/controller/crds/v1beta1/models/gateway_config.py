@@ -24,7 +24,7 @@ from apigateway.controller.crds.v1beta1.models.base import GatewayCustomResource
 
 
 class ConfigControllerAuth(KubernetesModel):
-    secret = Field(default="", description="jwt secret key", helm_value=True, helm_value_default="")
+    secret: str = Field(default="", description="jwt secret key", helm_value=True, helm_value_default="")
 
 
 class ConfigController(KubernetesModel):

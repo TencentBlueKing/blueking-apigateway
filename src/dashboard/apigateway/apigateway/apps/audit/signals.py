@@ -24,23 +24,8 @@ from apigateway.apps.audit.models import AuditEventLog
 
 logger = logging.getLogger(__name__)
 
-
-_record_audit_log_signal = Signal(
-    providing_args=[
-        "event_id",
-        "system",
-        "username",
-        "op_type",
-        "op_status",
-        "op_object_group",
-        "op_object_type",
-        "op_object_id",
-        "op_object",
-        "data_before",
-        "data_after",
-        "comment",
-    ]
-)
+# provide_args: [event_id: str, system: str, username: str, op_type: str, op_status: str, op_object_group: str, op_object_type: str, op_object_id: int, op_object: str, data_before: Union[list, dict, str, None], data_after: Union[list, dict, str, None], comment: Optional[str] = None]
+_record_audit_log_signal = Signal()
 
 
 @receiver(_record_audit_log_signal, dispatch_uid="record_audit_log")
