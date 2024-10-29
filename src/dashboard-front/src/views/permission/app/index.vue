@@ -42,7 +42,7 @@
         >
           <bk-table-column type="selection" width="60" align="center"></bk-table-column>
           <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
-          <bk-table-column :label="t('授权维度')">
+          <bk-table-column :label="t('授权维度')" prop="grant_dimension" :filter="grantDimensionFilterOptions">
             <template #default="{ row }: { row: IPermission }">
               <span class="ag-auto-text">
                 {{ getSearchDimensionText(row.grant_dimension) }}
@@ -66,7 +66,7 @@
               {{ row.expires || t('永久有效') }}
             </template>
           </bk-table-column>
-          <bk-table-column width="150" :label="t('授权类型')">
+          <bk-table-column width="150" :label="t('授权类型')" prop="grant_type" :filter="grantTypeFilterOptions">
             <template #default="{ row }: { row: IPermission }">
               {{ row.grant_type === 'initialize' ? t('主动授权') : t('申请审批') }}
             </template>
@@ -427,6 +427,34 @@ import dayjs from 'dayjs';
 const { t } = useI18n();
 const common = useCommon();
 const { apigwId } = common; // 网关id
+
+// 授权维度表头过滤
+const grantDimensionFilterOptions = {
+  list: [
+    {
+      value: 'api',
+      text: t('按网关'),
+    },
+    {
+      value: 'resource',
+      text: t('按资源'),
+    },
+  ],
+};
+
+// 授权类型表头过滤
+const grantTypeFilterOptions = {
+  list: [
+    {
+      value: 'initialize',
+      text: t('主动授权'),
+    },
+    {
+      value: 'renew',
+      text: t('申请审批'),
+    },
+  ],
+};
 
 const filterData = ref<IFilterParams>({});
 
