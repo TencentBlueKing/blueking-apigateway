@@ -220,7 +220,7 @@ const isShow = ref(false);
 const dialogShow = ref(false);
 const versionList = ref<any>([]);
 const formRef = ref(null);
-const diffSourceId = ref('');
+const diffSourceId = ref<number | string>('');
 const diffTargetId = ref('');
 const loading = ref(false);
 const createError = ref<boolean>(false);
@@ -324,12 +324,14 @@ const showReleaseSideslider = () => {
 
 // 获取资源版本列表
 const getResourceVersions = async () => {
-  try {
-    const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 999 });
-    versionList.value = res.results;
-    diffSourceId.value = versionList.value[0]?.id || '';
-  } catch (e) {
-    console.log(e);
+  const response = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 999 });
+  versionList.value = response.results;
+  // 如果此网关还未生成版本，或这是网关的第一个版本（版本号为 1.0.0），则与空网关版本对比（版本ID为0）
+  if (!response.results.length || response.results[0]?.version === '1.0.0') {
+    diffTargetId.value = response.results[0]?.id || '';
+    diffSourceId.value = 0;
+  } else {
+    diffSourceId.value = response.results[0]?.id || '';
   }
 };
 
@@ -398,7 +400,7 @@ watch(
       stepsConfig.value.curStep = 1;
       formData.version = '';
       formData.comment = '';
-    };
+    }
   },
 );
 

@@ -1368,6 +1368,7 @@ const lang: ILANG = {
   '停用成功': ['Successfully disabled'],
   '已绑定的环境：': ['Bound environments:'],
   '当前版本：': ['Current version:'],
+  '当前版本（{version}）': ['Current version({version})'],
   '已绑定的资源：': ['Bound resources:'],
   '请输入插件关键字，按Enter搜索': ['Please enter plugin keyword, press Enter to search'],
   '版本：': ['Version:'],
@@ -1663,6 +1664,8 @@ const lang: ILANG = {
   '上传失败': ['Upload failed'],
   '管理网关的应用列表': ['Related App Codes'],
   '允许列表中的应用使用 sdk 或者开放 API 调用网关接口，同步环境/资源以及发布版本': ['Apps allowed to use SDK or openAPI to call gateway APIs, sync environments/resources and publish versions'],
+  '暂无版本': ['No Version'],
+  '待发布（{version}）': ['To Be Published({version})'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

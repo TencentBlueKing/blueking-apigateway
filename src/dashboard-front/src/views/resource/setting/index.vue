@@ -1074,13 +1074,13 @@ const handleOutBatch = () => {
 // 版本对比
 const handleShowDiff = async () => {
   try {
-    const res = await getResourceVersionsList(props.apigwId, { offset: 0, limit: 999 });
-    // 如果是此网关的第一个版本（版本号为 1.0.0），则与空网关版本对比（版本ID为0）
-    if (res.results[0]?.version === '1.0.0') {
-      diffTargetId.value = res.results[0].id;
+    const response = await getResourceVersionsList(props.apigwId, { offset: 0, limit: 999 });
+    // 如果此网关还未生成版本，或这是网关的第一个版本（版本号为 1.0.0），则与空网关版本对比（版本ID为0）
+    if (!response.results.length || response.results[0]?.version === '1.0.0') {
+      diffTargetId.value = response.results[0]?.id || '';
       diffSourceId.value = 0;
     } else {
-      diffSourceId.value = res.results[0]?.id || '';
+      diffSourceId.value = response.results[0]?.id || '';
     }
     diffSidesliderConf.width = window.innerWidth <= 1280 ? 1040 : 1280;
     diffSidesliderConf.isShow = true;
