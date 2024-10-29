@@ -89,11 +89,12 @@ class BackendHandler:
         BackendConfig.objects.bulk_update(backend_configs, fields=["config", "updated_by", "updated_time"])
 
         # 触发变更的stage的发布流程
+        gateway_id = backend.gateway.id
         for stage_id in updated_stage_ids:
             trigger_gateway_publish(
                 PublishSourceEnum.BACKEND_UPDATE,
                 updated_by,
-                backend.gateway.id,
+                gateway_id,
                 stage_id,
             )
         return backend, updated_stage_ids
