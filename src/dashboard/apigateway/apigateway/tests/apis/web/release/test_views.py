@@ -95,29 +95,39 @@ class TestReleaseCreateApi:
 class TestReleaseAvailableResourceListApi:
     def test_list(self, request_view, fake_gateway, fake_stage):
         stage_1 = G(Stage, gateway=fake_gateway, name="prod", status=0)
-        resource_version = G(ResourceVersion, gateway=fake_gateway, _data=json.dumps([{
-            "id": 1,
-            "name": "test",
-            "method": "get",
-            "path": "/test/",
-            "description": "test...",
-            "description_en": "",
-            "match_subpath": "",
-            "is_public": True,
-            "allow_apply_permission": True,
-            "disabled_stages": [],
-            "contexts": {
-                "resource_auth": {
-                    "config": json.dumps({
-                        "app_verified_required": True,
-                        "skip_auth_verification": True,
-                        "auth_verified_required": True,
-                        "resource_perm_required": True
-                    })
-                }
-            },
-            "api_labels": "",
-        }]))
+        resource_version = G(
+            ResourceVersion,
+            gateway=fake_gateway,
+            _data=json.dumps(
+                [
+                    {
+                        "id": 1,
+                        "name": "test",
+                        "method": "get",
+                        "path": "/test/",
+                        "description": "test...",
+                        "description_en": "",
+                        "match_subpath": "",
+                        "is_public": True,
+                        "allow_apply_permission": True,
+                        "disabled_stages": [],
+                        "contexts": {
+                            "resource_auth": {
+                                "config": json.dumps(
+                                    {
+                                        "app_verified_required": True,
+                                        "skip_auth_verification": True,
+                                        "auth_verified_required": True,
+                                        "resource_perm_required": True,
+                                    }
+                                )
+                            }
+                        },
+                        "api_labels": "",
+                    }
+                ]
+            ),
+        )
 
         G(Release, gateway=fake_gateway, stage=stage_1, resource_version=resource_version)
 
@@ -130,9 +140,22 @@ class TestReleaseAvailableResourceListApi:
         result = response.json()
 
         assert response.status_code == 200
-        assert result == {'data': [{'id': 1, 'name': 'test', 'description': 'test...', 'method': 'get',
-                                    'path': '/test/', 'verified_user_required': False, 'verified_app_required': True,
-                                    'resource_perm_required': True, 'is_public': True, 'labels': []}]}
+        assert result == {
+            "data": [
+                {
+                    "id": 1,
+                    "name": "test",
+                    "description": "test...",
+                    "method": "get",
+                    "path": "/test/",
+                    "verified_user_required": False,
+                    "verified_app_required": True,
+                    "resource_perm_required": True,
+                    "is_public": True,
+                    "labels": [],
+                }
+            ]
+        }
 
 
 class TestReleaseResourceSchemaRetrieve:
