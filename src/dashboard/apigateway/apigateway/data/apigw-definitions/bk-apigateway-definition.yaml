@@ -1,13 +1,16 @@
+spec_version: 1
+
 release:
-  version: 1.2.3
+  version: 1.2.4
   title: 资源同步新增文档生成
   comment: 资源同步新增文档生成
 
 apigateway:
-  description: 蓝鲸 API 网关（BlueKing API Gateway）是一种高性能、高可用的 API 托管服务。网关提供了该服务的基础通用接口，包含网关、资源、环境、版本发布、权限等相关接口。(官方内置网关, 请勿修改!)
+  description: 蓝鲸 API 网关（BlueKing API Gateway）是一种高性能、高可用的 API 托管服务。网关提供了该服务的基础通用接口，包含网关、资源、环境、版本发布、权限等相关接口。(官方内置网关，请勿修改!)
   description_en: BlueKing API Gateway is a high-performance and highly available API hosting service. The gateway provides basic common interfaces for this service, including gateway, resource, stage, version release, permission, and other related interfaces. (Official built-in gateway, do not modify!)
   is_public: true
   api_type: 1
+
 
 stage:
   name: prod
@@ -28,9 +31,26 @@ stage:
             weight: 100
 
 grant_permissions:
-  - bk_app_code: visual-layout
-  - bk_app_code: bk_lesscode
   - bk_app_code: {{ settings.BK_APP_CODE }}
+    grant_dimension: "gateway"
+  # paas v3: TODO: add all inner apis here
+  - bk_app_code: bk_paas3
+    grant_dimension: "resource"
+    resource_names:
+      - v2_inner_list_gateways
+      - v2_inner_get_gateway
+  # bk_lesscode
+  - bk_app_code: bk_lesscode
+    grant_dimension: "resource"
+    resource_names:
+      - get_apigw_public_key
+      - v2_open_get_gateway_public_key
+  # visual-layout
+  - bk_app_code: visual-layout
+    grant_dimension: "resource"
+    resource_names:
+      - get_apigw_public_key
+      - v2_open_get_gateway_public_key
 
 resource_docs:
   basedir: "{{ settings.BASE_DIR }}/data/apidocs/"

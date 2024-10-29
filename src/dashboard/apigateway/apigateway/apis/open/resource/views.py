@@ -46,7 +46,7 @@ class ResourceSyncApi(generics.CreateAPIView):
     @swagger_auto_schema(
         request_body=ResourceImportInputSLZ,
         responses={status.HTTP_200_OK: ResourceSyncOutputSLZ()},
-        tags=["OpenAPI.Resource"],
+        tags=["OpenAPI.V1"],
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):

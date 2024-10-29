@@ -77,7 +77,7 @@ class ResourceViewSet(viewsets.ViewSet):
     @swagger_auto_schema(
         query_serializer=serializers.AppResourcePermissionInputSLZ(),
         responses={status.HTTP_200_OK: serializers.AppResourcePermissionOutputSLZ(many=True)},
-        tags=["OpenAPI.Permission"],
+        tags=["OpenAPI.V1"],
     )
     def list(self, request, *args, **kwargs):
         if not request.gateway.is_active_and_public:
@@ -285,7 +285,7 @@ class AppPermissionRenewAPIView(APIView):
     name="post",
     decorator=swagger_auto_schema(
         request_body=PaaSAppPermissionApplyV2InputSLZ,
-        tags=["OpenAPI.Permission"],
+        tags=["OpenAPI.V1"],
     ),
 )
 class AppPermissionApplyAPIView(APIView):
