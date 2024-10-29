@@ -335,6 +335,55 @@ class TestPublishValidator:
         with pytest.raises(ReleaseValidationError):
             publish_validator._validate_stage_plugins()
 
+    def test_validate_stage_backends(
+        self,
+        fake_stage,
+        fake_gateway
+    ):
+
+        backend = G(
+            Backend,
+            gateway=fake_gateway,
+            type="http",
+            name="test_name",
+            description="test",
+        )
+
+        backend_config = G(
+            BackendConfig,
+            gateway=fake_gateway,
+            backend_id=backend.id,
+            stage_id=227,
+            config={"timeout": 30, "loadbalance": "roundrobin",
+                    "hosts": [{"scheme": "http", "host": "ee.com", "weight": 100}]},
+        )
+
+        resource_version = G(
+            ResourceVersion,
+            gateway=fake_gateway,
+            version="1",
+            name="11",
+            title="11",
+            _data=json.dumps([{
+                "id": 1,
+                "name": "approval_add_workitems",
+                "proxy": {
+                    "id": 28,
+                    "type": "http",
+                    "backend_id": backend.id,
+                    "config": json.dumps({
+                        "method": "ANY",
+                        "path": "/api/v2/",
+                        "match_subpath": False,
+                        "timeout": 0
+                    })
+                }
+            }]),
+          )
+
+        publish_validator = PublishValidator(fake_gateway, fake_stage, resource_version)
+        publish_validator._validate_stage_backends()
+
 
 class TestSchemeInputValidator:
     @pytest.mark.parametrize(
