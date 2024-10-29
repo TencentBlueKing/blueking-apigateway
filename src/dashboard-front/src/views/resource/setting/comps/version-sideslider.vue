@@ -220,7 +220,7 @@ const isShow = ref(false);
 const dialogShow = ref(false);
 const versionList = ref<any>([]);
 const formRef = ref(null);
-const diffSourceId = ref('');
+const diffSourceId = ref<number | string>('');
 const diffTargetId = ref('');
 const loading = ref(false);
 const createError = ref<boolean>(false);
@@ -324,12 +324,14 @@ const showReleaseSideslider = () => {
 
 // 获取资源版本列表
 const getResourceVersions = async () => {
-  try {
-    const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 999 });
-    versionList.value = res.results;
+  const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 999 });
+  versionList.value = res.results;
+
+  // 新建的网关，需要传入为 0 的 sourceId 去和空版本做对比
+  if (formData.version === '1.0.0') {
+    diffSourceId.value = 0;
+  } else {
     diffSourceId.value = versionList.value[0]?.id || '';
-  } catch (e) {
-    console.log(e);
   }
 };
 
@@ -392,13 +394,13 @@ watch(
   () => isShow.value,
   (val) => {
     if (val) {
-      getResourceVersions();
       getSuggestionVersion();
+      getResourceVersions();
     } else {
       stepsConfig.value.curStep = 1;
       formData.version = '';
       formData.comment = '';
-    };
+    }
   },
 );
 
