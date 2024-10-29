@@ -16,9 +16,10 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from django_dynamic_fixture import G
 
 from apigateway.biz.backend import BackendHandler
-from apigateway.core.models import Backend, BackendConfig
+from apigateway.core.models import Backend, BackendConfig, Proxy, Resource
 
 
 class TestBackendHandler:
@@ -76,9 +77,24 @@ class TestBackendHandler:
         )
 
         backend = Backend.objects.filter(gateway=fake_stage.gateway, name="backend-test").first()
+
+        r = G(
+            Resource,
+            name="backend-test",
+            gateway=fake_stage.gateway,
+            method="/test/",
+            path="/test/"
+        )
+
+        G(
+            Proxy,
+            resource=r,
+            backend=backend
+        )
+
         assert backend
 
-        BackendHandler.update(
+        backend, updated_stage_ids = BackendHandler.update(
             backend,
             {
                 "gateway": fake_stage.gateway,
@@ -98,6 +114,7 @@ class TestBackendHandler:
             "admin",
         )
 
+        assert updated_stage_ids != []
         assert backend.name == "backend-update"
         assert backend.description == "update"
 
