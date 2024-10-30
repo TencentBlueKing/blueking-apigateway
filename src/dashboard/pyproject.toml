@@ -7,7 +7,7 @@ package-mode = false
 
 
 [tool.poetry.dependencies]
-python = ">=3.11,<3.12"
+python = ">=3.10,<3.11"
 django = "4.2.16"
 djangorestframework = "3.15.2"
 pymysql = "1.1.1"
@@ -50,7 +50,8 @@ bkapi-bcs-api-gateway = "1.12.1"
 bkapi-paasv3 = "^1.0.1"
 python-redis-lock = "4.0.0"
 etcd3 = "0.12.0"
-grpcio = "1.49.1"
+grpcio = "1.44.0"
+protobuf = "3.20.3"
 bkapi-bk-apigateway = "1.0.11"
 docutils = "0.21.2"
 Pygments = "2.18.0"
@@ -71,7 +72,6 @@ pypi-simple = "0.8.0"
 bk-notice-sdk = "1.3.2"
 jinja2 = "3.1.4"
 setuptools = "75.3.0"
-protobuf = "3.20.3"
 pycryptodomex = "3.21.0"
 certifi = "2024.8.30"
 sqlparse = "0.5.1"
@@ -212,6 +212,10 @@ ignore = [
     "SIM105",
     # https://beta.ruff.rs/docs/rules/open-file-with-context-handler/
     "SIM115",
+    # https://docs.astral.sh/ruff/rules/needless-bool/
+    "SIM103",
+    # https://docs.astral.sh/ruff/rules/abstract-base-class-without-abstract-method/
+    "B024",
 ]
 
 [tool.ruff.lint.mccabe]
