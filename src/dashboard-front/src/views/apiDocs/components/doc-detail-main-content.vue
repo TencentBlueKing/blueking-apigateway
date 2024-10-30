@@ -222,7 +222,6 @@ $code-color: #63656e;
     flex-grow: 1;
     padding-right: 8px;
     padding-left: 8px;
-    max-width: 1000px;
     height: calc(100vh - 144px);
     overflow-y: scroll;
 
