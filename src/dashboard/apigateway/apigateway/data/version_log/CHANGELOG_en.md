@@ -1,3 +1,25 @@
+<!-- 2024-10-30 -->
+# V1.14.5 Release Log
+
+### Bug Fixes
+
+- Fixed issues on the resource configuration page
+  - Incorrect page number after search
+  - Resource configuration table height issue
+- Fixed issues in pipeline logs
+  - Added search history for log queries
+  - Syntax error in log queries
+  - Data export issue resulting in empty logs
+- Fixed issue with header reset when switching in online debugging
+- Fixed the issue with resource documentation upload failure
+- Fixed backend configuration issues for environment validation during publishing
+- Updated bkui to fix XSS vulnerabilities
+- Fixed online debugging: refined response status code color differentiation
+- Fixed gateway basic information: tooltips for maintenance personnel text
+- Optimized resource version comparison display
+
+---
+
 <!-- 2024-10-09 -->
 # V1.14.4 Release Log
 
