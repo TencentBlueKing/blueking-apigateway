@@ -72,12 +72,15 @@ class BackendHandler:
 
         backend_configs = []
         now = now_datetime()
+        resource_count = Proxy.objects.filter(backend_id=backend.id).count()
+
         for config in data["configs"]:
             backend_config = stage_configs[config["stage_id"]]
             new_config = {key: value for key, value in config.items() if key != "stage_id"}
             if new_config == backend_config.config:
                 continue
-            updated_stage_ids.append(config["stage_id"])
+            if resource_count:
+                updated_stage_ids.append(config["stage_id"])
             backend_config.config = new_config
             backend_config.updated_by = updated_by
             backend_config.updated_time = now
@@ -86,12 +89,13 @@ class BackendHandler:
         BackendConfig.objects.bulk_update(backend_configs, fields=["config", "updated_by", "updated_time"])
 
         # 触发变更的stage的发布流程
-        for backend_config in backend_configs:
+        gateway_id = backend.gateway.id
+        for stage_id in updated_stage_ids:
             trigger_gateway_publish(
                 PublishSourceEnum.BACKEND_UPDATE,
                 updated_by,
-                backend_config.gateway_id,
-                backend_config.stage_id,
+                gateway_id,
+                stage_id,
             )
         return backend, updated_stage_ids
 

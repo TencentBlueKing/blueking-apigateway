@@ -810,14 +810,15 @@ onBeforeMount(() => {
   }
 
   // 去掉左侧伸缩栏的拉伸线
-  :deep(.bk-resize-layout-left>.bk-resize-layout-aside) {
+  :deep(.bk-resize-layout-left > .bk-resize-layout-aside) {
     padding-right: 8px;
     border-right: none;
   }
 
   // 去掉右侧伸缩栏的拉伸线
-  :deep(.bk-resize-layout-right>.bk-resize-layout-aside) {
+  :deep(.bk-resize-layout-right > .bk-resize-layout-aside) {
     border-left: none;
+    transition: none !important;
   }
 
   // 隐藏的折叠按钮

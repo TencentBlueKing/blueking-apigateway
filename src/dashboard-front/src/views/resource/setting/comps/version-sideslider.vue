@@ -394,8 +394,8 @@ watch(
   () => isShow.value,
   (val) => {
     if (val) {
-      getResourceVersions();
       getSuggestionVersion();
+      getResourceVersions();
     } else {
       stepsConfig.value.curStep = 1;
       formData.version = '';
