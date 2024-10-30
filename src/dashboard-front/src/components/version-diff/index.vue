@@ -1,5 +1,3 @@
-<!-- eslint-disable vue/no-v-html -->
-
 <template>
   <div class="ag-version-diff-box">
     <p class="summary-data">
@@ -116,7 +114,7 @@
               </bk-select>
               <strong class="title" v-else>
                 <template v-if="pageType === 'publishEnvironment'">
-                  当前版本（{{ sourceVersion.version }}）
+                  {{ t('当前版本（{version}）', { version: sourceVersion.version }) }}
                 </template>
                 <template v-else>
                   {{ sourceVersion.version }} {{ sourceVersion.comment ? `(${sourceVersion.comment})` : '' }}
@@ -124,7 +122,7 @@
               </strong>
             </template>
             <strong class="title" v-else>
-              暂无版本
+              {{ t('暂无版本') }}
             </strong>
           </div>
         </div>
@@ -158,7 +156,7 @@
             <strong class="title" v-else>
               <template v-if="pageType !== 'createVersion'">
                 <template v-if="pageType === 'publishEnvironment'">
-                  待发布（{{ targetVersion.version }}）
+                  {{ t('待发布（{version}）', { version: targetVersion.version }) }}
                 </template>
                 <template v-else>
                   {{ targetVersion.version }} {{ targetVersion.comment ? `(${targetVersion.comment})` : '' }}

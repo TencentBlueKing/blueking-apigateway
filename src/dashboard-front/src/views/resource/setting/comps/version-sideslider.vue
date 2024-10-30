@@ -324,14 +324,14 @@ const showReleaseSideslider = () => {
 
 // 获取资源版本列表
 const getResourceVersions = async () => {
-  const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 999 });
-  versionList.value = res.results;
-
-  // 新建的网关，需要传入为 0 的 sourceId 去和空版本做对比
-  if (formData.version === '1.0.0') {
+  const response = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 999 });
+  versionList.value = response.results;
+  // 如果此网关还未生成版本，或这是网关的第一个版本（版本号为 1.0.0），则与空网关版本对比（版本ID为0）
+  if (!response.results.length || response.results[0]?.version === '1.0.0') {
+    diffTargetId.value = response.results[0]?.id || '';
     diffSourceId.value = 0;
   } else {
-    diffSourceId.value = versionList.value[0]?.id || '';
+    diffSourceId.value = response.results[0]?.id || '';
   }
 };
 
