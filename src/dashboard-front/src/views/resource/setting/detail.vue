@@ -525,7 +525,7 @@
     </router-link>
     <bk-pop-confirm
       :title="t('确认删除资源{resourceName}？', { resourceName: formData?.name || '' })"
-      content="删除操作无法撤回，请谨慎操作！"
+      :content="t('删除操作无法撤回，请谨慎操作')"
       width="288"
       trigger="click"
       @confirm="handleDeleteResource(formData.id)"
