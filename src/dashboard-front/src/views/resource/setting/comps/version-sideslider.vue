@@ -196,6 +196,12 @@ import {
 import { useGetStageList } from '@/hooks';
 import versionDiff from '@/components/version-diff/index.vue';
 
+type VersionType = {
+  id: number
+  version: string
+  isLatestVersion: boolean
+};
+
 const route = useRoute();
 const router = useRouter();
 const apigwId = computed(() => +route.params.id);
@@ -324,12 +330,12 @@ const showReleaseSideslider = () => {
 
 // 获取资源版本列表
 const getResourceVersions = async () => {
-  try {
-    const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 999 });
-    versionList.value = res.results;
+  const response = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 10 });
+  versionList.value = response.results;
+  if (!response.results.length) {
+    diffSourceId.value = 'current';
+  } else {
     diffSourceId.value = versionList.value[0]?.id || '';
-  } catch (e) {
-    console.log(e);
   }
 };
 
@@ -337,7 +343,7 @@ const getResourceVersions = async () => {
 const handleNext = async () => {
   await formRef.value?.validate();
   stepsConfig.value.curStep = 2;
-  getDiffData();
+  await getDiffData();
 };
 
 // 上一步
@@ -362,9 +368,8 @@ const handleSkip = () => {
 
 const handlePublish = async () => {
   try {
-    const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 999 });
-    const { results } = res;
-    const newVersion = results?.filter((item: any) => item.version === formData.version)[0];
+    const { results } = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 10 });
+    const newVersion = results.filter((item: VersionType) => item.version === formData.version)[0];
     if (newVersion?.id) {
       versionData.value = newVersion;
     }
@@ -398,7 +403,7 @@ watch(
       stepsConfig.value.curStep = 1;
       formData.version = '';
       formData.comment = '';
-    };
+    }
   },
 );
 

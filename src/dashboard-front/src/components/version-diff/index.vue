@@ -1,5 +1,3 @@
-<!-- eslint-disable vue/no-v-html -->
-
 <template>
   <div class="ag-version-diff-box">
     <p class="summary-data">
@@ -89,7 +87,9 @@
         <div class="source-header">
           <!-- <div class="marked">{{ $t("源版本") }}</div> -->
           <div class="version">
-            <template v-if="localSourceId">
+            <template
+              v-if="localSourceId && (localSourceId !== 'current' || localTargetId !== 'current')"
+            >
               <bk-select
                 class="fl mr10 choose-version"
                 v-model="localSourceId"
@@ -116,7 +116,9 @@
               </bk-select>
               <strong class="title" v-else>
                 <template v-if="pageType === 'publishEnvironment'">
-                  当前版本（{{ sourceVersion.version }}）
+                  {{
+                    sourceVersion.version ? t('当前版本（{version}）', { version: sourceVersion.version }) : t('暂无版本')
+                  }}
                 </template>
                 <template v-else>
                   {{ sourceVersion.version }} {{ sourceVersion.comment ? `(${sourceVersion.comment})` : '' }}
@@ -124,7 +126,7 @@
               </strong>
             </template>
             <strong class="title" v-else>
-              暂无版本
+              {{ t('暂无版本') }}
             </strong>
           </div>
         </div>
@@ -158,7 +160,7 @@
             <strong class="title" v-else>
               <template v-if="pageType !== 'createVersion'">
                 <template v-if="pageType === 'publishEnvironment'">
-                  待发布（{{ targetVersion.version }}）
+                  {{ t('待发布（{version}）', { version: targetVersion.version }) }}
                 </template>
                 <template v-else>
                   {{ targetVersion.version }} {{ targetVersion.comment ? `(${targetVersion.comment})` : '' }}
@@ -683,33 +685,25 @@ const getDiffData = async () => {
 };
 
 const getApigwVersions = async () => {
-  const pageParams = {
-    limit: 999,
-    offset: 0,
-  };
-  try {
-    const res = await getResourceVersionsList(apigwId.value, pageParams);
-    res.results.forEach((item: any) => {
-      item.resource_version_display = item.comment ? `${item.version}(${item.comment})` : item.version;
-      item.stage_text = item.released_stages.map((item: any) => {
-        return item.name;
-      });
+  const response = await getResourceVersionsList(apigwId.value, { limit: 1000, offset: 0 });
+  response.results.forEach((item: any) => {
+    item.resource_version_display = item.comment ? `${item.version}(${item.comment})` : item.version;
+    item.stage_text = item.released_stages.map((item: any) => {
+      return item.name;
     });
+  });
 
-    if (props.curDiffEnabled) {
-      localVersionList.value = [
-        {
-          id: 'current',
-          name: t('当前最新资源列表'),
-          resource_version_display: t('当前最新资源列表'),
-        },
-        ...res.results,
-      ];
-    } else {
-      localVersionList.value = res.results;
-    }
-  } catch (e) {
-    console.log(e);
+  if (props.curDiffEnabled) {
+    localVersionList.value = [
+      {
+        id: 'current',
+        name: t('当前最新资源列表'),
+        resource_version_display: t('当前最新资源列表'),
+      },
+      ...response.results,
+    ];
+  } else {
+    localVersionList.value = response.results;
   }
 };
 

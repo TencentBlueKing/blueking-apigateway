@@ -1074,8 +1074,12 @@ const handleOutBatch = () => {
 // 版本对比
 const handleShowDiff = async () => {
   try {
-    const res = await getResourceVersionsList(props.apigwId, { offset: 0, limit: 999 });
-    diffSourceId.value = res.results[0]?.id || '';
+    const response = await getResourceVersionsList(props.apigwId, { offset: 0, limit: 10 });
+    if (!response.results.length) {
+      diffSourceId.value = 'current';
+    } else {
+      diffSourceId.value = response.results[0]?.id || '';
+    }
     diffSidesliderConf.width = window.innerWidth <= 1280 ? 1040 : 1280;
     diffSidesliderConf.isShow = true;
   } catch (e) {
@@ -1084,7 +1088,6 @@ const handleShowDiff = async () => {
       theme: 'error',
       width: 'auto',
     });
-    console.log(e);
   }
 };
 
@@ -1259,6 +1262,12 @@ const handleEditLabel = (data: any) => {
 
 // 生成版本功能
 const handleCreateResourceVersion = async () => {
+  const response = await getResourceVersionsList(props.apigwId, { offset: 0, limit: 10 });
+  if (!response.results.length) {
+    diffSourceId.value = 'current';
+  } else {
+    diffSourceId.value = response.results[0]?.id || '';
+  }
   versionSidesliderRef.value.showReleaseSideslider();
 };
 
