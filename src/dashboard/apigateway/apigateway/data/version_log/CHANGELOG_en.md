@@ -1,3 +1,12 @@
+<!-- 2024-10-30 -->
+# V1.13.21 Release Log
+
+### Bug Fixes
+
+- Fixed bk-esb-buffet synchronization issue
+
+---
+
 <!-- 2024-10-11 -->
 # V1.13.20 Release Log
 
