@@ -168,8 +168,7 @@
               <DocDetailSideContent
                 :basics="curTargetBasics"
                 :sdks="sdks"
-                @lang-change="handleLangChange"
-              ></DocDetailSideContent>
+              />
             </main>
           </aside>
         </template>
@@ -197,7 +196,6 @@ import {
 import {
   getApigwResourceDocDocs,
   getApigwResourcesDocs,
-  getApigwSDKDocs,
   getApigwStagesDocs,
   getComponenSystemDetail,
   getComponentSystemList,
@@ -216,7 +214,6 @@ import {
   IStage,
   IBoard,
   ISystemBasics,
-  LanguageType,
   TabType,
   ISystem,
 } from '@/views/apiDocs/types';
@@ -309,7 +306,9 @@ const allSystemList = computed(() => {
 const fetchTargetBasics = async () => {
   try {
     if (curTab.value === 'apigw') {
-      curTargetBasics.value = await getGatewaysDetailsDocs(curTargetName.value);
+      const { sdks: sdksResponse, ...restResponse } = await getGatewaysDetailsDocs(curTargetName.value);
+      curTargetBasics.value = restResponse;
+      sdks.value = sdksResponse;
     } else if (curTab.value === 'component') {
       curTargetBasics.value = await getComponenSystemDetail(board.value, curTargetName.value);
     }
@@ -318,26 +317,16 @@ const fetchTargetBasics = async () => {
   }
 };
 
-const fetchSdks = async (language: LanguageType = 'python') => {
+const fetchEsbSdks = async () => {
+  if (curTab.value !== 'component') {
+    return;
+  }
   try {
-    if (curTab.value === 'apigw') {
-      const query = {
-        limit: 10000,
-        offset: 0,
-        language,
-      };
-      sdks.value = await getApigwSDKDocs(curTargetName.value, query);
-    } else if (curTab.value === 'component') {
-      const res = await getESBSDKDetail(board.value, { language });
-      sdks.value = res ? [{ language, ...res }] : [];
-    }
+    const response = await getESBSDKDetail(board.value, { language: 'python' });
+    sdks.value = [{ language: 'python', ...response }];
   } catch {
     sdks.value = [];
   }
-};
-
-const handleLangChange = async (language: LanguageType) => {
-  await fetchSdks(language);
 };
 
 const fetchApigwStages = async () => {
@@ -491,7 +480,7 @@ const init = async () => {
   }
   await Promise.all([
     fetchTargetBasics(),
-    fetchSdks(),
+    fetchEsbSdks(),
     fetchApiList(),
   ]);
   if (curTab.value === 'component') {

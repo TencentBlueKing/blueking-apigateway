@@ -30,64 +30,25 @@
           <header class="content-title">{{ t('网关访问地址') }}</header>
           <main class="content-main">{{ basics.api_url }}</main>
         </article>
+        <!--  网关 SDK 信息  -->
         <template v-if="userStore.featureFlags?.ENABLE_SDK">
           <article>
             <header class="content-title">{{ t('网关 SDK') }}</header>
-            <LangSelector :width="90" :margin-bottom="12" @select="handleLangSelect"></LangSelector>
+            <LangSelector
+              v-model="language"
+              :sdk-languages="sdks.map(item => item.language)"
+              :width="90"
+              :margin-bottom="12"
+            />
+            <main class="content-main">
+              <SdkDetail v-if="curSdk" :sdk="curSdk" is-apigw />
+              <p v-else class="ag-tip mt5">
+                {{ t('SDK未生成，可联系负责人生成SDK') }}
+              </p>
+            </main>
           </article>
         </template>
       </div>
-
-      <!--  网关SDK信息表格  -->
-      <template v-if="userStore.featureFlags?.ENABLE_SDK && curTab === 'apigw'">
-        <bk-table
-          :data="sdks"
-          show-overflow-tooltip
-          :border="['outer']"
-          :size="'small'"
-        >
-          <!-- <template #empty>
-          <table-empty
-            :abnormal="isAbnormal"
-            @reacquire="getApigwSDK('python')"
-          />
-        </template> -->
-
-          <bk-table-column :label="t('网关环境')" field="stage_name">
-            <template #default="{ row }: { row: IApiGatewaySdkDoc }">
-              {{ row.stage?.name || '--' }}
-            </template>
-          </bk-table-column>
-
-          <bk-table-column :label="t('网关API资源版本')" field="resource_version_display">
-            <template #default="{ row }: { row: IApiGatewaySdkDoc }">
-              {{ row.resource_version?.version || '--' }}
-            </template>
-          </bk-table-column>
-
-          <bk-table-column :label="t('SDK 版本号')" field="sdk_version_number">
-            <template #default="{ row }: { row: IApiGatewaySdkDoc }">
-              {{ row.sdk?.version || '--' }}
-            </template>
-          </bk-table-column>
-
-          <bk-table-column :label="t('SDK下载')">
-            <template #default="{ row }: { row: IApiGatewaySdkDoc }">
-              <template v-if="row.sdk?.url">
-                <bk-button theme="primary" text @click="handleDownload(row)"> {{ t('下载') }}</bk-button>
-              </template>
-              <template v-else>
-                {{ t('未生成-doc') }}
-              </template>
-            </template>
-          </bk-table-column>
-        </bk-table>
-
-        <p class="ag-tip mt5">
-          <info-line style="margin-right: 8px;" />
-          {{ t('若资源版本对应的SDK未生成，可联系网关负责人生成SDK') }}
-        </p>
-      </template>
     </main>
 
     <main v-else-if="curTab === 'component'" class="component-content">
@@ -106,7 +67,7 @@
             <bk-tag class="ml20 fw-normal" theme="info">Python</bk-tag>
           </header>
           <main class="content-main">
-            <SdkDetail :sdk="sdks[0]"></SdkDetail>
+            <SdkDetail :sdk="sdks[0]" />
           </main>
         </article>
       </div>
@@ -118,13 +79,14 @@
 import {
   computed,
   inject,
+  ref,
   Ref,
   toRefs,
+  watchEffect,
 } from 'vue';
 import { useI18n } from 'vue-i18n';
 import chat from '@/components/chat/index.vue';
 import SdkDetail from './sdk-detail.vue';
-import { InfoLine } from 'bkui-vue/lib/icon';
 import { useUser } from '@/store';
 import {
   IApiGatewayBasics,
@@ -156,11 +118,9 @@ const {
   sdks,
 } = toRefs(props);
 
-const emit = defineEmits<{
-  'lang-change': [language: LanguageType]
-}>();
-
 const userStore = useUser();
+
+const language = ref<LanguageType>('python');
 
 const curUser = computed(() => userStore?.user);
 const userList = computed(() => {
@@ -174,13 +134,13 @@ const userList = computed(() => {
 const chatName = computed(() => `${t('[蓝鲸网关API咨询] 网关')}${basics.value?.name}`);
 const chatContent = computed(() => `${t('网关API文档')}:${location.href}`);
 
-const handleDownload = (row: IApiGatewaySdkDoc) => {
-  window.open(row.sdk?.url);
-};
+const curSdk = computed(() => {
+  return sdks.value.find(item => item.language === language.value) ?? null;
+});
 
-const handleLangSelect = (language: LanguageType) => {
-  emit('lang-change', language);
-};
+watchEffect(() => {
+  language.value = sdks.value[0]?.language || 'python';
+});
 
 </script>
 
