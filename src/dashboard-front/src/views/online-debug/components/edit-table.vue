@@ -317,6 +317,13 @@ const addRow = (index: number) => {
 };
 
 const delRow = (index: number) => {
+  if (tableData.value.length === 1) {
+    Message({
+      theme: 'warning',
+      message: t('至少需要保留一行！'),
+    });
+    return;
+  }
   const row = tableData.value[index];
   checkedList.value = checkedList.value.filter(item => item.id !== row.id);
   tableData.value?.splice(index, 1);

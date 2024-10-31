@@ -424,7 +424,7 @@ const showReleaseSideslider = () => {
 };
 
 const curVersionId = computed(() => {
-  const version = versionList.value?.filter((item: any) => item.id === chooseAssets.value.resource_version?.id)[0];
+  const version = versionList.value?.filter(item => item.id === chooseAssets.value.resource_version?.id)[0];
   return version?.id;
 });
 
@@ -686,7 +686,10 @@ defineExpose({
     .bk-select-dropdown {
       .bk-select-options {
         .bk-select-option {
+          padding-inline: 0;
+
           .version-options {
+            padding-inline: 12px;
             width: 100%;
 
             .cur-version {
