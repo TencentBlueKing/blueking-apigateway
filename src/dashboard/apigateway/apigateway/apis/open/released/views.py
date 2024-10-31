@@ -37,7 +37,7 @@ from apigateway.utils.responses import V1OKJsonResponse
     name="get",
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: serializers.ReleasedResourceOutputSLZ()},
-        tags=["OpenAPI.Resource"],
+        tags=["OpenAPI.V1"],
     ),
 )
 class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
@@ -82,7 +82,7 @@ class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
     name="get",
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: serializers.ReleasedResourceListV1InputSLZ(many=True)},
-        tags=["OpenAPI.Resource"],
+        tags=["OpenAPI.V1"],
     ),
 )
 class ReleasedResourceListByGatewayNameApi(generics.ListAPIView):

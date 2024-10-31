@@ -45,14 +45,14 @@ from .serializers import (
     name="get",
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
-        tags=["OpenAPI.ResourceVersion"],
+        tags=["OpenAPI.V1"],
     ),
 )
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
         request_body=ResourceVersionCreateV1InputSLZ,
-        tags=["OpenAPI.ResourceVersion"],
+        tags=["OpenAPI.V1"],
     ),
 )
 class ResourceVersionListCreateApi(generics.ListCreateAPIView):
@@ -101,7 +101,7 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
     serializer_class = ReleaseV1InputSLZ
 
-    @swagger_auto_schema(tags=["OpenAPI.ResourceVersion"])
+    @swagger_auto_schema(tags=["OpenAPI.V1"])
     @transaction.atomic
     def post(self, request, gateway_name: str, *args, **kwargs):
         slz = self.get_serializer(data=request.data, context={"request": request})
@@ -146,7 +146,7 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
 class ResourceVersionGetLatestApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
-    @swagger_auto_schema(tags=["OpenAPI.ResourceVersion"])
+    @swagger_auto_schema(tags=["OpenAPI.V1"])
     def get(self, request, gateway_name: str, *args, **kwargs):
         resource_version = ResourceVersion.objects.get_latest_version(request.gateway.id)
 

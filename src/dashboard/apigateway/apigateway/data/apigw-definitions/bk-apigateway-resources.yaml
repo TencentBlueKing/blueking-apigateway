@@ -1,529 +1,813 @@
-swagger: '2.0'
-basePath: /
+openapi: 3.0.1
+servers:
+- url: /
 info:
-  version: '0.1'
+  version: '2.0'
   title: API Gateway Resources
   description: ''
-schemes:
-- http
 paths:
   /api/v1/apis/:
     get:
       operationId: get_apis
       description: 查询网关
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: get
           path: /backend/api/v1/apis/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
-        disabledStages: []
-        descriptionEn:
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
   /api/v1/apis/{api_name}/permissions/apply/:
     post:
       operationId: apply_permissions
       description: 申请网关API访问权限
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: post
           path: /backend/api/v1/apis/{api_name}/permissions/apply/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
+        descriptionEn: None
   /api/v1/apis/{api_name}/permissions/grant/:
     post:
       operationId: grant_permissions
       description: 网关为应用主动授权
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: post
           path: /backend/api/v1/apis/{api_name}/permissions/grant/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
+        descriptionEn: None
   /api/v1/apis/{api_name}/permissions/revoke/:
     delete:
       operationId: revoke_permissions
       description: 回收应用访问网关 API 的权限
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: delete
           path: /backend/api/v1/apis/{api_name}/permissions/revoke/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
+        descriptionEn: None
   /api/v1/apis/{api_name}/public_key/:
     get:
       operationId: get_apigw_public_key
       description: 获取网关公钥
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
           name: core-api
-          type: HTTP
           method: get
           path: /api/v1/open/gateways/{api_name}/public_key/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
+        descriptionEn: None
   /api/v1/apis/{api_name}/related-apps/:
     post:
       operationId: add_related_apps
       description: 添加网关关联应用
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: post
           path: /backend/api/v1/apis/{api_name}/related-apps/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
+        descriptionEn: None
   /api/v1/apis/{api_name}/released/stages/{stage_name}/resources/:
     get:
       operationId: get_released_resources
       description: 查询已发布资源列表
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: get
           path: /backend/api/v1/apis/{api_name}/released/stages/{stage_name}/resources/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
-        disabledStages: []
-        descriptionEn:
-
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
   /api/v1/apis/{api_name}/released/stages/{stage_name}/resources/{resource_name}/:
     get:
       operationId: get_released_resource
       description: 查询发布资源详情(包含接口参数)
-      tags: []
+      tags:
+      - v1
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: get
           path: /backend/api/v1/apis/{api_name}/released/stages/{stage_name}/resources/{resource_name}/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
-        disabledStages: []
-
-
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn:
   /api/v1/apis/{api_name}/resource-docs/import/by-archive/:
     post:
       operationId: import_resource_docs_by_archive
       description: 通过文档归档文件导入资源文档
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: post
           path: /backend/api/v1/apis/{api_name}/resource-docs/import/by-archive/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
+        descriptionEn: None
   /api/v1/apis/{api_name}/resource-docs/import/by-swagger/:
     post:
       operationId: import_resource_docs_by_swagger
       description: 通过 Swagger 格式导入文档
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: post
           path: /backend/api/v1/apis/{api_name}/resource-docs/import/by-swagger/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
+        descriptionEn: None
   /api/v1/apis/{api_name}/resources/sync/:
     post:
       operationId: sync_resources
       description: 同步资源
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: post
           path: /backend/api/v1/apis/{api_name}/resources/sync/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
+        descriptionEn: None
   /api/v1/apis/{api_name}/resource_versions/:
     get:
       operationId: list_resource_versions
       description: 查询资源版本
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: get
           path: /backend/api/v1/apis/{api_name}/resource_versions/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
         descriptionEn: List resource versions
     post:
       operationId: create_resource_version
       description: 创建资源版本
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: post
           path: /backend/api/v1/apis/{api_name}/resource_versions/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
+        descriptionEn: None
   /api/v1/apis/{api_name}/resource_versions/latest/:
     get:
       operationId: get_latest_resource_version
       description: 获取网关最新版本
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: get
           path: /backend/api/v1/apis/{api_name}/resource_versions/latest/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
+        descriptionEn: None
   /api/v1/apis/{api_name}/resource_versions/release/:
     post:
       operationId: release
       description: 发布版本
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: post
           path: /backend/api/v1/apis/{api_name}/resource_versions/release/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
+        descriptionEn: None
   /api/v1/apis/{api_name}/sdk/:
     post:
       operationId: generate_sdk
       description: 生成 SDK
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: post
           path: /backend/api/v1/apis/{api_name}/sdk/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
+        descriptionEn: None
   /api/v1/apis/{api_name}/stages/:
     get:
       operationId: get_stages
       description: 查询环境
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: get
           path: /backend/api/v1/apis/{api_name}/stages/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
-        disabledStages: []
-        descriptionEn:
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
   /api/v1/apis/{api_name}/stages/sync/:
     post:
       operationId: sync_stage
       description: 同步环境
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: post
           path: /backend/api/v1/apis/{api_name}/stages/sync/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
+        descriptionEn: None
   /api/v1/apis/{api_name}/stages/with-resource-version/:
     get:
       operationId: get_stages_with_resource_version
       description: 查询网关环境资源版本
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: get
           path: /backend/api/v1/apis/{api_name}/stages/with-resource-version/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
         descriptionEn: get stages with resource version
   /api/v1/apis/{api_name}/status/:
     post:
       operationId: update_gateway_status
       description: 修改网关状态
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: post
           path: /backend/api/v1/apis/{api_name}/status/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
+        descriptionEn: None
   /api/v1/apis/{api_name}/sync/:
     post:
       operationId: sync_api
       description: 同步网关
-      tags: []
+      tags:
+      - v1
       responses:
         default:
           description: ''
+          content:
+            application/json:
+              schema: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
+          name: default
           method: post
           path: /backend/api/v1/apis/{api_name}/sync/
           matchSubpath: false
           timeout: 0
-          upstreams: {}
-          transformHeaders: {}
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
           resourcePermissionRequired: false
-        disabledStages: []
-        descriptionEn:
+        descriptionEn: None
+  /api/v2/open/gateways/:
+    get:
+      operationId: v2_open_list_gateways
+      description: 获取网关列表
+      tags:
+      - v2_open
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/gateways/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/open/gateways/{gateway_name}/:
+    get:
+      operationId: v2_open_get_gateway
+      description: 获取网关
+      tags:
+      - v2_open
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/gateways/{gateway_name}/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/open/gateway/{gateway_name}/public_key/:
+    get:
+      operationId: v2_open_get_gateway_public_key
+      description: 获取网关公钥
+      tags:
+      - v2_open
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: core-api
+          method: get
+          path: /api/v1/open/gateways/{gateway_name}/public_key/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
+  /api/v2/sync/gateway/{gateway_name}/public_key/:
+    get:
+      operationId: v2_sync_get_gateway_public_key
+      description: 获取网关公钥
+      tags:
+      - v2_sync
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: core-api
+          method: get
+          path: /api/v1/open/gateways/{gateway_name}/public_key/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
+  /api/v2/sync/gateway/{gateway_name}/related-apps/:
+    post:
+      operationId: v2_sync_add_gateway_related_apps
+      description: 添加网关的关联应用
+      tags:
+      - v2_sync
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/sync/gateways/{gateway_name}/related-apps/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
+  /api/v2/inner/gateways/:
+    get:
+      operationId: v2_inner_list_gateways
+      description: 获取网关列表
+      tags:
+      - v2_inner
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/inner/gateways/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/inner/gateways/{gateway_name}/:
+    get:
+      operationId: v2_inner_get_gateway
+      description: 获取网关
+      tags:
+      - v2_inner
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/inner/gateways/{gateway_name}/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None

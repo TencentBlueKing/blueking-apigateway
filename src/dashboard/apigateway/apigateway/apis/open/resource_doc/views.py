@@ -45,7 +45,7 @@ class DocImportByArchiveApi(generics.CreateAPIView):
     @swagger_auto_schema(
         request_body=DocImportByArchiveV1InputSLZ,
         responses={status.HTTP_200_OK: ""},
-        tags=["OpenAPI.ResourceDoc"],
+        tags=["OpenAPI.V1"],
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -75,7 +75,7 @@ class DocImportBySwaggerApi(generics.CreateAPIView):
     @swagger_auto_schema(
         request_body=DocImportBySwaggerV1InputSLZ,
         responses={status.HTTP_200_OK: ""},
-        tags=["OpenAPI.ResourceDoc"],
+        tags=["OpenAPI.V1"],
     )
     @transaction.atomic
     def post(self, request, *args, **kwargs):

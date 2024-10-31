@@ -47,7 +47,7 @@ class StageListViewSet(viewsets.ModelViewSet):
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: serializers.StageV1SLZ(many=True)},
-        tags=["OpenAPI.Stage"],
+        tags=["OpenAPI.V1"],
     )
     def list(self, request, gateway_name: str, *args, **kwargs):
         if not request.gateway.is_active_and_public:
@@ -68,7 +68,7 @@ class StageV1ViewSet(viewsets.ViewSet):
 
     @swagger_auto_schema(
         responses={status.HTTP_200_OK: serializers.StageWithResourceVersionV1SLZ(many=True)},
-        tags=["OpenAPI.Stage"],
+        tags=["OpenAPI.V1"],
     )
     def list_stages_with_resource_version(self, request, gateway_name: str, *args, **kwargs):
         queryset = Stage.objects.filter(gateway=self.request.gateway)
@@ -83,7 +83,7 @@ class StageV1ViewSet(viewsets.ViewSet):
 class StageSyncViewSet(viewsets.ViewSet):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
-    @swagger_auto_schema(request_body=StageSLZ, tags=["OpenAPI.Stage"])
+    @swagger_auto_schema(request_body=StageSLZ, tags=["OpenAPI.V1"])
     def sync(self, request, gateway_name: str, *args, **kwargs):
         instance = get_object_or_None(Stage, gateway=request.gateway, name=request.data.get("name", ""))
         data_before = get_model_dict(instance) if instance else {}

@@ -51,6 +51,8 @@ urlpatterns = [
     path("backend/esb/", include("apigateway.apps.esb.urls")),
     # open api
     path("backend/api/v1/", include("apigateway.apis.open.urls")),
+    # open api v2
+    path("backend/api/v2/", include("apigateway.apis.v2.urls")),
     # api-support backend/docs urls
     path("backend/docs/", include("apigateway.apis.web.docs.urls")),
     # web api
