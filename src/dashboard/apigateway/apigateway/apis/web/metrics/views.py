@@ -17,8 +17,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-import re
-
 from django.http import Http404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -33,16 +31,19 @@ from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ
 
 
 class QueryRangeApi(generics.ListAPIView):
-    @staticmethod
-    def replace_resource_name(s):
-        match = re.search(r'\d+', s)
-        if match:
-            resource_id = match.group()
-            resource_obj = Resource.objects.filter(id=resource_id).first()
 
-            if resource_obj:
-                s = s.replace(resource_id, resource_obj.name)
-        return s
+    @staticmethod
+    def get_resource_ids(series):
+        ids_data = {}
+
+        for index in range(len(series)):
+            try:
+                id_ = int(series[index]["target"].split('"')[1].split(".")[2])
+                ids_data[id_] = {'index': index}
+            except Exception:
+                pass
+
+        return ids_data
 
     @swagger_auto_schema(
         query_serializer=MetricsQueryRangeInputSLZ(),
@@ -91,8 +92,13 @@ class QueryRangeApi(generics.ListAPIView):
 
         if metrics_ in ["ingress", "egress"]:
             series = data.get("data", {}).get("series", [])
-            for s in series:
-                s["target"] = self.replace_resource_name(s["target"])
+            ids_data = self.get_resource_ids(series)
+
+            if ids_data:
+                resources = Resource.objects.filter(id__in=ids_data.keys()).values("id", "name")
+                for obj in resources:
+                    index = ids_data[obj["id"]]["index"]
+                    series[index]["target"] = series[index]["target"].replace(str(obj["id"]), obj["name"])
 
         return OKJsonResponse(data=data)
 
