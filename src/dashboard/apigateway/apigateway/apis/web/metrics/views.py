@@ -33,13 +33,13 @@ from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ
 class QueryRangeApi(generics.ListAPIView):
 
     @staticmethod
-    def get_resource_ids(series):
+    def get_series_resource_id_index_map(series):
         ids_data = {}
 
         for index in range(len(series)):
             try:
                 id_ = int(series[index]["target"].split('"')[1].split(".")[2])
-                ids_data[id_] = {'index': index}
+                ids_data[id_] = index
             except Exception:
                 pass
 
@@ -92,12 +92,12 @@ class QueryRangeApi(generics.ListAPIView):
 
         if metrics_ in ["ingress", "egress"]:
             series = data.get("data", {}).get("series", [])
-            ids_data = self.get_resource_ids(series)
+            ids_data = self.get_series_resource_id_index_map(series)
 
             if ids_data:
                 resources = Resource.objects.filter(id__in=ids_data.keys()).values("id", "name")
                 for obj in resources:
-                    index = ids_data[obj["id"]]["index"]
+                    index = ids_data[obj["id"]]
                     series[index]["target"] = series[index]["target"].replace(str(obj["id"]), obj["name"])
 
         return OKJsonResponse(data=data)
