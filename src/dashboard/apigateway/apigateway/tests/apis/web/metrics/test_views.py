@@ -23,6 +23,13 @@ from apigateway.core.models import Resource
 
 class TestQueryRangeApi:
     def test_get(self, mocker, fake_stage, request_view):
+
+        resource_obj = G(
+            Resource,
+            name="testname001",
+            gateway=fake_stage.gateway
+        )
+
         data = {
             "data": {
                 "metrics": [],
@@ -31,7 +38,7 @@ class TestQueryRangeApi:
                         "alias": "_result_",
                         "metric_field": "_result_",
                         "unit": "",
-                        "target": "route=\"bk-esb.prod.1\"",
+                        "target": "route=\"bk-esb.prod.{}\"".format(resource_obj.id),
                         "dimensions": {
                             "route": "bk-esb.prod.2152"
                         },
@@ -45,12 +52,6 @@ class TestQueryRangeApi:
         mocker.patch(
             "apigateway.apis.web.metrics.views.MetricsRangeFactory.create_metrics",
             return_value=mocker.Mock(query_range=mocker.Mock(return_value=data)),
-        )
-
-        G(
-            Resource,
-            name="testname001",
-            gateway=fake_stage.gateway
         )
 
         response = request_view(
