@@ -35,13 +35,6 @@
           </bk-dropdown>
         </aside>
       </main>
-      <!--  展示右侧网关/组件基础信息的开关  -->
-      <aside
-        class="detail-toggle"
-        :class="{ 'active': isAsideVisible }"
-        @click="toggleAsideVisible()"
-      ><i class="apigateway-icon icon-ag-document f14"></i>
-      </aside>
     </header>
     <!--  正文  -->
     <main class="page-content">
@@ -54,7 +47,6 @@
         :max="480"
         :min="293"
         style="flex-grow: 1;"
-        @collapse-change="updateIsRightAsideCollapsed"
       >
         <template #main>
           <bk-resize-layout
@@ -183,7 +175,6 @@
 <script lang="ts" setup>
 import {
   computed,
-  nextTick,
   onBeforeMount,
   provide,
   ref,
@@ -254,8 +245,6 @@ const sdks = ref<IApiGatewaySdkDoc[] & IComponentSdk[]>([]);
 const isSdkInstructionSliderShow = ref(false);
 const navList = ref<INavItem[]>([]);
 const outerResizeLayoutRef = ref<InstanceType<typeof ResizeLayout> | null>(null);
-// 记录右栏折叠状态
-const isAsideVisible = ref(true);
 const isLoading = ref(false);
 const keyword = ref('');  // 筛选器输入框的搜索关键字
 const activeGroupPanelNames = ref<string[]>([]);  // API分类 collapse 展开的 panel
@@ -497,16 +486,6 @@ const init = async () => {
   if (curTab.value === 'component') {
     await fetchBoardList();
   }
-};
-
-const toggleAsideVisible = () => {
-  nextTick(() => {
-    outerResizeLayoutRef.value?.setCollapse(isAsideVisible.value);
-  });
-};
-
-const updateIsRightAsideCollapsed = (collapsed: boolean) => {
-  isAsideVisible.value = !collapsed;
 };
 
 const handleGoBack = () => {
@@ -823,7 +802,11 @@ onBeforeMount(() => {
 
   // 隐藏的折叠按钮
   :deep(.bk-resize-layout > .bk-resize-layout-aside .bk-resize-collapse) {
-    display: none !important;
+    // 避免折叠按钮溢出制造横向滚动条
+    svg {
+      width: 16px !important;
+      height: 16px !important;
+    }
   }
 }
 
