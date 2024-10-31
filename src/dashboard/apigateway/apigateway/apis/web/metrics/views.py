@@ -75,7 +75,8 @@ class QueryRangeApi(generics.ListAPIView):
         time_start, time_end = smart_time_range.get_head_and_tail()
         step = smart_time_range.get_interval()
 
-        metrics = MetricsRangeFactory.create_metrics(MetricsRangeEnum(data["metrics"]))
+        metrics_ = data["metrics"]
+        metrics = MetricsRangeFactory.create_metrics(MetricsRangeEnum(metrics_))
 
         data = metrics.query_range(
             gateway_name=request.gateway.name,
@@ -88,7 +89,7 @@ class QueryRangeApi(generics.ListAPIView):
             step=step,
         )
 
-        if data["metrics"] in ["ingress", "egress"]:
+        if metrics_ in ["ingress", "egress"]:
             series = data.get("data", {}).get("series", [])
             for s in series:
                 s["target"] = self.replace_resource_name(s["target"])
