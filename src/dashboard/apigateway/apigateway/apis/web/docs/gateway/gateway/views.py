@@ -29,7 +29,7 @@ from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, Release
 from apigateway.utils.responses import OKJsonResponse
 
-from .serializers import GatewayListOutputSLZ, GatewayOutputSLZ, GatewayQueryInputSLZ
+from .serializers import GatewayOutputSLZ, GatewayQueryInputSLZ
 
 
 @method_decorator(
@@ -37,7 +37,7 @@ from .serializers import GatewayListOutputSLZ, GatewayOutputSLZ, GatewayQueryInp
     decorator=swagger_auto_schema(
         operation_description="获取网关列表，仅显示公开的、已发布的网关",
         query_serializer=GatewayQueryInputSLZ,
-        responses={status.HTTP_200_OK: GatewayListOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: GatewayOutputSLZ(many=True)},
         tags=["WebAPI.Docs.Gateway"],
     ),
 )
@@ -63,7 +63,7 @@ class GatewayListApi(generics.ListAPIView):
 
         gateway_ids = [gateway.id for gateway in gateways]
 
-        output_slz = GatewayListOutputSLZ(
+        output_slz = GatewayOutputSLZ(
             gateways,
             many=True,
             context={
@@ -95,6 +95,7 @@ class GatewayRetrieveApi(generics.RetrieveAPIView):
             request.gateway,
             context={
                 "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([request.gateway.id]),
+                "gateway_sdks": GatewaySDKHandler.get_sdks([request.gateway.id]),
             },
         )
         return OKJsonResponse(data=slz.data)

@@ -78,19 +78,9 @@ class TestBackendHandler:
 
         backend = Backend.objects.filter(gateway=fake_stage.gateway, name="backend-test").first()
 
-        r = G(
-            Resource,
-            name="backend-test",
-            gateway=fake_stage.gateway,
-            method="/test/",
-            path="/test/"
-        )
+        r = G(Resource, name="backend-test", gateway=fake_stage.gateway, method="/test/", path="/test/")
 
-        G(
-            Proxy,
-            resource=r,
-            backend=backend
-        )
+        G(Proxy, resource=r, backend=backend)
 
         assert backend
 

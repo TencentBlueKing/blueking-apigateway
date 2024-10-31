@@ -36,7 +36,7 @@ class TestGatewayListApi:
 
 
 class TestGatewayRetrieveApi:
-    def test_retrieve(self, request_view, fake_gateway):
+    def test_retrieve(self, request_view, fake_gateway, fake_sdk):
         resp = request_view(
             method="GET",
             view_name="docs.gateway.retrieve",
@@ -47,6 +47,8 @@ class TestGatewayRetrieveApi:
 
         assert resp.status_code == 200
         assert result["data"]["is_official"] is False
+
+        assert len(result["data"]["sdks"]) == 1
 
         fake_gateway.is_public = False
         fake_gateway.save()
