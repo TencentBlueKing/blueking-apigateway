@@ -16,10 +16,73 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from ddf import G
+
+from apigateway.core.models import Resource
 
 
 class TestQueryRangeApi:
     def test_get(self, mocker, fake_stage, request_view):
+
+        resource_obj = G(
+            Resource,
+            name="testname001",
+            gateway=fake_stage.gateway
+        )
+
+        data = {
+            "data": {
+                "metrics": [],
+                "series": [
+                    {
+                        "alias": "_result_",
+                        "metric_field": "_result_",
+                        "unit": "",
+                        "target": "route=\"bk-esb.prod.{}\"".format(resource_obj.id),
+                        "dimensions": {
+                            "route": "bk-esb.prod.2152"
+                        },
+                        "datapoints": [
+                        ]
+                    },
+                    {
+                        "alias": "_result_",
+                        "metric_field": "_result_",
+                        "unit": "",
+                        "target": "route=\"bk-esb.prod.1234\"",
+                        "dimensions": {
+                            "route": "bk-esb.prod.1234"
+                        },
+                        "datapoints": [
+                        ]
+                    }
+                ]
+            }
+        }
+
+        mocker.patch(
+            "apigateway.apis.web.metrics.views.MetricsRangeFactory.create_metrics",
+            return_value=mocker.Mock(query_range=mocker.Mock(return_value=data)),
+        )
+
+        response = request_view(
+            "GET",
+            "metrics.query_range",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "stage_id": fake_stage.id,
+                "metrics": "ingress",
+                "time_range": 300,
+            },
+        )
+        result = response.json()
+
+        assert response.status_code == 200
+        assert result["data"]["data"]["series"][0]["target"] == "testname001"
+        assert result["data"]["data"]["series"][1]["target"] == "route=\"bk-esb.prod.1234\""
+
         mocker.patch(
             "apigateway.apis.web.metrics.views.MetricsRangeFactory.create_metrics",
             return_value=mocker.Mock(query_range=mocker.Mock(return_value={"foo": "bar"})),

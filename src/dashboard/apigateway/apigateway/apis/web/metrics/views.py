@@ -31,6 +31,20 @@ from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ
 
 
 class QueryRangeApi(generics.ListAPIView):
+
+    @staticmethod
+    def get_series_resource_id_index_map(series):
+        ids_data = {}
+
+        for index in range(len(series)):
+            try:
+                id_ = int(series[index]["target"].split('"')[1].split(".")[2])
+                ids_data[id_] = index
+            except Exception:
+                pass
+
+        return ids_data
+
     @swagger_auto_schema(
         query_serializer=MetricsQueryRangeInputSLZ(),
         responses={status.HTTP_200_OK: ""},
@@ -62,7 +76,8 @@ class QueryRangeApi(generics.ListAPIView):
         time_start, time_end = smart_time_range.get_head_and_tail()
         step = smart_time_range.get_interval()
 
-        metrics = MetricsRangeFactory.create_metrics(MetricsRangeEnum(data["metrics"]))
+        metrics_name = data["metrics"]
+        metrics = MetricsRangeFactory.create_metrics(MetricsRangeEnum(metrics_name))
 
         data = metrics.query_range(
             gateway_name=request.gateway.name,
@@ -74,6 +89,16 @@ class QueryRangeApi(generics.ListAPIView):
             end=time_end,
             step=step,
         )
+
+        if metrics_name in ["ingress", "egress"]:
+            series = data.get("data", {}).get("series", [])
+            ids_data = self.get_series_resource_id_index_map(series)
+
+            if ids_data:
+                resources = Resource.objects.filter(id__in=ids_data.keys()).values("id", "name")
+                for obj in resources:
+                    series[ids_data[obj["id"]]]["target"] = obj["name"]
+
         return OKJsonResponse(data=data)
 
 
