@@ -156,7 +156,7 @@
                 <version-diff
                   ref="diffRef"
                   page-type="publishEnvironment"
-                  :source-id="sourceResourceVersionId"
+                  :source-id="chooseAssets?.resource_version?.id || currentAssets?.resource_version?.id || 'current'"
                   :target-id="formData.resource_version_id"
                   :source-switch="false"
                   :target-switch="false"
@@ -253,6 +253,12 @@ import { Message } from 'bkui-vue';
 import { useSidebar, useGetStageList } from '@/hooks';
 import dayjs from 'dayjs';
 
+type VersionType = {
+  id: number
+  version: string
+  isLatestVersion: boolean
+};
+
 const route = useRoute();
 const router = useRouter();
 const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
@@ -287,7 +293,7 @@ const resourceVersion = computed(() => {
 const chooseVersionComment = ref<string>('');
 
 const isShow = ref(false);
-const versionList = ref<any>([]);
+const versionList = ref<VersionType[]>([]);
 const formRef = ref(null);
 const logDetailsRef = ref(null);
 const selectVersionRef = ref(null);
@@ -418,31 +424,17 @@ const showReleaseSideslider = () => {
 };
 
 const curVersionId = computed(() => {
-  const version = versionList.value?.filter((item: any) => item.id === chooseAssets.value.resource_version?.id)[0];
+  const version = versionList.value?.filter(item => item.id === chooseAssets.value.resource_version?.id)[0];
   return version?.id;
-});
-
-// 版本对比中放在UI左侧、作为旧版本来对比的资源版本ID
-const sourceResourceVersionId = computed(() => {
-  // 如果传入的版本是此网关的第一个版本（版本号为 1.0.0）
-  // 则需要跟空网关版本做对比，则版本ID为 0
-  if (chooseAssets.value.resource_version?.version === '1.0.0' && !chooseAssets.value.new_resource_version) {
-    return 0;
-  }
-  return chooseAssets.value.resource_version?.id || props.currentAssets?.resource_version?.id;
 });
 
 // 获取资源版本列表
 const getResourceVersions = async () => {
-  try {
-    const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 1000 });
-    res.results?.forEach((item: any, index: number) => {
-      item.isLatestVersion = index === 0;
-    });
-    versionList.value = res.results;
-  } catch (e) {
-    console.log(e);
-  };
+  const response = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 1000 });
+  response.results.forEach((item: VersionType, index: number) => {
+    item.isLatestVersion = index === 0;
+  });
+  versionList.value = response.results;
 };
 
 const handleVersionChange = async (payload: any) => {
@@ -457,19 +449,15 @@ const handleVersionChange = async (payload: any) => {
     };
     selectVersionRef.value.hidePopover();
     return;
+  }
+
+  const query = {
+    source_resource_version_id: chooseAssets.value.resource_version?.id,
+    target_resource_version_id: payload.id,
   };
-  try {
-    const query = {
-      source_resource_version_id: chooseAssets.value.resource_version?.id,
-      target_resource_version_id: payload.id,
-    };
-    const res: any = await resourceVersionsDiff(apigwId.value, query);
-    diffData.value = res;
-    formData.resource_version_id = payload?.id;
-    selectVersionRef.value.hidePopover();
-  } catch (e) {
-    console.log(e);
-  };
+  diffData.value = await resourceVersionsDiff(apigwId.value, query);
+  formData.resource_version_id = payload?.id;
+  selectVersionRef.value.hidePopover();
 };
 
 // 下一步
@@ -570,8 +558,8 @@ watch(
 watch(
   () => [formData.resource_version_id, formData.stage_id],
   () => {
-    const curVersion = versionList.value.filter((item: any) => item.id === chooseAssets.value.resource_version?.id)[0];
-    const choVersion = versionList.value.filter((item: any) => item.id === formData.resource_version_id)[0];
+    const curVersion = versionList.value.filter(item => item.id === chooseAssets.value.resource_version?.id)[0];
+    const choVersion = versionList.value.filter(item => item.id === formData.resource_version_id)[0];
     if (curVersion && choVersion) {
       const curDate = dayjs(curVersion.created_time);
       const chooseDate = dayjs(choVersion.created_time);

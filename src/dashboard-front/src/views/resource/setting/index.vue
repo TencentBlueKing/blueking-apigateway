@@ -1074,11 +1074,9 @@ const handleOutBatch = () => {
 // 版本对比
 const handleShowDiff = async () => {
   try {
-    const response = await getResourceVersionsList(props.apigwId, { offset: 0, limit: 999 });
-    // 如果此网关还未生成版本，或这是网关的第一个版本（版本号为 1.0.0），则与空网关版本对比（版本ID为0）
-    if (!response.results.length || response.results[0]?.version === '1.0.0') {
-      diffTargetId.value = response.results[0]?.id || '';
-      diffSourceId.value = 0;
+    const response = await getResourceVersionsList(props.apigwId, { offset: 0, limit: 10 });
+    if (!response.results.length) {
+      diffSourceId.value = 'current';
     } else {
       diffSourceId.value = response.results[0]?.id || '';
     }
@@ -1090,7 +1088,6 @@ const handleShowDiff = async () => {
       theme: 'error',
       width: 'auto',
     });
-    console.log(e);
   }
 };
 
@@ -1265,6 +1262,12 @@ const handleEditLabel = (data: any) => {
 
 // 生成版本功能
 const handleCreateResourceVersion = async () => {
+  const response = await getResourceVersionsList(props.apigwId, { offset: 0, limit: 10 });
+  if (!response.results.length) {
+    diffSourceId.value = 'current';
+  } else {
+    diffSourceId.value = response.results[0]?.id || '';
+  }
   versionSidesliderRef.value.showReleaseSideslider();
 };
 

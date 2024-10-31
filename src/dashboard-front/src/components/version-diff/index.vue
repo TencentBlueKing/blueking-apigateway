@@ -87,7 +87,9 @@
         <div class="source-header">
           <!-- <div class="marked">{{ $t("源版本") }}</div> -->
           <div class="version">
-            <template v-if="localSourceId">
+            <template
+              v-if="localSourceId && (localSourceId !== 'current' || localTargetId !== 'current')"
+            >
               <bk-select
                 class="fl mr10 choose-version"
                 v-model="localSourceId"
@@ -114,7 +116,9 @@
               </bk-select>
               <strong class="title" v-else>
                 <template v-if="pageType === 'publishEnvironment'">
-                  {{ t('当前版本（{version}）', { version: sourceVersion.version }) }}
+                  {{
+                    sourceVersion.version ? t('当前版本（{version}）', { version: sourceVersion.version }) : t('暂无版本')
+                  }}
                 </template>
                 <template v-else>
                   {{ sourceVersion.version }} {{ sourceVersion.comment ? `(${sourceVersion.comment})` : '' }}
@@ -622,8 +626,7 @@ const handleVersionChange = async () => {
 };
 
 const getDiffData = async () => {
-  // localSourceId 可以为 0
-  if (isDataLoading.value || localSourceId.value === '') {
+  if (isDataLoading.value || !localSourceId.value) {
     return false;
   }
 
@@ -682,33 +685,25 @@ const getDiffData = async () => {
 };
 
 const getApigwVersions = async () => {
-  const pageParams = {
-    limit: 999,
-    offset: 0,
-  };
-  try {
-    const res = await getResourceVersionsList(apigwId.value, pageParams);
-    res.results.forEach((item: any) => {
-      item.resource_version_display = item.comment ? `${item.version}(${item.comment})` : item.version;
-      item.stage_text = item.released_stages.map((item: any) => {
-        return item.name;
-      });
+  const response = await getResourceVersionsList(apigwId.value, { limit: 1000, offset: 0 });
+  response.results.forEach((item: any) => {
+    item.resource_version_display = item.comment ? `${item.version}(${item.comment})` : item.version;
+    item.stage_text = item.released_stages.map((item: any) => {
+      return item.name;
     });
+  });
 
-    if (props.curDiffEnabled) {
-      localVersionList.value = [
-        {
-          id: 'current',
-          name: t('当前最新资源列表'),
-          resource_version_display: t('当前最新资源列表'),
-        },
-        ...res.results,
-      ];
-    } else {
-      localVersionList.value = res.results;
-    }
-  } catch (e) {
-    console.log(e);
+  if (props.curDiffEnabled) {
+    localVersionList.value = [
+      {
+        id: 'current',
+        name: t('当前最新资源列表'),
+        resource_version_display: t('当前最新资源列表'),
+      },
+      ...response.results,
+    ];
+  } else {
+    localVersionList.value = response.results;
   }
 };
 

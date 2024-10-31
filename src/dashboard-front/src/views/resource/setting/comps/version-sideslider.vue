@@ -196,6 +196,12 @@ import {
 import { useGetStageList } from '@/hooks';
 import versionDiff from '@/components/version-diff/index.vue';
 
+type VersionType = {
+  id: number
+  version: string
+  isLatestVersion: boolean
+};
+
 const route = useRoute();
 const router = useRouter();
 const apigwId = computed(() => +route.params.id);
@@ -220,7 +226,7 @@ const isShow = ref(false);
 const dialogShow = ref(false);
 const versionList = ref<any>([]);
 const formRef = ref(null);
-const diffSourceId = ref<number | string>('');
+const diffSourceId = ref('');
 const diffTargetId = ref('');
 const loading = ref(false);
 const createError = ref<boolean>(false);
@@ -324,14 +330,12 @@ const showReleaseSideslider = () => {
 
 // 获取资源版本列表
 const getResourceVersions = async () => {
-  const response = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 999 });
+  const response = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 10 });
   versionList.value = response.results;
-  // 如果此网关还未生成版本，或这是网关的第一个版本（版本号为 1.0.0），则与空网关版本对比（版本ID为0）
-  if (!response.results.length || response.results[0]?.version === '1.0.0') {
-    diffTargetId.value = response.results[0]?.id || '';
-    diffSourceId.value = 0;
+  if (!response.results.length) {
+    diffSourceId.value = 'current';
   } else {
-    diffSourceId.value = response.results[0]?.id || '';
+    diffSourceId.value = versionList.value[0]?.id || '';
   }
 };
 
@@ -339,7 +343,7 @@ const getResourceVersions = async () => {
 const handleNext = async () => {
   await formRef.value?.validate();
   stepsConfig.value.curStep = 2;
-  getDiffData();
+  await getDiffData();
 };
 
 // 上一步
@@ -364,9 +368,8 @@ const handleSkip = () => {
 
 const handlePublish = async () => {
   try {
-    const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 999 });
-    const { results } = res;
-    const newVersion = results?.filter((item: any) => item.version === formData.version)[0];
+    const { results } = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 10 });
+    const newVersion = results.filter((item: VersionType) => item.version === formData.version)[0];
     if (newVersion?.id) {
       versionData.value = newVersion;
     }
@@ -394,8 +397,8 @@ watch(
   () => isShow.value,
   (val) => {
     if (val) {
-      getSuggestionVersion();
       getResourceVersions();
+      getSuggestionVersion();
     } else {
       stepsConfig.value.curStep = 1;
       formData.version = '';
