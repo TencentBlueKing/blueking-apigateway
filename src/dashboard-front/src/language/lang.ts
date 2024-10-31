@@ -1667,6 +1667,7 @@ const lang: ILANG = {
   '暂无版本': ['No Version'],
   '待发布（{version}）': ['To Be Published({version})'],
   '删除操作无法撤回，请谨慎操作': ['Deletion can\'t be reverted, please be cautious'],
+  '默认分类': ['Default'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

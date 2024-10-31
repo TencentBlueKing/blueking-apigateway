@@ -14,7 +14,7 @@
           :sdk-languages="sdks.map(item => item.language)"
           :lang-list="languages"
         />
-        <SdkDetail :sdk="curSdk" is-apigw></SdkDetail>
+        <SdkDetail :sdk="curSdk" is-apigw />
       </div>
     </main>
   </bk-dialog>
@@ -26,6 +26,7 @@ import {
   defineModel,
   ref,
   toRefs,
+  watchEffect,
 } from 'vue';
 import LangSelector from '@/views/apiDocs/components/lang-selector.vue';
 import {
@@ -63,6 +64,10 @@ const curSdk = computed(() => {
 
 const title = computed(() => {
   return targetName.value ? t('{name} SDK', { name: targetName.value }) : t('查看 SDK');
+});
+
+watchEffect(() => {
+  language.value = sdks.value[0]?.language || 'python';
 });
 
 </script>
