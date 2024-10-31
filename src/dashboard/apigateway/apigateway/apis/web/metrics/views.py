@@ -17,6 +17,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import re
+
 from django.http import Http404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -31,6 +33,17 @@ from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ
 
 
 class QueryRangeApi(generics.ListAPIView):
+    @staticmethod
+    def replace_resource_name(s):
+        match = re.search(r'\d+', s)
+        if match:
+            resource_id = match.group()
+            resource_obj = Resource.objects.filter(id=resource_id).first()
+
+            if resource_obj:
+                s = s.replace(resource_id, resource_obj.name)
+        return s
+
     @swagger_auto_schema(
         query_serializer=MetricsQueryRangeInputSLZ(),
         responses={status.HTTP_200_OK: ""},
@@ -74,6 +87,12 @@ class QueryRangeApi(generics.ListAPIView):
             end=time_end,
             step=step,
         )
+
+        if data["metrics"] in ["ingress", "egress"]:
+            series = data.get("data", {}).get("series", [])
+            for s in series:
+                s["target"] = self.replace_resource_name(s["target"])
+
         return OKJsonResponse(data=data)
 
 
