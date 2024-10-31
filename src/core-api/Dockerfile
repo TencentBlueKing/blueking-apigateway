@@ -1,4 +1,4 @@
-FROM golang:1.20.4 AS builder
+FROM golang:1.23.2-bullseye AS builder
 
 COPY ./ /app
 WORKDIR /app
@@ -9,7 +9,7 @@ ARG COMMIT=HEAD
 RUN make build -e VERSION=${VERSION} -e COMMIT=${COMMIT} && chmod +x ${BINARY}
 
 # install dlv
-RUN go install github.com/go-delve/delve/cmd/dlv@v1.21.0
+RUN go install github.com/go-delve/delve/cmd/dlv@v1.23.1
 
 FROM debian:bullseye-slim
 

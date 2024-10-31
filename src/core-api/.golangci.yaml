@@ -11,7 +11,7 @@ run:
   #   vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
   skip-dirs-use-default: true
 
-  skip-files:
+  issues.exclude-files:
     - ".*/mock/.*.go"
     - ".*testing.go"
 
