@@ -1515,6 +1515,7 @@ const lang: ILANG = {
   '关键字搜索': ['Keyword search'],
   '引用条件': ['Reference condition'],
   '如何使用': ['How to use'],
+  '检索出的日志条数为 0，不需要下载': ['The number of retrieved logs is 0, do not need to download'],
   '新建后端服务': ['Create backend service'],
   '于': ['at'],
   '超时时间不能为空': ['Timeout cannot be empty'],
