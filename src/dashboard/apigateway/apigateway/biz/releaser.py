@@ -158,7 +158,6 @@ class BaseGatewayReleaser:
         """发布资源版本"""
 
 
-#
 @dataclass
 class MicroGatewayReleaser(BaseGatewayReleaser):
     """微网关发布器"""

@@ -38,7 +38,7 @@ from apigateway.core.models import Gateway, ReleasedResource, Resource
 class ResourcePermission(BaseModel):
     class Config:
         arbitrary_types_allowed = True
-        keep_untouched = (cached_property,)
+        ignored_types = (cached_property,)
 
     id: int
     name: str

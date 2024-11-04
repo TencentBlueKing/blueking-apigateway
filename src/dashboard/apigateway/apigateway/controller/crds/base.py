@@ -26,7 +26,7 @@ class KubernetesModel(BaseModel):
     """K8S 自定义资源的通用结构声明"""
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
     def __str__(self):
         return repr(self)

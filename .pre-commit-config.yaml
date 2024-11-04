@@ -12,7 +12,7 @@ repos:
         name: ruff
         language: python
         types: [python]
-        entry: bash -c 'cd src/dashboard && ruff --config=pyproject.toml --force-exclude --fix .'
+        entry: bash -c 'cd src/dashboard && ruff check --config=pyproject.toml --force-exclude --fix .'
         files: src/dashboard/
       - id: mypy
         name: mypy
@@ -38,7 +38,7 @@ repos:
         name: ruff
         language: python
         types: [python]
-        entry: bash -c 'cd src/esb && ruff --config=pyproject.toml --force-exclude --fix .'
+        entry: bash -c 'cd src/esb && ruff check --config=pyproject.toml --force-exclude --fix .'
         files: ^src/esb/
       - id: mypy
         name: mypy

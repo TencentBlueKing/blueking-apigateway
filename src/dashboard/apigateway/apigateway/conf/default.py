@@ -21,6 +21,7 @@ from typing import List
 from urllib.parse import quote
 
 import pymysql
+import urllib3
 from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.encoding import force_bytes
@@ -32,8 +33,12 @@ from apigateway.conf.log_utils import build_logging_config
 from apigateway.conf.utils import get_default_keepalive_options
 
 pymysql.install_as_MySQLdb()
-# Patch version info to forcedly pass Django client check
-pymysql.version_info = 1, 4, 2, "final", 0
+# Patch version info to force pass Django client check
+pymysql.version_info = 1, 4, 6, "final", 0
+
+# Patch the SSL module for compatibility with legacy CA credentials.
+# https://stackoverflow.com/questions/72479812/how-to-change-tweak-python-3-10-default-ssl-settings-for-requests-sslv3-alert
+urllib3.util.ssl_.DEFAULT_CIPHERS = "ALL:@SECLEVEL=1"
 
 env = Env()
 

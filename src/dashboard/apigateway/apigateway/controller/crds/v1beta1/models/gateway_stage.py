@@ -33,8 +33,8 @@ class StageRewrite(KubernetesModel):
 
 
 class BkGatewayStageSpec(GatewayCustomResourceSpec):
-    domain = Field(default="", description="访问域名", helm_value=True, helm_value_default="")
-    path_prefix = Field(
+    domain: str = Field(default="", description="访问域名", helm_value=True, helm_value_default="")
+    path_prefix: str = Field(
         default="", description="访问路径前缀", helm_value=True, helm_value_default="/", alias="pathPrefix"
     )
     vars: Dict[str, str] = Field(default_factory=dict, description="环境变量", helm_value=True)
