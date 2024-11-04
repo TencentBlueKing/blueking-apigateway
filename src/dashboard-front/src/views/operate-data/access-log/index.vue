@@ -580,6 +580,9 @@ const getSearchData = async () => {
     ]);
     chartData.value = chartRes || {};
     renderChart(chartData.value);
+    chartInstance.value?.dispatchAction({
+      type: 'restore',
+    });
     table.value = Object.assign(table.value, {
       list: listRes?.results || [],
       fields: listRes?.fields || [],
@@ -839,10 +842,6 @@ const initChart = async () => {
       dateTimeRange.value = [];
       shortcutSelectedIndex.value = 1;
       [datePickerRef.value.shortcut] = [AccessLogStore.datepickerShortcuts[1]];
-
-      chartInstance.value.dispatchAction({
-        type: 'restore',
-      });
     } else {
       shortcutSelectedIndex.value = -1;
       dateTimeRange.value = [new Date(startTime), new Date(endTime)];
