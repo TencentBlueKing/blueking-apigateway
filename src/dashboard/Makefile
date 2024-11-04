@@ -138,7 +138,6 @@ _clean_build_dir:
 .PHONY: _build_image
 _build_image:
 	$(eval name ?= apigateway-dashboard)
-	$(eval pypi ?= "https://mirrors.cloud.tencent.com/pypi/simple/")
 	docker build \
 		--no-cache \
 		-t "${name}" \
@@ -163,7 +162,6 @@ image-te:
 dev-ee-image:
 	editionctl activate --linker-type copy EE
 	make _build_dir
-	$(eval pypi ?= "https://mirrors.cloud.tencent.com/pypi/simple/")
 	docker build \
 		-t "apigateway-dashboard:development" \
 		--build-arg PYPI="${pypi}" \
