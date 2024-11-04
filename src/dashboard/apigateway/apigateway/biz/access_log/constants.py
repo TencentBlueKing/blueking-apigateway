@@ -111,6 +111,11 @@ ES_LOG_FIELDS = [
         "is_filter": True,
     },
     {
+        "label": _("响应体大小"),
+        "field": "response_size",
+        "is_filter": True,
+    },
+    {
         "label": _("状态码"),
         "field": "status",
         "is_filter": True,
