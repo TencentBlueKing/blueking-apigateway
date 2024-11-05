@@ -344,15 +344,34 @@ class TestPublishValidator:
             description="test",
         )
 
-        backend_config = G(
+        stage2 = G(
+            Stage,
+            gateway=fake_gateway,
+            name="test_stage2",
+            description="test",
+        )
+
+        G(
             BackendConfig,
             gateway=fake_gateway,
-            backend_id=backend.id,
-            stage_id=227,
+            backend=backend,
+            stage=fake_stage,
             config={
                 "timeout": 30,
                 "loadbalance": "roundrobin",
                 "hosts": [{"scheme": "http", "host": "ee.com", "weight": 100}],
+            },
+        )
+
+        G(
+            BackendConfig,
+            gateway=fake_gateway,
+            backend=backend,
+            stage=stage2,
+            config={
+                "timeout": 30,
+                "loadbalance": "roundrobin",
+                "hosts": [{"scheme": "", "host": "", "weight": 100}],
             },
         )
 
