@@ -1623,7 +1623,7 @@ const lang: ILANG = {
   '执行中': ['Doing'],
   '网关启用': ['Gateway Enable'],
   '网关停用': ['Gateway Disable'],
-  '版本发布中': ['Version Publish'],
+  '版本发布': ['Version Publish'],
   '插件绑定': ['Plugin Bind'],
   '插件更新': ['Plugin Update'],
   '插件解绑': ['Plugin Unbind'],
