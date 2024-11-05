@@ -129,7 +129,7 @@ const dateKey = ref('dateKey');
 const publishSourceEnum = Object.freeze({
   gateway_enable: '网关启用',
   gateway_disable: '网关停用',
-  version_publish: '版本发布中',
+  version_publish: '版本发布',
   plugin_bind: '插件绑定',
   plugin_update: '插件更新',
   plugin_unbind: '插件解绑',
