@@ -198,7 +198,7 @@ class PublishValidator:
                     if resource["proxy"].get("backend_id", None)
                 }
             )
-            backend_configs = BackendConfig.objects.filter(backend_id__in=backend_ids)
+            backend_configs = BackendConfig.objects.filter(stage=self.stage, backend_id__in=backend_ids)
         else:
             backend_configs = BackendConfig.objects.filter(stage=self.stage)
 
@@ -207,9 +207,10 @@ class PublishValidator:
                 if not core_constants.HOST_WITHOUT_SCHEME_PATTERN.match(host["host"]):
                     raise ReleaseValidationError(
                         _(
-                            "网关环境【{stage_name}】中的配置【后端服务地址】不合法。请在网关 `后端服务` 中进行配置。"
+                            "网关环境【{stage_name}】中的配置【后端服务 {backend_name} 地址】不合法。请在网关 `后端服务` 中进行配置。"
                         ).format(
                             stage_name=self.stage.name,
+                            backend_name=backend_config.backend.name,
                         )
                     )
 
