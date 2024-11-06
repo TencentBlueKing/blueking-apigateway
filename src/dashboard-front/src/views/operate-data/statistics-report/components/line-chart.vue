@@ -1,5 +1,22 @@
 <template>
-  <div v-show="!isEmpty" class="line-chart" :id="instanceId"></div>
+  <div v-show="!isEmpty" class="chart-wrapper">
+    <div
+      :class="['line-chart', ['requests', 'non_200_status'].includes(instanceId) ? 'mini' : 'middle']"
+      :id="instanceId"></div>
+    <div
+      :class="['chart-legend', 'custom-scroll-bar', { 'side-legend': instanceId === 'non_200_status' }]"
+      v-if="chartLegend[instanceId]">
+      <div
+        v-for="({ color, name, selected }, legendIndex) in chartLegend[instanceId]"
+        :key="legendIndex"
+        :class="['legend-item', { selected, unselected: !selected }]"
+        @click.stop="handleClickLegend(legendIndex)">
+        <div class="legend-icon" :style="{ background: color }"></div>
+        <div class="legend-name">{{name}}</div>
+      </div>
+    </div>
+  </div>
+
   <div v-show="isEmpty" class="ap-nodata">
     <TableEmpty
       :keyword="tableEmptyConf.keyword"
@@ -17,6 +34,7 @@ import { merge } from 'lodash';
 import { userChartIntervalOption } from '@/hooks';
 import { SeriesItemType, SearchParamsType } from '../type';
 import TableEmpty from '@/components/table-empty.vue';
+import { getColorHue } from '@/common/util';
 
 const props = defineProps({
   instanceId: { // 生成图表的元素id
@@ -33,11 +51,30 @@ const props = defineProps({
   },
 });
 
+interface LegendItem {
+  color: string;
+  name: string;
+  selected: boolean,
+};
+
+interface ChartLegend {
+  requests_total?: LegendItem;
+  health_rate?: LegendItem;
+  requests?: LegendItem;
+  non_200_status?: LegendItem;
+  app_requests?: LegendItem;
+  resource_requests?: LegendItem;
+  ingress?: LegendItem;
+  egress?: LegendItem;
+  response_time_90th?: LegendItem;
+};
+
 const emit = defineEmits(['clear-params', 'report-init']);
 
 const { getChartIntervalOption } = userChartIntervalOption();
 
 const myChart = shallowRef();
+const chartLegend = ref<ChartLegend>({});
 const searchParams = ref<SearchParamsType>();
 const isEmpty = ref<boolean>(false);
 const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
@@ -99,7 +136,6 @@ const chartResize = () => {
 
 const getChartOption = () => {
   const baseOption: echarts.EChartOption = {
-    color: ['#FFB43D', '#4BC7AD', '#FF7756', '#B5E0AB', '#D66F6B', '#3E96C2', '#FFA66B', '#85CCA8', '#FFC685', '#3762B8'],
     title: {
       text: props.title,
       top: 12,
@@ -112,7 +148,7 @@ const getChartOption = () => {
       },
     },
     grid: {
-      right: 140, // 设置距离右侧的间距
+      right: '8%', // 设置距离右侧的间距
     },
     xAxis: {
       type: 'time',
@@ -120,7 +156,8 @@ const getChartOption = () => {
       boundaryGap: false,
       axisLabel: { // 坐标轴刻度标签的相关设置
         color: '#666666',
-        rotate: 35,
+        fontSize: 12,
+        padding: [0, 5, 0, 0],
       },
       axisLine: { // 坐标轴轴线相关设置
         lineStyle: {
@@ -138,6 +175,8 @@ const getChartOption = () => {
       type: 'value',
       axisLabel: { // 坐标轴刻度标签的相关设置
         color: '#666666',
+        fontSize: 12,
+        padding: [0, 5, 0, 0],
       },
       splitLine: { // 坐标轴在 grid 区域中的分隔线
         lineStyle: {
@@ -164,34 +203,20 @@ const getChartOption = () => {
           borderWidth: 0, // 边框宽度为0
         },
       },
+      lineStyle: {
+        width: 1,
+      },
+      markPoint: {
+        symbolSize: 12,
+      },
     }],
-    legend: { // 图例组件
-      show: true,
-      type: 'scroll',
-      orient: 'vertical', // 垂直排列
-      right: 10,
-      top: 30,     // 垂直居中
-      height: 302,
-      pageIconSize: 12, // 翻页按钮的大小
-      pageIconColor: '#63656E', // 翻页按钮的颜色
-      pageIconInactiveColor: '#C4C6CC', // 翻页按钮不激活时（即翻页到头时）的颜色
-      textStyle: {       // 图例文字的样式设置
-        fontSize: 12,
-        color: '#63656E',
-      },
-      itemWidth: 16, // 图例标记的图形宽度
-      itemHeight: 6, // 图例标记的图形高度
-      itemGap: 16, // 设置图例项之间的间隔
-      tooltip: {
-        show: true,
-      },
-      formatter: (name: string) => {
-        return echarts.format.truncateText(name, 80, '12px Microsoft Yahei', '…');
-      },
+    legend: {
+      show: false,
     },
   };
 
   const chartOption: echarts.EChartOption = {
+    xAxis: {},
     yAxis: {},
     series: [],
     tooltip: {},
@@ -222,15 +247,15 @@ const getChartOption = () => {
       }));
       moreOption = getChartMoreOption(datapoints);
     });
-    if (props.instanceId === 'requests') {
-      chartOption.legend.show = false;
-      chartOption.grid.left = '14%';
-      chartOption.grid.right = '8%';
-    }
-
-    if (props.instanceId === 'non_200_status') {
-      chartOption.grid.left = '14%';
-      chartOption.grid.right = 80;
+    // 设置图表颜色
+    chartOption.color = generateChartColor(props.chartData.series ?? []);
+    if (['requests', 'non_200_status'].includes(props.instanceId)) {
+      chartOption.grid.left = '18%';
+      if (document.body.clientWidth < 1550) {
+        chartOption.xAxis.axisLabel = {
+          rotate: 35,
+        };
+      }
     }
 
     if (props.instanceId === 'ingress' || props.instanceId === 'egress') {
@@ -267,8 +292,6 @@ const getChartOption = () => {
       formatter: '{value} ms',
     };
 
-    chartOption.grid.right = '10%';
-
     const serieData = datapoints.reduce((a, b) => a.concat(b), []);
     moreOption = getChartMoreOption(serieData);
   }
@@ -293,11 +316,99 @@ const getChartMoreOption = (seriesData: Array<Array<number>>) => {
   return xAxisIntervalOption;
 };
 
+const generateChartColor = (chartData: SeriesItemType[]) => {
+  let baseColor = ['#3A84FF', '#5AD8A6', '#5D7092', '#F6BD16', '#FF5656', '#6DC8EC', '#FFB43D', '#4BC7AD', '#FF7756', '#B5E0AB'];
+  let angle = 30;
+  if (props.instanceId.indexOf('failed_') !== -1) {
+    baseColor = ['#FF5656', '#5AD8A6'];
+    angle = 10;
+  }
+  const colors: string[] = [];
+  const interval = Math.ceil(chartData.length / baseColor.length);
+
+  baseColor.forEach((color) => {
+    let i = 0;
+    while (i < interval) {
+      const co = getColorHue(color, i * angle);
+      colors.push(co);
+      i += 1;
+    }
+  });
+
+  const finalColors = colors.reduce((a, b) => a.concat(b), []);
+  return finalColors;
+};
+
+const generateChartLegend = () => {
+  const option = myChart.value?.getOption();
+  // 只有一个系列不需要图例
+  if (option.series.length > 1) {
+    chartLegend.value[props.instanceId] = option?.series?.map((serie: echarts.EChartOption.Series, index: number) => ({
+      color: option.color[index],
+      name: serie.name,
+      selected: false,
+    }));
+  } else {
+    chartLegend.value[props.instanceId] = null;
+  }
+};
+
+const handleClickLegend = (index: number) => {
+  const legend = chartLegend.value[props.instanceId];
+  const currentLegend = legend[index];
+
+  const { selected } = currentLegend;
+
+  // 实现切换单选显示
+  if (!selected) {
+    // 仅显示选中
+    myChart.value.dispatchAction({
+      type: 'legendUnSelect',
+      batch: legend.map(({ name }: LegendItem) => ({ name })),
+    });
+    myChart.value.dispatchAction({
+      type: 'legendSelect',
+      name: currentLegend.name,
+    });
+
+    // 选中状态设置
+    legend.forEach((item: LegendItem, i: number) => {
+      item.selected = index === i;
+    });
+    chartLegend.value = { ...chartLegend.value, ...{ [props.instanceId]: legend } };
+  } else {
+    // 全部显示
+    myChart.value.dispatchAction({
+      type: 'legendSelect',
+      batch: legend.map(({ name }: LegendItem) => ({ name })),
+    });
+
+    legend.forEach((item: LegendItem) => (item.selected = false));
+    chartLegend.value = { ...chartLegend.value, ...{ [props.instanceId]: legend } };
+  }
+};
+
 const renderChart = () => {
   nextTick(() => {
     const option = getChartOption();
     myChart.value?.setOption(option, { notMerge: true });
+    // 切换图例，处理单个数据点x轴显示问题
+    myChart.value?.on('legendselected', (params: LegendItem) => {
+      const currentOption = myChart.value.getOption();
+      const serie = currentOption.series.find((item: echarts.EChartOption.Series) => item.name === params.name) || {};
+      if (serie.data && serie.data.length === 1) {
+        // fix单个数据点xAxis显示异常，本质上是去掉动态计算出的间隔设置
+        myChart.value?.setOption({
+          xAxis: {
+            interval: 'auto',
+          },
+        });
+      } else {
+        myChart.value?.setOption(option);
+      }
+    });
     chartResize();
+    generateChartLegend();
   });
 };
 
@@ -311,8 +422,74 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
-.line-chart {
-  width: 100%;
-  height: 100%;
+.chart-wrapper {
+  position: relative;
+  .line-chart {
+    &.mini {
+      height: 320px;
+    }
+    &.middle {
+      height: 360px;
+    }
+  }
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 40px;
+    height: 70px;
+    max-height: 110px;
+    overflow-y: auto;
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      flex: none;
+      font-size: 12px;
+      line-height: 22px;
+      margin-right: 12px;
+      color: #777;
+      white-space: nowrap;
+      cursor: pointer;
+
+      &:hover,
+      &.selected {
+        color: #333;
+      }
+
+      &.unselected {
+        color: #ccc;
+      }
+    }
+    .legend-icon {
+      height: 4px;
+      background: #999;
+      flex: none;
+      width: 16px;
+      border-radius: 2px;
+      margin-right: 3px;
+    }
+  }
+  .side-legend {
+    position: absolute;
+    right: -34px;
+    top: 10px;
+    flex-direction: column;
+  }
+  .custom-scroll-bar {
+    &::-webkit-scrollbar {
+      width: 4px;
+      background-color: lighten(#c4c6cc, 80%);
+    }
+
+    &::-webkit-scrollbar-thumb {
+      height: 5px;
+      border-radius: 2px;
+      background-color: #c4c6cc;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  }
 }
 </style>
