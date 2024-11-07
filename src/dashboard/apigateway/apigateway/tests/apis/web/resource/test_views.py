@@ -22,12 +22,14 @@ import pytest
 from ddf import G
 from django.utils import timezone
 
+from apigateway.apis.web.resource.serializers import ResourceInputSLZ
 from apigateway.apis.web.resource.views import (
     BackendHostIsEmpty,
     BackendPathCheckApi,
 )
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.biz.resource import ResourceHandler
+from apigateway.biz.resource.savers import ResourcesSaver
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core import constants
 from apigateway.core.models import Backend, BackendConfig, Context, Proxy, Resource, Stage
@@ -145,48 +147,101 @@ class TestResourceRetrieveUpdateDestroyApi:
         assert resp.status_code == 200
         assert result["data"]["id"] == fake_resource.id
 
-    def test_update(self, request_view, fake_resource):
-        fake_gateway = fake_resource.gateway
-        backend = Backend.objects.filter(gateway=fake_gateway).first()
+    def test_update(self, request_view, fake_gateway):
+        backend = G(Backend, gateway=fake_gateway, name="newtest4")
 
         data = {
-            "name": "post_echo",
-            "description": "desc",
+            "name": "test2",
+            "description": "",
+            "path": "/e/",
+            "method": "GET",
+            "match_subpath": False,
+            "enable_websocket": False,
+            "auth_config": {
+                "skip_auth_verification": False,
+                "auth_verified_required": True,
+                "app_verified_required": True,
+                "resource_perm_required": True
+            },
             "is_public": True,
-            "method": "POST",
-            "path": "/echo/",
+            "allow_apply_permission": True,
             "label_ids": [],
             "backend": {
                 "id": backend.id,
+                "name": "newtest4",
                 "config": {
                     "method": "GET",
-                    "path": "/echo/",
-                    "timeout": 30,
-                },
+                    "path": "/e/",
+                    "match_subpath": False,
+                    "timeout": 0
+                }
+            }
+        }
+
+        slz = ResourceInputSLZ(
+            data=data,
+            context={
+                "gateway": fake_gateway,
+                "stages": Stage.objects.filter(gateway=fake_gateway),
             },
+        )
+        slz.is_valid(raise_exception=True)
+
+        saver = ResourcesSaver.from_resources(
+            gateway=fake_gateway,
+            resources=[slz.validated_data],
+            username='root',
+        )
+
+        resources = saver.save()
+        instance = resources[0]
+
+        label_obj = G(APILabel, gateway=fake_gateway)
+
+        data2 = {
+            "name": "test2",
+            "description": "",
+            "path": "/e/",
+            "method": "GET",
+            "match_subpath": False,
+            "enable_websocket": False,
             "auth_config": {
-                "auth_verified_required": False,
+                "skip_auth_verification": False,
+                "auth_verified_required": True,
                 "app_verified_required": True,
-                "resource_perm_required": True,
+                "resource_perm_required": True
             },
+            "is_public": True,
+            "allow_apply_permission": True,
+            "label_ids": [label_obj.id],
+            "backend": {
+                "id": backend.id,
+                "name": "newtest4",
+                "config": {
+                    "method": "GET",
+                    "path": "/e/",
+                    "match_subpath": False,
+                    "timeout": 0
+                }
+            }
         }
 
         resp = request_view(
             method="PUT",
             view_name="resource.retrieve_update_destroy",
-            path_params={"gateway_id": fake_gateway.id, "id": fake_resource.id},
-            data=data,
+            path_params={"gateway_id": fake_gateway.id, "id": instance.id},
+            data=data2,
         )
 
         assert resp.status_code == 204
 
-        proxy = Proxy.objects.get(resource=fake_resource)
+        proxy = Proxy.objects.get(resource=instance)
         assert proxy.backend_id == backend.id
 
-        auth_config = ResourceAuthContext().get_config(fake_resource.id)
+        auth_config = ResourceAuthContext().get_config(instance.id)
         assert auth_config == {
             "skip_auth_verification": False,
-            "auth_verified_required": False,
+            "auth_verified_required": True,
             "app_verified_required": True,
             "resource_perm_required": True,
         }

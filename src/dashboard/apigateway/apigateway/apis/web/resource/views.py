@@ -215,23 +215,35 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
         )
         slz.is_valid(raise_exception=True)
 
+        now_resource_data = ResourceOutputSLZ(
+            instance,
+            context={
+                "auth_config": ResourceAuthContext().get_config(instance.id),
+                "labels": ResourceLabelHandler.get_labels([instance.id]),
+                "proxy": Proxy.objects.get(resource_id=instance.id),
+                "resource_id_to_schema": ResourceHandler.get_id_to_schema([instance.id]),
+            },
+        ).data
+
         saver = ResourcesSaver.from_resources(
             gateway=request.gateway,
             resources=[slz.validated_data],
             username=request.user.username,
         )
-        resources = saver.save()
-        instance = resources[0]
 
-        Auditor.record_resource_op_success(
-            op_type=OpTypeEnum.MODIFY,
-            username=request.user.username,
-            gateway_id=request.gateway.id,
-            instance_id=instance.id,
-            instance_name=instance.identity,
-            data_before=data_before,
-            data_after=get_model_dict(instance),
-        )
+        if saver.is_update(now_resource_data):
+            resources = saver.save()
+            instance = resources[0]
+
+            Auditor.record_resource_op_success(
+                op_type=OpTypeEnum.MODIFY,
+                username=request.user.username,
+                gateway_id=request.gateway.id,
+                instance_id=instance.id,
+                instance_name=instance.identity,
+                data_before=data_before,
+                data_after=get_model_dict(instance),
+            )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
