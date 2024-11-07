@@ -255,7 +255,7 @@ const handleReportInit = () => {
   }
   .requests {
     .total-requests {
-      width: 254px;
+      width: 200px;
       height: 320px;
       background: #FFFFFF;
       box-shadow: 0 1px 2px 0 #0000001a;
@@ -280,7 +280,6 @@ const handleReportInit = () => {
     }
     .success-requests {
       width: 673px;
-      height: 320px;
       background: #FFFFFF;
       box-shadow: 0 2px 4px 0 #1919290d;
       border-radius: 2px;
@@ -288,7 +287,6 @@ const handleReportInit = () => {
     }
     .error-requests {
       width: 673px;
-      height: 320px;
       background: #FFFFFF;
       box-shadow: 0 2px 4px 0 #1919290d;
       border-radius: 2px;
@@ -297,25 +295,25 @@ const handleReportInit = () => {
   .secondary-panel {
     .secondary-lf {
       width: 808px;
-      height: 360px;
       background: #FFFFFF;
       box-shadow: 0 2px 4px 0 #1919290d;
       border-radius: 2px;
       margin-right: 16px;
+      padding-bottom: 6px;
     }
     .secondary-rg {
       width: 808px;
-      height: 360px;
       background: #FFFFFF;
       box-shadow: 0 2px 4px 0 #1919290d;
       border-radius: 2px;
+      padding-bottom: 6px;
     }
   }
   .full-line {
-    height: 360px;
     background: #FFFFFF;
     box-shadow: 0 2px 4px 0 #1919290d;
     border-radius: 2px;
+    padding-bottom: 12px;
   }
 }
 .full-box {
