@@ -30,6 +30,7 @@ from rest_framework import generics, serializers, status
 
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.label.models import ResourceLabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
@@ -187,6 +188,33 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
     serializer_class = ResourceInputSLZ
     lookup_field = "id"
 
+    def _check_if_changed(self, input_data: Dict[str, Any], instance: Resource) -> bool:
+
+        resource_fields = ["name", "description", "method", "path", "match_subpath",
+                           "enable_websocket", "is_public", "allow_apply_permission"]
+
+        current_resource_data = get_model_dict(instance)
+        for field in resource_fields:
+            if input_data[field] != current_resource_data[field]:
+                return True
+
+        current_auth_config = ResourceAuthContext().get_config(instance.id)
+        input_data["auth_config"]["skip_auth_verification"] = False
+        if input_data["auth_config"] != current_auth_config:
+            return True
+
+        proxy = Proxy.objects.get(resource_id=instance.id)
+        current_backend = {"id": proxy.backend.id, "config": proxy.config}
+        input_backend = {"id": input_data['backend'].id, "config": dict(input_data["backend_config"])}
+        if input_backend != current_backend:
+            return True
+
+        current_label_ids = ResourceLabel.objects.filter(resource_id=instance.id).values_list("api_label_id", flat=True)
+        if input_data["label_ids"] != list(current_label_ids):
+            return True
+
+        return False
+
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         slz = ResourceOutputSLZ(
@@ -215,23 +243,13 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
         )
         slz.is_valid(raise_exception=True)
 
-        now_resource_data = ResourceOutputSLZ(
-            instance,
-            context={
-                "auth_config": ResourceAuthContext().get_config(instance.id),
-                "labels": ResourceLabelHandler.get_labels([instance.id]),
-                "proxy": Proxy.objects.get(resource_id=instance.id),
-                "resource_id_to_schema": ResourceHandler.get_id_to_schema([instance.id]),
-            },
-        ).data
+        if self._check_if_changed(dict(slz.validated_data), instance):
+            saver = ResourcesSaver.from_resources(
+                gateway=request.gateway,
+                resources=[slz.validated_data],
+                username=request.user.username,
+            )
 
-        saver = ResourcesSaver.from_resources(
-            gateway=request.gateway,
-            resources=[slz.validated_data],
-            username=request.user.username,
-        )
-
-        if saver.is_update(now_resource_data):
             resources = saver.save()
             instance = resources[0]
 

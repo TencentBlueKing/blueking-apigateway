@@ -149,6 +149,8 @@ class TestResourceRetrieveUpdateDestroyApi:
 
     def test_update(self, request_view, fake_gateway):
         backend = G(Backend, gateway=fake_gateway, name="newtest4")
+        label_obj1 = G(APILabel, gateway=fake_gateway, name="aaa")
+        label_obj2 = G(APILabel, gateway=fake_gateway, name="bbb")
 
         data = {
             "name": "test2",
@@ -165,7 +167,7 @@ class TestResourceRetrieveUpdateDestroyApi:
             },
             "is_public": True,
             "allow_apply_permission": True,
-            "label_ids": [],
+            "label_ids": [label_obj1.id],
             "backend": {
                 "id": backend.id,
                 "name": "newtest4",
@@ -196,8 +198,6 @@ class TestResourceRetrieveUpdateDestroyApi:
         resources = saver.save()
         instance = resources[0]
 
-        label_obj = G(APILabel, gateway=fake_gateway)
-
         data2 = {
             "name": "test2",
             "description": "",
@@ -213,7 +213,7 @@ class TestResourceRetrieveUpdateDestroyApi:
             },
             "is_public": True,
             "allow_apply_permission": True,
-            "label_ids": [label_obj.id],
+            "label_ids": [label_obj1.id, label_obj2.id],
             "backend": {
                 "id": backend.id,
                 "name": "newtest4",

@@ -50,41 +50,6 @@ class ResourcesSaver:
         resource_data_list = parse_obj_as(List[ResourceData], resources)
         return cls(gateway, resource_data_list, username)
 
-    def is_update(self, now_resource_data):
-
-        resource_fileds = ["name", "description", "method", "path", "match_subpath",
-                           "enable_websocket", "is_public", "allow_apply_permission"]
-
-        for resource in self.resource_data_list:
-
-            resource_data = dict(resource)
-
-            # resource
-            for field in resource_fileds:
-                if resource_data[field] != now_resource_data[field]:
-                    return True
-
-            # auth_config
-            auth_config = dict(resource_data["auth_config"])
-            auth_config["skip_auth_verification"] = False
-
-            if auth_config != now_resource_data["auth_config"]:
-                return True
-
-            # backend
-            config = dict(resource_data["backend_config"])
-            config.pop("legacy_upstreams")
-            config.pop("legacy_transform_headers")
-            before_backend = {"id": resource_data['backend'].id, "config": config}
-            if before_backend != now_resource_data["backend"]:
-                return True
-
-            # label_ids
-            if resource_data["label_ids"] != now_resource_data["labels"]:
-                return True
-
-        return False
-
     def save(self) -> List[Resource]:
         self._check_proxies(
             [resource_data.resource.id for resource_data in self.resource_data_list if resource_data.resource]
