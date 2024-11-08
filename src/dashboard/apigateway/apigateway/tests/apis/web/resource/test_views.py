@@ -22,12 +22,15 @@ import pytest
 from ddf import G
 from django.utils import timezone
 
+from apigateway.apis.web.resource.serializers import ResourceInputSLZ
 from apigateway.apis.web.resource.views import (
     BackendHostIsEmpty,
     BackendPathCheckApi,
+    ResourceRetrieveUpdateDestroyApi,
 )
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.biz.resource import ResourceHandler
+from apigateway.biz.resource.savers import ResourcesSaver
 from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core import constants
 from apigateway.core.models import Backend, BackendConfig, Context, Proxy, Resource, Stage
@@ -203,6 +206,84 @@ class TestResourceRetrieveUpdateDestroyApi:
         assert not Resource.objects.filter(id=fake_resource.id).exists()
         assert not Proxy.objects.filter(resource=fake_resource)
         assert not Context.objects.filter(type="resource", scope_id=fake_resource.id)
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            {
+                "name": "test",
+                "description": "desc",
+                "path": "/e/",
+                "method": "GET",
+                "match_subpath": False,
+                "enable_websocket": False,
+                "auth_config": {
+                    "skip_auth_verification": False,
+                    "auth_verified_required": True,
+                    "app_verified_required": True,
+                    "resource_perm_required": True
+                },
+                "is_public": True,
+                "allow_apply_permission": True,
+                "label_ids": [],
+                "backend": {
+                    "name": "default",
+                    "config": {
+                        "method": "GET",
+                        "path": "/e/",
+                        "match_subpath": False,
+                        "timeout": 0
+                    }
+                }
+            },
+        ],
+    )
+    def test_check_if_changed(self, request_view, fake_gateway, data):
+        backend = G(Backend, gateway=fake_gateway, name="default")
+        label_a = G(APILabel, gateway=fake_gateway, name="aaa")
+        label_b = G(APILabel, gateway=fake_gateway, name="bbb")
+        label_c = G(APILabel, gateway=fake_gateway, name="ccc")
+
+        data["backend"]["id"] = backend.id
+        data["label_ids"] = [label_a.id, label_b.id]
+
+        slz = ResourceInputSLZ(
+            data=data,
+            context={
+                "gateway": fake_gateway,
+                "stages": Stage.objects.filter(gateway=fake_gateway),
+            },
+        )
+        slz.is_valid(raise_exception=True)
+
+        saver = ResourcesSaver.from_resources(
+            gateway=fake_gateway,
+            resources=[slz.validated_data],
+            username='root',
+        )
+
+        resources = saver.save()
+        instance = resources[0]
+
+        view = ResourceRetrieveUpdateDestroyApi()
+
+        slz.validated_data["name"] = "test2"
+        assert view._check_if_changed(slz.validated_data, instance)
+
+        slz.validated_data["name"] = "test"
+        slz.validated_data["auth_config"]["resource_perm_required"] = False
+        assert view._check_if_changed(slz.validated_data, instance)
+
+        slz.validated_data["name"] = "test"
+        slz.validated_data["auth_config"]["resource_perm_required"] = True
+        slz.validated_data["backend_config"]["path"] = "/ee/"
+        assert view._check_if_changed(slz.validated_data, instance)
+
+        slz.validated_data["name"] = "test"
+        slz.validated_data["auth_config"]["resource_perm_required"] = True
+        slz.validated_data["backend_config"]["path"] = "/e/"
+        slz.validated_data["label_ids"] = [label_c.id, label_b.id, label_a.id]
+        assert view._check_if_changed(slz.validated_data, instance)
 
 
 class TestResourceBatchUpdateDestroyApi:
