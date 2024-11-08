@@ -18,6 +18,7 @@
 import pytest
 from django.utils.translation import override
 
+from apigateway.apis.web.plugin.views import PluginConfigRetrieveUpdateDestroyApi
 from apigateway.utils.yaml import yaml_dumps
 
 
@@ -214,6 +215,56 @@ class TestPluginConfigRetrieveUpdateDestroyApi:
         )
 
         assert response.status_code == 204
+
+    def test_check_if_changed(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_plugin_bk_header_rewrite,
+        fake_plugin_check_changed_binding,
+    ):
+
+        yaml = yaml_dumps(
+            {
+                "set": [{"key": "foo", "value": "bar"}],
+                "remove": [{"key": "baz"}],
+            }
+        )
+
+        view = PluginConfigRetrieveUpdateDestroyApi()
+
+        # update yaml
+        fake_input_data1 = {
+            "name": fake_plugin_bk_header_rewrite.name,
+            "type_id": fake_plugin_check_changed_binding[0],
+            "yaml": '',
+        }
+        assert view._check_if_changed(fake_input_data1, fake_plugin_bk_header_rewrite)
+
+        # update name
+        fake_input_data2 = {
+            "name": "bk-header-rewrite-2",
+            "type_id": fake_plugin_check_changed_binding[0],
+            "yaml": yaml,
+        }
+        assert view._check_if_changed(fake_input_data2, fake_plugin_bk_header_rewrite)
+
+        # update type_id
+        fake_input_data3 = {
+            "name": fake_plugin_bk_header_rewrite.name,
+            "type_id": fake_plugin_check_changed_binding[1],
+            "yaml": yaml,
+        }
+        assert view._check_if_changed(fake_input_data3, fake_plugin_bk_header_rewrite)
+
+        # no update
+        fake_input_data4 = {
+            "name": fake_plugin_bk_header_rewrite.name,
+            "type_id": fake_plugin_check_changed_binding[0],
+            "yaml": yaml,
+        }
+        assert not view._check_if_changed(fake_input_data4, fake_plugin_bk_header_rewrite)
 
 
 class TestPluginFormRetrieveApi:
