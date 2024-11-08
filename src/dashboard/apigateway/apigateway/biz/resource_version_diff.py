@@ -134,7 +134,7 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
     is_public: bool = True
     allow_apply_permission: bool = True
     proxy: Union[ResourceHTTPProxy, ResourceMockProxy]
-    api_labels: List[Text] = Field(default_factory=list)
+    api_labels: List[int] = Field(default_factory=list)
     contexts: ResourceContexts
     disabled_stages: List[Text] = Field(default_factory=list)
     plugins: List[ResourcePluginConfig] = Field(default_factory=list)

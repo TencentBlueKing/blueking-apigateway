@@ -189,9 +189,16 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
     lookup_field = "id"
 
     def _check_if_changed(self, input_data: Dict[str, Any], instance: Resource) -> bool:
-
-        resource_fields = ["name", "description", "method", "path", "match_subpath",
-                           "enable_websocket", "is_public", "allow_apply_permission"]
+        resource_fields = [
+            "name",
+            "description",
+            "method",
+            "path",
+            "match_subpath",
+            "enable_websocket",
+            "is_public",
+            "allow_apply_permission",
+        ]
 
         current_resource_data = get_model_dict(instance)
         for field in resource_fields:
@@ -209,7 +216,9 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
         if input_backend != current_backend:
             return True
 
-        current_label_ids = ResourceLabel.objects.filter(resource_id=instance.id).values_list("api_label_id", flat=True)
+        current_label_ids = ResourceLabel.objects.filter(resource_id=instance.id).values_list(
+            "api_label_id", flat=True
+        )
         if sorted(input_data["label_ids"]) != sorted(current_label_ids):
             return True
 

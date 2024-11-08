@@ -221,20 +221,15 @@ class TestResourceRetrieveUpdateDestroyApi:
                     "skip_auth_verification": False,
                     "auth_verified_required": True,
                     "app_verified_required": True,
-                    "resource_perm_required": True
+                    "resource_perm_required": True,
                 },
                 "is_public": True,
                 "allow_apply_permission": True,
                 "label_ids": [],
                 "backend": {
                     "name": "default",
-                    "config": {
-                        "method": "GET",
-                        "path": "/e/",
-                        "match_subpath": False,
-                        "timeout": 0
-                    }
-                }
+                    "config": {"method": "GET", "path": "/e/", "match_subpath": False, "timeout": 0},
+                },
             },
         ],
     )
@@ -259,7 +254,7 @@ class TestResourceRetrieveUpdateDestroyApi:
         saver = ResourcesSaver.from_resources(
             gateway=fake_gateway,
             resources=[slz.validated_data],
-            username='root',
+            username="root",
         )
 
         resources = saver.save()

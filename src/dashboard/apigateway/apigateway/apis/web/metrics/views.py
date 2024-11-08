@@ -31,7 +31,6 @@ from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ
 
 
 class QueryRangeApi(generics.ListAPIView):
-
     @staticmethod
     def get_series_resource_id_index_map(series):
         ids_data = {}
