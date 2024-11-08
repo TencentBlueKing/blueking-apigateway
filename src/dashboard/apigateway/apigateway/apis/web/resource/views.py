@@ -205,12 +205,12 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
 
         proxy = Proxy.objects.get(resource_id=instance.id)
         current_backend = {"id": proxy.backend.id, "config": proxy.config}
-        input_backend = {"id": input_data['backend'].id, "config": dict(input_data["backend_config"])}
+        input_backend = {"id": input_data["backend"].id, "config": dict(input_data["backend_config"])}
         if input_backend != current_backend:
             return True
 
         current_label_ids = ResourceLabel.objects.filter(resource_id=instance.id).values_list("api_label_id", flat=True)
-        if input_data["label_ids"] != list(current_label_ids):
+        if sorted(input_data["label_ids"]) != sorted(current_label_ids):
             return True
 
         return False

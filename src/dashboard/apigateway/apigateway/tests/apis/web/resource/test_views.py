@@ -26,6 +26,7 @@ from apigateway.apis.web.resource.serializers import ResourceInputSLZ
 from apigateway.apis.web.resource.views import (
     BackendHostIsEmpty,
     BackendPathCheckApi,
+    ResourceRetrieveUpdateDestroyApi,
 )
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.biz.resource import ResourceHandler
@@ -147,38 +148,104 @@ class TestResourceRetrieveUpdateDestroyApi:
         assert resp.status_code == 200
         assert result["data"]["id"] == fake_resource.id
 
-    def test_update(self, request_view, fake_gateway):
-        backend = G(Backend, gateway=fake_gateway, name="newtest4")
-        label_obj1 = G(APILabel, gateway=fake_gateway, name="aaa")
-        label_obj2 = G(APILabel, gateway=fake_gateway, name="bbb")
+    def test_update(self, request_view, fake_resource):
+        fake_gateway = fake_resource.gateway
+        backend = Backend.objects.filter(gateway=fake_gateway).first()
 
         data = {
-            "name": "test2",
-            "description": "",
-            "path": "/e/",
-            "method": "GET",
-            "match_subpath": False,
-            "enable_websocket": False,
-            "auth_config": {
-                "skip_auth_verification": False,
-                "auth_verified_required": True,
-                "app_verified_required": True,
-                "resource_perm_required": True
-            },
+            "name": "post_echo",
+            "description": "desc",
             "is_public": True,
-            "allow_apply_permission": True,
-            "label_ids": [label_obj1.id],
+            "method": "POST",
+            "path": "/echo/",
+            "label_ids": [],
             "backend": {
                 "id": backend.id,
-                "name": "newtest4",
                 "config": {
                     "method": "GET",
-                    "path": "/e/",
-                    "match_subpath": False,
-                    "timeout": 0
-                }
-            }
+                    "path": "/echo/",
+                    "timeout": 30,
+                },
+            },
+            "auth_config": {
+                "auth_verified_required": False,
+                "app_verified_required": True,
+                "resource_perm_required": True,
+            },
         }
+
+        resp = request_view(
+            method="PUT",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": fake_resource.id},
+            data=data,
+        )
+
+        assert resp.status_code == 204
+
+        proxy = Proxy.objects.get(resource=fake_resource)
+        assert proxy.backend_id == backend.id
+
+        auth_config = ResourceAuthContext().get_config(fake_resource.id)
+        assert auth_config == {
+            "skip_auth_verification": False,
+            "auth_verified_required": False,
+            "app_verified_required": True,
+            "resource_perm_required": True,
+        }
+
+    def test_destroy(self, request_view, fake_resource):
+        fake_gateway = fake_resource.gateway
+
+        resp = request_view(
+            method="DELETE",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": fake_resource.id},
+        )
+        assert resp.status_code == 204
+        assert not Resource.objects.filter(id=fake_resource.id).exists()
+        assert not Proxy.objects.filter(resource=fake_resource)
+        assert not Context.objects.filter(type="resource", scope_id=fake_resource.id)
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            {
+                "name": "test",
+                "description": "desc",
+                "path": "/e/",
+                "method": "GET",
+                "match_subpath": False,
+                "enable_websocket": False,
+                "auth_config": {
+                    "skip_auth_verification": False,
+                    "auth_verified_required": True,
+                    "app_verified_required": True,
+                    "resource_perm_required": True
+                },
+                "is_public": True,
+                "allow_apply_permission": True,
+                "label_ids": [],
+                "backend": {
+                    "name": "default",
+                    "config": {
+                        "method": "GET",
+                        "path": "/e/",
+                        "match_subpath": False,
+                        "timeout": 0
+                    }
+                }
+            },
+        ],
+    )
+    def test_check_if_changed(self, request_view, fake_gateway, data):
+        backend = G(Backend, gateway=fake_gateway, name="default")
+        label_a = G(APILabel, gateway=fake_gateway, name="aaa")
+        label_b = G(APILabel, gateway=fake_gateway, name="bbb")
+        label_c = G(APILabel, gateway=fake_gateway, name="ccc")
+
+        data["backend"]["id"] = backend.id
+        data["label_ids"] = [label_a.id, label_b.id]
 
         slz = ResourceInputSLZ(
             data=data,
@@ -198,66 +265,25 @@ class TestResourceRetrieveUpdateDestroyApi:
         resources = saver.save()
         instance = resources[0]
 
-        data2 = {
-            "name": "test2",
-            "description": "",
-            "path": "/e/",
-            "method": "GET",
-            "match_subpath": False,
-            "enable_websocket": False,
-            "auth_config": {
-                "skip_auth_verification": False,
-                "auth_verified_required": True,
-                "app_verified_required": True,
-                "resource_perm_required": True
-            },
-            "is_public": True,
-            "allow_apply_permission": True,
-            "label_ids": [label_obj1.id, label_obj2.id],
-            "backend": {
-                "id": backend.id,
-                "name": "newtest4",
-                "config": {
-                    "method": "GET",
-                    "path": "/e/",
-                    "match_subpath": False,
-                    "timeout": 0
-                }
-            }
-        }
+        view = ResourceRetrieveUpdateDestroyApi()
 
-        resp = request_view(
-            method="PUT",
-            view_name="resource.retrieve_update_destroy",
-            path_params={"gateway_id": fake_gateway.id, "id": instance.id},
-            data=data2,
-        )
+        slz.validated_data["name"] = "test2"
+        assert view._check_if_changed(slz.validated_data, instance)
 
-        assert resp.status_code == 204
+        slz.validated_data["name"] = "test"
+        slz.validated_data["auth_config"]["resource_perm_required"] = False
+        assert view._check_if_changed(slz.validated_data, instance)
 
-        proxy = Proxy.objects.get(resource=instance)
-        assert proxy.backend_id == backend.id
+        slz.validated_data["name"] = "test"
+        slz.validated_data["auth_config"]["resource_perm_required"] = True
+        slz.validated_data["backend_config"]["path"] = "/ee/"
+        assert view._check_if_changed(slz.validated_data, instance)
 
-        auth_config = ResourceAuthContext().get_config(instance.id)
-        assert auth_config == {
-            "skip_auth_verification": False,
-            "auth_verified_required": True,
-            "app_verified_required": True,
-            "resource_perm_required": True,
-        }
-
-    def test_destroy(self, request_view, fake_resource):
-        fake_gateway = fake_resource.gateway
-
-        resp = request_view(
-            method="DELETE",
-            view_name="resource.retrieve_update_destroy",
-            path_params={"gateway_id": fake_gateway.id, "id": fake_resource.id},
-        )
-        assert resp.status_code == 204
-        assert not Resource.objects.filter(id=fake_resource.id).exists()
-        assert not Proxy.objects.filter(resource=fake_resource)
-        assert not Context.objects.filter(type="resource", scope_id=fake_resource.id)
+        slz.validated_data["name"] = "test"
+        slz.validated_data["auth_config"]["resource_perm_required"] = True
+        slz.validated_data["backend_config"]["path"] = "/e/"
+        slz.validated_data["label_ids"] = [label_c.id, label_b.id, label_a.id]
+        assert view._check_if_changed(slz.validated_data, instance)
 
 
 class TestResourceBatchUpdateDestroyApi:
