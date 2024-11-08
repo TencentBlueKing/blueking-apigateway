@@ -9,7 +9,7 @@
       <div
         v-for="({ color, name, selected }, legendIndex) in chartLegend[instanceId]"
         :key="legendIndex"
-        :class="['legend-item', { selected, unselected: !selected }]"
+        :class="['legend-item', selected]"
         @click.stop="handleClickLegend(legendIndex)">
         <div class="legend-icon" :style="{ background: color }"></div>
         <div class="legend-name">{{name}}</div>
@@ -17,7 +17,7 @@
     </div>
   </div>
 
-  <div v-show="isEmpty" class="ap-nodata">
+  <div v-show="isEmpty" class="ap-nodata basic-height">
     <TableEmpty
       :keyword="tableEmptyConf.keyword"
       :abnormal="tableEmptyConf.isAbnormal"
@@ -31,10 +31,14 @@
 import { ref, shallowRef, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import * as echarts from 'echarts';
 import { merge } from 'lodash';
+import dayjs from 'dayjs';
+import { useI18n } from 'vue-i18n';
 import { userChartIntervalOption } from '@/hooks';
 import { SeriesItemType, SearchParamsType } from '../type';
 import TableEmpty from '@/components/table-empty.vue';
 import { getColorHue } from '@/common/util';
+
+const { t } = useI18n();
 
 const props = defineProps({
   instanceId: { // 生成图表的元素id
@@ -54,7 +58,7 @@ const props = defineProps({
 interface LegendItem {
   color: string;
   name: string;
-  selected: boolean,
+  selected: string,
 };
 
 interface ChartLegend {
@@ -249,6 +253,25 @@ const getChartOption = () => {
     });
     // 设置图表颜色
     chartOption.color = generateChartColor(props.chartData.series ?? []);
+
+    if (props.instanceId === 'requests') {
+      // 设置图表tooltip内容
+      chartOption.tooltip.formatter = (params: any) => {
+        return `<div>
+      <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
+      <p><span class="tooltip-icon">${params.marker}${t('总请求数')}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ${t('次')}</span></p>
+      </div>`;
+      };
+    } else {
+      // 设置图表tooltip内容
+      chartOption.tooltip.formatter = (params: any) => {
+        return `<div>
+      <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
+      <p><span class="tooltip-icon">${params.marker}${params.seriesName}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ${t('次')}</span></p>
+      </div>`;
+      };
+    }
+
     if (['requests', 'non_200_status'].includes(props.instanceId)) {
       chartOption.grid.left = '18%';
       if (document.body.clientWidth < 1550) {
@@ -346,7 +369,7 @@ const generateChartLegend = () => {
     chartLegend.value[props.instanceId] = option?.series?.map((serie: echarts.EChartOption.Series, index: number) => ({
       color: option.color[index],
       name: serie.name,
-      selected: false,
+      selected: 'all',
     }));
   } else {
     chartLegend.value[props.instanceId] = null;
@@ -360,7 +383,7 @@ const handleClickLegend = (index: number) => {
   const { selected } = currentLegend;
 
   // 实现切换单选显示
-  if (!selected) {
+  if (selected !== 'selected') {
     // 仅显示选中
     myChart.value.dispatchAction({
       type: 'legendUnSelect',
@@ -373,7 +396,7 @@ const handleClickLegend = (index: number) => {
 
     // 选中状态设置
     legend.forEach((item: LegendItem, i: number) => {
-      item.selected = index === i;
+      item.selected = index === i ? 'selected' : 'unselected';
     });
     chartLegend.value = { ...chartLegend.value, ...{ [props.instanceId]: legend } };
   } else {
@@ -383,7 +406,7 @@ const handleClickLegend = (index: number) => {
       batch: legend.map(({ name }: LegendItem) => ({ name })),
     });
 
-    legend.forEach((item: LegendItem) => (item.selected = false));
+    legend.forEach((item: LegendItem) => (item.selected = 'all'));
     chartLegend.value = { ...chartLegend.value, ...{ [props.instanceId]: legend } };
   }
 };
@@ -392,21 +415,6 @@ const renderChart = () => {
   nextTick(() => {
     const option = getChartOption();
     myChart.value?.setOption(option, { notMerge: true });
-    // 切换图例，处理单个数据点x轴显示问题
-    myChart.value?.on('legendselected', (params: LegendItem) => {
-      const currentOption = myChart.value.getOption();
-      const serie = currentOption.series.find((item: echarts.EChartOption.Series) => item.name === params.name) || {};
-      if (serie.data && serie.data.length === 1) {
-        // fix单个数据点xAxis显示异常，本质上是去掉动态计算出的间隔设置
-        myChart.value?.setOption({
-          xAxis: {
-            interval: 'auto',
-          },
-        });
-      } else {
-        myChart.value?.setOption(option);
-      }
-    });
     chartResize();
     generateChartLegend();
   });
@@ -474,6 +482,8 @@ defineExpose({
     right: -34px;
     top: 10px;
     flex-direction: column;
+    height: 220px;
+    max-height: 242px;
   }
   .custom-scroll-bar {
     &::-webkit-scrollbar {
@@ -491,5 +501,17 @@ defineExpose({
       background: transparent;
     }
   }
+}
+:deep(.tooltip-icon) {
+  margin-right: 6px;
+  span {
+    height: 4px !important;
+    width: 16px !important;
+    border-radius: 2px !important;
+    vertical-align: middle;
+  }
+}
+.basic-height {
+  height: 320px;
 }
 </style>

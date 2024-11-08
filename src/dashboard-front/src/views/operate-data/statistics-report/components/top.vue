@@ -61,7 +61,7 @@
         <date-picker
           v-model="dateTime"
           @update:model-value="handleValueChange"
-          :valid-date-range="['now/d', 'now/d']"
+          :valid-date-range="['now-2d', 'now/d']"
           format="YYYY-MM-DD HH:mm:ss" />
       </div>
       <div class="refresh-time">
