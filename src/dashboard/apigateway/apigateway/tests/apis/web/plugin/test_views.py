@@ -242,14 +242,6 @@ class TestPluginConfigRetrieveUpdateDestroyApi:
         }
         assert view._check_if_changed(fake_input_data1, fake_plugin_bk_header_rewrite)
 
-        # update name
-        fake_input_data2 = {
-            "name": "bk-header-rewrite-2",
-            "type_id": fake_plugin_check_changed_binding[0],
-            "yaml": yaml,
-        }
-        assert view._check_if_changed(fake_input_data2, fake_plugin_bk_header_rewrite)
-
         # update type_id
         fake_input_data3 = {
             "name": fake_plugin_bk_header_rewrite.name,

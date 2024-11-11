@@ -334,15 +334,9 @@ class PluginConfigRetrieveUpdateDestroyApi(
             input_yaml = yaml_loads(input_data["yaml"])
             current_yaml = yaml_loads(instance.yaml)
 
-            if input_yaml != current_yaml:
+            if input_yaml != current_yaml or input_data["type_id"].id != instance.type.id:
                 return True
         except Exception:
-            return True
-
-        if input_data["name"] != instance.name:
-            return True
-
-        if input_data["type_id"].id != instance.type.id:
             return True
 
         return False
