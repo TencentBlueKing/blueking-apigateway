@@ -904,6 +904,42 @@ def fake_plugin_resource_bk_cors_binding(fake_plugin_bk_cors, fake_resource):
 
 
 @pytest.fixture()
+def fake_plugin_check_changed(fake_plugin_type_bk_header_rewrite, fake_gateway):
+    return G(
+        PluginConfig,
+        gateway=fake_gateway,
+        name="bk-test",
+        type=fake_plugin_type_bk_header_rewrite,
+        yaml=yaml_dumps(
+            {
+                "set": [{"key": "foo", "value": "bar"}],
+                "remove": [{"key": "baz"}],
+            }
+        ),
+    )
+
+
+@pytest.fixture()
+def fake_plugin_check_changed_binding(fake_plugin_bk_header_rewrite, fake_plugin_check_changed, fake_stage):
+    bangding1 = G(
+        PluginBinding,
+        gateway=fake_plugin_bk_header_rewrite.gateway,
+        config=fake_plugin_bk_header_rewrite,
+        scope_type=PluginBindingScopeEnum.STAGE.value,
+        scope_id=fake_stage.pk,
+    )
+
+    bangding2 = G(
+        PluginBinding,
+        gateway=fake_plugin_check_changed.gateway,
+        config=fake_plugin_check_changed,
+        scope_type=PluginBindingScopeEnum.STAGE.value,
+        scope_id=fake_stage.pk,
+    )
+    return [bangding1, bangding2]
+
+
+@pytest.fixture()
 def fake_rsa_private_key():
     return """-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEArkgtL4OVsDVSlns1n5EAqs908uDoQMoPJ+2i3o/ddKXRObaN
