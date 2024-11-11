@@ -333,13 +333,10 @@ class PluginConfigRetrieveUpdateDestroyApi(
         try:
             input_yaml = yaml_loads(input_data["yaml"])
             current_yaml = yaml_loads(instance.yaml)
-
-            if input_yaml != current_yaml or input_data["type_id"].id != instance.type.id:
-                return True
         except Exception:
             return True
 
-        return False
+        return input_yaml != current_yaml or input_data["type_id"].id != instance.type.id
 
     def get_queryset(self):
         return PluginConfig.objects.prefetch_related("type").filter(gateway=self.request.gateway)
