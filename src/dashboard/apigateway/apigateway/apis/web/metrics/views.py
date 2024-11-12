@@ -89,14 +89,17 @@ class QueryRangeApi(generics.ListAPIView):
             step=step,
         )
 
-        if metrics_name in ["ingress", "egress"]:
-            series = data.get("data", {}).get("series", [])
-            ids_data = self.get_series_resource_id_index_map(series)
+        series = [s for s in data.get("data", {}).get("series", []) if s["target"].strip()]
+        if series:
+            data["data"]["series"] = series
 
-            if ids_data:
-                resources = Resource.objects.filter(id__in=ids_data.keys()).values("id", "name")
-                for obj in resources:
-                    series[ids_data[obj["id"]]]["target"] = obj["name"]
+            if metrics_name in ["ingress", "egress"]:
+                ids_data = self.get_series_resource_id_index_map(series)
+
+                if ids_data:
+                    resources = Resource.objects.filter(id__in=ids_data.keys()).values("id", "name")
+                    for obj in resources:
+                        series[ids_data[obj["id"]]]["target"] = obj["name"]
 
         return OKJsonResponse(data=data)
 
