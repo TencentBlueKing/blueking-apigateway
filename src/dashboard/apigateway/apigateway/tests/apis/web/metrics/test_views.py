@@ -26,35 +26,33 @@ class TestQueryRangeApi:
         resource_obj = G(Resource, name="testname001", gateway=fake_stage.gateway)
 
         data = {
-            "data": {
-                "metrics": [],
-                "series": [
-                    {
-                        "alias": "_result_",
-                        "metric_field": "_result_",
-                        "unit": "",
-                        "target": 'route="bk-esb.prod.{}"'.format(resource_obj.id),
-                        "dimensions": {"route": "bk-esb.prod.2152"},
-                        "datapoints": [],
-                    },
-                    {
-                        "alias": "_result_",
-                        "metric_field": "_result_",
-                        "unit": "",
-                        "target": 'route="bk-esb.prod.1234"',
-                        "dimensions": {"route": "bk-esb.prod.1234"},
-                        "datapoints": [],
-                    },
-                    {
-                        "alias": "_result_",
-                        "metric_field": "_result_",
-                        "unit": "",
-                        "target": "",
-                        "dimensions": {},
-                        "datapoints": []
-                    },
-                ],
-            }
+            "metrics": [],
+            "series": [
+                {
+                    "alias": "_result_",
+                    "metric_field": "_result_",
+                    "unit": "",
+                    "target": 'route="bk-esb.prod.{}"'.format(resource_obj.id),
+                    "dimensions": {"route": "bk-esb.prod.2152"},
+                    "datapoints": [],
+                },
+                {
+                    "alias": "_result_",
+                    "metric_field": "_result_",
+                    "unit": "",
+                    "target": 'route="bk-esb.prod.1234"',
+                    "dimensions": {"route": "bk-esb.prod.1234"},
+                    "datapoints": [],
+                },
+                {
+                    "alias": "_result_",
+                    "metric_field": "_result_",
+                    "unit": "",
+                    "target": "",
+                    "dimensions": {},
+                    "datapoints": []
+                },
+            ],
         }
 
         mocker.patch(
@@ -77,9 +75,9 @@ class TestQueryRangeApi:
         result = response.json()
 
         assert response.status_code == 200
-        assert result["data"]["data"]["series"][0]["target"] == "testname001"
-        assert result["data"]["data"]["series"][1]["target"] == 'route="bk-esb.prod.1234"'
-        assert len(result["data"]["data"]["series"]) == 2
+        assert result["data"]["series"][0]["target"] == 'name="testname001"'
+        assert result["data"]["series"][1]["target"] == 'route="bk-esb.prod.1234"'
+        assert len(result["data"]["series"]) == 2
 
         mocker.patch(
             "apigateway.apis.web.metrics.views.MetricsRangeFactory.create_metrics",
