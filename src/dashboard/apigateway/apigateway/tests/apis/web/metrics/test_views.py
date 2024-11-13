@@ -75,7 +75,7 @@ class TestQueryRangeApi:
         result = response.json()
 
         assert response.status_code == 200
-        assert result["data"]["series"][0]["target"] == "name=testname001"
+        assert result["data"]["series"][0]["target"] == 'name="testname001"'
         assert result["data"]["series"][1]["target"] == 'route="bk-esb.prod.1234"'
         assert len(result["data"]["series"]) == 2
 

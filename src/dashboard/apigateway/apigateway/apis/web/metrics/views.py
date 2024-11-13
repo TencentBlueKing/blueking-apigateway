@@ -99,7 +99,7 @@ class QueryRangeApi(generics.ListAPIView):
                 if ids_data:
                     resources = Resource.objects.filter(id__in=ids_data.keys()).values("id", "name")
                     for obj in resources:
-                        series[ids_data[obj["id"]]]["target"] = "name={}".format(obj["name"])
+                        series[ids_data[obj["id"]]]["target"] = 'name="{}"'.format(obj["name"])
 
         return OKJsonResponse(data=data)
 
