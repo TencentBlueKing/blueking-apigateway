@@ -45,6 +45,14 @@ class TestQueryRangeApi:
                         "dimensions": {"route": "bk-esb.prod.1234"},
                         "datapoints": [],
                     },
+                    {
+                        "alias": "_result_",
+                        "metric_field": "_result_",
+                        "unit": "",
+                        "target": "",
+                        "dimensions": {},
+                        "datapoints": []
+                    },
                 ],
             }
         }
@@ -71,6 +79,7 @@ class TestQueryRangeApi:
         assert response.status_code == 200
         assert result["data"]["data"]["series"][0]["target"] == "testname001"
         assert result["data"]["data"]["series"][1]["target"] == 'route="bk-esb.prod.1234"'
+        assert len(result["data"]["data"]["series"]) == 2
 
         mocker.patch(
             "apigateway.apis.web.metrics.views.MetricsRangeFactory.create_metrics",
