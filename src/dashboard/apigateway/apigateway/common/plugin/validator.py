@@ -1,6 +1,6 @@
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -39,6 +39,10 @@ class PluginConfigYamlValidator:
         :param payload: 插件 yaml 格式配置字符串
         :param schema: 插件 schema 规则
         """
+        # 校验 apisix 额外规则，这个报错的可读性更好，有一些 json schema 中的报错信息不够直观可以重复在这里处理
+        checker = PluginConfigYamlChecker(plugin_type_code)
+        checker.check(payload)
+
         # 校验 schema 规则
         if schema:
             convertor = PluginConvertorFactory.get_convertor(plugin_type_code)
@@ -46,7 +50,3 @@ class PluginConfigYamlValidator:
                 validate(convertor.convert(yaml_loads(payload)), schema=schema)
             except JsonSchemaValidationError as err:
                 raise ValueError(f"{err.message}, path {list(err.absolute_path)}")
-
-        # 校验 apisix 额外规则
-        checker = PluginConfigYamlChecker(plugin_type_code)
-        checker.check(payload)

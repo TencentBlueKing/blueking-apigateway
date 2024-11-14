@@ -26,6 +26,8 @@ from typing import Any, ClassVar, Dict, List, Union
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.utils.ip import parse_ip_content_to_list
 
+from .normalizer import format_fault_injection_config
+
 
 class PluginConvertor(ABC):
     plugin_type_code: ClassVar[PluginTypeCodeEnum]
@@ -145,6 +147,9 @@ class FaultInjectionConvertor(PluginConvertor):
     plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.FAULT_INJECTION
 
     def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        # NOTE: while the dynamic form textarea would pass here, we should clean it up
+        config = format_fault_injection_config(config)
+
         if config.get("abort"):
             abort = config["abort"]
             if abort.get("vars"):
