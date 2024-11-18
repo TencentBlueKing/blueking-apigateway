@@ -16,7 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
-import json
 
 from ddf import G
 from django.utils import timezone
@@ -24,8 +23,6 @@ from django.utils import timezone
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.apps.permission.tasks import AppPermissionExpiringSoonAlerter, renew_app_resource_permission
-from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
-from apigateway.core.models import Context, Resource
 from apigateway.utils.time import now_datetime, to_datetime_from_now
 
 
@@ -105,51 +102,17 @@ class TestRenewAppResourcePermission:
 
 
 class TestAppPermissionExpiringSoonAlerter:
-    def test_get_permissions_expiring_soon(self, fake_gateway, unique_id):
+    def test_get_permissions_expiring_soon(self, fake_resource_ctx, unique_id):
         now = timezone.now()
+        fake_gateway = fake_resource_ctx[0].gateway
+
         G(AppGatewayPermission, gateway=fake_gateway, expires=now + datetime.timedelta(days=20), bk_app_code=unique_id)
 
-        resource1 = G(Resource, gateway=fake_gateway, allow_apply_permission=True)
-        resource2 = G(Resource, gateway=fake_gateway, allow_apply_permission=True)
-        resource3 = G(Resource, gateway=fake_gateway, allow_apply_permission=True)
-        resource4 = G(Resource, gateway=fake_gateway, allow_apply_permission=True)
-
-        G(
-            Context,
-            scope_type=ContextScopeTypeEnum.RESOURCE.value,
-            type=ContextTypeEnum.RESOURCE_AUTH.value,
-            scope_id=resource1.id,
-            _config=json.dumps({
-                "resource_perm_required": True,
-            }),
-        )
-        G(
-            Context,
-            scope_type=ContextScopeTypeEnum.RESOURCE.value,
-            type=ContextTypeEnum.RESOURCE_AUTH.value,
-            scope_id=resource2.id,
-            _config=json.dumps({
-                "resource_perm_required": True,
-            }),
-        )
-        G(
-            Context,
-            scope_type=ContextScopeTypeEnum.RESOURCE.value,
-            type=ContextTypeEnum.RESOURCE_AUTH.value,
-            scope_id=resource3.id,
-            _config=json.dumps({
-                "resource_perm_required": True,
-            }),
-        )
-        G(
-            Context,
-            scope_type=ContextScopeTypeEnum.RESOURCE.value,
-            type=ContextTypeEnum.RESOURCE_AUTH.value,
-            scope_id=resource4.id,
-            _config=json.dumps({
-                "resource_perm_required": False,
-            }),
-        )
+        resource1 = fake_resource_ctx[0]
+        resource2 = fake_resource_ctx[1]
+        resource3 = fake_resource_ctx[2]
+        resource4 = fake_resource_ctx[3]
+        resource5 = fake_resource_ctx[4]
 
         G(
             AppResourcePermission,
@@ -179,29 +142,45 @@ class TestAppPermissionExpiringSoonAlerter:
             expires=now + datetime.timedelta(days=15),
             bk_app_code="test2",
         )
+        G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            resource_id=resource5.id,
+            expires=now + datetime.timedelta(days=15),
+            bk_app_code="test2",
+        )
 
         alerter = AppPermissionExpiringSoonAlerter(30, [])
         result = alerter._get_permissions_expiring_soon()
         assert len(result[unique_id]) == 2
         assert len(result["test2"]) == 1
 
-    def test_filter_permissions(self, fake_gateway, unique_id):
+    def test_filter_permissions(self, fake_resource_ctx, unique_id):
         now = timezone.now()
+        fake_gateway = fake_resource_ctx[0].gateway
+
+        resource1 = fake_resource_ctx[0]
+        resource2 = fake_resource_ctx[1]
+        resource3 = fake_resource_ctx[2]
+
         G(
             AppResourcePermission,
             gateway=fake_gateway,
+            resource_id=resource1.id,
             expires=now + datetime.timedelta(hours=24 * 1 + 1),
             bk_app_code=unique_id,
         )
         G(
             AppResourcePermission,
             gateway=fake_gateway,
+            resource_id=resource2.id,
             expires=now + datetime.timedelta(hours=24 * 3 + 2),
             bk_app_code=unique_id,
         )
         G(
             AppResourcePermission,
             gateway=fake_gateway,
+            resource_id=resource3.id,
             expires=now + datetime.timedelta(hours=24 * 7 + 1),
             bk_app_code=unique_id,
         )
@@ -220,11 +199,35 @@ class TestAppPermissionExpiringSoonAlerter:
         result = alerter._filter_permissions(permissions)
         assert len(result.get(unique_id, [])) == 0
 
-    def test_complete_permissions(self, fake_gateway, unique_id):
+    def test_complete_permissions(self, fake_resource_ctx, unique_id):
         now = timezone.now()
-        G(AppResourcePermission, gateway=fake_gateway, expires=now + datetime.timedelta(days=1), bk_app_code=unique_id)
-        G(AppResourcePermission, gateway=fake_gateway, expires=now + datetime.timedelta(days=2), bk_app_code=unique_id)
-        G(AppResourcePermission, gateway=fake_gateway, expires=now + datetime.timedelta(days=3), bk_app_code=unique_id)
+        fake_gateway = fake_resource_ctx[0].gateway
+
+        resource1 = fake_resource_ctx[0]
+        resource2 = fake_resource_ctx[1]
+        resource3 = fake_resource_ctx[2]
+
+        G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            expires=now + datetime.timedelta(days=1),
+            bk_app_code=unique_id,
+            resource_id=resource1.id
+        )
+        G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            expires=now + datetime.timedelta(days=2),
+            bk_app_code=unique_id,
+            resource_id=resource2.id
+        )
+        G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            expires=now + datetime.timedelta(days=3),
+            bk_app_code=unique_id,
+            resource_id=resource3.id
+        )
 
         alerter = AppPermissionExpiringSoonAlerter(30, [])
 

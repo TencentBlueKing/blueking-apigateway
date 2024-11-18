@@ -21,7 +21,7 @@ import datetime
 import logging
 import os
 from collections import defaultdict
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from celery import shared_task
 from django.conf import settings
@@ -221,6 +221,13 @@ class AppPermissionExpiringSoonAlerter:
         # 发送告警
         self._send_alert(filtered_permissions)
 
+    def _get_resource_required(self, config: Dict[str, Any]) -> bool:
+        return (
+            config.get("resource_perm_required", False)
+            and not config.get("skip_auth_verification", False)
+            and config.get("auth_verified_required", False)
+        )
+
     def _get_permissions_expiring_soon(self) -> Dict[str, List]:
         now = timezone.now()
         expire_end_time = now + datetime.timedelta(days=self.expire_in_days)
@@ -240,16 +247,17 @@ class AppPermissionExpiringSoonAlerter:
             )
 
         # 按资源的权限
+        permissions_by_resource = AppResourcePermission.objects.filter(expires__range=(now, expire_end_time))
+
         contexts = Context.objects.filter(
+            scope_id__in=list(permissions_by_resource.values_list("resource_id", flat=True)),
             scope_type=ContextScopeTypeEnum.RESOURCE.value,
             type=ContextTypeEnum.RESOURCE_AUTH.value,
         )
-        resource_ids = [content.scope_id for content in contexts if content.config["resource_perm_required"]]
+        resource_ids = [content.scope_id for content in contexts if self._get_resource_required(content.config)]
+        if resource_ids:
+            permissions_by_resource = permissions_by_resource.filter(resource_id__in=resource_ids)
 
-        permissions_by_resource = AppResourcePermission.objects.filter(
-            resource_id__in=resource_ids,
-            expires__range=(now, expire_end_time),
-        )
         for permission in permissions_by_resource:
             permissions[permission.bk_app_code].append(
                 {

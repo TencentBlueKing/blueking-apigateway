@@ -40,6 +40,8 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import (
+    ContextScopeTypeEnum,
+    ContextTypeEnum,
     ProxyTypeEnum,
     PublishEventNameTypeEnum,
     PublishEventStatusTypeEnum,
@@ -48,6 +50,7 @@ from apigateway.core.constants import (
 from apigateway.core.models import (
     Backend,
     BackendConfig,
+    Context,
     Gateway,
     MicroGateway,
     Proxy,
@@ -323,6 +326,72 @@ def fake_resource2(faker, fake_resource):
     proxy.save()
 
     return resource
+
+
+@pytest.fixture
+def fake_resource_ctx(fake_gateway):
+    resource1 = G(Resource, gateway=fake_gateway)
+    resource2 = G(Resource, gateway=fake_gateway)
+    resource3 = G(Resource, gateway=fake_gateway)
+    resource4 = G(Resource, gateway=fake_gateway)
+    resource5 = G(Resource, gateway=fake_gateway)
+
+    G(
+        Context,
+        scope_type=ContextScopeTypeEnum.RESOURCE.value,
+        type=ContextTypeEnum.RESOURCE_AUTH.value,
+        scope_id=resource1.id,
+        _config=json.dumps({
+            "resource_perm_required": True,
+            "skip_auth_verification": False,
+            "auth_verified_required": True,
+        }),
+    )
+    G(
+        Context,
+        scope_type=ContextScopeTypeEnum.RESOURCE.value,
+        type=ContextTypeEnum.RESOURCE_AUTH.value,
+        scope_id=resource2.id,
+        _config=json.dumps({
+            "resource_perm_required": True,
+            "skip_auth_verification": False,
+            "auth_verified_required": True,
+        }),
+    )
+    G(
+        Context,
+        scope_type=ContextScopeTypeEnum.RESOURCE.value,
+        type=ContextTypeEnum.RESOURCE_AUTH.value,
+        scope_id=resource3.id,
+        _config=json.dumps({
+            "resource_perm_required": True,
+            "skip_auth_verification": False,
+            "auth_verified_required": True,
+        }),
+    )
+    G(
+        Context,
+        scope_type=ContextScopeTypeEnum.RESOURCE.value,
+        type=ContextTypeEnum.RESOURCE_AUTH.value,
+        scope_id=resource4.id,
+        _config=json.dumps({
+            "resource_perm_required": False,
+            "skip_auth_verification": False,
+            "auth_verified_required": True,
+        }),
+    )
+    G(
+        Context,
+        scope_type=ContextScopeTypeEnum.RESOURCE.value,
+        type=ContextTypeEnum.RESOURCE_AUTH.value,
+        scope_id=resource5.id,
+        _config=json.dumps({
+            "resource_perm_required": True,
+            "skip_auth_verification": False,
+            "auth_verified_required": False,
+        }),
+    )
+    return [resource1, resource2, resource3, resource4, resource5]
 
 
 @pytest.fixture

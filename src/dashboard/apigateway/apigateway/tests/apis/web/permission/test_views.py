@@ -32,11 +32,7 @@ from apigateway.utils.time import now_datetime
 pytestmark = pytest.mark.django_db
 
 
-class TestAppPermissionViewSet(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.factory = APIRequestFactory()
-        cls.gateway = create_gateway()
+class TestAppPermissionViewSet:
 
     def test_list(self, fake_resource, request_view):
         fake_gateway = fake_resource.gateway
@@ -87,6 +83,13 @@ class TestAppPermissionViewSet(TestCase):
             result = response.json()
             assert response.status_code == 200, result
             assert result["data"]["count"] == test["expected"]["count"]
+
+
+class TestAppPermissionRenewViewSet(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.factory = APIRequestFactory()
+        cls.gateway = create_gateway()
 
     def test_renew(self):
         resource = G(Resource, gateway=self.gateway)
