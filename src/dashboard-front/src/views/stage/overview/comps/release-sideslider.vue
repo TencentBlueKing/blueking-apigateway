@@ -224,15 +224,13 @@
             }}
           </div>
           <div class="dialog-subtitle">
-            {{
-              isRollback ? t('发布后，将会覆盖原来的资源版本，请谨慎操作！') : ('发布后，将会覆盖原来的资源版本，请谨慎操作！')
-            }}
+            {{ t('发布后，将会覆盖原来的资源版本，请谨慎操作！') }}
           </div>
         </main>
         <footer class="dialog-footer">
           <bk-button theme="primary" @click="handlePublish()">
             {{
-              isRollback ? t('确认回滚') : ('确认发布')
+              isRollback ? t('确认回滚') : t('确认发布')
             }}
           </bk-button>
           <bk-button class="ml10" @click="isConfirmDialogVisible = false">{{ t('取消') }}</bk-button>

@@ -311,8 +311,8 @@ const getDiffData = async () => {
 
   try {
     const res = await resourceVersionsDiff(apigwId.value, {
-      source_resource_version_id: diffSourceId.value,
-      target_resource_version_id: diffTargetId.value,
+      source_resource_version_id: diffSourceId.value.replace('current', ''),
+      target_resource_version_id: diffTargetId.value.replace('current', ''),
     });
 
     diffData.value.add = res.add;

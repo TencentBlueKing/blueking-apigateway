@@ -39,7 +39,8 @@
                     <bk-menu-item
                       v-if="child.enabled"
                       :key="child.name"
-                      @click.stop="handleGoPage(child.name, apigwId, 'menu')">
+                      @click.stop="handleGoPage(child.name, apigwId)"
+                    >
                       {{ child.title }}
                       <bk-badge
                         :count="permission.count"
@@ -56,7 +57,7 @@
               <template v-else>
                 <bk-menu-item
                   :key="menu.name"
-                  @click.stop="handleGoPage(menu.name, apigwId, 'menu')"
+                  @click.stop="handleGoPage(menu.name, apigwId)"
                 >
                   <template #icon>
                     <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
@@ -74,7 +75,7 @@
           class="header-select"
           filterable
           v-model="apigwId"
-          @change="handleGoPage(activeMenuKey, apigwId, 'select')"
+          @change="handleGoPage(activeMenuKey, apigwId)"
           :clearable="false">
           <bk-option
             v-for="item in gatewaysList" :key="item.id" :id="item.id" :name="item.name"
@@ -211,7 +212,6 @@ watch(
         curOpenedKeys.push(item.name);
       }
     }
-    console.log('menuData', menuData.value);
     openedKeys.value = curOpenedKeys;
   },
   { immediate: true, deep: true },
@@ -227,8 +227,7 @@ const getPermList = async () => {
   }
 };
 
-const handleGoPage = async (routeName: string, id?: number, type?: string) => {
-  console.log(type);
+const handleGoPage = async (routeName: string, id?: number) => {
   let result = true;
   if (Object.keys(curLeavePageData.value).length > 0) {
     result = await isSidebarClosed(JSON.stringify(curLeavePageData.value)) as boolean;
@@ -284,7 +283,6 @@ onMounted(async () => {
     initSidebarFormData(payload);
   });
   gatewaysList.value = await getGatewaysListData();
-  console.log('gatewaysList', gatewaysList);
   // 初始化设置一次
   handleSetApigwName();
   getPermList();

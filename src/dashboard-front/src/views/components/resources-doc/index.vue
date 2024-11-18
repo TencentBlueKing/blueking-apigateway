@@ -86,7 +86,7 @@
           </bk-button>
           <bk-pop-confirm
             :title="t('确认要删除该文档？')"
-            content="将删除相关配置，不可恢复，请确认是否删除"
+            :content="t('将删除相关配置，不可恢复，请确认是否删除')"
             width="288"
             trigger="click"
             @confirm="handleDeleteMarkdown"
@@ -113,7 +113,7 @@
           </bk-button>
           <bk-pop-confirm
             :title="t('确认要删除该文档？')"
-            content="将删除相关配置，不可恢复，请确认是否删除"
+            :content="t('将删除相关配置，不可恢复，请确认是否删除')"
             width="288"
             trigger="click"
             @confirm="handleDeleteMarkdown"
