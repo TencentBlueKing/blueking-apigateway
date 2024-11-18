@@ -43,8 +43,8 @@ from apigateway.apps.permission.models import (
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.components.cmsi import cmsi_component
 from apigateway.components.paasv3 import paasv3_component
-from apigateway.core.constants import GatewayStatusEnum
-from apigateway.core.models import Gateway, Resource
+from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, GatewayStatusEnum
+from apigateway.core.models import Context, Gateway, Resource
 from apigateway.utils.file import read_file
 
 logger = logging.getLogger(__name__)
@@ -240,7 +240,16 @@ class AppPermissionExpiringSoonAlerter:
             )
 
         # 按资源的权限
-        permissions_by_resource = AppResourcePermission.objects.filter(expires__range=(now, expire_end_time))
+        contexts = Context.objects.filter(
+            scope_type=ContextScopeTypeEnum.RESOURCE.value,
+            type=ContextTypeEnum.RESOURCE_AUTH.value,
+        )
+        resource_ids = [content.scope_id for content in contexts if content.config["resource_perm_required"]]
+
+        permissions_by_resource = AppResourcePermission.objects.filter(
+            resource_id__in=resource_ids,
+            expires__range=(now, expire_end_time),
+        )
         for permission in permissions_by_resource:
             permissions[permission.bk_app_code].append(
                 {

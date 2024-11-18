@@ -56,11 +56,11 @@ class AppResourcePermissionManager(models.Manager):
     def filter_public_permission_by_app(self, bk_app_code: str):
         return self.filter(bk_app_code=bk_app_code, gateway__is_public=True)
 
-    def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS, grant_type=GrantTypeEnum.RENEW.value):
+    def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS):
         expire_time = calculate_expires(expires)
         self.filter(gateway=gateway, id__in=ids, expires__lt=expire_time).update(
             expires=expire_time,
-            grant_type=grant_type,
+            updated_time=now_datetime(),
         )
 
     def renew_by_resource_ids(
