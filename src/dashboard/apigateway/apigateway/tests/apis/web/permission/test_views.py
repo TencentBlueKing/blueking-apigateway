@@ -33,7 +33,6 @@ pytestmark = pytest.mark.django_db
 
 
 class TestAppPermissionViewSet:
-
     def test_list(self, fake_resource, request_view):
         fake_gateway = fake_resource.gateway
 
@@ -105,9 +104,9 @@ class TestAppPermissionRenewViewSet(TestCase):
         data = [
             {
                 "params": {
-                  "resource_dimension_ids": [resource_p1.id],
-                  "gateway_dimension_ids": [],
-                  "expire_days": 180,
+                    "resource_dimension_ids": [resource_p1.id],
+                    "gateway_dimension_ids": [],
+                    "expire_days": 180,
                 },
             },
         ]
