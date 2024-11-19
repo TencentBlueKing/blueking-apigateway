@@ -166,12 +166,21 @@
         >
           <template #default="{ data }">
             <!--  若是没匹配到资源，给出提示  -->
-            <template v-if="!data?.resource">
-              <span class="warning-c">{{ t('未匹配到资源') }}</span>
+            <!-- 若导入的是 zip -->
+            <template v-if="docType === 'archive'">
+              <span v-if="!data?.resource" class="warning-c">{{ t('未匹配到资源') }}</span>
+              <template v-else>
+                <span class="danger-c" v-if="!!data?.resource_doc">{{ t('覆盖') }}</span>
+                <span class="success-c" v-else>{{ t('新建') }}</span>
+              </template>
             </template>
+            <!-- 若导入方式是自行编辑的 yaml -->
             <template v-else>
-              <span class="danger-c" v-if="!!data?.resource_doc">{{ t('覆盖') }}</span>
-              <span class="success-c" v-else>{{ t('新建') }}</span>
+              <span v-if="!data?.id" class="warning-c">{{ t('未匹配到资源') }}</span>
+              <template v-else>
+                <span class="danger-c" v-if="hasExistedDoc(data)">{{ t('覆盖') }}</span>
+                <span class="success-c" v-else>{{ t('新建') }}</span>
+              </template>
             </template>
           </template>
         </bk-table-column>
@@ -427,6 +436,14 @@ const handleShowExample = () => {
 
 const handleHiddenExample = () => {
   isShowExample.value = false;
+};
+
+const hasExistedDoc = (data?: { doc?: { id: number, language: string }[] }) => {
+  if (!data?.doc?.length) {
+    return false;
+  }
+
+  return data.doc.find(item => item.language === language.value)?.id;
 };
 
 </script>
