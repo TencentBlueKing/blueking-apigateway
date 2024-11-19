@@ -343,8 +343,7 @@ def fake_resource_ctx(fake_gateway):
         scope_id=resource1.id,
         _config=json.dumps({
             "resource_perm_required": True,
-            "skip_auth_verification": False,
-            "auth_verified_required": True,
+            "app_verified_required": True,
         }),
     )
     G(
@@ -354,8 +353,7 @@ def fake_resource_ctx(fake_gateway):
         scope_id=resource2.id,
         _config=json.dumps({
             "resource_perm_required": True,
-            "skip_auth_verification": False,
-            "auth_verified_required": True,
+            "app_verified_required": True,
         }),
     )
     G(
@@ -365,8 +363,7 @@ def fake_resource_ctx(fake_gateway):
         scope_id=resource3.id,
         _config=json.dumps({
             "resource_perm_required": True,
-            "skip_auth_verification": False,
-            "auth_verified_required": True,
+            "app_verified_required": True,
         }),
     )
     G(
@@ -376,8 +373,7 @@ def fake_resource_ctx(fake_gateway):
         scope_id=resource4.id,
         _config=json.dumps({
             "resource_perm_required": False,
-            "skip_auth_verification": False,
-            "auth_verified_required": True,
+            "app_verified_required": True,
         }),
     )
     G(
@@ -387,8 +383,7 @@ def fake_resource_ctx(fake_gateway):
         scope_id=resource5.id,
         _config=json.dumps({
             "resource_perm_required": True,
-            "skip_auth_verification": False,
-            "auth_verified_required": False,
+            "app_verified_required": False,
         }),
     )
     return [resource1, resource2, resource3, resource4, resource5]

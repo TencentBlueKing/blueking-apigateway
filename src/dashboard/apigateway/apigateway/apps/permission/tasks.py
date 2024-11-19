@@ -221,12 +221,8 @@ class AppPermissionExpiringSoonAlerter:
         # 发送告警
         self._send_alert(filtered_permissions)
 
-    def _get_resource_required(self, config: Dict[str, Any]) -> bool:
-        return (
-            config.get("resource_perm_required", False)
-            and not config.get("skip_auth_verification", False)
-            and config.get("auth_verified_required", False)
-        )
+    def _should_check_resource_permssion(self, config: Dict[str, Any]) -> bool:
+        return config.get("resource_perm_required", False) and config.get("app_verified_required", True)
 
     def _get_permissions_expiring_soon(self) -> Dict[str, List]:
         now = timezone.now()
@@ -254,20 +250,22 @@ class AppPermissionExpiringSoonAlerter:
             scope_type=ContextScopeTypeEnum.RESOURCE.value,
             type=ContextTypeEnum.RESOURCE_AUTH.value,
         )
-        resource_ids = [content.scope_id for content in contexts if self._get_resource_required(content.config)]
-        if resource_ids:
-            permissions_by_resource = permissions_by_resource.filter(resource_id__in=resource_ids)
+        check_permission_resource_ids = [
+            content.scope_id for content in contexts if self._should_check_resource_permssion(content.config)
+        ]
+        if check_permission_resource_ids:
+            permissions_by_resource = permissions_by_resource.filter(resource_id__in=check_permission_resource_ids)
 
-        for permission in permissions_by_resource:
-            permissions[permission.bk_app_code].append(
-                {
-                    "gateway_id": permission.gateway_id,
-                    "expire_days": int(permission.expires_in / ONE_DAY_SECONDS),
-                    "grant_dimension": GrantDimensionEnum.RESOURCE.value,
-                    "grant_dimension_display": GrantDimensionEnum.get_choice_label(GrantDimensionEnum.RESOURCE.value),
-                    "resource_id": permission.resource_id,
-                }
-            )
+            for permission in permissions_by_resource:
+                permissions[permission.bk_app_code].append(
+                    {
+                        "gateway_id": permission.gateway_id,
+                        "expire_days": int(permission.expires_in / ONE_DAY_SECONDS),
+                        "grant_dimension": GrantDimensionEnum.RESOURCE.value,
+                        "grant_dimension_display": GrantDimensionEnum.get_choice_label(GrantDimensionEnum.RESOURCE.value),
+                        "resource_id": permission.resource_id,
+                    }
+                )
 
         return permissions
 
