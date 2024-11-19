@@ -224,7 +224,6 @@ class TestPluginConfigRetrieveUpdateDestroyApi:
         fake_plugin_bk_header_rewrite,
         fake_plugin_check_changed_binding,
     ):
-
         yaml = yaml_dumps(
             {
                 "set": [{"key": "foo", "value": "bar"}],
@@ -238,7 +237,7 @@ class TestPluginConfigRetrieveUpdateDestroyApi:
         fake_input_data1 = {
             "name": fake_plugin_bk_header_rewrite.name,
             "type_id": fake_plugin_check_changed_binding[0],
-            "yaml": '',
+            "yaml": "",
         }
         assert view._check_if_changed(fake_input_data1, fake_plugin_bk_header_rewrite)
 

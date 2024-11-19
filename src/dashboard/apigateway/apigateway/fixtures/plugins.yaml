@@ -128,7 +128,10 @@
               "type": "string",
               "pattern": "^(|\\*|\\*\\*|null|http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+(,http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+)*)$",
               "maxLength": 4096,
-              "default": ""
+              "default": "",
+              "ui:props": {
+                "labelWidth": 200
+              }
             },
             "allow_origins_by_regex": {
               "description": "使用正则表示的允许跨域访问的 Origin，示例如 '^https://.*\\.example\\.com:8081$'，此正则允许 https://a.example.com:8081, https://b.example.com:8081。allow_origins、allow_origins_by_regex 只能一个有效。",
@@ -142,6 +145,9 @@
               },
               "ui:component": {
                 "name": "bfArray"
+              },
+              "ui:props": {
+                "labelWidth": 200
               }
             },
             "allow_methods": {
@@ -152,7 +158,10 @@
               "maxLength": 100,
               "ui:rules": [
                 "required"
-              ]
+              ],
+              "ui:props": {
+                "labelWidth": 200
+              }
             },
             "allow_headers": {
               "description": "允许跨域访问时请求方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Header 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Header 都通过，但请注意这样存在安全隐患。",
@@ -162,14 +171,20 @@
               "maxLength": 4096,
               "ui:rules": [
                 "required"
-              ]
+              ],
+              "ui:props": {
+                "labelWidth": 200
+              }
             },
             "expose_headers": {
               "description": "允许跨域访问时响应方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许任意 Header。你也可以在启用了 allow_credential 后使用 ** 强制允许任意 Header，但请注意这样存在安全隐患。",
               "type": "string",
               "pattern": "^(|\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
               "maxLength": 4096,
-              "default": ""
+              "default": "",
+              "ui:props": {
+                "labelWidth": 200
+              }
             },
             "max_age": {
               "description": "浏览器缓存 CORS 结果的最大时间，单位为秒。在这个时间范围内，浏览器会复用上一次的检查结果，-1 表示不缓存。请注意各个浏览器允许的最大时间不同。",
@@ -182,12 +197,18 @@
                 "name": "bfInput",
                 "min": -1,
                 "unit": "秒"
+              },
+              "ui:props": {
+                "labelWidth": 200
               }
             },
             "allow_credential": {
               "description": "是否允许跨域访问的请求方携带凭据（如 Cookie 等）。根据 CORS 规范，如果设置该选项为 true，那么将不能在其他属性中使用 *。",
               "type": "boolean",
-              "default": true
+              "default": true,
+              "ui:props": {
+                "labelWidth": 200
+              }
             }
           }
         },
@@ -1267,7 +1288,7 @@
 - model: plugin.plugintype
   fields:
     code: bk-status-rewrite
-    name: 网关错误使用HTTP状态码200(不推荐)
+    name: 网关错误使用 HTTP 状态码 200(不推荐)
     name_en: Gateway error using HTTP status code 200 (not recommended)
     is_public: false
     schema: null
@@ -1354,7 +1375,7 @@
 - model: plugin.plugintype
   fields:
     code: bk-verified-user-exempted-apps
-    name: 免用户认证应用白名单(不推荐)
+    name: 免用户认证应用白名单 (不推荐)
     name_en: Exempted user auth apps white list (not recommended)
     is_public: false
     scope: stage
@@ -1987,8 +2008,8 @@
     language: ''
     type:
     - request-validation
-    notes: 用于提前验证向上游服务转发的请求。该插件使用 JSON Schema 机制进行数据验证，可以验证请求的 Body 以及 Header 的数据。
-    example: '作用：当请求体中没有包含 boolean_payload 时，则返回 400 拒绝状态码和拒绝信息\n\n"header_schema": {}\n"body_schema": {"type": "object","required": ["bool_payload"],"properties": {"bool_payload": {"type": "boolean"}}}\n"rejected_code": 400\n"rejected_msg": "not valid request body"'
+    notes: 用于提前验证向上游服务转发的请求。该插件使用 JSON Schema 机制进行数据验证，可以验证请求的 Body 以及 Header 的数据。至少需要配置 body_schema 或 header_schema 中的一个，两者也可以同时使用。
+    example: '作用：当请求体中没有包含 boolean_payload 时，则返回 400 拒绝状态码和拒绝信息\n\n"body_schema": {"type": "object","required": ["bool_payload"],"properties": {"bool_payload": {"type": "boolean"}}}\n"header_schema": {}\n"rejected_code": 400\n"rejected_msg": "not valid request body"'
     style: dynamic
     default_value: ''
     config: |-
@@ -2041,8 +2062,8 @@
     language: 'en'
     type:
     - request-validation
-    notes: Used to validate requests forwarded to upstream services in advance. The plug-in uses the JSON Schema mechanism for data validation, which validates the requested Body and Header data.
-    example: 'Purpose: When the boolean_payload argument is not filled, 400 reject status code and reject information are returned \n\n"header_schema": {}\n"body_schema": {"type": "object","required": ["bool_payload"],"properties": {"bool_payload": {"type": "boolean"}}}\n"rejected_code": 400\n"rejected_msg": "not valid request body"'
+    notes: Used to validate requests forwarded to upstream services in advance. The plug-in uses the JSON Schema mechanism for data validation, which validates the requested Body and Header data. At least one of the body_schema or header_schema needs to be configured, and both can be used at the same time.
+    example: 'Purpose: When the boolean_payload argument is not filled, 400 reject status code and reject information are returned \n\n"body_schema": {"type": "object","required": ["bool_payload"],"properties": {"bool_payload": {"type": "boolean"}}}\n"header_schema": {}\n"rejected_code": 400\n"rejected_msg": "not valid request body"'
     style: dynamic
     default_value: ''
     config: |-
@@ -2170,8 +2191,8 @@
     language: ''
     type:
     - fault-injection
-    notes: fault-injection 插件是故障注入插件，该插件可以和其他插件一起使用，并在其他插件执行前被执行。
-    example: '作用：当请求参数 name 等于 jack 的时候，则返回 400 拒绝状态码和响应内容\n\n"abort": {\n    "http_status": 400,\n    "body": "not valid request params",\n    "vars": [["arg_name", "==", "jack"]]\n}\n'
+    notes: fault-injection 插件是故障注入插件，该插件可以和其他插件一起使用，并在其他插件执行前被执行，至少要配置中断和延迟中的任意一个，两者也可以同时使用。
+    example: '作用：当请求参数 name 等于 jack，并且 age 等于 18 的时候，则返回 400 拒绝状态码和响应内容\n\n"abort": {\n    "http_status": 400,\n    "body": "not valid request params",\n    "vars": [[["arg_name", "==", "jack"], ["arg_age", "==", 18]]]\n}\n'
     style: dynamic
     default_value: ''
     config: |-
@@ -2255,8 +2276,8 @@
     language: en
     type:
     - fault-injection
-    notes: The fault-injection plug-in is a fault injection plug-in that can be used with other plug-ins and executed before the other plug-ins are executed.
-    example: 'Purpose: When the request parameter name is equal to jack, return 400 reject status code and response body \n\n"abort": {\n "http_status": 400,\n "body": "not valid request params",\n "vars": [["arg_name", "==", "jack"]]\n}\n'
+    notes: The fault-injection plug-in is a fault injection plug-in that can be used with other plug-ins and executed before the other plug-ins are executed. abort and delay must be configured at least one, and both can be used at the same time.
+    example: 'Purpose: When the request parameter name is equal to jack and age is 18, return 400 reject status code and response body \n\n"abort": {\n "http_status": 400,\n "body": "not valid request params",\n "vars": [[["arg_name", "==", "jack"], ["arg_age", "==", 18]]]\n}\n'
     style: dynamic
     default_value: ''
     config: |-

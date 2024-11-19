@@ -40,6 +40,8 @@ from apigateway.apps.plugin.constants import (
 )
 from apigateway.utils.yaml import yaml_loads
 
+from .normalizer import format_fault_injection_config
+
 VARS_ALLOWED_COMPARISON_SYMBOLS = {"==", "~=", ">", ">=", "<", "<=", "~~", "~*", "in", "has", "!", "ipmatch"}
 
 
@@ -195,6 +197,7 @@ class FaultInjectionChecker(BaseChecker):
         if not loaded_data:
             raise ValueError("YAML cannot be empty")
 
+        loaded_data = format_fault_injection_config(loaded_data)
         abort_data = loaded_data.get("abort")
         delay_data = loaded_data.get("delay")
 

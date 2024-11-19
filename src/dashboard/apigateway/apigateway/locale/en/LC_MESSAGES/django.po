@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-04-11 12:11+0800\n"
+"POT-Creation-Date: 2024-11-19 15:00+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,11 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: apigateway/apis/controller/permissions.py:37
-msgid "当前微网关实例无权限调用"
-msgstr "No permission to access the microgateway instance"
-
-#: apigateway/apis/open/gateway/serializers.py:131
+#: apigateway/apis/open/gateway/serializers.py:133
 #, python-brace-format
 msgid "api_type 为 {api_type} 时，网关名 name 需以 {prefix} 开头。"
 msgstr ""
@@ -34,17 +30,45 @@ msgid "申请权限类型为 {grant_dimension} 时，参数 resource_ids 不能�
 msgstr ""
 "When grant_dimension is {grant_dimension}, resource_ids cannot be empty."
 
-#: apigateway/apis/open/permission/serializers.py:150
+#: apigateway/apis/open/permission/serializers.py:186
 #, python-brace-format
 msgid "应用【{app_code}】不能为其它应用【{value}】申请访问网关API的权限。"
 msgstr "App [{app_code}] cannot apply permission for other app [{value}]."
 
-#: apigateway/apis/open/permission/serializers.py:304
+#: apigateway/apis/open/permission/serializers.py:340
 #, python-brace-format
 msgid "资源【{resource_id}】已删除。"
 msgstr "Resource [{resource_id}] has been deleted."
 
-#: apigateway/apis/open/resource_doc/views.py:59
+#: apigateway/apis/open/permissions.py:34 apigateway/apis/v2/permissions.py:33
+msgid "只能通过网关访问该接口"
+msgstr "the api can be only accessed through the gateway"
+
+#: apigateway/apis/open/permissions.py:49
+msgid "只能通过网关访问该接口，并且 gateway_id 对应网关必须存在"
+msgstr "the api can be only accessed through the gateway, additionally, the corresponding gateway_id must exist for the gateway"
+
+#: apigateway/apis/open/permissions.py:85 apigateway/apis/v2/permissions.py:48
+msgid "只能通过网关访问该接口，并且 gateway_name 对应网关必须存在"
+msgstr "the api can be only accessed through the gateway, additionally, the corresponding gateway_name must exist for the gateway"
+
+#: apigateway/apis/open/permissions.py:120 apigateway/apis/v2/permissions.py:83
+msgid "应用无操作网关权限"
+msgstr "App has no permission to access the gateway"
+
+#: apigateway/apis/open/resource/views.py:69
+#: apigateway/apis/web/resource/views.py:437
+#, python-brace-format
+msgid "导入内容为无效的 json/yaml 数据，{err}。"
+msgstr "Importing invalid json/yaml data, {err}."
+
+#: apigateway/apis/open/resource/views.py:77
+#: apigateway/apis/web/resource/views.py:496
+#, python-brace-format
+msgid "validate err {err}。"
+msgstr ""
+
+#: apigateway/apis/open/resource_doc/views.py:61
 #: apigateway/apis/web/resource_doc/views.py:65
 #: apigateway/apis/web/resource_doc/views.py:90
 msgid ""
@@ -53,18 +77,18 @@ msgstr ""
 "There is no qualified resource document. Please refer to the guide to check "
 "whether the resource documents in the archive are correct"
 
-#: apigateway/apis/open/resource_doc/views.py:62
+#: apigateway/apis/open/resource_doc/views.py:64
 #: apigateway/apis/web/resource_doc/views.py:93
 #, python-brace-format
 msgid "导入资源文档失败，{err}。"
 msgstr "Import resource document failed: {err}."
 
-#: apigateway/apis/open/resource_doc/views.py:91
+#: apigateway/apis/open/resource_doc/views.py:93
 #: apigateway/apis/web/resource_doc/views.py:124
 msgid "swagger 描述内容不符合规范。"
 msgstr "The content does not conform to swagger specification."
 
-#: apigateway/apis/open/resource_doc/views.py:93
+#: apigateway/apis/open/resource_doc/views.py:95
 #: apigateway/apis/web/resource_doc/views.py:126
 msgid "根据 swagger 描述生成 markdown 格式文档出现错误。"
 msgstr ""
@@ -92,120 +116,124 @@ msgstr ""
 "Header key must be less than 100 characters and only contain letters, "
 "numbers, and hyphens (-)."
 
-#: apigateway/apis/open/stage/serializers.py:200
-#: apigateway/apis/web/stage/serializers.py:120
+#: apigateway/apis/open/stage/serializers.py:218
+#: apigateway/apis/web/stage/serializers.py:170
 msgid "网关下环境名称已经存在。"
 msgstr "The stage name already exists."
 
-#: apigateway/apis/open/stage/serializers.py:205
-#: apigateway/apis/web/stage/serializers.py:125
+#: apigateway/apis/open/stage/serializers.py:223
+#: apigateway/apis/web/stage/serializers.py:175
 #, python-brace-format
 msgid "每个网关最多创建 {max_count} 个环境。"
 msgstr "Up to {max_count} stages per gateway."
 
-#: apigateway/apis/open/stage/serializers.py:339
-#, python-brace-format
-msgid "微网关实例不存在，id={value}。"
-msgstr "Microgateway instance does not exist, id={value}."
+#: apigateway/apis/open/stage/serializers.py:234
+msgid "proxy_http or backends 必须要选择一种方式配置后端服务"
+msgstr "either proxy_http or backends must be selected to configure the backend service"
 
-#: apigateway/apis/open/stage/serializers.py:353
+#: apigateway/apis/open/stage/serializers.py:416
 msgid "微网关实例已绑定到其它环境。"
 msgstr "The microgateway instance is bound to other stage."
 
-#: apigateway/apis/open/stage/serializers.py:369
+#: apigateway/apis/open/stage/serializers.py:432
 #, python-brace-format
 msgid "插件类型重复：{plugin_type}。"
 msgstr "Duplicate plugin type: {plugin_type}"
 
-#: apigateway/apis/open/stage/serializers.py:378
-#: apigateway/biz/resource/importer/importers.py:338
+#: apigateway/apis/open/stage/serializers.py:441
+#: apigateway/biz/resource/importer/validate.py:232
 #, python-brace-format
 msgid "插件类型 {not_exist_types} 不存在。"
 msgstr "Plugin type {not_exist_types} does not exist."
 
-#: apigateway/apis/open/stage/serializers.py:394
+#: apigateway/apis/open/stage/serializers.py:457
 #, python-brace-format
 msgid "插件配置校验失败，插件类型：{plugin_type_code}，错误信息：{err}。"
 msgstr ""
 "Plugin configuration verification failed, plugin type: {plugin_type_code}, "
 "error message: {err}."
 
-#: apigateway/apis/open/support/views.py:111
+#: apigateway/apis/open/support/views.py:74
 msgid "网关下无资源，无法生成 SDK。"
 msgstr "No resources to generate SDK."
 
-#: apigateway/apis/open/support/views.py:113
+#: apigateway/apis/open/support/views.py:76
 msgid "网关 SDK 生成失败，请联系管理员。"
 msgstr "Generate SDK failed, please contact administrator."
 
-#: apigateway/apis/open/support/views.py:115
+#: apigateway/apis/open/support/views.py:78
 msgid "网关 SDK 打包失败，请联系管理员。"
 msgstr "Pack SDK failed, please contact administrator."
 
-#: apigateway/apis/open/support/views.py:117
+#: apigateway/apis/open/support/views.py:80
 msgid "网关 SDK 发布失败，请联系管理员。"
 msgstr "Distribute SDK failed, please contact administrator."
 
-#: apigateway/apis/open/support/views.py:120
-#: apigateway/apis/web/sdk/views.py:113
+#: apigateway/apis/open/support/views.py:83
+#: apigateway/apis/web/sdk/views.py:117
 #, python-brace-format
 msgid "同一资源版本，最多只能生成 {count} 个 SDK。"
 msgstr ""
 "Only up to {count} SDKs can be generated for the same resource version."
 
-#: apigateway/apis/open/support/views.py:126
+#: apigateway/apis/open/support/views.py:89
 msgid "网关 SDK 创建失败，请联系管理员。"
 msgstr "Create SDK failed, please contact administrator."
 
-#: apigateway/apis/web/access_log/serializers.py:34
-#: apigateway/apis/web/metrics/serializers.py:38
+#: apigateway/apis/web/access_log/serializers.py:39
+#: apigateway/apis/web/metrics/serializers.py:35
+#: apigateway/apis/web/metrics/serializers.py:49
 msgid "参数 time_start+time_end, time_range 必须一组有效。"
 msgstr "One of time_start+time_end, time_range must be valid."
 
-#: apigateway/apis/web/access_log/views.py:82
+#: apigateway/apis/web/access_log/views.py:87
 msgid "网关未请求或请求后端接口异常，响应内容由网关提供。"
 msgstr ""
 "The response content is provided by the gateway, and the gateway reports an "
 "error directly or the request backend interface is abnormal."
 
-#: apigateway/apis/web/access_log/views.py:84
+#: apigateway/apis/web/access_log/views.py:89
 msgid "网关已请求后端接口，并将其响应原样返回。"
 msgstr ""
 "The gateway has requested the backend interface and returned its response as "
 "is."
 
+#: apigateway/apis/web/access_log/views.py:92
+msgid "当状态码为 200 时，不记录响应正文"
+msgstr "when the status code was 200, the response body was not logged"
+
 #: apigateway/apis/web/api_test/prepared_request.py:74
 msgid "Header X-Bkapi-Authorization 不是一个有效的 Json 格式字符串。"
 msgstr "Header X-Bkapi-Authorization is not a valid Json format string."
 
-#: apigateway/apis/web/api_test/views.py:103
+#: apigateway/apis/web/api_test/views.py:157
 #, python-brace-format
 msgid "请求网关资源失败，错误消息：{err}。"
 msgstr "Request for gateway resource failed, error message: {err}."
 
-#: apigateway/apis/web/backend/serializers.py:52
+#: apigateway/apis/web/backend/serializers.py:53
 msgid "网关下后端服务名称已经存在。"
 msgstr "Backend service name already exists under the gateway."
 
-#: apigateway/apis/web/backend/serializers.py:64
+#: apigateway/apis/web/backend/serializers.py:65
 #, python-brace-format
 msgid "网关【{gateway}】下不存在id为【{stage_id}】的环境。"
 msgstr ""
 "There is no stage with the ID [{stage_id}] under the gateway [{gateway}]"
 
-#: apigateway/apis/web/backend/serializers.py:73
+#: apigateway/apis/web/backend/serializers.py:74
 #, python-brace-format
 msgid "后端服务缺少网关【{gateway}】下【{stage_name}】环境配置。"
 msgstr ""
 "The backend service lacks the [{stage_name}] stage configuration under the "
 "gateway [{gateway}]"
 
-#: apigateway/apis/web/backend/serializers.py:83
+#: apigateway/apis/web/backend/serializers.py:84
 #, python-brace-format
 msgid "环境【{stage_name}】的配置Scheme【{scheme}】不合法。"
 msgstr "The Scheme [{scheme}] of Stage [{stage_name}] is invalid."
 
-#: apigateway/apis/web/backend/views.py:172
+#: apigateway/apis/web/backend/views.py:176
 msgid "请先下线后端服务，然后再删除。"
 msgstr "Please deactivate the backend service first, and then delete."
 
@@ -218,7 +246,7 @@ msgstr "Gateway name already exists."
 msgid "网关名不能以【{prefix}】开头，其为官方保留字。"
 msgstr "The gateway name cannot start with [{prefix}], it is reserved."
 
-#: apigateway/apis/web/gateway/views.py:231
+#: apigateway/apis/web/gateway/views.py:236
 msgid "请先停用网关，然后再删除。"
 msgstr "Please deactivate the gateway first, and then delete."
 
@@ -227,7 +255,7 @@ msgid "网关下标签名称已存在。"
 msgstr "Label name already exists."
 
 #: apigateway/apis/web/label/serializers.py:62
-#: apigateway/biz/resource/importer/importers.py:306
+#: apigateway/biz/resource/importer/validate.py:198
 #, python-brace-format
 msgid "每个网关最多创建 {max_count} 个标签。"
 msgstr "Up to {max_count} labels per gateway."
@@ -237,77 +265,77 @@ msgid "通知对象、其他通知对象不能同时为空。"
 msgstr "Notification and other notification receivers cannot both be empty"
 
 #: apigateway/apis/web/monitor/serializers.py:97
-#: apigateway/apis/web/resource/serializers.py:321
-#: apigateway/apis/web/resource/serializers.py:430
+#: apigateway/apis/web/resource/serializers.py:327
+#: apigateway/apis/web/resource/serializers.py:459
 #, python-brace-format
 msgid "标签不存在，id={ids}"
 msgstr "label does not exist, id={ids}"
 
-#: apigateway/apis/web/permission/serializers.py:78
-#: apigateway/apis/web/permission/serializers.py:186
-msgid "永久有效"
-msgstr "permanent"
-
-#: apigateway/apis/web/permission/serializers.py:124
+#: apigateway/apis/web/permission/serializers.py:172
 msgid "导出已选中权限时，已选中权限不能为空。"
 msgstr ""
 "When exporting selected permissions, the selected permissions cannot be "
 "empty."
 
-#: apigateway/apis/web/permission/serializers.py:226
+#: apigateway/apis/web/permission/serializers.py:188
+msgid "永久有效"
+msgstr "permanent"
+
+#: apigateway/apis/web/permission/serializers.py:269
 #, python-brace-format
 msgid "资源【{resource_id}】已删除"
 msgstr "Resource [{resource_id}] has been deleted."
 
-#: apigateway/apis/web/permission/views.py:178
-#: apigateway/apis/web/permission/views.py:368
+#: apigateway/apis/web/permission/views.py:295
 msgid "蓝鲸应用ID"
 msgstr "App ID"
 
-#: apigateway/apis/web/permission/views.py:179
-#: apigateway/biz/access_log/constants.py:54
+#: apigateway/apis/web/permission/views.py:296
+#: apigateway/biz/access_log/constants.py:59
 msgid "资源名称"
 msgstr "Resource Name"
 
-#: apigateway/apis/web/permission/views.py:180
+#: apigateway/apis/web/permission/views.py:297
 #: apigateway/apps/esb/bkcore/models.py:98
-#: apigateway/biz/access_log/constants.py:69
+#: apigateway/biz/access_log/constants.py:74
 #: apigateway/editions/ee/apps/esb/bkcore/models.py:98
 msgid "请求路径"
 msgstr "Request Path"
 
-#: apigateway/apis/web/permission/views.py:181
+#: apigateway/apis/web/permission/views.py:298
 #: apigateway/apps/esb/bkcore/models.py:97
-#: apigateway/biz/access_log/constants.py:59
+#: apigateway/biz/access_log/constants.py:64
 #: apigateway/editions/ee/apps/esb/bkcore/models.py:97
 msgid "请求方法"
 msgstr "Request Method"
 
-#: apigateway/apis/web/permission/views.py:182
-#: apigateway/apis/web/permission/views.py:369 apigateway/core/models.py:811
+#: apigateway/apis/web/permission/views.py:299
 msgid "过期时间"
 msgstr "Expire Time"
 
-#: apigateway/apis/web/permission/views.py:183
-#: apigateway/apis/web/permission/views.py:370
+#: apigateway/apis/web/permission/views.py:300
 msgid "授权类型"
 msgstr "Grant Type"
+
+#: apigateway/apis/web/permission/views.py:301
+msgid "授权维度"
+msgstr "Grant Dimension"
 
 #: apigateway/apis/web/plugin/convertor.py:81
 #, python-brace-format
 msgid "蓝鲸应用ID重复: {bk_app_code}"
 msgstr "Duplicate app ID: {bk_app_code}"
 
-#: apigateway/apis/web/plugin/serializers.py:148
+#: apigateway/apis/web/plugin/serializers.py:149
 msgid "插件类型不允许更改。"
 msgstr "The plugin type is not allowed to change."
 
-#: apigateway/apis/web/plugin/serializers.py:157
+#: apigateway/apis/web/plugin/serializers.py:158
 msgid "此插件类型未公开，不能用于绑定插件。"
 msgstr "The plugin type is not public, cannot be used to create new plugin."
 
-#: apigateway/apis/web/release/views.py:68
-#: apigateway/apis/web/release/views.py:90
+#: apigateway/apis/web/release/views.py:75
+#: apigateway/apis/web/release/views.py:114
 msgid "当前选择环境未发布版本，请先发布版本到该环境。"
 msgstr "The stage has not released, please release first."
 
@@ -320,33 +348,33 @@ msgstr "Document in {value} language for this resource already exists."
 msgid "hosts 存在时，需要指定 loadbalance 类型。"
 msgstr "When hosts exists, the loadbalance type needs to be specified."
 
-#: apigateway/apis/web/resource/serializers.py:71
+#: apigateway/apis/web/resource/serializers.py:69
 msgid "标签 ID 请用逗号分割"
 msgstr "Please separate label IDs with commas."
 
-#: apigateway/apis/web/resource/serializers.py:243
+#: apigateway/apis/web/resource/serializers.py:249
 #, python-brace-format
 msgid "每个网关最多创建 {max_count} 个资源。"
 msgstr "Up to {max_count} resources per gateway."
 
-#: apigateway/apis/web/resource/serializers.py:248
+#: apigateway/apis/web/resource/serializers.py:254
 msgid "网关下资源名称已经存在。"
 msgstr "Resource name already exists under the gateway."
 
-#: apigateway/apis/web/resource/serializers.py:253
+#: apigateway/apis/web/resource/serializers.py:259
 msgid "网关前端配置中，请求方法+请求路径已经存在。"
 msgstr ""
 "The combination of request method and path already exists in the gateway "
 "configuration."
 
-#: apigateway/apis/web/resource/serializers.py:289
+#: apigateway/apis/web/resource/serializers.py:295
 #, python-brace-format
 msgid "当前请求方法为 {method}，但相同请求路径下，其它请求方法已存在。"
 msgstr ""
 "The current request method is {method}, but other request methods already "
 "exist under the same request path."
 
-#: apigateway/apis/web/resource/serializers.py:294
+#: apigateway/apis/web/resource/serializers.py:300
 #, python-brace-format
 msgid ""
 "当前请求方法为 {method}，但相同请求路径下，请求方法 {method_any} 已存在。"
@@ -354,7 +382,7 @@ msgstr ""
 "The current request method is {method}, but request method {method_any} "
 "already exists under the same request path."
 
-#: apigateway/apis/web/resource/serializers.py:303
+#: apigateway/apis/web/resource/serializers.py:309
 msgid ""
 "资源前端配置中的【匹配所有子路径】与后端配置中的【追加匹配的子路径】值必需相"
 "同。"
@@ -362,29 +390,23 @@ msgstr ""
 "The value of [Match all subpaths] must be the same as the value of [Append "
 "matched subpaths]."
 
-#: apigateway/apis/web/resource/serializers.py:315
+#: apigateway/apis/web/resource/serializers.py:321
 #, python-brace-format
 msgid "后端服务 (id={id}) 不存在。"
 msgstr "Backend service (id={id}) does not exist"
 
-#: apigateway/apis/web/resource/serializers.py:401
-#: apigateway/apis/web/resource/serializers.py:413
+#: apigateway/apis/web/resource/serializers.py:430
+#: apigateway/apis/web/resource/serializers.py:442
 #, python-brace-format
 msgid "资源不存在，id={ids}"
 msgstr "The resource does not exist, id={ids}"
 
-#: apigateway/apis/web/resource/serializers.py:556
-#, python-brace-format
-msgid "导入内容为无效的 json/yaml 数据，{err}。"
-msgstr "Importing invalid json/yaml data, {err}."
+#: apigateway/apis/web/resource/serializers.py:589
+msgid "ANY的资源不支持文档预览"
+msgstr "resources of type ANY do not support document preview"
 
-#: apigateway/apis/web/resource/serializers.py:563
-#, python-brace-format
-msgid "导入内容不符合 swagger 2.0 协议，{err}。"
-msgstr "Imported content does not conform to the swagger 2.0 protocol, {err}."
-
-#: apigateway/apis/web/resource/serializers.py:666
-#: apigateway/apis/web/resource/serializers.py:675
+#: apigateway/apis/web/resource/serializers.py:725
+#: apigateway/apis/web/resource/serializers.py:734
 msgid "斜线(/)开头的合法URL路径，不包含http(s)开头的域名。"
 msgstr ""
 "URL path beginning with a slash (/) that do not contain a domain beginning "
@@ -429,7 +451,7 @@ msgstr ""
 "The stage variable [{var_name}] in the backend path [{backend_path}] does "
 "not exist in the stage [{stage_name}]."
 
-#: apigateway/apis/web/resource/views.py:547
+#: apigateway/apis/web/resource/views.py:673
 #, python-brace-format
 msgid ""
 "网关环境 {stage_name} 下，后端服务 {backend_name} 的服务地址为空，请在 后端服"
@@ -443,17 +465,17 @@ msgstr ""
 msgid "选中的资源未创建文档。"
 msgstr "No document for selected resources."
 
-#: apigateway/apis/web/resource_version/views.py:182
+#: apigateway/apis/web/resource_version/views.py:196
 msgid "请先创建资源，然后再发布版本。"
 msgstr "Please create a resource first and then release version."
 
-#: apigateway/apis/web/resource_version/views.py:186
+#: apigateway/apis/web/resource_version/views.py:200
 msgid "资源有更新，需生成新版本并发布到指定环境，才能生效。"
 msgstr ""
 "The resources have been updated, and a new version needs to be generated and "
 "released to the specified stage to take effect."
 
-#: apigateway/apis/web/resource_version/views.py:191
+#: apigateway/apis/web/resource_version/views.py:205
 msgid "资源文档有更新，需生成新版本并发布到任一环境，才能生效。"
 msgstr ""
 "The resource document has been updated, and a new version needs to be "
@@ -467,36 +489,44 @@ msgstr "Version already exists."
 msgid "生成SDK操作过于频繁，请间隔 10 秒再试。"
 msgstr "Generate SDK too often, please try again after 10 seconds."
 
-#: apigateway/apis/web/sdk/views.py:104
+#: apigateway/apis/web/sdk/views.py:105
 msgid "网关下无符合条件(请求方法为非ANY)的资源，无法生成 SDK。"
-msgstr "No resources matching the condition (request method is not ANY) were found under the gateway, unable to generate SDK."
-
-#: apigateway/apis/web/sdk/views.py:106
-msgid "网关 SDK 生成失败。"
-msgstr "SDK generation failed."
+msgstr ""
+"No resources matching the condition (request method is not ANY) were found "
+"under the gateway, unable to generate SDK."
 
 #: apigateway/apis/web/sdk/views.py:108
-msgid "网关 SDK 打包失败。"
+#, fuzzy
+#| msgid "网关 SDK 打包失败。"
+msgid "网关 SDK 仓库配置异常。"
 msgstr "Package SDK failed."
 
 #: apigateway/apis/web/sdk/views.py:110
+msgid "网关 SDK 生成失败。"
+msgstr "SDK generation failed."
+
+#: apigateway/apis/web/sdk/views.py:112
+msgid "网关 SDK 打包失败。"
+msgstr "Package SDK failed."
+
+#: apigateway/apis/web/sdk/views.py:114
 msgid "网关 SDK 发布失败。"
 msgstr "Distribute SDK failed."
 
-#: apigateway/apis/web/stage/serializers.py:138
+#: apigateway/apis/web/stage/serializers.py:187
 #, python-brace-format
 msgid "网关下不存在id为【{backend_id}】的后端服务。"
 msgstr ""
 "There is no backend service with the ID [{backend_id}] under the gateway."
 
-#: apigateway/apis/web/stage/serializers.py:145
+#: apigateway/apis/web/stage/serializers.py:194
 #, python-brace-format
 msgid "请求参数中，缺少后端服务【{backend_id}】的配置。"
 msgstr ""
 "In the request parameters, the configuration of the backend service "
 "[{backend_id}] is missing."
 
-#: apigateway/apis/web/stage/serializers.py:161
+#: apigateway/apis/web/stage/serializers.py:212
 #, python-brace-format
 msgid "后端服务【{backend_name}】的配置Scheme【{scheme}】不合法。"
 msgstr ""
@@ -515,21 +545,6 @@ msgstr ""
 #: apigateway/apis/web/stage/views.py:198
 msgid "请先下线环境，然后再删除。"
 msgstr "Please take the stage offline before deletion."
-
-#: apigateway/apps/access_strategy/models.py:56
-#: apigateway/apps/access_strategy/models.py:57
-msgid "IP分组"
-msgstr "IP group"
-
-#: apigateway/apps/access_strategy/models.py:94
-#: apigateway/apps/access_strategy/models.py:95
-msgid "访问策略"
-msgstr "Access Strategy"
-
-#: apigateway/apps/access_strategy/models.py:151
-#: apigateway/apps/access_strategy/models.py:152
-msgid "访问策略绑定"
-msgstr "Access Strategy Binding"
 
 #: apigateway/apps/audit/constants.py:25
 msgid "创建"
@@ -559,14 +574,13 @@ msgstr "Fail"
 msgid "未知"
 msgstr "Unknown"
 
-#: apigateway/apps/audit/constants.py:38 apigateway/core/constants.py:221
+#: apigateway/apps/audit/constants.py:38 apigateway/core/constants.py:191
 msgid "网关"
 msgstr "Gateway"
 
-#: apigateway/apps/audit/constants.py:39 apigateway/apps/plugin/constants.py:44
-#: apigateway/apps/plugin/constants.py:51
-#: apigateway/biz/access_log/constants.py:44 apigateway/core/constants.py:89
-#: apigateway/core/constants.py:222
+#: apigateway/apps/audit/constants.py:39 apigateway/apps/plugin/constants.py:40
+#: apigateway/apps/plugin/constants.py:47
+#: apigateway/biz/access_log/constants.py:49 apigateway/core/constants.py:192
 msgid "环境"
 msgstr "Stage"
 
@@ -578,8 +592,8 @@ msgstr "Backend Service"
 msgid "环境后端配置"
 msgstr "Stage Backend Config"
 
-#: apigateway/apps/audit/constants.py:42 apigateway/apps/plugin/constants.py:45
-#: apigateway/apps/plugin/constants.py:52 apigateway/core/constants.py:223
+#: apigateway/apps/audit/constants.py:42 apigateway/apps/plugin/constants.py:41
+#: apigateway/apps/plugin/constants.py:48 apigateway/core/constants.py:193
 msgid "资源"
 msgstr "Resource"
 
@@ -595,149 +609,144 @@ msgstr "Release"
 msgid "网关标签"
 msgstr "Create Gateway Label"
 
-#: apigateway/apps/audit/constants.py:46 apigateway/core/constants.py:36
-msgid "微网关"
-msgstr "Micro Gateway"
-
-#: apigateway/apps/audit/constants.py:47 apigateway/apps/plugin/models.py:181
-#: apigateway/apps/plugin/models.py:182
+#: apigateway/apps/audit/constants.py:46
 msgid "插件"
 msgstr "Plugin"
 
-#: apigateway/apps/audit/constants.py:48 apigateway/apps/support/models.py:57
+#: apigateway/apps/audit/constants.py:47 apigateway/apps/support/models.py:57
 #: apigateway/apps/support/models.py:58
 msgid "资源文档"
 msgstr "Resource Doc"
 
-#: apigateway/apps/audit/constants.py:53
+#: apigateway/apps/audit/constants.py:52
 msgid "创建网关"
 msgstr "Create gateway"
 
-#: apigateway/apps/audit/constants.py:54
+#: apigateway/apps/audit/constants.py:53
 msgid "更新网关"
 msgstr "Update gateway"
 
-#: apigateway/apps/audit/constants.py:55
+#: apigateway/apps/audit/constants.py:54
 msgid "删除网关"
 msgstr "Delete gateway"
 
-#: apigateway/apps/audit/constants.py:56
+#: apigateway/apps/audit/constants.py:55
 msgid "创建网关标签"
 msgstr "Create Gateway Label"
 
-#: apigateway/apps/audit/constants.py:57
+#: apigateway/apps/audit/constants.py:56
 msgid "更新网关标签"
 msgstr "Update Gateway Label"
 
-#: apigateway/apps/audit/constants.py:58
+#: apigateway/apps/audit/constants.py:57
 msgid "删除网关标签"
 msgstr "Delete Gateway Label"
 
-#: apigateway/apps/audit/constants.py:59
+#: apigateway/apps/audit/constants.py:58
 msgid "创建资源文档"
 msgstr "Create resource doc"
 
-#: apigateway/apps/audit/constants.py:60
+#: apigateway/apps/audit/constants.py:59
 msgid "更新资源文档"
 msgstr "Update resource doc"
 
-#: apigateway/apps/audit/constants.py:61
+#: apigateway/apps/audit/constants.py:60
 msgid "删除资源文档"
 msgstr "Delete resource doc"
 
-#: apigateway/apps/audit/constants.py:62
+#: apigateway/apps/audit/constants.py:61
 msgid "创建资源"
 msgstr "Create resource"
 
-#: apigateway/apps/audit/constants.py:63
+#: apigateway/apps/audit/constants.py:62
 msgid "更新资源"
 msgstr "Update resource"
 
-#: apigateway/apps/audit/constants.py:64
+#: apigateway/apps/audit/constants.py:63
 msgid "删除资源"
 msgstr "Delete resource"
 
-#: apigateway/apps/audit/constants.py:65
+#: apigateway/apps/audit/constants.py:64
 msgid "创建后端服务"
 msgstr "Create backend service"
 
-#: apigateway/apps/audit/constants.py:66
+#: apigateway/apps/audit/constants.py:65
 msgid "更新后端服务"
 msgstr "Update backend service"
 
-#: apigateway/apps/audit/constants.py:67
+#: apigateway/apps/audit/constants.py:66
 msgid "删除后端服务"
 msgstr "Delete backend service"
 
-#: apigateway/apps/audit/constants.py:68
+#: apigateway/apps/audit/constants.py:67
 msgid "创建微网关实例"
 msgstr "Create microgateway instance"
 
-#: apigateway/apps/audit/constants.py:69
+#: apigateway/apps/audit/constants.py:68
 msgid "更新微网关实例"
 msgstr "Update microgateway instance"
 
-#: apigateway/apps/audit/constants.py:70
+#: apigateway/apps/audit/constants.py:69
 msgid "删除微网关实例"
 msgstr "Delete microgateway instance"
 
-#: apigateway/apps/audit/constants.py:71
+#: apigateway/apps/audit/constants.py:70
 msgid "创建插件"
 msgstr "Create plugin"
 
-#: apigateway/apps/audit/constants.py:72
+#: apigateway/apps/audit/constants.py:71
 msgid "更新插件"
 msgstr "Update plugin"
 
-#: apigateway/apps/audit/constants.py:73
+#: apigateway/apps/audit/constants.py:72
 msgid "删除插件"
 msgstr "Delete plugin"
 
-#: apigateway/apps/audit/constants.py:74
+#: apigateway/apps/audit/constants.py:73
 msgid "创建环境"
 msgstr "Create stage"
 
-#: apigateway/apps/audit/constants.py:75
+#: apigateway/apps/audit/constants.py:74
 msgid "更新环境"
 msgstr "Update stage"
 
-#: apigateway/apps/audit/constants.py:76
+#: apigateway/apps/audit/constants.py:75
 msgid "删除环境"
 msgstr "Delete stage"
 
-#: apigateway/apps/audit/constants.py:77
+#: apigateway/apps/audit/constants.py:76
 msgid "版本发布"
 msgstr "Release"
 
-#: apigateway/apps/audit/constants.py:78
+#: apigateway/apps/audit/constants.py:77
 msgid "生成版本"
 msgstr "Create Resource Version"
 
-#: apigateway/apps/audit/constants.py:80
+#: apigateway/apps/audit/constants.py:79
 msgid "环境状态变更"
 msgstr "Stage state changes"
 
-#: apigateway/apps/audit/constants.py:81
+#: apigateway/apps/audit/constants.py:80
 msgid "更新环境变量"
 msgstr "Update Stage Variables"
 
-#: apigateway/apps/audit/constants.py:82
+#: apigateway/apps/audit/constants.py:81
 msgid "批量更新资源"
 msgstr "Batch update resources"
 
-#: apigateway/apps/audit/constants.py:83
+#: apigateway/apps/audit/constants.py:82
 msgid "批量删除资源"
 msgstr "Batch delete resources"
 
-#: apigateway/apps/audit/constants.py:84
+#: apigateway/apps/audit/constants.py:83
 msgid "创建环境后端配置"
 msgstr "Create stage backend config"
 
-#: apigateway/apps/audit/constants.py:85
+#: apigateway/apps/audit/constants.py:84
 msgid "更新环境后端配置"
 msgstr "Update stage backend config"
 
-#: apigateway/apps/audit/constants.py:86
+#: apigateway/apps/audit/constants.py:85
 msgid "删除环境后端配置"
 msgstr "Delete stage backend config"
 
@@ -836,8 +845,8 @@ msgstr "Component API Doc"
 msgid "资源版本ID"
 msgstr "Resource Version ID"
 
-#: apigateway/apps/esb/bkcore/models.py:324 apigateway/core/models.py:585
-#: apigateway/core/models.py:758
+#: apigateway/apps/esb/bkcore/models.py:324 apigateway/core/models.py:558
+#: apigateway/core/models.py:759
 #: apigateway/editions/ee/apps/esb/bkcore/models.py:324
 msgid "发布状态"
 msgstr "Release Status"
@@ -989,12 +998,12 @@ msgstr ""
 "The request method is {method}, but request method GET/POST already exists "
 "under the same request path."
 
-#: apigateway/apps/esb/component/views.py:209
-#: apigateway/editions/ee/apps/esb/component/views.py:209
+#: apigateway/apps/esb/component/views.py:210
+#: apigateway/editions/ee/apps/esb/component/views.py:210
 msgid "当前已有同步任务正在执行，请稍后重试。"
-msgstr ""
+msgstr "a synchronization task is currently in progress. Please try again later."
 
-#: apigateway/apps/esb/constants.py:32 apigateway/conf/default.py:918
+#: apigateway/apps/esb/constants.py:32 apigateway/conf/default.py:888
 #: apigateway/editions/ee/apps/esb/constants.py:32
 msgid "蓝鲸智云"
 msgstr "BlueKing"
@@ -1068,12 +1077,6 @@ msgstr "Gateway request statistics (by day)"
 #: apigateway/apps/metrics/models.py:84 apigateway/apps/metrics/models.py:85
 msgid "应用请求统计(按天)"
 msgstr "App request statistics (by day)"
-
-#: apigateway/apps/micro_gateway/serializers.py:88
-#: apigateway/apps/micro_gateway/serializers.py:149
-msgid "该网关下，同名微网关实例已存在。"
-msgstr ""
-"Under this gateway, a microgateway instance of the same name already exists."
 
 #: apigateway/apps/monitor/constants.py:24
 #: apigateway/apps/monitor/constants.py:49
@@ -1225,7 +1228,7 @@ msgid "按资源"
 msgstr "By Resource"
 
 #: apigateway/apps/permission/models.py:55
-#: apigateway/apps/permission/models.py:109
+#: apigateway/apps/permission/models.py:102
 msgid "默认过期时间为180天"
 msgstr "Default expiration time is 180 days"
 
@@ -1234,76 +1237,83 @@ msgstr "Default expiration time is 180 days"
 msgid "蓝鲸应用访问网关权限"
 msgstr "App gateway permissions"
 
-#: apigateway/apps/permission/models.py:119
-#: apigateway/apps/permission/models.py:120
+#: apigateway/apps/permission/models.py:112
+#: apigateway/apps/permission/models.py:113
 msgid "蓝鲸应用访问资源权限"
 msgstr "App resource permissions"
 
-#: apigateway/apps/permission/models.py:176
-#: apigateway/apps/permission/models.py:177
+#: apigateway/apps/permission/models.py:169
+#: apigateway/apps/permission/models.py:170
 msgid "蓝鲸应用访问资源权限待审批申请单"
 msgstr "App pending permission approvals for resources"
 
-#: apigateway/apps/permission/models.py:221
-#: apigateway/apps/permission/models.py:222
+#: apigateway/apps/permission/models.py:214
+#: apigateway/apps/permission/models.py:215
 msgid "蓝鲸应用访问资源权限申请单"
 msgstr "App permission approvals for resources"
 
-#: apigateway/apps/permission/models.py:270
-#: apigateway/apps/permission/models.py:271
+#: apigateway/apps/permission/models.py:263
+#: apigateway/apps/permission/models.py:264
 msgid "蓝鲸应用访问资源权限申请状态"
 msgstr "App permission approval status for resources"
 
 #: apigateway/apps/plugin/constants.py:25
-msgid "IP访问控制"
-msgstr "IP Access Control"
-
-#: apigateway/apps/plugin/constants.py:26
-#: apigateway/apps/plugin/constants.py:33
 msgid "频率控制"
 msgstr "Rate Limit"
 
-#: apigateway/apps/plugin/constants.py:29
-msgid "免用户认证应用白名单"
-msgstr "Applications allowlist without user authentication"
-
-#: apigateway/apps/plugin/constants.py:35
+#: apigateway/apps/plugin/constants.py:27
 msgid "Header 转换"
 msgstr "Header rewrite"
 
-#: apigateway/apps/plugin/constants.py:37
+#: apigateway/apps/plugin/constants.py:29
 msgid "网关错误使用HTTP状态码200(不推荐)"
 msgstr "Gateway error using HTTP status code 200 (Not Recommended)"
 
-#: apigateway/apps/plugin/constants.py:39
+#: apigateway/apps/plugin/constants.py:31
 msgid "免用户认证应用白名单(不推荐)"
 msgstr "Applications allowlist without user authentication (Not recommended)"
 
-#: apigateway/apps/plugin/constants.py:46
+#: apigateway/apps/plugin/constants.py:33
+msgid "mocking 插件"
+msgstr "mocking"
+
+#: apigateway/apps/plugin/constants.py:34
+msgid "API 熔断"
+msgstr "api-breaker"
+
+#: apigateway/apps/plugin/constants.py:35
+msgid "请求校验"
+msgstr "request-validation"
+
+#: apigateway/apps/plugin/constants.py:36
+msgid "故障注入"
+msgstr "fault-injection"
+
+#: apigateway/apps/plugin/constants.py:42
 msgid "环境和资源"
 msgstr "stage and backend"
 
-#: apigateway/apps/plugin/constants.py:56
+#: apigateway/apps/plugin/constants.py:52
 msgid "原生"
 msgstr "Native"
 
-#: apigateway/apps/plugin/constants.py:57
+#: apigateway/apps/plugin/constants.py:53
 msgid "动态"
 msgstr "Dynamic"
 
-#: apigateway/apps/plugin/constants.py:58
+#: apigateway/apps/plugin/constants.py:54
 msgid "固定"
 msgstr "Fixed"
 
-#: apigateway/apps/plugin/constants.py:62
+#: apigateway/apps/plugin/constants.py:58
 msgid "yaml导入"
 msgstr "yaml import"
 
-#: apigateway/apps/plugin/constants.py:63
+#: apigateway/apps/plugin/constants.py:59
 msgid "用户创建"
 msgstr "user create"
 
-#: apigateway/apps/plugin/models.py:83 apigateway/apps/plugin/models.py:84
+#: apigateway/apps/plugin/models.py:82 apigateway/apps/plugin/models.py:83
 msgid "插件类型"
 msgstr "Plugin type"
 
@@ -1315,31 +1325,31 @@ msgstr "Plugin form"
 msgid "插件配置"
 msgstr "Plugin Configuration"
 
-#: apigateway/apps/plugin/models.py:216 apigateway/apps/plugin/models.py:217
+#: apigateway/apps/plugin/models.py:182 apigateway/apps/plugin/models.py:183
 msgid "插件绑定"
 msgstr "Plugin Binding"
 
-#: apigateway/apps/support/constants.py:34
+#: apigateway/apps/support/constants.py:35
 msgid "英文"
 msgstr "English"
 
-#: apigateway/apps/support/constants.py:35
+#: apigateway/apps/support/constants.py:36
 msgid "中文"
 msgstr "Chinese"
 
-#: apigateway/apps/support/constants.py:39
+#: apigateway/apps/support/constants.py:40
 msgid "导入"
 msgstr "Import"
 
-#: apigateway/apps/support/constants.py:40
+#: apigateway/apps/support/constants.py:41
 msgid "自定义"
 msgstr "Custom"
 
-#: apigateway/apps/support/constants.py:44
+#: apigateway/apps/support/constants.py:45
 msgid "tgz 归档文件"
 msgstr "tgz archive file"
 
-#: apigateway/apps/support/constants.py:45
+#: apigateway/apps/support/constants.py:46
 msgid "zip 归档文件"
 msgstr "zip archive file"
 
@@ -1380,54 +1390,62 @@ msgid "蓝鲸应用"
 msgstr "App"
 
 #: apigateway/biz/access_log/constants.py:39
+msgid "蓝鲸用户"
+msgstr "bk user"
+
+#: apigateway/biz/access_log/constants.py:44
 msgid "客户端IP"
 msgstr "Client IP"
 
-#: apigateway/biz/access_log/constants.py:49
+#: apigateway/biz/access_log/constants.py:54
 msgid "资源ID"
 msgstr "Resource ID"
 
-#: apigateway/biz/access_log/constants.py:64
+#: apigateway/biz/access_log/constants.py:69
 msgid "请求域名"
 msgstr "Request Host"
 
-#: apigateway/biz/access_log/constants.py:84
+#: apigateway/biz/access_log/constants.py:89
 msgid "后端请求方法"
 msgstr "Backend Method"
 
-#: apigateway/biz/access_log/constants.py:89
+#: apigateway/biz/access_log/constants.py:94
 msgid "后端Scheme"
 msgstr "Backend Scheme"
 
-#: apigateway/biz/access_log/constants.py:94
+#: apigateway/biz/access_log/constants.py:99
 msgid "后端域名"
 msgstr "Backend Host"
 
-#: apigateway/biz/access_log/constants.py:99
+#: apigateway/biz/access_log/constants.py:104
 msgid "后端路径"
 msgstr "Backend Path"
 
-#: apigateway/biz/access_log/constants.py:104
+#: apigateway/biz/access_log/constants.py:109
 msgid "响应正文"
 msgstr "Response Body"
 
-#: apigateway/biz/access_log/constants.py:109
+#: apigateway/biz/access_log/constants.py:114
+msgid "响应体大小"
+msgstr "Response Size"
+
+#: apigateway/biz/access_log/constants.py:119
 msgid "状态码"
 msgstr "Status Code"
 
-#: apigateway/biz/access_log/constants.py:119
+#: apigateway/biz/access_log/constants.py:129
 msgid "请求总耗时"
 msgstr "Request Duration"
 
-#: apigateway/biz/access_log/constants.py:124
+#: apigateway/biz/access_log/constants.py:134
 msgid "请求后端耗时"
 msgstr "Backend Duration"
 
-#: apigateway/biz/access_log/constants.py:129
+#: apigateway/biz/access_log/constants.py:139
 msgid "错误编码名称"
 msgstr "Code Name"
 
-#: apigateway/biz/access_log/constants.py:139
+#: apigateway/biz/access_log/constants.py:149
 msgid "响应说明"
 msgstr "Response Desc"
 
@@ -1454,55 +1472,16 @@ msgstr ""
 msgid "授权维度 grant_dimension 暂不支持 {grant_dimension}。"
 msgstr "Grant dimension {grant_dimension} is currently unsupported."
 
-#: apigateway/biz/releaser.py:184
-#, python-brace-format
-msgid ""
-"网关环境【{stage_name}】中的配置【后端服务地址】不合法。请在网关 `后端服务` "
-"中进行配置。"
-msgstr ""
-"The config Hosts of stage [{stage_name}] is not configured, please configure "
-"it in the `Backend Service`."
-
-#: apigateway/biz/releaser.py:206
-#, python-brace-format
-msgid "网关环境【{stage_name}】存在绑定多个相同类型[{plugin_code}]的插件。"
-msgstr ""
-"Multiple plugins of the same type [{plugin_code}] are bound in the gateway "
-"environment [{stage_name}]."
-
-#: apigateway/biz/releaser.py:222
-#, python-brace-format
-msgid ""
-"网关环境【{stage_name}】中代理配置 Hosts 未配置，请在网关 `基本设置 -> 环境管"
-"理` 中进行配置。"
-msgstr ""
-"The config Hosts of stage [{stage_name}] is not configured, please configure "
-"it in the `Settings -> Stages`."
-
-#: apigateway/biz/releaser.py:244
-#, python-brace-format
-msgid "网关【{gateway_name}】没有启用，不允许发布"
-msgstr "Gateway [{gateway_name}] is not enabled, publishing is not allowed."
-
-#: apigateway/biz/releaser.py:279
+#: apigateway/biz/releaser.py:171
 msgid "共享微网关实例不存在。"
 msgstr "The shared micro-gateway instance does not exist."
 
-#: apigateway/biz/resource/importer/importers.py:103
+#: apigateway/biz/resource/importer/parser.py:408
 #, python-brace-format
 msgid "后端服务 (name={name}) 不存在。"
 msgstr "The backend service (name={name}) does not exist."
 
-#: apigateway/biz/resource/importer/importers.py:206
-#, python-brace-format
-msgid ""
-"资源重复，id={resource_id}, method={method}, path={path} 在当前配置数据中被多"
-"次使用，请检查。"
-msgstr ""
-"Duplicate resource, id={resource_id}, method={method}, path={path} are used "
-"multiple times in the current configuration data, please check."
-
-#: apigateway/biz/resource/importer/importers.py:227
+#: apigateway/biz/resource/importer/validate.py:99
 #, python-brace-format
 msgid ""
 "资源请求方法+请求路径重复，method={method}, path={path} 已被现有资源占用，请"
@@ -1511,7 +1490,7 @@ msgstr ""
 "The resource request method + request path are duplicated. method={method}, "
 "path={path} are already occupied by existing resources, please check."
 
-#: apigateway/biz/resource/importer/importers.py:235
+#: apigateway/biz/resource/importer/validate.py:109
 #, python-brace-format
 msgid ""
 "资源请求方法+请求路径重复，method={method}, path={path} 在当前配置数据中被多"
@@ -1521,7 +1500,7 @@ msgstr ""
 "path={path} are used multiple times in the current configuration data, "
 "please check."
 
-#: apigateway/biz/resource/importer/importers.py:256
+#: apigateway/biz/resource/importer/validate.py:133
 #, python-brace-format
 msgid ""
 "当前配置数据及已有资源数据中，请求路径 {path} 下，同时存在 {method_any} 及其"
@@ -1530,21 +1509,21 @@ msgstr ""
 "Under request path [{path}], there exists [{method_any}] and other request "
 "methods."
 
-#: apigateway/biz/resource/importer/importers.py:268
+#: apigateway/biz/resource/importer/validate.py:148
 #, python-brace-format
 msgid "资源名称重复，operationId={name} 已被现有资源占用，请检查。"
 msgstr ""
 "The resource name is duplicated, operationId={name} is already occupied by "
 "an existing resource, please check."
 
-#: apigateway/biz/resource/importer/importers.py:273
+#: apigateway/biz/resource/importer/validate.py:156
 #, python-brace-format
 msgid "资源名称重复，operationId={name} 在当前配置数据中被多次使用，请检查。"
 msgstr ""
 "The resource name \"{name}\" is duplicated, it was used more than once in "
 "the current configuration data."
 
-#: apigateway/biz/resource/importer/importers.py:285
+#: apigateway/biz/resource/importer/validate.py:171
 #, python-brace-format
 msgid ""
 "当前配置数据中，资源 method={method}, path={path}，前端配置中的 "
@@ -1553,12 +1532,12 @@ msgstr ""
 "The matchSubpath of resource [method={method}, path={path}] value in "
 "frontend config must be the same as the matchSubpath value in backend config."
 
-#: apigateway/biz/resource/importer/importers.py:293
+#: apigateway/biz/resource/importer/validate.py:183
 #, python-brace-format
 msgid "每个网关最多创建 {count} 个资源。"
 msgstr "Up to {count} resources per gateway."
 
-#: apigateway/biz/resource/importer/importers.py:324
+#: apigateway/biz/resource/importer/validate.py:219
 #, python-brace-format
 msgid ""
 "资源绑定的插件类型重复，资源名称：{resource_name}，重复的插件类型："
@@ -1567,7 +1546,7 @@ msgstr ""
 "The plugin type bound to the resource is duplicated, resource name: "
 "{resource_name}, duplicate plugin type: {duplicate_types}"
 
-#: apigateway/biz/resource/importer/importers.py:364
+#: apigateway/biz/resource/importer/validate.py:261
 #, python-brace-format
 msgid ""
 "资源的插件配置校验失败，资源名称：{resource_name}，插件类型："
@@ -1576,12 +1555,16 @@ msgstr ""
 "The plugin configuration verification of the resource failed. Resource name: "
 "{resource_name}, plugin type: {plugin_type_code}, error message: {err}."
 
+#: apigateway/biz/resource/importer/validate.py:285
+#, python-brace-format
 msgid ""
-"资源的后端服务校验失败，资源名称：{resource_name}，后端服务：{backend_name} 不存在"
+"资源的后端服务校验失败，资源名称：{resource_name}，后端服务：{backend_name} "
+"不存在"
 msgstr ""
-"Backend service validation failed for resource, resource name: {resource_name}, backend service: {backend_name} "
-"does not exist"
-#: apigateway/biz/resource/savers.py:115
+"Backend service validation failed for resource, resource name: "
+"{resource_name}, backend service: {backend_name} does not exist"
+
+#: apigateway/biz/resource/savers.py:117
 #, python-brace-format
 msgid ""
 "根据资源名称匹配资源时，匹配资源的 method + path 和用户输入的不一致，请检查资"
@@ -1591,7 +1574,7 @@ msgstr ""
 "matching resource is inconsistent with the one entered by the user. Please "
 "check whether the resource (name={name}) already exists."
 
-#: apigateway/biz/resource/savers.py:133
+#: apigateway/biz/resource/savers.py:135
 #, python-brace-format
 msgid "网关资源 (id={resource_ids}) 存在多个后端配置，请联系网关管理员检查。"
 msgstr ""
@@ -1610,44 +1593,44 @@ msgstr "Jinja2 template not found"
 msgid "Jinja2 模板语法错误"
 msgstr "Jinja2 template syntax error"
 
-#: apigateway/biz/resource_doc/importer/parsers.py:116
+#: apigateway/biz/resource_doc/importer/parsers.py:117
 msgid "无有效的资源文档。"
 msgstr "No valid resource document."
 
-#: apigateway/biz/resource_version.py:146 apigateway/biz/validators.py:182
+#: apigateway/biz/resource_version.py:151 apigateway/biz/validators.py:294
 msgid "请先创建资源，然后再生成版本。"
 msgstr "Please create a resource first and then generate resource version."
 
-#: apigateway/biz/resource_version.py:154 apigateway/biz/validators.py:186
+#: apigateway/biz/resource_version.py:159 apigateway/biz/validators.py:298
 msgid "存在资源未绑定后端服务. "
 msgstr "There is a resource that is not bound to the backend service."
 
-#: apigateway/biz/resource_version.py:158 apigateway/biz/validators.py:200
+#: apigateway/biz/resource_version.py:163 apigateway/biz/validators.py:312
 #, python-brace-format
 msgid "版本 {version} 已存在。"
 msgstr "Resource version {version} already exists."
 
-#: apigateway/biz/stage.py:189
+#: apigateway/biz/stage.py:168
 #, python-brace-format
 msgid "环境【{stage_name}】不存在。"
 msgstr "Stage [{stage_name}] does not exist."
 
-#: apigateway/biz/validators.py:75
+#: apigateway/biz/validators.py:84
 #, python-brace-format
 msgid "网关【id={gateway_id}】下指定的部分资源ID不存在。"
 msgstr "Some resource IDs do not exist under gateway [id={gateway_id}]."
 
-#: apigateway/biz/validators.py:89
+#: apigateway/biz/validators.py:98
 #, python-brace-format
 msgid "蓝鲸应用【{app_codes}】不匹配要求的模式。"
 msgstr "App [{app_codes}] does not match the required pattern."
 
-#: apigateway/biz/validators.py:101
+#: apigateway/biz/validators.py:110
 #, python-brace-format
 msgid "蓝鲸应用【{value}】不匹配要求的模式。"
 msgstr "App [{value}] does not match the required pattern."
 
-#: apigateway/biz/validators.py:133
+#: apigateway/biz/validators.py:142
 #, python-brace-format
 msgid ""
 "环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作路径变"
@@ -1656,7 +1639,7 @@ msgstr ""
 "In stage [{stage_name}], the variable [{key}] is used as a path variable in "
 "some resources, and must exist."
 
-#: apigateway/biz/validators.py:140
+#: apigateway/biz/validators.py:149
 #, python-brace-format
 msgid ""
 "环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作路径变"
@@ -1665,7 +1648,7 @@ msgstr ""
 "In stage [{stage_name}], the variable [{key}] is used as a path variable in "
 "some resources, but it's value is not a valid URL fragment."
 
-#: apigateway/biz/validators.py:155
+#: apigateway/biz/validators.py:164
 #, python-brace-format
 msgid ""
 "环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作 Host 变"
@@ -1674,7 +1657,7 @@ msgstr ""
 "In stage [{stage_name}], the variable [{key}] is used as a Host variable in "
 "some resources, and cannot be empty."
 
-#: apigateway/biz/validators.py:162
+#: apigateway/biz/validators.py:171
 #, python-brace-format
 msgid ""
 "环境【{stage_name}】中，环境变量【{key}】在发布版本的资源配置中被用作 Host 变"
@@ -1684,9 +1667,60 @@ msgstr ""
 "some resources, but it's value is not a valid Host (not including "
 "\"http(s)://\")."
 
-#: apigateway/biz/validators.py:196
+#: apigateway/biz/validators.py:210
+#, fuzzy, python-brace-format
+#| msgid ""
+#| "网关环境【{stage_name}】中的配置【后端服务地址】不合法。请在网关 `后端服务"
+#| "` 中进行配置。"
+msgid ""
+"网关环境【{stage_name}】中的配置【后端服务 {backend_name} 地址】不合法。请在"
+"网关 `后端服务` 中进行配置。"
+msgstr ""
+"The config Hosts of stage [{stage_name}] is not configured, please configure "
+"it in the `Backend Service`."
+
+#: apigateway/biz/validators.py:233
+#, python-brace-format
+msgid "网关环境【{stage_name}】存在绑定多个相同类型[{plugin_code}]的插件。"
+msgstr ""
+"Multiple plugins of the same type [{plugin_code}] are bound in the gateway "
+"environment [{stage_name}]."
+
+#: apigateway/biz/validators.py:255
+#, python-brace-format
+msgid ""
+"版本【{resource_version}】数据结构已经不兼容，不允许发布，请在【资源配置】中"
+"新建版本再发布"
+msgstr ""
+
+#: apigateway/biz/validators.py:263
+#, python-brace-format
+msgid "网关【{gateway_name}】没有启用，不允许发布"
+msgstr "Gateway [{gateway_name}] is not enabled, publishing is not allowed."
+
+#: apigateway/biz/validators.py:308
 msgid "存在同一资源绑定多个后端服务. "
 msgstr "There is a resource that is bound to the multiple backend service."
+
+#: apigateway/biz/validators.py:324
+#, fuzzy, python-brace-format
+#| msgid "后端服务【{backend_name}】的配置Scheme【{scheme}】不合法。"
+msgid ""
+"后端服务【{backend_name}】的配置 scheme 同时存在 http 和 https， 需要保持一"
+"致。"
+msgstr ""
+"The configuration Scheme [{scheme}] of the backend service [{backend_name}] "
+"is illegal."
+
+#: apigateway/biz/validators.py:330
+#, fuzzy, python-brace-format
+#| msgid "后端服务【{backend_name}】的配置Scheme【{scheme}】不合法。"
+msgid ""
+"后端服务【{backend_name}】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一"
+"致。"
+msgstr ""
+"The configuration Scheme [{scheme}] of the backend service [{backend_name}] "
+"is illegal."
 
 #: apigateway/common/django/validators.py:35
 msgid "名称不能以【-】结尾。"
@@ -1709,30 +1743,26 @@ msgid "用户未登录或登录态失效，请使用登录链接重新登录"
 msgstr "User is not logged in or login status is invalid, please log in again"
 
 #: apigateway/common/error_codes.py:127
-msgid "没有访问权限"
-msgstr "Forbidden"
-
-#: apigateway/common/error_codes.py:128
 msgid "没有相关权限"
 msgstr "No Permission"
 
-#: apigateway/common/error_codes.py:129
+#: apigateway/common/error_codes.py:128
 msgid "数据不存在"
 msgstr "Not Found"
 
-#: apigateway/common/error_codes.py:131
+#: apigateway/common/error_codes.py:130
 msgid "不支持当前的请求方法"
 msgstr "The request method is not allowed"
 
-#: apigateway/common/error_codes.py:133
+#: apigateway/common/error_codes.py:132
 msgid "处理请求时发生内部错误"
 msgstr "An internal error occurred while processing the request"
 
-#: apigateway/common/error_codes.py:134
+#: apigateway/common/error_codes.py:133
 msgid "请求失败"
 msgstr "Reuqest Failed"
 
-#: apigateway/common/es/clients.py:59
+#: apigateway/common/es/clients.py:70
 msgid "项目配置 ELASTICSEARCH_HOSTS 不能为空。"
 msgstr "setting ELASTICSEARCH_HOSTS cannot be empty."
 
@@ -1740,47 +1770,44 @@ msgstr "setting ELASTICSEARCH_HOSTS cannot be empty."
 msgid "Schema 不存在。"
 msgstr "Schema does not exist."
 
-#: apigateway/common/permissions/permissions.py:34
+#: apigateway/common/permissions/permissions.py:33
 msgid "当前用户无访问网关权限"
 msgstr "The user has no permission to access the gateway"
 
-#: apigateway/common/permissions/permissions.py:71
-msgid "应用无操作网关权限"
-msgstr "App has no permission to access the gateway"
-
-#: apigateway/common/permissions/permissions.py:112
+#: apigateway/common/permissions/permissions.py:73
 msgid "网关不存在"
 msgstr "The gateway does not exist."
 
-#: apigateway/common/plugin/plugin_checkers.py:57
-#, python-brace-format
-msgid "当 'allow_credential' 为 True 时, {key} 不能为 '*'。"
+#: apigateway/common/plugin/checker.py:67
+#, fuzzy, python-brace-format
+#| msgid "当 'allow_credential' 为 True 时, {key} 不能为 '*'。"
+msgid "当 'allow_credential' 为 True 时，{key} 不能为 '*'。"
 msgstr "{key} cannot be '*' when 'allow_credential' is True."
 
-#: apigateway/common/plugin/plugin_checkers.py:61
+#: apigateway/common/plugin/checker.py:71
 msgid "allow_origins, allow_origins_by_regex 不能同时为空。"
 msgstr ""
 "allow_origins, allow_origins_by_regex cannot be empty at the same time."
 
-#: apigateway/common/plugin/plugin_checkers.py:64
+#: apigateway/common/plugin/checker.py:74
 msgid "allow_origins, allow_origins_by_regex 只能一个有效。"
 msgstr "allow_origins, allow_origins_by_regex can only be one valid at a time."
 
-#: apigateway/common/plugin/plugin_checkers.py:87
+#: apigateway/common/plugin/checker.py:97
 #, python-brace-format
 msgid "allow_origins_by_regex 中数据 '{re_rule}' 不是合法的正则表达式。"
 msgstr ""
 "The '{re_rule}' in allow_origins_by_regex is not a legal regex expression."
 
-#: apigateway/common/plugin/plugin_checkers.py:93
+#: apigateway/common/plugin/checker.py:103
 msgid "{} 存在重复的元素：{}。"
 msgstr "Duplicate element in {}: {}."
 
-#: apigateway/common/plugin/plugin_checkers.py:103
+#: apigateway/common/plugin/checker.py:113
 msgid "set 存在重复的元素：{}。"
 msgstr "Duplicate element in set: {}."
 
-#: apigateway/common/plugin/plugin_checkers.py:108
+#: apigateway/common/plugin/checker.py:118
 msgid "remove 存在重复的元素：{}。"
 msgstr "Duplicate element in remove: {}."
 
@@ -1801,25 +1828,29 @@ msgstr "No response content"
 msgid "接口响应数据非 JSON 格式"
 msgstr "Response data is not in JSON format"
 
-#: apigateway/conf/default.py:923
+#: apigateway/conf/default.py:893
 msgid "正式环境"
 msgstr "Prod"
 
-#: apigateway/conf/default.py:925
+#: apigateway/conf/default.py:895
 msgid "访问后端正式环境"
 msgstr "request third-party API Prod environment"
 
-#: apigateway/conf/default.py:929
+#: apigateway/conf/default.py:899
 msgid "测试环境"
 msgstr "Test"
 
-#: apigateway/conf/default.py:931
+#: apigateway/conf/default.py:901
 msgid "访问后端测试环境"
 msgstr "request third-party API Test environment"
 
-#: apigateway/conf/default.py:941
+#: apigateway/conf/default.py:911
 msgid "访问蓝鲸智云组件 API"
 msgstr "request BlueKing component API"
+
+#: apigateway/core/constants.py:36
+msgid "微网关"
+msgstr "Micro Gateway"
 
 #: apigateway/core/constants.py:42
 msgid "待安装"
@@ -1841,173 +1872,42 @@ msgstr "Updated"
 msgid "安装异常"
 msgstr "Installation Error"
 
-#: apigateway/core/constants.py:54
-msgid "节点"
-msgstr "Node"
-
-#: apigateway/core/constants.py:55
-msgid "服务发现"
-msgstr "Service Discovery"
-
-#: apigateway/core/constants.py:61
-msgid "默认后端服务"
-msgstr "Default Backend Service"
-
-#: apigateway/core/constants.py:62
-msgid "自定义后端服务"
-msgstr "Custom Backend Service"
-
-#: apigateway/core/constants.py:63
-msgid "已存在的后端服务"
-msgstr "Existing Backend Service"
-
-#: apigateway/core/constants.py:82
-msgid "客户端证书"
-msgstr "Client Certificate"
-
-#: apigateway/core/constants.py:83
-msgid "服务端证书"
-msgstr "Server Certificate"
-
-#: apigateway/core/constants.py:84
-msgid "客户端引用证书"
-msgstr "Client Reference Certificate"
-
-#: apigateway/core/constants.py:85
-msgid "服务端引用证书"
-msgstr "Server Reference Certificate"
-
-#: apigateway/core/constants.py:90
-msgid "环境配置"
-msgstr "Stage item config"
-
 #: apigateway/core/constants.py:91
-msgid "后端服务发现配置"
-msgstr "Backend service discovery config"
-
-#: apigateway/core/constants.py:121
 msgid "配置校验"
 msgstr "Configuration verification"
 
-#: apigateway/core/constants.py:122
+#: apigateway/core/constants.py:92
 msgid "生成发布任务"
 msgstr "Generate publishing tasks"
 
-#: apigateway/core/constants.py:123
+#: apigateway/core/constants.py:93
 msgid "下发配置"
 msgstr "Deliver configuration"
 
-#: apigateway/core/constants.py:125
+#: apigateway/core/constants.py:95
 msgid "解析配置"
 msgstr "Parse configuration"
 
-#: apigateway/core/constants.py:126
+#: apigateway/core/constants.py:96
 msgid "应用配置"
 msgstr "Apply configuration"
 
-#: apigateway/core/constants.py:128
+#: apigateway/core/constants.py:98
 msgid "加载配置"
 msgstr "Load configuration"
 
-#: apigateway/core/models.py:463
+#: apigateway/core/models.py:436
 msgid "符合 semver 规范"
 msgstr "Conform to semver specification"
 
-#: apigateway/core/models.py:465
+#: apigateway/core/models.py:438
 msgid "[Deprecated] 版本名"
 msgstr "[Deprecated] Name"
 
-#: apigateway/core/models.py:713
+#: apigateway/core/models.py:721
 msgid "是否共享实例"
 msgstr "Is shared instance"
 
-#: apigateway/core/models.py:715
+#: apigateway/core/models.py:723
 msgid "是否托管实例"
 msgstr "Is managed instance"
-
-#: apigateway/core/models.py:806
-msgid "引用类证书，名称表示引用名称"
-msgstr "Reference certificate, the name indicates the reference name"
-
-#: apigateway/iam/constants.py:32
-msgid "管理员"
-msgstr "Administrator"
-
-#: apigateway/iam/constants.py:33
-msgid "开发者"
-msgstr "Developer"
-
-#: apigateway/iam/constants.py:34
-msgid "运营者"
-msgstr "Operator"
-
-#: apigateway/iam/exceptions.py:28
-#, python-brace-format
-msgid "网关 (id={gateway_id}) 的 IAM 分级管理员已存在，请不要重复创建。"
-msgstr ""
-"The IAM grade manager for the gateway (id={gateway_id}) already exists, "
-"please do not create it again."
-
-#: apigateway/iam/exceptions.py:38
-#, python-brace-format
-msgid ""
-"网关 (id={gateway_id}) 的 IAM 分级管理员不存在，请联系系统负责人初始化数据。"
-msgstr ""
-"The IAM grade manager for the gateway (id={gateway_id}) does not exist. "
-"Please contact the system admin to initialize the data."
-
-#: apigateway/iam/exceptions.py:50
-#, python-brace-format
-msgid ""
-"网关 (id={gateway_id}) {role_label}的 IAM 用户组不存在，请联系系统负责人初始"
-"化数据。"
-msgstr ""
-"The IAM user group of gateway (id={gateway_id}) {role_label} does not exist. "
-"Please contact the system admin to initialize the data."
-
-#: apigateway/iam/handlers/user_group.py:63
-#, python-brace-format
-msgid "API网关-{gateway_name}-管理员"
-msgstr "API Gateway-{gateway_name}-Admin"
-
-#: apigateway/iam/handlers/user_group.py:65
-#, python-brace-format
-msgid "API网关-{gateway_name}-开发者"
-msgstr "API Gateway-{gateway_name}-Developer"
-
-#: apigateway/iam/handlers/user_group.py:67
-#, python-brace-format
-msgid "API网关-{gateway_name}-运营者"
-msgstr "API Gateway-{gateway_name}-Operator"
-
-#: apigateway/iam/handlers/user_group.py:73
-#, python-brace-format
-msgid "API网关 ({gateway_name}) 管理员，拥有网关的全部权限。"
-msgstr ""
-"API gateway ({gateway_name}) administrator has all the permissions of the "
-"gateway."
-
-#: apigateway/iam/handlers/user_group.py:75
-#, python-brace-format
-msgid ""
-"API网关 ({gateway_name}) 开发者，拥有网关的开发权限，如管理资源，查看日志，在"
-"线测试等。"
-msgstr ""
-"API gateway ({gateway_name}) developer has the development rights of the "
-"gateway, such as managing resources, viewing logs, online testing, etc."
-
-#: apigateway/iam/handlers/user_group.py:79
-#, python-brace-format
-msgid ""
-"API网关 ({gateway_name}) 运营者，拥有网关的运营权限，如管理权限，查看日志等。"
-msgstr ""
-"API gateway ({gateway_name}) operator has the operational permissions of the "
-"gateway, such as management permissions, viewing logs, etc."
-
-#: apigateway/iam/models.py:37 apigateway/iam/models.py:38
-msgid "IAM 分级管理员"
-msgstr "IAM grade manager"
-
-#: apigateway/iam/models.py:54 apigateway/iam/models.py:55
-msgid "IAM 用户组"
-msgstr "IAM user group"

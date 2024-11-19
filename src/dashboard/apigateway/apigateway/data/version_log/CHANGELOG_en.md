@@ -1,3 +1,87 @@
+<!-- 2024-11-15 -->
+# V1.15.0 Release Log
+
+### Features
+
+- Data Operation - Statistical Report: Complete page redesign.
+- Permission Management - Application Permissions: Full page redesign, merging two permission dimensions into a single list page/export.
+- Gateway/Component API Documentation and Gateway/Component SDK: Merged into a single page, API Documentation, with all functions needing testing.
+- Optimized Log Query Page: Search history/icon selection to narrow scope.
+- Optimized Online Debugging Page.
+- Resource Version: Support for generating Java SDK.
+- Resource Configuration: Support for enabling WebSocket.
+- Added 4 new plugins to Resource Dimension: Mock, Circuit Breaker, Request Validation, and Fault Injection, with functionality needing testing.
+- Upgraded the underlying Django framework and all dependency libraries to the latest version.
+
+---
+
+<!-- 2024-10-30 -->
+# V1.14.5 Release Log
+
+### Bug Fixes
+
+- Fixed issues on the resource configuration page
+  - Incorrect page number after search
+  - Resource configuration table height issue
+- Fixed issues in pipeline logs
+  - Added search history for log queries
+  - Syntax error in log queries
+  - Data export issue resulting in empty logs
+- Fixed issue with header reset when switching in online debugging
+- Fixed the issue with resource documentation upload failure
+- Fixed backend configuration issues for environment validation during publishing
+- Updated bkui to fix XSS vulnerabilities
+- Fixed online debugging: refined response status code color differentiation
+- Fixed gateway basic information: tooltips for maintenance personnel text
+- Optimized resource version comparison display
+
+---
+
+<!-- 2024-10-09 -->
+# V1.14.4 Release Log
+
+### Bug Fixes
+
+- Fixed incorrect validation in online debugging
+
+---
+
+<!-- 2024-10-08 -->
+# V1.14.3 Release Log
+
+### Bug Fixes
+
+- Fixed the issue where the description disappears when editing a plugin
+- Error notification for failed ZIP uploads during document import
+- XSS vulnerability fix
+
+---
+
+<!-- 2024-09-26 -->
+# V1.14.2 Release Log
+
+### Bug Fixes
+
+- Fixed incorrect official documentation link for resource import
+- Added support for delete operation in OpenAPI resource synchronization
+
+---
+
+<!-- 2024-09-25 -->
+# V1.14.1 Release Log
+
+### Bug Fixes
+
+- Environment Overview: Resource plugin list merge takes too long
+- Fixed issue where a prompt dialog still appears after leaving a page with an edited form
+
+### Features
+
+- Prohibit selecting and publishing schema v1 resource versions
+- Standardize documentation center redirect links
+
+---
+
 <!-- 2024-09-13 -->
 # V1.14.0 Release Log
 

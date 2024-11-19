@@ -329,7 +329,6 @@ class PluginConfigRetrieveUpdateDestroyApi(
     lookup_field = "id"
 
     def _check_if_changed(self, input_data: Dict[str, Any], instance: PluginConfig) -> bool:
-
         try:
             input_yaml = yaml_loads(input_data["yaml"])
             current_yaml = yaml_loads(instance.yaml)
@@ -351,7 +350,6 @@ class PluginConfigRetrieveUpdateDestroyApi(
         self.validate_code(type_id=serializer.validated_data["type_id"])
 
         if self._check_if_changed(dict(serializer.validated_data), serializer.instance):
-
             data_before = get_model_dict(serializer.instance)
 
             super().perform_update(serializer)

@@ -50,7 +50,7 @@ class TestQueryRangeApi:
                     "unit": "",
                     "target": "",
                     "dimensions": {},
-                    "datapoints": []
+                    "datapoints": [],
                 },
             ],
         }
