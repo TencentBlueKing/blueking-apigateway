@@ -45,6 +45,7 @@
             :row-style="{ cursor: 'pointer' }"
             :show-overflow-tooltip="true"
             :cell-class="getCellClass"
+            :pagination="pagination"
           >
             <bk-table-column :label="t('资源名称')" prop="resource_name"></bk-table-column>
             <bk-table-column :label="t('响应状态码')" prop="status_code">
@@ -86,6 +87,14 @@
                 />
               </div>
             </template>
+            <template #empty>
+              <TableEmpty
+                :keyword="tableEmptyConf.keyword"
+                :abnormal="tableEmptyConf.isAbnormal"
+                @reacquire="setSearchTimeRange"
+                @clear-filter="handleClearFilterKey"
+              />
+            </template>
           </bk-table>
         </div>
       </div>
@@ -97,6 +106,9 @@
 import { ref, shallowRef, reactive, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAccessLog, useCommon } from '@/store';
+// @ts-ignore
+import TableEmpty from '@/components/table-empty.vue';
+// @ts-ignore
 import editorMonaco from '@/components/ag-editor.vue';
 import { getTestHistories, getTestHistoriesDetails } from '@/http';
 import { Message } from 'bkui-vue';
@@ -111,7 +123,7 @@ const filterData = ref<any>({
   time_end: '',
 });
 const dateTimeRange = ref([]);
-const dateKey = ref('dateKey');
+const dateKey = ref<string>('dateKey');
 const topDatePicker = ref(null);
 const AccessLogStore = useAccessLog();
 const shortcutSelectedIndex = shallowRef(-1);
@@ -124,12 +136,13 @@ const tableEmptyConf = reactive<any>({
   isAbnormal: false,
 });
 let expandIds: number[] = [];
+const pagination = ref<{count: number, limit: number}>({ count: 0, limit: 10 });
 
 const updateTableEmptyConfig = () => {
-  // if (!curPagination.value.count) {
-  //   tableEmptyConf.keyword = 'placeholder';
-  //   return;
-  // }
+  if (filterData.value.resource_name || filterData.value.time_end) {
+    tableEmptyConf.keyword = 'placeholder';
+    return;
+  }
   tableEmptyConf.keyword = '';
 };
 
@@ -206,17 +219,25 @@ const getList = async () => {
     limit: 10000,
     ...filterData.value,
   };
-  const res = await getTestHistories(common.apigwId, data);
-  res?.forEach((item: any) => {
+  const response = await getTestHistories(common.apigwId, data);
+  response?.forEach((item: any) => {
     item.editorText = '';
   });
-  tableList.value = res;
+  tableList.value = response;
+  pagination.value.count = response?.length || 0;
+  updateTableEmptyConfig();
+};
+
+const handleClearFilterKey = () => {
+  clear();
+  getList();
+  dateKey.value = String(+new Date());
 };
 
 const getDetails = async (id: number, row: Record<string, any>) => {
-  const res = await getTestHistoriesDetails(common.apigwId, id);
+  const response = await getTestHistoriesDetails(common.apigwId, id);
 
-  row.editorText = res?.response?.data?.curl;
+  row.editorText = response?.response?.data?.curl;
   row.isExpand = !row.isExpand;
   expandIds.push(id);
   nextTick(() => {

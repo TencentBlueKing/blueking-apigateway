@@ -150,7 +150,7 @@
     </bk-dialog>
 
     <bk-sideslider
-      v-model:isShow="isSliderShow"
+      v-model:is-show="isSliderShow"
       :width="640"
       :title="sliderTitle"
       quick-close
@@ -468,15 +468,18 @@ const deleteDialogTitle = computed(() => {
   return `${t('确认删除系统')}【${curSystem.value.name}】？`;
 });
 
-watch(keyword, (newVal, oldVal) => {
-  if (oldVal && !newVal && isFilter) {
-    isFilter.value = false;
-    pagination.value.offset = 1;
-    pagination.value.limit = 10;
-    displayData.value = allData.value;
-    systemList.value = getDataByPage();
-  }
-});
+watch(
+  () => keyword.value,
+  (newVal, oldVal) => {
+    if (oldVal && !newVal && isFilter) {
+      isFilter.value = false;
+      pagination.value.offset = 1;
+      pagination.value.limit = 10;
+      displayData.value = allData.value;
+      systemList.value = getDataByPage();
+    }
+  },
+);
 
 const init = () => {
   console.log('init');
@@ -485,12 +488,6 @@ const init = () => {
 
 const handleClearFilterKey = () => {
   keyword.value = '';
-  pagination.value = Object.assign(pagination.value, {
-    current: 1,
-    limit: 10,
-    count: displayData.value.length,
-  });
-  getDataByPage();
 };
 
 const handleCreateCategory = () => {

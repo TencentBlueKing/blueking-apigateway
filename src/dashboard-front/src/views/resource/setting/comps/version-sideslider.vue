@@ -1,7 +1,7 @@
 <template>
   <div class="release-sideslider">
     <bk-sideslider
-      v-model:isShow="isShow"
+      v-model:is-show="isShow"
       :width="960"
       :title="t('生成资源版本')"
       quick-close
@@ -50,15 +50,15 @@
                     :description="t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1')"
                     class="form-item-version mt-20"
                     required>
-                    <bk-popover
+                    <!-- <bk-popover
                       :content="t('由数字、字母、中折线（-）、点号（.）组成，长度小于64个字符')"
                       theme="light"
                     >
-                      <bk-input
-                        v-model="formData.version"
-                        :placeholder="t('由数字、字母、中折线（-）、点号（.）组成，长度小于64个字符')"
-                      />
-                    </bk-popover>
+                    </bk-popover> -->
+                    <bk-input
+                      v-model="formData.version"
+                      :placeholder="t('由数字、字母、中折线（-）、点号（.）组成，长度小于64个字符')"
+                    />
                     <div class="form-tips">
                       <i class="apigateway-icon icon-ag-info"></i>
                       {{ t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1') }}

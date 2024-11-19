@@ -255,16 +255,24 @@ const getChartOption = () => {
     chartOption.color = generateChartColor(props.chartData.series ?? []);
 
     if (props.instanceId === 'requests') {
-      // 设置图表tooltip内容
-      chartOption.tooltip.formatter = (params: any) => {
+      // 总请求数
+      chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
         return `<div>
       <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
       <p><span class="tooltip-icon">${params.marker}${t('总请求数')}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ${t('次')}</span></p>
       </div>`;
       };
-    } else {
+    } else if (props.instanceId === 'response_time_90th') {
+      // 资源 90th 响应耗时分布
+      chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
+        return `<div>
+      <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
+      <p><span class="tooltip-icon">${params.marker}${params.seriesName}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ms</span></p>
+      </div>`;
+      };
+    }  else {
       // 设置图表tooltip内容
-      chartOption.tooltip.formatter = (params: any) => {
+      chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
         return `<div>
       <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
       <p><span class="tooltip-icon">${params.marker}${params.seriesName}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ${t('次')}</span></p>

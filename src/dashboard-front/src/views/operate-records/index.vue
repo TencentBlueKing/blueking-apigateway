@@ -72,7 +72,7 @@
           </template>
         </bk-table-column>
         <bk-table-column :label="t('操作人')" prop="username" />
-        <bk-table-column :label="t('操作时间')" prop="op_time" :sort="true" />
+        <bk-table-column :label="t('操作时间')" prop="op_time" />
         <bk-table-column :label="t('描述')" prop="comment" />
         <template #empty>
           <TableEmpty
