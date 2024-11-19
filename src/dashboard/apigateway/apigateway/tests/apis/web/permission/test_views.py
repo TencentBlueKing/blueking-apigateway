@@ -33,6 +33,7 @@ pytestmark = pytest.mark.django_db
 
 
 class TestAppPermissionViewSet:
+
     def test_list(self, fake_resource, request_view):
         fake_gateway = fake_resource.gateway
 
@@ -82,6 +83,48 @@ class TestAppPermissionViewSet:
             result = response.json()
             assert response.status_code == 200, result
             assert result["data"]["count"] == test["expected"]["count"]
+
+
+class TestAppPermissionRenewViewSet(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.factory = APIRequestFactory()
+        cls.gateway = create_gateway()
+
+    def test_renew(self):
+        resource = G(Resource, gateway=self.gateway)
+
+        resource_p1 = G(
+            models.AppResourcePermission,
+            gateway=self.gateway,
+            bk_app_code="test",
+            resource_id=resource.id,
+            grant_type="initialize",
+        )
+
+        data = [
+            {
+                "params": {
+                  "resource_dimension_ids": [resource_p1.id],
+                  "gateway_dimension_ids": [],
+                  "expire_days": 180,
+                },
+            },
+        ]
+
+        for test in data:
+            request = self.factory.post(
+                f"/gateways/{self.gateway.id}/permissions/app-permissions/renew/", data=test["params"]
+            )
+
+            view = views.AppPermissionRenewApi.as_view()
+            response = view(request, gateway_id=self.gateway.id)
+
+            result = get_response_json(response)
+            self.assertEqual(response.status_code, 201, result)
+
+            resource_p1_obj = models.AppResourcePermission.objects.get(id=resource_p1.id)
+            assert resource_p1_obj.grant_type == "initialize"
 
 
 class TestAppResourcePermissionViewSet:
