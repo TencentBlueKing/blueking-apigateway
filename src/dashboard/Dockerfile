@@ -17,6 +17,12 @@ ADD build/requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
+# install mvn dep
+RUN mvn dependency:get -Dartifact=com.squareup.okhttp3:okhttp:4.12.0 && \
+    mvn dependency:get -Dartifact=com.fasterxml.jackson.core:jackson-databind:2.13.4.1 && \
+    mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-compiler-plugin:3.8.1 && \
+    mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-jar-plugin:3.1.0
+
 ADD build /app
 
 

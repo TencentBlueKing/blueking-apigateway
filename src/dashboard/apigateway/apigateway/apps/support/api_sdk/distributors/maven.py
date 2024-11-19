@@ -92,6 +92,7 @@ class MavenSourceDistributor(Distributor):
                 stderr=subprocess.PIPE,
                 text=True,
                 check=False,
+                timeout=120,
             )
             logger.info("stdout:%s", completed_process.stdout)
             logger.info("stderr:%s", completed_process.stderr)

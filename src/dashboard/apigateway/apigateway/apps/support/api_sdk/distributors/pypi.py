@@ -17,7 +17,6 @@
 #
 import logging
 import os
-import sys
 from dataclasses import dataclass, field
 from subprocess import CalledProcessError, check_call
 from typing import ClassVar, List, Optional
@@ -89,7 +88,7 @@ class PypiSourceDistributor(Distributor):
 
         try:
             check_call(
-                [sys.executable, "setup.py", "sdist", "upload", "-r", self.repository],
+                ["twine", "upload", "dist/*", "-r", self.repository],
                 env=env,
                 cwd=source_dir,
             )
