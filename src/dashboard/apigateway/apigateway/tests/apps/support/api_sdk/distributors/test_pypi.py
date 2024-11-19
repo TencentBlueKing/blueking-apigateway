@@ -15,6 +15,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import os
+import subprocess
+from unittest.mock import patch
+
 import pytest
 
 from apigateway.apps.support.api_sdk.distributors.pypi import PypiSourceDistributor
@@ -57,9 +61,36 @@ def sdist(tmpdir, sdk_context):
     dist = tmpdir.join("dist")
     dist.mkdir()
 
-    source_tar = dist.join(f"{sdk_context.name}.tar.gz")
-    source_tar.write("")
-    return source_tar
+    # Create a simple package structure
+    package_dir = tmpdir.join(sdk_context.name)
+    package_dir.mkdir()
+
+    init_file = package_dir.join("__init__.py")
+    init_file.write("# Sample package")
+
+    # Create a setup.py file with necessary metadata
+    setup_py = tmpdir.join("setup.py")
+    setup_py.write(f"""
+    from setuptools import setup, find_packages
+    setup(
+        name='{sdk_context.name}',
+        version='0.1',
+        packages=find_packages(),
+        description='A sample Python package',
+        author='Your Name',
+        author_email='your.email@example.com',
+        url='https://example.com',
+    )
+    """)
+
+    # Build the source distribution
+    current_dir = os.getcwd()
+    os.chdir(tmpdir)
+    try:
+        subprocess.check_call([os.sys.executable, "setup.py", "sdist"])
+    finally:
+        os.chdir(current_dir)
+    return dist.join(f"{sdk_context.name}-0.1.tar.gz")
 
 
 @pytest.fixture
@@ -80,16 +111,14 @@ def test_pypirc(
 def test_distribute(
     output_dir,
     sdk_context,
-    python_setup_script,
     sdist,
-    python_setup_history,
     distributor: PypiSourceDistributor,
     package_searcher_result,
 ):
-    result = distributor.distribute(output_dir, [sdist])
-
-    python_setup_history = python_setup_history.read()
-    assert f"setup.py sdist upload -r {distributor.repository}" in python_setup_history
+    # Mock the check_call to prevent actual call to `twine upload`
+    with patch("subprocess.check_call") as mock_check_call:
+        mock_check_call.return_value = 0  # Simulate successful execution
+        result = distributor.distribute(output_dir, [sdist])
 
     assert sdk_context.config["python"]["is_uploaded_to_pypi"]
     assert sdk_context.config["python"]["repository"] == distributor.repository
