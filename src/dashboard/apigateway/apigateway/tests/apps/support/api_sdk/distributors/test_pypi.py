@@ -75,11 +75,11 @@ from setuptools import setup, find_packages
 
 setup(
     name='{sdk_context.name}',
-    version='0.1',
+    version='1.0.0',
     packages=find_packages(),
-    description='A sample Python package',
+    description='A test Python package',
     author='Your Name',
-    author_email='your.email@example.com',
+    author_email='test@example.com',
     url='https://example.com',
 )
 """)
@@ -91,7 +91,7 @@ setup(
         subprocess.check_call([os.sys.executable, "setup.py", "sdist"])
     finally:
         os.chdir(current_dir)
-    return dist.join(f"{sdk_context.name}-0.1.tar.gz")
+    return dist.join(f"{sdk_context.name}-1.0.0.tar.gz")
 
 
 @pytest.fixture
