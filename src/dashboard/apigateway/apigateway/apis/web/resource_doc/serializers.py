@@ -47,7 +47,9 @@ class DocArchiveParseOutputSLZ(serializers.Serializer):
 
 
 class SelectedResourceDocSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(choices=DocLanguageEnum.get_choices(), help_text="文档语言，en: 英文，zh: 中文")
+    language = serializers.ChoiceField(
+        choices=DocLanguageEnum.get_choices(), required=False, help_text="文档语言，en: 英文，zh: 中文"
+    )
     resource_name = serializers.CharField(help_text="资源名称")
 
 
@@ -67,6 +69,17 @@ class DocImportBySwaggerInputSLZ(serializers.Serializer):
     )
     language = serializers.ChoiceField(choices=DocLanguageEnum.get_choices(), help_text="文档语言，en: 英文，zh: 中文")
     swagger = serializers.CharField(help_text="导入的 Swagger 文档")
+
+    def validate(self, data):
+        language = data.get("language")
+        selected_resource_docs = data.get("selected_resource_docs", [])
+
+        # Loop through each resource doc and set the language if not specified
+        for resource_doc in selected_resource_docs:
+            if "language" not in resource_doc or not resource_doc["language"]:
+                resource_doc["language"] = language
+
+        return data
 
 
 class ResourceFilterConditionSLZ(serializers.Serializer):

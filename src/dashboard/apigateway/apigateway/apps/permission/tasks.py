@@ -262,7 +262,9 @@ class AppPermissionExpiringSoonAlerter:
                         "gateway_id": permission.gateway_id,
                         "expire_days": int(permission.expires_in / ONE_DAY_SECONDS),
                         "grant_dimension": GrantDimensionEnum.RESOURCE.value,
-                        "grant_dimension_display": GrantDimensionEnum.get_choice_label(GrantDimensionEnum.RESOURCE.value),
+                        "grant_dimension_display": GrantDimensionEnum.get_choice_label(
+                            GrantDimensionEnum.RESOURCE.value
+                        ),
                         "resource_id": permission.resource_id,
                     }
                 )

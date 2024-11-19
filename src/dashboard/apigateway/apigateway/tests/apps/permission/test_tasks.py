@@ -212,21 +212,21 @@ class TestAppPermissionExpiringSoonAlerter:
             gateway=fake_gateway,
             expires=now + datetime.timedelta(days=1),
             bk_app_code=unique_id,
-            resource_id=resource1.id
+            resource_id=resource1.id,
         )
         G(
             AppResourcePermission,
             gateway=fake_gateway,
             expires=now + datetime.timedelta(days=2),
             bk_app_code=unique_id,
-            resource_id=resource2.id
+            resource_id=resource2.id,
         )
         G(
             AppResourcePermission,
             gateway=fake_gateway,
             expires=now + datetime.timedelta(days=3),
             bk_app_code=unique_id,
-            resource_id=resource3.id
+            resource_id=resource3.id,
         )
 
         alerter = AppPermissionExpiringSoonAlerter(30, [])
