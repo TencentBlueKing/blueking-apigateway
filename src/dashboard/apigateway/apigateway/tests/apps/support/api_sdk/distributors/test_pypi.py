@@ -70,18 +70,19 @@ def sdist(tmpdir, sdk_context):
 
     # Create a setup.py file with necessary metadata
     setup_py = tmpdir.join("setup.py")
-    setup_py.write(f"""
-    from setuptools import setup, find_packages
-    setup(
-        name='{sdk_context.name}',
-        version='0.1',
-        packages=find_packages(),
-        description='A sample Python package',
-        author='Your Name',
-        author_email='your.email@example.com',
-        url='https://example.com',
-    )
-    """)
+    setup_py.write(f"""\
+from setuptools import setup, find_packages
+
+setup(
+    name='{sdk_context.name}',
+    version='0.1',
+    packages=find_packages(),
+    description='A sample Python package',
+    author='Your Name',
+    author_email='your.email@example.com',
+    url='https://example.com',
+)
+""")
 
     # Build the source distribution
     current_dir = os.getcwd()
