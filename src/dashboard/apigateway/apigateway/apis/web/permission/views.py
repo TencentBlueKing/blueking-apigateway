@@ -122,6 +122,19 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
     ),
 )
 class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
+
+    def _modify_request_data(self):
+        data = self.request.GET.copy()
+        resource_id = data.get("resource_id")
+        if resource_id:
+            try:
+                int(resource_id)
+            except ValueError:
+                resource_id = -1
+
+            data["resource_id"] = resource_id
+        return data
+
     def get_queryset(self):
         query_params = self.request.query_params
         grant_dimension = query_params.get("grant_dimension")
@@ -138,7 +151,7 @@ class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
             app_gateway_permissions = []
 
         app_resource_permissions = AppResourcePermissionFilter(
-            self.request.GET, queryset=self.get_resource_queryset()
+            self._modify_request_data(), queryset=self.get_resource_queryset()
         ).qs
         if grant_dimension == GrantDimensionEnum.API.value:
             app_resource_permissions = []

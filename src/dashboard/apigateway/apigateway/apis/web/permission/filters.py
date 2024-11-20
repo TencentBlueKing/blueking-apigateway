@@ -26,7 +26,6 @@ from apigateway.apps.permission.models import (
     AppPermissionApply,
     AppPermissionRecord,
     AppResourcePermission,
-    Resource,
 )
 
 
@@ -34,7 +33,7 @@ class AppResourcePermissionFilter(filters.FilterSet):
     bk_app_code = filters.CharFilter()
     keyword = filters.CharFilter(method="query_filter")
     grant_type = filters.ChoiceFilter(choices=GrantTypeEnum.get_choices())
-    resource_id = filters.CharFilter(method="filter_resource")
+    resource_id = filters.NumberFilter()
     order_by = filters.OrderingFilter(
         choices=[(field, field) for field in ["bk_app_code", "-bk_app_code", "expires", "-expires"]]
     )
@@ -51,18 +50,6 @@ class AppResourcePermissionFilter(filters.FilterSet):
 
     def query_filter(self, queryset, name, value):
         return queryset.filter(bk_app_code__icontains=value)
-
-    def filter_resource(self, queryset, name, value):
-        try:
-            resource_id = int(value)
-            return queryset.filter(resource_id=resource_id)
-        except ValueError:
-            resource_ids = list(Resource.objects.filter(
-                id__in=list(queryset.values_list("resource_id", flat=True)),
-                name__icontains=value,
-            ).values_list("id", flat=True))
-
-            return queryset.filter(resource_id__in=resource_ids)
 
 
 class AppPermissionApplyFilter(filters.FilterSet):
