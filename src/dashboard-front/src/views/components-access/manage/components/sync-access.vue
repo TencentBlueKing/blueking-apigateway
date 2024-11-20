@@ -101,39 +101,16 @@
       </bk-loading>
       <div class="mt20">
         <bk-pop-confirm
-          ref="resourcePopconfirm"
-          :is-show="confirmSyncShow"
           trigger="click"
           ext-cls="import-resource-popconfirm-wrapper"
-          v-if="componentList.length">
-          <template #content>
-            <div>
-              <div class="content-text"> {{ t('将组件配置同步到网关 bk-esb，创建网关的资源版本并发布到网关所有环境') }} </div>
-              <div class="btn-wrapper">
-                <bk-button
-                  size="small"
-                  theme="primary"
-                  class="btn"
-                  :disabled="confirmIsLoading"
-                  @click="confirm">
-                  {{ t('确认') }}
-                </bk-button>
-                <bk-button
-                  size="small"
-                  class="btn"
-                  @click="confirmSyncShow = false">
-                  {{ t('取消') }}
-                </bk-button>
-              </div>
-            </div>
-          </template>
-
+          :content="t('将组件配置同步到网关 bk-esb，创建网关的资源版本并发布到网关所有环境')"
+          v-if="componentList.length"
+          @confirm="checkReleaseData"
+        >
           <bk-button
             class="mr10"
             theme="primary"
             type="button"
-            :title="t('下一步')"
-            @click="confirmSyncShow = true"
             :loading="confirmIsLoading">
             {{ t('确认同步') }}
           </bk-button>
@@ -171,7 +148,6 @@ const { t } = useI18n();
 const router = useRouter();
 const common = useCommon();
 
-const resourcePopconfirm = ref();
 const componentRef = ref();
 
 const componentList = ref<any>([]);
@@ -181,9 +157,8 @@ const pagination = reactive({
   limit: 10,
 });
 
-const confirmSyncShow = ref<boolean>(false);
-const isLoading = ref<boolean>(false);
-const pathUrl = ref<string>('');
+const isLoading = ref(false);
+const pathUrl = ref('');
 const esb = ref<any>({});
 const filterList = ref<any>({});
 const allData = ref<any>([]);
@@ -274,11 +249,6 @@ const handlerChange = (payload: any) => {
 
 const handlerAllChange = (payload: any) => {
   curSelectList.value = [...payload];
-};
-
-const confirm = () => {
-  checkReleaseData();
-  confirmSyncShow.value = false;
 };
 
 const checkReleaseData = async () => {
@@ -480,26 +450,9 @@ watch(
 
 <style lang="scss">
 .import-resource-popconfirm-wrapper.bk-popover {
-  padding: 16px;
   .bk-pop-confirm {
-    .btn-wrapper {
-      padding-top: 10px;
-      position: relative;
-      height: 26px;
-      .btn {
-        min-width: 50px;
-        padding: 0 6px;
-        position: absolute;
-        &:nth-child(1) {
-          right: 100px;
-        }
-        &:nth-child(2) {
-          right: 35px;
-        }
-      }
-    }
     .bk-pop-confirm-footer {
-      display: none !important;
+      margin-right: 48px;
     }
   }
 }
