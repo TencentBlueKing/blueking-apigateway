@@ -42,7 +42,7 @@
     <bk-form-item :label="t('认证方式')">
       <bk-checkbox
         v-model="formData.auth_config.app_verified_required"
-        :disabled="!curApigwData.allow_update_gateway_auth">
+        :disabled="!common.curApigwData.allow_update_gateway_auth">
         <span class="bottom-line" v-bk-tooltips="{ content: t('请求方需提供蓝鲸应用身份信息') }">{{ t('蓝鲸应用认证') }}</span>
       </bk-checkbox>
       <bk-checkbox class="ml40" v-model="formData.auth_config.auth_verified_required">
@@ -56,7 +56,7 @@
     >
       <bk-switcher
         v-model="formData.auth_config.resource_perm_required"
-        :disabled="!curApigwData.allow_update_gateway_auth"
+        :disabled="!common.curApigwData.allow_update_gateway_auth"
         theme="primary"
         size="small"
       />
@@ -113,7 +113,6 @@ const props = defineProps({
 const formRef = ref(null);
 const { t } = useI18n();
 const common = useCommon();
-const { curApigwData } = common;
 const formData = ref({
   name: '',
   description: '',

@@ -2,7 +2,7 @@
   <div>
     <!-- 新建/编辑sideslider -->
     <bk-sideslider
-      v-model:isShow="sidesliderConfi.isShow"
+      v-model:is-show="sidesliderConfi.isShow"
       :quick-close="true"
       ext-cls="backend-service-slider"
       width="960"
@@ -543,6 +543,9 @@ defineExpose({
   :deep(.bk-modal-content) {
     min-height: calc(100vh - 104px) !important;
     overflow-y: auto;
+  }
+  :deep(.bk-sideslider-footer) {
+    margin-top: 0;
   }
 
   .base-info {

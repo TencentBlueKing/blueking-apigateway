@@ -544,7 +544,7 @@
 
     <!-- 版本对比 -->
     <bk-sideslider
-      v-model:isShow="diffSidesliderConf.isShow"
+      v-model:is-show="diffSidesliderConf.isShow"
       :title="diffSidesliderConf.title"
       :width="diffSidesliderConf.width"
       :quick-close="true"
@@ -634,9 +634,18 @@ interface ApigwIDropList extends IDropList {
 }
 // 导出下拉
 const exportDropData = ref<ApigwIDropList[]>([
-  { value: 'all', label: t('全部资源') },
-  { value: 'filtered', label: t('已筛选资源'), disabled: false, tooltips: t('请先筛选资源') },
-  { value: 'selected', label: t('已选资源'), disabled: false, tooltips: t('请先勾选资源') }]);
+  {
+    value: 'all',
+    label: t('全部资源'),
+  },
+  {
+    value: 'filtered',
+    label: t('已筛选资源'),
+    disabled: false,
+    tooltips: t('请先筛选资源'),
+  },
+  // { value: 'selected', label: t('已选资源'), disabled: false, tooltips: t('请先勾选资源') },
+]);
 
 const route = useRoute();
 const router = useRouter();
@@ -1069,12 +1078,37 @@ const showBatch = ref<boolean>(false);
 const handleShowBatch = () => {
   showBatch.value = true;
   handleShowList();
+  exportDropData.value = [
+    {
+      value: 'all',
+      label: t('全部资源'),
+    },
+    {
+      value: 'selected',
+      label: t('已选资源'),
+      disabled: !selections.value.length,
+      tooltips: t('请先勾选资源'),
+    },
+  ];
 };
 
 // 退出批量操作
 const handleOutBatch = () => {
   showBatch.value = false;
   selections.value = [];
+  exportDropData.value = [
+    {
+      value: 'all',
+      label: t('全部资源'),
+    },
+    {
+      value: 'filtered',
+      label: t('已筛选资源'),
+      disabled: !searchValue.value.length,
+      tooltips: t('请先筛选资源'),
+    },
+  ];
+
   tableDataKey.value = uniqueId();
 };
 
