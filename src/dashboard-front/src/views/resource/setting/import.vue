@@ -675,6 +675,11 @@ const importErrorMsg = ref('');
 // 导入成功后的下载资源 dialog 是否可视
 const isDownloadDialogShow = ref(false);
 
+const filterInputAdd = ref('');
+const filterInputAddClone = ref('');
+const filterInputUpdate = ref('');
+const filterInputUpdateClone = ref('');
+
 // 展示在“新增的资源”一栏的资源
 const tableDataToAdd = computed(() => {
   return tableData.value.filter((data) => {
@@ -747,6 +752,18 @@ watch(curView, async (newCurView, oldCurView) => {
         parentEl.value?.classList.add('panel-head-sticky-top');
       });
     });
+  }
+});
+
+watch(filterInputAddClone, () => {
+  if (filterInputAddClone.value === '') {
+    filterInputAdd.value = '';
+  }
+});
+
+watch(filterInputUpdateClone, () => {
+  if (filterInputUpdateClone.value === '') {
+    filterInputUpdate.value = '';
   }
 });
 
@@ -1230,11 +1247,6 @@ const handleConfirmPublicConfigPopConfirm = (action: ActionType) => {
     });
 };
 
-const filterInputAdd = ref('');
-const filterInputAddClone = ref('');
-const filterInputUpdate = ref('');
-const filterInputUpdateClone = ref('');
-
 const filterData = (action: ActionType) => {
   if (action === 'add') {
     filterInputAdd.value = filterInputAddClone.value;
@@ -1247,12 +1259,10 @@ const filterData = (action: ActionType) => {
 
 const clearFilterInput = (action: ActionType) => {
   if (action === 'add') {
-    filterInputAdd.value = '';
     filterInputAddClone.value = '';
   }
 
   if (action === 'update') {
-    filterInputUpdate.value = '';
     filterInputUpdateClone.value = '';
   }
 };

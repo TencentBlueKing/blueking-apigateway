@@ -124,7 +124,7 @@
                           </bk-form-item>
 
                           <bk-form-item
-                            label="后端服务地址"
+                            :label="t('后端服务地址')"
                             v-for="(hostItem, index) of backend.config.hosts"
                             :required="true"
                             :property="`config.hosts.${index}.host`"
