@@ -454,12 +454,9 @@ const updateTableEmptyConfig = () => {
     ...filterData.value,
   };
   const list = Object.values(searchParams).filter(item => item !== '');
-  if (list.length && !tableData.value.length) {
-    tableEmptyConf.value.keyword = 'placeholder';
-    return;
-  }
+
   if (list.length) {
-    tableEmptyConf.value.keyword = '$CONSTANT';
+    tableEmptyConf.value.keyword = 'placeholder';
     return;
   }
   tableEmptyConf.value.keyword = '';

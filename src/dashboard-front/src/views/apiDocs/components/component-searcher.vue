@@ -15,9 +15,10 @@
       </template>
     </bk-dropdown>
     <div class="input-wrapper bk-dropdown-menu search-result-box">
-      <input
-        type="text" v-model="keyword" class="input" :placeholder="t('请输入 API 名称')" @input="handleSearch"
-        @keydown="handleKeyup">
+      <bk-input
+        v-model="keyword" class="input" :placeholder="t('请输入 API 名称')" @input="handleSearch"
+        @keydown="handleKeyup"
+      />
       <div class="bk-dropdown-content is-show left-align" v-if="keyword">
         <bk-loading :loading="isLoading" :opacity="1">
           <ul
@@ -255,9 +256,9 @@ const handleKeyup = (e: any) => {
     line-height: 12px;
     font-size: 12px;
     background: transparent;
-    padding-left: 20px;
     border-left: 1px solid #c4c6cc;
     position: relative;
+    height: 28px;
 
     &::placeholder {
       color: #c4c6cc;

@@ -179,6 +179,7 @@
             :data="tableData"
             remote-pagination
             :pagination="pagination"
+            :key="tableDataKey"
             row-key="id"
             :show-overflow-tooltip="true"
             @page-limit-change="handlePageSizeChange"
@@ -507,20 +508,20 @@
         }}
       </span>
       <bk-form>
-        <bk-form-item label="导出内容">
+        <bk-form-item :label="t('导出内容')">
           <bk-radio-group v-model="exportDialogConfig.exportFileDocType">
             <bk-radio label="resource">{{ t('资源配置') }}</bk-radio>
             <bk-radio label="docs">{{ t('资源文档') }}</bk-radio>
           </bk-radio-group>
         </bk-form-item>
 
-        <bk-form-item label="导出格式" v-if="exportDialogConfig.exportFileDocType === 'resource'">
+        <bk-form-item :label="t('导出格式')" v-if="exportDialogConfig.exportFileDocType === 'resource'">
           <bk-radio-group v-model="exportParams.file_type">
             <bk-radio class="mt5" label="yaml"> {{ $t('YAML格式') }} </bk-radio>
             <bk-radio label="json"> {{ $t('JSON格式') }} </bk-radio>
           </bk-radio-group>
         </bk-form-item>
-        <bk-form-item label="导出格式" v-else>
+        <bk-form-item :label="t('导出格式')" v-else>
           <bk-radio-group v-model="exportParams.file_type">
             <bk-radio class="mt5" label="zip"> {{ $t('Zip') }} </bk-radio>
             <bk-radio label="tgz"> {{ $t('Tgz') }} </bk-radio>
@@ -563,6 +564,7 @@ import { useRouter, useRoute } from 'vue-router';
 import {
   cloneDeep,
   differenceBy,
+  uniqueId,
 } from 'lodash';
 import { Message } from 'bkui-vue';
 
@@ -647,6 +649,7 @@ const exportDropData = ref<ApigwIDropList[]>([
 
 const route = useRoute();
 const router = useRouter();
+const tableDataKey = ref(uniqueId());
 const chooseMethod = ref<string[]>([]);
 const filterData = ref<any>({ keyword: '', order_by: '' });
 const chooseLabels = ref<string[]>([]);
@@ -856,6 +859,9 @@ const labelsList = computed(() => {
   if (!labelsData?.value.length) {
     return [];
   }
+
+  tableDataKey.value = uniqueId();
+
   return labelsData.value?.map((item: any) => {
     return {
       text: item.name,
@@ -1102,6 +1108,8 @@ const handleOutBatch = () => {
       tooltips: t('请先筛选资源'),
     },
   ];
+
+  tableDataKey.value = uniqueId();
 };
 
 // 版本对比
@@ -1128,7 +1136,7 @@ const handleShowDiff = async () => {
 const handleBatchOperate = async (type: string) => {
   if (!selections.value?.length) {
     Message({
-      message: t('请先勾选数据！'),
+      message: t('请先勾选资源'),
       theme: 'warning',
       width: 'auto',
     });
@@ -1495,6 +1503,8 @@ watch(
       if (!filter?.length && chooseMethod.value?.length) { // 清空筛选时，同步给表头筛选
         chooseMethod.value = [];
       }
+
+      tableDataKey.value = uniqueId();
     });
 
     updateTableEmptyConfig();

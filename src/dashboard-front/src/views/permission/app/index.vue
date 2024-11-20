@@ -428,32 +428,77 @@ const { t } = useI18n();
 const common = useCommon();
 const { apigwId } = common; // 网关id
 
+const checkedGrantDimensionFilterOptions = ref<string[]>([]);
+const checkedGrantTypeFilterOptions = ref<string[]>([]);
+
 // 授权维度表头过滤
 const grantDimensionFilterOptions = {
   list: [
     {
-      value: 'api',
+      // value: 'api',
+      value: t('按网关'),
       text: t('按网关'),
     },
     {
-      value: 'resource',
+      // value: 'resource',
+      value: t('按资源'),
       text: t('按资源'),
     },
   ],
+  checked: checkedGrantDimensionFilterOptions.value,
+  filterFn: (checked: string[], row: IPermission) => {
+    if (!checked.length) {
+      return true;
+    }
+
+    const checkedList = checked.map((value) => {
+      if (value === '按网关' || value === 'By Gateway') {
+        return 'api';
+      }
+      if (value === '按资源' || value === 'By Resource') {
+        return 'resource';
+      }
+
+      return value;
+    });
+
+    return checkedList.includes(row.grant_dimension);
+  },
 };
 
 // 授权类型表头过滤
 const grantTypeFilterOptions = {
   list: [
     {
-      value: 'initialize',
+      // value: 'initialize',
+      value: t('主动授权'),
       text: t('主动授权'),
     },
     {
-      value: 'renew',
+      // value: 'renew',
+      value: t('申请审批'),
       text: t('申请审批'),
     },
   ],
+  checked: checkedGrantTypeFilterOptions.value,
+  filterFn: (checked: string[], row: IPermission) => {
+    if (!checked.length) {
+      return true;
+    }
+
+    const checkedList = checked.map((value) => {
+      if (value === '主动授权' || value === 'Add Permissions') {
+        return 'initialize';
+      }
+      if (value === '申请审批' || value === 'apply') {
+        return 'renew';
+      }
+
+      return value;
+    });
+
+    return checkedList.includes(row.grant_type);
+  },
 };
 
 const filterData = ref<IFilterParams>({});
@@ -634,17 +679,15 @@ watch(
   },
   {  deep: true },
 );
-watch(
-  () => filterData.value, () => {
-    // filterData 变化重新请求列表数据，数据还未返回时执行 updateTableEmptyConfig 偶现问题，因此加入延迟
-    setTimeout(() => {
-      updateTableEmptyConfig();
-    }, 100);
-  },
-  {
-    deep: true,
-  },
-);
+
+// 侦听返回的数据和表头 filter 变化，更新空数据展示状态
+watch([
+  tableData,
+  checkedGrantDimensionFilterOptions,
+  checkedGrantTypeFilterOptions,
+], () => {
+  updateTableEmptyConfig();
+}, { deep: true });
 
 const getBkAppCodes = async () => {
   const appCodeOption = filterConditions.value.find(condition => condition.id === 'bk_app_code');
@@ -912,6 +955,8 @@ const handleSidesliderCancel = () => {
 const handleClearFilterKey = () => {
   filterData.value = {};
   filterValues.value = [];
+  checkedGrantDimensionFilterOptions.value = [];
+  checkedGrantTypeFilterOptions.value = [];
   getList();
   updateTableEmptyConfig();
 };
@@ -925,12 +970,8 @@ const updateTableEmptyConfig = () => {
   });
   const list = Object.values(searchParams).filter(item => item !== '');
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (list.length && !tableData.value.length) {
+  if (list.length || checkedGrantDimensionFilterOptions.value.length || checkedGrantTypeFilterOptions.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
-    return;
-  }
-  if (list.length) {
-    tableEmptyConf.value.keyword = '$CONSTANT';
     return;
   }
   tableEmptyConf.value.keyword = '';

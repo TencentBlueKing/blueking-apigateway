@@ -151,8 +151,6 @@ const getWebsiteConfig = async () => {
     websiteConfig.value = await getPlatformConfig(constantConfig.SITE_CONFIG);
   }
 
-  console.log('websiteConfig', websiteConfig.value);
-
   if (websiteConfig.value.i18n) {
     websiteConfig.value.i18n.appLogo = websiteConfig.value[isChinese ? 'appLogo' : 'appLogoEn'];
   }
