@@ -178,7 +178,11 @@ class AppPermissionExportOutputSLZ(AppPermissionOutputSLZ):
     grant_dimension = serializers.SerializerMethodField(help_text="过期时间")
 
     def get_grant_type(self, obj):
-        return _(GrantTypeEnum.get_choice_label(obj.get("grant_type", GrantTypeEnum.INITIALIZE.value)))
+        # 与前端展示逻辑保持一致, 管理员只知道主动授权和申请审批两种类型, 后续如有变更需与前端一块更改
+        grant_type = obj.get("grant_type", GrantTypeEnum.INITIALIZE.value)
+        if grant_type != GrantTypeEnum.INITIALIZE.value:
+            grant_type = GrantTypeEnum.APPLY.value
+        return _(GrantTypeEnum.get_choice_label(grant_type))
 
     def get_grant_dimension(self, obj):
         return _(GrantDimensionEnum.get_choice_label(obj.get("grant_dimension")))
