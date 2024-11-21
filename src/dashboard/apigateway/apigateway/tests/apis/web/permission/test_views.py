@@ -33,21 +33,23 @@ pytestmark = pytest.mark.django_db
 
 
 class TestAppPermissionViewSet:
-    def test_list(self, fake_resource, request_view):
-        fake_gateway = fake_resource.gateway
+    def test_list(self, fake_gateway, request_view):
+
+        fake_resource1 = G(Resource, name="name1", gateway=fake_gateway)
+        fake_resource2 = G(Resource, name="name2", gateway=fake_gateway)
 
         G(
             models.AppResourcePermission,
             gateway=fake_gateway,
             bk_app_code="test",
-            resource_id=fake_resource.id,
+            resource_id=fake_resource1.id,
             grant_type="apply",
         )
         G(
             models.AppResourcePermission,
             gateway=fake_gateway,
             bk_app_code="test-2",
-            resource_id=fake_resource.id,
+            resource_id=fake_resource2.id,
             grant_type="apply",
         )
 
@@ -66,6 +68,25 @@ class TestAppPermissionViewSet:
                 },
                 "expected": {
                     "count": 2,
+                    "status_code": 200,
+                },
+            },
+            {
+                "params": {
+                    "resource_id": fake_resource1.id,
+                },
+                "expected": {
+                    "count": 1,
+                    "status_code": 200,
+                },
+            },
+            {
+                "params": {
+                    "grant_dimension": "测试",
+                },
+                "expected": {
+                    "count": 0,
+                    "status_code": 400,
                 },
             },
         ]
@@ -80,8 +101,9 @@ class TestAppPermissionViewSet:
             )
 
             result = response.json()
-            assert response.status_code == 200, result
-            assert result["data"]["count"] == test["expected"]["count"]
+            assert response.status_code == test["expected"]["status_code"], result
+            if response.status_code == 200:
+                assert result["data"]["count"] == test["expected"]["count"]
 
 
 class TestAppPermissionRenewViewSet(TestCase):

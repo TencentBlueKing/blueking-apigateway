@@ -122,6 +122,7 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
     ),
 )
 class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
+
     def get_queryset(self):
         query_params = self.request.query_params
         app_gateway_permissions = AppGatewayPermissionFilter(self.request.GET, queryset=self.get_gateway_queryset()).qs
@@ -145,6 +146,9 @@ class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
         """
         权限列表(gateway+resource)
         """
+        slz = AppPermissionQueryInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
         queryset = self.get_queryset()
         page = self.paginate_queryset(queryset)
         resource_ids = [perm["resource_id"] for perm in page if perm.get("resource_id")]
