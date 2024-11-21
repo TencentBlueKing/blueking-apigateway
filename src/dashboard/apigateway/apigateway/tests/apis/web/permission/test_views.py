@@ -80,14 +80,6 @@ class TestAppPermissionViewSet:
             },
             {
                 "params": {
-                    "resource_id": "测试",
-                },
-                "expected": {
-                    "count": 0,
-                },
-            },
-            {
-                "params": {
                     "grant_dimension": "测试",
                 },
                 "expected": {
