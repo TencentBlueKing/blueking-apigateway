@@ -125,14 +125,10 @@ class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
 
     def get_queryset(self):
         query_params = self.request.query_params
-        grant_dimension = query_params.get("grant_dimension")
-        if grant_dimension and grant_dimension not in [GrantDimensionEnum.RESOURCE.value, GrantDimensionEnum.API.value]:
-            return []
-
         app_gateway_permissions = AppGatewayPermissionFilter(self.request.GET, queryset=self.get_gateway_queryset()).qs
         # 如果查询维度为资源 或者 授权类型不为 INITIALIZE(网关维度都为INITIALIZE)或者 查询某个资源 都要忽略掉网关维度的
         if (
-            grant_dimension == GrantDimensionEnum.RESOURCE.value
+            query_params.get("grant_dimension") == GrantDimensionEnum.RESOURCE.value
             or (query_params.get("grant_type") and query_params.get("grant_type") != GrantTypeEnum.INITIALIZE.value)
             or query_params.get("resource_id")
         ):
@@ -141,7 +137,7 @@ class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
         app_resource_permissions = AppResourcePermissionFilter(
             self.request.GET, queryset=self.get_resource_queryset()
         ).qs
-        if grant_dimension == GrantDimensionEnum.API.value:
+        if query_params.get("grant_dimension") == GrantDimensionEnum.API.value:
             app_resource_permissions = []
 
         return self.get_app_permissions(app_gateway_permissions, app_resource_permissions)
@@ -150,6 +146,9 @@ class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
         """
         权限列表(gateway+resource)
         """
+        slz = AppPermissionQueryInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
         queryset = self.get_queryset()
         page = self.paginate_queryset(queryset)
         resource_ids = [perm["resource_id"] for perm in page if perm.get("resource_id")]

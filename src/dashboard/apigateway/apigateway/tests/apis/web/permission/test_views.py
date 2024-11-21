@@ -68,6 +68,7 @@ class TestAppPermissionViewSet:
                 },
                 "expected": {
                     "count": 2,
+                    "status_code": 200,
                 },
             },
             {
@@ -76,6 +77,7 @@ class TestAppPermissionViewSet:
                 },
                 "expected": {
                     "count": 1,
+                    "status_code": 200,
                 },
             },
             {
@@ -84,6 +86,7 @@ class TestAppPermissionViewSet:
                 },
                 "expected": {
                     "count": 0,
+                    "status_code": 400,
                 },
             },
         ]
@@ -98,8 +101,9 @@ class TestAppPermissionViewSet:
             )
 
             result = response.json()
-            assert response.status_code == 200, result
-            assert result["data"]["count"] == test["expected"]["count"]
+            assert response.status_code == test["expected"]["status_code"], result
+            if response.status_code == 200:
+                assert result["data"]["count"] == test["expected"]["count"]
 
 
 class TestAppResourcePermissionViewSet:
