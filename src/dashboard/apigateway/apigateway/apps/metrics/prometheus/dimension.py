@@ -124,7 +124,7 @@ def get_data_differ_number(data: dict) -> int:
             last_number = datapoints[-2][0] if last_value is None else last_value
 
             # 返回计算的差值，并确保结果是整数
-            return int(last_number) - int(first_number)
+            return abs(int(last_number) - int(first_number))
 
     # 如果没有有效数据，返回0
     return 0
