@@ -2228,7 +2228,7 @@
                 },
                 "vars": {
                   "type": "string",
-                  "title": "执行故障注入的规则",
+                  "title": "中断规则",
                   "description": "执行故障注入的规则，当规则匹配通过后才会执行故障注。vars 是一个表达式的列表，来自 lua-resty-expr。",
                   "ui:component": {
                     "type": "textarea",
