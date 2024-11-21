@@ -423,6 +423,7 @@ import {
   IFilterParams,
 } from '@/http/permission';
 import dayjs from 'dayjs';
+import { ISearchItem } from 'bkui-vue/lib/search-select/utils';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -575,7 +576,7 @@ const exportParams = ref<IExportParams>({
 
 const filterValues = ref<IFilterValues[]>([]);
 const componentKey = ref(0);
-const filterConditions = ref([
+const filterConditions = ref<ISearchItem[]>([
   {
     name: t('授权维度'),
     id: 'grant_dimension',
@@ -627,25 +628,42 @@ const selectedApiPermList = computed(() => curSelections.value.filter(perm => pe
 
 // 监听搜索是否变化
 watch(
-  () => filterValues.value,
-  (v) => {
+  filterValues,
+  () => {
     resetSelections();
+    // 当前有资源名称过滤，且过滤值不在资源列表中，则删除该过滤条件
+    const resourceIdFilterIndex = filterValues.value.findIndex(filter => filter.id === 'resource_id');
+
+    if (resourceIdFilterIndex > -1) {
+      const resourceId = filterValues.value[resourceIdFilterIndex].values[0].id as string;
+      const validResourceIds = filterConditions.value
+        .find(condition => condition.id === 'resource_id').children
+        .map(option => option.id);
+      if (!validResourceIds.includes(resourceId)) {
+        filterValues.value.splice(resourceIdFilterIndex, 1);
+        Message({
+          theme: 'warning',
+          message: t('请选择有效的资源名称'),
+        });
+      }
+    }
+
     filterData.value = {};
     let isEmpty = false;
-    if (v) {
+    if (filterValues.value) {
       // 把纯文本搜索项转换成查询参数
-      const textItem = v.find(val => val.type === 'text');
+      const textItem = filterValues.value.find(val => val.type === 'text');
 
       if (textItem) {
         filterData.value.keyword = textItem.name || '';
       }
 
-      v.forEach((item) => {
+      filterValues.value.forEach((item) => {
         if (item.values) {
           filterData.value[item.id] = item.values[0].id;
         }
       });
-      isEmpty = v.length === 0;
+      isEmpty = filterValues.value.length === 0;
     }
     exportDropData.value.forEach((e: IDropList) => {
       // 已选资源
@@ -717,7 +735,7 @@ const getApigwResources = async () => {
   }));
   resourceList.value = sortByKey(results, 'name');
   resourceIdOption.children = resourceList.value.map(item => ({
-    id: item.id,
+    id: String(item.id),
     name: item.name,
   }));
   componentKey.value += 1;

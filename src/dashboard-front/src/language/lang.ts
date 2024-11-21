@@ -1672,6 +1672,7 @@ const lang: ILANG = {
   '待发布（{version}）': ['To Be Published({version})'],
   '删除操作无法撤回，请谨慎操作': ['Deletion can\'t be reverted, please be cautious'],
   '默认分类': ['Default'],
+  '请选择有效的资源名称': ['Please choose a valid resource name'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

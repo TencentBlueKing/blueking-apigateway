@@ -21,16 +21,10 @@
           v-model="activeIndex"
           class="binding-plugins mt20">
           <template #title="slotProps">
-            <span class="f15" @mouseenter="handleTitleHover(slotProps)" @mouseleave="handleTitleLeave">
+            <span class="f15">
               {{ slotProps.name }}
-              <span
-                class="icon apigateway-icon icon-ag-edit-line ml5 mr5 " @click.stop="handleEditePlugin(slotProps)"
-                v-if="slotProps.name === curHoverHead">
-              </span>
-              <span
-                class="icon apigateway-icon icon-ag-delet " @click.stop="handleDeletePlugin(slotProps)"
-                v-if="slotProps.name === curHoverHead">
-              </span>
+              <AgIcon class="ml5 mr5" name="edit-line" size="15" @click.stop="handleEditePlugin(slotProps)" />
+              <AgIcon class="ml5 mr5" name="delet" size="15" @click.stop="handleDeletePlugin(slotProps)" />
             </span>
           </template>
           <template #content="slotProps">
@@ -241,6 +235,7 @@ import {
 } from '@/http';
 import ConfigDisplayTable from '@/views/components/plugin-manage/config-display-table.vue';
 import pluginIconList from '@/common/plugin-icon-list';
+import AgIcon from '@/components/ag-icon.vue';
 
 const props = defineProps({
   resourceId: {
@@ -256,22 +251,21 @@ const router = useRouter();
 const common = useCommon();
 
 const { apigwId } = common; // 网关id
-const scopeType = ref<string>('');
-const scopeId = ref<number>(-1);
+const scopeType = ref('');
+const scopeId = ref(-1);
 const isBindingListLoading = ref(false);
 const isPluginListLoading = ref(false);
 const isVisible = ref(false);
-const curType = ref<string>('');
+const curType = ref('');
 const isEditVisible = ref(false);
 const isAddSuccess = ref(false);
-const searchValue = ref<string>('');
+const searchValue = ref('');
 const pluginListDate = ref([]);
 const curBindingScopeData = ref<any>({});
-const curHover = ref<string>('');
-const curHoverHead = ref<string>('');
+const curHover = ref('');
 const curBindingPlugins = ref<any>([]);
 const curChoosePlugin = ref(null);
-const curChooseCode = ref<string>('');
+const curChooseCode = ref('');
 const curEditPlugin = ref<any>({});
 const curScopeInfo = reactive({
   scopeType: '',
@@ -385,14 +379,6 @@ const handleScopeHover = (name: string) => {
 };
 const handlScopeLeave = () => {
   curHover.value = '';
-};
-
-// hover 已绑插件的title
-const handleTitleHover = (data: any) => {
-  curHoverHead.value = data.name;
-};
-const handleTitleLeave = () => {
-  curHoverHead.value = '';
 };
 
 const handleClearFilterKey = () => {
