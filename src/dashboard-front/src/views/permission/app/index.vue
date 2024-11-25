@@ -66,7 +66,7 @@
               {{ row.expires || t('永久有效') }}
             </template>
           </bk-table-column>
-          <bk-table-column width="150" :label="t('授权类型')" prop="grant_type" :filter="grantTypeFilterOptions">
+          <bk-table-column width="150" :label="t('授权类型')" prop="grant_type">
             <template #default="{ row }: { row: IPermission }">
               {{ row.grant_type === 'initialize' ? t('主动授权') : t('申请审批') }}
             </template>
@@ -468,39 +468,39 @@ const grantDimensionFilterOptions = {
 };
 
 // 授权类型表头过滤
-const grantTypeFilterOptions = {
-  list: [
-    {
-      // value: 'initialize',
-      value: t('主动授权'),
-      text: t('主动授权'),
-    },
-    {
-      // value: 'renew',
-      value: t('申请审批'),
-      text: t('申请审批'),
-    },
-  ],
-  checked: checkedGrantTypeFilterOptions.value,
-  filterFn: (checked: string[], row: IPermission) => {
-    if (!checked.length) {
-      return true;
-    }
-
-    const checkedList = checked.map((value) => {
-      if (value === '主动授权' || value === 'Add Permissions') {
-        return 'initialize';
-      }
-      if (value === '申请审批' || value === 'apply') {
-        return 'renew';
-      }
-
-      return value;
-    });
-
-    return checkedList.includes(row.grant_type);
-  },
-};
+// const grantTypeFilterOptions = {
+//   list: [
+//     {
+//       // value: 'initialize',
+//       value: t('主动授权'),
+//       text: t('主动授权'),
+//     },
+//     {
+//       // value: 'renew',
+//       value: t('申请审批'),
+//       text: t('申请审批'),
+//     },
+//   ],
+//   checked: checkedGrantTypeFilterOptions.value,
+//   filterFn: (checked: string[], row: IPermission) => {
+//     if (!checked.length) {
+//       return true;
+//     }
+//
+//     const checkedList = checked.map((value) => {
+//       if (value === '主动授权' || value === 'Add Permissions') {
+//         return 'initialize';
+//       }
+//       if (value === '申请审批' || value === 'apply') {
+//         return 'renew';
+//       }
+//
+//       return value;
+//     });
+//
+//     return checkedList.includes(row.grant_type);
+//   },
+// };
 
 const filterData = ref<IFilterParams>({});
 
