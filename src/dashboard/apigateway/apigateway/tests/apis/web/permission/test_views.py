@@ -34,7 +34,6 @@ pytestmark = pytest.mark.django_db
 
 class TestAppPermissionViewSet:
     def test_list(self, fake_gateway, request_view):
-
         fake_resource1 = G(Resource, name="name1", gateway=fake_gateway)
         fake_resource2 = G(Resource, name="name2", gateway=fake_gateway)
 

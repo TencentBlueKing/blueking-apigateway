@@ -469,7 +469,8 @@ class BaseExporter:
         content = self._get_openapi_content(resources)
 
         if file_type == OpenAPIFormatEnum.JSON.value:
-            return json.dumps(content, indent=4)
+            # 设置 ensure_ascii=False,防止中文被编码
+            return json.dumps(content, indent=4, ensure_ascii=False)
 
         return yaml_export_dumps(content)
 
