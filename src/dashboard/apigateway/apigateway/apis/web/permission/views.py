@@ -122,7 +122,6 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
     ),
 )
 class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
-
     def get_queryset(self):
         query_params = self.request.query_params
         app_gateway_permissions = AppGatewayPermissionFilter(self.request.GET, queryset=self.get_gateway_queryset()).qs
