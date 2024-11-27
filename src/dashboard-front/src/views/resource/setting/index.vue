@@ -1104,7 +1104,7 @@ const handleOutBatch = () => {
     {
       value: 'filtered',
       label: t('已筛选资源'),
-      disabled: !searchValue.value.length,
+      disabled: !searchValue.value.length || !tableData.value.length,
       tooltips: t('请先筛选资源'),
     },
   ];
@@ -1424,6 +1424,12 @@ watch(
         return label.name;
       });
       item.isEditLabel = false;
+    });
+
+    exportDropData.value.forEach((e: IDropList) => {
+      if (e.value === 'filtered') {
+        e.disabled = !v.length || !searchValue.value.length;
+      }
     });
 
     updateTableEmptyConfig();
