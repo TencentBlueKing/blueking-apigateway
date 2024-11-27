@@ -216,7 +216,8 @@ class FaultInjectionChecker(BaseChecker):
                 raise ValueError("The percentage of abort must be greater than 0 and less than or equal to 100.")
 
             abort_vars = abort_data.get("vars")
-            check_vars(abort_vars, "abort")
+            if abort_vars:
+                check_vars(abort_vars, "abort")
 
         if delay_data:
             duration = delay_data.get("duration")
@@ -228,7 +229,8 @@ class FaultInjectionChecker(BaseChecker):
                 raise ValueError("The percentage of delay must be greater than 0 and less than or equal to 100.")
 
             delay_vars = delay_data.get("vars")
-            check_vars(delay_vars, "delay")
+            if delay_vars:
+                check_vars(delay_vars, "delay")
 
 
 def check_vars(vars, location):
