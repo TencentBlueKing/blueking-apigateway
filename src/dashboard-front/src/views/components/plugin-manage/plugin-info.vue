@@ -268,7 +268,8 @@ const handleAdd = async () => {
     }
   } catch (err) {
     const error = err as Error;
-    Message({ theme: 'error', message: error.message });
+    Message({ theme: 'error', message: error.message || t('表单校验失败') });
+    return;
   }
 
   if (isAdd.value) {
