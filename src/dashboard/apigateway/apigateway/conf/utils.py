@@ -19,6 +19,8 @@
 import socket
 from typing import Optional
 
+from django.utils.functional import cached_property
+
 
 def get_default_keepalive_options() -> Optional[dict]:
     """Mac OS's socket module does not has below attrs, return empty options instead"""
@@ -30,3 +32,11 @@ def get_default_keepalive_options() -> Optional[dict]:
         }
     except AttributeError:
         return None
+
+
+class PatchFeatures:
+    @cached_property
+    def minimum_database_version(self):
+        if self.connection.mysql_is_mariadb:
+            return (10, 4)
+        return (5, 7)
