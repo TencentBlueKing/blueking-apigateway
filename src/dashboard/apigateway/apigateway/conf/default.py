@@ -24,17 +24,22 @@ import pymysql
 import urllib3
 from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
+from django.db.backends.mysql.features import DatabaseFeatures
 from django.utils.encoding import force_bytes
 
 from apigateway.common.env import Env
 from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
 from apigateway.conf.log_utils import build_logging_config
-from apigateway.conf.utils import get_default_keepalive_options
+from apigateway.conf.utils import PatchFeatures, get_default_keepalive_options
 
 pymysql.install_as_MySQLdb()
 # Patch version info to force pass Django client check
 pymysql.version_info = 1, 4, 6, "final", 0
+
+# 目前 Django 仅是对 5.7 做了软性的不兼容改动，在没有使用 8.0 特异的功能时，对 5.7 版本的使用无影响
+DatabaseFeatures.minimum_database_version = PatchFeatures.minimum_database_version
+
 
 # Patch the SSL module for compatibility with legacy CA credentials.
 # https://stackoverflow.com/questions/72479812/how-to-change-tweak-python-3-10-default-ssl-settings-for-requests-sslv3-alert
