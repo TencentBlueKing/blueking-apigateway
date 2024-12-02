@@ -68,6 +68,9 @@ DEBUG = env.bool("DEBUG", False)
 # 是否为本地开发环境
 IS_LOCAL = env.bool("DASHBOARD_IS_LOCAL", default=False)
 
+# 是否开启多租户模式
+ENABLE_MULTI_TENANT_MODE = env.bool("ENABLE_MULTI_TENANT_MODE", default=False)
+
 ALLOWED_HOSTS = ["*"]
 
 # Application definition

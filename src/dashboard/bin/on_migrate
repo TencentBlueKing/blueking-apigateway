@@ -37,13 +37,16 @@ python manage.py sync_default_micro_gateway \
 --secret "${DEFAULT_MICRO_GATEWAY_SECRET}" \
 --http-url "${DEFAULT_MICRO_GATEWAY_HTTP_URL}"
 
-# ESB 相关
-python manage.py create_esb_jwt_key
-python manage.py create_esb_gateway
-python manage.py sync_esb_jwt_key_to_gateway
-python manage.py update_esb_user_verified_unrequired_apps ${esb_verified_user_exempted_apps}
-python manage.py sync_esb_verified_user_exempted_apps_to_gateway
-python manage.py add_plugin_error_status_code_200
+# only init esb when ENABLE_MULTI_TENANT_MODE != true/True
+if [ "${ENABLE_MULTI_TENANT_MODE}" != "true" ] && [ "${ENABLE_MULTI_TENANT_MODE}" != "True" ]; then
+    # ESB 相关
+    python manage.py create_esb_jwt_key
+    python manage.py create_esb_gateway
+    python manage.py sync_esb_jwt_key_to_gateway
+    python manage.py update_esb_user_verified_unrequired_apps ${esb_verified_user_exempted_apps}
+    python manage.py sync_esb_verified_user_exempted_apps_to_gateway
+    python manage.py add_plugin_error_status_code_200
+fi
 
 # 蓝鲸通知中心
 python manage.py register_to_bk_notice
