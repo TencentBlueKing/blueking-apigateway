@@ -21,10 +21,8 @@ from typing import Any, Dict
 
 from bkapi_client_core.apigateway import OperationGroup
 from bkapi_client_core.apigateway.django_helper import get_client_by_username as get_client_by_username_for_apigateway
-from django.conf import settings
 
-from apigateway.components.bkapi_client.bkmonitorv3 import Client as BkMonitorV3Client
-from apigateway.components.esb_components import get_client_by_username as get_client_by_username_for_esb
+from apigateway.components.bkapi_client.bkmonitorv3 import new_client_cls
 from apigateway.components.handler import RequestAPIHandler
 
 
@@ -85,13 +83,9 @@ class PrometheusComponent:
 
     def _get_api_client(self) -> OperationGroup:
         # use gateway: bkmonitorv3
-        if settings.USE_BKAPI_BKMONITORV3:
-            apigw_client = get_client_by_username_for_apigateway(BkMonitorV3Client, username="admin")
-            return apigw_client.api
-
-        # use esb api
-        esb_client = get_client_by_username_for_esb("admin")
-        return esb_client.monitor_v3
+        client_cls = new_client_cls("bkmonitorv3")
+        apigw_client = get_client_by_username_for_apigateway(client_cls, username="admin")
+        return apigw_client.api
 
 
 prometheus_component = PrometheusComponent()

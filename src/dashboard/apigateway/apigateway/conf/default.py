@@ -68,6 +68,9 @@ DEBUG = env.bool("DEBUG", False)
 # 是否为本地开发环境
 IS_LOCAL = env.bool("DASHBOARD_IS_LOCAL", default=False)
 
+# te 还是 ee
+EDITION = env.str("EDITION", "ee")
+
 # 是否开启多租户模式
 ENABLE_MULTI_TENANT_MODE = env.bool("ENABLE_MULTI_TENANT_MODE", default=False)
 
@@ -103,9 +106,7 @@ INSTALLED_APPS = [
     "bkpaas_auth",
     "apigateway.account",
     "apigateway.apps.feature",
-    "apigateway.apps.esb",
     "apigateway.apps.docs",
-    "apigateway.apps.esb.bkcore",
     "apigateway.apps.api_debug",
     "apigw_manager.apigw",
     "apigateway.controller",
@@ -113,6 +114,13 @@ INSTALLED_APPS = [
     # 蓝鲸通知中心
     "bk_notice_sdk",
 ]
+
+# 非多租户模式才会有 esb 相关的模型
+if not ENABLE_MULTI_TENANT_MODE:
+    INSTALLED_APPS += [
+        "apigateway.apps.esb",
+        "apigateway.apps.esb.bkcore",
+    ]
 
 MIDDLEWARE = [
     # 这个必须在最前
@@ -262,7 +270,11 @@ DATABASES = {
             "isolation_level": env.str("BK_APIGW_DATABASE_ISOLATION_LEVEL", "READ COMMITTED"),
         },
     },
-    "bkcore": {
+}
+
+# 非多租户模式才会有 esb 相关的模型
+if not ENABLE_MULTI_TENANT_MODE:
+    DATABASES["bkcore"] = {
         "ENGINE": env.str("BK_ESB_DATABASE_ENGINE", "django.db.backends.mysql"),
         "NAME": env.str("BK_ESB_DATABASE_NAME", "bk_esb"),
         "USER": env.str("BK_ESB_DATABASE_USER", BK_APP_CODE),
@@ -272,8 +284,7 @@ DATABASES = {
         "OPTIONS": {
             "isolation_level": env.str("BK_ESB_DATABASE_ISOLATION_LEVEL", "READ COMMITTED"),
         },
-    },
-}
+    }
 
 # ==============================================================================
 # redis 配置
@@ -636,10 +647,6 @@ BK_ESB_ACCESS_LOG_CONFIG = {
     "es_index": env.str("BK_ESB_API_LOG_ES_INDEX", "2_bklog_bkapigateway_esb_container*"),
 }
 
-# 使用 bkmonitorv3 网关 API，还是 monitor_v3 组件 API
-USE_BKAPI_BKMONITORV3 = env.bool("USE_BKAPI_BKMONITORV3", False)
-# 是否使用 bklog 网关 API
-USE_BKAPI_BK_LOG = env.bool("USE_BKAPI_BK_LOG", False)
 
 # ==============================================================================
 # prometheus 配置
@@ -806,6 +813,8 @@ DEFAULT_FEATURE_FLAG = {
     # ----------------------------------------------------------------------------
     # 是否展示蓝鲸通知中心组件
     "ENABLE_BK_NOTICE": ENABLE_BK_NOTICE,
+    # 是否开启多租户模式
+    "ENABLE_MULTI_TENANT_MODE": ENABLE_MULTI_TENANT_MODE,
 }
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并
