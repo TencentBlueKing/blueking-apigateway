@@ -71,7 +71,7 @@ class StageConvertor(BaseConvertor):
 
     def _get_default_stage_plugins(self) -> List[PluginConfig]:
         """Get the default plugins for stage, which is shared by all resources in the stage"""
-        return [
+        default_stage_plugins = [
             # 2024-08-19 disable the bk-opentelemetry plugin, we should let each gateway set their own opentelemetry
             # PluginConfig(name="bk-opentelemetry"),
             PluginConfig(name="prometheus"),
@@ -106,6 +106,14 @@ class StageConvertor(BaseConvertor):
                 },
             ),
         ]
+
+        # 多租户模式
+        if settings.ENABLE_MULTI_TENANT_MODE:
+            default_stage_plugins.append(PluginConfig(name="bk-tenant-verify"))
+        else:
+            default_stage_plugins.append(PluginConfig(name="bk-default-tenant"))
+
+        return default_stage_plugins
 
     def _get_stage_plugins(self) -> List[PluginConfig]:
         return [
