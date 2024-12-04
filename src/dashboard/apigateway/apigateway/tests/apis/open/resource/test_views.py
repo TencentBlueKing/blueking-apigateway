@@ -124,8 +124,6 @@ class TestResourceSyncApi:
         )
         result = resp.json()
 
-        print(result)
-
         assert resp.status_code == 200
         assert result["code"] == 0
         assert len(result["data"]["added"]) == 1
