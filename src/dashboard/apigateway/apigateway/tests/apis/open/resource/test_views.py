@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
+
 from apigateway.apps.support.models import ResourceDoc
 
 
@@ -98,3 +100,36 @@ class TestResourceSyncApi:
         assert len(result["data"]["updated"]) == 1
 
         assert len(ResourceDoc.objects.filter(gateway_id=fake_gateway.id, language="en").all()) == 2
+
+    def test_sync_with_null_doc_language(
+        self,
+        request_view,
+        fake_gateway,
+        fake_default_backend,
+        fake_resource_swagger,
+        fake_resource,
+        fake_resource_echo,
+        ignore_related_app_permission,
+    ):
+        data_dic = {"content": fake_resource_swagger, "delete": True}
+        raw_data = '{"doc_language":null}'
+        raw_dict = json.loads(raw_data)
+        data_dic["doc_language"] = raw_dict["doc_language"]
+        resp = request_view(
+            method="POST",
+            view_name="openapi.resource.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data=data_dic,
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        print(result)
+
+        assert resp.status_code == 200
+        assert result["code"] == 0
+        assert len(result["data"]["added"]) == 1
+        assert len(result["data"]["deleted"]) == 1
+        assert len(result["data"]["updated"]) == 1
+
+        assert len(ResourceDoc.objects.filter(gateway_id=fake_gateway.id, language="en").all()) == 0

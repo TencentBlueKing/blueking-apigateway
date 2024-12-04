@@ -34,6 +34,7 @@ class ResourceImportInputSLZ(serializers.Serializer):
     doc_language = serializers.ChoiceField(
         choices=DocLanguageEnum.get_choices(),
         allow_blank=True,
+        allow_null=True,
         required=False,
         help_text="文档语言，en: 英文，zh: 中文",
     )
