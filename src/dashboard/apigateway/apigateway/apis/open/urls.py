@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.conf import settings
 from django.urls import include, path
 
 from apigateway.apis.open.esb.permission import views as esb_permission_views
@@ -87,27 +88,29 @@ urlpatterns = [
     path("", include("apigateway.apis.open.monitor.urls")),
 ]
 
-urlpatterns += [
-    path("esb/systems/", include("apigateway.apis.open.esb.system.urls")),
-    path("esb/systems/<int:system_id>/permissions/", include("apigateway.apis.open.esb.permission.urls")),
-    path(
-        "esb/systems/permissions/renew/",
-        esb_permission_views.AppPermissionRenewAPIView.as_view({"post": "renew"}),
-        name="openapi.esb.permission.renew",
-    ),
-    path(
-        "esb/systems/permissions/app-permissions/",
-        esb_permission_views.AppPermissionViewSet.as_view({"get": "list"}),
-        name="openapi.esb.permission.app-permissions",
-    ),
-    path(
-        "esb/systems/permissions/apply-records/",
-        esb_permission_views.AppPermissionApplyRecordViewSet.as_view({"get": "list"}),
-        name="openapi.esb.permission.app-records",
-    ),
-    path(
-        "esb/systems/permissions/apply-records/<int:record_id>/",
-        esb_permission_views.AppPermissionApplyRecordViewSet.as_view({"get": "retrieve"}),
-        name="openapi.esb.permission.app-record-detail",
-    ),
-]
+# 非多租户模式才会有 esb 相关的接口
+if not settings.ENABLE_MULTI_TENANT_MODE:
+    urlpatterns += [
+        path("esb/systems/", include("apigateway.apis.open.esb.system.urls")),
+        path("esb/systems/<int:system_id>/permissions/", include("apigateway.apis.open.esb.permission.urls")),
+        path(
+            "esb/systems/permissions/renew/",
+            esb_permission_views.AppPermissionRenewAPIView.as_view({"post": "renew"}),
+            name="openapi.esb.permission.renew",
+        ),
+        path(
+            "esb/systems/permissions/app-permissions/",
+            esb_permission_views.AppPermissionViewSet.as_view({"get": "list"}),
+            name="openapi.esb.permission.app-permissions",
+        ),
+        path(
+            "esb/systems/permissions/apply-records/",
+            esb_permission_views.AppPermissionApplyRecordViewSet.as_view({"get": "list"}),
+            name="openapi.esb.permission.app-records",
+        ),
+        path(
+            "esb/systems/permissions/apply-records/<int:record_id>/",
+            esb_permission_views.AppPermissionApplyRecordViewSet.as_view({"get": "retrieve"}),
+            name="openapi.esb.permission.app-record-detail",
+        ),
+    ]

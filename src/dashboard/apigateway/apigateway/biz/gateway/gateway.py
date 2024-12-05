@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 #
 
 import copy
+import logging
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
@@ -39,6 +40,8 @@ from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
 from apigateway.utils.dict import deep_update
+
+logger = logging.getLogger(__name__)
 
 
 class GatewayHandler:
@@ -112,7 +115,7 @@ class GatewayHandler:
         :param api_type: 网关类型，只有 ESB 才能被设置为 SUPER_OFFICIAL_API 网关，网关会将所有请求参数透传给其后端服务
         :param allow_update_api_auth: 是否允许编辑网关资源安全设置中的应用认证配置
         :param unfiltered_sensitive_keys: 网关请求后端时，不去除的敏感字段
-        :param allow_auth_from_params: 网关从请求中获取认证信息时，是否允许从请求参数(querystring, body 等)获取认证信息；如果不允许，则只能从请求头获取
+        :param allow_auth_from_params: 网关从请求中获取认证信息时，是否允许从请求参数 (querystring, body 等) 获取认证信息；如果不允许，则只能从请求头获取
         :param allow_delete_sensitive_params: 网关转发请求到后端时，是否需要删除请求参数（querystring, body 等）中的敏感参数
         """
         new_config: Dict[str, Any] = {}
@@ -134,6 +137,14 @@ class GatewayHandler:
 
         if allow_auth_from_params is not None:
             new_config["allow_auth_from_params"] = allow_auth_from_params
+
+            # 多租户版本，只允许从请求头获取认证信息，如果注册方配置 allow_auth_from_params 为 True，则强制设置为 False
+            if allow_auth_from_params and settings.ENABLE_MULTI_TENANT_MODE:
+                logger.warning(
+                    "multi-tenant mode, allow_auth_from_params=True is not supported, force set to False, gateway_id=%s",
+                    gateway_id,
+                )
+                new_config["allow_auth_from_params"] = False
 
         if allow_delete_sensitive_params is not None:
             new_config["allow_delete_sensitive_params"] = allow_delete_sensitive_params

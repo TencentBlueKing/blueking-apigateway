@@ -31,6 +31,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path, re_path
 from django.views.i18n import set_language
@@ -47,8 +48,6 @@ urlpatterns = [
     path("backend/admin42/", admin.site.urls),
     # /userinfo
     path("backend/accounts/", include("apigateway.account.urls")),
-    # esb
-    path("backend/esb/", include("apigateway.apps.esb.urls")),
     # open api
     path("backend/api/v1/", include("apigateway.apis.open.urls")),
     # open api v2
@@ -85,6 +84,12 @@ urlpatterns = [
     path("backend/notice/", include(("bk_notice_sdk.urls", "notice"), namespace="notice")),
 ]
 
+# 非多租户模式才会有 esb 相关的接口
+if not settings.ENABLE_MULTI_TENANT_MODE:
+    urlpatterns += [
+        # esb
+        path("backend/esb/", include("apigateway.apps.esb.urls")),
+    ]
 
 # backend/docs/
 urlpatterns += [

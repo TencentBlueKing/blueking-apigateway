@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.conf import settings
 from django.urls import include, path
 
 urlpatterns = [
@@ -26,11 +27,17 @@ urlpatterns = [
     path("gateways/<slug:gateway_name>/resources/", include("apigateway.apis.web.docs.gateway.resource.urls")),
     path("gateways/<slug:gateway_name>/stages/", include("apigateway.apis.web.docs.gateway.stage.urls")),
     path("gateways/<slug:gateway_name>/sdks/", include("apigateway.apis.web.docs.gateway.gateway_sdk.urls")),
-    # esb
-    path("esb/boards/<slug:board>/systems/", include("apigateway.apis.web.docs.esb.system.urls")),
-    path(
-        "esb/boards/<slug:board>/systems/<slug:system_name>/components/",
-        include("apigateway.apis.web.docs.esb.component.urls"),
-    ),
-    path("esb/boards/<slug:board>/sdks/", include("apigateway.apis.web.docs.esb.sdk.urls")),
 ]
+
+
+# 非多租户模式才会有 esb 相关的接口
+if not settings.ENABLE_MULTI_TENANT_MODE:
+    urlpatterns += [
+        # esb
+        path("esb/boards/<slug:board>/systems/", include("apigateway.apis.web.docs.esb.system.urls")),
+        path(
+            "esb/boards/<slug:board>/systems/<slug:system_name>/components/",
+            include("apigateway.apis.web.docs.esb.component.urls"),
+        ),
+        path("esb/boards/<slug:board>/sdks/", include("apigateway.apis.web.docs.esb.sdk.urls")),
+    ]

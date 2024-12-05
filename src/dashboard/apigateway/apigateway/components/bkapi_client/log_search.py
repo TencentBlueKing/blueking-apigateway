@@ -34,3 +34,11 @@ class Client(APIGatewayClient):
     _api_name = "log-search"
 
     api = bind_property(Group, name="api")
+
+
+def new_client_cls(api_name: str):
+    class Client(APIGatewayClient):
+        _api_name = api_name
+        api = bind_property(Group, name="api")
+
+    return Client
