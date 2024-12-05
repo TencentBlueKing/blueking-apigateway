@@ -48,6 +48,7 @@ from apigateway.core.constants import (
     ReleaseStatusEnum,
     ResourceVersionSchemaEnum,
     StageStatusEnum,
+    TenantModeEnum,
 )
 from apigateway.core.utils import get_path_display
 from apigateway.schema.models import Schema
@@ -75,6 +76,16 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
 
     _maintainers = models.CharField(db_column="maintainers", max_length=1024, default="")
     _developers = models.CharField(db_column="developers", max_length=1024, blank=True, null=True, default="")
+
+    # tenant
+    tenant_mode = models.CharField(
+        max_length=32,
+        blank=False,
+        null=False,
+        choices=TenantModeEnum.get_choices(),
+        default=TenantModeEnum.SINGLE.value,
+    )
+    tenant_id = models.CharField(max_length=32, blank=True, null=False, default="default")
 
     # status
     status = models.IntegerField(choices=GatewayStatusEnum.get_choices())

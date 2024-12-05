@@ -33,7 +33,7 @@ from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
+from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum, TenantModeEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
@@ -69,7 +69,7 @@ from .serializers import (
 class GatewayListCreateApi(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         # 获取用户有权限的网关列表，后续切换到 IAM
-        gateways = GatewayHandler.list_gateways_by_user(request.user.username)
+        gateways = GatewayHandler.list_gateways_by_user(request.user.username, request.user.tenant_id)
         gateway_ids = [gateway.id for gateway in gateways]
 
         slz = GatewayListInputSLZ(data=request.query_params)
@@ -109,6 +109,17 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         slz.is_valid(raise_exception=True)
 
         bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
+
+        if settings.ENABLE_MULTI_TENANT_MODE:
+            if slz.validated_data["tenant_mode"] == TenantModeEnum.GLOBAL.value:
+                # set the tenant_id to "" if in global mode
+                slz.validated_data["tenant_id"] = ""
+            elif slz.validated_data["tenant_id"] != request.user.tenant_id:
+                raise error_codes.NO_PERMISSION.format(_("只能创建当前用户租户下的网关或者全租户网关。"), replace=True)
+        else:
+            # set the tenant_mode/tenant_id if not in multi-tenant mode => the frontend can ignore these fields
+            slz.validated_data["tenant_mode"] = TenantModeEnum.SINGLE.value
+            slz.validated_data["tenant_id"] = "default"
 
         # 1. save gateway
         slz.save(

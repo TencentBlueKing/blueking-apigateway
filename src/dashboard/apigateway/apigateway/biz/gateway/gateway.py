@@ -23,7 +23,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
-from django.db.models import Count
+from django.db.models import Count, Q
 
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.plugin.models import PluginBinding
@@ -37,7 +37,7 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
 from apigateway.core.api_auth import APIAuthConfig
-from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
+from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum, TenantModeEnum
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
 from apigateway.utils.dict import deep_update
 
@@ -46,10 +46,15 @@ logger = logging.getLogger(__name__)
 
 class GatewayHandler:
     @staticmethod
-    def list_gateways_by_user(username: str) -> List[Gateway]:
+    def list_gateways_by_user(username: str, tenant_id: str) -> List[Gateway]:
         """获取用户有权限的的网关列表"""
+        # tenant_mode = global or gateway.tenant_mode = single & gateway.tenant_id=user_tenant_id
+        queryset = Gateway.objects.filter(_maintainers__contains=username).filter(
+            Q(tenant_mode=TenantModeEnum.GLOBAL.value)
+            | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=tenant_id)
+        )
+
         # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
-        queryset = Gateway.objects.filter(_maintainers__contains=username)
         return [gateway for gateway in queryset if gateway.has_permission(username)]
 
     @staticmethod
