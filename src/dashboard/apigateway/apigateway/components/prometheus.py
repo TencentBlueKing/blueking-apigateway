@@ -22,6 +22,7 @@ from typing import Any, Dict
 from bkapi_client_core.apigateway import OperationGroup
 from bkapi_client_core.apigateway.django_helper import get_client_by_username as get_client_by_username_for_apigateway
 
+from apigateway.common.constants import TENANT_ID_OPERATION
 from apigateway.components.bkapi_client.bkmonitorv3 import new_client_cls
 from apigateway.components.handler import RequestAPIHandler
 
@@ -76,7 +77,10 @@ class PrometheusComponent:
             "type": type_,
         }
 
-        headers = {"X-Bk-Scope-Space-Uid": f"bkcc__{bk_biz_id}"}
+        headers = {
+            "X-Bk-Scope-Space-Uid": f"bkcc__{bk_biz_id}",
+            "X-Bk-Tenant-Id": TENANT_ID_OPERATION,
+        }
 
         api_result, response = self._request_handler.call_api(self._api_client.promql_query, data, headers=headers)
         return self._request_handler.parse_api_result(api_result, response, {"code": 200}, itemgetter("data"))

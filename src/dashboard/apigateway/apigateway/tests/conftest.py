@@ -126,6 +126,8 @@ def fake_gateway(faker):
         _maintainers=FAKE_USERNAME,
         status=1,
         is_public=True,
+        tenant_mode="single",
+        tenant_id="default",
     )
 
     GatewayAuthContext().save(gateway.pk, {})

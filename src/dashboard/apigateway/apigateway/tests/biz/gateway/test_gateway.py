@@ -45,19 +45,19 @@ from apigateway.core.models import (
 class TestGatewayHandler:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self):
-        self.gateway = G(Gateway, created_by="admin")
+        self.gateway = G(Gateway, created_by="admin", tenant_id="default")
 
     def test_get_gateways_by_user(self):
-        G(Gateway, _maintainers="admin1")
-        G(Gateway, _maintainers="admin2;admin1")
+        G(Gateway, _maintainers="admin1", tenant_id="default")
+        G(Gateway, _maintainers="admin2;admin1", tenant_id="default")
 
-        gateways = GatewayHandler.list_gateways_by_user("admin1")
+        gateways = GatewayHandler.list_gateways_by_user("admin1", "default")
         assert len(gateways) >= 2
 
-        gateways = GatewayHandler.list_gateways_by_user("admin2")
+        gateways = GatewayHandler.list_gateways_by_user("admin2", "default")
         assert len(gateways) >= 1
 
-        gateways = GatewayHandler.list_gateways_by_user("not_exist_user")
+        gateways = GatewayHandler.list_gateways_by_user("not_exist_user", "default")
         assert len(gateways) == 0
 
     def test_get_stages_with_release_status(self, fake_gateway):

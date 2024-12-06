@@ -25,7 +25,7 @@ from django.conf import settings
 
 from apigateway.components.bkapi_client.log_search import new_client_cls
 from apigateway.components.handler import RequestAPIHandler
-from apigateway.components.utils import inject_accept_language
+from apigateway.components.utils import inject_accept_language, inject_operation_tenant_id
 
 
 class BKLogComponent:
@@ -53,6 +53,7 @@ class BKLogComponent:
         client_cls = new_client_cls(gateway_name)
         apigw_client = get_client_by_username_for_apigateway(client_cls, username="admin")
         apigw_client.session.register_hook("request", inject_accept_language)
+        apigw_client.session.register_hook("request", inject_operation_tenant_id)
         return apigw_client.api
 
 

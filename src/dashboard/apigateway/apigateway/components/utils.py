@@ -16,10 +16,98 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import copy
+import logging
+from typing import Dict, Optional
+from urllib.parse import urlparse
+
 from django.utils.translation import get_language
+
+from apigateway.common.constants import TENANT_ID_OPERATION
+from apigateway.common.error_codes import error_codes
+from apigateway.utils.local import local
+
+logger = logging.getLogger("component")
 
 
 def inject_accept_language(request):
     language = get_language()
     if language:
         request.headers["Accept-Language"] = language
+
+
+def inject_operation_tenant_id(request):
+    request.headers["X-Bk-Tenant-Id"] = TENANT_ID_OPERATION
+
+
+def _remove_sensitive_info(info: Optional[Dict]) -> str:
+    """
+    去除敏感信息
+    """
+    if info is None:
+        return ""
+
+    data = copy.copy(info)
+    sensitive_info_keys = ["bk_token", "bk_app_secret", "app_secret"]
+
+    for key in sensitive_info_keys:
+        if key in data:
+            data[key] = data[key][:6] + "******"
+    return str(data)
+
+
+def do_legacy_blueking_http_request(
+    component: str,
+    http_func,
+    url: str,
+    data: Optional[Dict] = None,
+    headers: Optional[Dict] = None,
+    timeout: Optional[int] = None,
+    request_session=None,
+):
+    kwargs = {"url": url, "data": data, "headers": headers, "timeout": timeout, "request_session": request_session}
+
+    ok, resp_data = http_func(**kwargs)
+    if not ok:
+        logger.error(
+            "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
+            component,
+            http_func.__name__,
+            url,
+            _remove_sensitive_info(data),
+            local.request_id,
+            resp_data["error"],
+        )
+        raise error_codes.REMOTE_REQUEST_ERROR.format(
+            f"request {component} fail! "
+            f"Request=[{http_func.__name__} {urlparse(url).path} request_id={local.request_id}]"
+            f"error={resp_data['error']}"
+        )
+
+    code = resp_data.get("code", -1)
+    message = resp_data.get("message", "unknown")
+
+    # code may be string or int, and login v1 the code is "00"
+    try:
+        code = int(code)
+    except Exception:  # pylint: disable=broad-except
+        pass
+    if code in ("0", 0, "00"):
+        return resp_data["data"]
+
+    logger.error(
+        "%s api error! %s %s, data: %s, request_id: %s, code: %s, message: %s",
+        component,
+        http_func.__name__,
+        url,
+        _remove_sensitive_info(data),
+        local.request_id,
+        code,
+        message,
+    )
+
+    raise error_codes.REMOTE_REQUEST_ERROR.format(
+        f"request {component} error! "
+        f"Request=[{http_func.__name__} {urlparse(url).path} request_id={local.request_id}] "
+        f"Response[code={code}, message={message}]"
+    )

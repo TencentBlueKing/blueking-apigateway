@@ -30,7 +30,7 @@ class ResourceMonitorHandler:
         统计网关下，各策略的告警信息
         """
         # 1. get current user's gateways
-        gateways = GatewayHandler.list_gateways_by_user(username)
+        gateways = GatewayHandler.list_gateways_by_user(username, "default")
         gateway_id_map = {g.id: g for g in gateways}
 
         # 2. annotate alarm-record by strategy

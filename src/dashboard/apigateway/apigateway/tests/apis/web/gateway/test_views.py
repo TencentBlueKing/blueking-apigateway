@@ -40,6 +40,8 @@ class TestGatewayListCreateApi:
             "maintainers": ["admin"],
             "is_public": False,
             "bk_app_codes": ["app1"],
+            "tenant_mode": "single",
+            "tenant_id": "default",
         }
 
         resp = request_view(

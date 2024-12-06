@@ -160,7 +160,7 @@ class GatewayHandler:
         current_config = GatewayHandler.get_gateway_auth_config(gateway_id)
 
         # 因用户配置为 dict，参数 user_conf 仅传递了部分用户配置，因此需合并当前配置与传入配置
-        api_auth_config = APIAuthConfig.parse_obj(deep_update(current_config, new_config))
+        api_auth_config = APIAuthConfig.model_validate(deep_update(current_config, new_config))
 
         return GatewayAuthContext().save(gateway_id, api_auth_config.config)
 

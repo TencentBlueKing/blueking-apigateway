@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
@@ -45,6 +45,8 @@ class TestGatewayData:
                     "user_config": None,
                     "allow_auth_from_params": None,
                     "allow_delete_sensitive_params": None,
+                    "tenant_id": None,
+                    "tenant_mode": None,
                 },
             ),
             (
@@ -60,6 +62,8 @@ class TestGatewayData:
                     "not_exist_key": "",
                     "allow_auth_from_params": False,
                     "allow_delete_sensitive_params": True,
+                    "tenant_mode": "single",
+                    "tenant_id": "default",
                 },
                 {
                     "name": "foo",
@@ -72,26 +76,32 @@ class TestGatewayData:
                     "user_config": {"foo": "bar"},
                     "allow_auth_from_params": False,
                     "allow_delete_sensitive_params": True,
+                    "tenant_mode": "single",
+                    "tenant_id": "default",
                 },
             ),
         ],
     )
     def test(self, data, expected):
-        gateway_data = parse_obj_as(GatewayData, data)
+        gateway_data = TypeAdapter(GatewayData).validate_python(data)
         assert gateway_data.dict() == expected
 
 
 class TestGatewaySaver:
     def test_save(self, unique_gateway_name):
         # create
-        saver = GatewaySaver(None, GatewayData(name=unique_gateway_name, status=0))
+        saver = GatewaySaver(
+            None, GatewayData(name=unique_gateway_name, status=0, tenant_mode="single", tenant_id="default")
+        )
         gateway = saver.save()
 
         assert gateway.id == Gateway.objects.get(name=unique_gateway_name).id
         assert gateway.status == 0
 
         # update
-        saver = GatewaySaver(gateway.id, GatewayData(name=unique_gateway_name, status=1))
+        saver = GatewaySaver(
+            gateway.id, GatewayData(name=unique_gateway_name, status=1, tenant_mode="single", tenant_id="default")
+        )
         gateway = saver.save()
 
         assert gateway.id == Gateway.objects.get(name=unique_gateway_name).id
@@ -110,6 +120,8 @@ class TestGatewaySaver:
                 maintainers=["admin"],
                 status=1,
                 is_public=True,
+                tenant_mode="single",
+                tenant_id="default",
                 gateway_type=GatewayTypeEnum.OFFICIAL_API.value,
                 user_config={"from_bk_token": False},
                 allow_auth_from_params=True,
@@ -127,6 +139,8 @@ class TestGatewaySaver:
         assert gateway.maintainers == ["admin"]
         assert gateway.status == 1
         assert gateway.is_public is True
+        assert gateway.tenant_mode == "single"
+        assert gateway.tenant_id == "default"
 
         auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
         assert auth_config["user_auth_type"] == "default"

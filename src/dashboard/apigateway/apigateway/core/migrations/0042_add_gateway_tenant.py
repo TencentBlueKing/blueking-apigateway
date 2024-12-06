@@ -11,12 +11,12 @@ class Migration(migrations.Migration):
 
     operations = [
         # alter, with default, no need to migrate the legacy records
-        migrations.AlterField(
+        migrations.AddField(
             model_name="gateway",
             name="tenant_id",
             field=models.CharField(blank=True, default="default", max_length=32),
         ),
-        migrations.AlterField(
+        migrations.AddField(
             model_name="gateway",
             name="tenant_mode",
             field=models.CharField(

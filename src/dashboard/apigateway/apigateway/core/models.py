@@ -83,9 +83,8 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         blank=False,
         null=False,
         choices=TenantModeEnum.get_choices(),
-        default=TenantModeEnum.SINGLE.value,
     )
-    tenant_id = models.CharField(max_length=32, blank=True, null=False, default="default")
+    tenant_id = models.CharField(max_length=32, blank=True, null=False)
 
     # status
     status = models.IntegerField(choices=GatewayStatusEnum.get_choices())

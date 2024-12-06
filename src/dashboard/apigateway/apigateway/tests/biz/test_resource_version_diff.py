@@ -83,8 +83,8 @@ class TestDiffMixin:
         ],
     )
     def test_diff(self, source, target, expected):
-        source = User.parse_obj(source)
-        target = User.parse_obj(target)
+        source = User.model_validate(source)
+        target = User.model_validate(target)
         source_diff, target_diff = source.diff(target)
 
         assert source_diff == expected["source"]
@@ -124,8 +124,8 @@ class TestDiffMixin:
         ],
     )
     def test_diff_with_field_value(self, source, target, key, expected):
-        source = User.parse_obj(source)
-        target = User.parse_obj(target)
+        source = User.model_validate(source)
+        target = User.model_validate(target)
         source_diff, target_diff = source._diff_with_field_value(target, key)
 
         assert source_diff == expected["source"]
@@ -418,7 +418,7 @@ class ResourceProxyHTTPConfig:
 
 
 class TestResourceDifferHandler:
-    @patch("apigateway.biz.resource_version_diff.ResourceDifferHandler.parse_obj")
+    @patch("apigateway.biz.resource_version_diff.ResourceDifferHandler.model_validate")
     def test_diff_resource_version_data(self, mock_parse_obj):
         class ResourceDifferMock(BaseModel, DiffMixin):
             id: int
@@ -426,15 +426,35 @@ class TestResourceDifferHandler:
             method: str
             path: str
 
-        mock_parse_obj.side_effect = lambda x: ResourceDifferMock.parse_obj(x)
+        mock_parse_obj.side_effect = lambda x: ResourceDifferMock.model_validate(x)
 
         source_data = [
-            {"id": 1, "name": "n1", "method": "GET", "path": "/p1"},
-            {"id": 3, "name": "n3", "method": "POST", "path": "/p3"},
+            {
+                "id": 1,
+                "name": "n1",
+                "method": "GET",
+                "path": "/p1",
+            },
+            {
+                "id": 3,
+                "name": "n3",
+                "method": "POST",
+                "path": "/p3",
+            },
         ]
         target_data = [
-            {"id": 2, "name": "n2", "method": "POST", "path": "/p2"},
-            {"id": 3, "name": "nn", "method": "GET", "path": "/p3"},
+            {
+                "id": 2,
+                "name": "n2",
+                "method": "POST",
+                "path": "/p2",
+            },
+            {
+                "id": 3,
+                "name": "nn",
+                "method": "GET",
+                "path": "/p3",
+            },
         ]
 
         result = ResourceDifferHandler.diff_resource_version_data(source_data, target_data, {}, {})

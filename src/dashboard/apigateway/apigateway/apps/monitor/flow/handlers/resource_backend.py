@@ -38,7 +38,7 @@ class ResourceBackendDimension(BaseModel):
 
 class ResourceBackendAlarmStrategyEnabledFilter(AlertHandler):
     def _do(self, event: MonitorEvent) -> Optional[MonitorEvent]:
-        dimension = ResourceBackendDimension.parse_obj(event.event_dimensions)
+        dimension = ResourceBackendDimension.model_validate(event.event_dimensions)
 
         alarm_strategies = AlarmStrategy.objects.get_resource_alarm_strategy(
             dimension.api_id,
@@ -141,7 +141,7 @@ class ResourceBackendAlerter(Alerter):
         if label:
             return label
 
-        dimension = ResourceBackendDimension.parse_obj(event.event_dimensions)
+        dimension = ResourceBackendDimension.model_validate(event.event_dimensions)
         return dimension.code_name or "网关请求后端接口错误"
 
     def _get_backend_url(self, record_source: Dict[str, Any]) -> str:

@@ -23,6 +23,9 @@ from bkapi_client_core.exceptions import BKAPIError
 from bkapi_component.open.shortcuts import get_client_by_username
 from django.utils.translation import gettext as _
 
+# FIXME: upgrade to new cmsi gateway
+# FIXME: 需要 ineject x-bk-tenant-id
+
 
 class CMSIComponent:
     def _call_api(self, action: str, data: dict, username: str) -> Tuple[bool, str]:

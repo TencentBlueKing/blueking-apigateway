@@ -30,6 +30,7 @@ from apigateway.biz.audit import Auditor
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
+from apigateway.common.constants import TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID, TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
 from apigateway.controller.publisher.publish import trigger_gateway_publish
@@ -69,7 +70,12 @@ from .serializers import (
 class GatewayListCreateApi(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         # 获取用户有权限的网关列表，后续切换到 IAM
-        gateways = GatewayHandler.list_gateways_by_user(request.user.username, request.user.tenant_id)
+        if settings.ENABLE_MULTI_TENANT_MODE:
+            user_tenant_id = request.user.tenant_id
+        else:
+            user_tenant_id = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
+
+        gateways = GatewayHandler.list_gateways_by_user(request.user.username, user_tenant_id)
         gateway_ids = [gateway.id for gateway in gateways]
 
         slz = GatewayListInputSLZ(data=request.query_params)
@@ -113,13 +119,13 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         if settings.ENABLE_MULTI_TENANT_MODE:
             if slz.validated_data["tenant_mode"] == TenantModeEnum.GLOBAL.value:
                 # set the tenant_id to "" if in global mode
-                slz.validated_data["tenant_id"] = ""
+                slz.validated_data["tenant_id"] = TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID
             elif slz.validated_data["tenant_id"] != request.user.tenant_id:
                 raise error_codes.NO_PERMISSION.format(_("只能创建当前用户租户下的网关或者全租户网关。"), replace=True)
         else:
             # set the tenant_mode/tenant_id if not in multi-tenant mode => the frontend can ignore these fields
             slz.validated_data["tenant_mode"] = TenantModeEnum.SINGLE.value
-            slz.validated_data["tenant_id"] = "default"
+            slz.validated_data["tenant_id"] = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
 
         # 1. save gateway
         slz.save(

@@ -25,7 +25,7 @@ from cachetools import TTLCache, cached
 from django.conf import settings
 
 from apigateway.components.handler import RequestAPIHandler
-from apigateway.components.utils import inject_accept_language
+from apigateway.components.utils import inject_accept_language, inject_operation_tenant_id
 from apigateway.utils.list import chunk_list
 
 logger = logging.getLogger(__name__)
@@ -37,6 +37,7 @@ class PaaSV3Component:
     def __init__(self):
         self._client = get_client_by_username(username="admin", endpoint=settings.BK_PAAS3_API_URL)
         self._client.session.register_hook("request", inject_accept_language)
+        self._client.session.register_hook("request", inject_operation_tenant_id)
         self._request_handler = RequestAPIHandler("bkpaas3")
 
     @cached(cache=TTLCache(maxsize=2000, ttl=300))

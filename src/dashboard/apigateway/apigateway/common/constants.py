@@ -31,6 +31,10 @@ class LanguageCodeEnum(StructuredEnum):
     ZH_HANS = EnumField("zh-hans", "zh-hans")
 
 
+TENANT_MODE_SINGLE_DEFAULT_TENANT_ID = "default"
+TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID = ""
+TENANT_ID_OPERATION = "blueking"
+
 # IP 或 IP 网段正则
 # IPV4 + mask
 # IP_OR_SEGMENT_PATTERN = re.compile(
