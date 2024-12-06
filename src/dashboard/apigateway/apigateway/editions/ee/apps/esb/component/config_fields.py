@@ -52,4 +52,6 @@ def enrich_config_fields(config_fields: List[dict], config: Dict[str, Any]) -> L
             }
         )
 
-    return [field.dict(exclude_none=True) for field in TypeAdapter(List[ConfigField]).validate_python(config_fields)]
+    return [
+        field.model_dump(exclude_none=True) for field in TypeAdapter(List[ConfigField]).validate_python(config_fields)
+    ]

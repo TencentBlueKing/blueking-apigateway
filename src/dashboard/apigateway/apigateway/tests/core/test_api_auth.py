@@ -66,7 +66,7 @@ class TestUserAuthConfig:
     )
     def test_init(self, data, expected):
         result = UserAuthConfig.model_validate(data)
-        assert result.dict() == expected
+        assert result.model_dump() == expected
 
     @pytest.mark.parametrize(
         "data, expected",

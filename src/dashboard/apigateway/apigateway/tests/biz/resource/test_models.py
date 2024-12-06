@@ -76,4 +76,4 @@ class TestResourceBackendConfig:
         config = ResourceBackendConfig.model_validate(data)
         assert config.legacy_upstreams == expected_legacy_upstreams
         assert config.legacy_transform_headers == expected_legacy_transform_headers
-        assert config.dict() == expected
+        assert config.model_dump() == expected

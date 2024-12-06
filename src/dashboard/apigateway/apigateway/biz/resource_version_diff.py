@@ -44,10 +44,10 @@ class DiffMixin:
         target_field_value = getattr(target, field, None)
 
         if isinstance(source_field_value, BaseModel):
-            source_field_value = source_field_value.dict()
+            source_field_value = source_field_value.model_dump()
 
         if isinstance(target_field_value, BaseModel):
-            target_field_value = target_field_value.dict()
+            target_field_value = target_field_value.model_dump()
 
         if source_field_value != target_field_value:
             return source_field_value, target_field_value
@@ -70,7 +70,7 @@ class ResourceProxyHTTPConfig(BaseModel, DiffMixin):
 
     @field_validator("transform_headers")
     def clean_transform_headers(cls, v):  # noqa: N805
-        return TransformHeaders.model_validate(v).dict(exclude_unset=True)
+        return TransformHeaders.model_validate(v).model_dump(exclude_unset=True)
 
 
 class ResourceProxyMockConfig(BaseModel, DiffMixin):
@@ -142,7 +142,7 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
 
     def diff_proxy(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
         if not isinstance(self.proxy, type(target.proxy)):
-            return self.proxy.dict(), target.proxy.dict()
+            return self.proxy.model_dump(), target.proxy.model_dump()
 
         return self.proxy.diff(target.proxy)
 
@@ -153,8 +153,8 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
         source_plugins = {plugin.type: plugin for plugin in self.plugins}
         target_plugins = {plugin.type: plugin for plugin in target.plugins}
 
-        source_plugins_config = {plugin.type: plugin.dict() for plugin in self.plugins}
-        target_plugins_config = {plugin.type: plugin.dict() for plugin in target.plugins}
+        source_plugins_config = {plugin.type: plugin.model_dump() for plugin in self.plugins}
+        target_plugins_config = {plugin.type: plugin.model_dump() for plugin in target.plugins}
         for plugin_type, source_plugin_config in source_plugins.items():
             if plugin_type not in target_plugins:
                 continue
@@ -199,7 +199,7 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
 
             # 目标版本中资源不存在，资源被删除
             if not target_resource_data:
-                resource_delete.append(source_resource_differ.dict())
+                resource_delete.append(source_resource_differ.model_dump())
                 continue
 
             target_resource_differ = ResourceDifferHandler.model_validate(target_resource_data)
@@ -210,8 +210,8 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
                 continue
 
             # 资源有变化，记录资源差异
-            source_resource_data = source_resource_differ.dict()
-            target_resource_data = target_resource_differ.dict()
+            source_resource_data = source_resource_differ.model_dump()
+            target_resource_data = target_resource_differ.model_dump()
             source_resource_data["diff"] = source_diff_value
             target_resource_data["diff"] = target_diff_value
             resource_update.append(
@@ -225,7 +225,7 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
         if target_data_map:
             for target_resource_data in target_data_map.values():
                 target_resource_differ = ResourceDifferHandler.model_validate(target_resource_data)
-                resource_add.append(target_resource_differ.dict())
+                resource_add.append(target_resource_differ.model_dump())
 
         return {
             "add": sorted(resource_add, key=lambda x: x["path"]),

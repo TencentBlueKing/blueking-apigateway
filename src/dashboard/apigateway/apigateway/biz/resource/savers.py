@@ -197,7 +197,7 @@ class ResourcesSaver:
             context = contexts.get(resource_data.resource.id)
 
             auth_config = (context and context.config) or ResourceHandler.get_default_auth_config()
-            auth_config.update(resource_data.auth_config.dict())
+            auth_config.update(resource_data.auth_config.model_dump())
 
             if context:
                 context._config = json.dumps(auth_config)

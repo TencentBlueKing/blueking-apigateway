@@ -84,7 +84,7 @@ class TestGatewayData:
     )
     def test(self, data, expected):
         gateway_data = TypeAdapter(GatewayData).validate_python(data)
-        assert gateway_data.dict() == expected
+        assert gateway_data.model_dump() == expected
 
 
 class TestGatewaySaver:
