@@ -19,7 +19,7 @@ import pytest
 from elasticsearch.exceptions import AuthenticationException, ConnectionError, ConnectionTimeout, NotFoundError
 from urllib3.exceptions import ConnectTimeoutError
 
-from apigateway.common.error_codes import APIError
+from apigateway.common.error_codes import APIError, error_codes
 from apigateway.common.es.clients import (
     BKLogESClient,
     ESClientFactory,
@@ -94,7 +94,7 @@ class TestBKLogESClientMixin:
 
         mocker.patch(
             "apigateway.common.es.clients.esquery_dsl",
-            side_effect=APIError("error"),
+            side_effect=error_codes.REMOTE_REQUEST_ERROR,
         )
         with pytest.raises(APIError):
             es_client.execute_search(es_body)

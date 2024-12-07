@@ -47,19 +47,20 @@ logger = logging.getLogger(__name__)
 
 class GatewayHandler:
     @staticmethod
-    def list_gateways_by_user(username: str, tenant_id: str) -> List[Gateway]:
+    def list_gateways_by_user(username: str, tenant_id: str = "") -> List[Gateway]:
         """获取用户有权限的的网关列表"""
 
-        # 运营租户，能够创建全局网关，也能创建本租户的网关，所以能够同时看到 全局网关和本租户网关
-        if tenant_id == TENANT_ID_OPERATION:
-            condition = Q(tenant_mode=TenantModeEnum.GLOBAL.value) | Q(
-                tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=tenant_id
-            )
-        # 非运营租户，只能看到本租户下的网关列表
-        else:
-            condition = Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=tenant_id)
-
-        queryset = Gateway.objects.filter(_maintainers__contains=username).filter(condition)
+        queryset = Gateway.objects.filter(_maintainers__contains=username)
+        if tenant_id:
+            # 运营租户，能够创建全局网关，也能创建本租户的网关，所以能够同时看到 全局网关和本租户网关
+            if tenant_id == TENANT_ID_OPERATION:
+                queryset = queryset.filter(
+                    Q(tenant_mode=TenantModeEnum.GLOBAL.value)
+                    | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=tenant_id)
+                )
+            # 非运营租户，只能看到本租户下的网关列表
+            else:
+                queryset = queryset.filter(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=tenant_id)
 
         # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
         return [gateway for gateway in queryset if gateway.has_permission(username)]
