@@ -280,7 +280,9 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
         app_codes_of_tenant = {app["bk_app_code"] for app in apps_of_tenant}
         for app_code in target_app_codes:
             if app_code not in app_codes_of_tenant:
-                raise serializers.ValidationError({"target_app_codes": f"app_code {app_code} not in tenant"})
+                raise serializers.ValidationError(
+                    {"target_app_codes": f"app_code {app_code} not belong to the tenant {request.gateway.tenant_id}"}
+                )
 
         related_app_codes = GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id)
         missing_app_codes = set(target_app_codes) - set(related_app_codes)

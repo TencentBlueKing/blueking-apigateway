@@ -33,7 +33,7 @@ class LanguageCodeEnum(StructuredEnum):
 
 TENANT_MODE_SINGLE_DEFAULT_TENANT_ID = "default"
 TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID = ""
-TENANT_ID_OPERATION = "blueking"
+TENANT_ID_OPERATION = "operation"
 
 # IP 或 IP 网段正则
 # IPV4 + mask

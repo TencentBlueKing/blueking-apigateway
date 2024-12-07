@@ -25,7 +25,7 @@ from apigateway.apps.monitor.constants import AlarmStatusEnum
 from apigateway.apps.monitor.flow.handlers.base import Alerter
 from apigateway.apps.monitor.flow.helpers import AlertHandler, MonitorEvent
 from apigateway.apps.monitor.models import AlarmRecord
-from apigateway.apps.monitor.utils import get_app_maintainers
+from apigateway.components.paasv3 import get_app_maintainers
 from apigateway.utils import time as time_utils
 
 

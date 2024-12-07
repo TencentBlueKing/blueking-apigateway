@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -24,7 +24,9 @@ from bkapi_component.open.shortcuts import get_client_by_username
 from django.utils.translation import gettext as _
 
 # FIXME: upgrade to new cmsi gateway
-# FIXME: 需要 ineject x-bk-tenant-id
+# FIXME: 需要 ineject x-bk-tenant-id=> 需要获取对应网关的 tenant_id，发送时放入 header 头，以使用其渠道
+
+# FIXME: remove bkapi_client_core from pyproject.toml
 
 
 class CMSIComponent:

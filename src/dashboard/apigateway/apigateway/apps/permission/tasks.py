@@ -42,7 +42,7 @@ from apigateway.apps.permission.models import (
 )
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.components.cmsi import cmsi_component
-from apigateway.components.paasv3 import paasv3_component
+from apigateway.components.paasv3 import get_app_maintainers
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, GatewayStatusEnum
 from apigateway.core.models import Context, Gateway, Resource
 from apigateway.utils.file import read_file
@@ -321,7 +321,7 @@ class AppPermissionExpiringSoonAlerter:
 
     def _send_alert(self, permissions: Dict[str, List]):
         for bk_app_code, app_perms in permissions.items():
-            app_maintainers = paasv3_component.get_app_maintainers(bk_app_code)
+            app_maintainers = get_app_maintainers(bk_app_code)
             if not app_maintainers:
                 continue
 

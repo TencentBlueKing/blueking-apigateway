@@ -49,6 +49,8 @@ class GatewayListOutputSLZ(serializers.Serializer):
     description = SerializerTranslatedField(
         allow_blank=True, default_field="description_i18n", read_only=True, help_text="网关描述"
     )
+    tenant_mode = serializers.CharField(read_only=True, help_text="租户模式")
+    tenant_id = serializers.CharField(read_only=True, help_text="租户 ID")
     status = serializers.ChoiceField(
         choices=GatewayStatusEnum.get_choices(), read_only=True, help_text="网关状态，0: 已停用，1：启用中"
     )

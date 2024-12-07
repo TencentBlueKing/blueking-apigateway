@@ -16,45 +16,38 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from operator import itemgetter
-from typing import Any, Dict
+from typing import Any
 
-from bkapi_client_core.apigateway import OperationGroup
-from bkapi_client_core.apigateway.django_helper import get_client_by_username as get_client_by_username_for_apigateway
 from django.conf import settings
+from django.utils.translation import get_language
 
-from apigateway.components.bkapi_client.log_search import new_client_cls
-from apigateway.components.handler import RequestAPIHandler
-from apigateway.components.utils import inject_accept_language, inject_operation_tenant_id
+from apigateway.common.constants import TENANT_ID_OPERATION
+from apigateway.utils.url import url_join
 
-
-class BKLogComponent:
-    def __init__(self):
-        self._api_client: OperationGroup = self._get_api_client()
-        self._request_handler = RequestAPIHandler("bk-log")
-
-    def esquery_dsl(self, index: str, body: Any) -> Dict[str, Any]:
-        data = {
-            "indices": index,
-            "body": body,
-        }
-
-        headers = {"Content-Type": "application/json"}
-
-        api_result, response = self._request_handler.call_api(self._api_client.esquery_dsl, data, headers=headers)
-        return self._request_handler.parse_api_result(api_result, response, {"result": True}, itemgetter("data"))
-
-    def _get_api_client(self) -> OperationGroup:
-        # use gateway: log-search(te) / bk-log-search(ee)
-        gateway_name = "bk-log-search"
-        if settings.EDITION == "te":
-            gateway_name = "log-search"
-
-        client_cls = new_client_cls(gateway_name)
-        apigw_client = get_client_by_username_for_apigateway(client_cls, username="admin")
-        apigw_client.session.register_hook("request", inject_accept_language)
-        apigw_client.session.register_hook("request", inject_operation_tenant_id)
-        return apigw_client.api
+from .http import http_post
+from .utils import do_legacy_blueking_http_request
 
 
-bk_log_component = BKLogComponent()
+def esquery_dsl(index: str, body: Any) -> Any:
+    data = {
+        "indices": index,
+        "body": body,
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-Bk-Tenant-Id": TENANT_ID_OPERATION,
+    }
+    language = get_language()
+    if language:
+        headers["Accept-Language"] = language
+
+    gateway_name = "bk-log-search"
+    if settings.EDITION == "te":
+        gateway_name = "log-search"
+    host = settings.BK_API_URL_TMPL.format(api_name=gateway_name)
+
+    url = url_join(host, "/prod/esquery_dsl/")
+    timeout = 30
+
+    return do_legacy_blueking_http_request("bklog", http_post, url, data, headers, timeout)

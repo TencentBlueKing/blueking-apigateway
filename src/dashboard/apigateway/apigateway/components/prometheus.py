@@ -16,80 +16,71 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from operator import itemgetter
-from typing import Any, Dict
+from typing import Any
 
-from bkapi_client_core.apigateway import OperationGroup
-from bkapi_client_core.apigateway.django_helper import get_client_by_username as get_client_by_username_for_apigateway
+from django.conf import settings
 
 from apigateway.common.constants import TENANT_ID_OPERATION
-from apigateway.components.bkapi_client.bkmonitorv3 import new_client_cls
-from apigateway.components.handler import RequestAPIHandler
+from apigateway.utils.url import url_join
+
+from .http import http_post
+from .utils import do_legacy_blueking_http_request
 
 
-class PrometheusComponent:
-    def __init__(self):
-        self._api_client: OperationGroup = self._get_api_client()
-        self._request_handler = RequestAPIHandler("bkmonitorv3")
+def query_range(bk_biz_id: str, promql: str, start: int, end: int, step: str) -> Any:
+    """
+    Evaluate an expression query over a range of time
 
-    def query_range(self, bk_biz_id: str, promql: str, start: int, end: int, step: str) -> Dict[str, Any]:
-        """
-        Evaluate an expression query over a range of time
-
-        :param bk_biz_id: business ID
-        :param promql: prometheus query language
-        :param start: start timestamp, e.g. 1622009400
-        :param end: end timestamp, e.g. 1622009500
-        :param step: step, e.g. "1m"
-        """
-        return self._promql_query(bk_biz_id, promql, start, end, step, "range")
-
-    def query(self, bk_biz_id: str, promql: str, time_: int) -> Dict[str, Any]:
-        """
-        Evaluate an instant query at a single point in time
-
-        :param bk_biz_id: business ID
-        :param promql: prometheus query language
-        :param time_: evaluation timestamp, e.g. 1622009400
-        """
-        # Instant query, no need for start, step,
-        # but the backend does not allow the value to be null, so set a default value.
-        # step: set to 1m, backend use it to calculate real evaluation timestamp
-        return self._promql_query(bk_biz_id, promql, 0, time_, "1m", "instant")
-
-    def _promql_query(
-        self, bk_biz_id: str, promql: str, start: int, end: int, step: str, type_: str
-    ) -> Dict[str, Any]:
-        """
-        Common query Prometheus data interface
-
-        :param type_: choices: range, instant
-            - range: corresponds to Prometheus /api/v1/query_range
-            - instant: corresponds to Prometheus /api/v1/query
-        """
-        data = {
-            "bk_biz_id": bk_biz_id,
-            "promql": promql,
-            "start_time": start,
-            "end_time": end,
-            "step": step,
-            "format": "time_series",
-            "type": type_,
-        }
-
-        headers = {
-            "X-Bk-Scope-Space-Uid": f"bkcc__{bk_biz_id}",
-            "X-Bk-Tenant-Id": TENANT_ID_OPERATION,
-        }
-
-        api_result, response = self._request_handler.call_api(self._api_client.promql_query, data, headers=headers)
-        return self._request_handler.parse_api_result(api_result, response, {"code": 200}, itemgetter("data"))
-
-    def _get_api_client(self) -> OperationGroup:
-        # use gateway: bkmonitorv3
-        client_cls = new_client_cls("bkmonitorv3")
-        apigw_client = get_client_by_username_for_apigateway(client_cls, username="admin")
-        return apigw_client.api
+    :param bk_biz_id: business ID
+    :param promql: prometheus query language
+    :param start: start timestamp, e.g. 1622009400
+    :param end: end timestamp, e.g. 1622009500
+    :param step: step, e.g. "1m"
+    """
+    return _promql_query(bk_biz_id, promql, start, end, step, "range")
 
 
-prometheus_component = PrometheusComponent()
+def query(bk_biz_id: str, promql: str, time_: int) -> Any:
+    """
+    Evaluate an instant query at a single point in time
+
+    :param bk_biz_id: business ID
+    :param promql: prometheus query language
+    :param time_: evaluation timestamp, e.g. 1622009400
+    """
+    # Instant query, no need for start, step,
+    # but the backend does not allow the value to be null, so set a default value.
+    # step: set to 1m, backend use it to calculate real evaluation timestamp
+    return _promql_query(bk_biz_id, promql, 0, time_, "1m", "instant")
+
+
+def _promql_query(bk_biz_id: str, promql: str, start: int, end: int, step: str, type_: str) -> Any:
+    """
+    Common query Prometheus data interface
+
+    :param type_: choices: range, instant
+        - range: corresponds to Prometheus /api/v1/query_range
+        - instant: corresponds to Prometheus /api/v1/query
+    """
+    data = {
+        "bk_biz_id": bk_biz_id,
+        "promql": promql,
+        "start_time": start,
+        "end_time": end,
+        "step": step,
+        "format": "time_series",
+        "type": type_,
+    }
+
+    headers = {
+        "X-Bk-Scope-Space-Uid": f"bkcc__{bk_biz_id}",
+        "X-Bk-Tenant-Id": TENANT_ID_OPERATION,
+    }
+
+    host = settings.BK_API_URL_TMPL.format(api_name="bkmonitorv3")
+
+    url = url_join(host, "/prod/promql_query/")
+    timeout = 30
+
+    # FIXME: {"code": 200} as ok response should be tested
+    return do_legacy_blueking_http_request("bkmonitorv3", http_post, url, data, headers, timeout)

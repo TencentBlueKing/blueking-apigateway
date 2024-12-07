@@ -16,7 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-from bkapi_client_core.exceptions import BKAPIError
 from elasticsearch.exceptions import AuthenticationException, ConnectionError, ConnectionTimeout, NotFoundError
 from urllib3.exceptions import ConnectTimeoutError
 
@@ -26,7 +25,6 @@ from apigateway.common.es.clients import (
     ESClientFactory,
     RawESClient,
 )
-from apigateway.components.exceptions import RemoteRequestError
 
 
 class TestRawESClient:
@@ -95,14 +93,14 @@ class TestBKLogESClientMixin:
         es_client = BKLogESClient(es_index)
 
         mocker.patch(
-            "apigateway.common.es.clients.bk_log_component.esquery_dsl",
-            side_effect=RemoteRequestError(faker.pystr, BKAPIError("error")),
+            "apigateway.common.es.clients.esquery_dsl",
+            side_effect=APIError("error"),
         )
         with pytest.raises(APIError):
             es_client.execute_search(es_body)
 
         mocked_esquery_dsl = mocker.patch(
-            "apigateway.common.es.clients.bk_log_component.esquery_dsl",
+            "apigateway.common.es.clients.esquery_dsl",
             return_value={"test": 1},
         )
         result = es_client.execute_search(es_body)

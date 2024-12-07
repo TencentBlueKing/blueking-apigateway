@@ -35,6 +35,7 @@ from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
+from apigateway.common.constants import TENANT_ID_OPERATION
 from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum, TenantModeEnum
@@ -48,11 +49,17 @@ class GatewayHandler:
     @staticmethod
     def list_gateways_by_user(username: str, tenant_id: str) -> List[Gateway]:
         """获取用户有权限的的网关列表"""
-        # tenant_mode = global or gateway.tenant_mode = single & gateway.tenant_id=user_tenant_id
-        queryset = Gateway.objects.filter(_maintainers__contains=username).filter(
-            Q(tenant_mode=TenantModeEnum.GLOBAL.value)
-            | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=tenant_id)
-        )
+
+        # 运营租户，能够创建全局网关，也能创建本租户的网关，所以能够同时看到 全局网关和本租户网关
+        if tenant_id == TENANT_ID_OPERATION:
+            condition = Q(tenant_mode=TenantModeEnum.GLOBAL.value) | Q(
+                tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=tenant_id
+            )
+        # 非运营租户，只能看到本租户下的网关列表
+        else:
+            condition = Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=tenant_id)
+
+        queryset = Gateway.objects.filter(_maintainers__contains=username).filter(condition)
 
         # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
         return [gateway for gateway in queryset if gateway.has_permission(username)]

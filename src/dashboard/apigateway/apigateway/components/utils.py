@@ -21,23 +21,10 @@ import logging
 from typing import Dict, Optional
 from urllib.parse import urlparse
 
-from django.utils.translation import get_language
-
-from apigateway.common.constants import TENANT_ID_OPERATION
 from apigateway.common.error_codes import error_codes
 from apigateway.utils.local import local
 
 logger = logging.getLogger("component")
-
-
-def inject_accept_language(request):
-    language = get_language()
-    if language:
-        request.headers["Accept-Language"] = language
-
-
-def inject_operation_tenant_id(request):
-    request.headers["X-Bk-Tenant-Id"] = TENANT_ID_OPERATION
 
 
 def _remove_sensitive_info(info: Optional[Dict]) -> str:
