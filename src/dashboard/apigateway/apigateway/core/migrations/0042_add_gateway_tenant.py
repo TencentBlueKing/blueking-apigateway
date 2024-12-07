@@ -26,16 +26,17 @@ class Migration(migrations.Migration):
             ),
         ),
         # alter, remove the default value
-        migrations.AlterField(
-            model_name="gateway",
-            name="tenant_id",
-            field=models.CharField(blank=True, max_length=32),
-        ),
-        migrations.AlterField(
-            model_name="gateway",
-            name="tenant_mode",
-            field=models.CharField(
-                choices=[("global", "全租户"), ("single", "单租户")], max_length=32
-            ),
-        ),
+        # only uncomment that after 1.16/1.17, while we may rollback to 1.15, should keep the default value
+        # migrations.AlterField(
+        #     model_name="gateway",
+        #     name="tenant_id",
+        #     field=models.CharField(blank=True, max_length=32),
+        # ),
+        # migrations.AlterField(
+        #     model_name="gateway",
+        #     name="tenant_mode",
+        #     field=models.CharField(
+        #         choices=[("global", "全租户"), ("single", "单租户")], max_length=32
+        #     ),
+        # ),
     ]
