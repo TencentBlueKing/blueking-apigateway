@@ -33,7 +33,6 @@ from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
     EVENT_FAIL_INTERVAL_TIME,
     RESOURCE_METHOD_CHOICES,
-    APIHostingTypeEnum,
     BackendTypeEnum,
     ContextScopeTypeEnum,
     ContextTypeEnum,
@@ -45,7 +44,6 @@ from apigateway.core.constants import (
     PublishEventStatusEnum,
     PublishSourceEnum,
     ReleaseHistoryStatusEnum,
-    ReleaseStatusEnum,
     ResourceVersionSchemaEnum,
     StageStatusEnum,
     TenantModeEnum,
@@ -90,11 +88,10 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     status = models.IntegerField(choices=GatewayStatusEnum.get_choices())
 
     is_public = models.BooleanField(default=False)
+
+    # FIXME: remove it later after 1.16/1.17
     # 不同的托管类型决定特性集
-    hosting_type = models.IntegerField(
-        choices=APIHostingTypeEnum.get_choices(),
-        default=APIHostingTypeEnum.MICRO.value,
-    )
+    hosting_type = models.IntegerField(blank=True, null=True, default=1)
 
     def __str__(self):
         return f"<Gateway: {self.pk}/{self.name}>"
@@ -253,8 +250,8 @@ class Proxy(ConfigModelMixin):
 
     backend = models.ForeignKey("Backend", null=True, default=None, on_delete=models.PROTECT)
 
-    # TODO: 1.14 待删除
-    schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
+    # FIXME: remote it later after 1.16/1.17
+    schema = models.ForeignKey(Schema, on_delete=models.PROTECT, blank=True, null=True)
 
     # config = from ConfigModelMixin
 
@@ -444,10 +441,10 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))
-    # todo: 1.14 删除
-    name = models.CharField(_("[Deprecated] 版本名"), max_length=128)
-    # todo: 1.14 删除
+
+    name = models.CharField(_("[Deprecated] 版本名"), max_length=128, blank=True, default="", null=True)
     title = models.CharField(max_length=128, blank=True, default="", null=True)
+
     comment = models.CharField(max_length=512, blank=True, null=True)
     _data = models.TextField(db_column="data")
     # 用于不同数据格式解析版本数据兼容历史数据
@@ -471,9 +468,6 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
 
     @property
     def object_display(self):
-        if not self.version:
-            return f"{self.title}({self.name})"
-
         return self.version
 
     @property
@@ -551,8 +545,8 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
 
     # only one stage-resource_version
     stage = models.ForeignKey(Stage, related_name="+", on_delete=models.CASCADE)
-    # todo:1.14
-    stages = models.ManyToManyField(Stage)
+    # FIXME: remove it later after 1.16/1.17
+    stages = models.ManyToManyField(Stage, blank=True)
 
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)
     comment = models.CharField(max_length=512, blank=True, null=True)
@@ -563,15 +557,17 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
         choices=PublishSourceEnum.get_choices(),
         default=PublishSourceEnum.VERSION_PUBLISH.value,
     )
-    # todo:1.14 删掉该字段废弃，由 publish_event 来决定最终状态
+
+    # FIXME: remove it later after 1.16/1.17
     status = models.CharField(
         _("发布状态"),
         max_length=16,
-        choices=ReleaseStatusEnum.get_choices(),
-        default=ReleaseStatusEnum.PENDING.value,
+        blank=True,
+        null=True,
+        default="",
     )
-    # 废弃同上
-    message = models.TextField(blank=True, default="")
+    # FIXME: remove it later after 1.16/1.17
+    message = models.TextField(blank=True, null=True, default="")
 
     objects = managers.ReleaseHistoryManager()
 
@@ -751,27 +747,3 @@ class MicroGateway(ConfigModelMixin):
     def instance_id(self):
         """微网关实例 ID"""
         return str(self.pk)
-
-
-# FIXME: remove this model
-class MicroGatewayReleaseHistory(models.Model):
-    """微网关资源发布历史，不同于 ReleaseHistory，这里关注的是单个实例"""
-
-    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
-    # 因为实例和环境的绑定关系可能会修改，所以这里不能是强关联
-    stage = models.ForeignKey(Stage, null=True, on_delete=models.SET_NULL)
-    micro_gateway = models.ForeignKey(MicroGateway, on_delete=models.CASCADE)
-    release_history = models.ForeignKey(ReleaseHistory, on_delete=models.CASCADE)
-    message = models.TextField(blank=True, null=True, default="")
-
-    # todo: 废弃：1.14 删除
-    status = models.CharField(
-        _("发布状态"),
-        max_length=16,
-        choices=ReleaseStatusEnum.get_choices(),
-        default=ReleaseStatusEnum.PENDING.value,
-    )
-    details = JSONField(blank=True, null=True)
-
-    class Meta:
-        db_table = "core_micro_gateway_release_history"
