@@ -28,14 +28,6 @@ class GatewayStatusEnum(StructuredEnum):
     ACTIVE = EnumField(1, "启用中")
 
 
-# TODO: delete it in 1.14
-class APIHostingTypeEnum(StructuredEnum):
-    """网关托管类型，影响特性集"""
-
-    DEFAULT = EnumField(0, "apigateway-ng")
-    MICRO = EnumField(1, _("微网关"))
-
-
 class MicroGatewayStatusEnum(StructuredEnum):
     """微网关实例状态"""
 
@@ -59,6 +51,13 @@ class EtcdSecureTypeEnum(StructuredEnum):
 
     SSL = EnumField("ssl", "SSL")
     PASSWORD = EnumField("password", "Password")
+
+
+class TenantModeEnum(StructuredEnum):
+    """租户模式"""
+
+    GLOBAL = EnumField("global", _("全租户"))
+    SINGLE = EnumField("single", _("单租户"))
 
 
 class GatewayTypeEnum(StructuredEnum):

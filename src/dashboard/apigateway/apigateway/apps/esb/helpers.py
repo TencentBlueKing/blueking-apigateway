@@ -37,7 +37,7 @@ class BoardConfig(BaseModel):
 class BoardConfigManager:
     @classmethod
     def get_board_config(cls, board: str) -> BoardConfig:
-        return BoardConfig.parse_obj(get_esb_board_config(board))
+        return BoardConfig.model_validate(get_esb_board_config(board))
 
     @classmethod
     def get_optional_display_label(cls, board: str) -> str:

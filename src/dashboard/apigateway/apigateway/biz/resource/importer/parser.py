@@ -24,7 +24,7 @@ from urllib.parse import urlparse
 
 from django.utils.translation import gettext as _
 from openapi_spec_validator.versions import OPENAPIV30, OPENAPIV31
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 
 from apigateway.biz.constants import OpenAPIFormatEnum
 from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData
@@ -419,10 +419,12 @@ class ResourceDataConvertor:
                     enable_websocket=resource.get("enable_websocket", False),
                     is_public=resource.get("is_public", True),
                     allow_apply_permission=resource.get("allow_apply_permission", True),
-                    auth_config=ResourceAuthConfig.parse_obj(resource.get("auth_config", {})),
+                    auth_config=ResourceAuthConfig.model_validate(resource.get("auth_config", {})),
                     backend=backend,
-                    backend_config=ResourceBackendConfig.parse_obj(resource["backend_config"]),
-                    plugin_configs=parse_obj_as(Optional[List[PluginConfigData]], resource.get("plugin_configs")),
+                    backend_config=ResourceBackendConfig.model_validate(resource["backend_config"]),
+                    plugin_configs=TypeAdapter(Optional[List[PluginConfigData]]).validate_python(
+                        resource.get("plugin_configs")
+                    ),
                     # 在导入时，根据 metadata 中的 labels 创建 GatewayLabel，并补全 label_ids 数据
                     label_ids=[],
                     metadata=metadata,

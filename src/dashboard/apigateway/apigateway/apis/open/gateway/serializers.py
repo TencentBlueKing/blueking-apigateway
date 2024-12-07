@@ -48,6 +48,8 @@ class GatewayListV1OutputSLZ(serializers.Serializer):
     maintainers = serializers.SerializerMethodField()
     api_type = serializers.SerializerMethodField()
     user_auth_type = serializers.SerializerMethodField()
+    tenant_mode = serializers.CharField(read_only=True)
+    tenant_id = serializers.CharField(read_only=True)
 
     def get_api_type(self, obj):
         return self.context["gateway_auth_configs"][obj.id].gateway_type

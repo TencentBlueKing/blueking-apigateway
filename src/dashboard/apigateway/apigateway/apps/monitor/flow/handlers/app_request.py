@@ -25,7 +25,7 @@ from apigateway.apps.monitor.constants import AlarmStatusEnum
 from apigateway.apps.monitor.flow.handlers.base import Alerter
 from apigateway.apps.monitor.flow.helpers import AlertHandler, MonitorEvent
 from apigateway.apps.monitor.models import AlarmRecord
-from apigateway.apps.monitor.utils import get_app_maintainers
+from apigateway.components.paasv3 import get_app_maintainers
 from apigateway.utils import time as time_utils
 
 
@@ -39,7 +39,7 @@ class AppRequestDimension(BaseModel):
 
 class AppRequestAppCodeRequiredFilter(AlertHandler):
     def _do(self, event: MonitorEvent) -> Optional[MonitorEvent]:
-        dimension = AppRequestDimension.parse_obj(event.event_dimensions)
+        dimension = AppRequestDimension.model_validate(event.event_dimensions)
 
         # app_code 非空，不过滤
         if dimension.app_code:
@@ -56,7 +56,7 @@ class AppRequestAppCodeRequiredFilter(AlertHandler):
 
 class AppRequestAlerter(Alerter):
     def get_receivers(self, event: MonitorEvent) -> List[str]:
-        dimension = AppRequestDimension.parse_obj(event.event_dimensions)
+        dimension = AppRequestDimension.model_validate(event.event_dimensions)
         return get_app_maintainers(dimension.app_code)
 
     def get_message(self, event: MonitorEvent) -> str:

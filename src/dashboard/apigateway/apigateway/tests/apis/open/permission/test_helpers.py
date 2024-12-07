@@ -82,7 +82,7 @@ class TestResourcePermission:
         ],
     )
     def test_as_dict(self, resource, expected):
-        perm = ResourcePermission.parse_obj(resource)
+        perm = ResourcePermission.model_validate(resource)
         assert perm.as_dict() == expected
 
     @pytest.mark.parametrize(
@@ -95,7 +95,7 @@ class TestResourcePermission:
     def test_permission_level(self, mocked_resource, resource_perm_required, expected):
         mocked_resource["resource_perm_required"] = resource_perm_required
 
-        perm = ResourcePermission.parse_obj(mocked_resource)
+        perm = ResourcePermission.model_validate(mocked_resource)
         assert perm.permission_level == expected
 
     @pytest.mark.parametrize(
@@ -161,7 +161,7 @@ class TestResourcePermission:
 
         mocked_resource.update(params)
 
-        perm = ResourcePermission.parse_obj(mocked_resource)
+        perm = ResourcePermission.model_validate(mocked_resource)
         assert perm.permission_status == expected
 
     @pytest.mark.parametrize(
@@ -249,7 +249,7 @@ class TestResourcePermission:
 
         mocked_resource.update(params)
 
-        perm = ResourcePermission.parse_obj(mocked_resource)
+        perm = ResourcePermission.model_validate(mocked_resource)
         assert perm.expires_in == expected
 
 

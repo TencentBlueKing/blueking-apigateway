@@ -92,7 +92,6 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
                 "id": instance.id,
                 "version": instance.version,
                 "name": instance.name,
-                "title": instance.title,
             },
         )
 

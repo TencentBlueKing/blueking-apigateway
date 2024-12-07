@@ -35,9 +35,8 @@ from elasticsearch.exceptions import (
 )
 from urllib3.exceptions import ConnectTimeoutError
 
-from apigateway.common.error_codes import error_codes
-from apigateway.components.bk_log import bk_log_component
-from apigateway.components.exceptions import RemoteAPIResultError, RemoteRequestError
+from apigateway.common.error_codes import APIError, error_codes
+from apigateway.components.bk_log import esquery_dsl
 
 logger = logging.getLogger(__name__)
 
@@ -109,11 +108,11 @@ class RawESClient(BaseESClient):
 class BKLogESClient(BaseESClient):
     def execute_search(self, body: Dict[str, Any]) -> Dict[str, Any]:
         try:
-            return bk_log_component.esquery_dsl(
+            return esquery_dsl(
                 index=self._es_index,
                 body=body,
             )
-        except (RemoteRequestError, RemoteAPIResultError) as err:
+        except APIError as err:
             # 去除 err 敏感信息
             err_raw_msg = str(err)
             err_msg = re.sub(r'\\"bk_app_secret\\":\s*\\".*?\\"', r'\\"bk_app_secret\\": \\"******\\"', err_raw_msg)

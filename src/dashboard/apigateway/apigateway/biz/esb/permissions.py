@@ -1,6 +1,6 @@
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional, Union
 from django.conf import settings
 from django.db import transaction
 from django.utils.functional import cached_property
-from pydantic import BaseModel, parse_obj_as
+from pydantic import BaseModel, TypeAdapter
 
 from apigateway.apps.esb.bkcore.models import (
     AppComponentPermission,
@@ -87,7 +87,7 @@ class ComponentPermissionManager:
 
         # 在旧版中，AppPermissionApplyStatus 不存在，为保持模型引用的兼容，将其设置为了 None
         if AppPermissionApplyStatus is not None:
-            # 删除应用-组件申请状态的历史记录，方便下面批量插入
+            # 删除应用 - 组件申请状态的历史记录，方便下面批量插入
             AppPermissionApplyStatus.objects.filter(
                 bk_app_code=bk_app_code,
                 system=system,
@@ -135,7 +135,7 @@ class ComponentPermissionManager:
                 component["id"], None
             )
 
-        component_permissions = parse_obj_as(List[ComponentPermission], components)
+        component_permissions = TypeAdapter(List[ComponentPermission]).validate_python(components)
 
         return [perm.as_dict() for perm in component_permissions]
 
@@ -197,7 +197,7 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
             username,
         )
 
-        # 将网关权限单ID，记录到组件权限申请单，方便查询组件权限单据时，根据网关权限单获取单据实际的审批结果
+        # 将网关权限单 ID，记录到组件权限申请单，方便查询组件权限单据时，根据网关权限单获取单据实际的审批结果
         esb_record.gateway_apply_record_id = gateway_record.id
         esb_record.save()
 
@@ -260,7 +260,7 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
             component["component_permission"] = resource_id_to_permission.get(resource_id)
             component["component_permission_apply_status"] = resource_id_to_apply_status.get(resource_id)
 
-        component_permissions = parse_obj_as(List[ComponentPermission], components)
+        component_permissions = TypeAdapter(List[ComponentPermission]).validate_python(components)
 
         return [perm.as_dict() for perm in component_permissions]
 
@@ -418,7 +418,7 @@ class ComponentPermission(BaseModel):
         return self._normalize_expires_in(self.component_permission.expires_in)
 
     def _normalize_expires_in(self, expires_in) -> Union[int, float]:
-        # 指定的过期时间为None，表示不过期，过期时间设置为 math.inf
+        # 指定的过期时间为 None，表示不过期，过期时间设置为 math.inf
         if expires_in is None:
             return math.inf
 

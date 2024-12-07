@@ -477,6 +477,12 @@ BK_COMPONENT_API_INNER_URL = env.str("BK_COMPONENT_API_INNER_URL", "") or BK_COM
 BK_PAAS3_API_URL = BK_API_INNER_URL_TMPL.format(api_name="bkpaas3")
 BK_APIGATEWAY_API_URL = env.str("BK_APIGATEWAY_API_URL", "")
 
+BK_AUTH_API_URL = env.str("BK_AUTH_API_URL", "")
+
+# Requests pool config
+REQUESTS_POOL_CONNECTIONS = env.int("REQUESTS_POOL_CONNECTIONS", default=20)
+REQUESTS_POOL_MAXSIZE = env.int("REQUESTS_POOL_MAXSIZE", default=20)
+
 # ==============================================================================
 # 网关全局配置
 # ==============================================================================
