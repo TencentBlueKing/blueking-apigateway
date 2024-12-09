@@ -124,12 +124,6 @@ def build_logging_config(log_level: str, to_console: bool, file_directory: Optio
                 "level": "INFO",
                 "propagate": False,
             },
-            "opentelemetry.util._time": {
-                # TODO: 升级 python >= 3.7 后，可删除此 logger
-                "handlers": [*logger_handlers_map["celery"], "sentry"],
-                "level": "ERROR",
-                "propagate": False,
-            },
             "apigateway.core.management": {
                 "handlers": ["console_simple"],
                 "level": "INFO",

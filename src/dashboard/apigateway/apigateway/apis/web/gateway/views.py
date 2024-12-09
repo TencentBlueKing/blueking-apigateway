@@ -47,7 +47,6 @@ from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
     GatewayCreateInputSLZ,
-    GatewayFeatureFlagsOutputSLZ,
     GatewayListInputSLZ,
     GatewayListOutputSLZ,
     GatewayRetrieveOutputSLZ,
@@ -320,25 +319,3 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
-
-
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关特性开关",
-        responses={status.HTTP_200_OK: GatewayFeatureFlagsOutputSLZ()},
-        tags=["WebAPI.Gateway"],
-    ),
-)
-class GatewayFeatureFlagsApi(generics.ListAPIView):
-    queryset = Gateway.objects.all()
-    serializer_class = GatewayFeatureFlagsOutputSLZ
-    lookup_url_kwarg = "gateway_id"
-
-    def list(self, request, *args, **kwargs):
-        instance = self.get_object()
-
-        feature_flags = GatewayHandler.get_feature_flags(instance.pk)
-        slz = self.get_serializer({"feature_flags": feature_flags})
-
-        return OKJsonResponse(data=slz.data)

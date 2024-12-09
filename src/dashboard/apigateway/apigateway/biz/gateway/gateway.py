@@ -17,7 +17,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-import copy
 import logging
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
@@ -35,7 +34,7 @@ from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
-from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
+from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.tenant.query import gateway_filter_by_tenant_id
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
@@ -246,12 +245,6 @@ class GatewayHandler:
 
         # delete gateway
         Gateway.objects.filter(id=gateway_id).delete()
-
-    @staticmethod
-    def get_feature_flags(gateway_id: int) -> Dict[str, bool]:
-        feature_flags = copy.deepcopy(settings.GLOBAL_GATEWAY_FEATURE_FLAG)
-        feature_flags.update(GatewayFeatureFlagContext().get_config(gateway_id, {}))
-        return feature_flags
 
     @staticmethod
     def get_docs_url(gateway: Gateway) -> str:

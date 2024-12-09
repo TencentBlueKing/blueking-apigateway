@@ -67,9 +67,6 @@ class BaseContext(metaclass=ABCMeta):
             queryset = queryset.filter(scope_id__in=scope_ids)
         return queryset
 
-    def filter_scope_id_config_map(self, scope_ids=None):
-        return {context.scope_id: context.config for context in self.filter_contexts(scope_ids)}
-
     def delete(self, scope_ids):
         return Context.objects.filter(
             scope_type=self.scope_type,

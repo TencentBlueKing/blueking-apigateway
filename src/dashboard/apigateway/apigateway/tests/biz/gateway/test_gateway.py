@@ -23,7 +23,6 @@ from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.common.contexts import GatewayFeatureFlagContext
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
     ContextTypeEnum,
@@ -327,13 +326,6 @@ class TestGatewayHandler:
         ]:
             with pytest.raises(ObjectDoesNotExist):
                 model.refresh_from_db()
-
-    def test_get_feature_flag(self, settings, fake_gateway):
-        settings.GLOBAL_GATEWAY_FEATURE_FLAG = {"FOO": False, "BAR": True}
-        GatewayFeatureFlagContext().save(fake_gateway.id, {"FOO": True})
-
-        feature_flag = GatewayHandler.get_feature_flags(fake_gateway.id)
-        assert feature_flag == {"FOO": True, "BAR": True}
 
     def test_get_docs_url(self, settings, fake_gateway, fake_stage, fake_resource_version):
         settings.API_DOCS_URL_TMPL = "http://apigw.example.com/docs/{api_name}"

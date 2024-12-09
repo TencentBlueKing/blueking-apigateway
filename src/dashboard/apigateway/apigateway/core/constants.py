@@ -28,6 +28,7 @@ class GatewayStatusEnum(StructuredEnum):
     ACTIVE = EnumField(1, "启用中")
 
 
+# FIXME: should be removed
 class MicroGatewayStatusEnum(StructuredEnum):
     """微网关实例状态"""
 
@@ -40,17 +41,11 @@ class MicroGatewayStatusEnum(StructuredEnum):
     ABNORMAL = EnumField("abnormal", _("安装异常"))
 
 
+# FIXME: should be removed
 class ServiceDiscoveryTypeEnum(StructuredEnum):
     """服务发现注册中心类型"""
 
     GO_MICRO_ETCD = EnumField("go_micro_etcd", "Go Micro - Etcd")
-
-
-class EtcdSecureTypeEnum(StructuredEnum):
-    """Etcd 安全认证类型"""
-
-    SSL = EnumField("ssl", "SSL")
-    PASSWORD = EnumField("password", "Password")
 
 
 class GatewayTypeEnum(StructuredEnum):
