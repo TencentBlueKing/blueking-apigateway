@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -55,12 +55,23 @@ class FeatureFlagListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         """获取特性开关列表"""
         feature_flags = copy.copy(settings.DEFAULT_FEATURE_FLAG)
-        feature_flags.update(
-            {
-                "MENU_ITEM_ESB_API": feature_flags.get("MENU_ITEM_ESB_API", False) and request.user.is_superuser,
-                "MENU_ITEM_ESB_API_DOC": feature_flags.get("MENU_ITEM_ESB_API_DOC", False),
-            }
-        )
+
+        # 多租户模式下，没有 esb 相关的页面：组件管理 + 组件 API 文档
+        if settings.ENABLE_MULTI_TENANT_MODE:
+            feature_flags.update(
+                {
+                    "MENU_ITEM_ESB_API": False,
+                    "MENU_ITEM_ESB_API_DOC": False,
+                }
+            )
+        # 非多租户模式才会有 esb 相关的页面：组件管理 + 组件 API 文档
+        else:
+            feature_flags.update(
+                {
+                    "MENU_ITEM_ESB_API": feature_flags.get("MENU_ITEM_ESB_API", False) and request.user.is_superuser,
+                    # "MENU_ITEM_ESB_API_DOC": feature_flags.get("MENU_ITEM_ESB_API_DOC", False),
+                }
+            )
 
         user_feature_flags = UserFeatureFlag.objects.get_feature_flags(request.user.username)
         feature_flags.update(user_feature_flags)

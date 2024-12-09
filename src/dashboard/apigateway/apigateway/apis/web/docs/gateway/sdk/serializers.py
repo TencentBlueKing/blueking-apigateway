@@ -21,15 +21,6 @@ from rest_framework import serializers
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.common.i18n.field import SerializerTranslatedField
 
-# class SDKListInputSLZ(serializers.Serializer):
-#     language = serializers.ChoiceField(
-#         choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python"
-#     )
-#     keyword = serializers.CharField(allow_blank=True, required=False, help_text="筛选条件，支持模糊匹配网关名称、描述")
-
-#     class Meta:
-#         ref_name = "apigateway.apis.web.docs.gateway.sdk.SDKListInputSLZ"
-
 
 class GatewaySLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="网关 ID")
@@ -37,29 +28,6 @@ class GatewaySLZ(serializers.Serializer):
     description = SerializerTranslatedField(
         translated_fields={"en": "description_en"}, read_only=True, help_text="网关描述"
     )
-
-
-# class SDKListOutputSLZ(serializers.Serializer):
-#     gateway = GatewaySLZ(help_text="网关")
-#     sdk = serializers.SerializerMethodField(help_text="SDK")
-#     resource_version = serializers.SerializerMethodField(help_text="资源版本")
-#     released_stages = serializers.SerializerMethodField(help_text="资源版本已发布的环境")
-
-#     class Meta:
-#         ref_name = "apigateway.apis.web.docs.gateway.sdk.SDKListOutputSLZ"
-
-#     def get_sdk(self, obj):
-#         return SDKFactory.create(obj).as_dict()
-
-#     def get_resource_version(self, obj):
-#         resource_version = self.context["resource_versions"][obj.resource_version_id]
-#         return {
-#             "id": resource_version["id"],
-#             "version": resource_version["version"],
-#         }
-
-#     def get_released_stages(self, obj):
-#         return self.context["released_stages"].get(obj.resource_version_id, [])
 
 
 class SDKDocInputSLZ(serializers.Serializer):

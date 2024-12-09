@@ -29,6 +29,9 @@ from django.utils.translation import gettext as _
 # FIXME: remove bkapi_client_core from pyproject.toml
 
 
+# FIXME: 内部上云版怎么办，还得继续使用 bk-esb 的 cmsi 组件
+
+
 class CMSIComponent:
     def _call_api(self, action: str, data: dict, username: str) -> Tuple[bool, str]:
         client = get_client_by_username(username)

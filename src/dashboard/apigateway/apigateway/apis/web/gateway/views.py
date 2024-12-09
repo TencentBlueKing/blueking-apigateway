@@ -37,6 +37,7 @@ from apigateway.common.constants import (
 )
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum, TenantModeEnum
 from apigateway.core.models import Gateway
@@ -74,10 +75,8 @@ from .serializers import (
 class GatewayListCreateApi(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         # 获取用户有权限的网关列表，后续切换到 IAM
-        if settings.ENABLE_MULTI_TENANT_MODE:
-            user_tenant_id = request.user.tenant_id
-        else:
-            user_tenant_id = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
+
+        user_tenant_id = get_user_tenant_id(request)
 
         gateways = GatewayHandler.list_gateways_by_user(request.user.username, user_tenant_id)
         gateway_ids = [gateway.id for gateway in gateways]

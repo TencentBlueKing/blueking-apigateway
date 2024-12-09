@@ -23,7 +23,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
-from django.db.models import Count, Q
+from django.db.models import Count
 
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.plugin.models import PluginBinding
@@ -35,10 +35,10 @@ from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
-from apigateway.common.constants import TENANT_ID_OPERATION
 from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
+from apigateway.common.tenant.query import gateway_filter_by_tenant_id
 from apigateway.core.api_auth import APIAuthConfig
-from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum, TenantModeEnum
+from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
 from apigateway.utils.dict import deep_update
 
@@ -52,15 +52,7 @@ class GatewayHandler:
 
         queryset = Gateway.objects.filter(_maintainers__contains=username)
         if tenant_id:
-            # 运营租户，能够创建全局网关，也能创建本租户的网关，所以能够同时看到 全局网关和本租户网关
-            if tenant_id == TENANT_ID_OPERATION:
-                queryset = queryset.filter(
-                    Q(tenant_mode=TenantModeEnum.GLOBAL.value)
-                    | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=tenant_id)
-                )
-            # 非运营租户，只能看到本租户下的网关列表
-            else:
-                queryset = queryset.filter(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=tenant_id)
+            queryset = gateway_filter_by_tenant_id(queryset, tenant_id)
 
         # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
         return [gateway for gateway in queryset if gateway.has_permission(username)]

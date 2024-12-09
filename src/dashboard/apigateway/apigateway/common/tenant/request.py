@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,10 +15,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
 
-from .views import SDKDocApi
+from django.conf import settings
 
-urlpatterns = [
-    path("doc/", SDKDocApi.as_view(), name="docs.gateway.sdk.retrieve_doc"),
-]
+from apigateway.common.constants import (
+    TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
+)
+
+
+def get_user_tenant_id(request) -> str:
+    if settings.ENABLE_MULTI_TENANT_MODE:
+        return request.user.tenant_id
+    return TENANT_MODE_SINGLE_DEFAULT_TENANT_ID

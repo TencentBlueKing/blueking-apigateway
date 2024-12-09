@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,10 +15,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
 
-from .views import SDKDocApi
+from django.db.models import Q, QuerySet
 
-urlpatterns = [
-    path("doc/", SDKDocApi.as_view(), name="docs.gateway.sdk.retrieve_doc"),
-]
+from apigateway.common.constants import (
+    TENANT_ID_OPERATION,
+)
+from apigateway.core.constants import TenantModeEnum
+
+
+def gateway_filter_by_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
+    # 运营租户可以看到 全租户网关 + 自己租户网关
+    if user_tenant_id == TENANT_ID_OPERATION:
+        return queryset.filter(
+            Q(tenant_mode=TenantModeEnum.GLOBAL.value)
+            | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=user_tenant_id)
+        )
+    # only list the gateways under the tenant
+    return queryset.filter(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=user_tenant_id)

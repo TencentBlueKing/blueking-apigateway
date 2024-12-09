@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -16,10 +15,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
 
-from .views import SDKDocApi
 
-urlpatterns = [
-    path("doc/", SDKDocApi.as_view(), name="docs.gateway.sdk.retrieve_doc"),
-]
+import pytest
+
+from apigateway.utils.url import url_join
+
+
+@pytest.mark.parametrize(
+    "host, path, expected",
+    [
+        ("http://host", "path", "http://host/path"),
+        ("http://host/", "path", "http://host/path"),
+        ("http://host", "/path", "http://host/path"),
+        ("http://host/", "/path", "http://host/path"),
+    ],
+)
+def test_url_join(host: str, path: str, expected: str):
+    assert url_join(host, path) == expected
