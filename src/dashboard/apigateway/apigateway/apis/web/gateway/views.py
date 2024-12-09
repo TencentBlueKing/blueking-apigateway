@@ -30,14 +30,14 @@ from apigateway.biz.audit import Auditor
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
-from apigateway.common.constants import (
+from apigateway.common.contexts import GatewayAuthContext
+from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.constants import (
     TENANT_ID_OPERATION,
     TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID,
     TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
     TenantModeEnum,
 )
-from apigateway.common.contexts import GatewayAuthContext
-from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum

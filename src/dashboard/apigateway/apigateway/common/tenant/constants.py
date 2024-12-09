@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -15,21 +16,16 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from blue_krill.data_types.enum import EnumField, StructuredEnum
+from django.utils.translation import gettext_lazy as _
 
-from django.db.models import Q, QuerySet
-
-from .constants import (
-    TENANT_ID_OPERATION,
-    TenantModeEnum,
-)
+TENANT_MODE_SINGLE_DEFAULT_TENANT_ID = "default"
+TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID = ""
+TENANT_ID_OPERATION = "system"
 
 
-def gateway_filter_by_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
-    # 运营租户可以看到 全租户网关 + 自己租户网关
-    if user_tenant_id == TENANT_ID_OPERATION:
-        return queryset.filter(
-            Q(tenant_mode=TenantModeEnum.GLOBAL.value)
-            | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=user_tenant_id)
-        )
-    # only list the gateways under the tenant
-    return queryset.filter(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=user_tenant_id)
+class TenantModeEnum(StructuredEnum):
+    """租户模式"""
+
+    GLOBAL = EnumField("global", _("全租户"))
+    SINGLE = EnumField("single", _("单租户"))

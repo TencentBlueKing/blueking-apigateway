@@ -43,10 +43,12 @@ from apigateway.biz.release import ReleaseHandler
 from apigateway.common.constants import (
     CACHE_MAXSIZE,
     CACHE_TIME_5_MINUTES,
+)
+from apigateway.common.contexts import GatewayAuthContext
+from apigateway.common.tenant.constants import (
     TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
     TenantModeEnum,
 )
-from apigateway.common.contexts import GatewayAuthContext
 from apigateway.components.bkauth import get_app_info, list_all_apps_of_tenant
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import JWT, Gateway

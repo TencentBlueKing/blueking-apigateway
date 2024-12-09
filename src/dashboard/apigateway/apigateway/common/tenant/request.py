@@ -19,7 +19,7 @@ from typing import Dict
 
 from django.conf import settings
 
-from apigateway.common.constants import (
+from .constants import (
     TENANT_ID_OPERATION,
     TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
 )
