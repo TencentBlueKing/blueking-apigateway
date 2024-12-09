@@ -16,19 +16,20 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from django.utils.functional import cached_property
+from django.db.models import Q, QuerySet
 
-from apigateway.common.factories import SchemaFactory
-from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
+from .constants import (
+    TENANT_ID_OPERATION,
+    TenantModeEnum,
+)
 
-from .context import BaseContext
 
-
-# FIXME: remove it if no `Context` required
-class GatewayFeatureFlagContext(BaseContext):
-    scope_type = ContextScopeTypeEnum.GATEWAY.value
-    type = ContextTypeEnum.GATEWAY_FEATURE_FLAG.value
-
-    @cached_property
-    def schema(self):
-        return SchemaFactory().get_context_gateway_feature_flag_schema()
+def gateway_filter_by_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
+    # 运营租户可以看到 全租户网关 + 自己租户网关
+    if user_tenant_id == TENANT_ID_OPERATION:
+        return queryset.filter(
+            Q(tenant_mode=TenantModeEnum.GLOBAL.value)
+            | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=user_tenant_id)
+        )
+    # only list the gateways under the tenant
+    return queryset.filter(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=user_tenant_id)

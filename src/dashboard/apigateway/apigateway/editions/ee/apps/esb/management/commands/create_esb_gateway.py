@@ -25,7 +25,7 @@ import logging
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 
 from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
 from apigateway.core.constants import GatewayStatusEnum
@@ -50,8 +50,7 @@ class Command(BaseCommand):
             if not dry_run:
                 saver = GatewaySaver(
                     id=None,
-                    data=parse_obj_as(
-                        GatewayData,
+                    data=TypeAdapter(GatewayData).validate_python(
                         dict(
                             config,
                             name=name,

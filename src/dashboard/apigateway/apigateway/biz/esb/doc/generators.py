@@ -97,7 +97,7 @@ class ComponentDocFactory:
         if not doc_configs:
             return None
 
-        return ComponentConfig.parse_obj(doc_configs)
+        return ComponentConfig.model_validate(doc_configs)
 
 
 class ComponentDocBuilder(metaclass=ABCMeta):

@@ -25,6 +25,8 @@ from rest_framework import generics, status
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.permissions import GatewayDisplayablePermission
+from apigateway.common.tenant.query import gateway_filter_by_tenant_id
+from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, Release
 from apigateway.utils.responses import OKJsonResponse
@@ -49,8 +51,12 @@ class GatewayListApi(generics.ListAPIView):
         slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
+        user_tenant_id = get_user_tenant_id(request)
         # 网关公开，启用中
         queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
+
+        # 根据租户过滤
+        queryset = gateway_filter_by_tenant_id(queryset, user_tenant_id)
 
         # 根据网关名称、描述过滤
         keyword = slz.validated_data.get("keyword")

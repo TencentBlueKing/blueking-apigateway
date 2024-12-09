@@ -15,30 +15,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from bkapi_client_core.apigateway import APIGatewayClient, Operation, OperationGroup, bind_property
+from typing import Dict
+
+from django.conf import settings
+
+from .constants import (
+    TENANT_ID_OPERATION,
+    TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
+)
 
 
-class Group(OperationGroup):
-    # 统一查询时序数据
-    promql_query = bind_property(
-        Operation,
-        name="promql_query",
-        method="POST",
-        path="/promql_query/",
-    )
+def get_user_tenant_id(request) -> str:
+    if settings.ENABLE_MULTI_TENANT_MODE:
+        return request.user.tenant_id
+    return TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
 
 
-class Client(APIGatewayClient):
-    """Bkapi bkmonitorv3 client"""
-
-    _api_name = "bkmonitorv3"
-
-    api = bind_property(Group, name="api")
-
-
-def new_client_cls(api_name: str):
-    class Client(APIGatewayClient):
-        _api_name = api_name
-        api = bind_property(Group, name="api")
-
-    return Client
+def gen_operation_tenant_headers() -> Dict[str, str]:
+    return {"X-Bk-Tenant-Id": TENANT_ID_OPERATION}

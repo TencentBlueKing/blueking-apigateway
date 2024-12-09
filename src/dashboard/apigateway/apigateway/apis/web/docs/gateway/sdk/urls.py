@@ -18,9 +18,8 @@
 #
 from django.urls import path
 
-from .views import SDKDocApi, SDKListApi
+from .views import SDKDocApi
 
 urlpatterns = [
-    path("", SDKListApi.as_view(), name="docs.gateway.sdk.list"),
     path("doc/", SDKDocApi.as_view(), name="docs.gateway.sdk.retrieve_doc"),
 ]

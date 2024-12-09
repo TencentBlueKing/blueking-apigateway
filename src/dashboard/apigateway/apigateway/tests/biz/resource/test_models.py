@@ -73,7 +73,7 @@ class TestResourceBackendConfig:
         ],
     )
     def test_dict(self, data, expected, expected_legacy_upstreams, expected_legacy_transform_headers):
-        config = ResourceBackendConfig.parse_obj(data)
+        config = ResourceBackendConfig.model_validate(data)
         assert config.legacy_upstreams == expected_legacy_upstreams
         assert config.legacy_transform_headers == expected_legacy_transform_headers
-        assert config.dict() == expected
+        assert config.model_dump() == expected

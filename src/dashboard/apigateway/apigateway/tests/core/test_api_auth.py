@@ -65,8 +65,8 @@ class TestUserAuthConfig:
         ],
     )
     def test_init(self, data, expected):
-        result = UserAuthConfig.parse_obj(data)
-        assert result.dict() == expected
+        result = UserAuthConfig.model_validate(data)
+        assert result.model_dump() == expected
 
     @pytest.mark.parametrize(
         "data, expected",
@@ -89,7 +89,7 @@ class TestUserAuthConfig:
         ],
     )
     def test_config(self, data, expected):
-        assert UserAuthConfig.parse_obj(data).config == expected
+        assert UserAuthConfig.model_validate(data).config == expected
 
     @pytest.mark.parametrize(
         "api_user_auth_configs, user_auth_type, expected",
@@ -218,5 +218,5 @@ class TestAPIAuthConfig:
             "apigateway.core.api_auth.UserAuthConfig.config",
             new_callable=mock.PropertyMock(return_value=mock_user_config),
         )
-        result = APIAuthConfig.parse_obj(data).config
+        result = APIAuthConfig.model_validate(data).config
         assert result == expected

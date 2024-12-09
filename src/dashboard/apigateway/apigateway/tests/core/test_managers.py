@@ -30,7 +30,6 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import (
     Gateway,
-    MicroGateway,
     Release,
     ReleasedResource,
     ReleaseHistory,
@@ -82,23 +81,6 @@ class TestStageManager:
             assert result.vars == {}
             assert result.status == constants.StageStatusEnum.INACTIVE.value
             assert result.created_by == test["created_by"]
-
-    def test_get_micro_gateway_id_to_fields(self):
-        gateway = G(Gateway)
-
-        micro_gateway = G(MicroGateway, gateway=gateway)
-
-        G(Stage, gateway=gateway)
-        s2 = G(Stage, gateway=gateway, micro_gateway=micro_gateway)
-
-        result = Stage.objects.get_micro_gateway_id_to_fields(gateway.id)
-        assert result == {
-            micro_gateway.id: {
-                "id": s2.id,
-                "name": s2.name,
-                "micro_gateway_id": micro_gateway.id,
-            }
-        }
 
     def test_get_gateway_name_to_active_stage_names(self):
         gateway = G(Gateway)

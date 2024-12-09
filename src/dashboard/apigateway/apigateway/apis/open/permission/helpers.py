@@ -22,7 +22,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Union
 
 from django.utils.functional import cached_property
-from pydantic import BaseModel, parse_obj_as
+from pydantic import BaseModel, TypeAdapter
 
 from apigateway.apps.permission.constants import (
     GrantDimensionEnum,
@@ -152,7 +152,7 @@ class ResourcePermissionBuilder:
                 resource["id"], ""
             )
 
-        resource_permissions = parse_obj_as(List[ResourcePermission], resources)
+        resource_permissions = TypeAdapter(List[ResourcePermission]).validate_python(resources)
 
         return [perm.as_dict() for perm in resource_permissions]
 
@@ -244,7 +244,7 @@ class AppPermissionBuilder:
                     resource_id, ""
                 )
 
-        resource_permissions = parse_obj_as(List[ResourcePermission], list(resource_map.values()))
+        resource_permissions = TypeAdapter(List[ResourcePermission]).validate_python(list(resource_map.values()))
         return [perm.as_dict() for perm in resource_permissions]
 
     def _get_api_permission_map(self) -> Dict[int, AppGatewayPermission]:

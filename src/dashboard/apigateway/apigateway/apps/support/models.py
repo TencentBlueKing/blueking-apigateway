@@ -73,23 +73,6 @@ class ResourceDoc(TimestampedModelMixin, OperatorModelMixin):
         return json.dumps(data)
 
 
-# TODO: 1.14 删除此表
-class ResourceDocSwagger(TimestampedModelMixin):
-    """资源文档扩展数据，若资源文档通过 Swagger 导入，可存储资源的 Swagger 描述"""
-
-    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
-    resource_doc = models.OneToOneField(ResourceDoc, on_delete=models.CASCADE)
-    swagger = models.TextField(blank=True, default="")
-
-    def __str__(self):
-        return f"<ResourceDocSwagger: {self.resource_doc}>"
-
-    class Meta:
-        verbose_name = _("资源文档 Swagger 扩展")
-        verbose_name_plural = _("资源文档 Swagger 扩展")
-        db_table = "support_resource_doc_swagger"
-
-
 class ResourceDocVersion(TimestampedModelMixin, OperatorModelMixin):
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)

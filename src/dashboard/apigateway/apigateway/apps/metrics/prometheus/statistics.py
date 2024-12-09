@@ -24,8 +24,8 @@ from typing import Optional
 
 from django.conf import settings
 
-from apigateway.components.exceptions import RemoteAPIResultError, RemoteRequestError
-from apigateway.components.prometheus import prometheus_component
+from apigateway.common.error_codes import APIError
+from apigateway.components.prometheus import query as prometheus_query
 
 from .base import BasePrometheusMetrics
 
@@ -42,12 +42,12 @@ class BaseStatisticsMetrics(BasePrometheusMetrics):
         promql = self._get_query_promql(step, gateway_name)
 
         try:
-            return prometheus_component.query(bk_biz_id=bk_biz_id, promql=promql, time_=time_)
-        except (RemoteRequestError, RemoteAPIResultError) as err:
+            return prometheus_query(bk_biz_id=bk_biz_id, promql=promql, time_=time_)
+        except APIError as err:
             logger.warning("fetch statistics metrics data error: %s, will retry.", err)
             # 此接口涉及定时拉取网关请求量数据，为保证成功率，添加重试
             sleep(random.uniform(0.2, 1))
-            return prometheus_component.query(bk_biz_id=bk_biz_id, promql=promql, time_=time_)
+            return prometheus_query(bk_biz_id=bk_biz_id, promql=promql, time_=time_)
 
 
 class StatisticsGatewayRequestMetrics(BaseStatisticsMetrics):

@@ -70,7 +70,7 @@ class ResourceData(BaseModel):
 
     @property
     def basic_data(self) -> Dict[str, Any]:
-        return self.dict(include=set(self.basic_field_names()))
+        return self.model_dump(include=set(self.basic_field_names()))
 
     @staticmethod
     def basic_field_names() -> List[str]:
@@ -100,9 +100,9 @@ class ResourceData(BaseModel):
             "enable_websocket": self.enable_websocket,
             "is_public": self.is_public,
             "allow_apply_permission": self.allow_apply_permission,
-            "auth_config": self.auth_config.dict(),
+            "auth_config": self.auth_config.model_dump(),
             "backend_id": self.backend.id,
-            "backend_config": self.backend_config.dict(),
+            "backend_config": self.backend_config.model_dump(),
             "metadata": self.metadata,
         }
 
@@ -116,7 +116,7 @@ class ResourceData(BaseModel):
             "enable_websocket": self.enable_websocket,
             "is_public": self.is_public,
             "allow_apply_permission": self.allow_apply_permission,
-            "auth_config": self.auth_config.dict(),
+            "auth_config": self.auth_config.model_dump(),
             "metadata": self.metadata,
         }
         if self.resource:

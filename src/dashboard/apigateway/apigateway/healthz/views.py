@@ -15,14 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
 
 import redis
-import requests
 from django.conf import settings
 from django.http import HttpResponse
 from django.views.generic import View
-from requests.exceptions import HTTPError, RequestException
 
 from apigateway.utils.redis_utils import get_redis_pool
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
@@ -95,62 +92,3 @@ class HealthzView(View):
             client.get(key)
         except Exception as err:
             raise CheckError(f"Redis check failed [{config['host']}:{config['port']}], error: {err}")
-
-    def _check_external_dependency_url(self):
-        url_keys = [
-            "BK_COMPONENT_API_URL",
-            "BK_PAAS3_API_URL",
-        ]
-        for key in url_keys:
-            url = getattr(settings, key)
-            try:
-                resp = requests.get(url, timeout=3, verify=False)
-            except RequestException as err:
-                raise CheckError(f"Request api error, url: {url}, error: {err}")
-
-            if resp.status_code >= 500:
-                raise CheckError(
-                    f"Request api status_code >= 500, url: {url}, "
-                    f"status_code: {resp.status_code}, response content: {resp.text}"
-                )
-
-    def _check_bk_paasv3(self):
-        url = settings.BK_PAAS3_API_URL.rstrip("/") + "/prod/system/uni_applications/query/by_id/"
-        try:
-            resp = requests.get(
-                url,
-                params={
-                    "id": [settings.BK_APP_CODE],
-                    "private_token": getattr(settings, "BK_PAAS3_PRIVATE_TOKEN", ""),
-                    "format": "bk_std_json",
-                },
-                headers={
-                    "x-bkapi-authorization": json.dumps(
-                        {
-                            "bk_app_code": settings.BK_APP_CODE,
-                            "bk_app_secret": settings.BK_APP_SECRET,
-                        }
-                    )
-                },
-                timeout=3,
-                verify=False,
-            )
-        except RequestException as err:
-            raise CheckWarning(f"Request paas3.0 api to get application error, url: {url}, error: {err}")
-
-        try:
-            result = resp.json()
-        except (TypeError, json.JSONDecodeError):
-            raise CheckWarning(
-                "The response to paas3.0 api is not a valid json, "
-                "please check django settings: BK_APP_CODE, BK_APP_SECRET, "
-                f"url: {url}, response content: {resp.text}, "
-            )
-
-        try:
-            resp.raise_for_status()
-        except HTTPError:
-            raise CheckWarning(
-                f"Request paas3.0 api to get application fail, request url: {url}, response: {resp.text}, "
-                "please check django settings: BK_APP_CODE, BK_APP_SECRET"
-            )

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -15,20 +16,16 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import include, path
+from blue_krill.data_types.enum import EnumField, StructuredEnum
+from django.utils.translation import gettext_lazy as _
 
-from . import views
+TENANT_MODE_SINGLE_DEFAULT_TENANT_ID = "default"
+TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID = ""
+TENANT_ID_OPERATION = "system"
 
-urlpatterns = [
-    path("", views.GatewayListCreateApi.as_view(), name="gateways.list_create"),
-    path(
-        # 使用 gateway_id，复用 GatewayPermission 的权限校验
-        "<int:gateway_id>/",
-        include(
-            [
-                path("", views.GatewayRetrieveUpdateDestroyApi.as_view(), name="gateways.retrieve_update_destroy"),
-                path("status/", views.GatewayUpdateStatusApi.as_view(), name="gateways.update_status"),
-            ]
-        ),
-    ),
-]
+
+class TenantModeEnum(StructuredEnum):
+    """租户模式"""
+
+    GLOBAL = EnumField("global", _("全租户"))
+    SINGLE = EnumField("single", _("单租户"))

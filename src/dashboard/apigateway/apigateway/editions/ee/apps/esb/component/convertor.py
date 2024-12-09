@@ -122,9 +122,9 @@ class ComponentConvertor:
     def _parse_components(self, components: List[Dict[str, Any]]) -> List[Component]:
         parsed_components = []
         for component in components:
-            # 为精确定位到出错的组件配置，未使用 parse_obj_as
+            # 为精确定位到出错的组件配置，未使用 TypeAdapter.validate_python
             try:
-                parsed_components.append(Component.parse_obj(component))
+                parsed_components.append(Component.model_validate(component))
             except ValidationError:
                 logger.exception("component configuration error, please check: %s", json.dumps(component))
                 raise error_codes.INTERNAL.format(message=_("组件配置错误，请进行检查。"))
