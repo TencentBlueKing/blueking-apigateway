@@ -20,8 +20,8 @@ from django.db.models import Q, QuerySet
 
 from apigateway.common.constants import (
     TENANT_ID_OPERATION,
+    TenantModeEnum,
 )
-from apigateway.core.constants import TenantModeEnum
 
 
 def gateway_filter_by_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:

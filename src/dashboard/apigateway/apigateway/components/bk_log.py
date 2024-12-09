@@ -21,7 +21,7 @@ from typing import Any
 from django.conf import settings
 from django.utils.translation import get_language
 
-from apigateway.common.constants import TENANT_ID_OPERATION
+from apigateway.common.tenant.request import gen_operation_tenant_headers
 from apigateway.utils.url import url_join
 
 from .http import http_post
@@ -36,8 +36,8 @@ def esquery_dsl(index: str, body: Any) -> Any:
 
     headers = {
         "Content-Type": "application/json",
-        "X-Bk-Tenant-Id": TENANT_ID_OPERATION,
     }
+    headers.update(gen_operation_tenant_headers())
     language = get_language()
     if language:
         headers["Accept-Language"] = language

@@ -26,6 +26,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
 
+from apigateway.common.constants import TenantModeEnum
 from apigateway.common.i18n.field import I18nProperty
 from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
 from apigateway.core import managers
@@ -46,7 +47,6 @@ from apigateway.core.constants import (
     ReleaseHistoryStatusEnum,
     ResourceVersionSchemaEnum,
     StageStatusEnum,
-    TenantModeEnum,
 )
 from apigateway.core.utils import get_path_display
 from apigateway.schema.models import Schema

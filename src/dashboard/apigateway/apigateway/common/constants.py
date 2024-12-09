@@ -18,6 +18,7 @@
 #
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
+from django.utils.translation import gettext_lazy as _
 
 CACHE_TIME_5_MINUTES = 5 * 60
 CACHE_TIME_24_HOURS = 24 * 3600
@@ -34,6 +35,14 @@ class LanguageCodeEnum(StructuredEnum):
 TENANT_MODE_SINGLE_DEFAULT_TENANT_ID = "default"
 TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID = ""
 TENANT_ID_OPERATION = "system"
+
+
+class TenantModeEnum(StructuredEnum):
+    """租户模式"""
+
+    GLOBAL = EnumField("global", _("全租户"))
+    SINGLE = EnumField("single", _("单租户"))
+
 
 # IP 或 IP 网段正则
 # IPV4 + mask

@@ -34,12 +34,13 @@ from apigateway.common.constants import (
     TENANT_ID_OPERATION,
     TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID,
     TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
+    TenantModeEnum,
 )
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum, TenantModeEnum
+from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse

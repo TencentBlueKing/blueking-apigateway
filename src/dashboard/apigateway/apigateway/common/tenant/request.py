@@ -15,10 +15,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import Dict
 
 from django.conf import settings
 
 from apigateway.common.constants import (
+    TENANT_ID_OPERATION,
     TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
 )
 
@@ -27,3 +29,7 @@ def get_user_tenant_id(request) -> str:
     if settings.ENABLE_MULTI_TENANT_MODE:
         return request.user.tenant_id
     return TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
+
+
+def gen_operation_tenant_headers() -> Dict[str, str]:
+    return {"X-Bk-Tenant-Id": TENANT_ID_OPERATION}

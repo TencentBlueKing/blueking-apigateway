@@ -20,7 +20,7 @@ from typing import Any
 
 from django.conf import settings
 
-from apigateway.common.constants import TENANT_ID_OPERATION
+from apigateway.common.tenant.request import gen_operation_tenant_headers
 from apigateway.utils.url import url_join
 
 from .http import http_post
@@ -74,8 +74,8 @@ def _promql_query(bk_biz_id: str, promql: str, start: int, end: int, step: str, 
 
     headers = {
         "X-Bk-Scope-Space-Uid": f"bkcc__{bk_biz_id}",
-        "X-Bk-Tenant-Id": TENANT_ID_OPERATION,
     }
+    headers.update(gen_operation_tenant_headers())
 
     host = settings.BK_API_URL_TMPL.format(api_name="bkmonitorv3")
 

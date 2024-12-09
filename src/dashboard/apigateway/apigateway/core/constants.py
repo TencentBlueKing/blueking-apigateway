@@ -53,13 +53,6 @@ class EtcdSecureTypeEnum(StructuredEnum):
     PASSWORD = EnumField("password", "Password")
 
 
-class TenantModeEnum(StructuredEnum):
-    """租户模式"""
-
-    GLOBAL = EnumField("global", _("全租户"))
-    SINGLE = EnumField("single", _("单租户"))
-
-
 class GatewayTypeEnum(StructuredEnum):
     SUPER_OFFICIAL_API = EnumField(0, "超级官方API")
     OFFICIAL_API = EnumField(1, "官方云API")
