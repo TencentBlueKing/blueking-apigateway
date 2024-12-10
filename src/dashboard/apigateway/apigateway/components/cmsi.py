@@ -29,7 +29,7 @@ from django.utils.translation import gettext as _
 # FIXME: remove bkapi_client_core from pyproject.toml
 
 
-# FIXME: 内部上云版怎么办，还得继续使用 bk-esb 的 cmsi 组件
+# FIXME: 内部上云版怎么办，还得继续使用 bk-esb 的 cmsi 组件， 所以这个组件还不能删，只能新增一个？
 
 
 class CMSIComponent:

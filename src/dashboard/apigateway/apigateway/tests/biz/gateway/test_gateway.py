@@ -49,6 +49,9 @@ class TestGatewayHandler:
     def test_get_gateways_by_user(self):
         G(Gateway, _maintainers="admin1", tenant_mode="single", tenant_id="default")
         G(Gateway, _maintainers="admin2;admin1", tenant_mode="single", tenant_id="default")
+        G(Gateway, _maintainers="admin3", tenant_mode="single", tenant_id="abc")
+        G(Gateway, _maintainers="admin4", tenant_mode="single", tenant_id="system")
+        G(Gateway, _maintainers="admin4", tenant_mode="global", tenant_id="")
 
         gateways = GatewayHandler.list_gateways_by_user("admin1", "default")
         assert len(gateways) >= 2
@@ -58,6 +61,16 @@ class TestGatewayHandler:
 
         gateways = GatewayHandler.list_gateways_by_user("not_exist_user", "default")
         assert len(gateways) == 0
+
+        gateways = GatewayHandler.list_gateways_by_user("admin1", "not_exit_tenant")
+        assert len(gateways) == 0
+
+        # other tenant
+        gateways = GatewayHandler.list_gateways_by_user("admin3", "abc")
+        assert len(gateways) == 1
+        # system tenant: would got 2 gateways, one is global, one is single
+        gateways = GatewayHandler.list_gateways_by_user("admin4", "system")
+        assert len(gateways) == 2
 
     def test_get_stages_with_release_status(self, fake_gateway):
         Gateway.objects.filter(id=fake_gateway.id).update(status=GatewayStatusEnum.ACTIVE.value)
