@@ -131,8 +131,38 @@ class TestGatewaySyncApi:
         assert result["code"] == 0
         assert result["data"]["id"] == gateway.id
 
+        assert gateway.tenant_mode == "single"
+        assert gateway.tenant_id == "default"
+
         auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
         assert auth_config["allow_delete_sensitive_params"] is False
+
+    def test_post_with_multi_tenant_mode(self, mocker, request_view, unique_gateway_name, disable_app_permission):
+        mocker.patch("apigateway.apis.open.gateway.views.settings.ENABLE_MULTI_TENANT_MODE", True)
+        mocker.patch(
+            "apigateway.apis.open.gateway.views.get_app_info",
+            return_value={"tenant_mode": "global", "tenant_id": "abc"},
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.gateway.sync",
+            path_params={"gateway_name": unique_gateway_name},
+            data={
+                "description": "desc",
+                "is_public": True,
+                "allow_delete_sensitive_params": False,
+            },
+            app=mocker.MagicMock(app_code="foo"),
+        )
+        result = resp.json()
+
+        gateway = Gateway.objects.get(name=unique_gateway_name)
+        assert resp.status_code == 200
+        assert result["code"] == 0
+        assert result["data"]["id"] == gateway.id
+        assert gateway.tenant_mode == "global"
+        assert gateway.tenant_id == "abc"
 
 
 class TestGatewayUpdateStatusApi:

@@ -15,6 +15,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from unittest.mock import patch
+
+import pytest
+
 from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_jwt import GatewayJWTHandler
@@ -62,6 +66,82 @@ class TestGatewayListCreateApi:
         auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
         assert auth_config["allow_auth_from_params"] is False
         assert auth_config["allow_delete_sensitive_params"] is False
+
+    @pytest.mark.parametrize(
+        "data, expected_status_code, expected_error",
+        [
+            (
+                {
+                    "name": "test1",
+                    "description": "test description",
+                    "maintainers": ["admin"],
+                    "is_public": False,
+                    "bk_app_codes": ["app1"],
+                    "tenant_mode": "global",
+                    "tenant_id": "",
+                },
+                403,
+                "只有运营租户下的用户才能创建全租户网关。",
+            ),
+            (
+                {
+                    "name": "test2",
+                    "description": "test description",
+                    "maintainers": ["admin"],
+                    "is_public": False,
+                    "bk_app_codes": ["app1"],
+                    "tenant_mode": "single",
+                    "tenant_id": "invalid_tenant",
+                },
+                403,
+                "普通租户（非运营租户）只能创建当前用户租户下的单租户网关。",
+            ),
+            (
+                {
+                    "name": "test3",
+                    "description": "test description",
+                    "maintainers": ["admin"],
+                    "is_public": False,
+                    "bk_app_codes": ["app1"],
+                    "tenant_mode": "single",
+                    "tenant_id": "valid_tenant_id",
+                },
+                201,
+                None,
+            ),
+        ],
+    )
+    @patch("apigateway.apis.web.gateway.views.settings.ENABLE_MULTI_TENANT_MODE", True)
+    def test_create_with_multi_tenant_mode(
+        self,
+        request_view,
+        faker,
+        unique_gateway_name,
+        data,
+        expected_status_code,
+        expected_error,
+    ):
+        with patch("apigateway.apis.web.gateway.views.get_user_tenant_id", return_value="valid_tenant_id"):
+            resp = request_view(
+                method="POST",
+                view_name="gateways.list_create",
+                data=data,
+            )
+            result = resp.json()
+
+            assert resp.status_code == expected_status_code
+            if expected_error:
+                assert expected_error in result["error"]["message"]
+            else:
+                gateway = Gateway.objects.get(name=data["name"])
+                assert result["data"]["id"] == gateway.id
+                assert Stage.objects.filter(gateway=gateway).exists()
+                assert JWT.objects.filter(gateway=gateway).count() == 1
+                assert GatewayAppBinding.objects.filter(gateway=gateway).count() == 1
+
+                auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
+                assert auth_config["allow_auth_from_params"] is False
+                assert auth_config["allow_delete_sensitive_params"] is False
 
 
 class TestGatewayRetrieveUpdateDestroyApi:

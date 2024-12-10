@@ -116,19 +116,20 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         slz = GatewayCreateInputSLZ(data=request.data, context={"created_by": request.user.username})
         slz.is_valid(raise_exception=True)
+        user_tenant_id = get_user_tenant_id(request)
 
         bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
 
         if settings.ENABLE_MULTI_TENANT_MODE:
             if slz.validated_data["tenant_mode"] == TenantModeEnum.GLOBAL.value:
                 # 只有运营租户下的用户能创建 全租户网关
-                if request.user.tenant_id != TENANT_ID_OPERATION:
+                if user_tenant_id != TENANT_ID_OPERATION:
                     raise error_codes.NO_PERMISSION.format(_("只有运营租户下的用户才能创建全租户网关。"), replace=True)
 
                 # set the tenant_id to "" if in global mode
                 slz.validated_data["tenant_id"] = TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID
             elif slz.validated_data["tenant_mode"] == TenantModeEnum.SINGLE.value:
-                if slz.validated_data["tenant_id"] != request.user.tenant_id:
+                if slz.validated_data["tenant_id"] != user_tenant_id:
                     raise error_codes.NO_PERMISSION.format(
                         _("普通租户（非运营租户）只能创建当前用户租户下的单租户网关。"), replace=True
                     )
