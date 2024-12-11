@@ -15,30 +15,3 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from bkapi_client_core.apigateway import APIGatewayClient, Operation, OperationGroup, bind_property
-
-
-class Group(OperationGroup):
-    # 统一查询时序数据
-    promql_query = bind_property(
-        Operation,
-        name="promql_query",
-        method="POST",
-        path="/promql_query/",
-    )
-
-
-class Client(APIGatewayClient):
-    """Bkapi bkmonitorv3 client"""
-
-    _api_name = "bkmonitorv3"
-
-    api = bind_property(Group, name="api")
-
-
-def new_client_cls(api_name: str):
-    class Client(APIGatewayClient):
-        _api_name = api_name
-        api = bind_property(Group, name="api")
-
-    return Client

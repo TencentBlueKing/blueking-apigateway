@@ -30,6 +30,8 @@ class ResourceMonitorHandler:
         统计网关下，各策略的告警信息
         """
         # 1. get current user's gateways
+        # NOTE: here we don't need to get the username's tenant_id,
+        # while the username/tenant_id is verified before create gateway
         gateways = GatewayHandler.list_gateways_by_user(username)
         gateway_id_map = {g.id: g for g in gateways}
 

@@ -23,8 +23,6 @@ from typing import Any, Dict, List, Optional
 
 from cachetools import TTLCache, cached
 from django.conf import settings
-from django.utils.translation import gettext as _
-from rest_framework import serializers
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
@@ -42,7 +40,7 @@ from apigateway.biz.resource_openapi_schema import ResourceOpenAPISchemaVersionH
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
 from apigateway.common.constants import CACHE_TIME_5_MINUTES
 from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
-from apigateway.core.models import Gateway, Proxy, Release, Resource, ResourceVersion, Stage
+from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
 from apigateway.utils import time as time_utils
 from apigateway.utils.version import max_version
 
@@ -143,25 +141,6 @@ class ResourceVersionHandler:
         )
 
         return resource_version
-
-    @staticmethod
-    def _validate_resource_version_data(gateway: Gateway, version: str):
-        # 判断是否创建资源
-        if not Resource.objects.filter(gateway_id=gateway.id).exists():
-            raise serializers.ValidationError(_("请先创建资源，然后再生成版本。"))
-
-        # TODO: 临时跳过 version 校验，待提供 version 后，此部分删除
-        if not version:
-            return
-
-        # 是否绑定backend
-        if Proxy.objects.filter(resource__gateway=gateway, backend__isnull=True).exists():
-            raise serializers.ValidationError(_("存在资源未绑定后端服务. "))
-
-        # ResourceVersion 中数据量较大，因此，不使用 UniqueTogetherValidator
-        if ResourceVersion.objects.filter(gateway=gateway, version=version).exists():
-            raise serializers.ValidationError(_("版本 {version} 已存在。").format(version=version))
-        return
 
     @staticmethod
     def get_released_public_resources(gateway_id: int, stage_name: Optional[str] = None) -> List[dict]:

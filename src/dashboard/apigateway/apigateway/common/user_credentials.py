@@ -32,6 +32,7 @@ class UserCredentials:
         }
 
 
+# FIXME: maybe we don't need this anymore? can we remove it?
 def get_user_credentials_from_request(request) -> Optional[UserCredentials]:
     credentials = request.COOKIES.get(settings.BK_LOGIN_TICKET_KEY, None)
     if not credentials:

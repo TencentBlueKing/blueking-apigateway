@@ -23,7 +23,6 @@ from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.common.contexts import GatewayFeatureFlagContext
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
     ContextTypeEnum,
@@ -45,20 +44,33 @@ from apigateway.core.models import (
 class TestGatewayHandler:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self):
-        self.gateway = G(Gateway, created_by="admin")
+        self.gateway = G(Gateway, created_by="admin", tenant_mode="single", tenant_id="default")
 
     def test_get_gateways_by_user(self):
-        G(Gateway, _maintainers="admin1")
-        G(Gateway, _maintainers="admin2;admin1")
+        G(Gateway, _maintainers="admin1", tenant_mode="single", tenant_id="default")
+        G(Gateway, _maintainers="admin2;admin1", tenant_mode="single", tenant_id="default")
+        G(Gateway, _maintainers="admin3", tenant_mode="single", tenant_id="abc")
+        G(Gateway, _maintainers="admin4", tenant_mode="single", tenant_id="system")
+        G(Gateway, _maintainers="admin4", tenant_mode="global", tenant_id="")
 
-        gateways = GatewayHandler.list_gateways_by_user("admin1")
+        gateways = GatewayHandler.list_gateways_by_user("admin1", "default")
         assert len(gateways) >= 2
 
-        gateways = GatewayHandler.list_gateways_by_user("admin2")
+        gateways = GatewayHandler.list_gateways_by_user("admin2", "default")
         assert len(gateways) >= 1
 
-        gateways = GatewayHandler.list_gateways_by_user("not_exist_user")
+        gateways = GatewayHandler.list_gateways_by_user("not_exist_user", "default")
         assert len(gateways) == 0
+
+        gateways = GatewayHandler.list_gateways_by_user("admin1", "not_exit_tenant")
+        assert len(gateways) == 0
+
+        # other tenant
+        gateways = GatewayHandler.list_gateways_by_user("admin3", "abc")
+        assert len(gateways) == 1
+        # system tenant: would got 2 gateways, one is global, one is single
+        gateways = GatewayHandler.list_gateways_by_user("admin4", "system")
+        assert len(gateways) == 2
 
     def test_get_stages_with_release_status(self, fake_gateway):
         Gateway.objects.filter(id=fake_gateway.id).update(status=GatewayStatusEnum.ACTIVE.value)
@@ -327,13 +339,6 @@ class TestGatewayHandler:
         ]:
             with pytest.raises(ObjectDoesNotExist):
                 model.refresh_from_db()
-
-    def test_get_feature_flag(self, settings, fake_gateway):
-        settings.GLOBAL_GATEWAY_FEATURE_FLAG = {"FOO": False, "BAR": True}
-        GatewayFeatureFlagContext().save(fake_gateway.id, {"FOO": True})
-
-        feature_flag = GatewayHandler.get_feature_flags(fake_gateway.id)
-        assert feature_flag == {"FOO": True, "BAR": True}
 
     def test_get_docs_url(self, settings, fake_gateway, fake_stage, fake_resource_version):
         settings.API_DOCS_URL_TMPL = "http://apigw.example.com/docs/{api_name}"

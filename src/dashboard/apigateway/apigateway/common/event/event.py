@@ -50,16 +50,17 @@ class PublishEventReporter:
             status=status.value,
         )
 
-    @classmethod
-    def report_config_validate_doing(cls, publish: Optional[ReleaseHistory]):
-        """
-        dashboard 配置参数校验事件上报
-        """
-        name = PublishEventNameTypeEnum.VALIDATE_CONFIGURATION
-        status = PublishEventStatusTypeEnum.DOING
-        detail = None
+    # NOTE: not used
+    # @classmethod
+    # def report_config_validate_doing(cls, publish: Optional[ReleaseHistory]):
+    #     """
+    #     dashboard 配置参数校验事件上报
+    #     """
+    #     name = PublishEventNameTypeEnum.VALIDATE_CONFIGURATION
+    #     status = PublishEventStatusTypeEnum.DOING
+    #     detail = None
 
-        cls._report_event(publish, name, status, detail)
+    #     cls._report_event(publish, name, status, detail)
 
     @classmethod
     def report_config_validate_success(cls, publish: Optional[ReleaseHistory]):

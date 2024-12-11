@@ -22,9 +22,9 @@ from apigateway.core.models import PublishEvent
 
 
 class TestPublishEventReporter:
-    def test_report_config_validate_doing_event(self, fake_release_history):
-        PublishEventReporter.report_config_validate_doing(fake_release_history)
-        assert PublishEvent.objects.filter(publish_id=fake_release_history.id).first()
+    # def test_report_config_validate_doing_event(self, fake_release_history):
+    #     PublishEventReporter.report_config_validate_doing(fake_release_history)
+    #     assert PublishEvent.objects.filter(publish_id=fake_release_history.id).first()
 
     def test_report_config_validate_success_event(self, fake_release_history):
         PublishEventReporter.report_config_validate_success(fake_release_history)

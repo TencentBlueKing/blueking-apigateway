@@ -17,7 +17,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-import copy
 import logging
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
@@ -35,7 +34,8 @@ from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
-from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
+from apigateway.common.contexts import GatewayAuthContext
+from apigateway.common.tenant.query import gateway_filter_by_tenant_id
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
@@ -46,10 +46,14 @@ logger = logging.getLogger(__name__)
 
 class GatewayHandler:
     @staticmethod
-    def list_gateways_by_user(username: str) -> List[Gateway]:
+    def list_gateways_by_user(username: str, tenant_id: str = "") -> List[Gateway]:
         """获取用户有权限的的网关列表"""
-        # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
+
         queryset = Gateway.objects.filter(_maintainers__contains=username)
+        if tenant_id:
+            queryset = gateway_filter_by_tenant_id(queryset, tenant_id)
+
+        # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
         return [gateway for gateway in queryset if gateway.has_permission(username)]
 
     @staticmethod
@@ -155,7 +159,7 @@ class GatewayHandler:
         current_config = GatewayHandler.get_gateway_auth_config(gateway_id)
 
         # 因用户配置为 dict，参数 user_conf 仅传递了部分用户配置，因此需合并当前配置与传入配置
-        api_auth_config = APIAuthConfig.parse_obj(deep_update(current_config, new_config))
+        api_auth_config = APIAuthConfig.model_validate(deep_update(current_config, new_config))
 
         return GatewayAuthContext().save(gateway_id, api_auth_config.config)
 
@@ -241,12 +245,6 @@ class GatewayHandler:
 
         # delete gateway
         Gateway.objects.filter(id=gateway_id).delete()
-
-    @staticmethod
-    def get_feature_flags(gateway_id: int) -> Dict[str, bool]:
-        feature_flags = copy.deepcopy(settings.GLOBAL_GATEWAY_FEATURE_FLAG)
-        feature_flags.update(GatewayFeatureFlagContext().get_config(gateway_id, {}))
-        return feature_flags
 
     @staticmethod
     def get_docs_url(gateway: Gateway) -> str:

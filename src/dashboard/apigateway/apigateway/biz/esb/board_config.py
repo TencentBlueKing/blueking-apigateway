@@ -44,7 +44,7 @@ class BoardConfig(BaseModel):
 class BoardConfigManager:
     @staticmethod
     def get_board_config(board: str) -> BoardConfig:
-        return BoardConfig.parse_obj(settings.ESB_BOARD_CONFIGS[board])
+        return BoardConfig.model_validate(settings.ESB_BOARD_CONFIGS[board])
 
     @classmethod
     def get_board_label(cls, board: str) -> str:

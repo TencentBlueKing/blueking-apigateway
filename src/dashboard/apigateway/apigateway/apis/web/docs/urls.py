@@ -20,7 +20,6 @@ from django.urls import include, path
 
 urlpatterns = [
     # 所有网关 sdk
-    # FIXME: remove this in 1.15
     path("sdks/", include("apigateway.apis.web.docs.gateway.sdk.urls")),
     # 网关
     path("gateways/", include("apigateway.apis.web.docs.gateway.gateway.urls")),

@@ -34,7 +34,7 @@ def board(settings, faker):
         name=faker.pystr(),
         label=faker.pystr(),
         sdk_name=faker.pystr(),
-    ).dict()
+    ).model_dump()
     return board
 
 

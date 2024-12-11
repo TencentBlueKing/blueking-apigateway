@@ -49,13 +49,6 @@ class StageManager(models.Manager):
     def get_name_id_map(self, gateway):
         return dict(self.filter(gateway_id=gateway.id).values_list("name", "id"))
 
-    def get_micro_gateway_id_to_fields(self, gateway_id: int) -> Dict[str, Dict[str, Any]]:
-        return {
-            item["micro_gateway_id"]: item
-            for item in self.filter(gateway_id=gateway_id).values("id", "name", "micro_gateway_id")
-            if item["micro_gateway_id"]
-        }
-
     def get_gateway_name_to_active_stage_names(self, gateways) -> Dict[str, List[str]]:
         gateway_id_to_name = {g.id: g.name for g in gateways}
 

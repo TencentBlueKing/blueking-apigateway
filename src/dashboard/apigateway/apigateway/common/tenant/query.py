@@ -15,30 +15,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from bkapi_client_core.apigateway import APIGatewayClient, Operation, OperationGroup, bind_property
+
+from django.db.models import Q, QuerySet
+
+from .constants import (
+    TENANT_ID_OPERATION,
+    TenantModeEnum,
+)
 
 
-class Group(OperationGroup):
-    # 统一查询时序数据
-    esquery_dsl = bind_property(
-        Operation,
-        name="esquery_dsl",
-        method="POST",
-        path="/esquery_dsl/",
-    )
-
-
-class Client(APIGatewayClient):
-    """Bkapi log-search client"""
-
-    _api_name = "log-search"
-
-    api = bind_property(Group, name="api")
-
-
-def new_client_cls(api_name: str):
-    class Client(APIGatewayClient):
-        _api_name = api_name
-        api = bind_property(Group, name="api")
-
-    return Client
+def gateway_filter_by_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
+    # 运营租户可以看到 全租户网关 + 自己租户网关
+    if user_tenant_id == TENANT_ID_OPERATION:
+        return queryset.filter(
+            Q(tenant_mode=TenantModeEnum.GLOBAL.value)
+            | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=user_tenant_id)
+        )
+    # only list the gateways under the tenant
+    return queryset.filter(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=user_tenant_id)

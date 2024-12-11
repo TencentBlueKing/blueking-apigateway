@@ -17,69 +17,74 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from operator import itemgetter
 from typing import Any, Dict, Iterable, List, Optional
 
-from bkapi.paasv3.shortcuts import get_client_by_username
 from cachetools import TTLCache, cached
 from django.conf import settings
+from django.utils.translation import get_language
 
-from apigateway.components.handler import RequestAPIHandler
-from apigateway.components.utils import inject_accept_language
+from apigateway.common.tenant.request import gen_operation_tenant_headers
 from apigateway.utils.list import chunk_list
+from apigateway.utils.url import url_join
+
+from .http import http_get
+from .utils import do_legacy_blueking_http_request
 
 logger = logging.getLogger(__name__)
 
 
-class PaaSV3Component:
-    """API 网关 paasv3 相关接口"""
+@cached(cache=TTLCache(maxsize=2000, ttl=300))
+def get_app(app_code: str) -> Optional[Dict[str, Any]]:
+    data = get_apps([app_code])
+    return data.get(app_code)
 
-    def __init__(self):
-        self._client = get_client_by_username(username="admin", endpoint=settings.BK_PAAS3_API_URL)
-        self._client.session.register_hook("request", inject_accept_language)
-        self._request_handler = RequestAPIHandler("bkpaas3")
 
-    @cached(cache=TTLCache(maxsize=2000, ttl=300))
-    def get_app(self, app_code: str) -> Optional[Dict[str, Any]]:
-        data = self.get_apps([app_code])
-        return data.get(app_code)
+def get_apps(app_code_list: List[str]) -> Dict[str, Any]:
+    """
+    :param app_code_list: 蓝鲸应用 bk_app_code 列表
+    """
+    result_data = []
 
-    def get_apps(self, app_code_list: List[str]) -> Dict[str, Any]:
-        """
-        :param app_code_list: 蓝鲸应用 bk_app_code 列表
-        """
-        result_data = []
+    # paas 限制参数 id 列表最大长度 20，因此将 app_code_list 拆分成多组
+    for app_codes in chunk_list(app_code_list, n=20):
+        data = _call_paasv3_uni_apps_query_by_id(app_codes)
+        result_data.extend(data)
 
-        # paas 限制参数 id 列表最大长度 20，因此将 app_code_list 拆分成多组
-        for app_codes in chunk_list(app_code_list, n=20):
-            params = {
-                "private_token": getattr(settings, "BK_PAAS3_PRIVATE_TOKEN", ""),
-                "id": app_codes,
-                "format": "bk_std_json",
-            }
-            api_result, response = self._request_handler.call_api(
-                self._client.api.uni_apps_query_by_id,
-                data=params,
-            )
-            data = self._request_handler.parse_api_result(api_result, response, {"code": 0}, itemgetter("data"))
-            result_data.extend(data)
+    apps: Iterable[Dict] = filter(None, result_data)
+    return {app["code"]: app for app in apps} or {}
 
-        apps: Iterable[Dict] = filter(None, result_data)
-        return {app["code"]: app for app in apps} or {}
 
-    def get_app_maintainers(self, bk_app_code: str) -> List[str]:
-        """获取应用负责人"""
-        app = self.get_app(bk_app_code)
-        if not app:
-            return []
-
-        if app.get("developers"):
-            return app["developers"]
-
-        if app.get("creator"):
-            return [app["creator"]]
-
+def get_app_maintainers(bk_app_code: str) -> List[str]:
+    """获取应用负责人"""
+    app = get_app(bk_app_code)
+    if not app:
         return []
 
+    if app.get("developers"):
+        return app["developers"]
 
-paasv3_component = PaaSV3Component()
+    if app.get("creator"):
+        return [app["creator"]]
+
+    return []
+
+
+def _call_paasv3_uni_apps_query_by_id(app_codes: List[str]):
+    data = {
+        "private_token": getattr(settings, "BK_PAAS3_PRIVATE_TOKEN", ""),
+        "id": app_codes,
+        "format": "bk_std_json",
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+    }
+    headers.update(gen_operation_tenant_headers())
+    language = get_language()
+    if language:
+        headers["Accept-Language"] = language
+
+    url = url_join(settings.BK_PAAS3_API_URL, "/prod/system/uni_applications/query/by_id/")
+    timeout = 10
+
+    return do_legacy_blueking_http_request("bklog", http_get, url, data, headers, timeout)

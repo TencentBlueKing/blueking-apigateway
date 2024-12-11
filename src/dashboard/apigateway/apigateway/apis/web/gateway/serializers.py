@@ -1,6 +1,6 @@
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -49,6 +49,8 @@ class GatewayListOutputSLZ(serializers.Serializer):
     description = SerializerTranslatedField(
         allow_blank=True, default_field="description_i18n", read_only=True, help_text="网关描述"
     )
+    tenant_mode = serializers.CharField(read_only=True, help_text="租户模式")
+    tenant_id = serializers.CharField(read_only=True, help_text="租户 ID")
     status = serializers.ChoiceField(
         choices=GatewayStatusEnum.get_choices(), read_only=True, help_text="网关状态，0: 已停用，1：启用中"
     )
@@ -98,6 +100,8 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
             "developers",
             "is_public",
             "bk_app_codes",
+            "tenant_mode",
+            "tenant_id",
         )
         lookup_field = "id"
 
@@ -111,7 +115,7 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
         }
 
         # 使用 UniqueTogetherValidator，方便错误提示信息统一处理
-        # 使用 UniqueValidator，错误提示中包含了字段名："参数校验失败: Name: 网关名称已经存在"
+        # 使用 UniqueValidator，错误提示中包含了字段名："参数校验失败：Name: 网关名称已经存在"
         validators = [
             UniqueTogetherValidator(
                 queryset=Gateway.objects.all(),
@@ -144,10 +148,12 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
     is_official = serializers.SerializerMethodField(help_text="是否为官方网关，true：官方网关，false：非官方网关")
     api_domain = serializers.SerializerMethodField(help_text="网关访问域名")
     docs_url = serializers.SerializerMethodField(help_text="文档地址")
-    public_key_fingerprint = serializers.SerializerMethodField(help_text="公钥(指纹)")
+    public_key_fingerprint = serializers.SerializerMethodField(help_text="公钥 (指纹)")
     allow_update_gateway_auth = serializers.SerializerMethodField(help_text="是否允许更新网关认证配置")
     bk_app_codes = serializers.SerializerMethodField(help_text="网关关联的应用")
-    related_app_codes = serializers.SerializerMethodField(help_text="关联的APP")
+    related_app_codes = serializers.SerializerMethodField(help_text="关联的 APP")
+    tenant_mode = serializers.CharField(help_text="租户模式")
+    tenant_id = serializers.CharField(help_text="租户 ID")
 
     class Meta:
         model = Gateway
@@ -170,13 +176,15 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             "public_key_fingerprint",
             "bk_app_codes",
             "related_app_codes",
+            "tenant_mode",
+            "tenant_id",
         )
         read_only_fields = fields
         lookup_field = "id"
 
         extra_kwargs = {
             "id": {
-                "help_text": "网关ID",
+                "help_text": "网关 ID",
             },
             "name": {
                 "help_text": "网关名称",
@@ -185,7 +193,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
                 "help_text": "网关状态，0：已停用，1：启用中",
             },
             "is_public": {
-                "help_text": "是否公开, true: 公开,false: 不公开",
+                "help_text": "是否公开，true: 公开，false: 不公开",
             },
             "created_by": {
                 "help_text": "创建人",

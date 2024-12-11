@@ -16,19 +16,24 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from django.utils.functional import cached_property
+from unittest.mock import Mock, patch
 
-from apigateway.common.factories import SchemaFactory
-from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
-
-from .context import BaseContext
+from apigateway.common.tenant.request import gen_operation_tenant_headers, get_user_tenant_id
 
 
-# FIXME: remove it if no `Context` required
-class GatewayFeatureFlagContext(BaseContext):
-    scope_type = ContextScopeTypeEnum.GATEWAY.value
-    type = ContextTypeEnum.GATEWAY_FEATURE_FLAG.value
+@patch("apigateway.common.tenant.request.settings")
+def test_get_user_tenant_id_multi_tenant_mode(mock_settings):
+    mock_settings.ENABLE_MULTI_TENANT_MODE = True
+    request = Mock()
+    request.user.tenant_id = "tenant_123"
+    assert get_user_tenant_id(request) == "tenant_123"
 
-    @cached_property
-    def schema(self):
-        return SchemaFactory().get_context_gateway_feature_flag_schema()
+
+@patch("apigateway.common.tenant.request.settings")
+def test_get_user_tenant_id_single_tenant_mode(mock_settings):
+    mock_settings.ENABLE_MULTI_TENANT_MODE = False
+    assert get_user_tenant_id(Mock()) == "default"
+
+
+def test_gen_operation_tenant_headers():
+    assert gen_operation_tenant_headers() == {"X-Bk-Tenant-Id": "system"}

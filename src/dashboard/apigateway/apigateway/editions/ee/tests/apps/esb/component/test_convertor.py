@@ -27,7 +27,7 @@ from apigateway.common.error_codes import APIError
 class TestComponent:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self):
-        self.component = Component.parse_obj(
+        self.component = Component.model_validate(
             {
                 "id": None,
                 "method": "GET",
@@ -96,7 +96,7 @@ class TestComponent:
         ],
     )
     def test_to_resource(self, data, expected):
-        component = Component.parse_obj(data)
+        component = Component.model_validate(data)
         assert component.to_resource() == expected
 
     @pytest.mark.parametrize(

@@ -20,7 +20,7 @@ from typing import Any, Dict, List
 
 from django.db.models import Count
 from django.utils.translation import gettext as _
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.openapi.models import OpenAPIResourceSchema
@@ -47,7 +47,7 @@ class ResourcesSaver:
 
     @classmethod
     def from_resources(cls, gateway: Gateway, resources: List[Dict[str, Any]], username: str):
-        resource_data_list = parse_obj_as(List[ResourceData], resources)
+        resource_data_list = TypeAdapter(List[ResourceData]).validate_python(resources)
         return cls(gateway, resource_data_list, username)
 
     def save(self) -> List[Resource]:
@@ -197,7 +197,7 @@ class ResourcesSaver:
             context = contexts.get(resource_data.resource.id)
 
             auth_config = (context and context.config) or ResourceHandler.get_default_auth_config()
-            auth_config.update(resource_data.auth_config.dict())
+            auth_config.update(resource_data.auth_config.model_dump())
 
             if context:
                 context._config = json.dumps(auth_config)
