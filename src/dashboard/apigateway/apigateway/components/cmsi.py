@@ -23,12 +23,11 @@ from bkapi_client_core.exceptions import BKAPIError
 from bkapi_component.open.shortcuts import get_client_by_username
 from django.utils.translation import gettext as _
 
-# FIXME: upgrade to new cmsi gateway
-# FIXME: 需要 ineject x-bk-tenant-id=> 需要获取对应网关的 tenant_id，发送时放入 header 头，以使用其渠道
-
 # FIXME: remove bkapi_client_core from pyproject.toml
 
 
+# FIXME: upgrade to new cmsi gateway
+# FIXME: 需要 ineject x-bk-tenant-id=> 需要获取对应网关的 tenant_id，发送时放入 header 头，以使用其渠道
 # FIXME: 内部上云版怎么办，还得继续使用 bk-esb 的 cmsi 组件， 所以这个组件还不能删，只能新增一个？
 
 
