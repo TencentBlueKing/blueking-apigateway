@@ -20,6 +20,7 @@
 
 import logging
 import time
+import uuid
 from urllib.parse import urlparse
 
 import requests
@@ -28,10 +29,22 @@ from django.conf import settings
 logger = logging.getLogger("component")
 
 
-def _gen_header():
-    return {
-        "Content-Type": "application/json",
-    }
+def _enrich_header(headers=None):
+    if not headers:
+        request_id = str(uuid.uuid4()).replace("-", "")
+        return {
+            # only add this when the headers is not provided
+            "Content-Type": "application/json",
+            "X-Request-Id": request_id,
+        }
+
+    request_id = headers.get("X-Request-Id")
+    if request_id:
+        return headers
+
+    request_id = str(uuid.uuid4()).replace("-", "")
+    headers["X-Request-Id"] = request_id
+    return headers
 
 
 session = requests.Session()
@@ -48,7 +61,9 @@ def _http_request(
     if request_session is None:
         request_session = session
 
-    request_id = headers.get("X-Request-Id", "-") if headers else "-"
+    headers = _enrich_header(headers)
+    request_id = headers.get("X-Request-Id")
+
     st = time.time()
     try:
         if method == "GET":
@@ -104,8 +119,6 @@ def _http_request(
 
 
 def http_get(url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None):
-    if not headers:
-        headers = _gen_header()
     return _http_request(
         method="GET",
         url=url,
@@ -120,8 +133,6 @@ def http_get(url, data, headers=None, verify=False, cert=None, timeout=None, coo
 
 
 def http_post(url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None):
-    if not headers:
-        headers = _gen_header()
     return _http_request(
         method="POST",
         url=url,
@@ -136,8 +147,6 @@ def http_post(url, data, headers=None, verify=False, cert=None, timeout=None, co
 
 
 def http_put(url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None):
-    if not headers:
-        headers = _gen_header()
     return _http_request(
         method="PUT",
         url=url,
@@ -152,8 +161,6 @@ def http_put(url, data, headers=None, verify=False, cert=None, timeout=None, coo
 
 
 def http_patch(url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None):
-    if not headers:
-        headers = _gen_header()
     return _http_request(
         method="PATCH",
         url=url,
@@ -168,8 +175,6 @@ def http_patch(url, data, headers=None, verify=False, cert=None, timeout=None, c
 
 
 def http_delete(url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None):
-    if not headers:
-        headers = _gen_header()
     return _http_request(
         method="DELETE",
         url=url,

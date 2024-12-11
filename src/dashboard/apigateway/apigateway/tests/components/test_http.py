@@ -21,7 +21,7 @@ from unittest.mock import patch
 import pytest
 import requests
 
-from apigateway.components.http import _http_request
+from apigateway.components.http import _enrich_header, _http_request
 
 
 @pytest.fixture
@@ -79,3 +79,23 @@ def test_http_request_error(mock_session):
 
     assert success is False
     assert "error" in response
+
+
+def test_enrich_header():
+    # Test when headers are None
+    headers = _enrich_header()
+    assert "Content-Type" in headers
+    assert headers["Content-Type"] == "application/json"
+    assert "X-Request-Id" in headers
+    assert len(headers["X-Request-Id"]) == 32
+
+    # Test when headers are provided without X-Request-Id
+    headers = _enrich_header({"Content-Type": "application/xml"})
+    assert headers["Content-Type"] == "application/xml"
+    assert "X-Request-Id" in headers
+    assert len(headers["X-Request-Id"]) == 32
+
+    # Test when headers are provided with X-Request-Id
+    headers = _enrich_header({"Content-Type": "application/xml", "X-Request-Id": "test-id"})
+    assert headers["Content-Type"] == "application/xml"
+    assert headers["X-Request-Id"] == "test-id"
