@@ -346,6 +346,9 @@ class GatewayMaintainerUpdateApi(generics.UpdateAPIView):
         # gateway = request.gateway
         instance = self.get_object()
 
+        # FIXME: if multi tenant mode, the maintainers should be the same tenant of the gateway
+        # currently, the gateway list filtered by tenant_id, so it's not so important for now
+
         data_before = instance.maintainers
         instance.maintainers = maintainers
         instance.save()
@@ -376,6 +379,7 @@ class GatewayIdUpdateStatusApi(generics.UpdateAPIView):
 
     @swagger_auto_schema(request_body=GatewayUpdateStatusInputSLZ, tags=["OpenAPI.V1"])
     def put(self, request, *args, **kwargs):
+        # FIXME: should check it has the right to update the gateway status
         instance = self.get_object()
 
         status_before = instance.status
