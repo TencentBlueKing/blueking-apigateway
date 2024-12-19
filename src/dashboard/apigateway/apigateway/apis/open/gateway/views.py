@@ -88,11 +88,20 @@ class GatewayListApi(generics.ListAPIView):
 
         data = slz.validated_data
 
+        # 多租户环境，需要获取 tenant_mode/tenant_id作为过滤条件，是必传的
+        tenant_id = None
+        if settings.ENABLE_MULTI_TENANT_MODE:
+            # FIXME: add /api/v2/, we should get this tenant_id in middleware, set into request.tenant_id
+            tenant_id = request.headers.get("X-Bk-Tenant-Id", None)
+            if not tenant_id:
+                raise serializers.ValidationError("tenant_id is required in multi-tenant mode")
+
         queryset = self._filter_list_queryset(
             name=data.get("name"),
             query=data.get("query"),
             user_auth_type=data.get("user_auth_type"),
             fuzzy=data.get("fuzzy"),
+            tenant_id=tenant_id,
         )
         gateway_ids = list(queryset.values_list("id", flat=True))
 
@@ -112,6 +121,7 @@ class GatewayListApi(generics.ListAPIView):
         query: Optional[str] = None,
         user_auth_type: Optional[str] = None,
         fuzzy: Optional[bool] = None,
+        tenant_id: Optional[str] = None,
     ) -> QuerySet:
         """
         获取可用的网关列表
@@ -121,6 +131,13 @@ class GatewayListApi(generics.ListAPIView):
         - 4. 满足 name、query, user_auth_type 等过滤条件
         """
         queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
+
+        # 可以申请全租户网关接口 + 本租户网关接口的权限
+        if tenant_id:
+            queryset = queryset.filter(
+                Q(tenant_mode=TenantModeEnum.GLOBAL.value)
+                | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=tenant_id)
+            )
 
         if name:
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
@@ -329,6 +346,9 @@ class GatewayMaintainerUpdateApi(generics.UpdateAPIView):
         # gateway = request.gateway
         instance = self.get_object()
 
+        # FIXME: if multi tenant mode, the maintainers should be the same tenant of the gateway
+        # currently, the gateway list filtered by tenant_id, so it's not so important for now
+
         data_before = instance.maintainers
         instance.maintainers = maintainers
         instance.save()
@@ -359,6 +379,7 @@ class GatewayIdUpdateStatusApi(generics.UpdateAPIView):
 
     @swagger_auto_schema(request_body=GatewayUpdateStatusInputSLZ, tags=["OpenAPI.V1"])
     def put(self, request, *args, **kwargs):
+        # FIXME: should check it has the right to update the gateway status
         instance = self.get_object()
 
         status_before = instance.status

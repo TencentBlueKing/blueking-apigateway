@@ -24,12 +24,12 @@ from .constants import (
 )
 
 
-def gateway_filter_by_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
+def gateway_filter_by_tenant_id(queryset: QuerySet, input_tenant_id: str) -> QuerySet:
     # 运营租户可以看到 全租户网关 + 自己租户网关
-    if user_tenant_id == TENANT_ID_OPERATION:
+    if input_tenant_id == TENANT_ID_OPERATION:
         return queryset.filter(
             Q(tenant_mode=TenantModeEnum.GLOBAL.value)
-            | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=user_tenant_id)
+            | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=input_tenant_id)
         )
     # only list the gateways under the tenant
-    return queryset.filter(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=user_tenant_id)
+    return queryset.filter(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=input_tenant_id)

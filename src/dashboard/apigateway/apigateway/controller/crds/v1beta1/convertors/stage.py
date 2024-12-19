@@ -109,14 +109,17 @@ class StageConvertor(BaseConvertor):
 
         # 多租户模式
         if settings.ENABLE_MULTI_TENANT_MODE:
-            default_stage_plugins.append(
-                PluginConfig(
-                    name="bk-tenant-verify",
-                    config={
-                        "tenant_mode": self._release_data.gateway.tenant_mode,
-                        "tenant_id": self._release_data.gateway.tenant_id,
-                    },
-                )
+            default_stage_plugins.extend(
+                [
+                    PluginConfig(name="bk-tenant-verify"),
+                    PluginConfig(
+                        name="bk-tenant-validate",
+                        config={
+                            "tenant_mode": self._release_data.gateway.tenant_mode,
+                            "tenant_id": self._release_data.gateway.tenant_id,
+                        },
+                    ),
+                ]
             )
         else:
             default_stage_plugins.append(PluginConfig(name="bk-default-tenant"))

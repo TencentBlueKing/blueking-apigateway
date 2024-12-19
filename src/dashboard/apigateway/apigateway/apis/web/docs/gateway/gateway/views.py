@@ -52,6 +52,7 @@ class GatewayListApi(generics.ListAPIView):
         slz.is_valid(raise_exception=True)
 
         user_tenant_id = get_user_tenant_id(request)
+
         # 网关公开，启用中
         queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
 
