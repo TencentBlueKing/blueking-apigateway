@@ -19,6 +19,7 @@
 
 from typing import Dict, List, Tuple
 
+from cachetools import TTLCache, cached
 from django.conf import settings
 
 from apigateway.utils.local import local
@@ -82,3 +83,12 @@ def list_all_apps_of_tenant(tenant_mode: str, tenant_id: str) -> List[Dict]:
         all_results.extend(results)
 
     return all_results
+
+
+@cached(cache=TTLCache(maxsize=2000, ttl=300))
+def list_available_apps_for_tenant(tenant_mode: str, tenant_id: str) -> List[Dict]:
+    # list tenant_mode=global apps
+    global_apps = list_all_apps_of_tenant("global", "")
+    # list the tenant's apps
+    tenant_apps = list_all_apps_of_tenant(tenant_mode, tenant_id)
+    return global_apps + tenant_apps

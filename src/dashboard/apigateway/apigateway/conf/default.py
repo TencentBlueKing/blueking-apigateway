@@ -557,7 +557,8 @@ BKAUTH_TOKEN_SECRET_KEY = BK_APP_SECRET
 if ENABLE_MULTI_TENANT_MODE:
     # https://bkapi.bk-tenant-dev.woa.com/api/bk-login
     BKAUTH_USER_COOKIE_VERIFY_URL = (
-        BK_API_URL_TMPL.format(api_name="bk-login") + "/prod/login/api/v3/open/bk-tokens/verify/"
+        # BK_API_URL_TMPL.format(api_name="bk-login") + "/prod/login/api/v3/open/bk-tokens/verify/"
+        BK_API_URL_TMPL.format(api_name="bk-login") + "/prod/login/api/v3/open/bk-tokens/userinfo/"
     )
     # FIXME: there got no endpoint for get user info in multi-tenant mode env
     BKAUTH_TOKEN_USER_INFO_ENDPOINT = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/get_user/"

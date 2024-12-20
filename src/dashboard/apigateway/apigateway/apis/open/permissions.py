@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from django.conf import settings
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy
@@ -37,6 +38,9 @@ class OpenAPIPermission(permissions.BasePermission):
         # openapi 的请求来源必须是网关，此时经过网关的中间件（所有都开启了应用认证）, 请求中会注入 app 对象
         if not hasattr(request, "app"):
             return False
+
+        if settings.ENABLE_MULTI_TENANT_MODE:
+            request.tenant_id = request.headers.get("X-Bk-Tenant-Id", None)
 
         return True
 
