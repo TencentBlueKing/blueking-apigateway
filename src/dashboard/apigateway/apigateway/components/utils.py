@@ -17,14 +17,35 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import copy
+import json
 import logging
 from typing import Dict, Optional
 from urllib.parse import urlparse
+
+from django.conf import settings
+from django.utils.translation import get_language
 
 from apigateway.common.error_codes import error_codes
 from apigateway.utils.local import local
 
 logger = logging.getLogger("component")
+
+
+def gen_gateway_headers() -> Dict[str, str]:
+    headers = {
+        "Content-Type": "application/json",
+        "X-Bkapi-Authorization": json.dumps(
+            {
+                "bk_app_code": settings.BK_APP_CODE,
+                "bk_app_secret": settings.BK_APP_SECRET,
+            }
+        ),
+    }
+    language = get_language()
+    if language:
+        headers["Accept-Language"] = language
+
+    return headers
 
 
 def _remove_sensitive_info(info: Optional[Dict]) -> str:

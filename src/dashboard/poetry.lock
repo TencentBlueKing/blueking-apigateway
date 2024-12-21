@@ -273,13 +273,12 @@ bkapi-client-core = ">=1.1.0,<2.0.0"
 
 [[package]]
 name = "bkpaas-auth"
-version = "3.0.0"
+version = "3.1.0"
 description = "User authentication django app for blueking internal projects"
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "bkpaas_auth-3.0.0-py3-none-any.whl", hash = "sha256:cbad6348510b856147c3647413aab7da49345ec6f7276c435c10556209571606"},
-    {file = "bkpaas_auth-3.0.0.tar.gz", hash = "sha256:85786155fd8f379cd0ee3330b33d704718cc31d178cecb1bb6a6c5ccf348f782"},
+    {file = "bkpaas_auth-3.1.0.tar.gz", hash = "sha256:5cc418e08153b633c6e306fcf699571cea64f87aea25aae6a75d4ef2b5a98c11"},
 ]
 
 [package.dependencies]
@@ -901,13 +900,13 @@ files = [
 
 [[package]]
 name = "django"
-version = "4.2.16"
+version = "4.2.17"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "Django-4.2.16-py3-none-any.whl", hash = "sha256:1ddc333a16fc139fd253035a1606bb24261951bbc3a6ca256717fa06cc41a898"},
-    {file = "Django-4.2.16.tar.gz", hash = "sha256:6f1616c2786c408ce86ab7e10f792b8f15742f7b7b7460243929cb371e7f1dad"},
+    {file = "Django-4.2.17-py3-none-any.whl", hash = "sha256:3a93350214ba25f178d4045c0786c61573e7dbfa3c509b3551374f1e11ba8de0"},
+    {file = "Django-4.2.17.tar.gz", hash = "sha256:6b56d834cc94c8b21a8f4e775064896be3b4a4ca387f2612d4406a5927cd2fdc"},
 ]
 
 [package.dependencies]
@@ -4711,4 +4710,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "a4f532c0aea297b2a2e701a0a308b60299489acc006738f5b4fcab683a506ec0"
+content-hash = "e25357accda0c6925a40edcfb32604e76a2ece03f66158d5ea9bc9e558e469e1"

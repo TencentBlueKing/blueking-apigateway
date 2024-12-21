@@ -41,6 +41,8 @@ from apigateway.core.models import (
 class GatewayAdmin(admin.ModelAdmin):
     list_display = [
         "id",
+        "tenant_mode",
+        "tenant_id",
         "name",
         "status",
         "is_public",

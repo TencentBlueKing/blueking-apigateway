@@ -28,6 +28,7 @@ urlpatterns = [
             [
                 path("", views.GatewayRetrieveUpdateDestroyApi.as_view(), name="gateways.retrieve_update_destroy"),
                 path("status/", views.GatewayUpdateStatusApi.as_view(), name="gateways.update_status"),
+                path("tenant-apps/", views.GatewayTenantAppListApi.as_view(), name="gateway.tenant.apps"),
             ]
         ),
     ),

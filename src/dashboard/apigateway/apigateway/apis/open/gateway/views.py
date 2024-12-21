@@ -91,10 +91,9 @@ class GatewayListApi(generics.ListAPIView):
         # 多租户环境，需要获取 tenant_mode/tenant_id作为过滤条件，是必传的
         tenant_id = None
         if settings.ENABLE_MULTI_TENANT_MODE:
-            # FIXME: add /api/v2/, we should get this tenant_id in middleware, set into request.tenant_id
-            tenant_id = request.headers.get("X-Bk-Tenant-Id", None)
-            if not tenant_id:
+            if not request.tenant_id:
                 raise serializers.ValidationError("tenant_id is required in multi-tenant mode")
+            tenant_id = request.tenant_id
 
         queryset = self._filter_list_queryset(
             name=data.get("name"),
