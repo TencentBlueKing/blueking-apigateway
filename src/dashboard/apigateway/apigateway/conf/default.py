@@ -1,6 +1,6 @@
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -549,20 +549,23 @@ PAAS_RENEW_API_PERMISSION_URL = f"{BK_PAAS3_URL}/developer-center/apps/{{bk_app_
 # ==============================================================================
 # bkpaas-auth 配置
 # ==============================================================================
-BKAUTH_BACKEND_TYPE = "bk_token"
 
 BKAUTH_TOKEN_APP_CODE = BK_APP_CODE
 BKAUTH_TOKEN_SECRET_KEY = BK_APP_SECRET
 
-if ENABLE_MULTI_TENANT_MODE:
-    # https://bkapi.bk-tenant-dev.woa.com/api/bk-login
-    BKAUTH_USER_COOKIE_VERIFY_URL = (
-        # BK_API_URL_TMPL.format(api_name="bk-login") + "/prod/login/api/v3/open/bk-tokens/verify/"
+# 用户登录态认证类型，默认为 bk_token，te 版本会被 te_default.py 中的值覆盖
+BKAUTH_BACKEND_TYPE = "bk_token"
+
+# 启用多租户模式
+BKAUTH_ENABLE_MULTI_TENANT_MODE = ENABLE_MULTI_TENANT_MODE
+
+# 验证用户信息的网关 API(租户版本) => 走网关，不走 esb
+if EDITION == "ee":
+    BKAUTH_USER_INFO_APIGW_URL = (
         BK_API_URL_TMPL.format(api_name="bk-login") + "/prod/login/api/v3/open/bk-tokens/userinfo/"
     )
-    # FIXME: there got no endpoint for get user info in multi-tenant mode env
-    BKAUTH_TOKEN_USER_INFO_ENDPOINT = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/get_user/"
 else:
+    # 只在 te 生效，并且会被 te_default.py 中的值覆盖
     BKAUTH_USER_COOKIE_VERIFY_URL = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/is_login/"
     BKAUTH_TOKEN_USER_INFO_ENDPOINT = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/get_user/"
 

@@ -39,6 +39,7 @@ from apigateway.common.tenant.constants import (
     TenantModeEnum,
 )
 from apigateway.common.tenant.request import get_user_tenant_id
+from apigateway.components.bkauth import list_all_apps_of_tenant, list_available_apps_for_tenant
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
@@ -50,6 +51,7 @@ from .serializers import (
     GatewayListInputSLZ,
     GatewayListOutputSLZ,
     GatewayRetrieveOutputSLZ,
+    GatewayTenantAppListOutputSLZ,
     GatewayUpdateInputSLZ,
     GatewayUpdateStatusInputSLZ,
 )
@@ -320,3 +322,30 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取网关可配置的应用列表",
+        responses={status.HTTP_200_OK: GatewayTenantAppListOutputSLZ(many=True)},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+class GatewayTenantAppListApi(generics.ListAPIView):
+    queryset = Gateway.objects.all()
+    lookup_url_kwarg = "gateway_id"
+
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # 需要能配置所有的应用 => get tenant list, then get all apps of each tenant
+        if instance.tenant_mode == TenantModeEnum.GLOBAL.value:
+            apps = list_all_apps_of_tenant(TenantModeEnum.GLOBAL.value, "")
+            # FIXME get all other tenant's app
+
+        # 否则，只能配置 全租户应用 + 本租户应用
+        else:
+            apps = list_available_apps_for_tenant(instance.tenant_mode, instance.tenant_id)
+
+        return OKJsonResponse(data=apps)
