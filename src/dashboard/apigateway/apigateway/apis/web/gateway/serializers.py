@@ -283,7 +283,7 @@ class GatewayFeatureFlagsOutputSLZ(serializers.Serializer):
     feature_flags = serializers.DictField(help_text="网关特性集")
 
 
-class GatewayTenantAppTenant(serializers.Serializer):
+class GatewayTenantAppInfoTenant(serializers.Serializer):
     mode = serializers.CharField(help_text="租户模式")
     id = serializers.CharField(help_text="租户 ID")
 
@@ -301,7 +301,7 @@ class GatewayTenantAppListOutputSLZ(serializers.Serializer):
     bk_app_code = serializers.CharField(help_text="应用编码")
     name = serializers.CharField(help_text="应用名称")
     description = serializers.CharField(help_text="应用描述")
-    bk_tenant = GatewayTenantAppTenant(help_text="租户信息")
+    bk_tenant = GatewayTenantAppInfoTenant(help_text="租户信息")
 
     class Meta:
         ref_name = "apigateway.apis.web.gateway.serializers.GatewayTenantAppListOutputSLZ"

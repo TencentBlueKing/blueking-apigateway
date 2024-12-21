@@ -24,7 +24,7 @@ from apigateway.common.tenant.request import gen_operation_tenant_headers
 from apigateway.utils.url import url_join
 
 from .http import http_post
-from .utils import do_legacy_blueking_http_request
+from .utils import do_legacy_blueking_http_request, gen_gateway_headers
 
 
 def query_range(bk_biz_id: str, promql: str, start: int, end: int, step: str) -> Any:
@@ -72,9 +72,13 @@ def _promql_query(bk_biz_id: str, promql: str, start: int, end: int, step: str, 
         "type": type_,
     }
 
-    headers = {
-        "X-Bk-Scope-Space-Uid": f"bkcc__{bk_biz_id}",
-    }
+    headers = gen_gateway_headers()
+    headers.update(
+        {
+            "X-Bk-Scope-Space-Uid": f"bkcc__{bk_biz_id}",
+        }
+    )
+
     headers.update(gen_operation_tenant_headers())
 
     host = settings.BK_API_URL_TMPL.format(api_name="bkmonitorv3")

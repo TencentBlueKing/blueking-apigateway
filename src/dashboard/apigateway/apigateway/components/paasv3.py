@@ -21,14 +21,12 @@ from typing import Any, Dict, Iterable, List, Optional
 
 from cachetools import TTLCache, cached
 from django.conf import settings
-from django.utils.translation import get_language
 
-from apigateway.common.tenant.request import gen_operation_tenant_headers
 from apigateway.utils.list import chunk_list
 from apigateway.utils.url import url_join
 
 from .http import http_get
-from .utils import do_legacy_blueking_http_request
+from .utils import do_legacy_blueking_http_request, gen_gateway_headers
 
 logger = logging.getLogger(__name__)
 
@@ -69,22 +67,22 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
     return []
 
 
-def _call_paasv3_uni_apps_query_by_id(app_codes: List[str]):
+def _call_paasv3_uni_apps_query_by_id(app_codes: List[str], tenant_id: str = "") -> List[Dict[str, Any]]:
     data = {
-        "private_token": getattr(settings, "BK_PAAS3_PRIVATE_TOKEN", ""),
         "id": app_codes,
         "format": "bk_std_json",
     }
 
-    headers = {
-        "Content-Type": "application/json",
-    }
-    headers.update(gen_operation_tenant_headers())
-    language = get_language()
-    if language:
-        headers["Accept-Language"] = language
+    # FIXME: should set the tenant_id
 
-    url = url_join(settings.BK_PAAS3_API_URL, "/prod/system/uni_applications/query/by_id/")
+    headers = gen_gateway_headers()
+
+    gateway_name = "bkpaas3"
+    if settings.EDITION == "te":
+        gateway_name = "paasv3"
+    host = settings.BK_API_URL_TMPL.format(api_name=gateway_name)
+
+    url = url_join(host, "/prod/system/uni_applications/query/by_id/")
     timeout = 10
 
-    return do_legacy_blueking_http_request("bklog", http_get, url, data, headers, timeout)
+    return do_legacy_blueking_http_request(gateway_name, http_get, url, data, headers, timeout)

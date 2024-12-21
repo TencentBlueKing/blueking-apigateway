@@ -327,7 +327,7 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="获取网关可配置的应用列表",
+        operation_description="获取网关可配置的应用列表，用于应用选择器",
         responses={status.HTTP_200_OK: GatewayTenantAppListOutputSLZ(many=True)},
         tags=["WebAPI.Gateway"],
     ),
