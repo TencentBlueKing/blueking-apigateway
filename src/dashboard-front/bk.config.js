@@ -15,11 +15,13 @@ module.exports = {
     return {
       devServer: {
         setupMiddlewares: mockServer,
-        host: 'dev-t.paas3-dev.bktencent.com',
+        // host: 'dev-t.paas3-dev.bktencent.com',
+        host: 'dev-t.paasv3-dev.woa.com',
         client: {
           overlay: false,
         },
-        https: !process.env.BK_HTTPS,
+        // https: !process.env.BK_HTTPS,
+        https: false,
       },
     };
   },

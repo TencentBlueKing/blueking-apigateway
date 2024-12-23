@@ -16,6 +16,8 @@ interface IApiGatewayBasics {
   is_official: boolean;
   api_url: string;
   sdks?: IApiGatewaySdk[];
+  tenant_mode?: string;
+  tenant_id?: string;
 }
 
 interface IApiGatewaySdkDoc {

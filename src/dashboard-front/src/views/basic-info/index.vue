@@ -71,6 +71,21 @@
         <div class="basic-info-detail-item">
           <div class="detail-item-title">{{ t('基础信息') }}</div>
           <div class="detail-item-content">
+            <template v-if="user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
+              <div class="detail-item-content-item">
+                <div class="label">{{ `${t('租户模式')}：` }}</div>
+                <div class="value">
+                  <span>{{ basicInfoData.tenant_mode || '是' }}</span>
+                </div>
+              </div>
+              <div class="detail-item-content-item">
+                <div class="label">{{ `${t('租户 ID')}：` }}</div>
+                <div class="value url">
+                  <span>{{ basicInfoData.tenant_id || '--' }}</span>
+                  <i class="apigateway-icon icon-ag-copy-info" @click.self.stop="copy(basicInfoData.tenant_id)"></i>
+                </div>
+              </div>
+            </template>
             <div class="detail-item-content-item">
               <div class="label">{{ `${t('是否公开')}：` }}</div>
               <div class="value">
@@ -367,6 +382,8 @@ const basicInfoData = ref<BasicInfoParams>({
   developers: [],
   is_public: true,
   is_official: false,
+  tenant_mode: '',
+  tenant_id: '',
 });
 const basicInfoDetailData = ref(_.cloneDeep(basicInfoData.value));
 const delApigwDialog = ref<DialogParams>({

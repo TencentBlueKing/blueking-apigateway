@@ -27,6 +27,14 @@
           <main class="content-main">{{ basics.maintainers.join(', ') }}</main>
         </article>
         <article>
+          <header class="content-title">{{ t('租户模式') }}</header>
+          <main class="content-main">{{ basics.tenant_mode }}</main>
+        </article>
+        <article>
+          <header class="content-title">{{ t('租户 ID') }}</header>
+          <main class="content-main">{{ basics.tenant_id || '--' }}</main>
+        </article>
+        <article>
           <header class="content-title">{{ t('网关访问地址') }}</header>
           <main class="content-main">{{ basics.api_url }}</main>
         </article>
