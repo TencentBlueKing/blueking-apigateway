@@ -20,7 +20,6 @@ from typing import Any
 
 from django.conf import settings
 
-from apigateway.common.tenant.request import gen_operation_tenant_headers
 from apigateway.utils.url import url_join
 
 from .http import http_post
@@ -33,8 +32,7 @@ def esquery_dsl(index: str, body: Any) -> Any:
         "body": body,
     }
 
-    headers = gen_gateway_headers()
-    headers.update(gen_operation_tenant_headers())
+    headers = gen_gateway_headers(with_operation_tenant_headers=True)
 
     gateway_name = "bk-log-search"
     if settings.EDITION == "te":

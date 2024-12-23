@@ -31,5 +31,9 @@ def get_user_tenant_id(request) -> str:
     return TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
 
 
-def gen_operation_tenant_headers() -> Dict[str, str]:
+def gen_operation_tenant_header() -> Dict[str, str]:
     return {"X-Bk-Tenant-Id": TENANT_ID_OPERATION}
+
+
+def gen_tenant_header(tenant_id: str) -> Dict[str, str]:
+    return {"X-Bk-Tenant-Id": tenant_id}

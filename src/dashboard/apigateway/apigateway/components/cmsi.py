@@ -16,22 +16,31 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from abc import ABC, abstractmethod
 from typing import Tuple
 
 from bkapi_client_core.esb import Operation
 from bkapi_client_core.exceptions import BKAPIError
 from bkapi_component.open.shortcuts import get_client_by_username
+from django.conf import settings
 from django.utils.translation import gettext as _
 
-# FIXME: remove bkapi_client_core from pyproject.toml
+
+class BaseCMSIComponent(ABC):
+    @abstractmethod
+    def send_mail(self, params: dict, username: str = "") -> Tuple[bool, str]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def send_wechat(self, params: dict, username: str = "") -> Tuple[bool, str]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def send_im(self, params: dict, username: str = "") -> Tuple[bool, str]:
+        raise NotImplementedError
 
 
-# FIXME: upgrade to new cmsi gateway
-# FIXME: 需要 ineject x-bk-tenant-id=> 需要获取对应网关的 tenant_id，发送时放入 header 头，以使用其渠道
-# FIXME: 内部上云版怎么办，还得继续使用 bk-esb 的 cmsi 组件， 所以这个组件还不能删，只能新增一个？
-
-
-class CMSIComponent:
+class CMSIComponent(BaseCMSIComponent):
     def _call_api(self, action: str, data: dict, username: str) -> Tuple[bool, str]:
         client = get_client_by_username(username)
         try:
@@ -56,4 +65,23 @@ class CMSIComponent:
         return True, ""
 
 
-cmsi_component = CMSIComponent()
+class BKCMSIGateway(BaseCMSIComponent):
+    # FIXME: 如果新版本的 bk-cmsi 协议跟 esb cmsi 协议不一样，那么上层代码也需要修改
+    # FIXME: 需要 ineject x-bk-tenant-id=> 需要获取对应网关的 tenant_id，发送时放入 header 头，以使用其渠道
+    def send_mail(self, params: dict, username: str = "") -> Tuple[bool, str]:
+        raise NotImplementedError
+
+    def send_wechat(self, params: dict, username: str = "") -> Tuple[bool, str]:
+        raise NotImplementedError
+
+    def send_im(self, params: dict, username: str = "") -> Tuple[bool, str]:
+        raise NotImplementedError
+
+
+cmsi_component: BaseCMSIComponent
+
+if settings.ENABLE_MULTI_TENANT_MODE:
+    print("multi-tenant mode enabled, use bkcmsi gateway instead of cmsi component in esb")
+    cmsi_component = BKCMSIGateway()
+else:
+    cmsi_component = CMSIComponent()
