@@ -217,20 +217,21 @@ class GatewaySyncApi(generics.CreateAPIView):
         slz = self.get_serializer(gateway, data=request.data)
         slz.is_valid(raise_exception=True)
 
+        data = slz.validated_data
         # assign the tenant_mode and tenant_id
         if settings.ENABLE_MULTI_TENANT_MODE:
             app_info = get_app_info(request.app.app_code)
-            slz.validated_data["tenant_mode"] = app_info["tenant_mode"]
-            slz.validated_data["tenant_id"] = app_info["tenant_id"]
+            data["tenant_mode"] = app_info["bk_tenant"]["mode"]
+            data["tenant_id"] = app_info["bk_tenant"]["id"]
         else:
-            slz.validated_data["tenant_mode"] = TenantModeEnum.SINGLE.value
-            slz.validated_data["tenant_id"] = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
+            data["tenant_mode"] = TenantModeEnum.SINGLE.value
+            data["tenant_id"] = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
 
         # save gateway
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
         saver = GatewaySaver(
             id=gateway and gateway.id,
-            data=TypeAdapter(GatewayData).validate_python(slz.validated_data),
+            data=TypeAdapter(GatewayData).validate_python(data),
             bk_app_code=request.app.app_code,
             username=username,
         )

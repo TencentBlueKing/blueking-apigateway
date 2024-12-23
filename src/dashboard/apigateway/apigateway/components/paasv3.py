@@ -24,6 +24,7 @@ from cachetools import TTLCache, cached
 from django.conf import settings
 
 from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.constants import TENANT_ID_OPERATION, TenantModeEnum
 from apigateway.common.tenant.request import gen_tenant_header
 from apigateway.utils.local import local
 from apigateway.utils.url import url_join
@@ -90,9 +91,14 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
     #       but the X-Bk-Tenant-Id required
     #       so, we query it from bkauth first
     info = bkauth_get_app_info(bk_app_code)
-    tenant_id = info["tenant_id"]
+    tenant_mode = info["bk_tenant"]["mode"]
+    tenant_id = info["bk_tenant"]["id"]
+    # 全租户应用，使用 tenant_id = system 去查询应用信息
+    if tenant_mode == TenantModeEnum.GLOBAL.value:
+        app = get_app(TENANT_ID_OPERATION, bk_app_code)
+    else:
+        app = get_app(tenant_id, bk_app_code)
 
-    app = get_app(tenant_id, bk_app_code)
     if not app:
         return []
 
