@@ -229,14 +229,13 @@ class TestResourceVersionNeedNewVersionRetrieveApi:
 
 
 class TestResourceVersionDiffApi:
-    def test_resource_version_diff(
+    def test_resource_version_diff_without_resource_version(
         self,
         request_view,
         fake_backend,
         fake_stage,
         fake_gateway,
         fake_resource,
-        fake_resource_version_v2,
         echo_plugin_stage_binding,
     ):
         resp = request_view(
@@ -292,6 +291,34 @@ class TestResourceVersionDiffApi:
                         "doc_updated_time": {},
                     }
                 ],
+                "delete": [],
+                "update": [],
+            }
+        }
+
+    def test_resource_version_diff_with_resource_version(
+        self,
+        request_view,
+        fake_backend,
+        fake_stage,
+        fake_gateway,
+        fake_resource_version_v2,
+        echo_plugin_stage_binding,
+    ):
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.diff",
+            gateway=fake_gateway,
+            path_params={
+                "gateway_id": fake_gateway.id,
+            },
+            data={"source_resource_version_id": fake_resource_version_v2.id, "target_resource_version_id": ""},
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result == {
+            "data": {
+                "add": [],
                 "delete": [],
                 "update": [],
             }
