@@ -40,6 +40,7 @@ from apigateway.common.tenant.constants import (
 )
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.components.bkauth import list_all_apps_of_tenant, list_available_apps_for_tenant
+from apigateway.components.bkuser import get_tenant_list
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
@@ -94,6 +95,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         page = self.paginate_queryset(queryset)
         gateway_ids = [gateway.id for gateway in page]
 
+        # FIXME: created_by to display_name
         output_slz = GatewayListOutputSLZ(
             page,
             many=True,
@@ -339,12 +341,17 @@ class GatewayTenantAppListApi(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        # 需要能配置所有的应用 => get tenant list, then get all apps of each tenant
+        # 全租户网关，需要能配置所有的应用 => get tenant list, then get all apps of each tenant
         if instance.tenant_mode == TenantModeEnum.GLOBAL.value:
             apps = list_all_apps_of_tenant(TenantModeEnum.GLOBAL.value, "")
-            # FIXME get all other tenant's app
 
-        # 否则，只能配置 全租户应用 + 本租户应用
+            # FIXME get all other tenant's app
+            tenant_list = get_tenant_list()
+            tenant_ids = [tenant["id"] for tenant in tenant_list]
+            for tenant_id in tenant_ids:
+                apps.extend(list_all_apps_of_tenant(TenantModeEnum.SINGLE.value, tenant_id))
+
+        # 单租户网关，只能配置 全租户应用 + 本租户应用
         else:
             apps = list_available_apps_for_tenant(instance.tenant_mode, instance.tenant_id)
 

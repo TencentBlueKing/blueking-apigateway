@@ -20,7 +20,6 @@
 import operator
 
 from django.conf import settings
-from django.db.models import Q
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -28,7 +27,7 @@ from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
 from apigateway.biz.release import ReleaseHandler
-from apigateway.common.tenant.constants import TenantModeEnum
+from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.responses import OKJsonResponse
@@ -77,10 +76,7 @@ class GatewayListApi(generics.ListAPIView):
                 raise ValidationError("tenant_id is required in multi-tenant mode")
             tenant_id = request.tenant_id
         if tenant_id:
-            queryset = queryset.filter(
-                Q(tenant_mode=TenantModeEnum.GLOBAL.value)
-                | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=tenant_id)
-            )
+            queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
 
         if name:
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关

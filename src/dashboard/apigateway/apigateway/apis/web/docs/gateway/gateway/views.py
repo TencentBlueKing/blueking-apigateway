@@ -25,7 +25,7 @@ from rest_framework import generics, status
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.permissions import GatewayDisplayablePermission
-from apigateway.common.tenant.constants import TenantModeEnum
+from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, Release
@@ -56,12 +56,8 @@ class GatewayListApi(generics.ListAPIView):
         # 网关公开，启用中
         queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
 
-        # 根据租户过滤 => 可以看到本租户 + 全租户的网关列表及文档
-        # queryset = gateway_filter_by_tenant_id(queryset, user_tenant_id)
-        queryset = queryset.filter(
-            Q(tenant_mode=TenantModeEnum.GLOBAL.value)
-            | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=user_tenant_id)
-        )
+        # 根据租户过滤 => app 开发者 可以看到本租户 + 全租户的网关列表及文档 => 所以这里以 user_tenant_id 当成 app_tenant_id 过滤
+        queryset = gateway_filter_by_app_tenant_id(queryset, user_tenant_id)
 
         # 根据网关名称、描述过滤
         keyword = slz.validated_data.get("keyword")
@@ -74,6 +70,7 @@ class GatewayListApi(generics.ListAPIView):
 
         gateway_ids = [gateway.id for gateway in gateways]
 
+        # FIXME: gateway maintainers to display_name, only ee edition
         output_slz = GatewayOutputSLZ(
             gateways,
             many=True,

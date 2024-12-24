@@ -24,12 +24,37 @@ from .constants import (
 )
 
 
-def gateway_filter_by_tenant_id(queryset: QuerySet, input_tenant_id: str) -> QuerySet:
+def gateway_filter_by_user_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
+    """网关管理员维度查看网关列表，运营租户能看到全租户网关 + 本租户网关，其他租户只能看到本租户网关
+
+    Args:
+        queryset (QuerySet): gateway queryset
+        user_tenant_id (str): user tenant id
+
+    Returns:
+        QuerySet: filtered queryset
+    """
     # 运营租户可以看到 全租户网关 + 自己租户网关
-    if input_tenant_id == TENANT_ID_OPERATION:
+    if user_tenant_id == TENANT_ID_OPERATION:
         return queryset.filter(
             Q(tenant_mode=TenantModeEnum.GLOBAL.value)
-            | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=input_tenant_id)
+            | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=user_tenant_id)
         )
     # only list the gateways under the tenant
-    return queryset.filter(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=input_tenant_id)
+    return queryset.filter(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=user_tenant_id)
+
+
+def gateway_filter_by_app_tenant_id(queryset: QuerySet, app_tenant_id: str) -> QuerySet:
+    """应用维度/应用开发者 维度查看网关列表，能看到 全租户网关 + 本租户网关
+
+    Args:
+        queryset (QuerySet): gateway queryset
+        app_tenant_id (str): app tenant id
+
+    Returns:
+        QuerySet: filtered queryset
+    """
+    return queryset.filter(
+        Q(tenant_mode=TenantModeEnum.GLOBAL.value)
+        | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=app_tenant_id)
+    )

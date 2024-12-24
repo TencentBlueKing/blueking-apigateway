@@ -39,7 +39,7 @@ def _call_bkuser_api(http_func, path, data, more_headers=None, timeout=10) -> Di
 
     url = url_join(host, path)
 
-    return do_blueking_http_request("bkuser", http_func, url, data, headers, timeout)
+    return do_blueking_http_request("bk-user", http_func, url, data, headers, timeout)
 
 
 @cached(cache=TTLCache(maxsize=100, ttl=300))

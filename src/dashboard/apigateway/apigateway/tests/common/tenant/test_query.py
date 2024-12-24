@@ -21,18 +21,18 @@ from django.db.models import Q
 from django.test import TestCase
 
 from apigateway.common.tenant.constants import TENANT_ID_OPERATION, TenantModeEnum
-from apigateway.common.tenant.query import gateway_filter_by_tenant_id
+from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id, gateway_filter_by_user_tenant_id
 
 
 @pytest.mark.django_db
-class TestGatewayFilterByTenantId(TestCase):
+class TestGatewayFilterByUserTenantId(TestCase):
     def setUp(self):
         # Setup initial data for the tests
         self.queryset = MockQuerySet()
 
     def test_filter_by_operation_tenant(self):
         user_tenant_id = TENANT_ID_OPERATION
-        filtered_queryset = gateway_filter_by_tenant_id(self.queryset, user_tenant_id)
+        filtered_queryset = gateway_filter_by_user_tenant_id(self.queryset, user_tenant_id)
         expected_filter = Q(tenant_mode=TenantModeEnum.GLOBAL.value) | Q(
             tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=user_tenant_id
         )
@@ -40,8 +40,23 @@ class TestGatewayFilterByTenantId(TestCase):
 
     def test_filter_by_single_tenant(self):
         user_tenant_id = "tenant_123"
-        filtered_queryset = gateway_filter_by_tenant_id(self.queryset, user_tenant_id)
+        filtered_queryset = gateway_filter_by_user_tenant_id(self.queryset, user_tenant_id)
         expected_filter = {"tenant_mode": TenantModeEnum.SINGLE.value, "tenant_id": user_tenant_id}
+        assert filtered_queryset.filter_condition == expected_filter
+
+
+@pytest.mark.django_db
+class TestGatewayFilterByAppTenantId(TestCase):
+    def setUp(self):
+        # Setup initial data for the tests
+        self.queryset = MockQuerySet()
+
+    def test_filter_by_app_tenant(self):
+        app_tenant_id = "tenant_456"
+        filtered_queryset = gateway_filter_by_app_tenant_id(self.queryset, app_tenant_id)
+        expected_filter = Q(tenant_mode=TenantModeEnum.GLOBAL.value) | Q(
+            tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=app_tenant_id
+        )
         assert filtered_queryset.filter_condition == expected_filter
 
 

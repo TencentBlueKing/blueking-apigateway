@@ -49,6 +49,7 @@ from apigateway.common.tenant.constants import (
     TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
     TenantModeEnum,
 )
+from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_info, list_all_apps_of_tenant
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import JWT, Gateway
@@ -133,10 +134,7 @@ class GatewayListApi(generics.ListAPIView):
 
         # 可以申请全租户网关接口 + 本租户网关接口的权限
         if tenant_id:
-            queryset = queryset.filter(
-                Q(tenant_mode=TenantModeEnum.GLOBAL.value)
-                | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=tenant_id)
-            )
+            queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
 
         if name:
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
