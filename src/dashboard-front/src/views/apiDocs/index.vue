@@ -1,7 +1,7 @@
 <template>
   <div class="docs-main" ref="docsMain">
     <!--  顶部 网关 / 组件 Tab  -->
-    <header class="page-tabs">
+    <header class="page-tabs" v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
       <nav class="tabs-group">
         <section
           class="page-tab"
@@ -18,7 +18,7 @@
       </nav>
     </header>
     <!--  正文  -->
-    <main class="docs-main-content">
+    <main class="docs-main-content" :class="{ 'pt24': user.featureFlags?.ENABLE_MULTI_TENANT_MODE }">
       <!--  当选中 网关API文档 时  -->
       <div v-if="curTab === 'apigw'" class="content-of-apigw">
         <!--  搜索栏和 SDK使用说明  -->
@@ -58,6 +58,26 @@
                   </bk-tag>
                 </template>
               </bk-table-column>
+              <template v-if="user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
+                <bk-table-column
+                  :label="t('租户模式')"
+                  field="tenant_mode"
+                  :width="120"
+                >
+                  <template #default="{ row }">
+                    {{ row.tenant_mode || '--' }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('租户 ID')"
+                  field="tenant_id"
+                  :width="120"
+                >
+                  <template #default="{ row }">
+                    {{ row.tenant_id || '--' }}
+                  </template>
+                </bk-table-column>
+              </template>
               <bk-table-column
                 :label="t('网关描述')"
                 field="description"
@@ -262,10 +282,12 @@ import {
 } from '@/views/apiDocs/types';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useTemplateRefsList } from '@vueuse/core';
+import { useUser } from '@/store';
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+const user = useUser();
 
 const filterData = ref({ keyword: '' });
 
@@ -401,6 +423,11 @@ const isActiveNavPanel = (panelName: string) => {
 
 onBeforeMount(() => {
   const { params } = route;
+  // 如果是多租户模式，直接跳转到网关API文档
+  if (user.featureFlags?.ENABLE_MULTI_TENANT_MODE) {
+    curTab.value = 'apigw';
+    return;
+  }
   // 记录返回到此页时选中的 tab
   curTab.value = params.curTab as TabType || 'apigw';
 });

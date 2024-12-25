@@ -19,7 +19,7 @@ const userInfo = ref(user.user);
     disable-outside-click
   >
     <div class="user-name">
-      {{ userInfo.username }}
+      {{ userInfo.display_name || userInfo.username }}
       <angle-down-line class="pl5" />
     </div>
     <template #content>

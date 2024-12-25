@@ -205,7 +205,7 @@ const headerList = computed(() => ([
     name: t('组件管理'),
     id: 2,
     url: 'componentsMain',
-    enabled: user.featureFlags?.MENU_ITEM_ESB_API,
+    enabled: user.featureFlags?.MENU_ITEM_ESB_API && !user.featureFlags?.ENABLE_MULTI_TENANT_MODE,
     link: '',
   },
   {
