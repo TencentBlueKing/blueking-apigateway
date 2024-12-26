@@ -30,9 +30,17 @@
     <div class="table-container" v-bkloading="{ loading: isLoading, opacity: 1, color: '#f5f7fb' }">
       <section v-if="gatewaysList.length">
         <div class="table-header flex-row">
-          <div class="flex-1 of3">{{ t('网关名') }}</div>
+          <div class="flex-1" :class="user.featureFlags?.ENABLE_MULTI_TENANT_MODE ? 'of2' : 'of3'">
+            {{ t('网关名') }}
+          </div>
+          <template v-if="user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
+            <div class="flex-1 of1">{{ t('租户模式') }}</div>
+            <div class="flex-1 of1">{{ t('租户 ID') }}</div>
+          </template>
           <div class="flex-1 of1">{{ t('创建者') }}</div>
-          <div class="flex-1 of3">{{ t('环境列表') }}</div>
+          <div class="flex-1" :class="user.featureFlags?.ENABLE_MULTI_TENANT_MODE ? 'of2' : 'of3'">
+            {{ t('环境列表') }}
+          </div>
           <div class="flex-1 of1 text-c">{{ t('资源数量') }}</div>
           <div class="flex-1 of2">{{ t('操作') }}</div>
         </div>
@@ -41,7 +49,10 @@
             class="table-item flex-row align-items-center"
             v-for="item in gatewaysList" :key="item.id"
             :class="item.is24HoursAgo ? '' : 'newly-item'">
-            <div class="flex-1 flex-row align-items-center  of3">
+            <div
+              class="flex-1 flex-row align-items-center"
+              :class="user.featureFlags?.ENABLE_MULTI_TENANT_MODE ? 'of2' : 'of3'"
+            >
               <div
                 class="name-logo mr10" :class="item.status ? '' : 'deact'"
                 @click="handleGoPage('apigwResource', item.id)">
@@ -55,8 +66,14 @@
               <bk-tag theme="info" v-if="item.is_official">{{ t('官方') }}</bk-tag>
               <bk-tag v-if="item.status === 0">{{ t('已停用') }}</bk-tag>
             </div>
+            <template v-if="user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
+              <div class="flex-1 of1">
+                {{ item.tenant_mode || '是' }}
+              </div>
+              <div class="flex-1 of1">{{ item.tenant_id || '--' }}</div>
+            </template>
             <div class="flex-1 of1">{{ item.created_by }}</div>
-            <div class="flex-1 of3 env">
+            <div class="flex-1 env" :class="user.featureFlags?.ENABLE_MULTI_TENANT_MODE ? 'of2' : 'of3'">
               <div class="flex-row">
                 <span
                   v-for="(envItem, index) in item.stages" :key="envItem.id">
@@ -199,6 +216,38 @@
           <bk-switcher theme="primary" v-model="formData.is_public" />
           <span class="common-form-tips">{{ $t('公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏') }}</span>
         </bk-form-item>
+        <template v-if="user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
+          <template v-if="user.user.tenant_id === 'system'">
+            <bk-form-item
+              :label="t('租户模式')"
+              property="tenant_mode"
+            >
+              <bk-select
+                v-model="formData.tenant_mode"
+                :clearable="false"
+                :filterable="false"
+                :input-search="false"
+                @change="handleTenantModeChange"
+              >
+                <bk-option
+                  value="global"
+                  :label="t('全租户（Global）')"
+                />
+                <bk-option
+                  value="single"
+                  :label="t('单租户（Single）')"
+                />
+              </bk-select>
+            </bk-form-item>
+            <bk-form-item
+              v-if="formData.tenant_mode === 'single'"
+              :label="t('租户 ID')"
+              property="tenant_id"
+            >
+              <bk-input v-model="formData.tenant_id" disabled />
+            </bk-form-item>
+          </template>
+        </template>
       </bk-form>
     </bk-dialog>
   </div>
@@ -244,6 +293,8 @@ interface IinitDialogData {
   maintainers: string[]
   description?: string
   is_public: boolean
+  tenant_mode: string
+  tenant_id: string
 }
 
 // const globalProperties = useGetGlobalProperties();
@@ -255,6 +306,8 @@ const initDialogData: IinitDialogData = {
   maintainers: [user.user.username],   // 默认当前填入当前用户
   description: '',
   is_public: true,
+  tenant_mode: 'global',
+  tenant_id: '',
 };
 
 const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
@@ -346,6 +399,28 @@ watch(() => dataList.value, (val: any[]) => {
   gatewaysList.value = handleGatewaysList(val);
 });
 
+watch(() => user.featureFlags?.ENABLE_MULTI_TENANT_MODE, (value) => {
+  if (value) {
+    if (user.user.tenant_id === 'system') {
+      formData.value.tenant_mode = 'global';
+      formData.value.tenant_id = '';
+    } else {
+      formData.value.tenant_mode = 'single';
+      formData.value.tenant_id = user.user.tenant_id;
+    }
+  } else {
+    formData.value.tenant_mode = 'single';
+    formData.value.tenant_id = 'default';
+  }
+}, { immediate: true });
+
+const handleTenantModeChange = (tenant_mode: string) => {
+  if (tenant_mode === 'global') {
+    formData.value.tenant_id = '';
+  } else if (tenant_mode === 'single') {
+    formData.value.tenant_id = user.user.tenant_id || 'system';
+  }
+};
 
 // 页面初始化
 const init = async () => {

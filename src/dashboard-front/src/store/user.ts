@@ -8,7 +8,9 @@ export const useUser = defineStore('user', {
   } => ({
     user: {
       username: '',
+      display_name: '',
       avatar_url: '',
+      tenant_id: '',
     },
     featureFlags: {},
   }),
@@ -18,6 +20,7 @@ export const useUser = defineStore('user', {
     },
     setFeatureFlags(data: IFeatureFlags) {
       this.featureFlags = data;
+      // this.featureFlags.ENABLE_MULTI_TENANT_MODE = true;
     },
   },
 });

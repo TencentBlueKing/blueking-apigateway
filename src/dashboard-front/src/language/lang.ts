@@ -1674,6 +1674,10 @@ const lang: ILANG = {
   '默认分类': ['Default'],
   '请选择有效的资源名称': ['Please choose a valid resource name'],
   '表单校验失败': ['Form Validation Failed'],
+  '租户模式': ['Tenant Mode'],
+  '租户 ID': ['Tenant ID'],
+  '全租户（Global）': ['Global Tenant (Global)'],
+  '单租户（Single）': ['Single Tenant (Single)'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

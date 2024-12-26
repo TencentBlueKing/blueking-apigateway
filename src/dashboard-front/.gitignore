@@ -78,3 +78,4 @@ dist/
 .prettierrc
 
 bkcodeai.json
+.bk.local.tenant.env

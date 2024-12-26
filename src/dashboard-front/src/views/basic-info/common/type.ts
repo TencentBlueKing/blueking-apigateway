@@ -17,6 +17,8 @@ export interface BasicInfoParams {
   public_key: string
   is_official: boolean
   publish_validate_msg?: string
+  tenant_mode?: string
+  tenant_id?: string
 }
 
 export interface DialogParams {
