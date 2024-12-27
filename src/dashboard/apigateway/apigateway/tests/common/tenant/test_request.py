@@ -18,7 +18,7 @@
 
 from unittest.mock import Mock, patch
 
-from apigateway.common.tenant.request import gen_operation_tenant_headers, get_user_tenant_id
+from apigateway.common.tenant.request import gen_operation_tenant_header, get_user_tenant_id
 
 
 @patch("apigateway.common.tenant.request.settings")
@@ -36,4 +36,4 @@ def test_get_user_tenant_id_single_tenant_mode(mock_settings):
 
 
 def test_gen_operation_tenant_headers():
-    assert gen_operation_tenant_headers() == {"X-Bk-Tenant-Id": "system"}
+    assert gen_operation_tenant_header() == {"X-Bk-Tenant-Id": "system"}

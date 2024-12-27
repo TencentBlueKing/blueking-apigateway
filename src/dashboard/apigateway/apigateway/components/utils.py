@@ -17,14 +17,39 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import copy
+import json
 import logging
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
+from django.conf import settings
+from django.utils.translation import get_language
+
 from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.request import gen_operation_tenant_header
 from apigateway.utils.local import local
 
 logger = logging.getLogger("component")
+
+
+def gen_gateway_headers(with_operation_tenant_headers: bool = False) -> Dict[str, str]:
+    headers = {
+        "Content-Type": "application/json",
+        "X-Bkapi-Authorization": json.dumps(
+            {
+                "bk_app_code": settings.BK_APP_CODE,
+                "bk_app_secret": settings.BK_APP_SECRET,
+            }
+        ),
+    }
+    language = get_language()
+    if language:
+        headers["Accept-Language"] = language
+
+    if with_operation_tenant_headers:
+        headers.update(gen_operation_tenant_header())
+
+    return headers
 
 
 def _remove_sensitive_info(info: Optional[Dict]) -> str:
@@ -51,7 +76,7 @@ def do_legacy_blueking_http_request(
     headers: Optional[Dict] = None,
     timeout: Optional[int] = None,
     request_session=None,
-):
+) -> List | Dict:
     kwargs = {"url": url, "data": data, "headers": headers, "timeout": timeout, "request_session": request_session}
 
     ok, resp_data = http_func(**kwargs)
@@ -98,3 +123,34 @@ def do_legacy_blueking_http_request(
         f"Request=[{http_func.__name__} {urlparse(url).path} request_id={local.request_id}] "
         f"Response[code={code}, message={message}]"
     )
+
+
+def do_blueking_http_request(
+    component: str,
+    http_func,
+    url: str,
+    data: Optional[Dict] = None,
+    headers: Optional[Dict] = None,
+    timeout: Optional[int] = None,
+    request_session=None,
+) -> List | Dict:
+    kwargs = {"url": url, "data": data, "headers": headers, "timeout": timeout, "request_session": request_session}
+
+    ok, resp_data = http_func(**kwargs)
+    if not ok:
+        logger.error(
+            "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
+            component,
+            http_func.__name__,
+            url,
+            _remove_sensitive_info(data),
+            local.request_id,
+            resp_data["error"],
+        )
+        raise error_codes.REMOTE_REQUEST_ERROR.format(
+            f"request {component} fail! "
+            f"Request=[{http_func.__name__} {urlparse(url).path} request_id={local.request_id}]"
+            f"error={resp_data['error']}"
+        )
+
+    return resp_data["data"]

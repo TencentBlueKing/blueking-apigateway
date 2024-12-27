@@ -20,41 +20,13 @@ from typing import Any
 
 from django.conf import settings
 
-from apigateway.common.tenant.request import gen_operation_tenant_headers
 from apigateway.utils.url import url_join
 
 from .http import http_post
-from .utils import do_legacy_blueking_http_request
+from .utils import do_legacy_blueking_http_request, gen_gateway_headers
 
 
-def query_range(bk_biz_id: str, promql: str, start: int, end: int, step: str) -> Any:
-    """
-    Evaluate an expression query over a range of time
-
-    :param bk_biz_id: business ID
-    :param promql: prometheus query language
-    :param start: start timestamp, e.g. 1622009400
-    :param end: end timestamp, e.g. 1622009500
-    :param step: step, e.g. "1m"
-    """
-    return _promql_query(bk_biz_id, promql, start, end, step, "range")
-
-
-def query(bk_biz_id: str, promql: str, time_: int) -> Any:
-    """
-    Evaluate an instant query at a single point in time
-
-    :param bk_biz_id: business ID
-    :param promql: prometheus query language
-    :param time_: evaluation timestamp, e.g. 1622009400
-    """
-    # Instant query, no need for start, step,
-    # but the backend does not allow the value to be null, so set a default value.
-    # step: set to 1m, backend use it to calculate real evaluation timestamp
-    return _promql_query(bk_biz_id, promql, 0, time_, "1m", "instant")
-
-
-def _promql_query(bk_biz_id: str, promql: str, start: int, end: int, step: str, type_: str) -> Any:
+def _call_bkmonitor_promql_query(bk_biz_id: str, promql: str, start: int, end: int, step: str, type_: str) -> Any:
     """
     Common query Prometheus data interface
 
@@ -72,10 +44,12 @@ def _promql_query(bk_biz_id: str, promql: str, start: int, end: int, step: str, 
         "type": type_,
     }
 
-    headers = {
-        "X-Bk-Scope-Space-Uid": f"bkcc__{bk_biz_id}",
-    }
-    headers.update(gen_operation_tenant_headers())
+    headers = gen_gateway_headers(with_operation_tenant_headers=True)
+    headers.update(
+        {
+            "X-Bk-Scope-Space-Uid": f"bkcc__{bk_biz_id}",
+        }
+    )
 
     host = settings.BK_API_URL_TMPL.format(api_name="bkmonitorv3")
 
@@ -84,3 +58,30 @@ def _promql_query(bk_biz_id: str, promql: str, start: int, end: int, step: str, 
 
     # FIXME: {"code": 200} as ok response should be tested
     return do_legacy_blueking_http_request("bkmonitorv3", http_post, url, data, headers, timeout)
+
+
+def query_range(bk_biz_id: str, promql: str, start: int, end: int, step: str) -> Any:
+    """
+    Evaluate an expression query over a range of time
+
+    :param bk_biz_id: business ID
+    :param promql: prometheus query language
+    :param start: start timestamp, e.g. 1622009400
+    :param end: end timestamp, e.g. 1622009500
+    :param step: step, e.g. "1m"
+    """
+    return _call_bkmonitor_promql_query(bk_biz_id, promql, start, end, step, "range")
+
+
+def query(bk_biz_id: str, promql: str, time_: int) -> Any:
+    """
+    Evaluate an instant query at a single point in time
+
+    :param bk_biz_id: business ID
+    :param promql: prometheus query language
+    :param time_: evaluation timestamp, e.g. 1622009400
+    """
+    # Instant query, no need for start, step,
+    # but the backend does not allow the value to be null, so set a default value.
+    # step: set to 1m, backend use it to calculate real evaluation timestamp
+    return _call_bkmonitor_promql_query(bk_biz_id, promql, 0, time_, "1m", "instant")

@@ -35,7 +35,7 @@ from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.contexts import GatewayAuthContext
-from apigateway.common.tenant.query import gateway_filter_by_tenant_id
+from apigateway.common.tenant.query import gateway_filter_by_user_tenant_id
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
@@ -51,7 +51,7 @@ class GatewayHandler:
 
         queryset = Gateway.objects.filter(_maintainers__contains=username)
         if tenant_id:
-            queryset = gateway_filter_by_tenant_id(queryset, tenant_id)
+            queryset = gateway_filter_by_user_tenant_id(queryset, tenant_id)
 
         # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
         return [gateway for gateway in queryset if gateway.has_permission(username)]

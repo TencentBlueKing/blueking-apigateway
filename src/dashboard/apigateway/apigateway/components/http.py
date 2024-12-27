@@ -64,6 +64,19 @@ def _http_request(
     headers = _enrich_header(headers)
     request_id = headers.get("X-Request-Id")
 
+    logger.debug(
+        "_http_request: method=%s, url=%s, headers=%s, data=%s, timeout=%s, verify=%s, cert=%s, cookies=%s, request_id=%s",
+        method,
+        url,
+        headers,
+        data,
+        timeout,
+        verify,
+        cert,
+        cookies,
+        request_id,
+    )
+
     st = time.time()
     try:
         if method == "GET":
@@ -99,14 +112,25 @@ def _http_request(
 
         # greater than 100ms
         if latency > 100:
-            logger.warning("http slow request! method: %s, url: %s, latency: %dms", method, url, latency)
+            logger.warning(
+                "http slow request! %s %s, request_id: %s, latency: %dms",
+                method,
+                url,
+                request_id,
+                latency,
+            )
 
         if resp.status_code != 200:
             content = resp.content[:256] if resp.content else ""
-            error_msg = (
-                "http request fail! %s %s, data: %s, request_id: %s, response.status_code: %s, response.body: %s"
+            logger.error(
+                "http request fail! %s %s, data: %s, request_id: %s, response.status_code: %s, response.body: %s",
+                method,
+                url,
+                str(data),
+                request_id,
+                resp.status_code,
+                content,
             )
-            logger.error(error_msg, method, url, str(data), request_id, resp.status_code, content)
 
             return False, {
                 "error": (
@@ -114,6 +138,15 @@ def _http_request(
                     f"{method} {urlparse(url).path}, request_id={request_id}, resp.body={content}"
                 )
             }
+
+        logger.debug(
+            "http request success! %s %s, data: %s, request_id: %s, response: %s",
+            method,
+            url,
+            str(data),
+            request_id,
+            resp.text,
+        )
 
         return True, resp.json()
 

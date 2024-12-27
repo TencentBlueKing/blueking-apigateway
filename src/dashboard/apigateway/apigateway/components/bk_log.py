@@ -19,13 +19,11 @@
 from typing import Any
 
 from django.conf import settings
-from django.utils.translation import get_language
 
-from apigateway.common.tenant.request import gen_operation_tenant_headers
 from apigateway.utils.url import url_join
 
 from .http import http_post
-from .utils import do_legacy_blueking_http_request
+from .utils import do_legacy_blueking_http_request, gen_gateway_headers
 
 
 def esquery_dsl(index: str, body: Any) -> Any:
@@ -34,13 +32,7 @@ def esquery_dsl(index: str, body: Any) -> Any:
         "body": body,
     }
 
-    headers = {
-        "Content-Type": "application/json",
-    }
-    headers.update(gen_operation_tenant_headers())
-    language = get_language()
-    if language:
-        headers["Accept-Language"] = language
+    headers = gen_gateway_headers(with_operation_tenant_headers=True)
 
     gateway_name = "bk-log-search"
     if settings.EDITION == "te":

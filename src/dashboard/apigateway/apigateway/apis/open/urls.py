@@ -19,8 +19,6 @@
 from django.conf import settings
 from django.urls import include, path
 
-from apigateway.apis.open.esb.permission import views as esb_permission_views
-
 # FIXME: 目前根据鉴权应该将接口分为 3 类，目前 3 类是混在一起的，并不好维护
 # 按照鉴权分：
 # 1. OpenAPIPermission
@@ -90,6 +88,8 @@ urlpatterns = [
 
 # 非多租户模式才会有 esb 相关的接口
 if not settings.ENABLE_MULTI_TENANT_MODE:
+    from apigateway.apis.open.esb.permission import views as esb_permission_views
+
     urlpatterns += [
         path("esb/systems/", include("apigateway.apis.open.esb.system.urls")),
         path("esb/systems/<int:system_id>/permissions/", include("apigateway.apis.open.esb.permission.urls")),

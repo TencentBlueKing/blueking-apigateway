@@ -19,6 +19,7 @@
 
 from typing import Dict, List, Tuple
 
+from cachetools import TTLCache, cached
 from django.conf import settings
 
 from apigateway.utils.local import local
@@ -64,7 +65,17 @@ def list_apps_of_tenant(
     return result["count"], result["results"]
 
 
+@cached(cache=TTLCache(maxsize=100, ttl=300))
 def list_all_apps_of_tenant(tenant_mode: str, tenant_id: str) -> List[Dict]:
+    """get apps of specific tenant
+
+    Args:
+        tenant_mode (str): the tenant mode
+        tenant_id (str): the tenant id
+
+    Returns:
+        List[Dict]: app info list
+    """
     page_size = 100
 
     # get first page
@@ -78,7 +89,25 @@ def list_all_apps_of_tenant(tenant_mode: str, tenant_id: str) -> List[Dict]:
     # get the rest pages
     rest_pages = (count1 + page_size - 1) // page_size
     for page in range(2, rest_pages + 1):
-        _, results = list_apps_of_tenant(tenant_mode, tenant_id, page=page, page_size=page_size)
-        all_results.extend(results)
+        _, results2 = list_apps_of_tenant(tenant_mode, tenant_id, page=page, page_size=page_size)
+        all_results.extend(results2)
 
     return all_results
+
+
+@cached(cache=TTLCache(maxsize=100, ttl=300))
+def list_available_apps_for_tenant(tenant_mode: str, tenant_id: str) -> List[Dict]:
+    """get apps of tenant global + specific tenant
+
+    Args:
+        tenant_mode (str): the tenant mode
+        tenant_id (str): the tenant id
+
+    Returns:
+        List[Dict]: app info list
+    """
+    # list tenant_mode=global apps
+    global_apps = list_all_apps_of_tenant("global", "")
+    # list the tenant's apps
+    tenant_apps = list_all_apps_of_tenant(tenant_mode, tenant_id)
+    return global_apps + tenant_apps

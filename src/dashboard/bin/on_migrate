@@ -19,7 +19,11 @@ fi
 
 # 数据库
 python manage.py migrate
+# only init esb when ENABLE_MULTI_TENANT_MODE != true/True
+if [ "${ENABLE_MULTI_TENANT_MODE}" != "true" ] && [ "${ENABLE_MULTI_TENANT_MODE}" != "True" ]; then
 python manage.py migrate bkcore --database bkcore
+fi
+
 python manage.py loaddata -i apigateway/fixtures/*.yaml
 
 # dashboard 相关

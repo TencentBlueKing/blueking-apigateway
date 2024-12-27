@@ -141,7 +141,7 @@ class TestGatewaySyncApi:
         mocker.patch("apigateway.apis.open.gateway.views.settings.ENABLE_MULTI_TENANT_MODE", True)
         mocker.patch(
             "apigateway.apis.open.gateway.views.get_app_info",
-            return_value={"tenant_mode": "global", "tenant_id": "abc"},
+            return_value={"bk_tenant": {"mode": "global", "id": "abc"}},
         )
 
         resp = request_view(

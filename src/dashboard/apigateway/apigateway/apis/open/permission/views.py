@@ -151,9 +151,11 @@ class BaseAppPermissionApplyAPIView(APIView, metaclass=ABCMeta):
 
         # 全租户网关，谁都可以申请，单租户网关，只能本租户应用申请
         if settings.ENABLE_MULTI_TENANT_MODE and request.gateway.tenant_mode != TenantModeEnum.GLOBAL.value:
-            app = get_app(app_code)
+            app = get_app(request.gateway.tenant_id, app_code)
             if not app:
-                raise error_codes.NOT_FOUND.format(f"app_code={app_code} not found in paas")
+                raise error_codes.NOT_FOUND.format(
+                    f"app_code={app_code} not found in paasv3 with tenant_id={request.gateway.tenant_id}"
+                )
             app_tenant_id = app.get("tenant_id")
             gateway_tenant_id = request.gateway.tenant_id
             if app_tenant_id != gateway_tenant_id:

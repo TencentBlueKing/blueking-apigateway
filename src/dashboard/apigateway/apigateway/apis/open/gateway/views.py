@@ -49,6 +49,7 @@ from apigateway.common.tenant.constants import (
     TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
     TenantModeEnum,
 )
+from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_info, list_all_apps_of_tenant
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import JWT, Gateway
@@ -91,10 +92,9 @@ class GatewayListApi(generics.ListAPIView):
         # 多租户环境，需要获取 tenant_mode/tenant_id作为过滤条件，是必传的
         tenant_id = None
         if settings.ENABLE_MULTI_TENANT_MODE:
-            # FIXME: add /api/v2/, we should get this tenant_id in middleware, set into request.tenant_id
-            tenant_id = request.headers.get("X-Bk-Tenant-Id", None)
-            if not tenant_id:
+            if not request.tenant_id:
                 raise serializers.ValidationError("tenant_id is required in multi-tenant mode")
+            tenant_id = request.tenant_id
 
         queryset = self._filter_list_queryset(
             name=data.get("name"),
@@ -134,10 +134,7 @@ class GatewayListApi(generics.ListAPIView):
 
         # 可以申请全租户网关接口 + 本租户网关接口的权限
         if tenant_id:
-            queryset = queryset.filter(
-                Q(tenant_mode=TenantModeEnum.GLOBAL.value)
-                | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=tenant_id)
-            )
+            queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
 
         if name:
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
@@ -218,20 +215,21 @@ class GatewaySyncApi(generics.CreateAPIView):
         slz = self.get_serializer(gateway, data=request.data)
         slz.is_valid(raise_exception=True)
 
+        data = slz.validated_data
         # assign the tenant_mode and tenant_id
         if settings.ENABLE_MULTI_TENANT_MODE:
             app_info = get_app_info(request.app.app_code)
-            slz.validated_data["tenant_mode"] = app_info["tenant_mode"]
-            slz.validated_data["tenant_id"] = app_info["tenant_id"]
+            data["tenant_mode"] = app_info["bk_tenant"]["mode"]
+            data["tenant_id"] = app_info["bk_tenant"]["id"]
         else:
-            slz.validated_data["tenant_mode"] = TenantModeEnum.SINGLE.value
-            slz.validated_data["tenant_id"] = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
+            data["tenant_mode"] = TenantModeEnum.SINGLE.value
+            data["tenant_id"] = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
 
         # save gateway
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
         saver = GatewaySaver(
             id=gateway and gateway.id,
-            data=TypeAdapter(GatewayData).validate_python(slz.validated_data),
+            data=TypeAdapter(GatewayData).validate_python(data),
             bk_app_code=request.app.app_code,
             username=username,
         )
