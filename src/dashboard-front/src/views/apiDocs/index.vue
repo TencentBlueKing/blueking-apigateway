@@ -65,7 +65,7 @@
                   :width="120"
                 >
                   <template #default="{ row }">
-                    {{ row.tenant_mode || '--' }}
+                    {{ TENANT_MODE_TEXT_MAP[row.tenant_mode as string] || '--' }}
                   </template>
                 </bk-table-column>
                 <bk-table-column
@@ -283,6 +283,7 @@ import {
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useTemplateRefsList } from '@vueuse/core';
 import { useUser } from '@/store';
+import { TENANT_MODE_TEXT_MAP } from '@/enums';
 
 const { t } = useI18n();
 const route = useRoute();
