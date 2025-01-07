@@ -68,7 +68,7 @@
             </div>
             <template v-if="user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
               <div class="flex-1 of1">
-                {{ item.tenant_mode || '是' }}
+                {{ TENANT_MODE_TEXT_MAP[item.tenant_mode as string] || '是' }}
               </div>
               <div class="flex-1 of1">{{ item.tenant_id || '--' }}</div>
             </template>
@@ -262,6 +262,7 @@ import { useRouter } from 'vue-router';
 import { useGetApiList/* , useGetGlobalProperties */ } from '@/hooks';
 import { is24HoursAgo } from '@/common/util';
 import { useCommon } from '@/store';
+import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import MemberSelect from '@/components/member-select';
 // @ts-ignore
 import TableEmpty from '@/components/table-empty.vue';
