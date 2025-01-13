@@ -40,7 +40,7 @@ from apigateway.common.tenant.constants import (
 )
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.components.bkauth import list_all_apps_of_tenant, list_available_apps_for_tenant
-from apigateway.components.bkuser import get_tenant_list
+from apigateway.components.bkuser import list_tenants
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
@@ -345,8 +345,7 @@ class GatewayTenantAppListApi(generics.ListAPIView):
         if instance.tenant_mode == TenantModeEnum.GLOBAL.value:
             apps = list_all_apps_of_tenant(TenantModeEnum.GLOBAL.value, "")
 
-            # FIXME get all other tenant's app
-            tenant_list = get_tenant_list()
+            tenant_list = list_tenants()
             tenant_ids = [tenant["id"] for tenant in tenant_list]
             for tenant_id in tenant_ids:
                 apps.extend(list_all_apps_of_tenant(TenantModeEnum.SINGLE.value, tenant_id))

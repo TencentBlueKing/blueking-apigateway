@@ -764,6 +764,7 @@ PLUGIN_METADATA_CONFIG = {
         "default_conn_delay": env.int("GATEWAY_CONCURRENCY_LIMIT_DEFAULT_CONN_DELAY", 1),  # second
         "key_type": "var",
         "key": "bk_concurrency_limit_key",
+        "allow_degradation": True,
     },
     "bk-real-ip": {
         "recursive": env.bool("GATEWAY_REAL_IP_RECURSIVE", False),
