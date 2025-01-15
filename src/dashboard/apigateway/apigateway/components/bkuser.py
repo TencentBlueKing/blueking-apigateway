@@ -43,27 +43,68 @@ def _call_bkuser_api(http_func, path, data, more_headers=None, timeout=10) -> Di
 
 
 @cached(cache=TTLCache(maxsize=100, ttl=300))
-def get_tenant_list():
-    url_path = "/api/v2/tenants/"
+def list_tenants():
+    url_path = "/prod/api/v3/open/tenants/"
 
     # use the operation tenant id
     more_headers = gen_operation_tenant_header()
+    # [
+    #     {
+    #     "id": "default",
+    #     "name": "Default",
+    #     "status": "enabled"
+    #     },
+    # ]
     return _call_bkuser_api(http_get, url_path, {}, more_headers)
 
 
+def query_display_names_for_readonly(tenant_id: str, bk_usernames: List[str]) -> List[str]:
+    """查看态的，直接替换成 可读的 display_name 返回"""
+    result = query_display_names(tenant_id, bk_usernames)
+    display_name_map = {item["bk_username"]: item["display_name"] for item in result}
+
+    display_names: List[str] = []
+    for bk_username in bk_usernames:
+        # if the bk_username not found, use the original bk_username as the display_name
+        display_name = display_name_map.get(bk_username, bk_username)
+        display_names.append(display_name)
+
+    return display_names
+
+
+def query_display_names(tenant_id: str, bk_usernames: List[str]):
+    """查询用户列表对应的显示名称
+    注意：非查看态的，保持原样，返回一个新的字段带对应的数据结构
+    """
+    # TODO: can we use redis to cache the display names? the ttlcache is not good enough
+    if not bk_usernames:
+        return {}
+    if len(bk_usernames) > 100:
+        raise ValueError("bk_usernames should not exceed 100")
+
+    # sort the usernames to hit the cache
+    bk_usernames.sort()
+    bk_usernames_str = ",".join(bk_usernames)
+    return query_display_names_cached(tenant_id, bk_usernames_str)
+
+
 @cached(cache=TTLCache(maxsize=100, ttl=300))
-def query_display_names(
+def query_display_names_cached(
     tenant_id: str,
-    bk_usernames: List[str],
+    bk_usernames: str,
 ):
-    url_path = "/api/v2/display_names/"
+    url_path = "/prod/api/v3/open/tenant/users/-/display_name/"
+
     data = {
         "bk_usernames": bk_usernames,
     }
-
     # use the specific tenant_id
     more_headers = gen_tenant_header(tenant_id)
 
-    # note: {bk_username => display_name}
-
+    # [
+    #     {
+    #     "bk_username": "7idwx3b7nzk6xigs",
+    #     "display_name": "张三",
+    #     },
+    # ]
     return _call_bkuser_api(http_get, url_path, data, more_headers)
