@@ -28,6 +28,10 @@ from django.db import transaction
 from pydantic import TypeAdapter
 
 from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
+from apigateway.common.tenant.constants import (
+    TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
+    TenantModeEnum,
+)
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.django import get_object_or_None
@@ -48,6 +52,16 @@ class Command(BaseCommand):
                 continue
 
             if not dry_run:
+                tenant_mode = None
+                tenant_id = None
+                # assign the tenant_mode and tenant_id
+                if settings.ENABLE_MULTI_TENANT_MODE:
+                    tenant_mode = TenantModeEnum.GLOBAL.value
+                    tenant_id = ""
+                else:
+                    tenant_mode = TenantModeEnum.SINGLE.value
+                    tenant_id = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
+
                 saver = GatewaySaver(
                     id=None,
                     data=TypeAdapter(GatewayData).validate_python(
@@ -56,6 +70,8 @@ class Command(BaseCommand):
                             name=name,
                             maintainers=[settings.GATEWAY_DEFAULT_CREATOR],
                             status=GatewayStatusEnum.ACTIVE.value,
+                            tenant_mode=tenant_mode,
+                            tenant_id=tenant_id,
                         ),
                     ),
                     bk_app_code=settings.BK_APP_CODE,
