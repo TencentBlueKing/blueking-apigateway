@@ -230,6 +230,7 @@ const handleKeyup = (e: any) => {
   width: 320px;
   height: 30px;
   display: flex;
+  align-items: center;
   background: #FFF;
   border: 1px solid #C4C6CC;
   border-radius: 2px;
@@ -247,6 +248,13 @@ const handleKeyup = (e: any) => {
     flex: 1;
     width: 220px;
     line-height: 28px;
+    position: relative;
+
+    .bk-dropdown-content {
+      position: absolute;
+      top: 28px;
+      left: 0;
+    }
   }
 
   .input {
@@ -257,6 +265,8 @@ const handleKeyup = (e: any) => {
     font-size: 12px;
     background: transparent;
     border-left: 1px solid #c4c6cc;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
     position: relative;
     height: 28px;
 
