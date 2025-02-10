@@ -107,7 +107,7 @@
       <!--  当选中 组件API文档 时  -->
       <div v-else-if="curTab === 'component'" class="content-of-component">
         <main class="category-list">
-          <article class="category-wrap" v-for="systemBoard in componentSystemList" :key="systemBoard.board">
+          <article class="category-wrap" v-for="(systemBoard, index) in componentSystemList" :key="systemBoard.board">
             <!--  system 类别 title 和搜索栏  -->
             <header class="top-bar">
               <main class="bar-title">
@@ -124,7 +124,7 @@
                   {{ t('查看 SDK') }}
                 </bk-link>
               </main>
-              <aside class="bar-aside">
+              <aside class="bar-aside" v-if="index === 0">
                 <ComponentSearcher
                   v-if="componentSystemList.length > 0"
                   class="ag-searcher-box"
@@ -156,7 +156,7 @@
                     class="item"
                     v-for="system in cat.systems"
                     :key="system.name"
-                    @click="gotoDetails(system)"
+                    @click="gotoDetails(system, systemBoard.board)"
                   >
                     <main class="title">
                       <div class="name">{{ system.description }}</div>
@@ -315,12 +315,13 @@ watch(
   { deep: true },
 );
 
-const gotoDetails = (row: IApiGatewayBasics | ISystem) => {
+const gotoDetails = (row: IApiGatewayBasics | ISystem, systemBoard?: string) => {
   router.push({
     name: 'apiDocDetail',
     params: {
       targetName: row.name,
       curTab: curTab.value,
+      board: curTab.value === 'apigw' ? board.value : systemBoard,
     },
   });
 };

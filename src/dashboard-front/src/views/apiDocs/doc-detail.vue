@@ -491,6 +491,7 @@ onBeforeMount(() => {
   curTab.value = params.curTab as TabType || 'apigw';
   curTargetName.value = params.targetName as string;
   curComponentApiName.value = params.componentName as string || '';
+  board.value = params.board as string || 'default';
   init();
 });
 
