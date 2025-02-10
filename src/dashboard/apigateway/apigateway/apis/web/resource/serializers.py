@@ -24,7 +24,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.web.constants import ExportTypeEnum
-from apigateway.apis.web.resource.validators import BackendPathVarsValidator, PathVarsValidator
+from apigateway.apis.web.resource.validators import BackendPathVarsValidator, NameVarsValidator, PathVarsValidator
 from apigateway.apps.plugin.models import PluginConfig
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, OpenAPIFormatEnum
@@ -258,6 +258,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
                 fields=["gateway", "method", "path"],
                 message=gettext_lazy("网关前端配置中，请求方法+请求路径已经存在。"),
             ),
+            NameVarsValidator(),
             PathVarsValidator(),
             BackendPathVarsValidator(),
         ]
