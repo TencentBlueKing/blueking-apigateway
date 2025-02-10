@@ -221,7 +221,8 @@
     <SdkInstructionSlider v-model="isSdkInstructionSliderShow"></SdkInstructionSlider>
     <!--  网关/组件 SDK 地址 dialog  -->
     <SdkDetailDialog
-      v-model="isSdkDetailDialogShow" :sdks="curSdks" :languages="curTab === 'component' ? ['python'] : undefined"
+      v-model="isSdkDetailDialogShow" :sdks="curSdks"
+      :languages="curTab === 'component' ? ['python'] : undefined"
       :target-name="curTargetName"
     ></SdkDetailDialog>
   </div>
