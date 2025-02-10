@@ -21,7 +21,11 @@ from ddf import G
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apis.web.resource.validators import BackendPathVarsValidator, NameVarsValidator, PathVarsValidator
+from apigateway.apis.web.resource.validators import (
+    BackendPathVarsValidator,
+    LowerDashCaseNameDuplicationValidator,
+    PathVarsValidator,
+)
 from apigateway.core.models import Resource
 
 
@@ -31,7 +35,7 @@ class FakeNameVarsSLZ(serializers.Serializer):
 
     class Meta:
         validators = [
-            NameVarsValidator(),
+            LowerDashCaseNameDuplicationValidator(),
         ]
 
 

@@ -28,11 +28,12 @@ from apigateway.utils.list import get_duplicate_items
 from .constants import NORMAL_PATH_VAR_NAME_PATTERN, PATH_VAR_PATTERN, STAGE_PATH_VAR_NAME_PATTERN
 
 
-class NameVarsValidator:
+class LowerDashCaseNameDuplicationValidator:
     requires_context = True
 
     def __call__(self, attrs, serializer):
-        name = shortcuts.to_lower_dash_case(attrs.get("name"))
+        origin_name = attrs.get("name")
+        lower_name = shortcuts.to_lower_dash_case(origin_name)
         instance = getattr(serializer, "instance", None)
         gateway = attrs.get("gateway", None)
         if not gateway:
@@ -44,8 +45,12 @@ class NameVarsValidator:
 
         # 校验资源名称是否重复
         for n in name_list:
-            if name == shortcuts.to_lower_dash_case(n):
-                raise serializers.ValidationError(_("网关下资源名称已经存在。"))
+            if lower_name == shortcuts.to_lower_dash_case(n):
+                raise serializers.ValidationError(
+                    _(
+                        f"网关下资源名称 {origin_name} 或其同名驼峰名称已被占用（如 get_foo 会与 getFoo 冲突），请使用其他命名，建议使用统一的命名格式。"
+                    )
+                )
 
 
 class PathVarsValidator:
