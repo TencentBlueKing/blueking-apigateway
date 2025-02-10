@@ -48,8 +48,8 @@ class LowerDashCaseNameDuplicationValidator:
             if lower_name == shortcuts.to_lower_dash_case(n):
                 raise serializers.ValidationError(
                     _(
-                        f"网关下资源名称 {origin_name} 或其同名驼峰名称已被占用（如 get_foo 会与 getFoo 冲突），请使用其他命名，建议使用统一的命名格式。"
-                    )
+                        "网关下资源名称 {origin_name} 或其同名驼峰名称已被占用（如 get_foo 会与 getFoo 冲突），请使用其他命名，建议使用统一的命名格式。"
+                    ).format(origin_name=origin_name)
                 )
 
 
