@@ -112,6 +112,14 @@ class TestResourceImportValidator:
         validator._validate_name()
         assert len(validator.schema_validate_result) > 0
 
+        G(Resource, gateway=fake_gateway, name="getFoo")
+        resource_data_list2 = [
+            fake_resource_data.copy(update={"name": "get_foo"}, deep=True),
+        ]
+        validator2 = ResourceImportValidator(fake_gateway, resource_data_list2, False)
+        validator2._validate_name()
+        assert len(validator2.schema_validate_result) == 1
+
     def test_validate_match_subpath(self, fake_gateway, fake_resource_data):
         resource_data = fake_resource_data.copy(deep=True)
         resource_data.match_subpath = True

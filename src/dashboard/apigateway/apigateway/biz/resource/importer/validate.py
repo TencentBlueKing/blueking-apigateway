@@ -19,6 +19,7 @@
 from collections import defaultdict
 from typing import Any, Dict, List
 
+from blue_krill.cubing_case import shortcuts
 from django.conf import settings
 from django.utils.translation import gettext as _
 
@@ -140,6 +141,9 @@ class ResourceImportValidator:
     def _validate_name(self):
         """校验资源名称不能重复"""
         unchanged_resource_names = {item["name"] for item in self._unchanged_resources}
+        lower_resource_names = {
+            shortcuts.to_lower_dash_case(obj.name): obj.id for obj in Resource.objects.filter(gateway=self.gateway)
+        }
         resource_names = set()
 
         for resource_data in self.resource_data_list:
@@ -156,6 +160,20 @@ class ResourceImportValidator:
                     _("资源名称重复，operationId={name} 在当前配置数据中被多次使用，请检查。").format(
                         name=resource_data.name
                     ),
+                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.operationId",
+                    absolute_path=[],
+                )
+                self.schema_validate_result.append(validate_err)
+
+            lower_name = shortcuts.to_lower_dash_case(resource_data.name)
+            resource_id = lower_resource_names.get(lower_name)
+            if resource_id and (
+                not resource_data.resource or (resource_data.resource and resource_data.resource.id != resource_id)
+            ):
+                validate_err = SchemaValidateErr(
+                    _(
+                        "网关下资源名称 {name} 或其同名驼峰名称已被占用（如 get_foo 会与 getFoo 冲突），请使用其他命名，建议使用统一的命名格式。"
+                    ).format(name=resource_data.name),
                     f"$.paths.{resource_data.path}.{resource_data.method.lower()}.operationId",
                     absolute_path=[],
                 )
