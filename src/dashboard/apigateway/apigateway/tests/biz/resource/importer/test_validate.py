@@ -120,9 +120,10 @@ class TestResourceImportValidator:
         validator2._validate_name()
         assert len(validator2.schema_validate_result) == 1
 
+        # 更新
         G(Resource, gateway=fake_gateway, name="get_foo")
         resource_data_list3 = [
-            fake_resource_data.copy(update={"resource": r2, "name": "get_foo"}, deep=True),
+            fake_resource_data.copy(update={"resource": r2, "name": "getFoo"}, deep=True),
         ]
         validator3 = ResourceImportValidator(fake_gateway, resource_data_list3, False)
         validator3._validate_name()

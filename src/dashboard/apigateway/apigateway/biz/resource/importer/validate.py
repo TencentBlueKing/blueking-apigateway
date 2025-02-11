@@ -172,9 +172,9 @@ class ResourceImportValidator:
 
             lower_name = shortcuts.to_lower_dash_case(resource_data.name)
             resource_ids = lower_resource_names.get(lower_name)
-            if not resource_ids:
-                continue
-            if not resource_data.resource or resource_data.resource.id not in resource_ids or len(resource_ids) < 2:
+            if resource_ids and (
+                not resource_data.resource or resource_data.resource.id not in resource_ids or len(resource_ids) > 1
+            ):
                 validate_err = SchemaValidateErr(
                     _(
                         "网关下资源名称 {name} 或其同名驼峰名称已被占用（如 get_foo 会与 getFoo 冲突），请使用其他命名，建议使用统一的命名格式。"
