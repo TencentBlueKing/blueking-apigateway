@@ -117,7 +117,7 @@
                               v-for="api in group.apiList"
                               :key="api.id"
                               :class="{ active: api.id === curApi?.id }"
-                              @click="handleApiClick(api.id)"
+                              @click="handleApiClick(api.id, api.name)"
                             >
                               <header
                                 class="res-item-name" v-dompurify-html="getHighlightedHtml(api.name)" v-bk-overflow-tips
@@ -280,17 +280,29 @@ const apiGroupList = computed(() => {
   }, [] as { id: number, name: string, apiList: typeof apiList.value }[]);
 });
 
-// 分类列表变化时更新 collapse 展开状态
-watch(apiGroupList, () => {
-  activeGroupPanelNames.value = apiGroupList.value.map(item => item.name);
-});
-
 const allSystemList = computed(() => {
   const curBoard = boardList.value[0];
   const systems: ISystem[] = [];
   curBoard.categories.forEach(cat => cat.systems.forEach(system => systems.push(system)));
   return systems;
 });
+
+// 分类列表变化时更新 collapse 展开状态
+watch(apiGroupList, () => {
+  activeGroupPanelNames.value = apiGroupList.value.map(item => item.name);
+});
+
+watch(() => route.query, async () => {
+  if (route.query?.apiName) {
+    curComponentApiName.value = route.query.apiName as string;
+    curApi.value = apiList.value.find(api => api.name === curComponentApiName.value) ?? null;
+    navList.value = [];
+
+    if (curApi.value) {
+      await getApigwResourceDoc();
+    }
+  }
+}, { deep: true });
 
 const fetchTargetBasics = async () => {
   try {
@@ -354,6 +366,10 @@ const fetchApiList = async () => {
       }
     });
 
+    if (route.query?.apiName) {
+      curComponentApiName.value = route.query.apiName as string;
+    }
+
     if (curComponentApiName.value) {
       curApi.value = apiList.value.find(api => api.name === curComponentApiName.value) ?? null;
     } else {
@@ -367,13 +383,16 @@ const fetchApiList = async () => {
   }
 };
 
-const handleApiClick = async (resId: number) => {
+const handleApiClick = (resId: number, apiName: string) => {
   if (curApi.value.id === resId) return;
-  navList.value = [];
-  curApi.value = apiList.value.find(res => res.id === resId) ?? null;
-  if (curApi.value) {
-    await getApigwResourceDoc();
-  }
+
+  router.push({
+    name: 'apiDocDetail',
+    params: { ...route.params },
+    query: {
+      apiName,
+    },
+  });
 };
 
 const md = new MarkdownIt({
