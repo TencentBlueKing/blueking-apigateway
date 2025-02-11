@@ -35,6 +35,7 @@ from apigateway.apps.plugin.constants import (
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 from apigateway.biz.audit import Auditor
 from apigateway.common.error_codes import error_codes
+from apigateway.common.pagination import StandardLimitOffsetPagination
 from apigateway.common.renderers import BkStandardApiJSONRenderer
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum
@@ -54,6 +55,10 @@ from .serializers import (
 )
 
 
+class PluginPagination(StandardLimitOffsetPagination):
+    default_limit = 100
+
+
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
@@ -65,6 +70,7 @@ from .serializers import (
 )
 class PluginTypeListApi(generics.ListAPIView):
     serializer_class = PluginTypeOutputSLZ
+    pagination_class = PluginPagination
 
     def get_serializer_context(self):
         # 需要返回描述，描述在 plugin_form 中
