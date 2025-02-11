@@ -141,10 +141,15 @@ class ResourceImportValidator:
     def _validate_name(self):
         """校验资源名称不能重复"""
         unchanged_resource_names = {item["name"] for item in self._unchanged_resources}
-        lower_resource_names = {
-            shortcuts.to_lower_dash_case(obj.name): obj.id for obj in Resource.objects.filter(gateway=self.gateway)
-        }
+        lower_resource_names = {}
         resource_names = set()
+
+        for obj in Resource.objects.filter(gateway=self.gateway):
+            lower_obj_name = shortcuts.to_lower_dash_case(obj.name)
+            if not lower_resource_names.get(lower_obj_name):
+                lower_resource_names[lower_obj_name] = [obj.id]
+            else:
+                lower_resource_names[lower_obj_name].append(obj.id)
 
         for resource_data in self.resource_data_list:
             if resource_data.name in unchanged_resource_names:
@@ -166,8 +171,10 @@ class ResourceImportValidator:
                 self.schema_validate_result.append(validate_err)
 
             lower_name = shortcuts.to_lower_dash_case(resource_data.name)
-            resource_id = lower_resource_names.get(lower_name)
-            if resource_id and (not resource_data.resource or resource_data.resource.id != resource_id):
+            resource_ids = lower_resource_names.get(lower_name)
+            if not resource_ids:
+                continue
+            if not resource_data.resource or resource_data.resource.id not in resource_ids or len(resource_ids) < 2:
                 validate_err = SchemaValidateErr(
                     _(
                         "网关下资源名称 {name} 或其同名驼峰名称已被占用（如 get_foo 会与 getFoo 冲突），请使用其他命名，建议使用统一的命名格式。"
@@ -178,6 +185,7 @@ class ResourceImportValidator:
                 self.schema_validate_result.append(validate_err)
 
             resource_names.add(resource_data.name)
+            resource_names.add(lower_name)
 
     def _validate_match_subpath(self):
         for resource_data in self.resource_data_list:
