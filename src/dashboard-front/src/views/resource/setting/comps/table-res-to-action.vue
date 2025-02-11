@@ -104,13 +104,11 @@
       </template>
     </bk-table-column>
     <bk-table-column
-      :label="t('资源文档')"
-      prop="doc"
-      width="85"
+      :label="() => action === 'add' ? renderDocColLabel() : t('资源文档')"
     >
       <template #default="{ row }: { row: ILocalImportedResource }">
         <bk-button
-          v-if="showDoc"
+          v-if="docConfig.showDoc"
           text
           theme="primary"
           @click="handleShowResourceDoc(row)"
@@ -186,6 +184,7 @@ import { useI18n } from 'vue-i18n';
 import { MethodsEnum } from '@/types';
 import useTextGetter from '@/views/resource/setting/hooks/useTextGetter';
 import TableEmpty from '@/components/table-empty.vue';
+import { type IDocConfig } from '@/views/resource/setting/import.vue';
 
 const {
   getAuthConfigText,
@@ -199,16 +198,19 @@ const methodsEnum = Object.freeze(MethodsEnum);
 
 interface IProps {
   tableData: ILocalImportedResource[];
-  showDoc: boolean;
   action: ActionType;
   keyword: string;
+  docConfig: IDocConfig;
 }
 
 const props = withDefaults(defineProps<IProps>(), {
   tableData: () => [],
-  showDoc: true,
   action: 'add',
   keyword: '',
+  docConfig: () => ({
+    showDoc: true,
+    language: 'zh',
+  }),
 });
 
 const emit = defineEmits<{
@@ -218,6 +220,7 @@ const emit = defineEmits<{
   'toggle-row-unchecked': [row: ILocalImportedResource]
   'confirm-auth-config': [action: ActionType]
   'confirm-pub-config': [action: ActionType]
+  'confirm-doc-config': [docConfig: IDocConfig]
   'clear-filter': [action: ActionType]
 }>();
 
@@ -231,15 +234,17 @@ const tempPublicConfig = defineModel<IPublicConfig>('tempPublicConfig', {
 
 const {
   tableData,
-  showDoc,
   action,
   keyword,
+  docConfig,
 } = toRefs(props);
 
 const pagination = ref({
   count: tableData.value.length,
   limit: 10,
 });
+
+const localDocConfig = ref({ ...docConfig.value });
 
 const handleShowResourceDoc = (row: ILocalImportedResource) => {
   emit('show-row-doc', row);
@@ -287,6 +292,10 @@ const handleCancelPublicConfig = () => {
     is_public: false,
     allow_apply_permission: false,
   }
+};
+
+const handleConfirmDocConfig = () => {
+  emit('confirm-doc-config', localDocConfig.value);
 };
 
 const renderAuthConfigColLabel = () => {
@@ -398,6 +407,61 @@ const renderIsPublicColLabel = () => {
               content: (
                 <div>
                   {t('批量修改公开设置')}
+                </div>
+              ),
+            }}
+          />
+        </bk-pop-confirm>
+      </div>
+    </div>
+  );
+};
+
+// 是否生成文档列 TSX
+const renderDocColLabel = () => {
+  return (
+    <div>
+      <div class="public-config-col-label">
+        <span>{t('资源文档')}</span>
+        <bk-pop-confirm
+          width="360"
+          trigger="click"
+          title={<span class="f16" style="color: #313238;">{t('批量修改资源文档')}</span>}
+          content={
+            <div class="multi-edit-popconfirm-wrap public-config" style="margin-bottom: -12px;">
+              <bk-form model={localDocConfig.value} labelWidth="100" labelPosition="right">
+                <bk-form-item
+                  label={t('生成文档')}
+                  style="margin-bottom: 12px;"
+                >
+                  <bk-switcher
+                    v-model={localDocConfig.value.showDoc}
+                    theme="primary"
+                    size="small"
+                  />
+                </bk-form-item>
+                {localDocConfig.value.showDoc ?
+                 <bk-form-item
+                   label={t('文档语言')}
+                   style="margin-bottom: 12px;"
+                 >
+                   <bk-radio-group v-model={localDocConfig.value.language} size="small">
+                     <bk-radio label="zh">{t('中文文档')}</bk-radio>
+                     <bk-radio label="en">{t('英文文档')}</bk-radio>
+                   </bk-radio-group>
+                 </bk-form-item> : ''
+                }
+              </bk-form>
+            </div>
+          }
+          onConfirm={() => handleConfirmDocConfig()}
+        >
+          <i
+            class="apigateway-icon icon-ag-bulk-edit edit-action ml5 f14 default-c"
+            v-bk-tooltips={{
+              content: (
+                <div>
+                  {t('批量修改资源文档')}
                 </div>
               ),
             }}
