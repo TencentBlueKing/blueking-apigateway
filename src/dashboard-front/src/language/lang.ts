@@ -672,6 +672,8 @@ const lang: ILANG = {
   '生成资源文档': ['Generate resource doc'],
   '请确认以下资源变更，资源配置：': ['Confirm the following resource changes, resource configs:'],
   '资源文档：': ['Resource Doc:'],
+  '生成文档': ['Generate Resource Doc'],
+  '批量修改资源文档': ['Change Resource Doc Settings'],
   '勾选新增资源': ['Select added'],
   '勾选已存在资源': ['Select existing'],
   '资源操作类型': ['Resource operation type'],
