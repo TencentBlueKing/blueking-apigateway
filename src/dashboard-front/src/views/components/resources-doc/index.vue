@@ -136,7 +136,10 @@ import {
   saveResourceDocs,
   deleteResourceDocs,
 } from '@/http';
-import { useCommon } from '@/store';
+import {
+  useCommon,
+  useStage,
+} from '@/store';
 import { cloneDeep } from 'lodash';
 import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
@@ -144,7 +147,10 @@ import mitt from '@/common/event-bus';
 
 const { t } = useI18n();
 const common = useCommon();
+const stage = useStage();
+
 const { apigwId } = common; // 网关id
+
 const props = defineProps({
   curResource: { type: Object, default: {} },   // 当前点击的资源
   height: { type: String, default: 'calc(100vh - 104px)' },
@@ -214,6 +220,9 @@ const emit = defineEmits(['fetch', 'on-update']);
 const resourcesHeight = computed(() => {
   if (props.source === 'side') {
     return 'height: calc(100vh - 57px)';
+  }
+  if (stage.getNotUpdatedStages?.length) {
+    return 'height: calc(100vh - 218px)';
   }
   return 'height: calc(100vh - 176px)';
 });
