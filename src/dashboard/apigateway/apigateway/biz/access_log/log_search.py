@@ -41,8 +41,8 @@ class LogSearchClient:
         resource_id: Optional[int] = None,
         request_id: Optional[str] = None,
         query: Optional[str] = None,
-        include_conditions: Optional[Dict[str, str]] = None,
-        exclude_conditions: Optional[Dict[str, str]] = None,
+        include_conditions: Optional[List[Tuple[str, str]]] = None,
+        exclude_conditions: Optional[List[Tuple[str, str]]] = None,
         time_start: Optional[int] = None,
         time_end: Optional[int] = None,
         time_range: Optional[int] = None,
@@ -108,11 +108,11 @@ class LogSearchClient:
             s = s.filter("term", request_id=self._request_id)
 
         if self._include_conditions:
-            for key, val in self._include_conditions.items():
+            for key, val in self._include_conditions:
                 s = s.filter("term", **{key: val})
 
         if self._exclude_conditions:
-            for key, val in self._exclude_conditions.items():
+            for key, val in self._exclude_conditions:
                 s = s.exclude("term", **{key: val})
 
         # time range

@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import List, Tuple
+
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
@@ -42,25 +44,25 @@ class RequestLogQueryInputSLZ(serializers.Serializer):
     def to_internal_value(self, data):
         data = super().to_internal_value(data)
 
-        include_conditions = {}
+        include_conditions: List[Tuple[str, str]] = []
         if data.get("include"):
             # aaa:bbb => {aaa: bbb}, aaa:bbb:ccc => {aaa: bbb:ccc}
             for expr in data["include"]:
                 if ":" not in expr:
                     continue
                 k, v = expr.split(":", 1)
-                include_conditions[k] = v
+                include_conditions.append((k, v))
 
         if include_conditions:
             data["include_conditions"] = include_conditions
 
-        exclude_conditions = {}
+        exclude_conditions: List[Tuple[str, str]] = []
         if data.get("exclude"):
             for expr in data["exclude"]:
                 if ":" not in expr:
                     continue
                 k, v = expr.split(":", 1)
-                exclude_conditions[k] = v
+                exclude_conditions.append((k, v))
 
         if exclude_conditions:
             data["exclude_conditions"] = exclude_conditions
