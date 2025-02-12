@@ -165,7 +165,14 @@
               </div>
             </template>
             <div :class="stepsConfig.curStep === 1 ? 'operate1' : 'operate2'">
-              <bk-button v-if="stepsConfig.curStep === 1" theme="primary" style="width: 100px" @click="handleNext">
+              <bk-button
+                v-if="stepsConfig.curStep === 1"
+                :disabled="isNextBtnDisabled"
+                theme="primary"
+                style="width: 100px"
+                v-bk-tooltips="{ content: t('请新建版本再发布'), disabled: !isNextBtnDisabled }"
+                @click="handleNext"
+              >
                 {{ $t('下一步') }}
               </bk-button>
               <template v-else-if="stepsConfig.curStep === 2">
@@ -286,6 +293,15 @@ const resourceVersion = computed(() => {
     }
   });
   return version;
+});
+
+// 当版本过旧时“下一步”按钮不能点击
+const isNextBtnDisabled = computed(() => {
+  const currentResource = versionList.value.find(version => version.id === formData.resource_version_id);
+  if (currentResource) {
+    return currentResource.schema_version === '1.0';
+  }
+  return false;
 });
 
 const chooseVersionComment = ref<string>('');
