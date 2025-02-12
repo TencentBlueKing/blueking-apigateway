@@ -141,15 +141,12 @@ class ResourceImportValidator:
     def _validate_name(self):
         """校验资源名称不能重复"""
         unchanged_resource_names = {item["name"] for item in self._unchanged_resources}
-        lower_resource_names = {}
+        lower_resource_names = defaultdict(list)
         resource_names = set()
 
         for obj in Resource.objects.filter(gateway=self.gateway):
             lower_obj_name = shortcuts.to_lower_dash_case(obj.name)
-            if not lower_resource_names.get(lower_obj_name):
-                lower_resource_names[lower_obj_name] = [obj.id]
-            else:
-                lower_resource_names[lower_obj_name].append(obj.id)
+            lower_resource_names[lower_obj_name].append(obj.id)
 
         for resource_data in self.resource_data_list:
             if resource_data.name in unchanged_resource_names:
@@ -172,6 +169,10 @@ class ResourceImportValidator:
 
             lower_name = shortcuts.to_lower_dash_case(resource_data.name)
             resource_ids = lower_resource_names.get(lower_name)
+            # 如果有 resource_ids，说明数据库中可能存在多条 lower_name 同名的记录。
+            # not resource_data.resource: 为空则是创建数据，但此时库中已有同名记录，创建会产生冲突。
+            # resource.id not in resource_ids：同名记录中不包含当前资源id，名称已被其他资源占用，更新会产生冲突。
+            # len(resource_ids) > 1: 同名记录包含当前资源id，但记录数量大于1，说明还有其他同名资源，更新会覆盖其他资源。
             if resource_ids and (
                 not resource_data.resource or resource_data.resource.id not in resource_ids or len(resource_ids) > 1
             ):
@@ -185,6 +186,7 @@ class ResourceImportValidator:
                 self.schema_validate_result.append(validate_err)
 
             resource_names.add(resource_data.name)
+            # 避免导入数据存在 lower_name 冲突
             resource_names.add(lower_name)
 
     def _validate_match_subpath(self):
