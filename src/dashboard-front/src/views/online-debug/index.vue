@@ -105,7 +105,12 @@
                         <bk-tag theme="success" class="method-tag">{{ curResource?.method }}</bk-tag>
                         <span class="request-path">{{ curResource?.path }}</span>
                       </div>
-                      <bk-button class="fixed-w" theme="primary" @click="handleSend" :loading="isLoading">
+                      <bk-button
+                        class="fixed-w"
+                        theme="primary"
+                        @click="handleSend"
+                        :loading="isLoading"
+                        :disabled="isLoading">
                         {{ t('发送') }}
                       </bk-button>
                       <bk-button class="ml8 fixed-w" @click="viewDoc">{{ t('查看文档') }}</bk-button>
@@ -245,7 +250,12 @@
                         <bk-tag theme="success" class="method-tag">{{ curResource?.method }}</bk-tag>
                         <span class="request-path">{{ curResource?.path }}</span>
                       </div>
-                      <bk-button class="fixed-w" theme="primary" @click="handleSend" :loading="isLoading">
+                      <bk-button
+                        class="fixed-w"
+                        theme="primary"
+                        @click="handleSend"
+                        :loading="isLoading"
+                        :disabled="isLoading">
                         {{ t('发送') }}
                       </bk-button>
                       <bk-button class="ml8 fixed-w" @click="viewDoc">{{ t('查看文档') }}</bk-button>
