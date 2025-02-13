@@ -158,6 +158,7 @@ class ResourceImportValidator:
                 self.schema_validate_result.append(validate_err)
 
             lower_name = shortcuts.to_lower_dash_case(resource_data.name)
+            # 同时检查导入资源中是否有存在冲突的情况
             if resource_data.name in resource_names or lower_name in resource_names:
                 validate_err = SchemaValidateErr(
                     _("资源名称重复，operationId={name} 在当前配置数据中被多次使用，请检查。").format(
