@@ -5,8 +5,8 @@
       <nav class="tabs-group">
         <section
           class="page-tab"
-          :class="{ 'active': curTab === 'apigw' }"
-          @click="curTab = 'apigw'"
+          :class="{ 'active': curTab === 'gateway' }"
+          @click="curTab = 'gateway'"
         >{{ t('网关 API 文档') }}
         </section>
         <section
@@ -20,7 +20,7 @@
     <!--  正文  -->
     <main class="docs-main-content">
       <!--  当选中 网关API文档 时  -->
-      <div v-if="curTab === 'apigw'" class="content-of-apigw">
+      <div v-if="curTab === 'gateway'" class="content-of-apigw">
         <!--  搜索栏和 SDK使用说明  -->
         <header class="top-bar">
           <bk-input
@@ -294,7 +294,7 @@ const tableEmptyConf = ref<{ keyword: string, isAbnormal: boolean }>({
 });
 
 // 当前展示的是 网关 | 组件 相关内容
-const curTab = ref<TabType>('apigw');
+const curTab = ref<TabType>('gateway');
 const curTargetName = ref('');
 const board = ref('default');
 const curCategoryNavId = ref('');
@@ -317,13 +317,18 @@ watch(
 );
 
 const gotoDetails = (row: IApiGatewayBasics | ISystem, systemBoard?: string) => {
+  const params = {
+    targetName: row.name,
+    curTab: curTab.value,
+  };
+
+  if (curTab.value === 'component') {
+    Object.assign(params, { board: systemBoard || 'default' });
+  }
+
   router.push({
     name: 'apiDocDetail',
-    params: {
-      targetName: row.name,
-      curTab: curTab.value,
-      board: curTab.value === 'apigw' ? board.value : systemBoard,
-    },
+    params,
   });
 };
 
@@ -404,7 +409,7 @@ const isActiveNavPanel = (panelName: string) => {
 onBeforeMount(() => {
   const { params } = route;
   // 记录返回到此页时选中的 tab
-  curTab.value = params.curTab as TabType || 'apigw';
+  curTab.value = params.curTab as TabType || 'gateway';
 });
 
 onMounted(async () => {

@@ -157,7 +157,9 @@ class ResourceImportValidator:
                 )
                 self.schema_validate_result.append(validate_err)
 
-            if resource_data.name in resource_names:
+            lower_name = shortcuts.to_lower_dash_case(resource_data.name)
+            # 同时检查导入资源中是否有存在冲突的情况
+            if resource_data.name in resource_names or lower_name in resource_names:
                 validate_err = SchemaValidateErr(
                     _("资源名称重复，operationId={name} 在当前配置数据中被多次使用，请检查。").format(
                         name=resource_data.name
@@ -167,7 +169,6 @@ class ResourceImportValidator:
                 )
                 self.schema_validate_result.append(validate_err)
 
-            lower_name = shortcuts.to_lower_dash_case(resource_data.name)
             resource_ids = lower_resource_names.get(lower_name)
             # 如果有 resource_ids，说明数据库中可能存在多条 lower_name 同名的记录。
             # not resource_data.resource: 为空则是创建数据，但此时库中已有同名记录，创建会产生冲突。

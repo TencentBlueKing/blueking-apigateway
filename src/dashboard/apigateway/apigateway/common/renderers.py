@@ -38,7 +38,8 @@ class BkStandardApiJSONRenderer(JSONRenderer):
     def render(self, data, accepted_media_type=None, renderer_context=None):
         # Wrap response data on demand
         resp = renderer_context["response"]
-        if status.is_success(resp.status_code):
+        # NOTE: 204 no content should not wrap with a content, the request would be pending forever
+        if status.is_success(resp.status_code) and resp.status_code != 204:
             data = {"data": data}
         elif (
             status.is_client_error(resp.status_code) or status.is_server_error(resp.status_code)
