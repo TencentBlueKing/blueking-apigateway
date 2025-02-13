@@ -9,7 +9,7 @@
           class="icon apigateway-icon icon-ag-return-small"
           @click="handleGoBack()"
         ></i>
-        {{ curTab === 'apigw' ? curTargetName : curTargetBasics?.description ?? '' }}
+        {{ curTab === 'gateway' ? curTargetName : curTargetBasics?.description ?? '' }}
         <!--  组件系统下拉菜单  -->
         <aside v-if="curTab === 'component'" class="system-dropdown-wrap">
           <bk-dropdown ref="dropdown" :popover-options="{ boundary: 'body', placement: 'bottom-start' }">
@@ -64,11 +64,11 @@
                   <!--  筛选器  -->
                   <header class="left-aside-header">
                     <header class="title">
-                      {{ curTab === 'apigw' ? t('资源列表') : t('API列表') }}
+                      {{ curTab === 'gateway' ? t('资源列表') : t('API列表') }}
                       <aside v-if="apiList.length" class="sub-title">{{ filteredApiList.length }}</aside>
                     </header>
                     <main class="nav-filters">
-                      <article v-if="curTab === 'apigw'">
+                      <article v-if="curTab === 'gateway'">
                         <bk-select
                           v-model="curStageName"
                           :clearable="false"
@@ -221,7 +221,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
-const curTab = ref<TabType>('apigw');
+const curTab = ref<TabType>('gateway');
 const board = ref('default');
 // 提供当前 tab 的值
 // 注入时请使用：const curTab = inject<Ref<TabType>>('curTab');
@@ -251,7 +251,7 @@ const searchPlaceholder = computed(() => {
     '在{resourceLength}个{type}中搜索...',
     {
       resourceLength: apiList.value.length,
-      type: curTab.value === 'apigw' ? t('资源') : 'API',
+      type: curTab.value === 'gateway' ? t('资源') : 'API',
     },
   );
 });
@@ -302,11 +302,16 @@ watch(() => route.query, async () => {
       await getApigwResourceDoc();
     }
   }
+
+  if (route.query?.stage) {
+    curStageName.value = route.query.stage as string;
+    await fetchApiList();
+  }
 }, { deep: true });
 
 const fetchTargetBasics = async () => {
   try {
-    if (curTab.value === 'apigw') {
+    if (curTab.value === 'gateway') {
       const { sdks: sdksResponse, ...restResponse } = await getGatewaysDetailsDocs(curTargetName.value);
       curTargetBasics.value = restResponse;
       sdks.value = sdksResponse;
@@ -336,9 +341,16 @@ const fetchApigwStages = async () => {
       limit: 10000,
       offset: 0,
     };
+
     stageList.value = await getApigwStagesDocs(curTargetName.value, query);
-    const prodStage = stageList.value.find(stage => stage.name === 'prod');
-    curStageName.value = prodStage?.name || stageList.value[0]?.name || '';
+
+    const requestedStage = stageList.value.find(stage => stage.name === route.query?.stage);
+    if (requestedStage) {
+      curStageName.value = requestedStage.name;
+    } else {
+      const prodStage = stageList.value.find(stage => stage.name === 'prod');
+      curStageName.value = prodStage?.name || stageList.value[0]?.name || '';
+    }
   } catch {
     stageList.value = [];
   }
@@ -348,7 +360,7 @@ const fetchApiList = async () => {
   try {
     let res: (IResource & IComponent)[] = [];
     navList.value = [];
-    if (curTab.value === 'apigw') {
+    if (curTab.value === 'gateway') {
       const query = {
         limit: 10000,
         offset: 0,
@@ -386,10 +398,11 @@ const fetchApiList = async () => {
 const handleApiClick = (resId: number, apiName: string) => {
   if (curApi.value.id === resId) return;
 
-  router.push({
+  router.replace({
     name: 'apiDocDetail',
     params: { ...route.params },
     query: {
+      ...route.query,
       apiName,
     },
   });
@@ -438,7 +451,7 @@ const getApigwResourceDoc = async () => {
   try {
     isLoading.value = true;
     let res: any;
-    if (curTab.value === 'apigw') {
+    if (curTab.value === 'gateway') {
       const query = {
         stage_name: curStageName.value,
       };
@@ -454,8 +467,16 @@ const getApigwResourceDoc = async () => {
   }
 };
 
-const handleStageChange = async () => {
-  await fetchApiList();
+const handleStageChange = () => {
+  router.replace({
+    name: 'apiDocDetail',
+    params: { ...route.params },
+    query: {
+      ...route.query,
+      stage: curStageName.value,
+    },
+  });
+  // await fetchApiList();
 };
 
 const getHighlightedHtml = (value: string) => {
@@ -483,7 +504,7 @@ const handleSystemChange = async (system: ISystem) => {
 };
 
 const init = async () => {
-  if (curTab.value === 'apigw') {
+  if (curTab.value === 'gateway') {
     await fetchApigwStages();
   }
   await Promise.all([
@@ -507,7 +528,7 @@ const handleGoBack = () => {
 
 onBeforeMount(() => {
   const { params } = route;
-  curTab.value = params.curTab as TabType || 'apigw';
+  curTab.value = params.curTab as TabType || 'gateway';
   curTargetName.value = params.targetName as string;
   curComponentApiName.value = params.componentName as string || '';
   board.value = params.board as string || 'default';
