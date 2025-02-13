@@ -586,7 +586,10 @@ const updateTableEmptyConfig = () => {
 };
 
 watch(
-  () => props.stageId,
+  [
+    () => props.stageId,
+    () => props.resourceId,
+  ],
   () => {
     init();
   },

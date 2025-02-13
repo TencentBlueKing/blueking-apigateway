@@ -1,5 +1,5 @@
 <template>
-  <div class="detail-container pl10 pr10">
+  <div class="detail-container pl10 pr10" :class="{ 'has-notice': stage.getNotUpdatedStages?.length }">
     <div class="title">
       {{ t('基本信息') }}
     </div>
@@ -553,14 +553,20 @@ import { Message } from 'bkui-vue';
 import { copy } from '@/common/util';
 import SelectCheckBox from './comps/select-check-box.vue';
 import { MethodsEnum } from '@/types';
-import { useCommon } from '@/store';
+import {
+  useCommon,
+  useStage,
+} from '@/store';
 import { cloneDeep } from 'lodash';
 
 const { t } = useI18n();
 
 // const router = useRouter();
 const common = useCommon();
+const stage = useStage();
+
 const { curApigwData } = common;
+
 const methodData = ref(common.methodList);
 
 const props = defineProps({
@@ -954,98 +960,118 @@ watch(
 
 </script>
 <style lang="scss" scoped>
-.detail-container{
-    // max-width: 1000px;
-    height: calc(100vh - 175px);
-    overflow: auto;
-    .title {
-      color: #313238;
-      font-weight: 700;
-      font-size: 14px;
-      margin-bottom: 12px;
-    }
-    .form-cls {
-      font-size: 12px;
-      flex-flow: wrap;
-      margin-bottom: 30px;
-      :deep(.form-item-cls){
-        flex: 0 0 50%;
-        margin-bottom: 6px;
-        .bk-form-label {
-          font-size: 12px;
-          padding-right: 10px;
-          display: flex;
-          justify-content: flex-end;
-          .bk-form-label-description {
-            border-bottom: none;
-            position: relative;
-            &::after {
-              content: ' ';
-              position: absolute;
-              width: 82%;
-              height: 1px;
-              border-bottom: 1px dashed #979ba5;
-              bottom: 4px;
-              left: 0;
-            }
-          }
-        }
-      }
-      .label-cls{
+
+.detail-container {
+  height: calc(100vh - 175px);
+  overflow: auto;
+
+  &.has-notice {
+    height: calc(100vh - 217px);
+  }
+
+  .title {
+    color: #313238;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .form-cls {
+    font-size: 12px;
+    flex-flow: wrap;
+    margin-bottom: 30px;
+
+    :deep(.form-item-cls) {
+      flex: 0 0 50%;
+      margin-bottom: 6px;
+
+      .bk-form-label {
         font-size: 12px;
-        color: #63656E;
-      }
-      .value-cls{
-        color: #313238;
-        cursor: pointer;
-        .bk-tag {
-          &:not(&:last-child) {
-            margin-right: 4px;
+        padding-right: 10px;
+        display: flex;
+        justify-content: flex-end;
+
+        .bk-form-label-description {
+          border-bottom: none;
+          position: relative;
+
+          &::after {
+            content: ' ';
+            position: absolute;
+            width: 82%;
+            height: 1px;
+            border-bottom: 1px dashed #979ba5;
+            bottom: 4px;
+            left: 0;
           }
         }
-      }
-      .value-container {
-        .operate-btn {
-          display: none;
-        }
-      }
-      .value-container:hover {
-        .value-cls {
-          color: #1768EF;
-        }
-        .operate-btn {
-          display: inline-block;
-        }
-      }
-    }
-    .resource-btn-cls{
-      margin-left: 150px;
-      min-width: 88px;
-      margin-top: 20px;
-      &:last-child {
-        margin-left: 4px;
       }
     }
 
-    .apigateway-icon {
+    .label-cls {
+      font-size: 12px;
+      color: #63656e;
+    }
+
+    .value-cls {
+      color: #313238;
       cursor: pointer;
-      color: #3A84FF;
-      font-size: 14px;
+
+      .bk-tag {
+        &:not(&:last-child) {
+          margin-right: 4px;
+        }
+      }
+    }
+
+    .value-container {
+      .operate-btn {
+        display: none;
+      }
+    }
+
+    .value-container:hover {
+      .value-cls {
+        color: #1768ef;
+      }
+
+      .operate-btn {
+        display: inline-block;
+      }
+    }
+  }
+
+  .resource-btn-cls {
+    margin-left: 150px;
+    min-width: 88px;
+    margin-top: 20px;
+
+    &:last-child {
+      margin-left: 4px;
+    }
+  }
+
+  .apigateway-icon {
+    cursor: pointer;
+    color: #3a84ff;
+    font-size: 14px;
+    padding: 2px;
+  }
+
+  .edit-name {
+    display: flex;
+    align-items: center;
+
+    .edit-name-icon {
+      color: #3a84ff;
+      margin-left: 4px;
+      cursor: pointer;
+      font-size: 16px;
       padding: 2px;
     }
+  }
 
-    .edit-name {
-      display: flex;
-      align-items: center;
-      .edit-name-icon {
-        color: #3A84FF;
-        margin-left: 4px;
-        cursor: pointer;
-        font-size: 16px;
-        padding: 2px;
-      }
-    }
-    :deep(.back-config-timeout) {
+  :deep(.back-config-timeout) {
     display: inline-block;
 
     .edit-action,

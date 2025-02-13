@@ -1,29 +1,37 @@
 <template>
-  <div v-show="!isEmpty" class="chart-wrapper">
-    <div
-      :class="['line-chart', ['requests', 'non_200_status'].includes(instanceId) ? 'mini' : 'middle']"
-      :id="instanceId"></div>
-    <div
-      :class="['chart-legend', 'custom-scroll-bar', { 'side-legend': instanceId === 'non_200_status' }]"
-      v-if="chartLegend[instanceId]">
+  <div class="chart-wrapper">
+    <div class="chart-title">
+      {{ title || '--' }}
+    </div>
+
+    <div v-show="!isEmpty">
       <div
-        v-for="({ color, name, selected }, legendIndex) in chartLegend[instanceId]"
-        :key="legendIndex"
-        :class="['legend-item', selected]"
-        @click.stop="handleClickLegend(legendIndex)">
-        <div class="legend-icon" :style="{ background: color }"></div>
-        <div class="legend-name">{{name}}</div>
+        :class="['line-chart', ['requests', 'non_200_status'].includes(instanceId) ? 'mini' : 'middle']"
+        :id="instanceId">
+      </div>
+
+      <div
+        :class="['chart-legend', 'custom-scroll-bar', { 'side-legend': instanceId === 'non_200_status' }]"
+        v-if="chartLegend[instanceId]">
+        <div
+          v-for="({ color, name, selected }, legendIndex) in chartLegend[instanceId]"
+          :key="legendIndex"
+          :class="['legend-item', selected]"
+          @click.stop="handleClickLegend(legendIndex)">
+          <div class="legend-icon" :style="{ background: color }"></div>
+          <div class="legend-name">{{name}}</div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div v-show="isEmpty" class="ap-nodata basic-height">
-    <TableEmpty
-      :keyword="tableEmptyConf.keyword"
-      :abnormal="tableEmptyConf.isAbnormal"
-      @reacquire="handleInit"
-      @clear-filter="handleClearFilterKey"
-    />
+    <div v-show="isEmpty" class="ap-nodata basic-height">
+      <TableEmpty
+        :keyword="tableEmptyConf.keyword"
+        :abnormal="tableEmptyConf.isAbnormal"
+        @reacquire="handleInit"
+        @clear-filter="handleClearFilterKey"
+      />
+    </div>
   </div>
 </template>
 
@@ -140,17 +148,17 @@ const chartResize = () => {
 
 const getChartOption = () => {
   const baseOption: echarts.EChartOption = {
-    title: {
-      text: props.title,
-      top: 12,
-      left: 24,
-      textStyle: {
-        color: '#313238',
-        fontSize: 14,
-        fontWeight: 'bold',
-        lineHeight: 22,
-      },
-    },
+    // title: {
+    //   text: props.title,
+    //   top: 12,
+    //   left: 24,
+    //   textStyle: {
+    //     color: '#313238',
+    //     fontSize: 14,
+    //     fontWeight: 'bold',
+    //     lineHeight: 22,
+    //   },
+    // },
     grid: {
       right: '8%', // 设置距离右侧的间距
     },
@@ -268,6 +276,14 @@ const getChartOption = () => {
         return `<div>
       <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
       <p><span class="tooltip-icon">${params.marker}${params.seriesName}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ms</span></p>
+      </div>`;
+      };
+    } else if (['ingress', 'egress'].includes(props.instanceId)) {
+      // ingress 带宽占用 && egress 带宽占用
+      chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
+        return `<div>
+      <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
+      <p><span class="tooltip-icon">${params.marker}${params.seriesName}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} KB</span></p>
       </div>`;
       };
     }  else {
@@ -440,12 +456,20 @@ defineExpose({
 <style lang="scss" scoped>
 .chart-wrapper {
   position: relative;
+  .chart-title {
+    margin-top: 12px;
+    margin-left: 24px;
+    color: '#313238';
+    font-size: 14px;
+    font-weight: 'bold';
+    line-height: 22px;
+  }
   .line-chart {
     &.mini {
-      height: 320px;
+      height: 286px;
     }
     &.middle {
-      height: 360px;
+      height: 326px;
     }
   }
   .chart-legend {
@@ -520,6 +544,6 @@ defineExpose({
   }
 }
 .basic-height {
-  height: 320px;
+  height: 286px;
 }
 </style>

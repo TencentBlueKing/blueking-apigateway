@@ -1617,7 +1617,7 @@ onBeforeMount(() => {
 .resource-container{
   display: flex;
   align-items: flex-start;
-  height: calc(100vh - 112px);
+  height: calc(100% - 112px);
   .resource-container-lf,
   .resource-container-rg{
     position: relative;

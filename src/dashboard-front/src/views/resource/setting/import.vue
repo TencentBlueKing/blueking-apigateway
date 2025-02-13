@@ -47,18 +47,18 @@
               class="mb0"
               :label-width="20"
             >
-              <bk-checkbox v-model="showDoc" size="small">
+              <bk-checkbox v-model="docConfig.showDoc" size="small">
                 {{ t('生成资源文档') }}
               </bk-checkbox>
             </bk-form-item>
             <bk-form-item
-              v-if="showDoc"
+              v-if="docConfig.showDoc"
               class="mb0"
               :label="t('文档语言')"
               :required="true"
               :label-width="120"
             >
-              <bk-radio-group v-model="language" size="small">
+              <bk-radio-group v-model="docConfig.language" size="small">
                 <bk-radio label="zh">{{ t('中文文档') }}</bk-radio>
                 <bk-radio label="en">{{ t('英文文档') }}</bk-radio>
               </bk-radio-group>
@@ -263,8 +263,8 @@
                 <TableResToAction
                   action="add"
                   :table-data="tableDataToAdd"
-                  :show-doc="showDoc"
                   :keyword="filterInputAddClone"
+                  :doc-config="docConfig"
                   v-model:tempAuthConfig="tempAuthConfig"
                   v-model:tempPublicConfig="tempPublicConfig"
                   @show-row-doc="handleShowResourceDoc"
@@ -273,6 +273,7 @@
                   @toggle-row-unchecked="toggleRowUnchecked"
                   @confirm-auth-config="handleConfirmAuthConfigPopConfirm"
                   @confirm-pub-config="handleConfirmPublicConfigPopConfirm"
+                  @confirm-doc-config="handleConfirmDocConfigPopConfirm"
                   @clear-filter="clearFilterInput"
                 ></TableResToAction>
               </div>
@@ -434,7 +435,7 @@
       :show-footer="false"
       :show-create-btn="false"
       :is-preview="!editingResource.id"
-      :preview-lang="language"
+      :preview-lang="docConfig.language"
     ></ResourceDocSideSlider>
     <!--  查看插件侧边栏  -->
     <PluginPreviewSideSlider
@@ -606,6 +607,11 @@ type CodeErrorResponse = {
   message: string,
 };
 
+export interface IDocConfig {
+  showDoc: boolean;
+  language: 'zh' | 'en',
+}
+
 const { useRouter, onBeforeRouteLeave } = useTsxRouter();
 const router = useRouter();
 const { t } = useI18n();
@@ -613,8 +619,10 @@ const common = useCommon();
 const editorText = ref<string>(exampleData.content);
 const { apigwId } = common; // 网关id
 const resourceEditorRef = ref<InstanceType<typeof editorMonaco>>(); // 实例化
-const showDoc = ref(true);
-const language = ref<'zh' | 'en'>('zh');
+const docConfig = ref<IDocConfig>({
+  showDoc: true,
+  language: 'zh',
+});
 const isDataLoading = ref(false);
 // 代码校验是否通过
 const isCodeValid = ref(false);
@@ -856,8 +864,8 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
       allow_overwrite: true,
     };
     // 如果勾选了资源文档
-    if (showDoc.value) {
-      params.doc_language = language.value;
+    if (docConfig.value.showDoc) {
+      params.doc_language = docConfig.value.language;
     }
     // 配置是否显示错误 Message，只校验代码时不显示，改为展示在编辑器的错误消息栏中
     const interceptorConfig = _changeView ? {} : { globalError: false };
@@ -996,8 +1004,8 @@ const handleImportResource = async () => {
       });
     const params = { import_resources };
     // 如果勾选了资源文档，传入 doc_language
-    if (showDoc.value) {
-      Object.assign(params, { doc_language: language.value });
+    if (docConfig.value.showDoc) {
+      Object.assign(params, { doc_language: docConfig.value.language });
     }
     await importResource(apigwId, params);
     isImportSucceeded.value = true;
@@ -1245,6 +1253,10 @@ const handleConfirmPublicConfigPopConfirm = (action: ActionType) => {
         item.allow_apply_permission = allowApplyPermission;
       }
     });
+};
+
+const handleConfirmDocConfigPopConfirm = (config: IDocConfig) => {
+  docConfig.value = { ...config };
 };
 
 const filterData = (action: ActionType) => {
