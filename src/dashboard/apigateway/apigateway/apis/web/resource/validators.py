@@ -18,13 +18,39 @@
 #
 from typing import List, Tuple
 
+from blue_krill.cubing_case import shortcuts
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.core.models import Stage
+from apigateway.core.models import Resource, Stage
 from apigateway.utils.list import get_duplicate_items
 
 from .constants import NORMAL_PATH_VAR_NAME_PATTERN, PATH_VAR_PATTERN, STAGE_PATH_VAR_NAME_PATTERN
+
+
+class LowerDashCaseNameDuplicationValidator:
+    requires_context = True
+
+    def __call__(self, attrs, serializer):
+        origin_name = attrs.get("name")
+        lower_name = shortcuts.to_lower_dash_case(origin_name)
+        instance = getattr(serializer, "instance", None)
+        gateway = attrs.get("gateway", None)
+        if not gateway:
+            return
+
+        name_list = Resource.objects.filter(gateway=gateway).values_list("name", flat=True)
+        if instance:
+            name_list = name_list.exclude(id=instance.id)
+
+        # 校验资源名称是否重复
+        for n in name_list:
+            if lower_name == shortcuts.to_lower_dash_case(n):
+                raise serializers.ValidationError(
+                    _(
+                        "网关下资源名称 {origin_name} 或其同名驼峰名称已被占用（如 get_foo 会与 getFoo 冲突），请使用其他命名，建议使用统一的命名格式。"
+                    ).format(origin_name=origin_name)
+                )
 
 
 class PathVarsValidator:
