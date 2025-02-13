@@ -1413,6 +1413,7 @@ watch(
 watch(
   () => tableData.value,
   (v: any) => {
+    // if (v.length && resourceId.value === 0) {
     if (v.length) {
       resourceId.value = v[0].id;
     }
