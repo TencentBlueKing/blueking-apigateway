@@ -17,10 +17,26 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from ddf import G
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apis.web.resource.validators import BackendPathVarsValidator, PathVarsValidator
+from apigateway.apis.web.resource.validators import (
+    BackendPathVarsValidator,
+    LowerDashCaseNameDuplicationValidator,
+    PathVarsValidator,
+)
+from apigateway.core.models import Resource
+
+
+class FakeNameVarsSLZ(serializers.Serializer):
+    name = serializers.CharField(allow_blank=True)
+    gateway = serializers.IntegerField()
+
+    class Meta:
+        validators = [
+            LowerDashCaseNameDuplicationValidator(),
+        ]
 
 
 class FakePathVarsSLZ(serializers.Serializer):
@@ -40,6 +56,27 @@ class FakeBackendPathVarsSLZ(serializers.Serializer):
         validators = [
             BackendPathVarsValidator(),
         ]
+
+
+class TestNameVarsValidator:
+    def test_validate(self, fake_gateway):
+        data1 = {"name": "get_response", "gateway": fake_gateway.id}
+        slz1 = FakeNameVarsSLZ(data=data1)
+        slz1.is_valid(raise_exception=True)
+        G(Resource, gateway=fake_gateway, name=data1["name"])
+
+        # 创建
+        data2 = {"name": "getResponse", "gateway": fake_gateway.id}
+        slz2 = FakeNameVarsSLZ(data=data2)
+        with pytest.raises(ValidationError):
+            slz2.is_valid(raise_exception=True)
+        r2 = G(Resource, gateway=fake_gateway, name=data2["name"])
+
+        # 更新
+        data2 = {"name": "getResponse", "gateway": fake_gateway.id}
+        slz2 = FakeNameVarsSLZ(instance=r2, data=data2)
+        with pytest.raises(ValidationError):
+            slz2.is_valid(raise_exception=True)
 
 
 class TestPathVarsValidator:
