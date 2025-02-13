@@ -876,7 +876,7 @@ const openTab = (name?: string) => {
   const routeData = router.resolve({
     name: 'apiDocDetail',
     params: {
-      curTab: 'apigw',
+      curTab: 'gateway',
       targetName: common?.apigwName,
       componentName: name,
     },
