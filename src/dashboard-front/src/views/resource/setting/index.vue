@@ -1413,8 +1413,8 @@ watch(
 watch(
   () => tableData.value,
   (v: any) => {
-    // if (v.length && resourceId.value === 0) {
-    if (v.length) {
+    if (v.length && resourceId.value === 0) {
+    // if (v.length) {
       resourceId.value = v[0].id;
     }
     // 设置显示的tag值
