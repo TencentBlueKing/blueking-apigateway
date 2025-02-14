@@ -292,8 +292,12 @@ const handleShowAlertChange = (payload: boolean) => {
 // };
 
 watch(
-  () => route.fullPath,
-  async () => {
+  // () => route.fullPath,
+  () => route.path,
+  async (val, prevVal) => {
+    if (val === prevVal) {
+      return;
+    }
     const { meta } = route;
     let index = 0;
     for (let i = 0; i < headerList.value.length; i++) {
