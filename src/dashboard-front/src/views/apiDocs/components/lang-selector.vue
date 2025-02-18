@@ -49,6 +49,7 @@ const props = withDefaults(defineProps<IProps>(), {
   langList: () => [
     'python',
     'java',
+    'golang',
   ],
 });
 

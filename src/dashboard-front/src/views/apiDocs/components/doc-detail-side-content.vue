@@ -2,7 +2,7 @@
   <!--  页面右侧的网关详情/组件详情  -->
   <div v-if="basics" class="intro-side-content-wrap">
     <header class="intro-header">
-      <article v-if="curTab === 'apigw'" class="title">{{ t('网关详情') }}</article>
+      <article v-if="curTab === 'gateway'" class="title">{{ t('网关详情') }}</article>
       <article v-else-if="curTab === 'component'" class="title">{{ t('组件详情') }}</article>
       <aside>
         <chat
@@ -16,7 +16,7 @@
         </chat>
       </aside>
     </header>
-    <main v-if="curTab === 'apigw'" class="component-content">
+    <main v-if="curTab === 'gateway'" class="component-content">
       <div class="ag-markdown-view" id="markdown">
         <article>
           <header class="content-title">{{ t('网关描述') }}</header>

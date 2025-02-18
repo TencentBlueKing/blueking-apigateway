@@ -112,6 +112,32 @@ class TestResourceImportValidator:
         validator._validate_name()
         assert len(validator.schema_validate_result) > 0
 
+        r2 = G(Resource, gateway=fake_gateway, name="getFoo")
+        resource_data_list2 = [
+            fake_resource_data.copy(update={"name": "get_foo"}, deep=True),
+        ]
+        validator2 = ResourceImportValidator(fake_gateway, resource_data_list2, False)
+        validator2._validate_name()
+        assert len(validator2.schema_validate_result) == 1
+
+        # 更新
+        G(Resource, gateway=fake_gateway, name="get_foo")
+        resource_data_list3 = [
+            fake_resource_data.copy(update={"resource": r2, "name": "getFoo"}, deep=True),
+        ]
+        validator3 = ResourceImportValidator(fake_gateway, resource_data_list3, False)
+        validator3._validate_name()
+        assert len(validator3.schema_validate_result) == 1
+
+        # 导入资源同时存在 get_bar 和 getBar
+        resource_data_list4 = [
+            fake_resource_data.copy(update={"name": "get_bar"}, deep=True),
+            fake_resource_data.copy(update={"name": "getBar"}, deep=True),
+        ]
+        validator4 = ResourceImportValidator(fake_gateway, resource_data_list4, False)
+        validator4._validate_name()
+        assert len(validator4.schema_validate_result) == 1
+
     def test_validate_match_subpath(self, fake_gateway, fake_resource_data):
         resource_data = fake_resource_data.copy(deep=True)
         resource_data.match_subpath = True

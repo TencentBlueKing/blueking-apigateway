@@ -1413,7 +1413,8 @@ watch(
 watch(
   () => tableData.value,
   (v: any) => {
-    if (v.length) {
+    if (v.length && resourceId.value === 0) {
+    // if (v.length) {
       resourceId.value = v[0].id;
     }
     // 设置显示的tag值
@@ -1617,7 +1618,7 @@ onBeforeMount(() => {
 .resource-container{
   display: flex;
   align-items: flex-start;
-  height: calc(100vh - 112px);
+  height: calc(100% - 112px);
   .resource-container-lf,
   .resource-container-rg{
     position: relative;

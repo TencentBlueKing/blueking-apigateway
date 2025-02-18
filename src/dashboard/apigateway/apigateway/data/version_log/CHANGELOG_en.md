@@ -1,3 +1,36 @@
+<!-- 2025-02-12 -->
+# V1.15.2 Release Log
+
+### Bug Fixes
+
+- Fix: Unable to use the same key for filtering in transaction logs
+- Fix: Comparison failure when creating resource versions
+- Fix: Outdated resource versions could still be published
+- Fix: Display issues in component API documentation
+- Fix: API documentation links directly to the API
+- Fix: Icon and logo display errors in the version release process
+- Fix: Page height error when release notifications appear
+- Fix: Bulk modification of resource documents in resource import table
+- Fix: Add Golang option when viewing SDK
+- Fix: Height of resource configuration drawer
+- Fix: Issue with repeated clicking of the online debug button
+- Fix: Unable to view entire value when environment management variable is too long
+- Fix: Unit error in statistical charts
+- Fix: Naming conflict caused by using both underscores and camel case in resource names, added pre-validation
+- Fix: Added DASHBOARD_CSRF_TRUSTED_ORIGINS
+- Fix: Incomplete display of the list when plugins exceed 10 items
+
+---
+
+<!-- 2024-11-29 -->
+# V1.15.1 Release Log
+
+### Bug Fixes
+
+- Fix: Compatibility with MySQL 5.7
+
+---
+
 <!-- 2024-11-15 -->
 # V1.15.0 Release Log
 

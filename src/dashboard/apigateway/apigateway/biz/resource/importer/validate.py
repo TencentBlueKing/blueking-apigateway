@@ -19,6 +19,7 @@
 from collections import defaultdict
 from typing import Any, Dict, List
 
+from blue_krill.cubing_case import shortcuts
 from django.conf import settings
 from django.utils.translation import gettext as _
 
@@ -140,7 +141,12 @@ class ResourceImportValidator:
     def _validate_name(self):
         """校验资源名称不能重复"""
         unchanged_resource_names = {item["name"] for item in self._unchanged_resources}
+        lower_resource_names = defaultdict(list)
         resource_names = set()
+
+        for obj in Resource.objects.filter(gateway=self.gateway):
+            lower_obj_name = shortcuts.to_lower_dash_case(obj.name)
+            lower_resource_names[lower_obj_name].append(obj.id)
 
         for resource_data in self.resource_data_list:
             if resource_data.name in unchanged_resource_names:
@@ -151,7 +157,9 @@ class ResourceImportValidator:
                 )
                 self.schema_validate_result.append(validate_err)
 
-            if resource_data.name in resource_names:
+            lower_name = shortcuts.to_lower_dash_case(resource_data.name)
+            # 同时检查导入资源中是否有存在冲突的情况
+            if resource_data.name in resource_names or lower_name in resource_names:
                 validate_err = SchemaValidateErr(
                     _("资源名称重复，operationId={name} 在当前配置数据中被多次使用，请检查。").format(
                         name=resource_data.name
@@ -161,7 +169,26 @@ class ResourceImportValidator:
                 )
                 self.schema_validate_result.append(validate_err)
 
+            resource_ids = lower_resource_names.get(lower_name)
+            # 如果有 resource_ids，说明数据库中可能存在多条 lower_name 同名的记录。
+            # not resource_data.resource: 为空则是创建数据，但此时库中已有同名记录，创建会产生冲突。
+            # resource.id not in resource_ids：同名记录中不包含当前资源id，名称已被其他资源占用，更新会产生冲突。
+            # len(resource_ids) > 1: 同名记录包含当前资源id，但记录数量大于1，说明还有其他同名资源，更新会覆盖其他资源。
+            if resource_ids and (
+                not resource_data.resource or resource_data.resource.id not in resource_ids or len(resource_ids) > 1
+            ):
+                validate_err = SchemaValidateErr(
+                    _(
+                        "网关下资源名称 {name} 或其同名驼峰名称已被占用（如 get_foo 会与 getFoo 冲突），请使用其他命名，建议使用统一的命名格式。"
+                    ).format(name=resource_data.name),
+                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.operationId",
+                    absolute_path=[],
+                )
+                self.schema_validate_result.append(validate_err)
+
             resource_names.add(resource_data.name)
+            # 避免导入数据存在 lower_name 冲突
+            resource_names.add(lower_name)
 
     def _validate_match_subpath(self):
         for resource_data in self.resource_data_list:

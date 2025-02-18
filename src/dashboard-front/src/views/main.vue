@@ -97,7 +97,7 @@
             <div class="name">{{ pageName }}</div>
           </div>
         </div>
-        <div :class="route.meta.customHeader ? 'custom-header-view' : 'default-header-view'">
+        <div :class="routerViewWrapperClass">
           <router-view
             :key="apigwId" :apigw-id="apigwId">
           </router-view>
@@ -110,7 +110,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import {
+  ref,
+  watch,
+  onMounted,
+  onBeforeUnmount,
+  computed,
+} from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { createMenuData } from '@/common/menu';
 import { useGetApiList, useSidebar, useGetStageList } from '@/hooks';
@@ -153,6 +159,16 @@ const headerTitle = ref('');
 
 // 当前离开页面的数据
 const curLeavePageData = ref({});
+
+const routerViewWrapperClass = computed(() => {
+  if (route.meta.customHeader) {
+    return 'custom-header-view';
+  }
+  if (stage.getNotUpdatedStages?.length) {
+    return 'default-header-view has-notice';
+  }
+  return 'default-header-view';
+});
 
 const handleCollapse = (v: boolean) => {
   mitt.emit('side-toggle', v);
@@ -450,6 +466,10 @@ onMounted(async () => {
       .default-header-view{
         height: calc(100vh - 105px);
         overflow: auto;
+
+        &.has-notice {
+          height: calc(100vh - 147px);
+        }
       }
       .custom-header-view{
         margin-top: 52px;

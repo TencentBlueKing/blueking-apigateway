@@ -5,8 +5,8 @@
       <nav class="tabs-group">
         <section
           class="page-tab"
-          :class="{ 'active': curTab === 'apigw' }"
-          @click="curTab = 'apigw'"
+          :class="{ 'active': curTab === 'gateway' }"
+          @click="curTab = 'gateway'"
         >{{ t('网关 API 文档') }}
         </section>
         <section
@@ -20,7 +20,7 @@
     <!--  正文  -->
     <main class="docs-main-content" :class="{ 'pt24': user.featureFlags?.ENABLE_MULTI_TENANT_MODE }">
       <!--  当选中 网关API文档 时  -->
-      <div v-if="curTab === 'apigw'" class="content-of-apigw">
+      <div v-if="curTab === 'gateway'" class="content-of-apigw">
         <!--  搜索栏和 SDK使用说明  -->
         <header class="top-bar">
           <bk-input
@@ -127,7 +127,7 @@
       <!--  当选中 组件API文档 时  -->
       <div v-else-if="curTab === 'component'" class="content-of-component">
         <main class="category-list">
-          <article class="category-wrap" v-for="systemBoard in componentSystemList" :key="systemBoard.board">
+          <article class="category-wrap" v-for="(systemBoard, index) in componentSystemList" :key="systemBoard.board">
             <!--  system 类别 title 和搜索栏  -->
             <header class="top-bar">
               <main class="bar-title">
@@ -144,7 +144,7 @@
                   {{ t('查看 SDK') }}
                 </bk-link>
               </main>
-              <aside class="bar-aside">
+              <aside class="bar-aside" v-if="index === 0">
                 <ComponentSearcher
                   v-if="componentSystemList.length > 0"
                   class="ag-searcher-box"
@@ -176,7 +176,7 @@
                     class="item"
                     v-for="system in cat.systems"
                     :key="system.name"
-                    @click="gotoDetails(system)"
+                    @click="gotoDetails(system, systemBoard.board)"
                   >
                     <main class="title">
                       <div class="name">{{ system.description }}</div>
@@ -241,7 +241,8 @@
     <SdkInstructionSlider v-model="isSdkInstructionSliderShow"></SdkInstructionSlider>
     <!--  网关/组件 SDK 地址 dialog  -->
     <SdkDetailDialog
-      v-model="isSdkDetailDialogShow" :sdks="curSdks" :languages="curTab === 'component' ? ['python'] : undefined"
+      v-model="isSdkDetailDialogShow" :sdks="curSdks"
+      :languages="curTab === 'component' ? ['python'] : undefined"
       :target-name="curTargetName"
     ></SdkDetailDialog>
   </div>
@@ -316,7 +317,7 @@ const tableEmptyConf = ref<{ keyword: string, isAbnormal: boolean }>({
 });
 
 // 当前展示的是 网关 | 组件 相关内容
-const curTab = ref<TabType>('apigw');
+const curTab = ref<TabType>('gateway');
 const curTargetName = ref('');
 const board = ref('default');
 const curCategoryNavId = ref('');
@@ -338,13 +339,19 @@ watch(
   { deep: true },
 );
 
-const gotoDetails = (row: IApiGatewayBasics | ISystem) => {
+const gotoDetails = (row: IApiGatewayBasics | ISystem, systemBoard?: string) => {
+  const params = {
+    targetName: row.name,
+    curTab: curTab.value,
+  };
+
+  if (curTab.value === 'component') {
+    Object.assign(params, { board: systemBoard || 'default' });
+  }
+
   router.push({
     name: 'apiDocDetail',
-    params: {
-      targetName: row.name,
-      curTab: curTab.value,
-    },
+    params,
   });
 };
 
@@ -430,7 +437,7 @@ onBeforeMount(() => {
     return;
   }
   // 记录返回到此页时选中的 tab
-  curTab.value = params.curTab as TabType || 'apigw';
+  curTab.value = params.curTab as TabType || 'gateway';
 });
 
 onMounted(async () => {

@@ -22,7 +22,12 @@
       >
         <bk-table-column :label="t('变量名称')" prop="name" :show-overflow-tooltip="false" :resizable="false">
           <template #default="{ row, index, column }">
-            <span v-if="!row.isEdit" class="no-edit-value">{{ row?.name }}</span>
+            <span
+              v-if="!row.isEdit"
+              v-bk-tooltips="{ content: row.name, disabled: !row.name }"
+              class="no-edit-value">
+              {{ row?.name }}
+            </span>
             <template v-if="row.isEdit">
               <bk-popover
                 placement="top-start"
@@ -55,7 +60,12 @@
         </bk-table-column>
         <bk-table-column :label="t('变量值')" prop="value" :show-overflow-tooltip="false" :resizable="false">
           <template #default="{ row, index, column }">
-            <span v-show="!row.isEdit" class="no-edit-value">{{ row?.value }}</span>
+            <span
+              v-show="!row.isEdit"
+              v-bk-tooltips="{ content: row.value, disabled: !row.value }"
+              class="no-edit-value">
+              {{ row?.value }}
+            </span>
             <template v-if="row.isEdit">
               <bk-form :ref="(el: HTMLElement) => setRefs(el, `value-${index}`)" :model="row" label-width="0">
                 <bk-form-item

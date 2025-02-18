@@ -133,19 +133,19 @@ const { y } = useScroll(detailWrapRef, {
 });
 
 const appVerifiedTooltips = computed(() => {
-  if (curTab.value === 'apigw') return t('应用访问该网关API时，是否需提供应用认证信息');
+  if (curTab.value === 'gateway') return t('应用访问该网关API时，是否需提供应用认证信息');
   if (curTab.value === 'component') return t('应用访问该组件API时，是否需提供应用认证信息');
   return '--';
 });
 
 const resourcePermTooltips = computed(() => {
-  if (curTab.value === 'apigw') return t('应用访问该网关API前，是否需要在开发者中心申请该网关API权限');
+  if (curTab.value === 'gateway') return t('应用访问该网关API前，是否需要在开发者中心申请该网关API权限');
   if (curTab.value === 'component') return t('应用访问该组件API前，是否需要在开发者中心申请该组件API权限');
   return '--';
 });
 
 const userVerifiedTooltips = computed(() => {
-  if (curTab.value === 'apigw') return t('应用访问该网关API时，是否需要提供用户认证信息');
+  if (curTab.value === 'gateway') return t('应用访问该网关API时，是否需要提供用户认证信息');
   if (curTab.value === 'component') return t('应用访问该组件API时，是否需要提供用户认证信息');
   return '--';
 });

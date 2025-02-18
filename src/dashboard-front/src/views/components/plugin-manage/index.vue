@@ -396,7 +396,7 @@ const handleEditePlugin = async (item: any) => {
     const res = await getPluginConfig(apigwId, scopeType.value, scopeId.value, code, config_id);
     curEditPlugin.value = res;
     isEditVisible.value = true;
-    mitt.emit('on-update-plugin');
+    // mitt.emit('on-update-plugin');
   } catch (error) {
     console.log('error', error);
   }
@@ -586,7 +586,10 @@ const updateTableEmptyConfig = () => {
 };
 
 watch(
-  () => props.stageId,
+  [
+    () => props.stageId,
+    () => props.resourceId,
+  ],
   () => {
     init();
   },

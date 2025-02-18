@@ -1,4 +1,4 @@
-type TabType = 'apigw' | 'component';
+type TabType = 'gateway' | 'component';
 type LanguageType = 'python' | 'java' | 'golang';
 
 interface INavItem {

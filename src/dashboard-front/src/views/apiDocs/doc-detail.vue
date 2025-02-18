@@ -9,7 +9,7 @@
           class="icon apigateway-icon icon-ag-return-small"
           @click="handleGoBack()"
         ></i>
-        {{ curTab === 'apigw' ? curTargetName : curTargetBasics?.description ?? '' }}
+        {{ curTab === 'gateway' ? curTargetName : curTargetBasics?.description ?? '' }}
         <!--  组件系统下拉菜单  -->
         <aside v-if="curTab === 'component'" class="system-dropdown-wrap">
           <bk-dropdown ref="dropdown" :popover-options="{ boundary: 'body', placement: 'bottom-start' }">
@@ -64,11 +64,11 @@
                   <!--  筛选器  -->
                   <header class="left-aside-header">
                     <header class="title">
-                      {{ curTab === 'apigw' ? t('资源列表') : t('API列表') }}
+                      {{ curTab === 'gateway' ? t('资源列表') : t('API列表') }}
                       <aside v-if="apiList.length" class="sub-title">{{ filteredApiList.length }}</aside>
                     </header>
                     <main class="nav-filters">
-                      <article v-if="curTab === 'apigw'">
+                      <article v-if="curTab === 'gateway'">
                         <bk-select
                           v-model="curStageName"
                           :clearable="false"
@@ -117,7 +117,7 @@
                               v-for="api in group.apiList"
                               :key="api.id"
                               :class="{ active: api.id === curApi?.id }"
-                              @click="handleApiClick(api.id)"
+                              @click="handleApiClick(api.id, api.name)"
                             >
                               <header
                                 class="res-item-name" v-dompurify-html="getHighlightedHtml(api.name)" v-bk-overflow-tips
@@ -221,7 +221,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
-const curTab = ref<TabType>('apigw');
+const curTab = ref<TabType>('gateway');
 const board = ref('default');
 // 提供当前 tab 的值
 // 注入时请使用：const curTab = inject<Ref<TabType>>('curTab');
@@ -251,7 +251,7 @@ const searchPlaceholder = computed(() => {
     '在{resourceLength}个{type}中搜索...',
     {
       resourceLength: apiList.value.length,
-      type: curTab.value === 'apigw' ? t('资源') : 'API',
+      type: curTab.value === 'gateway' ? t('资源') : 'API',
     },
   );
 });
@@ -280,11 +280,6 @@ const apiGroupList = computed(() => {
   }, [] as { id: number, name: string, apiList: typeof apiList.value }[]);
 });
 
-// 分类列表变化时更新 collapse 展开状态
-watch(apiGroupList, () => {
-  activeGroupPanelNames.value = apiGroupList.value.map(item => item.name);
-});
-
 const allSystemList = computed(() => {
   const curBoard = boardList.value[0];
   const systems: ISystem[] = [];
@@ -292,9 +287,31 @@ const allSystemList = computed(() => {
   return systems;
 });
 
+// 分类列表变化时更新 collapse 展开状态
+watch(apiGroupList, () => {
+  activeGroupPanelNames.value = apiGroupList.value.map(item => item.name);
+});
+
+watch(() => route.query, async () => {
+  if (route.query?.apiName) {
+    curComponentApiName.value = route.query.apiName as string;
+    curApi.value = apiList.value.find(api => api.name === curComponentApiName.value) ?? null;
+    navList.value = [];
+
+    if (curApi.value) {
+      await getApigwResourceDoc();
+    }
+  }
+
+  if (route.query?.stage) {
+    curStageName.value = route.query.stage as string;
+    await fetchApiList();
+  }
+}, { deep: true });
+
 const fetchTargetBasics = async () => {
   try {
-    if (curTab.value === 'apigw') {
+    if (curTab.value === 'gateway') {
       const { sdks: sdksResponse, ...restResponse } = await getGatewaysDetailsDocs(curTargetName.value);
       curTargetBasics.value = restResponse;
       sdks.value = sdksResponse;
@@ -324,9 +341,16 @@ const fetchApigwStages = async () => {
       limit: 10000,
       offset: 0,
     };
+
     stageList.value = await getApigwStagesDocs(curTargetName.value, query);
-    const prodStage = stageList.value.find(stage => stage.name === 'prod');
-    curStageName.value = prodStage?.name || stageList.value[0]?.name || '';
+
+    const requestedStage = stageList.value.find(stage => stage.name === route.query?.stage);
+    if (requestedStage) {
+      curStageName.value = requestedStage.name;
+    } else {
+      const prodStage = stageList.value.find(stage => stage.name === 'prod');
+      curStageName.value = prodStage?.name || stageList.value[0]?.name || '';
+    }
   } catch {
     stageList.value = [];
   }
@@ -336,7 +360,7 @@ const fetchApiList = async () => {
   try {
     let res: (IResource & IComponent)[] = [];
     navList.value = [];
-    if (curTab.value === 'apigw') {
+    if (curTab.value === 'gateway') {
       const query = {
         limit: 10000,
         offset: 0,
@@ -354,6 +378,10 @@ const fetchApiList = async () => {
       }
     });
 
+    if (route.query?.apiName) {
+      curComponentApiName.value = route.query.apiName as string;
+    }
+
     if (curComponentApiName.value) {
       curApi.value = apiList.value.find(api => api.name === curComponentApiName.value) ?? null;
     } else {
@@ -367,13 +395,17 @@ const fetchApiList = async () => {
   }
 };
 
-const handleApiClick = async (resId: number) => {
+const handleApiClick = (resId: number, apiName: string) => {
   if (curApi.value.id === resId) return;
-  navList.value = [];
-  curApi.value = apiList.value.find(res => res.id === resId) ?? null;
-  if (curApi.value) {
-    await getApigwResourceDoc();
-  }
+
+  router.replace({
+    name: 'apiDocDetail',
+    params: { ...route.params },
+    query: {
+      ...route.query,
+      apiName,
+    },
+  });
 };
 
 const md = new MarkdownIt({
@@ -419,7 +451,7 @@ const getApigwResourceDoc = async () => {
   try {
     isLoading.value = true;
     let res: any;
-    if (curTab.value === 'apigw') {
+    if (curTab.value === 'gateway') {
       const query = {
         stage_name: curStageName.value,
       };
@@ -435,8 +467,16 @@ const getApigwResourceDoc = async () => {
   }
 };
 
-const handleStageChange = async () => {
-  await fetchApiList();
+const handleStageChange = () => {
+  router.replace({
+    name: 'apiDocDetail',
+    params: { ...route.params },
+    query: {
+      ...route.query,
+      stage: curStageName.value,
+    },
+  });
+  // await fetchApiList();
 };
 
 const getHighlightedHtml = (value: string) => {
@@ -464,7 +504,7 @@ const handleSystemChange = async (system: ISystem) => {
 };
 
 const init = async () => {
-  if (curTab.value === 'apigw') {
+  if (curTab.value === 'gateway') {
     await fetchApigwStages();
   }
   await Promise.all([
@@ -488,9 +528,10 @@ const handleGoBack = () => {
 
 onBeforeMount(() => {
   const { params } = route;
-  curTab.value = params.curTab as TabType || 'apigw';
+  curTab.value = params.curTab as TabType || 'gateway';
   curTargetName.value = params.targetName as string;
   curComponentApiName.value = params.componentName as string || '';
+  board.value = params.board as string || 'default';
   init();
 });
 

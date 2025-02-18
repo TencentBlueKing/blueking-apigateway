@@ -2,7 +2,7 @@
   <!--  SDK使用说明 Slider 的内容  -->
   <div class="sdk-wrapper">
     <LangSelector
-      v-if="curTab === 'apigw'"
+      v-if="curTab === 'gateway'"
       v-model="language"
       :margin-bottom="0"
       :sdk-languages="['python', 'java', 'golang']"
@@ -132,7 +132,7 @@ const getSDKDoc = async () => {
   const params = { language: language.value };
   isLoading.value = true;
   try {
-    if (curTab.value === 'apigw') {
+    if (curTab.value === 'gateway') {
       const res = await getGatewaySDKDoc(params);
       sdkDoc.value = res.content;
     } else {
