@@ -433,7 +433,7 @@ onBeforeMount(() => {
   const { params } = route;
   // 如果是多租户模式，直接跳转到网关API文档
   if (user.featureFlags?.ENABLE_MULTI_TENANT_MODE) {
-    curTab.value = 'apigw';
+    curTab.value = 'gateway';
     return;
   }
   // 记录返回到此页时选中的 tab
@@ -441,7 +441,10 @@ onBeforeMount(() => {
 });
 
 onMounted(async () => {
-  await fetchComponentSystemList();
+  // 如果是多租户模式，不需要获取 esb 列表
+  if (!user.featureFlags?.ENABLE_MULTI_TENANT_MODE) {
+    await fetchComponentSystemList();
+  }
 });
 
 </script>
