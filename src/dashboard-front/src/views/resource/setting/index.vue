@@ -1473,6 +1473,14 @@ watch(
       order_by: filterData.value.order_by,
       keyword: '',
     };
+
+    if (route.query?.backend_id) {
+      const { backend_id } =  route?.query;
+      filterData.value.backend_id = backend_id;
+    } else {
+      delete filterData.value.backend_id;
+    }
+
     if (!filterData.value.order_by) {
       delete filterData.value.order_by;
     }
