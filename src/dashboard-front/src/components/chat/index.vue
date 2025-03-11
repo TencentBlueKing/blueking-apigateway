@@ -23,12 +23,17 @@
             <p> {{ $t('可以通过企业微信将需求的相关人员邀请到一个群里进行讨论') }} </p>
           </div>
         </div>
-        <bk-input
-          :placeholder="$t('请输入群成员')"
-          v-model="userlist"
-          :key="renderKey"
-          class="chat-selector"
-        />
+        <div
+          v-bk-tooltips="{ content: userlist.join(', ') }"
+        >
+          <bk-input
+            :show-overflow-tooltips="false"
+            :placeholder="$t('请输入群成员')"
+            v-model="userlist"
+            :key="renderKey"
+            class="chat-selector"
+          />
+        </div>
       </div>
     </bk-dialog>
   </div>
