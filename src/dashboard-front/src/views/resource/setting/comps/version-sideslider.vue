@@ -335,7 +335,7 @@ const getResourceVersions = async () => {
   if (!response.results.length) {
     diffSourceId.value = 'current';
   } else {
-    diffSourceId.value = versionList.value[0]?.id || '';
+    diffSourceId.value = String(versionList.value[0]?.id || '');
   }
 };
 
