@@ -209,10 +209,7 @@
       theme="primary"
       :is-show="dialogEditData.isShow"
       :title="dialogEditData.title"
-      quick-close
-      :is-loading="dialogEditData.loading"
-      @confirm="handleConfirmEdit"
-      @closed="handleCloseEdit">
+      quick-close>
       <bk-form ref="formRef" form-type="vertical" :model="basicInfoDetailData" :rules="rules">
         <bk-form-item
           :label="t('名称')"
@@ -286,6 +283,26 @@
           <span class="common-form-tips">{{ t('允许列表中的应用使用 sdk 或者开放 API 调用网关接口，同步环境/资源以及发布版本') }}</span>
         </bk-form-item>
       </bk-form>
+      <template #footer>
+        <bk-pop-confirm
+          width="288"
+          :content="t('您已将自己从维护人员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！')"
+          trigger="click"
+          @confirm="handleConfirmEdit"
+          @cancel="handleCloseEdit"
+          v-if="!basicInfoDetailData.maintainers?.includes(user.user.username)"
+        >
+          <bk-button theme="primary" :loading="dialogEditData.loading">
+            {{ t('确定') }}
+          </bk-button>
+        </bk-pop-confirm>
+        <bk-button v-else theme="primary" @click="handleConfirmEdit" :loading="dialogEditData.loading">
+          {{ t('确定') }}
+        </bk-button>
+        <bk-button @click="handleCloseEdit" class="ml8">
+          {{ t('取消') }}
+        </bk-button>
+      </template>
     </bk-dialog>
   </div>
 </template>

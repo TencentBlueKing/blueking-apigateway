@@ -1638,6 +1638,7 @@ const lang: ILANG = {
   '环境更新': ['Stage Update'],
   '服务更新': ['Backend Update'],
   '文件名需要跟资源名称完全一致才能导入，请检查文件名': ['Filename must matches resource name'],
+  '您已将自己从维护人员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！': ['You have removed yourself from the list of maintainers, and upon removal you will lose access to view and edit your gateway. Please confirm! '],
   '已匹配到资源': ['Resource matched'],
   '未匹配到资源': ['Resource not matched'],
   '启用 WebSocket': ['Enable WebSocket'],
