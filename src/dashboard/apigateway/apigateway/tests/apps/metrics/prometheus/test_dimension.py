@@ -62,7 +62,7 @@ class TestRequestsMetrics:
             assert result == test["expected"]
 
 
-class TestNon200StatusMetrics:
+class TestNon20XStatusMetrics:
     def test_get_query_promql(self, mocker):
         mocker.patch("apigateway.apps.metrics.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
 
@@ -78,7 +78,7 @@ class TestNon200StatusMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo", status!~"200|201|204"}[1m])) by (status))'
+                    'stage_name="prod", resource_name="get_foo", status>"299"}[1m])) by (status))'
                 ),
             },
             {
@@ -92,12 +92,12 @@ class TestNon200StatusMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", status!~"200|201|204"}[1m])) by (status))'
+                    'stage_name="prod", status>"299"}[1m])) by (status))'
                 ),
             },
         ]
         for test in data:
-            metrics = dimension.Non200StatusMetrics()
+            metrics = dimension.Non20XStatusMetrics()
             result = metrics._get_query_promql(**test["params"])
             assert result == test["expected"], result
 
@@ -388,8 +388,8 @@ class TestMetricsRangeFactory:
                 "expected": dimension.RequestsMetrics,
             },
             {
-                "metrics": "non_200_status",
-                "expected": dimension.Non200StatusMetrics,
+                "metrics": "non_20X_status",
+                "expected": dimension.Non20XStatusMetrics,
             },
             {
                 "metrics": "app_requests",
