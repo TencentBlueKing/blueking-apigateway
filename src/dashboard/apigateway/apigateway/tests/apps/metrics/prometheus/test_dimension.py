@@ -78,7 +78,7 @@ class TestNon200StatusMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo", status!="200"}[1m])) by (status))'
+                    'stage_name="prod", resource_name="get_foo", status!~"200|201|204"}[1m])) by (status))'
                 ),
             },
             {
@@ -92,7 +92,7 @@ class TestNon200StatusMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", status!="200"}[1m])) by (status))'
+                    'stage_name="prod", status!~"200|201|204"}[1m])) by (status))'
                 ),
             },
         ]

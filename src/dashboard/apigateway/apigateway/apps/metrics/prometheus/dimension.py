@@ -172,7 +172,7 @@ class Non200StatusMetrics(BaseMetrics):
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
                 ("resource_name", "=", resource_name),
-                ("status", "!=", "200"),
+                ("status", "!~", "200|201|204"),
             ]
         )
         return (
