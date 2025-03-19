@@ -21,7 +21,7 @@ from blue_krill.data_types.enum import EnumField, StructuredEnum
 
 class MetricsRangeEnum(StructuredEnum):
     REQUESTS = EnumField("requests")
-    NON_20X_STATUS = EnumField("non_20X_status")
+    NON_20X_STATUS = EnumField("non_20x_status")
     APP_REQUESTS = EnumField("app_requests")
     RESOURCE_REQUESTS = EnumField("resource_requests")
     RESPONSE_TIME_90TH = EnumField("response_time_90th")

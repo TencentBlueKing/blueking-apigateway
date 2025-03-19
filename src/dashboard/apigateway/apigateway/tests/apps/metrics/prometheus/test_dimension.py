@@ -388,7 +388,7 @@ class TestMetricsRangeFactory:
                 "expected": dimension.RequestsMetrics,
             },
             {
-                "metrics": "non_20X_status",
+                "metrics": "non_20x_status",
                 "expected": dimension.Non20XStatusMetrics,
             },
             {
