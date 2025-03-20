@@ -313,3 +313,16 @@ export const componentsMenu: IMenu[] = [
     icon: 'runtime',
   },
 ];
+
+export const platformToolsMenu: IMenu[] = [
+  {
+    name: 'platformToolsToolbox',
+    title: t('工具箱'),
+    icon: 'component-intro',
+  },
+  {
+    name: 'platformToolsAutomatedGateway',
+    title: t('自动化接入网关'),
+    icon: 'system-mgr',
+  },
+];

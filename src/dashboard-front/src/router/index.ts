@@ -57,7 +57,9 @@ const ComponentsPower = () => import(/* webpackChunkName: 'components-main'*/'@/
 const ComponentsHistory = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/permission/history/index.vue');
 const ComponentsRuntimeData = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/runtime-data/index.vue');
 const ComponentsRuntimeDetail = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/runtime-data/detail.vue');
-
+const PlatformTools = () => import(/* webpackChunkName: 'platform-tools'*/'@/views/platform-tools/index.vue');
+const PlatformToolsToolbox = () => import(/* webpackChunkName: 'platform-tools'*/'@/views/platform-tools/toolbox/index.vue');
+const PlatformToolsAutomatedGateway = () => import(/* webpackChunkName: 'platform-tools'*/'@/views/platform-tools/automatedGateway/index.vue');
 
 // 文档一级路由出口
 const docsComponent = {
@@ -604,6 +606,41 @@ const routes: RouteRecordRaw[] = [
           matchRoute: 'componentsRuntimeDetail',
           topMenu: 'componentsMain',
           showBackIcon: true,
+        },
+      },
+    ],
+  },
+
+  // 平台工具
+  {
+    path: '/platform-tools',
+    name: 'platformTools',
+    redirect: '/platform-tools/toolbox',
+    component: PlatformTools,
+    meta: {
+      title: t('平台工具'),
+      matchRoute: 'platformTools',
+      topMenu: 'platformTools',
+    },
+    children: [
+      {
+        path: 'toolbox',
+        name: 'platformToolsToolbox',
+        component: PlatformToolsToolbox,
+        meta: {
+          title: t('工具箱'),
+          matchRoute: 'platformToolsToolbox',
+          topMenu: 'platformTools',
+        },
+      },
+      {
+        path: 'automated-gateway',
+        name: 'platformToolsAutomatedGateway',
+        component: PlatformToolsAutomatedGateway,
+        meta: {
+          title: t('自动化接入网关'),
+          matchRoute: 'platformToolsAutomatedGateway',
+          topMenu: 'platformTools',
         },
       },
     ],
