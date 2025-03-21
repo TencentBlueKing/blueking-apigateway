@@ -18,11 +18,17 @@
 from datetime import timedelta
 
 import pytest
+from dateutil.relativedelta import relativedelta
 from ddf import G
 from django.utils import timezone
 
+from apigateway.apps.api_debug.models import APIDebugHistory
 from apigateway.apps.support.models import ResourceDocVersion
-from apigateway.controller.tasks.clean_task import delete_old_publish_events, delete_old_resource_doc_version_records
+from apigateway.controller.tasks.clean_task import (
+    delete_old_debug_history,
+    delete_old_publish_events,
+    delete_old_resource_doc_version_records,
+)
 from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
 from apigateway.core.models import PublishEvent
 
@@ -66,3 +72,22 @@ def test_delete_old_resource_version_records(fake_gateway, fake_resource_version
 
     assert ResourceDocVersion.objects.filter(created_time__lt=old_time).count() == 0
     assert ResourceDocVersion.objects.filter(created_time__gte=old_time).count() == 1
+
+
+@pytest.mark.django_db
+def test_delete_old_debug_history(fake_gateway, fake_debug_history):
+    old_time = timezone.now() - relativedelta(months=6) - relativedelta(days=1)
+    fake_debug_history.created_time = old_time
+    fake_debug_history.save()
+
+    new_time = timezone.now()
+    G(
+        APIDebugHistory,
+        gateway=fake_gateway,
+        created_time=new_time,
+    )
+
+    delete_old_debug_history()
+
+    assert APIDebugHistory.objects.filter(created_time__lte=old_time).count() == 0
+    assert APIDebugHistory.objects.filter(created_time__gt=old_time).count() == 1

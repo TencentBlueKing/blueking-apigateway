@@ -53,6 +53,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apigateway.controller.tasks.clean_task.delete_old_resource_doc_version_records",
         "schedule": crontab(day_of_week="*", hour=0, minute=0),
     },
+    "apigateway.controller.tasks.clean_task.delete_old_debug_history": {
+        "task": "apigateway.controller.tasks.clean_task.delete_old_debug_history",
+        "schedule": crontab(day_of_week="*", hour=0, minute=0),
+    },
 }
 
 CELERY_CHORD_UNLOCK_MAX_RETRIES = 60

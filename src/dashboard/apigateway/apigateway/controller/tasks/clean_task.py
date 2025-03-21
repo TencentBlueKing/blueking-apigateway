@@ -19,8 +19,10 @@ import logging
 from datetime import datetime, timedelta
 
 from celery import shared_task
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 
+from apigateway.apps.api_debug.models import APIDebugHistory
 from apigateway.apps.support.models import ResourceDocVersion
 from apigateway.core.models import PublishEvent, Release
 
@@ -69,3 +71,24 @@ def delete_old_resource_doc_version_records():
     count, _ = ResourceDocVersion.objects.filter(id__in=ids_to_delete).delete()
 
     logger.info("deleted %s resource_doc_version older than %s", count, delete_end_time)
+
+
+@shared_task(ignore_result=True)
+def delete_old_debug_history():
+    """
+    清理在线调试 6 个月前的调用历史
+    """
+    logger.info("begin clean debug old history")
+
+    # 获取 6 个月的前一天日期
+    delete_end_time = datetime.now() - relativedelta(months=6) - relativedelta(days=1)
+
+    # 每次删除 1000 条记录
+    debug_history_to_delete = APIDebugHistory.objects.filter(created_time__lte=delete_end_time)[:1000]
+
+    # 要删除的 ID 列表
+    ids_to_delete = list(debug_history_to_delete.values_list("id", flat=True))
+
+    count, _ = APIDebugHistory.objects.filter(id__in=ids_to_delete).delete()
+
+    logger.info("deleted %s debug older than %s", count, delete_end_time)

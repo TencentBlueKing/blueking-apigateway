@@ -30,6 +30,7 @@ from django.contrib.auth import get_user_model
 from django.urls import resolve, reverse
 from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
+from apigateway.apps.api_debug.models import APIDebugHistory
 from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum, PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
@@ -1085,6 +1086,14 @@ def fake_resource_doc(faker, fake_resource):
         language=faker.random_element(
             ["en", "zh"],
         ),
+    )
+
+
+@pytest.fixture
+def fake_debug_history(faker, fake_resource):
+    return G(
+        APIDebugHistory,
+        gateway=fake_resource.gateway,
     )
 
 
