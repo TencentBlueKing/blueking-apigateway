@@ -149,7 +149,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['response-fold']);
+const emit = defineEmits(['response-fold', 'response-unfold']);
 
 type TableDataItem = {
   name: String;
@@ -286,6 +286,8 @@ watch(
   (v) => {
     if (!v?.includes(1)) {
       emit('response-fold');
+    } else {
+      emit('response-unfold');
     }
   },
 );

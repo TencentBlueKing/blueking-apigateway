@@ -14,7 +14,7 @@
       </template>
       <template #content>
         <div>
-          <edit-table ref="editTableRef" :list="headerList" @change="handleChange" />
+          <edit-table ref="editTableRef" :list="headerList" @change="handleChange" type="headers" />
         </div>
       </template>
     </bk-collapse-panel>
