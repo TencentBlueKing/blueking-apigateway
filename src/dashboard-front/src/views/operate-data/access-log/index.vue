@@ -147,6 +147,7 @@
                 :row-style="{ cursor: 'pointer' }"
                 :row-class="getRowClass"
                 :show-overflow-tooltip="true"
+                :settings="table.settings"
                 @row-click="handleRowClick"
                 @page-value-change="handlePageChange"
                 @page-limit-change="handlePageLimitChange"
@@ -299,6 +300,34 @@ const table = ref({
   list: [],
   fields: [],
   headers: [],
+  settings: {
+    fields: [
+      {
+        label: t('请求时间'),
+        field: 'timestamp',
+      },
+      {
+        label: t('请求方法'),
+        field: 'method',
+      },
+      {
+        label: t('请求路径'),
+        field: 'http_path',
+      },
+      {
+        label: t('状态码'),
+        field: 'status',
+      },
+      {
+        label: t('耗时(毫秒)'),
+        field: 'backend_duration',
+      },
+      {
+        label: t('错误'),
+        field: 'error',
+      },
+    ],
+  },
 });
 const includeObj = ref<string[]>([]);
 const excludeObj = ref<string[]>([]);
@@ -497,9 +526,9 @@ const setTableHeader = () => {
       },
     },
     { field: 'method', width: 160, label: t('请求方法') },
-    { field: 'http_path', label: t('请求路径') },
+    { field: 'http_path', label: t('请求路径'), minWidth: 260 },
     { field: 'status', width: 160, label: t('状态码') },
-    { field: 'backend_duration', width: 100, label: t('耗时(毫秒)') },
+    { field: 'backend_duration', width: 160, label: t('耗时(毫秒)') },
     {
       field: 'error',
       width: 200,
