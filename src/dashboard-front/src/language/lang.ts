@@ -1677,6 +1677,19 @@ const lang: ILANG = {
   '默认分类': ['Default'],
   '请选择有效的资源名称': ['Please choose a valid resource name'],
   '表单校验失败': ['Form Validation Failed'],
+  '平台工具': ['Platform Tools'],
+  '工具箱': ['Toolbox'],
+  '自动化接入网关': ['Automated Gateway'],
+  '查询日志': ['Log Query'],
+  '根据 request_id 查询日志详情': ['Query log details by request_id'],
+  'JWT 解析': ['JWT Decoder'],
+  '根据 JWT 解析出完整的请求头': ['Decode content from JWT token'],
+  'JSON 格式化': ['JSON Formatter'],
+  '通过命令自动将已有 API 注册到网关，省去繁琐操作': ['Automatically register APIs to the gateway by command'],
+  '（可以在文本框内粘贴令牌）': ['(Paste token in textarea)'],
+  '（以下是解密的内容）': ['(Decoded content)'],
+  '解密': ['Decode'],
+  'Decode 失败': ['Decode failed'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

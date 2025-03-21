@@ -13,7 +13,7 @@
           :active-key="activeMenuKey"
         >
           <template v-for="menu in platformToolsMenu" :key="menu.name">
-            <bk-menu-item @click="handleGoPage(menu.name, apigwId)">
+            <bk-menu-item @click="handleGoPage(menu.name)">
               <template #icon>
                 <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
               </template>
@@ -34,8 +34,7 @@
           {{ headerTitle }}
         </div>
         <div :class="route.meta.customHeader ? 'custom-header-view' : 'default-header-view'">
-          <router-view :apigw-id="apigwId">
-          </router-view>
+          <router-view></router-view>
         </div>
       </div>
     </bk-navigation>
@@ -46,37 +45,21 @@
 import {
   ref,
   watch,
-  onMounted,
 } from 'vue';
 import {
   useRoute,
   useRouter,
 } from 'vue-router';
 import { platformToolsMenu } from '@/common/menu';
-import { useGetApiList } from '@/hooks';
-import { useCommon } from '@/store';
 
 const route = useRoute();
 const router = useRouter();
 
-// 全局公共字段存储
-const common = useCommon();
-// const permission = usePermission();
-const filterData = ref({ name: '' });
-
-// 获取网关数据方法
-const {
-  getGatewaysListData,
-} = useGetApiList(filterData);
 const collapse = ref(true);
 
 // 选中的菜单
 const activeMenuKey = ref('');
-const gatewaysList = ref<any>([]);
 const openedKeys = platformToolsMenu.map(e => e.name);
-
-// 当前网关Id
-const apigwId = ref(0);
 
 // 页面header名
 const headerTitle = ref('');
@@ -84,39 +67,19 @@ const handleCollapse = (v: boolean) => {
   collapse.value = !v;
 };
 
-// 设置网关名
-const handleSetApigwName = () => {
-  const apigwObj = gatewaysList.value.find((apigw: any) => apigw.id === apigwId.value) || {};
-  common.setApigwName(apigwObj?.name);
-};
-
 // 监听当前路由
 watch(
   () => route,
   (val: any) => {
     activeMenuKey.value = val.meta.matchRoute;
-    apigwId.value = Number(val.params.id);
     headerTitle.value = val.meta.title;
-    // 设置全局网关id
-    common.setApigwId(apigwId.value);
-    // 设置全局网关名称
-    handleSetApigwName();
   },
   { immediate: true, deep: true },
 );
 
-onMounted(async () => {
-  gatewaysList.value = await getGatewaysListData();
-  handleSetApigwName();
-});
-
-const handleGoPage = (routeName: string, apigwId?: number) => {
-  common.setApigwId(apigwId);
+const handleGoPage = (routeName: string) => {
   router.push({
     name: routeName,
-    params: {
-      id: apigwId,
-    },
   });
 };
 
@@ -135,6 +98,7 @@ const handleBack = () => {
   :deep(.navigation-nav) {
     .nav-slider {
       background: #fff !important;
+      border-right: 1px solid #dcdee5 !important;
 
       .bk-navigation-title {
         display: none !important;
@@ -205,7 +169,7 @@ const handleBack = () => {
             .bk-badge {
               background-color: #ff5656;
               height: 18px;
-              padding: 0px 2px;
+              padding: 0 2px;
               font-size: 12px;
               line-height: 14px;
               min-width: 18px;
@@ -230,9 +194,9 @@ const handleBack = () => {
 
   :deep(.navigation-container) {
     .container-header {
-      height: 0px !important;
-      flex-basis: 0px !important;
-      border-bottom: 0px;
+      height: 0 !important;
+      flex-basis: 0 !important;
+      border-bottom: 0;
     }
   }
 
