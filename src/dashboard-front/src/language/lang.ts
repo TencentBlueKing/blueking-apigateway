@@ -1691,6 +1691,12 @@ const lang: ILANG = {
   '（以下是解密的内容）': ['(Decoded content)'],
   '解密': ['Decode'],
   'Decode 失败': ['Decode failed'],
+  '蓝鲸 API 网关提供了 apigw-manager SDK，它是一个用于管理 API 网关的工具，提供了一套完整的工具和功能，可以帮助您更轻松地管理 API 网关，提高系统的安全性和可靠性。': ['BK API Gateway offers an apigw-manager SDK, a complete set of tools and functionalities to manage API gateways. It helps you manage API gateways more easily and improves system security and reliability.'],
+  'SDK 提供了 Django Command，支持网关注册、同步、发布等功能。您可以根据需要编排指令，以满足您的特定需求，并集成到您的项目自动执行 API 网关同步过程，以便更轻松地管理 API 网关。': ['SDK offers Django Command, which supports gateway registration, synchronization, and publication. You can organize commands according to your specific needs and integrate them into your project to automatically execute the API gateway synchronization process.'],
+  'Docker 镜像': ['Docker Image'],
+  '对于非 Django 项目，提供了 Docker 基础镜像，封装了 SDK 同步网关的相关功能，以便非 Django 项目轻松管理 API 网关。': ['For non-Django projects, a Docker base image is provided that encapsulates the SDK synchronization gateway-related functions, making it easier for non-Django projects to manage API gateways.'],
+  'Django 中间件': ['Django Middleware'],
+  'SDK 还提供了 Django 中间件，用于解析 API 网关请求后端接口时添加的请求头 X-Bkapi-JWT，以方便后端服务校验请求是否来自 API 网关。这个中间件可以确保只有来自蓝鲸 API 网关的请求才能访问您的后端服务，从而提高系统的安全性。': ['The SDK also provides a Django middleware for parsing the X-Bkapi-JWT header added to API gateway requests when accessing backend interfaces. This middleware ensures that only requests from the BK API Gateway can access your backend services, improving system security.'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
