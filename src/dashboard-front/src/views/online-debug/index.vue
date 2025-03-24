@@ -277,7 +277,10 @@
         >
           <template #aside>
             <div class="request-response">
-              <response-content :res="response" @response-fold="handleResponseFold" />
+              <response-content
+                :res="response"
+                @response-fold="handleResponseFold"
+                @response-unfold="handleResponseUnfold" />
             </div>
           </template>
           <template #main>
@@ -708,6 +711,10 @@ const setAsideHeight = (height: number) => {
 
 const handleResponseFold = () => {
   setAsideHeight(52);
+};
+
+const handleResponseUnfold = () => {
+  setAsideHeight(600);
 };
 
 const setUserToken = () => {

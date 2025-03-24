@@ -7,99 +7,80 @@
     :checked="checkedList"
     @select="handleSelect"
     @select-all="handleSelectAll"
-    @cell-click="handleCellClick"
     :cell-class="getCellClass"
     border="outer">
     <bk-table-column :width="55" type="selection" align="center" />
     <bk-table-column :label="t('参数名')" prop="name">
       <template #default="{ row, column, index }">
-        <!-- <div class="td-text" v-if="!row?.isEdit">
-          {{ row?.name }}
-        </div> -->
-        <!-- <template v-else> -->
-        <!-- <bk-popover
-          placement="top-start"
-          trigger="click"
-          theme="light"
-          :is-show="isShowVarPopover"
-          :content="t('变量名由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符') "
-          :popover-delay="[300, 0]"
-        > -->
-        <bk-form :ref="(el) => setRefs(el, `name-${index}`)" :model="row" label-width="0">
+        <bk-form :ref="(el: HTMLElement | null) => setRefs(el, `name-${index}`)" :model="row" label-width="0">
           <bk-form-item
             property="name"
             error-display-type="tooltips"
             class="table-form-item">
             <bk-input
+              v-if="type !== 'headers'"
               v-model="row.name"
               :clearable="false"
               class="edit-input"
               @blur="handleCellBlur(index)"
-              :ref="(el) => setInputRefs(el, `name-input-${index}-${column?.index}`)"
+              :ref="(el: HTMLElement | null) => setInputRefs(el, `name-input-${index}-${column?.index}`)"
             />
+            <bk-select
+              v-else
+              class="edit-select"
+              :clearable="false"
+              v-model="row.name"
+              @change="handleNameChange(index, row.name)"
+              :ref="(el: HTMLElement | null) => setInputRefs(el, `name-input-${index}-${column?.index}`)"
+            >
+              <bk-option
+                v-for="item in headersNameList"
+                :id="item.value"
+                :key="item.value"
+                :name="item.label"
+              />
+            </bk-select>
           </bk-form-item>
         </bk-form>
-        <!-- </bk-popover> -->
-        <!-- </template> -->
-
       </template>
     </bk-table-column>
     <bk-table-column :label="t('参数值')" prop="value">
       <template #default="{ row, column, index }">
-        <!-- <div class="td-text" v-if="!row?.isEdit">
-          {{ row?.value }}
-        </div> -->
-        <!-- <template v-else> -->
-        <bk-form :ref="(el) => setRefs(el, `value-${index}`)" :model="row" label-width="0">
+        <bk-form :ref="(el: HTMLElement | null) => setRefs(el, `value-${index}`)" :model="row" label-width="0">
           <bk-form-item
             property="value"
             error-display-type="tooltips"
             class="table-form-item">
-            <template v-if="row?.options?.length">
-              <bk-select
-                class="edit-select"
-                :clearable="false"
-                :filterable="false"
-                v-model="row.value"
-                @change="handleCellBlur(index)"
-                :ref="(el) => setInputRefs(el, `value-input-${index}-${column?.index}`)"
-              >
-                <bk-option
-                  v-for="item in row.options"
-                  :id="item"
-                  :key="item"
-                  :name="item"
-                />
-              </bk-select>
-            </template>
-            <template v-else>
-              <bk-input
-                v-model="row.value"
-                :clearable="false"
-                class="edit-input"
-                @blur="handleCellBlur(index)"
-                :ref="(el) => setInputRefs(el, `value-input-${index}-${column?.index}`)"
+            <bk-select
+              v-if="!!row?.options?.length"
+              class="edit-select"
+              :clearable="false"
+              v-model="row.value"
+              @change="handleCellBlur(index)"
+              :ref="(el: HTMLElement | null) => setInputRefs(el, `value-input-${index}-${column?.index}`)"
+            >
+              <bk-option
+                v-for="item in row.options"
+                :id="item"
+                :key="item"
+                :name="item"
               />
-            </template>
+            </bk-select>
+            <bk-input
+              v-else
+              v-model="row.value"
+              :clearable="false"
+              class="edit-input"
+              @blur="handleCellBlur(index)"
+              :ref="(el: HTMLElement | null) => setInputRefs(el, `value-input-${index}-${column?.index}`)"
+            />
           </bk-form-item>
         </bk-form>
-        <!-- </template> -->
       </template>
     </bk-table-column>
     <bk-table-column :label="t('类型')" prop="type">
       <template #default="{ row, column, index }">
-        <!-- <div
-          class="td-text"
-          @click="(event) => handleCellClick({ event, column, rowIndex: index })"
-          v-if="!row?.editType">
-          <bk-tag
-            theme="info"
-            @click="(event) => handleCellClick({ event, column, rowIndex: index })">
-            {{ row?.type }}
-          </bk-tag>
-        </div> -->
-        <!-- <template v-else> -->
-        <bk-form :ref="(el) => setRefs(el, `type-${index}`)" :model="row" label-width="0">
+        <bk-form :ref="(el: HTMLElement | null) => setRefs(el, `type-${index}`)" :model="row" label-width="0">
           <bk-form-item
             property="type"
             error-display-type="tooltips"
@@ -109,9 +90,8 @@
               :clearable="false"
               :filterable="false"
               v-model="row.type"
-              @toggle="(v) => handleTypeChange(index, v)"
               @change="handleCellBlur(index)"
-              :ref="(el) => setInputRefs(el, `type-input-${index}-${column?.index}`)"
+              :ref="(el: HTMLElement | null) => setInputRefs(el, `type-input-${index}-${column?.index}`)"
             >
               <bk-option
                 v-for="item in typeList"
@@ -122,16 +102,11 @@
             </bk-select>
           </bk-form-item>
         </bk-form>
-        <!-- </template> -->
       </template>
     </bk-table-column>
     <bk-table-column :label="t('说明')" prop="instructions">
       <template #default="{ row, column, index }">
-        <!-- <div class="td-text" v-if="!row?.isEdit">
-          {{ row?.instructions }}
-        </div> -->
-        <!-- <template v-else> -->
-        <bk-form :ref="(el) => setRefs(el, `instructions-${index}`)" :model="row" label-width="0">
+        <bk-form :ref="(el: HTMLElement | null) => setRefs(el, `instructions-${index}`)" :model="row" label-width="0">
           <bk-form-item
             property="instructions"
             error-display-type="tooltips"
@@ -141,11 +116,10 @@
               :clearable="false"
               class="edit-input"
               @blur="handleCellBlur(index)"
-              :ref="(el) => setInputRefs(el, `instructions-input-${index}-${column?.index}`)"
+              :ref="(el: HTMLElement | null) => setInputRefs(el, `instructions-input-${index}-${column?.index}`)"
             />
           </bk-form-item>
         </bk-form>
-        <!-- </template> -->
       </template>
     </bk-table-column>
     <bk-table-column :label="t('操作')">
@@ -162,9 +136,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, nextTick, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
+import headersNames from '@/common/headers-name';
+import headersValues from '@/common/headers-value';
 
 const { t } = useI18n();
 
@@ -175,7 +151,6 @@ interface RowType {
   type: string;
   instructions: string;
   isEdit?: boolean;
-  editType?: boolean;
   required?: boolean;
   options?: unknown;
   default?: string;
@@ -188,37 +163,28 @@ interface SelectPayload {
   data: RowType[];
 }
 
-interface CellClickPayload {
-  event: Event;
-  row: RowType;
-  column: {
-    field: string;
-    index: number;
-  };
-  rowIndex: number;
-  columnIndex: number;
-}
-
 const props = defineProps({
   list: {
     type: Array<RowType>,
     default: [],
   },
+  type: {
+    type: String,
+    required: false,
+  },
 });
 
 const emit = defineEmits(['change']);
 
-// const isShowVarPopover = ref(false);
-
 const formRefs = ref(new Map());
-const setRefs = (el: Element, name: string) => {
+const setRefs = (el: HTMLElement | null, name: string) => {
   if (el) {
     formRefs.value?.set(name, el);
   }
 };
 
 const formInputRef = ref(new Map());
-const setInputRefs = (el: Element, name: string) => {
+const setInputRefs = (el: HTMLElement | null, name: string) => {
   if (el) {
     formInputRef.value?.set(name, el);
   }
@@ -230,7 +196,6 @@ const getDefaultTbRow = () => {
     type: 'string',
     instructions: '',
     isEdit: true,
-    editType: false,
   };
 };
 
@@ -251,6 +216,8 @@ const typeList = ref<{label: string, value: string}[]>([
   },
 ]);
 
+const headersNameList = computed(() => (headersNames.map((item: string) => ({ label: item, value: item }))));
+
 const getCellClass = (payload: {index: number;}) => {
   if (payload.index !== 5) {
     return 'custom-table-cell';
@@ -258,56 +225,19 @@ const getCellClass = (payload: {index: number;}) => {
   return '';
 };
 
-const handleCellClick = async ({ event, column, rowIndex }: CellClickPayload) => {
-  event.stopPropagation();
-  const { field, index } = column;
-  if (!field) {
-    return;
-  };
-  tableData.value[rowIndex].isEdit = true;
-  if (field === 'type') {
-    tableData.value[rowIndex].editType = true;
-  }
-
-  nextTick(() => {
-    if (field === 'type') {
-      // formInputRef.value?.get(`${field}-input-${rowIndex}-${index}`)?.showPopover();
-      // formInputRef.value?.get(`${field}-input-${rowIndex}-${index}`)?.focus();
-    } else {
-      formInputRef.value?.get(`${field}-input-${rowIndex}-${index}`)?.focus();
-    }
-  });
-};
-
-// const validateRow = async (index: number) => {
-//   let flag = true;
-//   await formRefs.value?.get(`name-${index}`)?.validate()
-//     .then(() => {}, () => {
-//       flag = false;
-//     });
-//   await formRefs.value?.get(`value-${index}`)?.validate()
-//     .then(() => {}, () => {
-//       flag = false;
-//     });
-//   await formRefs.value?.get(`type-${index}`)?.validate()
-//     .then(() => {}, () => {
-//       flag = false;
-//     });
-//   await formRefs.value?.get(`instructions-${index}`)?.validate()
-//     .then(() => {}, () => {
-//       flag = false;
-//     });
-
-//   return flag;
-// };
-
 const handleCellBlur = async (index: number) => {
-  // if (await validateRow(index)) {}
   tableData.value[index].isEdit = false;
 };
 
-const handleTypeChange = (index: number, v: boolean) => {
-  tableData.value[index].editType = v;
+const handleNameChange = (index: number, name: string) => {
+  if (['Accept', 'Content-Type'].includes(name)) {
+    tableData.value[index].options = headersValues;
+  } else {
+    tableData.value[index].options = [];
+  }
+
+  tableData.value[index].value = '';
+  handleCellBlur(index);
 };
 
 const addRow = (index: number) => {
@@ -376,57 +306,6 @@ const handleSelectAll = ({ checked, data }: SelectPayload) => {
   }
 };
 
-// const varRules = {
-//   name: [
-//     {
-//       required: true,
-//       message: t('必填项'),
-//       trigger: 'blur',
-//     },
-//     {
-//       validator(value: any) {
-//         const reg = /^[a-zA-Z][a-zA-Z0-9_]{0,49}$/;
-//         return reg.test(value);
-//       },
-//       message: t('由字母、数字、下划线（_） 组成，首字符必须是字母，长度小于50个字符'),
-//       trigger: 'blur',
-//     },
-//     {
-//       validator(value: any) {
-//         // 去重
-//         const alikeArr: any = tableData.value?.filter((item: any) => item.name === value);
-//         if (alikeArr?.length > 1) {
-//           return false;
-//         }
-//         return true;
-//       },
-//       message: t('变量名不可重复'),
-//       trigger: 'blur',
-//     },
-//   ],
-//   value: [
-//     {
-//       required: true,
-//       message: t('必填项'),
-//       trigger: 'blur',
-//     },
-//   ],
-//   // type: [
-//   //   {
-//   //     required: true,
-//   //     message: t('必填项'),
-//   //     trigger: 'change',
-//   //   },
-//   // ],
-//   // instructions: [
-//   //   {
-//   //     required: false,
-//   //     message: t('必填项'),
-//   //     trigger: 'blur',
-//   //   },
-//   // ],
-// };
-
 watch(
   () => props.list,
   (v) => {
@@ -434,7 +313,6 @@ watch(
     v?.forEach((item: any) => {
       list.push({
         isEdit: false,
-        editType: false,
         id: +new Date(),
         name: item.name,
         value: item.schema?.default || '',
@@ -463,8 +341,6 @@ watch(
 watch(
   () => tableData.value,
   () => {
-    // const list = v?.filter((item: RowType) => item.name);
-    // checkedList.value = cloneDeep([...tableData.value]);
     emit('change', checkedList.value);
   },
   {
