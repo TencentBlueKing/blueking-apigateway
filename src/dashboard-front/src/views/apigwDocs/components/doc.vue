@@ -114,16 +114,27 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, nextTick } from 'vue';
+import {
+  computed,
+  nextTick,
+  ref,
+  watch,
+} from 'vue';
 import MarkdownIt from 'markdown-it';
 import { slugify } from 'transliteration';
 import sdkDetail from '@/components/sdk-detail/index.vue';
 import sideNav from '@/components/side-nav/index.vue';
 import hljs from 'highlight.js';
-import 'highlight.js/styles/monokai-sublime.css';
+import 'highlight.js/styles/vs2015.min.css';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
-import { getApigwResourceSDKDocs, getApigwResourceDocDocs, getApigwResourcesDocs, getApigwSDKDocs, getGatewaysDetailsDocs } from '@/http';
+import {
+  getApigwResourceDocDocs,
+  getApigwResourceSDKDocs,
+  getApigwResourcesDocs,
+  getApigwSDKDocs,
+  getGatewaysDetailsDocs,
+} from '@/http';
 import { copy } from '@/common/util';
 import chat from '@/components/chat/index.vue';
 import { useUser } from '@/store';

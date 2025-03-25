@@ -61,7 +61,7 @@
             :box-shadow="false"
             :subfield="false"
             :ishljs="true"
-            :code-style="'monokai'"
+            code-style="vs2015"
             :toolbars="toolbars"
             :tab-size="4"
             @full-screen="handleFullscreen"
@@ -128,13 +128,22 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, toRefs, onMounted, onUnmounted, onBeforeUnmount, nextTick, onUpdated, computed } from 'vue';
 import {
-  getResourceDocs,
-  getResourceDocPreview,
-  updateResourceDocs,
-  saveResourceDocs,
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  onUnmounted,
+  onUpdated,
+  ref,
+  toRefs,
+} from 'vue';
+import {
   deleteResourceDocs,
+  getResourceDocPreview,
+  getResourceDocs,
+  saveResourceDocs,
+  updateResourceDocs,
 } from '@/http';
 import {
   useCommon,

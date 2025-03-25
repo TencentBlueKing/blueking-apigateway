@@ -98,7 +98,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { slugify } from 'transliteration';
@@ -108,12 +113,12 @@ import sideNav from '@/components/side-nav/index.vue';
 import sdkDetail from '@/components/sdk-detail/index.vue';
 import chat from '@/components/chat/index.vue';
 import hljs from 'highlight.js';
-import 'highlight.js/styles/monokai-sublime.css';
+import 'highlight.js/styles/vs2015.min.css';
 import {
   getComponenSystemDetail,
   getESBSDKDetail,
-  getSystemAPIList,
   getSDKDoc,
+  getSystemAPIList,
   getSystemComponentDoc,
 } from '@/http';
 import { useUser } from '@/store';

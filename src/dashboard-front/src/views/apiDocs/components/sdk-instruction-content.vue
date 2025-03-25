@@ -16,7 +16,7 @@
     <div
       v-if="sdkDoc"
       class="ag-markdown-view"
-      id="markdown"
+      id="sdk-instruction-markdown"
       :key="renderHtmlIndex"
       v-dompurify-html="markdownHtml"
     ></div>
@@ -91,8 +91,7 @@ const initMarkdownHtml = (content: string) => {
   markdownHtml.value = md.render(content);
   renderHtmlIndex.value += 1;
   nextTick(() => {
-    const markdownDom = document.getElementById('markdown');
-
+    const markdownDom = document.getElementById('sdk-instruction-markdown');
     // 复制代码
     markdownDom.querySelectorAll('a')
       .forEach((item: any) => {
@@ -204,8 +203,13 @@ $code-color: #63656e;
     .ag-copy-btn {
       right: 12px;
       top: 12px;
-      background-color: $code-bc;
+      background-color: #ccc;
+      border-radius: 4px;
       color: $primary-color;
+
+      &:hover {
+        background-color: #fff;
+      }
     }
   }
 
@@ -345,11 +349,10 @@ $code-color: #63656e;
 
   pre {
     border-radius: 2px;
-    background: $code-bc;
+    background: #1e1e1e;
     padding: 10px;
     font-size: 14px;
     text-align: left;
-    color: $code-color;
     line-height: 24px;
     position: relative;
     overflow: auto;
@@ -357,7 +360,7 @@ $code-color: #63656e;
 
     code {
       font-family: "Lucida Console", "Courier New", "Monaco", monospace;
-      color: $code-color;
+      color: #dcdcdc;
     }
 
     .hljs {
