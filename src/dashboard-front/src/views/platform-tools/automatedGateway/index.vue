@@ -4,7 +4,7 @@
       <div class="header-icon-wrapper">
         <ag-icon
           class="icon"
-          name="fuwuguanli"
+          name="zidongjieru"
           size="64"
         />
       </div>
