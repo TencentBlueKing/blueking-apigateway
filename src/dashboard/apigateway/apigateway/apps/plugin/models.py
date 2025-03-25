@@ -68,7 +68,7 @@ class PluginType(models.Model):
         choices=PluginTypeScopeEnum.get_choices(),
         default=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value,
     )
-    priority = models.IntegerField("优先级", default=1000)
+    priority = models.IntegerField("优先级1", default=-1, blank=True, null=True)
 
     objects = PluginTypeManager()
 

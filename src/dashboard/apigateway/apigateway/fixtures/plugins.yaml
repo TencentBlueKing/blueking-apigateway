@@ -355,7 +355,7 @@
     name_en: Header transformation
     is_public: true
     scope: stage_and_resource
-    priority: 17430
+    priority: 17421
     schema:
     - bk-header-rewrite
     - plugin

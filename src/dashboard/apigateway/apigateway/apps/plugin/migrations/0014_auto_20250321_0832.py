@@ -30,6 +30,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='plugintype',
             name='priority',
-            field=models.IntegerField(default=1000, verbose_name='优先级'),
+            field=models.IntegerField(blank=True, default=-1, null=True, verbose_name='优先级'),
         ),
     ]
