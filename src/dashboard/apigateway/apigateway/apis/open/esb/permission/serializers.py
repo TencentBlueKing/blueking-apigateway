@@ -81,11 +81,16 @@ class AppPermissionComponentSLZ(serializers.Serializer):
             PermissionStatusEnum.PENDING.value,
             PermissionStatusEnum.OWNED.value,
             PermissionStatusEnum.UNLIMITED.value,
+            PermissionStatusEnum.EXPIRED.value,
         ]
 
     def _need_to_renew_permission(self, permission_status, expires_in):
         renewable_end_time = time.to_seconds(days=RENEWABLE_EXPIRE_DAYS)
-        if permission_status in [PermissionStatusEnum.OWNED.value] and 0 < expires_in < renewable_end_time:
+        # 对于已经过期的权限也可以申请续期
+        if (
+            permission_status in [PermissionStatusEnum.OWNED.value, PermissionStatusEnum.EXPIRED.value]
+            and expires_in < renewable_end_time
+        ):
             return True
 
         return False
