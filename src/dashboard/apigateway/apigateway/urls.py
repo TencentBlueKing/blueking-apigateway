@@ -35,6 +35,7 @@ from django.contrib import admin
 from django.urls import include, path, re_path
 from django.views.i18n import set_language
 
+from apigateway.apis.web.access_log.views import LogDetailInfoApi
 from apigateway.apis.web.monitor.views import AlarmRecordSummaryListApi
 from apigateway.common.swagger import schema_view
 
@@ -81,10 +82,10 @@ urlpatterns = [
         AlarmRecordSummaryListApi.as_view(),
         name="monitors.alarm_records.summary",
     ),
+    path("backend/gateways/logs/query/<slug:request_id>/", LogDetailInfoApi.as_view(), name="access_log.logs.query"),
     # notice
     path("backend/notice/", include(("bk_notice_sdk.urls", "notice"), namespace="notice")),
 ]
-
 
 # backend/docs/
 urlpatterns += [

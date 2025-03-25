@@ -244,7 +244,6 @@ class LogDetailRetrieveApi(generics.RetrieveAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        query_serializer=LogDetailQueryInputSLZ,
         responses={status.HTTP_200_OK: RequestLogOutputSLZ(many=False)},
         tags=["WebAPI.Log"],
     ),
