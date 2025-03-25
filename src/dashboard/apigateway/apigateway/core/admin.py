@@ -121,30 +121,19 @@ class ContextAdmin(admin.ModelAdmin):
     search_fields = ["scope_id"]
 
     def get_search_results(self, request, queryset, search_term):
-        # 根据网关名称搜索结果，同时保留过滤器条件
-        queryset, use_distinct = super().get_search_results(request, queryset, "")
-
-        if not search_term:
-            return queryset, use_distinct
-
+        # 查询 gateway name
         gateway_obj = Gateway.objects.filter(name=search_term).first()
-        if not gateway_obj:
-            # 没有查询到网关信息，返回空的 queryset
-            return self.model.objects.none(), use_distinct
+        if gateway_obj:
+            queryset = queryset.filter(scope_type=ContextScopeTypeEnum.GATEWAY.value, scope_id=gateway_obj.id)
+            return queryset, False
 
-        # 查询 GATEWAY 类型的记录
-        gateway_queryset = queryset.filter(scope_type=ContextScopeTypeEnum.GATEWAY.value, scope_id=gateway_obj.id)
+        # 查询 resource name
+        resource_ids = Resource.objects.filter(name=search_term).values_list("id", flat=True)
+        if resource_ids:
+            queryset = queryset.filter(scope_type=ContextScopeTypeEnum.RESOURCE.value, scope_id__in=resource_ids)
+            return queryset, False
 
-        # 查询 STAGE 类型的记录
-        stage_ids = list(Stage.objects.filter(gateway=gateway_obj).values_list("id", flat=True))
-        stage_queryset = queryset.filter(scope_type=ContextScopeTypeEnum.STAGE.value, scope_id__in=stage_ids)
-
-        # 查询 RESOURCE 类型的记录
-        resource_ids = list(Resource.objects.filter(gateway=gateway_obj).values_list("id", flat=True))
-        resource_queryset = queryset.filter(scope_type=ContextScopeTypeEnum.RESOURCE.value, scope_id__in=resource_ids)
-
-        queryset = gateway_queryset | stage_queryset | resource_queryset
-
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
         return queryset, use_distinct
 
 
