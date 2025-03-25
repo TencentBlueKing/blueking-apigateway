@@ -185,16 +185,20 @@
 
 <script setup lang="tsx">
 import {
+  computed,
+  onMounted,
   ref,
   unref,
   watch,
-  computed,
-  onMounted,
 } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { cloneDeep } from 'lodash';
 import { Message } from 'bkui-vue';
-import { getBackendsListData, getBackendsDetailData, backendsPathCheck } from '@/http';
+import {
+  backendsPathCheck,
+  getBackendsDetailData,
+  getBackendsListData,
+} from '@/http';
 import { useCommon } from '../../../../store';
 import { useGetGlobalProperties } from '@/hooks';
 import mitt from '@/common/event-bus';
@@ -301,7 +305,10 @@ const handleTimeOutTotal = (value: any[]) => {
 
 const handleRefreshTime = () => {
   servicesConfigs.value = cloneDeep(servicesConfigsStorage.value);
-  handleTimeOutTotal(servicesConfigs.value)
+  // handleTimeOutTotal(servicesConfigs.value);
+  backConfigData.value.config.timeout = 0;
+  timeOutValue.value = '';
+  isTimeEmpty.value = false;
 };
 
 const handleShowPopover = () => {
