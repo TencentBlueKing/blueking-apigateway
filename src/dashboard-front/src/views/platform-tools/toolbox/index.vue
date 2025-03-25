@@ -38,6 +38,7 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import JwtDecoder from './components/jwt-decoder.vue';
+import JsonFormat from './components/json-format.vue';
 
 interface ITool {
   id: number;
@@ -50,6 +51,7 @@ const { t } = useI18n();
 
 const toolCompMap: Record<string, any> = {
   jwtDecoder: JwtDecoder,
+  jsonFormat: JsonFormat,
 };
 
 const toolList = ref([
@@ -68,8 +70,8 @@ const toolList = ref([
   {
     id: 3,
     name: t('JSON 格式化'),
-    desc: t('通过命令自动将已有 API 注册到网关，省去繁琐操作'),
-    comp: '',
+    desc: t('对 json 进行格式化及高亮'),
+    comp: 'jsonFormat',
   },
 ]);
 const curTool = ref<ITool>(toolList.value[1]);
