@@ -41,6 +41,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-copy-fill:before {
 	content: "\e118";
 }
+.icon-ag-micro-route:before {
+	content: "\e1a1";
+}
 .icon-ag-help:before {
 	content: "\e106";
 }
@@ -58,6 +61,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-delet:before {
 	content: "\e15d";
+}
+.icon-ag-audit1-fill:before {
+	content: "\e1af";
 }
 .icon-ag-danger-fill:before {
 	content: "\e181";
@@ -116,6 +122,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-circle-shape:before {
 	content: "\e103";
 }
+.icon-ag-close-circle-filled:before {
+	content: "\e1a6";
+}
 .icon-ag-down-shape:before {
 	content: "\e102";
 }
@@ -130,6 +139,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-plus-square-shape:before {
 	content: "\e10d";
+}
+.icon-ag-micro-upstream:before {
+	content: "\e1a0";
 }
 .icon-ag-up-shape:before {
 	content: "\e101";
@@ -194,11 +206,17 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-audit:before {
 	content: "\e133";
 }
+.icon-ag-cert-fill:before {
+	content: "\e1b0";
+}
 .icon-ag-cc-history:before {
 	content: "\e145";
 }
 .icon-ag-todolist:before {
 	content: "\e16b";
+}
+.icon-ag-cc-user:before {
+	content: "\e1ab";
 }
 .icon-ag-monitor-fill:before {
 	content: "\e135";
@@ -227,6 +245,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-copy:before {
 	content: "\e14c";
 }
+.icon-ag-plugin-generic-fill:before {
+	content: "\e1a8";
+}
 .icon-ag-yishanchu:before {
 	content: "\e136";
 }
@@ -241,6 +262,12 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-icon0:before {
 	content: "\e14e";
+}
+.icon-ag-micro-service:before {
+	content: "\e1a2";
+}
+.icon-ag-publish-fill:before {
+	content: "\e1a7";
 }
 .icon-ag-icon3:before {
 	content: "\e14f";
@@ -278,6 +305,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-component-intro:before {
 	content: "\e13d";
 }
+.icon-ag-micro-plugin-generic:before {
+	content: "\e1a5";
+}
 .icon-ag-insights:before {
 	content: "\e144";
 }
@@ -308,8 +338,17 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-edit-line:before {
 	content: "\e158";
 }
+.icon-ag-micro-plugin:before {
+	content: "\e1a4";
+}
 .icon-ag-cardd:before {
 	content: "\e178";
+}
+.icon-ag-usergroup:before {
+	content: "\e1a9";
+}
+.icon-ag-micro-consumer:before {
+	content: "\e1a3";
 }
 .icon-ag-history:before {
 	content: "\e16a";
@@ -457,4 +496,16 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-plugin-bk-header-rewrite:before {
 	content: "\e19f";
+}
+.icon-ag-fuwu-2:before {
+	content: "\e1ad";
+}
+.icon-ag-luyou:before {
+	content: "\e1ac";
+}
+.icon-ag-gongjuxiang:before {
+	content: "\e1b1";
+}
+.icon-ag-zidongjieru:before {
+	content: "\e1b2";
 }
