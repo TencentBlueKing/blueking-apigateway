@@ -211,7 +211,7 @@ const handleSdkInstructionClick = () => {
 
 <style scoped lang="scss">
 $primary-color: #3a84ff;
-$code-bc: #f5f7fa;
+$code-bc: #1e1e1e;
 $code-color: #63656e;
 
 .content-wrap {
@@ -336,9 +336,14 @@ $code-color: #63656e;
     .ag-copy-btn {
       right: 12px;
       top: 12px;
-      background-color: $code-bc;
+      background-color: #ccc;
+      border-radius: 4px;
       color: $primary-color;
       z-index: 1;
+
+      &:hover {
+        background-color: #fff;
+      }
     }
   }
 
@@ -486,7 +491,6 @@ $code-color: #63656e;
     padding: 10px;
     font-size: 14px;
     text-align: left;
-    color: $code-color;
     line-height: 24px;
     position: relative;
     overflow: auto;
@@ -494,27 +498,12 @@ $code-color: #63656e;
 
     code {
       font-family: "Lucida Console", "Courier New", "Monaco", monospace;
-      color: $code-color;
+      color: #dcdcdc;
     }
 
     .hljs {
       margin: -10px;
     }
-  }
-}
-
-:deep(.code-box) {
-  // 代码块高亮字体颜色
-  .hljs-string {
-    color: #ff9c01;
-  }
-
-  .hljs-keyword {
-    color: #ea3636;
-  }
-
-  .hljs-comment {
-    color: #c4c6cc;
   }
 }
 </style>

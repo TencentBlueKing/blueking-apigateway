@@ -212,20 +212,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, reactive, computed, nextTick } from 'vue';
+import {
+  computed,
+  nextTick,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
-import 'highlight.js/styles/monokai-sublime.css';
+import 'highlight.js/styles/vs2015.min.css';
 
 import { copy } from '@/common/util';
 import TableEmpty from '@/components/table-empty.vue';
 import {
-  getGatewaySDKlist,
+  getESBSDKDoc,
   getESBSDKlist,
   getGatewaySDKDoc,
-  getESBSDKDoc,
+  getGatewaySDKlist,
 } from '@/http';
 
 const props = defineProps({

@@ -68,7 +68,7 @@
                   :box-shadow="false"
                   :subfield="false"
                   :ishljs="true"
-                  :code-style="'monokai'"
+                  code-style="vs2015"
                   :toolbars="toolbars"
                   :tab-size="4"
                   @full-screen="handleFullscreen"

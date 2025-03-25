@@ -166,7 +166,7 @@
         overflow: auto;
 
         code {
-            color: #FFF;
+            /*color: #FFF;*/
         }
 
         .hljs {
@@ -193,8 +193,7 @@
 .ag-copy-btn {
     position: absolute;
     top: 8px;
-    right: 0;
-    background: transparent;
+    right: 12px;
     border: none;
     z-index: 10;
     cursor: pointer;
