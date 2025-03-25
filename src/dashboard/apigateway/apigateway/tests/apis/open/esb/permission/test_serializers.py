@@ -93,7 +93,7 @@ class TestAppPermissionComponentSLZ:
                     "permission_status": "expired",
                     "expires_in": -10,
                 },
-                "apply",
+                "renew",
             ),
             (
                 {
@@ -124,7 +124,7 @@ class TestAppPermissionComponentSLZ:
             ("owned", False),
             ("rejected", True),
             ("need_apply", True),
-            ("expired", True),
+            ("expired", False),
         ],
     )
     def test_need_to_apply_permission(self, permission_status, expected):
@@ -140,8 +140,9 @@ class TestAppPermissionComponentSLZ:
             ("pending", -math.inf, False),
             ("owned", 10, True),
             ("owned", time.to_seconds(RENEWABLE_EXPIRE_DAYS) + 100, False),
-            ("owned", -10, False),
+            ("owned", -10, True),
             ("need_apply", -math.inf, False),
+            ("expired", -math.inf, True),
         ],
     )
     def test_need_to_renew_permission(self, permission_status, expires_in, expected):
