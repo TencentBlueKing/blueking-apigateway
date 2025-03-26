@@ -558,9 +558,22 @@
   </div>
 </template>
 <script setup lang="ts">
-import { reactive, ref, watch, onMounted, onBeforeMount, shallowRef, h, computed, nextTick } from 'vue';
+import {
+  computed,
+  h,
+  nextTick,
+  onBeforeMount,
+  onMounted,
+  reactive,
+  ref,
+  shallowRef,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter, useRoute } from 'vue-router';
+import {
+  useRoute,
+  useRouter,
+} from 'vue-router';
 import {
   cloneDeep,
   differenceBy,
@@ -568,12 +581,19 @@ import {
 } from 'lodash';
 import { Message } from 'bkui-vue';
 
-import { useQueryList, useSelection } from '@/hooks';
 import {
-  getResourceListData, deleteResources,
-  batchDeleteResources, batchEditResources,
-  exportResources, exportDocs, checkNeedNewVersion,
+  useQueryList,
+  useSelection,
+} from '@/hooks';
+import {
+  batchDeleteResources,
+  batchEditResources,
+  checkNeedNewVersion,
+  deleteResources,
+  exportDocs,
+  exportResources,
   getGatewayLabels,
+  getResourceListData,
   getResourceVersionsList,
 } from '@/http';
 import Detail from './detail.vue';
@@ -587,9 +607,16 @@ import TableEmpty from '@/components/table-empty.vue';
 // import RenderCustomColumn from '@/components/custom-table-header-filter';
 import ResourceSettingTopBar from '@/views/resource/setting/comps/resource-setting-top-bar.vue';
 import mitt from '@/common/event-bus';
-import { IDialog, IDropList, MethodsEnum } from '@/types';
+import {
+  IDialog,
+  IDropList,
+  MethodsEnum,
+} from '@/types';
 import { is24HoursAgo } from '@/common/util';
-import {  useCommon, useResourceVersion } from '@/store';
+import {
+  useCommon,
+  useResourceVersion,
+} from '@/store';
 import ResourceDocSideSlider from '@/views/components/resource-doc-slider/index.vue';
 import useMaxTableLimit from '@/hooks/use-max-table-limit';
 
@@ -1190,9 +1217,10 @@ const handleExportDownload = async () => {
       });
     }
     exportDialogConfig.isShow = false;
-  } catch ({ error }: any) {
+  } catch (e) {
+    const error = e as Error;
     Message({
-      message: error.message,
+      message: error?.message || t('导出失败'),
       theme: 'error',
       width: 'auto',
     });

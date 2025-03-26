@@ -58,7 +58,9 @@
                 </p>
               </div>
               <!-- eslint-disable vue/no-v-html -->
-              <div class="ag-markdown-view" v-dompurify-html="markdownHtml" v-show="!isEdited"></div>
+              <div
+                v-show="!isEdited" id="resource-doc-markdown" v-dompurify-html="markdownHtml" class="ag-markdown-view"
+              ></div>
               <div class="ag-markdown-editor" v-show="isEdited">
                 <mavon-editor
                   ref="markdownRef"
@@ -118,6 +120,7 @@
 <script setup lang="ts">
 import {
   defineModel,
+  nextTick,
   onMounted,
   onUnmounted,
   ref,
@@ -135,6 +138,7 @@ import { Message } from 'bkui-vue';
 import { useCommon } from '@/store';
 import { useI18n } from 'vue-i18n';
 import mitt from '@/common/event-bus';
+import { copy } from '../../../common/util';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -331,6 +335,39 @@ const handleDocDataWithLanguage = () => {
     isEmpty.value = !docDataItem.id;
     markdownDoc.value = docDataItem.content;
     markdownHtml.value = markdownRef.value.markdownIt.render(docDataItem.content);
+    nextTick(() => {
+      const markdownDom = document.getElementById('resource-doc-markdown');
+      if (markdownDom) {
+        markdownDom.querySelectorAll('pre')?.forEach((preEl) => {
+          const parentDiv = document.createElement('div');
+          const codeBox = document.createElement('div');
+          const btn = document.createElement('button');
+          const code = preEl.querySelector('code')?.innerText || '';
+          parentDiv.className = 'pre-wrapper';
+          btn.className = 'ag-copy-btn';
+          codeBox.className = 'code-box';
+          btn.innerHTML = '<span title="复制"><i class="apigateway-icon icon-ag-copy-info"></i></span>';
+          btn.setAttribute('data-copy', code);
+          parentDiv.appendChild(btn);
+          codeBox.appendChild(preEl.querySelector('code'));
+          preEl.appendChild(codeBox);
+          preEl.parentNode?.replaceChild(parentDiv, preEl);
+          parentDiv.appendChild(preEl);
+        });
+
+        setTimeout(() => {
+          const copyBtnEls = Array.from(document.getElementsByClassName('ag-copy-btn'));
+
+          const handleCopy = function (this: any) {
+            copy(this.dataset?.copy);
+          };
+
+          copyBtnEls.forEach((dom: any) => {
+            dom.onclick = handleCopy;
+          });
+        }, 500);
+      }
+    });
   } else {
     // 预览资源文档会走到这里
     const doc = docData.value.find((d: any) => d.language === language.value);

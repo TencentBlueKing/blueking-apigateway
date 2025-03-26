@@ -332,21 +332,6 @@ $code-color: #63656e;
   line-height: 19px;
   font-style: normal;
 
-  .pre-wrapper {
-    .ag-copy-btn {
-      right: 12px;
-      top: 12px;
-      background-color: #ccc;
-      border-radius: 4px;
-      color: $primary-color;
-      z-index: 1;
-
-      &:hover {
-        background-color: #fff;
-      }
-    }
-  }
-
   h1,
   h2,
   h3,
