@@ -92,7 +92,10 @@
                 field="maintainers"
               >
                 <template #default="{ row }">
-                  {{ row.maintainers?.join(', ') || '--' }}
+                  <span v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
+                    {{ row.maintainers?.join(', ') || '--' }}
+                  </span>
+                  <span v-else><bk-user-display-name :user-id="row.maintainers || []" /></span>
                 </template>
               </bk-table-column>
               <bk-table-column
@@ -274,12 +277,12 @@ import SdkDetailDialog from '@/views/apiDocs/components/sdk-detail-dialog.vue';
 import ComponentSearcher from '@/views/apiDocs/components/component-searcher.vue';
 import {
   IApiGatewayBasics,
-  ICategory,
-  ISdk,
   IBoard,
-  TabType,
-  ISystem,
+  ICategory,
   IComponentSdk,
+  ISdk,
+  ISystem,
+  TabType,
 } from '@/views/apiDocs/types';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useTemplateRefsList } from '@vueuse/core';

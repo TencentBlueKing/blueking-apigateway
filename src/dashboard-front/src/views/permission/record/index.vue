@@ -183,16 +183,23 @@
 </template>
 
 <script setup lang="tsx">
-import { nextTick, reactive, ref, watch, onMounted } from 'vue';
+import {
+  nextTick,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPermissionRecordList } from '@/http';
-import { useCommon } from '@/store';
+import { useUser } from '@/store';
 import { useQueryList } from '@/hooks';
 import { sortByKey } from '@/common/util';
 import TableEmpty from '@/components/table-empty.vue';
 import { Message } from 'bkui-vue';
 
 const { t } = useI18n();
+const user = useUser();
 
 const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
   keyword: '',
@@ -326,7 +333,14 @@ const setTableHeader = () => {
     },
     { field: 'applied_by', label: t('申请人') },
     { field: 'handled_time', label: t('审批时间') },
-    { field: 'handled_by', label: t('审批人') },
+    {
+      field: 'handled_by',
+      label: t('审批人'),
+      render: ({ data }: Record<string, any>) =>
+        user.featureFlags?.ENABLE_MULTI_TENANT_MODE
+        ? <span><bk-user-display-name user-id={data.handled_by} /></span>
+        : <span>{data.handled_by}</span>,
+    },
     {
       field: 'status',
       label: t('审批状态'),

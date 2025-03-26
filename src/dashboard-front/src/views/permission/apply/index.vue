@@ -146,7 +146,11 @@
 import { reactive, ref, watch, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPermissionApplyList, getApigwResources, updatePermissionStatus } from '@/http';
-import { useCommon, usePermission } from '@/store';
+import {
+  useCommon,
+  usePermission,
+  useUser,
+} from '@/store';
 import { useQueryList, useSelection } from '@/hooks';
 import type { SelectionType }  from '@/hooks';
 import { Message, Loading } from 'bkui-vue';
@@ -237,6 +241,7 @@ const {
   resetSelections,
 } = useSelection();
 
+const user = useUser();
 
 const setTableHeader = () => {
   const columns =  [
@@ -275,7 +280,14 @@ const setTableHeader = () => {
         return data?.reason || '--';
       },
     },
-    { field: 'applied_by', label: t('申请人') },
+    {
+      field: 'applied_by',
+      label: t('申请人'),
+      render: ({ data }: Record<string, any>) =>
+        user.featureFlags?.ENABLE_MULTI_TENANT_MODE
+        ? <span><bk-user-display-name user-id={data.applied_by} /></span>
+        : <span>{ data.applied_by }</span>
+    },
     { field: 'created_time', width: 215, label: t('申请时间') },
     {
       field: 'status',

@@ -75,6 +75,10 @@
               </template>
             </bk-table-column>
             <bk-table-column :label="t('创建者')" prop="created_by">
+              <template #default="{ row }">
+                <span v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE">{{ row.created_by }}</span>
+                <span v-else><bk-user-display-name :user-id="row.created_by" /></span>
+              </template>
             </bk-table-column>
             <bk-table-column :label="t('操作')" width="200">
               <template #default="{ data }">
@@ -167,19 +171,35 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed, onMounted, onUnmounted } from 'vue';
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
 import { useRoute } from 'vue-router';
 import dayjs from 'dayjs';
 
 import { getStatus } from '@/common/util';
-import { useQueryList, useSelection } from '@/hooks';
-import { getResourceVersionsList, getStageList } from '@/http';
+import {
+  useQueryList,
+  useSelection,
+} from '@/hooks';
+import {
+  getResourceVersionsList,
+  getStageList,
+} from '@/http';
 import createSdk from '../components/createSdk.vue';
 import resourceDetail from '../components/resourceDetail.vue';
 import versionDiff from '@/components/version-diff/index.vue';
-import { useResourceVersion, useUser } from '@/store';
+import {
+  useResourceVersion,
+  useUser,
+} from '@/store';
 import releaseSideslider from '@/views/stage/overview/comps/release-sideslider.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import { orderBy } from 'lodash';
@@ -191,11 +211,10 @@ const props = defineProps({
   },
 });
 
-const user = useUser();
-
 const route = useRoute();
 const { t } = useI18n();
 const resourceVersionStore = useResourceVersion();
+const user = useUser();
 
 const apigwId = computed(() => +route.params.id);
 

@@ -131,6 +131,7 @@
               <div class="label">{{ `${t('维护人员')}：` }}</div>
               <div class="value">
                 <GateWaysEditMemberSelector
+                  v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE"
                   mode="edit"
                   width="600px"
                   field="maintainers"
@@ -141,12 +142,25 @@
                   :error-value="t('维护人员不能为空')"
                   @on-change="(e:Record<string, any>) => handleInfoChange(e)"
                 />
+                <GateWaysEditTenantUserSelector
+                  v-else
+                  :content="basicInfoData.maintainers"
+                  :error-value="t('维护人员不能为空')"
+                  :is-error-class="'maintainers-error-tip'"
+                  :is-required="true"
+                  :placeholder="t('请选择维护人员')"
+                  field="maintainers"
+                  mode="edit"
+                  width="600px"
+                  @on-change="(e:Record<string, any>) => handleInfoChange(e)"
+                />
               </div>
             </div>
             <div class="detail-item-content-item">
               <div class="label">{{ `${t('创建人')}：` }}</div>
               <div class="value">
-                <span>{{ basicInfoData.created_by || '--' }}</span>
+                <span v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE">{{ basicInfoData.created_by || '--' }}</span>
+                <span v-else><bk-user-display-name :user-id="basicInfoData.created_by" /></span>
               </div>
             </div>
             <div class="detail-item-content-item">
@@ -249,7 +263,20 @@
           property="maintainers"
           required
         >
-          <MemberSelect v-model="basicInfoDetailData.maintainers" :placeholder="t('请选择维护人员')" :has-delete-icon="true" />
+          <MemberSelect
+            v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE"
+            v-model="basicInfoDetailData.maintainers"
+            :has-delete-icon="true"
+            :placeholder="t('请选择维护人员')"
+          />
+          <bk-user-selector
+            v-else
+            v-model="basicInfoDetailData.maintainers"
+            :api-base-url="user.apiBaseUrl"
+            :multiple="true"
+            :placeholder="t('请选择维护人员')"
+            :tenant-id="user.user.tenant_id"
+          />
         </bk-form-item>
         <bk-form-item
           :label="t('描述')"
@@ -306,21 +333,41 @@
 </template>
 
 <script setup lang="ts">
-import {  ref, computed, watch } from 'vue';
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue';
 import _ from 'lodash';
-import { Message, InfoBox } from 'bkui-vue';
+import {
+  InfoBox,
+  Message,
+} from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute, useRouter } from 'vue-router';
+import {
+  useRoute,
+  useRouter,
+} from 'vue-router';
 import { useUser } from '@/store';
-import {  copy } from '@/common/util';
+import { copy } from '@/common/util';
 import { useGetGlobalProperties } from '@/hooks';
 // import { useStage } from '@/store';
-import { BasicInfoParams, DialogParams } from './common/type';
-import { getGateWaysInfo, toggleGateWaysStatus, deleteGateWays, editGateWays } from '@/http';
+import {
+  BasicInfoParams,
+  DialogParams,
+} from './common/type';
+import {
+  deleteGateWays,
+  editGateWays,
+  getGateWaysInfo,
+  toggleGateWaysStatus,
+} from '@/http';
 import GateWaysEditTextarea from '@/components/gateways-edit/textarea.vue';
 import GateWaysEditMemberSelector from '@/components/gateways-edit/member-selector.vue';
+import GateWaysEditTenantUserSelector from '@/components/gateways-edit/tenant-user-selector.vue';
 import MemberSelect from '@/components/member-select';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
+import BkUserSelector from '@blueking/bk-user-selector';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -373,7 +420,7 @@ const basicInfoData = ref<BasicInfoParams>({
   description_en: '',
   public_key_fingerprint: '',
   bk_app_codes: '',
-  related_app_codes: '',
+  related_app_codes: [],
   docs_url: '',
   api_domain: '',
   created_by: '',

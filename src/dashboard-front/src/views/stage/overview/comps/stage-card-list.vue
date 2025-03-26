@@ -89,8 +89,11 @@
         </div>
         <div class="apigw-form-item">
           <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('发布人')}：` }}</div>
-          <div class="value">
+          <div v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE" class="value">
             {{ stageData.release.created_by || '--' }}
+          </div>
+          <div v-else class="value">
+            <bk-user-display-name :user-id="stageData.release.created_by" />
           </div>
         </div>
         <div class="apigw-form-item">
@@ -122,18 +125,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRefs, computed, onUnmounted, onMounted } from 'vue';
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  toRefs,
+} from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { Message, InfoBox } from 'bkui-vue';
+import {
+  InfoBox,
+  Message,
+} from 'bkui-vue';
 import { Spinner } from 'bkui-vue/lib/icon';
 
-import { copy, getStatus, getStatusText } from '@/common/util';
+import {
+  copy,
+  getStatus,
+  getStatusText,
+} from '@/common/util';
 import logDetails from '@/components/log-details/index.vue';
 import mitt from '@/common/event-bus';
 import { useGetGlobalProperties } from '@/hooks';
-import { useCommon } from '@/store';
-import { removalStage, getGateWaysInfo } from '@/http';
+import {
+  useCommon,
+  useUser,
+} from '@/store';
+import {
+  getGateWaysInfo,
+  removalStage,
+} from '@/http';
 import { BasicInfoParams } from '@/views/basic-info/common/type';
 import editStageSideslider from './edit-stage-sideslider.vue';
 import releaseSideslider from './release-sideslider.vue';
@@ -141,6 +163,7 @@ import releaseSideslider from './release-sideslider.vue';
 const common = useCommon();
 const { t, locale } = useI18n();
 const route = useRoute();
+const user = useUser();
 
 // 网关id
 const apigwId = computed(() => +route.params.id);
@@ -251,6 +274,7 @@ const basicInfoData = ref<BasicInfoParams>({
   developers: [],
   is_public: true,
   is_official: false,
+  related_app_codes: [],
 });
 
 // 获取网关基本信息
