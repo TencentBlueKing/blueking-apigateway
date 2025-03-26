@@ -52,7 +52,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, useTemplateRef } from 'vue';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Copy } from 'bkui-vue/lib/icon';
 import { copy as copeFn } from '@/common/util';
@@ -64,7 +64,7 @@ const jsonString = ref<string>('');
 const result = ref<string>('');
 const errorMsg = ref<string>('');
 
-const jsonInputRef = useTemplateRef<HTMLInputElement>('jsonInputRef');
+const jsonInputRef = ref();
 
 const handleInputClick = () => {
   jsonInputRef.value?.focus();
