@@ -1203,6 +1203,7 @@ const lang: ILANG = {
   '若资源版本对应的SDK未生成，可联系网关负责人生成SDK': ['If the SDK corresponding to the resource version is not generated, you can contact the gateway maintainers to generate the SDK'],
   'SDK未生成，可联系负责人生成SDK': ['SDK not generated, contact maintainers to generate it'],
   '{lang} SDK未生成，可联系负责人生成SDK': ['{lang} SDK not generated, contact maintainers to generate it'],
+  '{lang} SDK未生成，可联系负责人生成SDK：{maintainers}': ['{lang} SDK not generated, contact maintainers to generate: {maintainers}'],
   '网关API资源版本对应的SDK': ['The SDK corresponding to the resource version'],
   '所有系统': ['All Systems'],
   'API 列表': ['APIs'],

@@ -13,6 +13,7 @@
           v-model="language"
           :sdk-languages="sdks.map(item => item.language)"
           :lang-list="languages"
+          :maintainers="maintainers"
         />
         <SdkDetail :sdk="curSdk" is-apigw />
       </div>
@@ -47,11 +48,13 @@ interface IProps {
   sdks: ISdk[];
   targetName: string;
   languages: LanguageType[];
+  maintainers: string[];
 }
 
 const props = withDefaults(defineProps<IProps>(), {
   sdks: () => [],
   targetName: '',
+  maintainers: () => [],
 });
 
 const { sdks, targetName, languages } = toRefs(props);

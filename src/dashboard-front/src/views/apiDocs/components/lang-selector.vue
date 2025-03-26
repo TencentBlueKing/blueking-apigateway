@@ -10,7 +10,7 @@
         width: `${width}px`,
         'margin-bottom': `${marginBottom}px`,
       }"
-      v-bk-tooltips="{ content: t(`{lang} SDK未生成，可联系负责人生成SDK`, { lang }), disabled: isSdkGenerated(lang) }"
+      v-bk-tooltips="{ content: getTooltipContent(lang), disabled: isSdkGenerated(lang) }"
       @click="handleSelect(lang)"
     >
       {{ useChangeCase(lang, 'capitalCase') }}
@@ -35,6 +35,7 @@ interface IProps {
   marginBottom: number;
   sdkLanguages: LanguageType[],
   langList: LanguageType[],
+  maintainers: string[];
 }
 
 const props = withDefaults(defineProps<IProps>(), {
@@ -51,6 +52,7 @@ const props = withDefaults(defineProps<IProps>(), {
     'java',
     'golang',
   ],
+  maintainers: () => [],
 });
 
 const {
@@ -63,6 +65,13 @@ const {
 const emit = defineEmits<{
   'select': [language: LanguageType]
 }>();
+
+const getTooltipContent = (lang: string) => {
+  if (props.maintainers.length) {
+    return t('{lang} SDK未生成，可联系负责人生成SDK：{maintainers}', { lang, maintainers: props.maintainers.join(',') });
+  }
+  return t('{lang} SDK未生成，可联系负责人生成SDK', { lang });
+};
 
 // 检查是否已生成该语言的sdk
 const isSdkGenerated = (lang: LanguageType) => {
