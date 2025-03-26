@@ -224,6 +224,7 @@
       v-model="isSdkDetailDialogShow" :sdks="curSdks"
       :languages="curTab === 'component' ? ['python'] : undefined"
       :target-name="curTargetName"
+      :maintainers="curTargetMaintainers"
     ></SdkDetailDialog>
   </div>
 </template>
@@ -254,12 +255,12 @@ import SdkDetailDialog from '@/views/apiDocs/components/sdk-detail-dialog.vue';
 import ComponentSearcher from '@/views/apiDocs/components/component-searcher.vue';
 import {
   IApiGatewayBasics,
-  ICategory,
-  ISdk,
   IBoard,
-  TabType,
-  ISystem,
+  ICategory,
   IComponentSdk,
+  ISdk,
+  ISystem,
+  TabType,
 } from '@/views/apiDocs/types';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useTemplateRefsList } from '@vueuse/core';
@@ -303,6 +304,7 @@ const isSdkInstructionSliderShow = ref(false);
 const isSdkDetailDialogShow = ref(false);
 const componentSystemList = ref<IBoard[]>([]); // 组件系统列表
 const curSdks = ref<ISdk[]>([]);
+const curTargetMaintainers = ref<string[]>([]);
 
 // 提供当前 tab 的值
 // 注入时请使用：const curTab = inject<Ref<TabType>>('curTab');
@@ -393,11 +395,13 @@ const handleSdkDetailClick = (row: IApiGatewayBasics) => {
   curTargetName.value = row.name;
   curSdks.value = row.sdks ?? [];
   isSdkDetailDialogShow.value = true;
+  curTargetMaintainers.value = row.maintainers || [];
 };
 
 const handleESBSdkDetailClick = (board: IBoard) => {
   curTargetName.value = board.sdk?.board_label ?? '';
   curSdks.value = board.sdk ? [board.sdk] : [];
+  curTargetMaintainers.value = [];
   isSdkDetailDialogShow.value = true;
 };
 
