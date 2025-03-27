@@ -176,6 +176,9 @@ const highlightJson = (value: string) => {
       height: 100%;
       background: #FAFBFD;
       padding: 12px 28px;
+      pre {
+        white-space: pre-wrap;
+      }
     }
 
     .decode-error-message {
