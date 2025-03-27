@@ -24,7 +24,12 @@
         </article>
         <article>
           <header class="content-title">{{ t('网关负责人') }}</header>
-          <main class="content-main">{{ basics.maintainers.join(', ') }}</main>
+          <main v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE" class="content-main">
+            {{ basics.maintainers.join(', ') }}
+          </main>
+          <main v-else class="content-main">
+            <bk-user-display-name :user-id="basics.maintainers" />
+          </main>
         </article>
         <article>
           <header class="content-title">{{ t('租户模式') }}</header>
@@ -108,6 +113,7 @@ import LangSelector from '@/views/apiDocs/components/lang-selector.vue';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 
 const { t } = useI18n();
+const user = useUser();
 
 // 注入当前的总 tab 变量
 const curTab = inject<Ref<TabType>>('curTab');

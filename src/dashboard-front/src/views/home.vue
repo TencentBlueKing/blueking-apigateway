@@ -72,7 +72,10 @@
               </div>
               <div class="flex-1 of1">{{ item.tenant_id || '--' }}</div>
             </template>
-            <div class="flex-1 of1">{{ item.created_by }}</div>
+            <div class="flex-1 of1">
+              <span v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE">{{ item.created_by || '--' }}</span>
+              <span v-else><bk-user-display-name :user-id="item.created_by" /></span>
+            </div>
             <div class="flex-1 env" :class="user.featureFlags?.ENABLE_MULTI_TENANT_MODE ? 'of2' : 'of3'">
               <div class="flex-row">
                 <span
@@ -190,11 +193,25 @@
           {{ t('网关的唯一标识，创建后不可更改') }}
         </span>
         <bk-form-item
+          v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE"
           :label="t('维护人员')"
           property="maintainers"
           required
         >
           <member-select v-model="formData.maintainers" />
+        </bk-form-item>
+        <bk-form-item
+          v-else
+          :label="t('维护人员')"
+          property="maintainers"
+          required
+        >
+          <bk-user-selector
+            v-model="formData.maintainers"
+            :api-base-url="user.apiBaseUrl"
+            :multiple="true"
+            :tenant-id="user.user.tenant_id"
+          />
         </bk-form-item>
         <bk-form-item
           :label="t('描述')"
@@ -259,19 +276,21 @@ import { useUser } from '@/store/user';
 import { Message } from 'bkui-vue';
 import { IDialog } from '@/types';
 import { useRouter } from 'vue-router';
-import { useGetApiList/* , useGetGlobalProperties */ } from '@/hooks';
+import { useGetApiList } from '@/hooks';
 import { is24HoursAgo } from '@/common/util';
 import { useCommon } from '@/store';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import MemberSelect from '@/components/member-select';
+import BkUserSelector from '@blueking/bk-user-selector';
 // @ts-ignore
 import TableEmpty from '@/components/table-empty.vue';
 import {
+  computed,
+  h,
   ref,
   watch,
-  h,
-  computed,
 } from 'vue';
+
 const { t } = useI18n();
 const user = useUser();
 const router = useRouter();

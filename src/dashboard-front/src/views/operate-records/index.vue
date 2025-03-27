@@ -71,7 +71,12 @@
             <span class="status-text">{{ getStatusText(row.op_status) }}</span>
           </template>
         </bk-table-column>
-        <bk-table-column :label="t('操作人')" prop="username" />
+        <bk-table-column :label="t('操作人')" prop="username">
+          <template #default="{ row }">
+            <span v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE">{{ row.username }}</span>
+            <span v-else><bk-user-display-name :user-id="row.username" /></span>
+          </template>
+        </bk-table-column>
         <bk-table-column :label="t('操作时间')" prop="op_time" />
         <bk-table-column :label="t('描述')" prop="comment" />
         <template #empty>
@@ -91,10 +96,20 @@
 import i18n from '@/language/i18n';
 import TableEmpty from '@/components/table-empty.vue';
 import RenderCustomColumn from '@/components/custom-table-header-filter';
-import { ref, shallowRef, reactive, watch, h } from 'vue';
+import {
+  h,
+  reactive,
+  ref,
+  shallowRef,
+  watch,
+} from 'vue';
 import { cloneDeep } from 'lodash';
 import { useQueryList } from '@/hooks';
-import { useAccessLog, useOperateRecords } from '@/store';
+import {
+  useAccessLog,
+  useOperateRecords,
+  useUser,
+} from '@/store';
 import {
   DefaultSearchParamsInterface,
   TableEmptyConfType,
@@ -105,6 +120,7 @@ import { Message } from 'bkui-vue';
 const { t } = i18n.global;
 const AccessLogStore = useAccessLog();
 const OperateRecords = useOperateRecords();
+const user = useUser();
 
 const defaultSearchData = ref<DefaultSearchParamsInterface>({
   keyword: '',

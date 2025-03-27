@@ -11,7 +11,7 @@
         <section class="stage-info">
           <div :class="['stage-name', stageData.release.status === 'unreleased' ? 'no-release' : '']">
             <template v-if="stageData.release.status === 'unreleased'">
-              <span class="no-release-label">未发布</span>
+              <span class="no-release-label">{{ t('未发布') }}</span>
               <span class="no-release-dot"></span>
               <!-- <span class="no-release-icon apigateway-icon icon-ag-edit-line" @click="handleEditStage">
               </span> -->
@@ -60,8 +60,11 @@
             <div class="column">
               <div class="apigw-form-item">
                 <div class="label">{{ `${t('发布人')}：` }}</div>
-                <div class="value">
+                <div v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE" class="value">
                   {{ stageData.release.created_by || '--' }}
+                </div>
+                <div v-else class="value">
+                  <bk-user-display-name :user-id="stageData.release.created_by" />
                 </div>
               </div>
               <div class="apigw-form-item">
@@ -179,18 +182,38 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, shallowRef, ref, watch } from 'vue';
+import {
+  computed,
+  onMounted,
+  ref,
+  shallowRef,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute, useRouter } from 'vue-router';
-import { Message, InfoBox } from 'bkui-vue';
+import {
+  useRoute,
+  useRouter,
+} from 'vue-router';
+import {
+  InfoBox,
+  Message,
+} from 'bkui-vue';
 
 import { copy } from '@/common/util';
-import { useStage, useCommon } from '@/store';
+import {
+  useCommon,
+  useStage,
+  useUser,
+} from '@/store';
 import releaseSideslider from '../comps/release-sideslider.vue';
 import editStageSideslider from '../comps/edit-stage-sideslider.vue';
 import stageTopBar from '@/components/stage-top-bar.vue';
 import { useGetGlobalProperties } from '@/hooks';
-import { deleteStage, removalStage, getGateWaysInfo } from '@/http';
+import {
+  deleteStage,
+  getGateWaysInfo,
+  removalStage,
+} from '@/http';
 import mitt from '@/common/event-bus';
 import { BasicInfoParams } from '@/views/basic-info/common/type';
 
@@ -198,12 +221,14 @@ import resourceInfo from './resource-info.vue';
 import pluginManage from './plugin-manage.vue';
 import variableManage from './variable-manage.vue';
 
+type TabComponents = typeof resourceInfo | typeof pluginManage | typeof variableManage;
+
 const { t } = useI18n();
 const stageStore = useStage();
 const route = useRoute();
 const router = useRouter();
 const common = useCommon();
-type TabComponents = typeof resourceInfo | typeof pluginManage | typeof variableManage;
+const user = useUser();
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();
@@ -393,11 +418,11 @@ const basicInfoData = ref<BasicInfoParams>({
   created_by: '',
   created_time: '',
   public_key: '',
-  publish_validate_msg: '',
   maintainers: [],
   developers: [],
   is_public: true,
   is_official: false,
+  related_app_codes: [],
 });
 
 // 获取网关基本信息

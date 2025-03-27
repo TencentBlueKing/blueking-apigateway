@@ -1,5 +1,10 @@
 import { defineStore } from 'pinia';
-import type { IUser, IFeatureFlags } from '@/types/store';
+import type {
+  IFeatureFlags,
+  IUser,
+} from '@/types/store';
+
+const { BK_API_URL_TMPL } = window;
 
 export const useUser = defineStore('user', {
   state: (): {
@@ -14,6 +19,9 @@ export const useUser = defineStore('user', {
     },
     featureFlags: {},
   }),
+  getters: {
+    apiBaseUrl: () => `${BK_API_URL_TMPL}/bk-user-web/prod`,
+  },
   actions: {
     setUser(user: IUser) {
       this.user = user;

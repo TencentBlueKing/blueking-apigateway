@@ -55,6 +55,10 @@
             <bk-table-column min-width="120" prop="language" :label="t('语言')">
             </bk-table-column>
             <bk-table-column :label="t('创建人')" prop="created_by" min-width="120">
+              <template #default="{ row }">
+                <span v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE">{{ row.created_by }}</span>
+                <span v-else><bk-user-display-name :user-id="row.created_by" /></span>
+              </template>
             </bk-table-column>
             <bk-table-column :label="t('生成时间')" prop="created_time" min-width="120">
             </bk-table-column>
@@ -97,13 +101,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import {
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { useQueryList, useSelection } from '@/hooks';
+import {
+  useQueryList,
+  useSelection,
+} from '@/hooks';
 import { getSdksList } from '@/http';
 import { copy } from '@/common/util';
-import { useResourceVersion } from '@/store';
+import {
+  useResourceVersion,
+  useUser,
+} from '@/store';
 import createSdk from '../components/createSdk.vue';
 import TableEmpty from '@/components/table-empty.vue';
 
@@ -111,6 +124,7 @@ const emits = defineEmits<(event: 'on-show-version', version: string) => void>()
 
 const { t } = useI18n();
 const resourceVersionStore = useResourceVersion();
+const user = useUser();
 
 const keyword = ref<string>('');
 const createSdkRef = ref(null);
