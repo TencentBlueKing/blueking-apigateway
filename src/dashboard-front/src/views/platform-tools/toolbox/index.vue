@@ -37,6 +37,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import QueryLog from './components/query-log.vue';
 import JwtDecoder from './components/jwt-decoder.vue';
 
 interface ITool {
@@ -49,6 +50,7 @@ interface ITool {
 const { t } = useI18n();
 
 const toolCompMap: Record<string, any> = {
+  queryLog: QueryLog,
   jwtDecoder: JwtDecoder,
 };
 
@@ -57,7 +59,7 @@ const toolList = ref([
     id: 1,
     name: t('查询日志'),
     desc: t('根据 request_id 查询日志详情'),
-    comp: '',
+    comp: 'queryLog',
   },
   {
     id: 2,
@@ -72,7 +74,7 @@ const toolList = ref([
     comp: '',
   },
 ]);
-const curTool = ref<ITool>(toolList.value[1]);
+const curTool = ref<ITool>(toolList.value[0]);
 
 const handleToolNavClick = (tool: ITool) => {
   curTool.value = tool;

@@ -313,6 +313,7 @@ const table = ref({
       {
         label: t('请求路径'),
         field: 'http_path',
+        disabled: true,
       },
       {
         label: t('状态码'),
@@ -327,6 +328,7 @@ const table = ref({
         field: 'error',
       },
     ],
+    checked: ['timestamp', 'method', 'http_path', 'status', 'backend_duration', 'error'],
   },
 });
 const includeObj = ref<string[]>([]);

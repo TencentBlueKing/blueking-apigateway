@@ -32,6 +32,7 @@
             width="288"
             :content="t('您已将自己从维护人员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！')"
             trigger="click"
+            ext-cls="confirm-custom-btn"
             @confirm="handleSubmit"
             @cancel="handleCancel"
             v-if="!displayValue?.includes(user.user.username)"
@@ -320,3 +321,15 @@ onBeforeMount(() => {
 }
 </style>
 
+<style lang="scss">
+.confirm-custom-btn {
+  .bk-button.bk-button-primary {
+    background-color: #E71818;
+    border-color: #E71818;
+    &:hover {
+      background-color: #ff5656;
+      border-color: #ff5656;
+    }
+  }
+}
+</style>
