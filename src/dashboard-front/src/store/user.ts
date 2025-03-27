@@ -4,7 +4,10 @@ import type {
   IUser,
 } from '@/types/store';
 
-const { BK_API_URL_TMPL } = window;
+const {
+  // BK_API_URL_TMPL,
+  BK_USER_WEB_API_URL,
+} = window;
 
 export const useUser = defineStore('user', {
   state: (): {
@@ -20,7 +23,8 @@ export const useUser = defineStore('user', {
     featureFlags: {},
   }),
   getters: {
-    apiBaseUrl: () => `${BK_API_URL_TMPL}/bk-user-web/prod`,
+    // apiBaseUrl: () => `${BK_API_URL_TMPL}/bk-user-web/prod`,
+    apiBaseUrl: () => BK_USER_WEB_API_URL,
   },
   actions: {
     setUser(user: IUser) {
