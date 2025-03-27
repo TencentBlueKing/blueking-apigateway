@@ -429,7 +429,7 @@ onMounted(() => {
 // });
 </script>
 
-<style>
+<style lang="scss">
 @import './css/app.css';
 
 // 多租户人员选择器样式
