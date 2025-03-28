@@ -1060,10 +1060,10 @@
   resolved "https://registry.yarnpkg.com/@blueking/bk-user-display-name/-/bk-user-display-name-1.0.1.tgz#41a2efa1d199c70d5a60e3bfaf45ea926efabb22"
   integrity sha512-AWqV9eTerGEGBfjz9bl/TufM3oUed+sDE8VABKXa32ne2HhTmp5KD4F3G2xHxgyUcSGpUP0C5GFTJWdqpR5pUQ==
 
-"@blueking/bk-user-selector@^0.0.12":
-  version "0.0.12"
-  resolved "https://registry.yarnpkg.com/@blueking/bk-user-selector/-/bk-user-selector-0.0.12.tgz#f5a06e2aa5f2c44677e3561c50066df82273961b"
-  integrity sha512-Ft4gANoZfmUOYklG0NPeTfzU6mPhsC7aSpIg8wQujJJNs4zpusdj05CCIUdYMBM10fDmKm9zG9WWaQ19rFeDug==
+"@blueking/bk-user-selector@^0.0.16":
+  version "0.0.16"
+  resolved "https://registry.yarnpkg.com/@blueking/bk-user-selector/-/bk-user-selector-0.0.16.tgz#fa9d759acd9320179aee860e331be28f111a1745"
+  integrity sha512-pvz7CSbkDfC/iU+26dwbM9FrxrouoHQ3+c2+jJ7pP6Srnpf/FGUcL85fhhI0DMpJK0LyIWWKHIyQfxHuT94Jjg==
   dependencies:
     lodash "^4.17.21"
     sortablejs "^1.15.6"
