@@ -23,7 +23,7 @@
   "license": "ISC",
   "dependencies": {
     "@blueking/bk-user-display-name": "^1.0.1",
-    "@blueking/bk-user-selector": "^0.0.12",
+    "@blueking/bk-user-selector": "^0.0.16",
     "@blueking/bkui-form": "1.0.0-beta.5",
     "@blueking/date-picker": "^2.0.0-beta.27",
     "@blueking/login-modal": "^1.0.3",

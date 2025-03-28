@@ -433,7 +433,7 @@ onMounted(() => {
 @import './css/app.css';
 
 // 多租户人员选择器样式
-.multiple-selector .tags-container {
+.multiple-selector .tags-container:not(.focused) {
   border-color: #c4c6cc !important;
 }
 </style>
