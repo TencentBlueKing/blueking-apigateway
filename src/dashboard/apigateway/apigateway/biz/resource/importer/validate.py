@@ -240,46 +240,43 @@ class ResourceImportValidator:
         if not label_names:
             return
 
+        conflict_names = set()
         label_name_map = defaultdict(list)
         for name in label_names:
-            label_name_map[shortcuts.to_lower_dash_case(name)].append(name)
+            lower_name = shortcuts.to_lower_dash_case(name)
+            label_name_map[lower_name].append(name)
+
+            if len(label_name_map[lower_name]) > 1:
+                conflict_names.update([lower_name])
+
+        # 检查是否与当前配置数据的标签存在大小写冲突
+        for name in conflict_names:
+            validate_err = SchemaValidateErr(
+                _("当前配置数据的标签存在大小写冲突：【{import_label_names}】，请使用统一的命名格式。").format(
+                    import_label_names="，".join(label_name_map.get(name))
+                ),
+                "$.paths.*.tags",
+                absolute_path=[],
+            )
+            self.schema_validate_result.append(validate_err)
 
         exist_label_name_map = {}
         for name in APILabel.objects.filter(gateway=self.gateway).values_list("name", flat=True):
             exist_label_name_map[shortcuts.to_lower_dash_case(name)] = name
 
+        if not exist_label_name_map:
+            return
+
         for name in label_names:
             lower_name = shortcuts.to_lower_dash_case(name)
-
-            import_label_names = label_name_map.get(lower_name, [])
-            # 检查是否与当前配置数据的标签存在大小写冲突
-            if len(import_label_names) > 1:
-                validate_err = SchemaValidateErr(
-                    _("当前配置数据的标签存在大小写冲突：【{import_label_names}】，请使用统一的命名格式。").format(
-                        import_label_names="，".join(import_label_names)
-                    ),
-                    "$.paths.*.tags",
-                    absolute_path=[],
-                )
-                self.schema_validate_result.append(validate_err)
-
-                # 避免同一个大小写问题的标签重复报错
-                label_name_map[lower_name] = []
-
-            if not exist_label_name_map:
-                continue
 
             # 检查是否与数据库中的标签存在大小写冲突
             exist_label_name = exist_label_name_map.get(lower_name)
             if exist_label_name and name != exist_label_name:
-                differences = [
-                    f"{exist_label_name[i]} => {name[i]}" for i in range(len(name)) if name[i] != exist_label_name[i]
-                ]
-
                 validate_err = SchemaValidateErr(
                     _(
-                        "标签 {name} 与已存在的标签 {exist_label_name} 存在大小写冲突：【{differences}】，请与已存在的标签保持统一命名格式。"
-                    ).format(name=name, exist_label_name=exist_label_name, differences="，".join(differences)),
+                        "标签 {name} 与已存在的标签 {exist_label_name} 存在大小写冲突，请与已存在的标签保持统一命名格式。"
+                    ).format(name=name, exist_label_name=exist_label_name),
                     "$.paths.*.tags",
                     absolute_path=[],
                 )
