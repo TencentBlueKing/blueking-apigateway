@@ -149,6 +149,7 @@
                 :show-overflow-tooltip="true"
                 :settings="table.settings"
                 @row-click="handleRowClick"
+                @setting-change="handleSettingChange"
                 @page-value-change="handlePageChange"
                 @page-limit-change="handlePageLimitChange"
               >
@@ -157,7 +158,9 @@
                     <div
                       class="item"
                       v-for="({ label, field/*, is_filter: showCopy*/ }, index) in table.fields"
-                      :key="index">
+                      :key="index"
+                      v-show="settingChecked.includes(field)"
+                    >
                       <dt class="label">
                         {{ label }}
                         <span class="fields">
@@ -279,6 +282,7 @@ const dateKey = ref('dateKey');
 const dateTimeRange = ref([]);
 const resourceList = ref<any>([]);
 const apigwId = ref(commonStore.apigwId);
+const settingChecked = ref<string[]>([]);
 const pagination = ref({
   current: 1,
   count: 0,
@@ -309,6 +313,7 @@ const table = ref({
       {
         label: t('请求方法'),
         field: 'method',
+        disabled: true,
       },
       {
         label: t('请求路径'),
@@ -328,6 +333,7 @@ const table = ref({
         field: 'error',
       },
     ],
+    extCls: 'hide-table-setting-line-height',
     checked: ['timestamp', 'method', 'http_path', 'status', 'backend_duration', 'error'],
   },
 });
@@ -621,6 +627,17 @@ const getSearchData = async () => {
     table.value.list.forEach((item) => {
       item.isExpand = false;
     });
+    table.value.settings.fields = [
+      ...table.value.settings.fields,
+      ...listRes?.fields?.filter((item: any) => {
+        const { field } = item;
+        if (!['timestamp', 'method', 'http_path', 'status', 'backend_duration', 'error'].includes(field)) {
+          return true;
+        }
+        return false;
+      }),
+    ];
+    settingChecked.value = table.value.settings.fields.map(item => item.field);
     pagination.value.count = listRes?.count || 0;
     setTableHeader();
     updateTableEmptyConfig();
@@ -812,6 +829,10 @@ const handleRowClick = (e: Event, row: Record<string, any>) => {
   nextTick(() => {
     tableRef.value.setRowExpand(row,  row.isExpand);
   });
+};
+
+const handleSettingChange = ({ checked }: {checked: string[]}) => {
+  settingChecked.value = checked;
 };
 
 const handleClearFilterKey = () => {
@@ -1229,6 +1250,9 @@ onBeforeUnmount(() => {
 </style>
 
 <style>
+.hide-table-setting-line-height .setting-body-line-height {
+  display: none !important;
+}
 .access-log-popover {
   top: 10px !important;
 }
