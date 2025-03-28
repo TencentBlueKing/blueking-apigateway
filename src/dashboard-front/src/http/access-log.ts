@@ -28,6 +28,11 @@ export const fetchApigwAccessLogShareLink = (apigwId: number, params: { request_
  */
 export const fetchApigwAccessLogDetail = (apigwId: number, requestId: string, params: LogDetailInterface) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/logs/${requestId}/?${json2Query(params)}`);
 
+/**
+ *  根据 request_id 查询日志
+ */
+export const getLogsInfo = (requestId: string) => fetch.get(`${BK_DASHBOARD_URL}/gateways/logs/query/${requestId}/`);
+
 
 /**
  *  获取stage数据

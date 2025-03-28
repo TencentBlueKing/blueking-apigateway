@@ -207,7 +207,7 @@
     <bk-dialog
       width="600"
       theme="primary"
-      :is-show="dialogEditData.isShow"
+      v-model:is-show="dialogEditData.isShow"
       :title="dialogEditData.title"
       quick-close>
       <bk-form ref="formRef" form-type="vertical" :model="basicInfoDetailData" :rules="rules">
@@ -288,6 +288,7 @@
           width="288"
           :content="t('您已将自己从维护人员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！')"
           trigger="click"
+          ext-cls="confirm-custom-btn"
           @confirm="handleConfirmEdit"
           @cancel="handleCloseEdit"
           v-if="!basicInfoDetailData.maintainers?.includes(user.user.username)"
@@ -428,7 +429,7 @@ const handleDeleteApigw = async () => {
       router.push({
         name: 'home',
       });
-    }, 300);
+    }, 200);
   } catch (e) {
     console.error(e);
   }
@@ -517,7 +518,7 @@ const handleOperate = async (type: string) => {
     console.log('basicInfoDetailData.value', basicInfoDetailData.value);
     setTimeout(() => {
       dialogEditData.value.isShow = true;
-    }, 500);
+    }, 200);
     return;
   }
 
