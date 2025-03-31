@@ -149,7 +149,6 @@
                 :show-overflow-tooltip="true"
                 :settings="table.settings"
                 @row-click="handleRowClick"
-                @setting-change="handleSettingChange"
                 @page-value-change="handlePageChange"
                 @page-limit-change="handlePageLimitChange"
               >
@@ -159,7 +158,6 @@
                       class="item"
                       v-for="({ label, field/*, is_filter: showCopy*/ }, index) in table.fields"
                       :key="index"
-                      v-show="settingChecked.includes(field)"
                     >
                       <dt class="label">
                         {{ label }}
@@ -282,7 +280,6 @@ const dateKey = ref('dateKey');
 const dateTimeRange = ref([]);
 const resourceList = ref<any>([]);
 const apigwId = ref(commonStore.apigwId);
-const settingChecked = ref<string[]>([]);
 const pagination = ref({
   current: 1,
   count: 0,
@@ -306,32 +303,30 @@ const table = ref({
   headers: [],
   settings: {
     fields: [
-      {
-        label: t('请求时间'),
-        field: 'timestamp',
-      },
-      {
-        label: t('请求方法'),
-        field: 'method',
-        disabled: true,
-      },
-      {
-        label: t('请求路径'),
-        field: 'http_path',
-        disabled: true,
-      },
-      {
-        label: t('状态码'),
-        field: 'status',
-      },
-      {
-        label: t('耗时(毫秒)'),
-        field: 'backend_duration',
-      },
-      {
-        label: t('错误'),
-        field: 'error',
-      },
+      { label: t('请求ID'), field: 'request_id' },
+      { label: t('请求时间'), field: 'timestamp' },
+      { label: t('蓝鲸应用'), field: 'app_code' },
+      { label: t('蓝鲸用户'), field: 'bk_username' },
+      { label: t('客户端IP'), field: 'client_ip' },
+      { label: t('环境'), field: 'stage' },
+      { label: t('资源ID'), field: 'resource_id' },
+      { label: t('资源名称'), field: 'resource_name' },
+      { label: t('请求方法'), field: 'method', disabled: true },
+      { label: t('请求域名'), field: 'http_host' },
+      { label: t('请求路径'), field: 'http_path', disabled: true },
+      { label: t('QueryString'), field: 'params' },
+      { label: t('Body'), field: 'body' },
+      { label: t('后端请求方法'), field: 'backend_method' },
+      { label: t('后端Scheme'), field: 'backend_scheme' },
+      { label: t('后端域名'), field: 'backend_host' },
+      { label: t('后端路径'), field: 'backend_path' },
+      { label: t('响应体大小'), field: 'response_size' },
+      { label: t('状态码'), field: 'status' },
+      { label: t('请求总耗时'), field: 'request_duration' },
+      { label: t('耗时(毫秒)'), field: 'backend_duration' },
+      { label: t('错误编码名称'), field: 'code_name' },
+      { label: t('错误'), field: 'error' },
+      { label: t('响应说明'), field: 'response_desc' },
     ],
     extCls: 'hide-table-setting-line-height',
     checked: ['timestamp', 'method', 'http_path', 'status', 'backend_duration', 'error'],
@@ -525,27 +520,45 @@ const setTableHeader = () => {
       minWidth: 30,
       showOverflowTooltip: false,
     },
+    { field: 'request_id', width: 180, label: t('请求ID') },
     {
       field: 'timestamp',
-      width: 220,
+      width: 180,
       label: t('请求时间'),
       render: ({ data }: Record<string, any>) => {
         return formatValue(data.timestamp, 'timestamp');
       },
     },
-    { field: 'method', width: 160, label: t('请求方法') },
-    { field: 'http_path', label: t('请求路径'), minWidth: 260 },
-    { field: 'status', width: 160, label: t('状态码') },
-    { field: 'backend_duration', width: 160, label: t('耗时(毫秒)') },
+    { field: 'app_code', width: 100, label: t('蓝鲸应用 ') },
+    { field: 'bk_username', width: 100, label: t('蓝鲸用户') },
+    { field: 'client_ip', width: 100, label: t('客户端IP') },
+    { field: 'stage', width: 80, label: t('环境') },
+    { field: 'resource_id', width: 80, label: t('资源ID') },
+    { field: 'resource_name', width: 160, label: t('资源名称') },
+    { field: 'method', width: 100, label: t('请求方法') },
+    { field: 'http_host', width: 160, label: t('请求域名') },
+    { field: 'http_path', label: t('请求路径'), width: 260 },
+    { field: 'params', width: 120, label: t('QueryString') },
+    { field: 'body', width: 120, label: t('Body') },
+    { field: 'backend_method', width: 120, label: t('后端请求方法') },
+    { field: 'backend_scheme', width: 120, label: t('后端Scheme') },
+    { field: 'backend_host', width: 160, label: t('后端域名') },
+    { field: 'backend_path', width: 160, label: t('后端路径')  },
+    { field: 'response_size', width: 100, label: t('响应体大小') },
+    { field: 'status', width: 100, label: t('状态码') },
+    { field: 'request_duration', width: 120, label: t('请求总耗时') },
+    { field: 'backend_duration', width: 120, label: t('耗时(毫秒)') },
+    { field: 'code_name', width: 120, label: t('错误编码名称') },
     {
       field: 'error',
-      width: 200,
+      width: 120,
       label: t('错误'),
       showOverflowTooltip: true,
       render: ({ data }: Record<string, any>) => {
         return data.error || '--';
       },
     },
+    { field: 'response_desc', width: 120, label: t('响应说明') },
   ];
   table.value.headers = columns;
 };
@@ -627,17 +640,6 @@ const getSearchData = async () => {
     table.value.list.forEach((item) => {
       item.isExpand = false;
     });
-    table.value.settings.fields = [
-      ...table.value.settings.fields,
-      ...listRes?.fields?.filter((item: any) => {
-        const { field } = item;
-        if (!['timestamp', 'method', 'http_path', 'status', 'backend_duration', 'error'].includes(field)) {
-          return true;
-        }
-        return false;
-      }),
-    ];
-    settingChecked.value = table.value.settings.fields.map(item => item.field);
     pagination.value.count = listRes?.count || 0;
     setTableHeader();
     updateTableEmptyConfig();
@@ -829,10 +831,6 @@ const handleRowClick = (e: Event, row: Record<string, any>) => {
   nextTick(() => {
     tableRef.value.setRowExpand(row,  row.isExpand);
   });
-};
-
-const handleSettingChange = ({ checked }: {checked: string[]}) => {
-  settingChecked.value = checked;
 };
 
 const handleClearFilterKey = () => {
