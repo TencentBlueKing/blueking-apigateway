@@ -18,6 +18,7 @@
 
 from django.contrib import admin
 
+from apigateway.core.constants import ContextScopeTypeEnum
 from apigateway.core.models import (
     JWT,
     Backend,
@@ -118,6 +119,22 @@ class ContextAdmin(admin.ModelAdmin):
     list_display = ["id", "scope_type", "scope_id", "type"]
     list_filter = ["scope_type", "type"]
     search_fields = ["scope_id"]
+
+    def get_search_results(self, request, queryset, search_term):
+        # 查询 gateway name
+        gateway_obj = Gateway.objects.filter(name=search_term).first()
+        if gateway_obj:
+            queryset = queryset.filter(scope_type=ContextScopeTypeEnum.GATEWAY.value, scope_id=gateway_obj.id)
+            return queryset, False
+
+        # 查询 resource name
+        resource_ids = list(Resource.objects.filter(name=search_term).values_list("id", flat=True))
+        if resource_ids:
+            queryset = queryset.filter(scope_type=ContextScopeTypeEnum.RESOURCE.value, scope_id__in=resource_ids)
+            return queryset, False
+
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+        return queryset, use_distinct
 
 
 class JWTAdmin(admin.ModelAdmin):
