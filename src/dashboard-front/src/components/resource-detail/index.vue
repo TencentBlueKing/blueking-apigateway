@@ -168,7 +168,7 @@
         </bk-col>
       </bk-row>
 
-      <!-- <bk-row :class="{ 'ag-diff': checkDiff('localData.match_subpath') }">
+      <bk-row :class="{ 'ag-diff': checkDiff('localData.match_subpath') }">
         <bk-col :span="4">
           <label class="ag-key">{{ $t("匹配所有子路径") }}:</label>
         </bk-col>
@@ -177,7 +177,7 @@
             {{ localData.match_subpath ? $t("是") : $t("否") }}
           </div>
         </bk-col>
-      </bk-row> -->
+      </bk-row>
 
       <bk-row :class="{ 'ag-diff': checkDiff('localData.enable_websocket') }">
         <bk-col :span="4">
@@ -677,7 +677,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue';
 import cookie from 'cookie';
 // import dayjs from 'dayjs';
 import { useI18n } from 'vue-i18n';
