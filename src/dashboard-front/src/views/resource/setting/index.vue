@@ -571,6 +571,7 @@ import {
 } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
+  onBeforeRouteLeave,
   useRoute,
   useRouter,
 } from 'vue-router';
@@ -615,6 +616,7 @@ import {
 import { is24HoursAgo } from '@/common/util';
 import {
   useCommon,
+  useResourceSetting,
   useResourceVersion,
 } from '@/store';
 import ResourceDocSideSlider from '@/views/components/resource-doc-slider/index.vue';
@@ -651,6 +653,7 @@ const leftWidth = ref('320px');
 const methodsEnum: any = ref(MethodsEnum);
 const common = useCommon();
 const resourceVersionStore = useResourceVersion();
+const resourceSettingStore = useResourceSetting();
 const { t } = useI18n();
 // 批量下拉的item
 // const batchDropData = ref([{ value: 'edit', label: t('编辑资源') }, { value: 'delete', label: t('删除资源') }]);
@@ -1560,6 +1563,12 @@ watch(() => route, () => {
     const { backend_id } =  route?.query;
     filterData.value.backend_id = backend_id;
   }
+  if (resourceSettingStore.previousPagination) {
+    nextTick(() => {
+      pagination.value.current = resourceSettingStore.previousPagination.current;
+      pagination.value.offset = resourceSettingStore.previousPagination.offset;
+    });
+  }
 }, { immediate: true, deep: true });
 
 watch(
@@ -1630,6 +1639,18 @@ const recoverPageStatus = () => {
     el.style.width = leftWidth.value;
   }
 };
+
+onBeforeRouteLeave((to) => {
+  if (to.name === 'apigwResourceEdit') {
+    const { current, offset } = pagination.value;
+    resourceSettingStore.setPagination({
+      current,
+      offset,
+    });
+  } else {
+    resourceSettingStore.setPagination(null);
+  }
+});
 
 onMounted(() => {
   init();
