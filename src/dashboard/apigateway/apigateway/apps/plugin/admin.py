@@ -16,29 +16,34 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.contrib import admin
+from djangoql.admin import DjangoQLSearchMixin
 
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 
 
-class PluginTypeAdmin(admin.ModelAdmin):
+class PluginTypeAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["id", "code", "name", "is_public", "scope"]
     search_fields = ["code", "name"]
     list_filter = ["code", "is_public", "scope"]
 
 
-class PluginFormAdmin(admin.ModelAdmin):
+class PluginFormAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["id", "type", "style", "language"]
     search_fields = ["notes"]
     list_filter = ["type", "language", "style"]
 
 
-class PluginConfigAdmin(admin.ModelAdmin):
+class PluginConfigAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "name", "type"]
     search_fields = ["type", "gateway__id", "gateway__name"]
     list_filter = ["type", "gateway"]
 
 
-class PluginBindingAdmin(admin.ModelAdmin):
+class PluginBindingAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["id", "scope_type", "scope_id", "config", "gateway", "source"]
     search_fields = ["scope_id", "gateway__id", "gateway__name"]
     list_filter = ["scope_type", "gateway", "source"]

@@ -16,12 +16,14 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.contrib import admin
+from djangoql.admin import DjangoQLSearchMixin
 
 # Register your models here.
 from apigateway.schema.models import Schema
 
 
-class SchemaAdmin(admin.ModelAdmin):
+class SchemaAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["id", "name", "type", "version"]
     list_filter = ["type"]
 

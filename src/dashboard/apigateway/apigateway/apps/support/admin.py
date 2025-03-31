@@ -16,30 +16,35 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.contrib import admin
+from djangoql.admin import DjangoQLSearchMixin
 
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 
 
-class ResourceDocAdmin(admin.ModelAdmin):
+class ResourceDocAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "resource_id", "language", "source", "updated_by", "updated_time"]
     search_fields = ["id", "resource_id"]
     list_filter = ["gateway", "language", "source"]
 
 
-class ResourceDocVersionAdmin(admin.ModelAdmin):
+class ResourceDocVersionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "resource_version"]
     list_filter = ["gateway"]
     exclude = ["_data"]
     raw_id_fields = ["resource_version"]
 
 
-class ReleasedResourceDocAdmin(admin.ModelAdmin):
+class ReleasedResourceDocAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "resource_version_id", "resource_id", "language"]
     list_filter = ["gateway", "language"]
     search_fields = ["resource_id"]
 
 
-class APISDKAdmin(admin.ModelAdmin):
+class APISDKAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = [
         "id",
         "gateway",

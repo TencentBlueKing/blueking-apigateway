@@ -16,18 +16,21 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.contrib import admin
+from djangoql.admin import DjangoQLSearchMixin
 
 # Register your models here.
 from apigateway.apps.label.models import APILabel, ResourceLabel
 
 
-class APILabelAdmin(admin.ModelAdmin):
+class APILabelAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["id", "name", "gateway"]
     list_filter = ["gateway"]
     search_fields = ["gateway__id", "gateway__name", "name"]
 
 
-class ResourceLabelAdmin(admin.ModelAdmin):
+class ResourceLabelAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["id", "resource", "api_label"]
     search_fields = ["resource__id"]
 

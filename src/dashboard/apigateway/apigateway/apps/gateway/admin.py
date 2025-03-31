@@ -16,14 +16,30 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.contrib import admin
+from django_celery_beat.admin import PeriodicTaskAdmin as BasePeriodicTaskAdmin
+from django_celery_beat.models import PeriodicTask
+from djangoql.admin import DjangoQLSearchMixin
 
 from .models import GatewayAppBinding
 
 
-class GatewayAppBindingAdmin(admin.ModelAdmin):
+class GatewayAppBindingAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "bk_app_code", "updated_time"]
     search_fields = ["gateway__id", "bk_app_code"]
     list_filter = ["gateway"]
 
 
+class PeriodicTaskAdmin(DjangoQLSearchMixin, BasePeriodicTaskAdmin):
+    """
+    继承原有 PeriodicTaskAdmin 并添加 DjangoQL 功能
+    保持所有原有配置不变，只增加搜索功能
+    """
+
+    djangoql_completion_enabled_by_default = False
+    search_fields = ["name"]
+
+
 admin.site.register(GatewayAppBinding, GatewayAppBindingAdmin)
+admin.site.unregister(PeriodicTask)
+admin.site.register(PeriodicTask, PeriodicTaskAdmin)
