@@ -60,14 +60,26 @@
 </template>
 <script setup lang="ts">
 import mitt from '@/common/event-bus';
-import { ref, computed, onMounted, nextTick } from 'vue';
+import {
+  computed,
+  nextTick,
+  onMounted,
+  ref,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import BaseInfo from './comps/base-info.vue';
 import FrontConfig from './comps/front-config.vue';
 import BackConfig from './comps/back-config.vue';
-import { useRouter, useRoute } from 'vue-router';
+import {
+  useRoute,
+  useRouter,
+} from 'vue-router';
 import { useCommon } from '@/store';
-import { createResources, getResourceDetailData, updateResources } from '@/http';
+import {
+  createResources,
+  getResourceDetailData,
+  updateResources,
+} from '@/http';
 import { Message } from 'bkui-vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useSidebar } from '@/hooks';

@@ -6,3 +6,4 @@ export * from './permission';
 export * from './accessLog';
 export * from './operate-records';
 export * from './staff';
+export * from './resourceSetting';
