@@ -17,7 +17,7 @@
 #  to the current version of the project delivered to anyone in the future.
 #  #
 from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 
 from blue_krill.cubing_case import shortcuts
 from django.conf import settings
@@ -60,6 +60,7 @@ class ResourceImportValidator:
         self._validate_match_subpath()
         self._validate_resource_count()
         self._validate_label_count()
+        self._validate_label_name()
         self._validate_plugin_type()
         self._validate_plugin_config()
         self._validate_backend()
@@ -86,6 +87,13 @@ class ResourceImportValidator:
             .exclude(id__in=specified_resource_ids)
             .values("id", "name", "method", "path")
         )
+
+    def _get_label_names(self) -> Set[str]:
+        label_names = set()
+        for resource_data in self.resource_data_list:
+            label_names.update(resource_data.metadata.get("labels", []))
+
+        return label_names
 
     def _validate_method_path(self):
         """校验 method + path 不能重复"""
@@ -212,9 +220,7 @@ class ResourceImportValidator:
             self.schema_validate_result.append(validate_err)
 
     def _validate_label_count(self):
-        label_names = set()
-        for resource_data in self.resource_data_list:
-            label_names.update(resource_data.metadata.get("labels", []))
+        label_names = self._get_label_names()
 
         if not label_names:
             return
@@ -223,10 +229,58 @@ class ResourceImportValidator:
         if len(label_names | exist_label_names) > settings.MAX_LABEL_COUNT_PER_GATEWAY:
             validate_err = SchemaValidateErr(
                 _("每个网关最多创建 {max_count} 个标签。").format(max_count=settings.MAX_LABEL_COUNT_PER_GATEWAY),
-                "$.paths.*.tages",
+                "$.paths.*.tags",
                 absolute_path=[],
             )
             self.schema_validate_result.append(validate_err)
+
+    def _validate_label_name(self):
+        label_names = self._get_label_names()
+
+        if not label_names:
+            return
+
+        conflict_names = set()
+        label_name_map = defaultdict(list)
+        for name in label_names:
+            lower_name = shortcuts.to_lower_dash_case(name)
+            label_name_map[lower_name].append(name)
+
+            if len(label_name_map[lower_name]) > 1:
+                conflict_names.update([lower_name])
+
+        # 检查是否与当前配置数据的标签存在大小写冲突
+        for name in conflict_names:
+            validate_err = SchemaValidateErr(
+                _("当前配置数据的标签存在大小写冲突：【{import_label_names}】，请使用统一的命名格式。").format(
+                    import_label_names="，".join(label_name_map.get(name))
+                ),
+                "$.paths.*.tags",
+                absolute_path=[],
+            )
+            self.schema_validate_result.append(validate_err)
+
+        exist_label_name_map = {}
+        for name in APILabel.objects.filter(gateway=self.gateway).values_list("name", flat=True):
+            exist_label_name_map[shortcuts.to_lower_dash_case(name)] = name
+
+        if not exist_label_name_map:
+            return
+
+        for name in label_names:
+            lower_name = shortcuts.to_lower_dash_case(name)
+
+            # 检查是否与数据库中的标签存在大小写冲突
+            exist_label_name = exist_label_name_map.get(lower_name)
+            if exist_label_name and name != exist_label_name:
+                validate_err = SchemaValidateErr(
+                    _(
+                        "标签 {name} 与已存在的标签 {exist_label_name} 存在大小写冲突，请与已存在的标签保持统一命名格式。"
+                    ).format(name=name, exist_label_name=exist_label_name),
+                    "$.paths.*.tags",
+                    absolute_path=[],
+                )
+                self.schema_validate_result.append(validate_err)
 
     def _validate_plugin_type(self):
         """
