@@ -35,7 +35,7 @@ type ChartsSires = {
 export interface ChartDataType {
   requests_total?: ChartsSires;
   requests?: ChartsSires;
-  non_200_status?: ChartsSires;
+  non_20x_status?: ChartsSires;
   app_requests?: ChartsSires;
   resource_requests?: ChartsSires;
   ingress?: ChartsSires;
@@ -49,7 +49,7 @@ export interface ChartDataLoading {
   requests_total?: boolean;
   health_rate?: boolean;
   requests?: boolean;
-  non_200_status?: boolean;
+  non_20x_status?: boolean;
   app_requests?: boolean;
   resource_requests?: boolean;
   ingress?: boolean;

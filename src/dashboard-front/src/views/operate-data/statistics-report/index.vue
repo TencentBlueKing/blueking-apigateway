@@ -35,14 +35,14 @@
         </bk-loading>
       </div>
       <div class="error-requests">
-        <bk-loading class="full-box" :loading="chartLoading.non_200_status">
+        <bk-loading class="full-box" :loading="chartLoading.non_20x_status">
           <line-chart
             ref="statusRef"
             :title="t('非 200 请求数趋势')"
-            :chart-data="chartData['non_200_status']"
+            :chart-data="chartData['non_20x_status']"
             @clear-params="handleClearParams"
             @report-init="handleReportInit"
-            instance-id="non_200_status" />
+            instance-id="non_20x_status" />
         </bk-loading>
       </div>
     </div>
@@ -128,7 +128,7 @@ const { t } = useI18n();
 
 const metricsList = ref<string[]>([
   'requests', // 总请求数趋势
-  'non_200_status', // 非 200 请求数趋势
+  'non_20x_status', // 非 200 请求数趋势
   'app_requests', // app_code 维度请求数趋势
   'resource_requests', // 每个资源请求数趋势
   'ingress', // 每个资源的 ingress  带宽占用
