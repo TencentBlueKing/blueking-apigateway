@@ -669,6 +669,35 @@ paths:
   /api/v2/open/gateway/{gateway_name}/public_key/:
     get:
       operationId: v2_open_get_gateway_public_key
+      description: 获取网关公钥(废弃)
+      tags:
+      - v2_open
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: core-api
+          method: get
+          path: /api/v1/open/gateways/{gateway_name}/public_key/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
+  /api/v2/open/gateways/{gateway_name}/public_key/:
+    get:
+      operationId: v2_open_get_gateway_public_key_new
       description: 获取网关公钥
       tags:
       - v2_open
@@ -695,9 +724,9 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: false
         descriptionEn: None
-  /api/v2/sync/gateway/{gateway_name}/public_key/:
+  /api/v2/sync/gateways/{gateway_name}/public_key/:
     get:
-      operationId: v2_sync_get_gateway_public_key
+      operationId: v2_sync_get_gateway_public_key_new
       description: 获取网关公钥
       tags:
       - v2_sync
@@ -724,9 +753,9 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: false
         descriptionEn: None
-  /api/v2/sync/gateway/{gateway_name}/related-apps/:
+  /api/v2/sync/gateways/{gateway_name}/related-apps/:
     post:
-      operationId: v2_sync_add_gateway_related_apps
+      operationId: v2_sync_add_related_apps
       description: 添加网关的关联应用
       tags:
       - v2_sync
@@ -743,8 +772,37 @@ paths:
         enableWebsocket: false
         backend:
           name: default
-          method: get
+          method: post
           path: /backend/api/v2/sync/gateways/{gateway_name}/related-apps/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
+  /api/v2/sync/gateways/{gateway_name}/permissions/:
+    get:
+      operationId: v2_sync_list_permissions
+      description: 获取网关权限列表
+      tags:
+      - v2_sync
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/sync/gateways/{gateway_name}/permissions/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []

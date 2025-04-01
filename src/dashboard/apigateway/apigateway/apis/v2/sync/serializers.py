@@ -19,7 +19,9 @@
 
 from rest_framework import serializers
 
+from apigateway.apps.permission.constants import FormattedGrantDimensionEnum
 from apigateway.biz.validators import BKAppCodeListValidator
+from apigateway.utils.time import NeverExpiresTime
 
 
 class GatewayRelatedAppsAddInputSLZ(serializers.Serializer):
@@ -33,3 +35,31 @@ class GatewayRelatedAppsAddInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.GatewayRelatedAppsAddInputSLZ"
+
+
+class GatewayPermissionListInputSLZ(serializers.Serializer):
+    bk_app_code = serializers.CharField(required=False)
+    grant_dimension = serializers.ChoiceField(choices=FormattedGrantDimensionEnum.get_choices(), required=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.GatewayPermissionListInputSLZ"
+
+
+class GatewayPermissionListOutputSLZ(serializers.Serializer):
+    # common fields
+    bk_app_code = serializers.CharField()
+    expires = serializers.SerializerMethodField()
+    grant_dimension = serializers.ChoiceField(choices=FormattedGrantDimensionEnum.get_choices())
+
+    # only for resource permission
+    # grant_type = serializers.ChoiceField(choices=GrantTypeEnum.get_choices())
+    resource_id = serializers.IntegerField()
+    resource_name = serializers.CharField()
+
+    def get_expires(self, obj):
+        expires = (
+            None
+            if (not obj.get("expires") or NeverExpiresTime.is_never_expired(obj.get("expires")))
+            else obj.get("expires")
+        )
+        return serializers.DateTimeField(allow_null=True, required=False).to_representation(expires)
