@@ -190,6 +190,10 @@ class PublishValidator:
         """校验待发布环境的backend配置"""
         resource_version = self.resource_version
 
+        if not resource_version:
+            # 如果没有指定版本，则使用当前网关的最新版本
+            resource_version = ResourceVersion.objects.get_latest_version(self.gateway.id)
+
         if resource_version and resource_version.data:
             backend_ids = list(
                 {
@@ -200,7 +204,12 @@ class PublishValidator:
             )
             backend_configs = BackendConfig.objects.filter(stage=self.stage, backend_id__in=backend_ids)
         else:
-            backend_configs = BackendConfig.objects.filter(stage=self.stage)
+            # 校验编辑区的资源所绑定的后端服务
+            resource_ids = Resource.objects.filter(gateway=self.gateway).values_list("id", flat=True)
+            backend_ids = (
+                Proxy.objects.filter(resource_id__in=resource_ids).values_list("backend_id", flat=True).distinct()
+            )
+            backend_configs = BackendConfig.objects.filter(stage=self.stage, backend_id__in=backend_ids)
 
         for backend_config in backend_configs:
             for host in backend_config.config["hosts"]:

@@ -213,6 +213,30 @@ def fake_default_backend(fake_gateway, fake_stage, faker):
 
 
 @pytest.fixture
+def fake_default_empty_backend(fake_gateway, fake_stage, faker):
+    backend = G(
+        Backend,
+        gateway=fake_gateway,
+        name="default",
+    )
+
+    G(
+        BackendConfig,
+        gateway=fake_gateway,
+        stage=fake_stage,
+        backend=backend,
+        config={
+            "type": "node",
+            "timeout": 30,
+            "loadbalance": "roundrobin",
+            "hosts": [{"scheme": "http", "host": "", "weight": 100}],
+        },
+    )
+
+    return backend
+
+
+@pytest.fixture
 def fake_resource(faker, fake_gateway, fake_backend):
     resource = G(
         Resource,

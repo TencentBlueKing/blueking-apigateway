@@ -402,6 +402,15 @@ class TestPublishValidator:
         publish_validator = PublishValidator(fake_gateway, fake_stage, resource_version)
         publish_validator._validate_stage_backends()
 
+    def test_validate_stage_backends_without_default_backend(
+        self, fake_stage, fake_backend, fake_default_empty_backend, fake_resource, fake_gateway
+    ):
+        """
+        测试编辑区资源没有绑定default backend（host为空）的情况
+        """
+        publish_validator = PublishValidator(fake_gateway, fake_stage, None)
+        assert publish_validator._validate_stage_backends() is None
+
 
 class TestSchemeInputValidator:
     @pytest.mark.parametrize(
