@@ -279,6 +279,7 @@
             <div class="request-response">
               <response-content
                 :res="response"
+                ref="responseContentRef"
                 @response-fold="handleResponseFold"
                 @response-unfold="handleResponseUnfold" />
             </div>
@@ -415,6 +416,7 @@ const defaultValue = {
 const formData = ref<any>({ ...defaultValue.formData });
 const isShowDoc = ref<boolean>(false);
 const requestPayloadRef = ref();
+const responseContentRef = ref();
 const showPath = ref<boolean>(false);
 const payloadType = reactive<any>({
   rawPayload: {},
@@ -658,6 +660,7 @@ const handleShowDoc = (resource: any) => {
   curResource.value = resource;
   curComponentName.value = resource.name;
   getResourceParams();
+  responseContentRef.value?.setInit();
   response.value = {};
 };
 
@@ -714,7 +717,7 @@ const handleResponseFold = () => {
 };
 
 const handleResponseUnfold = () => {
-  setAsideHeight(600);
+  setAsideHeight(400);
 };
 
 const setUserToken = () => {
@@ -863,7 +866,7 @@ const handleSend = async (e: Event) => {
     const res = await postAPITest(common.apigwId, data);
     response.value = res;
 
-    setAsideHeight(600);
+    setAsideHeight(400);
   } catch (e) {
     console.log(e);
   } finally {

@@ -3,6 +3,7 @@
     <bk-collapse
       class="bk-collapse-response"
       v-model="activeIndex"
+      @update:model-value="handleCollapse"
     >
       <bk-collapse-panel :name="1">
         <template #header>
@@ -232,7 +233,7 @@ const handleBodyTypeChange = (type: string) => {
   }
 };
 
-const setEditorValue = () => {
+const setEditorValue = (fold?: boolean) => {
   if (tabActive.value === 'body') {
     editorText.value = data.value?.body || '';
   } else {
@@ -241,6 +242,11 @@ const setEditorValue = () => {
   resourceEditorRef.value?.setValue(editorText.value);
   if (tabActive.value === 'body' && bodyType.value === 'pretty') {
     formatBody();
+  }
+
+  if (fold) {
+    activeIndex.value = [];
+    return;
   }
   activeIndex.value = [1];
 };
@@ -262,6 +268,21 @@ const setTableData = () => {
   }
 };
 
+const handleCollapse = () => {
+  if (!activeIndex.value?.includes(1)) {
+    emit('response-fold');
+  } else {
+    emit('response-unfold');
+  }
+};
+
+const setInit = () => {
+  activeIndex.value = [];
+  tabActive.value = 'body';
+  bodyType.value = 'pretty';
+  emit('response-fold');
+};
+
 watch(
   () => tabActive.value,
   (v) => {
@@ -276,21 +297,14 @@ watch(
   (v) => {
     data.value = v || {};
     tabActive.value = 'body';
-    setEditorValue();
+    setEditorValue(JSON.stringify(v) === '{}');
     setTableData();
   },
 );
 
-watch(
-  () => activeIndex.value,
-  (v) => {
-    if (!v?.includes(1)) {
-      emit('response-fold');
-    } else {
-      emit('response-unfold');
-    }
-  },
-);
+defineExpose({
+  setInit,
+});
 
 </script>
 

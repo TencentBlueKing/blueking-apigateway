@@ -6,12 +6,12 @@
 
     <div v-show="!isEmpty">
       <div
-        :class="['line-chart', ['requests', 'non_200_status'].includes(instanceId) ? 'mini' : 'middle']"
+        :class="['line-chart', ['requests', 'non_20x_status'].includes(instanceId) ? 'mini' : 'middle']"
         :id="instanceId">
       </div>
 
       <div
-        :class="['chart-legend', 'custom-scroll-bar', { 'side-legend': instanceId === 'non_200_status' }]"
+        :class="['chart-legend', 'custom-scroll-bar', { 'side-legend': instanceId === 'non_20x_status' }]"
         v-if="chartLegend[instanceId]">
         <div
           v-for="({ color, name, selected }, legendIndex) in chartLegend[instanceId]"
@@ -73,7 +73,7 @@ interface ChartLegend {
   requests_total?: LegendItem;
   health_rate?: LegendItem;
   requests?: LegendItem;
-  non_200_status?: LegendItem;
+  non_20x_status?: LegendItem;
   app_requests?: LegendItem;
   resource_requests?: LegendItem;
   ingress?: LegendItem;
@@ -296,7 +296,7 @@ const getChartOption = () => {
       };
     }
 
-    if (['requests', 'non_200_status'].includes(props.instanceId)) {
+    if (['requests', 'non_20x_status'].includes(props.instanceId)) {
       chartOption.grid.left = '18%';
       if (document.body.clientWidth < 1550) {
         chartOption.xAxis.axisLabel = {
