@@ -75,6 +75,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
 
     _maintainers = models.CharField(db_column="maintainers", max_length=1024, default="")
     _developers = models.CharField(db_column="developers", max_length=1024, blank=True, null=True, default="")
+    doc_maintainers = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
 
     # status
     status = models.IntegerField(choices=GatewayStatusEnum.get_choices())
