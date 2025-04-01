@@ -53,8 +53,8 @@ class GatewayPermissionListOutputSLZ(serializers.Serializer):
 
     # only for resource permission
     # grant_type = serializers.ChoiceField(choices=GrantTypeEnum.get_choices())
-    resource_id = serializers.IntegerField()
-    resource_name = serializers.CharField()
+    resource_id = serializers.IntegerField(required=False)
+    resource_name = serializers.CharField(required=False)
 
     def get_expires(self, obj):
         expires = (
