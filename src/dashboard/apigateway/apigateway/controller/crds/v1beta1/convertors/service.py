@@ -42,6 +42,9 @@ class ServiceConvertor(BaseConvertor):
 
         for node in upstreams.get("hosts", []):
             host = node["host"]
+            ## 如果default没有设置host，则默认使用 0.0.0.0来替代，避免apisix加载报错
+            if host == "":
+                host = "0.0.0.0"
             if "scheme" in node:
                 host = node["scheme"] + "://" + host
             url_info = UrlInfo(host)
