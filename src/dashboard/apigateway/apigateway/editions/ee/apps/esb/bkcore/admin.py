@@ -16,18 +16,21 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.contrib import admin
+from djangoql.admin import DjangoQLSearchMixin
 
 from apigateway.apps.esb.bkcore import models
 
 
-class ComponentSystemAdmin(admin.ModelAdmin):
+class ComponentSystemAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["id", "name", "description", "timeout", "board"]
     search_fields = ["id", "name", "description"]
     list_filter = ["board"]
     readonly_fields = ["board", "data_type"]
 
 
-class ESBChannelAdmin(admin.ModelAdmin):
+class ESBChannelAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["id", "system", "name", "method", "path", "is_active", "board"]
     search_fields = ["id", "name", "path"]
     list_fields = ["board"]
@@ -35,70 +38,81 @@ class ESBChannelAdmin(admin.ModelAdmin):
     readonly_fields = ["board", "data_type"]
 
 
-class ESBChannelExtendAdmin(admin.ModelAdmin):
+class ESBChannelExtendAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["component_id", "component", "board"]
     search_fields = ["component_id"]
     list_fields = ["board"]
     readonly_fields = ["board"]
 
 
-class AppComponentPermissionAdmin(admin.ModelAdmin):
+class AppComponentPermissionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["bk_app_code", "component_id", "expires", "board"]
     search_fields = ["bk_app_code", "component_id"]
     list_filter = ["board"]
     readonly_fields = ["board"]
 
 
-class ComponentDocAdmin(admin.ModelAdmin):
+class ComponentDocAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["component_id", "board"]
     search_fields = ["component_id"]
     list_filter = ["board"]
     readonly_fields = ["board"]
 
 
-class DocCategoryAdmin(admin.ModelAdmin):
+class DocCategoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["id", "name", "priority", "board"]
     search_fields = ["name"]
     list_filter = ["board"]
     readonly_fields = ["board", "data_type"]
 
 
-class SystemDocCategoryAdmin(admin.ModelAdmin):
+class SystemDocCategoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["system", "doc_category", "board"]
     list_filter = ["board"]
     readonly_fields = ["board"]
 
 
-class AppPermissionApplyRecordAdmin(admin.ModelAdmin):
+class AppPermissionApplyRecordAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["bk_app_code", "system", "applied_by", "applied_time", "handled_by", "handled_time", "status"]
     list_filter = ["bk_app_code"]
     readonly_fields = ["board"]
 
 
-class FunctionControllerAdmin(admin.ModelAdmin):
+class FunctionControllerAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["func_code", "func_name", "switch_status", "board"]
     search_fields = ["func_code", "func_name"]
     list_filter = ["board"]
     readonly_fields = ["board"]
 
 
-class AppAccountAdmin(admin.ModelAdmin):
+class AppAccountAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["app_code", "app_token", "created_time"]
     search_fields = ["app_code"]
 
 
-class WxmpAccessTokenAdmin(admin.ModelAdmin):
+class WxmpAccessTokenAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["wx_app_id", "access_token", "expires"]
     search_fields = ["wx_app_id"]
 
 
-class ComponentResourceBindingAdmin(admin.ModelAdmin):
+class ComponentResourceBindingAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["component_id", "component_method", "component_path", "resource_id"]
     search_fields = ["component_id", "resource_id", "component_path"]
     readonly_fields = ["board"]
 
 
-class ComponentReleaseHistoryAdmin(admin.ModelAdmin):
+class ComponentReleaseHistoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = ["resource_version_id", "status", "created_by", "created_time"]
     search_fields = ["resource_version_id"]
     list_filter = ["status"]

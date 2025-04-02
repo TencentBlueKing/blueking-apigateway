@@ -17,11 +17,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.contrib import admin
+from djangoql.admin import DjangoQLSearchMixin
 
 from apigateway.apps.audit.models import AuditEventLog
 
 
-class AuditEventLogAdmin(admin.ModelAdmin):
+class AuditEventLogAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
     list_display = [
         "id",
         "event_id",

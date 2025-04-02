@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "raven.contrib.django.raven_compat",
+    "djangoql",
     "django_celery_beat",
     "rest_framework",
     "drf_yasg",
