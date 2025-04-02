@@ -245,7 +245,7 @@ class ResourceVersionHandler:
         for resource in resource_version.data:
             if resource["proxy"]["type"] != ProxyTypeEnum.HTTP.value:
                 continue
-            if resource["stage_vars"]:
+            if resource.get("stage_vars"):
                 stage_vars = resource["stage_vars"]
             else:
                 stage_vars = ResourceHandler.get_resource_use_stage_vars(resource)
