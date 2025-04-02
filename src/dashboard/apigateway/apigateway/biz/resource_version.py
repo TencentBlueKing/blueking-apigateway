@@ -17,7 +17,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
-import json
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
@@ -41,7 +40,7 @@ from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_openapi_schema import ResourceOpenAPISchemaVersionHandler
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
 from apigateway.common.constants import CACHE_TIME_5_MINUTES
-from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
+from apigateway.core.constants import ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Gateway, Proxy, Release, Resource, ResourceVersion, Stage
 from apigateway.utils import time as time_utils
 from apigateway.utils.version import max_version
@@ -246,18 +245,12 @@ class ResourceVersionHandler:
         for resource in resource_version.data:
             if resource["proxy"]["type"] != ProxyTypeEnum.HTTP.value:
                 continue
-
-            proxy_config = json.loads(resource["proxy"]["config"])
-
-            proxy_path = proxy_config["path"]
-            used_in_path.update(STAGE_VAR_PATTERN.findall(proxy_path))
-
-            proxy_upstreams = proxy_config.get("upstreams")
-            if proxy_upstreams:
-                # 覆盖环境配置
-                for host in proxy_upstreams["hosts"]:
-                    for match in STAGE_VAR_PATTERN.findall(host["host"]):
-                        used_in_host.add(match)
+            if resource["stage_vars"]:
+                stage_vars = resource["stage_vars"]
+            else:
+                stage_vars = ResourceHandler.get_resource_use_stage_vars(resource)
+            used_in_path.update(stage_vars["in_path"])
+            used_in_host.update(stage_vars["in_host"])
         return {
             "in_path": list(used_in_path),
             "in_host": list(used_in_host),

@@ -30,7 +30,7 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.common.contexts import ResourceAuthContext
-from apigateway.core.constants import ContextScopeTypeEnum
+from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum
 from apigateway.core.models import Context, Gateway, Proxy, Resource, StageResourceDisabled
 from apigateway.utils import time
 
@@ -81,6 +81,27 @@ class ResourceHandler:
         Resource.objects.filter(id__in=resource_ids).delete()
 
     @staticmethod
+    def get_resource_use_stage_vars(resource: dict) -> dict:
+        """
+        获取资源使用的 stage vars
+        """
+        used_in_path = set()
+        used_in_host = set()
+        proxy_config = json.loads(resource["proxy"]["config"])
+        proxy_path = proxy_config["path"]
+        used_in_path.update(STAGE_VAR_PATTERN.findall(proxy_path))
+        proxy_upstreams = proxy_config.get("upstreams")
+        if proxy_upstreams:
+            # 覆盖环境配置
+            for host in proxy_upstreams["hosts"]:
+                for match in STAGE_VAR_PATTERN.findall(host["host"]):
+                    used_in_host.add(match)
+        return {
+            "in_path": list(used_in_path),
+            "in_host": list(used_in_host),
+        }
+
+    @staticmethod
     def snapshot(
         resource,
         as_dict=False,
@@ -114,6 +135,10 @@ class ResourceHandler:
             data["proxy"] = Proxy.objects.get(resource_id=resource.id).snapshot(as_dict=True)
         else:
             data["proxy"] = proxy_map[resource.id]
+
+        # 资源使用的 stage vars
+        if data["proxy"]["type"] == ProxyTypeEnum.HTTP.value:
+            data["stage_vars"] = ResourceHandler.get_resource_use_stage_vars(data)
 
         if context_map is None:
             contexts = Context.objects.filter(
