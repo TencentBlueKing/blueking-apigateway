@@ -58,6 +58,19 @@ urlpatterns = [
                         ]
                     ),
                 ),
+                path(
+                    "permissions/",
+                    include(
+                        [
+                            # GET /api/v2/sync/gateways/{gateway_name}/permissions/
+                            path(
+                                "",
+                                views.GatewayPermissionListApi.as_view(),
+                                name="openapi.v2.sync.gateway.permissions.list",
+                            ),
+                        ]
+                    ),
+                ),
             ]
         ),
     ),
