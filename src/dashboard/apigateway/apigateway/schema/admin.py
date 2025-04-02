@@ -25,6 +25,7 @@ from apigateway.schema.models import Schema
 class SchemaAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "name", "type", "version"]
+    search_fields = ["name", "type"]
     list_filter = ["type"]
 
 

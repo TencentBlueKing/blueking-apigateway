@@ -24,6 +24,7 @@ from . import models
 class AlarmFilterConfigAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["alarm_type", "gateway"]
+    search_fields = ["gateway__id", "gateway__name"]
     list_filter = ["gateway", "alarm_type"]
 
 
@@ -51,6 +52,7 @@ class AlarmRecordAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
         "source_time",
         "status",
     )
+    search_fields = ["gateway__id", "gateway__name", "alarm_attr_id", "alarm_id"]
     filter_horizontal = ["alarm_strategies"]
     list_filter = ["gateway", "status"]
 

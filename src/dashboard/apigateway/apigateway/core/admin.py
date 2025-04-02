@@ -166,6 +166,7 @@ class GatewayRelatedAppAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
 class MicroGatewayAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "name", "is_shared", "status", "updated_time"]
+    search_fields = ["gateway__id", "gateway__name", "name", "description"]
 
 
 class BackendAdmin(DjangoQLSearchMixin, admin.ModelAdmin):

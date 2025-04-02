@@ -24,6 +24,7 @@ from apigateway.apps.feature.models import UserFeatureFlag
 class UserFeatureFlagAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["username", "name", "effect"]
+    search_fields = ["username", "name"]
 
 
 admin.site.register(UserFeatureFlag, UserFeatureFlagAdmin)

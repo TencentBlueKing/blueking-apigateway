@@ -31,6 +31,7 @@ class ResourceDocAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
 class ResourceDocVersionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "resource_version"]
+    search_fields = ["gateway__id", "gateway__name"]
     list_filter = ["gateway"]
     exclude = ["_data"]
     raw_id_fields = ["resource_version"]
