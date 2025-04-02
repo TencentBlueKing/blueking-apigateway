@@ -1,3 +1,18 @@
+<!-- 2025-04-02 -->
+# V1.17.0 Release Log
+
+### Features
+
+- Support multi-tenant
+
+### Bug Fixes
+
+- Fix: Backend service resource query error
+- Fix: Incorrect tooltips content in one-click group
+- Fix: Incorrect number of resource changes displayed when generating versions
+
+---
+
 <!-- 2025-02-12 -->
 # V1.15.2 Release Log
 
