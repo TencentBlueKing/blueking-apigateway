@@ -73,6 +73,7 @@ class DocCategoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
 class SystemDocCategoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["system", "doc_category", "board"]
+    search_fields = ["system__id", "doc_category__id"]
     list_filter = ["board"]
     readonly_fields = ["board"]
 
@@ -80,6 +81,7 @@ class SystemDocCategoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
 class AppPermissionApplyRecordAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["bk_app_code", "system", "applied_by", "applied_time", "handled_by", "handled_time", "status"]
+    search_fields = ["bk_app_code", "applied_by"]
     list_filter = ["bk_app_code"]
     readonly_fields = ["board"]
 
