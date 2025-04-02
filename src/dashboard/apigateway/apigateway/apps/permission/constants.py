@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -54,8 +54,8 @@ class PermissionLevelEnum(StructuredEnum):
 
 class PermissionApplyExpireDaysEnum(StructuredEnum):
     FOREVER = EnumField(0, label=_("永久"))
-    SIX_MONTH = EnumField(180, label=_("6个月"))
-    TWELVE_MONTH = EnumField(360, label=_("12个月"))
+    SIX_MONTH = EnumField(180, label=_("6 个月"))
+    TWELVE_MONTH = EnumField(360, label=_("12 个月"))
 
 
 class GrantTypeEnum(StructuredEnum):
@@ -78,6 +78,15 @@ class GrantDimensionEnum(StructuredEnum):
 
     API = EnumField("api", label=_("按网关"))
     RESOURCE = EnumField("resource", label=_("按资源"))
+
+
+class FormattedGrantDimensionEnum(StructuredEnum):
+    """
+    格式化后的授权维度，放在 v2 api 中使用，仅对外，往 db 中写入还是得用 GrantDimensionEnum(存量数据)
+    """
+
+    GATEWAY = EnumField("gateway", label=_("网关"))
+    RESOURCE = EnumField("resource", label=_("资源"))
 
 
 # 默认的权限有效期天数
