@@ -84,8 +84,10 @@ class TestGatewayRetrieveUpdateDestroyApi:
             "doc_maintainers": {
                 "type": "user",
                 "contacts": ["admin1", "admin2", "admin3"],
-                "service_number_name": "",
-                "service_number_link": "",
+                "service_account": {
+                    "name": "",
+                    "link": "",
+                },
             },
             "is_public": faker.random_element([True, False]),
             "bk_app_codes": ["app1"],

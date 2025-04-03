@@ -35,6 +35,7 @@ class GatewayListOutputSLZ(serializers.Serializer):
     name = serializers.CharField(read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
+    doc_maintainers = serializers.JSONField(read_only=True)
 
     def get_maintainers(self, obj):
         return obj.maintainers
@@ -48,6 +49,7 @@ class GatewayRetrieveOutputSLZ(serializers.Serializer):
     name = serializers.CharField(read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
+    doc_maintainers = serializers.JSONField(read_only=True)
 
     def get_maintainers(self, obj):
         return obj.maintainers

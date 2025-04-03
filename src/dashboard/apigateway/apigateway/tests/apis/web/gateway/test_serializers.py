@@ -285,14 +285,18 @@ class TestGatewayAPIDocSlZ:
                 {
                     "type": "",
                     "contacts": [],
-                    "service_number_name": "",
-                    "service_number_link": "",
+                    "service_account": {
+                        "name": "",
+                        "link": "",
+                    },
                 },
                 {
                     "type": "",
                     "contacts": [],
-                    "service_number_name": "",
-                    "service_number_link": "",
+                    "service_account": {
+                        "name": "",
+                        "link": "",
+                    },
                 },
                 False,
             ),
@@ -300,29 +304,37 @@ class TestGatewayAPIDocSlZ:
                 {
                     "type": "user",
                     "contacts": ["admin1", "admin2", "admin3"],
-                    "service_number_name": "",
-                    "service_number_link": "",
+                    "service_account": {
+                        "name": "",
+                        "link": "",
+                    },
                 },
                 {
                     "type": "user",
                     "contacts": ["admin1", "admin2", "admin3"],
-                    "service_number_name": "",
-                    "service_number_link": "",
+                    "service_account": {
+                        "name": "",
+                        "link": "",
+                    },
                 },
                 False,
             ),
             (
                 {
-                    "type": "service_number",
+                    "type": "service_account",
                     "contacts": [],
-                    "service_number_name": "admin1",
-                    "service_number_link": "wxwork://message?xxx",
+                    "service_account": {
+                        "name": "admin1",
+                        "link": "wxwork://message?xxx",
+                    },
                 },
                 {
-                    "type": "service_number",
+                    "type": "service_account",
                     "contacts": [],
-                    "service_number_name": "admin1",
-                    "service_number_link": "wxwork://message?xxx",
+                    "service_account": {
+                        "name": "admin1",
+                        "link": "wxwork://message?xxx",
+                    },
                 },
                 False,
             ),
@@ -330,28 +342,34 @@ class TestGatewayAPIDocSlZ:
                 {
                     "type": "user",
                     "contacts": [],
-                    "service_number_name": "",
-                    "service_number_link": "",
+                    "service_account": {
+                        "name": "",
+                        "link": "",
+                    },
                 },
                 None,
                 True,
             ),
             (
                 {
-                    "type": "service_number",
+                    "type": "service_account",
                     "contacts": [],
-                    "service_number_name": "",
-                    "service_number_link": "wxwork://message?xxx",
+                    "service_account": {
+                        "name": "",
+                        "link": "wxwork://message?xxx",
+                    },
                 },
                 None,
                 True,
             ),
             (
                 {
-                    "type": "service_number",
+                    "type": "service_account",
                     "contacts": [],
-                    "service_number_name": "admin1",
-                    "service_number_link": "",
+                    "service_account": {
+                        "name": "admin",
+                        "link": "",
+                    },
                 },
                 None,
                 True,
@@ -380,8 +398,10 @@ class TestGatewayUpdateInputSLZ:
                     "doc_maintainers": {
                         "type": "user",
                         "contacts": ["admin1", "admin2", "admin3"],
-                        "service_number_name": "",
-                        "service_number_link": "",
+                        "service_account": {
+                            "name": "",
+                            "link": "",
+                        },
                     },
                     "developers": ["foo"],
                     "description": "test",
@@ -394,8 +414,10 @@ class TestGatewayUpdateInputSLZ:
                     "doc_maintainers": {
                         "type": "user",
                         "contacts": ["admin1", "admin2", "admin3"],
-                        "service_number_name": "",
-                        "service_number_link": "",
+                        "service_account": {
+                            "name": "",
+                            "link": "",
+                        },
                     },
                     "developers": ["foo"],
                     "description": "test",
@@ -408,10 +430,12 @@ class TestGatewayUpdateInputSLZ:
                 {
                     "maintainers": ["admin"],
                     "doc_maintainers": {
-                        "type": "service_number",
+                        "type": "service_account",
                         "contacts": [],
-                        "service_number_name": "admin1",
-                        "service_number_link": "wxwork://message?xxx",
+                        "service_account": {
+                            "name": "admin1",
+                            "link": "wxwork://message?xxx",
+                        },
                     },
                     "developers": ["foo"],
                     "description": "test",
@@ -422,10 +446,12 @@ class TestGatewayUpdateInputSLZ:
                 {
                     "maintainers": ["admin"],
                     "doc_maintainers": {
-                        "type": "service_number",
+                        "type": "service_account",
                         "contacts": [],
-                        "service_number_name": "admin1",
-                        "service_number_link": "wxwork://message?xxx",
+                        "service_account": {
+                            "name": "admin1",
+                            "link": "wxwork://message?xxx",
+                        },
                     },
                     "developers": ["foo"],
                     "description": "test",
@@ -441,8 +467,10 @@ class TestGatewayUpdateInputSLZ:
                     "doc_maintainers": {
                         "type": "user",
                         "contacts": ["admin1", "admin2", "admin3"],
-                        "service_number_name": "",
-                        "service_number_link": "",
+                        "service_account": {
+                            "name": "",
+                            "link": "",
+                        },
                     },
                     "description": "test",
                     "is_public": True,
@@ -453,8 +481,10 @@ class TestGatewayUpdateInputSLZ:
                     "doc_maintainers": {
                         "type": "user",
                         "contacts": ["admin1", "admin2", "admin3"],
-                        "service_number_name": "",
-                        "service_number_link": "",
+                        "service_account": {
+                            "name": "",
+                            "link": "",
+                        },
                     },
                     "developers": [],
                     "description": "test",
