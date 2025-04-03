@@ -20,7 +20,7 @@ from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from apigateway.apis.web.constants import GatewayAPIDocTypeEnum
+from apigateway.apis.web.constants import GatewayAPIDocMaintainerTypeEnum
 from apigateway.biz.constants import APP_CODE_PATTERN
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_type import GatewayTypeHandler
@@ -226,9 +226,9 @@ class ServiceAccountSLZ(serializers.Serializer):
     link = serializers.CharField(allow_blank=True, required=False, help_text="服务号链接")
 
 
-class GatewayAPIDocSlZ(serializers.Serializer):
+class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
     type = serializers.ChoiceField(
-        choices=GatewayAPIDocTypeEnum.get_choices(), allow_blank=True, required=False, help_text="联系人类型"
+        choices=GatewayAPIDocMaintainerTypeEnum.get_choices(), allow_blank=True, required=False, help_text="联系人类型"
     )
     contacts = serializers.ListField(
         child=serializers.CharField(), allow_empty=True, required=False, help_text="联系人"
@@ -236,11 +236,11 @@ class GatewayAPIDocSlZ(serializers.Serializer):
     service_account = ServiceAccountSLZ(required=False, help_text="服务号")
 
     def validate(self, data):
-        if data.get("type") == GatewayAPIDocTypeEnum.USER.value:
+        if data.get("type") == GatewayAPIDocMaintainerTypeEnum.USER.value:
             if not data.get("contacts"):
                 raise serializers.ValidationError(_("联系人不可为空。"))
 
-        elif data.get("type") == GatewayAPIDocTypeEnum.SERVICE_ACCOUNT.value:
+        elif data.get("type") == GatewayAPIDocMaintainerTypeEnum.SERVICE_ACCOUNT.value:
             if not data["service_account"]["name"]:
                 raise serializers.ValidationError(_("服务号名称不可为空。"))
             if not data["service_account"]["link"]:
@@ -250,7 +250,7 @@ class GatewayAPIDocSlZ(serializers.Serializer):
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="网关维护人员")
-    doc_maintainers = GatewayAPIDocSlZ(help_text="网关文档维护人员")
+    doc_maintainers = GatewayAPIDocMaintainerSLZ(required=False, help_text="网关文档维护人员")
 
     developers = serializers.ListField(
         child=serializers.CharField(), allow_empty=True, default=list, help_text="网关开发者"

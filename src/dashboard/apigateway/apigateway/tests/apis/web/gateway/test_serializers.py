@@ -21,7 +21,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import DateTimeField
 
 from apigateway.apis.web.gateway.serializers import (
-    GatewayAPIDocSlZ,
+    GatewayAPIDocMaintainerSLZ,
     GatewayCreateInputSLZ,
     GatewayListOutputSLZ,
     GatewayRetrieveOutputSLZ,
@@ -277,7 +277,7 @@ class TestGatewayRetrieveOutputSLZ:
         assert slz.data == expected
 
 
-class TestGatewayAPIDocSlZ:
+class TestGatewayAPIDocMaintainerSLZ:
     @pytest.mark.parametrize(
         "data, expected, will_error",
         [
@@ -377,7 +377,7 @@ class TestGatewayAPIDocSlZ:
         ],
     )
     def test_validate(self, data, expected, will_error):
-        slz = GatewayAPIDocSlZ(data=data)
+        slz = GatewayAPIDocMaintainerSLZ(data=data)
 
         if not will_error:
             slz.is_valid(raise_exception=True)

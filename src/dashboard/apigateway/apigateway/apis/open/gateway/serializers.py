@@ -24,7 +24,7 @@ from rest_framework import serializers
 
 from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apis.web.gateway.constants import GATEWAY_NAME_PATTERN
-from apigateway.apis.web.gateway.serializers import GatewayAPIDocSlZ
+from apigateway.apis.web.gateway.serializers import GatewayAPIDocMaintainerSLZ
 from apigateway.biz.validators import BKAppCodeListValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
@@ -47,7 +47,7 @@ class GatewayListV1OutputSLZ(serializers.Serializer):
     name = serializers.CharField(read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
-    doc_maintainers = serializers.JSONField(read_only=True)
+    doc_maintainers = serializers.SerializerMethodField()
     api_type = serializers.SerializerMethodField()
     user_auth_type = serializers.SerializerMethodField()
 
@@ -60,6 +60,9 @@ class GatewayListV1OutputSLZ(serializers.Serializer):
     def get_maintainers(self, obj):
         # TODO: 网关对外的维护者（助手号），便于用户咨询网关问题，需要单独使用一个新字段去维护？
         return obj.maintainers
+
+    def get_doc_maintainers(self, obj):
+        return obj.doc_maintainers
 
 
 class GatewayRetrieveV1OutputSLZ(GatewayListV1OutputSLZ):
@@ -88,7 +91,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         validators=[NameValidator()],
     )
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, required=False)
-    doc_maintainers = GatewayAPIDocSlZ(required=False)
+    doc_maintainers = GatewayAPIDocMaintainerSLZ(required=False)
     status = serializers.ChoiceField(choices=GatewayStatusEnum.get_choices(), default=GatewayStatusEnum.ACTIVE.value)
     # 只允许指定为普通网关或官方网关，不能指定为超级官方网关，超级官方网关会传递敏感参数到后端接口
     api_type = serializers.ChoiceField(

@@ -61,7 +61,7 @@ BACKEND_CONFIG_SCHEME_MAP = {
 }
 
 
-class GatewayAPIDocTypeEnum(StructuredEnum):
+class GatewayAPIDocMaintainerTypeEnum(StructuredEnum):
     USER = EnumField("user", label="用户")
     SERVICE_ACCOUNT = EnumField("service_account", label="服务号")
 
