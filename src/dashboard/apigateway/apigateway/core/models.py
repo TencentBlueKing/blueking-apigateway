@@ -20,7 +20,7 @@ import json
 import logging
 import uuid
 from datetime import datetime
-from typing import List
+from typing import Dict, List
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -75,6 +75,9 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
 
     _maintainers = models.CharField(db_column="maintainers", max_length=1024, default="")
     _developers = models.CharField(db_column="developers", max_length=1024, blank=True, null=True, default="")
+    _doc_maintainers = JSONField(
+        db_column="doc_maintainers", default={}, dump_kwargs={"indent": None}, blank=True, null=True
+    )
 
     # status
     status = models.IntegerField(choices=GatewayStatusEnum.get_choices())
@@ -103,6 +106,23 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     @maintainers.setter
     def maintainers(self, data: List[str]):
         self._maintainers = ";".join(data)
+
+    @property
+    def doc_maintainers(self) -> Dict:
+        if not self._doc_maintainers or self._doc_maintainers.get("type") == "":
+            return {
+                "type": "user",
+                "contacts": self.maintainers,
+                "service_account": {
+                    "name": "",
+                    "link": "",
+                },
+            }
+        return self._doc_maintainers
+
+    @doc_maintainers.setter
+    def doc_maintainers(self, data: Dict):
+        self._doc_maintainers = data
 
     @property
     def developers(self) -> List[str]:

@@ -17,9 +17,11 @@
 #
 import pytest
 from ddf import G
+from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import DateTimeField
 
 from apigateway.apis.web.gateway.serializers import (
+    GatewayAPIDocMaintainerSLZ,
     GatewayCreateInputSLZ,
     GatewayListOutputSLZ,
     GatewayRetrieveOutputSLZ,
@@ -255,6 +257,7 @@ class TestGatewayRetrieveOutputSLZ:
             "name": fake_gateway.name,
             "description": fake_gateway.description,
             "maintainers": fake_gateway.maintainers,
+            "doc_maintainers": fake_gateway.doc_maintainers,
             "developers": fake_gateway.developers,
             "status": fake_gateway.status,
             "is_public": fake_gateway.is_public,
@@ -274,6 +277,117 @@ class TestGatewayRetrieveOutputSLZ:
         assert slz.data == expected
 
 
+class TestGatewayAPIDocMaintainerSLZ:
+    @pytest.mark.parametrize(
+        "data, expected, will_error",
+        [
+            (
+                {
+                    "type": "",
+                    "contacts": [],
+                    "service_account": {
+                        "name": "",
+                        "link": "",
+                    },
+                },
+                {
+                    "type": "",
+                    "contacts": [],
+                    "service_account": {
+                        "name": "",
+                        "link": "",
+                    },
+                },
+                False,
+            ),
+            (
+                {
+                    "type": "user",
+                    "contacts": ["admin1", "admin2", "admin3"],
+                    "service_account": {
+                        "name": "",
+                        "link": "",
+                    },
+                },
+                {
+                    "type": "user",
+                    "contacts": ["admin1", "admin2", "admin3"],
+                    "service_account": {
+                        "name": "",
+                        "link": "",
+                    },
+                },
+                False,
+            ),
+            (
+                {
+                    "type": "service_account",
+                    "contacts": [],
+                    "service_account": {
+                        "name": "admin1",
+                        "link": "wxwork://message?xxx",
+                    },
+                },
+                {
+                    "type": "service_account",
+                    "contacts": [],
+                    "service_account": {
+                        "name": "admin1",
+                        "link": "wxwork://message?xxx",
+                    },
+                },
+                False,
+            ),
+            (
+                {
+                    "type": "user",
+                    "contacts": [],
+                    "service_account": {
+                        "name": "",
+                        "link": "",
+                    },
+                },
+                None,
+                True,
+            ),
+            (
+                {
+                    "type": "service_account",
+                    "contacts": [],
+                    "service_account": {
+                        "name": "",
+                        "link": "wxwork://message?xxx",
+                    },
+                },
+                None,
+                True,
+            ),
+            (
+                {
+                    "type": "service_account",
+                    "contacts": [],
+                    "service_account": {
+                        "name": "admin",
+                        "link": "",
+                    },
+                },
+                None,
+                True,
+            ),
+        ],
+    )
+    def test_validate(self, data, expected, will_error):
+        slz = GatewayAPIDocMaintainerSLZ(data=data)
+
+        if not will_error:
+            slz.is_valid(raise_exception=True)
+            assert slz.validated_data == expected
+            return
+
+        with pytest.raises(ValidationError):
+            slz.is_valid(raise_exception=True)
+
+
 class TestGatewayUpdateInputSLZ:
     @pytest.mark.parametrize(
         "data, expected",
@@ -281,6 +395,14 @@ class TestGatewayUpdateInputSLZ:
             (
                 {
                     "maintainers": ["admin"],
+                    "doc_maintainers": {
+                        "type": "user",
+                        "contacts": ["admin1", "admin2", "admin3"],
+                        "service_account": {
+                            "name": "",
+                            "link": "",
+                        },
+                    },
                     "developers": ["foo"],
                     "description": "test",
                     "is_public": True,
@@ -289,6 +411,48 @@ class TestGatewayUpdateInputSLZ:
                 },
                 {
                     "maintainers": ["admin"],
+                    "doc_maintainers": {
+                        "type": "user",
+                        "contacts": ["admin1", "admin2", "admin3"],
+                        "service_account": {
+                            "name": "",
+                            "link": "",
+                        },
+                    },
+                    "developers": ["foo"],
+                    "description": "test",
+                    "is_public": True,
+                    "bk_app_codes": ["app1", "app2"],
+                    "related_app_codes": ["app1", "app2"],
+                },
+            ),
+            (
+                {
+                    "maintainers": ["admin"],
+                    "doc_maintainers": {
+                        "type": "service_account",
+                        "contacts": [],
+                        "service_account": {
+                            "name": "admin1",
+                            "link": "wxwork://message?xxx",
+                        },
+                    },
+                    "developers": ["foo"],
+                    "description": "test",
+                    "is_public": True,
+                    "bk_app_codes": ["app1", "app2"],
+                    "related_app_codes": ["app1", "app2"],
+                },
+                {
+                    "maintainers": ["admin"],
+                    "doc_maintainers": {
+                        "type": "service_account",
+                        "contacts": [],
+                        "service_account": {
+                            "name": "admin1",
+                            "link": "wxwork://message?xxx",
+                        },
+                    },
                     "developers": ["foo"],
                     "description": "test",
                     "is_public": True,
@@ -300,12 +464,28 @@ class TestGatewayUpdateInputSLZ:
             (
                 {
                     "maintainers": ["admin"],
+                    "doc_maintainers": {
+                        "type": "user",
+                        "contacts": ["admin1", "admin2", "admin3"],
+                        "service_account": {
+                            "name": "",
+                            "link": "",
+                        },
+                    },
                     "description": "test",
                     "is_public": True,
                     "status": 1,
                 },
                 {
                     "maintainers": ["admin"],
+                    "doc_maintainers": {
+                        "type": "user",
+                        "contacts": ["admin1", "admin2", "admin3"],
+                        "service_account": {
+                            "name": "",
+                            "link": "",
+                        },
+                    },
                     "developers": [],
                     "description": "test",
                     "is_public": True,

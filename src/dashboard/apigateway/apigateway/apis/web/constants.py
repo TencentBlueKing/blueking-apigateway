@@ -61,6 +61,11 @@ BACKEND_CONFIG_SCHEME_MAP = {
 }
 
 
+class GatewayAPIDocMaintainerTypeEnum(StructuredEnum):
+    USER = EnumField("user", label="用户")
+    SERVICE_ACCOUNT = EnumField("service_account", label="服务号")
+
+
 PLUGIN_MERGE_TYPE = {
     "bk-rate-limit": "merge",
     "bk-header-rewrite": "merge",

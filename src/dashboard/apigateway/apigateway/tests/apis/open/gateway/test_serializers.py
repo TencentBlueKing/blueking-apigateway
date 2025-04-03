@@ -194,6 +194,88 @@ class TestGatewaySyncInputSLZ:
                 },
                 False,
             ),
+            (
+                {
+                    "name": "test",
+                    "description": "desc",
+                    "is_public": True,
+                    "doc_maintainers": {},
+                },
+                {
+                    "name": "test",
+                    "description": "desc",
+                    "is_public": True,
+                    "doc_maintainers": {},
+                    "status": GatewayStatusEnum.ACTIVE.value,
+                    "gateway_type": None,
+                    "allow_delete_sensitive_params": True,
+                },
+                False,
+            ),
+            (
+                {
+                    "name": "test",
+                    "description": "desc",
+                    "is_public": True,
+                    "doc_maintainers": {
+                        "type": "user",
+                        "contacts": ["admin1", "admin2", "admin3"],
+                        "service_account": {
+                            "name": "",
+                            "link": "",
+                        },
+                    },
+                },
+                {
+                    "name": "test",
+                    "description": "desc",
+                    "is_public": True,
+                    "doc_maintainers": {
+                        "type": "user",
+                        "contacts": ["admin1", "admin2", "admin3"],
+                        "service_account": {
+                            "name": "",
+                            "link": "",
+                        },
+                    },
+                    "status": GatewayStatusEnum.ACTIVE.value,
+                    "gateway_type": None,
+                    "allow_delete_sensitive_params": True,
+                },
+                False,
+            ),
+            (
+                {
+                    "name": "test",
+                    "description": "desc",
+                    "is_public": True,
+                    "doc_maintainers": {
+                        "type": "service_account",
+                        "contacts": [],
+                        "service_account": {
+                            "name": "admin1",
+                            "link": "wxwork://message?xxx",
+                        },
+                    },
+                },
+                {
+                    "name": "test",
+                    "description": "desc",
+                    "is_public": True,
+                    "doc_maintainers": {
+                        "type": "service_account",
+                        "contacts": [],
+                        "service_account": {
+                            "name": "admin1",
+                            "link": "wxwork://message?xxx",
+                        },
+                    },
+                    "status": GatewayStatusEnum.ACTIVE.value,
+                    "gateway_type": None,
+                    "allow_delete_sensitive_params": True,
+                },
+                False,
+            ),
             # error, api_type=1 时，name 需以 bk- 开头
             (
                 {

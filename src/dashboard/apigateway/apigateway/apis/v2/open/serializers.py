@@ -35,9 +35,13 @@ class GatewayListOutputSLZ(serializers.Serializer):
     name = serializers.CharField(read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
+    doc_maintainers = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
         return obj.maintainers
+
+    def get_doc_maintainers(self, obj):
+        return obj.doc_maintainers
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayListOutputSLZ"
@@ -48,9 +52,13 @@ class GatewayRetrieveOutputSLZ(serializers.Serializer):
     name = serializers.CharField(read_only=True)
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
+    doc_maintainers = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
         return obj.maintainers
+
+    def get_doc_maintainers(self, obj):
+        return obj.doc_maintainers
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayRetrieveOutputSLZ"
