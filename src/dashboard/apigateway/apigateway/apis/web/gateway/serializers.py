@@ -240,9 +240,10 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
             raise serializers.ValidationError(_("联系人不可为空。"))
 
         if data.get("type") == GatewayAPIDocMaintainerTypeEnum.SERVICE_ACCOUNT.value:
-            if not data["service_account"]["name"]:
+            service_account = data.get("service_account", {})
+            if not service_account.get("name"):
                 raise serializers.ValidationError(_("服务号名称不可为空。"))
-            if not data["service_account"]["link"]:
+            if not service_account.get("link"):
                 raise serializers.ValidationError(_("服务号链接不可为空。"))
         return data
 
