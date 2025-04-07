@@ -236,11 +236,10 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
     service_account = ServiceAccountSLZ(required=False, help_text="服务号")
 
     def validate(self, data):
-        if data.get("type") == GatewayAPIDocMaintainerTypeEnum.USER.value:
-            if not data.get("contacts"):
-                raise serializers.ValidationError(_("联系人不可为空。"))
+        if data.get("type") == GatewayAPIDocMaintainerTypeEnum.USER.value and not data.get("contacts"):
+            raise serializers.ValidationError(_("联系人不可为空。"))
 
-        elif data.get("type") == GatewayAPIDocMaintainerTypeEnum.SERVICE_ACCOUNT.value:
+        if data.get("type") == GatewayAPIDocMaintainerTypeEnum.SERVICE_ACCOUNT.value:
             if not data["service_account"]["name"]:
                 raise serializers.ValidationError(_("服务号名称不可为空。"))
             if not data["service_account"]["link"]:
