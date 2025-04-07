@@ -110,7 +110,7 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
         event = self.context["release_history_events_map"].get(obj.id, None)
         if not event:
             # 兼容历史数据
-            return obj.status
+            return "pending"
 
         # 通过最新的 event 获取 release_history 状态
         return event.get_release_history_status()

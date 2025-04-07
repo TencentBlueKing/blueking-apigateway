@@ -45,7 +45,6 @@ from apigateway.core.constants import (
     PublishEventStatusEnum,
     PublishSourceEnum,
     ReleaseHistoryStatusEnum,
-    ReleaseStatusEnum,
     ResourceVersionSchemaEnum,
     StageStatusEnum,
 )
@@ -454,10 +453,6 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))
-    # todo: 1.14 删除
-    name = models.CharField(_("[Deprecated] 版本名"), max_length=128)
-    # todo: 1.14 删除
-    title = models.CharField(max_length=128, blank=True, default="", null=True)
     comment = models.CharField(max_length=512, blank=True, null=True)
     _data = models.TextField(db_column="data")
     # 用于不同数据格式解析版本数据兼容历史数据
@@ -561,8 +556,6 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
 
     # only one stage-resource_version
     stage = models.ForeignKey(Stage, related_name="+", on_delete=models.CASCADE)
-    # todo:1.14
-    stages = models.ManyToManyField(Stage)
 
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)
     comment = models.CharField(max_length=512, blank=True, null=True)
@@ -573,15 +566,6 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
         choices=PublishSourceEnum.get_choices(),
         default=PublishSourceEnum.VERSION_PUBLISH.value,
     )
-    # todo:1.14 删掉该字段废弃，由 publish_event 来决定最终状态
-    status = models.CharField(
-        _("发布状态"),
-        max_length=16,
-        choices=ReleaseStatusEnum.get_choices(),
-        default=ReleaseStatusEnum.PENDING.value,
-    )
-    # 废弃同上
-    message = models.TextField(blank=True, default="")
 
     objects = managers.ReleaseHistoryManager()
 

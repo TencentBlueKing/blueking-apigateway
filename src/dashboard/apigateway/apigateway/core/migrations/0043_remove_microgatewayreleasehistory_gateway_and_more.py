@@ -102,4 +102,24 @@ class Migration(migrations.Migration):
         migrations.DeleteModel(
             name='StageItemConfig',
         ),
+        migrations.RemoveField(
+            model_name='releasehistory',
+            name='message',
+        ),
+        migrations.RemoveField(
+            model_name='releasehistory',
+            name='stages',
+        ),
+        migrations.RemoveField(
+            model_name='releasehistory',
+            name='status',
+        ),
+        migrations.RemoveField(
+            model_name='resourceversion',
+            name='name',
+        ),
+        migrations.RemoveField(
+            model_name='resourceversion',
+            name='title',
+        ),
     ]
