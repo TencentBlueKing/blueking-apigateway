@@ -36,6 +36,7 @@ from apigateway.core.constants import (
     BackendTypeEnum,
     ContextScopeTypeEnum,
     ContextTypeEnum,
+    GatewayKindEnum,
     GatewayStatusEnum,
     MicroGatewayStatusEnum,
     ProxyTypeEnum,
@@ -80,6 +81,11 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
 
     # status
     status = models.IntegerField(choices=GatewayStatusEnum.get_choices())
+
+    # kind is normal or programmable, while the gateway_type is already been occupied on the context of gateway_auth
+    kind = models.IntegerField(
+        choices=GatewayKindEnum.get_choices(), default=GatewayKindEnum.NORMAL.value, null=True, blank=True
+    )
 
     is_public = models.BooleanField(default=False)
 
@@ -755,27 +761,3 @@ class MicroGateway(ConfigModelMixin):
     def instance_id(self):
         """微网关实例 ID"""
         return str(self.pk)
-
-
-# FIXME: remove this model
-class MicroGatewayReleaseHistory(models.Model):
-    """微网关资源发布历史，不同于 ReleaseHistory，这里关注的是单个实例"""
-
-    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
-    # 因为实例和环境的绑定关系可能会修改，所以这里不能是强关联
-    stage = models.ForeignKey(Stage, null=True, on_delete=models.SET_NULL)
-    micro_gateway = models.ForeignKey(MicroGateway, on_delete=models.CASCADE)
-    release_history = models.ForeignKey(ReleaseHistory, on_delete=models.CASCADE)
-    message = models.TextField(blank=True, null=True, default="")
-
-    # todo: 废弃：1.14 删除
-    status = models.CharField(
-        _("发布状态"),
-        max_length=16,
-        choices=ReleaseStatusEnum.get_choices(),
-        default=ReleaseStatusEnum.PENDING.value,
-    )
-    details = JSONField(blank=True, null=True)
-
-    class Meta:
-        db_table = "core_micro_gateway_release_history"

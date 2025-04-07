@@ -27,6 +27,7 @@ from apigateway.biz.gateway_type import GatewayTypeHandler
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import (
+    GatewayKindEnum,
     GatewayStatusEnum,
 )
 from apigateway.core.models import Gateway
@@ -38,6 +39,13 @@ from .validators import ReservedGatewayNameValidator
 
 class GatewayListInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(allow_blank=True, required=False, help_text="网关筛选条件，支持模糊匹配网关名称")
+    kind = serializers.ChoiceField(
+        choices=GatewayKindEnum.get_choices(),
+        required=False,
+        allow_null=True,
+        help_text="网关类型，不传或传空表示全部",
+    )
+
     order_by = serializers.ChoiceField(
         choices=["-updated_time", "updated_time", "-created_time", "created_time", "name", "-name"],
         default="-updated_time",
@@ -54,13 +62,19 @@ class GatewayListOutputSLZ(serializers.Serializer):
     status = serializers.ChoiceField(
         choices=GatewayStatusEnum.get_choices(), read_only=True, help_text="网关状态，0: 已停用，1：启用中"
     )
+    kind = serializers.ChoiceField(
+        choices=GatewayKindEnum.get_choices(),
+        read_only=True,
+        help_text="网关类型，0: 普通网关，1：可编程网关",
+    )
     is_public = serializers.BooleanField(read_only=True, help_text="是否公开，true：公开，false：不公开")
-    created_by = serializers.CharField(allow_blank=True, allow_null=True, read_only=True, help_text="创建人")
-    created_time = serializers.DateTimeField(allow_null=True, read_only=True, help_text="创建时间")
-    updated_time = serializers.DateTimeField(allow_null=True, read_only=True, help_text="更新时间")
     is_official = serializers.SerializerMethodField(help_text="是否为官方网关，true：官方网关，false：非官方网关")
     resource_count = serializers.SerializerMethodField(help_text="网关下资源的数量")
     stages = serializers.SerializerMethodField(help_text="网关环境列表，其中的 released 表示环境是否已发布")
+
+    created_by = serializers.CharField(allow_blank=True, allow_null=True, read_only=True, help_text="创建人")
+    created_time = serializers.DateTimeField(allow_null=True, read_only=True, help_text="创建时间")
+    updated_time = serializers.DateTimeField(allow_null=True, read_only=True, help_text="更新时间")
 
     def get_is_official(self, obj):
         if obj.id not in self.context["gateway_auth_configs"]:
@@ -162,6 +176,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             "doc_maintainers",
             "developers",
             "status",
+            "kind",
             "is_public",
             "created_by",
             "created_time",
@@ -187,6 +202,9 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             },
             "status": {
                 "help_text": "网关状态，0：已停用，1：启用中",
+            },
+            "kind": {
+                "help_text": "网关类型，0: 普通网关，1：可编程网关",
             },
             "is_public": {
                 "help_text": "是否公开, true: 公开,false: 不公开",
