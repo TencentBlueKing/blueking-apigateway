@@ -8,5 +8,5 @@ if [ -f "${envfile}" ]; then
     set +a
 fi
 
-command="celery -A apigateway.apigateway worker -l INFO -P gevent -c 20"
+command="celery -A apigateway.apigateway worker -l INFO -c 20"
 exec bash -c "$command"
