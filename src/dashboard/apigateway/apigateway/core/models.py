@@ -33,7 +33,6 @@ from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
     EVENT_FAIL_INTERVAL_TIME,
     RESOURCE_METHOD_CHOICES,
-    APIHostingTypeEnum,
     BackendTypeEnum,
     ContextScopeTypeEnum,
     ContextTypeEnum,
@@ -83,11 +82,6 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     status = models.IntegerField(choices=GatewayStatusEnum.get_choices())
 
     is_public = models.BooleanField(default=False)
-    # 不同的托管类型决定特性集
-    hosting_type = models.IntegerField(
-        choices=APIHostingTypeEnum.get_choices(),
-        default=APIHostingTypeEnum.MICRO.value,
-    )
 
     def __str__(self):
         return f"<Gateway: {self.pk}/{self.name}>"
