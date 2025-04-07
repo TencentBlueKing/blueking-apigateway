@@ -81,6 +81,14 @@ class TestGatewayRetrieveUpdateDestroyApi:
         data = {
             "description": faker.pystr(),
             "maintainers": ["admin"],
+            "doc_maintainers": {
+                "type": "user",
+                "contacts": ["admin1", "admin2", "admin3"],
+                "service_account": {
+                    "name": "",
+                    "link": "",
+                },
+            },
             "is_public": faker.random_element([True, False]),
             "bk_app_codes": ["app1"],
             "related_app_codes": ["app2"],

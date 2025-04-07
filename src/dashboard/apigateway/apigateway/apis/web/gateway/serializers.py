@@ -15,10 +15,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
+from apigateway.apis.web.constants import GatewayAPIDocMaintainerTypeEnum
 from apigateway.biz.constants import APP_CODE_PATTERN
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_type import GatewayTypeHandler
@@ -134,6 +136,7 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
 
 class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="网关维护人员")
+    doc_maintainers = serializers.JSONField(help_text="网关文档维护人员")
     developers = serializers.ListField(
         child=serializers.CharField(), allow_empty=True, default=list, help_text="网关开发者"
     )
@@ -156,6 +159,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             "name",
             "description",
             "maintainers",
+            "doc_maintainers",
             "developers",
             "status",
             "is_public",
@@ -217,8 +221,37 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
         return self.context["related_app_codes"]
 
 
+class ServiceAccountSLZ(serializers.Serializer):
+    name = serializers.CharField(allow_blank=True, required=False, help_text="服务号名称")
+    link = serializers.CharField(allow_blank=True, required=False, help_text="服务号链接")
+
+
+class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
+    type = serializers.ChoiceField(
+        choices=GatewayAPIDocMaintainerTypeEnum.get_choices(), allow_blank=True, required=False, help_text="联系人类型"
+    )
+    contacts = serializers.ListField(
+        child=serializers.CharField(), allow_empty=True, required=False, help_text="联系人"
+    )
+    service_account = ServiceAccountSLZ(required=False, help_text="服务号")
+
+    def validate(self, data):
+        if data.get("type") == GatewayAPIDocMaintainerTypeEnum.USER.value and not data.get("contacts"):
+            raise serializers.ValidationError(_("联系人不可为空。"))
+
+        if data.get("type") == GatewayAPIDocMaintainerTypeEnum.SERVICE_ACCOUNT.value:
+            service_account = data.get("service_account", {})
+            if not service_account.get("name"):
+                raise serializers.ValidationError(_("服务号名称不可为空。"))
+            if not service_account.get("link"):
+                raise serializers.ValidationError(_("服务号链接不可为空。"))
+        return data
+
+
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="网关维护人员")
+    doc_maintainers = GatewayAPIDocMaintainerSLZ(required=False, help_text="网关文档维护人员")
+
     developers = serializers.ListField(
         child=serializers.CharField(), allow_empty=True, default=list, help_text="网关开发者"
     )
@@ -240,6 +273,7 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
         fields = (
             "description",
             "maintainers",
+            "doc_maintainers",
             "developers",
             "is_public",
             "bk_app_codes",
