@@ -7,7 +7,6 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('schema', '0007_alter_schema_type'),
         ('core', '0044_gateway_kind'),
         ('support', '0017_auto_20230901_1716'),
     ]
