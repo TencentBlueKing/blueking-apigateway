@@ -48,7 +48,7 @@
                     property="version"
                     :label="t('版本号')"
                     :description="t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1')"
-                    class="form-item-version mt-20"
+                    class="form-item-version mt-20 mb15"
                     required>
                     <!-- <bk-popover
                       :content="t('由数字、字母、中折线（-）、点号（.）组成，长度小于64个字符')"
@@ -59,10 +59,6 @@
                       v-model="formData.version"
                       :placeholder="t('由数字、字母、中折线（-）、点号（.）组成，长度小于64个字符')"
                     />
-                    <div class="form-tips">
-                      <i class="apigateway-icon icon-ag-info"></i>
-                      {{ t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1') }}
-                    </div>
                   </bk-form-item>
                   <bk-form-item>
                     <section class="ft12">
@@ -138,23 +134,23 @@
             </div>
           </div>
 
-          <div class="create-status" v-if="!loading && createError">
-            <close class="status-icon large-icon" fill="#EA3636" />
-            <p class="create-status-title">
-              {{ t('版本生成失败') }}
-            </p>
-            <p class="create-status-subtitle">
-              {{ t('接下来你可以重试或关闭弹窗') }}
-            </p>
-            <div class="create-status-btns">
-              <bk-button theme="primary" @click="handleBuildVersion">
-                {{ t('重试') }}
-              </bk-button>
-              <bk-button class="ml8" @click="handleCancel">
-                {{ t('关闭') }}
-              </bk-button>
-            </div>
-          </div>
+          <!--          <div class="create-status" v-if="!loading && createError">-->
+          <!--            <close class="status-icon large-icon" fill="#EA3636" />-->
+          <!--            <p class="create-status-title">-->
+          <!--              {{ t('版本生成失败') }}-->
+          <!--            </p>-->
+          <!--            <p class="create-status-subtitle">-->
+          <!--              {{ t('接下来你可以重试或关闭弹窗') }}-->
+          <!--            </p>-->
+          <!--            <div class="create-status-btns">-->
+          <!--              <bk-button theme="primary" @click="handleBuildVersion">-->
+          <!--                {{ t('重试') }}-->
+          <!--              </bk-button>-->
+          <!--              <bk-button class="ml8" @click="handleCancel">-->
+          <!--                {{ t('关闭') }}-->
+          <!--              </bk-button>-->
+          <!--            </div>-->
+          <!--          </div>-->
         </div>
       </template>
     </bk-sideslider>
@@ -180,18 +176,32 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { ref, reactive, watch, computed } from 'vue';
+import {
+  computed,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import semver from 'semver';
-import { useRoute, useRouter } from 'vue-router';
-import { Success, Spinner, Close } from 'bkui-vue/lib/icon';
-import { Message } from 'bkui-vue';
+import {
+  useRoute,
+  useRouter,
+} from 'vue-router';
+import {
+  Spinner,
+  Success,
+} from 'bkui-vue/lib/icon';
+import {
+  InfoBox,
+  Message,
+} from 'bkui-vue';
 import releaseSideslider from '@/views/stage/overview/comps/release-sideslider.vue';
 import {
-  getResourceVersionsList,
   createResourceVersion,
-  resourceVersionsDiff,
-  getStageList,
   getNextVersion,
+  getResourceVersionsList,
+  getStageList,
+  resourceVersionsDiff,
 } from '@/http';
 import { useGetStageList } from '@/hooks';
 import versionDiff from '@/components/version-diff/index.vue';
@@ -229,7 +239,9 @@ const formRef = ref(null);
 const diffSourceId = ref('');
 const diffTargetId = ref('');
 const loading = ref(false);
-const createError = ref<boolean>(false);
+const createError = ref(false);
+const hasDuplicateVersionError = ref(false);
+const duplicateVersionErrorMsg = ref('');
 const releaseSidesliderRef = ref(null);
 const versionData = ref<any>();
 const stageData = ref<any>();
@@ -237,7 +249,8 @@ const stageData = ref<any>();
 interface FormData {
   version: string;
   comment: string;
-};
+}
+
 // 提交数据
 const formData = reactive<FormData>({
   version: '',
@@ -283,6 +296,11 @@ const rules = {
         return true;
       },
     },
+    {
+      message: () => duplicateVersionErrorMsg.value,
+      trigger: 'change',
+      validator: () => !hasDuplicateVersionError.value,
+    },
   ],
 };
 
@@ -291,14 +309,33 @@ const handleBuildVersion = async () => {
   try {
     await formRef.value?.validate();
     loading.value = true;
-    dialogShow.value = true;
     await createResourceVersion(apigwId.value, formData);
+    dialogShow.value = true;
     emit('done');
     getStagesStatus();
     createError.value = false;
+    hasDuplicateVersionError.value = false;
+    duplicateVersionErrorMsg.value = '';
   } catch (e) {
-    createError.value = true;
-    console.log(e);
+    const error = e as Error;
+    const errMsg = error?.message?.toLowerCase() || t('版本号已存在');
+    if (
+      (errMsg.includes('版本') && errMsg.includes('已存在'))
+      || (errMsg.includes('resource version') && errMsg.includes('already exists'))
+    ) {
+      hasDuplicateVersionError.value = true;
+      duplicateVersionErrorMsg.value = errMsg;
+      await formRef.value!.validate('version');
+    } else {
+      // createError.value = true;
+      InfoBox({
+        'ext-cls': 'version-publish-error-infobox',
+        infoType: 'danger',
+        title: t('版本生成失败'),
+        subTitle: t('版本号创建失败，请联系管理员'),
+        confirmText: t('关闭'),
+      });
+    }
   } finally {
     loading.value = false;
   }
@@ -407,100 +444,133 @@ watch(
   },
 );
 
+watch(() => formData.version, () => {
+  hasDuplicateVersionError.value = false;
+  duplicateVersionErrorMsg.value = '';
+});
+
 defineExpose({
   showReleaseSideslider,
 });
 </script>
 
-  <style lang="scss" scoped>
-  .sideslider-content {
+<style lang="scss" scoped>
+.sideslider-content {
+  width: 100%;
+
+  .top-steps {
     width: 100%;
+    padding: 16px 300px;
+    border-bottom: 1px solid #dcdee5;
+  }
 
-    .top-steps {
-      width: 100%;
-      padding: 16px 300px;
-      border-bottom: 1px solid #dcdee5;
+  .main {
+    padding: 15px 100px 0px;
+
+    .add {
+      color: #34d97b;
     }
 
-    .main {
-      padding: 15px 100px 0px;
-
-      .add {
-        color: #34d97b;
-      }
-
-      .update {
-        color: #ffb400;
-      }
-
-      .delete {
-        color: #ff5656;
-      }
-
-      .ft12 {
-        color: #63656e;
-      }
+    .update {
+      color: #ffb400;
     }
 
-    .resource-diff-main {
-      padding: 18px 24px 24px;
+    .delete {
+      color: #ff5656;
     }
-    .operate1 {
-      padding: 0px 100px 24px;
-    }
-    .operate2 {
-      padding: 0px 24px 24px;
+
+    .ft12 {
+      color: #63656e;
     }
   }
 
-  .form-tips {
-    font-size: 12px;
+  .resource-diff-main {
+    padding: 18px 24px 24px;
+  }
+
+  .operate1 {
+    padding: 0px 100px 24px;
+  }
+
+  .operate2 {
+    padding: 0px 24px 24px;
+  }
+}
+
+.form-tips {
+  font-size: 12px;
+  color: #63656e;
+}
+
+.form-item-version {
+  margin-bottom: 0;
+
+  &.is-error {
+    margin-bottom: 12px;
+  }
+}
+
+.version-create-status {
+  margin-top: 238px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+
+  .create-status-title {
+    font-size: 24px;
+    color: #313238;
+    margin-bottom: 16px;
+  }
+
+  .create-status-subtitle {
+    font-size: 14px;
     color: #63656e;
+    margin-bottom: 28px;
   }
 
-  .form-item-version {
-    margin-bottom: 0;
-    &.is-error {
-      margin-bottom: 12px;
+  .status-icon {
+    font-size: 56px;
+
+    &.large-icon {
+      font-size: 74px;
     }
+  }
+}
+
+.ml8 {
+  margin-left: 8px;
+}
+</style>
+
+<style lang="scss">
+.custom-option-disabled {
+  color: #c4c6cc !important;
+  cursor: not-allowed !important;
+}
+
+.scroll {
+  .bk-modal-content {
+    overflow-y: auto;
+  }
+}
+
+.version-publish-error-infobox {
+
+  .bk-modal-wrapper .bk-modal-footer {
+    border: none;
+    background-color: #fff;
   }
 
-  .version-create-status {
-    margin-top: 238px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
-    .create-status-title {
-      font-size: 24px;
-      color: #313238;
-      margin-bottom: 16px;
-    }
-    .create-status-subtitle {
-      font-size: 14px;
-      color: #63656E;
-      margin-bottom: 28px;
-    }
-    .status-icon {
-      font-size: 56px;
-      &.large-icon {
-        font-size: 74px;
-      }
-    }
-  }
-  .ml8 {
-    margin-left: 8px;
-  }
-  </style>
+  .bk-modal-wrapper .bk-dialog-footer {
+    border: none;
+    background-color: #fff;
+    padding-bottom: 24px;
 
-  <style lang="scss">
-  .custom-option-disabled {
-    color: #c4c6cc !important;
-    cursor: not-allowed !important;
-  }
-  .scroll {
-    .bk-modal-content {
-      overflow-y: auto;
+    .bk-dialog-cancel {
+
+      display: none;
     }
   }
-  </style>
+}
+</style>
