@@ -56,7 +56,6 @@ class ComponentReleaser:
             self.gateway,
             data={
                 "version": version,
-                "title": version,
                 "comment": _("同步组件到 API 网关"),
             },
             username=self.username,

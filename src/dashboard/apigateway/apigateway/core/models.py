@@ -477,7 +477,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
     @property
     def object_display(self):
         if not self.version:
-            return f"{self.title}({self.name})"
+            return f"{self.gateway}({self.created_time})"
 
         return self.version
 

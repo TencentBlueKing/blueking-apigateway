@@ -113,8 +113,6 @@ class ReleasedResourceHandler:
         stage_release = queryset.values(
             "stage_id",
             "resource_version_id",
-            "resource_version__name",
-            "resource_version__title",
             "resource_version__version",
             "resource_version__schema_version",
             "updated_time",
@@ -125,13 +123,7 @@ class ReleasedResourceHandler:
                 "release_status": True,
                 "release_time": release["updated_time"],
                 "resource_version_id": release["resource_version_id"],
-                "resource_version_name": release["resource_version__name"],
-                "resource_version_title": release["resource_version__title"],
-                "resource_version": {
-                    "version": release["resource_version__version"]
-                    if release["resource_version__version"] != ""
-                    else release["resource_version__title"]
-                },
+                "resource_version": {"version": release["resource_version__version"]},
                 "resource_version_schema_version": release["resource_version__schema_version"],
                 "resource_version_display": release["resource_version__version"],
                 "release_by": release["updated_by"],

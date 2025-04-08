@@ -134,8 +134,6 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
             "OK",
             data={
                 "version": resource_version["version"],
-                "resource_version_name": resource_version["name"],
-                "resource_version_title": resource_version["title"],
                 "stage_names": list(Stage.objects.filter(id__in=stage_ids).values_list("name", flat=True)),
             },
         )

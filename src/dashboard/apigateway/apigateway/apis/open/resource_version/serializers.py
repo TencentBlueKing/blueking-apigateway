@@ -31,7 +31,8 @@ from apigateway.core.models import ResourceVersion
 class ReleaseV1InputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     version = serializers.RegexField(SEMVER_PATTERN, max_length=64, required=False)
-    resource_version_name = serializers.CharField(max_length=128, allow_blank=True, required=False)
+    # remove the name from ResourceVersion
+    # resource_version_name = serializers.CharField(max_length=128, allow_blank=True, required=False)
     stage_names = serializers.ListField(child=serializers.CharField(max_length=64), allow_empty=True, default=list)
     comment = serializers.CharField(max_length=512, allow_blank=True, default="")
 
@@ -40,27 +41,15 @@ class ReleaseV1InputSLZ(serializers.Serializer):
         data["resource_version_id"] = self._get_resource_version_id(
             data["gateway"],
             data.get("version"),
-            data.get("resource_version_name"),
         )
         data["stage_ids"] = StageHandler.get_stage_ids(data["gateway"], data["stage_names"])
         return data
 
-    def _get_resource_version_id(self, gateway, version: Optional[str], resource_version_name: Optional[str]) -> int:
+    def _get_resource_version_id(self, gateway, version: Optional[str]) -> int:
         if version:
             resource_version_id = ResourceVersion.objects.get_id_by_version(gateway.id, version)
             if not resource_version_id:
                 raise serializers.ValidationError({"version": _("版本【{version}】不存在。").format(version=version)})
-            return resource_version_id
-        if resource_version_name:
-            resource_version_id = ResourceVersion.objects.get_id_by_name(gateway, resource_version_name)
-            if not resource_version_id:
-                raise serializers.ValidationError(
-                    {
-                        "resource_version_name": _("版本【{resource_version_name}】不存在。").format(
-                            resource_version_name=resource_version_name,
-                        ),
-                    }
-                )
             return resource_version_id
 
         raise serializers.ValidationError({"version": "请指定待发布的版本"})
@@ -69,7 +58,6 @@ class ReleaseV1InputSLZ(serializers.Serializer):
 class ResourceVersionCreateV1InputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     version = serializers.RegexField(SEMVER_PATTERN, max_length=64, required=True)
-    title = serializers.CharField(allow_blank=True, allow_null=True, max_length=128, required=False)
     comment = serializers.CharField(allow_blank=True, allow_null=True, max_length=512, required=False)
 
     class Meta:
@@ -82,5 +70,4 @@ class ResourceVersionQueryV1InputSLZ(serializers.Serializer):
 
 class ResourceVersionListV1OutputSLZ(serializers.Serializer):
     version = serializers.CharField(read_only=True)
-    title = serializers.CharField(read_only=True)
     comment = serializers.CharField(read_only=True)

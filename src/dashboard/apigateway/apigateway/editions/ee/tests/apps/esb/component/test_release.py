@@ -45,7 +45,6 @@ class TestComponentReleaser:
             self.releaser.gateway,
             data={
                 "version": f"1.0.{self.releaser.release_history.id}",
-                "title": f"1.0.{self.releaser.release_history.id}",
                 "comment": "同步组件到 API 网关",
             },
             username="admin",

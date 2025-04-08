@@ -123,8 +123,8 @@ class TestStageManager:
 class TestResourceVersionManager:
     def test_get_id_to_fields_map(self):
         gateway = G(Gateway)
-        rv1 = G(ResourceVersion, gateway=gateway, name="rv1", title="rv1", version="1.0.1")
-        rv2 = G(ResourceVersion, gateway=gateway, name="rv2", title="rv2", version="1.0.2")
+        rv1 = G(ResourceVersion, gateway=gateway, version="1.0.1")
+        rv2 = G(ResourceVersion, gateway=gateway, version="1.0.2")
 
         data = [
             {
@@ -133,8 +133,8 @@ class TestResourceVersionManager:
                     "resource_version_ids": None,
                 },
                 "expected": {
-                    rv1.id: {"id": rv1.id, "name": rv1.name, "title": rv1.title, "version": "1.0.1"},
-                    rv2.id: {"id": rv2.id, "name": rv2.name, "title": rv2.title, "version": "1.0.2"},
+                    rv1.id: {"id": rv1.id, "version": "1.0.1"},
+                    rv2.id: {"id": rv2.id, "version": "1.0.2"},
                 },
             },
             {
@@ -143,23 +143,13 @@ class TestResourceVersionManager:
                     "resource_version_ids": [rv1.id],
                 },
                 "expected": {
-                    rv1.id: {"id": rv1.id, "name": rv1.name, "title": rv1.title, "version": "1.0.1"},
+                    rv1.id: {"id": rv1.id, "version": "1.0.1"},
                 },
             },
         ]
         for test in data:
             result = ResourceVersion.objects.get_id_to_fields_map(**test["params"])
             assert result == test["expected"]
-
-    def test_get_id_by_name(self, unique_id):
-        gateway = G(Gateway)
-
-        result = ResourceVersion.objects.get_id_by_name(gateway, unique_id)
-        assert result is None
-
-        resource_version = G(ResourceVersion, gateway=gateway, name=unique_id)
-        result = ResourceVersion.objects.get_id_by_name(gateway, unique_id)
-        assert result == resource_version.id
 
     def test_get_id_by_version(self, unique_id):
         gateway = G(Gateway)
@@ -174,8 +164,6 @@ class TestResourceVersionManager:
     def test_get_object_fields(self, fake_resource_version):
         expected = {
             "id": fake_resource_version.id,
-            "name": fake_resource_version.name,
-            "title": fake_resource_version.title,
             "version": fake_resource_version.version,
         }
 
@@ -189,7 +177,6 @@ class TestResourceVersionManager:
             {
                 "id": fake_resource_version.id,
                 "version": fake_resource_version.version,
-                "title": fake_resource_version.title,
                 "comment": fake_resource_version.comment,
             }
         ]
@@ -459,39 +446,27 @@ class TestReleaseHistoryManager(TestCase):
         gateway = G(Gateway)
         stage_prod = G(Stage, gateway=gateway, name="prod")
         stage_test = G(Stage, gateway=gateway, name="test")
-        resource_version_1 = G(ResourceVersion, gateway=gateway, name="test-20191225-aaaaa")
-        resource_version_2 = G(ResourceVersion, gateway=gateway, name="test-20191225-bbbbb")
+        resource_version_1 = G(ResourceVersion, gateway=gateway)
+        resource_version_2 = G(ResourceVersion, gateway=gateway)
 
-        history = G(ReleaseHistory, gateway=gateway, stage=stage_prod, resource_version=resource_version_1)
-
-        history = G(
-            ReleaseHistory, gateway=gateway, stage=stage_prod, resource_version=resource_version_1, created_by="admin"
-        )
-
-        history = G(
+        # prod
+        G(ReleaseHistory, gateway=gateway, stage=stage_prod, resource_version=resource_version_1)
+        G(ReleaseHistory, gateway=gateway, stage=stage_prod, resource_version=resource_version_1, created_by="admin")
+        G(
             ReleaseHistory,
             gateway=gateway,
             stage=stage_prod,
             resource_version=resource_version_1,
             created_time=dummy_time.time,
         )
-
-        history = G(ReleaseHistory, gateway=gateway, stage=stage_test, resource_version=resource_version_2)
+        # test
+        G(ReleaseHistory, gateway=gateway, stage=stage_test, resource_version=resource_version_2)
 
         data = [
             # query, stage_name
             {
                 "params": {
                     "query": "prod",
-                },
-                "expected": {
-                    "count": 3,
-                },
-            },
-            # query, release_version name
-            {
-                "params": {
-                    "query": "aaaaa",
                 },
                 "expected": {
                     "count": 3,

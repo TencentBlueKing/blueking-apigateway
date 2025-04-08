@@ -28,7 +28,7 @@ from apigateway.biz.releaser import (
     ReleaseValidationError,
 )
 from apigateway.common.user_credentials import UserCredentials
-from apigateway.core.constants import PublishEventEnum, PublishEventStatusEnum, ReleaseStatusEnum
+from apigateway.core.constants import PublishEventEnum, PublishEventStatusEnum
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -39,7 +39,6 @@ def get_release_data(gateway):
     resource_version = G(
         ResourceVersion,
         gateway=gateway,
-        name=f"{gateway.id}-{stage.id}",
         _data=json.dumps([{"id": 1, "name": "demo", "method": "GET", "path": "/"}]),
     )
     G(
@@ -103,12 +102,11 @@ class TestBaseGatewayReleaser:
         mocker.patch.object(releaser, "_validate", side_effect=ReleaseValidationError)
         with pytest.raises(ReleaseError):
             releaser.release()
-        ReleaseHistory.objects.filter(gateway=fake_gateway, status=ReleaseStatusEnum.FAILURE.value).exists()
+        ReleaseHistory.objects.filter(gateway=fake_gateway).exists()
         # 校验成功
         mocker.patch.object(releaser, "_validate", return_value=None)
         mocker.patch.object(releaser, "_validate", return_value=None)
         mock_release = mocker.patch.object(releaser, "_do_release")
-        # mock_post_release = mocker.patch.object(releaser, "_post_release")
 
         releaser.release()
         resource_version_ids = list(
@@ -118,7 +116,6 @@ class TestBaseGatewayReleaser:
         )
         assert len(resource_version_ids) == 1
         assert resource_version_ids[0] == release_data["resource_version_id"]
-        # assert ReleaseHistory.objects.filter(gateway=fake_gateway, status=ReleaseStatusEnum.SUCCESS.value).exists()
 
         mock_release.assert_called()
         # mock_post_release.assert_called()

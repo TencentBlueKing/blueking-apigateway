@@ -78,9 +78,9 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
         queryset = ResourceVersion.objects.filter(gateway=request.gateway)
         if query:
             queryset = queryset.filter(version__icontains=query)
-        data = queryset.values(
-            "id", "version", "schema_version", "comment", "name", "title", "created_time", "created_by"
-        ).order_by("-id")
+        data = queryset.values("id", "version", "schema_version", "comment", "created_time", "created_by").order_by(
+            "-id"
+        )
 
         page = self.paginate_queryset(data)
         resource_version_ids = [rv["id"] for rv in page]
