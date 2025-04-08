@@ -1719,6 +1719,9 @@ const lang: ILANG = {
   '对于非 Django 项目，提供了 Docker 基础镜像，封装了 SDK 同步网关的相关功能，以便非 Django 项目轻松管理 API 网关。': ['For non-Django projects, a Docker base image is provided that encapsulates the SDK synchronization gateway-related functions, making it easier for non-Django projects to manage API gateways.'],
   'Django 中间件': ['Django Middleware'],
   'SDK 还提供了 Django 中间件，用于解析 API 网关请求后端接口时添加的请求头 X-Bkapi-JWT，以方便后端服务校验请求是否来自 API 网关。这个中间件可以确保只有来自蓝鲸 API 网关的请求才能访问您的后端服务，从而提高系统的安全性。': ['The SDK also provides a Django middleware for parsing the X-Bkapi-JWT header added to API gateway requests when accessing backend interfaces. This middleware ensures that only requests from the BK API Gateway can access your backend services, improving system security.'],
+  '当前有版本正在发布，请稍后再操作': ['A new version is being published, please try again later'],
+  '当前有版本正在发布，请稍后再进行变量修改': ['A new version is being published, please modify variables again later'],
+  '当前有版本正在发布，请稍后再进行后端服务修改': ['A new version is being published, please modify backend service again later'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

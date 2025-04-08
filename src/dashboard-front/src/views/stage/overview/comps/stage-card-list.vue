@@ -122,18 +122,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRefs, computed, onUnmounted, onMounted } from 'vue';
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  toRefs,
+} from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { Message, InfoBox } from 'bkui-vue';
+import {
+  InfoBox,
+  Message,
+} from 'bkui-vue';
 import { Spinner } from 'bkui-vue/lib/icon';
 
-import { copy, getStatus, getStatusText } from '@/common/util';
+import {
+  copy,
+  getStatus,
+  getStatusText,
+} from '@/common/util';
 import logDetails from '@/components/log-details/index.vue';
 import mitt from '@/common/event-bus';
 import { useGetGlobalProperties } from '@/hooks';
 import { useCommon } from '@/store';
-import { removalStage, getGateWaysInfo } from '@/http';
+import {
+  getGateWaysInfo,
+  removalStage,
+} from '@/http';
 import { BasicInfoParams } from '@/views/basic-info/common/type';
 import editStageSideslider from './edit-stage-sideslider.vue';
 import releaseSideslider from './release-sideslider.vue';
@@ -251,6 +267,7 @@ const basicInfoData = ref<BasicInfoParams>({
   developers: [],
   is_public: true,
   is_official: false,
+  related_app_codes: '',
 });
 
 // 获取网关基本信息

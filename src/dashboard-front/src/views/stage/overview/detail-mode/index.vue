@@ -11,7 +11,7 @@
         <section class="stage-info">
           <div :class="['stage-name', stageData.release.status === 'unreleased' ? 'no-release' : '']">
             <template v-if="stageData.release.status === 'unreleased'">
-              <span class="no-release-label">未发布</span>
+              <span class="no-release-label">{{ t('未发布') }}</span>
               <span class="no-release-dot"></span>
               <!-- <span class="no-release-icon apigateway-icon icon-ag-edit-line" @click="handleEditStage">
               </span> -->
@@ -48,6 +48,12 @@
                     --
                   </span>
                   <span v-else>{{ stageData.resource_version.version || '--' }}</span>
+                  <bk-tag
+                    v-if="getStatus(stageData) === 'doing'" class="ml8" style="height: 16px;font-size: 10px;"
+                    theme="info"
+                  >
+                    {{ stageData.publish_version }} {{ t('发布中') }}
+                  </bk-tag>
                 </div>
               </div>
               <div class="apigw-form-item">
@@ -89,15 +95,22 @@
               v-else
               theme="primary"
               class="mr10"
-              :disabled="!!stageData?.publish_validate_msg"
-              v-bk-tooltips="{ content: t(stageData?.publish_validate_msg),
-                               disabled: !stageData?.publish_validate_msg }"
+              v-bk-tooltips="{
+                content: getStatus(stageData) === 'doing' ? t('当前有版本正在发布，请稍后再操作') : t(stageData?.publish_validate_msg),
+                disabled: getStatus(stageData) !== 'doing' && !stageData?.publish_validate_msg
+              }"
+              :disabled="!!stageData?.publish_validate_msg || getStatus(stageData) === 'doing'"
               @click="handleRelease">
               {{ t('发布资源') }}
             </bk-button>
             <bk-button
+              v-bk-tooltips="{
+                content: t('当前有版本正在发布，请稍后再操作'),
+                disabled: getStatus(stageData) !== 'doing'
+              }"
               class="mr10"
               @click="handleEditStage"
+              :disabled="getStatus(stageData) === 'doing'"
             >
               {{ t('编辑') }}
             </bk-button>
@@ -179,18 +192,40 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, shallowRef, ref, watch } from 'vue';
+import {
+  computed,
+  onMounted,
+  ref,
+  shallowRef,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute, useRouter } from 'vue-router';
-import { Message, InfoBox } from 'bkui-vue';
+import {
+  useRoute,
+  useRouter,
+} from 'vue-router';
+import {
+  InfoBox,
+  Message,
+} from 'bkui-vue';
 
-import { copy } from '@/common/util';
-import { useStage, useCommon } from '@/store';
+import {
+  copy,
+  getStatus,
+} from '@/common/util';
+import {
+  useCommon,
+  useStage,
+} from '@/store';
 import releaseSideslider from '../comps/release-sideslider.vue';
 import editStageSideslider from '../comps/edit-stage-sideslider.vue';
 import stageTopBar from '@/components/stage-top-bar.vue';
 import { useGetGlobalProperties } from '@/hooks';
-import { deleteStage, removalStage, getGateWaysInfo } from '@/http';
+import {
+  deleteStage,
+  getGateWaysInfo,
+  removalStage,
+} from '@/http';
 import mitt from '@/common/event-bus';
 import { BasicInfoParams } from '@/views/basic-info/common/type';
 
@@ -398,6 +433,7 @@ const basicInfoData = ref<BasicInfoParams>({
   developers: [],
   is_public: true,
   is_official: false,
+  related_app_codes: '',
 });
 
 // 获取网关基本信息
