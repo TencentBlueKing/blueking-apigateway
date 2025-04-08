@@ -431,12 +431,8 @@ onMounted(() => {
 
 <style lang="scss">
 @import './css/app.css';
-
-// 多租户人员选择器样式
-.multiple-selector .tags-container:not(.focused) {
-  border-color: #c4c6cc !important;
-}
 </style>
+
 <style lang="scss" scoped>
 .navigation-content {
   // :deep(.bk-navigation-header) {

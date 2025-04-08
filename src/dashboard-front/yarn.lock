@@ -1055,15 +1055,15 @@
     core-js-compat "^3.25.3"
     semver "^7.3.7"
 
-"@blueking/bk-user-display-name@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@blueking/bk-user-display-name/-/bk-user-display-name-1.0.1.tgz#41a2efa1d199c70d5a60e3bfaf45ea926efabb22"
-  integrity sha512-AWqV9eTerGEGBfjz9bl/TufM3oUed+sDE8VABKXa32ne2HhTmp5KD4F3G2xHxgyUcSGpUP0C5GFTJWdqpR5pUQ==
+"@blueking/bk-user-display-name@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@blueking/bk-user-display-name/-/bk-user-display-name-1.0.2.tgz#5db5d791db60571d744a352ed5100d9005489544"
+  integrity sha512-HutBumyW9cQEPD1rby7kJfCdKOZ5T1HHE4icQhuoHGP9rtQoB9NYmEbFdgQvNLVu1EbH4cCtdaaiu8imTzTJlw==
 
-"@blueking/bk-user-selector@^0.0.16":
-  version "0.0.16"
-  resolved "https://registry.yarnpkg.com/@blueking/bk-user-selector/-/bk-user-selector-0.0.16.tgz#fa9d759acd9320179aee860e331be28f111a1745"
-  integrity sha512-pvz7CSbkDfC/iU+26dwbM9FrxrouoHQ3+c2+jJ7pP6Srnpf/FGUcL85fhhI0DMpJK0LyIWWKHIyQfxHuT94Jjg==
+"@blueking/bk-user-selector@^0.0.22":
+  version "0.0.22"
+  resolved "https://registry.yarnpkg.com/@blueking/bk-user-selector/-/bk-user-selector-0.0.22.tgz#99785ec5b1e48f57c50611a25016056ddcc6af5c"
+  integrity sha512-j7mLP8+Kjv8HDN2uLzhYfNL5Jm0YNDwpglvCwcOph/m91NdDY1wl0aRaeH8s1GC3aAT1aFF/eYjOfxDoAYf3jw==
   dependencies:
     lodash "^4.17.21"
     sortablejs "^1.15.6"

@@ -17,9 +17,18 @@
           <bk-input clearable v-model="filterData.bk_app_code" :placeholder="t('请输入应用ID')" class="w150">
           </bk-input>
         </bk-form-item>
-        <bk-form-item :label="t('申请人')" class="mb10" label-width="90">
+        <bk-form-item v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE" :label="t('申请人')" class="mb10" label-width="90">
           <bk-input clearable v-model="filterData.applied_by" :placeholder="t('请输入用户')" class="w150">
           </bk-input>
+        </bk-form-item>
+        <bk-form-item v-else :label="t('申请人')" class="mb10" label-width="90">
+          <bk-user-selector
+            v-model="filterData.applied_by"
+            :api-base-url="user.apiBaseUrl"
+            :tenant-id="user.user.tenant_id"
+            :placeholder="t('请输入用户')"
+            style="min-width: 200px;"
+          />
         </bk-form-item>
       </bk-form>
     </div>
@@ -157,6 +166,7 @@ import { Message, Loading } from 'bkui-vue';
 import { sortByKey } from '@/common/util'
 import TableEmpty from '@/components/table-empty.vue';
 import { cloneDeep } from 'lodash';
+import BkUserSelector from '@blueking/bk-user-selector';
 
 const { t } = useI18n();
 const common = useCommon();

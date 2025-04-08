@@ -95,7 +95,13 @@
                   <span v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
                     {{ row.maintainers?.join(', ') || '--' }}
                   </span>
-                  <span v-else><bk-user-display-name :user-id="row.maintainers || []" /></span>
+                  <span v-else>
+                    <template v-for="(maintainer, index) in row.maintainers" :key="maintainer.login_name">
+                      <bk-user-display-name
+                        :user-id="maintainer"
+                      /><span v-if="index !== (row.maintainers.length - 1)">,</span>
+                    </template>
+                  </span>
                 </template>
               </bk-table-column>
               <bk-table-column

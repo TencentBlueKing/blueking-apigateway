@@ -42,8 +42,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, nextTick, watch, onBeforeMount, onMounted } from 'vue';
+import {
+  computed,
+  nextTick,
+  ref,
+  watch,
+} from 'vue';
 import MemberSelector from '../member-select';
+
 const props = defineProps({
   field: {
     type: String,
@@ -90,10 +96,10 @@ const isEditable = ref(false);
 const errorTips = ref('');
 const displayValue = ref([]);
 
-const handleValidate = () => {
-  isShowError.value = false;
-  errorTips.value = '';
-};
+// const handleValidate = () => {
+//   isShowError.value = false;
+//   errorTips.value = '';
+// };
 
 const handleEdit = () => {
   document.body.click();
@@ -132,18 +138,18 @@ const handleEnter = (event: any) => {
   }
 };
 
-const hideEdit = (event: any) => {
-  if (props.isRequired && !displayValue.value.length) {
-    isShowError.value = true;
-    errorTips.value = props.errorValue;
-    return;
-  }
-  if (memberSelectorEditRef.value?.contains(event.target)) {
-    return;
-  }
-  handleValidate();
-  triggerChange();
-};
+// const hideEdit = (event: any) => {
+//   if (props.isRequired && !displayValue.value.length) {
+//     isShowError.value = true;
+//     errorTips.value = props.errorValue;
+//     return;
+//   }
+//   if (memberSelectorEditRef.value?.contains(event.target)) {
+//     return;
+//   }
+//   handleValidate();
+//   triggerChange();
+// };
 
 const triggerChange = () => {
   if (props.isRequired && !displayValue.value.length) {
@@ -190,13 +196,13 @@ watch(
   { immediate: true },
 );
 
-onMounted(() => {
-  document.body.addEventListener('click', hideEdit);
-});
-
-onBeforeMount(() => {
-  document.body.removeEventListener('click', hideEdit);
-});
+// onMounted(() => {
+//   document.body.addEventListener('click', hideEdit);
+// });
+//
+// onBeforeMount(() => {
+//   document.body.removeEventListener('click', hideEdit);
+// });
 </script>
 
 <style lang="scss" scoped>
