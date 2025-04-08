@@ -5,11 +5,13 @@
         <div class="edit-content">
           <slot>
             <template v-if="membersText">
-              <span
-                v-bk-tooltips="{ content: tooltipContentVNode, placement: 'top-start' }"
-                class="member-item"
-              >
-                <span><bk-user-display-name ref="bkUserDisplayNameRef" :user-id="membersText" /></span>
+              <span class="member-item">
+                <bk-popover>
+                  <bk-user-display-name ref="bkUserDisplayNameRef" :user-id="membersText" />
+                  <template #content>
+                    <span><bk-user-display-name ref="bkUserDisplayNameRef" :user-id="membersText" /></span>
+                  </template>
+                </bk-popover>
               </span>
             </template>
             <template v-else>--</template>
@@ -27,7 +29,7 @@
           v-model="displayValue"
           :api-base-url="user.apiBaseUrl"
           :class="['edit-selector', { [isErrorClass]: isShowError }]"
-          :multiple="true"
+          multiple
           :placeholder="placeholder"
           :tenant-id="user.user.tenant_id"
           required
@@ -52,8 +54,6 @@
 import {
   computed,
   nextTick,
-  onBeforeMount,
-  onMounted,
   ref,
   watch,
 } from 'vue';
@@ -177,8 +177,6 @@ const triggerChange = () => {
   });
 };
 
-const tooltipContentVNode = () => <bk-user-display-name user-id={membersText.value} />;
-
 const styles = computed(() => {
   return {
     width: props.width,
@@ -209,13 +207,13 @@ watch(
   { immediate: true },
 );
 
-onMounted(() => {
-  document.body.addEventListener('click', hideEdit);
-});
-
-onBeforeMount(() => {
-  document.body.removeEventListener('click', hideEdit);
-});
+// onMounted(() => {
+//   document.body.addEventListener('click', hideEdit);
+// });
+//
+// onBeforeMount(() => {
+//   document.body.removeEventListener('click', hideEdit);
+// });
 </script>
 
 <style lang="scss" scoped>

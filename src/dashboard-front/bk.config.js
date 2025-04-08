@@ -16,6 +16,8 @@ module.exports = {
       devServer: {
         setupMiddlewares: mockServer,
         host: process.env.BK_LOCAL_HOST,
+        // 多租户开发环境
+        // host: 'dev-t.bk-tenant-dev.woa.com',
         client: {
           overlay: false,
         },

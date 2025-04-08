@@ -22,6 +22,7 @@
         </bk-form-item>
         <bk-form-item class="ag-form-item-search">
           <bk-search-select
+            v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE"
             style="width: 100%"
             v-model="searchValue"
             unique-select
@@ -31,6 +32,19 @@
             :clearable="false"
             :value-split-code="'+'"
             :value-behavior="'need-key'"
+          />
+          <bk-search-select
+            v-else
+            v-model="searchValue"
+            :clearable="false"
+            :data="searchData"
+            :get-menu-list="getMenuList"
+            :placeholder="t('请输入关键字或选择条件搜索')"
+            :value-behavior="'need-key'"
+            :value-split-code="'+'"
+            class="operate-records-search"
+            style="width: 100%"
+            unique-select
           />
         </bk-form-item>
       </bk-form>
@@ -97,6 +111,7 @@ import i18n from '@/language/i18n';
 import TableEmpty from '@/components/table-empty.vue';
 import RenderCustomColumn from '@/components/custom-table-header-filter';
 import {
+  computed,
   h,
   reactive,
   ref,
@@ -114,7 +129,10 @@ import {
   DefaultSearchParamsInterface,
   TableEmptyConfType,
 } from './common/type';
-import { fetchApigwAuditLogs } from '@/http';
+import {
+  fetchApigwAuditLogs,
+  searchTenantUsers,
+} from '@/http';
 import { Message } from 'bkui-vue';
 
 const { t } = i18n.global;
@@ -180,45 +198,51 @@ const OperateRecordStatus =  ref(OperateRecords.operateStatus.map((item: Record<
   };
 }));
 const searchValue = ref([]);
-const searchData = shallowRef([
-  {
-    name: t('模糊查询'),
-    id: 'keyword',
-    placeholder: t('请输入实例，操作人'),
-  },
-  {
-    name: t('操作对象'),
-    id: 'op_object_type',
-    placeholder: t('请选择操作对象'),
-    onlyRecommendChildren: true,
-    children: OperateRecordObjectType.value,
-  },
-  {
-    name: t('操作类型'),
-    id: 'op_type',
-    placeholder: t('请选择操作类型'),
-    onlyRecommendChildren: true,
-    children: OperateRecordType.value,
-  },
-  {
-    name: t('操作状态'),
-    id: 'op_status',
-    placeholder: t('请选择操作状态'),
-    onlyRecommendChildren: true,
-    children: OperateRecordStatus.value,
-  },
-
-  {
-    name: t('实例'),
-    id: 'op_object',
-    placeholder: t('请输入实例'),
-  },
-  {
-    name: t('操作人'),
-    id: 'username',
-    placeholder: t('请输入操作人'),
-  },
-]);
+const searchData = computed(() => {
+  const isTenantMode = user.featureFlags?.ENABLE_MULTI_TENANT_MODE || false;
+  return [
+    {
+      name: t('模糊查询'),
+      id: 'keyword',
+      placeholder: t('请输入实例，操作人'),
+      children: isTenantMode ? [] : undefined,
+    },
+    {
+      name: t('操作对象'),
+      id: 'op_object_type',
+      placeholder: t('请选择操作对象'),
+      onlyRecommendChildren: true,
+      children: OperateRecordObjectType.value,
+    },
+    {
+      name: t('操作类型'),
+      id: 'op_type',
+      placeholder: t('请选择操作类型'),
+      onlyRecommendChildren: true,
+      children: OperateRecordType.value,
+    },
+    {
+      name: t('操作状态'),
+      id: 'op_status',
+      placeholder: t('请选择操作状态'),
+      onlyRecommendChildren: true,
+      children: OperateRecordStatus.value,
+    },
+    {
+      name: t('实例'),
+      id: 'op_object',
+      placeholder: t('请输入实例'),
+      children: isTenantMode ? [] : undefined,
+    },
+    {
+      name: t('操作人'),
+      id: 'username',
+      placeholder: t('请输入操作人'),
+      async: isTenantMode,
+      children: isTenantMode ? [] : undefined,
+    },
+  ];
+});
 
 const handleFilterData = (payload: Record<string, string>, curData: Record<string, string>) => {
   const { id, name } = payload;
@@ -412,6 +436,25 @@ const updateTableEmptyConfig = () => {
 const refreshTableData = async () => {
   await getList();
   updateTableEmptyConfig();
+};
+
+const getMenuList = async (item: { id: string }, keyword: string) => {
+  if (!user.featureFlags?.ENABLE_MULTI_TENANT_MODE) {
+    return undefined;
+  }
+
+  if (item.id === 'username' && keyword) {
+    const list = await searchTenantUsers({ keyword }, user.user.tenant_id) as {
+      bk_username: string;
+      display_name: string;
+    }[];
+    return list.map(user => ({
+      id: user.bk_username,
+      name: user.display_name,
+      value: user.bk_username,
+    }));
+  }
+  return searchData.value.find(set => set.id === item.id)?.children;
 };
 
 watch(

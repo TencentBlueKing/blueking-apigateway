@@ -28,7 +28,7 @@
             {{ basics.maintainers.join(', ') }}
           </main>
           <main v-else class="content-main">
-            <bk-user-display-name :user-id="basics.maintainers" />
+            <bk-user-display-name :user-id="basics.maintainers" style="word-break: break-all;" />
           </main>
         </article>
         <article>

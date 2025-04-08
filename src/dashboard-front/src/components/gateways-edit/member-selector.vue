@@ -42,8 +42,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, nextTick, watch, onBeforeMount, onMounted } from 'vue';
+import {
+  computed,
+  nextTick,
+  ref,
+  watch,
+} from 'vue';
 import MemberSelector from '../member-select';
+
 const props = defineProps({
   field: {
     type: String,
@@ -190,13 +196,13 @@ watch(
   { immediate: true },
 );
 
-onMounted(() => {
-  document.body.addEventListener('click', hideEdit);
-});
-
-onBeforeMount(() => {
-  document.body.removeEventListener('click', hideEdit);
-});
+// onMounted(() => {
+//   document.body.addEventListener('click', hideEdit);
+// });
+//
+// onBeforeMount(() => {
+//   document.body.removeEventListener('click', hideEdit);
+// });
 </script>
 
 <style lang="scss" scoped>

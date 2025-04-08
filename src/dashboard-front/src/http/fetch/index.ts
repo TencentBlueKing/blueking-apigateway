@@ -44,6 +44,7 @@ const getFetchConfig = (method: string, payload: any, config: IFetchConfig) => {
       headers: {
         'X-Requested-With': 'fetch',
         'Content-Type': contentTypeMap[config.responseType] || 'application/json',
+        // 'Content-Type': 'application/json',
       },
       redirect: 'follow',
       referrerPolicy: 'no-referrer-when-downgrade',
@@ -109,6 +110,12 @@ allMethods.forEach((method) => {
         } else {
           // console.warn('Can not find csrftoken in document.cookie');
           // return;
+        }
+
+        // get 方法不传 content-type 头
+        if (method === 'get') {
+          // @ts-ignore
+          delete fetchConfig.headers['Content-Type'];
         }
 
         try {
