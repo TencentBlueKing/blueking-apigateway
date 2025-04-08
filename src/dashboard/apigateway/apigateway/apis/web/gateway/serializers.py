@@ -1,6 +1,6 @@
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -26,6 +26,7 @@ from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_type import GatewayTypeHandler
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
+from apigateway.common.paas import gen_programmable_gateway_links
 from apigateway.core.constants import (
     GatewayKindEnum,
     GatewayStatusEnum,
@@ -72,6 +73,8 @@ class GatewayListOutputSLZ(serializers.Serializer):
     resource_count = serializers.SerializerMethodField(help_text="网关下资源的数量")
     stages = serializers.SerializerMethodField(help_text="网关环境列表，其中的 released 表示环境是否已发布")
 
+    extra_info = serializers.SerializerMethodField(help_text="网关额外信息")
+
     created_by = serializers.CharField(allow_blank=True, allow_null=True, read_only=True, help_text="创建人")
     created_time = serializers.DateTimeField(allow_null=True, read_only=True, help_text="创建时间")
     updated_time = serializers.DateTimeField(allow_null=True, read_only=True, help_text="更新时间")
@@ -87,6 +90,17 @@ class GatewayListOutputSLZ(serializers.Serializer):
 
     def get_stages(self, obj):
         return self.context["stages"].get(obj.id, [])
+
+    def get_extra_info(self, obj):
+        return obj.extra_info
+
+
+class GatewayExtraInfoSLZ(serializers.Serializer):
+    # 公共额外信息字段
+    # 可编程网关额外信息字段
+    language = serializers.CharField(allow_blank=True, required=False, help_text="语言")
+    repository = serializers.CharField(allow_blank=True, required=False, help_text="仓库")
+    # 普通网关额外信息字段
 
 
 class GatewayCreateInputSLZ(serializers.ModelSerializer):
@@ -104,6 +118,7 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
     bk_app_codes = serializers.ListField(
         child=serializers.RegexField(APP_CODE_PATTERN), allow_empty=True, required=False, help_text="网关关联的应用"
     )
+    extra_info = GatewayExtraInfoSLZ(required=False, help_text="网关额外信息")
 
     class Meta:
         model = Gateway
@@ -113,6 +128,8 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
             "maintainers",
             "developers",
             "is_public",
+            "kind",
+            "extra_info",
             "bk_app_codes",
         )
         lookup_field = "id"
@@ -127,7 +144,7 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
         }
 
         # 使用 UniqueTogetherValidator，方便错误提示信息统一处理
-        # 使用 UniqueValidator，错误提示中包含了字段名："参数校验失败: Name: 网关名称已经存在"
+        # 使用 UniqueValidator，错误提示中包含了字段名："参数校验失败：Name: 网关名称已经存在"
         validators = [
             UniqueTogetherValidator(
                 queryset=Gateway.objects.all(),
@@ -161,10 +178,12 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
     is_official = serializers.SerializerMethodField(help_text="是否为官方网关，true：官方网关，false：非官方网关")
     api_domain = serializers.SerializerMethodField(help_text="网关访问域名")
     docs_url = serializers.SerializerMethodField(help_text="文档地址")
-    public_key_fingerprint = serializers.SerializerMethodField(help_text="公钥(指纹)")
+    public_key_fingerprint = serializers.SerializerMethodField(help_text="公钥 (指纹)")
     allow_update_gateway_auth = serializers.SerializerMethodField(help_text="是否允许更新网关认证配置")
     bk_app_codes = serializers.SerializerMethodField(help_text="网关关联的应用")
-    related_app_codes = serializers.SerializerMethodField(help_text="关联的APP")
+    related_app_codes = serializers.SerializerMethodField(help_text="关联的 APP")
+
+    links = serializers.SerializerMethodField(help_text="相关链接")
 
     class Meta:
         model = Gateway
@@ -189,13 +208,15 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             "public_key_fingerprint",
             "bk_app_codes",
             "related_app_codes",
+            "extra_info",
+            "links",
         )
         read_only_fields = fields
         lookup_field = "id"
 
         extra_kwargs = {
             "id": {
-                "help_text": "网关ID",
+                "help_text": "网关 ID",
             },
             "name": {
                 "help_text": "网关名称",
@@ -207,13 +228,16 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
                 "help_text": "网关类型，0: 普通网关，1：可编程网关",
             },
             "is_public": {
-                "help_text": "是否公开, true: 公开,false: 不公开",
+                "help_text": "是否公开，true: 公开，false: 不公开",
             },
             "created_by": {
                 "help_text": "创建人",
             },
             "created_time": {
                 "help_text": "创建时间",
+            },
+            "extra_info": {
+                "help_text": "网关额外信息",
             },
         }
 
@@ -237,6 +261,11 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
 
     def get_related_app_codes(self, obj):
         return self.context["related_app_codes"]
+
+    def get_links(self, obj):
+        if obj.kind == GatewayKindEnum.PROGRAMMABLE.value:
+            return gen_programmable_gateway_links(obj.name)
+        return {}
 
 
 class ServiceAccountSLZ(serializers.Serializer):
@@ -269,6 +298,7 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="网关维护人员")
     doc_maintainers = GatewayAPIDocMaintainerSLZ(required=False, help_text="网关文档维护人员")
+    extra_info = GatewayExtraInfoSLZ(required=False, help_text="网关额外信息")
 
     developers = serializers.ListField(
         child=serializers.CharField(), allow_empty=True, default=list, help_text="网关开发者"
@@ -292,6 +322,7 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
             "description",
             "maintainers",
             "doc_maintainers",
+            "extra_info",
             "developers",
             "is_public",
             "bk_app_codes",

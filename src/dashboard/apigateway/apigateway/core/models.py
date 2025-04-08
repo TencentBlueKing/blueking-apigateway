@@ -82,9 +82,12 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     status = models.IntegerField(choices=GatewayStatusEnum.get_choices())
 
     # kind is normal or programmable, while the gateway_type is already been occupied on the context of gateway_auth
+    # 这个 kind 仅对 web 产品页面感知，openapi 自动化注册等，不需要感知
     kind = models.IntegerField(
         choices=GatewayKindEnum.get_choices(), default=GatewayKindEnum.NORMAL.value, null=True, blank=True
     )
+    # NOTE: 后续所有的 JSONField，必须使用 models.JSONField
+    _extra_info = models.JSONField(db_column="extra_info", default={}, blank=True, null=True)
 
     is_public = models.BooleanField(default=False)
 
@@ -132,6 +135,22 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     @developers.setter
     def developers(self, data: List[str]):
         self._developers = ";".join(data)
+
+    @property
+    def extra_info(self) -> Dict:
+        return self._extra_info
+
+    @extra_info.setter
+    def extra_info(self, data: Dict):
+        if self.kind == GatewayKindEnum.PROGRAMMABLE.value:
+            # now only support language and repository
+            self._extra_info = {
+                "language": data.get("language", ""),
+                "repository": data.get("repository", ""),
+            }
+        else:
+            # 非编程网关，额外信息为空
+            self._extra_info = {}
 
     def has_permission(self, username):
         """

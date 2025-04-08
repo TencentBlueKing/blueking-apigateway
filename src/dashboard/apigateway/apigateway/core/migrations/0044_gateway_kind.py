@@ -15,4 +15,9 @@ class Migration(migrations.Migration):
             name='kind',
             field=models.IntegerField(blank=True, choices=[(0, '普通网关'), (1, '可编程网关')], default=0, null=True),
         ),
+        migrations.AddField(
+            model_name='gateway',
+            name='_extra_info',
+            field=models.JSONField(blank=True, db_column='extra_info', default={}, null=True),
+        ),
     ]

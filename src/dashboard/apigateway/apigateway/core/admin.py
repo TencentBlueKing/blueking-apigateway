@@ -47,12 +47,13 @@ class GatewayAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
         "name",
         "status",
         "is_public",
+        "kind",
         "created_by",
         "created_time",
         "updated_time",
     ]
     search_fields = ["id", "name"]
-    list_filter = ["status", "is_public"]
+    list_filter = ["status", "is_public", "kind"]
 
 
 class StageAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
