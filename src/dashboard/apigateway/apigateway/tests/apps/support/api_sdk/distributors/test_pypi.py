@@ -103,7 +103,9 @@ def sdk_context(sdk_context):
 def test_pypirc(
     tmpdir, faker, output_dir, python_setup_script, python_setup_history, sdist, distributor: PypiSourceDistributor
 ):
-    distributor.distribute(output_dir, [sdist])
+    with patch("apigateway.apps.support.api_sdk.distributors.pypi.check_call") as mock_check_call:
+        mock_check_call.return_value = 0  # Simulate successful execution
+        distributor.distribute(output_dir, [sdist])
 
     pypirc_path = tmpdir.join(".pypirc")
     assert pypirc_path.exists()
@@ -117,7 +119,7 @@ def test_distribute(
     package_searcher_result,
 ):
     # Mock the check_call to prevent actual call to `twine upload`
-    with patch("subprocess.check_call") as mock_check_call:
+    with patch("apigateway.apps.support.api_sdk.distributors.pypi.check_call") as mock_check_call:
         mock_check_call.return_value = 0  # Simulate successful execution
         result = distributor.distribute(output_dir, [sdist])
 
