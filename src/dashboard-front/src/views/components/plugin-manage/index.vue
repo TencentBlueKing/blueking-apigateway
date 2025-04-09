@@ -6,12 +6,29 @@
         class="exception-wrap-item" type="empty" :class="{ 'exception-gray': false }"
         v-if="curBindingPlugins.length === 0">
         {{ t('尚未添加插件，') }}
-        <bk-button text theme="primary" @click="handlePluginAdd">
+        <bk-button
+          v-bk-tooltips="{
+            content: t('当前有版本正在发布，请稍后再操作'),
+            disabled: getStatus(stageData) !== 'doing'
+          }"
+          :disabled="getStatus(stageData) === 'doing'"
+          text
+          theme="primary"
+          @click="handlePluginAdd"
+        >
           {{ t('立即添加') }}
         </bk-button>
       </bk-exception>
       <div class="bindding-info p10" v-else>
-        <bk-button class="add-plugin-btn" @click="handlePluginAdd">
+        <bk-button
+          v-bk-tooltips="{
+            content: t('当前有版本正在发布，请稍后再操作'),
+            disabled: getStatus(stageData) !== 'doing'
+          }"
+          :disabled="getStatus(stageData) === 'doing'"
+          class="add-plugin-btn"
+          @click="handlePluginAdd"
+        >
           <i class="icon apigateway-icon icon-ag-plus pr10 f12"></i>
           {{ t('添加插件') }}
         </bk-button>
@@ -23,8 +40,26 @@
           <template #title="slotProps">
             <span class="f15">
               {{ slotProps.name }}
-              <AgIcon class="ml5 mr5" name="edit-line" size="15" @click.stop="handleEditePlugin(slotProps)" />
-              <AgIcon class="ml5 mr5" name="delet" size="15" @click.stop="handleDeletePlugin(slotProps)" />
+              <AgIcon
+                v-bk-tooltips="{
+                  content: t('当前有版本正在发布，请稍后再操作'),
+                  disabled: getStatus(stageData) !== 'doing'
+                }"
+                class="ml5 mr5"
+                name="edit-line"
+                size="15"
+                @click.stop="handleEditePlugin(slotProps)"
+              />
+              <AgIcon
+                v-bk-tooltips="{
+                  content: t('当前有版本正在发布，请稍后再操作'),
+                  disabled: getStatus(stageData) !== 'doing'
+                }"
+                class="ml5 mr5"
+                name="delet"
+                size="15"
+                @click.stop="handleDeletePlugin(slotProps)"
+              />
             </span>
           </template>
           <template #content="slotProps">
@@ -216,26 +251,36 @@
 import pluginInfo from './plugin-info.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import mitt from '@/common/event-bus';
-import { InfoBox, Message } from 'bkui-vue';
 import {
-  ref,
-  reactive,
+  InfoBox,
+  Message,
+} from 'bkui-vue';
+import {
   computed,
+  reactive,
+  ref,
   watch,
 } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useCommon } from '@/store';
-import { useRoute, useRouter } from 'vue-router';
 import {
-  getPluginListData,
-  getPluginBindingsList,
-  getScopeBindingPluginList,
-  getPluginConfig,
+  useCommon,
+  useStage,
+} from '@/store';
+import {
+  useRoute,
+  useRouter,
+} from 'vue-router';
+import {
   deletePluginConfig,
+  getPluginBindingsList,
+  getPluginConfig,
+  getPluginListData,
+  getScopeBindingPluginList,
 } from '@/http';
 import ConfigDisplayTable from '@/views/components/plugin-manage/config-display-table.vue';
 import pluginIconList from '@/common/plugin-icon-list';
 import AgIcon from '@/components/ag-icon.vue';
+import { getStatus } from '@/common/util';
 
 const props = defineProps({
   resourceId: {
@@ -249,6 +294,7 @@ const emit = defineEmits(['on-jump']);
 const route = useRoute();
 const router = useRouter();
 const common = useCommon();
+const stageStore = useStage();
 
 const { apigwId } = common; // 网关id
 const scopeType = ref('');
@@ -285,6 +331,28 @@ const tableEmptyConf = ref({
 });
 // 控制插件 slider 宽度，会在展示插件使用示例时变宽
 const pluginSliderWidth = ref(960);
+
+// 当前环境信息
+const stageData: any = computed(() => {
+  if (stageStore.curStageData.id !== null) {
+    return stageStore.curStageData;
+  }
+  return {
+    name: '',
+    description: '',
+    description_en: '',
+    status: 1,
+    created_time: '',
+    release: {
+      status: '',
+      created_time: null,
+      created_by: '',
+    },
+    resource_version: '',
+    new_resource_version: '',
+    publish_validate_msg: '',
+  };
+});
 
 // 监听是否成功添加
 watch(
@@ -388,6 +456,9 @@ const handleClearFilterKey = () => {
 
 // 编辑插件
 const handleEditePlugin = async (item: any) => {
+  if (getStatus(stageData.value) === 'doing') {
+    return;
+  }
   curType.value = 'edit';
   const { code, config_id } = item;
   const curEditItem = curBindingPlugins.value.find((pluginItem: { code: string; }) => pluginItem.code === code);
@@ -406,6 +477,9 @@ const pluginDeleting = ref(false);
 
 // 删除插件
 const handleDeletePlugin = (item: any) => {
+  if (getStatus(stageData.value) === 'doing') {
+    return;
+  }
   const { code, config_id } = item;
   InfoBox({
     title: t('确定停用插件？'),

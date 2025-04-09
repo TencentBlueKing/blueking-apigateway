@@ -3,7 +3,16 @@
     <div class="header flex-row justify-content-between mb15">
       <div class="header-btn flex-row ">
         <span class="mr10">
-          <bk-button theme="primary" class="mr5 w80" @click="handleAdd">
+          <bk-button
+            v-bk-tooltips="{
+              content: t('当前有版本正在发布，请稍后再进行后端服务修改'),
+              disabled: !hasPublishingStage,
+            }"
+            :disabled="hasPublishingStage"
+            class="mr5 w80"
+            theme="primary"
+            @click="handleAdd"
+          >
             {{ t('新建') }}
           </bk-button>
         </span>
@@ -42,7 +51,17 @@
           <bk-table-column :label="t('更新时间')" prop="updated_time"></bk-table-column>
           <bk-table-column :label="t('操作')" width="150">
             <template #default="{ data }">
-              <bk-button class="mr25" theme="primary" text @click="handleEdit(data)">
+              <bk-button
+                v-bk-tooltips="{
+                  content: t('当前有版本正在发布，请稍后再进行后端服务修改'),
+                  disabled: !hasPublishingStage
+                }"
+                :disabled="hasPublishingStage"
+                class="mr25"
+                text
+                theme="primary"
+                @click="handleEdit(data)"
+              >
                 {{ t('编辑') }}
               </bk-button>
               <span
@@ -53,10 +72,13 @@
                     ? t('默认后端服务，且被{resourceCount}个资源引用了，不能删除', { resourceCount: data?.resource_count })
                     : t('服务被{resourceCount}个资源引用了，不能删除', { resourceCount: data?.resource_count }),
                   disabled: data?.resource_count === 0
-                }">
+                }"
+              >
                 <bk-button
-                  theme="primary" text
-                  :disabled="data?.resource_count !== 0 || data?.name === 'default'" @click="handleDelete(data)">
+                  :disabled="data?.resource_count !== 0 || data?.name === 'default'"
+                  text
+                  theme="primary" @click="handleDelete(data)"
+                >
                   {{ t('删除') }}
                 </bk-button>
               </span>
@@ -103,16 +125,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import {
+  computed,
+  onBeforeMount,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
-import { InfoBox, Message } from 'bkui-vue';
+import {
+  InfoBox,
+  Message,
+} from 'bkui-vue';
 import { useRouter } from 'vue-router';
 import { useCommon } from '@/store';
 import { timeFormatter } from '@/common/util';
 import { useQueryList } from '@/hooks';
 import {
-  getBackendServiceList,
   deleteBackendService,
+  getBackendServiceList,
+  getStageList,
 } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
 import addBackendService from '@/views/backend-service/add.vue';
@@ -133,6 +164,12 @@ const filterData = ref({ name: '', type: '' });
 const tableEmptyConf = ref({
   keyword: '',
   isAbnormal: false,
+});
+
+const stageList = ref<{ release: { status: string } }[]>([]);
+
+const hasPublishingStage = computed(() => {
+  return stageList.value.some(item => item?.release?.status === 'doing');
 });
 
 // 列表hooks
@@ -164,6 +201,10 @@ const isWithinTime = (date: string) => {
 
 // 新建btn
 const handleAdd = () => {
+  if (hasPublishingStage.value) {
+    return;
+  }
+
   baseInfo.value = {
     name: '',
     description: '',
@@ -238,12 +279,21 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.keyword = '';
 };
 
+const getStageListData = async () => {
+  stageList.value = await getStageList(apigwId);
+};
+
 watch(
   () => tableData.value, () => {
     updateTableEmptyConfig();
   },
   { deep: true },
 );
+
+onBeforeMount(async () => {
+  await getStageListData();
+});
+
 </script>
 
 <style lang="scss" scoped>

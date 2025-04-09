@@ -6,7 +6,16 @@
       </span>
       <span class="title-tips">{{ t('（可在资源配置中使用）') }}</span>
       <span class="title-edit">
-        <edit-line @click.stop="editTable" />
+        <AgIcon
+          v-bk-tooltips="{
+            content: t('当前有版本正在发布，请稍后再进行变量修改'),
+            disabled: getStatus(stageData) !== 'doing'
+          }"
+          class="ml5 mr5"
+          name="edit-line"
+          size="15"
+          @click.stop="editTable"
+        />
       </span>
     </div>
 
@@ -151,15 +160,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick } from 'vue';
-import { EditLine } from 'bkui-vue/lib/icon';
+import {
+  computed,
+  nextTick,
+  onMounted,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
-import { getStageVars, updateStageVars } from '@/http';
-import { useCommon } from '@/store';
-import { Message, InfoBox } from 'bkui-vue';
+import {
+  getStageVars,
+  updateStageVars,
+} from '@/http';
+import {
+  useCommon,
+  useStage,
+} from '@/store';
+import {
+  InfoBox,
+  Message,
+} from 'bkui-vue';
+import { getStatus } from '@/common/util';
+import AgIcon from '@/components/ag-icon.vue';
 
 const common = useCommon();
 const { t } = useI18n();
+const stageStore = useStage();
 
 const props = defineProps({
   stageId: Number,
@@ -179,6 +205,28 @@ const getVars = () => {
 
 const isLoading = ref<boolean>(false);
 const tableData = ref<any>([]);
+
+// 当前环境信息
+const stageData: any = computed(() => {
+  if (stageStore.curStageData.id !== null) {
+    return stageStore.curStageData;
+  }
+  return {
+    name: '',
+    description: '',
+    description_en: '',
+    status: 1,
+    created_time: '',
+    release: {
+      status: '',
+      created_time: null,
+      created_by: '',
+    },
+    resource_version: '',
+    new_resource_version: '',
+    publish_validate_msg: '',
+  };
+});
 
 const getCellClass = (payload: any) => {
   if (payload.index !== 2) {
@@ -297,6 +345,9 @@ const confirmRowEdit = async (index: number) => {
 // };
 
 const editTable = () => {
+  if (getStatus(stageData.value) === 'doing') {
+    return;
+  }
   tableIsEdit.value = true;
   if (tableData.value.length) {
     tableData.value.forEach((row: any, index: number) => {
