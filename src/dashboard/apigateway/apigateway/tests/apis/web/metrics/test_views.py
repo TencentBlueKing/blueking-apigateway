@@ -16,8 +16,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import datetime
+
 from ddf import G
 
+from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.core.models import Resource
 
 
@@ -153,3 +156,146 @@ class TestQueryInstantApi:
             },
         )
         assert response.status_code == 404
+
+
+class TestQueryGatewayRequestApi:
+    def test_get(self, fake_stage, request_view):
+        resource_obj1 = G(Resource, name="test1", gateway=fake_stage.gateway)
+        resource_obj2 = G(Resource, name="test2", gateway=fake_stage.gateway)
+        G(
+            StatisticsGatewayRequestByDay,
+            gateway_id=fake_stage.gateway.id,
+            stage_name=fake_stage.name,
+            resource_id=resource_obj1.id,
+            total_count=100,
+            failed_count=10,
+            total_msecs=600,
+            start_time=datetime.datetime.now(),
+            end_time=datetime.datetime.now(),
+        )
+        G(
+            StatisticsGatewayRequestByDay,
+            gateway_id=fake_stage.gateway.id,
+            stage_name=fake_stage.name,
+            resource_id=resource_obj2.id,
+            total_count=200,
+            failed_count=20,
+            total_msecs=800,
+            start_time=datetime.datetime.now(),
+            end_time=datetime.datetime.now(),
+        )
+
+        response = request_view(
+            "GET",
+            "metrics.query_request",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "type": "gateway",
+                "stage_id": fake_stage.id,
+                "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
+                "time_end": int((datetime.datetime.now()).timestamp()) + 10,
+            },
+        )
+        result = response.json()
+        assert response.status_code == 200
+        assert len(result["data"]) == 2
+
+        # 查询 resource_id
+        response = request_view(
+            "GET",
+            "metrics.query_request",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "type": "gateway",
+                "stage_id": fake_stage.id,
+                "resource_id": resource_obj1.id,
+                "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
+                "time_end": int((datetime.datetime.now()).timestamp()) + 10,
+            },
+        )
+        result = response.json()
+        assert response.status_code == 200
+        assert len(result["data"]) == 1
+
+        resource_obj3 = G(Resource, name="test3", gateway=fake_stage.gateway)
+        G(
+            StatisticsAppRequestByDay,
+            gateway_id=fake_stage.gateway.id,
+            stage_name=fake_stage.name,
+            resource_id=resource_obj3.id,
+            bk_app_code="app1",
+            total_count=100,
+            failed_count=10,
+            total_msecs=600,
+            start_time=datetime.datetime.now(),
+            end_time=datetime.datetime.now(),
+        )
+        G(
+            StatisticsAppRequestByDay,
+            gateway_id=fake_stage.gateway.id,
+            stage_name=fake_stage.name,
+            resource_id=resource_obj3.id,
+            bk_app_code="app2",
+            total_count=200,
+            failed_count=20,
+            total_msecs=800,
+            start_time=datetime.datetime.now(),
+            end_time=datetime.datetime.now(),
+        )
+        response = request_view(
+            "GET",
+            "metrics.query_request",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "type": "app",
+                "stage_id": fake_stage.id,
+                "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
+                "time_end": int((datetime.datetime.now()).timestamp()) + 10,
+            },
+        )
+        result = response.json()
+
+        assert response.status_code == 200
+        assert len(result["data"][resource_obj3.name]) == 2
+
+        # 查询 bk_app_code
+        response = request_view(
+            "GET",
+            "metrics.query_request",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "type": "app",
+                "stage_id": fake_stage.id,
+                "bk_app_code": "app1",
+                "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
+                "time_end": int((datetime.datetime.now()).timestamp()) + 10,
+            },
+        )
+        result = response.json()
+
+        assert response.status_code == 200
+        assert len(result["data"]) == 1
+
+        # no type
+        response = request_view(
+            "GET",
+            "metrics.query_request",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "type": "",
+                "stage_id": fake_stage.id,
+                "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
+                "time_end": int((datetime.datetime.now()).timestamp()) + 10,
+            },
+        )
+        assert response.status_code == 400

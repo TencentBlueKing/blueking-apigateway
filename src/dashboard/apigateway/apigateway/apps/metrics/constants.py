@@ -32,3 +32,8 @@ class MetricsRangeEnum(StructuredEnum):
 class MetricsInstantEnum(StructuredEnum):
     REQUESTS_TOTAL = EnumField("requests_total")
     HEALTH_RATE = EnumField("health_rate")
+
+
+class MetricsRequestEnum(StructuredEnum):
+    GATEWAY = EnumField("gateway", label="网关请求统计")
+    APP = EnumField("app", label="应用请求统计")

@@ -16,18 +16,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import datetime
+from collections import defaultdict
 
 from django.http import Http404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apps.metrics.constants import MetricsInstantEnum, MetricsRangeEnum
+from apigateway.apps.metrics.constants import MetricsInstantEnum, MetricsRangeEnum, MetricsRequestEnum
+from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.apps.metrics.prometheus.dimension import MetricsInstantFactory, MetricsRangeFactory
 from apigateway.core.models import Resource, Stage
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.time import MetricsSmartTimeRange
 
-from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ
+from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ, MetricsQueryRequestInputSLZ
 
 
 class QueryRangeApi(generics.ListAPIView):
@@ -171,3 +174,61 @@ class QueryInstantApi(generics.ListAPIView):
             return OKJsonResponse(data=health_rate_result)
 
         return OKJsonResponse(data=requests_total_result)
+
+
+class QueryRequestApi(generics.ListAPIView):
+    @swagger_auto_schema(
+        query_serializer=MetricsQueryRequestInputSLZ(),
+        responses={status.HTTP_200_OK: ""},
+        operation_description="查询 metrics",
+        tags=["WebAPI.Metrics"],
+    )
+    def get(self, request, *args, **kwargs):
+        slz = MetricsQueryRequestInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
+        if not stage_name:
+            raise Http404
+
+        query_params = {
+            "gateway_id": request.gateway.id,
+            "stage_name": stage_name,
+            "start_time__gte": datetime.datetime.fromtimestamp(data["time_start"]),
+            "end_time__lte": datetime.datetime.fromtimestamp(data["time_end"]),
+        }
+
+        if data.get("resource_id"):
+            query_params["resource_id"] = data["resource_id"]
+            resource_id_to_name = dict(
+                Resource.objects.filter(gateway=request.gateway, id=data["resource_id"]).values_list("id", "name")
+            )
+        else:
+            resource_id_to_name = dict(Resource.objects.filter(gateway=request.gateway).values_list("id", "name"))
+
+        fields = ["resource_id", "total_count", "failed_count", "total_msecs", "start_time", "end_time"]
+        if data["type"] == MetricsRequestEnum.GATEWAY.value:
+            queryset = StatisticsGatewayRequestByDay.objects.filter(**query_params).values(*fields)
+        else:
+            if data.get("bk_app_code"):
+                query_params["bk_app_code"] = data["bk_app_code"]
+            queryset = StatisticsAppRequestByDay.objects.filter(**query_params).values(*fields)
+
+        results = defaultdict(list)
+        for obj in queryset.iterator(chunk_size=1000):
+            resource_name = resource_id_to_name.get(obj["resource_id"])
+            if not resource_name:
+                continue
+
+            results[resource_name].append(
+                {
+                    "total_count": obj["total_count"],
+                    "failed_count": obj["failed_count"],
+                    "total_msecs": obj["total_msecs"],
+                    "start_time": obj["start_time"],
+                    "end_time": obj["end_time"],
+                }
+            )
+
+        return OKJsonResponse(data=results)
