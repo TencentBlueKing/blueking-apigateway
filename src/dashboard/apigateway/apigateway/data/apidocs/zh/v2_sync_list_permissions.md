@@ -7,6 +7,7 @@
 | 参数名称 | 参数类型 | 参数位置 | 描述 |
 | -------- | -------- | -------- | ---- |
 | gateway_name | string | path | 网关名称 |
+| bk_app_code | string | query | 应用编码 |
 | grant_dimension | string | query | 授权维度，gateway 为网关，resource 为资源 |
 
 ### 请求参数示例
