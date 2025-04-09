@@ -393,14 +393,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue';
+import {
+  computed,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { useRoute } from 'vue-router';
 import resourceDetail from '@/components/resource-detail/index.vue';
 import { useI18n } from 'vue-i18n';
-import { Spinner, RightShape, DownShape } from 'bkui-vue/lib/icon';
+import {
+  DownShape,
+  RightShape,
+  Spinner,
+} from 'bkui-vue/lib/icon';
 import { useCommon } from '@/store';
 import TableEmpty from '@/components/table-empty.vue';
-import { resourceVersionsDiff, getResourceVersionsList, getGatewayLabels, getBackendsListData } from '@/http';
+import {
+  getBackendsListData,
+  getGatewayLabels,
+  getResourceVersionsList,
+  resourceVersionsDiff,
+} from '@/http';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -737,7 +752,7 @@ const init = async () => {
 };
 
 const localSourceTriggerLabel = computed(() => {
-  const match = localVersionList.value.find((item: any) => item.id === localSourceId.value);
+  const match = localVersionList.value.find((item: any) => Number(item.id) === Number(localSourceId.value));
   if (match) {
     return match.resource_version_display;
   }
@@ -745,7 +760,7 @@ const localSourceTriggerLabel = computed(() => {
 });
 
 const localTargetTriggerLabel = computed(() => {
-  const match = localVersionList.value.find((item: any) => item.id === localTargetId.value);
+  const match = localVersionList.value.find((item: any) => Number(item.id) === Number(localTargetId.value));
   if (match) {
     return match.resource_version_display;
   }
