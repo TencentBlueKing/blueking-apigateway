@@ -41,8 +41,9 @@ from apigateway.apps.permission.models import (
     AppResourcePermission,
 )
 from apigateway.biz.permission import PermissionDimensionManager
+from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.components.cmsi import cmsi_component
-from apigateway.components.paasv3 import get_app_maintainers
+from apigateway.components.paasv3 import get_app_maintainers, get_tenant_id_for_app_developers
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, GatewayStatusEnum
 from apigateway.core.models import Context, Gateway, Resource
 from apigateway.utils.file import read_file
@@ -92,7 +93,8 @@ def send_mail_for_perm_apply(record_id):
         ],
     }
 
-    return cmsi_component.send_mail(params)
+    tenant_id = get_tenant_id_for_gateway_maintainers(record.gateway.tenant_id)
+    return cmsi_component.send_mail(tenant_id, params)
 
 
 @shared_task(name="apigateway.apps.permission.tasks.send_mail_for_perm_handle", ignore_result=True)
@@ -167,7 +169,8 @@ def send_mail_for_perm_handle(record_id):
         ],
     }
 
-    return cmsi_component.send_mail(params)
+    tenant_id = get_tenant_id_for_app_developers(record.bk_app_code)
+    return cmsi_component.send_mail(tenant_id, params)
 
 
 @shared_task(name="apigateway.apps.permission.tasks.renew_app_resource_permission", ignore_result=True)
@@ -353,7 +356,9 @@ class AppPermissionExpiringSoonAlerter:
                 ],
             }
 
-            cmsi_component.send_mail(params)
+            tenant_id = get_tenant_id_for_app_developers(bk_app_code)
+
+            cmsi_component.send_mail(tenant_id, params)
 
 
 @shared_task(name="apigateway.apps.permission.tasks.alert_app_permission_expiring_soon", ignore_result=True)

@@ -21,6 +21,7 @@ from django.conf import settings
 
 from .constants import (
     TENANT_ID_OPERATION,
+    TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID,
     TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
 )
 
@@ -37,3 +38,12 @@ def gen_operation_tenant_header() -> Dict[str, str]:
 
 def gen_tenant_header(tenant_id: str) -> Dict[str, str]:
     return {"X-Bk-Tenant-Id": tenant_id}
+
+
+def get_tenant_id_for_gateway_maintainers(gateway_tenant_id: str) -> str:
+    # it gateway_tenant_id is empty, it means the gateway is a global gateway
+    # so the cmsi user could only be the `system` (the system tenant)
+    if gateway_tenant_id == TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID:
+        return TENANT_ID_OPERATION
+
+    return gateway_tenant_id
