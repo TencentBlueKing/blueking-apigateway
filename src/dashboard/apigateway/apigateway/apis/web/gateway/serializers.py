@@ -35,7 +35,10 @@ from apigateway.core.models import Gateway
 from apigateway.utils.crypto import calculate_fingerprint
 
 from .constants import GATEWAY_NAME_PATTERN
-from .validators import ReservedGatewayNameValidator
+from .validators import (
+    ProgrammableGatewayNameValidator,
+    ReservedGatewayNameValidator,
+)
 
 
 class GatewayListInputSLZ(serializers.Serializer):
@@ -150,7 +153,8 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
                 queryset=Gateway.objects.all(),
                 fields=["name"],
                 message=gettext_lazy("网关名称已经存在。"),
-            )
+            ),
+            ProgrammableGatewayNameValidator(),
         ]
 
     def _add_creator_to_maintainers(self, data):

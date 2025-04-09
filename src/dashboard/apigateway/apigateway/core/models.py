@@ -83,6 +83,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
 
     # kind is normal or programmable, while the gateway_type is already been occupied on the context of gateway_auth
     # 这个 kind 仅对 web 产品页面感知，openapi 自动化注册等，不需要感知
+    # 注意，可编程网关其  gateway_name = bk_app_code
     kind = models.IntegerField(
         choices=GatewayKindEnum.get_choices(), default=GatewayKindEnum.NORMAL.value, null=True, blank=True
     )

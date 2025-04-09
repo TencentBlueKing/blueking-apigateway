@@ -32,8 +32,9 @@ from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
+from apigateway.components.paas import create_paas_app
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
+from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
@@ -114,6 +115,12 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         slz.is_valid(raise_exception=True)
 
         bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
+
+        # if kind is programmable, create paas app
+        if slz.validated_data.get("kind") == GatewayKindEnum.PROGRAMMABLE.value:
+            ok = create_paas_app(slz.validated_data["name"])
+            if not ok:
+                raise error_codes.INTERNAL.format(_("创建蓝鲸应用失败。"), replace=True)
 
         # 1. save gateway
         slz.save(

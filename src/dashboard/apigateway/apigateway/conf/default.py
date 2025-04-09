@@ -527,6 +527,11 @@ USE_GATEWAY_BK_ESB_MANAGE_COMPONENT_PERMISSIONS = env.bool("USE_GATEWAY_BK_ESB_M
 BK_PAAS3_URL = env.str("BK_PAAS3_URL", "")
 PAAS_RENEW_API_PERMISSION_URL = f"{BK_PAAS3_URL}/developer-center/apps/{{bk_app_code}}/cloudapi"
 
+
+# Requests pool config
+REQUESTS_POOL_CONNECTIONS = env.int("REQUESTS_POOL_CONNECTIONS", default=20)
+REQUESTS_POOL_MAXSIZE = env.int("REQUESTS_POOL_MAXSIZE", default=20)
+
 # ==============================================================================
 # bkpaas-auth 配置
 # ==============================================================================

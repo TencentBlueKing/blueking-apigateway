@@ -17,7 +17,11 @@
 #
 from django.conf import settings
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 from rest_framework import serializers
+
+from apigateway.components.paas import is_app_code_occupied
+from apigateway.core.constants import GatewayKindEnum
 
 
 class ReservedGatewayNameValidator:
@@ -35,3 +39,16 @@ class ReservedGatewayNameValidator:
                 raise serializers.ValidationError(
                     _("网关名不能以【{prefix}】开头，其为官方保留字。").format(prefix=prefix)
                 )
+
+
+class ProgrammableGatewayNameValidator:
+    """Validator for programmable gateway name"""
+
+    message = gettext_lazy("可编程网关名称对应的蓝鲸应用 ID 已经存在，无法创建关联应用。")
+
+    def __call__(self, attrs):
+        if attrs.get("kind") == GatewayKindEnum.PROGRAMMABLE.value:
+            name = attrs.get("name", "")
+            # check if the name is already occupied on PaaS
+            if is_app_code_occupied(name):
+                raise serializers.ValidationError(self.message)
