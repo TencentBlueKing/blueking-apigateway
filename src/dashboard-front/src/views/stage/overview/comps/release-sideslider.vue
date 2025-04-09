@@ -249,13 +249,30 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { ref, reactive, watch, computed } from 'vue';
-import { getResourceVersionsList, resourceVersionsDiff, createReleases, getStageList } from '@/http';
-import { useRoute, useRouter } from 'vue-router';
+import {
+  computed,
+  nextTick,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
+import {
+  createReleases,
+  getResourceVersionsList,
+  getStageList,
+  resourceVersionsDiff,
+} from '@/http';
+import {
+  useRoute,
+  useRouter,
+} from 'vue-router';
 import versionDiff from '@/components/version-diff/index.vue';
 import logDetails from '@/components/log-details/index.vue';
 import { Message } from 'bkui-vue';
-import { useSidebar, useGetStageList } from '@/hooks';
+import {
+  useGetStageList,
+  useSidebar,
+} from '@/hooks';
 import dayjs from 'dayjs';
 
 type VersionType = {
@@ -283,7 +300,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits<(e: 'release-success' | 'hidden') => void>();
+const emit = defineEmits<(e: 'release-success' | 'hidden' | 'closed-on-publishing') => void>();
 
 const resourceVersion = computed(() => {
   let version = '';
@@ -421,6 +438,9 @@ const handleReleaseSuccess = () => {
 };
 
 const handleReleaseDoing = () => {
+  nextTick(() => {
+    emit('closed-on-publishing');
+  });
   setTimeout(() => {
     getStagesStatus();
   }, 3000);

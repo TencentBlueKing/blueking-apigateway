@@ -185,6 +185,7 @@
       <release-sideslider
         :current-assets="stageData"
         ref="releaseSidesliderRef"
+        @closed-on-publishing="handleClosedOnPublishing"
         @release-success="handleReleaseSuccess"
       />
     </div>
@@ -300,6 +301,11 @@ const setDynamicComponents = (name: string) => {
 const handleReleaseSuccess = async () => {
   // stageTopBarRef.value?.getStageDetailFun(stageData.value?.id);
   await mitt.emit('rerun-init');
+};
+
+// 处理在版本还在发布时关闭抽屉的情况（刷新 stage 状态）
+const handleClosedOnPublishing = () => {
+  mitt.emit('rerun-init');
 };
 
 // 重新加载子组件
