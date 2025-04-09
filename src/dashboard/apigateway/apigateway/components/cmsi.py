@@ -113,7 +113,9 @@ class BKCMSIGateway(BaseCMSIComponent):
         try:
             self._call_bkcmsi_api(tenant_id, http_post, url_path, params)
         except Exception as err:
-            logger.exception("send mail failed, tenant_id: %s, params: %s, username: %s", tenant_id, params, username)
+            logger.exception(
+                "send wechat failed, tenant_id: %s, params: %s, username: %s", tenant_id, params, username
+            )
             return False, _("发送消息失败，{err}").format(err=err)
         return True, ""
 
