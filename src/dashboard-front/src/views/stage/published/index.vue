@@ -22,7 +22,7 @@
         <bk-input
           class="ml10 mr10 operate-input"
           style="width: 500px"
-          placeholder="请输入已发布的环境或版本号"
+          :placeholder="t('请输入已发布的环境或版本号')"
           v-model="filterData.keyword">
         </bk-input>
       </div>
@@ -67,7 +67,10 @@
         </bk-table-column>
         <bk-table-column :label="t('操作时间')" prop="created_time">
         </bk-table-column>
-        <bk-table-column :label="t('操作人')" prop="created_by">
+        <bk-table-column :label="t('操作人')">
+          <template #default="{ row }">
+            <bk-user-display-name :user-id="row.created_by" />
+          </template>
         </bk-table-column>
         <bk-table-column :label="t('耗时')" prop="duration">
         </bk-table-column>
@@ -101,17 +104,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import {
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue';
 import { useRouter } from 'vue-router';
 
-import { useQueryList, useDatePicker } from '@/hooks';
+import {
+  useDatePicker,
+  useQueryList,
+} from '@/hooks';
 import { useI18n } from 'vue-i18n';
 import logDetails from '@/components/log-details/index.vue';
 import publishDetails from './comps/publish-details.vue';
 import { Spinner } from 'bkui-vue/lib/icon';
-import {
-  getReleaseHistories,
-} from '@/http';
+import { getReleaseHistories } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
 import { Message } from 'bkui-vue';
 

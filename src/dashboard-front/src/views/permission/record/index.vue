@@ -108,7 +108,13 @@
             </div>
             <div class="item">
               <div class="key"> {{ t('申请人：') }} </div>
-              <div class="value">{{curRecord.applied_by}}</div>
+              <div class="value">
+                <bk-user-display-name
+                  v-if="user.featureFlags?.ENABLE_MULTI_TENANT_MODE"
+                  :user-id="curRecord.applied_by"
+                />
+                <span>{{ curRecord.applied_by }}</span>
+              </div>
             </div>
             <div class="item">
               <div class="key"> {{ t('授权维度：') }} </div>
@@ -128,7 +134,13 @@
             </div>
             <div class="item">
               <div class="key"> {{ t('审批人：') }} </div>
-              <div class="value">{{curRecord.handled_by}}</div>
+              <div class="value">
+                <bk-user-display-name
+                  v-if="user.featureFlags?.ENABLE_MULTI_TENANT_MODE"
+                  :user-id="curRecord.handled_by"
+                />
+                <span>{{ curRecord.handled_by }}</span>
+              </div>
             </div>
             <div class="item">
               <div class="key"> {{ t('审批时间：') }} </div>
@@ -331,7 +343,14 @@ const setTableHeader = () => {
         return data.expire_days_display || '--'
       }
     },
-    { field: 'applied_by', label: t('申请人') },
+    {
+      field: 'applied_by',
+      label: t('申请人'),
+      render: ({ data }: Record<string, any>) =>
+        user.featureFlags?.ENABLE_MULTI_TENANT_MODE
+        ? <span><bk-user-display-name user-id={data.applied_by} /></span>
+        : <span>{data.applied_by}</span>,
+    },
     { field: 'handled_time', label: t('审批时间') },
     {
       field: 'handled_by',
