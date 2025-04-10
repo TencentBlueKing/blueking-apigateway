@@ -39,6 +39,7 @@ from apigateway.core.constants import (
     GatewayKindEnum,
     GatewayStatusEnum,
     MicroGatewayStatusEnum,
+    ProgrammableGatewayLanguageEnum,
     ProxyTypeEnum,
     PublishEventEnum,
     PublishEventNameTypeEnum,
@@ -144,6 +145,12 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     @extra_info.setter
     def extra_info(self, data: Dict):
         if self.kind == GatewayKindEnum.PROGRAMMABLE.value:
+            if data.get("language") not in ProgrammableGatewayLanguageEnum.get_values():
+                raise ValueError("language should be one of [python, go]")
+
+            if not data.get("repository"):
+                raise ValueError("repository is required")
+
             # now only support language and repository
             self._extra_info = {
                 "language": data.get("language", ""),

@@ -30,6 +30,7 @@ from apigateway.common.paas import gen_programmable_gateway_links
 from apigateway.core.constants import (
     GatewayKindEnum,
     GatewayStatusEnum,
+    ProgrammableGatewayLanguageEnum,
 )
 from apigateway.core.models import Gateway
 from apigateway.utils.crypto import calculate_fingerprint
@@ -101,7 +102,12 @@ class GatewayListOutputSLZ(serializers.Serializer):
 class GatewayExtraInfoSLZ(serializers.Serializer):
     # 公共额外信息字段
     # 可编程网关额外信息字段
-    language = serializers.CharField(allow_blank=True, required=False, help_text="语言")
+    language = serializers.ChoiceField(
+        choices=ProgrammableGatewayLanguageEnum.get_choices(),
+        allow_blank=True,
+        required=False,
+        help_text="语言",
+    )
     repository = serializers.CharField(allow_blank=True, required=False, help_text="仓库")
     # 普通网关额外信息字段
 
@@ -360,3 +366,7 @@ class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
 
 class GatewayFeatureFlagsOutputSLZ(serializers.Serializer):
     feature_flags = serializers.DictField(help_text="网关特性集")
+
+
+class GatewayDevGuidelineOutputSLZ(serializers.Serializer):
+    content = serializers.CharField(help_text="文档内容")
