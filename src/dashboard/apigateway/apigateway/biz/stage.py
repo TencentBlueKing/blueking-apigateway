@@ -24,7 +24,13 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import DEFAULT_BACKEND_NAME, DEFAULT_STAGE_NAME, PublishSourceEnum, StageStatusEnum
+from apigateway.core.constants import (
+    DEFAULT_BACKEND_NAME,
+    DEFAULT_STAGE_NAME,
+    GatewayKindEnum,
+    PublishSourceEnum,
+    StageStatusEnum,
+)
 from apigateway.core.models import Backend, BackendConfig, Release, Stage
 from apigateway.utils.time import now_datetime
 
@@ -150,6 +156,31 @@ class StageHandler:
             },
         )
         backend_config.save()
+
+        if gateway.kind == GatewayKindEnum.PROGRAMMABLE.value:
+            # create stage: stage for programmable gateway
+            pre_stage = Stage.objects.create(
+                gateway=gateway,
+                name="stag",
+                description="预发布环境",
+                description_en="Stag for paas app",
+                vars={},
+                status=StageStatusEnum.INACTIVE.value,
+                created_by=created_by,
+                updated_by=created_by,
+            )
+            pre_backend_config = BackendConfig(
+                gateway=gateway,
+                backend=backend,
+                stage=pre_stage,
+                config={
+                    "type": "node",
+                    "timeout": 30,
+                    "loadbalance": "roundrobin",
+                    "hosts": [{"scheme": "http", "host": "", "weight": 100}],
+                },
+            )
+            pre_backend_config.save()
 
         return stage
 
