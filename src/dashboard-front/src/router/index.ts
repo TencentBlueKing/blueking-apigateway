@@ -1,6 +1,10 @@
 /* eslint-disable max-len */
 
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
+import {
+  createRouter,
+  createWebHistory,
+  RouteRecordRaw,
+} from 'vue-router';
 import i18n from '@/language/i18n';
 
 import globalConfig from '@/constant/config';
@@ -645,6 +649,11 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
+  {
+    path: '/:pathMatch(.*)*',
+    name: '404',
+    component: () => import('@/views/404.vue'),
+  },
 ];
 
 const router = createRouter({
@@ -655,8 +664,17 @@ const router = createRouter({
 router.beforeEach((to: any, from: any) => {
   const { name: toName } = to;
   const { name: fromName } = from;
-  if (toName === 'apigwResource' && fromName === 'apigwResourceEdit') {
-    to.meta.pageStatus = true;
+  if (toName === 'apigwResource') {
+    if (fromName === 'apigwResourceEdit') {
+      to.meta.pageStatus = true;
+    }
+    // const commonStore = useCommon();
+    // 可编程网关不可访问
+    // if (commonStore?.curApigwData?.kind === 1) {
+    //   return {
+    //     name: '404',
+    //   };
+    // }
   }
   return true;
 });

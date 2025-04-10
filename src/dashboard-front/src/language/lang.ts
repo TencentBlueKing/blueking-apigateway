@@ -1364,6 +1364,7 @@ const lang: ILANG = {
   '修改插件': ['Modify plugin'],
   '产品文档': ['Documentation'],
   '尚未添加插件，': ['No plugin added,'],
+  '尚未添加插件': ['No plugin added'],
   '立即添加': ['Add now'],
   '添加成功': ['Added successfully'],
   '确定停用插件？': ['Are you sure to disable the plugin?'],
@@ -1732,6 +1733,8 @@ const lang: ILANG = {
   '当前有版本正在发布，请稍后再操作': ['A new version is being published, please try again later'],
   '当前有版本正在发布，请稍后再进行变量修改': ['A new version is being published, please modify variables again later'],
   '当前有版本正在发布，请稍后再进行后端服务修改': ['A new version is being published, please modify backend service again later'],
+  '可编程网关的环境由平台内置，不能修改和新增': ['Programmable gateway environments are built in by the platform, and cannot be modified or added'],
+  '页面不存在': ['Page not found'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

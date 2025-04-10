@@ -23,6 +23,8 @@ export interface IMenu {
   icon?: string
   enabled?: boolean
   children?: IMenu[]
+  // 是否在可编程网关中隐藏，默认 false
+  hideInProgrammable?: boolean
 }
 
 export interface IMethodList {

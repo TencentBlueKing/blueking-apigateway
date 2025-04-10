@@ -32,12 +32,11 @@
                       theme="danger"
                       style="margin-left: 5px"
                       v-if="menu.name === 'apigwPermissionManage' && permission.count !== 0"
-                    >
-                    </bk-badge>
+                    />
                   </template>
                   <template v-for="child in menu.children">
                     <bk-menu-item
-                      v-if="child.enabled"
+                      v-if="child.enabled && !(child.hideInProgrammable && common.curApigwData.kind === 1)"
                       :key="child.name"
                       @click.stop="handleGoPage(child.name, apigwId)"
                     >
@@ -56,11 +55,12 @@
               </template>
               <template v-else>
                 <bk-menu-item
+                  v-if="!(menu.hideInProgrammable && common.curApigwData.kind === 1)"
                   :key="menu.name"
                   @click.stop="handleGoPage(menu.name, apigwId)"
                 >
                   <template #icon>
-                    <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]"></i>
+                    <i :class="['icon apigateway-icon', `icon-ag-${menu.icon}`]" />
                   </template>
                   {{ menu.title }}
                 </bk-menu-item>
@@ -111,21 +111,36 @@
 
 <script setup lang="ts">
 import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
   ref,
   watch,
-  onMounted,
-  onBeforeUnmount,
-  computed,
 } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import {
+  useRoute,
+  useRouter,
+} from 'vue-router';
 import { createMenuData } from '@/common/menu';
-import { useGetApiList, useSidebar, useGetStageList } from '@/hooks';
-import { useCommon, usePermission, useStage } from '@/store';
-import { getPermissionApplyList, getGatewaysDetail } from '@/http';
+import {
+  useGetApiList,
+  useGetStageList,
+  useSidebar,
+} from '@/hooks';
+import {
+  useCommon,
+  usePermission,
+  useStage,
+} from '@/store';
+import {
+  getGatewaysDetail,
+  getPermissionApplyList,
+} from '@/http';
 import mitt from '@/common/event-bus';
 import { cloneDeep } from 'lodash';
 import versionReleaseNote from '@/components/version-release-note.vue';
 import tipsPublishBar from '@/components/tips-publish-bar.vue';
+import { IMenu } from '@/types';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const route = useRoute();
@@ -195,7 +210,7 @@ const getStages = async () => {
 };
 
 const needMenu = ref(true);
-const menuData = ref([]);
+const menuData = ref<IMenu[]>([]);
 const pageName = ref<string>('');
 
 // 监听当前路由

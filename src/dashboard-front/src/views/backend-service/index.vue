@@ -8,7 +8,7 @@
               content: t('当前有版本正在发布，请稍后再进行后端服务修改'),
               disabled: !hasPublishingStage,
             }"
-            :disabled="hasPublishingStage"
+            :disabled="hasPublishingStage || common.curApigwData.kind === 1"
             class="mr5 w80"
             theme="primary"
             @click="handleAdd"
@@ -30,7 +30,11 @@
           border="outer">
           <bk-table-column :label="t('后端服务名称')" prop="name">
             <template #default="{ data }">
-              <bk-button text theme="primary" @click="handleEdit(data)">
+              <bk-button
+                text
+                theme="primary"
+                @click="handleEdit(data)"
+              >
                 {{ data?.name }}
               </bk-button>
             </template>
@@ -56,7 +60,7 @@
                   content: t('当前有版本正在发布，请稍后再进行后端服务修改'),
                   disabled: !hasPublishingStage
                 }"
-                :disabled="hasPublishingStage"
+                :disabled="common.curApigwData.kind === 1 || hasPublishingStage"
                 class="mr25"
                 text
                 theme="primary"
@@ -109,6 +113,7 @@
     </div>
 
     <addBackendService
+      :disabled="common.curApigwData.kind === 1 || hasPublishingStage"
       :base="baseInfo"
       :edit-id="backendServiceId"
       ref="addBackendServiceRef"

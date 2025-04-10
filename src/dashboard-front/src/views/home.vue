@@ -18,7 +18,7 @@
         >
           <template #prefix>
             <div class="prefix-cls flex-row align-items-center">
-              <i class="icon apigateway-icon icon-ag-exchange-line pb5"></i>
+              <i class="icon apigateway-icon icon-ag-exchange-line pb5" />
             </div>
           </template>
           <bk-option
@@ -43,13 +43,17 @@
             :class="item.is24HoursAgo ? '' : 'newly-item'">
             <div class="flex-1 flex-row align-items-center  of3">
               <div
-                class="name-logo mr10" :class="item.status ? '' : 'deact'"
-                @click="handleGoPage('apigwResource', item.id)">
+                :class="item.status ? '' : 'deact'"
+                class="name-logo mr10"
+                @click="handleGoPage('apigwResource', item)"
+              >
                 {{ item.name[0].toUpperCase() }}
               </div>
               <span
-                class="name mr10" :class="item.status ? '' : 'deact-name'"
-                @click="handleGoPage('apigwResource', item.id)">
+                :class="item.status ? '' : 'deact-name'"
+                class="name mr10"
+                @click="handleGoPage('apigwResource', item)"
+              >
                 {{ item.name }}
               </span>
               <bk-tag theme="info" v-if="item.is_official">{{ t('官方') }}</bk-tag>
@@ -90,17 +94,24 @@
             <div class="flex-1 of2">
               <bk-button
                 text theme="primary"
-                @click="handleGoPage('apigwStageOverview', item.id)">{{ $t('环境概览') }}</bk-button>
+                @click="handleGoPage('apigwStageOverview', item)"
+              >{{ $t('环境概览') }}
+              </bk-button>
               <bk-button
                 text
                 theme="primary"
                 class="pl20"
-                @click="handleGoPage('apigwResource', item.id)">{{ $t('资源配置') }}</bk-button>
+                :disabled="item?.kind === 1"
+                @click="handleGoPage('apigwResource', item)"
+              >{{ $t('资源配置') }}
+              </bk-button>
               <bk-button
                 text
                 theme="primary"
                 class="pl20"
-                @click="handleGoPage('apigwAccessLog', item.id)">{{ $t('流水日志') }}</bk-button>
+                @click="handleGoPage('apigwAccessLog', item)"
+              >{{ $t('流水日志') }}
+              </bk-button>
             </div>
           </div>
         </div>
@@ -210,18 +221,20 @@ import { useUser } from '@/store/user';
 import { Message } from 'bkui-vue';
 import { IDialog } from '@/types';
 import { useRouter } from 'vue-router';
-import { useGetApiList/* , useGetGlobalProperties */ } from '@/hooks';
+import { useGetApiList } from '@/hooks';
 import { is24HoursAgo } from '@/common/util';
 import { useCommon } from '@/store';
 import MemberSelect from '@/components/member-select';
 // @ts-ignore
 import TableEmpty from '@/components/table-empty.vue';
 import {
+  computed,
+  h,
   ref,
   watch,
-  h,
-  computed,
 } from 'vue';
+import { GatewayListItem } from '@/types/gateway';
+
 const { t } = useI18n();
 const user = useUser();
 const router = useRouter();
@@ -386,13 +399,22 @@ const handleConfirmCreate = async () => {
   }
 };
 
-const handleGoPage = (routeName: string, apigwId: number) => {
-  router.push({
-    name: routeName,
-    params: {
-      id: apigwId,
-    },
-  });
+const handleGoPage = (routeName: string, gateway: GatewayListItem) => {
+  if (gateway.kind === 1 && routeName === 'apigwResource') {
+    router.push({
+      name: 'apigwResourceVersion',
+      params: {
+        id: gateway.id,
+      },
+    });
+  } else {
+    router.push({
+      name: routeName,
+      params: {
+        id: gateway.id,
+      },
+    });
+  }
 };
 
 const resetDialogData = () => {
