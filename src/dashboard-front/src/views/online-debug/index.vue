@@ -657,6 +657,10 @@ const matchPath = (resource: any) => {
 
 // 点击资源列表项
 const handleShowDoc = (resource: any) => {
+  if (resource.id === curResource.value?.id) {
+    return;
+  }
+
   curResource.value = resource;
   curComponentName.value = resource.name;
   getResourceParams();

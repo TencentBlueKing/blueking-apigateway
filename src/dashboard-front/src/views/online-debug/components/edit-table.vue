@@ -315,12 +315,12 @@ watch(
         isEdit: false,
         id: +new Date(),
         name: item.name,
-        value: item.schema?.default || '',
-        instructions: item.description,
+        value: item.schema?.default || item.value || '',
+        instructions: item.description || item.instructions,
         required: !!item.required,
-        type: item.schema?.type || 'string',
-        options: item.schema?.enum || [],
-        default: item.schema?.default,
+        type: item.schema?.type || item.type || 'string',
+        options: item.schema?.enum || item.options || [],
+        default: item.schema?.default || item.default,
       });
     });
 
