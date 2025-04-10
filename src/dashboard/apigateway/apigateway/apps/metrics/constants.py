@@ -35,5 +35,11 @@ class MetricsInstantEnum(StructuredEnum):
 
 
 class MetricsRequestEnum(StructuredEnum):
-    GATEWAY = EnumField("gateway", label="网关请求统计")
-    APP = EnumField("app", label="应用请求统计")
+    REQUESTS_TOTAL = EnumField("requests_total", label="请求总数")
+    REQUESTS_FAILED_TOTAL = EnumField("requests_failed_total", label="请求失败总数")
+
+
+class MetricsRequestTimeDimensionEnum(StructuredEnum):
+    DAY = EnumField("day", label="按天统计")
+    WEEK = EnumField("week", label="按周统计")
+    MONTH = EnumField("month", label="按月统计")

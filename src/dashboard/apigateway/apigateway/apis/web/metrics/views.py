@@ -17,13 +17,19 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
-from collections import defaultdict
 
+from django.db.models import Sum
+from django.db.models.functions import TruncDate, TruncMonth, TruncWeek
 from django.http import Http404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apps.metrics.constants import MetricsInstantEnum, MetricsRangeEnum, MetricsRequestEnum
+from apigateway.apps.metrics.constants import (
+    MetricsInstantEnum,
+    MetricsRangeEnum,
+    MetricsRequestEnum,
+    MetricsRequestTimeDimensionEnum,
+)
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.apps.metrics.prometheus.dimension import MetricsInstantFactory, MetricsRangeFactory
 from apigateway.core.models import Resource, Stage
@@ -177,10 +183,25 @@ class QueryInstantApi(generics.ListAPIView):
 
 
 class QueryRequestApi(generics.ListAPIView):
+    @staticmethod
+    def get_trunc_func(time_dimension):
+        return {
+            MetricsRequestTimeDimensionEnum.DAY.value: TruncDate,
+            MetricsRequestTimeDimensionEnum.WEEK.value: TruncWeek,
+            MetricsRequestTimeDimensionEnum.MONTH.value: TruncMonth,
+        }.get(time_dimension, TruncDate)
+
+    @staticmethod
+    def get_count_field(metrics):
+        return {
+            MetricsRequestEnum.REQUESTS_TOTAL.value: "total_count",
+            MetricsRequestEnum.REQUESTS_FAILED_TOTAL.value: "failed_count",
+        }.get(metrics, "total_count")
+
     @swagger_auto_schema(
         query_serializer=MetricsQueryRequestInputSLZ(),
         responses={status.HTTP_200_OK: ""},
-        operation_description="查询 metrics",
+        operation_description="查询请求总量/失败请求总量",
         tags=["WebAPI.Metrics"],
     )
     def get(self, request, *args, **kwargs):
@@ -201,34 +222,23 @@ class QueryRequestApi(generics.ListAPIView):
 
         if data.get("resource_id"):
             query_params["resource_id"] = data["resource_id"]
-            resource_id_to_name = dict(
-                Resource.objects.filter(gateway=request.gateway, id=data["resource_id"]).values_list("id", "name")
-            )
-        else:
-            resource_id_to_name = dict(Resource.objects.filter(gateway=request.gateway).values_list("id", "name"))
 
-        fields = ["resource_id", "total_count", "failed_count", "total_msecs", "start_time", "end_time"]
-        if data["type"] == MetricsRequestEnum.GATEWAY.value:
-            queryset = StatisticsGatewayRequestByDay.objects.filter(**query_params).values(*fields)
-        else:
-            if data.get("bk_app_code"):
-                query_params["bk_app_code"] = data["bk_app_code"]
-            queryset = StatisticsAppRequestByDay.objects.filter(**query_params).values(*fields)
+        trunc_func = self.get_trunc_func(data["time_dimension"])
+        count_field = self.get_count_field(data["metrics"])
 
-        results = defaultdict(list)
-        for obj in queryset.iterator(chunk_size=1000):
-            resource_name = resource_id_to_name.get(obj["resource_id"])
-            if not resource_name:
-                continue
+        model = StatisticsGatewayRequestByDay
+        if data.get("bk_app_code"):
+            model = StatisticsAppRequestByDay
+            query_params["bk_app_code"] = data["bk_app_code"]
 
-            results[resource_name].append(
-                {
-                    "total_count": obj["total_count"],
-                    "failed_count": obj["failed_count"],
-                    "total_msecs": obj["total_msecs"],
-                    "start_time": obj["start_time"],
-                    "end_time": obj["end_time"],
-                }
-            )
+        queryset = (
+            model.objects.filter(**query_params)
+            .annotate(time_period=trunc_func("end_time"))
+            .values("time_period")
+            .annotate(count_sum=Sum(count_field))
+            .order_by("time_period")
+        )
 
-        return OKJsonResponse(data=results)
+        datapoints = [[obj["count_sum"], obj["time_period"]] for obj in queryset.iterator(chunk_size=1000)]
+
+        return OKJsonResponse(data={"series": {"datapoints": datapoints}})

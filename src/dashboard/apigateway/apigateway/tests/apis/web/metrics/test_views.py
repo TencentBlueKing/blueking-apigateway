@@ -17,11 +17,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
+import time
 
 from ddf import G
 
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.core.models import Resource
+from apigateway.utils.time import utctime
 
 
 class TestQueryRangeApi:
@@ -160,6 +162,7 @@ class TestQueryInstantApi:
 
 class TestQueryGatewayRequestApi:
     def test_get(self, fake_stage, request_view):
+        # metrics_stats_api_request_by_day
         resource_obj1 = G(Resource, name="test1", gateway=fake_stage.gateway)
         resource_obj2 = G(Resource, name="test2", gateway=fake_stage.gateway)
         G(
@@ -170,8 +173,8 @@ class TestQueryGatewayRequestApi:
             total_count=100,
             failed_count=10,
             total_msecs=600,
-            start_time=datetime.datetime.now(),
-            end_time=datetime.datetime.now(),
+            start_time=utctime(int(time.time())).datetime,
+            end_time=utctime(int(time.time())).datetime,
         )
         G(
             StatisticsGatewayRequestByDay,
@@ -181,10 +184,11 @@ class TestQueryGatewayRequestApi:
             total_count=200,
             failed_count=20,
             total_msecs=800,
-            start_time=datetime.datetime.now(),
-            end_time=datetime.datetime.now(),
+            start_time=utctime(int(time.time())).datetime,
+            end_time=utctime(int(time.time())).datetime,
         )
 
+        # requests_total
         response = request_view(
             "GET",
             "metrics.query_request",
@@ -194,13 +198,37 @@ class TestQueryGatewayRequestApi:
             data={
                 "type": "gateway",
                 "stage_id": fake_stage.id,
+                "metrics": "requests_total",
+                "time_dimension": "day",
                 "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
-                "time_end": int((datetime.datetime.now()).timestamp()) + 10,
+                "time_end": int(time.time()),
             },
         )
         result = response.json()
         assert response.status_code == 200
-        assert len(result["data"]) == 2
+        assert len(result["data"]["series"]) == 1
+        assert result["data"]["series"]["datapoints"][0][0] == 300
+
+        # requests_failed_total
+        response = request_view(
+            "GET",
+            "metrics.query_request",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "type": "gateway",
+                "stage_id": fake_stage.id,
+                "metrics": "requests_failed_total",
+                "time_dimension": "day",
+                "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
+                "time_end": int(time.time()),
+            },
+        )
+        result = response.json()
+        assert response.status_code == 200
+        assert len(result["data"]["series"]) == 1
+        assert result["data"]["series"]["datapoints"][0][0] == 30
 
         # 查询 resource_id
         response = request_view(
@@ -212,15 +240,19 @@ class TestQueryGatewayRequestApi:
             data={
                 "type": "gateway",
                 "stage_id": fake_stage.id,
+                "metrics": "requests_total",
+                "time_dimension": "day",
                 "resource_id": resource_obj1.id,
                 "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
-                "time_end": int((datetime.datetime.now()).timestamp()) + 10,
+                "time_end": int(time.time()),
             },
         )
         result = response.json()
         assert response.status_code == 200
-        assert len(result["data"]) == 1
+        assert len(result["data"]["series"]) == 1
+        assert result["data"]["series"]["datapoints"][0][0] == 100
 
+        # metrics_stats_app_request_by_day
         resource_obj3 = G(Resource, name="test3", gateway=fake_stage.gateway)
         G(
             StatisticsAppRequestByDay,
@@ -231,8 +263,8 @@ class TestQueryGatewayRequestApi:
             total_count=100,
             failed_count=10,
             total_msecs=600,
-            start_time=datetime.datetime.now(),
-            end_time=datetime.datetime.now(),
+            start_time=utctime(int(time.time())).datetime,
+            end_time=utctime(int(time.time())).datetime,
         )
         G(
             StatisticsAppRequestByDay,
@@ -243,8 +275,8 @@ class TestQueryGatewayRequestApi:
             total_count=200,
             failed_count=20,
             total_msecs=800,
-            start_time=datetime.datetime.now(),
-            end_time=datetime.datetime.now(),
+            start_time=utctime(int(time.time())).datetime,
+            end_time=utctime(int(time.time())).datetime,
         )
         response = request_view(
             "GET",
@@ -253,16 +285,17 @@ class TestQueryGatewayRequestApi:
                 "gateway_id": fake_stage.gateway.id,
             },
             data={
-                "type": "app",
+                "metrics": "requests_total",
+                "time_dimension": "day",
                 "stage_id": fake_stage.id,
                 "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
-                "time_end": int((datetime.datetime.now()).timestamp()) + 10,
+                "time_end": int(time.time()),
             },
         )
         result = response.json()
-
         assert response.status_code == 200
-        assert len(result["data"][resource_obj3.name]) == 2
+        assert len(result["data"]["series"]) == 1
+        assert result["data"]["series"]["datapoints"][0][0] == 300
 
         # 查询 bk_app_code
         response = request_view(
@@ -272,19 +305,21 @@ class TestQueryGatewayRequestApi:
                 "gateway_id": fake_stage.gateway.id,
             },
             data={
-                "type": "app",
+                "metrics": "requests_total",
+                "time_dimension": "day",
                 "stage_id": fake_stage.id,
                 "bk_app_code": "app1",
                 "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
-                "time_end": int((datetime.datetime.now()).timestamp()) + 10,
+                "time_end": int(time.time()),
             },
         )
         result = response.json()
 
         assert response.status_code == 200
-        assert len(result["data"]) == 1
+        assert len(result["data"]["series"]) == 1
+        assert result["data"]["series"]["datapoints"][0][0] == 100
 
-        # no type
+        # empty metrics
         response = request_view(
             "GET",
             "metrics.query_request",
@@ -292,10 +327,11 @@ class TestQueryGatewayRequestApi:
                 "gateway_id": fake_stage.gateway.id,
             },
             data={
-                "type": "",
+                "metrics": "",
+                "time_dimension": "day",
                 "stage_id": fake_stage.id,
                 "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
-                "time_end": int((datetime.datetime.now()).timestamp()) + 10,
+                "time_end": int((datetime.datetime.now()).timestamp()),
             },
         )
         assert response.status_code == 400

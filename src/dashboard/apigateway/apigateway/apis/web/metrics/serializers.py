@@ -21,7 +21,12 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apps.metrics.constants import MetricsInstantEnum, MetricsRangeEnum, MetricsRequestEnum
+from apigateway.apps.metrics.constants import (
+    MetricsInstantEnum,
+    MetricsRangeEnum,
+    MetricsRequestEnum,
+    MetricsRequestTimeDimensionEnum,
+)
 
 
 class MetricsQueryRangeInputSLZ(serializers.Serializer):
@@ -55,16 +60,19 @@ class MetricsQueryInstantInputSLZ(serializers.Serializer):
 class MetricsQueryRequestInputSLZ(serializers.Serializer):
     stage_id = serializers.IntegerField(required=True, help_text="环境 id")
     resource_id = serializers.IntegerField(allow_null=True, required=False, help_text="资源 id")
-    bk_app_code = serializers.CharField(allow_null=True, required=False, help_text="app code")
+    bk_app_code = serializers.CharField(allow_blank=True, required=False, help_text="app code")
+    metrics = serializers.ChoiceField(choices=MetricsRequestEnum.get_choices(), help_text="metric 类型")
+    time_dimension = serializers.ChoiceField(
+        choices=MetricsRequestTimeDimensionEnum.get_choices(), help_text="时间维度"
+    )
     time_start = serializers.IntegerField(required=False, min_value=0, help_text="开始时间")
     time_end = serializers.IntegerField(required=False, min_value=0, help_text="结束时间")
-    type = serializers.ChoiceField(choices=MetricsRequestEnum.get_choices(), required=True, help_text="请求类型")
 
     def validate(self, data):
         if not (data.get("time_start") and data.get("time_end")):
             raise serializers.ValidationError(_("参数 time_start+time_end 必须同时有效。"))
 
-        time_ = int((timezone.now() - relativedelta(months=6)).timestamp())
-        if data["time_start"] < time_:
+        time_interval = int((timezone.now() - relativedelta(months=6)).timestamp())
+        if data["time_start"] < time_interval:
             raise serializers.ValidationError(_("查询时间范围不可超过半年"))
         return data
