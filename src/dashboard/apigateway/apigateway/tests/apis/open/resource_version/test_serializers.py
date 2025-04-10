@@ -53,17 +53,7 @@ class TestReleaseInputV1SLZ:
             "apigateway.apis.open.resource_version.serializers.ResourceVersion.objects.get_id_by_version",
             return_value=faker.pyint(),
         )
-        mock_get_by_name = mocker.patch(
-            "apigateway.apis.open.resource_version.serializers.ResourceVersion.objects.get_id_by_name",
-            return_value=faker.pyint(),
-        )
         slz = self._new_slz(fake_request, fake_gateway, "test", [], "test")
 
-        slz._get_resource_version_id(fake_gateway, None, "test")
-        mock_get_by_version.assert_not_called()
-        mock_get_by_name.assert_called_once_with(fake_gateway, "test")
-
-        mock_get_by_name.reset_mock()
-        slz._get_resource_version_id(fake_gateway, "1.0.0", "test")
+        slz._get_resource_version_id(fake_gateway, "1.0.0")
         mock_get_by_version.assert_called_once_with(fake_gateway.id, "1.0.0")
-        mock_get_by_name.assert_not_called()

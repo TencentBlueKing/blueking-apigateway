@@ -154,9 +154,7 @@ class TestReleaseHistoryOutputSLZ:
     def test_to_representation(self):
         gateway = G(Gateway)
         stage = G(Stage, gateway=gateway)
-        resource_version = G(
-            ResourceVersion, gateway=gateway, name="t1", version="1.0.0", title="测试", comment="test1"
-        )
+        resource_version = G(ResourceVersion, gateway=gateway, version="1.0.0", comment="test1")
         release_history = G(
             ReleaseHistory,
             gateway=gateway,

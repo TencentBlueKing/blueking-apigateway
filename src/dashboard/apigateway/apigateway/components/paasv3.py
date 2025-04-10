@@ -30,6 +30,8 @@ from apigateway.utils.list import chunk_list
 
 logger = logging.getLogger(__name__)
 
+# FIXME: LEGACY CODE, should use paas.py instead
+
 
 class PaaSV3Component:
     """API 网关 paasv3 相关接口"""

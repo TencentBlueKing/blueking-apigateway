@@ -71,9 +71,7 @@ class SDKListApi(generics.ListAPIView):
                 "released_stages": Release.objects.get_released_stages(resource_version_ids=resource_version_ids),
                 "resource_versions": {
                     version["id"]: version
-                    for version in ResourceVersion.objects.filter(id__in=resource_version_ids).values(
-                        "id", "version", "title", "name"
-                    )
+                    for version in ResourceVersion.objects.filter(id__in=resource_version_ids).values("id", "version")
                 },
             },
         )

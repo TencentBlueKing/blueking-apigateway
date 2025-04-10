@@ -47,12 +47,13 @@ class GatewayAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
         "name",
         "status",
         "is_public",
+        "kind",
         "created_by",
         "created_time",
         "updated_time",
     ]
     search_fields = ["id", "name"]
-    list_filter = ["status", "is_public"]
+    list_filter = ["status", "is_public", "kind"]
 
 
 class StageAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
@@ -113,8 +114,8 @@ class ReleasedResourceAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
 
 class ReleaseHistoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
-    list_display = ["gateway", "stage", "resource_version", "status", "created_by", "created_time"]
-    list_filter = ["gateway", "status", "created_time"]
+    list_display = ["gateway", "stage", "resource_version", "created_by", "created_time"]
+    list_filter = ["gateway", "created_time"]
     search_fields = ["gateway__id", "gateway__name"]
     raw_id_fields = ["resource_version"]
 

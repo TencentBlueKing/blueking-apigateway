@@ -107,7 +107,7 @@ class TestReleasedResourceHandler:
         stage_prod = G(Stage, gateway=fake_gateway, name="prod", status=1)
         stage_test = G(Stage, gateway=fake_gateway, name="test", status=1)
 
-        resource_version = G(ResourceVersion, gateway=fake_gateway, name="test-01", title="test", version="1.0.1")
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
         G(
             Release,
             gateway=fake_gateway,
@@ -125,8 +125,6 @@ class TestReleasedResourceHandler:
                         "release_status": True,
                         "release_time": dummy_time.time,
                         "resource_version_id": resource_version.id,
-                        "resource_version_name": "test-01",
-                        "resource_version_title": "test",
                         "resource_version_display": "1.0.1",
                         "resource_version": {
                             "version": "1.0.1",

@@ -379,8 +379,6 @@ class TestPublishValidator:
             ResourceVersion,
             gateway=fake_gateway,
             version="1",
-            name="11",
-            title="11",
             _data=json.dumps(
                 [
                     {

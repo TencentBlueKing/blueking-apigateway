@@ -30,7 +30,7 @@ from apigateway.tests.utils.testing import dummy_time
 
 class TestSDKListOutputSLZ:
     def test_to_representation(self, fake_gateway):
-        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1", title="test")
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
         sdk_1 = G(
             GatewaySDK,
             gateway=fake_gateway,

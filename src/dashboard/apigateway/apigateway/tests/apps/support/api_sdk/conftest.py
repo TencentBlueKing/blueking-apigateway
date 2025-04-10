@@ -78,8 +78,6 @@ def resource_version(fake_gateway, resource_version_data, faker):
         G(
             ResourceVersion,
             gateway=fake_gateway,
-            name=faker.pystr(),
-            title=faker.pystr(),
             comment=faker.pystr(),
             _data=json.dumps(resource_version_data),
             created_time=faker.date_time(),

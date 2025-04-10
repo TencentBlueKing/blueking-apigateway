@@ -33,10 +33,10 @@ from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
     EVENT_FAIL_INTERVAL_TIME,
     RESOURCE_METHOD_CHOICES,
-    APIHostingTypeEnum,
     BackendTypeEnum,
     ContextScopeTypeEnum,
     ContextTypeEnum,
+    GatewayKindEnum,
     GatewayStatusEnum,
     MicroGatewayStatusEnum,
     ProxyTypeEnum,
@@ -45,7 +45,6 @@ from apigateway.core.constants import (
     PublishEventStatusEnum,
     PublishSourceEnum,
     ReleaseHistoryStatusEnum,
-    ReleaseStatusEnum,
     ResourceVersionSchemaEnum,
     StageStatusEnum,
 )
@@ -82,12 +81,16 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     # status
     status = models.IntegerField(choices=GatewayStatusEnum.get_choices())
 
-    is_public = models.BooleanField(default=False)
-    # 不同的托管类型决定特性集
-    hosting_type = models.IntegerField(
-        choices=APIHostingTypeEnum.get_choices(),
-        default=APIHostingTypeEnum.MICRO.value,
+    # kind is normal or programmable, while the gateway_type is already been occupied on the context of gateway_auth
+    # 这个 kind 仅对 web 产品页面感知，openapi 自动化注册等，不需要感知
+    # 注意，可编程网关其  gateway_name = bk_app_code
+    kind = models.IntegerField(
+        choices=GatewayKindEnum.get_choices(), default=GatewayKindEnum.NORMAL.value, null=True, blank=True
     )
+    # NOTE: 后续所有的 JSONField，必须使用 models.JSONField
+    _extra_info = models.JSONField(db_column="extra_info", default={}, blank=True, null=True)
+
+    is_public = models.BooleanField(default=False)
 
     def __str__(self):
         return f"<Gateway: {self.pk}/{self.name}>"
@@ -133,6 +136,22 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     @developers.setter
     def developers(self, data: List[str]):
         self._developers = ";".join(data)
+
+    @property
+    def extra_info(self) -> Dict:
+        return self._extra_info
+
+    @extra_info.setter
+    def extra_info(self, data: Dict):
+        if self.kind == GatewayKindEnum.PROGRAMMABLE.value:
+            # now only support language and repository
+            self._extra_info = {
+                "language": data.get("language", ""),
+                "repository": data.get("repository", ""),
+            }
+        else:
+            # 非编程网关，额外信息为空
+            self._extra_info = {}
 
     def has_permission(self, username):
         """
@@ -454,10 +473,6 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))
-    # todo: 1.14 删除
-    name = models.CharField(_("[Deprecated] 版本名"), max_length=128)
-    # todo: 1.14 删除
-    title = models.CharField(max_length=128, blank=True, default="", null=True)
     comment = models.CharField(max_length=512, blank=True, null=True)
     _data = models.TextField(db_column="data")
     # 用于不同数据格式解析版本数据兼容历史数据
@@ -482,7 +497,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
     @property
     def object_display(self):
         if not self.version:
-            return f"{self.title}({self.name})"
+            return f"{self.gateway}({self.created_time})"
 
         return self.version
 
@@ -561,8 +576,6 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
 
     # only one stage-resource_version
     stage = models.ForeignKey(Stage, related_name="+", on_delete=models.CASCADE)
-    # todo:1.14
-    stages = models.ManyToManyField(Stage)
 
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)
     comment = models.CharField(max_length=512, blank=True, null=True)
@@ -573,15 +586,6 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
         choices=PublishSourceEnum.get_choices(),
         default=PublishSourceEnum.VERSION_PUBLISH.value,
     )
-    # todo:1.14 删掉该字段废弃，由 publish_event 来决定最终状态
-    status = models.CharField(
-        _("发布状态"),
-        max_length=16,
-        choices=ReleaseStatusEnum.get_choices(),
-        default=ReleaseStatusEnum.PENDING.value,
-    )
-    # 废弃同上
-    message = models.TextField(blank=True, default="")
 
     objects = managers.ReleaseHistoryManager()
 
@@ -761,27 +765,3 @@ class MicroGateway(ConfigModelMixin):
     def instance_id(self):
         """微网关实例 ID"""
         return str(self.pk)
-
-
-# FIXME: remove this model
-class MicroGatewayReleaseHistory(models.Model):
-    """微网关资源发布历史，不同于 ReleaseHistory，这里关注的是单个实例"""
-
-    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
-    # 因为实例和环境的绑定关系可能会修改，所以这里不能是强关联
-    stage = models.ForeignKey(Stage, null=True, on_delete=models.SET_NULL)
-    micro_gateway = models.ForeignKey(MicroGateway, on_delete=models.CASCADE)
-    release_history = models.ForeignKey(ReleaseHistory, on_delete=models.CASCADE)
-    message = models.TextField(blank=True, null=True, default="")
-
-    # todo: 废弃：1.14 删除
-    status = models.CharField(
-        _("发布状态"),
-        max_length=16,
-        choices=ReleaseStatusEnum.get_choices(),
-        default=ReleaseStatusEnum.PENDING.value,
-    )
-    details = JSONField(blank=True, null=True)
-
-    class Meta:
-        db_table = "core_micro_gateway_release_history"

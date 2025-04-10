@@ -67,10 +67,12 @@ class TestGatewayListOutputSLZ:
                 ],
                 "resource_count": 2,
                 "status": 1,
+                "kind": 0,
                 "is_public": True,
                 "is_official": True,
                 "created_time": DateTimeField().to_representation(gateway_1.created_time),
                 "updated_time": DateTimeField().to_representation(gateway_1.updated_time),
+                "extra_info": {},
             },
             {
                 "id": gateway_2.id,
@@ -80,10 +82,12 @@ class TestGatewayListOutputSLZ:
                 "stages": [],
                 "resource_count": 0,
                 "status": 0,
+                "kind": 0,
                 "is_public": False,
                 "is_official": False,
                 "created_time": DateTimeField().to_representation(gateway_2.created_time),
                 "updated_time": DateTimeField().to_representation(gateway_2.updated_time),
+                "extra_info": {},
             },
         ]
         gateways = Gateway.objects.filter(id__in=[gateway_1.id, gateway_2.id])
@@ -260,6 +264,7 @@ class TestGatewayRetrieveOutputSLZ:
             "doc_maintainers": fake_gateway.doc_maintainers,
             "developers": fake_gateway.developers,
             "status": fake_gateway.status,
+            "kind": fake_gateway.kind,
             "is_public": fake_gateway.is_public,
             "created_by": fake_gateway.created_by,
             "created_time": DateTimeField().to_representation(fake_gateway.created_time),
@@ -272,6 +277,8 @@ class TestGatewayRetrieveOutputSLZ:
             "is_official": False,
             "bk_app_codes": [],
             "related_app_codes": [],
+            "extra_info": {},
+            "links": {},
         }
 
         assert slz.data == expected

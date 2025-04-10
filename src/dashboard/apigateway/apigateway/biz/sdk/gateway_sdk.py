@@ -33,8 +33,6 @@ class GatewaySDKHandler:
                 "stage__name",
                 "stage__is_public",
                 "resource_version__id",
-                "resource_version__name",
-                "resource_version__title",
                 "resource_version__version",
             )
         )

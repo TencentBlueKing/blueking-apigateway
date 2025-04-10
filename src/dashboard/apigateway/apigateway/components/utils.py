@@ -16,6 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
+from typing import Dict
+
+from django.conf import settings
 from django.utils.translation import get_language
 
 
@@ -23,3 +27,20 @@ def inject_accept_language(request):
     language = get_language()
     if language:
         request.headers["Accept-Language"] = language
+
+
+def gen_gateway_headers() -> Dict[str, str]:
+    headers = {
+        "Content-Type": "application/json",
+        "X-Bkapi-Authorization": json.dumps(
+            {
+                "bk_app_code": settings.BK_APP_CODE,
+                "bk_app_secret": settings.BK_APP_SECRET,
+            }
+        ),
+    }
+    language = get_language()
+    if language:
+        headers["Accept-Language"] = language
+
+    return headers

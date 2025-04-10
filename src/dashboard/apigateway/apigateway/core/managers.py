@@ -122,14 +122,7 @@ class ResourceVersionManager(models.Manager):
         if resource_version_ids is not None:
             queryset = queryset.filter(id__in=resource_version_ids)
 
-        return {rv["id"]: dict(rv) for rv in queryset.values("id", "name", "title", "version")}
-
-    def get_id_by_name(self, gateway, name: str) -> Optional[int]:
-        # 版本中 data 数据量较大，查询时不查询 data 数据
-        ids = self.filter(gateway=gateway, name=name).values_list("id", flat=True)
-        if not ids:
-            return None
-        return ids[0]
+        return {rv["id"]: dict(rv) for rv in queryset.values("id", "version")}
 
     def get_id_by_version(self, gateway_id: int, version: str) -> Optional[int]:
         if not version:
@@ -142,7 +135,7 @@ class ResourceVersionManager(models.Manager):
 
     def get_object_fields(self, id_: int) -> Dict[str, Any]:
         """获取字段数据，因部分字段数据量过大，因此只获取部分数据量不大的字段"""
-        return self.filter(id=id_).values("id", "name", "title", "version").first() or {}
+        return self.filter(id=id_).values("id", "version").first() or {}
 
     def check_version_exists(self, gateway_id: int, version: str) -> bool:
         return self.filter(gateway_id=gateway_id, version=version).exists()
@@ -153,7 +146,7 @@ class ResourceVersionManager(models.Manager):
         if version:
             qs = qs.filter(version=version)
 
-        return qs.values("id", "version", "title", "comment")
+        return qs.values("id", "version", "comment")
 
 
 class ReleaseManager(models.Manager):
@@ -350,12 +343,7 @@ class ReleaseHistoryManager(models.Manager):
 
         # query 不是模型字段，仅支持模糊匹配，如需精确匹配，可使用具体字段
         if query and fuzzy:
-            queryset = queryset.filter(
-                Q(stage__name__contains=query)
-                | Q(resource_version__name__contains=query)
-                | Q(resource_version__title__contains=query)
-                | Q(resource_version__version__contains=query)
-            )
+            queryset = queryset.filter(Q(stage__name__contains=query) | Q(resource_version__version__contains=query))
 
         if stage_id:
             queryset = queryset.filter(stage_id=stage_id)

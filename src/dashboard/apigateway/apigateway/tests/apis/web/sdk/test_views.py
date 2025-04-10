@@ -30,7 +30,7 @@ from apigateway.tests.utils.testing import dummy_time
 
 class TestGatewaySDKListCreateApi:
     def test_list(self, request_view, fake_gateway, settings):
-        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1", title="test")
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
         sdk_1 = G(
             GatewaySDK,
             gateway=fake_gateway,
@@ -115,7 +115,7 @@ class TestGatewaySDKListCreateApi:
             assert result["data"] == test["expected"]
 
     def test_create(self, request_view, fake_gateway, mocker):
-        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1", title="test")
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
 
         mocker.patch(
             "apigateway.apps.support.api_sdk.managers.python.SDKManager.handle",

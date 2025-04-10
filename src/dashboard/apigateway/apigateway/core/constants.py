@@ -23,17 +23,14 @@ from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.utils.translation import gettext_lazy as _
 
 
+class GatewayKindEnum(StructuredEnum):
+    NORMAL = EnumField(0, "普通网关")
+    PROGRAMMABLE = EnumField(1, "可编程网关")
+
+
 class GatewayStatusEnum(StructuredEnum):
     INACTIVE = EnumField(0, "已停用")
     ACTIVE = EnumField(1, "启用中")
-
-
-# TODO: delete it in 1.14
-class APIHostingTypeEnum(StructuredEnum):
-    """网关托管类型，影响特性集"""
-
-    DEFAULT = EnumField(0, "apigateway-ng")
-    MICRO = EnumField(1, _("微网关"))
 
 
 class MicroGatewayStatusEnum(StructuredEnum):
@@ -46,19 +43,6 @@ class MicroGatewayStatusEnum(StructuredEnum):
     # 可能会因为 helm install 超时导致失败，此时资源可能更新了，但 release 状态未更新
     # 所以不能简单标识安装或者未安装
     ABNORMAL = EnumField("abnormal", _("安装异常"))
-
-
-class ServiceDiscoveryTypeEnum(StructuredEnum):
-    """服务发现注册中心类型"""
-
-    GO_MICRO_ETCD = EnumField("go_micro_etcd", "Go Micro - Etcd")
-
-
-class EtcdSecureTypeEnum(StructuredEnum):
-    """Etcd 安全认证类型"""
-
-    SSL = EnumField("ssl", "SSL")
-    PASSWORD = EnumField("password", "Password")
 
 
 class GatewayTypeEnum(StructuredEnum):

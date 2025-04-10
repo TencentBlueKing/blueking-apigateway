@@ -32,8 +32,9 @@ from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.error_codes import error_codes
+from apigateway.components.paas import create_paas_app
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
+from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
@@ -67,6 +68,8 @@ from .serializers import (
     ),
 )
 class GatewayListCreateApi(generics.ListCreateAPIView):
+    serializer_class = GatewayListInputSLZ
+
     def list(self, request, *args, **kwargs):
         # 获取用户有权限的网关列表，后续切换到 IAM
         gateways = GatewayHandler.list_gateways_by_user(request.user.username)
@@ -80,6 +83,9 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             slz.validated_data.get("keyword"),
             slz.validated_data["order_by"],
         )
+        if slz.validated_data.get("kind"):
+            queryset = queryset.filter(kind=slz.validated_data["kind"])
+
         page = self.paginate_queryset(queryset)
         gateway_ids = [gateway.id for gateway in page]
 
@@ -109,6 +115,12 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         slz.is_valid(raise_exception=True)
 
         bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
+
+        # if kind is programmable, create paas app
+        if slz.validated_data.get("kind") == GatewayKindEnum.PROGRAMMABLE.value:
+            ok = create_paas_app(slz.validated_data["name"])
+            if not ok:
+                raise error_codes.INTERNAL.format(_("创建蓝鲸应用失败。"), replace=True)
 
         # 1. save gateway
         slz.save(
@@ -211,7 +223,8 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
             GatewayAppBindingHandler.update_gateway_app_bindings(instance, bk_app_codes)
 
         related_app_codes = slz.validated_data.pop("related_app_codes", None)
-        GatewayRelatedAppHandler.update_related_app_codes(request.gateway, related_app_codes)
+        if related_app_codes is not None:
+            GatewayRelatedAppHandler.update_related_app_codes(request.gateway, related_app_codes)
 
         Auditor.record_gateway_op_success(
             op_type=OpTypeEnum.MODIFY,
