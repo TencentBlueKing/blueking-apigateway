@@ -32,38 +32,39 @@ class BaseNotice(ABC):
 
 
 class CMSIWechatNotice(BaseNotice):
-    def send(self, sender, receivers, message):
+    def send(self, tenant_id, sender, receivers, message):
         return cmsi_component.send_wechat(
+            tenant_id,
             {
                 "bk_username": sender,
                 "receiver__username": receivers,
                 "data": {
                     "message": message,
                 },
-            }
+            },
         )
 
 
 class CMSIIMNotice(BaseNotice):
-    def send(self, sender, receivers, message):
+    def send(self, tenant_id, sender, receivers, message):
         params = {
             "bk_username": sender,
             "receiver__username": receivers,
             "title": "蓝鲸通知",
             "content": message,
         }
-        return cmsi_component.send_im(params)
+        return cmsi_component.send_im(tenant_id, params)
 
 
 class CMSIMailNotice(BaseNotice):
-    def send(self, sender, receivers, message):
+    def send(self, tenant_id, sender, receivers, message):
         params = {
             "bk_username": sender,
             "receiver__username": receivers,
             "content": message,
             "title": "蓝鲸通知",
         }
-        return cmsi_component.send_mail(params)
+        return cmsi_component.send_mail(tenant_id, params)
 
 
 class NoticeWay:
@@ -74,7 +75,7 @@ class NoticeWay:
     }
 
     @classmethod
-    def send_notice(cls, notice_way, sender, receivers, message):
+    def send_notice(cls, tenant_id, notice_way, sender, receivers, message):
         # TODO: 是否可删除 sender
 
         notice_class = cls.notice_way_map.get(notice_way)
@@ -84,4 +85,4 @@ class NoticeWay:
         if getattr(settings, "FAKE_SEND_NOTICE", True):
             return False, "系统配置不实际发送消息"
 
-        return notice_class().send(sender, receivers, message)
+        return notice_class().send(tenant_id, sender, receivers, message)

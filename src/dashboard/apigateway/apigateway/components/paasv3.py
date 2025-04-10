@@ -24,7 +24,11 @@ from cachetools import TTLCache, cached
 from django.conf import settings
 
 from apigateway.common.error_codes import error_codes
-from apigateway.common.tenant.constants import TENANT_ID_OPERATION, TenantModeEnum
+from apigateway.common.tenant.constants import (
+    TENANT_ID_OPERATION,
+    TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
+    TenantModeEnum,
+)
 from apigateway.common.tenant.request import gen_tenant_header
 from apigateway.utils.local import local
 from apigateway.utils.url import url_join
@@ -109,3 +113,14 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
         return [app["creator"]]
 
     return []
+
+
+def get_tenant_id_for_app_developers(bk_app_code: str) -> str:
+    if not settings.ENABLE_MULTI_TENANT_MODE:
+        return TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
+
+    info = bkauth_get_app_info(bk_app_code)
+    # if the tenant_id is empty, it means the app is a global app
+    # so the cmsi use could only be the `system`
+
+    return info["bk_tenant"]["id"] or TENANT_ID_OPERATION

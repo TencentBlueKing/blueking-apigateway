@@ -25,6 +25,7 @@ from apigateway.apps.monitor.constants import AlarmStatusEnum, ResourceBackendAl
 from apigateway.apps.monitor.flow.handlers.base import Alerter
 from apigateway.apps.monitor.flow.helpers import AlertHandler, MonitorEvent
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
+from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.utils import time as time_utils
 from apigateway.utils.string import truncate_string
 
@@ -96,6 +97,9 @@ class ResourceBackendAlerter(Alerter):
             receivers.update(strategy.notice_receivers)
 
         return list(receivers)
+
+    def get_tenant_id(self, event: MonitorEvent):
+        return get_tenant_id_for_gateway_maintainers(event.extend["gateway"].tenant_id)
 
     def get_message(self, event: MonitorEvent):
         log_records = event.extend["log_records"]
