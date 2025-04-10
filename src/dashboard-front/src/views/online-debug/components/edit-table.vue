@@ -29,6 +29,7 @@
               v-else
               class="edit-select"
               :clearable="false"
+              allow-create
               v-model="row.name"
               @change="handleNameChange(index, row.name)"
               :ref="(el: HTMLElement | null) => setInputRefs(el, `name-input-${index}-${column?.index}`)"
