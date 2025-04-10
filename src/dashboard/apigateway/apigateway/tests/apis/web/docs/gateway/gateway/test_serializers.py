@@ -34,3 +34,8 @@ class TestGatewayOutputSLZ:
 
         assert slz.data["is_official"] is False
         assert slz.data["api_url"] == f"http://{fake_gateway.name}.example.com"
+        assert slz.data["doc_maintainers"] == {
+            "type": "user",
+            "contacts": ["admin"],
+            "service_account": {"name": "", "link": ""},
+        }
