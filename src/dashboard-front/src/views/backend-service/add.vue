@@ -39,12 +39,14 @@
                     form-type="vertical">
                     <bk-form-item :label="t('服务名称')" property="name" required :rules="baseInfoRules.name">
                       <bk-input
-                        v-model="baseInfo.name" :placeholder="t('请输入 1-20 字符的字母、数字、连字符(-)，以字母开头')"
-                        :disabled="editId" />
+                        v-model="baseInfo.name"
+                        :disabled="editId || disabled"
+                        :placeholder="t('请输入 1-20 字符的字母、数字、连字符(-)，以字母开头')"
+                      />
                       <p class="aler-text">{{ t('后端服务唯一标识，创建后不可修改') }}</p>
                     </bk-form-item>
                     <bk-form-item :label="t('描述')" property="description" class="last-form-item">
-                      <bk-input v-model="baseInfo.description" :placeholder="t('请输入描述')" />
+                      <bk-input v-model="baseInfo.description" :disabled="disabled" :placeholder="t('请输入描述')" />
                     </bk-form-item>
                   </bk-form>
                 </div>
@@ -75,7 +77,7 @@
                         <bk-form-item
                           :label="t('负载均衡类型')" property="configs.loadbalance" required :rules="configRules.loadbalance">
                           <bk-select
-                            v-model="slotProps.configs.loadbalance" class="w150" :clearable="false"
+                            v-model="slotProps.configs.loadbalance" :clearable="false" :disabled="disabled" class="w150"
                           >
                             <bk-option
                               v-for="option of loadbalanceList" :key="option.id" :value="option.id"
@@ -92,13 +94,20 @@
                           :class="['backend-item-cls', { 'form-item-special': i !== 0 }]"
                           required>
                           <div class="host-item">
-                            <bk-input :placeholder="t('格式如：host:port')" v-model="hostItem.host" :key="i">
+                            <bk-input
+                              :key="i"
+                              v-model="hostItem.host"
+                              :disabled="disabled"
+                              :placeholder="t('格式如：host:port')"
+                            >
                               <template #prefix>
                                 <bk-select
                                   v-model="hostItem.scheme"
                                   class="scheme-select-cls w80"
                                   :filterable="false"
-                                  :clearable="false">
+                                  :clearable="false"
+                                  :disabled="disabled"
+                                >
                                   <bk-option
                                     v-for="(item, index) in schemeList" :key="index" :value="item.value"
                                     :label="item.value" />
@@ -112,6 +121,7 @@
                                   label=""
                                   class="weight-input">
                                   <bk-input
+                                    :disabled="disabled"
                                     class="suffix-slot-cls weights-input"
                                     :placeholder="t('权重')"
                                     type="number"
@@ -132,11 +142,13 @@
                           </div>
                         </bk-form-item>
                         <bk-form-item
-                          :label="t('超时时间')" :required="true" :property="'configs.timeout'" class="timeout-item"
+                          :label="t('超时时间')" :property="'configs.timeout'" class="timeout-item" required
                           :rules="configRules.timeout" :error-display-type="'normal'">
                           <bk-input
+                            v-model="slotProps.configs.timeout"
                             type="number" :min="1" :max="300"
-                            v-model="slotProps.configs.timeout" class="time-input">
+                            :disabled="disabled" class="time-input"
+                          >
                             <template #suffix>
                               <div class="group-text group-text-style" :class="locale === 'en' ? 'long' : ''">
                                 {{ t('秒') }}
@@ -156,7 +168,13 @@
       </template>
       <template #footer>
         <div class="pl30">
-          <bk-button theme="primary" class="mr5 w80" @click="handleConfirm" :loading="isSaveLoading">
+          <bk-button
+            :disabled="disabled"
+            :loading="isSaveLoading"
+            class="mr5 w80"
+            theme="primary"
+            @click="handleConfirm"
+          >
             {{ t('确定') }}
           </bk-button>
           <bk-button class="w80" @click="handleCancel">{{ t('取消') }}</bk-button>
@@ -198,19 +216,26 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, watch } from 'vue';
+import {
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { useCommon } from '@/store';
 import { useSidebar } from '@/hooks';
 import {
   createBackendService,
-  updateBackendService,
-  getStageList,
   getBackendServiceDetail,
+  getStageList,
+  updateBackendService,
 } from '@/http';
 import { useRouter } from 'vue-router';
-import { AngleUpFill, Success } from 'bkui-vue/lib/icon';
+import {
+  AngleUpFill,
+  Success,
+} from 'bkui-vue/lib/icon';
 
 const props = defineProps({
   editId: {
@@ -218,6 +243,10 @@ const props = defineProps({
   },
   base: {
     type: Object,
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
   },
 });
 

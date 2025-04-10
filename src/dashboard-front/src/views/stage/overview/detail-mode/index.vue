@@ -7,6 +7,12 @@
         v-if="!stageStore.realStageMainLoading && stageData.status === 0 && stageData.release.status !== 'unreleased'"
         theme="warning"
         :title="t('当前环境已下架，所有内容的更新均不会生效，如需重新启用，需要重新发布')" style="margin-bottom: 16px;" />
+      <bk-alert
+        v-if="common.curApigwData?.kind === 1"
+        :title="t('可编程网关的环境由平台内置，不能修改和新增')"
+        class="mb24"
+        closable
+      />
       <bk-loading :loading="stageStore.realStageMainLoading">
         <section class="stage-info">
           <div :class="['stage-name', stageData.release.status === 'unreleased' ? 'no-release' : '']">
@@ -87,8 +93,12 @@
           <div class="operate">
             <div class="line"></div>
             <bk-button
-              v-if="!basicInfoData.status" :disabled="true" theme="primary" class="mr10"
-              v-bk-tooltips="{ content: t('当前网关已停用，如需使用，请先启用'), delay: 300 }">
+              v-if="!basicInfoData.status"
+              v-bk-tooltips="{ content: t('当前网关已停用，如需使用，请先启用'), delay: 300 }"
+              class="mr10"
+              disabled
+              theme="primary"
+            >
               {{ t('发布资源') }}
             </bk-button>
             <bk-button
@@ -104,6 +114,7 @@
               {{ t('发布资源') }}
             </bk-button>
             <bk-button
+              v-if="common.curApigwData?.kind !== 1"
               v-bk-tooltips="{
                 content: t('当前有版本正在发布，请稍后再操作'),
                 disabled: getStatus(stageData) !== 'doing'
@@ -114,9 +125,9 @@
             >
               {{ t('编辑') }}
             </bk-button>
-            <bk-dropdown trigger="click" v-model:is-show="showDropdown">
+            <bk-dropdown v-model:is-show="showDropdown" trigger="click">
               <bk-button class="more-cls" @click="showDropdown = true">
-                <i class="apigateway-icon icon-ag-gengduo"></i>
+                <i class="apigateway-icon icon-ag-gengduo" />
               </bk-button>
               <template #content>
                 <bk-dropdown-menu ext-cls="stage-more-actions">
@@ -133,6 +144,7 @@
                     {{ t('下架') }}
                   </bk-dropdown-item>
                   <bk-dropdown-item
+                    v-if="common.curApigwData?.kind !== 1"
                     :ext-cls="stageData.status !== 0 ? 'disabled' : ''"
                     v-bk-tooltips="stageData.status === 1 ? t('环境下架后，才能删除') : t('删除环境')"
                     @click="stageData.status === 0 ? handleStageDelete() : void 0"
@@ -234,12 +246,13 @@ import resourceInfo from './resource-info.vue';
 import pluginManage from './plugin-manage.vue';
 import variableManage from './variable-manage.vue';
 
+type TabComponents = typeof resourceInfo | typeof pluginManage | typeof variableManage;
+
 const { t } = useI18n();
 const stageStore = useStage();
 const route = useRoute();
 const router = useRouter();
 const common = useCommon();
-type TabComponents = typeof resourceInfo | typeof pluginManage | typeof variableManage;
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();
@@ -464,7 +477,7 @@ onMounted(async () => {
 <style lang="scss" scoped>
 .detail-mode {
   min-width: calc(1280px - 260px);
-  padding: 24px;
+  padding: 20px 24px;
   font-size: 12px;
   .stage-info {
     display: flex;

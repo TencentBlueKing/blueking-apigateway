@@ -38,16 +38,17 @@
         :class="['apigateway-icon', 'icon-ag-pa-arrow-left', prevDisabled ? 'icon-arrow-enable' : '']"
         @click="handlePrev"
         v-bk-tooltips="{ content: '已显示最前', disabled: prevDisabled }"
-      ></i>
+      />
 
       <i
         v-if="scrollState.isShowIcon"
         :class="['apigateway-icon', 'icon-ag-ps-arrow-right', nextDisabled ? 'icon-arrow-enable' : '']"
         @click="handleNext"
         v-bk-tooltips="{ content: '没有更多了', disabled: nextDisabled }"
-      ></i>
+      />
       <!-- 添加环境 -->
       <plus
+        v-if="common.curApigwData.kind !== 1"
         :class="['add-stage-icon', { notposition: !scrollState.isShowIcon }]"
         fill="#3785ff"
         @click="handleAddStage"
@@ -63,13 +64,33 @@
 <script setup lang="ts">
 /* eslint-disable prefer-destructuring */
 
-import { computed, ref, watch, onBeforeMount, onMounted, nextTick, Ref  } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { getStageList, getStageDetail } from '@/http';
-import { useStage, useCommon } from '@/store';
+import {
+  computed,
+  nextTick,
+  onBeforeMount,
+  onMounted,
+  ref,
+  Ref,
+  watch,
+} from 'vue';
+import {
+  useRoute,
+  useRouter,
+} from 'vue-router';
+import {
+  getStageDetail,
+  getStageList,
+} from '@/http';
+import {
+  useCommon,
+  useStage,
+} from '@/store';
 import { useI18n } from 'vue-i18n';
 import mitt from '@/common/event-bus';
-import { Spinner, Plus } from 'bkui-vue/lib/icon';
+import {
+  Plus,
+  Spinner,
+} from 'bkui-vue/lib/icon';
 import { getStatus } from '@/common/util';
 import editStageSideslider from '@/views/stage/overview/comps/edit-stage-sideslider.vue';
 import { throttle } from 'lodash';

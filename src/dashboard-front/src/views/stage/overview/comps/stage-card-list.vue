@@ -17,12 +17,16 @@
         <div class="title-rg">
           <template v-if="!basicInfoData.status">
             <bk-button
-              theme="primary" size="small" :disabled="true"
+              disabled
+              size="small"
+              theme="primary"
               v-bk-tooltips="{ content: t('当前网关已停用，如需使用，请先启用'), delay: 300 }">
               {{ t('发布资源') }}
             </bk-button>
             <bk-button
-              class="ml10" size="small" :disabled="true"
+              class="ml10"
+              disabled
+              size="small"
               v-bk-tooltips="{ content: t('当前网关已停用，如需使用，请先启用'), delay: 300 }">
               {{ t('下架') }}
             </bk-button>
@@ -101,8 +105,8 @@
         </div>
       </div>
     </div>
-    <div class="card-item add-stage" @click="handleAddStage">
-      <i class="apigateway-icon icon-ag-add-small"></i>
+    <div v-if="common.curApigwData?.kind !== 1" class="card-item add-stage" @click="handleAddStage">
+      <i class="apigateway-icon icon-ag-add-small" />
     </div>
 
     <!-- 环境侧边栏 -->

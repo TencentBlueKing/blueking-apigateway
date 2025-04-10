@@ -14,7 +14,7 @@
         :side-title="sideTitle"
       >
         <template #side-icon>
-          <img :src="appLogo" class="api-logo" />
+          <img :src="appLogo" alt="" class="api-logo" />
         </template>
         <div class="content">
           <router-view v-if="userLoaded"></router-view>
@@ -51,15 +51,20 @@
 
 <script setup lang="ts">
 import {
-  ref,
   computed,
-  watch,
   onMounted,
-  // onBeforeMount,
+  ref,
+  watch,
 } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter, useRoute } from 'vue-router';
-import { Message, ConfigProvider as BkConfigProvider } from 'bkui-vue';
+import {
+  useRoute,
+  useRouter,
+} from 'vue-router';
+import {
+  ConfigProvider as BkConfigProvider,
+  Message,
+} from 'bkui-vue';
 // @ts-ignore
 import zhCn from 'bkui-vue/dist/locale/zh-cn.esm';
 // @ts-ignore
@@ -74,12 +79,22 @@ import ProductInfo from '@/components/product-info.vue';
 import LanguageToggle from '@/components/language-toggle.vue';
 // import AppAuth from '@/components/auth/index.vue';
 import mitt from '@/common/event-bus';
-import { useUser, useCommon } from '@/store';
-import { getUser, getFeatureFlags } from '@/http';
+import {
+  useCommon,
+  useUser,
+} from '@/store';
+import {
+  getFeatureFlags,
+  getUser,
+} from '@/http';
 // import { ILoginData } from '@/common/auth';
 import { useSidebar } from '@/hooks';
 // @ts-ignore
-import { getPlatformConfig, setShortcutIcon, setDocumentTitle  } from '@blueking/platform-config';
+import {
+  getPlatformConfig,
+  setDocumentTitle,
+  setShortcutIcon,
+} from '@blueking/platform-config';
 // @ts-ignore
 import logoWithoutName from '@/images/APIgateway-logo.png';
 import { isChinese } from '@/language/i18n';

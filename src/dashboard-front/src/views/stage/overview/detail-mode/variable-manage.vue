@@ -5,7 +5,7 @@
         {{ t('变量列表') }}
       </span>
       <span class="title-tips">{{ t('（可在资源配置中使用）') }}</span>
-      <span class="title-edit">
+      <span v-if="common.curApigwData?.kind !== 1" class="title-edit">
         <AgIcon
           v-bk-tooltips="{
             content: t('当前有版本正在发布，请稍后再进行变量修改'),

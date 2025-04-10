@@ -61,6 +61,8 @@ export const createMenuData = (): IMenu[] => {
           name: 'apigwResource',
           enabled: true,
           title: t('资源配置'),
+          // 是否在可编程网关中隐藏
+          hideInProgrammable: true,
         },
         {
           name: 'apigwResourceVersion',

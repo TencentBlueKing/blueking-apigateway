@@ -2,25 +2,34 @@
   <div class="plugin-container">
     <bk-loading :loading="isBindingListLoading">
       <!-- 默认展示 -->
-      <bk-exception
-        class="exception-wrap-item" type="empty" :class="{ 'exception-gray': false }"
-        v-if="curBindingPlugins.length === 0">
-        {{ t('尚未添加插件，') }}
-        <bk-button
-          v-bk-tooltips="{
-            content: t('当前有版本正在发布，请稍后再操作'),
-            disabled: getStatus(stageData) !== 'doing'
-          }"
-          :disabled="getStatus(stageData) === 'doing'"
-          text
-          theme="primary"
-          @click="handlePluginAdd"
+      <template v-if="curBindingPlugins.length === 0">
+        <bk-exception
+          v-if="common.curApigwData?.kind !== 1"
+          :class="{ 'exception-gray': false }"
+          class="exception-wrap-item"
+          type="empty"
         >
-          {{ t('立即添加') }}
-        </bk-button>
-      </bk-exception>
+          {{ t('尚未添加插件，') }}
+          <bk-button
+            v-bk-tooltips="{
+              content: t('当前有版本正在发布，请稍后再操作'),
+              disabled: getStatus(stageData) !== 'doing'
+            }"
+            :disabled="getStatus(stageData) === 'doing'"
+            text
+            theme="primary"
+            @click="handlePluginAdd"
+          >
+            {{ t('立即添加') }}
+          </bk-button>
+        </bk-exception>
+        <bk-exception v-else type="empty">
+          {{ t('尚未添加插件') }}
+        </bk-exception>
+      </template>
       <div class="bindding-info p10" v-else>
         <bk-button
+          v-if="common.curApigwData?.kind !== 1"
           v-bk-tooltips="{
             content: t('当前有版本正在发布，请稍后再操作'),
             disabled: getStatus(stageData) !== 'doing'
@@ -40,26 +49,28 @@
           <template #title="slotProps">
             <span class="f15">
               {{ slotProps.name }}
-              <AgIcon
-                v-bk-tooltips="{
-                  content: t('当前有版本正在发布，请稍后再操作'),
-                  disabled: getStatus(stageData) !== 'doing'
-                }"
-                class="ml5 mr5"
-                name="edit-line"
-                size="15"
-                @click.stop="handleEditePlugin(slotProps)"
-              />
-              <AgIcon
-                v-bk-tooltips="{
-                  content: t('当前有版本正在发布，请稍后再操作'),
-                  disabled: getStatus(stageData) !== 'doing'
-                }"
-                class="ml5 mr5"
-                name="delet"
-                size="15"
-                @click.stop="handleDeletePlugin(slotProps)"
-              />
+              <template v-if="common.curApigwData?.kind !== 1">
+                <AgIcon
+                  v-bk-tooltips="{
+                    content: t('当前有版本正在发布，请稍后再操作'),
+                    disabled: getStatus(stageData) !== 'doing'
+                  }"
+                  class="ml5 mr5"
+                  name="edit-line"
+                  size="15"
+                  @click.stop="handleEditePlugin(slotProps)"
+                />
+                <AgIcon
+                  v-bk-tooltips="{
+                    content: t('当前有版本正在发布，请稍后再操作'),
+                    disabled: getStatus(stageData) !== 'doing'
+                  }"
+                  class="ml5 mr5"
+                  name="delet"
+                  size="15"
+                  @click.stop="handleDeletePlugin(slotProps)"
+                />
+              </template>
             </span>
           </template>
           <template #content="slotProps">

@@ -1,561 +1,603 @@
 <template>
-  <ResourceSettingTopBar
-    :latest="versionConfigs.needNewVersion"
-    :current-source="curResource"
-    :is-detail="isDetail"
-    :show-new-tips="!!tableData?.length"
-  />
-  <div
-    :class="['resource-container',
-             'page-wrapper-padding',
-             isDragging ? 'dragging' : '',
-             isDetail && !isShowLeft ? 'welt' : '']"
-    id="resourceId">
+  <div v-show="common.curApigwData?.kind !== 1">
+    <ResourceSettingTopBar
+      :current-source="curResource"
+      :is-detail="isDetail"
+      :latest="versionConfigs.needNewVersion"
+      :show-new-tips="!!tableData?.length"
+    />
     <div
-      class="resource-container-lf"
-      id="resourceLf"
-      :style="{ minWidth: isDetail ? isShowLeft ? '320px' : '0' : '100%' }">
-      <bk-alert
-        v-show="versionConfigs.needNewVersion && !isDetail"
-        theme="warning"
-        class="mb20"
+      id="resourceId"
+      :class="[
+        'resource-container',
+        'page-wrapper-padding',
+        isDragging ? 'dragging' : '',
+        isDetail && !isShowLeft ? 'welt' : ''
+      ]"
+    >
+      <div
+        id="resourceLf"
+        :style="{ minWidth: isDetail ? isShowLeft ? '320px' : '0' : '100%' }"
+        class="resource-container-lf"
       >
-        <template #title>
-          {{ versionConfigs.versionMessage }}
-          <bk-button
-            text
-            theme="primary"
-            v-if="versionConfigs.needNewVersion"
-            @click="handleCreateResourceVersion">
-            {{ t('立即生成版本') }}
-          </bk-button>
-        </template>
-      </bk-alert>
-      <div class="operate flex-row justify-content-between mb15">
-        <div class="flex-1 flex-row align-items-center">
-          <div class="mr8">
+        <bk-alert
+          v-show="versionConfigs.needNewVersion && !isDetail"
+          class="mb20"
+          theme="warning"
+        >
+          <template #title>
+            {{ versionConfigs.versionMessage }}
             <bk-button
-              style="width: 142px;"
-              v-show="isShowLeft && !showBatch"
+              v-if="versionConfigs.needNewVersion"
+              text
               theme="primary"
-              :class="{ 'super-big-button': isDetail }"
-              @click="handleCreateResource"
+              @click="handleCreateResourceVersion"
             >
-              {{ t('新建') }}
+              {{ t('立即生成版本') }}
             </bk-button>
-          </div>
-          <!-- <ag-dropdown
+          </template>
+        </bk-alert>
+        <div class="operate flex-row justify-content-between mb15">
+          <div class="flex-1 flex-row align-items-center">
+            <div class="mr8">
+              <bk-button
+                v-show="isShowLeft && !showBatch"
+                :class="{ 'super-big-button': isDetail }"
+                style="width: 142px;"
+                theme="primary"
+                @click="handleCreateResource"
+              >
+                {{ t('新建') }}
+              </bk-button>
+            </div>
+            <!-- <ag-dropdown
             v-show="isShowLeft"
             :text="t('批量')"
             :dropdown-list="batchDropData"
             @on-change="handleBatchOperate"
             :is-disabled="!selections.length"></ag-dropdown> -->
-          <bk-button
-            v-show="!showBatch"
-            class="mr8"
-            @click="handleShowBatch"
-          >
-            {{ t('批量操作') }}
-          </bk-button>
-          <div class="batch-status" v-show="showBatch">
             <bk-button
-              class="mr8"
-              @click="handleBatchOperate('edit')"
-            >
-              {{ t('编辑资源') }}
-            </bk-button>
-            <bk-button
-              class="mr8"
-              @click="handleBatchOperate('delete')"
-            >
-              {{ t('删除资源') }}
-            </bk-button>
-          </div>
-          <ag-dropdown
-            :text="t('更多')"
-            v-show="isDetail && isShowLeft">
-            <div class="nest-dropdown">
-              <ag-dropdown
-                :text="t('导入')"
-                :is-text="true"
-                placement="right-start"
-                :dropdown-list="importDropData"
-                @on-change="handleImport"></ag-dropdown>
-              <ag-dropdown
-                :text="t('导出')"
-                :is-text="true"
-                placement="right-start"
-                :dropdown-list="exportDropData"
-                @on-change="handleExport"></ag-dropdown>
-            </div>
-          </ag-dropdown>
-          <section class="flex-row align-items-center" v-show="!isDetail">
-            <ag-dropdown
-              :text="t('导入')"
-              :dropdown-list="importDropData"
               v-show="!showBatch"
-              @on-change="handleImport"></ag-dropdown>
-            <ag-dropdown
-              :text="t('导出')"
-              :dropdown-list="exportDropData"
-              @on-change="handleExport"></ag-dropdown>
-          </section>
-
-          <span :class="['split-line', showBatch ? 'batch' : '']" v-show="!isDetail"></span>
-
-          <div class="operate-btn-wrapper" v-show="!showBatch && !isDetail">
-            <bk-button class="operate-btn mr8" @click="handleShowDiff">
-              <i class="apigateway-icon icon-ag-chayiduibi-shixin"></i>
-              {{ t('与历史版本对比') }}
-            </bk-button>
-
-            <bk-badge
-              position="top-right"
-              theme="danger"
-              dot
-              v-if="versionConfigs.needNewVersion"
+              class="mr8"
+              @click="handleShowBatch"
             >
+              {{ t('批量操作') }}
+            </bk-button>
+            <div v-show="showBatch" class="batch-status">
               <bk-button
-                class="operate-btn"
-                @click="handleCreateResourceVersion"
+                class="mr8"
+                @click="handleBatchOperate('edit')"
+              >
+                {{ t('编辑资源') }}
+              </bk-button>
+              <bk-button
+                class="mr8"
+                @click="handleBatchOperate('delete')"
+              >
+                {{ t('删除资源') }}
+              </bk-button>
+            </div>
+            <ag-dropdown
+              v-show="isDetail && isShowLeft"
+              :text="t('更多')"
+            >
+              <div class="nest-dropdown">
+                <ag-dropdown
+                  :dropdown-list="importDropData"
+                  :is-text="true"
+                  :text="t('导入')"
+                  placement="right-start"
+                  @on-change="handleImport"
+                ></ag-dropdown>
+                <ag-dropdown
+                  :dropdown-list="exportDropData"
+                  :is-text="true"
+                  :text="t('导出')"
+                  placement="right-start"
+                  @on-change="handleExport"
+                ></ag-dropdown>
+              </div>
+            </ag-dropdown>
+            <section v-show="!isDetail" class="flex-row align-items-center">
+              <ag-dropdown
+                v-show="!showBatch"
+                :dropdown-list="importDropData"
+                :text="t('导入')"
+                @on-change="handleImport"
+              ></ag-dropdown>
+              <ag-dropdown
+                :dropdown-list="exportDropData"
+                :text="t('导出')"
+                @on-change="handleExport"
+              ></ag-dropdown>
+            </section>
+
+            <span v-show="!isDetail" :class="['split-line', showBatch ? 'batch' : '']"></span>
+
+            <div v-show="!showBatch && !isDetail" class="operate-btn-wrapper">
+              <bk-button class="operate-btn mr8" @click="handleShowDiff">
+                <i class="apigateway-icon icon-ag-chayiduibi-shixin"></i>
+                {{ t('与历史版本对比') }}
+              </bk-button>
+
+              <bk-badge
+                v-if="versionConfigs.needNewVersion"
+                dot
+                position="top-right"
+                theme="danger"
+              >
+                <bk-button
+                  v-bk-tooltips="{
+                    content: t('资源有更新，可生成新版本'),
+                  }"
+                  class="operate-btn"
+                  @click="handleCreateResourceVersion"
+                >
+                  <i class="apigateway-icon icon-ag-version"></i>
+                  {{ t('生成版本') }}
+                </bk-button>
+              </bk-badge>
+              <bk-button
+                v-else
                 v-bk-tooltips="{
-                  content: t('资源有更新，可生成新版本'),
+                  content: t('资源无更新，无需生成版本'),
                 }"
+                :disabled="true"
+                class="operate-btn"
               >
                 <i class="apigateway-icon icon-ag-version"></i>
                 {{ t('生成版本') }}
               </bk-button>
-            </bk-badge>
+
+            </div>
             <bk-button
-              v-else
+              v-show="showBatch"
               class="operate-btn"
-              :disabled="true"
-              v-bk-tooltips="{
-                content: t('资源无更新，无需生成版本'),
-              }"
+              outline
+              theme="primary"
+              @click="handleOutBatch"
             >
-              <i class="apigateway-icon icon-ag-version"></i>
-              {{ t('生成版本') }}
+              <i class="apigateway-icon icon-ag-chahao"></i>
+              {{ t('退出批量编辑') }}
             </bk-button>
-
           </div>
-          <bk-button
-            v-show="showBatch"
-            @click="handleOutBatch"
-            theme="primary"
-            outline
-            class="operate-btn">
-            <i class="apigateway-icon icon-ag-chahao"></i>
-            {{ t('退出批量编辑') }}
-          </bk-button>
+          <div class="search-select-wrap">
+            <bk-search-select
+              v-show="!isDetail"
+              v-model="searchValue"
+              :data="searchData"
+              :placeholder="t('请输入资源名称或选择条件搜索, 按Enter确认')"
+              :value-split-code="'+'"
+              style="width: 100%; background:#fff"
+              unique-select
+            />
+          </div>
         </div>
-        <div class="search-select-wrap">
-          <bk-search-select
-            v-show="!isDetail"
-            v-model="searchValue"
-            :data="searchData"
-            unique-select
-            style="width: 100%; background:#fff"
-            :placeholder="t('请输入资源名称或选择条件搜索, 按Enter确认')"
-            :value-split-code="'+'"
-          />
-        </div>
-      </div>
-      <bk-search-select
-        v-show="isDetail && isShowLeft"
-        v-model="searchValue"
-        :data="searchData"
-        unique-select
-        style="background:#fff"
-        class="mb15"
-        :placeholder="t('请输入资源名称或选择条件搜索, 按Enter确认')"
-        :value-split-code="'+'"
-      />
+        <bk-search-select
+          v-show="isDetail && isShowLeft"
+          v-model="searchValue"
+          :data="searchData"
+          :placeholder="t('请输入资源名称或选择条件搜索, 按Enter确认')"
+          :value-split-code="'+'"
+          class="mb15"
+          style="background:#fff"
+          unique-select
+        />
 
-      <div class="left-wraper" v-show="isShowLeft">
-        <bk-loading :loading="isLoading">
-          <bk-table
-            class="table-layout"
-            :data="tableData"
-            remote-pagination
-            :pagination="pagination"
-            :key="tableDataKey"
-            row-key="id"
-            :show-overflow-tooltip="true"
-            @page-limit-change="handlePageSizeChange"
-            @page-value-change="handlePageChange"
-            @select-all="handleSelecAllChange"
-            @selection-change="handleSelectionChange"
-            @row-mouse-enter="handleMouseEnter"
-            @row-mouse-leave="handleMouseLeave"
-            @column-sort="handleSortChange"
-            :row-class="handleRowClass"
-            border="outer"
-            :settings="settings">
-            <bk-table-column width="80" type="selection" align="center" fixed v-if="showBatch" />
-            <bk-table-column :label="t('资源名称')" width="170" prop="name" fixed>
-              <template #default="{ row }">
-                <div class="resource-name">
-                  <div
-                    v-bk-tooltips="{ content: row?.name, placement: 'right', delay: 300, }"
-                    :class="['name', { 'name-updated': row?.has_updated }]"
-                    @click="handleShowInfo(row.id)">
-                    {{row?.name}}
-                  </div>
-                  <div
-                    v-if="row?.has_updated"
-                    v-bk-tooltips="{ content: '资源已更新', placement: 'right', delay: 300, }"
-                    class="dot warning"
-                  />
-                </div>
-              </template>
-            </bk-table-column>
-            <bk-table-column
-              width="130"
-              :label="t('后端服务')"
-              prop="backend_name">
-              <template #default="{ row }">
-                {{row?.backend?.name}}
-              </template>
-            </bk-table-column>
-            <bk-table-column
-              prop="method"
-              :label="t('前端请求方法')"
-              :show-overflow-tooltip="false"
-              :filter="{
-                list: customMethodsList,
-                checked: chooseMethod,
-                filterFn: handleMethodFilter,
-                btnSave: false,
-              }"
-              width="130">
-              <template #default="{ row }">
-                <bk-tag :theme="methodsEnum[row?.method]">{{ row?.method }}</bk-tag>
-              </template>
-            </bk-table-column>
-            <bk-table-column
-              :label="t('前端请求路径')"
-              prop="path">
-            </bk-table-column>
-            <bk-table-column
-              :label="t('插件数')"
-              width="40"
-              prop="plugin_count">
-              <template #default="{ row }">
-                <div class="plugin-num" @click="handleShowInfo(row.id, 'pluginManage')">
-                  {{row?.plugin_count}}
-                </div>
-              </template>
-            </bk-table-column>
-            <bk-table-column
-              :label="t('文档')"
-              width="80"
-              prop="docs">
-              <template #default="{ row }">
-                <section v-if="row?.docs?.length" @click="handleShowDoc(row)">
-                  <span class="document-info">
-                    <i class="bk-icon apigateway-icon icon-ag-document"></i>
-                    {{ $t('详情') }}
-                  </span>
-                </section>
-                <section v-else>
-                  <span v-show="!row?.isDoc">--</span>
-                  <i
-                    class="bk-icon apigateway-icon icon-ag-plus plus-class"
-                    v-bk-tooltips="t('添加文档')"
-                    v-show="row?.isDoc"
-                    @click="handleShowDoc(row)"></i>
-                </section>
-              </template>
-            </bk-table-column>
-            <bk-table-column
-              :label="t('标签')"
-              :show-overflow-tooltip="false"
-              prop="labels"
-              :filter="{
-                list: labelsList,
-                checked: chooseLabels,
-                filterFn: handleMethodFilter,
-                btnSave: false,
-              }"
-              min-width="180"
+        <div v-show="isShowLeft" class="left-wraper">
+          <bk-loading :loading="isLoading">
+            <bk-table
+              :key="tableDataKey"
+              :data="tableData"
+              :pagination="pagination"
+              :row-class="handleRowClass"
+              :settings="settings"
+              :show-overflow-tooltip="true"
+              border="outer"
+              class="table-layout"
+              remote-pagination
+              row-key="id"
+              @page-limit-change="handlePageSizeChange"
+              @page-value-change="handlePageChange"
+              @select-all="handleSelecAllChange"
+              @selection-change="handleSelectionChange"
+              @row-mouse-enter="handleMouseEnter"
+              @row-mouse-leave="handleMouseLeave"
+              @column-sort="handleSortChange"
             >
-              <template #default="{ row }">
-                <span class="text-warp" v-if="!row?.isEditLabel" @click="handleEditLabel(row)">
-                  <span
-                    v-if="row?.labels?.length"
-                    v-bk-tooltips="{ content: tipsContent(row?.labelText), theme: 'light', placement: 'left' }">
-                    <template v-for="(item, index) in row?.labels" :key="item.id">
-                      <span style="margin-left: 4px;" v-if="index < row.tagOrder">
-                        <bk-tag @click="handleEditLabel(row)">
-                          {{ item.name }}
-                        </bk-tag>
-                      </span>
-                    </template>
-                    <bk-tag
-                      v-if="row.labels.length > row.tagOrder"
+              <bk-table-column v-if="showBatch" align="center" fixed type="selection" width="80" />
+              <bk-table-column :label="t('资源名称')" fixed prop="name" width="170">
+                <template #default="{ row }">
+                  <div class="resource-name">
+                    <div
+                      v-bk-tooltips="{ content: row?.name, placement: 'right', delay: 300, }"
+                      :class="['name', { 'name-updated': row?.has_updated }]"
+                      @click="handleShowInfo(row.id)"
+                    >
+                      {{ row?.name }}
+                    </div>
+                    <div
+                      v-if="row?.has_updated"
+                      v-bk-tooltips="{ content: '资源已更新', placement: 'right', delay: 300, }"
+                      class="dot warning"
+                    />
+                  </div>
+                </template>
+              </bk-table-column>
+              <bk-table-column
+                :label="t('后端服务')"
+                prop="backend_name"
+                width="130"
+              >
+                <template #default="{ row }">
+                  {{ row?.backend?.name }}
+                </template>
+              </bk-table-column>
+              <bk-table-column
+                :filter="{
+                  list: customMethodsList,
+                  checked: chooseMethod,
+                  filterFn: handleMethodFilter,
+                  btnSave: false,
+                }"
+                :label="t('前端请求方法')"
+                :show-overflow-tooltip="false"
+                prop="method"
+                width="130"
+              >
+                <template #default="{ row }">
+                  <bk-tag :theme="methodsEnum[row?.method]">{{ row?.method }}</bk-tag>
+                </template>
+              </bk-table-column>
+              <bk-table-column
+                :label="t('前端请求路径')"
+                prop="path"
+              >
+              </bk-table-column>
+              <bk-table-column
+                :label="t('插件数')"
+                prop="plugin_count"
+                width="40"
+              >
+                <template #default="{ row }">
+                  <div class="plugin-num" @click="handleShowInfo(row.id, 'pluginManage')">
+                    {{ row?.plugin_count }}
+                  </div>
+                </template>
+              </bk-table-column>
+              <bk-table-column
+                :label="t('文档')"
+                prop="docs"
+                width="80"
+              >
+                <template #default="{ row }">
+                  <section v-if="row?.docs?.length" @click="handleShowDoc(row)">
+                    <span class="document-info">
+                      <i class="bk-icon apigateway-icon icon-ag-document"></i>
+                      {{ $t('详情') }}
+                    </span>
+                  </section>
+                  <section v-else>
+                    <span v-show="!row?.isDoc">--</span>
+                    <i
+                      v-show="row?.isDoc"
+                      v-bk-tooltips="t('添加文档')"
+                      class="bk-icon apigateway-icon icon-ag-plus plus-class"
+                      @click="handleShowDoc(row)"
+                    ></i>
+                  </section>
+                </template>
+              </bk-table-column>
+              <bk-table-column
+                :filter="{
+                  list: labelsList,
+                  checked: chooseLabels,
+                  filterFn: handleMethodFilter,
+                  btnSave: false,
+                }"
+                :label="t('标签')"
+                :show-overflow-tooltip="false"
+                min-width="180"
+                prop="labels"
+              >
+                <template #default="{ row }">
+                  <span v-if="!row?.isEditLabel" class="text-warp" @click="handleEditLabel(row)">
+                    <span
+                      v-if="row?.labels?.length"
+                      v-bk-tooltips="{ content: tipsContent(row?.labelText), theme: 'light', placement: 'left' }"
+                    >
+                      <template v-for="(item, index) in row?.labels" :key="item.id">
+                        <span v-if="index < row.tagOrder" style="margin-left: 4px;">
+                          <bk-tag @click="handleEditLabel(row)">
+                            {{ item.name }}
+                          </bk-tag>
+                        </span>
+                      </template>
+                      <bk-tag
+                        v-if="row.labels.length > row.tagOrder"
+                        class="tag-cls"
+                        @click="handleEditLabel(row)"
+                      >
+                        +{{ row.labels.length - row.tagOrder }}
+                      </bk-tag>
+                    </span>
+                    <span v-else>--</span>
+                    <i
+                      v-show="row?.isDoc"
+                      class="icon apigateway-icon icon-ag-edit-small edit-icon"
                       @click="handleEditLabel(row)"
-                      class="tag-cls">
-                      +{{ row.labels.length - row.tagOrder }}
-                    </bk-tag>
+                    ></i>
                   </span>
-                  <span v-else>--</span>
-                  <i
-                    v-show="row?.isDoc"
-                    @click="handleEditLabel(row)"
-                    class="icon apigateway-icon icon-ag-edit-small edit-icon"></i>
-                </span>
-                <section ref="selectCheckBoxParentRef" v-else>
-                  <SelectCheckBox
-                    :cur-select-label-ids="curLabelIds"
-                    :resource-id="resourceId"
-                    :labels-data="labelsData"
-                    :width="selectCheckBoxParentRef?.offsetWidth"
-                    force-focus
-                    @close="(newLabelData) => {
-                      handleCloseSelect(row, newLabelData)
-                    }"
-                    @update-success="handleUpdateLabelSuccess"
-                    @label-add-success="getLabelsData"></SelectCheckBox>
-                </section>
-              </template>
-            </bk-table-column>
-            <bk-table-column
-              :label="t('更新时间')"
-              prop="updated_time"
-              :sort="true">
-            </bk-table-column>
-            <bk-table-column
-              :label="t('操作')"
-              width="150"
-              fixed="right"
-              prop="act">
-              <template #default="{ data }">
-                <bk-button
-                  text
-                  theme="primary"
-                  @click="handleEditResource(data.id, 'edit')">
-                  {{ t('编辑') }}
-                </bk-button>
-
-                <bk-button
-                  text
-                  theme="primary"
-                  class="pl10 pr10"
-                  @click="handleEditResource(data.id, 'clone')">
-                  {{ t('克隆') }}
-                </bk-button>
-
-                <bk-pop-confirm
-                  :title="t('确认删除资源{resourceName}？', { resourceName: data?.name || '' })"
-                  :content="t('删除操作无法撤回，请谨慎操作')"
-                  width="288"
-                  trigger="click"
-                  @confirm="handleDeleteResource(data.id)">
+                  <section v-else ref="selectCheckBoxParentRef">
+                    <SelectCheckBox
+                      :cur-select-label-ids="curLabelIds"
+                      :labels-data="labelsData"
+                      :resource-id="resourceId"
+                      :width="selectCheckBoxParentRef?.offsetWidth"
+                      force-focus
+                      @close="(newLabelData) => {
+                        handleCloseSelect(row, newLabelData)
+                      }"
+                      @update-success="handleUpdateLabelSuccess"
+                      @label-add-success="getLabelsData"
+                    ></SelectCheckBox>
+                  </section>
+                </template>
+              </bk-table-column>
+              <bk-table-column
+                :label="t('更新时间')"
+                :sort="true"
+                prop="updated_time"
+              >
+              </bk-table-column>
+              <bk-table-column
+                :label="t('操作')"
+                fixed="right"
+                prop="act"
+                width="150"
+              >
+                <template #default="{ data }">
                   <bk-button
                     text
-                    theme="primary">
-                    {{ t('删除') }}
+                    theme="primary"
+                    @click="handleEditResource(data.id, 'edit')"
+                  >
+                    {{ t('编辑') }}
                   </bk-button>
-                </bk-pop-confirm>
+
+                  <bk-button
+                    class="pl10 pr10"
+                    text
+                    theme="primary"
+                    @click="handleEditResource(data.id, 'clone')"
+                  >
+                    {{ t('克隆') }}
+                  </bk-button>
+
+                  <bk-pop-confirm
+                    :content="t('删除操作无法撤回，请谨慎操作')"
+                    :title="t('确认删除资源{resourceName}？', { resourceName: data?.name || '' })"
+                    trigger="click"
+                    width="288"
+                    @confirm="handleDeleteResource(data.id)"
+                  >
+                    <bk-button
+                      text
+                      theme="primary"
+                    >
+                      {{ t('删除') }}
+                    </bk-button>
+                  </bk-pop-confirm>
+                </template>
+              </bk-table-column>
+              <template #empty>
+                <TableEmpty
+                  :abnormal="tableEmptyConf.isAbnormal"
+                  :keyword="tableEmptyConf.keyword"
+                  @reacquire="getSearchResourceList"
+                  @clear-filter="handleClearFilterKey"
+                />
               </template>
-            </bk-table-column>
-            <template #empty>
-              <TableEmpty
-                :keyword="tableEmptyConf.keyword"
-                :abnormal="tableEmptyConf.isAbnormal"
-                @reacquire="getSearchResourceList"
-                @clear-filter="handleClearFilterKey"
-              />
-            </template>
-          </bk-table>
-        </bk-loading>
+            </bk-table>
+          </bk-loading>
+        </div>
+
+        <div
+          v-show="isShowLeft"
+          :class="['toggle-button', 'toggle-button-lf', !isDetail ? 'active' : '']"
+          :style="{ right: !isDetail ? '-24px' : '-22px' }"
+          @click="handleToggleLf"
+        >
+          <i class="icon apigateway-icon icon-ag-ag-arrow-left"></i>
+        </div>
+      </div>
+
+      <div v-show="isDetail && isShowLeft" id="resourceLine" class="demarcation-button" draggable="true">
+        <span>......</span>
       </div>
 
       <div
-        :class="['toggle-button', 'toggle-button-lf', !isDetail ? 'active' : '']"
-        v-show="isShowLeft"
-        @click="handleToggleLf"
-        :style="{ right: !isDetail ? '-24px' : '-22px' }">
-        <i class="icon apigateway-icon icon-ag-ag-arrow-left"></i>
+        v-show="isDetail"
+        id="resourceRg"
+        :class="['resource-container-rg', 'flex-1', isDragging ? 'dragging' : '']"
+      >
+        <div
+          :class="['toggle-button', 'toggle-button-rg', !isShowLeft ? 'active' : '']"
+          @click="handleToggleRg"
+        >
+          <i class="icon apigateway-icon icon-ag-ag-arrow-left"></i>
+        </div>
+        <div class="right-wraper">
+          <bk-tab
+            v-model:active="active"
+            class="resource-tab-panel"
+            type="card-tab"
+          >
+            <bk-tab-panel
+              v-for="item in panels"
+              :key="item.name"
+              :label="item.label"
+              :name="item.name"
+              render-directive="if"
+            >
+              <bk-loading :loading="isComponentLoading" :opacity="1">
+                <!-- deleted-success 删除成功需要请求一次列表数据 更新详情 -->
+                <component
+                  :is="item.component"
+                  v-if="item.name === active && resourceId"
+                  ref="componentRef"
+                  :apigw-id="apigwId"
+                  :cur-resource="curResource"
+                  :resource-id="resourceId"
+                  doc-root-class="doc-tab"
+                  height="calc(100vh - 348px)"
+                  @done="(v: boolean | any) => {
+                    isComponentLoading = !!v
+                  }"
+                  @deleted-success="handleDeleteSuccess"
+                  @on-jump="(id: number | any) => {
+                    handleShowInfo(id)
+                  }"
+                />
+              </bk-loading>
+            </bk-tab-panel>
+          </bk-tab>
+        </div>
       </div>
-    </div>
 
-    <div class="demarcation-button" id="resourceLine" draggable="true" v-show="isDetail && isShowLeft">
-      <span>......</span>
-    </div>
-
-    <div
-      :class="['resource-container-rg', 'flex-1', isDragging ? 'dragging' : '']"
-      id="resourceRg"
-      v-show="isDetail">
-      <div
-        :class="['toggle-button', 'toggle-button-rg', !isShowLeft ? 'active' : '']"
-        @click="handleToggleRg">
-        <i class="icon apigateway-icon icon-ag-ag-arrow-left"></i>
-      </div>
-      <div class="right-wraper">
-        <bk-tab
-          v-model:active="active"
-          type="card-tab"
-          class="resource-tab-panel">
-          <bk-tab-panel
-            v-for="item in panels"
-            :key="item.name"
-            :name="item.name"
-            :label="item.label"
-            render-directive="if">
-            <bk-loading :opacity="1" :loading="isComponentLoading">
-              <!-- deleted-success 删除成功需要请求一次列表数据 更新详情 -->
-              <component
-                v-if="item.name === active && resourceId"
-                :is="item.component"
-                :resource-id="resourceId"
-                :cur-resource="curResource"
-                :apigw-id="apigwId"
-                height="calc(100vh - 348px)"
-                doc-root-class="doc-tab"
-                ref="componentRef"
-                @done="(v: boolean | any) => {
-                  isComponentLoading = !!v
-                }"
-                @deleted-success="handleDeleteSuccess"
-                @on-jump="(id: number | any) => {
-                  handleShowInfo(id)
-                }"
-              />
-            </bk-loading>
-          </bk-tab-panel>
-        </bk-tab>
-      </div>
-    </div>
-
-    <!-- 批量删除dialog -->
-    <bk-dialog
-      :is-show="dialogData.isShow"
-      width="600"
-      :title="dialogData.title"
-      theme="primary"
-      quick-close
-      :is-loading="dialogData.loading"
-      @confirm="handleBatchConfirm"
-      @closed="handleBatchCancel">
-      <div class="delete-content" v-if="isBatchDelete">
-        <bk-table
-          row-hover="auto"
-          :columns="columns"
-          :data="selections"
-          show-overflow-tooltip
-          max-height="280"
-        />
-        <bk-alert
-          class="mt10 mb10"
-          theme="warning"
-          :title="t('删除资源后，需要生成新的版本，并发布到目标环境才能生效')"
-        />
-      </div>
-      <div v-else>
+      <!-- 批量删除dialog -->
+      <bk-dialog
+        :is-loading="dialogData.loading"
+        :is-show="dialogData.isShow"
+        :title="dialogData.title"
+        quick-close
+        theme="primary"
+        width="600"
+        @closed="handleBatchCancel"
+        @confirm="handleBatchConfirm"
+      >
+        <div v-if="isBatchDelete" class="delete-content">
+          <bk-table
+            :columns="columns"
+            :data="selections"
+            max-height="280"
+            row-hover="auto"
+            show-overflow-tooltip
+          />
+          <bk-alert
+            :title="t('删除资源后，需要生成新的版本，并发布到目标环境才能生效')"
+            class="mt10 mb10"
+            theme="warning"
+          />
+        </div>
+        <div v-else>
+          <bk-form>
+            <bk-form-item :label="t('基本信息')">
+              <bk-checkbox
+                v-model="batchEditData.isPublic"
+                @change="handlePublicChange"
+              >
+                {{ t('是否公开') }}
+              </bk-checkbox>
+              <bk-checkbox
+                v-model="batchEditData.allowApply"
+                :disabled="!batchEditData.isPublic"
+              >
+                {{ t('允许申请权限') }}
+              </bk-checkbox>
+            </bk-form-item>
+            <bk-form-item :label="t('是否修改标签')">
+              <div class="edit-labels-container">
+                <bk-switcher
+                  v-model="batchEditData.isUpdateLabels"
+                  theme="primary"
+                  @change="handleUpdateLabelsChange"
+                />
+                <SelectCheckBox
+                  v-if="batchEditData.isUpdateLabels"
+                  v-model="batchEditData.labelIds"
+                  :bath-edit="true"
+                  :cur-select-label-ids="[]"
+                  :labels-data="labelsData"
+                  class="select-labels"
+                  @update-success="getLabelsData"
+                  @label-add-success="getLabelsData"
+                >
+                </SelectCheckBox>
+              </div>
+            </bk-form-item>
+          </bk-form>
+        </div>
+      </bk-dialog>
+      <!-- 导出dialog -->
+      <bk-dialog
+        :is-loading="exportDialogConfig.loading"
+        :is-show="exportDialogConfig.isShow"
+        :title="exportDialogConfig.title"
+        quick-close
+        theme="primary"
+        width="600"
+        @closed="exportDialogConfig.isShow = false"
+        @confirm="handleExportDownload"
+      >
+        <span class="resource-number">
+          {{
+            exportParams.export_type === 'all'
+              ? t('已选择全部资源')
+              : t('已选择{num}个资源', { num: selections.length })
+          }}
+        </span>
         <bk-form>
-          <bk-form-item :label="t('基本信息')">
-            <bk-checkbox
-              v-model="batchEditData.isPublic"
-              @change="handlePublicChange">
-              {{ t('是否公开') }}
-            </bk-checkbox>
-            <bk-checkbox
-              :disabled="!batchEditData.isPublic"
-              v-model="batchEditData.allowApply">
-              {{ t('允许申请权限') }}
-            </bk-checkbox>
+          <bk-form-item :label="t('导出内容')">
+            <bk-radio-group v-model="exportDialogConfig.exportFileDocType">
+              <bk-radio label="resource">{{ t('资源配置') }}</bk-radio>
+              <bk-radio label="docs">{{ t('资源文档') }}</bk-radio>
+            </bk-radio-group>
           </bk-form-item>
-          <bk-form-item :label="t('是否修改标签')">
-            <div class="edit-labels-container">
-              <bk-switcher
-                v-model="batchEditData.isUpdateLabels"
-                @change="handleUpdateLabelsChange"
-                theme="primary"
-              />
-              <SelectCheckBox
-                class="select-labels"
-                v-if="batchEditData.isUpdateLabels"
-                :cur-select-label-ids="[]"
-                :labels-data="labelsData"
-                :bath-edit="true"
-                v-model="batchEditData.labelIds"
-                @update-success="getLabelsData"
-                @label-add-success="getLabelsData">
-              </SelectCheckBox>
-            </div>
+
+          <bk-form-item v-if="exportDialogConfig.exportFileDocType === 'resource'" :label="t('导出格式')">
+            <bk-radio-group v-model="exportParams.file_type">
+              <bk-radio class="mt5" label="yaml"> {{ $t('YAML格式') }}</bk-radio>
+              <bk-radio label="json"> {{ $t('JSON格式') }}</bk-radio>
+            </bk-radio-group>
+          </bk-form-item>
+          <bk-form-item v-else :label="t('导出格式')">
+            <bk-radio-group v-model="exportParams.file_type">
+              <bk-radio class="mt5" label="zip"> {{ $t('Zip') }}</bk-radio>
+              <bk-radio label="tgz"> {{ $t('Tgz') }}</bk-radio>
+            </bk-radio-group>
           </bk-form-item>
         </bk-form>
-      </div>
-    </bk-dialog>
-    <!-- 导出dialog -->
-    <bk-dialog
-      :is-show="exportDialogConfig.isShow"
-      width="600"
-      :title="exportDialogConfig.title"
-      theme="primary"
-      quick-close
-      :is-loading="exportDialogConfig.loading"
-      @confirm="handleExportDownload"
-      @closed="exportDialogConfig.isShow = false">
-      <span class="resource-number">
-        {{
-          exportParams.export_type === 'all'
-            ? t('已选择全部资源')
-            : t('已选择{num}个资源', { num: selections.length })
-        }}
-      </span>
-      <bk-form>
-        <bk-form-item :label="t('导出内容')">
-          <bk-radio-group v-model="exportDialogConfig.exportFileDocType">
-            <bk-radio label="resource">{{ t('资源配置') }}</bk-radio>
-            <bk-radio label="docs">{{ t('资源文档') }}</bk-radio>
-          </bk-radio-group>
-        </bk-form-item>
+      </bk-dialog>
 
-        <bk-form-item :label="t('导出格式')" v-if="exportDialogConfig.exportFileDocType === 'resource'">
-          <bk-radio-group v-model="exportParams.file_type">
-            <bk-radio class="mt5" label="yaml"> {{ $t('YAML格式') }} </bk-radio>
-            <bk-radio label="json"> {{ $t('JSON格式') }} </bk-radio>
-          </bk-radio-group>
-        </bk-form-item>
-        <bk-form-item :label="t('导出格式')" v-else>
-          <bk-radio-group v-model="exportParams.file_type">
-            <bk-radio class="mt5" label="zip"> {{ $t('Zip') }} </bk-radio>
-            <bk-radio label="tgz"> {{ $t('Tgz') }} </bk-radio>
-          </bk-radio-group>
-        </bk-form-item>
-      </bk-form>
-    </bk-dialog>
+      <!-- 文档侧边栏 -->
+      <ResourceDocSideSlider
+        v-model="docSliderConf.isShowDocSide"
+        :resource="curResource"
+        :title="docSliderConf.title"
+        @fetch="handleSuccess"
+        @on-update="handleUpdateTitle"
+      ></ResourceDocSideSlider>
 
-    <!-- 文档侧边栏 -->
-    <ResourceDocSideSlider
-      v-model="docSliderConf.isShowDocSide"
-      :resource="curResource"
-      :title="docSliderConf.title"
-      @fetch="handleSuccess"
-      @on-update="handleUpdateTitle"
-    ></ResourceDocSideSlider>
+      <!-- 生成版本 -->
+      <version-sideslider ref="versionSidesliderRef" @done="mitt.emit('on-update-plugin');" />
 
-    <!-- 生成版本 -->
-    <version-sideslider ref="versionSidesliderRef" @done="mitt.emit('on-update-plugin');" />
-
-    <!-- 版本对比 -->
-    <bk-sideslider
-      v-model:is-show="diffSidesliderConf.isShow"
-      :title="diffSidesliderConf.title"
-      :width="diffSidesliderConf.width"
-      :quick-close="true"
-    >
-      <template #default>
-        <div class="p20 pure-diff">
-          <version-diff ref="diffRef" :source-id="diffSourceId" :target-id="diffTargetId" />
-        </div>
-      </template>
-    </bk-sideslider>
+      <!-- 版本对比 -->
+      <bk-sideslider
+        v-model:is-show="diffSidesliderConf.isShow"
+        :quick-close="true"
+        :title="diffSidesliderConf.title"
+        :width="diffSidesliderConf.width"
+      >
+        <template #default>
+          <div class="p20 pure-diff">
+            <version-diff ref="diffRef" :source-id="diffSourceId" :target-id="diffTargetId" />
+          </div>
+        </template>
+      </bk-sideslider>
+    </div>
   </div>
+  <page-not-found v-if="common.curApigwData?.kind === 1" />
 </template>
 <script setup lang="ts">
 import {
@@ -607,6 +649,7 @@ import ResourcesDoc from '@/views/components/resources-doc/index.vue';
 import TableEmpty from '@/components/table-empty.vue';
 // import RenderCustomColumn from '@/components/custom-table-header-filter';
 import ResourceSettingTopBar from '@/views/resource/setting/comps/resource-setting-top-bar.vue';
+import PageNotFound from '@/views/404.vue';
 import mitt from '@/common/event-bus';
 import {
   IDialog,
@@ -1034,12 +1077,12 @@ const dragTwoColDiv = (contentId: string, leftBoxId: string, resizeId: string/* 
         moveLen = 0;
         isShowLeft.value = false;
         document.onmouseup(e);
-      };
+      }
       if (moveLen > maxT - 770) {
         moveLen = maxT;
         handleShowList();
         document.onmouseup(e);
-      };
+      }
       resize.style.left = moveLen;
       leftBox.style.width = `${moveLen}px`;
       // rightBox.style.width = `${box.clientWidth - moveLen - 5}px`;
