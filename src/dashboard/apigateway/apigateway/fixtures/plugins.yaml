@@ -2201,7 +2201,7 @@
     language: ''
     type:
     - fault-injection
-    notes: fault-injection 插件是故障注入插件，该插件可以和其他插件一起使用，并在其他插件执行前被执行，至少要配置中断和延迟中的任意一个，两者也可以同时使用。
+    notes: 故障注入，该插件可以和其他插件一起使用，并在其他插件执行前被执行，至少要配置中断和延迟中的任意一个，两者也可以同时使用。
     example: '作用：当请求参数 name 等于 jack，并且 age 等于 18 的时候，则返回 400 拒绝状态码和响应内容\n\n"abort": {\n    "http_status": 400,\n    "body": "not valid request params",\n    "vars": [[["arg_name", "==", "jack"], ["arg_age", "==", 18]]]\n}\n'
     style: dynamic
     default_value: ''
