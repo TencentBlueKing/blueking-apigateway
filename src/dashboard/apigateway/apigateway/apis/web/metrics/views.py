@@ -27,8 +27,8 @@ from rest_framework import generics, status
 from apigateway.apps.metrics.constants import (
     MetricsInstantEnum,
     MetricsRangeEnum,
-    MetricsRequestEnum,
-    MetricsRequestTimeDimensionEnum,
+    MetricsSummaryEnum,
+    MetricsSummaryTimeDimensionEnum,
 )
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.apps.metrics.prometheus.dimension import MetricsInstantFactory, MetricsRangeFactory
@@ -36,7 +36,7 @@ from apigateway.core.models import Resource, Stage
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.time import MetricsSmartTimeRange
 
-from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ, MetricsQueryRequestInputSLZ
+from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ, MetricsQuerySummaryInputSLZ
 
 
 class QueryRangeApi(generics.ListAPIView):
@@ -182,30 +182,30 @@ class QueryInstantApi(generics.ListAPIView):
         return OKJsonResponse(data=requests_total_result)
 
 
-class QueryRequestApi(generics.ListAPIView):
+class QuerySummaryApi(generics.ListAPIView):
     @staticmethod
     def get_trunc_func(time_dimension):
         return {
-            MetricsRequestTimeDimensionEnum.DAY.value: TruncDate,
-            MetricsRequestTimeDimensionEnum.WEEK.value: TruncWeek,
-            MetricsRequestTimeDimensionEnum.MONTH.value: TruncMonth,
+            MetricsSummaryTimeDimensionEnum.DAY.value: TruncDate,
+            MetricsSummaryTimeDimensionEnum.WEEK.value: TruncWeek,
+            MetricsSummaryTimeDimensionEnum.MONTH.value: TruncMonth,
         }.get(time_dimension, TruncDate)
 
     @staticmethod
     def get_count_field(metrics):
         return {
-            MetricsRequestEnum.REQUESTS_TOTAL.value: "total_count",
-            MetricsRequestEnum.REQUESTS_FAILED_TOTAL.value: "failed_count",
+            MetricsSummaryEnum.REQUESTS_TOTAL.value: "total_count",
+            MetricsSummaryEnum.REQUESTS_FAILED_TOTAL.value: "failed_count",
         }.get(metrics, "total_count")
 
     @swagger_auto_schema(
-        query_serializer=MetricsQueryRequestInputSLZ(),
+        query_serializer=MetricsQuerySummaryInputSLZ(),
         responses={status.HTTP_200_OK: ""},
         operation_description="查询请求总量/失败请求总量",
         tags=["WebAPI.Metrics"],
     )
     def get(self, request, *args, **kwargs):
-        slz = MetricsQueryRequestInputSLZ(data=request.query_params)
+        slz = MetricsQuerySummaryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 

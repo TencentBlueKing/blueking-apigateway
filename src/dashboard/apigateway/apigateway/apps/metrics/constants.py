@@ -34,12 +34,12 @@ class MetricsInstantEnum(StructuredEnum):
     HEALTH_RATE = EnumField("health_rate")
 
 
-class MetricsRequestEnum(StructuredEnum):
+class MetricsSummaryEnum(StructuredEnum):
     REQUESTS_TOTAL = EnumField("requests_total", label="请求总数")
     REQUESTS_FAILED_TOTAL = EnumField("requests_failed_total", label="请求失败总数")
 
 
-class MetricsRequestTimeDimensionEnum(StructuredEnum):
+class MetricsSummaryTimeDimensionEnum(StructuredEnum):
     DAY = EnumField("day", label="按天统计")
     WEEK = EnumField("week", label="按周统计")
     MONTH = EnumField("month", label="按月统计")

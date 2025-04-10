@@ -24,8 +24,8 @@ from rest_framework import serializers
 from apigateway.apps.metrics.constants import (
     MetricsInstantEnum,
     MetricsRangeEnum,
-    MetricsRequestEnum,
-    MetricsRequestTimeDimensionEnum,
+    MetricsSummaryEnum,
+    MetricsSummaryTimeDimensionEnum,
 )
 
 
@@ -57,13 +57,13 @@ class MetricsQueryInstantInputSLZ(serializers.Serializer):
         return data
 
 
-class MetricsQueryRequestInputSLZ(serializers.Serializer):
+class MetricsQuerySummaryInputSLZ(serializers.Serializer):
     stage_id = serializers.IntegerField(required=True, help_text="环境 id")
     resource_id = serializers.IntegerField(allow_null=True, required=False, help_text="资源 id")
     bk_app_code = serializers.CharField(allow_blank=True, required=False, help_text="app code")
-    metrics = serializers.ChoiceField(choices=MetricsRequestEnum.get_choices(), help_text="metric 类型")
+    metrics = serializers.ChoiceField(choices=MetricsSummaryEnum.get_choices(), help_text="metric 类型")
     time_dimension = serializers.ChoiceField(
-        choices=MetricsRequestTimeDimensionEnum.get_choices(), help_text="时间维度"
+        choices=MetricsSummaryTimeDimensionEnum.get_choices(), help_text="时间维度"
     )
     time_start = serializers.IntegerField(required=False, min_value=0, help_text="开始时间")
     time_end = serializers.IntegerField(required=False, min_value=0, help_text="结束时间")

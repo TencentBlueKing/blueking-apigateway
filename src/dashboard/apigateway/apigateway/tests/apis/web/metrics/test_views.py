@@ -19,6 +19,7 @@
 import datetime
 import time
 
+import pytest
 from ddf import G
 
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
@@ -160,16 +161,16 @@ class TestQueryInstantApi:
         assert response.status_code == 404
 
 
-class TestQueryGatewayRequestApi:
-    def test_get(self, fake_stage, request_view):
-        # metrics_stats_api_request_by_day
-        resource_obj1 = G(Resource, name="test1", gateway=fake_stage.gateway)
-        resource_obj2 = G(Resource, name="test2", gateway=fake_stage.gateway)
+class TestQuerySummaryApi:
+    @pytest.fixture(autouse=True)
+    def setup_fixtures(self, fake_stage):
+        self.resource_obj1 = G(Resource, name="test1", gateway=fake_stage.gateway)
+        self.resource_obj2 = G(Resource, name="test2", gateway=fake_stage.gateway)
         G(
             StatisticsGatewayRequestByDay,
             gateway_id=fake_stage.gateway.id,
             stage_name=fake_stage.name,
-            resource_id=resource_obj1.id,
+            resource_id=self.resource_obj1.id,
             total_count=100,
             failed_count=10,
             total_msecs=600,
@@ -180,7 +181,7 @@ class TestQueryGatewayRequestApi:
             StatisticsGatewayRequestByDay,
             gateway_id=fake_stage.gateway.id,
             stage_name=fake_stage.name,
-            resource_id=resource_obj2.id,
+            resource_id=self.resource_obj2.id,
             total_count=200,
             failed_count=20,
             total_msecs=800,
@@ -188,10 +189,10 @@ class TestQueryGatewayRequestApi:
             end_time=utctime(int(time.time())).datetime,
         )
 
-        # requests_total
+    def test_get_requests_total(self, fake_stage, request_view):
         response = request_view(
             "GET",
-            "metrics.query_request",
+            "metrics.query_summary",
             path_params={
                 "gateway_id": fake_stage.gateway.id,
             },
@@ -209,10 +210,10 @@ class TestQueryGatewayRequestApi:
         assert len(result["data"]["series"]) == 1
         assert result["data"]["series"]["datapoints"][0][0] == 300
 
-        # requests_failed_total
+    def test_get_requests_failed_total(self, fake_stage, request_view):
         response = request_view(
             "GET",
-            "metrics.query_request",
+            "metrics.query_summary",
             path_params={
                 "gateway_id": fake_stage.gateway.id,
             },
@@ -230,10 +231,10 @@ class TestQueryGatewayRequestApi:
         assert len(result["data"]["series"]) == 1
         assert result["data"]["series"]["datapoints"][0][0] == 30
 
-        # 查询 resource_id
+    def test_get_resource_id(self, fake_stage, request_view):
         response = request_view(
             "GET",
-            "metrics.query_request",
+            "metrics.query_summary",
             path_params={
                 "gateway_id": fake_stage.gateway.id,
             },
@@ -242,7 +243,7 @@ class TestQueryGatewayRequestApi:
                 "stage_id": fake_stage.id,
                 "metrics": "requests_total",
                 "time_dimension": "day",
-                "resource_id": resource_obj1.id,
+                "resource_id": self.resource_obj1.id,
                 "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
                 "time_end": int(time.time()),
             },
@@ -252,7 +253,7 @@ class TestQueryGatewayRequestApi:
         assert len(result["data"]["series"]) == 1
         assert result["data"]["series"]["datapoints"][0][0] == 100
 
-        # metrics_stats_app_request_by_day
+    def test_get_bk_app_code(self, fake_stage, request_view):
         resource_obj3 = G(Resource, name="test3", gateway=fake_stage.gateway)
         G(
             StatisticsAppRequestByDay,
@@ -278,29 +279,10 @@ class TestQueryGatewayRequestApi:
             start_time=utctime(int(time.time())).datetime,
             end_time=utctime(int(time.time())).datetime,
         )
-        response = request_view(
-            "GET",
-            "metrics.query_request",
-            path_params={
-                "gateway_id": fake_stage.gateway.id,
-            },
-            data={
-                "metrics": "requests_total",
-                "time_dimension": "day",
-                "stage_id": fake_stage.id,
-                "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
-                "time_end": int(time.time()),
-            },
-        )
-        result = response.json()
-        assert response.status_code == 200
-        assert len(result["data"]["series"]) == 1
-        assert result["data"]["series"]["datapoints"][0][0] == 300
 
-        # 查询 bk_app_code
         response = request_view(
             "GET",
-            "metrics.query_request",
+            "metrics.query_summary",
             path_params={
                 "gateway_id": fake_stage.gateway.id,
             },
@@ -319,10 +301,10 @@ class TestQueryGatewayRequestApi:
         assert len(result["data"]["series"]) == 1
         assert result["data"]["series"]["datapoints"][0][0] == 100
 
-        # empty metrics
+    def test_get_empty_metrics(self, fake_stage, request_view):
         response = request_view(
             "GET",
-            "metrics.query_request",
+            "metrics.query_summary",
             path_params={
                 "gateway_id": fake_stage.gateway.id,
             },
