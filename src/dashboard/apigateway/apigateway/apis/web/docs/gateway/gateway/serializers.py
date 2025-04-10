@@ -34,6 +34,7 @@ class GatewayOutputSLZ(serializers.Serializer):
     name = serializers.CharField(help_text="网关名称")
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, help_text="网关描述")
     maintainers = serializers.ListField(help_text="网关负责人")
+    doc_maintainers = serializers.JSONField(help_text="网关文档维护人员")
     is_official = serializers.SerializerMethodField(help_text="是否为官方网关, true: 是, false: 否")
     api_url = serializers.SerializerMethodField(help_text="网关访问地址")
     sdks = serializers.SerializerMethodField(help_text="SDK")
