@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import time
+
 from django.test import TestCase
 
 from apigateway.apis.web.metrics import serializers
@@ -74,4 +76,54 @@ class TestMetricsQueryInstantSLZ(TestCase):
         for test in data:
             slz = serializers.MetricsQueryInstantInputSLZ(data=test["data"])
             slz.is_valid()
+            self.assertEqual(slz.validated_data, test["expected"])
+
+
+class TestMetricsQuerySummaryInputSLZ(TestCase):
+    def test_validate(self):
+        data = [
+            {
+                "data": {
+                    "stage_id": 1,
+                    "resource_id": 1,
+                    "metrics": "requests_total",
+                    "time_dimension": "day",
+                    "bk_app_code": "",
+                    "time_start": int(time.time()),
+                    "time_end": int(time.time()),
+                },
+                "expected": {
+                    "stage_id": 1,
+                    "resource_id": 1,
+                    "metrics": "requests_total",
+                    "time_dimension": "day",
+                    "bk_app_code": "",
+                    "time_start": int(time.time()),
+                    "time_end": int(time.time()),
+                },
+            },
+            {
+                "data": {
+                    "stage_id": 1,
+                    "resource_id": 1,
+                    "metrics": "requests_total",
+                    "time_dimension": "day",
+                    "bk_app_code": "app01",
+                    "time_start": int(time.time()),
+                    "time_end": int(time.time()),
+                },
+                "expected": {
+                    "stage_id": 1,
+                    "resource_id": 1,
+                    "metrics": "requests_total",
+                    "time_dimension": "day",
+                    "bk_app_code": "app01",
+                    "time_start": int(time.time()),
+                    "time_end": int(time.time()),
+                },
+            },
+        ]
+        for test in data:
+            slz = serializers.MetricsQuerySummaryInputSLZ(data=test["data"])
+            slz.is_valid(raise_exception=True)
             self.assertEqual(slz.validated_data, test["expected"])

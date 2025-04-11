@@ -20,8 +20,17 @@ from abc import abstractmethod
 from typing import Any, ClassVar, Dict, Optional, Type
 
 from django.conf import settings
+from django.db.models import Sum
+from django.db.models.functions import TruncDate, TruncMonth, TruncWeek
+from django.utils import timezone
 
-from apigateway.apps.metrics.constants import MetricsInstantEnum, MetricsRangeEnum
+from apigateway.apps.metrics.constants import (
+    MetricsInstantEnum,
+    MetricsRangeEnum,
+    MetricsSummaryEnum,
+    MetricsSummaryTimeDimensionEnum,
+)
+from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.common.error_codes import error_codes
 from apigateway.components.prometheus import prometheus_component
 
@@ -407,6 +416,55 @@ class MetricsInstantFactory:
         if not hasattr(metrics_class, "metrics") or not isinstance(metrics_class.metrics, MetricsInstantEnum):
             raise ValueError("metrics_class must have a 'metrics' ClassVar of type MetricsInstantEnum")
         cls._registry[metrics_class.metrics] = metrics_class
+
+
+class MetricsSummaryFactory:
+    TRUNC_FUNC_MAP = {
+        MetricsSummaryTimeDimensionEnum.DAY.value: TruncDate,
+        MetricsSummaryTimeDimensionEnum.WEEK.value: TruncWeek,
+        MetricsSummaryTimeDimensionEnum.MONTH.value: TruncMonth,
+    }
+
+    COUNT_FIELD_MAP = {
+        MetricsSummaryEnum.REQUESTS_TOTAL.value: "total_count",
+        MetricsSummaryEnum.REQUESTS_FAILED_TOTAL.value: "failed_count",
+    }
+
+    def __init__(self, stage_name, data):
+        self.stage_name = stage_name
+        self.data = data
+
+    def _build_query_params(self):
+        query_params = {
+            "stage_name": self.stage_name,
+            "start_time__gte": timezone.datetime.fromtimestamp(self.data["time_start"]),
+            "end_time__lte": timezone.datetime.fromtimestamp(self.data["time_end"]),
+        }
+
+        if self.data.get("bk_app_code"):
+            query_params["bk_app_code"] = self.data["bk_app_code"]
+        if self.data.get("resource_id"):
+            query_params["resource_id"] = self.data["resource_id"]
+
+        return query_params
+
+    def queryset(self):
+        # 查询参数
+        query_params = self._build_query_params()
+        # 时间维度
+        trunc_func = self.TRUNC_FUNC_MAP.get(self.data["time_dimension"], TruncDate)
+        # 统计字段
+        count_field = self.COUNT_FIELD_MAP.get(self.data["metrics"], "total_count")
+        # 查询 model
+        model = StatisticsAppRequestByDay if self.data.get("bk_app_code") else StatisticsGatewayRequestByDay
+
+        return (
+            model.objects.filter(**query_params)
+            .annotate(time_period=trunc_func("end_time"))
+            .values("time_period")
+            .annotate(count_sum=Sum(count_field))
+            .order_by("time_period")
+        )
 
 
 MetricsRangeFactory.register(RequestsMetrics)
