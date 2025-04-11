@@ -351,7 +351,9 @@ const handleBlur = () => {
 const handleHeadersChange = () => {
   const found = localHeaders.value.find((item: any) => item.id === presuppose.value);
   if (found) {
-    propsHeaders.value = [...propsHeaders.value, ...found.list];
+    const foundNames = found.list.map((item: any) => item.name);
+    const list = propsHeaders.value?.filter((item: any) => !foundNames?.includes(item.name));
+    propsHeaders.value = [...list, ...found.list];
   }
 };
 
