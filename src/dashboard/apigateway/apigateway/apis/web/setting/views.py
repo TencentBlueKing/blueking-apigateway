@@ -47,6 +47,21 @@ class UserAuthTypeRetrieveApi(generics.RetrieveAPIView):
     name="get",
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
+        operation_description="获取环境变量列表",
+        tags=["WebAPI.Settings"],
+    ),
+)
+class EnvVarListApi(generics.ListAPIView):
+    def list(self, request, *args, **kwargs):
+        env_vars = copy.copy(settings.ENV_VARS_FOR_FRONTEND)
+
+        return OKJsonResponse(data=env_vars)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: ""},
         operation_description="获取 feature flag 全局特性开关列表",
         tags=["WebAPI.Settings"],
     ),

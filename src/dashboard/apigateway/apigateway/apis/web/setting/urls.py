@@ -18,9 +18,13 @@
 #
 from django.urls import path
 
-from .views import FeatureFlagListApi, UserAuthTypeRetrieveApi
+from .views import EnvVarListApi, FeatureFlagListApi, UserAuthTypeRetrieveApi
 
 urlpatterns = [
-    path("feature_flags/", FeatureFlagListApi.as_view(), name="settings.feature_flags"),
     path("user_auth_type/", UserAuthTypeRetrieveApi.as_view(), name="settings.user_auth_type"),
+    # @deprecated
+    path("feature_flags/", FeatureFlagListApi.as_view(), name="settings.feature_flags"),
+    # recommend
+    path("feature-flags/", FeatureFlagListApi.as_view(), name="settings.feature_flags_new"),
+    path("env-vars/", EnvVarListApi.as_view(), name="settings.env_vars"),
 ]

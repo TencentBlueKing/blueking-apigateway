@@ -19,6 +19,7 @@ from typing import List, Optional
 
 from django.conf import settings
 from django.db import transaction
+from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -31,16 +32,23 @@ from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.common.contexts import GatewayAuthContext
+from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.components.paas import create_paas_app
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, PublishSourceEnum
+from apigateway.core.constants import (
+    GatewayKindEnum,
+    GatewayStatusEnum,
+    ProgrammableGatewayLanguageEnum,
+    PublishSourceEnum,
+)
 from apigateway.core.models import Gateway
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
     GatewayCreateInputSLZ,
+    GatewayDevGuidelineOutputSLZ,
     GatewayFeatureFlagsOutputSLZ,
     GatewayListInputSLZ,
     GatewayListOutputSLZ,
@@ -326,4 +334,47 @@ class GatewayFeatureFlagsApi(generics.ListAPIView):
         feature_flags = GatewayHandler.get_feature_flags(instance.pk)
         slz = self.get_serializer({"feature_flags": feature_flags})
 
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取指定网关的开发指引页面",
+        responses={status.HTTP_200_OK: GatewayDevGuidelineOutputSLZ()},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
+    queryset = Gateway.objects.all()
+    serializer_class = GatewayDevGuidelineOutputSLZ
+    lookup_url_kwarg = "gateway_id"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        if instance.kind != GatewayKindEnum.PROGRAMMABLE.value:
+            raise error_codes.FAILED_PRECONDITION.format(_("当前网关类型不支持开发指引。"), replace=True)
+
+        language = instance.extra_info["language"]
+        dev_guideline_url = ""
+        if language == ProgrammableGatewayLanguageEnum.PYTHON.value:
+            dev_guideline_url = settings.PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL
+        elif language == ProgrammableGatewayLanguageEnum.GO.value:
+            dev_guideline_url = settings.PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_GO_URL
+
+        template_name = f"dev_guideline/{get_current_language_code()}/programmable_gateway.md"
+
+        slz = GatewayDevGuidelineOutputSLZ(
+            {
+                "content": render_to_string(
+                    template_name,
+                    context={
+                        "language": instance.extra_info["language"],
+                        "repo_url": instance.extra_info["repository"],
+                        "dev_guideline_url": dev_guideline_url,
+                    },
+                )
+            }
+        )
         return OKJsonResponse(data=slz.data)

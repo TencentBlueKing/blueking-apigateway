@@ -28,6 +28,11 @@ class GatewayKindEnum(StructuredEnum):
     PROGRAMMABLE = EnumField(1, "可编程网关")
 
 
+class ProgrammableGatewayLanguageEnum(StructuredEnum):
+    PYTHON = EnumField("python", "Python")
+    GO = EnumField("go", "Go")
+
+
 class GatewayStatusEnum(StructuredEnum):
     INACTIVE = EnumField(0, "已停用")
     ACTIVE = EnumField(1, "启用中")
