@@ -4,11 +4,12 @@
       <div class="header-btn flex-row ">
         <span class="mr10">
           <bk-button
+            v-if="common.curApigwData.kind !== 1"
             v-bk-tooltips="{
               content: t('当前有版本正在发布，请稍后再进行后端服务修改'),
               disabled: !hasPublishingStage,
             }"
-            :disabled="hasPublishingStage || common.curApigwData.kind === 1"
+            :disabled="hasPublishingStage"
             class="mr5 w80"
             theme="primary"
             @click="handleAdd"
@@ -25,9 +26,17 @@
       <bk-loading :loading="isLoading">
         <bk-table
           :row-class="isNewCreate"
-          class="table-layout" :data="tableData" remote-pagination :pagination="pagination" show-overflow-tooltip
-          @page-limit-change="handlePageSizeChange" @page-value-change="handlePageChange" row-hover="auto"
-          border="outer">
+          :key="tableKey"
+          :data="tableData"
+          :pagination="pagination"
+          border="outer"
+          class="table-layout"
+          remote-pagination
+          row-hover="auto"
+          show-overflow-tooltip
+          @page-limit-change="handlePageSizeChange"
+          @page-value-change="handlePageChange"
+        >
           <bk-table-column :label="t('后端服务名称')" prop="name">
             <template #default="{ data }">
               <bk-button
@@ -53,14 +62,14 @@
             </template>
           </bk-table-column>
           <bk-table-column :label="t('更新时间')" prop="updated_time"></bk-table-column>
-          <bk-table-column :label="t('操作')" width="150">
+          <bk-table-column v-if="common.curApigwData.kind === 0" :label="t('操作')" prop="actions" width="150">
             <template #default="{ data }">
               <bk-button
                 v-bk-tooltips="{
                   content: t('当前有版本正在发布，请稍后再进行后端服务修改'),
                   disabled: !hasPublishingStage
                 }"
-                :disabled="common.curApigwData.kind === 1 || hasPublishingStage"
+                :disabled="hasPublishingStage"
                 class="mr25"
                 text
                 theme="primary"
@@ -152,6 +161,8 @@ import {
 } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
 import addBackendService from '@/views/backend-service/add.vue';
+import _ from 'lodash';
+import useMaxTableLimit from '@/hooks/use-max-table-limit';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -172,10 +183,14 @@ const tableEmptyConf = ref({
 });
 
 const stageList = ref<{ release: { status: string } }[]>([]);
+const tableKey = ref(_.uniqueId());
 
 const hasPublishingStage = computed(() => {
   return stageList.value.some(item => item?.release?.status === 'doing');
 });
+
+// 当前视口高度能展示最多多少条表格数据
+const maxTableLimit = useMaxTableLimit(300);
 
 // 列表hooks
 const {
@@ -185,7 +200,22 @@ const {
   handlePageChange,
   handlePageSizeChange,
   getList,
-} = useQueryList(getBackendServiceList, filterData);
+} = useQueryList(
+  getBackendServiceList,
+  filterData,
+  0,
+  false,
+  {
+    limitList: [
+      maxTableLimit,
+      10,
+      20,
+      50,
+      100,
+    ],
+    limit: maxTableLimit,
+  },
+);
 
 
 const isNewCreate = (row: any) => {
@@ -294,6 +324,10 @@ watch(
   },
   { deep: true },
 );
+
+watch(() => common.curApigwData.kind, () => {
+  tableKey.value = _.uniqueId();
+});
 
 onBeforeMount(async () => {
   await getStageListData();
