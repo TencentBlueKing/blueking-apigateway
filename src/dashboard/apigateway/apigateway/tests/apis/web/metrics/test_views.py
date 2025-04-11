@@ -210,6 +210,46 @@ class TestQuerySummaryApi:
         assert len(result["data"]["series"]) == 1
         assert result["data"]["series"]["datapoints"][0][0] == 300
 
+    def test_get_requests_total_by_week(self, fake_stage, request_view):
+        response = request_view(
+            "GET",
+            "metrics.query_summary",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "type": "gateway",
+                "stage_id": fake_stage.id,
+                "metrics": "requests_total",
+                "time_dimension": "week",
+                "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
+                "time_end": int(time.time()),
+            },
+        )
+        result = response.json()
+        assert response.status_code == 200
+        assert len(result["data"]["series"]) == 1
+
+    def test_get_requests_total_by_month(self, fake_stage, request_view):
+        response = request_view(
+            "GET",
+            "metrics.query_summary",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "type": "gateway",
+                "stage_id": fake_stage.id,
+                "metrics": "requests_total",
+                "time_dimension": "month",
+                "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
+                "time_end": int(time.time()),
+            },
+        )
+        result = response.json()
+        assert response.status_code == 200
+        assert len(result["data"]["series"]) == 1
+
     def test_get_requests_failed_total(self, fake_stage, request_view):
         response = request_view(
             "GET",
@@ -317,3 +357,24 @@ class TestQuerySummaryApi:
             },
         )
         assert response.status_code == 400
+
+
+class TestQuerySummaryExportApi:
+    def test_get(self, request_view, fake_stage):
+        response = request_view(
+            "GET",
+            "metrics.query_summary_export",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "type": "gateway",
+                "stage_id": fake_stage.id,
+                "metrics": "requests_total",
+                "time_dimension": "day",
+                "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
+                "time_end": int(time.time()),
+            },
+        )
+
+        assert response.status_code == 200

@@ -16,12 +16,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
+from django.urls import include, path
 
-from .views import QueryInstantApi, QueryRangeApi, QuerySummaryApi
+from .views import QueryInstantApi, QueryRangeApi, QuerySummaryApi, QuerySummaryExportApi
 
 urlpatterns = [
     path("query-range/", QueryRangeApi.as_view(), name="metrics.query_range"),
     path("query-instant/", QueryInstantApi.as_view(), name="metrics.query_instant"),
-    path("query-summary/", QuerySummaryApi.as_view(), name="metrics.query_summary"),
+    path(
+        "query-summary/",
+        include(
+            [
+                path("", QuerySummaryApi.as_view(), name="metrics.query_summary"),
+                path("export/", QuerySummaryExportApi.as_view(), name="metrics.query_summary_export"),
+            ]
+        ),
+    ),
 ]

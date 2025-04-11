@@ -16,24 +16,26 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
+import csv
+from io import StringIO
+from typing import Any, List
 
-from django.db.models import Sum
-from django.db.models.functions import TruncDate, TruncMonth, TruncWeek
 from django.http import Http404
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.metrics.constants import (
     MetricsInstantEnum,
     MetricsRangeEnum,
-    MetricsSummaryEnum,
-    MetricsSummaryTimeDimensionEnum,
 )
-from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
-from apigateway.apps.metrics.prometheus.dimension import MetricsInstantFactory, MetricsRangeFactory
+from apigateway.apps.metrics.prometheus.dimension import (
+    MetricsInstantFactory,
+    MetricsRangeFactory,
+    MetricsSummaryFactory,
+)
 from apigateway.core.models import Resource, Stage
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.time import MetricsSmartTimeRange
 
 from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ, MetricsQuerySummaryInputSLZ
@@ -183,21 +185,6 @@ class QueryInstantApi(generics.ListAPIView):
 
 
 class QuerySummaryApi(generics.ListAPIView):
-    @staticmethod
-    def get_trunc_func(time_dimension):
-        return {
-            MetricsSummaryTimeDimensionEnum.DAY.value: TruncDate,
-            MetricsSummaryTimeDimensionEnum.WEEK.value: TruncWeek,
-            MetricsSummaryTimeDimensionEnum.MONTH.value: TruncMonth,
-        }.get(time_dimension, TruncDate)
-
-    @staticmethod
-    def get_count_field(metrics):
-        return {
-            MetricsSummaryEnum.REQUESTS_TOTAL.value: "total_count",
-            MetricsSummaryEnum.REQUESTS_FAILED_TOTAL.value: "failed_count",
-        }.get(metrics, "total_count")
-
     @swagger_auto_schema(
         query_serializer=MetricsQuerySummaryInputSLZ(),
         responses={status.HTTP_200_OK: ""},
@@ -213,32 +200,55 @@ class QuerySummaryApi(generics.ListAPIView):
         if not stage_name:
             raise Http404
 
-        query_params = {
-            "gateway_id": request.gateway.id,
-            "stage_name": stage_name,
-            "start_time__gte": datetime.datetime.fromtimestamp(data["time_start"]),
-            "end_time__lte": datetime.datetime.fromtimestamp(data["time_end"]),
-        }
-
-        if data.get("resource_id"):
-            query_params["resource_id"] = data["resource_id"]
-
-        trunc_func = self.get_trunc_func(data["time_dimension"])
-        count_field = self.get_count_field(data["metrics"])
-
-        model = StatisticsGatewayRequestByDay
-        if data.get("bk_app_code"):
-            model = StatisticsAppRequestByDay
-            query_params["bk_app_code"] = data["bk_app_code"]
-
-        queryset = (
-            model.objects.filter(**query_params)
-            .annotate(time_period=trunc_func("end_time"))
-            .values("time_period")
-            .annotate(count_sum=Sum(count_field))
-            .order_by("time_period")
-        )
-
+        queryset = MetricsSummaryFactory(stage_name, data).queryset()
         datapoints = [[obj["count_sum"], obj["time_period"]] for obj in queryset.iterator(chunk_size=1000)]
 
         return OKJsonResponse(data={"series": {"datapoints": datapoints}})
+
+
+class QuerySummaryExportApi(generics.CreateAPIView):
+    @swagger_auto_schema(
+        decorator=swagger_auto_schema(
+            operation_description="请求总量/失败请求总量导出",
+            request_body=MetricsQuerySummaryInputSLZ,
+            responses={status.HTTP_200_OK: ""},
+            tags=["WebAPI.Metrics"],
+        ),
+    )
+    def get(self, request, *args, **kwargs):
+        slz = MetricsQuerySummaryInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
+        if not stage_name:
+            raise Http404
+
+        queryset = MetricsSummaryFactory(stage_name, data).queryset()
+
+        content = self._get_csv_content(queryset)
+        response = DownloadableResponse(content, filename=f"bk_apigw_metrics_{self.request.gateway.name}.csv")
+        # use utf-8-sig for windows
+        response.charset = "utf-8-sig" if "windows" in request.headers.get("User-Agent", "").lower() else "utf-8"
+
+        return response
+
+    def _get_csv_content(self, data: List[Any]) -> str:
+        """
+        将筛选出的权限数据，整理为 csv 格式内容
+        """
+        headers = [
+            "time_period",
+            "count_sum",
+        ]
+        header_row = {
+            "time_period": _("日期"),
+            "count_sum": _("请求总数"),
+        }
+
+        content = StringIO()
+        io_csv = csv.DictWriter(content, fieldnames=headers, extrasaction="ignore")
+        io_csv.writerow(header_row)
+        io_csv.writerows(data)
+
+        return content.getvalue()
