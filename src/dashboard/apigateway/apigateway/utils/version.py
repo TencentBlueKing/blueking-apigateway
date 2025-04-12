@@ -59,6 +59,47 @@ def get_next_version(current_version: str) -> str:
         return ""
 
 
+def parse_version(version: str) -> tuple[int, int, int, str | None]:
+    """解析语义化版本字符串（如 1.2.3+prod），返回 (major, minor, patch, build_metadata)"""
+    # 分离构建元数据
+    version_part, *build_metadata_parts = version.split("+", maxsplit=1)
+    build_metadata = build_metadata_parts[0] if build_metadata_parts else None
+
+    # 解析主版本号
+    version_numbers = version_part.split(".")
+    major = _parse_version_part(version_numbers, 0)
+    minor = _parse_version_part(version_numbers, 1)
+    patch = _parse_version_part(version_numbers, 2)
+
+    return major, minor, patch, build_metadata
+
+
+def _parse_version_part(parts: list[str], index: int) -> int:
+    """安全解析版本号的某一部分"""
+    try:
+        return int(parts[index])
+    except (IndexError, ValueError):
+        return 0
+
+
+def get_nex_version_with_type(old_version: str, version_type: str) -> str:
+    major, minor, patch, build_metadata = parse_version(old_version)
+    if version_type == "major":
+        major += 1
+        minor, patch = 0, 0
+    elif version_type == "minor":
+        minor += 1
+        patch = 0
+    elif version_type == "patch":
+        patch += 1
+    else:
+        raise ValueError("Invalid version type")
+    new_version = f"{major}.{minor}.{patch}"
+    if build_metadata:
+        new_version += f"+{build_metadata}"
+    return new_version
+
+
 def is_version1_greater_than_version2(version1: str, version2: str) -> bool:
     try:
         return version.parse(version1) > version.parse(version2)

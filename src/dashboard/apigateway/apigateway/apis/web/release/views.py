@@ -20,19 +20,23 @@ import logging
 
 from django.conf import settings
 from django.http import Http404
+from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from openapi_schema_to_json_schema import to_json_schema
 from rest_framework import generics, status
 
+from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceHandler
-from apigateway.biz.releaser import ReleaseError, release
+from apigateway.biz.releaser import ProgramGatewayReleaser, ReleaseError, release
 from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.user_credentials import get_user_credentials_from_request
+from apigateway.components.paas import get_deploy_detail
+from apigateway.core.constants import GatewayKindEnum
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory
 from apigateway.utils import openapi
 from apigateway.utils.exception import LockTimeout
@@ -40,6 +44,7 @@ from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 
 from .serializers import (
+    DeployInputSLZ,
     ReleaseHistoryEventRetrieveOutputSLZ,
     ReleaseHistoryOutputSLZ,
     ReleaseHistoryQueryInputSLZ,
@@ -299,3 +304,55 @@ class RelishHistoryEventsRetrieveAPI(generics.RetrieveAPIView):
             },
         )
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        request_body=DeployInputSLZ,
+        responses={status.HTTP_200_OK: ""},
+        tags=["WebAPI.release"],
+        operation_description="编程网关部署接口",
+    ),
+)
+class DeployCreateApi(generics.CreateAPIView):
+    serializer_class = DeployInputSLZ
+
+    def create(self, request, *args, **kwargs):
+        if request.gateway.kind != GatewayKindEnum.PROGRAMMABLE.value:
+            raise error_codes.FAILED_PRECONDITION.format(_("当前网关类型不支持应用部署。"), replace=True)
+
+        slz = DeployInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        deploy_id = ProgramGatewayReleaser.deploy(
+            gateway=request.gateway,
+            stage_id=slz.validated_data["stage_id"],
+            branch=slz.validated_data["branch"],
+            comment=slz.validated_data.get("comment", ""),
+            commit_id=slz.validated_data.get("commit_id", ""),
+            version=slz.validated_data.get("version", ""),
+            username=request.user.username,
+        )
+
+        return OKJsonResponse(data={"deploy_id": deploy_id})
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        request_body=DeployInputSLZ,
+        responses={status.HTTP_200_OK: ""},
+        tags=["WebAPI.release"],
+        operation_description="编程网关pass部署详情查询",
+    ),
+)
+class DeployRetrieveApi(generics.RetrieveAPIView):
+    def get_queryset(self):
+        return ProgrammableGatewayDeployHistory.objects.filter(gateway=self.request.gateway)
+
+    def get(self, request, *args, **kwargs):
+        instance = get_object_or_404(self.get_queryset(), deploy_id=self.kwargs["deploy_id"])
+        # 查询pass部署详情
+        data = get_deploy_detail(deploy_id=instance.deploy_id)
+        return OKJsonResponse(data=data)

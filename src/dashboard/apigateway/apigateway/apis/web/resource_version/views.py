@@ -33,10 +33,11 @@ from apigateway.biz.resource_version_diff import ResourceDifferHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.version import get_next_version
+from apigateway.utils.version import get_nex_version_with_type, get_next_version
 
 from .serializers import (
     NeedNewVersionOutputSLZ,
+    NextResourceVersionGetInputSLZ,
     ResourceVersionCreateInputSLZ,
     ResourceVersionDiffOutputSLZ,
     ResourceVersionDiffQueryInputSLZ,
@@ -273,4 +274,33 @@ class NextResourceVersionRetrieveApi(generics.RetrieveAPIView):
             )
         return OKJsonResponse(
             data={"version": "1.0.0"},
+        )
+
+
+class NextProgramGatewayResourceVersionRetrieveApi(generics.RetrieveAPIView):
+    @method_decorator(
+        name="get",
+        decorator=swagger_auto_schema(
+            query_serializer=NextResourceVersionGetInputSLZ(),
+            responses={status.HTTP_200_OK: ""},
+            tags=["WebAPI.ResourceVersion"],
+            operation_description="编程网关环境版本获取",
+        ),
+    )
+    def get(self, request, *args, **kwargs):
+        slz = NextResourceVersionGetInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        stage_name = slz.validated_data["stage_name"]
+        version_type = slz.validated_data["version_type"]
+        query_set = ResourceVersion.objects.filter(gateway=request.gateway, version__icontains=stage_name).order_by(
+            "-id"
+        )
+        obj = query_set.first()
+        if obj:
+            new_version_str = get_nex_version_with_type(obj.version, version_type)
+            return OKJsonResponse(
+                data={"version": new_version_str},
+            )
+        return OKJsonResponse(
+            data={"version": "1.0.0+" + stage_name},
         )

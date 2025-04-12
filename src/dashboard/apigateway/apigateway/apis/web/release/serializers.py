@@ -161,3 +161,12 @@ class ReleaseHistoryEventRetrieveOutputSLZ(ReleaseHistoryOutputSLZ):
         for step, (name, desc) in enumerate(choices):
             events_template.append({"name": name, "description": desc, "step": step})
         return events_template
+
+
+class DeployInputSLZ(serializers.Serializer):
+    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
+    stage_id = serializers.IntegerField(required=True, help_text="环境id")
+    branch = serializers.CharField(help_text="部署分支")
+    commit_id = serializers.CharField(help_text="commit_id")
+    version = serializers.CharField(read_only=True, help_text="发布版本号")
+    comment = serializers.CharField(help_text="版本日志")

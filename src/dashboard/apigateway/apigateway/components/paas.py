@@ -106,3 +106,26 @@ def create_paas_app(app_code: str) -> bool:
     创建应用
     """
     return True
+
+
+def deploy_paas_app(app_code: str, module: str, stag_name: str, revision: str, branch: str) -> str:
+    """
+    部署应用
+    """
+    return ""
+
+
+def set_paas_stage_env(app_code: str, module: str, env: Dict[str, Any]):
+    """
+    设置应用环境变量
+    """
+
+    return True
+
+
+def get_deploy_detail(deploy_id: str):
+    """
+    获取部署详情
+    """
+
+    return {}

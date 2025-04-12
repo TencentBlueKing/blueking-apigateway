@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -22,6 +23,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceHandler
@@ -37,6 +39,7 @@ from apigateway.utils.responses import OKJsonResponse
 from .serializers import (
     BackendConfigInputSLZ,
     StageBackendOutputSLZ,
+    StageDeployOutputSLZ,
     StageInputSLZ,
     StageOutputSLZ,
     StagePartialInputSLZ,
@@ -413,3 +416,46 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取编程网关环境部署详情",
+        responses={status.HTTP_200_OK: StageDeployOutputSLZ()},
+        tags=["WebAPI.Stage"],
+    ),
+)
+class StageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUpdateAPIView):
+    lookup_field = "id"
+    serializer_class = StageDeployOutputSLZ
+    queryset = Stage.objects.all()
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        gateway = request.gateway
+        stage_id = instance.id
+
+        # 查询当前deploy历史
+        deploy_history = ProgrammableGatewayDeployHistory.objects.filter(gateway=gateway).order_by("-id").first()
+
+        stage_release = ReleasedResourceHandler.get_stage_release(gateway, [stage_id]).get(stage_id)
+        if stage_release:
+            # 优先使用与 stage_release 匹配的记录
+            instance = (
+                ProgrammableGatewayDeployHistory.objects.filter(
+                    gateway=gateway, version=stage_release["resource_version_display"]
+                ).first()
+                or deploy_history  # 回退到最新记录
+            )
+        else:
+            instance = deploy_history or ProgrammableGatewayDeployHistory()  # 空对象
+
+        context_data = {
+            "current_deploy_history": instance,
+            "repo_url": getattr(gateway, "extra_info", {}).get("repository", ""),
+            "stage_publish_status": ReleaseHandler.batch_get_stage_release_status([stage_id]),
+        }
+
+        output_slz = self.get_serializer(instance=instance, context=context_data)
+        return OKJsonResponse(data=output_slz.data)

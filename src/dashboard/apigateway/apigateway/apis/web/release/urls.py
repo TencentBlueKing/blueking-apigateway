@@ -19,6 +19,8 @@
 from django.urls import include, path
 
 from .views import (
+    DeployCreateApi,
+    DeployRetrieveApi,
     ReleaseAvailableResourceListApi,
     ReleaseAvailableResourceSchemaRetrieveApi,
     ReleaseCreateApi,
@@ -29,6 +31,15 @@ from .views import (
 
 urlpatterns = [
     path("", ReleaseCreateApi.as_view(), name="gateway.release.create"),
+    path(
+        "deploy",
+        include(
+            [
+                path("", DeployCreateApi.as_view(), name="gateway.deploy.create"),
+                path("/<str>:deploy_id", DeployRetrieveApi.as_view(), name="gateway.deploy.get"),
+            ]
+        ),
+    ),
     path(
         "stages/<int:stage_id>/resources/",
         include(
