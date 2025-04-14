@@ -30,16 +30,18 @@ from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.error_codes import error_codes
+from apigateway.components.paas import module_offline
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import PublishSourceEnum
+from apigateway.core.constants import PublishSourceEnum, StageStatusEnum
 from apigateway.core.models import BackendConfig, Stage
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.user_credentials import get_user_credentials_from_request
 
 from .serializers import (
     BackendConfigInputSLZ,
+    ProgrammableStageDeployOutputSLZ,
     StageBackendOutputSLZ,
-    StageDeployOutputSLZ,
     StageInputSLZ,
     StageOutputSLZ,
     StagePartialInputSLZ,
@@ -404,6 +406,15 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
         username = request.user.username
         StageHandler.set_status(instance, data["status"], username)
 
+        if data["status"] == StageStatusEnum.INACTIVE.value and instance.gateway.is_programmable:
+            # 调用paas下架接口
+            module_offline(
+                app_code=request.gateway.name,
+                module="default",
+                env=instance.name,
+                user_credentials=get_user_credentials_from_request(request),
+            )
+
         Auditor.record_stage_op_success(
             op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
@@ -422,13 +433,13 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
     name="get",
     decorator=swagger_auto_schema(
         operation_description="获取编程网关环境部署详情",
-        responses={status.HTTP_200_OK: StageDeployOutputSLZ()},
+        responses={status.HTTP_200_OK: ProgrammableStageDeployOutputSLZ()},
         tags=["WebAPI.Stage"],
     ),
 )
-class StageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUpdateAPIView):
+class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUpdateAPIView):
     lookup_field = "id"
-    serializer_class = StageDeployOutputSLZ
+    serializer_class = ProgrammableStageDeployOutputSLZ
     queryset = Stage.objects.all()
 
     def retrieve(self, request, *args, **kwargs):
@@ -452,7 +463,7 @@ class StageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUpdateAPIView)
             instance = deploy_history or ProgrammableGatewayDeployHistory()  # 空对象
 
         context_data = {
-            "current_deploy_history": instance,
+            "latest_deploy_history": instance,
             "repo_url": getattr(gateway, "extra_info", {}).get("repository", ""),
             "stage_publish_status": ReleaseHandler.batch_get_stage_release_status([stage_id]),
         }

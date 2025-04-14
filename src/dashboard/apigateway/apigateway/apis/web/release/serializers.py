@@ -163,10 +163,27 @@ class ReleaseHistoryEventRetrieveOutputSLZ(ReleaseHistoryOutputSLZ):
         return events_template
 
 
-class DeployInputSLZ(serializers.Serializer):
-    gateway = serializers.HiddenField(default=CurrentGatewayDefault())
+class ProgrammableDeployCreateInputSLZ(serializers.Serializer):
     stage_id = serializers.IntegerField(required=True, help_text="环境id")
     branch = serializers.CharField(help_text="部署分支")
     commit_id = serializers.CharField(help_text="commit_id")
-    version = serializers.CharField(read_only=True, help_text="发布版本号")
+    version = serializers.CharField(required=True, help_text="发布版本号")
     comment = serializers.CharField(help_text="版本日志")
+
+
+class ProgrammableDeployEventGetOutputSLZ(serializers.Serializer):
+    events = serializers.SerializerMethodField(read_only=True, help_text="部署events")
+    events_instance = serializers.SerializerMethodField(read_only=True, help_text="部署实例阶段")
+    events_framework = serializers.SerializerMethodField(read_only=True, help_text="部署步骤整体框架)")
+
+    def get_events(self, obj):
+        return self.context["events"]
+
+    def get_events_instance(self, obj):
+        return self.context["events_instance"]
+
+    def get_events_framework(self, obj):
+        return self.context["events_framework"]
+
+    class Meta:
+        ref_name = "apigateway.apis.web.deploy.ProgrammableDeployEventGetOutputSLZ"

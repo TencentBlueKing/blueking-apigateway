@@ -34,17 +34,22 @@ from apigateway.biz.releaser import ProgramGatewayReleaser, ReleaseError, releas
 from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.common.user_credentials import get_user_credentials_from_request
-from apigateway.components.paas import get_deploy_detail
-from apigateway.core.constants import GatewayKindEnum
+from apigateway.components.paas import (
+    get_deploy_phases_framework,
+    get_deploy_phases_instance,
+    get_deployment_result,
+    get_pass_deploy_streams_history_events,
+)
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory
 from apigateway.utils import openapi
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
+from apigateway.utils.user_credentials import get_user_credentials_from_request
 
 from .serializers import (
-    DeployInputSLZ,
+    ProgrammableDeployCreateInputSLZ,
+    ProgrammableDeployEventGetOutputSLZ,
     ReleaseHistoryEventRetrieveOutputSLZ,
     ReleaseHistoryOutputSLZ,
     ReleaseHistoryQueryInputSLZ,
@@ -309,20 +314,20 @@ class RelishHistoryEventsRetrieveAPI(generics.RetrieveAPIView):
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        request_body=DeployInputSLZ(),
+        request_body=ProgrammableDeployCreateInputSLZ(),
         responses={status.HTTP_200_OK: ""},
-        tags=["WebAPI.release"],
+        tags=["WebAPI.Release"],
         operation_description="编程网关部署接口",
     ),
 )
-class DeployCreateApi(generics.CreateAPIView):
-    serializer_class = DeployInputSLZ
+class ProgrammableDeployCreateApi(generics.CreateAPIView):
+    serializer_class = ProgrammableDeployCreateInputSLZ
 
     def create(self, request, *args, **kwargs):
-        if request.gateway.kind != GatewayKindEnum.PROGRAMMABLE.value:
+        if not request.gateway.is_programmable:
             raise error_codes.FAILED_PRECONDITION.format(_("当前网关类型不支持应用部署。"), replace=True)
 
-        slz = DeployInputSLZ(data=request.data)
+        slz = ProgrammableDeployCreateInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         deploy_id = ProgramGatewayReleaser.deploy(
@@ -333,6 +338,7 @@ class DeployCreateApi(generics.CreateAPIView):
             commit_id=slz.validated_data.get("commit_id", ""),
             version=slz.validated_data.get("version", ""),
             username=request.user.username,
+            user_credentials=get_user_credentials_from_request(request),
         )
 
         return OKJsonResponse(data={"deploy_id": deploy_id})
@@ -342,16 +348,68 @@ class DeployCreateApi(generics.CreateAPIView):
     name="get",
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
-        tags=["WebAPI.release"],
+        tags=["WebAPI.Release"],
         operation_description="编程网关pass部署详情查询",
     ),
 )
-class DeployRetrieveApi(generics.RetrieveAPIView):
+class ProgrammableDeployRetrieveApi(generics.RetrieveAPIView):
     def get_queryset(self):
         return ProgrammableGatewayDeployHistory.objects.filter(gateway=self.request.gateway)
 
     def get(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), deploy_id=self.kwargs["deploy_id"])
         # 查询pass部署详情
-        data = get_deploy_detail(deploy_id=instance.deploy_id)
+        data = get_deployment_result(
+            app_code=request.gateway.name,
+            module="default",
+            deploy_id=instance.deploy_id,
+            user_credentials=get_user_credentials_from_request(request),
+        )
         return OKJsonResponse(data=data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: ProgrammableDeployEventGetOutputSLZ()},
+        tags=["WebAPI.Release"],
+        operation_description="编程网关pass部署event查询",
+    ),
+)
+class ProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
+    serializer_class = ProgrammableDeployEventGetOutputSLZ
+
+    def get_queryset(self):
+        return ProgrammableGatewayDeployHistory.objects.filter(gateway=self.request.gateway)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = get_object_or_404(self.get_queryset(), deploy_id=self.kwargs["deploy_id"])
+        # 查询pass部署步骤框架
+        user_credentials = get_user_credentials_from_request(request)
+        events_framework = get_deploy_phases_framework(
+            app_code=request.gateway.name,
+            module="default",
+            env=instance.stage.name,
+            user_credentials=user_credentials,
+        )
+
+        # 查询pass部署实例步骤
+        events_instance = get_deploy_phases_instance(
+            app_code=request.gateway.name,
+            env=instance.stage.name,
+            module="default",
+            deploy_id=instance.deploy_id,
+            user_credentials=user_credentials,
+        )
+        # 查询pass部署事件
+        events = get_pass_deploy_streams_history_events(
+            deploy_id=instance.deploy_id,
+            user_credentials=user_credentials,
+        )
+
+        slz_class = self.get_serializer_class()
+        slz = slz_class(
+            instance,
+            context={"events_framework": events_framework, "events_instance": events_instance, "events": events},
+        )
+        return OKJsonResponse(data=slz.data)

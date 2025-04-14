@@ -17,7 +17,7 @@
 #
 from django.conf import settings
 
-from apigateway.common.user_credentials import UserCredentials, get_user_credentials_from_request
+from apigateway.utils.user_credentials import UserCredentials, get_user_credentials_from_request
 
 
 def test_get_user_access_token_from_request(mocker, faker):

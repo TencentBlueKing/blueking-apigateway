@@ -28,6 +28,11 @@ urlpatterns = [
         name="stage.retrieve-update-destroy",
     ),
     path(
+        "<int:id>/programmable/",
+        views.ProgrammableStageDeployRetrieveApi.as_view(),
+        name="stage.retrieve-update-destroy",
+    ),
+    path(
         "<int:id>/vars/",
         views.StageVarsRetrieveUpdateApi.as_view(),
         name="stage.vars-retrieve-update",

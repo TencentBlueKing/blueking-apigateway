@@ -28,7 +28,7 @@ class ProgrammableGatewayDeployHistory(TimestampedModelMixin, OperatorModelMixin
     Deploy Code gateway History
     """
 
-    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
+    gateway = models.ForeignKey(Gateway, on_delete=models.CASCADE)
     stage = models.ForeignKey(Stage, on_delete=models.CASCADE)
     branch = models.CharField(max_length=128, blank=True, null=True)
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))

@@ -42,7 +42,7 @@ urlpatterns = [
     path("diff/", ResourceVersionDiffRetrieveApi.as_view(), name="gateway.resource_version.diff"),
     path("next-version/", NextResourceVersionRetrieveApi.as_view(), name="gateway.resource_version.next_version"),
     path(
-        "next-deploy-version/",
+        "programmable/next-deploy-version/",
         NextProgramGatewayResourceVersionRetrieveApi.as_view(),
         name="gateway.resource_version.next_deploy_version",
     ),

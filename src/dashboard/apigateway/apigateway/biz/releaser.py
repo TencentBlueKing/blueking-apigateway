@@ -30,7 +30,6 @@ from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeplo
 from apigateway.biz.audit import Auditor
 from apigateway.biz.validators import PublishValidator, ReleaseValidationError
 from apigateway.common.event.event import PublishEventReporter
-from apigateway.common.user_credentials import UserCredentials
 from apigateway.components.paas import deploy_paas_app, set_paas_stage_env
 from apigateway.controller.tasks import (
     release_gateway_by_registry,
@@ -46,6 +45,7 @@ from apigateway.core.models import (
     Stage,
 )
 from apigateway.utils.django import get_model_dict
+from apigateway.utils.user_credentials import UserCredentials
 
 
 class ReleaseError(Exception):
@@ -225,7 +225,14 @@ def release(
 class ProgramGatewayReleaser:
     @staticmethod
     def deploy(
-        gateway: Gateway, stage_id: int, branch: str, commit_id: str, version: str, comment: str, username: str = ""
+        gateway: Gateway,
+        stage_id: int,
+        branch: str,
+        commit_id: str,
+        version: str,
+        comment: str,
+        user_credentials: Optional[UserCredentials] = None,
+        username: str = "",
     ) -> str:
         """
         编程网关部署
@@ -237,7 +244,12 @@ class ProgramGatewayReleaser:
 
         # 调用pass平台部署接口
         deploy_id = deploy_paas_app(
-            app_code=gateway.name, module="default", stag_name=stage.name, revision=commit_id, branch=branch
+            app_code=gateway.name,
+            module="default",
+            env=stage.name,
+            revision=commit_id,
+            branch=branch,
+            user_credentials=user_credentials,
         )
 
         # 创建部署历史

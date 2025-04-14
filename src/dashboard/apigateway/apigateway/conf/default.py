@@ -68,6 +68,9 @@ DEBUG = env.bool("DEBUG", False)
 # 是否为本地开发环境
 IS_LOCAL = env.bool("DASHBOARD_IS_LOCAL", default=False)
 
+# te 还是 ee
+EDITION = env.str("EDITION", "ee")
+
 ALLOWED_HOSTS = ["*"]
 
 # Application definition
