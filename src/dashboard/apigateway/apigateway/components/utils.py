@@ -31,7 +31,7 @@ def inject_accept_language(request):
         request.headers["Accept-Language"] = language
 
 
-def gen_gateway_headers(user_credentials: Optional[UserCredentials]) -> Dict[str, str]:
+def gen_gateway_headers(user_credentials: Optional[UserCredentials] = None) -> Dict[str, str]:
     bk_api_authorization = {
         "bk_app_code": settings.BK_APP_CODE,
         "bk_app_secret": settings.BK_APP_SECRET,
