@@ -27,7 +27,6 @@ from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     DEFAULT_STAGE_NAME,
-    GatewayKindEnum,
     PublishSourceEnum,
     StageStatusEnum,
 )
@@ -157,7 +156,7 @@ class StageHandler:
         )
         backend_config.save()
 
-        if gateway.kind == GatewayKindEnum.PROGRAMMABLE.value:
+        if gateway.is_programmable:
             # create stage: stage for programmable gateway
             pre_stage = Stage.objects.create(
                 gateway=gateway,

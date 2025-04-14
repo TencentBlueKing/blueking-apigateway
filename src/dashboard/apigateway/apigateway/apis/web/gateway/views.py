@@ -353,7 +353,7 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        if instance.kind != GatewayKindEnum.PROGRAMMABLE.value:
+        if not instance.is_programmable:
             raise error_codes.FAILED_PRECONDITION.format(_("当前网关类型不支持开发指引。"), replace=True)
 
         language = instance.extra_info["language"]

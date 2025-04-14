@@ -68,6 +68,9 @@ DEBUG = env.bool("DEBUG", False)
 # 是否为本地开发环境
 IS_LOCAL = env.bool("DASHBOARD_IS_LOCAL", default=False)
 
+# te 还是 ee
+EDITION = env.str("EDITION", "ee")
+
 ALLOWED_HOSTS = ["*"]
 
 # Application definition
@@ -831,6 +834,7 @@ GLOBAL_GATEWAY_FEATURE_FLAG = {
 # ==============================================================================
 # 后续前端环境变量尽量走这个接口，而不是通过 src/dashboard-front/index.html + src/constant/config.ts 传入
 ENV_VARS_FOR_FRONTEND = {
+    "EDITION": EDITION,
     "BK_APP_CODE": BK_APP_CODE,
     "BK_DEFAULT_TEST_APP_CODE": DEFAULT_TEST_APP["bk_app_code"],
     "BK_API_RESOURCE_URL_TMPL": RESOURCE_DOC_URL_TMPL,

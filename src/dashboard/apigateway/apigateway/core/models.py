@@ -144,7 +144,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
 
     @extra_info.setter
     def extra_info(self, data: Dict):
-        if self.kind == GatewayKindEnum.PROGRAMMABLE.value:
+        if self.is_programmable:
             if data.get("language") not in ProgrammableGatewayLanguageEnum.get_values():
                 raise ValueError("language should be one of [python, go]")
 
@@ -165,6 +165,10 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         用户是否有网关操作权限，只有网关维护者有权限，创建者仅作为标记，不具有权限
         """
         return username in self.maintainers
+
+    @property
+    def is_programmable(self):
+        return self.kind == GatewayKindEnum.PROGRAMMABLE.value
 
     @property
     def is_active(self):
