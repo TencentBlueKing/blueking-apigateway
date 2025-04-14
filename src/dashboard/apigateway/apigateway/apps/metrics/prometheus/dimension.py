@@ -430,21 +430,35 @@ class MetricsSummaryFactory:
         MetricsSummaryEnum.REQUESTS_FAILED_TOTAL.value: "failed_count",
     }
 
-    def __init__(self, stage_name, data):
+    def __init__(
+        self,
+        stage_name: str,
+        resource_id: Optional[int],
+        bk_app_code: Optional[str],
+        metrics: str,
+        time_dimension: str,
+        time_start: int,
+        time_end: int,
+    ):
         self.stage_name = stage_name
-        self.data = data
+        self.resource_id = resource_id
+        self.bk_app_code = bk_app_code
+        self.metrics = metrics
+        self.time_dimension = time_dimension
+        self.time_start = time_start
+        self.time_end = time_end
 
     def _build_query_params(self):
         query_params = {
             "stage_name": self.stage_name,
-            "start_time__gte": timezone.datetime.fromtimestamp(self.data["time_start"]),
-            "end_time__lte": timezone.datetime.fromtimestamp(self.data["time_end"]),
+            "start_time__gte": timezone.datetime.fromtimestamp(self.time_start),
+            "end_time__lte": timezone.datetime.fromtimestamp(self.time_end),
         }
 
-        if self.data.get("bk_app_code"):
-            query_params["bk_app_code"] = self.data["bk_app_code"]
-        if self.data.get("resource_id"):
-            query_params["resource_id"] = self.data["resource_id"]
+        if self.bk_app_code:
+            query_params["bk_app_code"] = self.bk_app_code
+        if self.resource_id:
+            query_params["resource_id"] = self.resource_id
 
         return query_params
 
@@ -452,11 +466,11 @@ class MetricsSummaryFactory:
         # 查询参数
         query_params = self._build_query_params()
         # 时间维度
-        trunc_func = self.TRUNC_FUNC_MAP.get(self.data["time_dimension"], TruncDate)
+        trunc_func = self.TRUNC_FUNC_MAP.get(self.time_dimension, TruncDate)
         # 统计字段
-        count_field = self.COUNT_FIELD_MAP.get(self.data["metrics"], "total_count")
+        count_field = self.COUNT_FIELD_MAP.get(self.metrics, "total_count")
         # 查询 model
-        model = StatisticsAppRequestByDay if self.data.get("bk_app_code") else StatisticsGatewayRequestByDay
+        model = StatisticsAppRequestByDay if self.bk_app_code else StatisticsGatewayRequestByDay
 
         return (
             model.objects.filter(**query_params)

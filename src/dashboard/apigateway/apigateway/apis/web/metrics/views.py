@@ -200,7 +200,15 @@ class QuerySummaryApi(generics.ListAPIView):
         if not stage_name:
             raise Http404
 
-        queryset = MetricsSummaryFactory(stage_name, data).queryset()
+        queryset = MetricsSummaryFactory(
+            stage_name,
+            data.get("resource_id", 0),
+            data.get("bk_app_code"),
+            data["metrics"],
+            data["time_dimension"],
+            data["time_start"],
+            data["time_end"],
+        ).queryset()
         datapoints = [[obj["count_sum"], obj["time_period"]] for obj in queryset.iterator(chunk_size=1000)]
 
         return OKJsonResponse(data={"series": {"datapoints": datapoints}})
@@ -224,7 +232,15 @@ class QuerySummaryExportApi(generics.CreateAPIView):
         if not stage_name:
             raise Http404
 
-        queryset = MetricsSummaryFactory(stage_name, data).queryset()
+        queryset = MetricsSummaryFactory(
+            stage_name,
+            data.get("resource_id", 0),
+            data.get("bk_app_code"),
+            data["metrics"],
+            data["time_dimension"],
+            data["time_start"],
+            data["time_end"],
+        ).queryset()
 
         content = self._get_csv_content(queryset)
         response = DownloadableResponse(content, filename=f"bk_apigw_metrics_{self.request.gateway.name}.csv")
