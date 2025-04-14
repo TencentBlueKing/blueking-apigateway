@@ -309,7 +309,7 @@ class RelishHistoryEventsRetrieveAPI(generics.RetrieveAPIView):
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        request_body=DeployInputSLZ,
+        request_body=DeployInputSLZ(),
         responses={status.HTTP_200_OK: ""},
         tags=["WebAPI.release"],
         operation_description="编程网关部署接口",
@@ -341,7 +341,6 @@ class DeployCreateApi(generics.CreateAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        request_body=DeployInputSLZ,
         responses={status.HTTP_200_OK: ""},
         tags=["WebAPI.release"],
         operation_description="编程网关pass部署详情查询",
