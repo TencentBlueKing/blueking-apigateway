@@ -19,6 +19,9 @@ export const useGetApiList = (filter: any) => {
         offset: pagination.value.limit * pagination.value.offset,
         ...filter.value,
       };
+      if (parmas.kind === 'all') {
+        parmas.kind = '';
+      }
       const res = await getGatewaysList(parmas);
       dataList.value = res.results;
       return dataList.value;
