@@ -16,18 +16,29 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import csv
+from io import StringIO
+from typing import Any, List
 
 from django.http import Http404
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apps.metrics.constants import MetricsInstantEnum, MetricsRangeEnum
-from apigateway.apps.metrics.prometheus.dimension import MetricsInstantFactory, MetricsRangeFactory
+from apigateway.apps.metrics.constants import (
+    MetricsInstantEnum,
+    MetricsRangeEnum,
+)
+from apigateway.apps.metrics.prometheus.dimension import (
+    MetricsInstantFactory,
+    MetricsRangeFactory,
+    MetricsSummaryFactory,
+)
 from apigateway.core.models import Resource, Stage
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.time import MetricsSmartTimeRange
 
-from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ
+from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ, MetricsQuerySummaryInputSLZ
 
 
 class QueryRangeApi(generics.ListAPIView):
@@ -171,3 +182,89 @@ class QueryInstantApi(generics.ListAPIView):
             return OKJsonResponse(data=health_rate_result)
 
         return OKJsonResponse(data=requests_total_result)
+
+
+class QuerySummaryApi(generics.ListAPIView):
+    @swagger_auto_schema(
+        query_serializer=MetricsQuerySummaryInputSLZ(),
+        responses={status.HTTP_200_OK: ""},
+        operation_description="查询请求总量/失败请求总量",
+        tags=["WebAPI.Metrics"],
+    )
+    def get(self, request, *args, **kwargs):
+        slz = MetricsQuerySummaryInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
+        if not stage_name:
+            raise Http404
+
+        queryset = MetricsSummaryFactory(
+            stage_name,
+            data.get("resource_id", 0),
+            data.get("bk_app_code"),
+            data["metrics"],
+            data["time_dimension"],
+            data["time_start"],
+            data["time_end"],
+        ).queryset()
+        datapoints = [[obj["count_sum"], obj["time_period"]] for obj in queryset.iterator(chunk_size=1000)]
+
+        return OKJsonResponse(data={"series": {"datapoints": datapoints}})
+
+
+class QuerySummaryExportApi(generics.CreateAPIView):
+    @swagger_auto_schema(
+        decorator=swagger_auto_schema(
+            operation_description="请求总量/失败请求总量导出",
+            request_body=MetricsQuerySummaryInputSLZ,
+            responses={status.HTTP_200_OK: ""},
+            tags=["WebAPI.Metrics"],
+        ),
+    )
+    def get(self, request, *args, **kwargs):
+        slz = MetricsQuerySummaryInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
+        if not stage_name:
+            raise Http404
+
+        queryset = MetricsSummaryFactory(
+            stage_name,
+            data.get("resource_id", 0),
+            data.get("bk_app_code"),
+            data["metrics"],
+            data["time_dimension"],
+            data["time_start"],
+            data["time_end"],
+        ).queryset()
+
+        content = self._get_csv_content(queryset)
+        response = DownloadableResponse(content, filename=f"bk_apigw_metrics_{self.request.gateway.name}.csv")
+        # use utf-8-sig for windows
+        response.charset = "utf-8-sig" if "windows" in request.headers.get("User-Agent", "").lower() else "utf-8"
+
+        return response
+
+    def _get_csv_content(self, data: List[Any]) -> str:
+        """
+        将筛选出的权限数据，整理为 csv 格式内容
+        """
+        headers = [
+            "time_period",
+            "count_sum",
+        ]
+        header_row = {
+            "time_period": _("日期"),
+            "count_sum": _("请求总数"),
+        }
+
+        content = StringIO()
+        io_csv = csv.DictWriter(content, fieldnames=headers, extrasaction="ignore")
+        io_csv.writerow(header_row)
+        io_csv.writerows(data)
+
+        return content.getvalue()
