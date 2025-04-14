@@ -302,5 +302,5 @@ class NextProgramGatewayResourceVersionRetrieveApi(generics.RetrieveAPIView):
                 data={"version": new_version_str},
             )
         return OKJsonResponse(
-            data={"version": "1.0.0+" + stage_name},
+            data={"version": "1.0.0"},
         )

@@ -32,11 +32,11 @@ from .views import (
 urlpatterns = [
     path("", ReleaseCreateApi.as_view(), name="gateway.release.create"),
     path(
-        "deploy",
+        "deploy/",
         include(
             [
                 path("", DeployCreateApi.as_view(), name="gateway.deploy.create"),
-                path("/<str>:deploy_id", DeployRetrieveApi.as_view(), name="gateway.deploy.get"),
+                path("<str:deploy_id>/", DeployRetrieveApi.as_view(), name="gateway.deploy.get"),
             ]
         ),
     ),
