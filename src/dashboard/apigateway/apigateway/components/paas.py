@@ -31,8 +31,8 @@ def get_paas_host() -> str:
     获取 paas url
     """
     gateway_name = "paasv3"
-    # if settings.EDITION == "te":
-    #     gateway_name = "paasv3"
+    if settings.EDITION == "te":
+        gateway_name = "paasv3"
     return settings.BK_API_URL_TMPL.format(api_name=gateway_name)
 
 
