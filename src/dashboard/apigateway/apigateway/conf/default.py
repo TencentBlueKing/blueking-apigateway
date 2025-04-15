@@ -272,6 +272,36 @@ DATABASES = {
     },
 }
 
+## database ssl
+BK_APIGW_DATABASE_TLS_ENABLED = env.bool("BK_APIGW_DATABASE_TLS_ENABLED", False)
+if BK_APIGW_DATABASE_TLS_ENABLED:
+    default_ssl_options = {
+        "ca": env.str("BK_APIGW_DATABASE_TLS_CERT_CA_FILE", ""),
+    }
+    # mTLS
+    default_cert_file = env.str("BK_APIGW_DATABASE_TLS_CERT_FILE", "")
+    default_key_file = env.str("BK_APIGW_DATABASE_TLS_CERT_KEY_FILE", "")
+    if default_cert_file and default_key_file:
+        default_ssl_options["cert"] = default_cert_file
+        default_ssl_options["key"] = default_key_file
+
+    DATABASES["default"]["OPTIONS"]["ssl"] = default_ssl_options
+
+BK_ESB_DATABASE_TLS_ENABLED = env.bool("BK_ESB_DATABASE_TLS_ENABLED", False)
+if BK_ESB_DATABASE_TLS_ENABLED:
+    bkcore_ssl_options = {
+        "ca": env.str("BK_ESB_DATABASE_TLS_CERT_CA_FILE", ""),
+    }
+    # mTLS
+    bkcore_cert_file = env.str("BK_ESB_DATABASE_TLS_CERT_FILE", "")
+    bkcore_key_file = env.str("BK_ESB_DATABASE_TLS_CERT_KEY_FILE", "")
+    if bkcore_cert_file and bkcore_key_file:
+        bkcore_ssl_options["cert"] = bkcore_cert_file
+        bkcore_ssl_options["key"] = bkcore_key_file
+
+    DATABASES["bkcore"]["OPTIONS"]["ssl"] = bkcore_ssl_options
+
+
 # ==============================================================================
 # redis 配置
 # ==============================================================================
