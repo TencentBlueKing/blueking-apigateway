@@ -20,6 +20,7 @@ import pytest
 
 from apigateway.utils.version import (
     _filter_the_valid_versions,
+    get_nex_version_with_type,
     get_next_version,
     is_version1_greater_than_version2,
     max_version,
@@ -77,3 +78,24 @@ class TestUtilsVersion:
     def test_is_version1_greater_than_version2(self, version1, version2, expected):
         result = is_version1_greater_than_version2(version1, version2)
         assert result == expected
+
+    @pytest.mark.parametrize(
+        "current_version, version_type, expected",
+        [
+            # 正常递增
+            ("1.2.3", "major", "2.0.0"),
+            ("1.2.3", "minor", "1.3.0"),
+            ("1.2.3", "patch", "1.2.4"),
+            # 带构建元数据
+            ("1.0.0+prod", "major", "2.0.0"),
+            ("1.2.3-rc1+sha123", "minor", "1.3.0"),
+            # 非标准版本
+            ("3", "major", "4.0.0"),
+            ("4.5", "patch", "4.5.1"),
+            ("v5.6.7", "minor", "5.7.0"),  # 需要预处理的情况
+            # 边界条件
+            ("0.0.0", "major", "1.0.0"),
+        ],
+    )
+    def test_generate_new_version_normal(self, current_version, version_type, expected):
+        assert get_nex_version_with_type(current_version, version_type) == expected

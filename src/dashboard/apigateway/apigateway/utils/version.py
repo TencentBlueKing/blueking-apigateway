@@ -59,6 +59,31 @@ def get_next_version(current_version: str) -> str:
         return ""
 
 
+def parse_version(version: str) -> tuple[int, int, int]:
+    """解析语义化版本字符串（如 1.2.3+prod），返回 (major, minor, patch)"""
+    std_version = parse(version)
+    return std_version.major, std_version.minor, std_version.micro
+
+
+def get_nex_version_with_type(old_version: str, version_type: str) -> str:
+    (
+        major,
+        minor,
+        patch,
+    ) = parse_version(old_version)
+    if version_type == "major":
+        major += 1
+        minor, patch = 0, 0
+    elif version_type == "minor":
+        minor += 1
+        patch = 0
+    elif version_type == "patch":
+        patch += 1
+    else:
+        raise ValueError("Invalid version type")
+    return f"{major}.{minor}.{patch}"
+
+
 def is_version1_greater_than_version2(version1: str, version2: str) -> bool:
     try:
         return version.parse(version1) > version.parse(version2)

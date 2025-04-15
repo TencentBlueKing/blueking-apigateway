@@ -100,6 +100,7 @@ INSTALLED_APPS = [
     "apigateway.apps.metrics",
     "apigateway.apps.support",
     "apigateway.apps.openapi",
+    "apigateway.apps.programmable_gateway",
     "django_prometheus",
     "bkpaas_auth",
     "apigateway.account",
@@ -529,6 +530,7 @@ USE_GATEWAY_BK_ESB_MANAGE_COMPONENT_PERMISSIONS = env.bool("USE_GATEWAY_BK_ESB_M
 # paas 开发者中心权限续期地址
 BK_PAAS3_URL = env.str("BK_PAAS3_URL", "")
 PAAS_RENEW_API_PERMISSION_URL = f"{BK_PAAS3_URL}/developer-center/apps/{{bk_app_code}}/cloudapi"
+
 
 # Requests pool config
 REQUESTS_POOL_CONNECTIONS = env.int("REQUESTS_POOL_CONNECTIONS", default=20)

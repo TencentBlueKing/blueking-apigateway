@@ -17,10 +17,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
-from typing import Dict
+from typing import Dict, Optional
 
 from django.conf import settings
 from django.utils.translation import get_language
+
+from apigateway.utils.user_credentials import UserCredentials
 
 
 def inject_accept_language(request):
@@ -29,15 +31,16 @@ def inject_accept_language(request):
         request.headers["Accept-Language"] = language
 
 
-def gen_gateway_headers() -> Dict[str, str]:
+def gen_gateway_headers(user_credentials: Optional[UserCredentials] = None) -> Dict[str, str]:
+    bk_api_authorization = {
+        "bk_app_code": settings.BK_APP_CODE,
+        "bk_app_secret": settings.BK_APP_SECRET,
+    }
+    if user_credentials:
+        bk_api_authorization.update(user_credentials.to_dict())
     headers = {
         "Content-Type": "application/json",
-        "X-Bkapi-Authorization": json.dumps(
-            {
-                "bk_app_code": settings.BK_APP_CODE,
-                "bk_app_secret": settings.BK_APP_SECRET,
-            }
-        ),
+        "X-Bkapi-Authorization": json.dumps(bk_api_authorization),
     }
     language = get_language()
     if language:

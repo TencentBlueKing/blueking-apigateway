@@ -19,6 +19,9 @@
 from django.urls import include, path
 
 from .views import (
+    ProgrammableDeployCreateApi,
+    ProgrammableDeployEventsRetrieveApi,
+    ProgrammableDeployRetrieveApi,
     ReleaseAvailableResourceListApi,
     ReleaseAvailableResourceSchemaRetrieveApi,
     ReleaseCreateApi,
@@ -29,6 +32,22 @@ from .views import (
 
 urlpatterns = [
     path("", ReleaseCreateApi.as_view(), name="gateway.release.create"),
+    path(
+        "programmable/deploy/",
+        include(
+            [
+                path("", ProgrammableDeployCreateApi.as_view(), name="gateway.programmable.deploy.create"),
+                path(
+                    "<str:deploy_id>/", ProgrammableDeployRetrieveApi.as_view(), name="gateway.programmable.deploy.get"
+                ),
+                path(
+                    "<str:deploy_id>/histories/events/",
+                    ProgrammableDeployEventsRetrieveApi.as_view(),
+                    name="gateway.programmable.deploy_histories.events",
+                ),
+            ]
+        ),
+    ),
     path(
         "stages/<int:stage_id>/resources/",
         include(
