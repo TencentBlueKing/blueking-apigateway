@@ -77,6 +77,12 @@
           v-model="apigwId"
           @change="handleGoPage(activeMenuKey, apigwId)"
           :clearable="false">
+          <template #prefix>
+            <span
+              :class="['kind', currentGateway.kind === 0 ? 'normal' : 'program']">
+              {{ currentGateway.kind === 0 ? t('普') : t('编') }}
+            </span>
+          </template>
           <bk-option
             v-for="item in gatewaysList" :key="item.id" :id="item.id" :name="item.name"
           />
@@ -141,6 +147,7 @@ import { cloneDeep } from 'lodash';
 import versionReleaseNote from '@/components/version-release-note.vue';
 import tipsPublishBar from '@/components/tips-publish-bar.vue';
 import { IMenu } from '@/types';
+import { useI18n } from 'vue-i18n';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const route = useRoute();
@@ -150,6 +157,8 @@ const common = useCommon();
 const permission = usePermission();
 const filterData = ref({ name: '' });
 const apigwSelect = ref();
+
+const { t } = useI18n();
 
 const stage = useStage();
 const versionReleaseNoteRef = ref();
@@ -174,6 +183,8 @@ const headerTitle = ref('');
 
 // 当前离开页面的数据
 const curLeavePageData = ref({});
+
+const currentGateway = computed(() => gatewaysList.value.find((apigw: any) => apigw.id === apigwId.value) || {});
 
 const routerViewWrapperClass = computed(() => {
   if (route.meta.customHeader) {
@@ -509,6 +520,26 @@ onMounted(async () => {
     &.is-focus {
       border: 1px solid #3a84ff;
     }
+  }
+}
+.kind {
+  content: ' ';
+  width: 20px;
+  height: 20px;
+  border-radius: 2px;
+  margin: 6px 0px 6px 6px;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  &.normal {
+    color: #1768EF;
+    background: #E1ECFF;
+    border: 1px solid #699DF4;
+  }
+  &.program {
+    color: #299E56;
+    background: #EBFAF0;
+    border: 1px solid #A1E3BA;
   }
 }
 </style>
