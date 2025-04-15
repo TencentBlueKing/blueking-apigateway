@@ -1,15 +1,41 @@
 <template>
   <div class="home-container">
     <div class="title-container flex-row justify-content-between">
-      <div class="flex-1 left">{{ t('我的网关') }} ({{ gatewaysList.length }})</div>
-      <div class="flex-1 flex-row">
+      <!-- <div class="flex-1 left">{{ t('我的网关') }} ({{ gatewaysList.length }})</div> -->
+      <div class="flex-1 left">
         <bk-button
           theme="primary"
+          class="mr4"
           @click="showAddDialog"
         >
           {{ t('新建网关') }}
         </bk-button>
-        <bk-input class="ml10 mr10 search-input" v-model="filterNameData.keyword" :placeholder="t('请输入网关名称')" />
+
+        <!-- <bk-radio-group
+          v-model="tabActive"
+          type="capsule"
+        >
+          <bk-radio-button label="all">{{ t('全部 ({count})', { count: 20 }) }}</bk-radio-button>
+          <bk-radio-button label="created">{{ t('我创建的 ({count})', { count: 40 }) }}</bk-radio-button>
+        </bk-radio-group> -->
+      </div>
+
+
+      <div class="flex-1 flex-row">
+        <bk-select
+          class="gateway-kind-sel"
+          v-model="filterNameData.kind"
+          :clearable="false"
+          :filterable="false"
+        >
+          <bk-option
+            v-for="item in gatewayTypes"
+            :key="item.value"
+            :id="item.value"
+            :name="item.label"
+          />
+        </bk-select>
+        <bk-input class="ml8 mr8 flex-1 search-input" v-model="filterNameData.keyword" :placeholder="t('请输入网关名称')" />
         <bk-select
           v-model="filterKey"
           :clearable="false"
@@ -47,6 +73,11 @@
                 class="name-logo mr10"
                 @click="handleGoPage('apigwResource', item)"
               >
+                <span
+                  :class="['kind', item.kind === 0 ? 'normal' : 'program']"
+                  v-bk-tooltips="{ content: item.kind === 0 ? t('普通网关') : t('可编程网关') }">
+                  {{ item.kind === 0 ? t('普') : t('编') }}
+                </span>
                 {{ item.name[0].toUpperCase() }}
               </div>
               <span
@@ -84,12 +115,17 @@
                 { 'default-c': item.hasOwnProperty('resource_count') }
               ]"
             >
-              <!-- {{ item.resource_count }} -->
-              <router-link :to="{ name: 'apigwResource', params: { id: item.id } }" target="_blank">
-                <span :style="{ color: item.resource_count === 0 ? '#c4c6cc' : '#3a84ff' }">
-                  {{ item.resource_count }}
-                </span>
-              </router-link>
+              <template v-if="item.kind === 0">
+                <!-- {{ item.resource_count }} -->
+                <router-link :to="{ name: 'apigwResource', params: { id: item.id } }" target="_blank">
+                  <span :style="{ color: item.resource_count === 0 ? '#c4c6cc' : '#3a84ff' }">
+                    {{ item.resource_count }}
+                  </span>
+                </router-link>
+              </template>
+              <template v-else>
+                <span class="none">--</span>
+              </template>
             </div>
             <div class="flex-1 of2">
               <bk-button
@@ -240,15 +276,30 @@ const user = useUser();
 const router = useRouter();
 const common = useCommon();
 
+// const tabActive = ref<string>('all');
 const formRef = ref(null);
 const filterKey = ref<string>('updated_time');
-const filterNameData = ref({ keyword: '' });
+const filterNameData = ref({ keyword: '', kind: 'all' });
 // 弹窗
 const dialogData = ref<IDialog>({
   isShow: false,
   title: t('新建网关'),
   loading: false,
 });
+const gatewayTypes = ref([
+  {
+    label: t('全部'),
+    value: 'all',
+  },
+  {
+    label: t('普通网关'),
+    value: '0',
+  },
+  {
+    label: t('可编程网关'),
+    value: '1',
+  },
+]);
 
 
 // 新增网关弹窗字段interface
@@ -453,7 +504,7 @@ const tipsContent = (data: any[]) => {
 };
 
 const handleClearFilterKey = () => {
-  filterNameData.value = { keyword: '' };
+  filterNameData.value = { keyword: '', kind: '' };
   filterKey.value = 'updated_time';
   getGatewaysListData();
   updateTableEmptyConfig();
@@ -516,6 +567,9 @@ watch(
       flex: 0 0 60%;
     }
   }
+  .gateway-kind-sel {
+    width: 150px;
+  }
   .select-cls {
     flex-shrink: 0;
     width: 126px;
@@ -577,6 +631,28 @@ watch(
           font-size: 26px;
           font-weight: 700;
           cursor: pointer;
+          position: relative;
+          .kind {
+            content: ' ';
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            border-radius: 2px;
+            top: 0;
+            left: 0;
+            font-size: 10px;
+            line-height: 12px;
+            &.normal {
+              color: #1768EF;
+              background: #E1ECFF;
+              border: 1px solid #699DF4;
+            }
+            &.program {
+              color: #299E56;
+              background: #EBFAF0;
+              border: 1px solid #A1E3BA;
+            }
+          }
         }
         .name{
           font-weight: 700;
@@ -643,6 +719,9 @@ watch(
 
   .default-c {
     cursor: pointer;
+  }
+  .none {
+    color: #C4C6CC;
   }
 }
 .ag-dot{
