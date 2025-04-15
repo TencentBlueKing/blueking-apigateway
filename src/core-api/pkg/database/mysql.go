@@ -53,6 +53,8 @@ const (
 const (
 	// sql errCode
 	DuplicateErrCode uint16 = 1062
+
+	defaultTLSConfigName = "custom"
 )
 
 // DBClient MySQL DB Instance
@@ -148,7 +150,7 @@ func initMysqlTLS(tlsCertCaFile, tlsCertFile, tlsCertKeyFile string) {
 		tlsConfig.Certificates = clientCert
 	}
 
-	err = mysql.RegisterTLSConfig("custom", tlsConfig)
+	err = mysql.RegisterTLSConfig(defaultTLSConfigName, tlsConfig)
 	if err != nil {
 		logging.GetLogger().Fatalf("failed to register TLS config: %s", err)
 	}
@@ -176,7 +178,7 @@ func NewDBClient(cfg *config.Database) *DBClient {
 
 	if cfg.TLS.Enabled {
 		initMysqlTLS(cfg.TLS.CertCaFile, cfg.TLS.CertFile, cfg.TLS.CertKeyFile)
-		dataSource = fmt.Sprintf("%s&tls=custom", dataSource)
+		dataSource = fmt.Sprintf("%s&tls=%s", dataSource, defaultTLSConfigName)
 	}
 
 	maxOpenConns := defaultMaxOpenConns
