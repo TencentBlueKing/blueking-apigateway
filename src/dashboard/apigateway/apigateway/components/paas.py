@@ -155,7 +155,7 @@ def deploy_paas_app(
     return resp_data["deployment_id"]
 
 
-def module_offline(app_code: str, module: str, env: str, user_credentials: Optional[UserCredentials] = None):
+def paas_app_module_offline(app_code: str, module: str, env: str, user_credentials: Optional[UserCredentials] = None):
     """
     下线应用
     """
@@ -184,7 +184,7 @@ def set_paas_stage_env(app_code: str, module: str, env: Dict[str, Any]):
     return True
 
 
-def get_deploy_phases_framework(
+def get_paas_deploy_phases_framework(
     app_code: str, module: str, env: str, user_credentials: Optional[UserCredentials] = None
 ):
     """
@@ -208,7 +208,7 @@ def get_deploy_phases_framework(
     return resp_data
 
 
-def get_deploy_phases_instance(
+def get_paas_deploy_phases_instance(
     app_code: str, module: str, env: str, deploy_id: str, user_credentials: Optional[UserCredentials] = None
 ):
     """
@@ -256,7 +256,7 @@ def get_pass_deploy_streams_history_events(deploy_id: str, user_credentials: Opt
     return resp_data
 
 
-def get_deployment_result(
+def get_paas_deployment_result(
     app_code: str, module: str, deploy_id: str, user_credentials: Optional[UserCredentials] = None
 ):
     """

@@ -35,9 +35,9 @@ from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.components.paas import (
-    get_deploy_phases_framework,
-    get_deploy_phases_instance,
-    get_deployment_result,
+    get_paas_deploy_phases_framework,
+    get_paas_deploy_phases_instance,
+    get_paas_deployment_result,
     get_pass_deploy_streams_history_events,
 )
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory
@@ -359,7 +359,7 @@ class ProgrammableDeployRetrieveApi(generics.RetrieveAPIView):
     def get(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), deploy_id=self.kwargs["deploy_id"])
         # 查询pass部署详情
-        data = get_deployment_result(
+        data = get_paas_deployment_result(
             app_code=request.gateway.name,
             module="default",
             deploy_id=instance.deploy_id,
@@ -386,7 +386,7 @@ class ProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
         instance = get_object_or_404(self.get_queryset(), deploy_id=self.kwargs["deploy_id"])
         # 查询pass部署步骤框架
         user_credentials = get_user_credentials_from_request(request)
-        events_framework = get_deploy_phases_framework(
+        events_framework = get_paas_deploy_phases_framework(
             app_code=request.gateway.name,
             module="default",
             env=instance.stage.name,
@@ -394,7 +394,7 @@ class ProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
         )
 
         # 查询pass部署实例步骤
-        events_instance = get_deploy_phases_instance(
+        events_instance = get_paas_deploy_phases_instance(
             app_code=request.gateway.name,
             env=instance.stage.name,
             module="default",

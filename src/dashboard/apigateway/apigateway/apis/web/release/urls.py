@@ -36,12 +36,14 @@ urlpatterns = [
         "programmable/deploy/",
         include(
             [
-                path("", ProgrammableDeployCreateApi.as_view(), name="gateway.deploy.create"),
-                path("<str:deploy_id>/", ProgrammableDeployRetrieveApi.as_view(), name="gateway.deploy.get"),
+                path("", ProgrammableDeployCreateApi.as_view(), name="gateway.programmable.deploy.create"),
+                path(
+                    "<str:deploy_id>/", ProgrammableDeployRetrieveApi.as_view(), name="gateway.programmable.deploy.get"
+                ),
                 path(
                     "<str:deploy_id>/histories/events/",
                     ProgrammableDeployEventsRetrieveApi.as_view(),
-                    name="gateway.deploy_histories.events",
+                    name="gateway.programmable.deploy_histories.events",
                 ),
             ]
         ),

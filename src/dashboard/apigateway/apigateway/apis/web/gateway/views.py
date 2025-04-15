@@ -34,7 +34,7 @@ from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
-from apigateway.components.paas import create_paas_app, module_offline
+from apigateway.components.paas import create_paas_app, paas_app_module_offline
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import (
     GatewayKindEnum,
@@ -303,11 +303,11 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
             source = PublishSourceEnum.GATEWAY_ENABLE if instance.is_active else PublishSourceEnum.GATEWAY_DISABLE
             trigger_gateway_publish(source, request.user.username, instance.id)
             # todo: 编程网关启用需要特殊处理
-            if instance.kind == GatewayKindEnum.PROGRAMMABLE.value and source == PublishSourceEnum.GATEWAY_DISABLE:
+            if instance.is_programmable and source == PublishSourceEnum.GATEWAY_DISABLE:
                 # 编程网关停用时，需要调用paas的module_offline接口下架所有环境
                 active_stages = Stage.objects.get_gateway_name_to_active_stage_names([instance]).get(instance.name)
                 for stage_name in active_stages:
-                    module_offline(
+                    paas_app_module_offline(
                         app_code=request.gateway.name,
                         module="default",
                         env=stage_name,

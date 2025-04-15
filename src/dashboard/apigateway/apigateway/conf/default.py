@@ -536,6 +536,10 @@ PAAS_RENEW_API_PERMISSION_URL = f"{BK_PAAS3_URL}/developer-center/apps/{{bk_app_
 REQUESTS_POOL_CONNECTIONS = env.int("REQUESTS_POOL_CONNECTIONS", default=20)
 REQUESTS_POOL_MAXSIZE = env.int("REQUESTS_POOL_MAXSIZE", default=20)
 
+# 可编程网关开发文档链接地址
+PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL = env.str("PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL", "")
+PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_GO_URL = env.str("PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_GO_URL", "")
+
 # ==============================================================================
 # bkpaas-auth 配置
 # ==============================================================================
@@ -826,6 +830,23 @@ GLOBAL_GATEWAY_FEATURE_FLAG = {
     # 2024-02-20 in 1.13 has no support for FEATURE_FLAG_MICRO_GATEWAY_ENABLED, comment it until it's supported
     # "MICRO_GATEWAY_ENABLED": env.bool("FEATURE_FLAG_MICRO_GATEWAY_ENABLED", False),
 }
+
+# ==============================================================================
+# 提供给前端的环境变量值
+# ==============================================================================
+# 后续前端环境变量尽量走这个接口，而不是通过 src/dashboard-front/index.html + src/constant/config.ts 传入
+ENV_VARS_FOR_FRONTEND = {
+    "EDITION": EDITION,
+    "BK_APP_CODE": BK_APP_CODE,
+    "BK_DEFAULT_TEST_APP_CODE": DEFAULT_TEST_APP["bk_app_code"],
+    "BK_API_RESOURCE_URL_TMPL": RESOURCE_DOC_URL_TMPL,
+    "BK_COMPONENT_API_URL": BK_COMPONENT_API_URL,
+    "BK_PAAS_APP_REPO_URL_TMPL": env.str("BK_PAAS_APP_REPO_URL_TMPL", ""),
+    "BK_DASHBOARD_FE_URL": DASHBOARD_FE_URL,
+    "BK_DASHBOARD_URL": DASHBOARD_URL,
+    "BK_DASHBOARD_CSRF_COOKIE_NAME": CSRF_COOKIE_NAME,
+}
+
 
 # ==============================================================================
 # 网关资源数量限制
