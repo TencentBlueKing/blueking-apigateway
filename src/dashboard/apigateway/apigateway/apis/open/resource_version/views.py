@@ -153,7 +153,7 @@ class ResourceVersionGetLatestApi(generics.RetrieveAPIView):
             "OK",
             data={
                 "version": resource_version.version,
-                "name": resource_version.name,
-                "title": resource_version.title,
+                "name": "-",
+                "title": "-",
             },
         )
