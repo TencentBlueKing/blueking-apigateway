@@ -50,6 +50,13 @@ type Logger struct {
 	API     LogConfig
 }
 
+type TLS struct {
+	Enabled     bool
+	CertCaFile  string
+	CertFile    string
+	CertKeyFile string
+}
+
 // Database is the config for database connection
 type Database struct {
 	ID       string
@@ -64,6 +71,8 @@ type Database struct {
 	ConnMaxLifetimeSecond int
 	// connect: s
 	Timeout int
+	// tls
+	TLS TLS
 }
 
 // Sentry is the config for sentry

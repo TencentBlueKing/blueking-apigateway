@@ -19,10 +19,14 @@
 package database
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net/url"
+	"os"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/uptrace/opentelemetry-go-extra/otelsql"
 	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
@@ -117,6 +121,39 @@ func (db *DBClient) Close() {
 	}
 }
 
+func initMysqlTLS(tlsCertCaFile, tlsCertFile, tlsCertKeyFile string) {
+	// https://pkg.go.dev/github.com/go-sql-driver/mysql#RegisterTLSConfig
+	rootCertPool := x509.NewCertPool()
+	pem, err := os.ReadFile(tlsCertCaFile)
+	if err != nil {
+		logging.GetLogger().Fatalf("failed to load CA certificate: %s", err)
+	}
+
+	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+		logging.GetLogger().Fatal("failed to append CA certificate")
+	}
+
+	tlsConfig := &tls.Config{
+		RootCAs: rootCertPool,
+	}
+
+	if tlsCertFile != "" && tlsCertKeyFile != "" {
+		clientCert := make([]tls.Certificate, 0, 1)
+		certs, err := tls.LoadX509KeyPair(tlsCertFile, tlsCertKeyFile)
+		if err != nil {
+			logging.GetLogger().Fatalf("failed to load client certificate and key: %s", err)
+		}
+		clientCert = append(clientCert, certs)
+
+		tlsConfig.Certificates = clientCert
+	}
+
+	err = mysql.RegisterTLSConfig("custom", tlsConfig)
+	if err != nil {
+		logging.GetLogger().Fatalf("failed to register TLS config: %s", err)
+	}
+}
+
 // NewDBClient :
 func NewDBClient(cfg *config.Database) *DBClient {
 	timeout := defaultTimeout
@@ -136,6 +173,11 @@ func NewDBClient(cfg *config.Database) *DBClient {
 		url.QueryEscape("'+00:00'"),
 		timeout,
 	)
+
+	if cfg.TLS.Enabled {
+		initMysqlTLS(cfg.TLS.CertCaFile, cfg.TLS.CertFile, cfg.TLS.CertKeyFile)
+		dataSource = fmt.Sprintf("%s&tls=custom", dataSource)
+	}
 
 	maxOpenConns := defaultMaxOpenConns
 	if cfg.MaxOpenConns > 0 {
