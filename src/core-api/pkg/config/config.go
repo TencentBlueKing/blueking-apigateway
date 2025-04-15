@@ -55,6 +55,8 @@ type TLS struct {
 	CertCaFile  string
 	CertFile    string
 	CertKeyFile string
+	// for testing only, default false is secure; if set true will skip hostname verification, don't enable it in production
+	InsecureSkipVerify bool
 }
 
 // Database is the config for database connection

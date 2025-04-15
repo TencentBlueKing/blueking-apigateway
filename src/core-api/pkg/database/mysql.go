@@ -123,7 +123,7 @@ func (db *DBClient) Close() {
 	}
 }
 
-func initMysqlTLS(tlsCertCaFile, tlsCertFile, tlsCertKeyFile string) {
+func initMysqlTLS(tlsCertCaFile, tlsCertFile, tlsCertKeyFile string, insecureSkipVerify bool) {
 	// https://pkg.go.dev/github.com/go-sql-driver/mysql#RegisterTLSConfig
 	rootCertPool := x509.NewCertPool()
 	pem, err := os.ReadFile(tlsCertCaFile)
@@ -136,7 +136,8 @@ func initMysqlTLS(tlsCertCaFile, tlsCertFile, tlsCertKeyFile string) {
 	}
 
 	tlsConfig := &tls.Config{
-		RootCAs: rootCertPool,
+		RootCAs:            rootCertPool,
+		InsecureSkipVerify: insecureSkipVerify, // Skip hostname verification for IP addresses
 	}
 
 	if tlsCertFile != "" && tlsCertKeyFile != "" {
@@ -177,7 +178,7 @@ func NewDBClient(cfg *config.Database) *DBClient {
 	)
 
 	if cfg.TLS.Enabled {
-		initMysqlTLS(cfg.TLS.CertCaFile, cfg.TLS.CertFile, cfg.TLS.CertKeyFile)
+		initMysqlTLS(cfg.TLS.CertCaFile, cfg.TLS.CertFile, cfg.TLS.CertKeyFile, cfg.TLS.InsecureSkipVerify)
 		dataSource = fmt.Sprintf("%s&tls=%s", dataSource, defaultTLSConfigName)
 	}
 
