@@ -367,6 +367,7 @@ RABBITMQ_HOST = env.str("BK_APIGW_RABBITMQ_HOST", "")
 RABBITMQ_USER = env.str("BK_APIGW_RABBITMQ_USER", "")
 RABBITMQ_PASSWORD = env.str("BK_APIGW_RABBITMQ_PASSWORD", "")
 if all([RABBITMQ_VHOST, RABBITMQ_PORT, RABBITMQ_HOST, RABBITMQ_USER, RABBITMQ_PASSWORD]):
+    # this section not support tls, both rabbitmq and redis
     CELERY_BROKER_URL = f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASSWORD}@{RABBITMQ_HOST}:{RABBITMQ_PORT}/{RABBITMQ_VHOST}"
     CELERY_RESULT_BACKEND = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0"
 else:
@@ -378,7 +379,22 @@ else:
     CELERY_TASK_DEFAULT_QUEUE = env.str(
         "BK_APIGW_CELERY_TASK_DEFAULT_QUEUE", f"{REDIS_PREFIX}bk_apigateway_dashboard_celery"
     )
-    # FIXME: support tls (redis)
+    # support tls
+    if REDIS_TLS_ENABLED:
+        query_string_params = {
+            "ssl_cert_reqs": "CERT_REQUIRED",
+            "ssl_ca_certs": REDIS_TLS_CERT_CA_FILE,
+        }
+        if REDIS_TLS_CERT_KEY_FILE and REDIS_TLS_CERT_FILE:
+            query_string_params["ssl_keyfile"] = REDIS_TLS_CERT_KEY_FILE
+            query_string_params["ssl_certfile"] = REDIS_TLS_CERT_FILE
+
+        import urllib.parse
+
+        broker_url = f"rediss://:{quote(REDIS_PASSWORD)}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}?{urllib.parse.urlencode(query_string_params)}"
+        CELERY_BROKER_URL = broker_url
+        CELERY_RESULT_BACKEND = broker_url
+
 
 if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True):
     CELERY_BEAT_SCHEDULE.update(
