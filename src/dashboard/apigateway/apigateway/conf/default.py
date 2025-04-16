@@ -311,14 +311,6 @@ REDIS_PASSWORD = env.str("BK_APIGW_REDIS_PASSWORD", "")
 REDIS_PREFIX = env.str("BK_APIGW_REDIS_PREFIX", "apigw::")
 REDIS_MAX_CONNECTIONS = env.int("BK_APIGW_REDIS_MAX_CONNECTIONS", 100)
 REDIS_DB = env.int("BK_APIGW_REDIS_DB", 0)
-# sentinel check
-REDIS_USE_SENTINEL = env.bool("BK_APIGW_REDIS_USE_SENTINEL", False)
-REDIS_SENTINEL_MASTER_NAME = env.str("BK_APIGW_REDIS_SENTINEL_MASTER_NAME", "mymaster")
-# sentinel password is not the same as redis password, so you should both set the passwords
-REDIS_SENTINEL_PASSWORD = env.str("BK_APIGW_REDIS_SENTINEL_PASSWORD", "")
-REDIS_SENTINEL_ADDR_STR = env.str("BK_APIGW_REDIS_SENTINEL_ADDR", "")
-# parse sentinel address from "host1:port1,host2:port2" to [("host1", port1), ("host2", port2)]
-REDIS_SENTINEL_ADDR_LIST = [tuple(addr.split(":")) for addr in REDIS_SENTINEL_ADDR_STR.split(",") if addr]
 # redis lock 配置
 REDIS_PUBLISH_LOCK_TIMEOUT = env.int("BK_APIGW_PUBLISH_LOCK_TIMEOUT", 5)
 REDIS_PUBLISH_LOCK_RETRY_GET_TIMES = env.int("BK_APIGW_PUBLISH_LOCK_RETRY_GET_TIMES", 3)
@@ -329,11 +321,6 @@ DEFAULT_REDIS_CONFIG = CHANNEL_REDIS_CONFIG = {
     "password": REDIS_PASSWORD,
     "max_connections": REDIS_MAX_CONNECTIONS,
     "db": REDIS_DB,
-    # sentinel
-    "use_sentinel": REDIS_USE_SENTINEL,
-    "master_name": REDIS_SENTINEL_MASTER_NAME,
-    "sentinel_password": REDIS_SENTINEL_PASSWORD,
-    "sentinels": REDIS_SENTINEL_ADDR_LIST,
 }
 
 # ==============================================================================
@@ -371,32 +358,12 @@ RABBITMQ_PASSWORD = env.str("BK_APIGW_RABBITMQ_PASSWORD", "")
 if all([RABBITMQ_VHOST, RABBITMQ_PORT, RABBITMQ_HOST, RABBITMQ_USER, RABBITMQ_PASSWORD]):
     CELERY_BROKER_URL = f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASSWORD}@{RABBITMQ_HOST}:{RABBITMQ_PORT}/{RABBITMQ_VHOST}"
     CELERY_RESULT_BACKEND = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0"
-elif not REDIS_USE_SENTINEL:
+else:
     # 如果没有使用 Redis 作为 Broker，请不要启用该配置，详见：
     # http://docs.celeryproject.org/en/latest/userguide/configuration.html#broker-transport-options
     CELERY_BROKER_TRANSPORT_OPTIONS = REDIS_CONNECTION_OPTIONS
     CELERY_BROKER_URL = f"redis://:{quote(REDIS_PASSWORD)}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
     CELERY_RESULT_BACKEND = f"redis://:{quote(REDIS_PASSWORD)}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
-    CELERY_TASK_DEFAULT_QUEUE = env.str(
-        "BK_APIGW_CELERY_TASK_DEFAULT_QUEUE", f"{REDIS_PREFIX}bk_apigateway_dashboard_celery"
-    )
-else:
-    # https://docs.celeryq.dev/en/v4.3.0/history/whatsnew-4.0.html?highlight=sentinel#redis-support-for-sentinel
-    # sentinel://0.0.0.0:26379;sentinel://0.0.0.0:26380/...
-    # REDIS_SENTINEL_ADDR_LIST = [(host1, port1), (host2, port2)]
-    CELERY_SENTINEL_URL = ";".join(
-        [f"sentinel://:{REDIS_PASSWORD}@" + ":".join(addr) + f"/{REDIS_DB}" for addr in REDIS_SENTINEL_ADDR_LIST]
-    )
-    CELERY_SENTINEL_TRANSPORT_OPTIONS = {
-        "master_name": REDIS_SENTINEL_MASTER_NAME,
-        "sentinel_kwargs": {"password": REDIS_SENTINEL_PASSWORD},
-        **REDIS_CONNECTION_OPTIONS,
-    }
-
-    CELERY_BROKER_URL = CELERY_SENTINEL_URL
-    CELERY_BROKER_TRANSPORT_OPTIONS = CELERY_SENTINEL_TRANSPORT_OPTIONS
-    CELERY_RESULT_BACKEND = CELERY_SENTINEL_URL
-    CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = CELERY_SENTINEL_TRANSPORT_OPTIONS
     CELERY_TASK_DEFAULT_QUEUE = env.str(
         "BK_APIGW_CELERY_TASK_DEFAULT_QUEUE", f"{REDIS_PREFIX}bk_apigateway_dashboard_celery"
     )

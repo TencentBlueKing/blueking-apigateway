@@ -23,7 +23,6 @@ from typing import Dict
 
 import redis
 from django.conf import settings
-from redis import sentinel
 
 from .exception import LockTimeout
 
@@ -40,20 +39,6 @@ def get_redis_pool(redis_conf):
     @param redis_conf: redis 配置
     @return: redis 连接池
     """
-
-    if redis_conf.get("use_sentinel", False):
-        redis_sentinel = sentinel.Sentinel(
-            redis_conf["sentinels"],
-            sentinel_kwargs={"password": redis_conf["sentinel_password"], "socket_timeout": REDIS_TIMEOUT},
-            socket_timeout=REDIS_TIMEOUT,
-        )
-        return sentinel.SentinelConnectionPool(
-            redis_conf["master_name"],
-            redis_sentinel,
-            db=redis_conf.get("db", 0),
-            password=redis_conf["password"],
-            max_connections=redis_conf["max_connections"],
-        )
 
     return redis.BlockingConnectionPool(
         host=redis_conf["host"],
