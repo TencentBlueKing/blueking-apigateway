@@ -595,37 +595,16 @@ BK_NOTICE = {
 # ==============================================================================
 VERSION_LOG_DIR = os.path.join(BASE_DIR, "data/version_log")
 
-# ==============================================================================
-# Elasticsearch 配置
-# ==============================================================================
-BK_APIGW_ES_USER = env.str("BK_APIGW_ES_USER", BK_APP_CODE)
-# 密码中可能包含特殊字符
-BK_APIGW_ES_PASSWORD = quote(env.str("BK_APIGW_ES_PASSWORD", ""))
-BK_APIGW_ES_HOST = env.list("BK_APIGW_ES_HOST", default=[])
-BK_APIGW_ES_PORT = env.str("BK_APIGW_ES_PORT", "9200")
-ELASTICSEARCH_HOSTS = []
-if BK_APIGW_ES_HOST and BK_APIGW_ES_PORT:
-    ELASTICSEARCH_HOSTS = [f"{host}:{BK_APIGW_ES_PORT}" for host in BK_APIGW_ES_HOST]
-    ELASTICSEARCH_HOSTS_WITHOUT_AUTH = ELASTICSEARCH_HOSTS.copy()
-    if BK_APIGW_ES_USER and BK_APIGW_ES_PASSWORD:
-        ELASTICSEARCH_HOSTS = [
-            f"{BK_APIGW_ES_USER}:{BK_APIGW_ES_PASSWORD}@{host}:{BK_APIGW_ES_PORT}" for host in BK_APIGW_ES_HOST
-        ]
-
-DEFAULT_ES_SEARCH_TIMEOUT = env.int("DEFAULT_ES_SEARCH_TIMEOUT", 30)
-DEFAULT_ES_AGGS_TERM_SIZE = env.int("DEFAULT_ES_AGGS_TERM_SIZE", 1000)
 
 # ==============================================================================
 # 访问日志
 # ==============================================================================
 ACCESS_LOG_CONFIG = {
-    "es_client_type": env.str("BK_APIGW_ES_CLIENT_TYPE", "bk_log"),
     "es_time_field_name": env.str("BK_APIGW_ES_TIME_FIELD_NAME", "dtEventTimeStamp"),
     "es_index": env.str("BK_APIGW_API_LOG_ES_INDEX", "2_bklog_bkapigateway_apigateway_container*"),
 }
 
 BK_ESB_ACCESS_LOG_CONFIG = {
-    "es_client_type": env.str("BK_ESB_ES_CLIENT_TYPE", "bk_log"),
     "es_time_field_name": env.str("BK_ESB_ES_TIME_FIELD_NAME", "dtEventTimeStamp"),
     "es_index": env.str("BK_ESB_API_LOG_ES_INDEX", "2_bklog_bkapigateway_esb_container*"),
 }
