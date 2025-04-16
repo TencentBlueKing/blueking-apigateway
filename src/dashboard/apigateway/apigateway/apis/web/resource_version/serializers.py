@@ -175,7 +175,7 @@ class ResourceVersionDiffOutputSLZ(serializers.Serializer):
 
 
 class NextProgrammableDeployVersionGetInputSLZ(serializers.Serializer):
-    stage_name = serializers.IntegerField(required=True, help_text="环境name")
+    stage_name = serializers.CharField(required=True, help_text="环境name")
     version_type = serializers.ChoiceField(
         choices=ResourceVersionTypeEnum.get_choices(), help_text="版本类型：major/minor/patch"
     )
