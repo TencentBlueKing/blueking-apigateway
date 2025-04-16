@@ -311,6 +311,13 @@ REDIS_PASSWORD = env.str("BK_APIGW_REDIS_PASSWORD", "")
 REDIS_PREFIX = env.str("BK_APIGW_REDIS_PREFIX", "apigw::")
 REDIS_MAX_CONNECTIONS = env.int("BK_APIGW_REDIS_MAX_CONNECTIONS", 100)
 REDIS_DB = env.int("BK_APIGW_REDIS_DB", 0)
+## redis tls
+REDIS_TLS_ENABLED = env.bool("BK_APIGW_REDIS_TLS_ENABLED", False)
+REDIS_TLS_CERT_CA_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_CA_FILE", "")
+REDIS_TLS_CERT_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_FILE", "")
+REDIS_TLS_CERT_KEY_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_KEY_FILE", "")
+
+
 # redis lock 配置
 REDIS_PUBLISH_LOCK_TIMEOUT = env.int("BK_APIGW_PUBLISH_LOCK_TIMEOUT", 5)
 REDIS_PUBLISH_LOCK_RETRY_GET_TIMES = env.int("BK_APIGW_PUBLISH_LOCK_RETRY_GET_TIMES", 3)
@@ -321,6 +328,10 @@ DEFAULT_REDIS_CONFIG = CHANNEL_REDIS_CONFIG = {
     "password": REDIS_PASSWORD,
     "max_connections": REDIS_MAX_CONNECTIONS,
     "db": REDIS_DB,
+    "tls_enabled": REDIS_TLS_ENABLED,
+    "tls_cert_ca_file": REDIS_TLS_CERT_CA_FILE,
+    "tls_cert_file": REDIS_TLS_CERT_FILE,
+    "tls_cert_key_file": REDIS_TLS_CERT_KEY_FILE,
 }
 
 # ==============================================================================
@@ -367,6 +378,7 @@ else:
     CELERY_TASK_DEFAULT_QUEUE = env.str(
         "BK_APIGW_CELERY_TASK_DEFAULT_QUEUE", f"{REDIS_PREFIX}bk_apigateway_dashboard_celery"
     )
+    # FIXME: support tls (redis)
 
 if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True):
     CELERY_BEAT_SCHEDULE.update(

@@ -39,6 +39,21 @@ def get_redis_pool(redis_conf):
     @param redis_conf: redis 配置
     @return: redis 连接池
     """
+    # support tls
+    if redis_conf.get("tls_enabled"):
+        return redis.BlockingConnectionPool(
+            host=redis_conf["host"],
+            port=redis_conf["port"],
+            db=redis_conf.get("db", 0),
+            password=redis_conf["password"],
+            max_connections=redis_conf["max_connections"],
+            socket_timeout=REDIS_TIMEOUT,
+            timeout=REDIS_TIMEOUT,
+            connection_class=redis.SSLConnection,
+            ssl_ca_certs=redis_conf.get("tls_cert_ca_file"),
+            ssl_certfile=redis_conf.get("tls_cert_file"),
+            ssl_keyfile=redis_conf.get("tls_cert_key_file"),
+        )
 
     return redis.BlockingConnectionPool(
         host=redis_conf["host"],
