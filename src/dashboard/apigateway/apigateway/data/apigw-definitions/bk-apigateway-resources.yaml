@@ -869,3 +869,32 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
+  /api/v2/inner/gateways/{gateway_name}/permissions/app-permissions/allow-apply-by-api/:
+    get:
+      operationId: v2_inner_allow_apply_by_api
+      description: 是否允许按网关申请资源权限
+      tags:
+      - v2_inner
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/inner/gateways/{gateway_name}/permissions/app-permissions/allow-apply-by-api/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None

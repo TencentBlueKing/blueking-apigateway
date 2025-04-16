@@ -42,8 +42,106 @@ urlpatterns = [
                         [
                             # GET /api/v2/inner/gateways/{gateway_name}/
                             path("", views.GatewayRetrieveApi.as_view(), name="openapi.v2.inner.gateway.retrieve"),
+                            # GET /api/v2/inner/gateways/{gateway_name}/permissions/resources/
+                            path(
+                                "permissions/resources/",
+                                views.ResourceViewSet.as_view({"get": "list"}),
+                                name="openapi.v2.inner.gateway.permission.resource",
+                            ),
+                            # GET /api/v2/inner/gateways/{gateway_name}/permissions/app-permissions/allow-apply-by-api/
+                            path(
+                                "permissions/app-permissions/allow-apply-by-api/",
+                                views.AppGatewayPermissionViewSet.as_view({"get": "allow_apply_by_gateway"}),
+                                name="openapi.v2.inner.gateway.permission.allow_apply_by_api",
+                            ),
+                            # POST /api/v2/inner/gateways/{gateway_name}/permissions/app-permissions/apply/
+                            path(
+                                "permissions/app-permissions/apply/",
+                                views.PaaSAppPermissionApplyAPIView.as_view(),
+                                name="openapi.v2.inner.gateway.permission.apply.paas",
+                            ),
                         ]
                     ),
+                ),
+                path(
+                    "permissions/",
+                    include(
+                        [
+                            # POST /api/v2/inner/gateways/permissions/renew/
+                            path(
+                                "renew/",
+                                views.AppPermissionRenewAPIView.as_view(),
+                                name="openapi.v2.inner.permission.renew",
+                            ),
+                            # GET /api/v2/inner/gateways/permissions/app-permissions/
+                            path(
+                                "app-permissions/",
+                                views.AppPermissionViewSet.as_view({"get": "list"}),
+                                name="openapi.v2.inner.permission.app-permissions",
+                            ),
+                            # GET /api/v2/inner/gateways/permissions/apply-records/
+                            path(
+                                "apply-records/",
+                                views.AppPermissionRecordViewSet.as_view({"get": "list"}),
+                                name="openapi.v2.inner.permission.app-records",
+                            ),
+                            # GET /api/v2/inner/gateways/permissions/apply-records/{record_id}/
+                            path(
+                                "apply-records/<int:record_id>/",
+                                views.AppPermissionRecordViewSet.as_view({"get": "retrieve"}),
+                                name="openapi.v2.inner.permission.app-record-detail",
+                            ),
+                        ]
+                    ),
+                ),
+            ]
+        ),
+    ),
+    path(
+        "esb/systems/",
+        include(
+            [
+                # GET /api/v2/inner/esb/systems/
+                path(
+                    "",
+                    views.EsbSystemViewSet.as_view({"get": "list"}),
+                    name="openapi.v2.inner.esb.systems.list",
+                ),
+                # GET /api/v2/inner/esb/systems/{system_id}/permissions/components/
+                path(
+                    "<int:system_id>/permissions/components/",
+                    views.EsbComponentViewSet.as_view({"get": "list"}),
+                    name="openapi.v2.inner.esb.permission.apply",
+                ),
+                # GET /api/v2/inner/esb/systems/{system_id}/permissions/apply/
+                path(
+                    "<int:system_id>/permissions/apply/",
+                    views.EsbAppPermissionApplyV2APIView.as_view({"post": "apply"}),
+                    name="openapi.v2.inner.esb.permission.apply",
+                ),
+                # POST /api/v2/inner/esb/systems/permissions/renew/
+                path(
+                    "permissions/renew/",
+                    views.EsbAppPermissionRenewAPIView.as_view({"post": "renew"}),
+                    name="openapi.v2.inner.esb.permission.renew",
+                ),
+                # GET /api/v2/inner/esb/systems/permissions/app-permissions/
+                path(
+                    "permissions/app-permissions/",
+                    views.EsbAppPermissionViewSet.as_view({"get": "list"}),
+                    name="openapi.v2.inner.esb.permission.app-permissions",
+                ),
+                # GET /api/v2/inner/esb/systems/permissions/apply-records/
+                path(
+                    "permissions/apply-records/",
+                    views.EsbAppPermissionApplyRecordViewSet.as_view({"get": "list"}),
+                    name="openapi.v2.inner.esb.permission.app-records",
+                ),
+                # GET /api/v2/inner/esb/systems/permissions/apply-records/{record_id}/
+                path(
+                    "permissions/apply-records/<int:record_id>/",
+                    views.EsbAppPermissionApplyRecordViewSet.as_view({"get": "retrieve"}),
+                    name="openapi.v2.inner.esb.permission.app-record-detail",
                 ),
             ]
         ),

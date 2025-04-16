@@ -39,6 +39,7 @@ grant_permissions:
     resource_names:
       - v2_inner_list_gateways
       - v2_inner_get_gateway
+      - v2_inner_allow_apply_by_api
   # bk_lesscode
   - bk_app_code: bk_lesscode
     grant_dimension: "resource"
