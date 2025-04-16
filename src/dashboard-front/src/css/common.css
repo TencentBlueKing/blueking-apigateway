@@ -280,6 +280,9 @@
 .mr10 {
   margin-right: 10px !important;
 }
+.mr12 {
+  margin-right: 12px !important;
+}
 .mr15 {
   margin-right: 15px !important;
 }
@@ -306,6 +309,9 @@
 }
 .mr50 {
   margin-right: 50px !important;
+}
+.mr80 {
+  margin-right: 80px !important;
 }
 .p0 {
   padding: 0px !important;
@@ -447,6 +453,9 @@
 }
 .pr0 {
   padding-right: 0px !important;
+}
+.pr4 {
+  padding-right: 4px !important;
 }
 .pr5 {
   padding-right: 5px !important;

@@ -120,6 +120,14 @@
       @hidden="handleReleaseSuccess(false)"
     />
 
+    <!-- 发布可编程网关的资源至环境 -->
+    <release-programmable-slider
+      ref="releaseProgrammableSliderRef"
+      :current-stage="currentStage"
+      @hidden="handleReleaseSuccess(false)"
+      @release-success="handleReleaseSuccess"
+    />
+
     <!-- 日志抽屉 -->
     <log-details ref="logDetailsRef" :history-id="historyId" />
   </div>
@@ -157,23 +165,14 @@ import {
 import { BasicInfoParams } from '@/views/basic-info/common/type';
 import editStageSideslider from './edit-stage-sideslider.vue';
 import releaseSideslider from './release-sideslider.vue';
-
-const common = useCommon();
-const { t, locale } = useI18n();
-const route = useRoute();
-
-// 网关id
-const apigwId = computed(() => +route.params.id);
-
-const logDetailsRef = ref(null);
-const historyId = ref();
-const releaseSidesliderRef = ref();
-const currentStage = ref<any>({});
-let timeId: any = null;
+import releaseProgrammableSlider from './release-programmable-slider.vue';
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
+const { t, locale } = useI18n();
+const route = useRoute();
+const common = useCommon();
 
 const props = defineProps<{
   stageList: any[];
@@ -182,15 +181,55 @@ const props = defineProps<{
 // 环境列表
 const { stageList } = toRefs(props);
 
+const logDetailsRef = ref(null);
+const historyId = ref();
+const releaseSidesliderRef = ref();
+const releaseProgrammableSliderRef = ref();
+const currentStage = ref<any>({});
+
+// 当前基本信息
+const basicInfoData = ref<BasicInfoParams>({
+  status: 1,
+  name: '',
+  url: '',
+  description: '',
+  description_en: '',
+  public_key_fingerprint: '',
+  bk_app_codes: '',
+  docs_url: '',
+  api_domain: '',
+  created_by: '',
+  created_time: '',
+  public_key: '',
+  maintainers: [],
+  developers: [],
+  is_public: true,
+  is_official: false,
+  related_app_codes: '',
+});
+
+// 新建环境
+const stageSidesliderRef = ref(null);
+let timeId: any = null;
+
+// 网关id
+const apigwId = computed(() => +route.params.id);
+
 // 环境详情
 const handleToDetail = (data: any) => {
   mitt.emit('switch-mode', { id: data.id, name: data.name });
 };
 
 // 发布资源
-const handleRelease = (stage: any) => {
+const handleRelease = async (stage: any) => {
   currentStage.value = stage;
-  releaseSidesliderRef.value?.showReleaseSideslider();
+  // 普通网关
+  if (common.curApigwData?.kind !== 1) {
+    releaseSidesliderRef.value?.showReleaseSideslider();
+  } else {
+    // 可编程网关
+    releaseProgrammableSliderRef.value?.showReleaseSideslider();
+  }
 };
 
 // 发布成功
@@ -246,33 +285,9 @@ const getStageAddress = (name: string) => {
   }
   return url;
 };
-
-// 新建环境
-const stageSidesliderRef = ref(null);
 const handleAddStage = () => {
   stageSidesliderRef.value.handleShowSideslider('add');
 };
-
-// 当前基本信息
-const basicInfoData = ref<BasicInfoParams>({
-  status: 1,
-  name: '',
-  url: '',
-  description: '',
-  description_en: '',
-  public_key_fingerprint: '',
-  bk_app_codes: '',
-  docs_url: '',
-  api_domain: '',
-  created_by: '',
-  created_time: '',
-  public_key: '',
-  maintainers: [],
-  developers: [],
-  is_public: true,
-  is_official: false,
-  related_app_codes: '',
-});
 
 // 获取网关基本信息
 const getBasicInfo = async (apigwId: number) => {
@@ -375,6 +390,7 @@ onUnmounted(() => {
       .value {
         max-width: 220px;
         color: #313238;
+        flex-shrink: 0;
 
         &.url {
           max-width: 280px;
