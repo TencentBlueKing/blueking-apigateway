@@ -17,6 +17,10 @@ export interface BasicInfoParams {
   public_key: string
   is_official: boolean
   publish_validate_msg?: string
+  kind?: number
+  extra_info?: {
+    [key: string]: string
+  }
 }
 
 export interface DialogParams {
