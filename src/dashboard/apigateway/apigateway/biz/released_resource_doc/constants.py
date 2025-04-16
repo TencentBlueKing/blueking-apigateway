@@ -35,7 +35,13 @@ BKAPI_AUTHORIZATION_DESCRIPTION_ZH = """
 **示例：** 使用 curl 命令，请求时携带认证请求头
 
 ```shell
+{%- if verified_app_required and verified_user_required %}
+curl -H 'X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y", "{{ settings.BK_LOGIN_TICKET_KEY }}": "z"}' "http://example.com/api"
+{%- elif verified_app_required %}
 curl -H 'X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y"}' "http://example.com/api"
+{%- elif verified_user_required %}
+curl -H 'X-Bkapi-Authorization: {"{{ settings.BK_LOGIN_TICKET_KEY }}": "z"}' "http://example.com/api"
+{%- endif %}
 ```
 
 **示例：** 使用 Python 语言和 requests 模块
@@ -47,7 +53,13 @@ import requests
 requests.get(
     "http://example.com/api",
     headers={
+        {%- if verified_app_required and verified_user_required %}
+        "X-Bkapi-Authorization": json.dumps({"bk_app_code": "x", "bk_app_secret": "y", "{{ settings.BK_LOGIN_TICKET_KEY }}": "z"})
+        {%- elif verified_app_required %}
         "X-Bkapi-Authorization": json.dumps({"bk_app_code": "x", "bk_app_secret": "y"})
+        {%- elif verified_user_required %}
+        "X-Bkapi-Authorization": json.dumps({"{{ settings.BK_LOGIN_TICKET_KEY }}": "z"})
+        {%- endif %}
     },
 )
 ```
@@ -83,7 +95,13 @@ BKAPI_AUTHORIZATION_DESCRIPTION_ZH_MULTI_TENANT = """
 **示例：** 使用 curl 命令，请求时携带认证请求头和租户头
 
 ```shell
+{%- if verified_app_required and verified_user_required %}
+curl -H 'X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y", "{{ settings.BK_LOGIN_TICKET_KEY }}": "z"}' -H 'X-Bk-Tenant-Id: your_app_tenant_id' "http://example.com/api"
+{%- elif verified_app_required %}
 curl -H 'X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y"}' -H 'X-Bk-Tenant-Id: your_app_tenant_id' "http://example.com/api"
+{%- elif verified_user_required %}
+curl -H 'X-Bkapi-Authorization: {"{{ settings.BK_LOGIN_TICKET_KEY }}": "z"}' -H 'X-Bk-Tenant-Id: your_app_tenant_id' "http://example.com/api"
+{%- endif %}
 ```
 
 **示例：** 使用 Python 语言和 requests 模块
@@ -95,7 +113,13 @@ import requests
 requests.get(
     "http://example.com/api",
     headers={
-        "X-Bkapi-Authorization": json.dumps({"bk_app_code": "x", "bk_app_secret": "y"}),
+        {%- if verified_app_required and verified_user_required %}
+        "X-Bkapi-Authorization": json.dumps({"bk_app_code": "x", "bk_app_secret": "y", "{{ settings.BK_LOGIN_TICKET_KEY }}": "z"})
+        {%- elif verified_app_required %}
+        "X-Bkapi-Authorization": json.dumps({"bk_app_code": "x", "bk_app_secret": "y"})
+        {%- elif verified_user_required %}
+        "X-Bkapi-Authorization": json.dumps({"{{ settings.BK_LOGIN_TICKET_KEY }}": "z"})
+        {%- endif %}
         "X-Bk-Tenant-Id": "your_app_tenant_id"
     },
 )
@@ -127,7 +151,13 @@ Public request parameters are parameters used to identify the application and us
 **Example：** Use `curl` to carry the authorization header
 
 ```shell
+{%- if verified_app_required and verified_user_required %}
+curl -H 'X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y", "{{ settings.BK_LOGIN_TICKET_KEY }}": "z"}' "http://example.com/api"
+{%- elif verified_app_required %}
 curl -H 'X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y"}' "http://example.com/api"
+{%- elif verified_user_required %}
+curl -H 'X-Bkapi-Authorization: {"{{ settings.BK_LOGIN_TICKET_KEY }}": "z"}' "http://example.com/api"
+{%- endif %}
 ```
 
 **Example：** Use Python and the `requests` module
@@ -139,7 +169,13 @@ import requests
 requests.get(
     "http://example.com/api",
     headers={
+        {%- if verified_app_required and verified_user_required %}
+        "X-Bkapi-Authorization": json.dumps({"bk_app_code": "x", "bk_app_secret": "y", "{{ settings.BK_LOGIN_TICKET_KEY }}": "z"})
+        {%- elif verified_app_required %}
         "X-Bkapi-Authorization": json.dumps({"bk_app_code": "x", "bk_app_secret": "y"})
+        {%- elif verified_user_required %}
+        "X-Bkapi-Authorization": json.dumps({"{{ settings.BK_LOGIN_TICKET_KEY }}": "z"})
+        {%- endif %}
     },
 )
 ```
@@ -175,7 +211,13 @@ Public request parameters include authentication parameters and tenant parameter
 **Example：** Use `curl` to carry the authorization header
 
 ```shell
+{%- if verified_app_required and verified_user_required %}
+curl -H 'X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y", "{{ settings.BK_LOGIN_TICKET_KEY }}": "z"}' -H 'X-Bk-Tenant-Id: your_app_tenant_id' "http://example.com/api"
+{%- elif verified_app_required %}
 curl -H 'X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y"}' -H 'X-Bk-Tenant-Id: your_app_tenant_id' "http://example.com/api"
+{%- elif verified_user_required %}
+curl -H 'X-Bkapi-Authorization: {"{{ settings.BK_LOGIN_TICKET_KEY }}": "z"}' -H 'X-Bk-Tenant-Id: your_app_tenant_id' "http://example.com/api"
+{%- endif %}
 ```
 
 **Example：** Use Python and the `requests` module
@@ -187,7 +229,13 @@ import requests
 requests.get(
     "http://example.com/api",
     headers={
+        {%- if verified_app_required and verified_user_required %}
+        "X-Bkapi-Authorization": json.dumps({"bk_app_code": "x", "bk_app_secret": "y", "{{ settings.BK_LOGIN_TICKET_KEY }}": "z"})
+        {%- elif verified_app_required %}
         "X-Bkapi-Authorization": json.dumps({"bk_app_code": "x", "bk_app_secret": "y"})
+        {%- elif verified_user_required %}
+        "X-Bkapi-Authorization": json.dumps({"{{ settings.BK_LOGIN_TICKET_KEY }}": "z"})
+        {%- endif %}
         "X-Bk-Tenant-Id": "your_app_tenant_id"
     },
 )
