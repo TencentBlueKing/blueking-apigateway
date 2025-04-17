@@ -26,6 +26,7 @@ from django_dynamic_fixture import G
 from apigateway.biz.stage import StageHandler
 from apigateway.core import constants
 from apigateway.core.constants import (
+    GatewayKindEnum,
     StageStatusEnum,
 )
 from apigateway.core.models import (
@@ -82,6 +83,18 @@ class TestStageManager:
             assert result.vars == {}
             assert result.status == constants.StageStatusEnum.INACTIVE.value
             assert result.created_by == test["created_by"]
+
+    def test_create_stage_of_programmable_gateway(self):
+        gateway = G(Gateway, kind=GatewayKindEnum.PROGRAMMABLE.value)
+        result = StageHandler().create_default(
+            gateway,
+            created_by="admin",
+        )
+        assert result.gateway == gateway
+        # there should be two stages, one is prod, one is stag
+        assert Stage.objects.filter(gateway=gateway).count() == 2
+        assert Stage.objects.filter(gateway=gateway, name="prod").exists()
+        assert Stage.objects.filter(gateway=gateway, name="stag").exists()
 
     def test_get_micro_gateway_id_to_fields(self):
         gateway = G(Gateway)

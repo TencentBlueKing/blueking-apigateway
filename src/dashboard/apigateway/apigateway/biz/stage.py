@@ -126,6 +126,10 @@ class StageHandler:
     def create_default(gateway, created_by):
         """
         创建默认 stage，网关创建时，需要创建一个默认环境
+        注意：
+        1. 编程网关需要创建两个默认环境，一个 prod，一个 stag
+
+        目前的返回值是创建的 prod stage 对象
         """
         stage = Stage.objects.create(
             gateway=gateway,
