@@ -24,8 +24,7 @@ from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics, status, viewsets
-from rest_framework.views import APIView
+from rest_framework import generics, status
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
 from apigateway.apps.esb.bkcore.models import AppPermissionApplyRecord, ComponentSystem, ESBChannel
@@ -120,19 +119,22 @@ class GatewayRetrieveApi(generics.RetrieveAPIView):
         return OKJsonResponse(data=slz.data)
 
 
-class ResourceViewSet(viewsets.ViewSet):
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        query_serializer=serializers.AppResourcePermissionListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.AppResourcePermissionListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class GatewayPermissionsResourceListApi(generics.ListAPIView):
     permission_classes = [OpenAPIV2GatewayNamePermission]
 
-    @swagger_auto_schema(
-        query_serializer=serializers.AppResourcePermissionInputSLZ,
-        responses={status.HTTP_200_OK: serializers.AppResourcePermissionOutputSLZ(many=True)},
-        tags=["OpenAPI.V2.Inner"],
-    )
     def list(self, request, *args, **kwargs):
         if not request.gateway.is_active_and_public:
             return OKJsonResponse(data=[])
 
-        slz = serializers.AppResourcePermissionInputSLZ(data=request.query_params)
+        slz = serializers.AppResourcePermissionListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         resources = ResourceVersionHandler.get_released_public_resources(request.gateway.id)
@@ -145,23 +147,26 @@ class ResourceViewSet(viewsets.ViewSet):
             slz.validated_data["target_app_code"],
         ).build(resources)
 
-        slz = serializers.AppResourcePermissionOutputSLZ(
+        slz = serializers.AppResourcePermissionListOutputSLZ(
             sorted(resource_permissions, key=operator.itemgetter("permission_level", "name")),
             many=True,
         )
         return OKJsonResponse(data=slz.data)
 
 
-class AppGatewayPermissionViewSet(viewsets.GenericViewSet):
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        query_serializer=serializers.AppGatewayPermissionInputSLZ,
+        responses={status.HTTP_200_OK: serializers.AppGatewayPermissionOutputSLZ()},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class AppGatewayPermissionApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIV2GatewayNamePermission]
     serializer_class = serializers.AppGatewayPermissionInputSLZ
 
-    @swagger_auto_schema(
-        query_serializer=serializers.AppGatewayPermissionInputSLZ,
-        responses={status.HTTP_200_OK: serializers.AppGatewayPermissionOutputSLZ(many=True)},
-        tags=["OpenAPI.V2.Inner"],
-    )
-    def allow_apply_by_gateway(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
@@ -177,7 +182,15 @@ class AppGatewayPermissionViewSet(viewsets.GenericViewSet):
         )
 
 
-class PaaSAppPermissionApplyAPIView(APIView):
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        request_body=serializers.PaaSAppPermissionApplyCreateInputSLZ,
+        responses={status.HTTP_201_CREATED: serializers.AppPermissionApplyCreateOutputSLZ()},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class PaaSAppPermissionApplyCreateApi(generics.CreateAPIView):
     """
     PaaS 中应用申请访问网关 API 的权限
     - 提供给 paas3 开发者中心的接口
@@ -185,13 +198,12 @@ class PaaSAppPermissionApplyAPIView(APIView):
 
     permission_classes = [OpenAPIV2GatewayNamePermission]
 
-    @swagger_auto_schema(request_body=serializers.PaaSAppPermissionApplyInputSLZ, tags=["OpenAPI.V2.Inner"])
     @transaction.atomic
-    def post(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         """
         创建申请资源权限的申请单据
         """
-        slz = serializers.PaaSAppPermissionApplyInputSLZ(
+        slz = serializers.PaaSAppPermissionApplyCreateInputSLZ(
             data=request.data,
             context={
                 "request": request,
@@ -218,22 +230,31 @@ class PaaSAppPermissionApplyAPIView(APIView):
             logger.exception("send mail to gateway manager fail. apply_record_id=%s", record.id)
 
         return OKJsonResponse(
+            status=status.HTTP_201_CREATED,
             data={
                 "record_id": record.id,
-            }
+            },
         )
 
 
-class AppPermissionRenewAPIView(APIView):
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="权限续期",
+        request_body=serializers.AppPermissionRenewPutInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class AppPermissionRenewApi(generics.CreateAPIView):
     """
     权限续期
     """
 
     permission_classes = [OpenAPIV2Permission]
 
-    @swagger_auto_schema(request_body=serializers.AppPermissionRenewInputSLZ, tags=["OpenAPI.V2.Inner"])
     def post(self, request, *args, **kwargs):
-        slz = serializers.AppPermissionRenewInputSLZ(
+        slz = serializers.AppPermissionRenewPutInputSLZ(
             data=request.data,
             context={
                 "request": request,
@@ -259,38 +280,45 @@ class AppPermissionRenewAPIView(APIView):
                 expire_days=data["expire_days"],
             )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
-class AppPermissionViewSet(viewsets.ViewSet):
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        query_serializer=serializers.AppPermissionListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.AppResourcePermissionListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class AppPermissionListApi(generics.ListAPIView):
     permission_classes = [OpenAPIV2Permission]
 
-    @swagger_auto_schema(
-        query_serializer=serializers.AppPermissionInputSLZ,
-        responses={status.HTTP_200_OK: serializers.AppResourcePermissionOutputSLZ(many=True)},
-        tags=["OpenAPI.V2.Inner"],
-    )
     def list(self, request, *args, **kwargs):
         """已申请权限列表"""
-        slz = serializers.AppPermissionInputSLZ(data=request.query_params)
+        slz = serializers.AppPermissionListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
 
         permissions = AppPermissionBuilder(data["target_app_code"]).build()
-        slz = serializers.AppResourcePermissionOutputSLZ(permissions, many=True)
-        return OKJsonResponse(data=sorted(slz.data, key=operator.itemgetter("api_name", "name")))
+        slz = serializers.AppResourcePermissionListOutputSLZ(permissions, many=True)
+        output_data = sorted(slz.data, key=operator.itemgetter("gateway_name", "name"))
+        return OKJsonResponse(data=output_data)
 
 
-class AppPermissionRecordViewSet(viewsets.GenericViewSet):
-    permission_classes = [OpenAPIV2Permission]
-    serializer_class = serializers.AppPermissionRecordInputSLZ
-
-    @swagger_auto_schema(
-        query_serializer=serializers.AppPermissionRecordInputSLZ,
-        responses={status.HTTP_200_OK: serializers.AppPermissionRecordSLZ(many=True)},
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        query_serializer=serializers.AppPermissionRecordListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.AppPermissionRecordListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
-    )
+    ),
+)
+class AppPermissionRecordListApi(generics.ListAPIView):
+    permission_classes = [OpenAPIV2Permission]
+    serializer_class = serializers.AppPermissionRecordListInputSLZ
+
     def list(self, request, *args, **kwargs):
         slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -310,34 +338,59 @@ class AppPermissionRecordViewSet(viewsets.GenericViewSet):
         )
 
         page = self.paginate_queryset(queryset)
-        slz = serializers.AppPermissionRecordSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+        slz = serializers.AppPermissionRecordListOutputSLZ(page, many=True)
+        return OKJsonResponse(data=slz.data)
 
-    @swagger_auto_schema(
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        query_serializer=serializers.AppPermissionRecordRetrieveInputSLZ,
         responses={status.HTTP_200_OK: serializers.AppPermissionRecordOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
-    )
-    def retrieve(self, request, record_id: int, *args, **kwargs):
-        slz = serializers.AppPermissionRecordInputSLZ(data=request.query_params)
-        slz.is_valid(raise_exception=True)
+    ),
+)
+class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
+    permission_classes = [OpenAPIV2Permission]
+    serializer_class = serializers.AppPermissionRecordRetrieveInputSLZ
+    lookup_field = "id"
 
+    def get_queryset(self):
+        return Gateway.objects.all()
+
+    def get_object(self):
+        record_id = self.kwargs["record_id"]
+
+        slz = serializers.AppPermissionRecordRetrieveInputSLZ(data=self.request.query_params)
+        slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
         try:
-            record = AppPermissionRecord.objects.get(bk_app_code=data["target_app_code"], id=record_id)
+            return AppPermissionRecord.objects.get(bk_app_code=data["target_app_code"], id=record_id)
         except AppPermissionRecord.DoesNotExist:
             raise error_codes.NOT_FOUND
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
         slz = serializers.AppPermissionRecordOutputSLZ(
-            record,
+            instance,
             context={
-                "resource_id_map": ResourceHandler.get_id_to_resource(gateway_id=record.gateway.id),
+                "resource_id_map": ResourceHandler.get_id_to_resource(gateway_id=instance.gateway.id),
             },
         )
         return OKJsonResponse(data=slz.data)
 
 
-class EsbSystemViewSet(viewsets.GenericViewSet):
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        query_serializer=serializers.EsbSystemListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.EsbSystemListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class EsbSystemListApi(generics.ListAPIView):
     permission_classes = [OpenAPIV2Permission]
 
     def _filter_active_and_public_systems(self, boards: List[str]):
@@ -351,32 +404,32 @@ class EsbSystemViewSet(viewsets.GenericViewSet):
 
         return ComponentSystem.objects.filter(board__in=boards, id__in=system_ids)
 
-    @swagger_auto_schema(
-        query_serializer=serializers.SystemQueryV2SLZ,
-        responses={status.HTTP_200_OK: serializers.SystemV2SLZ(many=True)},
-        tags=["OpenAPI.V2.Inner"],
-    )
     def list(self, request, *args, **kwargs):
-        slz = serializers.SystemQueryV2SLZ(data=request.query_params)
+        slz = serializers.EsbSystemListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         queryset = self._filter_active_and_public_systems(boards=slz.validated_data["boards"])
 
-        slz = serializers.SystemV2SLZ(queryset.order_by("board", "name"), many=True)
+        slz = serializers.EsbSystemListOutputSLZ(queryset.order_by("board", "name"), many=True)
         return OKJsonResponse(data=slz.data)
 
 
-class EsbComponentViewSet(viewsets.GenericViewSet):
-    permission_classes = [OpenAPIV2Permission]
-    serializer_class = serializers.AppPermissionComponentSLZ
-
-    @swagger_auto_schema(
-        query_serializer=serializers.AppPermissionComponentQuerySLZ,
-        responses={status.HTTP_200_OK: serializers.AppPermissionComponentSLZ(many=True)},
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        query_serializer=serializers.EsbPermissionComponentListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.EsbPermissionComponentListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
-    )
-    def list(self, request, system_id: int, *args, **kwargs):
-        slz = serializers.AppPermissionComponentQuerySLZ(data=request.query_params)
+    ),
+)
+class EsbPermissionComponentListApi(generics.ListAPIView):
+    permission_classes = [OpenAPIV2Permission]
+    serializer_class = serializers.EsbPermissionComponentListOutputSLZ
+
+    def list(self, request, *args, **kwargs):
+        system_id = self.kwargs["system_id"]
+
+        slz = serializers.EsbPermissionComponentListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         queryset = ESBChannel.objects.filter_active_and_public_components(system_id=system_id)
@@ -392,13 +445,21 @@ class EsbComponentViewSet(viewsets.GenericViewSet):
         return OKJsonResponse(data=output_slz.data)
 
 
-class EsbAppPermissionApplyV2APIView(viewsets.GenericViewSet):
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="创建申请资源权限的申请单据",
+        request_body=serializers.EsbAppPermissionApplyCreateInputSLZ,
+        responses={status.HTTP_201_CREATED: serializers.AppPermissionApplyCreateOutputSLZ()},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class EsbAppPermissionApplyCreateApi(generics.CreateAPIView):
     permission_classes = [OpenAPIV2Permission]
-    serializer_class = serializers.AppPermissionApplySLZ
+    serializer_class = serializers.EsbAppPermissionApplyCreateInputSLZ
 
-    @swagger_auto_schema(request_body=serializers.AppPermissionApplySLZ, tags=["OpenAPI.V2.Inner"])
     @transaction.atomic
-    def apply(self, request, system_id: int, *args, **kwargs):
+    def create(self, request, system_id: int, *args, **kwargs):
         """创建申请资源权限的申请单据"""
         try:
             system = ComponentSystem.objects.get(id=system_id)
@@ -425,19 +486,32 @@ class EsbAppPermissionApplyV2APIView(viewsets.GenericViewSet):
             request.user.username,
         )
 
-        return OKJsonResponse(data={"record_id": record.id})
+        return OKJsonResponse(
+            status=status.HTTP_201_CREATED,
+            data={
+                "record_id": record.id,
+            },
+        )
 
 
-class EsbAppPermissionRenewAPIView(viewsets.GenericViewSet):
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="权限续期",
+        request_body=serializers.EsbAppPermissionRenewPutInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class EsbAppPermissionRenewPutApi(generics.CreateAPIView):
     """
     权限续期
     """
 
     permission_classes = [OpenAPIV2Permission]
-    serializer_class = serializers.AppPermissionRenewSLZ
+    serializer_class = serializers.EsbAppPermissionRenewPutInputSLZ
 
-    @swagger_auto_schema(request_body=serializers.AppPermissionRenewSLZ, tags=["OpenAPI.V2.Inner"])
-    def renew(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
 
@@ -450,20 +524,23 @@ class EsbAppPermissionRenewAPIView(viewsets.GenericViewSet):
             data["expire_days"],
         )
 
-        return OKJsonResponse()
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
-class EsbAppPermissionViewSet(viewsets.ViewSet):
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        query_serializer=serializers.EsbAppPermissionListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.EsbAppPermissionOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class EsbAppPermissionListApi(generics.ListAPIView):
     permission_classes = [OpenAPIV2Permission]
 
-    @swagger_auto_schema(
-        query_serializer=serializers.AppPermissionQuerySLZ,
-        responses={status.HTTP_200_OK: serializers.AppPermissionComponentSLZ(many=True)},
-        tags=["OpenAPI.V2.Inner"],
-    )
     def list(self, request, *args, **kwargs):
         """已申请权限列表"""
-        slz = serializers.AppPermissionQuerySLZ(data=request.query_params)
+        slz = serializers.EsbAppPermissionListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -474,19 +551,23 @@ class EsbAppPermissionViewSet(viewsets.ViewSet):
             data.get("expire_days_range"),
         )
 
-        slz = serializers.AppPermissionComponentSLZ(component_permissions, many=True)
-        return OKJsonResponse(data=sorted(slz.data, key=operator.itemgetter("system_name", "name")))
+        slz = serializers.EsbAppPermissionOutputSLZ(component_permissions, many=True)
+        output_data = sorted(slz.data, key=operator.itemgetter("system_name", "name"))
+        return OKJsonResponse(data=output_data)
 
 
-class EsbAppPermissionApplyRecordViewSet(viewsets.GenericViewSet):
-    permission_classes = [OpenAPIV2Permission]
-    serializer_class = serializers.AppPermissionApplyRecordQuerySLZ
-
-    @swagger_auto_schema(
-        query_serializer=serializers.AppPermissionApplyRecordQuerySLZ,
-        responses={status.HTTP_200_OK: serializers.AppPermissionApplyRecordV2SLZ(many=True)},
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        query_serializer=serializers.EsbAppPermissionApplyRecordListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.EsbAppPermissionApplyRecordListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
-    )
+    ),
+)
+class EsbAppPermissionApplyRecordListApi(generics.ListAPIView):
+    permission_classes = [OpenAPIV2Permission]
+    serializer_class = serializers.EsbAppPermissionApplyRecordListInputSLZ
+
     def list(self, request, *args, **kwargs):
         slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -510,23 +591,44 @@ class EsbAppPermissionApplyRecordViewSet(viewsets.GenericViewSet):
         manager = ComponentPermissionManager.get_manager()
         manager.patch_permission_apply_records(page)
 
-        slz = serializers.AppPermissionApplyRecordV2SLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+        slz = serializers.EsbAppPermissionApplyRecordListOutputSLZ(page, many=True)
+        return OKJsonResponse(data=slz.data)
 
-    @swagger_auto_schema(response_serializer=serializers.AppPermissionApplyRecordDetailSLZ, tags=["OpenAPI.V2.Inner"])
-    def retrieve(self, request, record_id: int, *args, **kwargs):
-        slz = self.get_serializer(data=request.query_params)
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        query_serializer=serializers.EsbAppPermissionApplyRecordRetrieveInputSLZ,
+        responses={status.HTTP_200_OK: serializers.EsbAppPermissionApplyRecordRetrieveOutputSLZ()},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class EsbAppPermissionApplyRecordRetrieveApi(generics.RetrieveAPIView):
+    permission_classes = [OpenAPIV2Permission]
+    serializer_class = serializers.EsbAppPermissionApplyRecordRetrieveInputSLZ
+
+    lookup_field = "id"
+
+    def get_queryset(self):
+        return Gateway.objects.all()
+
+    def get_object(self):
+        record_id = self.kwargs["record_id"]
+
+        slz = serializers.EsbAppPermissionApplyRecordRetrieveInputSLZ(data=self.request.query_params)
         slz.is_valid(raise_exception=True)
-
         data = slz.validated_data
 
         try:
-            record = AppPermissionApplyRecord.objects.get(bk_app_code=data["target_app_code"], id=record_id)
+            return AppPermissionApplyRecord.objects.get(bk_app_code=data["target_app_code"], id=record_id)
         except AppPermissionApplyRecord.DoesNotExist:
             raise error_codes.NOT_FOUND
 
-        manager = ComponentPermissionManager.get_manager()
-        manager.patch_permission_apply_records([record])
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
 
-        slz = serializers.AppPermissionApplyRecordDetailSLZ(record)
+        manager = ComponentPermissionManager.get_manager()
+        manager.patch_permission_apply_records([instance])
+
+        slz = serializers.EsbAppPermissionApplyRecordRetrieveOutputSLZ(instance)
         return OKJsonResponse(data=slz.data)
