@@ -383,6 +383,16 @@
         </bk-button>
       </template>
     </bk-dialog>
+
+    <bk-sideslider
+      v-model:is-show="isShowMarkdown"
+      :title="t('查看开发指引')"
+      width="960"
+    >
+      <section class="markdown-box">
+        <guide :markdown-html="markdownHtml" />
+      </section>
+    </bk-sideslider>
   </div>
 </template>
 
@@ -398,10 +408,13 @@ import {  copy } from '@/common/util';
 import { useGetGlobalProperties } from '@/hooks';
 // import { useStage } from '@/store';
 import { BasicInfoParams, DialogParams } from './common/type';
-import { getGateWaysInfo, toggleGateWaysStatus, deleteGateWays, editGateWays } from '@/http';
+import { getGateWaysInfo, toggleGateWaysStatus, deleteGateWays, editGateWays, getGuideDocs } from '@/http';
 import GateWaysEditTextarea from '@/components/gateways-edit/textarea.vue';
 import GateWaysEditMemberSelector from '@/components/gateways-edit/member-selector.vue';
 import MemberSelect from '@/components/member-select';
+import guide from '@/components/guide.vue';
+import MarkdownIt from 'markdown-it';
+import hljs from 'highlight.js';
 // @ts-ignore
 import programProcess from '@/images/program-process.png';
 
@@ -447,6 +460,8 @@ const apigwId = ref(0);
 const formRef = ref(null);
 const formRemoveConfirmApigw = ref('');
 const basicInfoDetailLoading = ref(false);
+const isShowMarkdown = ref<boolean>(false);
+const markdownHtml = ref<string>('');
 // 当前基本信息
 const basicInfoData = ref<BasicInfoParams>({
   status: 1,
@@ -496,6 +511,32 @@ const getBasicInfo = async () => {
   try {
     const res = await getGateWaysInfo(apigwId.value);
     basicInfoData.value = Object.assign({}, res);
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+const md = new MarkdownIt({
+  linkify: false,
+  html: true,
+  breaks: true,
+  highlight(str: string, lang: string) {
+    try {
+      if (lang && hljs.getLanguage(lang)) {
+        return hljs.highlight(str, { language: lang, ignoreIllegals: true }).value;
+      }
+    } catch {
+      return str;
+    }
+    return str;
+  },
+});
+
+const showGuide = async () => {
+  try {
+    const data = await getGuideDocs(apigwId.value);
+    markdownHtml.value = md.render(data.content);
+    isShowMarkdown.value = true;
   } catch (e) {
     console.error(e);
   }
@@ -670,6 +711,9 @@ watch(
 </script>
 
 <style lang="scss" scoped>
+.markdown-box {
+  padding: 20px 24px;
+}
 .basic-info-wrapper {
   padding: 24px;
   font-size: 12px;

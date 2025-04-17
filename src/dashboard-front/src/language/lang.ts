@@ -604,6 +604,7 @@ const lang: ILANG = {
   '授权维度': ['Dimension'],
   '资源名称': ['Resource Name'],
   '授权类型': ['Type'],
+  '查看开发指引': ['View Development Guidelines'],
   '你将对指定的蓝鲸应用添加访问资源的权限': ['Add permissions for the specified app'],
   '请输入应用ID': ['Please input app id'],
   '包括网关下所有资源，包括未来新创建的资源': ['Includes all resources under the gateway, including new resources created in the future'],
