@@ -281,9 +281,13 @@ class ProgrammableDeploymentInfoSLZ(serializers.Serializer):
 
 class ProgrammableStageDeployOutputSLZ(serializers.Serializer):
     version = serializers.CharField(help_text="当前生效资源版本", default="", required=False, allow_blank=True)
-    repo_url = serializers.SerializerMethodField(
-        help_text="代码仓库地址",
-        default="",  # 设置默认值
+    repo_info = serializers.SerializerMethodField(
+        help_text="当前代码仓库信息",
+        default={
+            "repo_url": "",
+            "branch_list": [],
+            "commit_id": "",
+        },  # 设置默认值
     )
     branch = serializers.CharField(help_text="上一次部署分支", default="", required=False, allow_blank=True)
     commit_id = serializers.CharField(help_text="上一次部署commit_id", default="", required=False, allow_blank=True)
@@ -293,8 +297,8 @@ class ProgrammableStageDeployOutputSLZ(serializers.Serializer):
         default=dict,  # 设置默认空字典
     )
 
-    def get_repo_url(self, obj):
-        return self.context.get("repo_url", "")  # 确保返回字符串类型
+    def get_repo_info(self, obj):
+        return self.context.get("repo_info", {})
 
     def get_latest_deployment(self, obj):
         latest_deploy_history = self.context.get("latest_deploy_history")

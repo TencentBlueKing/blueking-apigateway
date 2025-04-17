@@ -170,19 +170,25 @@ class ProgrammableDeployCreateInputSLZ(serializers.Serializer):
     version = serializers.CharField(required=True, help_text="发布版本号")
     comment = serializers.CharField(help_text="版本日志")
 
+    def validate_version(self, value):
+        if ReleaseHistory.objects.filter(resource_version__version=value).exists():
+            raise serializers.ValidationError(_("编程网关每个版本只允许发布一次"))
 
-class ProgrammableDeployEventGetOutputSLZ(serializers.Serializer):
-    events = serializers.SerializerMethodField(read_only=True, help_text="部署events")
-    events_instance = serializers.SerializerMethodField(read_only=True, help_text="部署实例阶段")
-    events_framework = serializers.SerializerMethodField(read_only=True, help_text="部署步骤整体框架)")
+        return value
 
-    def get_events(self, obj):
+
+class ProgrammableDeployEventGetOutputSLZ(ReleaseHistoryEventRetrieveOutputSLZ):
+    paas_events = serializers.SerializerMethodField(read_only=True, help_text="部署events")
+    paas_events_instance = serializers.SerializerMethodField(read_only=True, help_text="部署实例阶段")
+    paas_events_framework = serializers.SerializerMethodField(read_only=True, help_text="部署步骤整体框架)")
+
+    def get_paas_events(self, obj):
         return self.context["events"]
 
-    def get_events_instance(self, obj):
+    def get_paas_events_instance(self, obj):
         return self.context["events_instance"]
 
-    def get_events_framework(self, obj):
+    def get_paas_events_framework(self, obj):
         return self.context["events_framework"]
 
     class Meta:
