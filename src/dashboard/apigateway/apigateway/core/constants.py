@@ -171,6 +171,12 @@ class ResourceVersionSchemaEnum(StructuredEnum):
     V2 = EnumField("2.0", "新模型版本")
 
 
+class ResourceVersionTypeEnum(StructuredEnum):
+    Major = EnumField("major", "主版本")
+    Minor = EnumField("minor", "次版本")
+    Patch = EnumField("patch", "修订版本")
+
+
 class ProxyTypeEnum(StructuredEnum):
     HTTP = EnumField("http", "http")
     MOCK = EnumField("mock", "mock")

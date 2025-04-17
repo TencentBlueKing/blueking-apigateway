@@ -120,7 +120,7 @@ def _http_request(
                 latency,
             )
 
-        if resp.status_code != 200:
+        if resp.status_code > 299:
             content = resp.content[:256] if resp.content else ""
             logger.error(
                 "http request fail! %s %s, data: %s, request_id: %s, response.status_code: %s, response.body: %s",
@@ -134,7 +134,7 @@ def _http_request(
 
             return False, {
                 "error": (
-                    f"status_code is {resp.status_code}, not 200! "
+                    f"status_code is {resp.status_code}, not 2xx! "
                     f"{method} {urlparse(url).path}, request_id={request_id}, resp.body={content}"
                 )
             }

@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -22,20 +23,24 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.error_codes import error_codes
+from apigateway.components.paas import get_paas_repo_info, paas_app_module_offline
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import PublishSourceEnum
+from apigateway.core.constants import PublishSourceEnum, StageStatusEnum
 from apigateway.core.models import BackendConfig, Stage
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.user_credentials import get_user_credentials_from_request
 
 from .serializers import (
     BackendConfigInputSLZ,
+    ProgrammableStageDeployOutputSLZ,
     StageBackendOutputSLZ,
     StageInputSLZ,
     StageOutputSLZ,
@@ -401,6 +406,15 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
         username = request.user.username
         StageHandler.set_status(instance, data["status"], username)
 
+        if data["status"] == StageStatusEnum.INACTIVE.value and instance.gateway.is_programmable:
+            # 调用paas下架接口
+            paas_app_module_offline(
+                app_code=request.gateway.name,
+                module="default",
+                env=instance.name,
+                user_credentials=get_user_credentials_from_request(request),
+            )
+
         Auditor.record_stage_op_success(
             op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
@@ -413,3 +427,46 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取编程网关环境部署详情",
+        responses={status.HTTP_200_OK: ProgrammableStageDeployOutputSLZ()},
+        tags=["WebAPI.Stage"],
+    ),
+)
+class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUpdateAPIView):
+    lookup_field = "id"
+    serializer_class = ProgrammableStageDeployOutputSLZ
+    queryset = Stage.objects.all()
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        gateway = request.gateway
+        stage_id = instance.id
+
+        # 查询当前deploy历史
+        deploy_history = ProgrammableGatewayDeployHistory.objects.filter(gateway=gateway).order_by("-id").first()
+
+        stage_release = ReleasedResourceHandler.get_stage_release(gateway, [stage_id]).get(stage_id)
+        if stage_release:
+            # 优先使用与 stage_release 匹配的记录
+            instance = (
+                ProgrammableGatewayDeployHistory.objects.filter(
+                    gateway=gateway, version=stage_release["resource_version_display"]
+                ).first()
+                or deploy_history  # 回退到最新记录
+            )
+        else:
+            instance = deploy_history or ProgrammableGatewayDeployHistory()  # 空对象
+
+        context_data = {
+            "latest_deploy_history": instance,
+            "repo_info": get_paas_repo_info(gateway.name, "default", get_user_credentials_from_request(request)),
+            "stage_publish_status": ReleaseHandler.batch_get_stage_release_status([stage_id]),
+        }
+
+        output_slz = self.get_serializer(instance=instance, context=context_data)
+        return OKJsonResponse(data=output_slz.data)

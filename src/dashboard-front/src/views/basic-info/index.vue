@@ -8,12 +8,22 @@
             'header-info-left',
             { 'header-info-left-disabled': !basicInfoData.status }
           ]">
+          <span
+            :class="['kind', basicInfoData.kind === 0 ? 'normal' : 'program']">
+            {{ basicInfoData.kind === 0 ? t('普') : t('编') }}
+          </span>
           <span class="name">{{ basicInfoData?.name?.[0]?.toUpperCase() }}</span>
         </div>
         <div class="header-info-right">
           <div class="header-info-name">
             <span class="name">{{ basicInfoData.name }}</span>
             <div class="header-info-tag">
+              <bk-tag theme="info" v-if="basicInfoData.kind === 0">
+                {{ t('普通网关') }}
+              </bk-tag>
+              <bk-tag theme="success" v-else>
+                {{ t('可编程网关') }}
+              </bk-tag>
               <bk-tag class="website" v-if="basicInfoData.is_official">{{ t('官网') }}</bk-tag>
               <div v-if="basicInfoData.status > 0">
                 <!-- <bk-tag class="vip">{{ t('专享') }}</bk-tag>? -->
@@ -64,6 +74,11 @@
                 {{ t('删除') }}
               </bk-button>
             </template>
+            <span class="btn-line"></span>
+            <bk-button class="operate-btn">
+              <help-document-fill class="icon-help" />
+              {{ t('查看开发指引') }}
+            </bk-button>
           </div>
         </div>
       </section>
@@ -71,6 +86,21 @@
         <div class="basic-info-detail-item">
           <div class="detail-item-title">{{ t('基础信息') }}</div>
           <div class="detail-item-content">
+            <div class="detail-item-content-item" v-if="basicInfoData.kind === 1">
+              <div class="label">{{ `${t('开发语言')}：` }}</div>
+              <div class="value">
+                <span>{{ basicInfoData.extra_info?.language || '--' }}</span>
+              </div>
+            </div>
+            <div class="detail-item-content-item" v-if="basicInfoData.kind === 1">
+              <div class="label">{{ `${t('代码仓库')}：` }}</div>
+              <div class="value">
+                <span>{{ basicInfoData.extra_info?.repository || '--' }}</span>
+                <i
+                  class="apigateway-icon icon-ag-jump"
+                  @click.stop="handleOpenNav(basicInfoData.extra_info.repository)"></i>
+              </div>
+            </div>
             <div class="detail-item-content-item">
               <div class="label">{{ `${t('是否公开')}：` }}</div>
               <div class="value">
@@ -172,6 +202,54 @@
                 <i class="apigateway-icon icon-ag-info"></i>
                 <span>{{ t('可用于解密传入后端接口的请求头 X-Bkapi-JWT') }}，</span>
                 <a :href="GLOBAL_CONFIG.DOC.JWT" target="_blank" class="more-detail">{{ t(' 更多详情') }}</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="basic-info-detail-item" v-if="basicInfoData.kind === 1">
+          <div class="detail-item-title">{{ t('可编程网关工作流') }}</div>
+          <div class="detail-item-content">
+            <img :src="processImg" :alt="t('可编程网关的流程图')">
+          </div>
+        </div>
+        <div class="basic-info-detail-item" v-if="basicInfoData.kind === 1">
+          <div class="detail-item-title">{{ t('关联操作指引') }}</div>
+          <div class="detail-item-content">
+            <div class="explain">
+              {{ t('可编程网关发布后，系统将在蓝鲸开发者中心部署一个 SaaS 来提供 API 的后端服务，与蓝鲸 SaaS 开发相关的操作均可在蓝鲸开发者中心完成') }}
+            </div>
+            <div class="guide-wrapper">
+              <div class="guide-item">
+                <div class="item-name">{{ t('开发 API') }}</div>
+                <div class="item-values">
+                  <div class="value">{{ t('查看密钥') }}</div>
+                  <span class="line"></span>
+                  <div class="value">{{ t('环境变量') }}</div>
+                  <span class="line"></span>
+                  <div class="value">{{ t('增强服务') }}</div>
+                  <span class="line"></span>
+                  <div class="value">{{ t('云 API 权限申请') }}</div>
+                </div>
+              </div>
+
+              <div class="guide-item">
+                <div class="item-name">{{ t('查询日志') }}</div>
+                <div class="item-values">
+                  <div class="value">{{ t('结构化日志') }}</div>
+                  <span class="line"></span>
+                  <div class="value">{{ t('标准输出日志') }}</div>
+                  <span class="line"></span>
+                  <div class="value">{{ t('访问日志') }}</div>
+                </div>
+              </div>
+
+              <div class="guide-item">
+                <div class="item-name">{{ t('更多操作') }}</div>
+                <div class="item-values">
+                  <div class="value">{{ t('进程管理') }}</div>
+                  <span class="line"></span>
+                  <div class="value">{{ t('访问管理') }}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -323,6 +401,7 @@ import {  ref, computed, watch } from 'vue';
 import _ from 'lodash';
 import { Message, InfoBox } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
+import { HelpDocumentFill } from 'bkui-vue/lib/icon';
 import { useRoute, useRouter } from 'vue-router';
 import { useUser } from '@/store';
 import {  copy } from '@/common/util';
@@ -336,6 +415,8 @@ import MemberSelect from '@/components/member-select';
 import guide from '@/components/guide.vue';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
+// @ts-ignore
+import programProcess from '@/images/program-process.png';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -410,6 +491,10 @@ const dialogEditData = ref<DialogParams>({
   isShow: false,
   loading: false,
   title: t('编辑网关'),
+});
+
+const processImg = computed(() => {
+  return programProcess;
 });
 
 const formRemoveApigw = computed(() => {
@@ -647,6 +732,29 @@ watch(
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
+      .kind {
+        content: ' ';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 2px;
+        top: 0;
+        left: 0;
+        font-size: 12px;
+        line-height: 18px;
+        text-align: center;
+        &.normal {
+          color: #1768EF;
+          background: #E1ECFF;
+          border: 1px solid #699DF4;
+        }
+        &.program {
+          color: #299E56;
+          background: #EBFAF0;
+          border: 1px solid #A1E3BA;
+        }
+      }
 
       .name {
         font-weight: 700;
@@ -719,9 +827,20 @@ watch(
       .header-info-button {
         display: flex;
 
+        .btn-line {
+          width: 1px;
+          height: 16px;
+          background-color: #DCDEE5;
+          margin-right: 8px;
+          margin-top: 8px;
+        }
         .operate-btn {
           min-width: 88px;
           margin-right: 8px;
+          .icon-help {
+            color: #c4c6cc;
+            margin-right: 2px;
+          }
         }
 
         .deactivate-btn {
@@ -778,7 +897,8 @@ watch(
             flex: 1;
             color: #313238;
 
-            .icon-ag-copy-info {
+            .icon-ag-copy-info,
+            .icon-ag-jump {
               margin-left: 3px;
               padding: 3px;
               color: #3A84FF;
@@ -843,7 +963,42 @@ watch(
             }
           }
         }
-
+        .explain {
+          font-size: 12px;
+          color: #4D4F56;
+          margin-bottom: 14px;
+        }
+        .guide-wrapper {
+          width: 912px;
+          border-top: 1px solid #DCDEE5;
+          .guide-item {
+            border-bottom: 1px solid #DCDEE5;
+            display: flex;
+            height: 42px;
+            line-height: 42px;
+            padding-left: 16px;
+            .item-name {
+              font-weight: Bold;
+              font-size: 12px;
+              color: #4D4F56;
+            }
+            .item-values {
+              display: flex;
+              margin-left: 164px;
+              .line {
+                width: 1px;
+                height: 13px;
+                margin: 15px 8px 0;
+                background-color: #C4C6CC;
+              }
+              .value {
+                font-size: 12px;
+                color: #3A84FF;
+                cursor: pointer;
+              }
+            }
+          }
+        }
       }
     }
   }

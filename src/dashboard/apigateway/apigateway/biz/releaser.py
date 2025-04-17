@@ -26,10 +26,11 @@ from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
 from apigateway.biz.validators import PublishValidator, ReleaseValidationError
 from apigateway.common.event.event import PublishEventReporter
-from apigateway.common.user_credentials import UserCredentials
+from apigateway.components.paas import deploy_paas_app, set_paas_stage_env
 from apigateway.controller.tasks import (
     release_gateway_by_registry,
     update_release_data_after_success,
@@ -44,6 +45,7 @@ from apigateway.core.models import (
     Stage,
 )
 from apigateway.utils.django import get_model_dict
+from apigateway.utils.user_credentials import UserCredentials
 
 
 class ReleaseError(Exception):
@@ -217,3 +219,52 @@ def release(
     return MicroGatewayReleaser.from_data(
         gateway, stage_id, resource_version_id, comment, username, user_credentials
     ).release()
+
+
+@dataclass
+class ProgramGatewayReleaser:
+    @staticmethod
+    def deploy(
+        gateway: Gateway,
+        stage_id: int,
+        branch: str,
+        commit_id: str,
+        version: str,
+        comment: str,
+        user_credentials: Optional[UserCredentials] = None,
+        username: str = "",
+    ) -> str:
+        """
+        编程网关部署
+        """
+        stage = Stage.objects.get(id=stage_id)
+
+        # 调用pass平台接口设置环境变量: 版本号+版本日志
+        set_paas_stage_env(app_code=gateway.name, module="default", env={"version": version, "comment": comment})
+
+        # 调用pass平台部署接口
+        deploy_id = deploy_paas_app(
+            app_code=gateway.name,
+            module="default",
+            env=stage.name,
+            revision=commit_id,
+            branch=branch,
+            user_credentials=user_credentials,
+        )
+
+        # 创建部署历史
+        instance = ProgrammableGatewayDeployHistory.objects.create(
+            gateway=gateway, stage=stage, branch=branch, version=version, commit_id=commit_id, deploy_id=deploy_id
+        )
+
+        # record audit log
+        Auditor.record_release_op_success(
+            op_type=OpTypeEnum.CREATE,
+            username=username or settings.GATEWAY_DEFAULT_CREATOR,
+            gateway_id=gateway.id,
+            instance_id=instance.id,
+            instance_name=f"{stage.name}:{version}",
+            data_before={},
+            data_after=get_model_dict(instance),
+        )
+        return deploy_id

@@ -161,3 +161,31 @@ class ReleaseHistoryEventRetrieveOutputSLZ(ReleaseHistoryOutputSLZ):
         for step, (name, desc) in enumerate(choices):
             events_template.append({"name": name, "description": desc, "step": step})
         return events_template
+
+
+class ProgrammableDeployCreateInputSLZ(serializers.Serializer):
+    stage_id = serializers.IntegerField(required=True, help_text="环境id")
+    branch = serializers.CharField(help_text="部署分支")
+    commit_id = serializers.CharField(help_text="commit_id")
+    version = serializers.CharField(required=True, help_text="发布版本号")
+    comment = serializers.CharField(help_text="版本日志")
+
+    def validate_version(self, value):
+        if ReleaseHistory.objects.filter(resource_version__version=value).exists():
+            raise serializers.ValidationError(_("编程网关每个版本只允许发布一次"))
+
+        return value
+
+
+class ProgrammableDeployEventGetOutputSLZ(ReleaseHistoryEventRetrieveOutputSLZ):
+    paas_deploy_info = serializers.SerializerMethodField(read_only=True, help_text="paas部署信息")
+
+    def get_paas_deploy_info(self, obj):
+        return {
+            "events": self.context["events"],
+            "events_instance": self.context["events_instance"],
+            "events_framework": self.context["events_framework"],
+        }
+
+    class Meta:
+        ref_name = "apigateway.apis.web.deploy.ProgrammableDeployEventGetOutputSLZ"

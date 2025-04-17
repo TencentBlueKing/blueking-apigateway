@@ -258,3 +258,48 @@ class StagePartialInputSLZ(serializers.Serializer):
 
 class StageStatusInputSLZ(serializers.Serializer):
     status = serializers.ChoiceField(choices=[(StageStatusEnum.INACTIVE.value, "INACTIVE")], help_text="状态")
+
+
+class StageDeployInputSLZ(serializers.Serializer):
+    resource_version = serializers.SerializerMethodField(help_text="当前生效资源版本")
+
+
+class ProgrammableDeploymentInfoSLZ(serializers.Serializer):
+    branch = serializers.CharField(help_text="部署分支", default="", required=False, allow_blank=True)
+    deploy_id = serializers.CharField(help_text="部署ID", default="", required=False, allow_blank=True)
+    commit_id = serializers.CharField(help_text="commit_id", default="", required=False, allow_blank=True)
+    version = serializers.CharField(help_text="部署版本", default="", required=False, allow_blank=True)
+    history_id = serializers.SerializerMethodField(
+        help_text="网关部署历史id",
+        default=0,  # 确保默认值存在
+    )
+
+    def get_history_id(self, obj):
+        stage_status = self.context.get("stage_publish_status", {}).get(obj.stage_id, {})
+        return stage_status.get("publish_id", 0)
+
+
+class ProgrammableStageDeployOutputSLZ(serializers.Serializer):
+    version = serializers.CharField(help_text="当前生效资源版本", default="", required=False, allow_blank=True)
+    repo_info = serializers.SerializerMethodField(
+        help_text="当前代码仓库信息",
+        default={
+            "repo_url": "",
+            "branch_list": [],
+            "commit_id": "",
+        },  # 设置默认值
+    )
+    branch = serializers.CharField(help_text="上一次部署分支", default="", required=False, allow_blank=True)
+    commit_id = serializers.CharField(help_text="上一次部署commit_id", default="", required=False, allow_blank=True)
+    deploy_id = serializers.CharField(help_text="上一次部署ID", default="", required=False, allow_blank=True)
+    latest_deployment = serializers.SerializerMethodField(
+        help_text="当前部署信息",
+        default=dict,  # 设置默认空字典
+    )
+
+    def get_repo_info(self, obj):
+        return self.context.get("repo_info", {})
+
+    def get_latest_deployment(self, obj):
+        latest_deploy_history = self.context.get("latest_deploy_history")
+        return ProgrammableDeploymentInfoSLZ(latest_deploy_history, context=self.context).data
