@@ -178,18 +178,14 @@ class ProgrammableDeployCreateInputSLZ(serializers.Serializer):
 
 
 class ProgrammableDeployEventGetOutputSLZ(ReleaseHistoryEventRetrieveOutputSLZ):
-    paas_events = serializers.SerializerMethodField(read_only=True, help_text="部署events")
-    paas_events_instance = serializers.SerializerMethodField(read_only=True, help_text="部署实例阶段")
-    paas_events_framework = serializers.SerializerMethodField(read_only=True, help_text="部署步骤整体框架)")
+    paas_deploy_info = serializers.SerializerMethodField(read_only=True, help_text="paas部署信息")
 
-    def get_paas_events(self, obj):
-        return self.context["events"]
-
-    def get_paas_events_instance(self, obj):
-        return self.context["events_instance"]
-
-    def get_paas_events_framework(self, obj):
-        return self.context["events_framework"]
+    def get_paas_deploy_info(self, obj):
+        return {
+            "events": self.context["events"],
+            "events_instance": self.context["events_instance"],
+            "events_framework": self.context["events_framework"],
+        }
 
     class Meta:
         ref_name = "apigateway.apis.web.deploy.ProgrammableDeployEventGetOutputSLZ"
