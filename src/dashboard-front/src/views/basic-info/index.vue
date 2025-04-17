@@ -74,11 +74,13 @@
                 {{ t('删除') }}
               </bk-button>
             </template>
-            <span class="btn-line"></span>
-            <bk-button class="operate-btn">
-              <help-document-fill class="icon-help" />
-              {{ t('查看开发指引') }}
-            </bk-button>
+            <template v-if="basicInfoData.kind === 1">
+              <span class="btn-line"></span>
+              <bk-button class="operate-btn" @click="showGuide">
+                <help-document-fill class="icon-help" />
+                {{ t('查看开发指引') }}
+              </bk-button>
+            </template>
           </div>
         </div>
       </section>
