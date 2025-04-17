@@ -759,22 +759,6 @@ PLUGIN_METADATA_CONFIG = {
     },
 }
 
-APISIX_CONFIG = {
-    "pluginAttrs": {
-        "log-rotate": {
-            # 每间隔多长时间切分一次日志，秒为单位
-            "interval": 60 * 60,
-            # 最多保留多少份历史日志，超过指定数量后，自动删除老文件
-            "max_kept": 24 * 7,
-        },
-        "prometheus": {
-            "export_addr": {
-                "ip": "0.0.0.0",
-            },
-        },
-    },
-}
-
 BK_GATEWAY_ETCD_NAMESPACE_PREFIX = env.str("BK_GATEWAY_ETCD_NAMESPACE_PREFIX", default="/bk-gateway-apigw")
 
 # ==============================================================================
