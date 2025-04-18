@@ -92,8 +92,9 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             slz.validated_data.get("keyword"),
             slz.validated_data["order_by"],
         )
-        if "kind" in slz.validated_data:
-            queryset = queryset.filter(kind=slz.validated_data["kind"])
+        kind = slz.validated_data.get("kind")
+        if kind in [GatewayKindEnum.PROGRAMMABLE.value, GatewayKindEnum.NORMAL.value]:
+            queryset = queryset.filter(kind=kind)
 
         page = self.paginate_queryset(queryset)
         gateway_ids = [gateway.id for gateway in page]
