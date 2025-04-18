@@ -112,6 +112,7 @@
       ref="logDetailsRef"
       :current-stage="currentStage"
       :deploy-id="deployId"
+      :version="stageDetail.version"
       @release-success="handleReleaseSuccess"
       @release-doing="handleReleaseDoing"
     />

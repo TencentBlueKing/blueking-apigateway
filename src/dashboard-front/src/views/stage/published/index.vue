@@ -101,17 +101,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import {
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue';
 import { useRouter } from 'vue-router';
 
-import { useQueryList, useDatePicker } from '@/hooks';
+import {
+  useDatePicker,
+  useQueryList,
+} from '@/hooks';
 import { useI18n } from 'vue-i18n';
 import logDetails from '@/components/log-details/index.vue';
 import publishDetails from './comps/publish-details.vue';
 import { Spinner } from 'bkui-vue/lib/icon';
-import {
-  getReleaseHistories,
-} from '@/http';
+import { getReleaseHistories } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
 import { Message } from 'bkui-vue';
 
@@ -175,7 +181,6 @@ const detailsRef = ref(null);
 
 const showLogs = (id: string) => {
   historyId.value = id;
-  console.error('id', id);
   logDetailsRef.value?.showSideslider();
 };
 
