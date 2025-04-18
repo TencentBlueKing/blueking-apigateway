@@ -92,7 +92,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             slz.validated_data.get("keyword"),
             slz.validated_data["order_by"],
         )
-        if slz.validated_data.get("kind"):
+        if "kind" in slz.validated_data:
             queryset = queryset.filter(kind=slz.validated_data["kind"])
 
         page = self.paginate_queryset(queryset)
@@ -368,7 +368,7 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
         if not instance.is_programmable:
             raise error_codes.FAILED_PRECONDITION.format(_("当前网关类型不支持开发指引。"), replace=True)
 
-        language = instance.extra_info["language"]
+        language = instance.extra_info.get("language", ProgrammableGatewayLanguageEnum.PYTHON.value)
         dev_guideline_url = ""
         if language == ProgrammableGatewayLanguageEnum.PYTHON.value:
             dev_guideline_url = settings.PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL
@@ -377,13 +377,16 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
 
         template_name = f"dev_guideline/{get_current_language_code()}/programmable_gateway.md"
 
+        language = instance.extra_info.get("language")
+        repo_url = instance.extra_info.get("repository")
+
         slz = GatewayDevGuidelineOutputSLZ(
             {
                 "content": render_to_string(
                     template_name,
                     context={
-                        "language": instance.extra_info["language"],
-                        "repo_url": instance.extra_info["repository"],
+                        "language": language,
+                        "repo_url": repo_url,
                         "dev_guideline_url": dev_guideline_url,
                     },
                 )
