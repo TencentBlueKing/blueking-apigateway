@@ -447,9 +447,10 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
         gateway = request.gateway
         stage_id = instance.id
 
+        latest_deploy_history = ProgrammableGatewayDeployHistory()
+
         # 查询当前deploy历史
         deploy_history = ProgrammableGatewayDeployHistory.objects.filter(gateway=gateway).order_by("-id").first()
-
         stage_release = ReleasedResourceHandler.get_stage_release(gateway, [stage_id]).get(stage_id)
         if stage_release:
             # 优先使用与 stage_release 匹配的记录
@@ -459,13 +460,11 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
                 ).first()
                 or deploy_history  # 回退到最新记录
             )
-        else:
-            instance = deploy_history or ProgrammableGatewayDeployHistory()  # 空对象
+            latest_deploy_history = deploy_history
 
         context_data = {
-            "latest_deploy_history": instance,
+            "latest_deploy_history": latest_deploy_history,
             "repo_info": get_paas_repo_info(gateway.name, "default", get_user_credentials_from_request(request)),
-            "stage_publish_status": ReleaseHandler.batch_get_stage_release_status([stage_id]),
         }
 
         output_slz = self.get_serializer(instance=instance, context=context_data)
