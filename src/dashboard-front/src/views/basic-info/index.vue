@@ -224,33 +224,30 @@
               <div class="guide-item">
                 <div class="item-name">{{ t('开发 API') }}</div>
                 <div class="item-values">
-                  <div class="value">{{ t('查看密钥') }}</div>
-                  <span class="line"></span>
-                  <div class="value">{{ t('环境变量') }}</div>
-                  <span class="line"></span>
-                  <div class="value">{{ t('增强服务') }}</div>
-                  <span class="line"></span>
-                  <div class="value">{{ t('云 API 权限申请') }}</div>
+                  <div class="item" v-for="(item, index) in basicInfoData.links?.develop" :key="item.name">
+                    <a class="value" :href="item.link" target="_blank">{{ item.name }}</a>
+                    <span class="line" v-if="index !== basicInfoData.links?.develop?.length - 1"></span>
+                  </div>
                 </div>
               </div>
 
               <div class="guide-item">
                 <div class="item-name">{{ t('查询日志') }}</div>
                 <div class="item-values">
-                  <div class="value">{{ t('结构化日志') }}</div>
-                  <span class="line"></span>
-                  <div class="value">{{ t('标准输出日志') }}</div>
-                  <span class="line"></span>
-                  <div class="value">{{ t('访问日志') }}</div>
+                  <div class="item" v-for="(item, index) in basicInfoData.links?.logging" :key="item.name">
+                    <a class="value" :href="item.link" target="_blank">{{ item.name }}</a>
+                    <span class="line" v-if="index !== basicInfoData.links?.logging?.length - 1"></span>
+                  </div>
                 </div>
               </div>
 
               <div class="guide-item">
                 <div class="item-name">{{ t('更多操作') }}</div>
                 <div class="item-values">
-                  <div class="value">{{ t('进程管理') }}</div>
-                  <span class="line"></span>
-                  <div class="value">{{ t('访问管理') }}</div>
+                  <div class="item" v-for="(item, index) in basicInfoData.links?.more" :key="item.name">
+                    <a class="value" :href="item.link" target="_blank">{{ item.name }}</a>
+                    <span class="line" v-if="index !== basicInfoData.links?.more?.length - 1"></span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -987,6 +984,9 @@ watch(
             .item-values {
               display: flex;
               margin-left: 164px;
+              .item {
+                display: flex;
+              }
               .line {
                 width: 1px;
                 height: 13px;
