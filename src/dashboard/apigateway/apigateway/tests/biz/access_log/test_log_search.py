@@ -25,11 +25,9 @@ class TestLogSearchClient:
     @pytest.fixture(autouse=True)
     def setup_fixture(self, mocker, settings):
         settings.ACCESS_LOG_CONFIG = {
-            "es_client_type": "elasticsearch",
             "es_index": "test_index",
             "es_time_field_name": "@timestamp",
         }
-        settings.ELASTICSEARCH_HOSTS = ["localhost"]
 
         mocker.patch.object(
             LogSearchClient,

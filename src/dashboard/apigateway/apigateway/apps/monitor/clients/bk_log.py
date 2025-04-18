@@ -21,14 +21,14 @@ from typing import List
 from django.conf import settings
 
 from apigateway.apps.monitor.constants import SOURCE_TIME_OFFSET_SECONDS
-from apigateway.common.es.clients import ESClientFactory
+from apigateway.common.es.clients import BKLogESClient
 
 
 class LogSearchClient:
     def __init__(self, es_index: str, output_fields: List[str]):
         self.es_index = es_index
         self.output_fields = output_fields
-        self._es_client = ESClientFactory.get_es_client(self.es_index)
+        self._es_client = BKLogESClient(self.es_index)
         self._es_time_field_name: str = settings.ACCESS_LOG_CONFIG["es_time_field_name"]
 
     def search(self, source_timestamp: int, match_dimension: dict):
