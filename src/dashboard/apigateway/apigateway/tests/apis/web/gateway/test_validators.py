@@ -18,7 +18,8 @@
 import pytest
 from rest_framework import serializers
 
-from apigateway.apis.web.gateway.validators import ReservedGatewayNameValidator
+from apigateway.apis.web.gateway.validators import ProgrammableGatewayNameValidator, ReservedGatewayNameValidator
+from apigateway.core.constants import GatewayKindEnum
 
 
 class TestReservedGatewayNameValidator:
@@ -48,4 +49,35 @@ class TestReservedGatewayNameValidator:
         if will_error:
             assert slz.errors
         else:
+            assert not slz.errors
+
+
+class TestProgrammableGatewayNameValidator:
+    class GatewaySLZ(serializers.Serializer):
+        name = serializers.CharField()
+        kind = serializers.ChoiceField(choices=GatewayKindEnum.get_choices())
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.validators.append(ProgrammableGatewayNameValidator())
+
+    @pytest.mark.parametrize(
+        "kind, name, is_occupied, will_error",
+        [
+            (GatewayKindEnum.PROGRAMMABLE.value, "testapp", True, True),
+            (GatewayKindEnum.PROGRAMMABLE.value, "testapp", False, False),
+            (GatewayKindEnum.NORMAL.value, "testapp", True, False),
+            (GatewayKindEnum.NORMAL.value, "testapp", False, False),
+        ],
+    )
+    def test_validate(self, mocker, kind, name, is_occupied, will_error):
+        mocker.patch("apigateway.apis.web.gateway.validators.is_app_code_occupied", return_value=is_occupied)
+
+        slz = self.GatewaySLZ(data={"name": name, "kind": kind})
+
+        if will_error:
+            with pytest.raises(serializers.ValidationError):
+                slz.is_valid(raise_exception=True)
+        else:
+            slz.is_valid()
             assert not slz.errors
