@@ -23,7 +23,7 @@ from elasticsearch_dsl import Search
 from elasticsearch_dsl.aggs import A
 
 from apigateway.biz.access_log.constants import ES_OUTPUT_FIELDS
-from apigateway.common.es.clients import ESClientFactory
+from apigateway.common.es.clients import BKLogESClient
 from apigateway.utils import time as time_utils
 from apigateway.utils.time import SmartTimeRange
 
@@ -64,7 +64,7 @@ class LogSearchClient:
                 time_range=time_range,
             )
 
-        self._es_client = ESClientFactory.get_es_client(self._es_index)
+        self._es_client = BKLogESClient(self._es_index)
 
     def search_logs(self, offset: int = 0, limit: Optional[int] = None) -> Tuple[int, List[Dict]]:
         """
