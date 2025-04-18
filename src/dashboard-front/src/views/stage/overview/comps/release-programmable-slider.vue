@@ -4,7 +4,7 @@
       v-model:isShow="isShow"
       :before-close="handleBeforeClose"
       :title="t('发布资源至环境【{stage}】', { stage: chooseAssets.name })"
-      :width="960"
+      :width="1100"
       class="release-sideslider"
       quick-close
       @animation-end="handleAnimationEnd"
@@ -13,14 +13,25 @@
         <div class="sideslider-content">
           <div>
             <div class="main">
-              <bk-alert
+              <BkAlert
                 class="mt15 mb15"
                 theme="info"
-                :title="`当前版本号: ${stageDetail.version}      `
-                  + `代码分支：${stageDetail.branch}       `
-                  + `CommitID: ${stageDetail.commit_id}       `
-                  + `由 ${stageDetail.deployedBy || '--'}  于 ${stageDetail.deployedAt || '--'}  发布`"
-              />
+              >
+                <div class="alert-content">
+                  <span class="pr12">
+                    <span class="pr4">{{ t('当前版本号') }}: </span>
+                    <span class="pr4">{{ stageDetail.version }}</span>
+                  </span>
+                  <span class="pr12">{{ t('代码分支') }}: <span>{{ stageDetail.branch }}</span></span>
+                  <span class="pr12">CommitID: <span>{{ stageDetail.commit_id }}</span></span>
+                  <span class="pr12">
+                    {{
+                      `由 ${stageDetail.created_by || '--'}  于 ${dayjs(stageDetail.created_time)
+                        .format('YYYY-MM-DD HH:mm:ss') || '--'}  发布`
+                    }}
+                  </span>
+                </div>
+              </BkAlert>
               <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
                 <bk-form-item :label="t('代码仓库')" required>
                   <div class="repo-item-wrapper">
@@ -64,8 +75,11 @@
                 </bk-form-item>
                 <bk-form-item label="CommitID" property="commit_id" required>
                   <div class="commit-id-wrapper">
-                    <span class="id-content">{{ formData.commit_id }}ffff</span>
-                    <span class="commit-suffix">（由 jiayuan 于 2024-10-14 11:18:10 提交）</span>
+                    <span class="id-content">{{ formData.commit_id }}</span>
+                    <span class="commit-suffix">{{
+                      `由 ${stageDetail.created_by || '--'}  于 ${dayjs(stageDetail.created_time)
+                        .format('YYYY-MM-DD HH:mm:ss') || '--'}  发布`
+                    }}</span>
                   </div>
                 </bk-form-item>
                 <bk-form-item :label="t('版本日志')" property="comment">
@@ -135,6 +149,8 @@
 </template>
 
 <script lang="ts" setup>
+import dayjs from 'dayjs';
+
 import { useI18n } from 'vue-i18n';
 import {
   computed,
@@ -204,6 +220,8 @@ const formData = ref<FormData>({
 const stageDetail = ref({
   branch: '',
   commit_id: '',
+  created_by: '',
+  created_time: '',
   deploy_id: '',
   latest_deployment: {
     branch: '',
@@ -422,16 +440,13 @@ defineExpose({
     .main {
       padding: 0 100px;
 
-      .add {
-        color: #34d97b;
+      :deep(.bk-alert-wraper) {
+        align-items: center;
       }
 
-      .update {
-        color: #ffb400;
-      }
-
-      .delete {
-        color: #ff5656;
+      .alert-content {
+        display: flex;
+        align-items: center;
       }
     }
 

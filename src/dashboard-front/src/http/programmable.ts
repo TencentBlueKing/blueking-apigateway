@@ -151,6 +151,8 @@ export const deployReleases = (apigwId: number, data: {
 export const getProgrammableStageDetail = (apigwId: number, stageId: number): Promise<{
   branch: string;
   commit_id: string;
+  created_by: string | null;
+  created_time: string;
   deploy_id: string;
   latest_deployment: {
     branch: string;
