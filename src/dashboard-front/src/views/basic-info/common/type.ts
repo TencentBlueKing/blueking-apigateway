@@ -21,6 +21,9 @@ export interface BasicInfoParams {
   extra_info?: {
     [key: string]: string
   }
+  links?: {
+    [key: string]: any
+  }
 }
 
 export interface DialogParams {
