@@ -1,5 +1,5 @@
 <template>
-  <bk-sideslider v-model:isShow="isShow" :width="960" quick-close>
+  <bk-sideslider v-model:isShow="isShow" :width="1100" quick-close>
     <template #header>
       <div class="log-details-title">
         <div class="log-details-name">【{{ currentStage?.name }}】{{ t('发布日志详情') }}</div>
@@ -17,7 +17,7 @@
         </div>
         <BkAlert v-else-if="isDeployFailed" theme="error">
           <div class="alert-content">
-            <div class="mr80"><span class="pr4">{{ t('版本') }}</span><span class="pr4">1.0.2</span><span
+            <div class="mr80"><span class="pr4">{{ t('版本') }}</span><span class="pr4">{{ version }}</span><span
               style="color: #ea3636;"
             >{{ t('发布失败') }}</span></div>
             <div class="mr50">{{ t('已耗时') }}: <span>{{ totalDuration }}s</span></div>
@@ -30,7 +30,7 @@
         </BkAlert>
         <BkAlert v-else theme="success">
           <div class="alert-content">
-            <div class="mr80"><span class="pr4">{{ t('版本') }}</span><span class="pr4">1.0.2</span><span
+            <div class="mr80"><span class="pr4">{{ t('版本') }}</span><span class="pr4">{{ version }}</span><span
               style="color: #2dcb56;"
             >{{ t('发布成功') }}</span></div>
             <div class="mr50">{{ t('已耗时') }}: <span>{{ totalDuration }}s</span></div>
@@ -52,7 +52,7 @@
           </div>
         </div>
         <div class="main-encoding">
-          <editor-monaco v-model="eventTextLines" :read-only="true" />
+          <editor-monaco v-model="eventTextLines" read-only />
         </div>
       </div>
     </template>
@@ -103,6 +103,10 @@ const props = defineProps({
   currentStage: {
     type: Object,
     default: () => ({}),
+  },
+  version: {
+    type: String,
+    default: '--',
   },
 });
 
