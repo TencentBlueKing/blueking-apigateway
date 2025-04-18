@@ -200,6 +200,14 @@
         @closed-on-publishing="handleClosedOnPublishing"
         @release-success="handleReleaseSuccess"
       />
+
+      <!-- 发布可编程网关的资源至环境 -->
+      <release-programmable-slider
+        ref="releaseProgrammableSliderRef"
+        :current-stage="stageData"
+        @hidden="handleReleaseSuccess"
+        @release-success="handleReleaseSuccess"
+      />
     </div>
   </div>
 </template>
@@ -231,6 +239,7 @@ import {
   useStage,
 } from '@/store';
 import releaseSideslider from '../comps/release-sideslider.vue';
+import releaseProgrammableSlider from '../comps/release-programmable-slider.vue';
 import editStageSideslider from '../comps/edit-stage-sideslider.vue';
 import stageTopBar from '@/components/stage-top-bar.vue';
 import { useGetGlobalProperties } from '@/hooks';
@@ -259,6 +268,7 @@ const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;
 
 const releaseSidesliderRef = ref(null);
+const releaseProgrammableSliderRef = ref(null);
 const stageSidesliderRef = ref(null);
 const stageTopBarRef = ref(null);
 
@@ -345,7 +355,13 @@ const handleTabChange = (name: string) => {
 
 // 发布资源
 const handleRelease = () => {
-  releaseSidesliderRef.value.showReleaseSideslider();
+  // 普通网关
+  if (common.curApigwData?.kind !== 1) {
+    releaseSidesliderRef.value?.showReleaseSideslider();
+  } else {
+    // 可编程网关
+    releaseProgrammableSliderRef.value?.showReleaseSideslider();
+  }
 };
 
 // 下架环境

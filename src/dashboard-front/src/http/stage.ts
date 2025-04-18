@@ -1,5 +1,4 @@
 import fetch from './fetch';
-// import { json2Query } from '@/common/util';
 
 const { BK_DASHBOARD_URL } = window;
 

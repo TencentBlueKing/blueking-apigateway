@@ -38,6 +38,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-plus-circle:before {
 	content: "\e110";
 }
+.icon-ag-time-circle:before {
+	content: "\e1b3";
+}
 .icon-ag-copy-fill:before {
 	content: "\e118";
 }
