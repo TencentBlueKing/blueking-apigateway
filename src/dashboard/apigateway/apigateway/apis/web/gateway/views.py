@@ -92,7 +92,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             slz.validated_data.get("keyword"),
             slz.validated_data["order_by"],
         )
-        if slz.validated_data.get("kind"):
+        if "kind" in slz.validated_data:
             queryset = queryset.filter(kind=slz.validated_data["kind"])
 
         page = self.paginate_queryset(queryset)
