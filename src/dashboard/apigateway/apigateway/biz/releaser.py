@@ -254,7 +254,13 @@ class ProgramGatewayReleaser:
 
         # 创建部署历史
         instance = ProgrammableGatewayDeployHistory.objects.create(
-            gateway=gateway, stage=stage, branch=branch, version=version, commit_id=commit_id, deploy_id=deploy_id
+            gateway=gateway,
+            stage=stage,
+            branch=branch,
+            version=version,
+            commit_id=commit_id,
+            deploy_id=deploy_id,
+            created_by=username,
         )
 
         # record audit log
