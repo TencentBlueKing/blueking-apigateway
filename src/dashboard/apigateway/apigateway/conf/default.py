@@ -272,6 +272,36 @@ DATABASES = {
     },
 }
 
+## database ssl
+BK_APIGW_DATABASE_TLS_ENABLED = env.bool("BK_APIGW_DATABASE_TLS_ENABLED", False)
+if BK_APIGW_DATABASE_TLS_ENABLED:
+    default_ssl_options = {
+        "ca": env.str("BK_APIGW_DATABASE_TLS_CERT_CA_FILE", ""),
+    }
+    # mTLS
+    default_cert_file = env.str("BK_APIGW_DATABASE_TLS_CERT_FILE", "")
+    default_key_file = env.str("BK_APIGW_DATABASE_TLS_CERT_KEY_FILE", "")
+    if default_cert_file and default_key_file:
+        default_ssl_options["cert"] = default_cert_file
+        default_ssl_options["key"] = default_key_file
+
+    DATABASES["default"]["OPTIONS"]["ssl"] = default_ssl_options
+
+BK_ESB_DATABASE_TLS_ENABLED = env.bool("BK_ESB_DATABASE_TLS_ENABLED", False)
+if BK_ESB_DATABASE_TLS_ENABLED:
+    bkcore_ssl_options = {
+        "ca": env.str("BK_ESB_DATABASE_TLS_CERT_CA_FILE", ""),
+    }
+    # mTLS
+    bkcore_cert_file = env.str("BK_ESB_DATABASE_TLS_CERT_FILE", "")
+    bkcore_key_file = env.str("BK_ESB_DATABASE_TLS_CERT_KEY_FILE", "")
+    if bkcore_cert_file and bkcore_key_file:
+        bkcore_ssl_options["cert"] = bkcore_cert_file
+        bkcore_ssl_options["key"] = bkcore_key_file
+
+    DATABASES["bkcore"]["OPTIONS"]["ssl"] = bkcore_ssl_options
+
+
 # ==============================================================================
 # redis 配置
 # ==============================================================================
@@ -281,14 +311,13 @@ REDIS_PASSWORD = env.str("BK_APIGW_REDIS_PASSWORD", "")
 REDIS_PREFIX = env.str("BK_APIGW_REDIS_PREFIX", "apigw::")
 REDIS_MAX_CONNECTIONS = env.int("BK_APIGW_REDIS_MAX_CONNECTIONS", 100)
 REDIS_DB = env.int("BK_APIGW_REDIS_DB", 0)
-# sentinel check
-REDIS_USE_SENTINEL = env.bool("BK_APIGW_REDIS_USE_SENTINEL", False)
-REDIS_SENTINEL_MASTER_NAME = env.str("BK_APIGW_REDIS_SENTINEL_MASTER_NAME", "mymaster")
-# sentinel password is not the same as redis password, so you should both set the passwords
-REDIS_SENTINEL_PASSWORD = env.str("BK_APIGW_REDIS_SENTINEL_PASSWORD", "")
-REDIS_SENTINEL_ADDR_STR = env.str("BK_APIGW_REDIS_SENTINEL_ADDR", "")
-# parse sentinel address from "host1:port1,host2:port2" to [("host1", port1), ("host2", port2)]
-REDIS_SENTINEL_ADDR_LIST = [tuple(addr.split(":")) for addr in REDIS_SENTINEL_ADDR_STR.split(",") if addr]
+## redis tls
+REDIS_TLS_ENABLED = env.bool("BK_APIGW_REDIS_TLS_ENABLED", False)
+REDIS_TLS_CERT_CA_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_CA_FILE", "")
+REDIS_TLS_CERT_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_FILE", "")
+REDIS_TLS_CERT_KEY_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_KEY_FILE", "")
+
+
 # redis lock 配置
 REDIS_PUBLISH_LOCK_TIMEOUT = env.int("BK_APIGW_PUBLISH_LOCK_TIMEOUT", 5)
 REDIS_PUBLISH_LOCK_RETRY_GET_TIMES = env.int("BK_APIGW_PUBLISH_LOCK_RETRY_GET_TIMES", 3)
@@ -299,11 +328,10 @@ DEFAULT_REDIS_CONFIG = CHANNEL_REDIS_CONFIG = {
     "password": REDIS_PASSWORD,
     "max_connections": REDIS_MAX_CONNECTIONS,
     "db": REDIS_DB,
-    # sentinel
-    "use_sentinel": REDIS_USE_SENTINEL,
-    "master_name": REDIS_SENTINEL_MASTER_NAME,
-    "sentinel_password": REDIS_SENTINEL_PASSWORD,
-    "sentinels": REDIS_SENTINEL_ADDR_LIST,
+    "tls_enabled": REDIS_TLS_ENABLED,
+    "tls_cert_ca_file": REDIS_TLS_CERT_CA_FILE,
+    "tls_cert_file": REDIS_TLS_CERT_FILE,
+    "tls_cert_key_file": REDIS_TLS_CERT_KEY_FILE,
 }
 
 # ==============================================================================
@@ -339,9 +367,10 @@ RABBITMQ_HOST = env.str("BK_APIGW_RABBITMQ_HOST", "")
 RABBITMQ_USER = env.str("BK_APIGW_RABBITMQ_USER", "")
 RABBITMQ_PASSWORD = env.str("BK_APIGW_RABBITMQ_PASSWORD", "")
 if all([RABBITMQ_VHOST, RABBITMQ_PORT, RABBITMQ_HOST, RABBITMQ_USER, RABBITMQ_PASSWORD]):
+    # this section not support tls, both rabbitmq and redis
     CELERY_BROKER_URL = f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASSWORD}@{RABBITMQ_HOST}:{RABBITMQ_PORT}/{RABBITMQ_VHOST}"
     CELERY_RESULT_BACKEND = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0"
-elif not REDIS_USE_SENTINEL:
+else:
     # 如果没有使用 Redis 作为 Broker，请不要启用该配置，详见：
     # http://docs.celeryproject.org/en/latest/userguide/configuration.html#broker-transport-options
     CELERY_BROKER_TRANSPORT_OPTIONS = REDIS_CONNECTION_OPTIONS
@@ -350,26 +379,22 @@ elif not REDIS_USE_SENTINEL:
     CELERY_TASK_DEFAULT_QUEUE = env.str(
         "BK_APIGW_CELERY_TASK_DEFAULT_QUEUE", f"{REDIS_PREFIX}bk_apigateway_dashboard_celery"
     )
-else:
-    # https://docs.celeryq.dev/en/v4.3.0/history/whatsnew-4.0.html?highlight=sentinel#redis-support-for-sentinel
-    # sentinel://0.0.0.0:26379;sentinel://0.0.0.0:26380/...
-    # REDIS_SENTINEL_ADDR_LIST = [(host1, port1), (host2, port2)]
-    CELERY_SENTINEL_URL = ";".join(
-        [f"sentinel://:{REDIS_PASSWORD}@" + ":".join(addr) + f"/{REDIS_DB}" for addr in REDIS_SENTINEL_ADDR_LIST]
-    )
-    CELERY_SENTINEL_TRANSPORT_OPTIONS = {
-        "master_name": REDIS_SENTINEL_MASTER_NAME,
-        "sentinel_kwargs": {"password": REDIS_SENTINEL_PASSWORD},
-        **REDIS_CONNECTION_OPTIONS,
-    }
+    # support tls
+    if REDIS_TLS_ENABLED:
+        query_string_params = {
+            "ssl_cert_reqs": "CERT_REQUIRED",
+            "ssl_ca_certs": REDIS_TLS_CERT_CA_FILE,
+        }
+        if REDIS_TLS_CERT_KEY_FILE and REDIS_TLS_CERT_FILE:
+            query_string_params["ssl_keyfile"] = REDIS_TLS_CERT_KEY_FILE
+            query_string_params["ssl_certfile"] = REDIS_TLS_CERT_FILE
 
-    CELERY_BROKER_URL = CELERY_SENTINEL_URL
-    CELERY_BROKER_TRANSPORT_OPTIONS = CELERY_SENTINEL_TRANSPORT_OPTIONS
-    CELERY_RESULT_BACKEND = CELERY_SENTINEL_URL
-    CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = CELERY_SENTINEL_TRANSPORT_OPTIONS
-    CELERY_TASK_DEFAULT_QUEUE = env.str(
-        "BK_APIGW_CELERY_TASK_DEFAULT_QUEUE", f"{REDIS_PREFIX}bk_apigateway_dashboard_celery"
-    )
+        import urllib.parse
+
+        broker_url = f"rediss://:{quote(REDIS_PASSWORD)}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}?{urllib.parse.urlencode(query_string_params)}"
+        CELERY_BROKER_URL = broker_url
+        CELERY_RESULT_BACKEND = broker_url
+
 
 if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True):
     CELERY_BEAT_SCHEDULE.update(
@@ -598,37 +623,16 @@ BK_NOTICE = {
 # ==============================================================================
 VERSION_LOG_DIR = os.path.join(BASE_DIR, "data/version_log")
 
-# ==============================================================================
-# Elasticsearch 配置
-# ==============================================================================
-BK_APIGW_ES_USER = env.str("BK_APIGW_ES_USER", BK_APP_CODE)
-# 密码中可能包含特殊字符
-BK_APIGW_ES_PASSWORD = quote(env.str("BK_APIGW_ES_PASSWORD", ""))
-BK_APIGW_ES_HOST = env.list("BK_APIGW_ES_HOST", default=[])
-BK_APIGW_ES_PORT = env.str("BK_APIGW_ES_PORT", "9200")
-ELASTICSEARCH_HOSTS = []
-if BK_APIGW_ES_HOST and BK_APIGW_ES_PORT:
-    ELASTICSEARCH_HOSTS = [f"{host}:{BK_APIGW_ES_PORT}" for host in BK_APIGW_ES_HOST]
-    ELASTICSEARCH_HOSTS_WITHOUT_AUTH = ELASTICSEARCH_HOSTS.copy()
-    if BK_APIGW_ES_USER and BK_APIGW_ES_PASSWORD:
-        ELASTICSEARCH_HOSTS = [
-            f"{BK_APIGW_ES_USER}:{BK_APIGW_ES_PASSWORD}@{host}:{BK_APIGW_ES_PORT}" for host in BK_APIGW_ES_HOST
-        ]
-
-DEFAULT_ES_SEARCH_TIMEOUT = env.int("DEFAULT_ES_SEARCH_TIMEOUT", 30)
-DEFAULT_ES_AGGS_TERM_SIZE = env.int("DEFAULT_ES_AGGS_TERM_SIZE", 1000)
 
 # ==============================================================================
 # 访问日志
 # ==============================================================================
 ACCESS_LOG_CONFIG = {
-    "es_client_type": env.str("BK_APIGW_ES_CLIENT_TYPE", "bk_log"),
     "es_time_field_name": env.str("BK_APIGW_ES_TIME_FIELD_NAME", "dtEventTimeStamp"),
     "es_index": env.str("BK_APIGW_API_LOG_ES_INDEX", "2_bklog_bkapigateway_apigateway_container*"),
 }
 
 BK_ESB_ACCESS_LOG_CONFIG = {
-    "es_client_type": env.str("BK_ESB_ES_CLIENT_TYPE", "bk_log"),
     "es_time_field_name": env.str("BK_ESB_ES_TIME_FIELD_NAME", "dtEventTimeStamp"),
     "es_index": env.str("BK_ESB_API_LOG_ES_INDEX", "2_bklog_bkapigateway_esb_container*"),
 }
@@ -752,22 +756,6 @@ PLUGIN_METADATA_CONFIG = {
             },
         },
         "additional_attributes": [],
-    },
-}
-
-APISIX_CONFIG = {
-    "pluginAttrs": {
-        "log-rotate": {
-            # 每间隔多长时间切分一次日志，秒为单位
-            "interval": 60 * 60,
-            # 最多保留多少份历史日志，超过指定数量后，自动删除老文件
-            "max_kept": 24 * 7,
-        },
-        "prometheus": {
-            "export_addr": {
-                "ip": "0.0.0.0",
-            },
-        },
     },
 }
 

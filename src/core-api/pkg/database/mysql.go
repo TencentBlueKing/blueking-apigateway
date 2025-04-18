@@ -19,10 +19,14 @@
 package database
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net/url"
+	"os"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/uptrace/opentelemetry-go-extra/otelsql"
 	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
@@ -49,6 +53,8 @@ const (
 const (
 	// sql errCode
 	DuplicateErrCode uint16 = 1062
+
+	defaultTLSConfigName = "custom"
 )
 
 // DBClient MySQL DB Instance
@@ -117,6 +123,40 @@ func (db *DBClient) Close() {
 	}
 }
 
+func initMysqlTLS(tlsCertCaFile, tlsCertFile, tlsCertKeyFile string, insecureSkipVerify bool) {
+	// https://pkg.go.dev/github.com/go-sql-driver/mysql#RegisterTLSConfig
+	rootCertPool := x509.NewCertPool()
+	pem, err := os.ReadFile(tlsCertCaFile)
+	if err != nil {
+		logging.GetLogger().Fatalf("failed to load CA certificate: %s", err)
+	}
+
+	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+		logging.GetLogger().Fatal("failed to append CA certificate")
+	}
+
+	tlsConfig := &tls.Config{
+		RootCAs:            rootCertPool,
+		InsecureSkipVerify: insecureSkipVerify, // Skip hostname verification for IP addresses
+	}
+
+	if tlsCertFile != "" && tlsCertKeyFile != "" {
+		clientCert := make([]tls.Certificate, 0, 1)
+		certs, err := tls.LoadX509KeyPair(tlsCertFile, tlsCertKeyFile)
+		if err != nil {
+			logging.GetLogger().Fatalf("failed to load client certificate and key: %s", err)
+		}
+		clientCert = append(clientCert, certs)
+
+		tlsConfig.Certificates = clientCert
+	}
+
+	err = mysql.RegisterTLSConfig(defaultTLSConfigName, tlsConfig)
+	if err != nil {
+		logging.GetLogger().Fatalf("failed to register TLS config: %s", err)
+	}
+}
+
 // NewDBClient :
 func NewDBClient(cfg *config.Database) *DBClient {
 	timeout := defaultTimeout
@@ -136,6 +176,11 @@ func NewDBClient(cfg *config.Database) *DBClient {
 		url.QueryEscape("'+00:00'"),
 		timeout,
 	)
+
+	if cfg.TLS.Enabled {
+		initMysqlTLS(cfg.TLS.CertCaFile, cfg.TLS.CertFile, cfg.TLS.CertKeyFile, cfg.TLS.InsecureSkipVerify)
+		dataSource = fmt.Sprintf("%s&tls=%s", dataSource, defaultTLSConfigName)
+	}
 
 	maxOpenConns := defaultMaxOpenConns
 	if cfg.MaxOpenConns > 0 {

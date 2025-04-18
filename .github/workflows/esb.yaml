@@ -16,7 +16,7 @@ jobs:
       matrix:
         python-version: ["3.7"]
         # reference: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
-        os: [ubuntu-latest]
+        os: [ubuntu-22.04]
 
     steps:
     - uses: actions/checkout@v3

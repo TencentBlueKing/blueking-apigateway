@@ -24,7 +24,10 @@ from typing import ClassVar, Type
 
 from django.conf import settings
 
-from apigateway.common.es.clients import BaseESClient, BKLogESClient, ESClientTypeEnum, RawESClient
+from apigateway.common.es.clients import BaseESClient, BKLogESClient
+
+DEFAULT_ES_SEARCH_TIMEOUT = 30
+DEFAULT_ES_AGGS_TERM_SIZE = 1000
 
 
 class BaseSearchClient:
@@ -228,13 +231,6 @@ class BaseSearchClient:
         return self.search_esb_api_log(body=body)
 
 
-class RawESSearchClient(BaseSearchClient):
-    _es_client_class = RawESClient
-
-    def search_esb_api_log(self, body):
-        return self._es_client.execute_search(body=body)
-
-
 class BKLogSearchClient(BaseSearchClient):
     """使用 BK_LOG 系统查询 ES 数据"""
 
@@ -245,11 +241,4 @@ class BKLogSearchClient(BaseSearchClient):
 
 
 def get_search_es_client():
-    es_client_type = settings.BK_ESB_ACCESS_LOG_CONFIG["es_client_type"]
-    if es_client_type == ESClientTypeEnum.BK_LOG.value:
-        return BKLogSearchClient()
-
-    if es_client_type == ESClientTypeEnum.ELASTICSEARCH.value:
-        return RawESSearchClient()
-
-    raise ValueError(f"unsupported es_client_type: {es_client_type}")
+    return BKLogSearchClient()
