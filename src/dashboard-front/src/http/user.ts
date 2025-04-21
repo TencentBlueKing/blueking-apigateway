@@ -23,3 +23,18 @@ export const searchTenantUsers = (
     },
   },
 );
+
+export const changeTenantLocales = (
+  tenant_id: string,
+  data: {
+    language: string
+  },
+) => fetch.put(
+  `${BK_USER_WEB_API_URL}/api/v3/open-web/tenant/current-user/language/`,
+  data,
+  {
+    headers: {
+      'X-Bk-Tenant-Id': tenant_id || '',
+    },
+  },
+);
