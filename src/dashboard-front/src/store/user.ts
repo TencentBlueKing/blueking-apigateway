@@ -25,6 +25,8 @@ export const useUser = defineStore('user', {
   getters: {
     // apiBaseUrl: () => `${BK_API_URL_TMPL}/bk-user-web/prod`,
     apiBaseUrl: () => BK_USER_WEB_API_URL,
+    // 是否开启了多租户模式
+    isTenantMode: state => !!state?.featureFlags?.ENABLE_MULTI_TENANT_MODE,
   },
   actions: {
     setUser(user: IUser) {
@@ -32,7 +34,6 @@ export const useUser = defineStore('user', {
     },
     setFeatureFlags(data: IFeatureFlags) {
       this.featureFlags = data;
-      // this.featureFlags.ENABLE_MULTI_TENANT_MODE = true;
     },
   },
 });
