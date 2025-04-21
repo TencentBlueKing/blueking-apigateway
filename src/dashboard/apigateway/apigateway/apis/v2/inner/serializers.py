@@ -104,7 +104,7 @@ class AppGatewayPermissionOutputSLZ(serializers.Serializer):
     name = serializers.CharField(read_only=True)
 
     class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.AppGatewayPermissionInputSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.AppGatewayPermissionOutputSLZ"
 
 
 class PaaSAppPermissionApplyCreateInputSLZ(serializers.Serializer):
@@ -139,7 +139,7 @@ class PaaSAppPermissionApplyCreateInputSLZ(serializers.Serializer):
         return data
 
     class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.PaaSAppPermissionApplyInputSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.PaaSAppPermissionApplyCreateInputSLZ"
 
 
 class AppResourcePermissionListOutputSLZ(serializers.Serializer):
@@ -213,7 +213,7 @@ class AppPermissionListInputSLZ(serializers.Serializer):
     expire_days_range = serializers.IntegerField(min_value=0, allow_null=True, required=False)
 
     class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionInputSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionListInputSLZ"
 
 
 class AppPermissionRecordListInputSLZ(serializers.Serializer):
@@ -225,7 +225,7 @@ class AppPermissionRecordListInputSLZ(serializers.Serializer):
     query = serializers.CharField(allow_blank=True, required=False)
 
     class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionRecordInputSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionRecordListInputSLZ"
 
 
 class AppPermissionRecordRetrieveInputSLZ(serializers.Serializer):
@@ -235,7 +235,7 @@ class AppPermissionRecordRetrieveInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionRecordRetrieveInputSLZ"
 
 
-class AppPermissionRecordSLZ(serializers.ModelSerializer):
+class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
     gateway_name = serializers.SerializerMethodField()
     apply_status = serializers.SerializerMethodField()
     apply_status_display = serializers.SerializerMethodField()
@@ -259,7 +259,7 @@ class AppPermissionRecordSLZ(serializers.ModelSerializer):
             "expire_days",
             "gateway_name",
         ]
-        ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionRecordSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionRecordBaseSLZ"
 
     def get_gateway_name(self, obj):
         return obj.gateway.name
@@ -279,17 +279,17 @@ class AppPermissionRecordSLZ(serializers.ModelSerializer):
         return obj.comment or ""
 
 
-class AppPermissionRecordListOutputSLZ(AppPermissionRecordSLZ):
-    class Meta(AppPermissionRecordSLZ.Meta):
-        fields = AppPermissionRecordSLZ.Meta.fields
+class AppPermissionRecordListOutputSLZ(AppPermissionRecordBaseSLZ):
+    class Meta(AppPermissionRecordBaseSLZ.Meta):
+        fields = AppPermissionRecordBaseSLZ.Meta.fields
         ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionRecordListOutputSLZ"
 
 
-class AppPermissionRecordOutputSLZ(AppPermissionRecordSLZ):
+class AppPermissionRecordOutputSLZ(AppPermissionRecordBaseSLZ):
     resources = serializers.SerializerMethodField()
 
-    class Meta(AppPermissionRecordSLZ.Meta):
-        fields = AppPermissionRecordSLZ.Meta.fields + ["resources"]
+    class Meta(AppPermissionRecordBaseSLZ.Meta):
+        fields = AppPermissionRecordBaseSLZ.Meta.fields + ["resources"]
         ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionRecordOutputSLZ"
 
     def get_resources(self, obj):
@@ -351,7 +351,7 @@ class EsbSystemListOutputSLZ(serializers.Serializer):
         return BoardConfigManager.get_optional_display_label(obj.board)
 
 
-class AppPermissionSLZ(serializers.Serializer):
+class AppPermissionBaseSLZ(serializers.Serializer):
     # TODO 验证当前用户为 target_app_code 管理员
 
     target_app_code = serializers.CharField(label="", validators=[BKAppCodeValidator()])
@@ -361,10 +361,10 @@ class AppPermissionSLZ(serializers.Serializer):
     )
 
     class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionBaseSLZ"
 
 
-class EsbAppPermissionApplyCreateInputSLZ(AppPermissionSLZ):
+class EsbAppPermissionApplyCreateInputSLZ(AppPermissionBaseSLZ):
     component_ids = serializers.ListField(
         child=serializers.IntegerField(),
         validators=[ComponentIDValidator()],
@@ -377,7 +377,7 @@ class EsbAppPermissionApplyCreateInputSLZ(AppPermissionSLZ):
         ref_name = "apigateway.apis.v2.inner.serializers.EsbAppPermissionApplyCreateInputSLZ"
 
 
-class EsbAppPermissionRenewPutInputSLZ(AppPermissionSLZ):
+class EsbAppPermissionRenewPutInputSLZ(AppPermissionBaseSLZ):
     component_ids = serializers.ListField(
         child=serializers.IntegerField(),
         allow_empty=False,
@@ -404,7 +404,7 @@ class EsbAppPermissionListInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.EsbAppPermissionListInputSLZ"
 
 
-class AppPermissionComponentSLZ(serializers.Serializer):
+class AppPermissionComponentBaseSLZ(serializers.Serializer):
     id = serializers.IntegerField(label="ID", read_only=True)
     name = serializers.CharField()
     system_name = serializers.CharField()
@@ -419,7 +419,7 @@ class AppPermissionComponentSLZ(serializers.Serializer):
     tag = serializers.SerializerMethodField()
 
     class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionComponentSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionComponentBaseSLZ"
 
     def get_expires_in(self, obj):
         if math.isinf(obj["expires_in"]):
@@ -462,12 +462,12 @@ class AppPermissionComponentSLZ(serializers.Serializer):
         return False
 
 
-class EsbPermissionComponentListOutputSLZ(AppPermissionComponentSLZ):
+class EsbPermissionComponentListOutputSLZ(AppPermissionComponentBaseSLZ):
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.EsbPermissionComponentListOutputSLZ"
 
 
-class EsbAppPermissionOutputSLZ(AppPermissionComponentSLZ):
+class EsbAppPermissionOutputSLZ(AppPermissionComponentBaseSLZ):
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.EsbAppPermissionOutputSLZ"
 
@@ -491,7 +491,7 @@ class EsbAppPermissionApplyRecordListInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.EsbAppPermissionApplyRecordListInputSLZ"
 
 
-class AppPermissionApplyRecordSLZ(serializers.ModelSerializer):
+class AppPermissionApplyRecordBaseSLZ(serializers.ModelSerializer):
     system_name = serializers.CharField(read_only=True)
     apply_status = serializers.CharField(read_only=True)
     apply_status_display = serializers.SerializerMethodField()
@@ -517,7 +517,7 @@ class AppPermissionApplyRecordSLZ(serializers.ModelSerializer):
             "system_name",
         ]
         fields = _common_fields + ["tag", "components"]
-        ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionApplyRecordSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionApplyRecordBaseSLZ"
 
     def get_apply_status_display(self, obj):
         return ApplyStatusEnum.get_choice_label(obj.apply_status)
@@ -534,17 +534,17 @@ class AppPermissionApplyRecordSLZ(serializers.ModelSerializer):
         return BoardConfigManager.get_optional_display_label(obj.board)
 
 
-class EsbAppPermissionApplyRecordListOutputSLZ(AppPermissionApplyRecordSLZ):
+class EsbAppPermissionApplyRecordListOutputSLZ(AppPermissionApplyRecordBaseSLZ):
     components = None
 
-    class Meta(AppPermissionApplyRecordSLZ.Meta):
-        fields = AppPermissionApplyRecordSLZ.Meta._common_fields
+    class Meta(AppPermissionApplyRecordBaseSLZ.Meta):
+        fields = AppPermissionApplyRecordBaseSLZ.Meta._common_fields
         ref_name = "apigateway.apis.v2.inner.serializers.EsbAppPermissionApplyRecordListOutputSLZ"
 
 
-class EsbAppPermissionApplyRecordRetrieveOutputSLZ(AppPermissionApplyRecordSLZ):
-    class Meta(AppPermissionApplyRecordSLZ.Meta):
-        fields = AppPermissionApplyRecordSLZ.Meta._common_fields + ["components"]
+class EsbAppPermissionApplyRecordRetrieveOutputSLZ(AppPermissionApplyRecordBaseSLZ):
+    class Meta(AppPermissionApplyRecordBaseSLZ.Meta):
+        fields = AppPermissionApplyRecordBaseSLZ.Meta._common_fields + ["components"]
         ref_name = "apigateway.apis.v2.inner.serializers.EsbAppPermissionApplyRecordRetrieveOutputSLZ"
 
 

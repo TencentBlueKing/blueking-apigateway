@@ -56,7 +56,7 @@ urlpatterns = [
                                         path(
                                             "app-permissions/allow-apply-by-gateway/",
                                             views.AppGatewayPermissionApi.as_view(),
-                                            name="openapi.v2.inner.gateway.permission.allow_apply_by_api",
+                                            name="openapi.v2.inner.gateway.permission.allow_apply_by_gateway",
                                         ),
                                         # POST /api/v2/inner/gateways/{gateway_name}/permissions/app-permissions/apply/
                                         path(
