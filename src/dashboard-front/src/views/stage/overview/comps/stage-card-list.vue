@@ -1,5 +1,6 @@
 <template>
   <div class="card-list">
+    <StageCardItem />
     <div class="card-item" v-for="(stageData, index) in stageList" :key="index">
       <div class="title">
         <div class="title-lf">
@@ -167,6 +168,7 @@ import { BasicInfoParams } from '@/views/basic-info/common/type';
 import editStageSideslider from './edit-stage-sideslider.vue';
 import releaseSideslider from './release-sideslider.vue';
 import ReleaseProgrammableSlider from './release-programmable-slider.vue';
+import StageCardItem from '@/views/stage/overview/comps/stage-card-item.vue';
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();
