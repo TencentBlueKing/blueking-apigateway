@@ -71,7 +71,7 @@ class StageConvertor(BaseConvertor):
 
     def _get_default_stage_plugins(self) -> List[PluginConfig]:
         """Get the default plugins for stage, which is shared by all resources in the stage"""
-        return [
+        default_plugins = [
             # 2024-08-19 disable the bk-opentelemetry plugin, we should let each gateway set their own opentelemetry
             # PluginConfig(name="bk-opentelemetry"),
             PluginConfig(name="prometheus"),
@@ -79,7 +79,6 @@ class StageConvertor(BaseConvertor):
             PluginConfig(name="bk-auth-validate"),
             PluginConfig(name="bk-auth-verify"),
             PluginConfig(name="bk-break-recursive-call"),
-            PluginConfig(name="bk-concurrency-limit"),
             PluginConfig(name="bk-delete-sensitive"),
             PluginConfig(name="bk-log-context"),
             PluginConfig(name="bk-delete-cookie"),
@@ -106,6 +105,11 @@ class StageConvertor(BaseConvertor):
                 },
             ),
         ]
+
+        if settings.GATEWAY_CONCURRENCY_LIMIT_ENABLED:
+            default_plugins.append(PluginConfig(name="bk-concurrency-limit"))
+
+        return default_plugins
 
     def _get_stage_plugins(self) -> List[PluginConfig]:
         return [
