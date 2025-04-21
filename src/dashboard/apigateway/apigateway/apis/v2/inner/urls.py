@@ -52,9 +52,9 @@ urlpatterns = [
                                             views.GatewayPermissionsResourceListApi.as_view(),
                                             name="openapi.v2.inner.gateway.permission.resource",
                                         ),
-                                        # GET /api/v2/inner/gateways/{gateway_name}/permissions/app-permissions/allow-apply-by-api/
+                                        # GET /api/v2/inner/gateways/{gateway_name}/permissions/app-permissions/allow-apply-by-gateway/
                                         path(
-                                            "app-permissions/allow-apply-by-api/",
+                                            "app-permissions/allow-apply-by-gateway/",
                                             views.AppGatewayPermissionApi.as_view(),
                                             name="openapi.v2.inner.gateway.permission.allow_apply_by_api",
                                         ),

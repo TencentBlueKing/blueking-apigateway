@@ -1,7 +1,7 @@
 spec_version: 1
 
 release:
-  version: 2.2.5
+  version: 1.3.0
   title: 重构 api v2 接口
   comment: 重构 api v2 接口
 
@@ -39,7 +39,20 @@ grant_permissions:
     resource_names:
       - v2_inner_list_gateways
       - v2_inner_get_gateway
-      - v2_inner_allow_apply_by_api
+      - v2_inner_get_gateway_resources
+      - v2_inner_allow_apply_by_gateway
+      - v2_inner_apply_resource_permission
+      - v2_inner_renew_resource_permission
+      - v2_inner_list_app_resource_permissions
+      - v2_inner_list_resource_permission_apply_records
+      - v2_inner_retrieve_resource_permission_apply_record
+      - v2_inner_get_esb_systems
+      - v2_inner_get_system_permission_components
+      - v2_inner_apply_esb_component_permissions
+      - v2_inner_renew_esb_component_permissions
+      - v2_inner_get_app_component_systems
+      - v2_inner_get_app_permission_apply_records
+      - v2_inner_get_app_permission_apply_record
   # bk_lesscode
   - bk_app_code: bk_lesscode
     grant_dimension: "resource"

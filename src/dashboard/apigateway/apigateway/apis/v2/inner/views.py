@@ -176,7 +176,7 @@ class AppGatewayPermissionApi(generics.RetrieveAPIView):
 
         return OKJsonResponse(
             data={
-                "allow_apply_by_api": allow,
+                "allow_apply_by_gateway": allow,
                 "reason": reason,
             }
         )

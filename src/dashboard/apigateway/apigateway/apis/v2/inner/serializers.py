@@ -100,7 +100,7 @@ class AppGatewayPermissionInputSLZ(serializers.Serializer):
 
 
 class AppGatewayPermissionOutputSLZ(serializers.Serializer):
-    allow_apply_by_api = serializers.BooleanField(read_only=True)
+    allow_apply_by_gateway = serializers.BooleanField(read_only=True)
     name = serializers.CharField(read_only=True)
 
     class Meta:
