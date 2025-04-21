@@ -9,7 +9,8 @@
             :class="['dot', getStatus(stageData)]"
             v-bk-tooltips="{
               content: getStatusText(getStatus(stageData)),
-              disabled: !getStatusText(getStatus(stageData)) }"
+              disabled: !getStatusText(getStatus(stageData)),
+            }"
           >
           </span>
           {{ stageData.name }}
@@ -36,7 +37,7 @@
               theme="primary"
               size="small"
               :disabled="getStatus(stageData) === 'doing' || !!stageData.publish_validate_msg"
-              v-bk-tooltips="{ content: t(stageData.publish_validate_msg), disabled: !stageData.publish_validate_msg }"
+              v-bk-tooltips="{ content: stageData.publish_validate_msg, disabled: !stageData.publish_validate_msg }"
               @click="handleRelease(stageData)"
             >
               {{ t('发布资源') }}
@@ -121,7 +122,7 @@
     />
 
     <!-- 发布可编程网关的资源至环境 -->
-    <release-programmable-slider
+    <ReleaseProgrammableSlider
       ref="releaseProgrammableSliderRef"
       :current-stage="currentStage"
       @hidden="handleReleaseSuccess(false)"
@@ -165,7 +166,7 @@ import {
 import { BasicInfoParams } from '@/views/basic-info/common/type';
 import editStageSideslider from './edit-stage-sideslider.vue';
 import releaseSideslider from './release-sideslider.vue';
-import releaseProgrammableSlider from './release-programmable-slider.vue';
+import ReleaseProgrammableSlider from './release-programmable-slider.vue';
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();

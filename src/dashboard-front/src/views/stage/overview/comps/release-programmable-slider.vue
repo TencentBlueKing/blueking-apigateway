@@ -163,7 +163,7 @@ import { getStageList } from '@/http';
 import {
   deployReleases,
   getProgrammableStageDetail,
-  getProgrammableStageNextVersion,
+  getStageNextVersion,
 } from '@/http/programmable';
 import {
   useRoute,
@@ -304,6 +304,7 @@ const handlePublish = async () => {
     const params = {
       stage_id: chooseAssets.value.id,
       ...formData.value,
+      version: `${formData.value.version}+${chooseAssets.value.name}`,
     };
     const res = await deployReleases(apigwId.value, params);
     deployId.value = res.deploy_id;
@@ -413,7 +414,7 @@ const handleRepoClick = () => {
 };
 
 const getVersion = async (): Promise<{ version: string }> => {
-  return await getProgrammableStageNextVersion(
+  return await getStageNextVersion(
     apigwId.value,
     { stage_name: props.currentStage.name, version_type: semVerType.value },
   );
