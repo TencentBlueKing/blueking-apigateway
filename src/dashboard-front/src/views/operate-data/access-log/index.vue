@@ -39,22 +39,13 @@
                   </bk-select>
                 </bk-form-item>
                 <bk-form-item :label="t('资源')">
-                  <bk-select
-                    style="width: 250px; margin-right: 8px;"
-                    class="top-resource-select"
-                    :popover-width="180"
-                    ext-popover-cls="resource-dropdown-content"
+                  <ResourceSearcher
                     v-model="searchParams.resource_id"
-                    filterable
-                    :input-search="false"
-                    @change="handleResourceChange">
-                    <bk-option
-                      v-for="option in resourceList"
-                      :key="option.id"
-                      :id="option.id"
-                      :name="`${option.method} ${option.path}`">
-                    </bk-option>
-                  </bk-select>
+                    :list="resourceList"
+                    :need-prefix="false"
+                    style="width: 250px; margin-right: 8px;"
+                    @change="handleResourceChange"
+                  />
                 </bk-form-item>
                 <bk-form-item :label="t('查询语句')" class="ag-form-item-inline">
                   <SearchInput
@@ -257,6 +248,7 @@ import {
 import { Message } from 'bkui-vue';
 import { useStorage } from '@vueuse/core';
 import AgIcon from '@/components/ag-icon.vue';
+import ResourceSearcher from '@/views/operate-data/statistics-report/components/resource-searcher.vue';
 
 const { t } = i18n.global;
 const { getChartIntervalOption } = userChartIntervalOption();
