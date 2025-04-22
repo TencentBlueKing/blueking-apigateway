@@ -112,6 +112,12 @@ class GatewayExtraInfoSLZ(serializers.Serializer):
     # 普通网关额外信息字段
 
 
+class ProgrammableGatewayGitInfoSLZ(serializers.Serializer):
+    repository = serializers.CharField(allow_blank=True, required=True, help_text="仓库地址")
+    account = serializers.CharField(allow_blank=True, required=True, help_text="账号")
+    password = serializers.CharField(allow_blank=True, required=True, help_text="密码")
+
+
 class GatewayCreateInputSLZ(serializers.ModelSerializer):
     name = serializers.RegexField(
         GATEWAY_NAME_PATTERN,
@@ -128,6 +134,7 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
         child=serializers.RegexField(APP_CODE_PATTERN), allow_empty=True, required=False, help_text="网关关联的应用"
     )
     extra_info = GatewayExtraInfoSLZ(required=False, help_text="网关额外信息")
+    programmable_gateway_git_info = ProgrammableGatewayGitInfoSLZ(required=False, help_text="可编程网关 Git 信息")
 
     class Meta:
         model = Gateway
@@ -140,6 +147,7 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
             "kind",
             "extra_info",
             "bk_app_codes",
+            "programmable_gateway_git_info",
         )
         lookup_field = "id"
 
@@ -173,6 +181,10 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
     def to_internal_value(self, data):
         data = super().to_internal_value(data)
         return self._add_creator_to_maintainers(data)
+
+    def create(self, validated_data):
+        validated_data.pop("programmable_gateway_git_info", None)
+        return super().create(validated_data)
 
 
 class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
