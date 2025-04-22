@@ -25,7 +25,7 @@ from apigateway.core.models import Gateway, Stage
 class APIDebugHistory(TimestampedModelMixin, OperatorModelMixin):
     gateway = models.ForeignKey(Gateway, db_column="gateway_id", on_delete=models.CASCADE)
     stage = models.ForeignKey(Stage, db_column="stage_id", on_delete=models.CASCADE)
-    resource_name = models.CharField(null=False, blank=False, max_length=32, help_text="资源名称")
+    resource_name = models.CharField(null=False, blank=False, max_length=256, help_text="资源名称")
     # "request": {
     #     "request_url": "www.baidu.com",       # 请求路由
     #     "request_method": "GET",              # 请求方法
