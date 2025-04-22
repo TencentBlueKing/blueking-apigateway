@@ -107,7 +107,7 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
     return []
 
 
-def create_paas_app(app_code: str) -> bool:
+def create_paas_app(app_code: str, git_info: Optional[Dict[str, Any]] = None) -> bool:
     """
     创建应用
     """

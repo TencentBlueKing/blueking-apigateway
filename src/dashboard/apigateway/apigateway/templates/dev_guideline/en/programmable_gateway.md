@@ -2,13 +2,28 @@
 
 {% if language == "python" %}
 
-### Pull the code to local
+### 1. Initialize project
 
 ```bash
+{% if edition == "ee" %}
+pip install cookiecutter
+
+cookiecutter https://github.com/TencentBlueKing/bk-apigateway-framework/ --directory templates/python
+project_name: {{project_name}}
+init_admin: {{init_admin}}
+
+cd {{project_name}}
+git init
+git add .
+git commit -m "init project"
+git remote add origin {{repo_url}} # Please replace with the actual repository address
+git push -u origin master
+{% else %}
 git clone {{repo_url}}
+{% endif %}
 ```
 
-### Set environment variables
+### 2. Local development: Set environment variables
 
 ```bash
 export DEBUG=True
@@ -22,17 +37,21 @@ export BKPAAS_ENVIRONMENT=dev
 export BKPAAS_PROCESS_TYPE=web
 ```
 
-### Execute startup command (after execution, you can access: swagger ui address: http://0.0.0.0:8080/api/schema/swagger-ui/#/open )
+### 3. Execute startup command (after execution, you can access: swagger ui address: http://0.0.0.0:8080/api/schema/swagger-ui/#/open )
 
-### Reference [Development Guide]({{dev_guideline_url}}) to develop API, you can generate definition.yaml and resources.yaml locally for testing
+```bash
+python manage.py runserver 0.0.0.0:8080
+```
+
+### 4. Reference [Development Guide]({{dev_guideline_url}}) to develop API, you can generate definition.yaml and resources.yaml locally for testing
 
 ```bash
 python manage.py generate_definition_yaml && cat definition.yaml
 python manage.py generate_resources_yaml && cat resources.yaml
 ```
 
-### In the "Environment Overview" page, publish the resource to the corresponding environment
+### 5. In the "Environment Overview" page, publish the resource to the corresponding environment
 
-### In the "Resource Version" page, generate the SDK for the version published to the prod environment
+### 6. In the "Resource Version" page, generate the SDK for the version published to the prod environment
 
 {% endif %}
