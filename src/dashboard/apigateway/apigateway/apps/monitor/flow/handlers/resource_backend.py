@@ -41,23 +41,26 @@ class ResourceBackendAlarmStrategyEnabledFilter(AlertHandler):
         dimension = ResourceBackendDimension.parse_obj(event.event_dimensions)
 
         alarm_strategies = AlarmStrategy.objects.get_resource_alarm_strategy(
-            dimension.api_id,
-            dimension.resource_id,
-            event.alarm_subtype,
+            gateway_id=dimension.api_id,
+            resource_id=dimension.resource_id,
+            alarm_subtype=event.alarm_subtype,
         )
 
-        if not self._is_alarm_enabled(alarm_strategies):
+        # get the stage of the event, to check if the stage is in the alarm_strategies
+        event_stage = event.event_dimensions["stage"]
+
+        if not self._is_alarm_enabled(alarm_strategies, event_stage):
             # 网关监控未开启，过滤，并存储当前的策略
             AlarmRecord.objects.update_alarm(
                 event.alarm_record_id,
                 alarm_strategies=alarm_strategies,
                 status=AlarmStatusEnum.SKIPPED.value,
-                comment="网关监控未开启",
+                comment="网关监控未开启 或 事件 stage 未在策略的生效环境列表中",
             )
             return None
 
         # 网关监控开启
-        enabled_strategies = self._get_enabled_strategies(alarm_strategies)
+        enabled_strategies = self._get_enabled_strategies(alarm_strategies, event_stage)
         event.update_extend_fields(
             {
                 "alarm_strategies": enabled_strategies,
@@ -71,18 +74,23 @@ class ResourceBackendAlarmStrategyEnabledFilter(AlertHandler):
         )
         return event
 
-    def _is_alarm_enabled(self, alarm_strategies: List[AlarmStrategy]) -> bool:
+    def _is_alarm_enabled(self, alarm_strategies: List[AlarmStrategy], event_stage: str) -> bool:
         """
         资源监控告警开启判定规则
-        - 策略不存在，默认开启
         """
+        # legacy 策略不存在，默认开启 True => 2025-04-22 1.16 update to False
         if not alarm_strategies:
-            return True
+            return False
 
-        return len(self._get_enabled_strategies(alarm_strategies)) > 0
+        return len(self._get_enabled_strategies(alarm_strategies, event_stage)) > 0
 
-    def _get_enabled_strategies(self, alarm_strategies: List[AlarmStrategy]) -> List[AlarmStrategy]:
-        return [strategy for strategy in alarm_strategies if strategy.enabled]
+    def _get_enabled_strategies(self, alarm_strategies: List[AlarmStrategy], event_stage: str) -> List[AlarmStrategy]:
+        # condition:
+        # 1. the strategy is enabled
+        # 2. the event_stage is in the effective_stages
+        return [
+            strategy for strategy in alarm_strategies if strategy.enabled and strategy.is_effective_stage(event_stage)
+        ]
 
 
 class ResourceBackendAlerter(Alerter):
@@ -121,6 +129,13 @@ class ResourceBackendAlerter(Alerter):
         事件产生时间：{{event_create_time}}
         您能收到此告警，因为您是该网关负责人，如有疑问，请联系 BK助手(蓝鲸助手)！
         """
+
+        status = (
+            int(float(record_source["status"]))
+            if isinstance(record_source["status"], (int, float))
+            else record_source["status"]
+        )
+
         return self.render_template(
             template,
             api_name=record_source["api_name"],
@@ -129,8 +144,8 @@ class ResourceBackendAlerter(Alerter):
             backend_url=self._get_backend_url(record_source),
             alarm_subtype_label=self._get_alarm_subtype_label(event),
             log_records_count=len(log_records),
-            status=record_source["status"],
-            response_body=truncate_string(record_source["response_body"] or "", 200) + "...",
+            status=status,
+            response_body=truncate_string(record_source["response_body"] or "", 256) + "...",
             request_id=record_source["request_id"],
             event_begin_time=time_utils.format(event.event_begin_time),
             event_create_time=time_utils.format(event.event_create_time),

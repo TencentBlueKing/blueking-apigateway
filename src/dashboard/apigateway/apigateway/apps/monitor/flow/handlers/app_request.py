@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -37,6 +37,11 @@ class AppRequestDimension(BaseModel):
     app_code: str
 
 
+# NOTE: 这里是蓝鲸应用请求网关报错，告警给蓝鲸应用负责人，被动，无法配置/忽略
+# FIXME: 理论上，只应该告警 prod 的？其他环境的不告警？
+# 或者应该提供一个入口让开发者可以配置？
+
+
 class AppRequestAppCodeRequiredFilter(AlertHandler):
     def _do(self, event: MonitorEvent) -> Optional[MonitorEvent]:
         dimension = AppRequestDimension.parse_obj(event.event_dimensions)
@@ -68,18 +73,18 @@ class AppRequestAlerter(Alerter):
 
         蓝鲸应用访问网关 API 出现错误
 
-        网关名称: {{api_name}}
-        部署环境: {{stage}}
+        网关名称：{{api_name}}
+        部署环境：{{stage}}
         请求来源：蓝鲸应用【{{app_code}}】
-        请求信息: {{request_info}}
+        请求信息：{{request_info}}
         错误信息：
         {{error|safe}}
-        请求来源IP: {{client_ip}}
-        请求ID: {{request_id}}
+        请求来源 IP: {{client_ip}}
+        请求 ID: {{request_id}}
 
         首次异常时间：{{event_begin_time}}
         事件产生时间：{{event_create_time}}
-        您能收到此告警，因为您是该应用负责人，如有疑问，请联系 BK助手(蓝鲸助手)！
+        您能收到此告警，因为您是该应用负责人，如有疑问，请联系 BK助手！
         """
         return self.render_template(
             template,

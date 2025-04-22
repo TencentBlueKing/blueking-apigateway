@@ -126,8 +126,6 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 
         bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
 
-        # FIXME: 差异化创建 可编程网关 + 开发指南差异化展示 (ee/te会有差异)
-
         # if kind is programmable, create paas app
         if slz.validated_data.get("kind") == GatewayKindEnum.PROGRAMMABLE.value:
             git_info = None

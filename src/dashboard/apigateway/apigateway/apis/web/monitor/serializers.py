@@ -26,6 +26,7 @@ from apigateway.apps.monitor.constants import DETECT_METHOD_CHOICES, AlarmStatus
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
 from apigateway.biz.gateway_label import GatewayLabelHandler
 from apigateway.common.fields import CurrentGatewayDefault, TimestampField
+from apigateway.core.models import Stage
 
 
 class DetectConfigSLZ(serializers.Serializer):
@@ -83,6 +84,7 @@ class AlarmStrategyInputSLZ(serializers.ModelSerializer):
             "alarm_subtype",
             "gateway_label_ids",
             "config",
+            "effective_stages",
         ]
         lookup_field = "id"
 
@@ -95,6 +97,20 @@ class AlarmStrategyInputSLZ(serializers.ModelSerializer):
         not_exist_ids = set(value) - set(GatewayLabelHandler.get_valid_ids(gateway.id, value))
         if not_exist_ids:
             raise serializers.ValidationError(_("标签不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids))))
+
+        return value
+
+    def validate_effective_stages(self, value):
+        if not value:
+            return []
+
+        if not isinstance(value, list):
+            raise serializers.ValidationError(_("生效环境列表必须为列表"))
+
+        # check if all the stages are valid
+        stage_names = Stage.objects.filter(name__in=value).values_list("name", flat=True)
+        if len(stage_names) != len(value):
+            raise serializers.ValidationError(_("生效环境列表中存在无效的环境"))
 
         return value
 
@@ -149,6 +165,7 @@ class AlarmRecordQueryOutputSLZ(serializers.ModelSerializer):
             "message",
             "created_time",
             "alarm_strategy_names",
+            "comment",
         ]
         read_only_fields = fields
 

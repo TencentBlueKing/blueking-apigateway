@@ -38,7 +38,7 @@ class TestAlarmRecordCreator:
 class TestAPIExistFilter:
     @pytest.fixture(autouse=True)
     def setup_fixture(self):
-        self.filter = base_handlers.APIExistFilter()
+        self.filter = base_handlers.GatewayExistFilter()
 
     def test_do_with_api_exist(self, faker, mocker):
         gateway = G(Gateway)
