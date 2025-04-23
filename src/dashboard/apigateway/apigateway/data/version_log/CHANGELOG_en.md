@@ -1,3 +1,12 @@
+<!-- 2025-04-23 -->
+# V1.15.6 Release Log
+
+### Bug Fixes
+
+- Fix: esb unable to use tls to connect MySQL
+
+---
+
 <!-- 2025-04-18 -->
 # V1.15.5 Release Log
 
