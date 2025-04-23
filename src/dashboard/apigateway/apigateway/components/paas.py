@@ -107,7 +107,7 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
     return []
 
 
-def create_paas_app(app_code: str) -> bool:
+def create_paas_app(app_code: str, git_info: Optional[Dict[str, Any]] = None) -> bool:
     """
     创建应用
     """
@@ -278,3 +278,15 @@ def get_paas_deployment_result(
             resp_data["error"],
         )
     return resp_data
+
+
+def get_paas_repo_info(app_code: str, module: str, user_credentials: Optional[UserCredentials] = None):
+    """
+    获取应用代码仓库信息
+    """
+
+    return {
+        "repo_url": "https://gitee.com/Tencent-BlueKing_admin/custom-gateway-demo.git",
+        "branch_list": ["master"],
+        "branch_commit_info": {"master": "620c734c433ffb2fd4d4c8dfa0ead33ff0242da3", "commit_user": "test"},
+    }

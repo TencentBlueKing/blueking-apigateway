@@ -17,74 +17,12 @@
 #
 import pytest
 from bkapi_client_core.exceptions import BKAPIError
-from elasticsearch.exceptions import AuthenticationException, ConnectionError, ConnectionTimeout, NotFoundError
-from urllib3.exceptions import ConnectTimeoutError
 
 from apigateway.common.error_codes import APIError
 from apigateway.common.es.clients import (
     BKLogESClient,
-    ESClientFactory,
-    RawESClient,
 )
 from apigateway.components.exceptions import RemoteRequestError
-
-
-class TestRawESClient:
-    def test_get_elasticsearch(self, mocker):
-        getter = RawESClient("index")
-
-        mocker.patch.object(getter, "_hosts", new_callable=mocker.PropertyMock(return_value=None))
-        with pytest.raises(APIError):
-            getter._get_elasticsearch()
-
-        mocker.patch.object(getter, "_hosts", new_callable=mocker.PropertyMock(return_value="es-hosts"))
-        mocker.patch("apigateway.common.es.clients.Elasticsearch", return_value=mocker.MagicMock())
-        assert getter._get_elasticsearch() is not None
-
-        mocker.patch.object(getter, "_hosts", new_callable=mocker.PropertyMock(return_value="es-hosts"))
-        mocker.patch("apigateway.common.es.clients.Elasticsearch", side_effect=Exception)
-        with pytest.raises(APIError):
-            getter._get_elasticsearch()
-
-    # def test_get_es_hosts_display(self, settings):
-    #     getter = RawESClient("index")
-
-    #     settings.ELASTICSEARCH_HOSTS_WITHOUT_AUTH = None
-    #     assert getter._get_es_hosts_display() == ""
-
-    #     settings.ELASTICSEARCH_HOSTS_WITHOUT_AUTH = ["1.0.0.1:9200"]
-    #     assert getter._get_es_hosts_display() == "1.0.0.1:9200"
-
-    def test_execute_search(self, mocker, faker):
-        es_index = faker.pystr()
-        es_body = faker.pystr()
-        es_client = RawESClient(es_index)
-
-        mocked_search = mocker.MagicMock(return_value={"result": True})
-        mocker.patch.object(es_client, "_get_elasticsearch", return_value=mocker.MagicMock(search=mocked_search))
-
-        result = es_client.execute_search(es_body)
-        assert result == {"result": True}
-        mocked_search.assert_called_once_with(index=es_index, body=es_body)
-
-    @pytest.mark.parametrize(
-        "exception",
-        [
-            ConnectionError(500, "error", {}),
-            ConnectionTimeout(500, "error", {}),
-            ConnectTimeoutError,
-            NotFoundError,
-            AuthenticationException,
-            Exception,
-        ],
-    )
-    def test_execute_search_error(self, mocker, faker, exception):
-        mocked_search = mocker.MagicMock(side_effect=exception)
-        es_client = mocker.MagicMock(search=mocked_search)
-
-        es_client = RawESClient(faker.pystr())
-        with pytest.raises(APIError):
-            es_client.execute_search(faker.pystr())
 
 
 class TestBKLogESClientMixin:
@@ -108,18 +46,3 @@ class TestBKLogESClientMixin:
         result = es_client.execute_search(es_body)
         assert result == {"test": 1}
         mocked_esquery_dsl.assert_called_once_with(index=es_index, body=es_body)
-
-
-class TestESClientFactory:
-    def test_get_es_client(self, settings):
-        settings.ACCESS_LOG_CONFIG["es_client_type"] = "bk_log"
-        client = ESClientFactory.get_es_client("index")
-        assert isinstance(client, BKLogESClient)
-
-        settings.ACCESS_LOG_CONFIG["es_client_type"] = "elasticsearch"
-        client = ESClientFactory.get_es_client("index")
-        assert isinstance(client, RawESClient)
-
-        settings.ACCESS_LOG_CONFIG["es_client_type"] = "not-exist"
-        with pytest.raises(ValueError):
-            ESClientFactory.get_es_client("index")

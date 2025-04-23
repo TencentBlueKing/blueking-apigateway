@@ -40,6 +40,61 @@ class TestGateway:
         gateway = G(models.Gateway, status=status, is_public=is_public)
         assert gateway.is_active_and_public == expected
 
+    def test_is_programmable(self):
+        gateway = G(models.Gateway, kind=models.GatewayKindEnum.PROGRAMMABLE.value)
+        assert gateway.is_programmable
+
+        gateway = G(models.Gateway)
+        assert not gateway.is_programmable
+
+    def test_extra_info_getter(self):
+        # Test with empty extra_info
+        gateway = G(models.Gateway, _extra_info={})
+        assert gateway.extra_info == {}
+
+        # Test with non-empty extra_info
+        gateway = G(models.Gateway, _extra_info={"key": "value"})
+        assert gateway.extra_info == {"key": "value"}
+
+    def test_extra_info_setter_normal_gateway(self):
+        gateway = G(models.Gateway)
+
+        # Test setting empty dict
+        gateway.extra_info = {}
+        assert gateway._extra_info == {}
+
+        # Test setting non-empty dict
+        gateway.extra_info = {"key": "value"}
+        assert gateway._extra_info == {}
+
+        # Test setting None
+        gateway.extra_info = None
+        assert gateway._extra_info == {}
+
+    def test_extra_info_setter_programmable_gateway(self):
+        # Test for programmable gateway
+        gateway = G(models.Gateway, kind=models.GatewayKindEnum.PROGRAMMABLE.value)
+
+        # Test valid language and repository
+        gateway.extra_info = {"language": "python", "repository": "https://example.com/repo"}
+        assert gateway._extra_info == {"language": "python", "repository": "https://example.com/repo"}
+
+        # Test invalid language
+        with pytest.raises(ValueError, match="language should be one of \\[python, go\\]"):
+            gateway.extra_info = {"language": "invalid", "repository": "https://example.com/repo"}
+
+        # Test missing repository
+        with pytest.raises(ValueError, match="repository is required"):
+            gateway.extra_info = {"language": "python"}
+
+    # def test_extra_info_setter_non_programmable_gateway(self):
+    #     # Test for non-programmable gateway
+    #     gateway = G(models.Gateway, kind=models.GatewayKindEnum.NORMAL.value)
+
+    #     # Setting any extra info should result in empty dict
+    #     gateway.extra_info = {"key": "value"}
+    #     assert gateway._extra_info == {}
+
 
 class TestResource:
     def test_snapshot(self, fake_resource):

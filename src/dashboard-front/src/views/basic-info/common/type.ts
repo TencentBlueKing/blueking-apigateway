@@ -19,6 +19,9 @@ export interface BasicInfoParams {
   is_official: boolean
   publish_validate_msg?: string
   kind?: number
+  links?: {
+    [key: string]: any
+  }
   extra_info?: {
     [key: string]: string
   }

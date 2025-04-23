@@ -30,7 +30,7 @@ from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.components.paas import paas_app_module_offline
+from apigateway.components.paas import get_paas_repo_info, paas_app_module_offline
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum, StageStatusEnum
 from apigateway.core.models import BackendConfig, Stage
@@ -447,9 +447,10 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
         gateway = request.gateway
         stage_id = instance.id
 
+        latest_deploy_history = ProgrammableGatewayDeployHistory()
+
         # 查询当前deploy历史
         deploy_history = ProgrammableGatewayDeployHistory.objects.filter(gateway=gateway).order_by("-id").first()
-
         stage_release = ReleasedResourceHandler.get_stage_release(gateway, [stage_id]).get(stage_id)
         if stage_release:
             # 优先使用与 stage_release 匹配的记录
@@ -459,13 +460,11 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
                 ).first()
                 or deploy_history  # 回退到最新记录
             )
-        else:
-            instance = deploy_history or ProgrammableGatewayDeployHistory()  # 空对象
+            latest_deploy_history = deploy_history
 
         context_data = {
-            "latest_deploy_history": instance,
-            "repo_url": getattr(gateway, "extra_info", {}).get("repository", ""),
-            "stage_publish_status": ReleaseHandler.batch_get_stage_release_status([stage_id]),
+            "latest_deploy_history": latest_deploy_history,
+            "repo_info": get_paas_repo_info(gateway.name, "default", get_user_credentials_from_request(request)),
         }
 
         output_slz = self.get_serializer(instance=instance, context=context_data)

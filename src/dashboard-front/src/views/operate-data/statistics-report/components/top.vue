@@ -37,25 +37,7 @@
     </div>
     <div class="top-right-wrapper">
       <div class="source-choose">
-        <bk-select
-          class="group-select"
-          v-model="searchParams.resource_id"
-          :input-search="false"
-          filterable
-          @change="handleSearchChange"
-        >
-          <template #prefix>
-            <div class="label">
-              {{ t('资源') }}
-            </div>
-          </template>
-          <bk-option
-            v-for="option in resourceList"
-            :key="option.id"
-            :id="option.id"
-            :name="option.name">
-          </bk-option>
-        </bk-select>
+        <ResourceSearcher v-model="searchParams.resource_id" :list="resourceList" @change="handleSearchChange" />
       </div>
       <div class="date-choose">
         <date-picker
@@ -101,16 +83,36 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import {
+  computed,
+  ref,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useStage, useCommon } from '@/store';
+import {
+  useCommon,
+  useStage,
+} from '@/store';
 import dayjs from 'dayjs';
-import { getApigwStages, getApigwResources } from '@/http';
+import {
+  getApigwResources,
+  getApigwStages,
+} from '@/http';
 import DatePicker from '@blueking/date-picker';
 import '@blueking/date-picker/vue3/vue3.css';
 import { SearchParamsType } from '../type';
 import { IStageData } from '@/views/stage/overview/types/stage';
 import { ResourcesItem } from '@/views/resource/setting/types';
+import ResourceSearcher from './resource-searcher.vue';
+
+type InfoTypeItem = {
+  formatText: null | string;
+  dayjs: dayjs.Dayjs | null;
+};
+
+type IntervalItem = {
+  label: string;
+  value: string;
+};
 
 const { t } = useI18n();
 const stage = useStage();
@@ -126,17 +128,14 @@ const searchParams = ref<SearchParamsType>({
   time_end: 0,
   metrics: '',
 });
-const stageToggle = ref<boolean>(false);
+
+const stageToggle = ref(false);
 const dateTime = ref(['now-10m', 'now']);
 const formatTime = ref<string[]>([dayjs().subtract(10, 'minute')
   .format('YYYY-MM-DD HH:mm:ss'), dayjs().format('YYYY-MM-DD HH:mm:ss')]);
 const stageList = ref<IStageData[]>([]);
 const resourceList = ref<ResourcesItem[]>([]);
 const interval = ref<string>('off');
-type IntervalItem = {
-  label: string;
-  value: string;
-};
 const intervalList = ref<IntervalItem[]>([
   {
     label: 'Off',
@@ -187,11 +186,6 @@ const intervalList = ref<IntervalItem[]>([
     value: '1d',
   },
 ]);
-
-type InfoTypeItem = {
-  formatText: null | string;
-  dayjs: dayjs.Dayjs | null;
-};
 
 const getStageName = computed(() => (id: string | number) => {
   if (id === 0) return '';
@@ -283,7 +277,6 @@ const reset = () => {
 const init = async () => {
   await getStages();
   await getResources();
-
   handleSearchChange();
 };
 
@@ -293,9 +286,11 @@ defineExpose({
   reset,
   init,
 });
+
 </script>
 
 <style lang="scss" scoped>
+
 .top-bar {
   position: absolute;
   width: 100%;
@@ -358,14 +353,6 @@ defineExpose({
     align-items: center;
     .source-choose {
       width: 280px;
-      .label {
-        font-size: 12px;
-        color: #63656E;
-        padding: 0 8px;
-        line-height: 30px;
-        background: #FAFBFD;
-        border-right: 1px solid #C4C6CC;
-      }
     }
     .date-choose {
       margin: 0 8px;

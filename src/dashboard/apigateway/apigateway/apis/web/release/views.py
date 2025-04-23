@@ -40,7 +40,7 @@ from apigateway.components.paas import (
     get_paas_deployment_result,
     get_pass_deploy_streams_history_events,
 )
-from apigateway.core.models import PublishEvent, Release, ReleaseHistory
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion
 from apigateway.utils import openapi
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
@@ -407,9 +407,32 @@ class ProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
             user_credentials=user_credentials,
         )
 
+        # 添加网关发布事件
+        release_history = ReleaseHistory.objects.filter(
+            gateway=request.gateway, stage=instance.stage, resource_version__version=instance.version
+        ).first()
+        release_history_events = []
+        release_history_events_map = {}
+        if release_history:
+            release_history_events = ReleaseHandler.list_publish_events_by_release_history_id(release_history.id)
+            release_history_events_map = PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
+                [release_history.id]
+            )
+
         slz_class = self.get_serializer_class()
         slz = slz_class(
-            instance,
-            context={"events_framework": events_framework, "events_instance": events_instance, "events": events},
+            release_history
+            if release_history
+            else ReleaseHistory(
+                stage=instance.stage,
+                resource_version=ResourceVersion(version=instance.version, gateway=request.gateway),
+            ),
+            context={
+                "events_framework": events_framework,
+                "events_instance": events_instance,
+                "events": events,
+                "release_history_events": release_history_events,
+                "release_history_events_map": release_history_events_map,
+            },
         )
         return OKJsonResponse(data=slz.data)

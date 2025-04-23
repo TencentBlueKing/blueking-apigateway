@@ -1,3 +1,47 @@
+<!-- 2025-04-23 -->
+# V1.15.6 Release Log
+
+### Bug Fixes
+
+- Fix: esb unable to use tls to connect MySQL
+
+---
+
+<!-- 2025-04-18 -->
+# V1.15.5 Release Log
+
+### Features
+
+- Support using tls to connect MySQL and Redis
+
+---
+
+<!-- 2025-04-08 -->
+# V1.15.4 Release Log
+
+### Bug Fixes
+
+- Fix: Backend service resource query error
+- Fix: Incorrect tooltips content in one-click group pull
+- Fix: Incorrect number of resource changes displayed when generating versions
+- Backport: Fix issues reported after 1.15上线
+- Fix: celery stuck in some environments
+
+### Features
+
+- v2 sync api: list permissions
+
+---
+
+<!-- 2025-02-17 -->
+# V1.15.3 Release Log
+
+### Bug Fixes
+
+- Fix: Some frontend issues
+
+---
+
 <!-- 2025-02-12 -->
 # V1.15.2 Release Log
 

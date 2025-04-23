@@ -92,8 +92,9 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             slz.validated_data.get("keyword"),
             slz.validated_data["order_by"],
         )
-        if slz.validated_data.get("kind"):
-            queryset = queryset.filter(kind=slz.validated_data["kind"])
+        kind = slz.validated_data.get("kind")
+        if kind in [GatewayKindEnum.PROGRAMMABLE.value, GatewayKindEnum.NORMAL.value]:
+            queryset = queryset.filter(kind=kind)
 
         page = self.paginate_queryset(queryset)
         gateway_ids = [gateway.id for gateway in page]
@@ -125,9 +126,17 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 
         bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
 
+        # FIXME: 差异化创建 可编程网关 + 开发指南差异化展示 (ee/te会有差异)
+
         # if kind is programmable, create paas app
         if slz.validated_data.get("kind") == GatewayKindEnum.PROGRAMMABLE.value:
-            ok = create_paas_app(slz.validated_data["name"])
+            git_info = None
+            if settings.EDITION == "ee":
+                git_info = slz.validated_data.pop("programmable_gateway_git_info", None)
+                if not git_info:
+                    raise error_codes.INVALID_ARGUMENT.format(_("可编程网关 Git 信息不能为空。"), replace=True)
+
+            ok = create_paas_app(slz.validated_data["name"], git_info)
             if not ok:
                 raise error_codes.INTERNAL.format(_("创建蓝鲸应用失败。"), replace=True)
 
@@ -368,7 +377,7 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
         if not instance.is_programmable:
             raise error_codes.FAILED_PRECONDITION.format(_("当前网关类型不支持开发指引。"), replace=True)
 
-        language = instance.extra_info["language"]
+        language = instance.extra_info.get("language", ProgrammableGatewayLanguageEnum.PYTHON.value)
         dev_guideline_url = ""
         if language == ProgrammableGatewayLanguageEnum.PYTHON.value:
             dev_guideline_url = settings.PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL
@@ -377,14 +386,20 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
 
         template_name = f"dev_guideline/{get_current_language_code()}/programmable_gateway.md"
 
+        language = instance.extra_info.get("language")
+        repo_url = instance.extra_info.get("repository")
+
         slz = GatewayDevGuidelineOutputSLZ(
             {
                 "content": render_to_string(
                     template_name,
                     context={
-                        "language": instance.extra_info["language"],
-                        "repo_url": instance.extra_info["repository"],
+                        "edition": settings.EDITION,
+                        "language": language,
+                        "repo_url": repo_url,
                         "dev_guideline_url": dev_guideline_url,
+                        "project_name": instance.name,
+                        "init_admin": request.user.username,
                     },
                 )
             }

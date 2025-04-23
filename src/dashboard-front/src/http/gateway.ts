@@ -33,6 +33,9 @@ export const getApigwSDKDocs = (gatewayName: string, data: any) => fetch.get(`${
 // 获取网关 SDK 调用示例
 export const getApigwResourceSDKDocs = (gatewayName: string, data: any) => fetch.get(`${BK_DASHBOARD_URL}/docs/gateways/${gatewayName}/sdks/usage-example/?${json2Query(data)}`);
 
+// 获取操作指引
+export const getGuideDocs = (apigwId: number) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/dev-guideline/`);
+
 // 获取网关资源的文档
 export const getApigwResourceDocDocs = (gatewayName: string, resourceName: string, data: any) => fetch.get(`${BK_DASHBOARD_URL}/docs/gateways/${gatewayName}/resources/${resourceName}/doc/?${json2Query(data)}`);
 
