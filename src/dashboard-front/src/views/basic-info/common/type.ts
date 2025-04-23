@@ -1,5 +1,6 @@
 export interface BasicInfoParams {
   name: string
+  id?: number
   url?: string
   description?: string
   description_en?: string
@@ -18,11 +19,14 @@ export interface BasicInfoParams {
   is_official: boolean
   publish_validate_msg?: string
   kind?: number
+  links?: {
+    [key: string]: any
+  }
   extra_info?: {
     [key: string]: string
   }
-  links?: {
-    [key: string]: any
+  programmable_gateway_git_info?: {
+    [key: string]: string
   }
 }
 
