@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 912 223" class="design-iconfont">
+  <defs>
+    <rect id="3zu8hd4q1__q80r8iex9a" x="0" y="0" width="182" height="32" rx="8"/>
+    <rect id="3zu8hd4q1__1kda8ytr8c" x="0" y="0" width="182" height="32" rx="8"/>
+    <rect id="3zu8hd4q1__7u7odhtjee" x="0" y="0" width="182" height="32" rx="8"/>
+    <rect id="3zu8hd4q1__ndfs5zt3yg" x="0" y="0" width="182" height="32" rx="8"/>
+  </defs>
+  <g fill="none" fill-rule="evenodd">
+    <path fill="#F5F7FA" d="M0 0H912V223H0z"/>
+    <g transform="translate(369 32)">
+      <rect stroke="#EAEBF0" fill="#FFF" x=".5" y=".5" width="213" height="158" rx="20"/>
+      <text font-family="MicrosoftYaHei-Bold, Microsoft YaHei" font-size="14" font-weight="bold" fill="#313238">
+        <tspan x="78.7026367" y="31">API 网关</tspan>
+      </text>
+      <g transform="translate(16 54)">
+        <mask id="3zu8hd4q1__y5uhkgsvbb" fill="#fff">
+          <use xlink:href="#3zu8hd4q1__q80r8iex9a"/>
+        </mask>
+        <use fill="#F0F1F5" fill-rule="nonzero" xlink:href="#3zu8hd4q1__q80r8iex9a"/>
+        <text mask="url(#3zu8hd4q1__y5uhkgsvbb)" font-family="MicrosoftYaHei, Microsoft YaHei" font-size="12" fill="#4D4F56">
+          <tspan x="63" y="17.5454545">stag 环境</tspan>
+        </text>
+      </g>
+      <g transform="translate(16 95)">
+        <mask id="3zu8hd4q1__hepj6hnadd" fill="#fff">
+          <use xlink:href="#3zu8hd4q1__1kda8ytr8c"/>
+        </mask>
+        <use fill="#F0F1F5" fill-rule="nonzero" xlink:href="#3zu8hd4q1__1kda8ytr8c"/>
+        <text mask="url(#3zu8hd4q1__hepj6hnadd)" font-family="MicrosoftYaHei, Microsoft YaHei" font-size="12" fill="#4D4F56">
+          <tspan x="63" y="17.5454545">prod 环境</tspan>
+        </text>
+      </g>
+    </g>
+    <g transform="translate(32 72)">
+      <rect stroke="#EAEBF0" fill="#FFF" x=".5" y=".5" width="213" height="79" rx="20"/>
+      <text font-family="MicrosoftYaHei-Bold, Microsoft YaHei" font-size="14" font-weight="bold" fill="#313238">
+        <tspan x="86" y="44">调用方</tspan>
+      </text>
+    </g>
+    <g transform="translate(622 32)">
+      <rect stroke="#EAEBF0" fill="#FFF" x=".5" y=".5" width="213" height="158" rx="20"/>
+      <text font-family="MicrosoftYaHei-Bold, Microsoft YaHei" font-size="14" font-weight="bold" fill="#313238">
+        <tspan x="72" y="31">开发者中心</tspan>
+      </text>
+      <g transform="translate(16 54)">
+        <mask id="3zu8hd4q1__m81xmiw3nf" fill="#fff">
+          <use xlink:href="#3zu8hd4q1__7u7odhtjee"/>
+        </mask>
+        <use fill="#F0F1F5" fill-rule="nonzero" xlink:href="#3zu8hd4q1__7u7odhtjee"/>
+        <text mask="url(#3zu8hd4q1__m81xmiw3nf)" font-family="MicrosoftYaHei, Microsoft YaHei" font-size="12" fill="#4D4F56">
+          <tspan x="33" y="17.5454545">蓝鲸 Saas 预发布环境</tspan>
+        </text>
+      </g>
+      <g transform="translate(16 95)">
+        <mask id="3zu8hd4q1__yfhg5egpah" fill="#fff">
+          <use xlink:href="#3zu8hd4q1__ndfs5zt3yg"/>
+        </mask>
+        <use fill="#F0F1F5" fill-rule="nonzero" xlink:href="#3zu8hd4q1__ndfs5zt3yg"/>
+        <text mask="url(#3zu8hd4q1__yfhg5egpah)" font-family="MicrosoftYaHei, Microsoft YaHei" font-size="12" fill="#4D4F56">
+          <tspan x="38" y="17.5454545">蓝鲸 Saas 生产环境</tspan>
+        </text>
+      </g>
+    </g>
+    <path d="M632,102.5 L623,98 L623,107 L632,102.5 Z M582,102 L582,103 L577,103 L577,102 L582,102 Z M590,102 L590,103 L585,103 L585,102 L590,102 Z M598,102 L598,103 L593,103 L593,102 L598,102 Z M606,102 L606,103 L601,103 L601,102 L606,102 Z M614,102 L614,103 L609,103 L609,102 L614,102 Z M622,102 L622,103 L617,103 L617,102 L622,102 Z" fill="#C4C6CC" fill-rule="nonzero"/>
+    <path d="M632,143.5 L623,139 L623,148 L632,143.5 Z M582,143 L582,144 L577,144 L577,143 L582,143 Z M590,143 L590,144 L585,144 L585,143 L590,143 Z M598,143 L598,144 L593,144 L593,143 L598,143 Z M606,143 L606,144 L601,144 L601,143 L606,143 Z M614,143 L614,144 L609,144 L609,143 L614,143 Z M622,143 L622,144 L617,144 L617,143 L622,143 Z" fill="#C4C6CC" fill-rule="nonzero"/>
+    <path d="M352.960162,107.076069 L361.99998,111.495536 L353.040516,116.07571 L353.004,112.076 L249.504464,112.99998 L249.004484,113.004444 L248.995556,112.004484 L249.495536,112.00002 L352.996,111.076 L352.960162,107.076069 Z" fill="#C4C6CC" fill-rule="nonzero"/>
+    <text font-family="MicrosoftYaHei, Microsoft YaHei" font-size="12" fill="#4D4F56">
+      <tspan x="277" y="101">调用 API</tspan>
+    </text>
+  </g>
+</svg>

@@ -282,7 +282,7 @@
       </template>
     </bk-dialog>
 
-    <bk-dialog
+    <!-- <bk-dialog
       width="600"
       theme="primary"
       v-model:is-show="dialogEditData.isShow"
@@ -382,7 +382,9 @@
           {{ t('取消') }}
         </bk-button>
       </template>
-    </bk-dialog>
+    </bk-dialog> -->
+
+    <create-gateway-com v-model="createGatewayShow" :init-data="basicInfoDetailData" @done="getBasicInfo()" />
   </div>
 </template>
 
@@ -393,7 +395,7 @@ import { Message, InfoBox } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { HelpDocumentFill } from 'bkui-vue/lib/icon';
 import { useRoute, useRouter } from 'vue-router';
-import { useUser } from '@/store';
+// import { useUser } from '@/store';
 import {  copy } from '@/common/util';
 import { useGetGlobalProperties } from '@/hooks';
 // import { useStage } from '@/store';
@@ -401,42 +403,43 @@ import { BasicInfoParams, DialogParams } from './common/type';
 import { getGateWaysInfo, toggleGateWaysStatus, deleteGateWays, editGateWays } from '@/http';
 import GateWaysEditTextarea from '@/components/gateways-edit/textarea.vue';
 import GateWaysEditMemberSelector from '@/components/gateways-edit/member-selector.vue';
-import MemberSelect from '@/components/member-select';
+// import MemberSelect from '@/components/member-select';
+import CreateGatewayCom from '@/components/create-gateway.vue';
 // @ts-ignore
-import programProcess from '@/images/program-process.png';
+import programProcess from '@/images/program-process.svg';
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const user = useUser();
+// const user = useUser();
 
-const rules = {
-  name: [
-    {
-      required: true,
-      message: t('请填写名称'),
-      trigger: 'blur',
-    },
-    {
-      validator: (value: string) => value.length >= 3,
-      message: t('不能小于3个字符'),
-      trigger: 'blur',
-    },
-    {
-      validator: (value: string) => value.length <= 30,
-      message: t('不能多于30个字符'),
-      trigger: 'blur',
-    },
-    {
-      validator: (value: string) => {
-        const reg = /^[a-z][a-z0-9-]*$/;
-        return reg.test(value);
-      },
-      message: '由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符',
-      trigger: 'blur',
-    },
-  ],
-};
+// const rules = {
+//   name: [
+//     {
+//       required: true,
+//       message: t('请填写名称'),
+//       trigger: 'blur',
+//     },
+//     {
+//       validator: (value: string) => value.length >= 3,
+//       message: t('不能小于3个字符'),
+//       trigger: 'blur',
+//     },
+//     {
+//       validator: (value: string) => value.length <= 30,
+//       message: t('不能多于30个字符'),
+//       trigger: 'blur',
+//     },
+//     {
+//       validator: (value: string) => {
+//         const reg = /^[a-z][a-z0-9-]*$/;
+//         return reg.test(value);
+//       },
+//       message: '由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符',
+//       trigger: 'blur',
+//     },
+//   ],
+// };
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();
@@ -444,9 +447,10 @@ const { GLOBAL_CONFIG } = globalProperties;
 
 // 网关id
 const apigwId = ref(0);
-const formRef = ref(null);
+// const formRef = ref(null);
 const formRemoveConfirmApigw = ref('');
 const basicInfoDetailLoading = ref(false);
+const createGatewayShow = ref<boolean>(false);
 // 当前基本信息
 const basicInfoData = ref<BasicInfoParams>({
   status: 1,
@@ -466,17 +470,27 @@ const basicInfoData = ref<BasicInfoParams>({
   developers: [],
   is_public: true,
   is_official: false,
+  kind: 0,
+  extra_info: {
+    language: 'python',
+    repository: '',
+  },
+  programmable_gateway_git_info: {
+    repository: '',
+    account: '',
+    password: '',
+  },
 });
 const basicInfoDetailData = ref(_.cloneDeep(basicInfoData.value));
 const delApigwDialog = ref<DialogParams>({
   isShow: false,
   loading: false,
 });
-const dialogEditData = ref<DialogParams>({
-  isShow: false,
-  loading: false,
-  title: t('编辑网关'),
-});
+// const dialogEditData = ref<DialogParams>({
+//   isShow: false,
+//   loading: false,
+//   title: t('编辑网关'),
+// });
 
 const processImg = computed(() => {
   return programProcess;
@@ -520,29 +534,29 @@ const handleDeleteApigw = async () => {
   }
 };
 
-const handleConfirmEdit = async () => {
-  try {
-    await formRef.value.validate();
-    dialogEditData.value.loading = true;
-    const params = _.cloneDeep(basicInfoDetailData.value);
-    if (!user?.featureFlags?.GATEWAY_APP_BINDING_ENABLED) {
-      params.bk_app_codes = undefined;
-    }
-    await editGateWays(apigwId.value, params);
-    Message({
-      message: t('编辑成功'),
-      theme: 'success',
-      width: 'auto',
-    });
-    dialogEditData.value.isShow = false;
-    await getBasicInfo();
-  } catch (error) {
-  } finally {
-    setTimeout(() => {
-      dialogEditData.value.loading = false;
-    }, 200);
-  }
-};
+// const handleConfirmEdit = async () => {
+//   try {
+//     // await formRef.value.validate();
+//     // dialogEditData.value.loading = true;
+//     // const params = _.cloneDeep(basicInfoDetailData.value);
+//     // if (!user?.featureFlags?.GATEWAY_APP_BINDING_ENABLED) {
+//     //   params.bk_app_codes = undefined;
+//     // }
+//     // await editGateWays(apigwId.value, params);
+//     // Message({
+//     //   message: t('编辑成功'),
+//     //   theme: 'success',
+//     //   width: 'auto',
+//     // });
+//     // dialogEditData.value.isShow = false;
+//     // await getBasicInfo();
+//   } catch (error) {
+//   } finally {
+//     // setTimeout(() => {
+//     //   dialogEditData.value.loading = false;
+//     // }, 200);
+//   }
+// };
 
 const handleChangePublic = async (value: boolean) => {
   basicInfoData.value.is_public = value;
@@ -600,10 +614,11 @@ const handleOperate = async (type: string) => {
 
   if (['edit'].includes(type)) {
     basicInfoDetailData.value = _.cloneDeep(basicInfoData.value);
-    console.log('basicInfoDetailData.value', basicInfoDetailData.value);
-    setTimeout(() => {
-      dialogEditData.value.isShow = true;
-    }, 200);
+    // console.log('basicInfoDetailData.value', basicInfoDetailData.value);
+    // setTimeout(() => {
+    //   dialogEditData.value.isShow = true;
+    // }, 200);
+    createGatewayShow.value = true;
     return;
   }
 
@@ -614,9 +629,9 @@ const handleOperate = async (type: string) => {
   }
 };
 
-const handleCloseEdit =  () => {
-  dialogEditData.value.isShow = false;
-};
+// const handleCloseEdit =  () => {
+//   dialogEditData.value.isShow = false;
+// };
 
 const handleOpenNav = (url: string) => {
   if (url) {

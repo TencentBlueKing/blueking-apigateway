@@ -52,7 +52,7 @@
 }
 
 .align-items-start {
-  align-items: flex-start;
+  align-items: flex-start !important;
 }
 
 .align-items-end {

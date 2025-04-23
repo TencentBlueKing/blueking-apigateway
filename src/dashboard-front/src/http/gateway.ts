@@ -41,3 +41,6 @@ export const createChat = (data: any) => fetch.post(CREATE_CHAT_API, data);
 
 // 发消息
 export const sendChat = (data: any) => fetch.post(SEND_CHAT_API, data);
+
+// 获取预设变量
+export const getEnvVars = () => fetch.get(`${BK_DASHBOARD_URL}/settings/env-vars/`);
