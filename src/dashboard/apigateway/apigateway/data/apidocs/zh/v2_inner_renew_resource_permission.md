@@ -19,7 +19,7 @@
 {
   "target_app_code": "",
   "resource_ids": [],
-  "expire_days": 180,
+  "expire_days": 180
 }
 ```
 

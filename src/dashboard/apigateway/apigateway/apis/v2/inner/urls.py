@@ -120,7 +120,7 @@ urlpatterns = [
                     views.EsbPermissionComponentListApi.as_view(),
                     name="openapi.v2.inner.esb.permission.apply",
                 ),
-                # GET /api/v2/inner/esb/systems/{system_id}/permissions/apply/
+                # POST /api/v2/inner/esb/systems/{system_id}/permissions/apply/
                 path(
                     "<int:system_id>/permissions/apply/",
                     views.EsbAppPermissionApplyCreateApi.as_view(),
