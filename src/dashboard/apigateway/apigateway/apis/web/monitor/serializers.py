@@ -74,6 +74,8 @@ class AlarmStrategyInputSLZ(serializers.ModelSerializer):
     )
     config = AlarmStrategyConfigSLZ(help_text="告警策略配置")
 
+    effective_stages = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="生效环境列表")
+
     class Meta:
         model = AlarmStrategy
         fields = [
@@ -101,14 +103,15 @@ class AlarmStrategyInputSLZ(serializers.ModelSerializer):
         return value
 
     def validate_effective_stages(self, value):
-        if not value:
-            return []
-
         if not isinstance(value, list):
             raise serializers.ValidationError(_("生效环境列表必须为列表"))
 
+        if not value:
+            return []
+
         # check if all the stages are valid
-        stage_names = Stage.objects.filter(name__in=value).values_list("name", flat=True)
+        gateway = self.context["request"].gateway
+        stage_names = Stage.objects.filter(name__in=value, gateway=gateway).values_list("name", flat=True)
         if len(stage_names) != len(value):
             raise serializers.ValidationError(_("生效环境列表中存在无效的环境"))
 
@@ -128,6 +131,7 @@ class AlarmStrategyListOutputSLZ(serializers.ModelSerializer):
             "enabled",
             "updated_time",
             "gateway_labels",
+            "effective_stages",
         ]
         lookup_field = "id"
 

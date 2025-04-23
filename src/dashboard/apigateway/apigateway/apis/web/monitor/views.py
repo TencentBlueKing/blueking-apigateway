@@ -53,6 +53,7 @@ from .serializers import (
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
+        request_body=AlarmStrategyInputSLZ,
         responses={status.HTTP_201_CREATED: ""},
         operation_description="创建告警策略",
         tags=["WebAPI.Monitor"],
