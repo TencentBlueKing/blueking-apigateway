@@ -74,7 +74,9 @@ class AlarmStrategyInputSLZ(serializers.ModelSerializer):
     )
     config = AlarmStrategyConfigSLZ(help_text="告警策略配置")
 
-    effective_stages = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="生效环境列表")
+    effective_stages = serializers.ListField(
+        child=serializers.CharField(), required=False, allow_empty=True, help_text="生效环境列表"
+    )
 
     class Meta:
         model = AlarmStrategy

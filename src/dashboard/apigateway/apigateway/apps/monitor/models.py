@@ -119,6 +119,9 @@ class AlarmStrategy(ConfigModelMixin):
 
     @property
     def effective_stages(self) -> List[str]:
+        if not self._effective_stages:
+            return []
+
         return self._effective_stages.split(",")
 
     @effective_stages.setter

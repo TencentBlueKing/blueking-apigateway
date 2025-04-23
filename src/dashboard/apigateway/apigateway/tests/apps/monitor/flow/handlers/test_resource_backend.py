@@ -68,17 +68,37 @@ class TestesourceBackendAlarmStrategyEnabledFilter:
         result = self.filter._do(mock_event)
         assert result == mock_event
 
-    def _is_alarm_enabled(self, mocker):
-        result = self.filter._is_alarm_enabled([])
-        assert result is True
+    def test__is_alarm_enabled(self, mocker):
+        result = self.filter._is_alarm_enabled([], "prod")
+        assert result is False
 
         strategy = G(AlarmStrategy, enabled=True)
-        result = self.filter._is_alarm_enabled([strategy])
+        result = self.filter._is_alarm_enabled([strategy], "prod")
         assert result is True
 
         strategy.enabled = False
-        result = self.filter._is_alarm_enabled([strategy])
+        result = self.filter._is_alarm_enabled([strategy], "prod")
         assert result is False
+
+    def test_get_enabled_strategies(self):
+        # Test with no strategies
+        result = self.filter._get_enabled_strategies([], "prod")
+        assert result == []
+
+        # Test with enabled strategy and matching stage
+        strategy = G(AlarmStrategy, enabled=True, _effective_stages="prod")
+        result = self.filter._get_enabled_strategies([strategy], "prod")
+        assert result == [strategy]
+
+        # Test with enabled strategy but non-matching stage
+        strategy = G(AlarmStrategy, enabled=True, _effective_stages="test")
+        result = self.filter._get_enabled_strategies([strategy], "prod")
+        assert result == []
+
+        # Test with disabled strategy
+        strategy = G(AlarmStrategy, enabled=False, _effective_stages="prod")
+        result = self.filter._get_enabled_strategies([strategy], "prod")
+        assert result == []
 
 
 class TestResourceBackendAlerter:

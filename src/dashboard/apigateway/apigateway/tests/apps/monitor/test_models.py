@@ -85,3 +85,66 @@ class TestAlarmStrategy(TestCase):
         for test in data:
             strategy.config = test["config"]
             self.assertEqual(sorted(strategy.notice_receivers), test["expected"], test["config"])
+
+    def test_effective_stages_getter(self):
+        gateway = G(Gateway)
+        strategy = G(
+            AlarmStrategy,
+            gateway=gateway,
+            schema=SchemaFactory().get_monitor_alarm_strategy_schema(),
+        )
+
+        # Test empty stages
+        strategy._effective_stages = ""
+        self.assertEqual(strategy.effective_stages, [])
+
+        # Test single stage
+        strategy._effective_stages = "prod"
+        self.assertEqual(strategy.effective_stages, ["prod"])
+
+        # Test multiple stages
+        strategy._effective_stages = "prod,test,dev"
+        self.assertEqual(strategy.effective_stages, ["prod", "test", "dev"])
+
+    def test_effective_stages_setter(self):
+        gateway = G(Gateway)
+        strategy = G(
+            AlarmStrategy,
+            gateway=gateway,
+            schema=SchemaFactory().get_monitor_alarm_strategy_schema(),
+        )
+
+        # Test empty stages
+        strategy.effective_stages = []
+        self.assertEqual(strategy._effective_stages, "")
+
+        # Test single stage
+        strategy.effective_stages = ["prod"]
+        self.assertEqual(strategy._effective_stages, "prod")
+
+        # Test multiple stages
+        strategy.effective_stages = ["prod", "test", "dev"]
+        self.assertEqual(strategy._effective_stages, "prod,test,dev")
+
+    def test_is_effective_stage(self):
+        gateway = G(Gateway)
+        strategy = G(
+            AlarmStrategy,
+            gateway=gateway,
+            schema=SchemaFactory().get_monitor_alarm_strategy_schema(),
+        )
+
+        # Test empty stage
+        self.assertFalse(strategy.is_effective_stage(""))
+
+        # Test when all stages are effective
+        strategy._effective_stages = ""
+        self.assertTrue(strategy.is_effective_stage("prod"))
+        self.assertTrue(strategy.is_effective_stage("test"))
+        self.assertTrue(strategy.is_effective_stage("dev"))
+
+        # Test specific stages
+        strategy._effective_stages = "prod,test"
+        self.assertTrue(strategy.is_effective_stage("prod"))
+        self.assertTrue(strategy.is_effective_stage("test"))
+        self.assertFalse(strategy.is_effective_stage("dev"))
