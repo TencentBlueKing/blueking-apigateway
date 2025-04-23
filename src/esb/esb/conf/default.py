@@ -176,6 +176,9 @@ if BK_ESB_DATABASE_TLS_ENABLED:
         default_ssl_options["cert"] = default_cert_file
         default_ssl_options["key"] = default_key_file
 
+    if "OPTIONS" not in DATABASES["default"]:
+        DATABASES["default"]["OPTIONS"] = {}
+
     DATABASES["default"]["OPTIONS"]["ssl"] = default_ssl_options
 
 
