@@ -171,7 +171,6 @@ class TestAlarmStrategyRetrieveUpdateDestroyApi(TestCase):
             gateway=self.gateway,
             name="test",
             alarm_type="resource_backend",
-            _api_label_ids=f"{self.label.id}",
             _config=json.dumps(
                 {
                     "detect_config": {
@@ -262,7 +261,6 @@ class TestAlarmStrategyUpdateStatusApi(TestCase):
             gateway=self.gateway,
             name="test",
             alarm_type="resource_backend",
-            _api_label_ids=f"{self.label.id}",
             _config=json.dumps(
                 {
                     "detect_config": {
