@@ -91,13 +91,14 @@ class APITestApi(generics.CreateAPIView):
         request_time = timezone.now()
 
         # 入参检查
+        body = data.get("body", "")
         history_request = {
             "request_url": prepared_request_url.request_url,
             "request_method": data["method"],
             "type": "HTTP",
             "path_params": data.get("path_params", {}),
             "query_params": data.get("query_params", {}),
-            "body": data.get("body", ""),
+            "body": body,
             "headers": data.get("headers", {}),
             "subpath": data.get("subpath", ""),
             "use_test_app": data.get("use_test_app", True),
@@ -110,7 +111,7 @@ class APITestApi(generics.CreateAPIView):
                 method=data["method"],
                 url=prepared_request_url.request_url,
                 params=data["query_params"],
-                json=json.loads(data.get("body", "{}")),
+                json=json.loads(body or "{}"),
                 headers=prepared_request_headers.headers,
                 # 隐式使用 cookies，不便于用户了解用户认证参数
                 # cookies=request.COOKIES,
