@@ -19,6 +19,7 @@
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse, urlunparse
 
+from django.utils.translation import gettext as _
 from pydantic import BaseModel
 
 from apigateway.apps.monitor.constants import AlarmStatusEnum, ResourceBackendAlarmSubTypeEnum
@@ -55,7 +56,7 @@ class ResourceBackendAlarmStrategyEnabledFilter(AlertHandler):
                 event.alarm_record_id,
                 alarm_strategies=alarm_strategies,
                 status=AlarmStatusEnum.SKIPPED.value,
-                comment="网关监控未开启 或 事件 stage 未在策略的生效环境列表中",
+                comment=_("网关监控未开启 或 事件 stage 未在策略的生效环境列表中"),
             )
             return None
 
