@@ -1046,7 +1046,7 @@ paths:
   /api/v2/inner/gateways/permissions/apply-records/{record_id}/:
     get:
       operationId: v2_inner_retrieve_resource_permission_apply_record
-      description: ''
+      description: '资源权限申请记录详情'
       tags:
       - v2_inner
       responses:
@@ -1075,7 +1075,7 @@ paths:
   /api/v2/inner/esb/systems/:
     get:
       operationId: v2_inner_get_esb_systems
-      description: ''
+      description: '查询组件系统列表'
       tags:
       - v2_inner
       responses:
@@ -1104,7 +1104,7 @@ paths:
   /api/v2/inner/esb/systems/{system_id}/permissions/components/:
     get:
       operationId: v2_inner_get_system_permission_components
-      description: ''
+      description: '查询系统权限组件'
       tags:
       - v2_inner
       responses:
@@ -1149,7 +1149,7 @@ paths:
         enableWebsocket: false
         backend:
           name: default
-          method: get
+          method: post
           path: /backend/api/v2/inner/esb/systems/{system_id}/permissions/apply/
           matchSubpath: false
           timeout: 0
@@ -1191,7 +1191,7 @@ paths:
   /api/v2/inner/esb/systems/permissions/app-permissions/:
     post:
       operationId: v2_inner_get_app_component_systems
-      description: ''
+      description: '已申请权限列表'
       tags:
       - v2_inner
       responses:
@@ -1207,7 +1207,7 @@ paths:
         enableWebsocket: false
         backend:
           name: default
-          method: post
+          method: get
           path: /backend/api/v2/inner/esb/systems/permissions/app-permissions/
           matchSubpath: false
           timeout: 0
@@ -1220,7 +1220,7 @@ paths:
   /api/v2/inner/esb/systems/permissions/apply-records/:
     get:
       operationId: v2_inner_get_app_permission_apply_records
-      description: ''
+      description: '查询应用权限申请记录列表'
       tags:
       - v2_inner
       responses:
@@ -1249,7 +1249,7 @@ paths:
   /api/v2/inner/esb/systems/permissions/apply-records/{record_id}/:
     get:
       operationId: v2_inner_get_app_permission_apply_record
-      description: ''
+      description: '查询应用权限申请记录详情'
       tags:
       - v2_inner
       responses:
