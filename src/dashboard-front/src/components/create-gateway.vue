@@ -23,7 +23,7 @@
               </bk-radio-button>
             </bk-radio-group>
           </bk-form-item>
-          <bk-alert theme="info" class="form-item-alert" v-show="formData.kind === 1">
+          <!-- <bk-alert theme="info" class="form-item-alert" v-show="formData.kind === 1">
             <template #title>
               <p class="flex-row">
                 {{ t('通过编码的方式配置和管理网关的功能，支持接口组合、协议转换和接口编排等功能') }}&nbsp;&nbsp;
@@ -32,7 +32,7 @@
                 </bk-button>
               </p>
             </template>
-          </bk-alert>
+          </bk-alert> -->
           <bk-form-item
             class="form-item-name"
             :label="t('名称')"
@@ -215,13 +215,43 @@
       </div>
     </section>
   </bk-sideslider>
+
+  <bk-sideslider
+    v-model:is-show="isShowMarkdown"
+    :title="t('新建网关')"
+    width="1020"
+  >
+    <section class="guide-wrapper">
+      <section class="header">
+        <p class="success-icon">
+          <i class="apigateway-icon icon-ag-check-circle-shape" />
+        </p>
+        <div class="title">
+          {{ t('网关（{name}）创建成功', { name: newGateway.name }) }}
+        </div>
+        <div class="tips">
+          {{ t('接下来您可以按照开发指引，完成网关的开发，或进入环境概览查看环境信息') }}
+        </div>
+        <div class="btn-wrapper">
+          <bk-button theme="primary" @click="handleGoToEnvOverview">
+            {{ t('环境概览') }}
+          </bk-button>
+          <bk-button class="ml8" @click="isShowMarkdown = false">{{ t('关闭') }}</bk-button>
+        </div>
+      </section>
+      <section class="markdown-box">
+        <guide :markdown-html="markdownHtml" />
+      </section>
+    </section>
+  </bk-sideslider>
 </template>
 
 <script lang="ts" setup>
 import { ref, watch, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useUser } from '@/store/user';
-import { createGateway, getEnvVars, editGateWays } from '@/http';
+import { createGateway, getEnvVars, editGateWays, getGuideDocs } from '@/http';
 import { Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash';
 // @ts-ignore
@@ -229,7 +259,11 @@ import { BasicInfoParams } from '@/basic-info/common/type';
 import MemberSelect from '@/components/member-select';
 // @ts-ignore
 import bareGit from '@/images/bare_git.png';
+import guide from '@/components/guide.vue';
+import MarkdownIt from 'markdown-it';
+import hljs from 'highlight.js';
 
+const router = useRouter();
 const user = useUser();
 const { t } = useI18n();
 
@@ -254,25 +288,6 @@ const emit = defineEmits(['update:modelValue', 'done']);
 
 const { BK_APP_VERSION } = window;
 
-// interface IinitDialogData {
-//   kind?: number
-//   name?: string
-//   id?: number
-//   maintainers?: string[]
-//   description?: string
-//   is_public?: boolean
-//   bk_app_codes?: string[]
-//   extra_info?: {
-//     language?: string
-//     repository?: string
-//   }
-//   programmable_gateway_git_info?: {
-//     repository: string
-//     account: string
-//     password: string
-//   }
-// }
-
 const defaultFormData = {
   name: '',
   description: '',
@@ -294,6 +309,12 @@ const isShow = ref<boolean>(props.modelValue);
 const formRef = ref(null);
 const formData = ref<BasicInfoParams>(cloneDeep(defaultFormData));
 const submitLoading = ref<boolean>(false);
+const isShowMarkdown = ref<boolean>(false);
+const markdownHtml = ref<string>('');
+const newGateway = ref({
+  name: '',
+  id: 0,
+});
 const repositoryUrl = ref<string>('');
 const rules = {
   name: [
@@ -388,6 +409,41 @@ const progressList = computed(() => {
   ];
 });
 
+const md = new MarkdownIt({
+  linkify: false,
+  html: true,
+  breaks: true,
+  highlight(str: string, lang: string) {
+    try {
+      if (lang && hljs.getLanguage(lang)) {
+        return hljs.highlight(str, { language: lang, ignoreIllegals: true }).value;
+      }
+    } catch {
+      return str;
+    }
+    return str;
+  },
+});
+
+const showGuide = async () => {
+  try {
+    const data = await getGuideDocs(newGateway.value?.id);
+    markdownHtml.value = md.render(data.content);
+    isShowMarkdown.value = true;
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+const handleGoToEnvOverview = () => {
+  router.push({
+    name: 'apigwStageOverview',
+    params: {
+      id: newGateway.value?.id,
+    },
+  });
+};
+
 const getUrlPrefix = async () => {
   const res = await getEnvVars();
   repositoryUrl.value = res.BK_PAAS_APP_REPO_URL_TMPL;
@@ -420,11 +476,20 @@ const handleConfirmCreate = async () => {
         width: 'auto',
       });
     } else {
-      await createGateway(payload);
-      Message({
-        message: t('创建成功'),
-        theme: 'success',
-      });
+      const response = await createGateway(payload);
+
+      if (payload.kind === 1) {
+        newGateway.value = {
+          name: payload.name,
+          id: response.id,
+        };
+        showGuide();
+      } else {
+        Message({
+          message: t('创建成功'),
+          theme: 'success',
+        });
+      }
     }
 
     isShow.value = false;
@@ -573,6 +638,32 @@ watch(
     }
   }
 }
+
+.guide-wrapper {
+  padding: 16px 24px;
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+    .success-icon {
+      margin-bottom: 18px;
+      i {
+        font-size: 42px;
+        background: #EBFAF0;
+        color: #65C389;
+      }
+    }
+    .title {
+      font-size: 20px;
+      color: #313238;
+    }
+    .tips {
+      font-size: 14px;
+      color: #4D4F56;
+      margin: 12px 0 24px;
+    }
+  }
+}
+
 :deep(.progress-subtitle) {
   font-size: 12px;
   color: #979BA5;
