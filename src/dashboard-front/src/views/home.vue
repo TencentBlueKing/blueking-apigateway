@@ -191,78 +191,15 @@
       <p class="copyright">{{copyright}}</p>
     </div>
 
-    <!-- <bk-dialog
-      :is-show="dialogData.isShow"
-      width="600"
-      :title="dialogData.title"
-      theme="primary"
-      :quick-close="false"
-      :is-loading="dialogData.loading"
-      @confirm="handleConfirmCreate"
-      @closed="dialogData.isShow = false">
-      <bk-form ref="formRef" form-type="vertical" class="create-gw-form" :model="formData" :rules="rules">
-        <bk-form-item
-          class="form-item-name"
-          :label="t('名称')"
-          property="name"
-          required
-        >
-          <bk-input
-            v-model="formData.name"
-            :maxlength="30"
-            show-word-limit
-            :placeholder="$t('请输入小写字母、数字、连字符(-)，以小写字母开头')"
-            clearable
-            autofocus
-          />
-        </bk-form-item>
-        <span class="common-form-tips form-item-name-tips">
-          {{ t('网关的唯一标识，创建后不可更改') }}
-        </span>
-        <bk-form-item
-          :label="t('维护人员')"
-          property="maintainers"
-          required
-        >
-          <member-select v-model="formData.maintainers" />
-        </bk-form-item>
-        <bk-form-item
-          :label="t('描述')"
-          property="description"
-        >
-          <bk-input
-            type="textarea"
-            v-model="formData.description"
-            :placeholder="t('请输入网关描述')"
-            :maxlength="500"
-            clearable
-          />
-        </bk-form-item>
-        <bk-form-item
-          :label="t('是否公开')"
-          property="is_public"
-          required
-        >
-          <bk-switcher theme="primary" v-model="formData.is_public" />
-          <span class="common-form-tips">{{ $t('公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏') }}</span>
-        </bk-form-item>
-      </bk-form>
-    </bk-dialog> -->
-
     <create-gateway-com v-model="createGatewayShow" @done="init()" />
   </div>
 </template>
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-// import { createGateway } from '@/http';
-// import { useUser } from '@/store/user';
-// import { Message } from 'bkui-vue';
-// import { IDialog } from '@/types';
 import { useRouter } from 'vue-router';
 import { useGetApiList } from '@/hooks';
 import { is24HoursAgo } from '@/common/util';
 import { useCommon } from '@/store';
-// import MemberSelect from '@/components/member-select';
 // @ts-ignore
 import TableEmpty from '@/components/table-empty.vue';
 import {
@@ -275,21 +212,13 @@ import { GatewayListItem } from '@/types/gateway';
 import CreateGatewayCom from '@/components/create-gateway.vue';
 
 const { t } = useI18n();
-// const user = useUser();
 const router = useRouter();
 const common = useCommon();
 
 // const tabActive = ref<string>('all');
-// const formRef = ref(null);
 const filterKey = ref<string>('updated_time');
 const filterNameData = ref({ keyword: '', kind: 'all' });
 const createGatewayShow = ref<boolean>(false);
-// 弹窗
-// const dialogData = ref<IDialog>({
-//   isShow: false,
-//   title: t('新建网关'),
-//   loading: false,
-// });
 const gatewayTypes = ref([
   {
     label: t('全部'),
@@ -305,67 +234,14 @@ const gatewayTypes = ref([
   },
 ]);
 
-
-// 新增网关弹窗字段interface
-// interface IinitDialogData {
-//   name: string
-//   maintainers: string[]
-//   description?: string
-//   is_public: boolean
-// }
-
-// const globalProperties = useGetGlobalProperties();
-// const { GLOBAL_CONFIG } = globalProperties;
-
-// dialog弹窗数据
-// const initDialogData: IinitDialogData = {
-//   name: '',
-//   maintainers: [user.user.username],   // 默认当前填入当前用户
-//   description: '',
-//   is_public: true,
-// };
-
 const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
   keyword: '',
   isAbnormal: false,
 });
 
 const isLoading = ref(true);
-
-// const rules = {
-//   name: [
-//     {
-//       required: true,
-//       message: t('请填写名称'),
-//       trigger: 'change',
-//     },
-//     {
-//       validator: (value: string) => value.length >= 3,
-//       message: t('不能小于3个字符'),
-//       trigger: 'change',
-//     },
-//     {
-//       validator: (value: string) => value.length <= 30,
-//       message: t('不能多于30个字符'),
-//       trigger: 'change',
-//     },
-//     {
-//       validator: (value: string) => {
-//         const reg = /^[a-z][a-z0-9-]*$/;
-//         return reg.test(value);
-//       },
-//       message: t('由小写字母、数字、连接符（-）组成，首字符必须是小写字母，长度大于3小于30个字符'),
-//       trigger: 'change',
-//     },
-//   ],
-// };
-
-// 新增网关字段
-// const formData = ref<IinitDialogData>(initDialogData);
-
 // 网关列表数据
 const gatewaysList = ref<any>([]);
-
 // // 当前年份
 // const curYear = (new Date()).getFullYear();
 
@@ -426,37 +302,9 @@ const init = async () => {
 };
 init();
 
-// 新建网关弹窗
-// const showAddDialog1 = () => {
-//   // 初始化数据
-//   resetDialogData();
-//   formData.value = initDialogData;
-//   dialogData.value.isShow = true;
-//   dialogData.value.loading = false;
-// };
-
 const showAddDialog = () => {
   createGatewayShow.value = true;
 };
-
-// 创建网关确认
-// const handleConfirmCreate = async () => {
-//   try {
-//     // 校验
-//     await formRef.value.validate();
-//     dialogData.value.loading = true;
-//     await createGateway(formData.value);
-//     Message({
-//       message: t('创建成功'),
-//       theme: 'success',
-//     });
-//     dialogData.value.isShow = false;
-//     init();
-//   } catch (error) {
-//   } finally {
-//     dialogData.value.loading = false;
-//   }
-// };
 
 const handleGoPage = (routeName: string, gateway: GatewayListItem) => {
   if (gateway.kind === 1 && routeName === 'apigwResource') {
@@ -475,13 +323,6 @@ const handleGoPage = (routeName: string, gateway: GatewayListItem) => {
     });
   }
 };
-
-// const resetDialogData = () => {
-//   initDialogData.name = '';
-//   initDialogData.maintainers = [user.user.username];
-//   initDialogData.description = '';
-//   initDialogData.is_public = true;
-// };
 
 // 列表排序
 const handleChange = (v: string) => {

@@ -1401,6 +1401,8 @@ const lang: ILANG = {
   '已绑定的环境：': ['Bound environments:'],
   '当前版本：': ['Current version:'],
   '当前版本（{version}）': ['Current version({version})'],
+  '网关（{name}）创建成功': ['Gateway ({name}) created successfully.'],
+  '接下来您可以按照开发指引，完成网关的开发，或进入环境概览查看环境信息': ['Next, you can follow the development guidelines to complete the development of the gateway, or enter the environment overview to view the environment information.'],
   '已绑定的资源：': ['Bound resources:'],
   '请输入插件关键字，按Enter搜索': ['Please enter plugin keyword, press Enter to search'],
   '版本：': ['Version:'],

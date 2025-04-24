@@ -281,109 +281,7 @@
       </template>
     </bk-dialog>
 
-    <!-- <bk-dialog
-      width="600"
-      theme="primary"
-      v-model:is-show="dialogEditData.isShow"
-      :title="dialogEditData.title"
-      quick-close>
-      <bk-form ref="formRef" form-type="vertical" :model="basicInfoDetailData" :rules="rules">
-        <bk-form-item
-          :label="t('名称')"
-          property="name"
-          required
-        >
-          <bk-input
-            v-model="basicInfoDetailData.name"
-            :maxlength="30"
-            :disabled="true"
-            :placeholder="t('请输入小写字母、数字、连字符(-)，以小写字母开头')"
-          />
-          <div class="gateways-name-tip">
-            <span>{{ t('网关唯一标识，创建后不可修改') }}</span>
-          </div>
-        </bk-form-item>
-        <bk-form-item
-          :label="t('维护人员')"
-          property="maintainers"
-          required
-        >
-          <MemberSelect v-model="basicInfoDetailData.maintainers" :placeholder="t('请选择维护人员')" :has-delete-icon="true" />
-        </bk-form-item>
-        <bk-form-item
-          :label="t('描述')"
-          property="description"
-        >
-          <bk-input
-            type="textarea"
-            v-model="basicInfoDetailData.description"
-            :placeholder="t('请输入网关描述')"
-            :maxlength="500"
-            :rows="5"
-            clearable
-          />
-        </bk-form-item>
-        <bk-form-item
-          :label="t('是否公开')"
-          property="is_public"
-          required
-        >
-          <bk-switcher v-model="basicInfoDetailData.is_public" theme="primary" />
-          <span class="common-form-tips">{{ t('公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏') }}</span>
-        </bk-form-item>
-        <bk-form-item
-          :label="t('关联蓝鲸应用')"
-          property="bk_app_codes"
-          v-if="user?.featureFlags?.GATEWAY_APP_BINDING_ENABLED"
-        >
-          <bk-tag-input
-            v-model="basicInfoDetailData.bk_app_codes"
-            :placeholder="t('请输入蓝鲸应用ID，并按enter确认')"
-            allow-create
-            has-delete-icon
-            collapse-tags
-            :list="[]"
-          />
-          <span class="common-form-tips">{{ t('仅影响 HomePage 中运维开发分数的计算') }}</span>
-        </bk-form-item>
-        <bk-form-item
-          :label="t('管理网关的应用列表 ')"
-          property="related_app_codes"
-        >
-          <bk-tag-input
-            v-model="basicInfoDetailData.related_app_codes"
-            :placeholder="t('请输入蓝鲸应用ID，并按enter确认')"
-            allow-create
-            has-delete-icon
-            collapse-tags
-          />
-          <span class="common-form-tips">{{ t('允许列表中的应用使用 sdk 或者开放 API 调用网关接口，同步环境/资源以及发布版本') }}</span>
-        </bk-form-item>
-      </bk-form>
-      <template #footer>
-        <bk-pop-confirm
-          width="288"
-          :content="t('您已将自己从维护人员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！')"
-          trigger="click"
-          ext-cls="confirm-custom-btn"
-          @confirm="handleConfirmEdit"
-          @cancel="handleCloseEdit"
-          v-if="!basicInfoDetailData.maintainers?.includes(user.user.username)"
-        >
-          <bk-button theme="primary" :loading="dialogEditData.loading">
-            {{ t('确定') }}
-          </bk-button>
-        </bk-pop-confirm>
-        <bk-button v-else theme="primary" @click="handleConfirmEdit" :loading="dialogEditData.loading">
-          {{ t('确定') }}
-        </bk-button>
-        <bk-button @click="handleCloseEdit" class="ml8">
-          {{ t('取消') }}
-        </bk-button>
-      </template>
-    </bk-dialog> -->
-
-   <bk-sideslider
+    <bk-sideslider
       v-model:is-show="isShowMarkdown"
       :title="t('查看开发指引')"
       width="960"
@@ -392,7 +290,7 @@
         <guide :markdown-html="markdownHtml" />
       </section>
     </bk-sideslider>
-    
+
     <create-gateway-com v-model="createGatewayShow" :init-data="basicInfoDetailData" @done="getBasicInfo()" />
   </div>
 </template>
@@ -404,15 +302,12 @@ import { Message, InfoBox } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { HelpDocumentFill } from 'bkui-vue/lib/icon';
 import { useRoute, useRouter } from 'vue-router';
-// import { useUser } from '@/store';
 import {  copy } from '@/common/util';
 import { useGetGlobalProperties } from '@/hooks';
-// import { useStage } from '@/store';
 import { BasicInfoParams, DialogParams } from './common/type';
 import { getGateWaysInfo, toggleGateWaysStatus, deleteGateWays, editGateWays, getGuideDocs } from '@/http';
 import GateWaysEditTextarea from '@/components/gateways-edit/textarea.vue';
 import GateWaysEditMemberSelector from '@/components/gateways-edit/member-selector.vue';
-// import MemberSelect from '@/components/member-select';
 import CreateGatewayCom from '@/components/create-gateway.vue';
 import guide from '@/components/guide.vue';
 import MarkdownIt from 'markdown-it';
@@ -423,35 +318,6 @@ import programProcess from '@/images/program-process.svg';
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-// const user = useUser();
-
-// const rules = {
-//   name: [
-//     {
-//       required: true,
-//       message: t('请填写名称'),
-//       trigger: 'blur',
-//     },
-//     {
-//       validator: (value: string) => value.length >= 3,
-//       message: t('不能小于3个字符'),
-//       trigger: 'blur',
-//     },
-//     {
-//       validator: (value: string) => value.length <= 30,
-//       message: t('不能多于30个字符'),
-//       trigger: 'blur',
-//     },
-//     {
-//       validator: (value: string) => {
-//         const reg = /^[a-z][a-z0-9-]*$/;
-//         return reg.test(value);
-//       },
-//       message: '由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符',
-//       trigger: 'blur',
-//     },
-//   ],
-// };
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();
@@ -459,7 +325,6 @@ const { GLOBAL_CONFIG } = globalProperties;
 
 // 网关id
 const apigwId = ref(0);
-// const formRef = ref(null);
 const formRemoveConfirmApigw = ref('');
 const basicInfoDetailLoading = ref(false);
 const createGatewayShow = ref<boolean>(false);
@@ -501,11 +366,6 @@ const delApigwDialog = ref<DialogParams>({
   isShow: false,
   loading: false,
 });
-// const dialogEditData = ref<DialogParams>({
-//   isShow: false,
-//   loading: false,
-//   title: t('编辑网关'),
-// });
 
 const processImg = computed(() => {
   return programProcess;
@@ -575,30 +435,6 @@ const handleDeleteApigw = async () => {
   }
 };
 
-// const handleConfirmEdit = async () => {
-//   try {
-//     // await formRef.value.validate();
-//     // dialogEditData.value.loading = true;
-//     // const params = _.cloneDeep(basicInfoDetailData.value);
-//     // if (!user?.featureFlags?.GATEWAY_APP_BINDING_ENABLED) {
-//     //   params.bk_app_codes = undefined;
-//     // }
-//     // await editGateWays(apigwId.value, params);
-//     // Message({
-//     //   message: t('编辑成功'),
-//     //   theme: 'success',
-//     //   width: 'auto',
-//     // });
-//     // dialogEditData.value.isShow = false;
-//     // await getBasicInfo();
-//   } catch (error) {
-//   } finally {
-//     // setTimeout(() => {
-//     //   dialogEditData.value.loading = false;
-//     // }, 200);
-//   }
-// };
-
 const handleChangePublic = async (value: boolean) => {
   basicInfoData.value.is_public = value;
   await editGateWays(apigwId.value, basicInfoData.value);
@@ -655,10 +491,6 @@ const handleOperate = async (type: string) => {
 
   if (['edit'].includes(type)) {
     basicInfoDetailData.value = _.cloneDeep(basicInfoData.value);
-    // console.log('basicInfoDetailData.value', basicInfoDetailData.value);
-    // setTimeout(() => {
-    //   dialogEditData.value.isShow = true;
-    // }, 200);
     createGatewayShow.value = true;
     return;
   }
@@ -669,10 +501,6 @@ const handleOperate = async (type: string) => {
     return;
   }
 };
-
-// const handleCloseEdit =  () => {
-//   dialogEditData.value.isShow = false;
-// };
 
 const handleOpenNav = (url: string) => {
   if (url) {
