@@ -19,8 +19,9 @@
 from django.urls import include, path
 
 from .views import (
+    DeployIdEventsRetrieveApi,
+    HistoryIdEventsRetrieveApi,
     ProgrammableDeployCreateApi,
-    ProgrammableDeployEventsRetrieveApi,
     ProgrammableDeployRetrieveApi,
     ReleaseAvailableResourceListApi,
     ReleaseAvailableResourceSchemaRetrieveApi,
@@ -42,8 +43,13 @@ urlpatterns = [
                 ),
                 path(
                     "<str:deploy_id>/histories/events/",
-                    ProgrammableDeployEventsRetrieveApi.as_view(),
+                    DeployIdEventsRetrieveApi.as_view(),
                     name="gateway.programmable.deploy_histories.events",
+                ),
+                path(
+                    "histories/<str:history_id>/events/",
+                    HistoryIdEventsRetrieveApi.as_view(),
+                    name="gateway.programmable.histories.events",
                 ),
             ]
         ),
