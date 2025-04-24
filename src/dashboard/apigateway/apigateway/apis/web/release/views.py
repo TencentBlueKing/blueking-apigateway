@@ -42,6 +42,7 @@ from apigateway.components.paas import (
     get_pass_deploy_streams_history_events,
 )
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion
+from apigateway.utils import openapi as openapi_utils
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
@@ -136,7 +137,7 @@ class ReleaseAvailableResourceSchemaRetrieveApi(generics.RetrieveAPIView):
             json_schema = to_json_schema(
                 request_body["content"]["application/json"]["schema"], {"keepNotSupported": ["example"]}
             )
-            example = openapi.generate_example(json_schema)
+            example = openapi_utils.generate_example(json_schema)
             schema_result.update(
                 {
                     "body_schema": request_body,
