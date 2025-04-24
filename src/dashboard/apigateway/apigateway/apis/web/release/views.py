@@ -23,6 +23,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
+from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from openapi_schema_to_json_schema import to_json_schema
 from rest_framework import generics, status
@@ -41,7 +42,7 @@ from apigateway.components.paas import (
     get_pass_deploy_streams_history_events,
 )
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion
-from apigateway.utils import openapi
+from apigateway.utils import openapi as openapi_utils
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
@@ -136,7 +137,7 @@ class ReleaseAvailableResourceSchemaRetrieveApi(generics.RetrieveAPIView):
             json_schema = to_json_schema(
                 request_body["content"]["application/json"]["schema"], {"keepNotSupported": ["example"]}
             )
-            example = openapi.generate_example(json_schema)
+            example = openapi_utils.generate_example(json_schema)
             schema_result.update(
                 {
                     "body_schema": request_body,
@@ -368,49 +369,40 @@ class ProgrammableDeployRetrieveApi(generics.RetrieveAPIView):
         return OKJsonResponse(data=data)
 
 
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ProgrammableDeployEventGetOutputSLZ()},
-        tags=["WebAPI.Release"],
-        operation_description="编程网关pass部署event查询",
-    ),
-)
-class ProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
+class BaseProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
+    """部署事件查询基类"""
+
     serializer_class = ProgrammableDeployEventGetOutputSLZ
 
-    def get_queryset(self):
-        return ProgrammableGatewayDeployHistory.objects.filter(gateway=self.request.gateway)
+    def get_common_context(self, instance):
+        """公共上下文数据准备"""
+        user_credentials = get_user_credentials_from_request(self.request)
 
-    def retrieve(self, request, *args, **kwargs):
-        instance = get_object_or_404(self.get_queryset(), deploy_id=self.kwargs["deploy_id"])
-        # 查询pass部署步骤框架
-        user_credentials = get_user_credentials_from_request(request)
+        # 获取部署阶段框架数据
         events_framework = get_paas_deploy_phases_framework(
-            app_code=request.gateway.name,
+            app_code=self.request.gateway.name,
             module="default",
             env=instance.stage.name,
             user_credentials=user_credentials,
         )
-
-        # 查询pass部署实例步骤
+        # 获取部署实例阶段数据
         events_instance = get_paas_deploy_phases_instance(
-            app_code=request.gateway.name,
+            app_code=self.request.gateway.name,
             env=instance.stage.name,
             module="default",
             deploy_id=instance.deploy_id,
             user_credentials=user_credentials,
         )
-        # 查询pass部署事件
+        # 获取部署事件流数据
         events = get_pass_deploy_streams_history_events(
             deploy_id=instance.deploy_id,
             user_credentials=user_credentials,
         )
-
-        # 添加网关发布事件
+        # 获取发布历史事件
         release_history = ReleaseHistory.objects.filter(
-            gateway=request.gateway, stage=instance.stage, resource_version__version=instance.version
+            gateway=self.request.gateway, stage=instance.stage, resource_version__version=instance.version
         ).first()
+
         release_history_events = []
         release_history_events_map = {}
         if release_history:
@@ -418,21 +410,94 @@ class ProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
             release_history_events_map = PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
                 [release_history.id]
             )
+        return {
+            "events_framework": events_framework,
+            "events_instance": events_instance,
+            "events": events,
+            "release_history_events": release_history_events,
+            "release_history_events_map": release_history_events_map,
+        }
 
-        slz_class = self.get_serializer_class()
-        slz = slz_class(
+    def build_response_data(self, instance):
+        """构造响应数据"""
+        release_history = ReleaseHistory.objects.filter(
+            gateway=self.request.gateway, stage=instance.stage, resource_version__version=instance.version
+        ).first()
+        slz = self.get_serializer(
             release_history
-            if release_history
-            else ReleaseHistory(
+            or ReleaseHistory(
                 stage=instance.stage,
-                resource_version=ResourceVersion(version=instance.version, gateway=request.gateway),
+                resource_version=ResourceVersion(version=instance.version, gateway=self.request.gateway),
             ),
-            context={
-                "events_framework": events_framework,
-                "events_instance": events_instance,
-                "events": events,
-                "release_history_events": release_history_events,
-                "release_history_events_map": release_history_events_map,
-            },
+            context=self.get_common_context(instance),
         )
-        return OKJsonResponse(data=slz.data)
+        return slz.data
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_id="get_deploy_events_by_deploy_id",
+        manual_parameters=[
+            openapi.Parameter(
+                name="deploy_id",
+                in_=openapi.IN_PATH,
+                type=openapi.TYPE_STRING,
+                description="部署任务ID",
+                required=True,
+            )
+        ],
+        responses={status.HTTP_200_OK: ProgrammableDeployEventGetOutputSLZ()},
+        tags=["WebAPI.Release"],
+        operation_description="通过部署ID查询编程网关事件",
+    ),
+)
+class DeployIdEventsRetrieveApi(BaseProgrammableDeployEventsRetrieveApi):
+    serializer_class = ProgrammableDeployEventGetOutputSLZ
+
+    def get_object(self):
+        """通过 deploy_id 获取部署历史"""
+        return get_object_or_404(
+            ProgrammableGatewayDeployHistory.objects.filter(gateway=self.request.gateway),
+            deploy_id=self.kwargs["deploy_id"],
+        )
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        return OKJsonResponse(data=self.build_response_data(instance))
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_id="get_deploy_events_by_history_id",
+        manual_parameters=[
+            openapi.Parameter(
+                name="history_id",
+                in_=openapi.IN_PATH,
+                type=openapi.TYPE_STRING,
+                description="发布历史ID",
+                required=True,
+            )
+        ],
+        responses={status.HTTP_200_OK: ProgrammableDeployEventGetOutputSLZ()},
+        tags=["WebAPI.Release"],
+        operation_description="通过发布历史ID查询编程网关事件",
+    ),
+)
+class HistoryIdEventsRetrieveApi(BaseProgrammableDeployEventsRetrieveApi):
+    def get_object(self):
+        """通过 history_id 获取部署历史"""
+        # 先获取发布历史记录
+        release_history = get_object_or_404(
+            ReleaseHistory.objects.filter(gateway=self.request.gateway), pk=self.kwargs["history_id"]
+        )
+        # 再获取对应的部署记录
+        return get_object_or_404(
+            ProgrammableGatewayDeployHistory.objects.filter(gateway=self.request.gateway),
+            version=release_history.resource_version.version,
+        )
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        return OKJsonResponse(data=self.build_response_data(instance))
