@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
 from typing import Any, Dict
 
 import requests
@@ -23,7 +24,6 @@ from django.conf import settings
 from django.http import Http404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.utils.encoding import force_bytes
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -91,13 +91,14 @@ class APITestApi(generics.CreateAPIView):
         request_time = timezone.now()
 
         # 入参检查
+        body = data.get("body", "")
         history_request = {
             "request_url": prepared_request_url.request_url,
             "request_method": data["method"],
             "type": "HTTP",
             "path_params": data.get("path_params", {}),
             "query_params": data.get("query_params", {}),
-            "body": data.get("body", ""),
+            "body": body,
             "headers": data.get("headers", {}),
             "subpath": data.get("subpath", ""),
             "use_test_app": data.get("use_test_app", True),
@@ -110,7 +111,7 @@ class APITestApi(generics.CreateAPIView):
                 method=data["method"],
                 url=prepared_request_url.request_url,
                 params=data["query_params"],
-                data=force_bytes(data.get("body", "")),
+                json=json.loads(body or "{}"),
                 headers=prepared_request_headers.headers,
                 # 隐式使用 cookies，不便于用户了解用户认证参数
                 # cookies=request.COOKIES,
