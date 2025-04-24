@@ -23,16 +23,16 @@
               </bk-radio-button>
             </bk-radio-group>
           </bk-form-item>
-          <!-- <bk-alert theme="info" class="form-item-alert" v-show="formData.kind === 1">
+          <bk-alert theme="info" class="form-item-alert" v-show="formData.kind === 1">
             <template #title>
               <p class="flex-row">
-                {{ t('通过编码的方式配置和管理网关的功能，支持接口组合、协议转换和接口编排等功能') }}&nbsp;&nbsp;
-                <bk-button theme="primary" text>
+                {{ t('通过编码的方式配置和管理网关的功能，支持接口组合、协议转换和接口编排等功能') }}
+                <!-- <bk-button theme="primary" text>
                   {{ t('查看指引 >') }}
-                </bk-button>
+                </bk-button> -->
               </p>
             </template>
-          </bk-alert> -->
+          </bk-alert>
           <bk-form-item
             class="form-item-name"
             :label="t('名称')"
