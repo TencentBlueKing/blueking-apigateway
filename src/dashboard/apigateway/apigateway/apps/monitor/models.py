@@ -82,11 +82,14 @@ class AlarmStrategy(ConfigModelMixin):
         choices=ResourceBackendAlarmSubTypeEnum.get_choices(),
         db_index=True,
     )
-    # TODO: 删除 _api_label_ids 字段
-    _api_label_ids = models.TextField(db_column="api_label_ids", blank=True, default="")
     api_labels = models.ManyToManyField(APILabel)
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
     enabled = models.BooleanField(default=True)
+
+    # 新增该字段，兼容存量数据，为空代表所有环境生效 (默认)
+    # 前端限制：全部则不填，否则填写具体的环境列表
+    # 开发者：用户根据是否启用告警策略来关闭所有告警，而不是将生效环境置空
+    _effective_stages = models.TextField(db_column="effective_stages", blank=True, default="")
 
     objects = AlarmStrategyManager()
 
@@ -113,6 +116,27 @@ class AlarmStrategy(ConfigModelMixin):
         if config["notice_config"]["notice_extra_receiver"]:
             receivers.update(config["notice_config"]["notice_extra_receiver"])
         return list(receivers)
+
+    @property
+    def effective_stages(self) -> List[str]:
+        if not self._effective_stages:
+            return []
+
+        return self._effective_stages.split(",")
+
+    @effective_stages.setter
+    def effective_stages(self, value: List[str]):
+        self._effective_stages = ",".join(value)
+
+    def is_effective_stage(self, stage: str) -> bool:
+        if not stage:
+            return False
+
+        # means all stages are effective
+        if self._effective_stages == "":
+            return True
+
+        return stage in self.effective_stages
 
 
 class AlarmRecord(models.Model):

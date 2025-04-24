@@ -101,6 +101,7 @@ class TestAlarmStrategyListCreateApi(TestCase):
                         "enabled": strategy_2.enabled,
                         "updated_time": dummy_time.str,
                         "gateway_labels": [],
+                        "effective_stages": [],
                     },
                     {
                         "id": strategy_1.id,
@@ -110,6 +111,7 @@ class TestAlarmStrategyListCreateApi(TestCase):
                         "enabled": strategy_1.enabled,
                         "updated_time": dummy_time.str,
                         "gateway_labels": [{"id": gateway_label.id, "name": gateway_label.name}],
+                        "effective_stages": [],
                     },
                 ],
             },
@@ -126,6 +128,7 @@ class TestAlarmStrategyListCreateApi(TestCase):
                         "enabled": strategy_2.enabled,
                         "updated_time": dummy_time.str,
                         "gateway_labels": [],
+                        "effective_stages": [],
                     },
                 ],
             },
@@ -142,6 +145,7 @@ class TestAlarmStrategyListCreateApi(TestCase):
                         "enabled": strategy_1.enabled,
                         "updated_time": dummy_time.str,
                         "gateway_labels": [{"id": gateway_label.id, "name": gateway_label.name}],
+                        "effective_stages": [],
                     },
                 ],
             },
@@ -171,7 +175,6 @@ class TestAlarmStrategyRetrieveUpdateDestroyApi(TestCase):
             gateway=self.gateway,
             name="test",
             alarm_type="resource_backend",
-            _api_label_ids=f"{self.label.id}",
             _config=json.dumps(
                 {
                     "detect_config": {
@@ -262,7 +265,6 @@ class TestAlarmStrategyUpdateStatusApi(TestCase):
             gateway=self.gateway,
             name="test",
             alarm_type="resource_backend",
-            _api_label_ids=f"{self.label.id}",
             _config=json.dumps(
                 {
                     "detect_config": {

@@ -32,7 +32,7 @@ from apigateway.apps.monitor.constants import (
     NoticeWayEnum,
 )
 from apigateway.apps.monitor.flow.handlers.app_request import AppRequestAlerter, AppRequestAppCodeRequiredFilter
-from apigateway.apps.monitor.flow.handlers.base import AlarmRecordCreator, APIExistFilter, RelatedLogRecordsFetcher
+from apigateway.apps.monitor.flow.handlers.base import AlarmRecordCreator, GatewayExistFilter, RelatedLogRecordsFetcher
 from apigateway.apps.monitor.flow.handlers.nginx_error import NginxErrorAlerter
 from apigateway.apps.monitor.flow.handlers.resource_backend import (
     ResourceBackendAlarmStrategyEnabledFilter,
@@ -55,9 +55,10 @@ def monitor_resource_backend(event_data: Dict[str, Any]):
 
     flow = AlertFlow()
     flow.append(AlarmRecordCreator())
-    flow.append(APIExistFilter())
+    flow.append(GatewayExistFilter())
     flow.append(ResourceBackendAlarmStrategyEnabledFilter())
     flow.append(RelatedLogRecordsFetcher(es_index=get_es_index(alarm_type), output_fields=API_ERRORLOG_OUTPUT_FIELDS))
+    # FIXME: the notice_way should be from the alarm_strategy
     flow.append(ResourceBackendAlerter(notice_ways=[NoticeWayEnum.IM.value, NoticeWayEnum.WECHAT.value]))
 
     flow.run(events=[event])
@@ -73,9 +74,10 @@ def monitor_app_request(event_data: Dict[str, Any]):
 
     flow = AlertFlow()
     flow.append(AlarmRecordCreator())
-    flow.append(APIExistFilter())
+    flow.append(GatewayExistFilter())
     flow.append(AppRequestAppCodeRequiredFilter())
     flow.append(RelatedLogRecordsFetcher(es_index=get_es_index(alarm_type), output_fields=API_ERRORLOG_OUTPUT_FIELDS))
+    # FIXME: the notice_way should be from the alarm_strategy
     flow.append(AppRequestAlerter(notice_ways=[NoticeWayEnum.IM.value, NoticeWayEnum.WECHAT.value]))
 
     flow.run(events=[event])

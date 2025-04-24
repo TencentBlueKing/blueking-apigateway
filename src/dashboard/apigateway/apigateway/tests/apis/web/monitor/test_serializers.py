@@ -186,6 +186,7 @@ class TestAlarmStrategyInputSLZ(TestCase):
                             },
                         }
                     ),
+                    _effective_stages="prod,test",
                 ),
                 "gateway_label_ids": [label_1.id, label_2.id],
                 "expected": {
@@ -209,6 +210,7 @@ class TestAlarmStrategyInputSLZ(TestCase):
                             "notice_extra_receiver": ["admin"],
                         },
                     },
+                    "effective_stages": ["prod", "test"],
                 },
             }
         ]
@@ -227,7 +229,7 @@ class TestAlarmRecordOutputSLZ(TestCase):
     def test_to_representation(self):
         gateway = G(Gateway)
         alarm_strategy = G(AlarmStrategy, gateway=gateway, name="test")
-        alarm_record = G(AlarmRecord, created_time=dummy_time.time)
+        alarm_record = G(AlarmRecord, created_time=dummy_time.time, comment="hello")
         alarm_record.alarm_strategies.set([alarm_strategy])
 
         slz = serializers.AlarmRecordQueryOutputSLZ(instance=alarm_record)
@@ -239,6 +241,7 @@ class TestAlarmRecordOutputSLZ(TestCase):
                 "alarm_id": alarm_record.alarm_id,
                 "status": alarm_record.status,
                 "message": alarm_record.message,
+                "comment": alarm_record.comment,
                 "created_time": dummy_time.str,
                 "alarm_strategy_names": ["test"],
             },

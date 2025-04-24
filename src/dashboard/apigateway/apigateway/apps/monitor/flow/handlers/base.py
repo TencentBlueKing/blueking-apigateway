@@ -59,7 +59,7 @@ class AlarmRecordCreator(AlertHandler):
         return event
 
 
-class APIExistFilter(AlertHandler):
+class GatewayExistFilter(AlertHandler):
     """网关必须存在"""
 
     def _do(self, event: MonitorEvent) -> Optional[MonitorEvent]:
