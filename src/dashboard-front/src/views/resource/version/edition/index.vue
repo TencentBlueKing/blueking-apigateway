@@ -76,8 +76,7 @@
             </bk-table-column>
             <bk-table-column :label="t('创建者')" prop="created_by">
               <template #default="{ row }">
-                <span v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE">{{ row.created_by }}</span>
-                <span v-else><bk-user-display-name :user-id="row.created_by" /></span>
+                <span><bk-user-display-name :user-id="row.created_by" /></span>
               </template>
             </bk-table-column>
             <bk-table-column :label="t('操作')" width="200">

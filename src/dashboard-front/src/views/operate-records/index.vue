@@ -22,7 +22,7 @@
         </bk-form-item>
         <bk-form-item class="ag-form-item-search">
           <bk-search-select
-            v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE"
+            v-if="!user.isTenantMode"
             style="width: 100%"
             v-model="searchValue"
             unique-select
@@ -87,8 +87,7 @@
         </bk-table-column>
         <bk-table-column :label="t('操作人')" prop="username">
           <template #default="{ row }">
-            <span v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE">{{ row.username }}</span>
-            <span v-else><bk-user-display-name :user-id="row.username" /></span>
+            <span><bk-user-display-name :user-id="row.username" /></span>
           </template>
         </bk-table-column>
         <bk-table-column :label="t('操作时间')" prop="op_time" />
@@ -439,7 +438,7 @@ const refreshTableData = async () => {
 };
 
 const getMenuList = async (item: { id: string }, keyword: string) => {
-  if (!user.featureFlags?.ENABLE_MULTI_TENANT_MODE) {
+  if (!user.isTenantMode) {
     return undefined;
   }
 

@@ -17,7 +17,7 @@
           <bk-input clearable v-model="filterData.bk_app_code" :placeholder="t('请输入应用ID')" class="w150">
           </bk-input>
         </bk-form-item>
-        <bk-form-item v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE" :label="t('申请人')" class="mb10" label-width="90">
+        <bk-form-item v-if="!user.isTenantMode" :label="t('申请人')" class="mb10" label-width="90">
           <bk-input clearable v-model="filterData.applied_by" :placeholder="t('请输入用户')" class="w150">
           </bk-input>
         </bk-form-item>
@@ -293,10 +293,7 @@ const setTableHeader = () => {
     {
       field: 'applied_by',
       label: t('申请人'),
-      render: ({ data }: Record<string, any>) =>
-        user.featureFlags?.ENABLE_MULTI_TENANT_MODE
-        ? <span><bk-user-display-name user-id={data.applied_by} /></span>
-        : <span>{ data.applied_by }</span>
+      render: ({ data }: Record<string, any>) => <span><bk-user-display-name user-id={data.applied_by} /></span>,
     },
     { field: 'created_time', width: 215, label: t('申请时间') },
     {

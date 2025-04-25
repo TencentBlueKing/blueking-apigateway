@@ -1,7 +1,7 @@
 <template>
   <div class="docs-main" ref="docsMain">
     <!--  顶部 网关 / 组件 Tab  -->
-    <header class="page-tabs" v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
+    <header v-if="!user.isTenantMode" class="page-tabs">
       <nav class="tabs-group">
         <section
           class="page-tab"
@@ -18,7 +18,7 @@
       </nav>
     </header>
     <!--  正文  -->
-    <main class="docs-main-content" :class="{ 'pt24': user.featureFlags?.ENABLE_MULTI_TENANT_MODE }">
+    <main :class="{ 'pt24': user.isTenantMode }" class="docs-main-content">
       <!--  当选中 网关API文档 时  -->
       <div v-if="curTab === 'gateway'" class="content-of-apigw">
         <!--  搜索栏和 SDK使用说明  -->
@@ -58,14 +58,14 @@
                   </bk-tag>
                 </template>
               </bk-table-column>
-              <template v-if="user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
+              <template v-if="user.isTenantMode">
                 <bk-table-column
                   :label="t('租户模式')"
                   field="tenant_mode"
                   :width="120"
                 >
                   <template #default="{ row }">
-                    {{ TENANT_MODE_TEXT_MAP[row.tenant_mode as string] || '--' }}
+                    {{ row.tenant_mode || '--' }}
                   </template>
                 </bk-table-column>
                 <bk-table-column
@@ -92,8 +92,8 @@
                 field="maintainers"
               >
                 <template #default="{ row }">
-                  <span v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
-                    {{ row.maintainers?.join(', ') || '--' }}
+                  <span v-if="!row.maintainers">
+                    {{ '--' }}
                   </span>
                   <span v-else>
                     <template v-for="(maintainer, index) in row.maintainers" :key="maintainer.login_name">
@@ -293,7 +293,6 @@ import {
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useTemplateRefsList } from '@vueuse/core';
 import { useUser } from '@/store';
-import { TENANT_MODE_TEXT_MAP } from '@/enums';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -441,7 +440,7 @@ const isActiveNavPanel = (panelName: string) => {
 onBeforeMount(() => {
   const { params } = route;
   // 如果是多租户模式，直接跳转到网关API文档
-  if (user.featureFlags?.ENABLE_MULTI_TENANT_MODE) {
+  if (user.isTenantMode) {
     curTab.value = 'gateway';
     return;
   }
@@ -451,7 +450,7 @@ onBeforeMount(() => {
 
 onMounted(async () => {
   // 如果是多租户模式，不需要获取 esb 列表
-  if (!user.featureFlags?.ENABLE_MULTI_TENANT_MODE) {
+  if (!user.isTenantMode) {
     await fetchComponentSystemList();
   }
 });
