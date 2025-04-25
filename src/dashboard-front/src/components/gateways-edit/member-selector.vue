@@ -5,8 +5,13 @@
         <div class="edit-content">
           <slot>
             <template v-if="membersText">
-              <span class="member-item" v-bk-tooltips="{ content: membersText, placement: 'top-start' }">
-                {{ membersText }}
+              <span class="member-item">
+                <bk-popover>
+                  <bk-user-display-name :user-id="membersText" />
+                  <template #content>
+                    <span><bk-user-display-name :user-id="membersText" /></span>
+                  </template>
+                </bk-popover>
               </span>
             </template>
             <template v-else>--</template>

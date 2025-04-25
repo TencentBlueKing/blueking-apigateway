@@ -60,10 +60,7 @@
             <div class="column">
               <div class="apigw-form-item">
                 <div class="label">{{ `${t('发布人')}：` }}</div>
-                <div v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE" class="value">
-                  {{ stageData.release.created_by || '--' }}
-                </div>
-                <div v-else class="value">
+                <div class="value">
                   <bk-user-display-name :user-id="stageData.release.created_by" />
                 </div>
               </div>
@@ -203,7 +200,6 @@ import { copy } from '@/common/util';
 import {
   useCommon,
   useStage,
-  useUser,
 } from '@/store';
 import releaseSideslider from '../comps/release-sideslider.vue';
 import editStageSideslider from '../comps/edit-stage-sideslider.vue';
@@ -228,7 +224,6 @@ const stageStore = useStage();
 const route = useRoute();
 const router = useRouter();
 const common = useCommon();
-const user = useUser();
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();

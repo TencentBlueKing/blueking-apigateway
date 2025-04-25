@@ -7,9 +7,9 @@
             <template v-if="membersText">
               <span class="member-item">
                 <bk-popover>
-                  <bk-user-display-name ref="bkUserDisplayNameRef" :user-id="membersText" />
+                  <bk-user-display-name :user-id="membersText" />
                   <template #content>
-                    <span><bk-user-display-name ref="bkUserDisplayNameRef" :user-id="membersText" /></span>
+                    <span><bk-user-display-name :user-id="membersText" /></span>
                   </template>
                 </bk-popover>
               </span>
@@ -111,8 +111,6 @@ const isShowError = ref(false);
 const isEditable = ref(false);
 const errorTips = ref('');
 const displayValue = ref([]);
-
-const bkUserDisplayNameRef = ref();
 
 const handleValidate = () => {
   isShowError.value = false;

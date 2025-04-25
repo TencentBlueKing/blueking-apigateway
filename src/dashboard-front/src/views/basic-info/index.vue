@@ -71,11 +71,11 @@
         <div class="basic-info-detail-item">
           <div class="detail-item-title">{{ t('基础信息') }}</div>
           <div class="detail-item-content">
-            <template v-if="user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
+            <template v-if="user.isTenantMode">
               <div class="detail-item-content-item">
                 <div class="label">{{ `${t('租户模式')}：` }}</div>
                 <div class="value">
-                  <span>{{ TENANT_MODE_TEXT_MAP[basicInfoData.tenant_mode] || '是' }}</span>
+                  <span>{{ basicInfoData.tenant_mode || '--' }}</span>
                 </div>
               </div>
               <div class="detail-item-content-item">
@@ -131,7 +131,7 @@
               <div class="label">{{ `${t('维护人员')}：` }}</div>
               <div class="value">
                 <GateWaysEditMemberSelector
-                  v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE"
+                  v-if="!user.isTenantMode"
                   mode="edit"
                   width="600px"
                   field="maintainers"
@@ -159,8 +159,7 @@
             <div class="detail-item-content-item">
               <div class="label">{{ `${t('创建人')}：` }}</div>
               <div class="value">
-                <span v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE">{{ basicInfoData.created_by || '--' }}</span>
-                <span v-else><bk-user-display-name :user-id="basicInfoData.created_by" /></span>
+                <span><bk-user-display-name :user-id="basicInfoData.created_by" /></span>
               </div>
             </div>
             <div class="detail-item-content-item">
@@ -264,7 +263,7 @@
           required
         >
           <MemberSelect
-            v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE"
+            v-if="!user.isTenantMode"
             v-model="basicInfoDetailData.maintainers"
             :has-delete-icon="true"
             :placeholder="t('请选择维护人员')"
@@ -366,7 +365,6 @@ import GateWaysEditTextarea from '@/components/gateways-edit/textarea.vue';
 import GateWaysEditMemberSelector from '@/components/gateways-edit/member-selector.vue';
 import GateWaysEditTenantUserSelector from '@/components/gateways-edit/tenant-user-selector.vue';
 import MemberSelect from '@/components/member-select';
-import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import BkUserSelector from '@blueking/bk-user-selector';
 
 const { t } = useI18n();

@@ -30,15 +30,15 @@
     <div class="table-container" v-bkloading="{ loading: isLoading, opacity: 1, color: '#f5f7fb' }">
       <section v-if="gatewaysList.length">
         <div class="table-header flex-row">
-          <div class="flex-1" :class="user.featureFlags?.ENABLE_MULTI_TENANT_MODE ? 'of2' : 'of3'">
+          <div :class="user.isTenantMode ? 'of2' : 'of3'" class="flex-1">
             {{ t('网关名') }}
           </div>
-          <template v-if="user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
+          <template v-if="user.isTenantMode">
             <div class="flex-1 of1">{{ t('租户模式') }}</div>
             <div class="flex-1 of1">{{ t('租户 ID') }}</div>
           </template>
           <div class="flex-1 of1">{{ t('创建者') }}</div>
-          <div class="flex-1" :class="user.featureFlags?.ENABLE_MULTI_TENANT_MODE ? 'of2' : 'of3'">
+          <div :class="user.isTenantMode ? 'of2' : 'of3'" class="flex-1">
             {{ t('环境列表') }}
           </div>
           <div class="flex-1 of1 text-c">{{ t('资源数量') }}</div>
@@ -51,7 +51,7 @@
             :class="item.is24HoursAgo ? '' : 'newly-item'">
             <div
               class="flex-1 flex-row align-items-center"
-              :class="user.featureFlags?.ENABLE_MULTI_TENANT_MODE ? 'of2' : 'of3'"
+              :class="user.isTenantMode ? 'of2' : 'of3'"
             >
               <div
                 class="name-logo mr10" :class="item.status ? '' : 'deact'"
@@ -66,17 +66,16 @@
               <bk-tag theme="info" v-if="item.is_official">{{ t('官方') }}</bk-tag>
               <bk-tag v-if="item.status === 0">{{ t('已停用') }}</bk-tag>
             </div>
-            <template v-if="user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
+            <template v-if="user.isTenantMode">
               <div class="flex-1 of1">
-                {{ TENANT_MODE_TEXT_MAP[item.tenant_mode as string] || '是' }}
+                {{ item.tenant_mode || '--' }}
               </div>
               <div class="flex-1 of1">{{ item.tenant_id || '--' }}</div>
             </template>
             <div class="flex-1 of1">
-              <span v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE">{{ item.created_by || '--' }}</span>
-              <span v-else><bk-user-display-name :user-id="item.created_by" /></span>
+              <span><bk-user-display-name :user-id="item.created_by" /></span>
             </div>
-            <div class="flex-1 env" :class="user.featureFlags?.ENABLE_MULTI_TENANT_MODE ? 'of2' : 'of3'">
+            <div :class="user.isTenantMode ? 'of2' : 'of3'" class="flex-1 env">
               <div class="flex-row">
                 <span
                   v-for="(envItem, index) in item.stages" :key="envItem.id">
@@ -193,7 +192,7 @@
           {{ t('网关的唯一标识，创建后不可更改') }}
         </span>
         <bk-form-item
-          v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE"
+          v-if="!user.isTenantMode"
           :label="t('维护人员')"
           property="maintainers"
           required
@@ -233,7 +232,7 @@
           <bk-switcher theme="primary" v-model="formData.is_public" />
           <span class="common-form-tips">{{ $t('公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏') }}</span>
         </bk-form-item>
-        <template v-if="user.featureFlags?.ENABLE_MULTI_TENANT_MODE">
+        <template v-if="user.isTenantMode">
           <template v-if="user.user.tenant_id === 'system'">
             <bk-form-item
               :label="t('租户模式')"
@@ -279,7 +278,6 @@ import { useRouter } from 'vue-router';
 import { useGetApiList } from '@/hooks';
 import { is24HoursAgo } from '@/common/util';
 import { useCommon } from '@/store';
-import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import MemberSelect from '@/components/member-select';
 import BkUserSelector from '@blueking/bk-user-selector';
 // @ts-ignore

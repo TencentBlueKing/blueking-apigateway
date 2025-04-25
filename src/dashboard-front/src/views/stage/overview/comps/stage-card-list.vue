@@ -89,9 +89,7 @@
         </div>
         <div class="apigw-form-item">
           <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('发布人')}：` }}</div>
-          <div v-if="!user.featureFlags?.ENABLE_MULTI_TENANT_MODE" class="value">
-            {{ stageData.release.created_by || '--' }}
-          </div>
+          <div v-if="!stageData.release.created_by" class="value">--</div>
           <div v-else class="value">
             <bk-user-display-name :user-id="stageData.release.created_by" />
           </div>
@@ -148,10 +146,7 @@ import {
 import logDetails from '@/components/log-details/index.vue';
 import mitt from '@/common/event-bus';
 import { useGetGlobalProperties } from '@/hooks';
-import {
-  useCommon,
-  useUser,
-} from '@/store';
+import { useCommon } from '@/store';
 import {
   getGateWaysInfo,
   removalStage,
@@ -163,7 +158,6 @@ import releaseSideslider from './release-sideslider.vue';
 const common = useCommon();
 const { t, locale } = useI18n();
 const route = useRoute();
-const user = useUser();
 
 // 网关id
 const apigwId = computed(() => +route.params.id);
