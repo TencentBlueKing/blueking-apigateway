@@ -19,6 +19,8 @@
 import datetime
 from typing import Optional
 
+from django.utils import timezone
+
 from apigateway.utils.time import NeverExpiresTime, to_datetime_from_now
 
 
@@ -26,5 +28,19 @@ def calculate_expires(expire_days: Optional[int] = None) -> datetime.datetime:
     # expire_days 为 None 或 0，都表示永久权限
     if expire_days:
         return to_datetime_from_now(days=expire_days)
+
+    return NeverExpiresTime.time
+
+
+def calculate_renew_time(expire_time: datetime.datetime, expire_days: Optional[int] = None) -> datetime.datetime:
+    # 计算续期时间
+    #  - 未过期：未过期时间 + 续期时间
+    #  - 已过期：当前时间 + 续期时间
+    # expire_days 为 None 或 0，都表示永久权限
+    if expire_days:
+        result = timezone.now()
+        if expire_time <= result:
+            return result + datetime.timedelta(days=expire_days)
+        return expire_time + datetime.timedelta(days=expire_days)
 
     return NeverExpiresTime.time

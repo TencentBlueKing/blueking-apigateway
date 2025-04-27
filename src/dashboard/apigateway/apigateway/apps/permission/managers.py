@@ -27,7 +27,7 @@ from apigateway.apps.permission.constants import (
     GrantDimensionEnum,
     GrantTypeEnum,
 )
-from apigateway.apps.permission.utils import calculate_expires
+from apigateway.apps.permission.utils import calculate_expires, calculate_renew_time
 from apigateway.utils.time import now_datetime, to_datetime_from_now
 
 
@@ -45,11 +45,12 @@ class AppGatewayPermissionManager(models.Manager):
         )
 
     def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS):
-        expire_time = calculate_expires(expires)
-        self.filter(gateway=gateway, id__in=ids, expires__lt=expire_time).update(
-            expires=expire_time,
-            updated_time=now_datetime(),
-        )
+        queryset = self.filter(gateway=gateway, id__in=ids)
+        for obj in queryset:
+            obj.expires = calculate_renew_time(obj.expires, expires)
+            obj.updated_time = now_datetime()
+
+        self.bulk_update(queryset, ["expires", "updated_time"])
 
 
 class AppResourcePermissionManager(models.Manager):
@@ -57,11 +58,12 @@ class AppResourcePermissionManager(models.Manager):
         return self.filter(bk_app_code=bk_app_code, gateway__is_public=True)
 
     def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS):
-        expire_time = calculate_expires(expires)
-        self.filter(gateway=gateway, id__in=ids, expires__lt=expire_time).update(
-            expires=expire_time,
-            updated_time=now_datetime(),
-        )
+        queryset = self.filter(gateway=gateway, id__in=ids)
+        for obj in queryset:
+            obj.expires = calculate_renew_time(obj.expires, expires)
+            obj.updated_time = now_datetime()
+
+        self.bulk_update(queryset, ["expires", "updated_time"])
 
     def renew_by_resource_ids(
         self,
@@ -72,14 +74,11 @@ class AppResourcePermissionManager(models.Manager):
         expire_days=DEFAULT_PERMISSION_EXPIRE_DAYS,
     ):
         queryset = self.filter(gateway=gateway, bk_app_code=bk_app_code, resource_id__in=resource_ids)
-        # 仅续期权限期限小于待续期时间的权限
-        expires = to_datetime_from_now(days=expire_days)
-        expire_time = calculate_expires(expire_days)
-        queryset = queryset.filter(expires__lt=expires)
-        queryset.update(
-            expires=expire_time,
-            grant_type=grant_type,
-        )
+        for obj in queryset:
+            obj.expires = calculate_renew_time(obj.expires, expire_days)
+            obj.grant_type = grant_type
+
+        self.bulk_update(queryset, ["expires", "grant_type"])
 
     def renew_not_expired_permissions(
         self,

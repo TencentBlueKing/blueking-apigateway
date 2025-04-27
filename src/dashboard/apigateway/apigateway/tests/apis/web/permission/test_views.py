@@ -277,7 +277,9 @@ class TestAppResourcePermissionBatchViewSet(TestCase):
                 id=test["params"]["ids"][0],
             ).first()
             self.assertTrue(
-                180 * 24 * 3600 - 10 < (perm_record.expires - now_datetime()).total_seconds() < 180 * 24 * 3600
+                (180 + 180) * 24 * 3600 - 10
+                < (perm_record.expires - now_datetime()).total_seconds()
+                < (180 + 180) * 24 * 3600
             )
 
     def test_destroy(self):
@@ -358,7 +360,9 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
                 id=test["params"]["ids"][0],
             ).first()
             self.assertTrue(
-                180 * 24 * 3600 - 10 < (perm_record.expires - now_datetime()).total_seconds() < 180 * 24 * 3600
+                (180 + 180) * 24 * 3600 - 10
+                < (perm_record.expires - now_datetime()).total_seconds()
+                < (180 + 180) * 24 * 3600
             )
 
     def test_destroy(self):
