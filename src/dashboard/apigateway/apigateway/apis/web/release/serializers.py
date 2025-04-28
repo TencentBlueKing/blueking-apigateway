@@ -166,6 +166,7 @@ class ReleaseHistoryEventRetrieveOutputSLZ(ReleaseHistoryOutputSLZ):
 class ProgrammableDeployCreateInputSLZ(serializers.Serializer):
     stage_id = serializers.IntegerField(required=True, help_text="环境id")
     branch = serializers.CharField(help_text="部署分支")
+    version_type = serializers.CharField(help_text="分支类型")
     commit_id = serializers.CharField(help_text="commit_id")
     version = serializers.CharField(required=True, help_text="发布版本号")
     comment = serializers.CharField(help_text="版本日志")

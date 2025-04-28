@@ -286,8 +286,14 @@ class ProgrammableStageDeployOutputSLZ(serializers.Serializer):
         default={
             "repo_url": "",
             "branch_list": [],
-            "branch_commit_info": {},
-        },  # 设置默认值
+            "branch_commit_info": {
+                "commit_id": "",
+                "last_update": "",
+                "message": "",
+                "type": "",
+                "extra": {},
+            },
+        },
     )
     branch = serializers.CharField(help_text="上一次部署分支", default="", required=False, allow_blank=True)
     commit_id = serializers.CharField(help_text="上一次部署commit_id", default="", required=False, allow_blank=True)

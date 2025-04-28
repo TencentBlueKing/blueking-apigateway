@@ -107,10 +107,50 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
     return []
 
 
-def create_paas_app(app_code: str, git_info: Optional[Dict[str, Any]] = None) -> bool:
+def create_paas_app(
+    app_code: str, git_info: Optional[Dict[str, Any]] = None, user_credentials: Optional[UserCredentials] = None
+) -> bool:
     """
     创建应用
     """
+    host = get_paas_host()
+    url = url_join(host, "/prod/bkapps/cloud-native/")
+    timeout = 10
+    headers = gen_gateway_headers(user_credentials)
+    data = {
+        "is_plugin_app": True,
+        "region": "default",
+        "code": app_code,
+        "name": app_code,
+        "source_config": {
+            "source_init_template": "bk-apigw-plugin-python",
+            "source_control_type": "bare_git",
+            "source_repo_url": git_info.get("repository", "") if git_info else "",
+            "source_origin": 1,
+            "source_dir": "plugin",
+            "source_repo_auth_info": {
+                "username": git_info.get("account", "") if git_info else "",
+                "password": git_info.get("password", "") if git_info else "",
+            },
+        },
+        "bkapp_spec": {"build_config": {"build_method": "buildpack"}},
+    }
+    ok, resp_data = http_post(url, data, headers=headers, timeout=timeout)
+    if not ok:
+        logger.error(
+            "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
+            "paasv3",
+            "http_get",
+            url,
+            data,
+            local.request_id,
+            resp_data["error"],
+        )
+        raise error_codes.REMOTE_REQUEST_ERROR.format(
+            f"request paasv3 fail! "
+            f"Request=[http_get {urlparse(url).path} request_id={local.request_id}]"
+            f"error={resp_data['error']}"
+        )
     return True
 
 
@@ -120,6 +160,7 @@ def deploy_paas_app(
     env: str,
     revision: str,
     branch: str,
+    version_type: str,
     user_credentials: Optional[UserCredentials] = None,
 ) -> str:
     """
@@ -133,7 +174,7 @@ def deploy_paas_app(
     data = {
         "revision": revision,
         "version_name": branch,
-        "version_type": "branch",
+        "version_type": version_type,
     }
 
     ok, resp_data = http_post(url, data, headers=headers, timeout=timeout)
@@ -176,10 +217,32 @@ def paas_app_module_offline(app_code: str, module: str, env: str, user_credentia
         )
 
 
-def set_paas_stage_env(app_code: str, module: str, env: Dict[str, Any]):
+def set_paas_stage_env(
+    app_code: str, module: str, stage: str, env: Dict[str, Any], user_credentials: Optional[UserCredentials] = None
+):
     """
     设置应用环境变量
     """
+    host = get_paas_host()
+    timeout = 10
+    for config_var_key, config_var_value in env.items():
+        url = url_join(host, f"prod/bkapps/applications/{app_code}/modules/{module}/config_vars/{config_var_key}/")
+        headers = gen_gateway_headers(user_credentials)
+        data = {
+            "environment_name": stage,  # 环境：stag、prod
+            "value": config_var_value,
+        }
+        ok, resp_data = http_post(url, data=data, headers=headers, timeout=timeout)
+        if not ok:
+            logger.error(
+                "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
+                "paasv3",
+                "http_get",
+                url,
+                data,
+                local.request_id,
+                resp_data["error"],
+            )
 
     return True
 
@@ -280,13 +343,41 @@ def get_paas_deployment_result(
     return resp_data
 
 
-def get_paas_repo_info(app_code: str, module: str, user_credentials: Optional[UserCredentials] = None):
+def get_paas_repo_branch_info(app_code: str, module: str, user_credentials: Optional[UserCredentials] = None):
     """
     获取应用代码仓库信息
     """
-
+    host = get_paas_host()
+    url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/repo/branches/")
+    timeout = 10
+    headers = gen_gateway_headers(user_credentials)
+    ok, resp_data = http_get(url, data={}, headers=headers, timeout=timeout)
+    if not ok:
+        logger.error(
+            "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
+            "paasv3",
+            "http_get",
+            url,
+            "",
+            local.request_id,
+            resp_data["error"],
+        )
+    repo_url = ""
+    branch_list = []
+    branch_commit_info = {}
+    for branch in resp_data.get("results", []):
+        repo_url = branch.get("url", "")
+        branch_name = branch.get("name")
+        branch_list.append(branch_name)
+        branch_commit_info[branch_name] = {
+            "commit_id": branch.get("revision", ""),
+            "last_update": branch.get("last_update", ""),
+            "message": branch.get("message", ""),
+            "type": branch.get("type", ""),
+            "extra": branch.get("extra", {}),
+        }
     return {
-        "repo_url": "https://gitee.com/Tencent-BlueKing_admin/custom-gateway-demo.git",
-        "branch_list": ["master"],
-        "branch_commit_info": {"master": "620c734c433ffb2fd4d4c8dfa0ead33ff0242da3", "commit_user": "test"},
+        "repo_url": repo_url,
+        "branch_list": branch_list,
+        "branch_commit_info": branch_commit_info,
     }

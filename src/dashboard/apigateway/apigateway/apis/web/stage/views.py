@@ -30,7 +30,7 @@ from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.components.paas import get_paas_repo_info, paas_app_module_offline
+from apigateway.components.paas import get_paas_repo_branch_info, paas_app_module_offline
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum, StageStatusEnum
 from apigateway.core.models import BackendConfig, Stage
@@ -464,7 +464,9 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
 
         context_data = {
             "latest_deploy_history": latest_deploy_history,
-            "repo_info": get_paas_repo_info(gateway.name, "default", get_user_credentials_from_request(request)),
+            "repo_info": get_paas_repo_branch_info(
+                gateway.name, "default", get_user_credentials_from_request(request)
+            ),
         }
 
         output_slz = self.get_serializer(instance=instance, context=context_data)
