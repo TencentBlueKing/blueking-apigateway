@@ -25,6 +25,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, serializers, status
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.models import PluginType
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin_binding import PluginBindingHandler
@@ -155,6 +156,7 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
             "resource_doc_updated_time": resource_docs_updated_time,
             "resource_backends": resource_backends,
             "is_schema_v2": instance.is_schema_v2,
+            "plugin_priority": {obj["code"]: obj["priority"] for obj in PluginType.objects.values("code", "priority")},
         }
 
         # 如果传入了stage,返回对应stage的backend_config以及合并资源插件
