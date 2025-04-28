@@ -37,10 +37,10 @@ def calculate_renew_time(expire_time: datetime.datetime, expire_days: Optional[i
     #  - 未过期：未过期时间 + 续期时间
     #  - 已过期：当前时间 + 续期时间
     # expire_days 为 None 或 0，都表示永久权限
-    if expire_days:
-        result = timezone.now()
-        if expire_time <= result:
-            return result + datetime.timedelta(days=expire_days)
-        return expire_time + datetime.timedelta(days=expire_days)
+    if not expire_days:
+        return NeverExpiresTime.time
 
-    return NeverExpiresTime.time
+    result = timezone.now()
+    if expire_time <= result:
+        return result + datetime.timedelta(days=expire_days)
+    return expire_time + datetime.timedelta(days=expire_days)
