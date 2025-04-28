@@ -273,10 +273,14 @@ class ProgrammableDeploymentInfoSLZ(serializers.Serializer):
         help_text="网关部署历史id",
         default=0,  # 确保默认值存在
     )
+    status = serializers.SerializerMethodField(help_text="部署状态", default="", required=False)
 
     def get_history_id(self, obj):
         stage_status = self.context.get("stage_publish_status", {}).get(obj.stage_id, {})
         return stage_status.get("publish_id", 0)
+
+    def get_status(self, obj):
+        return self.context.get("latest_publish_status", "")
 
 
 class ProgrammableStageDeployOutputSLZ(serializers.Serializer):
