@@ -228,6 +228,7 @@ class ProgramGatewayReleaser:
         gateway: Gateway,
         stage_id: int,
         branch: str,
+        version_type: str,
         commit_id: str,
         version: str,
         comment: str,
@@ -240,7 +241,17 @@ class ProgramGatewayReleaser:
         stage = Stage.objects.get(id=stage_id)
 
         # 调用pass平台接口设置环境变量: 版本号+版本日志
-        set_paas_stage_env(app_code=gateway.name, module="default", env={"version": version, "comment": comment})
+        set_paas_stage_env(
+            app_code=gateway.name,
+            module="default",
+            stage=stage.name,
+            env={
+                # "1.0.0+prod": 代码模版有通过版本号和环境名拼接的方式获取版本号，所以这里需要去掉
+                "version": version.split("+")[0],  # 不带环境name
+                "comment": comment,
+            },
+            user_credentials=user_credentials,
+        )
 
         # 调用pass平台部署接口
         deploy_id = deploy_paas_app(
@@ -249,6 +260,7 @@ class ProgramGatewayReleaser:
             env=stage.name,
             revision=commit_id,
             branch=branch,
+            version_type=version_type,
             user_credentials=user_credentials,
         )
 

@@ -339,6 +339,7 @@ class ProgrammableDeployCreateApi(generics.CreateAPIView):
             commit_id=slz.validated_data.get("commit_id", ""),
             version=slz.validated_data.get("version", ""),
             username=request.user.username,
+            version_type=slz.validated_data.get("version_type", ""),
             user_credentials=get_user_credentials_from_request(request),
         )
 
