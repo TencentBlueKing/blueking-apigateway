@@ -50,19 +50,20 @@
           @page-value-change="handlePageChange"
         >
           <template #expandRow="row">
-            <div class="record-expand-alert" v-if="['api'].includes(row.grant_dimension)">
-              <bk-alert theme="info" :title="t('网关下所有资源的权限，包括未来新创建的资源')" />
-            </div>
-            <div v-else>
+            <!--            <div class="record-expand-alert" v-if="['api'].includes(row.grant_dimension)">-->
+            <!--              <bk-alert theme="info" :title="t('网关下所有资源的权限，包括未来新创建的资源')" />-->
+            <!--            </div>-->
+            <div v-if="row.grant_dimension === 'resource'">
               <bk-table
                 :max-height="378"
                 :size="'small'"
                 :data="row.handled_resources"
-                :header-border="false"
-                :outer-border="false"
+                :border="['outer', 'row']"
                 :header-cell-style="{ background: '#fafbfd', borderRight: 'none' }"
-                class="ag-expand-table">
-                <bk-table-column type="index" label="#" width="60" />
+                :cell-style="{ background: '#fafbfd',  }"
+                class="ag-expand-table resources"
+              >
+                <bk-table-column align="right" label="#" type="index" width="220" />
                 <bk-table-column prop="name" :label="t('资源名称')" />
                 <bk-table-column prop="path" :label="t('请求路径')"/>
                 <bk-table-column prop="method" :label="t('请求方法')" />
@@ -151,7 +152,9 @@
                   :size="'small'"
                   :data="curRecord.handled_resources"
                   :border="['outer']"
-                  ext-cls="ag-expand-table">
+                  :max-height="378"
+                  ext-cls="ag-expand-table"
+                >
                   <bk-table-column prop="name" :label="t('资源名称')"></bk-table-column>
                   <bk-table-column prop="method" :label="t('审批状态')">
                     <template #default="prop">
@@ -183,14 +186,20 @@
 </template>
 
 <script setup lang="tsx">
-import { nextTick, reactive, ref, watch, onMounted } from 'vue';
+import {
+  nextTick,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPermissionRecordList } from '@/http';
-import { useCommon } from '@/store';
 import { useQueryList } from '@/hooks';
 import { sortByKey } from '@/common/util';
 import TableEmpty from '@/components/table-empty.vue';
 import { Message } from 'bkui-vue';
+import AgIcon from '@/components/ag-icon.vue';
 
 const { t } = useI18n();
 
@@ -300,12 +309,7 @@ const table = ref({
   headers: [],
 });
 const setTableHeader = () => {
-  const columns =  [
-    {
-      type: 'expand',
-      width: 30,
-      minWidth: 30
-    },
+  table.value.headers = [
     {
       field: 'bk_app_code',
       label: t('蓝鲸应用ID'),
@@ -313,8 +317,13 @@ const setTableHeader = () => {
     {
       field: 'grant_dimension_display',
       label: t('授权维度'),
-      render: ({ data }: Record<string, any>) => {
-        return data.grant_dimension_display || '--'
+      render: ({ row }: Record<string, any>) => {
+        if (row.grant_dimension === 'resource') {
+          return <div style="display: flex;align-items: center;"><AgIcon
+            name={row.isExpand ? 'down-shape' : 'right-shape'} size="10" style="margin-right: 5px"
+          />{`${row.grant_dimension_display} (${row.handled_resources?.length || '--'})`}</div>;
+        }
+        return row.grant_dimension_display || '--';
       }
      },
     {
@@ -367,7 +376,6 @@ const setTableHeader = () => {
       },
     },
   ];
-  table.value.headers = columns;
 };
 // 列表hooks
 const {
@@ -381,7 +389,9 @@ const {
 
 const handleRowClick = (e: Event, row: Record<string, any>) => {
   e.stopPropagation();
-  row.isExpand = !row.isExpand;
+  if (row.grant_dimension === 'resource') {
+    row.isExpand = !row.isExpand;
+  }
   nextTick(() => {
     tableRef.value.setRowExpand(row,  row.isExpand);
   });
@@ -470,7 +480,7 @@ watch(() => filterData.value, () => {
   updateTableEmptyConfig()
 }, {
   deep: true
-})
+});
 
 onMounted(() => {
   init();
@@ -590,14 +600,24 @@ onMounted(() => {
     padding: 0 !important;
     height: 42px !important;
   }
-  .bk-table-head {
-    scrollbar-color: transparent transparent;
-  }
-  .bk-table-body {
-    scrollbar-color: transparent transparent;
-  }
+
+  //.bk-table-head {
+  //  scrollbar-color: transparent transparent;
+  //}
+  //.bk-table-body {
+  //  scrollbar-color: transparent transparent;
+  //}
 }
 
+:deep(.ag-expand-table.resources) {
+  border-bottom: none;
+  border-left: none;
+
+  tr:not(:last-of-type) {
+    border-bottom: 1px solid #dcdee5;
+  }
+
+}
 :deep(.ag-expand-table) {
   .bk-fixed-bottom-border {
     display: none;
