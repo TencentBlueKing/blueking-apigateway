@@ -143,6 +143,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-plus-square-shape:before {
 	content: "\e10d";
 }
+.icon-ag-right-shape:before {
+	content: "\e1b4";
+}
 .icon-ag-micro-upstream:before {
 	content: "\e1a0";
 }
