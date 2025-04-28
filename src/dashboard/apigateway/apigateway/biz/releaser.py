@@ -246,6 +246,7 @@ class ProgramGatewayReleaser:
             module="default",
             stage=stage.name,
             env={
+                # "1.0.0+prod": 代码模版有通过版本号和环境名拼接的方式获取版本号，所以这里需要去掉
                 "version": version.split("+")[0],  # 不带环境name
                 "comment": comment,
             },

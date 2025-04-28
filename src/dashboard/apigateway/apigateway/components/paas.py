@@ -16,6 +16,8 @@ from .utils import gen_gateway_headers
 
 logger = logging.getLogger(__name__)
 
+REQ_PAAS_API_TIMEOUT = 10
+
 
 def url_join(host: str, path: str) -> str:
     """
@@ -47,9 +49,8 @@ def _call_paasv3_uni_apps_query_by_id(
     # headers.update(gen_tenant_header(tenant_id))
 
     url = url_join(get_paas_host(), "/prod/system/uni_applications/query/by_id/")
-    timeout = 10
 
-    ok, resp_data = http_get(url, data, headers=headers, timeout=timeout)
+    ok, resp_data = http_get(url, data, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
             "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
@@ -115,7 +116,6 @@ def create_paas_app(
     """
     host = get_paas_host()
     url = url_join(host, "/prod/bkapps/cloud-native/")
-    timeout = 10
     headers = gen_gateway_headers(user_credentials)
     data = {
         "is_plugin_app": True,
@@ -135,7 +135,7 @@ def create_paas_app(
         },
         "bkapp_spec": {"build_config": {"build_method": "buildpack"}},
     }
-    ok, resp_data = http_post(url, data, headers=headers, timeout=timeout)
+    ok, resp_data = http_post(url, data, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
             "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
@@ -164,20 +164,24 @@ def deploy_paas_app(
     user_credentials: Optional[UserCredentials] = None,
 ) -> str:
     """
-    部署应用
+    部署应用：
+    params:
+        app_code: 应用ID
+        module: 模块名
+        env: 环境
+        branch: 分支
+        version_type: 版本类型
     return: deployment id
     """
     host = get_paas_host()
     url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/envs/{env}/deployments/")
-    timeout = 10
     headers = gen_gateway_headers(user_credentials)
     data = {
         "revision": revision,
         "version_name": branch,
         "version_type": version_type,
     }
-
-    ok, resp_data = http_post(url, data, headers=headers, timeout=timeout)
+    ok, resp_data = http_post(url, data, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
             "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
@@ -202,9 +206,8 @@ def paas_app_module_offline(app_code: str, module: str, env: str, user_credentia
     """
     host = get_paas_host()
     url = url_join(host, f"prod/bkapps/applications/{app_code}/modules/{module}/envs/{env}/offlines/")
-    timeout = 10
     headers = gen_gateway_headers(user_credentials)
-    ok, resp_data = http_post(url, None, headers=headers, timeout=timeout)
+    ok, resp_data = http_post(url, None, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
             "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
@@ -224,7 +227,6 @@ def set_paas_stage_env(
     设置应用环境变量
     """
     host = get_paas_host()
-    timeout = 10
     for config_var_key, config_var_value in env.items():
         url = url_join(host, f"prod/bkapps/applications/{app_code}/modules/{module}/config_vars/{config_var_key}/")
         headers = gen_gateway_headers(user_credentials)
@@ -232,7 +234,7 @@ def set_paas_stage_env(
             "environment_name": stage,  # 环境：stag、prod
             "value": config_var_value,
         }
-        ok, resp_data = http_post(url, data=data, headers=headers, timeout=timeout)
+        ok, resp_data = http_post(url, data=data, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
         if not ok:
             logger.error(
                 "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
@@ -255,9 +257,8 @@ def get_paas_deploy_phases_framework(
     """
     host = get_paas_host()
     url = url_join(host, f"prod/bkapps/applications/{app_code}/modules/{module}/envs/{env}/deploy_phases/")
-    timeout = 10
     headers = gen_gateway_headers(user_credentials)
-    ok, resp_data = http_get(url, data={}, headers=headers, timeout=timeout)
+    ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
             "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
@@ -281,9 +282,8 @@ def get_paas_deploy_phases_instance(
     url = url_join(
         host, f"/prod/bkapps/applications/{app_code}/modules/{module}/envs/{env}/deploy_phases/{deploy_id}/"
     )
-    timeout = 10
     headers = gen_gateway_headers(user_credentials)
-    ok, resp_data = http_get(url, data={}, headers=headers, timeout=timeout)
+    ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
             "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
@@ -303,9 +303,8 @@ def get_pass_deploy_streams_history_events(deploy_id: str, user_credentials: Opt
     """
     host = get_paas_host()
     url = url_join(host, f"/prod/streams/{deploy_id}/history_events")
-    timeout = 10
     headers = gen_gateway_headers(user_credentials)
-    ok, resp_data = http_get(url, data={}, headers=headers, timeout=timeout)
+    ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
             "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
@@ -327,9 +326,8 @@ def get_paas_deployment_result(
     """
     host = get_paas_host()
     url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/deployments/{deploy_id}/result/")
-    timeout = 10
     headers = gen_gateway_headers(user_credentials)
-    ok, resp_data = http_get(url, data={}, headers=headers, timeout=timeout)
+    ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
             "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
@@ -349,9 +347,8 @@ def get_paas_repo_branch_info(app_code: str, module: str, user_credentials: Opti
     """
     host = get_paas_host()
     url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/repo/branches/")
-    timeout = 10
     headers = gen_gateway_headers(user_credentials)
-    ok, resp_data = http_get(url, data={}, headers=headers, timeout=timeout)
+    ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
             "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
