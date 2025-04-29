@@ -341,6 +341,27 @@ def get_paas_deployment_result(
     return resp_data
 
 
+def get_paas_runtime_info(app_code: str, module: str, user_credentials: Optional[UserCredentials] = None):
+    """
+    获取运行时信息
+    """
+    host = get_paas_host()
+    url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/runtime/overview/")
+    headers = gen_gateway_headers(user_credentials)
+    ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
+    if not ok:
+        logger.error(
+            "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
+            "paasv3",
+            "http_get",
+            url,
+            "",
+            local.request_id,
+            resp_data["error"],
+        )
+    return resp_data
+
+
 def get_paas_repo_branch_info(app_code: str, module: str, user_credentials: Optional[UserCredentials] = None):
     """
     获取应用代码仓库信息
@@ -359,11 +380,9 @@ def get_paas_repo_branch_info(app_code: str, module: str, user_credentials: Opti
             local.request_id,
             resp_data["error"],
         )
-    repo_url = ""
     branch_list = []
     branch_commit_info = {}
     for branch in resp_data.get("results", []):
-        repo_url = branch.get("url", "")
         branch_name = branch.get("name")
         branch_list.append(branch_name)
         branch_commit_info[branch_name] = {
@@ -373,8 +392,10 @@ def get_paas_repo_branch_info(app_code: str, module: str, user_credentials: Opti
             "type": branch.get("type", ""),
             "extra": branch.get("extra", {}),
         }
+
+    repo_info = get_paas_runtime_info(app_code, module, user_credentials).get("repo", {})
     return {
-        "repo_url": repo_url,
+        "repo_url": repo_info.get("repo_url", ""),
         "branch_list": branch_list,
         "branch_commit_info": branch_commit_info,
     }
