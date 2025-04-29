@@ -463,7 +463,7 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
             )
             ## 如果 stage_release 的版本和 deploy_history的第一个一致，说明是成功发布
             if stage_release["resource_version_display"] == deploy_history.version:
-                latest_publish_status = ReleaseHistoryStatusEnum.SUCCESS.value()
+                latest_publish_status = ReleaseHistoryStatusEnum.SUCCESS.value
         else:
             ## 获取网关发布的资源版本的状态
             latest_publish_status = ReleaseHandler.batch_get_stage_release_status([stage_id]).get(stage_id, "")
