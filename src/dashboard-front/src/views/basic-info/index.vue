@@ -48,9 +48,9 @@
             />
           </div>
           <div class="header-info-button">
-            <bk-button @click="handleOperate('edit')" class="operate-btn">
+            <!-- <bk-button @click="handleOperate('edit')" class="operate-btn">
               {{ t('编辑') }}
-            </bk-button>
+            </bk-button> -->
             <div>
               <bk-button
                 v-if="basicInfoData.status > 0" @click="handleOperate('enable')"
@@ -86,7 +86,16 @@
       </section>
       <section class="basic-info-detail">
         <div class="basic-info-detail-item">
-          <div class="detail-item-title">{{ t('基础信息') }}</div>
+          <div class="detail-item-title">
+            {{ t('基础信息') }}
+
+            <div class="area-edit" @click.stop="handleOperate('edit')">
+              <i class="apigateway-icon icon-ag-edit-line" />
+              <bk-button theme="primary" text class="operate-btn">
+                {{ t('编辑') }}
+              </bk-button>
+            </div>
+          </div>
           <div class="detail-item-content">
             <div class="detail-item-content-item" v-if="basicInfoData.kind === 1">
               <div class="label">{{ `${t('开发语言')}：` }}</div>
@@ -122,7 +131,7 @@
                 <i class="apigateway-icon icon-ag-copy-info" @click.self.stop="copy(basicInfoData.api_domain)"></i>
               </div>
             </div>
-            <div class="detail-item-content-item">
+            <!-- <div class="detail-item-content-item">
               <div class="label">{{ `${t('文档地址')}：` }}</div>
               <div class="value url">
                 <span
@@ -143,7 +152,7 @@
                   </span>
                 </template>
               </div>
-            </div>
+            </div> -->
             <div class="detail-item-content-item">
               <div class="label">{{ `${t('维护人员')}：` }}</div>
               <div class="value">
@@ -174,6 +183,75 @@
             </div>
           </div>
         </div>
+
+        <div class="basic-info-detail-item">
+          <div class="detail-item-title">
+            {{ t('API文档') }}
+
+            <div class="area-edit" @click.stop="showApiDocEdit()">
+              <i class="apigateway-icon icon-ag-edit-line" />
+              <bk-button theme="primary" text class="operate-btn">
+                {{ t('编辑') }}
+              </bk-button>
+            </div>
+          </div>
+          <div class="detail-item-content">
+            <div class="detail-item-content-item">
+              <div class="label">{{ `${t('联系人类型')}：` }}</div>
+              <div class="value">
+                <span class="link">{{ basicInfoData.doc_maintainers?.type === 'user' ? t('用户') : t('服务号') }}</span>
+              </div>
+            </div>
+
+            <div
+              class="detail-item-content-item align-items-start"
+              v-show="basicInfoData.doc_maintainers?.type === 'user'">
+              <div class="label">{{ `${t('联系人')}：` }}</div>
+              <div class="value contact">
+                <span class="link">{{ basicInfoData.doc_maintainers?.contacts?.join(',') || '--' }}</span>
+                <p class="sub-explain">{{ t('文档页面上展示出来的文档咨询接口人') }}</p>
+              </div>
+            </div>
+
+            <div class="detail-item-content-item" v-show="basicInfoData.doc_maintainers?.type === 'service_account'">
+              <div class="label">{{ `${t('服务号名称')}：` }}</div>
+              <div class="value">
+                <span class="link">{{ basicInfoData.doc_maintainers?.service_account?.name || '--' }}</span>
+              </div>
+            </div>
+
+            <div class="detail-item-content-item" v-show="basicInfoData.doc_maintainers?.type === 'service_account'">
+              <div class="label">{{ `${t('服务号链接')}：` }}</div>
+              <div class="value">
+                <span class="link">{{ basicInfoData.doc_maintainers?.service_account?.link || '--' }}</span>
+              </div>
+            </div>
+
+            <div class="detail-item-content-item">
+              <div class="label">{{ `${t('文档地址')}：` }}</div>
+              <div class="value url">
+                <span
+                  class="link"
+                  v-bk-tooltips="{
+                    content: t('网关未开启或公开，暂无文档地址'),
+                    placement: 'right',
+                    disabled: !!basicInfoData.docs_url }"
+                >
+                  {{ basicInfoData.docs_url || '--' }}
+                </span>
+                <template v-if="basicInfoData.docs_url">
+                  <span>
+                    <i class="apigateway-icon icon-ag-jump" @click.stop="handleOpenNav(basicInfoData.docs_url)" />
+                  </span>
+                  <span>
+                    <i class="apigateway-icon icon-ag-copy-info" @click.self.stop="copy(basicInfoData.docs_url)" />
+                  </span>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="basic-info-detail-item">
           <div class="detail-item-title">{{ t('API公钥（指纹）') }}</div>
           <div class="detail-item-content">
@@ -292,6 +370,8 @@
     </bk-sideslider>
 
     <create-gateway-com v-model="createGatewayShow" :init-data="basicInfoDetailData" @done="getBasicInfo()" />
+
+    <edit-api-doc v-model="isShowApiDoc" :data="basicInfoData" @done="getBasicInfo()" />
   </div>
 </template>
 
@@ -314,6 +394,7 @@ import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 // @ts-ignore
 import programProcess from '@/images/program-process.svg';
+import EditApiDoc from './common/editApiDoc.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -330,6 +411,7 @@ const basicInfoDetailLoading = ref(false);
 const createGatewayShow = ref<boolean>(false);
 const isShowMarkdown = ref<boolean>(false);
 const markdownHtml = ref<string>('');
+const isShowApiDoc = ref(false);
 
 // 当前基本信息
 const basicInfoData = ref<BasicInfoParams>({
@@ -379,6 +461,10 @@ const delTips = computed(() => {
   // return t('请完整输入 <code class="gateway-del-tips">{name}</code> 来确认删除网关！', { name: basicInfoData.value.name });
   return t(`请完整输入<code class="gateway-del-tips">${basicInfoData.value.name}</code> 来确认删除网关！`);
 });
+
+const showApiDocEdit = () => {
+  isShowApiDoc.value = true;
+};
 
 // 获取网关基本信息
 const getBasicInfo = async () => {
@@ -712,6 +798,16 @@ watch(
         font-weight: 700;
         font-size: 14px;
         color: #313238;
+        display: flex;
+        align-items: center;
+        .area-edit {
+          color: #3A84FF;
+          margin-left: 14px;
+          cursor: pointer;
+          .operate-btn {
+            font-size: 12px;
+          }
+        }
       }
 
       .detail-item-content {
@@ -739,6 +835,16 @@ watch(
             margin-left: 8px;
             flex: 1;
             color: #313238;
+
+            &.contact {
+              display: block;
+              .sub-explain {
+                color: #979BA5;
+                font-size: 12px;
+                line-height: 12px;
+                margin-bottom: 6px;
+              }
+            }
 
             .icon-ag-copy-info,
             .icon-ag-jump {
