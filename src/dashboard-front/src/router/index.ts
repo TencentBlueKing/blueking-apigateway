@@ -235,6 +235,7 @@ const routes: RouteRecordRaw[] = [
           title: t('审批历史'),
           matchRoute: 'apigwPermissionRecords',
           topMenu: 'home',
+          showBackIcon: true,
         },
       },
       {

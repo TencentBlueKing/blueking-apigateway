@@ -1,4 +1,5 @@
 <template>
+  <CustomHeader />
   <div class="permission-apply-container page-wrapper-padding">
     <div class="header flex-row justify-content-between mb5">
       <span v-bk-tooltips="{ content: t('请选择要审批的权限'), disabled: selections.length }">
@@ -41,11 +42,7 @@
           row-hover="auto"
           border="outer">
           <template #expandRow="row">
-            <div class="apply-expand-alert" v-if="['api'].includes(row.grant_dimension)">
-              <bk-alert theme="error" :title="t('将申请网关下所有资源的权限，包括未来新创建的资源，请谨慎审批')" />
-            </div>
             <bk-table
-              v-else
               :ref="(el: HTMLElement) =>(childPermTableRef[row.id] = el)"
               :max-height="378"
               :size="'small'"
@@ -153,6 +150,8 @@ import { Message, Loading } from 'bkui-vue';
 import { sortByKey } from '@/common/util'
 import TableEmpty from '@/components/table-empty.vue';
 import { cloneDeep } from 'lodash';
+import CustomHeader from '@/views/permission/apply/components/custom-header.vue';
+import AgIcon from '@/components/ag-icon.vue';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -239,7 +238,7 @@ const {
 
 
 const setTableHeader = () => {
-  const columns =  [
+  permissionData.value.headers = [
     {
       type: 'selection',
       width: 60,
@@ -247,19 +246,18 @@ const setTableHeader = () => {
       align: 'center',
       showOverflowTooltip: false,
     },
-    {
-      type: 'expand',
-      width: 30,
-      minWidth: 30,
-      showOverflowTooltip: false
-    },
     { field: 'bk_app_code', label: t('蓝鲸应用ID') },
     {
       field: 'grant_dimension_display',
       label: t('授权维度'),
-      render: ({ data }: Record<string, any>) => {
-        return data?.grant_dimension_display || '--';
-      },
+      render: ({ row }: Record<string, any>) => {
+        if (row.grant_dimension === 'resource') {
+          return <div style="display: flex;align-items: center;"><AgIcon
+            name={row.isExpand ? 'down-shape' : 'right-shape'} size="10" style="margin-right: 5px"
+          />{`${row.grant_dimension_display} (${row.resource_ids?.length || '--'})`}</div>;
+        }
+        return row.grant_dimension_display || '--';
+      }
     },
     {
       field: 'expire_days_display',
@@ -337,7 +335,6 @@ const setTableHeader = () => {
       },
     },
   ];
-  permissionData.value.headers = columns;
 };
 
 // 获取资源列表数据
@@ -558,27 +555,29 @@ const handleSubmitApprove = () => {
 
 const handleRowClick = (e:Event, row:any) => {
   e.stopPropagation();
-  row.isExpand = !row.isExpand;
-  expandRows.value = expandRows.value.filter((item) => item.id === row.id);
-  if(row.isExpand) {
-    curExpandRow.value = row;
-    expandRows.value.push(row.id);
-  } else {
-    curExpandRow.value = {};
+  if (row.grant_dimension === 'resource') {
+    row.isExpand = !row.isExpand;
     expandRows.value = expandRows.value.filter((item) => item.id === row.id);
+    if(row.isExpand) {
+      curExpandRow.value = row;
+      expandRows.value.push(row.id);
+    } else {
+      curExpandRow.value = {};
+      expandRows.value = expandRows.value.filter((item) => item.id === row.id);
+    }
+    setTimeout(() => {
+      permissionApplyList.value.forEach((item) => {
+        if(item.id === curExpandRow.value.id) {
+          item.selection = cloneDeep(item.resourceList);
+          permissionTableRef.value.setRowExpand(row, row.isExpand);
+          childPermTableRef.value[row.id]?.toggleAllSelection();
+        } else {
+          item = Object.assign(item, { isExpand: false, selection: [], isSelectAll: true });
+          permissionTableRef.value.setRowExpand(item, false);
+        }
+      })
+    }, 0);
   }
-  setTimeout(() => {
-    permissionApplyList.value.forEach((item) => {
-      if(item.id === curExpandRow.value.id) {
-        item.selection = cloneDeep(item.resourceList);
-        permissionTableRef.value.setRowExpand(row, row.isExpand);
-        childPermTableRef.value[row.id]?.toggleAllSelection();
-      } else {
-        item = Object.assign(item, { isExpand: false, selection: [], isSelectAll: true });
-        permissionTableRef.value.setRowExpand(item, false);
-      }
-    })
-  }, 0)
 };
 
 const handleClearFilterKey = () => {
@@ -638,12 +637,12 @@ onMounted(() => {
       color: #63656E !important;
     }
   }
-  :deep(.bk-table-head) {
-    scrollbar-color: transparent transparent;
-  }
-  :deep(.bk-table-body) {
-    scrollbar-color: transparent transparent;
-  }
+  //:deep(.bk-table-head) {
+  //  scrollbar-color: transparent transparent;
+  //}
+  //:deep(.bk-table-body) {
+  //  scrollbar-color: transparent transparent;
+  //}
 }
 :deep(.ag-expand-table) {
   .bk-table-body {
