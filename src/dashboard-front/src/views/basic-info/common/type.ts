@@ -28,6 +28,14 @@ export interface BasicInfoParams {
   programmable_gateway_git_info?: {
     [key: string]: string
   }
+  doc_maintainers?: {
+    type: string
+    contacts?: string[]
+    service_account?: {
+      name: string
+      link: string
+    }
+  }
 }
 
 export interface DialogParams {
