@@ -60,7 +60,7 @@
                 :data="row.handled_resources"
                 :border="['outer', 'row']"
                 :header-cell-style="{ background: '#fafbfd', borderRight: 'none' }"
-                :cell-style="{ background: '#fafbfd',  }"
+                :cell-style="{ background: '#fafbfd' }"
                 class="ag-expand-table resources"
               >
                 <bk-table-column align="right" label="#" type="index" width="220" />

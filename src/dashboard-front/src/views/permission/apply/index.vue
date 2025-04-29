@@ -49,7 +49,9 @@
               :key="row.id"
               :data="row.resourceList"
               :outer-border="false"
+              :cell-style="{ background: '#fafbfd' }"
               class="ag-expand-table"
+              :style="{ borderTop: '1px solid #dcdee5' }"
               @select-all="(e: SelectionType) => handleRowSelectionAllChange(row, e)"
               @selection-change="(e: SelectionType) => handleRowSelectionChange(row, e)"
             >
