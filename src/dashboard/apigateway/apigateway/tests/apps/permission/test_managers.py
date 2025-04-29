@@ -74,8 +74,8 @@ class TestAppAPIPermissionManager:
         perm_2 = models.AppGatewayPermission.objects.get(id=perm_2.id)
         perm_3 = models.AppGatewayPermission.objects.get(id=perm_3.id)
         assert to_datetime_from_now(days=179) < perm_1.expires < to_datetime_from_now(days=181)
-        assert to_datetime_from_now(days=179) < perm_2.expires < to_datetime_from_now(days=181)
-        assert to_datetime_from_now(days=719) < perm_3.expires < to_datetime_from_now(days=721)
+        assert to_datetime_from_now(days=170 + 179) < perm_2.expires < to_datetime_from_now(days=170 + 181)
+        assert to_datetime_from_now(days=720 + 179) < perm_3.expires < to_datetime_from_now(days=720 + 181)
 
 
 class TestAppResourcePermissionManager:
@@ -124,8 +124,8 @@ class TestAppResourcePermissionManager:
         perm_2 = models.AppResourcePermission.objects.get(id=perm_2.id)
         perm_3 = models.AppResourcePermission.objects.get(id=perm_3.id)
         assert to_datetime_from_now(days=179) < perm_1.expires < to_datetime_from_now(181)
-        assert to_datetime_from_now(days=179) < perm_2.expires < to_datetime_from_now(181)
-        assert to_datetime_from_now(days=719) < perm_3.expires < to_datetime_from_now(721)
+        assert to_datetime_from_now(days=70 + 179) < perm_2.expires < to_datetime_from_now(70 + 181)
+        assert to_datetime_from_now(days=720 + 179) < perm_3.expires < to_datetime_from_now(720 + 181)
 
     def test_renew_by_resource_ids(self):
         perm_1 = G(
@@ -175,8 +175,8 @@ class TestAppResourcePermissionManager:
         perm_2 = models.AppResourcePermission.objects.get(id=perm_2.id)
         perm_3 = models.AppResourcePermission.objects.get(id=perm_3.id)
         assert perm_1.expires > to_datetime_from_now(181)
-        assert to_datetime_from_now(days=179) < perm_2.expires < to_datetime_from_now(361)
-        assert to_datetime_from_now(days=719) < perm_3.expires < to_datetime_from_now(721)
+        assert to_datetime_from_now(days=70 + 359) < perm_2.expires < to_datetime_from_now(70 + 361)
+        assert to_datetime_from_now(days=720 + 179) < perm_3.expires < to_datetime_from_now(720 + 181)
 
     def test_renew_not_expired_permission(self):
         perm_1 = G(

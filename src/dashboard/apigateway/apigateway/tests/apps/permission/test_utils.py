@@ -16,9 +16,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import datetime
+
 import pytest
 
-from apigateway.apps.permission.utils import calculate_expires
+from apigateway.apps.permission.utils import calculate_expires, calculate_renew_time
 from apigateway.utils.time import now_datetime
 
 
@@ -33,4 +35,18 @@ from apigateway.utils.time import now_datetime
 def test_calculate_expires(expire_days, expected):
     result = calculate_expires(expire_days)
     # 因时间创建的误差，因此，结尾时间减去 2 秒
+    assert (result - now_datetime()).total_seconds() >= expected * 24 * 3600 - 2
+
+
+@pytest.mark.parametrize(
+    "default_days, expire_days, expected",
+    [
+        (0, 10, 10),
+        (10, 180, 180 + 10),
+        (0, None, 360 * 10),
+    ],
+)
+def test_calculate_renew_time(default_days, expire_days, expected):
+    expire_time = now_datetime() + datetime.timedelta(days=default_days) if default_days else now_datetime()
+    result = calculate_renew_time(expire_time, expire_days)
     assert (result - now_datetime()).total_seconds() >= expected * 24 * 3600 - 2
