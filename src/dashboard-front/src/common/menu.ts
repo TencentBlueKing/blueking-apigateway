@@ -87,11 +87,6 @@ export const createMenuData = (): IMenu[] => {
           enabled: true,
           title: t('应用权限'),
         },
-        {
-          name: 'apigwPermissionRecords',
-          enabled: true,
-          title: t('审批历史'),
-        },
       ],
     },
     {

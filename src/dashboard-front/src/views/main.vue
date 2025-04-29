@@ -92,13 +92,17 @@
       <tips-publish-bar v-show="stage.getNotUpdatedStages?.length" />
       <div class="content-view" :style="stage.getNotUpdatedStages?.length ? 'padding-top: 42px' : 'padding-top: 0px'">
         <!-- 默认头部 -->
-        <div class="flex-row align-items-center content-header" v-if="!route.meta.customHeader">
+        <div
+          v-if="!route.meta.customHeader"
+          class="flex-row align-items-center content-header"
+        >
           <i
-            class="icon apigateway-icon icon-ag-return-small"
             v-if="route.meta.showBackIcon"
-            @click="handleBack"></i>
+            class="icon apigateway-icon icon-ag-return-small"
+            @click="handleBack"
+          />
           {{ headerTitle }}
-          <div class="title-name" v-if="route.meta.showPageName && pageName">
+          <div v-if="route.meta.showPageName && pageName" class="title-name">
             <span></span>
             <div class="name">{{ pageName }}</div>
           </div>
