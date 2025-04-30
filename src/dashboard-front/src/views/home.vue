@@ -457,10 +457,12 @@ watch(
       position: sticky;
       top: 88px;
       background-color: #f5f7fa;
+      z-index: 999;
     }
     .table-list{
       height: calc(100% - 45px);
       overflow-y: auto;
+      padding-right: 2px;
       .table-item{
         width: 100%;
         height: 80px;
