@@ -265,10 +265,10 @@ class StageDeployInputSLZ(serializers.Serializer):
 
 
 class ProgrammableDeploymentInfoSLZ(serializers.Serializer):
-    branch = serializers.CharField(help_text="部署分支", default="", required=False, allow_blank=True)
-    deploy_id = serializers.CharField(help_text="部署ID", default="", required=False, allow_blank=True)
-    commit_id = serializers.CharField(help_text="commit_id", default="", required=False, allow_blank=True)
-    version = serializers.CharField(help_text="部署版本", default="", required=False, allow_blank=True)
+    branch = serializers.CharField(help_text="部署分支", default="", required=False)
+    deploy_id = serializers.CharField(help_text="部署ID", default="", required=False)
+    commit_id = serializers.CharField(help_text="commit_id", default="", required=False)
+    version = serializers.CharField(help_text="部署版本", default="", required=False)
     history_id = serializers.SerializerMethodField(
         help_text="网关部署历史id",
         default=0,  # 确保默认值存在
@@ -276,8 +276,7 @@ class ProgrammableDeploymentInfoSLZ(serializers.Serializer):
     status = serializers.SerializerMethodField(help_text="部署状态", default="", required=False)
 
     def get_history_id(self, obj):
-        stage_status = self.context.get("stage_publish_status", {}).get(obj.stage_id, {})
-        return stage_status.get("publish_id", 0)
+        return self.context.get("latest_history_id", 0)
 
     def get_status(self, obj):
         return self.context.get("latest_publish_status", "")
@@ -308,6 +307,10 @@ class ProgrammableStageDeployOutputSLZ(serializers.Serializer):
         help_text="当前部署信息",
         default=dict,  # 设置默认空字典
     )
+    status = serializers.SerializerMethodField(help_text="部署状态", default="", required=False)
+
+    def get_status(self, obj):
+        return self.context.get("last_publish_status", "")
 
     def get_repo_info(self, obj):
         return self.context.get("repo_info", {})
