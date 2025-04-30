@@ -33,7 +33,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.components.paas import get_paas_deployment_result, get_paas_repo_branch_info, paas_app_module_offline
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum, ReleaseHistoryStatusEnum, StageStatusEnum
-from apigateway.core.models import BackendConfig, PublishEvent, ReleaseHistory, Stage
+from apigateway.core.models import BackendConfig, ReleaseHistory, Stage
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.user_credentials import get_user_credentials_from_request
@@ -453,7 +453,11 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
         deploy_history = ProgrammableGatewayDeployHistory.objects.filter(gateway=gateway).order_by("-id").first()
 
         stage_release = ReleasedResourceHandler.get_stage_release(gateway, [stage_id]).get(stage_id)
+        # 正在发布版本状态
         latest_publish_status = ""
+        latest_history_id = 0
+        # 当前生效版本状态
+        last_publish_status = ""
         if stage_release:
             # 优先使用与 stage_release 匹配的记录
             instance = (
@@ -462,7 +466,14 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
                 ).first()
                 or deploy_history  # 回退到最新记录
             )
-            ## 如果 stage_release 的版本和 deploy_history的第一个不一致，说明正在发布
+            ## 查询当前生效环境的 release history
+            last_release_history = ReleaseHistory.objects.filter(
+                gateway=gateway, stage_id=stage_id, resource_version__version=stage_release["resource_version_display"]
+            ).first()
+            if last_release_history:
+                last_publish_status = ReleaseHandler.get_release_status(last_release_history.id)
+
+            # 如果 stage_release 的版本和 deploy_history的第一个不一致，说明正在发布
             if stage_release["resource_version_display"] != deploy_history.version:
                 latest_deploy_history = deploy_history
                 latest_publish_status = ReleaseHistoryStatusEnum.DOING.value
@@ -474,11 +485,8 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
             if not latest_history:
                 latest_publish_status = ReleaseHistoryStatusEnum.DOING.value
             else:
-                event = PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
-                    [latest_history.id]
-                ).get(latest_history.id, None)
-                if event:
-                    latest_publish_status = event.get_release_history_status()
+                latest_history_id = latest_history.id
+                latest_publish_status = ReleaseHandler.get_release_status(latest_history.id)
 
         # 说明有正在发布的任务
         if latest_publish_status != "":
@@ -493,7 +501,9 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
 
         context_data = {
             "latest_deploy_history": latest_deploy_history,
+            "latest_history_id": latest_history_id,
             "latest_publish_status": latest_publish_status,
+            "last_publish_status": last_publish_status,
             "repo_info": get_paas_repo_branch_info(
                 gateway.name, "default", get_user_credentials_from_request(request)
             ),
