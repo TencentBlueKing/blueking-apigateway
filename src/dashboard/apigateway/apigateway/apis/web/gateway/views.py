@@ -134,7 +134,11 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
                 if not git_info:
                     raise error_codes.INVALID_ARGUMENT.format(_("可编程网关 Git 信息不能为空。"), replace=True)
 
-            ok = create_paas_app(slz.validated_data["name"], git_info)
+            ok = create_paas_app(
+                slz.validated_data["name"],
+                git_info,
+                user_credentials=get_user_credentials_from_request(request),
+            )
             if not ok:
                 raise error_codes.INTERNAL.format(_("创建蓝鲸应用失败。"), replace=True)
 
