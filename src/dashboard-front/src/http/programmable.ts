@@ -162,7 +162,6 @@ export const deployReleases = (apigwId: number, data: {
   comment: string,
 }) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/programmable/deploy/`, data, { globalError: false });
 
-
 // 获取环境详情
 export const getProgrammableStageDetail = (apigwId: number, stageId: number): Promise<{
   branch: string;
@@ -175,13 +174,23 @@ export const getProgrammableStageDetail = (apigwId: number, stageId: number): Pr
     commit_id: string;
     deploy_id: string;
     history_id: number;
+    status: string;
     version: string;
   };
   repo_info: {
-    branch_commit_info: Record<string, string>;
+    branch_commit_info: {
+      [branch: string]: {
+        commit_id: string;
+        extra: object;
+        last_update: string;
+        message: string;
+        type: string;
+      }
+    };
     branch_list: string[];
     repo_url: string;
   };
+  status: string;
   version: string;
 }> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/stages/${stageId}/programmable/`);
 
@@ -192,7 +201,7 @@ export const getStageNextVersion = (apigwId: number, data: {
 }) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource-versions/programmable/next-deploy-version/?${json2Query(data)}`);
 
 // 查询部署中的发布事件
-export const getDeployEvents = (apigwId: number, deploy_id: number): Promise<IEventResponse> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/programmable/deploy/${deploy_id}/histories/events/`);
+export const getDeployEvents = (apigwId: number, deploy_id: string): Promise<IEventResponse> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/programmable/deploy/${deploy_id}/histories/events/`);
 
 // 查询已完成部署后的发布事件
 export const getFinishedDeployEvents = (apigwId: number, history_id: number): Promise<IEventResponse> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/programmable/deploy/histories/${history_id}/events/`);

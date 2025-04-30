@@ -87,7 +87,7 @@
                   {{ t('生成 SDK') }}
                 </bk-button>
                 <bk-dropdown
-                  v-if="commonStore.curApigwData?.kind === 0"
+                  v-if="!commonStore.isProgrammableGateway"
                   :is-show="!!data?.isReleaseMenuShow"
                   trigger="click"
                 >
@@ -106,7 +106,7 @@
                         :key="item.id"
                         @click="!item.publish_validate_msg ? handleClickStage(item, data) : ''"
                         :class="{ 'menu-item-disabled': !!item.publish_validate_msg }"
-                        v-bk-tooltips="{ content: t(item.publish_validate_msg), disabled: !item.publish_validate_msg }"
+                        v-bk-tooltips="{ content: item.publish_validate_msg, disabled: !item.publish_validate_msg }"
                       >
                         {{ item.name }}
                       </bk-dropdown-item>

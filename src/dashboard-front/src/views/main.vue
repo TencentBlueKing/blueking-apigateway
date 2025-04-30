@@ -36,7 +36,7 @@
                   </template>
                   <template v-for="child in menu.children">
                     <bk-menu-item
-                      v-if="child.enabled && !(child.hideInProgrammable && common.curApigwData.kind === 1)"
+                      v-if="child.enabled && !(child.hideInProgrammable && common.isProgrammableGateway)"
                       :key="child.name"
                       @click.stop="handleGoPage(child.name, apigwId)"
                     >
@@ -55,7 +55,7 @@
               </template>
               <template v-else>
                 <bk-menu-item
-                  v-if="!(menu.hideInProgrammable && common.curApigwData.kind === 1)"
+                  v-if="!(menu.hideInProgrammable && common.isProgrammableGateway)"
                   :key="menu.name"
                   @click.stop="handleGoPage(menu.name, apigwId)"
                 >

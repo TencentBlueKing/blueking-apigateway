@@ -8,7 +8,7 @@
         theme="warning"
         :title="t('当前环境已下架，所有内容的更新均不会生效，如需重新启用，需要重新发布')" style="margin-bottom: 16px;" />
       <bk-alert
-        v-if="common.curApigwData?.kind === 1"
+        v-if="common.isProgrammableGateway"
         :title="t('可编程网关的环境由平台内置，不能修改和新增')"
         class="mb24"
         closable
@@ -106,7 +106,9 @@
               theme="primary"
               class="mr10"
               v-bk-tooltips="{
-                content: getStatus(stageData) === 'doing' ? t('当前有版本正在发布，请稍后再操作') : t(stageData?.publish_validate_msg),
+                content: getStatus(stageData) === 'doing'
+                  ? t('当前有版本正在发布，请稍后再操作')
+                  : (stageData?.publish_validate_msg || '--'),
                 disabled: getStatus(stageData) !== 'doing' && !stageData?.publish_validate_msg
               }"
               :disabled="!!stageData?.publish_validate_msg || getStatus(stageData) === 'doing'"
@@ -229,7 +231,6 @@ import {
   InfoBox,
   Message,
 } from 'bkui-vue';
-
 import {
   copy,
   getStatus,

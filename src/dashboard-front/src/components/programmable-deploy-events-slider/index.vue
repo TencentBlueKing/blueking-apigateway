@@ -2,36 +2,31 @@
   <BkSideslider v-model:isShow="isShow" :width="1100" quick-close>
     <template #header>
       <div class="log-details-title">
-        <div class="log-details-name">【{{ currentStage?.name || historyStage?.name }}】{{ t('发布日志详情') }}</div>
+        <div class="log-details-name">【{{ stage?.name || historyStage?.name }}】{{ t('发布日志详情') }}</div>
       </div>
     </template>
     <template #default>
       <div class="deploy-status-alert-wrapper">
-        <div v-if="!isPaasDeployFinished || !isGatewayPublishFinished" class="deploying-alert">
+        <div v-if="deployStatus === 'pending' || deployStatus === 'doing'" class="deploying-alert">
           <div class="loading-icon">
             <Spinner />
           </div>
           <div class="main-text">{{ t('正在发布中，请稍等...') }}</div>
           <div class="mr50">{{ t('已耗时') }}: <span>{{ totalDuration }}s</span></div>
-          <div>{{ t('操作人') }}: <span>{{ deployedBy }}</span></div>
+          <!--          <div>{{ t('操作人') }}: <span>{{ deployedBy }}</span></div>-->
         </div>
         <BkAlert
-          v-else-if="
-            isPaasDeployFailed
-              || deployStatus === 'failure'
-              || deployStatus === 'failed'
-              || deployStatus === 'fail'
-          "
+          v-else-if="deployStatus === 'fail' || deployStatus === 'failed' || deployStatus === 'failure'"
           theme="error"
         >
           <div class="alert-content">
             <div class="mr80"><span class="pr4">{{ t('版本') }}</span><span
               class="pr4"
-            >{{ version || historyVersion || '--' }}</span><span
+            >{{ stage.paasInfo?.latest_deployment?.version || version || historyVersion || '--' }}</span><span
               style="color: #ea3636;"
             >{{ t('发布失败') }}</span></div>
             <div class="mr50">{{ t('已耗时') }}: <span>{{ totalDuration }}s</span></div>
-            <div>{{ t('操作人') }}: <span>{{ deployedBy }}</span></div>
+            <!--            <div>{{ t('操作人') }}: <span>{{ deployedBy }}</span></div>-->
             <div class="action">
               <div class="divider"></div>
               <BkButton style="height: 26px;font-size: 12px;" @click="handleRetry">{{ t('失败重试') }}</BkButton>
@@ -42,11 +37,11 @@
           <div class="alert-content">
             <div class="mr80"><span class="pr4">{{ t('版本') }}</span><span
               class="pr4"
-            >{{ version || historyVersion || '--' }}</span><span
+            >{{ stage.paasInfo?.latest_deployment?.version || version || historyVersion || '--' }}</span><span
               style="color: #2dcb56;"
             >{{ t('发布成功') }}</span></div>
             <div class="mr50">{{ t('已耗时') }}: <span>{{ totalDuration }}s</span></div>
-            <div>{{ t('操作人') }}: <span>{{ deployedBy }}</span></div>
+            <!--            <div>{{ t('操作人') }}: <span>{{ deployedBy }}</span></div>-->
             <div class="action">
               <div class="divider"></div>
               <BkButton style="height: 26px;font-size: 12px;" @click="handleGoDebug">{{ t('去调试') }}</BkButton>
@@ -64,7 +59,7 @@
           </div>
         </div>
         <div class="main-encoding">
-          <MonacoEditor v-model="eventOutputLines" read-only />
+          <MonacoEditor ref="editorRef" v-model="eventOutputLines" read-only />
         </div>
       </div>
     </template>
@@ -112,23 +107,126 @@ interface ITimelineItem {
   nodeType?: string;
 }
 
+interface IRelease {
+  status: string;
+  created_time: null | string;
+  created_by: string;
+}
+
+interface IResourceVersion {
+  version: string;
+  id: number;
+  schema_version: string;
+}
+
+interface IPaasInfo {
+  branch: string;
+  commit_id: string;
+  created_by: string | null;
+  created_time: string;
+  deploy_id: string;
+  latest_deployment: {
+    branch: string;
+    commit_id: string;
+    deploy_id: string;
+    history_id: number;
+    status: string;
+    version: string;
+  };
+  repo_info: {
+    branch_commit_info: {
+      [branch: string]: {
+        commit_id: string;
+        extra: object;
+        last_update: string;
+        message: string;
+        type: string;
+      }
+    };
+    branch_list: string[];
+    repo_url: string;
+  };
+  status: string;
+  version: string;
+}
+
+interface IStageItem {
+  id: number;
+  name: string;
+  description: string;
+  description_en: string;
+  status: number;
+  created_time: string;
+  release: IRelease;
+  resource_version: IResourceVersion;
+  publish_id: number;
+  publish_version: string;
+  publish_validate_msg: string;
+  new_resource_version: string;
+  paasInfo?: IPaasInfo;
+}
+
 interface IProps {
-  deployId?: number,
+  deployId?: string,
   historyId?: number,
-  currentStage?: any,
+  stage?: IStageItem,
   version?: string,
 }
 
 const props = withDefaults(defineProps<IProps>(), {
-  deployId: 0,
+  deployId: '',
   historyId: 0,
-  currentStage: () => ({}),
+  stage: () => ({
+    id: 0,
+    name: '',
+    description: '',
+    description_en: '',
+    status: 1,
+    created_time: '',
+    release: {
+      status: '',
+      created_time: null,
+      created_by: '',
+    },
+    resource_version: {
+      version: '',
+      id: 0,
+      schema_version: '',
+    },
+    publish_id: 0,
+    publish_version: '',
+    publish_validate_msg: '',
+    new_resource_version: '',
+    paasInfo: {
+      branch: '',
+      commit_id: '',
+      created_by: '',
+      created_time: '',
+      deploy_id: '',
+      latest_deployment: {
+        branch: '',
+        commit_id: '',
+        deploy_id: '',
+        history_id: 0,
+        status: '',
+        version: '',
+      },
+      repo_info: {
+        branch_commit_info: {},
+        branch_list: [],
+        repo_url: '',
+      },
+      status: '',
+      version: '',
+    },
+  }),
   version: '',
 });
 
 const emit = defineEmits([
   'release-success',
-  'release-doing',
+  'hide-when-pending',
+  'retry',
 ]);
 
 const { t } = useI18n();
@@ -143,13 +241,13 @@ const paasEventInstances = ref<IPaasEventInstance[]>([]);
 const gatewayEventTemplates = ref<IGatewayEventTemplate[]>([]);
 const gatewayEvents = ref<IGatewayEvent[]>([]);
 
-const isPaasDeployFinished = ref(false);
-const isPaasDeployFailed = ref(false);
 const deployedBy = ref('');
 const deployStatus = ref('');
 
 const historyStage = ref<{ id: number, name: string } | null>();
 const historyVersion = ref('');
+
+const editorRef = ref();
 
 const apigwId = computed(() => +route.params?.id);
 
@@ -276,16 +374,16 @@ const totalDuration = computed(() => {
   return gatewayPublishTotalDuration.value + paasDeployTotalDuration.value;
 });
 
-const isGatewayPublishFinished = computed(() => {
-  return deployStatus.value === 'success' || deployStatus.value === 'failure';
-});
-
 const eventOutputLines = computed(() => {
   // 当 PAAS 部署完成后
-  if (isPaasDeployFinished.value) {
+  if (isFinished.value) {
     return paasEventTextLines.value.concat(gatewayEventTextLines.value);
   }
   return paasEventTextLines.value;
+});
+
+const isFinished = computed(() => {
+  return deployStatus.value !== 'pending' && deployStatus.value !== 'doing';
 });
 
 const statusStyleMap: Record<string, any> = {
@@ -323,41 +421,19 @@ watch(
   () => isShow.value,
   () => {
     if (!isShow.value) {
-      if (isGatewayPublishFinished.value) {
+      if (isFinished.value) {
         emit('release-success');
       } else {
-        emit('release-doing');
+        emit('hide-when-pending');
       }
       pausePoll();
       resetStates();
-    }
-  },
-);
-
-watch(
-  () => props.deployId,
-  () => {
-    if (props.deployId && isShow.value) {
+    } else {
+      getEvents();
       startPoll();
     }
   },
 );
-
-watch(
-  () => props.historyId,
-  async () => {
-    // 查询静态的发布记录，调用一次接口即可，不要轮询
-    if (props.historyId && isShow.value) {
-      await getEvents();
-    }
-  },
-);
-
-watch(isGatewayPublishFinished, () => {
-  if (isPaasDeployFinished.value && isGatewayPublishFinished) {
-    pausePoll();
-  }
-});
 
 // 获取日志列表
 const getEvents = async () => {
@@ -378,11 +454,12 @@ const getEvents = async () => {
   deployedBy.value = created_by || '';
   deployStatus.value = status || '';
 
-  paasEventInstances.value = paasResponse.events_instance || [];
+  paasEventInstances.value = (paasResponse.events_instance && Array.isArray(paasResponse.events_instance))
+    ? paasResponse.events_instance : [];
   gatewayEventTemplates.value = events_template || [];
   gatewayEvents.value = gatewayEventsResponse || [];
 
-  const paasEvents = paasResponse.events || [];
+  const paasEvents = (paasResponse.events && Array.isArray(paasResponse.events)) ? paasResponse.events : [];
   const paasOutputLines: string[] = [];
   const gatewayOutputLines: string[] = [];
 
@@ -418,21 +495,9 @@ const getEvents = async () => {
   paasEventTextLines.value = paasOutputLines.join('');
   gatewayEventTextLines.value = gatewayOutputLines.join('');
 
-  // 有错误事件时
-  if (paasEventInstances.value.some(instance => instance.status === 'failed')) {
-    paasEventInstances.value = [];
-    isPaasDeployFinished.value = true;
-    isPaasDeployFailed.value = true;
+  editorRef.value?.setCursorPos({ toBottom: true });
+  if (isFinished.value) {
     pausePoll();
-    return;
-  }
-
-  const lastInstance = paasEventInstances.value[paasEventInstances.value.length - 1];
-
-  if (lastInstance?.status === 'successful') {
-    isPaasDeployFinished.value = true;
-    isPaasDeployFailed.value = false;
-    // pausePoll();
   }
 };
 
@@ -442,11 +507,6 @@ const { pause: pausePoll, resume: startPoll } = useTimeoutPoll(getEvents, 2000, 
 
 const showSideslider = () => {
   isShow.value = true;
-};
-
-const handleRetry = () => {
-  resetStates();
-  startPoll();
 };
 
 const getDotStyles = (status?: string | null) => {
@@ -477,12 +537,17 @@ const resetStates = () => {
   deployStatus.value = '';
   historyStage.value = null;
   historyVersion.value = '';
-  isPaasDeployFinished.value = false;
-  isPaasDeployFailed.value = false;
 };
 
 const handleGoDebug = () => {
   router.replace({ name: 'apigwOnlineTest' });
+};
+
+const handleRetry = () => {
+  emit('retry');
+  resetStates();
+  isShow.value = false;
+  // startPoll();
 };
 
 defineExpose({
@@ -633,7 +698,13 @@ defineExpose({
         padding-bottom: 0;
 
         &:before {
-          top: -9px;
+          top: -11px;
+        }
+
+        // Spinner 图标
+        svg {
+          width: 18px !important;
+          height: 18px !important;
         }
       }
     }

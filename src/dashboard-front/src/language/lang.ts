@@ -1768,6 +1768,7 @@ const lang: ILANG = {
   '正在发布中，请稍等...': ['Deploying, please hold on...'],
   '已耗时': ['Time used'],
   '去调试': ['Debug'],
+  '当前版本号': ['Current version'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

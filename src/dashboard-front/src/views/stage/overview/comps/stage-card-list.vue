@@ -1,113 +1,16 @@
 <template>
   <div class="card-list">
-    <StageCardItem />
-    <div class="card-item" v-for="(stageData, index) in stageList" :key="index">
-      <div class="title">
-        <div class="title-lf">
-          <spinner v-if="getStatus(stageData) === 'doing'" fill="#3A84FF" />
-          <span
-            v-else
-            :class="['dot', getStatus(stageData)]"
-            v-bk-tooltips="{
-              content: getStatusText(getStatus(stageData)),
-              disabled: !getStatusText(getStatus(stageData)),
-            }"
-          >
-          </span>
-          {{ stageData.name }}
-        </div>
-        <div class="title-rg">
-          <template v-if="!basicInfoData.status">
-            <bk-button
-              disabled
-              size="small"
-              theme="primary"
-              v-bk-tooltips="{ content: t('当前网关已停用，如需使用，请先启用'), delay: 300 }">
-              {{ t('发布资源') }}
-            </bk-button>
-            <bk-button
-              class="ml10"
-              disabled
-              size="small"
-              v-bk-tooltips="{ content: t('当前网关已停用，如需使用，请先启用'), delay: 300 }">
-              {{ t('下架') }}
-            </bk-button>
-          </template>
-          <template v-else>
-            <bk-button
-              theme="primary"
-              size="small"
-              :disabled="getStatus(stageData) === 'doing' || !!stageData.publish_validate_msg"
-              v-bk-tooltips="{ content: stageData.publish_validate_msg, disabled: !stageData.publish_validate_msg }"
-              @click="handleRelease(stageData)"
-            >
-              {{ t('发布资源') }}
-            </bk-button>
-            <bk-button
-              class="ml10"
-              size="small"
-              :disabled="stageData.status !== 1"
-              @click="handleStageUnlist(stageData.id)"
-            >
-              {{ t('下架') }}
-            </bk-button>
-          </template>
-        </div>
-      </div>
-      <div class="content" @click="handleToDetail(stageData)">
-        <div class="apigw-form-item">
-          <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('访问地址')}：` }}</div>
-          <div class="value url">
-            <p
-              class="link"
-              v-if="getStageAddress(stageData.name)"
-              v-bk-tooltips="{ content: getStageAddress(stageData.name) }">
-              {{ getStageAddress(stageData.name) || '--' }}
-            </p>
-            <p
-              v-else
-              class="link"
-            >
-              {{ getStageAddress(stageData.name) || '--' }}
-            </p>
-            <i
-              class="apigateway-icon icon-ag-copy-info"
-              v-if="getStageAddress(stageData.name)"
-              @click.self.stop="copy(getStageAddress(stageData.name))">
-            </i>
-          </div>
-        </div>
-        <div class="apigw-form-item">
-          <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('当前生效资源版本')}：` }}</div>
-          <div class="value">
-            <span class="unrelease" v-if="stageData.release.status === 'unreleased'">--</span>
-            <span v-else>{{ stageData.resource_version.version || '--' }}</span>
-            <template v-if="getStatus(stageData) === 'doing'">
-              <bk-tag theme="info" class="ml10">{{ stageData.publish_version }} {{ t('发布中') }} </bk-tag>
-              <bk-button
-                text
-                theme="primary"
-                @click.stop="showLogs(stageData.publish_id)">
-                {{ t('查看日志') }}
-              </bk-button>
-            </template>
-          </div>
-        </div>
-        <div class="apigw-form-item">
-          <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('发布人')}：` }}</div>
-          <div class="value">
-            {{ stageData.release.created_by || '--' }}
-          </div>
-        </div>
-        <div class="apigw-form-item">
-          <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('发布时间')}：` }}</div>
-          <div class="value">
-            {{ stageData.release.created_time || '--' }}
-          </div>
-        </div>
-      </div>
-    </div>
-    <div v-if="common.curApigwData?.kind !== 1" class="card-item add-stage" @click="handleAddStage">
+    <StageCardItem
+      v-for="stage in stageList"
+      :key="stage.id"
+      :stage="stage"
+      @click="handleToDetail(stage)"
+      @delist="() => handleStageUnlist(stage.id)"
+      @publish="() => handleRelease(stage)"
+      @check-log="() => showLogs(stage)"
+    />
+
+    <div v-if="!common.isProgrammableGateway" class="card-item add-stage" @click="handleAddStage">
       <i class="apigateway-icon icon-ag-add-small" />
     </div>
 
@@ -128,20 +31,32 @@
       :current-stage="currentStage"
       @hidden="handleReleaseSuccess(false)"
       @release-success="handleReleaseSuccess"
+      @closed-on-publishing="handleSliderHideWhenPending"
     />
 
     <!-- 日志抽屉 -->
     <log-details ref="logDetailsRef" :history-id="historyId" />
+
+    <!-- 可编程网关日志抽屉 -->
+    <ProgrammableEventSlider
+      ref="programmableEventSliderRef"
+      :deploy-id="deployId"
+      :history-id="historyId"
+      :stage="currentStage"
+      @retry="handleRetry"
+      @hide-when-pending="handleSliderHideWhenPending"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import {
   computed,
+  onBeforeMount,
   onMounted,
   onUnmounted,
   ref,
-  toRefs,
+  watch,
 } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -149,19 +64,15 @@ import {
   InfoBox,
   Message,
 } from 'bkui-vue';
-import { Spinner } from 'bkui-vue/lib/icon';
-
-import {
-  copy,
-  getStatus,
-  getStatusText,
-} from '@/common/util';
 import logDetails from '@/components/log-details/index.vue';
 import mitt from '@/common/event-bus';
-import { useGetGlobalProperties } from '@/hooks';
-import { useCommon } from '@/store';
+import {
+  useCommon,
+  useStage,
+} from '@/store';
 import {
   getGateWaysInfo,
+  getStageList,
   removalStage,
 } from '@/http';
 import { BasicInfoParams } from '@/views/basic-info/common/type';
@@ -169,26 +80,23 @@ import editStageSideslider from './edit-stage-sideslider.vue';
 import releaseSideslider from './release-sideslider.vue';
 import ReleaseProgrammableSlider from './release-programmable-slider.vue';
 import StageCardItem from '@/views/stage/overview/comps/stage-card-item.vue';
+import { getProgrammableStageDetail } from '@/http/programmable';
+import { useTimeoutPoll } from '@vueuse/core';
+import ProgrammableEventSlider from '@/components/programmable-deploy-events-slider/index.vue';
 
-// 全局变量
-const globalProperties = useGetGlobalProperties();
-const { GLOBAL_CONFIG } = globalProperties;
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const route = useRoute();
 const common = useCommon();
+const stageStore = useStage();
 
-const props = defineProps<{
-  stageList: any[];
-}>();
+const historyId = ref<number | undefined>(undefined);
+const deployId = ref<string | undefined>(undefined);
+const currentStage = ref<any>({});
 
-// 环境列表
-const { stageList } = toRefs(props);
-
-const logDetailsRef = ref(null);
-const historyId = ref();
 const releaseSidesliderRef = ref();
 const releaseProgrammableSliderRef = ref();
-const currentStage = ref<any>({});
+const logDetailsRef = ref(null);
+const programmableEventSliderRef = ref(null);
 
 // 当前基本信息
 const basicInfoData = ref<BasicInfoParams>({
@@ -209,14 +117,57 @@ const basicInfoData = ref<BasicInfoParams>({
   is_public: true,
   is_official: false,
   related_app_codes: '',
+  kind: 0,
 });
 
-// 新建环境
+const stageList = ref<any[]>([]);
 const stageSidesliderRef = ref(null);
-let timeId: any = null;
+
+const fetchStageList = async () => {
+  const data = await getStageList(common.apigwId);
+  stageList.value = data || [];
+  stageStore.setStageList(data);
+  setTimeout(() => {
+    stageStore.setStageMainLoading(false);
+  }, 200);
+
+  if (basicInfoData.value.kind === 1) {
+    await updateProgrammableGatewayStage();
+  }
+};
+
+const {
+  pause: pausePollingDetail,
+  resume: startPollingDetail,
+} = useTimeoutPoll(fetchStageList, 10000, {
+  immediate: false,
+});
 
 // 网关id
 const apigwId = computed(() => +route.params.id);
+
+watch(() => common.curApigwData, () => {
+  pausePollingDetail();
+  if (!common.curApigwData?.id) {
+    return;
+  }
+  startPollingDetail();
+}, { immediate: true, deep: true });
+
+// 获取可编程网关的 stage 详情
+const updateProgrammableGatewayStage = async () => {
+  const tasks: ReturnType<typeof getProgrammableStageDetail>[] = [];
+
+  for (const stage of stageList.value) {
+    tasks.push(getProgrammableStageDetail(common.apigwId, stage.id));
+  }
+
+  const responses = await Promise.all(tasks);
+
+  for (let i = 0; i < stageList.value.length; i++) {
+    stageList.value[i].paasInfo = responses[i];
+  }
+};
 
 // 环境详情
 const handleToDetail = (data: any) => {
@@ -227,7 +178,7 @@ const handleToDetail = (data: any) => {
 const handleRelease = async (stage: any) => {
   currentStage.value = stage;
   // 普通网关
-  if (common.curApigwData?.kind !== 1) {
+  if (!common.isProgrammableGateway) {
     releaseSidesliderRef.value?.showReleaseSideslider();
   } else {
     // 可编程网关
@@ -241,9 +192,23 @@ const handleReleaseSuccess = async (loading = true) => {
 };
 
 // 查看日志
-const showLogs = (id: string) => {
-  historyId.value = id;
-  logDetailsRef.value?.showSideslider();
+const showLogs = (stage: any) => {
+  currentStage.value = stage;
+  // 普通网关
+  if (!common.isProgrammableGateway) {
+    deployId.value = undefined;
+    historyId.value = stage.publish_id;
+    logDetailsRef.value?.showSideslider();
+  } else {
+    // 可编程网关
+    historyId.value = undefined;
+    if (stage.paasInfo?.latest_deployment?.deploy_id) {
+      deployId.value = stage.paasInfo.latest_deployment.deploy_id;
+    } else {
+      deployId.value = stage.paasInfo?.deploy_id;
+    }
+    programmableEventSliderRef.value?.showSideslider();
+  }
 };
 
 // 下架环境
@@ -273,46 +238,36 @@ const handleStageUnlist = async (id: number) => {
   });
 };
 
-// 访问地址
-const getStageAddress = (name: string) => {
-  const keys: any = {
-    api_name: common.apigwName,
-    stage_name: name,
-    resource_path: '',
-  };
-
-  let url = GLOBAL_CONFIG.STAGE_DOMAIN;
-  for (const name of Object.keys(keys)) {
-    const reg = new RegExp(`{${name}}`);
-    url = url?.replace(reg, keys[name]);
-  }
-  return url;
-};
 const handleAddStage = () => {
   stageSidesliderRef.value.handleShowSideslider('add');
 };
 
 // 获取网关基本信息
 const getBasicInfo = async (apigwId: number) => {
-  try {
-    const res = await getGateWaysInfo(apigwId);
-    basicInfoData.value = Object.assign({}, res);
-  } catch (e) {
-    console.error(e);
-  }
+  const res = await getGateWaysInfo(apigwId);
+  basicInfoData.value = Object.assign({}, res);
 };
 
-onMounted(async () => {
-  timeId = setInterval(() => {
-    // 获取网关列表
-    mitt.emit('get-environment-list-data');
-  }, 1000 * 30);
+const handleRetry = () => {
+  releaseProgrammableSliderRef.value?.showReleaseSideslider();
+};
 
+const handleSliderHideWhenPending = () => {
+  pausePollingDetail();
+  fetchStageList();
+  startPollingDetail();
+};
+
+onBeforeMount(async () => {
   await getBasicInfo(common.apigwId);
 });
 
+onMounted(async () => {
+  await fetchStageList();
+});
+
 onUnmounted(() => {
-  clearInterval(timeId);
+  pausePollingDetail();
 });
 
 </script>
@@ -341,7 +296,7 @@ onUnmounted(() => {
 
 .card-item {
   font-size: 12px;
-  height: 223px;
+  height: 238px;
   background: #ffffff;
   padding: 0 24px;
   box-shadow: 0 2px 4px 0 #1919290d;;
@@ -421,8 +376,6 @@ onUnmounted(() => {
     .unrelease {
       display: inline-block;
       font-size: 10px;
-      // color: #FE9C00;
-      // background: #FFF1DB;
       border-radius: 2px;
       padding: 2px 5px;
       line-height: 1;
