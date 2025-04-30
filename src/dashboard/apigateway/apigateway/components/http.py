@@ -148,7 +148,7 @@ def _http_request(
             resp.text,
         )
 
-        return True, resp.json()
+        return True, resp.json() if resp.content else {}
 
 
 def http_get(url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None):
