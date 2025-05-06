@@ -68,7 +68,7 @@
             </div>
             <template v-if="user.isTenantMode">
               <div class="flex-1 of1">
-                {{ item.tenant_mode || '--' }}
+                {{ TENANT_MODE_TEXT_MAP[item.tenant_mode as string] || '--' }}
               </div>
               <div class="flex-1 of1">{{ item.tenant_id || '--' }}</div>
             </template>
@@ -288,6 +288,7 @@ import {
   ref,
   watch,
 } from 'vue';
+import { TENANT_MODE_TEXT_MAP } from '@/enums';
 
 const { t } = useI18n();
 const user = useUser();
