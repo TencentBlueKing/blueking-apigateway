@@ -1,3 +1,12 @@
+<!-- 2025-05-06 -->
+# V1.15.7 Release Log
+
+### Bug Fixes
+
+- Fix: tls support check_hostname
+
+---
+
 <!-- 2025-04-23 -->
 # V1.15.6 Release Log
 

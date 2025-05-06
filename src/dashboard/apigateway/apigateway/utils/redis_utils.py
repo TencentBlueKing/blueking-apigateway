@@ -53,6 +53,7 @@ def get_redis_pool(redis_conf):
             ssl_ca_certs=redis_conf.get("tls_cert_ca_file"),
             ssl_certfile=redis_conf.get("tls_cert_file"),
             ssl_keyfile=redis_conf.get("tls_cert_key_file"),
+            ssl_check_hostname=redis_conf.get("tls_check_hostname", False),
         )
 
     return redis.BlockingConnectionPool(
