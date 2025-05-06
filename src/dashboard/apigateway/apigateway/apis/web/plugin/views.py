@@ -138,7 +138,7 @@ class PluginTypeListApi(generics.ListAPIView):
         if keyword:
             queryset = queryset.filter(Q(name__icontains=keyword) | Q(code__icontains=keyword))
 
-        return queryset.order_by("code")
+        return queryset.order_by("-priority")
 
 
 @method_decorator(
@@ -479,7 +479,7 @@ class ScopePluginConfigListApi(generics.ListAPIView, ScopeValidationMixin):
             gateway=request.gateway,
             scope_type=scope_type,
             scope_id=scope_id,
-        )
+        ).order_by("-config__type__priority")
 
         data = [
             {
