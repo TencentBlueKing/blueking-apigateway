@@ -75,7 +75,7 @@
               <div class="detail-item-content-item">
                 <div class="label">{{ `${t('租户模式')}：` }}</div>
                 <div class="value">
-                  <span>{{ basicInfoData.tenant_mode || '--' }}</span>
+                  <span>{{ TENANT_MODE_TEXT_MAP[basicInfoData.tenant_mode] || '--' }}</span>
                 </div>
               </div>
               <div class="detail-item-content-item">
@@ -366,6 +366,7 @@ import GateWaysEditMemberSelector from '@/components/gateways-edit/member-select
 import GateWaysEditTenantUserSelector from '@/components/gateways-edit/tenant-user-selector.vue';
 import MemberSelect from '@/components/member-select';
 import BkUserSelector from '@blueking/bk-user-selector';
+import { TENANT_MODE_TEXT_MAP } from '@/enums';
 
 const { t } = useI18n();
 const route = useRoute();

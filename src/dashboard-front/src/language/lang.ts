@@ -1681,6 +1681,8 @@ const lang: ILANG = {
   '租户 ID': ['Tenant ID'],
   '全租户（Global）': ['Global Tenant (Global)'],
   '单租户（Single）': ['Single Tenant (Single)'],
+  '全租户': ['global'],
+  '单租户': ['single'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
