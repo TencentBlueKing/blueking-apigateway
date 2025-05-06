@@ -42,7 +42,6 @@ export const useCommon = defineStore('common', {
         id: 'DELETE',
         name: 'DELETE',
       },
-
       {
         id: 'HEAD',
         name: 'HEAD',
@@ -93,6 +92,10 @@ export const useCommon = defineStore('common', {
     websiteConfig: {},
     noGlobalError: false, // 请求出错是否显示全局的错误Message
   }),
+  getters: {
+    // 网关是否为可编程网关 kind === 1
+    isProgrammableGateway: state => state?.curApigwData?.kind === 1,
+  },
   actions: {
     setApigwId(apigwId: number) {
       this.apigwId = apigwId;

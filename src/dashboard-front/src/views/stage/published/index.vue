@@ -95,6 +95,12 @@
     <!-- 日志抽屉 -->
     <log-details ref="logDetailsRef" :history-id="historyId" />
 
+    <!-- 日志弹窗 -->
+    <EventSlider
+      ref="programmableLogDetailsRef"
+      :history-id="historyId"
+    />
+
     <!-- 详情 -->
     <publish-details ref="detailsRef" :id="detailId" />
   </div>
@@ -120,8 +126,11 @@ import { Spinner } from 'bkui-vue/lib/icon';
 import { getReleaseHistories } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
 import { Message } from 'bkui-vue';
+import EventSlider from '@/components/programmable-deploy-events-slider/index.vue';
+import { useCommon } from '@/store';
 
 const router = useRouter();
+const common = useCommon();
 
 const { t } = useI18n();
 const filterData = ref({ keyword: '' });
@@ -171,6 +180,7 @@ const {
 
 const historyId = ref();
 const logDetailsRef = ref(null);
+const programmableLogDetailsRef = ref(null);
 const detailId = ref();
 const detailsRef = ref(null);
 
@@ -181,7 +191,13 @@ const detailsRef = ref(null);
 
 const showLogs = (id: string) => {
   historyId.value = id;
-  logDetailsRef.value?.showSideslider();
+  // 普通网关
+  if (common.curApigwData?.kind !== 1) {
+    logDetailsRef.value?.showSideslider();
+  } else {
+    // 可编程网关
+    programmableLogDetailsRef.value?.showSideslider();
+  }
 };
 
 const handleClearFilterKey = () => {
