@@ -88,7 +88,6 @@ class ResourceInfoSLZ(serializers.Serializer):
 
         plugins = []
         override_plugins = set()
-        merge_plugins = []
         plugin_priority = self.context["plugin_priority"]
         for plugin in obj.get("plugins", []):
             plugin_type = plugin["type"]
@@ -103,6 +102,7 @@ class ResourceInfoSLZ(serializers.Serializer):
 
             plugins.append(plugin)
 
+        merge_plugins = []
         for plugin_type, plugin in stage_plugins.items():
             if plugin_type not in override_plugins:
                 plugin["priority"] = plugin_priority.get(plugin_type)
