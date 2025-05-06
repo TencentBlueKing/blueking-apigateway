@@ -285,6 +285,10 @@ if BK_APIGW_DATABASE_TLS_ENABLED:
         default_ssl_options["cert"] = default_cert_file
         default_ssl_options["key"] = default_key_file
 
+    # 跳过主机名/IP 验证，会降低安全性，正式环境需要设置为 True
+    check_hostname = env.bool("BK_APIGW_DATABASE_TLS_CHECK_HOSTNAME", True)
+    default_ssl_options["check_hostname"] = check_hostname
+
     if "OPTIONS" not in DATABASES["default"]:
         DATABASES["default"]["OPTIONS"] = {}
 
@@ -301,6 +305,10 @@ if BK_ESB_DATABASE_TLS_ENABLED:
     if bkcore_cert_file and bkcore_key_file:
         bkcore_ssl_options["cert"] = bkcore_cert_file
         bkcore_ssl_options["key"] = bkcore_key_file
+
+    # 跳过主机名/IP 验证，会降低安全性，正式环境需要设置为 True
+    check_hostname = env.bool("BK_ESB_DATABASE_TLS_CHECK_HOSTNAME", True)
+    default_ssl_options["check_hostname"] = check_hostname
 
     if "OPTIONS" not in DATABASES["bkcore"]:
         DATABASES["bkcore"]["OPTIONS"] = {}
@@ -322,6 +330,7 @@ REDIS_TLS_ENABLED = env.bool("BK_APIGW_REDIS_TLS_ENABLED", False)
 REDIS_TLS_CERT_CA_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_CA_FILE", "")
 REDIS_TLS_CERT_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_FILE", "")
 REDIS_TLS_CERT_KEY_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_KEY_FILE", "")
+REDIS_TLS_CHECK_HOSTNAME = env.bool("BK_APIGW_REDIS_TLS_CHECK_HOSTNAME", True)
 
 
 # redis lock 配置
@@ -338,6 +347,7 @@ DEFAULT_REDIS_CONFIG = CHANNEL_REDIS_CONFIG = {
     "tls_cert_ca_file": REDIS_TLS_CERT_CA_FILE,
     "tls_cert_file": REDIS_TLS_CERT_FILE,
     "tls_cert_key_file": REDIS_TLS_CERT_KEY_FILE,
+    "tls_check_hostname": REDIS_TLS_CHECK_HOSTNAME,
 }
 
 # ==============================================================================
