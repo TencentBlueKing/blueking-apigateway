@@ -233,6 +233,38 @@ class FaultInjectionChecker(BaseChecker):
                 check_vars(delay_vars, "delay")
 
 
+class ResponseRewriteChecker(BaseChecker):
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
+        if not loaded_data:
+            raise ValueError("YAML cannot be empty")
+
+        status_code = loaded_data.get("status_code")
+        if status_code is not None and not (200 <= status_code <= 598):
+            raise ValueError("status_code must be between 200 and 598.")
+
+        response_rewrite_vars = loaded_data.get("vars")
+        if response_rewrite_vars:
+            check_vars(response_rewrite_vars, "response_rewrite")
+
+        headers = loaded_data.get("headers")
+        if headers:
+            add_keys = [item["key"] for item in headers.get("add", [])]
+            add_duplicate_keys = [key for key, count in Counter(add_keys).items() if count >= 2]
+            if add_duplicate_keys:
+                raise ValueError(_("add has duplicate elements：{}").format(", ".join(add_duplicate_keys)))
+
+            set_keys = [item["key"].lower() for item in headers.get("set", [])]
+            set_duplicate_keys = [key for key, count in Counter(set_keys).items() if count >= 2]
+            if set_duplicate_keys:
+                raise ValueError(_("set has duplicate elements：{}").format(", ".join(set_duplicate_keys)))
+
+            remove_keys = [item["key"] for item in headers.get("remove", [])]
+            remove_duplicate_keys = [key for key, count in Counter(remove_keys).items() if count >= 2]
+            if remove_duplicate_keys:
+                raise ValueError(_("remove has duplicate elements：{}").format(", ".join(remove_duplicate_keys)))
+
+
 def check_vars(vars, location):
     """check vars of lua-resty-expr
     vars = `[
@@ -281,6 +313,7 @@ class PluginConfigYamlChecker:
         PluginTypeCodeEnum.BK_IP_RESTRICTION.value: BkIPRestrictionChecker(),
         PluginTypeCodeEnum.REQUEST_VALIDATION.value: RequestValidationChecker(),
         PluginTypeCodeEnum.FAULT_INJECTION.value: FaultInjectionChecker(),
+        PluginTypeCodeEnum.BK_RESPONSE_REWRITE.value: ResponseRewriteChecker(),
     }
 
     def __init__(self, type_code: str):

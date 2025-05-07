@@ -27,6 +27,7 @@ from apigateway.common.plugin.checker import (
     HeaderRewriteChecker,
     PluginConfigYamlChecker,
     RequestValidationChecker,
+    ResponseRewriteChecker,
 )
 from apigateway.utils.yaml import yaml_dumps
 
@@ -507,5 +508,57 @@ class TestFaultInjectionChecker:
     )
     def test_check(self, data, ctx):
         checker = FaultInjectionChecker()
+        with ctx:
+            checker.check(yaml_dumps(data))
+
+
+class TestResponseRewriteChecker:
+    @pytest.mark.parametrize(
+        "data, ctx",
+        [
+            (
+                {
+                    "status_code": 200,
+                    "body": '{"code":"ok","message":"new json body"}',
+                    "headers": {
+                        "add": [{"key": "name:value"}],
+                        "set": [
+                            {"key": "key1", "value": "value1"},
+                            {"key": "key2", "value": "value2"},
+                        ],
+                        "remove": [{"key": "key2"}],
+                    },
+                    "vars": '[[["status", "==", 200]]]',
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "headers": {  # add key 重复
+                        "add": [{"key": "name:value"}, {"key": "name:value"}]
+                    },
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "headers": {  # set key 重复
+                        "set": [{"key": "key1", "value": "value1"}, {"key": "key1", "value": "value2"}]
+                    },
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "headers": {  # remove key 重复
+                        "remove": [{"key": "key1"}, {"key": "key1"}]
+                    },
+                },
+                pytest.raises(ValueError),
+            ),
+        ],
+    )
+    def test_check(self, data, ctx):
+        checker = ResponseRewriteChecker()
         with ctx:
             checker.check(yaml_dumps(data))
