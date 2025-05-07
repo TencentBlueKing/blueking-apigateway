@@ -81,15 +81,6 @@
           {{ t('发布资源') }}
         </BkButton>
         <BkButton
-          v-bk-tooltips="actionTooltipConfig"
-          class="mr8"
-          size="small"
-          theme="primary"
-          @click.stop="handlePublishClick"
-        >
-          {{ t('发布资源') }}
-        </BkButton>
-        <BkButton
           size="small"
           v-bk-tooltips="actionTooltipConfig"
           :disabled="isActionDisabled"

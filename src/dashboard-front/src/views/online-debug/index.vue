@@ -326,29 +326,45 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, computed, watch } from 'vue';
+import {
+  computed,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import onlineTestTop from '@/components/online-test-top.vue';
-import { RightShape, EditLine, InfoLine, AngleUpFill, Share, CloseLine } from 'bkui-vue/lib/icon';
+import {
+  AngleUpFill,
+  CloseLine,
+  EditLine,
+  InfoLine,
+  RightShape,
+  Share,
+} from 'bkui-vue/lib/icon';
 import requestPayload from '@/views/online-debug/components/request-payload.vue';
 import responseContent from '@/views/online-debug/components/response-content.vue';
 import doc from '@/views/online-debug/components/doc.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import { useCommon } from '@/store';
-import { useRouter } from 'vue-router';
+import {
+  useRoute,
+  useRouter,
+} from 'vue-router';
 import { Message } from 'bkui-vue';
 import {
-  getStages,
-  getResourcesOnline,
   getApiDetail,
-  resourceSchema,
+  getResourcesOnline,
+  getStages,
   postAPITest,
+  resourceSchema,
 } from '@/http';
 
 
 const { t } = useI18n();
 const common = useCommon();
 const router = useRouter();
+const route = useRoute();
 
 const isLoading = ref<boolean>(false);
 const keyword = ref<string>('');
@@ -588,6 +604,7 @@ const handleStageChange = (payload: number) => {
   const hasData = stageList.value.find((item: Record<string, number>) => item.id === payload);
   // 如果是未发布或者发布失败则不需要调资源列表
   if (!['unreleased', 'failure'].includes(hasData?.release?.status)) {
+    router.replace({ query: { stage_id: payload } });
     getApigwReleaseResources();
   } else {
     // formData.value = Object.assign(formData.value, { path: '', method: '' });
@@ -686,8 +703,9 @@ const getApigwStages = async () => {
     stageList.value = res || [];
     if (stageList.value.length) {
       const { id, release } = stageList.value[0];
-      // params.value.stage_id = id;
-      stage.value = id;
+      if (!stage.value) {
+        stage.value = id;
+      }
       // 如果是未发布或者发布失败则不需要调资源列表
       if (!['unreleased', 'failure'].includes(release?.status)) {
         getApigwReleaseResources();
@@ -948,6 +966,20 @@ watch(
     }
   },
 );
+
+watch(() => route, () => {
+  stage.value = null;
+  const stageId = route.query?.stage_id;
+  stage.value = Number(stageId) || null;
+  if (stage.value) {
+    handleStageChange(stage.value);
+  }
+}, { immediate: true });
+
+watch(() => common.curApigwData, () => {
+  router.replace({ query: null });
+}, { deep: true });
+
 </script>
 
 <style lang="scss" scoped>
