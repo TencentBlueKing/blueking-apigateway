@@ -227,11 +227,9 @@ const status = computed(() => {
   if (!props.stage) {
     return '';
   }
-  if (props.stage.status === 0) {
-    if (props.stage.release?.status === 'unreleased') { // 未发布
-      return 'unreleased';
-    }
-    return 'delist';
+  // 未发布
+  if (props.stage.status === 0 || props.stage.release?.status === 'unreleased') {
+    return 'unreleased';
   }
   if (common.isProgrammableGateway) {
     if (props.stage.paasInfo?.latest_deployment?.status) {
@@ -244,16 +242,16 @@ const status = computed(() => {
 
 // 发布和下架操作是否禁用
 const isActionDisabled = computed(() => {
-  return props.stage.status === 0 || status.value === 'doing' || !!props.stage.publish_validate_msg;
+  return status.value === 'doing' || !!props.stage.publish_validate_msg;
 });
 
 const actionTooltipConfig = computed(() => {
-  if (props.stage.status === 0) {
-    return {
-      content: t('当前网关已停用，如需使用，请先启用'),
-      disabled: false,
-    };
-  }
+  // if (props.stage.status === 0) {
+  //   return {
+  //     content: t('当前网关已停用，如需使用，请先启用'),
+  //     disabled: false,
+  //   };
+  // }
   if (status.value === 'doing') {
     return { content: t('发布中'), disabled: false };
   }
