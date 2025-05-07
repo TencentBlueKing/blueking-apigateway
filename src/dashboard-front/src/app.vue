@@ -342,12 +342,12 @@ watch(
 
       // 多租户 display_name 组件展示配置
       // 在 template 中使用时，不需再 import，否则报错
-      if (user.featureFlags?.ENABLE_MULTI_TENANT_MODE) {
-        BkUserDisplayName.configure({
-          tenantId: user.user.tenant_id,
-          apiBaseUrl: user.apiBaseUrl,
-        });
-      }
+      // if (user.featureFlags?.ENABLE_MULTI_TENANT_MODE) {
+      BkUserDisplayName.configure({
+        tenantId: user.user.tenant_id,
+        apiBaseUrl: user.apiBaseUrl,
+      });
+      // }
 
       userLoaded.value = true;
     } catch (e: any) {
