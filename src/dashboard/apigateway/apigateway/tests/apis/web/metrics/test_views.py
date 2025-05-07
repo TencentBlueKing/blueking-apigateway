@@ -208,7 +208,7 @@ class TestQuerySummaryApi:
         result = response.json()
         assert response.status_code == 200
         assert len(result["data"]["series"]) == 1
-        assert result["data"]["series"]["datapoints"][0][0] == 300
+        assert result["data"]["series"][0]["datapoints"][0][0] == 300
 
     def test_get_requests_total_by_week(self, fake_stage, request_view):
         response = request_view(
@@ -269,7 +269,7 @@ class TestQuerySummaryApi:
         result = response.json()
         assert response.status_code == 200
         assert len(result["data"]["series"]) == 1
-        assert result["data"]["series"]["datapoints"][0][0] == 30
+        assert result["data"]["series"][0]["datapoints"][0][0] == 30
 
     def test_get_resource_id(self, fake_stage, request_view):
         response = request_view(
@@ -291,7 +291,7 @@ class TestQuerySummaryApi:
         result = response.json()
         assert response.status_code == 200
         assert len(result["data"]["series"]) == 1
-        assert result["data"]["series"]["datapoints"][0][0] == 100
+        assert result["data"]["series"][0]["datapoints"][0][0] == 100
 
     def test_get_bk_app_code(self, fake_stage, request_view):
         resource_obj3 = G(Resource, name="test3", gateway=fake_stage.gateway)
@@ -339,7 +339,7 @@ class TestQuerySummaryApi:
 
         assert response.status_code == 200
         assert len(result["data"]["series"]) == 1
-        assert result["data"]["series"]["datapoints"][0][0] == 100
+        assert result["data"]["series"][0]["datapoints"][0][0] == 100
 
     def test_get_empty_metrics(self, fake_stage, request_view):
         response = request_view(
@@ -357,6 +357,53 @@ class TestQuerySummaryApi:
             },
         )
         assert response.status_code == 400
+
+
+class TestQuerySummaryCallerListApi:
+    def test_get(self, request_view, fake_stage):
+        resource_obj = G(Resource, name="test", gateway=fake_stage.gateway)
+        G(
+            StatisticsAppRequestByDay,
+            gateway_id=fake_stage.gateway.id,
+            stage_name=fake_stage.name,
+            resource_id=resource_obj.id,
+            bk_app_code="app1",
+            total_count=100,
+            failed_count=10,
+            total_msecs=600,
+            start_time=utctime(int(time.time())).datetime,
+            end_time=utctime(int(time.time())).datetime,
+        )
+        G(
+            StatisticsAppRequestByDay,
+            gateway_id=fake_stage.gateway.id,
+            stage_name=fake_stage.name,
+            resource_id=resource_obj.id,
+            bk_app_code="app2",
+            total_count=200,
+            failed_count=20,
+            total_msecs=800,
+            start_time=utctime(int(time.time())).datetime,
+            end_time=utctime(int(time.time())).datetime,
+        )
+
+        response = request_view(
+            "GET",
+            "metrics.query_summary_caller",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "stage_id": fake_stage.id,
+                "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
+                "time_end": int(time.time()),
+            },
+        )
+
+        result = response.json()
+
+        assert response.status_code == 200
+        assert result["data"]["app_codes"] == ["app1", "app2"]
 
 
 class TestQuerySummaryExportApi:

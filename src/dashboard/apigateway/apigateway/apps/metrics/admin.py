@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,21 +15,22 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import include, path
+from django.contrib import admin
+from djangoql.admin import DjangoQLSearchMixin
 
-from .views import QueryInstantApi, QueryRangeApi, QuerySummaryApi, QuerySummaryCallerListApi, QuerySummaryExportApi
+# Register your models here.
+from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 
-urlpatterns = [
-    path("query-range/", QueryRangeApi.as_view(), name="metrics.query_range"),
-    path("query-instant/", QueryInstantApi.as_view(), name="metrics.query_instant"),
-    path(
-        "query-summary/",
-        include(
-            [
-                path("", QuerySummaryApi.as_view(), name="metrics.query_summary"),
-                path("caller/", QuerySummaryCallerListApi.as_view(), name="metrics.query_summary_caller"),
-                path("export/", QuerySummaryExportApi.as_view(), name="metrics.query_summary_export"),
-            ]
-        ),
-    ),
-]
+
+class StatisticsGatewayRequestByDayAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
+    list_display = ["gateway_id", "stage_name", "total_count", "failed_count", "start_time", "end_time"]
+
+
+class StatisticsAppRequestByDayAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
+    list_display = ["gateway_id", "stage_name", "bk_app_code", "total_count", "failed_count", "start_time", "end_time"]
+
+
+admin.site.register(StatisticsGatewayRequestByDay, StatisticsGatewayRequestByDayAdmin)
+admin.site.register(StatisticsAppRequestByDay, StatisticsAppRequestByDayAdmin)

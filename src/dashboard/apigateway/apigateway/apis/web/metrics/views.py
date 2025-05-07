@@ -21,6 +21,7 @@ from io import StringIO
 from typing import Any, List
 
 from django.http import Http404
+from django.utils import timezone
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -29,6 +30,7 @@ from apigateway.apps.metrics.constants import (
     MetricsInstantEnum,
     MetricsRangeEnum,
 )
+from apigateway.apps.metrics.models import StatisticsAppRequestByDay
 from apigateway.apps.metrics.prometheus.dimension import (
     MetricsInstantFactory,
     MetricsRangeFactory,
@@ -38,7 +40,12 @@ from apigateway.core.models import Resource, Stage
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.time import MetricsSmartTimeRange
 
-from .serializers import MetricsQueryInstantInputSLZ, MetricsQueryRangeInputSLZ, MetricsQuerySummaryInputSLZ
+from .serializers import (
+    MetricsQueryInstantInputSLZ,
+    MetricsQueryRangeInputSLZ,
+    MetricsQuerySummaryCallerListInputSLZ,
+    MetricsQuerySummaryInputSLZ,
+)
 
 
 class QueryRangeApi(generics.ListAPIView):
@@ -211,7 +218,36 @@ class QuerySummaryApi(generics.ListAPIView):
         ).queryset()
         datapoints = [[obj["count_sum"], obj["time_period"]] for obj in queryset.iterator(chunk_size=1000)]
 
-        return OKJsonResponse(data={"series": {"datapoints": datapoints}})
+        return OKJsonResponse(data={"series": [{"datapoints": datapoints}]})
+
+
+class QuerySummaryCallerListApi(generics.ListAPIView):
+    @swagger_auto_schema(
+        query_serializer=MetricsQuerySummaryCallerListInputSLZ(),
+        responses={status.HTTP_200_OK: ""},
+        operation_description="历史请求统计调用方列表",
+        tags=["WebAPI.Metrics"],
+    )
+    def get(self, request, *args, **kwargs):
+        slz = MetricsQuerySummaryCallerListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
+        if not stage_name:
+            raise Http404
+
+        app_codes = sorted(
+            set(
+                StatisticsAppRequestByDay.objects.filter(
+                    stage_name=stage_name,
+                    start_time__gte=timezone.datetime.fromtimestamp(data["time_start"]),
+                    end_time__lte=timezone.datetime.fromtimestamp(data["time_end"]),
+                ).values_list("bk_app_code", flat=True)
+            )
+        )
+
+        return OKJsonResponse(data={"app_codes": app_codes})
 
 
 class QuerySummaryExportApi(generics.CreateAPIView):
