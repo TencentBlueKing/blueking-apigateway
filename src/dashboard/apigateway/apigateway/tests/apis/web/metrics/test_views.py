@@ -379,6 +379,18 @@ class TestQuerySummaryCallerListApi:
             gateway_id=fake_stage.gateway.id,
             stage_name=fake_stage.name,
             resource_id=resource_obj.id,
+            bk_app_code="app1",
+            total_count=150,
+            failed_count=15,
+            total_msecs=660,
+            start_time=utctime(int(time.time())).datetime,
+            end_time=utctime(int(time.time())).datetime,
+        )
+        G(
+            StatisticsAppRequestByDay,
+            gateway_id=fake_stage.gateway.id,
+            stage_name=fake_stage.name,
+            resource_id=resource_obj.id,
             bk_app_code="app2",
             total_count=200,
             failed_count=20,

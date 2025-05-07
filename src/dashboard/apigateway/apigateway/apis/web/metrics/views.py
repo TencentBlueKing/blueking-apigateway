@@ -238,13 +238,13 @@ class QuerySummaryCallerListApi(generics.ListAPIView):
             raise Http404
 
         app_codes = sorted(
-            set(
-                StatisticsAppRequestByDay.objects.filter(
-                    stage_name=stage_name,
-                    start_time__gte=timezone.datetime.fromtimestamp(data["time_start"]),
-                    end_time__lte=timezone.datetime.fromtimestamp(data["time_end"]),
-                ).values_list("bk_app_code", flat=True)
+            StatisticsAppRequestByDay.objects.filter(
+                stage_name=stage_name,
+                start_time__gte=timezone.datetime.fromtimestamp(data["time_start"]),
+                end_time__lte=timezone.datetime.fromtimestamp(data["time_end"]),
             )
+            .values_list("bk_app_code", flat=True)
+            .distinct()
         )
 
         return OKJsonResponse(data={"app_codes": app_codes})
