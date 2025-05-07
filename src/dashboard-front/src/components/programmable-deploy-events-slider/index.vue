@@ -540,7 +540,7 @@ const resetStates = () => {
 };
 
 const handleGoDebug = () => {
-  router.replace({ name: 'apigwOnlineTest' });
+  router.replace({ name: 'apigwOnlineTest', query: { stage_id: props.stage.id || historyStage.value.id } });
 };
 
 const handleRetry = () => {
