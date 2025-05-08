@@ -13,9 +13,5 @@
     // add all files in which you see
     // the "parserOptions.project" error
     ".eslintrc.js",
-    "mock-server.js",
-    "mock/*.ts",
-    "mock/**/*.ts",
-    "mock/**/*.js"
   ]
 }
