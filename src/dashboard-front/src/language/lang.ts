@@ -1810,6 +1810,9 @@ const lang: ILANG = {
   '已耗时': ['Time used'],
   '去调试': ['Debug'],
   '当前版本号': ['Current version'],
+  '有效期': ['Valid Duration'],
+  '已过期': ['Expired'],
+  '有效期为永久，不可续期': ['Permanent validity, cannot be renewed'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
