@@ -230,6 +230,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-edit-small:before {
 	content: "\e157";
 }
+.icon-ag-refresh-line:before {
+	content: "\e1b6";
+}
 .icon-ag-monitor:before {
 	content: "\e134";
 }

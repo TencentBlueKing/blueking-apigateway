@@ -65,7 +65,7 @@
         <div class="charts-item-outbox">
           <div class="charts-tools">
             <div class="tool refresh" @click="handleRefresh('requests_total')">
-              <i class="apigateway-icon icon-ag-lishijilu"></i>
+              <i class="apigateway-icon icon-ag-refresh-line"></i>
             </div>
             <div class="tool download" @click="handleDownload('requests_total')">
               <i class="apigateway-icon icon-ag-download"></i>
@@ -86,7 +86,7 @@
         <div class="charts-item-outbox">
           <div class="charts-tools">
             <div class="tool refresh" @click="handleRefresh('requests_failed_total')">
-              <i class="apigateway-icon icon-ag-lishijilu"></i>
+              <i class="apigateway-icon icon-ag-refresh-line"></i>
             </div>
             <div class="tool download" @click="handleDownload('requests_failed_total')">
               <i class="apigateway-icon icon-ag-download"></i>
@@ -393,6 +393,11 @@ watch(
           i {
             color: #979BA5;
             font-size: 16px;
+          }
+          &.download {
+            i {
+              font-size: 20px;
+            }
           }
           &:not(:nth-last-child(1)) {
             margin-right: 4px;
