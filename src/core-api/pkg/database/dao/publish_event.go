@@ -89,15 +89,15 @@ var _ PublishEventManger = publishEventManager{}
 // Create  publish event
 func (p publishEventManager) Create(ctx context.Context, publishEvent PublishEvent) (int64, error) {
 	insertSql := `INSERT INTO core_publish_event (
-	gateway_id, 
-    publish_id, 
-    stage_id,
-    name,
-    step, 
-    status, 
-    detail,
-    created_time,
-	updated_time                       
+        gateway_id, 
+        publish_id, 
+        stage_id,
+        name,
+        step, 
+        status, 
+        detail,
+        created_time,
+		updated_time                       
     )VALUES (:gateway_id, :publish_id, :stage_id, :name, :step, :status, :detail,:created_time,:updated_time)`
 	query, args, err := sqlx.Named(insertSql, publishEvent)
 	if err != nil {
