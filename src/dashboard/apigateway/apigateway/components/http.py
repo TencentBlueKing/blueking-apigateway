@@ -65,7 +65,10 @@ def _http_request(
     request_id = headers.get("X-Request-Id")
 
     logger.debug(
-        "_http_request: method=%s, url=%s, headers=%s, data=%s, timeout=%s, verify=%s, cert=%s, cookies=%s, request_id=%s",
+        (
+            "_http_request: method=%s, url=%s, headers=%s, data=%s, "
+            "timeout=%s, verify=%s, cert=%s, cookies=%s, request_id=%s"
+        ),
         method,
         url,
         headers,
