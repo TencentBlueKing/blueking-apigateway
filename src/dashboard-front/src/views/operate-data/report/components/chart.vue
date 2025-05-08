@@ -303,7 +303,8 @@ const generateChartColor = (chartData: SeriesItemType[]) => {
 //   const option = myChart.value?.getOption();
 //   // 只有一个系列不需要图例
 //   if (option.series.length > 1) {
-//     chartLegend.value[props.instanceId] = option?.series?.map((serie: echarts.EChartOption.Series, index: number) => ({
+//     chartLegend.value[props.instanceId] =
+// option?.series?.map((serie: echarts.EChartOption.Series, index: number) => ({
 //       color: option.color[index],
 //       name: serie.name,
 //       selected: 'all',
