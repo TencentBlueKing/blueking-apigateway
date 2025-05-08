@@ -76,3 +76,18 @@ class MetricsQuerySummaryInputSLZ(serializers.Serializer):
         if data["time_start"] < time_interval:
             raise serializers.ValidationError(_("查询时间范围不可超过半年"))
         return data
+
+
+class MetricsQuerySummaryCallerListInputSLZ(serializers.Serializer):
+    stage_id = serializers.IntegerField(required=True, help_text="环境 id")
+    time_start = serializers.IntegerField(required=False, min_value=0, help_text="开始时间")
+    time_end = serializers.IntegerField(required=False, min_value=0, help_text="结束时间")
+
+    def validate(self, data):
+        if not (data.get("time_start") and data.get("time_end")):
+            raise serializers.ValidationError(_("参数 time_start+time_end 必须同时有效。"))
+
+        time_interval = int((timezone.now() - relativedelta(months=6)).timestamp())
+        if data["time_start"] < time_interval:
+            raise serializers.ValidationError(_("查询时间范围不可超过半年"))
+        return data
