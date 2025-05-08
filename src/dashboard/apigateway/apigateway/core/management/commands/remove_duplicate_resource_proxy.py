@@ -63,7 +63,7 @@ class Command(BaseCommand):
                 )
 
             print(
-                "For gateway (id={gateway_id}), the following proxies are not in used and will be deleted, proxies:\n{proxies}".format(
+                "gateway({gateway_id}) the proxies are not in used and will be deleted, proxies:\n{proxies}".format(
                     gateway_id=gateway_id,
                     proxies="\n".join(
                         [

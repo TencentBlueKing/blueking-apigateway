@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -105,7 +105,7 @@ class BaseMetrics(BasePrometheusMetrics):
 
 # 计算数据里的 datapoints 里的 最后一位的值 和 第一位的 差值 以获取时间段内的数量
 def get_data_differ_number(data: dict) -> int:
-    # 检查传入的数据是否为None或不是字典
+    # 检查传入的数据是否为 None 或不是字典
     if data is None or not isinstance(data, dict):
         return 0
 
@@ -125,18 +125,22 @@ def get_data_differ_number(data: dict) -> int:
             first_value = datapoints[0][0]
 
             # 如果 first_value 为 None，将 first_value 设为 0
-            # 示例: {"result": true, "code": 200, "message": "OK", "data": {"metrics": [], "series": [{"datapoints": [[null, 1708290000000], [9, 1727161200000], [41, 1728370800000], [41, 1728374400000]]}]}}
+            # 示例：{"result": true, "code": 200, "message": "OK",
+            # "data": {"metrics": [],
+            # "series": [{"datapoints": [[null, 1708290000000], [9, 1727161200000], , [41, 1728374400000]]}]}}
             first_number = 0 if first_value is None else first_value
 
             # 如果 last_value 为 None，将 last_value 设为倒数第二条数据点的值
-            # 示例：{"result": true, "code": 200, "message": "OK", "data": {"metrics": [], "series": [{"datapoints": [[30, 1728291600000], [44, 1728460800000], [44, 1728464400000], [null, 1758373200000]]}]}}
+            # 示例：{"result": true, "code": 200, "message": "OK",
+            # "data": {"metrics": [],
+            # "series": [{"datapoints": [[30, 1728291600000], , [44, 1728464400000], [null, 1758373200000]]}]}}
             last_number = datapoints[-2][0] if last_value is None else last_value
 
             # 返回计算的差值，并确保结果是整数
             total = int(last_number) - int(first_number)
             return 0 if total < 0 else total
 
-    # 如果没有有效数据，返回0
+    # 如果没有有效数据，返回 0
     return 0
 
 
@@ -160,7 +164,7 @@ class RequestsMetrics(BaseMetrics):
                 ("resource_name", "=", resource_name),
             ]
         )
-        return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{" f"{labels}" f"}}[{step}]))"
+        return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}}[{step}]))"
 
 
 class Non20XStatusMetrics(BaseMetrics):
@@ -286,20 +290,20 @@ class IngressMetrics(BaseMetrics):
         resource_id: Optional[int],
         resource_name: Optional[str],
     ) -> str:
-        # 因为route的参数结果不能使用self._get_labels_expression方法去去除空参数
+        # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
         label_list = [
             *self.default_labels,
             ("type", "=", "ingress"),
-            # service 的参数规则： 网关名称.环境名称.stage-环境ID
+            # service 的参数规则：网关名称。环境名称.stage-环境 ID
             ("service", "=", f"{gateway_name}.{stage_name}.stage-{stage_id}"),
         ]
         if resource_id:
-            # route 的参数规则： 网关名称.环境名称.资源ID
+            # route 的参数规则：网关名称。环境名称.资源 ID
             label_list.append(("route", "=", f"{gateway_name}.{stage_name}.{resource_id}"))
         labels = self._get_labels_expression(label_list)
         return (
             # 指标：bkmonitor:bk_apigateway_bandwidth
-            f"topk(10, sum(increase({self.metric_name_prefix}bandwidth{{" f"{labels}" f"}}[{step}])) by (route))"
+            f"topk(10, sum(increase({self.metric_name_prefix}bandwidth{{{labels}}}[{step}])) by (route))"
         )
 
 
@@ -315,21 +319,21 @@ class EgressMetrics(BaseMetrics):
         resource_id: Optional[int],
         resource_name: Optional[str],
     ) -> str:
-        # 因为route的参数结果不能使用self._get_labels_expression方法去去除空参数
+        # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
         label_list = [
             *self.default_labels,
             ("type", "=", "egress"),
-            # service 的参数规则： 网关名称.环境名称.stage-环境ID
+            # service 的参数规则：网关名称。环境名称.stage-环境 ID
             ("service", "=", f"{gateway_name}.{stage_name}.stage-{stage_id}"),
         ]
         if resource_id:
-            # route 的参数规则： 网关名称.环境名称.资源ID
+            # route 的参数规则：网关名称。环境名称.资源 ID
             label_list.append(("route", "=", f"{gateway_name}.{stage_name}.{resource_id}"))
         labels = self._get_labels_expression(label_list)
 
         return (
             # 指标：bkmonitor:bk_apigateway_bandwidth
-            f"topk(10, sum(increase({self.metric_name_prefix}bandwidth{{" f"{labels}" f"}}[{step}])) by (route))"
+            f"topk(10, sum(increase({self.metric_name_prefix}bandwidth{{{labels}}}[{step}])) by (route))"
         )
 
 
