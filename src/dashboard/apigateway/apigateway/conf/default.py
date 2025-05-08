@@ -313,7 +313,7 @@ if BK_ESB_DATABASE_TLS_ENABLED:
 
     # 跳过主机名/IP 验证，会降低安全性，正式环境需要设置为 True
     check_hostname = env.bool("BK_ESB_DATABASE_TLS_CHECK_HOSTNAME", True)
-    default_ssl_options["check_hostname"] = check_hostname
+    bkcore_ssl_options["check_hostname"] = check_hostname
 
     if "OPTIONS" not in DATABASES["bkcore"]:
         DATABASES["bkcore"]["OPTIONS"] = {}
