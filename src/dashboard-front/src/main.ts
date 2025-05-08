@@ -12,9 +12,6 @@ import VueDOMPurifyHTML from 'vue-dompurify-html';
 
 // 全量引入 bkui-vue
 import bkui from 'bkui-vue';
-// import bkui, { bkTooltips, overflowTitle } from 'bkui-vue';
-// 全量引入 bkui-vue 样式
-import 'bkui-vue/dist/style.css';
 // 图标
 import './assets/iconfont/style.css';
 // highlight.js 代码高亮风格
