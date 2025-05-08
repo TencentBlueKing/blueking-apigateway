@@ -30,6 +30,7 @@
         <bk-table
           show-overflow-tooltip
           class="perm-app-table mt15"
+          :is-row-select-enable="isRowSelectEnable"
           :data="tableData"
           size="small"
           :pagination="pagination"
@@ -40,7 +41,15 @@
           @selection-change="handleSelectionChange"
           @select-all="handleSelecAllChange"
         >
-          <bk-table-column type="selection" width="60" align="center"></bk-table-column>
+          <bk-table-column
+            :show-overflow-tooltip="{
+              mode: 'static',
+              content: (column: any, row: IPermission) => isRowSelectEnable({ row }) ? '可续期' : t('有效期为永久，不可续期')
+            }"
+            align="center"
+            type="selection"
+            width="60"
+          />
           <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
           <bk-table-column :label="t('授权维度')" prop="grant_dimension" :filter="grantDimensionFilterOptions">
             <template #default="{ row }: { row: IPermission }">
@@ -61,9 +70,11 @@
               </span>
             </template>
           </bk-table-column>
-          <bk-table-column :label="t('过期时间')">
+          <bk-table-column :label="t('有效期')">
             <template #default="{ row }: { row: IPermission }">
-              {{ row.expires || t('永久有效') }}
+              <span
+                :style="{ color: getDurationTextColor(row.expires) }"
+              >{{ getDurationText(row.expires) }}</span>
             </template>
           </bk-table-column>
           <bk-table-column width="150" :label="t('授权类型')" prop="grant_type">
@@ -213,7 +224,7 @@
     >
       <template #default>
         <div class="renew-slider-content-wrap">
-          <ExpDaySelector v-model="expireDays" form-type="vertical" />
+          <ExpDaySelector v-model="expireDays" form-type="vertical" label-position="left" />
           <div class="collapse-wrap">
             <bk-collapse
               v-model="activeIndex"
@@ -243,21 +254,20 @@
                       </template>
                     </bk-table-column>
                     <bk-table-column
-                      :label="t('续期前的过期时间')"
-                      :width="392"
+                      :label="t('有效期')"
+                      width="300"
                     >
                       <template #default="{ row }">
-                        <span v-if="row.expires">{{ row.expires }}</span>
-                        <span v-else class="ag-strong warning">{{ t('永久') }}</span>
-                        <span class="ag-strong default" v-if="!row.renewable && row.expires">
-                          {{ t('(有效期大于30天)') }}
-                        </span>
-                      </template>
-                    </bk-table-column>
-                    <bk-table-column width="180" :label="t('续期后的过期时间')">
-                      <template #default="{ row }">
-                        <span class="ag-strong danger" v-if="!row.renewable"> {{ t('不可续期') }} </span>
-                        <span v-else class="ag-strong warning">{{ getExpTimeAfterRenew(row) }}</span>
+                        <div>
+                          <span
+                            :style="{ color: getDurationTextColor(row.expires) }"
+                          >{{ getDurationText(row.expires) }}</span>
+                          <span><AgIcon name="arrows--right--line" style="color: #699df4;" /></span>
+                          <span>
+                            <span v-if="!row.renewable" class="ag-strong danger"> {{ t('不可续期') }} </span>
+                            <span v-else class="ag-normal primary">{{ getDurationAfterRenew(row.expires) }}</span>
+                          </span>
+                        </div>
                       </template>
                     </bk-table-column>
                   </bk-table>
@@ -286,21 +296,20 @@
                       </template>
                     </bk-table-column>
                     <bk-table-column
-                      :label="t('续期前的过期时间')"
-                      :width="392"
+                      :label="t('有效期')"
+                      width="300"
                     >
                       <template #default="{ row }">
-                        <span v-if="row.expires">{{ row.expires }}</span>
-                        <span v-else class="ag-strong warning">{{ t('永久') }}</span>
-                        <span class="ag-strong default" v-if="!row.renewable && row.expires">
-                          {{ t('(有效期大于30天)') }}
-                        </span>
-                      </template>
-                    </bk-table-column>
-                    <bk-table-column width="180" :label="t('续期后的过期时间')">
-                      <template #default="{ row }">
-                        <span class="ag-strong danger" v-if="!row.renewable"> {{ t('不可续期') }} </span>
-                        <span v-else class="ag-strong warning">{{ getExpTimeAfterRenew(row) }}</span>
+                        <div>
+                          <span
+                            :style="{ color: getDurationTextColor(row.expires) }"
+                          >{{ getDurationText(row.expires) }}</span>
+                          <span><AgIcon name="arrows--right--line" style="color: #699df4;" /></span>
+                          <span>
+                            <span v-if="!row.renewable" class="ag-strong danger"> {{ t('不可续期') }} </span>
+                            <span v-else class="ag-normal primary">{{ getDurationAfterRenew(row.expires) }}</span>
+                          </span>
+                        </div>
                       </template>
                     </bk-table-column>
                   </bk-table>
@@ -333,29 +342,26 @@
     >
       <div>
         <ExpDaySelector v-model="expireDays" />
-        <bk-table :data="curSelections" size="small" :max-height="250" class="mb30">
-          <bk-table-column width="100" :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
-          <bk-table-column :label="t('资源名称')">
-            <template #default="{ row }">
-              {{ row.resource_name || '--' }}
-            </template>
-          </bk-table-column>
-          <bk-table-column :label="t('续期前的过期时间')">
-            <template #default="{ row }">
-              <span v-if="row.expires">{{ row.expires }}</span>
-              <span v-else class="ag-strong warning">{{ t('永久') }}</span>
-              <span class="ag-strong default" v-if="!row.renewable && row.expires">
-                {{ t('(有效期大于30天)') }}
+        <BkForm label-position="right" label-width="100">
+          <BkFormItem :label="t('蓝鲸应用ID')">
+            <div>{{ curSelections?.[0].bk_app_code || '--' }}</div>
+          </BkFormItem>
+          <BkFormItem :label="t('资源名称')">
+            <div>{{ curSelections?.[0].resource_name || '--' }}</div>
+          </BkFormItem>
+          <BkFormItem :label="t('有效期')">
+            <div>
+              <span
+                :style="{ color: getDurationTextColor(curSelections?.[0].expires) }"
+              >{{ getDurationText(curSelections?.[0].expires) }}</span>
+              <span><AgIcon name="arrows--right--line" style="color: #699df4;" /></span>
+              <span>
+                <span v-if="!curSelections?.[0].renewable" class="ag-strong danger">{{ t('不可续期') }}</span>
+                <span v-else class="ag-normal primary">{{ getDurationAfterRenew(curSelections?.[0].expires) }}</span>
               </span>
-            </template>
-          </bk-table-column>
-          <bk-table-column :label="t('续期后的过期时间')">
-            <template #default="{ row }">
-              <span class="ag-strong danger" v-if="!row.renewable"> {{ t('不可续期') }} </span>
-              <span v-else class="ag-strong warning ">{{ getExpTimeAfterRenew(row) }}</span>
-            </template>
-          </bk-table-column>
-        </bk-table>
+            </div>
+          </BkFormItem>
+        </BkForm>
       </div>
       <template #footer>
         <template v-if="applyCount">
@@ -387,10 +393,7 @@ import {
   watch,
 } from 'vue';
 import { useI18n } from 'vue-i18n';
-import {
-  sortByKey,
-  timeFormatter,
-} from '@/common/util';
+import { sortByKey } from '@/common/util';
 import {
   authApiPermission,
   authResourcePermission,
@@ -424,6 +427,7 @@ import {
 } from '@/http/permission';
 import dayjs from 'dayjs';
 import { ISearchItem } from 'bkui-vue/lib/search-select/utils';
+import AgIcon from '@/components/ag-icon.vue';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -1002,19 +1006,22 @@ const getSearchDimensionText = (raw: string | null) => {
 };
 
 // 计算续期后的过期时间
-const getExpTimeAfterRenew = (permission: IPermission, days?: number) => {
+const getDurationAfterRenew = (expireAt: string | null, days?: number) => {
   const _days = days || expireDays.value;
-  if (!permission.expires || _days === 0) return t('永久');
-
-  try {
-    return timeFormatter(`${dayjs().add(_days * 24 * 60 * 60 * 1000, 'millisecond')}`);
-  } catch {
-    Message({
-      theme: 'error',
-      message: t('日期格式错误'),
-    });
-    return '--';
+  if (!expireAt || _days === 0) {
+    return t('永久');
   }
+
+  const today = dayjs();
+  const expireDate = dayjs(expireAt);
+
+  // 已过期
+  if (today.isAfter(expireDate)) {
+    return `${_days}${t('天')}`;
+  }
+
+  const daysLeft = expireDate.diff(today, 'day');
+  return `${daysLeft + _days}${t('天')}`;
 };
 
 const handleApplyDialogClose = () => {
@@ -1025,6 +1032,38 @@ const handleApplyDialogClose = () => {
 const handleBatchApplySliderClose = () => {
   expireDays.value = 0;
   batchApplySliderConf.isShow = false;
+};
+
+const getDurationText = (expireAt: string | null) => {
+  if (!expireAt) {
+    return t('永久');
+  }
+
+  const today = dayjs();
+  const expireDate = dayjs(expireAt);
+
+  if (today.isAfter(expireDate)) {
+    return t('已过期');
+  }
+  return `${expireDate.diff(today, 'day')}${t('天')}`;
+};
+
+const getDurationTextColor = (expireAt: string | null) => {
+  if (!expireAt) {
+    return '#2caf5e';
+  }
+
+  const today = dayjs();
+  const expireDate = dayjs(expireAt);
+
+  if (today.isAfter(expireDate)) {
+    return '#f59500';
+  }
+  return '#63656e';
+};
+
+const isRowSelectEnable = ({ row }: { row: IPermission }) => {
+  return !!row.expires;
 };
 
 const init = () => {
@@ -1052,31 +1091,7 @@ init();
 .w400 {
   width: 400px;
 }
-.ag-strong {
-    font-weight: bold;
-    color: #63656E;
-    font-style: normal;
 
-    &.default {
-        color: #979BA5;
-    }
-
-    &.primary {
-        color: #3a84ff;
-    }
-
-    &.success {
-        color: #34d97b;
-    }
-
-    &.danger {
-        color: #ff5656;
-    }
-
-    &.warning {
-        color: #ffb400;
-    }
-}
 .ag-span-title {
   font-size: 14px;
   font-weight: bold;

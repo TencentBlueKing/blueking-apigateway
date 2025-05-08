@@ -62,7 +62,7 @@
             </template>
           </bk-table-column>
           <bk-table-column :label="t('更新时间')" prop="updated_time"></bk-table-column>
-          <bk-table-column v-if="common.curApigwData.kind === 0" :label="t('操作')" prop="actions" width="150">
+          <bk-table-column v-if="!common.isProgrammableGateway" :label="t('操作')" prop="actions" width="150">
             <template #default="{ data }">
               <bk-button
                 v-bk-tooltips="{
@@ -122,7 +122,7 @@
     </div>
 
     <addBackendService
-      :disabled="common.curApigwData.kind === 1 || hasPublishingStage"
+      :disabled="common.isProgrammableGateway || hasPublishingStage"
       :base="baseInfo"
       :edit-id="backendServiceId"
       ref="addBackendServiceRef"

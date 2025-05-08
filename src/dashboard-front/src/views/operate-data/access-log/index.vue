@@ -248,7 +248,7 @@ import {
 import { Message } from 'bkui-vue';
 import { useStorage } from '@vueuse/core';
 import AgIcon from '@/components/ag-icon.vue';
-import ResourceSearcher from '@/views/operate-data/statistics-report/components/resource-searcher.vue';
+import ResourceSearcher from '@/views/operate-data/dashboard/components/resource-searcher.vue';
 
 const { t } = i18n.global;
 const { getChartIntervalOption } = userChartIntervalOption();

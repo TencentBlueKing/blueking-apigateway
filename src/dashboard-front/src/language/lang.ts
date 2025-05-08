@@ -33,6 +33,7 @@ const lang: ILANG = {
   '运行数据': ['Statistics'],
   '流水日志': ['Logs'],
   '统计报表': ['Statistics'],
+  '仪表盘': ['Dashboard'],
   '监控告警': ['Monitoring'],
   '告警策略': ['Alarm Strategy'],
   '告警记录': ['Alarm Records'],
@@ -503,6 +504,14 @@ const lang: ILANG = {
   '组件系统：': ['System: '],
   '组件信息：': ['Component: '],
   '申请应用': ['App ID'],
+  '显示方式': ['Display Mode'],
+  '请求总数': ['Requests Total'],
+  '请求失败总数': ['Requests Failed Total'],
+  '按日': ['Day'],
+  '按周': ['Week'],
+  '按月': ['Month'],
+  '调用方': ['Caller'],
+  '日期选择器': ['Date Picker'],
   '新建文档分类': ['Create Doc Category'],
   '请输入文档分类名称，按Enter搜索': ['Please input name and press Enter to search'],
   '优先级': ['Priority'],
@@ -1809,6 +1818,10 @@ const lang: ILANG = {
   '正在发布中，请稍等...': ['Deploying, please hold on...'],
   '已耗时': ['Time used'],
   '去调试': ['Debug'],
+  '当前版本号': ['Current version'],
+  '有效期': ['Valid Duration'],
+  '已过期': ['Expired'],
+  '有效期为永久，不可续期': ['Permanent validity, cannot be renewed'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

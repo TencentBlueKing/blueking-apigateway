@@ -22,6 +22,7 @@ from django_dynamic_fixture import G
 
 from apigateway.apis.web.resource_version import serializers
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin_binding import PluginBindingHandler
 from apigateway.core.models import Gateway, ResourceVersion
@@ -113,6 +114,9 @@ class TestResourceVersionRetrieveOutputSLZ:
                 "is_schema_v2": fake_resource_version_v1.is_schema_v2,
                 "stage_plugins": {},
                 "resource_doc_updated_time": {},
+                "plugin_priority": {
+                    obj["code"]: obj["priority"] for obj in PluginType.objects.values("code", "priority")
+                },
             },
         )
         expected_data = {
@@ -174,6 +178,9 @@ class TestResourceVersionRetrieveOutputSLZ:
                 "is_schema_v2": fake_resource_version_v2.is_schema_v2,
                 "stage_plugins": stage_plugins,
                 "resource_doc_updated_time": {},
+                "plugin_priority": {
+                    obj["code"]: obj["priority"] for obj in PluginType.objects.values("code", "priority")
+                },
             },
         )
         expected_data = {
@@ -215,6 +222,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                             "name": echo_plugin_stage_binding.config.type.name,
                             "config": echo_plugin_stage_binding.get_config(),
                             "binding_type": "stage",
+                            "priority": -1,
                         },
                     ],
                 }
@@ -250,6 +258,9 @@ class TestResourceVersionRetrieveOutputSLZ:
                 "is_schema_v2": fake_resource_version_v2.is_schema_v2,
                 "stage_plugins": stage_plugins,
                 "resource_doc_updated_time": {},
+                "plugin_priority": {
+                    obj["code"]: obj["priority"] for obj in PluginType.objects.values("code", "priority")
+                },
             },
         )
         for resource in slz.data["resources"]:
@@ -261,6 +272,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                         "name": echo_plugin_stage_binding.config.type.name,
                         "config": echo_plugin_stage_binding.get_config(),
                         "binding_type": echo_plugin_stage_binding.scope_type,
+                        "priority": -1,
                     },
                 ]
             else:
@@ -271,6 +283,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                         "name": echo_plugin_resource_binding.config.type.name,
                         "config": echo_plugin_resource_binding.get_config(),
                         "binding_type": echo_plugin_resource_binding.scope_type,
+                        "priority": -1,
                     },
                 ]
 
@@ -299,6 +312,9 @@ class TestResourceVersionRetrieveOutputSLZ:
                 "is_schema_v2": fake_resource_version_v2.is_schema_v2,
                 "stage_plugins": stage_plugins,
                 "resource_doc_updated_time": {},
+                "plugin_priority": {
+                    obj["code"]: obj["priority"] for obj in PluginType.objects.values("code", "priority")
+                },
             },
         )
 
@@ -333,6 +349,9 @@ class TestResourceVersionRetrieveOutputSLZ:
                 "is_schema_v2": fake_resource_version_v2.is_schema_v2,
                 "stage_plugins": stage_plugins,
                 "resource_doc_updated_time": {},
+                "plugin_priority": {
+                    obj["code"]: obj["priority"] for obj in PluginType.objects.values("code", "priority")
+                },
             },
         )
 

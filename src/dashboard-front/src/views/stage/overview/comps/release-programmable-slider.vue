@@ -3,118 +3,119 @@
     <bk-sideslider
       v-model:isShow="isShow"
       :before-close="handleBeforeClose"
-      :title="t('发布资源至环境【{stage}】', { stage: chooseAssets.name })"
+      :title="t('发布资源至环境【{stage}】', { stage: currentStage.name })"
       :width="1100"
       class="release-sideslider"
       quick-close
       @animation-end="handleAnimationEnd"
     >
       <template #default>
-        <div class="sideslider-content">
-          <div>
-            <div class="main">
-              <BkAlert
-                class="mt15 mb15"
-                theme="info"
-              >
-                <div class="alert-content">
-                  <span class="pr12">
-                    <span class="pr4">{{ t('当前版本号') }}: </span>
-                    <span class="pr4">{{ stageDetail.version }}</span>
-                  </span>
-                  <span class="pr12">{{ t('代码分支') }}: <span>{{ stageDetail.branch }}</span></span>
-                  <span class="pr12">CommitID: <span>{{ stageDetail.commit_id }}</span></span>
-                  <span class="pr12">
-                    {{
-                      `由 ${stageDetail.created_by || '--'}  于 ${dayjs(stageDetail.created_time)
-                        .format('YYYY-MM-DD HH:mm:ss') || '--'}  发布`
-                    }}
-                  </span>
-                </div>
-              </BkAlert>
-              <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
-                <bk-form-item :label="t('代码仓库')" required>
-                  <div class="repo-item-wrapper">
-                    <div class="input-item-wrapper">
-                      <bk-input v-model="stageDetail.repo_info.repo_url" disabled />
+        <BkLoading :loading="isLoading">
+          <div class="sideslider-content">
+            <div>
+              <div class="main">
+                <BkAlert
+                  class="mt15 mb15"
+                  theme="info"
+                >
+                  <div class="alert-content">
+                    <span class="pr12">
+                      <span class="pr4">{{ t('当前版本号') }}: </span>
+                      <span class="pr4">{{ stageDetail.version }}</span>
+                    </span>
+                    <span class="pr12">{{ t('代码分支') }}: <span>{{ stageDetail.branch }}</span></span>
+                    <span class="pr12">CommitID: <span>{{ stageDetail.commit_id }}</span></span>
+                    <span class="pr12">
+                      {{
+                        `由 ${stageDetail.created_by || '--'}  于 ${dayjs(stageDetail.created_time)
+                          .format('YYYY-MM-DD HH:mm:ss') || '--'}  发布`
+                      }}
+                    </span>
+                  </div>
+                </BkAlert>
+                <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
+                  <bk-form-item :label="t('代码仓库')" required>
+                    <div class="repo-item-wrapper">
+                      <div class="input-item-wrapper">
+                        <bk-input v-model="stageDetail.repo_info.repo_url" disabled />
+                      </div>
+                      <div class="icon-wrapper">
+                        <i
+                          class="apigateway-icon icon-ag-copy-info mr8" @click="copyRepo"
+                        />
+                        <i class="apigateway-icon icon-ag-jump" @click="handleRepoClick" />
+                      </div>
                     </div>
-                    <div class="icon-wrapper">
-                      <i
-                        class="apigateway-icon icon-ag-copy-info mr8" @click="copyRepo"
+                  </bk-form-item>
+                  <bk-form-item :label="t('代码分支')" property="branch" required>
+                    <bk-select v-model="formData.branch" :clearable="false">
+                      <bk-option
+                        v-for="branch in stageDetail.repo_info.branch_list"
+                        :id="branch"
+                        :key="branch"
+                        :name="branch"
                       />
-                      <i class="apigateway-icon icon-ag-jump" @click="handleRepoClick" />
-                    </div>
-                  </div>
-                </bk-form-item>
-                <bk-form-item :label="t('代码分支')" property="branch" required>
-                  <bk-select v-model="formData.branch" :clearable="false">
-                    <bk-option
-                      v-for="branch in stageDetail.repo_info.branch_list"
-                      :id="branch"
-                      :key="branch"
-                      :name="branch"
-                    />
-                  </bk-select>
+                    </bk-select>
                   <!--                  <bk-input v-model="formData.branch" disabled />-->
-                </bk-form-item>
-                <bk-form-item :label="t('版本类型')" property="version" required>
-                  <bk-radio-group v-model="semVerType" @change="handleSemverChange">
-                    <bk-radio label="major">
-                      {{ t('重大版本') }}
-                    </bk-radio>
-                    <bk-radio label="minor">
-                      {{ t('次版本') }}
-                    </bk-radio>
-                    <bk-radio label="patch">
-                      {{ t('修正版本') }}
-                    </bk-radio>
-                  </bk-radio-group>
-                </bk-form-item>
-                <bk-form-item :label="t('版本号')" required>
-                  <bk-input v-model="formData.version" :placeholder="t('选择版本类型后自动生成')" disabled />
-                </bk-form-item>
-                <bk-form-item label="CommitID" property="commit_id" required>
-                  <div class="commit-id-wrapper">
-                    <span class="id-content">{{ formData.commit_id }}</span>
-                    <span class="commit-suffix">{{
-                      `由 ${stageDetail.created_by || '--'}  于 ${dayjs(stageDetail.created_time)
-                        .format('YYYY-MM-DD HH:mm:ss') || '--'}  发布`
-                    }}</span>
-                  </div>
-                </bk-form-item>
-                <bk-form-item :label="t('版本日志')" property="comment">
-                  <bk-input
-                    v-model="formData.comment"
-                    :maxlength="100"
-                    :rows="4"
-                    disabled
-                    placeholder="--"
-                    type="textarea"
-                  />
-                </bk-form-item>
-              </bk-form>
+                  </bk-form-item>
+                  <bk-form-item :label="t('版本类型')" property="version" required>
+                    <bk-radio-group v-model="semVerType" @change="handleSemverChange">
+                      <bk-radio label="major">
+                        {{ t('重大版本') }}
+                      </bk-radio>
+                      <bk-radio label="minor">
+                        {{ t('次版本') }}
+                      </bk-radio>
+                      <bk-radio label="patch">
+                        {{ t('修正版本') }}
+                      </bk-radio>
+                    </bk-radio-group>
+                  </bk-form-item>
+                  <bk-form-item :label="t('版本号')" required>
+                    <bk-input v-model="formData.version" :placeholder="t('选择版本类型后自动生成')" disabled />
+                  </bk-form-item>
+                  <bk-form-item label="CommitID" property="commit_id" required>
+                    <div class="commit-id-wrapper">
+                      <span class="id-content">{{ currentCommitInfo.commit_id }}</span>
+                      <span class="commit-suffix">{{
+                        `于 ${dayjs(currentCommitInfo.last_update).format('YYYY-MM-DD HH:mm:ss') || '--'}  提交`
+                      }}</span>
+                    </div>
+                  </bk-form-item>
+                  <bk-form-item :label="t('版本日志')" property="comment">
+                    <bk-input
+                      v-model="formData.comment"
+                      :maxlength="100"
+                      :rows="4"
+                      placeholder="--"
+                      type="textarea"
+                    />
+                  </bk-form-item>
+                </bk-form>
+              </div>
+            </div>
+            <div class="operate1">
+              <bk-button style="width: 100px" theme="primary" @click="showPublishDia">
+                {{ t('确认发布') }}
+              </bk-button>
+              <bk-button style="margin-left: 4px; width: 100px" @click="handleCancel">
+                {{ t('取消') }}
+              </bk-button>
             </div>
           </div>
-          <div class="operate1">
-            <bk-button style="width: 100px" theme="primary" @click="showPublishDia">
-              {{ t('确认发布') }}
-            </bk-button>
-            <bk-button style="margin-left: 4px; width: 100px" @click="handleCancel">
-              {{ t('取消') }}
-            </bk-button>
-          </div>
-        </div>
+        </BkLoading>
       </template>
     </bk-sideslider>
 
-    <!-- 日志弹窗 -->
-    <EventSlider
+    <!-- 可编程网关日志抽屉 -->
+    <ProgrammableEventSlider
       ref="logDetailsRef"
-      :current-stage="currentStage"
+      :stage="localStage"
       :deploy-id="deployId"
       :version="stageDetail.version"
       @release-success="handleReleaseSuccess"
-      @release-doing="handleReleaseDoing"
+      @hide-when-pending="handleReleaseDoing"
+      @retry="handleRetry"
     />
     <!--  发布确认弹窗  -->
     <bk-dialog
@@ -130,7 +131,7 @@
             {{
               t('确认发布 {version} 版本至 {stage} 环境？', {
                 version: formData.version,
-                stage: chooseAssets.name ?? '--',
+                stage: props.currentStage?.name || '--',
               })
             }}
           </div>
@@ -158,24 +159,26 @@ import {
   nextTick,
   ref,
   watch,
+  watchEffect,
 } from 'vue';
 import { getStageList } from '@/http';
 import {
   deployReleases,
   getProgrammableStageDetail,
-  getProgrammableStageNextVersion,
+  getStageNextVersion,
 } from '@/http/programmable';
 import {
   useRoute,
   useRouter,
 } from 'vue-router';
-import EventSlider from '@/components/programmable-deploy-events-slider/index.vue';
+import ProgrammableEventSlider from '@/components/programmable-deploy-events-slider/index.vue';
 import { Message } from 'bkui-vue';
 import {
   useGetStageList,
   useSidebar,
 } from '@/hooks';
 import { copy } from '@/common/util';
+import { cloneDeep } from 'lodash';
 
 interface FormData {
   stage_id: number | undefined;
@@ -183,14 +186,24 @@ interface FormData {
   commit_id: string;
   version: string;
   comment: string;
+  version_type: string;
 }
 
+type ProgrammableStageDetailType = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
+
+interface ICommitInfo {
+  commit_id: string,
+  extra: object,
+  last_update: string,
+  message: string,
+  type: string,
+}
+
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const { getStagesStatus } = useGetStageList();
-
-const { t } = useI18n();
 
 const props = defineProps({
   currentStage: {
@@ -203,7 +216,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits<(e: 'release-success' | 'hidden' | 'closed-on-publishing') => void>();
+const emit = defineEmits<(e: 'release-success' | 'hidden' | 'closed-on-publishing' | 'retry') => void>();
 
 const isShow = ref(false);
 const formRef = ref(null);
@@ -213,12 +226,14 @@ const isConfirmDialogVisible = ref(false);
 // 提交数据
 const formData = ref<FormData>({
   stage_id: undefined,
-  branch: 'master',
+  branch: '',
   commit_id: '',
   version: '',
-  comment: '--',
+  comment: '',
+  version_type: '',
 });
-const stageDetail = ref({
+const localStage = ref<any>({});
+const stageDetail = ref<ProgrammableStageDetailType>({
   branch: '',
   commit_id: '',
   created_by: '',
@@ -230,12 +245,14 @@ const stageDetail = ref({
     deploy_id: '',
     history_id: 0,
     version: '',
+    status: '',
   },
   repo_info: {
     branch_commit_info: {},
     branch_list: [],
     repo_url: '',
   },
+  status: '',
   version: '',
 });
 
@@ -245,6 +262,35 @@ const stepsConfig = ref({
     { title: t('差异确认') },
   ],
   controllable: true,
+});
+const deployId = ref('');
+const stageList = ref<any>([]);
+const semVerType = ref('major');
+const currentCommitInfo = ref<ICommitInfo>({
+  commit_id: '',
+  extra: {},
+  last_update: '',
+  message: '',
+  type: '',
+});
+const isLoading = ref(false);
+
+watch(() => formData.value.branch, () => {
+  const commitInfo = stageDetail.value.repo_info.branch_commit_info[formData.value.branch];
+  if (commitInfo) {
+    currentCommitInfo.value = commitInfo;
+    formData.value.version_type = commitInfo.type;
+    formData.value.comment = commitInfo.message;
+    formData.value.commit_id = commitInfo.commit_id;
+  } else {
+    currentCommitInfo.value = {
+      commit_id: '',
+      extra: {},
+      last_update: '',
+      message: '',
+      type: '',
+    };
+  }
 });
 
 const rules = {
@@ -256,25 +302,25 @@ const rules = {
     },
   ],
 };
-const deployId = ref(0);
-const chooseAssets = ref<any>(props.currentStage);
-const stageList = ref<any>([]);
-const semVerType = ref('major');
 
 const apigwId = computed(() => +route.params.id);
 
 watch(isShow, async (val) => {
   if (val) {
-    await getStageData();
-    stageDetail.value = await getProgrammableStageDetail(apigwId.value, props.currentStage!.id);
-    formData.value.commit_id = stageDetail.value.commit_id;
-    const { version } = await getVersion();
-    formData.value.version = version;
-    formData.value.branch = stageDetail.value.latest_deployment?.branch || 'master';
+    try {
+      isLoading.value = true;
+      await fetchStageList();
+      stageDetail.value = await getProgrammableStageDetail(apigwId.value, props.currentStage!.id);
+      const { version } = await getVersion();
+      formData.value.version = version;
+      formData.value.branch = stageDetail.value.branch || stageDetail.value.latest_deployment?.branch || '';
+      localStage.value.paasInfo = stageDetail.value;
 
-    if (props.currentStage?.id) {
-      formData.value.stage_id = props.currentStage.id;
-      chooseAssets.value = props.currentStage;
+      if (props.currentStage?.id) {
+        formData.value.stage_id = props.currentStage.id;
+      }
+    } finally {
+      isLoading.value = false;
     }
   } else {
     resetSliderData();
@@ -282,16 +328,11 @@ watch(isShow, async (val) => {
   }
 });
 
-watch(
-  () => formData.value.stage_id,
-  (v) => {
-    if (v && stageList.value?.length) {
-      chooseAssets.value = stageList.value?.filter((item: any) => item.id === v)[0];
-    }
-  },
-);
+watchEffect(() => {
+  localStage.value = cloneDeep(props.currentStage);
+});
 
-const getStageData = async () => {
+const fetchStageList = async () => {
   stageList.value = await getStageList(apigwId.value);
 };
 
@@ -302,8 +343,9 @@ const showPublishDia = () => {
 const handlePublish = async () => {
   try {
     const params = {
-      stage_id: chooseAssets.value.id,
+      stage_id: props.currentStage.id,
       ...formData.value,
+      version: `${formData.value.version}+${props.currentStage.name}`,
     };
     const res = await deployReleases(apigwId.value, params);
     deployId.value = res.deploy_id;
@@ -371,11 +413,6 @@ const showReleaseSideslider = () => {
   isShow.value = true;
 };
 
-// 下一步
-// const handleNext = async () => {
-//   await formRef.value?.validate();
-// };
-
 const handleBeforeClose = async () => {
   const params = {
     stepsConfig: stepsConfig.value,
@@ -397,10 +434,11 @@ const handleCancel = () => {
 const resetSliderData = () => {
   formData.value = {
     stage_id: undefined,
-    branch: 'master',
+    branch: '',
     commit_id: '',
     version: '',
-    comment: '--',
+    comment: '',
+    version_type: '',
   };
 };
 
@@ -413,7 +451,7 @@ const handleRepoClick = () => {
 };
 
 const getVersion = async (): Promise<{ version: string }> => {
-  return await getProgrammableStageNextVersion(
+  return await getStageNextVersion(
     apigwId.value,
     { stage_name: props.currentStage.name, version_type: semVerType.value },
   );
@@ -422,6 +460,10 @@ const getVersion = async (): Promise<{ version: string }> => {
 const handleSemverChange = async () => {
   const { version } = await getVersion();
   formData.value.version = version || '';
+};
+
+const handleRetry = () => {
+  emit('retry');
 };
 
 defineExpose({

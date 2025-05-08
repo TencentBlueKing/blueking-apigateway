@@ -101,7 +101,7 @@ export interface IEventsFramework {
   display_blocks: DisplayBlocksPreparation | DisplayBlocksBuild | DisplayBlocksRelease;
 }
 
-export interface IEventsInstance {
+export interface IPaasEventInstance {
   display_name: string;
   type: string;
   steps: IInstanceStep[];
@@ -115,15 +115,31 @@ export interface IEventsInstance {
 interface IPaasDeployInfo {
   events: IEvent[];
   events_framework: IEventsFramework[];
-  events_instance: IEventsInstance[];
+  events_instance: IPaasEventInstance[];
+}
+
+export interface IGatewayEvent {
+  'id': number,
+  'release_history_id': number,
+  'name': string,
+  'step': number,
+  'status': string,
+  'created_time': string,
+  'detail': any,
+}
+
+export interface IGatewayEventTemplate {
+  'name': string,
+  'description': string,
+  'step': number,
 }
 
 interface IEventResponse {
   created_by: string;
   created_time: string;
   duration: number;
-  events: unknown[];
-  events_template: unknown[];
+  events: IGatewayEvent[];
+  events_template: IGatewayEventTemplate[];
   id: number;
   paas_deploy_info: IPaasDeployInfo;
   resource_version_display: string;
@@ -146,7 +162,6 @@ export const deployReleases = (apigwId: number, data: {
   comment: string,
 }) => fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/programmable/deploy/`, data, { globalError: false });
 
-
 // 获取环境详情
 export const getProgrammableStageDetail = (apigwId: number, stageId: number): Promise<{
   branch: string;
@@ -159,21 +174,34 @@ export const getProgrammableStageDetail = (apigwId: number, stageId: number): Pr
     commit_id: string;
     deploy_id: string;
     history_id: number;
+    status: string;
     version: string;
   };
   repo_info: {
-    branch_commit_info: Record<string, string>;
+    branch_commit_info: {
+      [branch: string]: {
+        commit_id: string;
+        extra: object;
+        last_update: string;
+        message: string;
+        type: string;
+      }
+    };
     branch_list: string[];
     repo_url: string;
   };
+  status: string;
   version: string;
 }> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/stages/${stageId}/programmable/`);
 
 // 获取下一个发布版本号
-export const getProgrammableStageNextVersion = (apigwId: number, data: {
+export const getStageNextVersion = (apigwId: number, data: {
   stage_name: string,
   version_type: string
 }) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource-versions/programmable/next-deploy-version/?${json2Query(data)}`);
 
-// 查询发布事件
-export const getProgrammableDeployEvents = (apigwId: number, deploy_id: number): Promise<IEventResponse> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/programmable/deploy/${deploy_id}/histories/events/`);
+// 查询部署中的发布事件
+export const getDeployEvents = (apigwId: number, deploy_id: string): Promise<IEventResponse> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/programmable/deploy/${deploy_id}/histories/events/`);
+
+// 查询已完成部署后的发布事件
+export const getFinishedDeployEvents = (apigwId: number, history_id: number): Promise<IEventResponse> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/programmable/deploy/histories/${history_id}/events/`);

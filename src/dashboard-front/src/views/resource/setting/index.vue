@@ -597,7 +597,7 @@
       </bk-sideslider>
     </div>
   </div>
-  <page-not-found v-if="common.curApigwData?.kind === 1" />
+  <page-not-found v-if="common.isProgrammableGateway" />
 </template>
 <script setup lang="ts">
 import {
