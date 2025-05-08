@@ -1062,10 +1062,7 @@ const getDurationTextColor = (expireAt: string | null) => {
   return '#63656e';
 };
 
-const isRowSelectEnable = ({ row, isCheckAll }: { row: IPermission, isCheckAll?: boolean }) => {
-  if (isCheckAll) {
-    return true;
-  }
+const isRowSelectEnable = ({ row }: { row: IPermission }) => {
   return !!row.expires;
 };
 
