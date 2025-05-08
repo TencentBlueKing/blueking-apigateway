@@ -125,7 +125,7 @@
               property="programmable_gateway_git_info.repository"
               required
             >
-              <bk-input v-model="formData.programmable_gateway_git_info.repository" />
+              <bk-input v-model="formData.programmable_gateway_git_info.repository" :placeholder="t('支持以下协议:http(s)://、git://')" />
             </bk-form-item>
             <bk-form-item
               :label="t('账号')"
@@ -339,6 +339,21 @@ const rules = {
         return reg.test(value);
       },
       message: t('由小写字母、数字、连接符（-）组成，首字符必须是小写字母，长度大于3小于30个字符'),
+      trigger: 'change',
+    },
+  ],
+  'programmable_gateway_git_info.repository': [
+    {
+      required: true,
+      message: t('请填写代码仓库地址'),
+      trigger: 'change',
+    },
+    {
+      validator: (value: string) => {
+        const reg = /^(https?:\/\/|git:\/\/)[^\s]+$/;
+        return reg.test(value);
+      },
+      message: t('请输入正确的代码仓库地址，支持以下协议：http(s)://、git://'),
       trigger: 'change',
     },
   ],
