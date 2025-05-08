@@ -101,6 +101,11 @@ export const createMenuData = (): IMenu[] => {
           title: t('流水日志'),
         },
         {
+          name: 'apigwDashboard',
+          enabled: user.featureFlags?.ENABLE_RUN_DATA_METRICS,
+          title: t('仪表盘'),
+        },
+        {
           name: 'apigwReport',
           enabled: user.featureFlags?.ENABLE_RUN_DATA_METRICS,
           title: t('统计报表'),
