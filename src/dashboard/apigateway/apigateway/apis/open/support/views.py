@@ -82,7 +82,7 @@ class SDKGenerateViewSet(viewsets.ViewSet):
                     raise error_codes.INTERNAL.format(
                         _("同一资源版本，最多只能生成 {count} 个 SDK。").format(count=err.max_count), replace=True
                     )
-                except Exception:
+                except Exception:  # pylint: disable=broad-except
                     logger.exception(
                         "create sdk failed for gateway %s, release %s", gateway_name, resource_version.version
                     )

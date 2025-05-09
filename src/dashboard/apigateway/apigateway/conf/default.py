@@ -277,7 +277,7 @@ DATABASES = {
     },
 }
 
-## database ssl
+# database ssl
 BK_APIGW_DATABASE_TLS_ENABLED = env.bool("BK_APIGW_DATABASE_TLS_ENABLED", False)
 if BK_APIGW_DATABASE_TLS_ENABLED:
     default_ssl_options = {
@@ -330,7 +330,7 @@ REDIS_PASSWORD = env.str("BK_APIGW_REDIS_PASSWORD", "")
 REDIS_PREFIX = env.str("BK_APIGW_REDIS_PREFIX", "apigw::")
 REDIS_MAX_CONNECTIONS = env.int("BK_APIGW_REDIS_MAX_CONNECTIONS", 100)
 REDIS_DB = env.int("BK_APIGW_REDIS_DB", 0)
-## redis tls
+# redis tls
 REDIS_TLS_ENABLED = env.bool("BK_APIGW_REDIS_TLS_ENABLED", False)
 REDIS_TLS_CERT_CA_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_CA_FILE", "")
 REDIS_TLS_CERT_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_FILE", "")

@@ -338,7 +338,7 @@ class PluginConfigRetrieveUpdateDestroyApi(
         try:
             input_yaml = yaml_loads(input_data["yaml"])
             current_yaml = yaml_loads(instance.yaml)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             return True
 
         return input_yaml != current_yaml or input_data["type_id"].id != instance.type.id

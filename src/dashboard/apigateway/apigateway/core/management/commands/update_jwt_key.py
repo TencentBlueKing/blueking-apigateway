@@ -62,5 +62,5 @@ class Command(BaseCommand):
     def _decode_base64(self, encoded_key: str) -> bytes:
         try:
             return base64.b64decode(encoded_key)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             raise CommandError(f"not a valid base64 string: {encoded_key}")

@@ -25,7 +25,7 @@ from apigateway.utils.archivefile import BaseArchiveFile, TgzArchiveFile, ZipArc
 
 class ArchiveFileFactory:
     @classmethod
-    def from_file_type(cls, file_type: str) -> "BaseArchiveFile":
+    def from_file_type(cls, file_type: str) -> BaseArchiveFile:
         if file_type == DocArchiveTypeEnum.TGZ.value:
             return TgzArchiveFile()
 
@@ -35,7 +35,7 @@ class ArchiveFileFactory:
         raise ValueError(f"unsupported file_type: {file_type}")
 
     @classmethod
-    def from_fileobj(cls, fileobj) -> "BaseArchiveFile":
+    def from_fileobj(cls, fileobj) -> BaseArchiveFile:
         file_type = cls._guess_file_type(fileobj)
         return cls.from_file_type(file_type)
 

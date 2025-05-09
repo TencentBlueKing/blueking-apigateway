@@ -157,7 +157,7 @@ class BaseAppPermissionApplyAPIView(APIView, metaclass=ABCMeta):
 
         try:
             apply_async_on_commit(send_mail_for_perm_apply, args=[record.id])
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             logger.exception("send mail to gateway manager fail. apply_record_id=%s", record.id)
 
         return V1OKJsonResponse(
@@ -332,7 +332,7 @@ class AppPermissionApplyAPIView(APIView):
         try:
             for record_id in record_ids:
                 apply_async_on_commit(send_mail_for_perm_apply, args=[record_id])
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             logger.exception("send mail to gateway manager fail. apply_record_ids=%s", record_ids)
 
         return V1OKJsonResponse(

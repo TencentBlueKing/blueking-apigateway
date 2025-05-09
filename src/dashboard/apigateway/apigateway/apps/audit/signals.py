@@ -34,5 +34,5 @@ def _record_audit_log(sender, **kwargs):
 
     try:
         AuditEventLog.objects.create(**kwargs)
-    except Exception:
+    except Exception:  # pylint: disable=broad-except
         logger.exception("log audit event log fail, kwargs=%s", kwargs)

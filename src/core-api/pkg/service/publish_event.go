@@ -34,6 +34,7 @@ const (
 
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock
 
+// PublishEventService is the service for publish event
 type PublishEventService interface {
 	Report(ctx context.Context, event Event) error
 }
@@ -42,6 +43,7 @@ type publishEventService struct {
 	publishEventManager dao.PublishEventManger
 }
 
+// Event is the struct for publish event
 type Event struct {
 	Gateway   string
 	Stage     string
@@ -54,12 +56,14 @@ type Event struct {
 
 var _ PublishEventService = publishEventService{}
 
+// NewPublishEventService create a new publish event service
 func NewPublishEventService() PublishEventService {
 	return &publishEventService{
 		publishEventManager: dao.NewPublishEventManger(),
 	}
 }
 
+// Report report a publish event
 func (p publishEventService) Report(ctx context.Context, event Event) error {
 	// get release history info by publish id
 	releaseHistory, err := cacheimpls.GetReleaseHistory(ctx, event.PublishID)

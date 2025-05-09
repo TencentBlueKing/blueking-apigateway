@@ -31,6 +31,7 @@ const (
 	EventNameLoadConfiguration = "load_configuration"
 )
 
+// GetStep get the step of the event
 func GetStep(name string) int {
 	/**
 	publish event report chain:

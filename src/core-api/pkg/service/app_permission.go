@@ -96,7 +96,6 @@ func (s *appPermissionService) Query(
 	ctx context.Context, instanceID, gatewayName, stageName, resourceName, appCode string,
 ) (map[string]int64, error) {
 	permissions := make(map[string]int64, 2)
-
 	gatewayID, err := getGatewayID(ctx, instanceID, gatewayName)
 	if err != nil {
 		return nil, err
@@ -108,12 +107,8 @@ func (s *appPermissionService) Query(
 		return nil, fmt.Errorf("call GetAppGatewayPermissionExpiredAt fail: %w, gatewayID = %d", err, gatewayID)
 	}
 	logging.GetLogger().Debugw("call GetAppGatewayPermissionExpiredAt",
-		"instanceID", instanceID,
-		"gatewayName", gatewayName,
-		"stageName", stageName,
-		"resourceName", resourceName,
-		"appCode", appCode,
-		"gatewayID", gatewayID,
+		"instanceID", instanceID, "gatewayName", gatewayName, "stageName", stageName,
+		"resourceName", resourceName, "appCode", appCode, "gatewayID", gatewayID,
 		"gatewayPermissionExpiredAt", gatewayPermissionExpiredAt,
 	)
 	// if has app gateway permission records
@@ -129,27 +124,20 @@ func (s *appPermissionService) Query(
 		if gatewayPermissionExpiredAt > now+ClientLRUCacheTTL {
 			logging.GetLogger().
 				Debugw("app has gateway permission, and expires greater than now + ClientLRUCacheTTL, will return",
-					"ClientLRUCacheTTL", ClientLRUCacheTTL,
-					"instanceID", instanceID,
-					"gatewayName", gatewayName,
-					"stageName", stageName,
-					"resourceName", resourceName,
-					"appCode", appCode,
-					"gatewayID", gatewayID,
+					"ClientLRUCacheTTL", ClientLRUCacheTTL, "instanceID", instanceID, "gatewayName", gatewayName,
+					"stageName", stageName, "resourceName", resourceName, "appCode", appCode, "gatewayID", gatewayID,
 					"gatewayPermissionExpiredAt", gatewayPermissionExpiredAt,
 				)
 			// no need to query app-resource permission
 			return permissions, nil
 		}
 	}
-
 	stageID, err := getStageID(ctx, gatewayID, stageName)
 	if err != nil {
 		return nil, err
 	}
 
 	// 2. get app-resource permission
-
 	// 2.1 get resourceID by resourceName from release-resource_version-data
 	resourceID, ok, err := getResourceIDByName(ctx, gatewayID, stageID, resourceName)
 	if err != nil {
@@ -158,41 +146,22 @@ func (s *appPermissionService) Query(
 	// got no records, return directly
 	if !ok {
 		logging.GetLogger().Debugw("app has no resource permission records, will return",
-			"instanceID", instanceID,
-			"gatewayName", gatewayName,
-			"stageName", stageName,
-			"resourceName", resourceName,
-			"appCode", appCode,
-			"gatewayID", gatewayID,
-			"stageID", stageID,
+			"instanceID", instanceID, "gatewayName", gatewayName, "stageName", stageName, "resourceName", resourceName,
+			"appCode", appCode, "gatewayID", gatewayID, "stageID", stageID,
 		)
 		return permissions, nil
 	}
-
 	// 2.2 query app-resource permission
-	resourcePermissionExpiredAt, err := cacheimpls.GetAppResourcePermissionExpiredAt(
-		ctx,
-		appCode,
-		gatewayID,
-		resourceID,
-	)
+	resourcePermissionExpiredAt, err := cacheimpls.GetAppResourcePermissionExpiredAt(ctx, appCode, gatewayID, resourceID)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"call GetAppResourcePermissionExpiredAt fail: %w, appCode=%s, gatewayID=%d, resourceID=%d",
-			err,
-			appCode,
-			gatewayID,
-			resourceID,
+			err, appCode, gatewayID, resourceID,
 		)
 	}
 	logging.GetLogger().Debugw("call GetAppResourcePermissionExpiredAt",
-		"instanceID", instanceID,
-		"gatewayName", gatewayName,
-		"stageName", stageName,
-		"resourceName", resourceName,
-		"appCode", appCode,
-		"gatewayID", gatewayID,
-		"resourceID", resourceID,
+		"instanceID", instanceID, "gatewayName", gatewayName, "stageName", stageName, "resourceName", resourceName,
+		"appCode", appCode, "gatewayID", gatewayID, "resourceID", resourceID,
 		"resourcePermissionExpiredAt", resourcePermissionExpiredAt,
 	)
 	if resourcePermissionExpiredAt != 0 {

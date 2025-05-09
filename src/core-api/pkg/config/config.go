@@ -16,6 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+// Package config is the config for the whole project
 package config
 
 import (
@@ -50,6 +51,7 @@ type Logger struct {
 	API     LogConfig
 }
 
+// TLS is the config for tls
 type TLS struct {
 	Enabled     bool
 	CertCaFile  string

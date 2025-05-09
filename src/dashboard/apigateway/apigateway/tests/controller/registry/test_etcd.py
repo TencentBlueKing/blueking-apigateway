@@ -100,7 +100,7 @@ class TestEtcdRegistry:
 
         try:
             result = list(self.registry.iter_by_type(resource_type))
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             assert will_raise
         else:
             assert not will_raise

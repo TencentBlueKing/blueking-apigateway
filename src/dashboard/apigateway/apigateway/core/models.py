@@ -339,7 +339,7 @@ class Proxy(ConfigModelMixin):
         # check the config value
         try:
             _ = self.config
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             logger.exception("the config field is not a valid json")
             raise
 
@@ -469,7 +469,7 @@ class Context(ConfigModelMixin):
         # check the config value
         try:
             _ = self.config
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             logger.exception("the config field is not a valid json")
             raise
 

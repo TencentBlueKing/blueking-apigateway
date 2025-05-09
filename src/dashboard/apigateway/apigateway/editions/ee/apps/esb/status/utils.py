@@ -93,5 +93,5 @@ def str_to_seconds(s):
     try:
         value, unit = RE_TIME_STR.match(s.lower()).groups()
         return int(value) * time_unit_to_seconds[unit]
-    except Exception:
+    except Exception:  # pylint: disable=broad-except
         raise ValueError("Invalid time string given")

@@ -353,11 +353,11 @@ def process_bucket_data(bucket_data, key_name="system_name"):
     """二次处理ES查询出的bucket_data"""
     try:
         avg_resp_time_value = int(bucket_data["avg_resp_time"]["value"])
-    except Exception:
+    except Exception:  # pylint: disable=broad-except
         avg_resp_time_value = 0
     try:
         resp_time_outlier_95_value = int(bucket_data["resp_time_outlier"]["values"]["95.0"])
-    except Exception:
+    except Exception:  # pylint: disable=broad-except
         resp_time_outlier_95_value = 0
 
     summary = {

@@ -466,7 +466,7 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
                 ).first()
                 or deploy_history  # 回退到最新记录
             )
-            ## 查询当前生效环境的 release history
+            # 查询当前生效环境的 release history
             last_release_history = ReleaseHistory.objects.filter(
                 gateway=gateway, stage_id=stage_id, resource_version__version=stage_release["resource_version_display"]
             ).first()
@@ -496,11 +496,11 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
                 deploy_id=deploy_history.deploy_id,
                 user_credentials=get_user_credentials_from_request(request),
             )
-            ## 正在发布的话需要判断是否失败
+            # 正在发布的话需要判断是否失败
             if latest_publish_status != "" and result.get("status", "") == "failed":
                 latest_publish_status = ReleaseHistoryStatusEnum.FAILURE.value
 
-            ## 第一次发布
+            # 第一次发布
             if last_publish_status == "" and result.get("status", "") == "failed":
                 instance = deploy_history
                 last_publish_status = ReleaseHistoryStatusEnum.FAILURE.value

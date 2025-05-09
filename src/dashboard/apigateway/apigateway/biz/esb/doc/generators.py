@@ -205,6 +205,6 @@ class RSTDocBuilder(ComponentDocBuilder):
                 },
             )["html_body"]
             return html.unescape(doc_html)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             logger.exception("unable to convert rst to html, rst: \n%s", content)
             return "unable to convert rst to html"

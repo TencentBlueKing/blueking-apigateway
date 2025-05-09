@@ -57,7 +57,7 @@ class QueryRangeApi(generics.ListAPIView):
             try:
                 id_ = int(series[index]["target"].split('"')[1].split(".")[2])
                 ids_data[id_] = index
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 pass
 
         return ids_data

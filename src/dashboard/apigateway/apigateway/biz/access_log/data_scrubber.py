@@ -75,7 +75,7 @@ class DataScrubber:
     def _scrub_urlencoded_data(self, content: str) -> str:
         try:
             parsed_qs = parse_qs(content, keep_blank_values=True, strict_parsing=True)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             raise NotScrubbedException()
 
         scrubbed_content = self._scrub_by_keys(parsed_qs)
@@ -84,7 +84,7 @@ class DataScrubber:
     def _scrub_json_data(self, content: str) -> str:
         try:
             data = json.loads(content)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             raise NotScrubbedException()
 
         scrubbed_data = self._scrub_by_keys(data)
