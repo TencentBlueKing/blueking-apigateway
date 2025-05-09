@@ -1,7 +1,21 @@
 import { useStaffStore } from '@/store';
-import { Staff, StaffType } from '@/types';
-import { Loading, TagInput } from 'bkui-vue';
-import { computed, defineComponent, PropType, ref, watch, nextTick, onMounted } from 'vue';
+import {
+  Staff,
+  StaffType,
+} from '@/types';
+import {
+  Loading,
+  TagInput,
+} from 'bkui-vue';
+import {
+  computed,
+  defineComponent,
+  nextTick,
+  onMounted,
+  PropType,
+  ref,
+  watch,
+} from 'vue';
 import _ from 'lodash';
 
 import './member-select.scss';
@@ -39,24 +53,19 @@ export default defineComponent({
   emits: ['change', 'input', 'blur', 'focus'],
   setup(props, ctx) {
     const tagInputRef = ref(null);
-    // const isLoading = ref(false);
+    // 使用 staffStore 获取员工数据
     const staffStore = useStaffStore();
     const searchKey = ['username'];
     const userList: any = ref([]);
+    // 根据 multiple 属性计算最大数据量
     const maxData = computed(() => (!props.multiple ? {
       maxData: 1,
     } : {}));
     const popoverProps = {
       boundary: document.body,
-      // fixOnBoundary: true,
     };
 
-    // onMounted(() => {
-    //   if (staffStore.list.length === 0) {
-    //     staffStore.fetchStaffs();
-    //   }
-    // });
-
+    // 渲染员工信息模板
     function tpl(node: Staff) {
       return (
         <Tpl
@@ -65,46 +74,51 @@ export default defineComponent({
         />
       );
     }
+    // 处理输入变化事件
     function handleChange(val: Staff[]) {
       ctx.emit('input', val);
       ctx.emit('change', val);
     }
 
+    // 处理焦点事件
     function handleFocus(val: Staff[]) {
       ctx.emit('focus', val);
     }
 
+    // 处理失焦事件
     function handleBlur(val: Staff[]) {
       ctx.emit('blur', val);
     }
 
     ctx.expose({ tagInputRef });
 
+    // 获取用户列表，防抖处理
     const getUserList = _.debounce((userName: string) => {
       if (staffStore.fetching || !userName) return;
       staffStore.fetchStaffs(userName);
     }, 500);
 
+    // 处理输入事件
     function handleInput(userName: string) {
       getUserList(userName);
     }
 
+    // 监听 staffStore.list 的变化
     watch(
       () => staffStore.list,
       (list) => {
         if (list.length) {
-          // isLoading.value = false;
           nextTick(() => {
             userList.value = _.cloneDeep(list);
           });
         } else {
-          // isLoading.value = true;
           staffStore.fetchStaffs(props.modelValue.join(','));
         }
       },
       { immediate: true, deep: true },
     );
 
+    // 组件挂载时执行
     onMounted(() => {
       if (props.modelValue?.length) {
         staffStore.fetchStaffs(props.modelValue.join(','));
@@ -113,11 +127,9 @@ export default defineComponent({
     });
 
     return () => <>
-      {/* v-bkloading={{ loading: isLoading, opacity: 1, color: '#fff', mode: 'spin', size: 'mini' }} */}
       <TagInput
         {...ctx.attrs}
         {...maxData.value}
-        // disabled={props.disabled || staffStore.fetching}
         list={userList.value}
         ref={tagInputRef}
         displayKey="display_name"
@@ -125,7 +137,6 @@ export default defineComponent({
         is-async-list
         searchKey={searchKey}
         hasDeleteIcon={props?.hasDeleteIcon}
-        // filterCallback={handleSearch}
         modelValue={props.modelValue}
         onChange={handleChange}
         onFocus={handleFocus}
@@ -137,16 +148,16 @@ export default defineComponent({
         allowCreate={props.allowCreate}
         popoverProps={popoverProps}
       >
-          {{
-            suffix: () => staffStore.fetching && (
-              <Loading
-                class="mr10"
-                loading={staffStore.fetching}
-                mode="spin"
-                size="mini"
-              />
-            ),
-          }}
+        {{
+          suffix: () => staffStore.fetching && (
+            <Loading
+              class="mr10"
+              loading={staffStore.fetching}
+              mode="spin"
+              size="mini"
+            />
+          ),
+        }}
       </TagInput>
     </>;
   },
