@@ -15,7 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -450,7 +449,14 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
         latest_deploy_history = ProgrammableGatewayDeployHistory()
 
         # 查询当前deploy历史
-        deploy_history = ProgrammableGatewayDeployHistory.objects.filter(gateway=gateway).order_by("-id").first()
+        deploy_history = (
+            ProgrammableGatewayDeployHistory.objects.filter(
+                gateway=gateway,
+                stage=instance,
+            )
+            .order_by("-id")
+            .first()
+        )
 
         stage_release = ReleasedResourceHandler.get_stage_release(gateway, [stage_id]).get(stage_id)
         # 正在发布版本状态
@@ -462,7 +468,7 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
             # 优先使用与 stage_release 匹配的记录
             instance = (
                 ProgrammableGatewayDeployHistory.objects.filter(
-                    gateway=gateway, version=stage_release["resource_version_display"]
+                    gateway=gateway, stage=instance, version=stage_release["resource_version_display"]
                 ).first()
                 or deploy_history  # 回退到最新记录
             )
