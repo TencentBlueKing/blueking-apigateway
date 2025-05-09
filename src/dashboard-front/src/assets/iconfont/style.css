@@ -521,3 +521,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-zidongjieru:before {
 	content: "\e1b2";
 }
+.icon-ag-square-program:before {
+	content: "\e1b7";
+}
+.icon-ag-program:before {
+	content: "\e1b8";
+}

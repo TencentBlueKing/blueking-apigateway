@@ -5,7 +5,7 @@
     @update:is-show="emit('update:modelValue')"
     :title="t('编辑API文档')">
     <div class="doc-form">
-      <bk-form ref="formRef" form-type="vertical" :model="docForm">
+      <bk-form ref="formRef" form-type="vertical" :model="docForm" :rules="rules">
         <bk-form-item
           :label="t('联系人类型')"
           property="type"
@@ -158,6 +158,24 @@ const InitForm = (): IForm => {
 const formRef = ref(null);
 const loading = ref<boolean>(false);
 const docForm = ref<IForm>(InitForm());
+
+const rules = {
+  'service_account.link': [
+    {
+      required: true,
+      message: t('请填写服务号链接'),
+      trigger: 'change',
+    },
+    {
+      validator: (value: string) => {
+        const reg = /^wxwork:\/\//;
+        return reg.test(value);
+      },
+      message: t('请输入正确的服务号链接，支持以下协议：wxwork://'),
+      trigger: 'change',
+    },
+  ],
+};
 
 const handleCancel = () => {
   emit('update:modelValue', false);
