@@ -1,3 +1,4 @@
+// 定义登录数据接口
 export interface ILoginData {
   target?: string
   width?: number
@@ -6,8 +7,11 @@ export interface ILoginData {
   login_plain_url?: string
 }
 
+// 定义是否显示登录弹框的标志
 let isShow = false;
+// 定义登录窗口对象
 let loginWindow: Window = null;
+// 定义轮询检查窗口关闭的定时器
 let checkWindowTimer = -1;
 
 // 获取登录地址
@@ -26,8 +30,10 @@ const messageListener = ({ data = {} }: MessageEvent) => {
   hideLoginModal();
 };
 
+// 添加消息监听器
 window.addEventListener('message', messageListener, false);
 
+// 在页面卸载前移除消息监听器
 window.addEventListener('beforeunload', () => {
   window.removeEventListener('message', messageListener, false);
 });

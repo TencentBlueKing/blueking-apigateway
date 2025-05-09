@@ -3,8 +3,11 @@ import i18n from '@/language/i18n';
 
 const { t } = i18n.global;
 
+// 定义一个名为 useAccessLog 的 store
 export const useAccessLog = defineStore('accessLog', {
+  // 定义 store 的状态
   state: () => ({
+    // 日期选择快捷方式
     datepickerShortcuts: [
       {
         text: t('最近5分钟'),
@@ -61,6 +64,7 @@ export const useAccessLog = defineStore('accessLog', {
         },
       },
     ],
+    // 一天内的快捷方式
     shortcutsInDay: [
       {
         text: t('最近5分钟'),
@@ -108,6 +112,7 @@ export const useAccessLog = defineStore('accessLog', {
         },
       },
     ],
+    // 告警策略选项
     alarmStrategyOptions: {
       alarmType: [
         {
@@ -208,6 +213,7 @@ export const useAccessLog = defineStore('accessLog', {
         ],
       },
     },
+    // 告警状态
     alarmStatus: [
       {
         name: t('已接收'),
@@ -226,6 +232,7 @@ export const useAccessLog = defineStore('accessLog', {
         value: 'failure',
       },
     ],
+    // 请求方法列表
     methodList: [
       {
         id: 'GET',
@@ -261,6 +268,7 @@ export const useAccessLog = defineStore('accessLog', {
         name: 'ANY',
       },
     ],
+    // SDK 语言列表
     SDKLanguageList: [
       {
         name: 'python',
@@ -271,6 +279,7 @@ export const useAccessLog = defineStore('accessLog', {
         value: 'golang',
       },
     ],
+    // 审计选项
     auditOptions: {
       OPObjectType: [
         {
@@ -334,6 +343,7 @@ export const useAccessLog = defineStore('accessLog', {
       ],
     },
   }),
+  // 定义 store 的 getters
   getters: {
     getDatepickerShortcuts(state) {
       return state.datepickerShortcuts;

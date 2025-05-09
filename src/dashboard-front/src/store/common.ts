@@ -2,17 +2,18 @@ import { defineStore } from 'pinia';
 
 import type { Gateway } from '@/types/gateway';
 
+// 定义状态接口
 interface State {
-  apigwId: number;
-  apigwName: string;
+  apigwId: number; // 网关ID
+  apigwName: string; // 网关名称
   methodList: {
-    id: string,
-    name: string,
-  }[];
-  curApigwData: Gateway;
-  gatewayLabels: any[];
-  websiteConfig: any;
-  noGlobalError: boolean;
+    id: string; // 方法ID
+    name: string; // 方法名称
+  }[]; // 方法列表
+  curApigwData: Gateway; // 当前网关数据
+  gatewayLabels: any[]; // 网关标签
+  websiteConfig: any; // 网站配置
+  noGlobalError: boolean; // 请求出错是否显示全局的错误消息
 }
 
 export const useCommon = defineStore('common', {
@@ -97,21 +98,27 @@ export const useCommon = defineStore('common', {
     isProgrammableGateway: state => state?.curApigwData?.kind === 1,
   },
   actions: {
+    // 设置网关id
     setApigwId(apigwId: number) {
       this.apigwId = apigwId;
     },
+    // 设置网关名称
     setApigwName(name: string) {
       this.apigwName = name;
     },
+    // 设置当前网关数据
     setCurApigwData(data: Gateway) {
       this.curApigwData = data;
     },
+    // 设置网关标签
     setGatewayLabels(data: any) {
       this.gatewayLabels = data;
     },
+    // 设置网站配置
     setWebsiteConfig(data: any) {
       this.websiteConfig = data;
     },
+    // 设置是否显示全局错误消息
     setNoGlobalError(val: boolean) {
       this.noGlobalError = val;
     },

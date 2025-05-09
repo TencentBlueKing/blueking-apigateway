@@ -1,59 +1,55 @@
 export interface ServiceAccount {
-  name: string;
-  link: string;
+  name: string; // 服务账号名称
+  link: string; // 服务账号链接
 }
 
 export interface DocMaintainers {
-  type: string;
-  contacts: string[];
-  service_account: ServiceAccount;
+  type: string; // 文档维护者类型
+  contacts: string[]; // 文档维护者联系方式列表
+  service_account: ServiceAccount; // 关联的服务账号
 }
 
 export interface Gateway {
-  id: number;
-  name: string;
-  description: string;
-  maintainers: string[];
-  doc_maintainers: DocMaintainers;
-  developers: any[];
-  status: number;
-  // 是否为可编程网关，0 非可编程网关，1 可编程网关
-  kind: 0 | 1;
-  is_public: boolean;
-  created_by: string;
-  created_time: string;
-  updated_time: string;
-  public_key: string;
-  is_official: boolean;
-  allow_update_gateway_auth: boolean;
-  api_domain: string;
-  docs_url: string;
-  public_key_fingerprint: string;
-  bk_app_codes: any[];
-  related_app_codes: any[];
-  extra_info: any;
-  links: any;
+  id: number; // 网关ID
+  name: string; // 网关名称
+  description: string; // 网关描述
+  maintainers: string[]; // 网关维护者列表
+  doc_maintainers: DocMaintainers; // 文档维护者信息
+  developers: any[]; // 开发者列表
+  status: number; // 网关状态
+  kind: 0 | 1; // 是否为可编程网关，0 非可编程网关，1 可编程网关
+  is_public: boolean; // 是否公开
+  created_by: string; // 创建者
+  created_time: string; // 创建时间
+  updated_time: string; // 更新时间
+  public_key: string; // 公钥
+  is_official: boolean; // 是否为官方网关
+  allow_update_gateway_auth: boolean; // 是否允许更新网关认证
+  api_domain: string; // API域名
+  docs_url: string; // 文档URL
+  public_key_fingerprint: string; // 公钥指纹
+  bk_app_codes: any[]; // 蓝鲸应用代码列表
+  related_app_codes: any[]; // 相关应用代码列表
+  extra_info: any; // 额外信息
+  links: any; // 链接信息
 }
 
 export interface GatewayListItem {
-  created_by: string;
-  created_time: string;
-  description: string;
-  extra_info: any;
-  id: number;
-  is_official: boolean;
-  is_public: boolean;
-  // 是否为可编程网关，0 非可编程网关，1 可编程网关
-  kind: 0 | 1;
-  name: string;
-  resource_count: number;
-  status: number;
-  updated_time: string;
+  created_by: string; // 创建者
+  created_time: string; // 创建时间
+  description: string; // 描述
+  extra_info: any; // 额外信息
+  id: number; // 网关ID
+  is_official: boolean; // 是否为官方网关
+  is_public: boolean; // 是否公开
+  kind: 0 | 1; // 是否为可编程网关，0 非可编程网关，1 可编程网关
+  name: string; // 网关名称
+  resource_count: number; // 资源数量
+  status: number; // 网关状态
+  updated_time: string; // 更新时间
   stages: {
-    id: number;
-    name: string;
-    released: boolean;
-  }[];
+    id: number; // 阶段ID
+    name: string; // 阶段名称
+    released: boolean; // 是否已发布
+  }[]; // 阶段列表
 }
-
-

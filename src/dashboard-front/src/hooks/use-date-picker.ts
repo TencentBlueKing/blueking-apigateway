@@ -2,15 +2,21 @@
  * datepicker 时间选择器 hooks 适用于列表筛选
  */
 import {
-  ref,
   reactive,
+  ref,
 } from 'vue';
 import { useI18n } from 'vue-i18n';
+
+/**
+ * useDatePicker - 时间选择器的自定义钩子函数
+ * @param {any} filterData - 可选参数，用于筛选数据
+ * @returns {object} - 返回包含快捷日期范围、日期值、处理日期变化、清除日期和确认日期的函数
+ */
 export const useDatePicker = (filterData?: any) => {
-  const { t } = useI18n();
+  const { t } = useI18n(); // 获取国际化函数
   const shortcutsRange = reactive([
     {
-      text: t('今天'),
+      text: t('今天'), // 今天的快捷选项
       value() {
         const end = new Date();
         const start = new Date(end.getFullYear(), end.getMonth(), end.getDate());
@@ -18,7 +24,7 @@ export const useDatePicker = (filterData?: any) => {
       },
     },
     {
-      text: t('近7天'),
+      text: t('近7天'), // 近7天的快捷选项
       value() {
         const end = new Date();
         const start = new Date();
@@ -27,7 +33,7 @@ export const useDatePicker = (filterData?: any) => {
       },
     },
     {
-      text: t('近15天'),
+      text: t('近15天'), // 近15天的快捷选项
       value() {
         const end = new Date();
         const start = new Date();
@@ -36,7 +42,7 @@ export const useDatePicker = (filterData?: any) => {
       },
     },
     {
-      text: t('近30天'),
+      text: t('近30天'), // 近30天的快捷选项
       value() {
         const end = new Date();
         const start = new Date();
@@ -46,22 +52,35 @@ export const useDatePicker = (filterData?: any) => {
     },
   ]);
 
-  const dateValue = ref([]);
+  const dateValue = ref([]); // 日期值
 
+  /**
+   * handleChange - 处理日期变化
+   * @param {any} date - 选中的日期
+   */
   const handleChange = (date: any) => {
     dateValue.value = date;
   };
 
+  /**
+   * handleClear - 清除日期
+   */
   const handleClear = () => {
     dateValue.value = ['', ''];
     setFilterDate(dateValue.value);
   };
 
+  /**
+   * handleComfirm - 确认日期
+   */
   const handleComfirm = () => {
     setFilterDate(dateValue.value);
   };
 
-  // 格式化时间
+  /**
+   * setFilterDate - 格式化时间并设置筛选数据
+   * @param {any[]} date - 日期数组
+   */
   const setFilterDate = (date: any[]) => {
     if (date[0] && date[1]) {
       // @ts-ignore
