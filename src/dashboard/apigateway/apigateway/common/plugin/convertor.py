@@ -163,6 +163,23 @@ class FaultInjectionConvertor(PluginConvertor):
         return config
 
 
+class ResponseRewriteConvertor(PluginConvertor):
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.RESPONSE_REWRITE
+
+    def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        if config.get("vars") == "":
+            del config["vars"]
+        if config.get("vars"):
+            config["vars"] = ast.literal_eval(config["vars"])
+
+        headers = config["headers"]
+        headers["add"] = [item["key"] for item in headers["add"]]
+        headers["set"] = {item["key"]: item["value"] for item in headers["set"]}
+        headers["remove"] = [item["key"] for item in headers["remove"]]
+
+        return config
+
+
 class PluginConvertorFactory:
     plugin_convertors: ClassVar[Dict[PluginTypeCodeEnum, PluginConvertor]] = {
         c.plugin_type_code: c
@@ -173,6 +190,7 @@ class PluginConvertorFactory:
             BkMockConvertor(),
             RequestValidationConvertor(),
             FaultInjectionConvertor(),
+            ResponseRewriteConvertor(),
         ]
     }
 
