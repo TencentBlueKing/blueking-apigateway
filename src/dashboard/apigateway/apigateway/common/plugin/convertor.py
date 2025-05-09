@@ -167,10 +167,10 @@ class ResponseRewriteConvertor(PluginConvertor):
     plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.RESPONSE_REWRITE
 
     def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        if config.get("vars") == "":
+            del config["vars"]
         if config.get("vars"):
             config["vars"] = ast.literal_eval(config["vars"])
-        else:
-            del config["vars"]
 
         headers = config["headers"]
         headers["add"] = [item["key"] for item in headers["add"]]
