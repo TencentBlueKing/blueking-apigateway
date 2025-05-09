@@ -229,7 +229,9 @@ const status = computed(() => {
     if (props.stage.paasInfo?.latest_deployment?.status) {
       return props.stage.paasInfo?.latest_deployment?.status;
     }
-    return props.stage.paasInfo?.status;
+    if (props.stage.paasInfo?.status) {
+      return props.stage.paasInfo?.status;
+    }
   }
   // 未发布
   if (props.stage.status === 0 || props.stage.release?.status === 'unreleased') {

@@ -195,8 +195,6 @@ const md = new MarkdownIt({
 });
 
 const initMarkdownHtml = (box: string) => {
-  console.log('box', box);
-  console.log('activeTab', active.value);
   if (!box) {
     return false;
   }
