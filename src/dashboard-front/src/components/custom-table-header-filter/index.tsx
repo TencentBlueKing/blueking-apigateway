@@ -4,11 +4,11 @@ import {
   unref,
   watch,
 } from 'vue';
-import { Popover } from 'bkui-vue';
-import { Funnel } from 'bkui-vue/lib/icon';
-import { cloneDeep } from 'lodash';
-import './custom-table-header-filter.scss';
-import i18n from '@/language/i18n';
+import { Popover } from 'bkui-vue'; // 引入 bkui-vue 库中的 Popover 组件
+import { Funnel } from 'bkui-vue/lib/icon'; // 引入 bkui-vue 库中的 Funnel 图标组件
+import { cloneDeep } from 'lodash'; // 引入 lodash 库中的 cloneDeep 方法，用于深拷贝对象
+import './custom-table-header-filter.scss'; // 引入自定义的样式文件
+import i18n from '@/language/i18n'; // 引入国际化配置
 
 export default defineComponent({
   props: {
@@ -38,9 +38,13 @@ export default defineComponent({
   emits: ['selected'],
   setup(props, ctx) {
     const { t } = i18n.global;
+    // 引用弹出框组件的引用
     const popoverRef = ref();
+    // 控制弹出框显示状态的变量
     const isShowFilterPopover = ref(false);
+    // 当前选中的值
     const curSelectValue = ref('') as any;
+    // 过滤列表数据
     const filterList = ref([]);
 
     // 处理打开弹出框的逻辑
