@@ -46,7 +46,7 @@
             <span v-else>{{ stage.resource_version.version || '--' }}</span>
             <!-- 发布失败 -->
             <span v-if="status === 'failure'" :class="['suffix', status]">（{{
-              stage.paasInfo?.latest_deployment?.version || stage.new_resource_version || '--'
+              stage.paasInfo?.latest_deployment?.version || stage.paasInfo?.version || '--'
             }} 版本发布失败，<span><BkButton text theme="primary" @click.stop="handleCheckLog">{{
               t('查看日志')
             }}</BkButton></span>）</span>
@@ -227,15 +227,15 @@ const status = computed(() => {
   if (!props.stage) {
     return '';
   }
-  // 未发布
-  if (props.stage.status === 0 || props.stage.release?.status === 'unreleased') {
-    return 'unreleased';
-  }
   if (common.isProgrammableGateway) {
     if (props.stage.paasInfo?.latest_deployment?.status) {
       return props.stage.paasInfo?.latest_deployment?.status;
     }
     return props.stage.paasInfo?.status;
+  }
+  // 未发布
+  if (props.stage.status === 0 || props.stage.release?.status === 'unreleased') {
+    return 'unreleased';
   }
   return props.stage.release?.status;
 });
