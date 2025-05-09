@@ -2371,7 +2371,7 @@
   fields:
     created_time: 2025-05-06 11:48:21.010753+00:00
     updated_time: 2025-05-06 11:48:21.010788+00:00
-    name: bk-response-rewrite
+    name: response-rewrite
     type: plugin
     version: '0'
     _schema: |-
@@ -2381,24 +2381,28 @@
         "properties": {
             "status_code": {
                 "type": "integer",
+                "description": "new status code for response",
                 "minimum": 200,
                 "maximum": 598
             },
             "body": {
-                "type": "string"
+                "type": "string",
+                "description": "new body for response"
             },
             "body_base64": {
                 "type": "boolean",
+                "description": "whether new body for response need base64 decode before return",
                 "default": false
             },
             "headers": {
                 "type": "object",
+                "description": "new headers for response",
                 "properties": {
                     "add": {
                         "type": "array",
                         "items": {
                             "type": "string",
-                            "pattern": "^[^\\s]+:\\s*.+$"
+                            "pattern": "^[^:]+:[^:]*[^/]$"
                         }
                     },
                     "set": {
@@ -2438,23 +2442,23 @@
     example: '-'
 - model: plugin.plugintype
   fields:
-    code: bk-response-rewrite
+    code: response-rewrite
     name: Response 转换
-    name_en: Header transformation
+    name_en: Response Rewrite
     is_public: true
-    scope: stage_and_resource
-    priority: 17421
+    scope: resource
+    priority: 899
     schema:
-    - bk-response-rewrite
+    - response-rewrite
     - plugin
     - '0'
 - model: plugin.pluginform
   fields:
     language: ''
     type:
-    - bk-response-rewrite
+    - response-rewrite
     notes: "插件支持修改上游服务或 APISIX 返回的 Body 和 Header 信息。\n该插件可以应用在以下场景中：\n通过设置 Access-Control-Allow-* 字段实现 CORS（跨域资源共享）的功能。\n通过设置标头中的 status_code 和 Location 字段实现重定向。"
-    example: "作用：添加 header `X-Server-balancer-addr: $balancer_ip:$balancer_port`，设置 header `X-Server-id: 3`，并且删除 header `X-TO-BE-REMOVED`\n\n添加：X-Server-balancer-addr: $balancer_ip:$balancer_port\n设置：X-Server-id: 3\n删除：X-TO-BE-REMOVED"
+    example: '"status_code": 200, \n"body": {\"code\":\"ok\",\"message\":\"new json body\"}, \n"headers": {\n  "add": ["X-Server-balancer-addr: test"],\n  "set": {"X-Server-id": 3},\n  "remove": ["X-TO-BE-REMOVED"]\n}, \n "vars": [[["arg_name", "==", "jack"], ["arg_age", "==", 18]]]\n'
     style: dynamic
     default_value: ''
     config: |-
@@ -2491,7 +2495,7 @@
                               "description": "您可以添加响应头的键，响应头的键中必须包含冒号（:）。",
                               "type": "string",
                               "maxLength": 1024,
-                              "pattern": "^[^\\s]+:\\s*.+$",
+                              "pattern": "^[^:]+:[^:]*[^/]$",
                               "ui:rules": [
                                 "required"
                               ]
@@ -2508,7 +2512,7 @@
                         }
                       },
                       "set": {
-                          "type": "array",
+                          "type": "array", 
                           "title": "设置",
                           "minItems": 0,
                           "description": "改写响应头。",
@@ -2580,11 +2584,9 @@
   fields:
     language: en
     type:
-    - bk-response-rewrite
+    - response-rewrite
     notes: The response-rewrite Plugin rewrites the content returned by the Upstream and APISIX.\nThis Plugin can be useful in these scenarios:\nTo set Access-Control-Allow-* field for supporting CORS.\nTo set custom status_code and Location fields in the header to redirect.
-    example: "Purpose: Add header 'X-Server-balancer-addr: $balancer_ip:$balancer_port' and Set header 'X-Server-id: 3' and delete header 'X-TO-BE-REMOVED'\n\nAdd: X-Server-balancer-addr: $balancer_ip:$balancer_port\nSettings: X-Server-id: 3\nDelete: X-TO-BE-REMOVED"
-    example: "作用：添加 header `X-Server-balancer-addr: $balancer_ip:$balancer_port`，设置 header `X-Server-id: 3`，并且删除 header `X-TO-BE-REMOVED`\n\n添加：X-Server-balancer-addr: $balancer_ip:$balancer_port\n设置：X-Server-id: 3\n删除：X-TO-BE-REMOVED"
-
+    example: '"status_code": 200, \n"body": {\"code\":\"ok\",\"message\":\"new json body\"}, \n"headers": {\n  "add": ["X-Server-balancer-addr: test"],\n  "set": {"X-Server-id": 3},\n  "remove": ["X-TO-BE-REMOVED"]\n}, \n "vars": [[["arg_name", "==", "jack"], ["arg_age", "==", 18]]]\n'
     style: dynamic
     default_value: ''
     config: |-
@@ -2621,7 +2623,7 @@
                               "description": "You can add the key of the response header, but colons (:) must appear in the key of the response header.",
                               "type": "string",
                               "maxLength": 1024,
-                              "pattern": "^[^\\s]+:\\s*.+$",
+                              "pattern": "^[^:]+:[^:]*[^/]$",
                               "ui:rules": [
                                 "required"
                               ]

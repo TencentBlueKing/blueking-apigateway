@@ -313,7 +313,7 @@ class PluginConfigYamlChecker:
         PluginTypeCodeEnum.BK_IP_RESTRICTION.value: BkIPRestrictionChecker(),
         PluginTypeCodeEnum.REQUEST_VALIDATION.value: RequestValidationChecker(),
         PluginTypeCodeEnum.FAULT_INJECTION.value: FaultInjectionChecker(),
-        PluginTypeCodeEnum.BK_RESPONSE_REWRITE.value: ResponseRewriteChecker(),
+        PluginTypeCodeEnum.RESPONSE_REWRITE.value: ResponseRewriteChecker(),
     }
 
     def __init__(self, type_code: str):
