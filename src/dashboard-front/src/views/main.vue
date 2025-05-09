@@ -79,8 +79,9 @@
           :clearable="false">
           <template #prefix>
             <span
-              :class="['kind', currentGateway.kind === 0 ? 'normal' : 'program']">
-              {{ currentGateway.kind === 0 ? t('普') : t('编') }}
+              class="kind-program"
+              v-if="currentGateway.kind === 1">
+              <i class="apigateway-icon icon-ag-square-program" />
             </span>
           </template>
           <bk-option
@@ -151,7 +152,6 @@ import { cloneDeep } from 'lodash';
 import versionReleaseNote from '@/components/version-release-note.vue';
 import tipsPublishBar from '@/components/tips-publish-bar.vue';
 import { IMenu } from '@/types';
-import { useI18n } from 'vue-i18n';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const route = useRoute();
@@ -161,8 +161,6 @@ const common = useCommon();
 const permission = usePermission();
 const filterData = ref({ name: '' });
 const apigwSelect = ref();
-
-const { t } = useI18n();
 
 const stage = useStage();
 const versionReleaseNoteRef = ref();
@@ -526,25 +524,12 @@ onMounted(async () => {
     }
   }
 }
-.kind {
-  content: ' ';
-  width: 20px;
-  height: 20px;
-  border-radius: 2px;
+.kind-program {
   margin: 6px 0px 6px 6px;
-  font-size: 12px;
+  font-size: 16px;
   line-height: 18px;
   text-align: center;
-  &.normal {
-    color: #1768EF;
-    background: #E1ECFF;
-    border: 1px solid #699DF4;
-  }
-  &.program {
-    color: #299E56;
-    background: #EBFAF0;
-    border: 1px solid #A1E3BA;
-  }
+  color: #3A84FF;
 }
 </style>
 <style lang="scss">

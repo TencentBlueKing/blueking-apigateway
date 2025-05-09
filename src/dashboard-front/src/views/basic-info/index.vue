@@ -8,10 +8,10 @@
             'header-info-left',
             { 'header-info-left-disabled': !basicInfoData.status }
           ]">
-          <span
+          <!-- <span
             :class="['kind', basicInfoData.kind === 0 ? 'normal' : 'program']">
             {{ basicInfoData.kind === 0 ? t('普') : t('编') }}
-          </span>
+          </span> -->
           <span class="name">{{ basicInfoData?.name?.[0]?.toUpperCase() }}</span>
         </div>
         <div class="header-info-right">
@@ -662,28 +662,28 @@ watch(
       align-items: center;
       justify-content: center;
       position: relative;
-      .kind {
-        content: ' ';
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        border-radius: 2px;
-        top: 0;
-        left: 0;
-        font-size: 12px;
-        line-height: 18px;
-        text-align: center;
-        &.normal {
-          color: #1768EF;
-          background: #E1ECFF;
-          border: 1px solid #699DF4;
-        }
-        &.program {
-          color: #299E56;
-          background: #EBFAF0;
-          border: 1px solid #A1E3BA;
-        }
-      }
+      // .kind {
+      //   content: ' ';
+      //   position: absolute;
+      //   width: 20px;
+      //   height: 20px;
+      //   border-radius: 2px;
+      //   top: 0;
+      //   left: 0;
+      //   font-size: 12px;
+      //   line-height: 18px;
+      //   text-align: center;
+      //   &.normal {
+      //     color: #1768EF;
+      //     background: #E1ECFF;
+      //     border: 1px solid #699DF4;
+      //   }
+      //   &.program {
+      //     color: #299E56;
+      //     background: #EBFAF0;
+      //     border: 1px solid #A1E3BA;
+      //   }
+      // }
 
       .name {
         font-weight: 700;

@@ -14,11 +14,11 @@
           >
             <bk-radio-group v-model="formData.kind" type="card" :disabled="isEdit">
               <bk-radio-button :label="0">
-                <span class="kind normal">{{ t('普') }}</span>
+                <!-- <span class="kind normal">{{ t('普') }}</span> -->
                 {{ t('普通网关') }}
               </bk-radio-button>
               <bk-radio-button :label="1">
-                <span class="kind program">{{ t('编') }}</span>
+                <!-- <span class="kind program">{{ t('编') }}</span> -->
                 {{ t('可编程网关') }}
               </bk-radio-button>
             </bk-radio-group>
@@ -592,26 +592,26 @@ watch(
   margin-bottom: 16px;
   margin-top: -10px;
 }
-.kind {
-  content: ' ';
-  width: 20px;
-  height: 20px;
-  border-radius: 2px;
-  padding: 1px 2px;
-  font-size: 12px;
-  text-align: center;
-  margin-right: 4px;
-  &.normal {
-    color: #1768EF;
-    background: #E1ECFF;
-    border: 1px solid #699DF4;
-  }
-  &.program {
-    color: #299E56;
-    background: #EBFAF0;
-    border: 1px solid #A1E3BA;
-  }
-}
+// .kind {
+//   content: ' ';
+//   width: 20px;
+//   height: 20px;
+//   border-radius: 2px;
+//   padding: 1px 2px;
+//   font-size: 12px;
+//   text-align: center;
+//   margin-right: 4px;
+//   &.normal {
+//     color: #1768EF;
+//     background: #E1ECFF;
+//     border: 1px solid #699DF4;
+//   }
+//   &.program {
+//     color: #299E56;
+//     background: #EBFAF0;
+//     border: 1px solid #A1E3BA;
+//   }
+// }
 .repository-item {
   width: 124px;
   height: 88px;
