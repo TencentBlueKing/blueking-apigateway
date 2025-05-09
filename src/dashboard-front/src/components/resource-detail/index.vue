@@ -688,10 +688,6 @@ import { useI18n } from 'vue-i18n';
 import { useCommon } from '@/store';
 import ConfigDisplayTable from '@/views/components/plugin-manage/config-display-table.vue';
 
-const common = useCommon();
-
-const { t } = useI18n();
-
 const props = defineProps({
   curResource: {
     type: Object,
@@ -717,6 +713,10 @@ const props = defineProps({
     default: false,
   },
 });
+
+const common = useCommon();
+
+const { t } = useI18n();
 
 // const weightMap = reactive({
 //   roundrobin: t('轮询(Round-Robin)'),

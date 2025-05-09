@@ -173,16 +173,15 @@ import editStageSideslider from '../comps/edit-stage-sideslider.vue';
 import { copy } from '@/common/util';
 import { useRoute } from 'vue-router';
 
-const { t } = useI18n();
-const route = useRoute();
-const common = useCommon();
-const stageStore = useStage();
-
 const props = defineProps({
   stageAddress: String,
   stageId: Number,
   versionId: Number,
 });
+const { t } = useI18n();
+const route = useRoute();
+const common = useCommon();
+const stageStore = useStage();
 
 const searchValue = ref<string>('');
 const info = ref<any>({});

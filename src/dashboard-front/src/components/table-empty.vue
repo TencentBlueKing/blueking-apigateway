@@ -23,8 +23,6 @@
 import i18n from '@/language/i18n';
 import { computed } from 'vue';
 
-const { t } = i18n.global;
-
 const props = defineProps({
   keyword: {
     type: String,
@@ -49,6 +47,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['clear-filter', 'reacquire']);
+
+const { t } = i18n.global;
 
 const curType = computed(() => {
   if (props.abnormal) {

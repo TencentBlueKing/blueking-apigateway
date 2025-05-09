@@ -143,6 +143,19 @@ import { Message } from 'bkui-vue';
 import headersNames from '@/common/headers-name';
 import headersValues from '@/common/headers-value';
 
+const props = defineProps({
+  list: {
+    type: Array<RowType>,
+    default: [],
+  },
+  type: {
+    type: String,
+    required: false,
+  },
+});
+
+const emit = defineEmits(['change']);
+
 const { t } = useI18n();
 
 interface RowType {
@@ -163,19 +176,6 @@ interface SelectPayload {
   checked: boolean;
   data: RowType[];
 }
-
-const props = defineProps({
-  list: {
-    type: Array<RowType>,
-    default: [],
-  },
-  type: {
-    type: String,
-    required: false,
-  },
-});
-
-const emit = defineEmits(['change']);
 
 const formRefs = ref(new Map());
 const setRefs = (el: HTMLElement | null, name: string) => {

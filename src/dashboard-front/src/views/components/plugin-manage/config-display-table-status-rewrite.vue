@@ -30,9 +30,9 @@ interface IProps {
   valueRender: ValueRenderType
 }
 
-const { t } = useI18n();
-
 const props = defineProps<IProps>();
+
+const { t } = useI18n();
 
 const { firstColWidth } = toRefs(props);
 

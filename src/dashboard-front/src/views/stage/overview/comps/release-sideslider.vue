@@ -2,7 +2,7 @@
   <div>
     <bk-sideslider
       class="release-sideslider"
-      v-model:isShow="isShow"
+      v-model:is-show="isShow"
       :width="960"
       :title="t('发布资源至环境【{stage}】', { stage: chooseAssets.name })"
       quick-close
@@ -281,14 +281,6 @@ type VersionType = {
   isLatestVersion: boolean
 };
 
-const route = useRoute();
-const router = useRouter();
-const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
-const { getStagesStatus } = useGetStageList();
-const apigwId = computed(() => +route.params.id);
-
-const { t } = useI18n();
-
 const props = defineProps({
   currentAssets: {
     type: Object,
@@ -299,8 +291,14 @@ const props = defineProps({
     required: false,
   },
 });
-
 const emit = defineEmits<(e: 'release-success' | 'hidden' | 'closed-on-publishing') => void>();
+const route = useRoute();
+const router = useRouter();
+const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
+const { getStagesStatus } = useGetStageList();
+const apigwId = computed(() => +route.params.id);
+
+const { t } = useI18n();
 
 const resourceVersion = computed(() => {
   let version = '';

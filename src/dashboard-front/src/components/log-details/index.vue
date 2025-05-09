@@ -1,5 +1,5 @@
 <template>
-  <bk-sideslider v-model:isShow="isShow" :width="960" quick-close>
+  <bk-sideslider v-model:is-show="isShow" :width="960" quick-close>
     <template #header>
       <div class="log-details-title">
         <div class="log-details-name">【{{ logDetails?.stage?.name }}】{{ t('发布日志详情') }}</div>
@@ -53,6 +53,8 @@ const props = defineProps({
     type: Number,
   },
 });
+
+const emit = defineEmits(['release-success', 'release-doing']);
 
 const { t } = useI18n();
 
@@ -188,8 +190,6 @@ const getLogsList = async () => {
 const showSideslider = () => {
   isShow.value = true;
 };
-
-const emit = defineEmits(['release-success', 'release-doing']);
 
 watch(
   () => isShow.value,

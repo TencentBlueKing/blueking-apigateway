@@ -417,17 +417,6 @@ import {
   resourceVersionsDiff,
 } from '@/http';
 
-const { t } = useI18n();
-const route = useRoute();
-const common = useCommon();
-
-// 网关id
-const apigwId = computed(() => +route.params.id);
-const tableEmptyConf = ref<{ keyword: string; isAbnormal: boolean }>({
-  keyword: '',
-  isAbnormal: false,
-});
-
 const props = defineProps({
   versionList: {
     type: Array,
@@ -457,6 +446,16 @@ const props = defineProps({
     type: String, // createVersion: 生成资源版本  publishEnvironment: 发布到环境
     default: '',
   },
+});
+const { t } = useI18n();
+const route = useRoute();
+const common = useCommon();
+
+// 网关id
+const apigwId = computed(() => +route.params.id);
+const tableEmptyConf = ref<{ keyword: string; isAbnormal: boolean }>({
+  keyword: '',
+  isAbnormal: false,
 });
 
 const width = ref<number>(1240);

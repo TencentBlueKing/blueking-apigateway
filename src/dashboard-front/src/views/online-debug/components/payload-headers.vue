@@ -128,8 +128,6 @@ import { AngleUpFill } from 'bkui-vue/lib/icon';
 import headersValues from '@/common/headers-value';
 import editTable from '@/views/online-debug/components/edit-table.vue';
 
-const { t } = useI18n();
-
 const props = defineProps({
   headersPayload: {
     type: Array,
@@ -138,6 +136,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['change']);
+
+const { t } = useI18n();
 
 let local = localStorage.getItem('presupposeHeaders');
 if (!local) {

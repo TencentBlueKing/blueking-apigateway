@@ -2,7 +2,7 @@
   <!--  SDK使用说明 Slider  -->
   <div class="sdk-instruction-slider">
     <bk-sideslider
-      v-model:isShow="isShow"
+      v-model:is-show="isShow"
       width="960"
       :title="t('SDK 使用说明')"
       quick-close
@@ -22,12 +22,13 @@ import { defineModel } from 'vue';
 
 import SdkInstructionContent from '@/views/apiDocs/components/sdk-instruction-content.vue';
 
-const { t } = useI18n();
-
 const isShow = defineModel<boolean>({
   required: true,
   default: false,
 });
+
+const { t } = useI18n();
+
 </script>
 
 <style scoped lang="scss">

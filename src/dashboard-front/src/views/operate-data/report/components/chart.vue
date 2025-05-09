@@ -34,17 +34,25 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, shallowRef, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import {
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  watch,
+} from 'vue';
 import * as echarts from 'echarts';
 import { merge } from 'lodash';
 import dayjs from 'dayjs';
 import { useI18n } from 'vue-i18n';
 import { userChartIntervalOption } from '@/hooks';
-import { SeriesItemType, SearchParamsType } from '../type';
+import {
+  SearchParamsType,
+  SeriesItemType,
+} from '../type';
 import TableEmpty from '@/components/table-empty.vue';
 import { getColorHue } from '@/common/util';
-
-const { t } = useI18n();
 
 const props = defineProps({
   instanceId: { // 生成图表的元素id
@@ -60,6 +68,11 @@ const props = defineProps({
     default: '响应耗时',
   },
 });
+
+const emit = defineEmits([
+  'clear-params',
+  'report-init',
+]);
 
 // interface LegendItem {
 //   color: string;
@@ -79,8 +92,7 @@ const props = defineProps({
 //   response_time_90th?: LegendItem;
 // };
 
-const emit = defineEmits(['clear-params', 'report-init']);
-
+const { t } = useI18n();
 const { getChartIntervalOption } = userChartIntervalOption();
 
 const myChart = shallowRef();
@@ -373,9 +385,9 @@ defineExpose({
   padding-top: 12px;
   .chart-title {
     margin-left: 24px;
-    color: '#313238';
+    color: #313238;
     font-size: 14px;
-    font-weight: 'bold';
+    font-weight: bold;
     line-height: 22px;
   }
   .line-chart {

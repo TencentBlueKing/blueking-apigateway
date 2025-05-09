@@ -39,6 +39,8 @@ interface IProps {
   firstColWidth: string
 }
 
+const props = defineProps<IProps>();
+
 const { t } = useI18n();
 
 const periodTextMap: Record<number, string> = {
@@ -47,8 +49,6 @@ const periodTextMap: Record<number, string> = {
   3600: t('时'),
   86400: t('天'),
 };
-
-const props = defineProps<IProps>();
 
 const {
   plugin,

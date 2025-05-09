@@ -250,6 +250,7 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(['done', 'close']);
 const router = useRouter();
 const common = useCommon();
 const { apigwId } = common; // 网关id
@@ -358,8 +359,6 @@ const loadbalanceList = reactive([
   { id: 'roundrobin', name: t('轮询(Round-Robin)') },
   { id: 'weighted-roundrobin', name: t('加权轮询(Weighted Round-Robin)') },
 ]);
-
-const emit = defineEmits(['done', 'close']);
 
 const handleBeforeClose = async () => {
   const sliderParams = {

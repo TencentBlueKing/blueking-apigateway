@@ -8,6 +8,7 @@ module.exports = {
   cache: true,
   open: true,
   replaceStatic: true,
+  server: 'https',
 
   // webpack config 配置
   configureWebpack() {
@@ -17,7 +18,6 @@ module.exports = {
         client: {
           overlay: false,
         },
-        https: !process.env.BK_HTTPS,
       },
     };
   },

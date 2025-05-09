@@ -36,14 +36,6 @@ interface IProps {
   valueRender?: ValueRenderType
 }
 
-// Header转换插件、频率控制插件、IP访问限制插件、网关错误使用HTTP状态码200插件配置展示表格
-const tableComponentMap: { [key: string]: Component } = {
-  'bk-header-rewrite': ConfigDisplayTableHeaderRewrite,
-  'bk-rate-limit': ConfigDisplayTableRateLimit,
-  'bk-ip-restriction': ConfigDisplayTableIpRestriction,
-  'bk-status-rewrite': ConfigDisplayTableStatusRewrite,
-};
-
 const props = withDefaults(defineProps<IProps>(), {
   plugin: () => ({
     code: '',
@@ -66,6 +58,14 @@ const props = withDefaults(defineProps<IProps>(), {
     };
   },
 });
+
+// Header转换插件、频率控制插件、IP访问限制插件、网关错误使用HTTP状态码200插件配置展示表格
+const tableComponentMap: { [key: string]: Component } = {
+  'bk-header-rewrite': ConfigDisplayTableHeaderRewrite,
+  'bk-rate-limit': ConfigDisplayTableRateLimit,
+  'bk-ip-restriction': ConfigDisplayTableIpRestriction,
+  'bk-status-rewrite': ConfigDisplayTableStatusRewrite,
+};
 
 const {
   plugin,

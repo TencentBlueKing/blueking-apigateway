@@ -98,7 +98,7 @@
 
     <!-- 详情sideslider -->
     <bk-sideslider
-      ext-cls="alarm-history-slider" v-model:isShow="sidesliderConfig.isShow" :title="sidesliderConfig.title"
+      ext-cls="alarm-history-slider" v-model:is-show="sidesliderConfig.isShow" :title="sidesliderConfig.title"
       :quick-close="true" width="600">
       <template #default>
         <div class="hitory-form p30">

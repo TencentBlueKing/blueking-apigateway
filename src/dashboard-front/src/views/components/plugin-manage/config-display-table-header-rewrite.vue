@@ -35,9 +35,9 @@ interface IProps {
   firstColWidth: string
 }
 
-const { t } = useI18n();
-
 const props = defineProps<IProps>();
+
+const { t } = useI18n();
 
 const {
   plugin,

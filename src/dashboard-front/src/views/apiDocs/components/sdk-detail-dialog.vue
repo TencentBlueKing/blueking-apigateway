@@ -37,12 +37,18 @@ import {
 import SdkDetail from '@/views/apiDocs/components/sdk-detail.vue';
 import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n();
-
 const isShow = defineModel<boolean>({
   required: true,
   default: false,
 });
+
+const props = withDefaults(defineProps<IProps>(), {
+  sdks: () => [],
+  targetName: '',
+  maintainers: () => [],
+});
+
+const { t } = useI18n();
 
 interface IProps {
   sdks: ISdk[];
@@ -50,12 +56,6 @@ interface IProps {
   languages: LanguageType[];
   maintainers: string[];
 }
-
-const props = withDefaults(defineProps<IProps>(), {
-  sdks: () => [],
-  targetName: '',
-  maintainers: () => [],
-});
 
 const { sdks, targetName, languages } = toRefs(props);
 

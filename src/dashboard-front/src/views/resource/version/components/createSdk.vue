@@ -56,16 +56,16 @@ import { createSdks, getResourceVersionsList } from '@/http';
 import { useRoute } from 'vue-router';
 import { Message } from 'bkui-vue';
 
+const props = defineProps<{
+  versionList?: Array<any>;
+  resourceVersionId?: string;
+}>();
+const emit = defineEmits(['done']);
 const { t } = useI18n();
 const route = useRoute();
 
 // 网关id
 const apigwId = computed(() => +route.params.id);
-
-const props = defineProps<{
-  versionList?: Array<any>;
-  resourceVersionId?: string;
-}>();
 
 const baseInfoRef = ref(null);
 // 版本列表
@@ -95,8 +95,6 @@ const formData: CreateDialog = reactive({
   version: '',
   language: 'python',
 });
-
-const emit = defineEmits(['done']);
 
 // 生成sdk
 const handleCreate = async () => {

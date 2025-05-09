@@ -46,9 +46,6 @@ import { useI18n } from 'vue-i18n';
 import { createChat, sendChat, getFeatures } from '@/http';
 import { useStage } from '@/store';
 
-const stageStore = useStage();
-const { t } = useI18n();
-
 const props = defineProps({
   name: {
     type: String,
@@ -73,6 +70,8 @@ const props = defineProps({
     default: false,
   },
 });
+const stageStore = useStage();
+const { t } = useI18n();
 
 const renderKey = ref<number>(0);
 const chatDialog = reactive<any>({

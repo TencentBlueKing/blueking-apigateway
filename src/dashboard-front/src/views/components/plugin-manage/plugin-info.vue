@@ -153,19 +153,6 @@ import { useStage } from '@/store';
 import { onClickOutside } from '@vueuse/core';
 import pluginIconList from '@/common/plugin-icon-list';
 
-const stageStore = useStage();
-const BkSchemaForm = createForm();
-
-const { t } = useI18n();
-const emit = defineEmits(['on-change', 'choose-plugin', 'show-example']);
-
-const schemaFormData = ref({});
-const formConfig = ref({
-  schema: {},
-  layout: {},
-  rules: {},
-});
-
 const props = defineProps({
   curPlugin: {
     type: Object,
@@ -187,6 +174,17 @@ const props = defineProps({
     type: Array<any>,
     default: () => [],
   },
+});
+const emit = defineEmits(['on-change', 'choose-plugin', 'show-example']);
+const stageStore = useStage();
+const BkSchemaForm = createForm();
+
+const { t } = useI18n();
+const schemaFormData = ref({});
+const formConfig = ref({
+  schema: {},
+  layout: {},
+  rules: {},
 });
 
 const { curPlugin } = toRefs(props);

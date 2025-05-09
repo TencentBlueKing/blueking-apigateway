@@ -1,6 +1,6 @@
 <template>
   <bk-sideslider
-    v-model:isShow="isShow"
+    v-model:is-show="isShow"
     :width="960"
     quick-close
   >
@@ -103,13 +103,12 @@ import { useRoute } from 'vue-router';
 import { getReleaseLatest } from '@/http';
 import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n();
-const route = useRoute();
-const apigwId = computed(() => +route.params.id);
-
 const props = defineProps({
   id: String,
 });
+const { t } = useI18n();
+const route = useRoute();
+const apigwId = computed(() => +route.params.id);
 
 const isShow = ref<boolean>(false);
 const info = ref<any>();

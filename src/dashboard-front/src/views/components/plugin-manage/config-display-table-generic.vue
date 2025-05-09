@@ -32,6 +32,8 @@ interface IProps {
   valueRender: ValueRenderType
 }
 
+const props = defineProps<IProps>();
+
 const { t } = useI18n();
 
 // 键名对应文本
@@ -51,8 +53,6 @@ const rowKeyTextMap: Record<string, string> = {
   response_example: t('响应体'),
   response_headers: t('响应头'),
 };
-
-const props = defineProps<IProps>();
 
 const {
   plugin,

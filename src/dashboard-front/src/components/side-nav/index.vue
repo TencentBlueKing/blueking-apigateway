@@ -16,12 +16,6 @@ import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute } from 'vue-router';
 import { throttle } from 'lodash';
 
-const route = useRoute();
-
-const curSideNavId = ref<string>('');
-const contentHeightList = ref<any>(null);
-const triggerFlag = ref<boolean>(false);
-
 const props = defineProps({
   offsetTop: {
     type: Number,
@@ -38,6 +32,12 @@ const props = defineProps({
     },
   },
 });
+
+const route = useRoute();
+
+const curSideNavId = ref<string>('');
+const contentHeightList = ref<any>(null);
+const triggerFlag = ref<boolean>(false);
 
 const getChildrenHeigh = () => {
   const container = document.querySelector('.component-content') || document.body;

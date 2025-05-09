@@ -105,13 +105,6 @@ import {
 import i18n from '@/language/i18n';
 import { useGetGlobalProperties } from '@/hooks';
 import { useStorage } from '@vueuse/core';
-const { t } = i18n.global;
-
-const globalProperties = useGetGlobalProperties();
-// 从本地存储获取搜索历史
-const queryHistory = useStorage('access-log-query-history', []);
-const { GLOBAL_CONFIG } = globalProperties;
-
 const props = defineProps({
   modeValue: {
     type: String,
@@ -128,6 +121,13 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:modeValue', 'search', 'choose']);
+
+const { t } = i18n.global;
+
+const globalProperties = useGetGlobalProperties();
+// 从本地存储获取搜索历史
+const queryHistory = useStorage('access-log-query-history', []);
+const { GLOBAL_CONFIG } = globalProperties;
 
 const popoverOptions = {
   trigger: 'click',
