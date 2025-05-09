@@ -488,16 +488,31 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
                 latest_history_id = latest_history.id
                 latest_publish_status = ReleaseHandler.get_release_status(latest_history.id)
 
-        # 说明有正在发布的任务
-        if latest_publish_status != "":
+        if deploy_history:
+            # 查询paas部署结果
             result = get_paas_deployment_result(
                 app_code=gateway.name,
                 module="default",
                 deploy_id=deploy_history.deploy_id,
                 user_credentials=get_user_credentials_from_request(request),
             )
-            if result.get("status", "") == "failed":
+            ## 正在发布的话需要判断是否失败
+            if latest_publish_status != "" and result.get("status", "") == "failed":
                 latest_publish_status = ReleaseHistoryStatusEnum.FAILURE.value
+
+            ## 第一次发布
+            if last_publish_status == "" and result.get("status", "") == "failed":
+                instance = deploy_history
+                last_publish_status = ReleaseHistoryStatusEnum.FAILURE.value
+            elif last_publish_status == "" and result.get("status", "") != "failed":
+                latest_deploy_history = deploy_history
+                latest_history = ReleaseHistory.objects.filter(
+                    gateway=gateway, stage_id=stage_id, resource_version__version=deploy_history.version
+                ).first()
+                if latest_history:
+                    latest_publish_status = ReleaseHandler.get_release_status(latest_history.id)
+                else:
+                    latest_publish_status = ReleaseHistoryStatusEnum.DOING.value
 
         context_data = {
             "latest_deploy_history": latest_deploy_history,

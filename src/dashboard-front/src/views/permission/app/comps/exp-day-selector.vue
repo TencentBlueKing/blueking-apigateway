@@ -1,6 +1,6 @@
 <template>
-  <bk-form v-bind="$attrs">
-    <bk-form-item :label="t('授权期限')" label-width="90" label-position="left" required>
+  <bk-form label-position="right" label-width="100" v-bind="$attrs">
+    <bk-form-item :label="t('授权期限')" required>
       <bk-radio-group v-model="expireDays">
         <bk-radio-button
           v-for="option in radioOptions"

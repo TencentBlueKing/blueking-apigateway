@@ -127,3 +127,25 @@ class TestMetricsQuerySummaryInputSLZ(TestCase):
             slz = serializers.MetricsQuerySummaryInputSLZ(data=test["data"])
             slz.is_valid(raise_exception=True)
             self.assertEqual(slz.validated_data, test["expected"])
+
+
+class TestMetricsQuerySummaryCallerListInputSLZ(TestCase):
+    def test_validate(self):
+        data = [
+            {
+                "data": {
+                    "stage_id": 1,
+                    "time_start": int(time.time()),
+                    "time_end": int(time.time()),
+                },
+                "expected": {
+                    "stage_id": 1,
+                    "time_start": int(time.time()),
+                    "time_end": int(time.time()),
+                },
+            }
+        ]
+        for test in data:
+            slz = serializers.MetricsQuerySummaryCallerListInputSLZ(data=test["data"])
+            slz.is_valid(raise_exception=True)
+            self.assertEqual(slz.validated_data, test["expected"])

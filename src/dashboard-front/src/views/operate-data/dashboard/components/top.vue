@@ -1,7 +1,7 @@
 <template>
   <div class="top-bar" :style="stage.getNotUpdatedStages?.length ? 'top: 42px' : 'top: -1px'">
     <div class="top-left-wrapper">
-      <div class="title">{{ t('统计报表') }}</div>
+      <div class="title">{{ t('仪表盘') }}</div>
       <span class="line"></span>
       <div class="stage-choose">
         <bk-select

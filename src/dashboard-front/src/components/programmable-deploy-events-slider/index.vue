@@ -7,7 +7,7 @@
     </template>
     <template #default>
       <div class="deploy-status-alert-wrapper">
-        <div v-if="deployStatus === 'pending' || deployStatus === 'doing'" class="deploying-alert">
+        <div v-if="status === 'pending' || status === 'doing'" class="deploying-alert">
           <div class="loading-icon">
             <Spinner />
           </div>
@@ -16,7 +16,7 @@
           <!--          <div>{{ t('操作人') }}: <span>{{ deployedBy }}</span></div>-->
         </div>
         <BkAlert
-          v-else-if="deployStatus === 'fail' || deployStatus === 'failed' || deployStatus === 'failure'"
+          v-else-if="status === 'fail' || status === 'failed' || status === 'failure'"
           theme="error"
         >
           <div class="alert-content">
@@ -382,8 +382,15 @@ const eventOutputLines = computed(() => {
   return paasEventTextLines.value;
 });
 
+const status = computed(() => {
+  if (props.stage?.paasInfo?.status) {
+    return props.stage.paasInfo.status;
+  }
+  return deployStatus.value;
+});
+
 const isFinished = computed(() => {
-  return deployStatus.value !== 'pending' && deployStatus.value !== 'doing';
+  return status.value !== 'pending' && status.value !== 'doing';
 });
 
 const statusStyleMap: Record<string, any> = {

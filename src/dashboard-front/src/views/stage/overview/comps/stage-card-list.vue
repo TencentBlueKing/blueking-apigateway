@@ -1,52 +1,54 @@
 <template>
-  <div class="card-list">
-    <StageCardItem
-      v-for="stage in stageList"
-      :key="stage.id"
-      :stage="stage"
-      @click="handleToDetail(stage)"
-      @delist="() => handleStageUnlist(stage.id)"
-      @publish="() => handleRelease(stage)"
-      @check-log="() => showLogs(stage)"
-    />
+  <BkLoading :loading="isLoading">
+    <div class="card-list">
+      <StageCardItem
+        v-for="stage in stageList"
+        :key="stage.id"
+        :stage="stage"
+        @click="handleToDetail(stage)"
+        @delist="() => handleStageUnlist(stage.id)"
+        @publish="() => handleRelease(stage)"
+        @check-log="() => showLogs(stage)"
+      />
 
-    <div v-if="!common.isProgrammableGateway" class="card-item add-stage" @click="handleAddStage">
-      <i class="apigateway-icon icon-ag-add-small" />
+      <div v-if="!common.isProgrammableGateway" class="card-item add-stage" @click="handleAddStage">
+        <i class="apigateway-icon icon-ag-add-small" />
+      </div>
+
+      <!-- 环境侧边栏 -->
+      <edit-stage-sideslider ref="stageSidesliderRef" />
+
+      <!-- 发布资源至环境 -->
+      <release-sideslider
+        ref="releaseSidesliderRef"
+        :current-assets="currentStage"
+        @hidden="handleReleaseSuccess(false)"
+        @release-success="handleReleaseSuccess"
+      />
+
+      <!-- 发布可编程网关的资源至环境 -->
+      <ReleaseProgrammableSlider
+        ref="releaseProgrammableSliderRef"
+        :current-stage="currentStage"
+        @hidden="handleReleaseSuccess(false)"
+        @release-success="handleReleaseSuccess"
+        @closed-on-publishing="handleSliderHideWhenPending"
+      />
+
+      <!-- 日志抽屉 -->
+      <log-details ref="logDetailsRef" :history-id="historyId" />
+
+      <!-- 可编程网关日志抽屉 -->
+      <ProgrammableEventSlider
+        ref="programmableEventSliderRef"
+        :deploy-id="deployId"
+        :history-id="historyId"
+        :stage="currentStage"
+        @retry="handleRetry"
+        @hide-when-pending="handleSliderHideWhenPending"
+      />
     </div>
-
-    <!-- 环境侧边栏 -->
-    <edit-stage-sideslider ref="stageSidesliderRef" />
-
-    <!-- 发布资源至环境 -->
-    <release-sideslider
-      :current-assets="currentStage"
-      ref="releaseSidesliderRef"
-      @release-success="handleReleaseSuccess"
-      @hidden="handleReleaseSuccess(false)"
-    />
-
-    <!-- 发布可编程网关的资源至环境 -->
-    <ReleaseProgrammableSlider
-      ref="releaseProgrammableSliderRef"
-      :current-stage="currentStage"
-      @hidden="handleReleaseSuccess(false)"
-      @release-success="handleReleaseSuccess"
-      @closed-on-publishing="handleSliderHideWhenPending"
-    />
-
-    <!-- 日志抽屉 -->
-    <log-details ref="logDetailsRef" :history-id="historyId" />
-
-    <!-- 可编程网关日志抽屉 -->
-    <ProgrammableEventSlider
-      ref="programmableEventSliderRef"
-      :deploy-id="deployId"
-      :history-id="historyId"
-      :stage="currentStage"
-      @retry="handleRetry"
-      @hide-when-pending="handleSliderHideWhenPending"
-    />
-  </div>
+  </BkLoading>
 </template>
 
 <script setup lang="ts">
@@ -122,23 +124,53 @@ const basicInfoData = ref<BasicInfoParams>({
 
 const stageList = ref<any[]>([]);
 const stageSidesliderRef = ref(null);
+const isLoading = ref(false);
 
 const fetchStageList = async () => {
-  const data = await getStageList(common.apigwId);
-  stageList.value = data || [];
-  stageStore.setStageList(data);
+  isLoading.value = true;
+  const response = await getStageList(common.apigwId);
+  const _stageList = response || [];
   setTimeout(() => {
     stageStore.setStageMainLoading(false);
   }, 200);
 
+  // 获取可编程网关的 stage 详情
   if (basicInfoData.value.kind === 1) {
-    await updateProgrammableGatewayStage();
+    const tasks: ReturnType<typeof getProgrammableStageDetail>[] = [];
+
+    for (const stage of _stageList) {
+      tasks.push(getProgrammableStageDetail(common.apigwId, stage.id));
+    }
+
+    const responses = await Promise.all(tasks);
+
+    for (let i = 0; i < _stageList.length; i++) {
+      _stageList[i].paasInfo = responses[i];
+    }
+  }
+  stageList.value = _stageList || [];
+  stageStore.setStageList(_stageList);
+  isLoading.value = false;
+
+  if (stageList.value.every((stage) => {
+    let _status = '';
+    if (stage.paasInfo?.latest_deployment?.status) {
+      _status = stage?.paasInfo.latest_deployment.status;
+    } else if (stage.paasInfo?.status) {
+      _status = stage.paasInfo.status;
+    } else if (stage.release?.status) {
+      _status = stage.release.status;
+    }
+    console.log(_status);
+    return _status !== 'doing' && _status !== 'pending';
+  })) {
+    pausePollingStages();
   }
 };
 
 const {
-  pause: pausePollingDetail,
-  resume: startPollingDetail,
+  pause: pausePollingStages,
+  resume: startPollingStages,
 } = useTimeoutPoll(fetchStageList, 10000, {
   immediate: false,
 });
@@ -147,27 +179,12 @@ const {
 const apigwId = computed(() => +route.params.id);
 
 watch(() => common.curApigwData, () => {
-  pausePollingDetail();
+  pausePollingStages();
   if (!common.curApigwData?.id) {
     return;
   }
-  startPollingDetail();
+  startPollingStages();
 }, { immediate: true, deep: true });
-
-// 获取可编程网关的 stage 详情
-const updateProgrammableGatewayStage = async () => {
-  const tasks: ReturnType<typeof getProgrammableStageDetail>[] = [];
-
-  for (const stage of stageList.value) {
-    tasks.push(getProgrammableStageDetail(common.apigwId, stage.id));
-  }
-
-  const responses = await Promise.all(tasks);
-
-  for (let i = 0; i < stageList.value.length; i++) {
-    stageList.value[i].paasInfo = responses[i];
-  }
-};
 
 // 环境详情
 const handleToDetail = (data: any) => {
@@ -248,14 +265,15 @@ const getBasicInfo = async (apigwId: number) => {
   basicInfoData.value = Object.assign({}, res);
 };
 
-const handleRetry = () => {
+const handleRetry = async () => {
+  await fetchStageList();
   releaseProgrammableSliderRef.value?.showReleaseSideslider();
 };
 
 const handleSliderHideWhenPending = () => {
-  pausePollingDetail();
+  pausePollingStages();
   fetchStageList();
-  startPollingDetail();
+  startPollingStages();
 };
 
 onBeforeMount(async () => {
@@ -267,7 +285,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  pausePollingDetail();
+  pausePollingStages();
 });
 
 </script>
