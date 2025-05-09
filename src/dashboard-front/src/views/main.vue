@@ -152,7 +152,6 @@ import { cloneDeep } from 'lodash';
 import versionReleaseNote from '@/components/version-release-note.vue';
 import tipsPublishBar from '@/components/tips-publish-bar.vue';
 import { IMenu } from '@/types';
-import { useI18n } from 'vue-i18n';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const route = useRoute();
@@ -162,8 +161,6 @@ const common = useCommon();
 const permission = usePermission();
 const filterData = ref({ name: '' });
 const apigwSelect = ref();
-
-const { t } = useI18n();
 
 const stage = useStage();
 const versionReleaseNoteRef = ref();
