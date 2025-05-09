@@ -1,7 +1,7 @@
 <template>
   <div class="edit-container">
     <bk-sideslider
-      v-model:isShow="renderShow"
+      v-model:is-show="renderShow"
       width="960"
       title="修改配置"
       quick-close
@@ -82,13 +82,6 @@ import BackConfig from '@/views/resource/setting/comps/back-config.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { ILocalImportedResource } from '@/views/resource/setting/types';
 
-const { t } = useI18n();
-
-interface IProps {
-  isSliderShow: boolean;
-  resource: ILocalImportedResource | null;
-}
-
 const props = withDefaults(defineProps<IProps>(), {
   isSliderShow: false,
   resource: () => null,
@@ -98,6 +91,13 @@ const emits = defineEmits<{
   'on-hidden': [],
   submit: [resConfig: ILocalImportedResource]
 }>();
+
+const { t } = useI18n();
+
+interface IProps {
+  isSliderShow: boolean;
+  resource: ILocalImportedResource | null;
+}
 
 // 默认展开
 const activeIndex = ref(['baseInfo', 'frontConfig', 'backConfig']);

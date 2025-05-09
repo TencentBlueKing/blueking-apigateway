@@ -17,12 +17,12 @@
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
 
-const { t } = useI18n();
-
 const expireDays = defineModel<0 | 180 | 360>({
   required: true,
   default: 0,
 });
+
+const { t } = useI18n();
 
 const radioOptions = ref([
   {

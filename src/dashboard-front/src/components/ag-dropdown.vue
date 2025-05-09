@@ -33,12 +33,6 @@ import { ref, PropType, useSlots, watch } from 'vue';
 import { IDropList } from '@/types';
 import { AngleRight } from 'bkui-vue/lib/icon';
 
-const slots = useSlots();
-
-interface ApigwIDropList extends IDropList {
-  tooltips?: string;
-}
-
 const props = defineProps({
   text: {
     type: String,
@@ -65,12 +59,19 @@ const props = defineProps({
     default: 'bottom',
   },
 });
-const dropdownList = ref(props.dropdownList);
-const isOpen = ref<boolean>(false);
 
 const emit = defineEmits([
   'on-change',
 ]);
+
+const slots = useSlots();
+
+interface ApigwIDropList extends IDropList {
+  tooltips?: string;
+}
+
+const dropdownList = ref(props.dropdownList);
+const isOpen = ref<boolean>(false);
 
 watch(
   () => props.dropdownList,

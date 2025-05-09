@@ -84,7 +84,7 @@
 
     <!-- 添加插件 -->
     <bk-sideslider
-      v-model:isShow="isVisible"
+      v-model:is-show="isVisible"
       :title="t('添加插件')"
       quick-close
       ext-cls="plugin-add-slider"
@@ -236,7 +236,7 @@
 
     <!-- 修改插件 -->
     <bk-sideslider
-      v-model:isShow="isEditVisible"
+      v-model:is-show="isEditVisible"
       :title="t('修改插件')"
       quick-close
       ext-cls="plugin-add-slider"
@@ -300,8 +300,8 @@ const props = defineProps({
   },
   stageId: Number,
 });
-const { t } = useI18n();
 const emit = defineEmits(['on-jump']);
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const common = useCommon();

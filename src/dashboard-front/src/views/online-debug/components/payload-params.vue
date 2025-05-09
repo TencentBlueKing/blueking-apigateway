@@ -42,8 +42,6 @@ import { useI18n } from 'vue-i18n';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import editTable from '@/views/online-debug/components/edit-table.vue';
 
-const { t } = useI18n();
-
 const props = defineProps({
   queryPayload: {
     type: Array,
@@ -60,6 +58,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['queryChange', 'pathChange']);
+
+const { t } = useI18n();
 
 const queryRef = ref();
 const queryList = ref<any[]>([]);

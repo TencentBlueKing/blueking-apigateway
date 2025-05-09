@@ -2,7 +2,7 @@
 <template>
   <div class="sideslider-wrapper">
     <bk-sideslider
-      v-model:isShow="isShow"
+      v-model:is-show="isShow"
       :quick-close="true"
       width="960"
       ext-cls="stage-sideslider-cls"
@@ -368,6 +368,7 @@ import mitt from '@/common/event-bus';
 import { useGetGlobalProperties, useSidebar } from '@/hooks';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 
+const emit = defineEmits(['hidden']);
 const { t, locale } = useI18n();
 const common = useCommon();
 const stageStore = useStage();
@@ -381,8 +382,6 @@ const activeIndex = ref([0]);
 const actionType = ref('add');
 // 需要高亮的后端服务名称
 const selectedBackendName = ref('');
-const emit = defineEmits(['hidden']);
-
 // 全局变量
 const globalProperties = useGetGlobalProperties();
 const { GLOBAL_CONFIG } = globalProperties;

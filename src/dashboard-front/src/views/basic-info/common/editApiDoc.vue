@@ -120,8 +120,6 @@ import { Message } from 'bkui-vue';
 import MemberSelect from '@/components/member-select';
 import { editGateWays } from '@/http';
 
-const { t } = useI18n();
-
 const props = defineProps({
   modelValue: {
     type: Boolean,
@@ -134,6 +132,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:modelValue', 'done']);
+
+const { t } = useI18n();
 
 interface IForm {
   type: string;

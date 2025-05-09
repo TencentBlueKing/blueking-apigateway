@@ -159,6 +159,17 @@ import { useI18n } from 'vue-i18n';
 import { MethodsEnum } from '@/types';
 import useTextGetter from '@/views/resource/setting/hooks/useTextGetter';
 
+const props = withDefaults(defineProps<IProps>(), {
+  tableData: () => [],
+  showDoc: true,
+});
+
+const emit = defineEmits<{
+  'show-row-doc': [row: ILocalImportedResource]
+  'show-row-plugin': [row: ILocalImportedResource]
+  'toggle-row-unchecked': [row: ILocalImportedResource]
+}>();
+
 const {
   getAuthConfigText,
   getPermRequiredText,
@@ -173,17 +184,6 @@ interface IProps {
   tableData: ILocalImportedResource[];
   showDoc: boolean;
 }
-
-const props = withDefaults(defineProps<IProps>(), {
-  tableData: () => [],
-  showDoc: true,
-});
-
-const emit = defineEmits<{
-  'show-row-doc': [row: ILocalImportedResource]
-  'show-row-plugin': [row: ILocalImportedResource]
-  'toggle-row-unchecked': [row: ILocalImportedResource]
-}>();
 
 const {
   tableData,

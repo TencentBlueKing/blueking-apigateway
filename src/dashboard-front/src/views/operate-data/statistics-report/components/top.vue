@@ -114,12 +114,11 @@ type IntervalItem = {
   value: string;
 };
 
+const emit = defineEmits(['search-change', 'refresh-change']);
 const { t } = useI18n();
 const stage = useStage();
 const common = useCommon();
 const { apigwId } = common;
-
-const emit = defineEmits(['search-change', 'refresh-change']);
 
 const searchParams = ref<SearchParamsType>({
   stage_id: 0,

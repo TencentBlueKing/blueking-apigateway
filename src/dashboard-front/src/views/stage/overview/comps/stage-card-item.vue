@@ -181,10 +181,6 @@ interface IProps {
   stage: IStageItem,
 }
 
-const { t } = useI18n();
-const { GLOBAL_CONFIG } = useGetGlobalProperties();
-const common = useCommon();
-
 const props = withDefaults(defineProps<IProps>(), {
   stage: () => ({
     id: 0,
@@ -211,12 +207,14 @@ const props = withDefaults(defineProps<IProps>(), {
     new_resource_version: '',
   }),
 });
-
 const emit = defineEmits<{
   'check-log': [void],
   'publish': [void],
   'delist': [void],
 }>();
+const { t } = useI18n();
+const { GLOBAL_CONFIG } = useGetGlobalProperties();
+const common = useCommon();
 
 const data = ref(null);
 

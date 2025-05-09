@@ -21,7 +21,7 @@
       <template #default>
         <div
           v-bk-tooltips="{
-            content: $t('标签最多只能选择10个'),
+            content: t('标签最多只能选择10个'),
             disabled: !(!curLabelIds.includes(option.id) && curLabelIds.length >= 10) }"
           :disabled="!curLabelIds.includes(option.id) && curLabelIds.length >= 10"
           class="select-option-row"
@@ -87,25 +87,27 @@
 </template>
 <script setup lang="ts">
 import {
-  ref,
   computed,
-  toRefs,
   PropType,
-  watch,
+  ref,
+  toRefs,
   toValue,
+  watch,
 } from 'vue';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { cloneDeep } from 'lodash';
 
-import { updateResourcesLabels, createResourcesLabels, deleteResourcesLabels, updateResourcesLabelItem } from '@/http';
+import {
+  createResourcesLabels,
+  deleteResourcesLabels,
+  updateResourcesLabelItem,
+  updateResourcesLabels,
+} from '@/http';
 
 import { useCommon } from '@/store';
 
-const emit = defineEmits(['close', 'update-success', 'label-add-success', 'update:modelValue']);
-const common = useCommon();
-const { t } = useI18n();
-const { apigwId } = common; // 网关id
+// 网关id
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
@@ -120,6 +122,17 @@ const props = defineProps({
   // 批量编辑标签时，不需要更新某一资源的标签列表
   bathEdit: { type: Boolean, default: false },
 });
+
+const emit = defineEmits([
+  'close',
+  'update-success',
+  'label-add-success',
+  'update:modelValue',
+]);
+
+const { t } = useI18n();
+const common = useCommon();
+const { apigwId } = common;
 
 const { curSelectLabelIds, resourceId, labelsData, width, isAdd, modelValue } = toRefs(props);
 

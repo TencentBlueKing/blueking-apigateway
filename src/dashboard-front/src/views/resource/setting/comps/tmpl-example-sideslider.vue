@@ -1,7 +1,7 @@
 <template>
   <div class="tmpl-example-sideslider-wrapper">
     <bk-sideslider
-      v-model:isShow="renderShow"
+      v-model:is-show="renderShow"
       quick-close
       :title="t('模板示例')"
       width="660"
@@ -20,13 +20,11 @@ import { useI18n } from 'vue-i18n';
 import editorMonaco from '@/components/ag-editor.vue';
 import exampleData from '@/constant/example-data';
 
-const { t } = useI18n();
 const props = defineProps({
   isShow: { type: Boolean, default: false },
 });
-
 const emits = defineEmits<(event: 'on-hidden') => void>();
-
+const { t } = useI18n();
 const renderShow = ref(props.isShow);
 const editorText = ref<string>(exampleData.content);
 

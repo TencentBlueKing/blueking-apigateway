@@ -154,11 +154,7 @@ import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
 import mitt from '@/common/event-bus';
 
-const { t } = useI18n();
-const common = useCommon();
-const stage = useStage();
-
-const { apigwId } = common; // 网关id
+// 网关id
 
 const props = defineProps({
   curResource: { type: Object, default: {} },   // 当前点击的资源
@@ -169,8 +165,12 @@ const props = defineProps({
   showCreateBtn: { type: Boolean, default: true }, // 是否显示"立即创建"按钮
   isPreview: { type: Boolean, default: false }, // 是否获取预览文档，决定调用的接口
 });
+const emit = defineEmits(['fetch', 'on-update']);
+const { t } = useI18n();
+const common = useCommon();
+const stage = useStage();
 
-const {
+const { apigwId } = common;const {
   curResource,
   showFooter,
   showCreateBtn,
@@ -223,8 +223,6 @@ const toolbars = ref<any>({
   subfield: true,
   preview: true,
 });
-
-const emit = defineEmits(['fetch', 'on-update']);
 
 const resourcesHeight = computed(() => {
   if (props.source === 'side') {

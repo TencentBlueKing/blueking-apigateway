@@ -18,13 +18,6 @@ import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { getApigwChartDetail } from '@/http';
 
-const route = useRoute();
-const { t } = useI18n();
-
-function gettext(text: any) {
-  return text;
-}
-
 const props = defineProps({
   startTime: {
     type: [Number, String],
@@ -33,8 +26,13 @@ const props = defineProps({
     type: [Number, String],
   },
 });
-
 const emit = defineEmits(['time-change']);
+const route = useRoute();
+const { t } = useI18n();
+
+function gettext(text: any) {
+  return text;
+}
 
 const isChartDataLoading = ref<boolean>(true);
 const system = ref<string | string[]>('');

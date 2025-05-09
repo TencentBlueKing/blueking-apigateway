@@ -58,8 +58,6 @@
 import { ref, reactive, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n();
-
 const props = defineProps({
   value: {
     type: Object,
@@ -100,6 +98,14 @@ const props = defineProps({
     },
   },
 });
+
+const emit = defineEmits<{
+  (e: 'change', list: Array<ItemType>, obj?: any): void
+  (e: 'input', obj: any): void
+  (e: 'toggle-height'): void
+}>();
+
+const { t } = useI18n();
 
 interface ItemType {
   key: string;
@@ -299,12 +305,6 @@ const validate = () => {
     formRefs.value?.get(`value-${index}`)?.validate();
   });
 };
-
-const emit = defineEmits<{
-  (e: 'change', list: Array<ItemType>, obj?: any): void
-  (e: 'input', obj: any): void
-  (e: 'toggle-height'): void
-}>();
 
 defineExpose({
   getValue,

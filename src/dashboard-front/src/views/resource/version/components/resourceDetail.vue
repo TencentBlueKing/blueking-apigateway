@@ -3,7 +3,7 @@
 <template>
   <div class="release-sideslider">
     <bk-sideslider
-      v-model:isShow="renderIsShow"
+      v-model:is-show="renderIsShow"
       :width="960"
       :title="`${$t('资源详情')}【${info.version || ''}】`"
       quick-close
@@ -338,18 +338,16 @@ import { getResourceVersionsInfo, getGatewayLabels } from '@/http';
 import { getMethodsTheme } from '@/common/util';
 import ConfigDisplayTable from '@/views/components/plugin-manage/config-display-table.vue';
 
+const props = defineProps<{
+  id: number | undefined;
+  isShow: boolean;
+}>();
+const emits = defineEmits<(event: 'hidden') => void>();
 const { t } = useI18n();
 const route = useRoute();
 // 网关id
 const apigwId = computed(() => +route.params.id);
 const localLanguage =  cookie.parse(document.cookie).blueking_language || 'zh-cn';
-
-const props = defineProps<{
-  id: number | undefined;
-  isShow: boolean;
-}>();
-
-const emits = defineEmits<(event: 'hidden') => void>();
 
 const activeIndex = ref([1]);
 const info = ref<any>({});

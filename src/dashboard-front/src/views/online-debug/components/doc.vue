@@ -118,10 +118,6 @@ import {
   getGatewaysDetailsDocs,
 } from '@/http';
 
-const { t } = useI18n();
-const userStore = useUser();
-const common = useCommon();
-
 const props = defineProps({
   stageName: {
     type: String,
@@ -130,6 +126,9 @@ const props = defineProps({
     type: String,
   },
 });
+const { t } = useI18n();
+const userStore = useUser();
+const common = useCommon();
 
 const curSdk = ref<any>({});
 const active = ref<string>('doc');

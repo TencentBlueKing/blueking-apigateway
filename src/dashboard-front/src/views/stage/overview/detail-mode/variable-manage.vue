@@ -183,13 +183,12 @@ import {
 import { getStatus } from '@/common/util';
 import AgIcon from '@/components/ag-icon.vue';
 
-const common = useCommon();
-const { t } = useI18n();
-const stageStore = useStage();
-
 const props = defineProps({
   stageId: Number,
 });
+const common = useCommon();
+const { t } = useI18n();
+const stageStore = useStage();
 
 const tableIsEdit = ref<boolean>(false);
 const isShowVarPopover = ref(false);

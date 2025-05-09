@@ -1,7 +1,7 @@
 <template>
   <div>
     <bk-sideslider
-      v-model:isShow="isShow"
+      v-model:is-show="isShow"
       :before-close="handleBeforeClose"
       :title="t('发布资源至环境【{stage}】', { stage: currentStage.name })"
       :width="1100"
@@ -199,12 +199,6 @@ interface ICommitInfo {
   type: string,
 }
 
-const { t } = useI18n();
-const route = useRoute();
-const router = useRouter();
-const { initSidebarFormData, isSidebarClosed } = useSidebar();
-const { getStagesStatus } = useGetStageList();
-
 const props = defineProps({
   currentStage: {
     type: Object,
@@ -215,8 +209,12 @@ const props = defineProps({
     required: false,
   },
 });
-
 const emit = defineEmits<(e: 'release-success' | 'hidden' | 'closed-on-publishing' | 'retry') => void>();
+const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
+const { getStagesStatus } = useGetStageList();
 
 const isShow = ref(false);
 const formRef = ref(null);

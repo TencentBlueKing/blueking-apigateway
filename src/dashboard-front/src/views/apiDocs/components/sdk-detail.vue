@@ -125,6 +125,12 @@ import {
 } from '@/views/apiDocs/types';
 import { toRefs } from 'vue';
 
+const props = withDefaults(defineProps<IProps>(), {
+  isApigw: false,
+  sdk: () => null,
+  doc: () => null,
+});
+
 const { t } = useI18n();
 
 interface IProps {
@@ -132,12 +138,6 @@ interface IProps {
   sdk: ISdk | null
   doc: IApiGatewaySdkDoc | null
 }
-
-const props = withDefaults(defineProps<IProps>(), {
-  isApigw: false,
-  sdk: () => null,
-  doc: () => null,
-});
 
 const { sdk, doc } = toRefs(props);
 

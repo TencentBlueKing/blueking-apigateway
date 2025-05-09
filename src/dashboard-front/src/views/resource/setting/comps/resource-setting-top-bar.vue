@@ -57,9 +57,6 @@ import { useI18n } from 'vue-i18n';
 // import mitt from '@/common/event-bus';
 import { useStage } from '@/store';
 
-const { t } = useI18n();
-const stage = useStage();
-
 // const route = useRoute();
 // const apigwId = computed(() => +route.params.id);
 
@@ -81,6 +78,8 @@ defineProps({
     default: false,
   },
 });
+const { t } = useI18n();
+const stage = useStage();
 
 // ref
 // const versionSidesliderRef = ref(null);

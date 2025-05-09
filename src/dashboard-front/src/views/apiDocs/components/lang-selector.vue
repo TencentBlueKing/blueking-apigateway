@@ -24,19 +24,9 @@ import { useChangeCase } from '@vueuse/integrations/useChangeCase';
 import { LanguageType } from '@/views/apiDocs/types';
 import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n();
-
 const language = defineModel<LanguageType>({
   default: 'python',
 });
-
-interface IProps {
-  width: number;
-  marginBottom: number;
-  sdkLanguages: LanguageType[],
-  langList: LanguageType[],
-  maintainers: string[];
-}
 
 const props = withDefaults(defineProps<IProps>(), {
   width: 150,  // 按钮宽度
@@ -55,16 +45,26 @@ const props = withDefaults(defineProps<IProps>(), {
   maintainers: () => [],
 });
 
+const emit = defineEmits<{
+  'select': [language: LanguageType]
+}>();
+
+const { t } = useI18n();
+
+interface IProps {
+  width: number;
+  marginBottom: number;
+  sdkLanguages: LanguageType[],
+  langList: LanguageType[],
+  maintainers: string[];
+}
+
 const {
   width,
   marginBottom,
   sdkLanguages,
   langList,
 } = toRefs(props);
-
-const emit = defineEmits<{
-  'select': [language: LanguageType]
-}>();
 
 const getTooltipContent = (lang: string) => {
   if (props.maintainers.length) {

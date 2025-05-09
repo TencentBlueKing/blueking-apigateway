@@ -141,8 +141,6 @@ import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useI18n } from 'vue-i18n';
 import editorMonaco from '@/components/ag-editor.vue';
 
-const { t } = useI18n();
-
 const props = defineProps({
   res: {
     type: Object,
@@ -151,6 +149,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['response-fold', 'response-unfold']);
+
+const { t } = useI18n();
 
 type TableDataItem = {
   name: String;
