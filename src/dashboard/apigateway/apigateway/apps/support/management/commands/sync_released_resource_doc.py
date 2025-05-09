@@ -50,7 +50,8 @@ class Command(BaseCommand):
 
             if dry_run:
                 print(
-                    f"sync gateway[id={resource_doc_version.gateway_id}] resource_doc_version[id={resource_doc_version.id}]"
+                    f"sync gateway[id={resource_doc_version.gateway_id}] "
+                    f"resource_doc_version[id={resource_doc_version.id}]"
                 )
                 continue
 

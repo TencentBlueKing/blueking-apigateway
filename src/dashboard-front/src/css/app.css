@@ -155,6 +155,14 @@ body {
 
 .ag-strong {
     font-weight: bold;
+}
+
+.ag-normal {
+    font-weight: normal;
+}
+
+.ag-strong,
+.ag-normal {
     font-style: normal;
     color: #313238;
 

@@ -178,7 +178,8 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
         if len(component_id_to_resource_id) != len(component_ids):
             missing_component_ids = set(component_ids) - set(component_id_to_resource_id.keys())
             raise ValueError(
-                f"The gateway resources corresponding to the component were not found, missing components ids: {','.join(map(str, missing_component_ids))}."
+                "The gateway resources corresponding to the component were not found, "
+                f"missing components ids: {','.join(map(str, missing_component_ids))}."
                 "Please contact the administrator."
             )
 
@@ -210,7 +211,8 @@ class ComponentPermissionByGatewayManager(ComponentPermissionManager):
         if len(component_id_to_resource_id) != len(component_ids):
             missing_component_ids = set(component_ids) - set(component_id_to_resource_id.keys())
             raise ValueError(
-                f"The gateway resources corresponding to the component were not found, missing component ids: {','.join(map(str, missing_component_ids))}."
+                "The gateway resources corresponding to the component were not found, "
+                f"missing component ids: {','.join(map(str, missing_component_ids))}."
                 "Please contact the administrator."
             )
 

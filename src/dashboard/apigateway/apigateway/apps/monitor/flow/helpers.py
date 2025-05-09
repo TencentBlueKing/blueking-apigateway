@@ -51,8 +51,8 @@ class MonitorEvent:
 
     @property
     def event_dimensions(self) -> Dict[str, Any]:
-        # {"code_name": "RATE_LIMIT_RESTRICTION", "resource_id": 100028, "app_code": "abc", "api_id": 190, "stage": "prod"}
-        # {                                        "api_id": 101364, "stage": "prod", "status": 500, "resource_id": 111710}
+        # {"code_name": "RATE_LIMIT_RESTRICTION", "resource_id": 28, "app_code": "abc", "api_id": 190, "stage": "prod"}
+        # {                                        "api_id": 64, "stage": "prod", "status": 500, "resource_id": 111710}
         return self._raw["event"]["dimensions"]
 
     @property
