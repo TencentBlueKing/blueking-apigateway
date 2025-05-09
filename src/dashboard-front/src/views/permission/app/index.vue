@@ -42,10 +42,6 @@
           @select-all="handleSelecAllChange"
         >
           <bk-table-column
-            :show-overflow-tooltip="{
-              mode: 'static',
-              content: (column: any, row: IPermission) => isRowSelectEnable({ row }) ? '可续期' : t('有效期为永久，不可续期')
-            }"
             align="center"
             type="selection"
             width="60"
