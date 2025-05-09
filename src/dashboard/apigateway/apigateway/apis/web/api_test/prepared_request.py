@@ -70,7 +70,7 @@ class PreparedRequestHeaders:
 
         try:
             return json.loads(authorization)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             raise ValueError(_("Header X-Bkapi-Authorization 不是一个有效的 Json 格式字符串。"))
 
     @property

@@ -55,7 +55,7 @@ def get_next_version(current_version: str) -> str:
     try:
         version = parse(current_version)
         return str(Version(f"{version.major}.{version.minor}.{version.micro + 1}"))
-    except Exception:
+    except Exception:  # pylint: disable=broad-except
         return ""
 
 

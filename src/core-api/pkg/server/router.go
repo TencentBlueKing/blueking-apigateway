@@ -30,6 +30,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
+	// nolint: errcheck
 	_ "core/docs"
 	"core/pkg/api/microgateway"
 	"core/pkg/api/open"

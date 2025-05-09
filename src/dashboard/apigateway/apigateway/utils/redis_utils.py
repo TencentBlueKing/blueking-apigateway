@@ -80,7 +80,7 @@ def get_redis_client(name: str, redis_conf):
         redis_client.ping()
         REDIS_CLIENTS[name] = redis_client
         return redis_client
-    except Exception:
+    except Exception:  # pylint: disable=broad-except
         logger.exception("connect to redis fail")
         return None
 

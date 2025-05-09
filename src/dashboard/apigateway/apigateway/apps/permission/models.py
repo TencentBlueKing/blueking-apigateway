@@ -229,7 +229,7 @@ class AppPermissionRecord(models.Model):
     def handled_resource_ids(self):
         try:
             return json.loads(self._handled_resource_ids or "{}")
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             return {}
 
     @handled_resource_ids.setter

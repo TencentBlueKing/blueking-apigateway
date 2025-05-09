@@ -40,7 +40,7 @@ class TimestampField(serializers.IntegerField):
         data = super().to_internal_value(data)
         try:
             return utctime(data).datetime if data else None
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             raise serializers.ValidationError("A valid timestamp is required.", code="invalid")
 
     def to_representation(self, value):

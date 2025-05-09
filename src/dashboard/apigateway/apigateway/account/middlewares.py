@@ -75,7 +75,7 @@ class SelfAppCodeAppSecretLoginMiddleware:
     def _get_app_code_app_secret_from_header(self, request) -> Tuple[Optional[str], Optional[str]]:
         try:
             authorization = json.loads(request.META.get("HTTP_X_BKAPI_AUTHORIZATION"))
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             return None, None
 
         return authorization.get("bk_app_code"), authorization.get("bk_app_secret")

@@ -32,6 +32,7 @@ import (
 
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock
 
+// ReleaseHistory is the struct for release history
 type ReleaseHistory struct {
 	ID                int64     `db:"id"`
 	GatewayID         int64     `db:"api_id"`
@@ -41,11 +42,12 @@ type ReleaseHistory struct {
 	UpdatedTime       time.Time `db:"updated_time"`
 }
 
+// ReleaseHistoryManger is the manager for release history
 type ReleaseHistoryManger interface {
 	Get(ctx context.Context, publishID int64) (ReleaseHistory, error)
 }
 
-// NewReleaseHistoryManger
+// NewReleaseHistoryManger create a new release history manager
 func NewReleaseHistoryManger() ReleaseHistoryManger {
 	return &releaseHistoryManager{
 		DB: database.GetDefaultDBClient().DB,
@@ -60,12 +62,12 @@ var _ ReleaseHistoryManger = releaseHistoryManager{}
 
 // Get release history by id
 func (p releaseHistoryManager) Get(ctx context.Context, publishID int64) (ReleaseHistory, error) {
-	query := `SELECT 
+	query := `SELECT
 		stage_id,
 		api_id,
 		created_time,
-		updated_time 
-		FROM core_release_history 
+		updated_time
+		FROM core_release_history
 		WHERE id = ?`
 	var releaseHistory ReleaseHistory
 	err := database.SqlxGet(ctx, p.DB, &releaseHistory, query, publishID)

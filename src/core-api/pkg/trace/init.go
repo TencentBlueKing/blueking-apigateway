@@ -43,6 +43,7 @@ const (
 	sampleTypeTraceIdRatio       = "trace_id_ratio"
 )
 
+// Trace is the tracer for the whole project
 type Trace struct {
 	tc.Tracer
 	config config.Tracing

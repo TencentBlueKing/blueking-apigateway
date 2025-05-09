@@ -19,6 +19,7 @@ from typing import ClassVar, Dict
 
 from pydantic import BaseModel, Field
 
+# noqa
 BkGatewayResourceLabelPrefix = "gateway.bk.tencent.com/"
 
 

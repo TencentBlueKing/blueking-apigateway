@@ -606,7 +606,7 @@ class AppPermissionApplyApprovalApi(AppPermissionApplyQuerySetMixin, generics.Cr
 
             try:
                 apply_async_on_commit(send_mail_for_perm_handle, args=[record.id])
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 logger.exception("send mail to applicant fail. record_id=%s", record.id)
 
         # 删除申请单

@@ -35,7 +35,7 @@ class AuthorizationSLZ(serializers.Serializer):
     def validate_uin(self, value):
         try:
             return value.lstrip("o0")
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             return value
 
     def validate(self, data: Dict[str, str]) -> Dict[str, str]:

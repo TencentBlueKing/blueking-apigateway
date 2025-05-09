@@ -88,7 +88,7 @@ class SignatureValidator(SignatureGenerator):
             raise ValueError("bk_nonce is required")
         try:
             nonce = int(bk_nonce)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             raise ValueError("bk_nonce is illegal")
         if nonce <= 0:
             raise ValueError("bk_nonce is illegal, must be a positive integer")
@@ -100,7 +100,7 @@ class SignatureValidator(SignatureGenerator):
             raise ValueError("bk_timestamp is required")
         try:
             timestamp = int(bk_timestamp)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             raise ValueError("bk_timestamp is illegal, must be a timestamp integer")
 
         if timestamp < int(time.time()) - self.timestamp_expire_seconds:

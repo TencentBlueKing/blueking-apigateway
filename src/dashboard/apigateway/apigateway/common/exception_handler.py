@@ -59,7 +59,7 @@ def one_line_error(error: ValidationError):
                 return "index={index}, {error}".format(index=index, error=stringify_validation_error(error)[0])
 
         return stringify_validation_error(error)[0]
-    except Exception:
+    except Exception:  # pylint: disable=broad-except
         logger.exception("Error getting one line error from %s", error)
         return "format error message failed"
 

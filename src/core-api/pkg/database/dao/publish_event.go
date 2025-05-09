@@ -34,6 +34,7 @@ import (
 
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock
 
+// PublishEvent is the struct for publish event
 type PublishEvent struct {
 	ID          int64     `db:"id"`
 	GatewayID   int64     `db:"gateway_id"`
@@ -69,6 +70,7 @@ func (d Detail) Value() (driver.Value, error) {
 	return json.Marshal(d)
 }
 
+// PublishEventManger is the manager for publish event
 type PublishEventManger interface {
 	Create(ctx context.Context, publishEvent PublishEvent) (int64, error)
 }
@@ -77,7 +79,7 @@ type publishEventManager struct {
 	DB *sqlx.DB
 }
 
-// NewPublishEventManger
+// NewPublishEventManger create a new publish event manager
 func NewPublishEventManger() PublishEventManger {
 	return &publishEventManager{
 		DB: database.GetDefaultDBClient().DB,
@@ -86,18 +88,18 @@ func NewPublishEventManger() PublishEventManger {
 
 var _ PublishEventManger = publishEventManager{}
 
-// Create  publish event
+// Create create a publish event
 func (p publishEventManager) Create(ctx context.Context, publishEvent PublishEvent) (int64, error) {
 	insertSql := `INSERT INTO core_publish_event (
-	gateway_id, 
-	publish_id, 
+	gateway_id,
+	publish_id,
 	stage_id,
 	name,
-	step, 
-	status, 
+	step,
+	status,
 	detail,
 	created_time,
-	updated_time                       
+	updated_time
 	)VALUES (:gateway_id, :publish_id, :stage_id, :name, :step, :status, :detail,:created_time,:updated_time)`
 	query, args, err := sqlx.Named(insertSql, publishEvent)
 	if err != nil {

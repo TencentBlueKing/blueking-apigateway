@@ -92,7 +92,7 @@ class BkCorsChecker(BaseChecker):
         for re_rule in allow_origins_by_regex:
             try:
                 re.compile(re_rule)
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 raise ValueError(
                     _("allow_origins_by_regex 中数据 '{re_rule}' 不是合法的正则表达式。").format(re_rule=re_rule)
                 )

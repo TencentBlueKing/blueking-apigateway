@@ -75,14 +75,14 @@ class AuditEventLogOutputSLZ(serializers.ModelSerializer):
         if data["data_before"]:
             try:
                 data["data_before"] = json.loads(data["data_before"])
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 # do nothing here
                 pass
 
         if data["data_after"]:
             try:
                 data["data_after"] = json.loads(data["data_after"])
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 # do nothing here
                 pass
 

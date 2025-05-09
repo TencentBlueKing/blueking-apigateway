@@ -16,6 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+// Package sentry is the sentry for the whole project
 package sentry
 
 import (
@@ -30,10 +31,12 @@ import (
 
 var s Sentry
 
+// Sentry is the sentry for the whole project
 type Sentry struct {
 	enabled bool
 }
 
+// Init init the sentry
 func Init(config config.Sentry) error {
 	if config.DSN != "" {
 		err := sentry.Init(sentry.ClientOptions{
