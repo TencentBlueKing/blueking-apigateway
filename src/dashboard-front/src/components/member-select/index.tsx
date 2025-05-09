@@ -1,12 +1,16 @@
+// 引入自定义的 staffStore，用于获取员工数据
 import { useStaffStore } from '@/store';
+// 引入 Staff 和 StaffType 类型定义
 import {
   Staff,
   StaffType,
 } from '@/types';
+// 引入 bkui-vue 组件库中的 Loading 和 TagInput 组件
 import {
   Loading,
   TagInput,
 } from 'bkui-vue';
+// 引入 Vue 的一些核心功能
 import {
   computed,
   defineComponent,
@@ -16,35 +20,43 @@ import {
   ref,
   watch,
 } from 'vue';
+// 引入 lodash 库
 import _ from 'lodash';
-
+// 引入组件的样式文件
 import './member-select.scss';
 import Tpl from './Tpl';
 
 export default defineComponent({
   props: {
+    // 是否禁用组件
     disabled: {
       type: Boolean,
     },
+    // 绑定的值，类型为字符串数组
     modelValue: {
       type: Array as PropType<string[]>,
     },
+    // 员工类型，默认值为 StaffType.RTX
     type: {
       type: String as PropType<StaffType>,
       default: StaffType.RTX,
     },
+    // 是否允许多选，默认值为 true
     multiple: {
       type: Boolean,
       default: true,
     },
+    // 是否允许清除，默认值为 true
     clearable: {
       type: Boolean,
       default: true,
     },
+    // 是否允许创建新标签，默认值为 false
     allowCreate: {
       type: Boolean,
       default: false,
     },
+    // 是否显示删除图标，默认值为 false
     hasDeleteIcon: {
       type: Boolean,
       default: false,

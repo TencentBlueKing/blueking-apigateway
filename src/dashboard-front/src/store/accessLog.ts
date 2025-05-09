@@ -345,24 +345,59 @@ export const useAccessLog = defineStore('accessLog', {
   }),
   // 定义 store 的 getters
   getters: {
+    /**
+     * 获取日期选择快捷方式
+     * @param {Object} state - store 的状态对象
+     * @returns {Array} 日期选择快捷方式数组
+     */
     getDatepickerShortcuts(state) {
       return state.datepickerShortcuts;
     },
+    /**
+     * 获取一天内的快捷方式
+     * @param {Object} state - store 的状态对象
+     * @returns {Array} 一天内的快捷方式数组
+     */
     getShortcutsInDay(state) {
       return state.shortcutsInDay;
     },
+    /**
+     * 获取告警策略选项
+     * @param {Object} state - store 的状态对象
+     * @returns {Object} 告警策略选项对象
+     */
     getAlarmStrategyOptions(state) {
       return state.alarmStrategyOptions;
     },
+    /**
+     * 获取告警状态
+     * @param {Object} state - store 的状态对象
+     * @returns {Array} 告警状态数组
+     */
     getAlarmStatus(state) {
       return state.alarmStatus;
     },
+    /**
+     * 获取请求方法列表
+     * @param {Object} state - store 的状态对象
+     * @returns {Array} 请求方法列表数组
+     */
     getMethodList(state) {
       return state.methodList;
     },
+    /**
+     * 获取 SDK 语言列表
+     * @param {Object} state - store 的状态对象
+     * @returns {Array} SDK 语言列表数组
+     */
     getSDKLanguageList(state) {
       return state.SDKLanguageList;
     },
+    /**
+     * 获取审计选项
+     * @param {Object} state - store 的状态对象
+     * @returns {Object} 审计选项对象
+     */
     getAuditOptions(state) {
       return state.auditOptions;
     },
