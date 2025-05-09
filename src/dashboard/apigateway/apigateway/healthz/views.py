@@ -80,7 +80,7 @@ class HealthzView(View):
 
         try:
             Gateway.objects.exists()
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             raise CheckError(f"Query from database failed, error: {err}")
 
     def _check_redis(self):
@@ -93,7 +93,7 @@ class HealthzView(View):
             client.set(key, "apigateway")
             client.expire(key, 60)
             client.get(key)
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             raise CheckError(f"Redis check failed [{config['host']}:{config['port']}], error: {err}")
 
     def _check_external_dependency_url(self):

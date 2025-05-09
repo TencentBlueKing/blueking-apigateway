@@ -71,7 +71,7 @@ def _release_gateway(
         else:
             PublishEventReporter.report_distribute_config_failure(release_history, fail_msg)
             return False
-    except Exception as err:
+    except Exception as err:  # pylint: disable=broad-except
         # 记录失败原因
         procedure_logger.exception("release failed")
         # 上报失败事件

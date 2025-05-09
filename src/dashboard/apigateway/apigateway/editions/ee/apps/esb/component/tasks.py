@@ -63,7 +63,7 @@ def sync_and_release_esb_components(gateway_id: int, release_history_id: int, us
         releaser.release()
 
         logger.info("sync and release components success")
-    except Exception as err:
+    except Exception as err:  # pylint: disable=broad-except
         logger.exception("failed to sync and release components")
         message = one_line_error(err) if isinstance(err, ValidationError) else str(err)
         releaser.mark_release_fail(message)

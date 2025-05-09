@@ -133,7 +133,7 @@ class BkIPRestrictionChecker(BaseChecker):
 
             try:
                 ipaddress.ip_interface(ip_line)
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 raise ValueError("line {}: {}".format(index + 1, e))
 
     def check(self, payload: str):
@@ -249,7 +249,7 @@ def check_vars(vars, location):
     parsed_vars = []
     try:
         parsed_vars = ast.literal_eval(vars)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         raise ValueError(f"The vars of {location} is not valid, error: {e}")
 
     # 第一层 parsed_vars = [ [a], [] ]

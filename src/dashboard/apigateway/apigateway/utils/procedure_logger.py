@@ -39,7 +39,7 @@ class ProcedureLogger:
             self.logger.info(
                 "%s, step %s finished, duration %.6fs", self._message_prefix, step, time.time() - begin_time
             )
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             if raise_exception:
                 self.logger.exception("%s, step %s error", self._message_prefix, step)
                 raise

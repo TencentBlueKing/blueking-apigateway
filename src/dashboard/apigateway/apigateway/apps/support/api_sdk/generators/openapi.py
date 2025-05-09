@@ -50,7 +50,7 @@ class OpenAPITemplateGenerator(Generator):
             raise exceptions.GenerateError(
                 f"failed to generate client package {self.context.name}, code: {err.code}"
             ) from err
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             raise exceptions.GenerateError(f"failed to generate client package {self.context.name}") from err
 
     def generate(self, output_dir: str, resources: List[Dict[str, Any]]):
