@@ -74,9 +74,10 @@
                 @click="handleGoPage('apigwResource', item)"
               >
                 <span
-                  :class="['kind', item.kind === 0 ? 'normal' : 'program']"
-                  v-bk-tooltips="{ content: item.kind === 0 ? t('普通网关') : t('可编程网关') }">
-                  {{ item.kind === 0 ? t('普') : t('编') }}
+                  class="kind-program"
+                  v-if="item.kind === 1"
+                  v-bk-tooltips="{ content: t('可编程网关') }">
+                  <i class="apigateway-icon icon-ag-program" />
                 </span>
                 {{ item.name[0].toUpperCase() }}
               </div>
@@ -124,7 +125,7 @@
                 </router-link>
               </template>
               <template v-else>
-                <span class="none">--</span>
+                <span class="none">{{ item.resource_count }}</span>
               </template>
             </div>
             <div class="flex-1 of2">
@@ -483,26 +484,13 @@ watch(
           font-weight: 700;
           cursor: pointer;
           position: relative;
-          .kind {
-            content: ' ';
+          .kind-program {
             position: absolute;
-            width: 15px;
-            height: 15px;
-            border-radius: 2px;
             top: 0;
             left: 0;
-            font-size: 10px;
+            font-size: 12px;
             line-height: 12px;
-            &.normal {
-              color: #1768EF;
-              background: #E1ECFF;
-              border: 1px solid #699DF4;
-            }
-            &.program {
-              color: #299E56;
-              background: #EBFAF0;
-              border: 1px solid #A1E3BA;
-            }
+            color: #3A84FF;
           }
         }
         .name{
@@ -573,6 +561,7 @@ watch(
   }
   .none {
     color: #C4C6CC;
+    cursor: auto;
   }
 }
 .ag-dot{
