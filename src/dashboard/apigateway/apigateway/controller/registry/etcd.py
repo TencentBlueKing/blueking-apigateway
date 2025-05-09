@@ -90,7 +90,7 @@ class EtcdRegistry(Registry):
         try:
             value = yaml_loads(payload)
             return resource_type(**value)
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             if not self.safe_mode:
                 raise
 

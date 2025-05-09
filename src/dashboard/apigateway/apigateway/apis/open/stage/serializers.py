@@ -452,7 +452,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                     plugin_config["yaml"],
                     plugin_type.schema and plugin_type.schema.schema,
                 )
-            except Exception as err:
+            except Exception as err:  # pylint: disable=broad-except
                 raise serializers.ValidationError(
                     _("插件配置校验失败，插件类型：{plugin_type_code}，错误信息：{err}。").format(
                         plugin_type_code=plugin_type.code,

@@ -336,7 +336,7 @@ class ResourceImportValidator:
                         plugin_config_data.yaml.encode().decode("unicode_escape"),
                         plugin_type.schema and plugin_type.schema.schema,
                     )
-                except Exception as err:
+                except Exception as err:  # pylint: disable=broad-except
                     validate_err = SchemaValidateErr(
                         _(
                             "资源的插件配置校验失败，资源名称：{resource_name}，插件类型：{plugin_type_code}，错误信息：{err}。"

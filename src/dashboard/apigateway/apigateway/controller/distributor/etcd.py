@@ -85,7 +85,7 @@ class EtcdDistributor(BaseDistributor):
                 fail_resources = registry.sync_resources_by_key_prefix(resources)
                 if fail_resources:
                     raise SyncFail(fail_resources)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             fail_msg = f"distribute to etcd failed: {type(e).__name__}: {str(e)}"
             procedure_logger.exception(fail_msg)
             return False, fail_msg
@@ -106,7 +106,7 @@ class EtcdDistributor(BaseDistributor):
         if publish_id == DELETE_PUBLISH_ID:
             try:
                 registry.delete_resources_by_key_prefix()
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 fail_msg = f"revoke delete resources from etcd failed: {type(e).__name__}: {str(e)}"
                 logger.exception(fail_msg)
                 return False, fail_msg
@@ -140,7 +140,7 @@ class EtcdDistributor(BaseDistributor):
                     fail_resources = registry.sync_resources_by_key_prefix(resources)
                     if fail_resources:
                         raise SyncFail(fail_resources)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             fail_msg = f"revoke resources from etcd failed: {type(e).__name__}: {str(e)}"
             procedure_logger.exception(fail_msg)
             return False, fail_msg

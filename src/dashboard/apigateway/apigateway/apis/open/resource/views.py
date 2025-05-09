@@ -64,7 +64,7 @@ class ResourceSyncApi(generics.CreateAPIView):
                 slz.validated_data["content"],
                 need_delete_unspecified_resources=slz.validated_data["delete"],
             )
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             raise serializers.ValidationError(
                 {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)}
             )

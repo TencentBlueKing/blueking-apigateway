@@ -32,7 +32,7 @@ class RSAKeyValidationError(Exception):
 def get_public_key_from_private_key(pem_private_key: Union[str, bytes]) -> bytes:
     try:
         private_key = serialization.load_pem_private_key(force_bytes(pem_private_key), password=None)
-    except Exception as err:
+    except Exception as err:  # pylint: disable=broad-except
         raise RSAKeyValidationError(str(err))
 
     return private_key.public_key().public_bytes(

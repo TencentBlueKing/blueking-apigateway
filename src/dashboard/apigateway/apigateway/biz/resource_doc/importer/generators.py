@@ -49,7 +49,7 @@ class Jinja2ToMarkdownGenerator:
         # 检查是否能够打开文件
         try:
             content = read_file(self.filepath)
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             logger.exception("File reading failure for generate_doc_content %s", self.filepath)
             raise ValueError(f"Failed to read file {self.filepath}: {err}")
 
@@ -76,7 +76,7 @@ class Jinja2ToMarkdownGenerator:
         except (TemplateNotFound, TemplatesNotFound) as err:
             logger.exception("TemplateNotFound for _render_jinja2_template %s", self.filepath)
             raise ResourceDocJinja2TemplateNotFound(self.filename, err)
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             logger.exception("Unexpected error for _render_jinja2_template %s", self.filepath)
             raise ResourceDocJinja2TemplateError(self.filename, err)
 

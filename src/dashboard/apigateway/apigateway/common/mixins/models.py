@@ -78,7 +78,7 @@ class ConfigFieldModelMixin(models.Model):
         except ValidationError as ve:
             logger.exception("validate config fail!")
             raise SchemaValidationError(str(ve))
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.exception("validate fail, unknown fail!")
             raise SchemaValidationError(str(e))
 

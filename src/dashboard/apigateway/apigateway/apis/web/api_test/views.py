@@ -137,7 +137,7 @@ class APITestApi(generics.CreateAPIView):
                 "response": validated_response.dict(),
             }
             APIDebugHistory.objects.create(**success_history_data)
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             # 结果检查
             error_history_response = {
                 "error": err,

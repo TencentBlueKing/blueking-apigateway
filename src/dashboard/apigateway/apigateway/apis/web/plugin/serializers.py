@@ -135,7 +135,7 @@ class PluginConfigBaseSLZ(serializers.ModelSerializer):
         try:
             schema = plugin.type and plugin.type.schema and plugin.type.schema.schema
             validator.validate(plugin.type.code, validated_data["yaml"], schema)
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             raise ValidationError({api_settings.NON_FIELD_ERRORS_KEY: f"{err}"})
 
         plugin.config = validated_data["yaml"]
