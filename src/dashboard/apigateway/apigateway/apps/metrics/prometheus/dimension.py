@@ -20,8 +20,8 @@ from abc import abstractmethod
 from typing import Any, ClassVar, Dict, Optional, Type
 
 from django.conf import settings
-from django.db.models import Sum
-from django.db.models.functions import TruncDate, TruncMonth, TruncWeek
+from django.db import connection
+from django.db.models import DateField, Func, Sum
 from django.utils import timezone
 
 from apigateway.apps.metrics.constants import (
@@ -422,11 +422,53 @@ class MetricsInstantFactory:
         cls._registry[metrics_class.metrics] = metrics_class
 
 
+class TruncDateFunc(Func):
+    def __init__(self, expression, **extra):
+        if connection.vendor == "mysql":
+            self.function = "DATE"
+            self.template = "DATE(%(expressions)s)"
+        elif connection.vendor == "sqlite":
+            self.function = "DATE"
+            self.template = "DATE(%(expressions)s, 'unixepoch')"
+        else:  # postgresql
+            self.function = "DATE_TRUNC"
+            self.template = "DATE_TRUNC('day', %(expressions)s)::date"
+        super().__init__(expression, output_field=DateField(), **extra)
+
+
+class TruncWeekFunc(Func):
+    def __init__(self, expression, **extra):
+        if connection.vendor == "mysql":
+            self.function = "DATE"
+            self.template = "DATE(DATE_SUB(%(expressions)s, INTERVAL WEEKDAY(%(expressions)s) DAY))"
+        elif connection.vendor == "sqlite":
+            self.function = "DATE"
+            self.template = "DATE(%(expressions)s, 'weekday 0', '-6 days')"
+        else:  # postgresql
+            self.function = "DATE_TRUNC"
+            self.template = "DATE_TRUNC('week', %(expressions)s)::date"
+        super().__init__(expression, output_field=DateField(), **extra)
+
+
+class TruncMonthFunc(Func):
+    def __init__(self, expression, **extra):
+        if connection.vendor == "mysql":
+            self.function = "DATE_FORMAT"
+            self.template = "DATE_FORMAT(%(expressions)s, '%%%%Y-%%%%m-01')"
+        elif connection.vendor == "sqlite":
+            self.function = "DATE"
+            self.template = "DATE(%(expressions)s, 'start of month')"
+        else:  # postgresql
+            self.function = "DATE_TRUNC"
+            self.template = "DATE_TRUNC('month', %(expressions)s)::date"
+        super().__init__(expression, output_field=DateField(), **extra)
+
+
 class MetricsSummaryFactory:
     TRUNC_FUNC_MAP = {
-        MetricsSummaryTimeDimensionEnum.DAY.value: TruncDate,
-        MetricsSummaryTimeDimensionEnum.WEEK.value: TruncWeek,
-        MetricsSummaryTimeDimensionEnum.MONTH.value: TruncMonth,
+        MetricsSummaryTimeDimensionEnum.DAY.value: TruncDateFunc,
+        MetricsSummaryTimeDimensionEnum.WEEK.value: TruncWeekFunc,
+        MetricsSummaryTimeDimensionEnum.MONTH.value: TruncMonthFunc,
     }
 
     COUNT_FIELD_MAP = {
@@ -470,7 +512,7 @@ class MetricsSummaryFactory:
         # 查询参数
         query_params = self._build_query_params()
         # 时间维度
-        trunc_func = self.TRUNC_FUNC_MAP.get(self.time_dimension, TruncDate)
+        trunc_func = self.TRUNC_FUNC_MAP.get(self.time_dimension, TruncDateFunc)
         # 统计字段
         count_field = self.COUNT_FIELD_MAP.get(self.metrics, "total_count")
         # 查询 model
