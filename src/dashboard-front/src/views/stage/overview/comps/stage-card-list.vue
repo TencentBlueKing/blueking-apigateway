@@ -161,7 +161,6 @@ const fetchStageList = async () => {
     } else if (stage.release?.status) {
       _status = stage.release.status;
     }
-    console.log(_status);
     return _status !== 'doing' && _status !== 'pending';
   })) {
     pausePollingStages();
