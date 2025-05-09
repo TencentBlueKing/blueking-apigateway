@@ -212,14 +212,13 @@ type VersionType = {
   isLatestVersion: boolean
 };
 
+const emit  = defineEmits(['done']);
 const route = useRoute();
 const router = useRouter();
 const apigwId = computed(() => +route.params.id);
 
 const { t } = useI18n();
 const { getStagesStatus } = useGetStageList();
-const emit  = defineEmits(['done']);
-
 // const resourceVersion = computed(() => {
 //   let version = '';
 //   versionList.value?.forEach((item: any) => {

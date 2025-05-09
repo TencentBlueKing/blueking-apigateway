@@ -37,14 +37,14 @@ interface IProps {
   valueRender: ValueRenderType
 }
 
+const props = defineProps<IProps>();
+
 const { t } = useI18n();
 
 const ipTypeTextMap: Record<string, string> = {
   whitelist: t('白名单'),
   blacklist: t('黑名单'),
 };
-
-const props = defineProps<IProps>();
 
 const {
   plugin,

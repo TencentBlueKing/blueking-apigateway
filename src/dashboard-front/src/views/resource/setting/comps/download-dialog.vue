@@ -44,6 +44,10 @@ import {
 } from '@/http';
 import { useCommon } from '@/store';
 
+const isShow = defineModel<boolean>({
+  required: true,
+  default: false,
+});
 const common = useCommon();
 const { t } = useI18n();
 const { apigwId } = common; // 网关id
@@ -51,11 +55,6 @@ const { apigwId } = common; // 网关id
 interface IexportDialog extends Partial<IDialog> {
   docType: string
 }
-
-const isShow = defineModel<boolean>({
-  required: true,
-  default: false,
-});
 
 // 下载参数
 const params = reactive({

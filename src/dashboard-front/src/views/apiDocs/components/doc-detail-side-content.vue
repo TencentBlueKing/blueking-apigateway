@@ -98,6 +98,11 @@ import {
 } from '@/views/apiDocs/types';
 import LangSelector from '@/views/apiDocs/components/lang-selector.vue';
 
+const props = withDefaults(defineProps<IProps>(), {
+  basics: () => null,
+  sdks: () => [],
+});
+
 const { t } = useI18n();
 
 // 注入当前的总 tab 变量
@@ -107,11 +112,6 @@ interface IProps {
   basics: IApiGatewayBasics & ISystemBasics | null;
   sdks: IApiGatewaySdkDoc[] & IComponentSdk[];
 }
-
-const props = withDefaults(defineProps<IProps>(), {
-  basics: () => null,
-  sdks: () => [],
-});
 
 const {
   basics,

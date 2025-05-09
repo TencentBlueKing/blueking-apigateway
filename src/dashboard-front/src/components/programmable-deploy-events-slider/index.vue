@@ -1,5 +1,5 @@
 <template>
-  <BkSideslider v-model:isShow="isShow" :width="1100" quick-close>
+  <BkSideslider v-model:is-show="isShow" :width="1100" quick-close>
     <template #header>
       <div class="log-details-title">
         <div class="log-details-name">【{{ stage?.name || historyStage?.name }}】{{ t('发布日志详情') }}</div>

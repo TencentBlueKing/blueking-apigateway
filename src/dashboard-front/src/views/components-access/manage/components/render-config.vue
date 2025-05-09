@@ -51,10 +51,12 @@
 
 <script lang="ts" setup>
 import _ from 'lodash';
-import { ref, watch, onMounted } from 'vue';
+import {
+  onMounted,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
-
-const { t } = useI18n();
 
 const props = defineProps({
   list: {
@@ -62,6 +64,8 @@ const props = defineProps({
     default: () => [],
   },
 });
+
+const { t } = useI18n();
 
 const configList = ref<any>([]);
 
@@ -81,10 +85,6 @@ const getData = () => {
   });
   return data;
 };
-
-defineExpose({
-  getData,
-});
 
 const setComponentConfig = () => {
   if (document.querySelectorAll('.value .bk-form-control')) {
@@ -130,6 +130,10 @@ watch(
     immediate: true,
   },
 );
+
+defineExpose({
+  getData,
+});
 </script>
 
 <style lang="scss" scoped>

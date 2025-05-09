@@ -83,7 +83,7 @@
     </div>
     <!-- 新建/编辑sideslider -->
     <bk-sideslider
-      ext-cls="alarm-strategy-slider" v-model:isShow="sidesliderConfig.isShow" :title="sidesliderConfig.title"
+      ext-cls="alarm-strategy-slider" v-model:is-show="sidesliderConfig.isShow" :title="sidesliderConfig.title"
       width="750">
       <template #default>
         <div class="strategy-form p30">

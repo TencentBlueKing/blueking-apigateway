@@ -64,8 +64,6 @@ import { ref, reactive, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import TableEmpty from '@/components/table-empty.vue';
 
-const { t } = useI18n();
-
 const props = defineProps({
   list: {
     type: Array,
@@ -74,6 +72,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits<(e: 'on-select', value: any) => void>();
+
+const { t } = useI18n();
 
 const curList = ref<any>([]);
 const searchValue = ref<string>('');

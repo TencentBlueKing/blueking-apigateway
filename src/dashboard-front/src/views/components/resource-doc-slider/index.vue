@@ -1,7 +1,7 @@
 <template>
   <div class="res-doc-container">
     <bk-sideslider
-      v-model:isShow="isShow"
+      v-model:is-show="isShow"
       quick-close
       :title="resource.name"
       width="780"
@@ -140,9 +140,11 @@ import { useI18n } from 'vue-i18n';
 import mitt from '@/common/event-bus';
 import { copy } from '../../../common/util';
 
-const { t } = useI18n();
-const common = useCommon();
-const { apigwId } = common; // 网关id
+const isShow = defineModel<boolean>({
+  required: true,
+  default: false,
+});
+// 网关id
 
 const props = defineProps({
   resource: { type: Object, default: () => ({}) },
@@ -151,13 +153,10 @@ const props = defineProps({
   isPreview: { type: Boolean, default: false }, // 是否获取预览文档，决定调用的接口
   previewLang: { type: [String, null], default: null },
 });
-
-const isShow = defineModel<boolean>({
-  required: true,
-  default: false,
-});
-
-const {
+const emit = defineEmits(['fetch', 'on-update']);
+const { t } = useI18n();
+const common = useCommon();
+const { apigwId } = common;const {
   resource,
   showFooter,
   showCreateBtn,
@@ -210,8 +209,6 @@ const toolbars = ref<any>({
   subfield: true,
   preview: true,
 });
-
-const emit = defineEmits(['fetch', 'on-update']);
 
 // 编辑markdown
 const handleEditMarkdown = (type: string) => {

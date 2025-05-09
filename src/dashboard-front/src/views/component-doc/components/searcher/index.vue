@@ -60,9 +60,6 @@ import { useRouter } from 'vue-router';
 import {
   searchAPI,
 } from '@/http';
-const { t } = useI18n();
-const router = useRouter();
-
 const props = defineProps({
   versionList: {
     type: Array,
@@ -75,6 +72,8 @@ const props = defineProps({
     },
   },
 });
+const { t } = useI18n();
+const router = useRouter();
 
 const curVersionList = ref([]);
 const resultList = ref([]);

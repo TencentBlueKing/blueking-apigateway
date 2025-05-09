@@ -46,8 +46,6 @@ import { SeriesItemType, SearchParamsType } from '../type';
 import TableEmpty from '@/components/table-empty.vue';
 import { getColorHue } from '@/common/util';
 
-const { t } = useI18n();
-
 const props = defineProps({
   instanceId: { // 生成图表的元素id
     type: String,
@@ -62,6 +60,10 @@ const props = defineProps({
     default: '响应耗时',
   },
 });
+
+const emit = defineEmits(['clear-params', 'report-init']);
+
+const { t } = useI18n();
 
 interface LegendItem {
   color: string;
@@ -80,8 +82,6 @@ interface ChartLegend {
   egress?: LegendItem;
   response_time_90th?: LegendItem;
 };
-
-const emit = defineEmits(['clear-params', 'report-init']);
 
 const { getChartIntervalOption } = userChartIntervalOption();
 

@@ -101,7 +101,7 @@
     </bk-tab>
 
     <!-- 网关/组件详情sideslider -->
-    <bk-sideslider v-model:isShow="sidesliderConfi.isShow" :title="sidesliderConfi.title" quick-close width="750">
+    <bk-sideslider v-model:is-show="sidesliderConfi.isShow" :title="sidesliderConfi.title" quick-close width="750">
       <template #default>
         <div class="p25">
           <div class="bk-button-group mb15">

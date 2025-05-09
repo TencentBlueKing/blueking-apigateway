@@ -146,7 +146,7 @@
 
     <!-- 版本对比 -->
     <bk-sideslider
-      v-model:isShow="diffSidesliderConf.isShow"
+      v-model:is-show="diffSidesliderConf.isShow"
       :title="diffSidesliderConf.title"
       :width="diffSidesliderConf.width"
       :quick-close="true"

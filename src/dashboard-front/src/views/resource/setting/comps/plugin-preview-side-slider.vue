@@ -1,7 +1,7 @@
 <template>
   <div class="edit-container">
     <bk-sideslider
-      v-model:isShow="renderShow"
+      v-model:is-show="renderShow"
       width="640"
       :title="t('查看插件')"
       quick-close
@@ -39,6 +39,15 @@ import { AngleUpFill } from 'bkui-vue/lib/icon';
 import yaml from 'js-yaml';
 import { useI18n } from 'vue-i18n';
 
+const props = withDefaults(defineProps<IProps>(), {
+  isSliderShow: false,
+  plugins: () => [],
+});
+
+const emits = defineEmits<{
+  'on-hidden': [],
+}>();
+
 const { t } = useI18n();
 
 type PluginType = {
@@ -53,16 +62,7 @@ interface IProps {
   plugins: PluginType[];
 }
 
-const props = withDefaults(defineProps<IProps>(), {
-  isSliderShow: false,
-  plugins: () => [],
-});
-
 const { plugins } = toRefs(props);
-
-const emits = defineEmits<{
-  'on-hidden': [],
-}>();
 
 const activeIndex = computed(() => plugins.value.map(plugin => plugin.type));
 const renderShow = ref(props.isSliderShow);

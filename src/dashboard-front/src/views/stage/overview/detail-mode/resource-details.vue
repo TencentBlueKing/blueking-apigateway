@@ -1,7 +1,7 @@
 <template>
   <div class="release-sideslider">
     <bk-sideslider
-      v-model:isShow="isShow"
+      v-model:is-show="isShow"
       :width="960"
       :title="`${$t('资源详情')}【${info.name}】`"
       quick-close
@@ -255,17 +255,15 @@ import { getGatewayLabels } from '@/http';
 import { getMethodsTheme } from '@/common/util';
 import ConfigDisplayTable from '@/views/components/plugin-manage/config-display-table.vue';
 
+const props = defineProps<{
+  info: any;
+}>();
+const emit = defineEmits(['hidden']);
 const { t } = useI18n();
 const route = useRoute();
 // 网关id
 const apigwId = computed(() => +route.params.id);
 const localLanguage =  cookie.parse(document.cookie).blueking_language || 'zh-cn';
-
-const props = defineProps<{
-  info: any;
-}>();
-
-const emit = defineEmits(['hidden']);
 
 const isShow = ref(false);
 const currentSource = ref<any>({});

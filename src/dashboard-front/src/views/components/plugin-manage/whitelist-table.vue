@@ -136,7 +136,7 @@
     <bk-sideslider
       :title="resourceSliderConf.title"
       :width="800"
-      v-model:isShow="resourceSliderConf.isShow"
+      v-model:is-show="resourceSliderConf.isShow"
       :quick-close="true"
       :before-close="handleBeforeClose"
       @hidden="sidesliderHidden">
@@ -241,11 +241,6 @@ import { useSidebar } from '@/hooks';
 import { getResources } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
 
-const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
-
-const common = useCommon();
-const { t } = useI18n();
-
 const props = defineProps({
   yamlStr: {
     type: String,
@@ -256,6 +251,11 @@ const props = defineProps({
     default: 'create',
   },
 });
+
+const { initSidebarFormData, isSidebarClosed/* , isBackDialogShow */ } = useSidebar();
+
+const common = useCommon();
+const { t } = useI18n();
 
 const validateForm1 = ref();
 const keyword = ref<string>('');

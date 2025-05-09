@@ -87,6 +87,15 @@ import {
 } from '@vueuse/core';
 import { minBy } from 'lodash';
 
+const props = withDefaults(defineProps<IProps>(), {
+  api: () => null,
+  navList: () => [],
+  markdownHtml: () => '',
+  updatedTime: () => null,
+});
+
+const emit = defineEmits(['show-sdk-instruction']);
+
 const { t } = useI18n();
 
 interface IProps {
@@ -96,17 +105,8 @@ interface IProps {
   updatedTime: string;
 }
 
-const props = withDefaults(defineProps<IProps>(), {
-  api: () => null,
-  navList: () => [],
-  markdownHtml: () => '',
-  updatedTime: () => null,
-});
-
 // 注入当前的总 tab 变量
 const curTab = inject<Ref<TabType>>('curTab');
-
-const emit = defineEmits(['show-sdk-instruction']);
 
 const {
   api,

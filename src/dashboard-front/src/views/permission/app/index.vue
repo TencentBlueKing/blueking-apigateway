@@ -98,7 +98,7 @@
 
     <!-- 主动授权sideslider -->
     <bk-sideslider
-      v-model:isShow="authSliderConf.isShow"
+      v-model:is-show="authSliderConf.isShow"
       :title="authSliderConf.title"
       :width="800"
       quick-close
@@ -205,7 +205,7 @@
 
     <!--  批量续期 slider  -->
     <bk-sideslider
-      v-model:isShow="batchApplySliderConf.isShow"
+      v-model:is-show="batchApplySliderConf.isShow"
       width="960"
       :title="t('批量续期')"
       quick-close

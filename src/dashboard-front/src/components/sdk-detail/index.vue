@@ -108,8 +108,6 @@ import { useI18n } from 'vue-i18n';
 import { copy } from '@/common/util';
 import { HelpFill } from 'bkui-vue/lib/icon';
 
-const { t } = useI18n();
-
 const props = defineProps({
   isApigw: {
     type: Boolean,
@@ -126,6 +124,8 @@ const props = defineProps({
     },
   },
 });
+
+const { t } = useI18n();
 
 // const stageText = computed(() => {
 //   let texts = [];

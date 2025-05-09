@@ -263,10 +263,6 @@ import guide from '@/components/guide.vue';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 
-const router = useRouter();
-const user = useUser();
-const { t } = useI18n();
-
 const props = defineProps({
   modelValue: {
     type: Boolean,
@@ -283,8 +279,10 @@ const props = defineProps({
     }),
   },
 });
-
 const emit = defineEmits(['update:modelValue', 'done']);
+const router = useRouter();
+const user = useUser();
+const { t } = useI18n();
 
 const { BK_APP_VERSION } = window;
 
