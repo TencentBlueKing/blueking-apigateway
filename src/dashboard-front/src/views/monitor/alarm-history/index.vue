@@ -81,7 +81,10 @@
           <bk-table-column :label="t('状态')" width="200">
             <template #default="{ data }">
               <span :class="['ag-ouline-dot', data?.status]"></span>
-              <span class="status-text">{{ getAlarmStatusText(data?.status) }}</span>
+              <span
+                v-bk-tooltips="{ content: data.comment || '--', disabled: data?.status !== 'skipped' }"
+                class="status-text"
+              >{{ getAlarmStatusText(data?.status) }}</span>
             </template>
           </bk-table-column>
           <template #empty>
@@ -141,13 +144,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed, reactive, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useCommon, useAccessLog } from '@/store';
+import {
+  useAccessLog,
+  useCommon,
+} from '@/store';
 import { useQueryList } from '@/hooks';
 import {
-  getStrategyList,
   getRecordList,
+  getStrategyList,
 } from '@/http';
 import { cloneDeep } from 'lodash';
 import TableEmpty from '@/components/table-empty.vue';
