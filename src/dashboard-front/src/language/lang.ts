@@ -1830,6 +1830,7 @@ const lang: ILANG = {
   '有效期': ['Valid Duration'],
   '已过期': ['Expired'],
   '有效期为永久，不可续期': ['Permanent validity, cannot be renewed'],
+  '插件按优先级从高到低排序，多个插件优先级高的先执行。': ['Plugins are ordered by priority, plugin with higher priority executes first.'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

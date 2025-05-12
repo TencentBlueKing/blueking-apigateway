@@ -160,6 +160,9 @@
 .mt15 {
   margin-top: 15px !important;
 }
+.mt16 {
+  margin-top: 16px !important;
+}
 .mt20 {
   margin-top: 20px !important;
 }
@@ -361,6 +364,9 @@
 .pt15 {
   padding-top: 15px !important;
 }
+.pt16 {
+  padding-top: 16px !important;
+}
 .pt20 {
   padding-top: 20px !important;
 }
@@ -390,6 +396,9 @@
 }
 .pb10 {
   padding-bottom: 10px !important;
+}
+.pb12 {
+  padding-bottom: 12px !important;
 }
 .pb15 {
   padding-bottom: 15px !important;
@@ -426,6 +435,9 @@
 }
 .pl10 {
   padding-left: 10px !important;
+}
+.pl12 {
+  padding-left: 12px !important;
 }
 .pl15 {
   padding-left: 15px !important;

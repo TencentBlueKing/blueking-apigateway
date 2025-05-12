@@ -28,6 +28,9 @@
         </bk-exception>
       </template>
       <div class="bindding-info p10" v-else>
+        <div class="pb12 pl12">
+          <BkAlert closable>{{ t('插件按优先级从高到低排序，多个插件优先级高的先执行。') }}</BkAlert>
+        </div>
         <bk-button
           v-if="common.curApigwData?.kind !== 1"
           v-bk-tooltips="{
@@ -36,6 +39,7 @@
           }"
           :disabled="getStatus(stageData) === 'doing'"
           class="add-plugin-btn"
+          theme="primary"
           @click="handlePluginAdd"
         >
           <i class="icon apigateway-icon icon-ag-plus pr10 f12"></i>
@@ -100,6 +104,9 @@
         <div class="plugin-add-container">
           <!-- 选择插件 -->
           <div class="plugins pl20 pr20" v-if="state.curStep === 1">
+            <div class="pt16">
+              <BkAlert closable>{{ t('插件按优先级从高到低排序，多个插件优先级高的先执行。') }}</BkAlert>
+            </div>
             <div class="plugin-search">
               <bk-input
                 v-model="searchValue" clearable type="search" :placeholder="t('请输入插件关键字，按Enter搜索')"
@@ -725,7 +732,7 @@ init();
   min-height: calc(100vh - 171px) !important;
 
   .plugin-search {
-    padding: 20px 0px;
+    padding: 12px 0 20px;
 
     .bk-input--default {
       width: 608px;
