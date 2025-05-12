@@ -20,7 +20,7 @@
         </div>
       </template>
       <template #optionRender="{ item } ">
-        <div class="resource-option-wrapper" @click="handleChange">
+        <div class="resource-option-wrapper">
           <strong v-dompurify-html="getHighlightContent(item, 'name')"></strong>
           <span v-dompurify-html="getHighlightContent(item, 'path')" class="path"></span>
         </div>
