@@ -25,6 +25,7 @@ from apigateway.common.plugin.convertor import (
     HeaderWriteConvertor,
     IPRestrictionConvertor,
     PluginConvertorFactory,
+    ResponseRewriteConvertor,
 )
 from apigateway.utils.yaml import yaml_loads
 
@@ -220,6 +221,41 @@ class TestBkMockConvertor:
     )
     def test_convert(self, data, expected):
         convertor = BkMockConvertor()
+        result = convertor.convert(data)
+        assert result == expected
+
+
+class TestResponseRewriteConvertor:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {
+                    "status_code": 200,
+                    "body": '{"code":"ok","message":"new json body"}',
+                    "headers": {
+                        "add": [{"key": "name:value"}],
+                        "set": [
+                            {"key": "key1", "value": "value1"},
+                            {"key": "key2", "value": "value2"},
+                        ],
+                        "remove": [{"key": "key2"}],
+                    },
+                },
+                {
+                    "status_code": 200,
+                    "body": '{"code":"ok","message":"new json body"}',
+                    "headers": {
+                        "add": ["name:value"],
+                        "set": {"key1": "value1", "key2": "value2"},
+                        "remove": ["key2"],
+                    },
+                },
+            )
+        ],
+    )
+    def test_convert(self, data, expected):
+        convertor = ResponseRewriteConvertor()
         result = convertor.convert(data)
         assert result == expected
 

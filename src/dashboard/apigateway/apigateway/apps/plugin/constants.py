@@ -34,6 +34,7 @@ class PluginTypeCodeEnum(StructuredEnum):
     API_BREAKER = EnumField("api-breaker", label=_("API 熔断"))
     REQUEST_VALIDATION = EnumField("request-validation", label=_("请求校验"))
     FAULT_INJECTION = EnumField("fault-injection", label=_("故障注入"))
+    RESPONSE_REWRITE = EnumField("response-rewrite", label=_("Response 转换"))
 
 
 class PluginTypeScopeEnum(StructuredEnum):
