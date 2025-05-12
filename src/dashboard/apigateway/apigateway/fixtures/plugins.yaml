@@ -2457,7 +2457,7 @@
     language: ''
     type:
     - response-rewrite
-    notes: "插件支持修改上游服务返回的 Body 和 Header 信息。\n通过设置标头中的 status_code 和 Location 字段实现重定向。"
+    notes: "插件支持修改上游服务返回的 Body 和 Header 信息。\n该插件可以应用在以下场景中：\n通过设置标头中的 status_code 和 Location 字段实现重定向。"
     example: '"status_code": 200, \n"body": {\"code\":\"ok\",\"message\":\"new json body\"}, \n"headers": {\n  "add": ["X-Server-balancer-addr: test"],\n  "set": {"X-Server-id": 3},\n  "remove": ["X-TO-BE-REMOVED"]\n}, \n "vars": [[["arg_name", "==", "jack"], ["arg_age", "==", 18]]]\n'
     style: dynamic
     default_value: ''
@@ -2585,7 +2585,7 @@
     language: en
     type:
     - response-rewrite
-    notes: The response-rewrite Plugin rewrites the content returned by the Upstream.\nTo set custom status_code and Location fields in the header to redirect.
+    notes: The response-rewrite Plugin rewrites the content returned by the Upstream.\nThis Plugin can be useful in these scenarios:\nTo set custom status_code and Location fields in the header to redirect.
     example: '"status_code": 200, \n"body": {\"code\":\"ok\",\"message\":\"new json body\"}, \n"headers": {\n  "add": ["X-Server-balancer-addr: test"],\n  "set": {"X-Server-id": 3},\n  "remove": ["X-TO-BE-REMOVED"]\n}, \n "vars": [[["arg_name", "==", "jack"], ["arg_age", "==", 18]]]\n'
     style: dynamic
     default_value: ''
