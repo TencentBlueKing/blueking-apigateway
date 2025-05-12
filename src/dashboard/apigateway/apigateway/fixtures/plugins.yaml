@@ -2708,3 +2708,100 @@
           }
         }
       }
+
+
+- model: schema.schema
+  fields:
+    created_time: 2025-05-12 10:00:21.010753+00:00
+    updated_time: 2025-05-12 10:00:21.010788+00:00
+    name: redirect
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "$comment": "this is a mark for our injected plugin schema",
+        "type": "object",
+        "properties": {
+            "uri": {
+                "type": "string",
+                "pattern": "^(\\\\\\$[0-9a-zA-Z_]+|\\$\\{[0-9a-zA-Z_]+\\}|\\$[0-9a-zA-Z_]+|\\$|[^$\\\\]+)*$"
+            },
+            "ret_code": {
+                "type": "integer"
+            }
+        }
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: redirect
+    name: 重定向
+    name_en: Redirect
+    is_public: true
+    scope: resource
+    priority: 900
+    schema:
+    - redirect
+    - plugin
+    - '0'
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+    - redirect
+    notes: "用于配置 URI 重定向。"
+    example: '重定向 URI: /test/default.html, \nHTTP 响应码: 301\n'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "properties": {
+              "uri": {
+                  "title": "重定向 URI",
+                  "description": "要重定向到的 URI，可以包含 NGINX 变量。例如：/test/index.htm，$uri/index.html，${uri}/index.html，https://example.com/foo/bar。如果你引入了一个不存在的变量，它不会报错，而是将其视为一个空变量。",
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(\\\\\\$[0-9a-zA-Z_]+|\\$\\{[0-9a-zA-Z_]+\\}|\\$[0-9a-zA-Z_]+|\\$|[^$\\\\]+)*$"
+              },
+              "ret_code": {
+                  "title": "HTTP 响应码",
+                  "type": "integer",
+                  "minimum": 200,
+                  "default": 302
+              }
+          }
+        }
+      }
+- model: plugin.pluginform
+  fields:
+    language: en
+    type:
+    - redirect
+    notes: The redirect Plugin can be used to configure redirects.
+    example: 'uri: /test/default.html, \nret_code: 301\n'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "properties": {
+              "uri": {
+                  "title": "URI",
+                  "description": "URI to redirect to. Can contain Nginx variables. For example, /test/index.html, $uri/index.html, ${uri}/index.html, https://example.com/foo/bar. If you refer to a variable name that doesn't exist, instead of throwing an error, it will treat it as an empty variable.",
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(\\\\\\$[0-9a-zA-Z_]+|\\$\\{[0-9a-zA-Z_]+\\}|\\$[0-9a-zA-Z_]+|\\$|[^$\\\\]+)*$"
+              },
+              "ret_code": {
+                  "title": "HTTP response code",
+                  "type": "integer",
+                  "minimum": 200,
+                  "default": 302
+              }
+          }
+        }
+      }

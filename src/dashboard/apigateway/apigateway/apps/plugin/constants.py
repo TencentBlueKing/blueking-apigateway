@@ -35,6 +35,7 @@ class PluginTypeCodeEnum(StructuredEnum):
     REQUEST_VALIDATION = EnumField("request-validation", label=_("请求校验"))
     FAULT_INJECTION = EnumField("fault-injection", label=_("故障注入"))
     RESPONSE_REWRITE = EnumField("response-rewrite", label=_("Response 转换"))
+    REDIRECT = EnumField("redirect", label=_("重定向"))
 
 
 class PluginTypeScopeEnum(StructuredEnum):

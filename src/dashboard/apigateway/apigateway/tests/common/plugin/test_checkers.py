@@ -26,6 +26,7 @@ from apigateway.common.plugin.checker import (
     FaultInjectionChecker,
     HeaderRewriteChecker,
     PluginConfigYamlChecker,
+    RedirectChecker,
     RequestValidationChecker,
     ResponseRewriteChecker,
 )
@@ -560,5 +561,25 @@ class TestResponseRewriteChecker:
     )
     def test_check(self, data, ctx):
         checker = ResponseRewriteChecker()
+        with ctx:
+            checker.check(yaml_dumps(data))
+
+
+class TestRedirectChecker:
+    @pytest.mark.parametrize(
+        "data, ctx",
+        [
+            (
+                {"uri": "/test/default.html", "ret_code": 301},
+                does_not_raise(),
+            ),
+            (
+                {"uri": "/test/default.html", "ret_code": 101},
+                pytest.raises(ValueError),
+            ),
+        ],
+    )
+    def test_check(self, data, ctx):
+        checker = RedirectChecker()
         with ctx:
             checker.check(yaml_dumps(data))
