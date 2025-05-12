@@ -478,6 +478,7 @@ class MetricsSummaryFactory:
 
     def __init__(
         self,
+        gateway_id: int,
         stage_name: str,
         resource_id: Optional[int],
         bk_app_code: Optional[str],
@@ -486,6 +487,7 @@ class MetricsSummaryFactory:
         time_start: int,
         time_end: int,
     ):
+        self.gateway_id = gateway_id
         self.stage_name = stage_name
         self.resource_id = resource_id
         self.bk_app_code = bk_app_code
@@ -496,6 +498,7 @@ class MetricsSummaryFactory:
 
     def _build_query_params(self):
         query_params = {
+            "gateway_id": self.gateway_id,
             "stage_name": self.stage_name,
             "start_time__gte": timezone.datetime.fromtimestamp(self.time_start),
             "end_time__lte": timezone.datetime.fromtimestamp(self.time_end),

@@ -208,6 +208,7 @@ class QuerySummaryApi(generics.ListAPIView):
             raise Http404
 
         queryset = MetricsSummaryFactory(
+            request.gateway.id,
             stage_name,
             data.get("resource_id", 0),
             data.get("bk_app_code"),
@@ -269,6 +270,7 @@ class QuerySummaryExportApi(generics.CreateAPIView):
             raise Http404
 
         queryset = MetricsSummaryFactory(
+            request.gateway.id,
             stage_name,
             data.get("resource_id", 0),
             data.get("bk_app_code"),
