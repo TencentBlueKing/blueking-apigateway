@@ -360,9 +360,14 @@ class PluginConfigRetrieveUpdateDestroyApi(
 
             super().perform_update(serializer)
 
-            # if scope_type is stage, should publish
             scope_type = self.kwargs["scope_type"]
             scope_id = self.kwargs["scope_id"]
+            # update source
+            PluginBinding.objects.filter(
+                gateway=self.request.gateway, scope_type=scope_type, scope_id=scope_id, config=serializer.instance
+            ).update(source=PluginBindingSourceEnum.USER_UPDATE.value)
+
+            # if scope_type is stage, should publish
             self.post_modification(
                 source=PublishSourceEnum.PLUGIN_UPDATE,
                 op_type=OpTypeEnum.MODIFY,
