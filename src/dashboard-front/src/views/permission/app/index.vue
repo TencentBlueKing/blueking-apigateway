@@ -520,14 +520,15 @@ const {
   handleSelectionChange,
   handleSelecAllChange,
   resetSelections,
-} = useSelection();
+} = useSelection({ isRowSelectEnable: row => row.renewable });
 
 const resourceList = ref<IResource[]>([]);
 const isBatchApplyLoading = ref(false);
 const curPermission = ref<Partial<IPermission>>({ bk_app_code: '', detail: [], id: -1 });
 const curSelections = ref([]);
-const renewableConfig = reactive({
-  content: t('权限有效期大于 30 天时，暂无法续期'), placement: 'left',
+const renewableConfig = ref({
+  content: t('权限有效期大于 360 天时，暂无法续期'),
+  placement: 'left',
 });
 
 // 导出下拉
@@ -1059,7 +1060,7 @@ const getDurationTextColor = (expireAt: string | null) => {
 };
 
 const isRowSelectEnable = ({ row }: { row: IPermission }) => {
-  return !!row.expires;
+  return row.renewable;
 };
 
 const init = () => {

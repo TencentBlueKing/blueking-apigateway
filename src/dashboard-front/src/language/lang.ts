@@ -481,7 +481,7 @@ const lang: ILANG = {
   '组件系统': ['System'],
   '过期时间': ['Expire Time'],
   '永久有效': ['Forever'],
-  '权限有效期大于 30 天时，暂无法续期': ['When the permission is valid for more than 30 days, it cannot be renewed'],
+  '权限有效期大于 360 天时，暂无法续期': ['When the permission is valid for more than 360 days, it cannot be renewed'],
   '天': ['days'],
   '不可续期': ['Non-renewable'],
   '无可续期的权限': ['No renewable Permissions'],

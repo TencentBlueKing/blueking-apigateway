@@ -1,9 +1,8 @@
 /**
  * 选择相关状态和事件
  */
-import {
-  ref,
-} from 'vue';
+import { ref } from 'vue';
+import { cloneDeep } from 'lodash';
 
 export type SelectionType = {
   checked: boolean;
@@ -12,9 +11,10 @@ export type SelectionType = {
   row?: any
 };
 
-export const useSelection = () => {
+export const useSelection = ({ isRowSelectEnable }: { isRowSelectEnable?: (row: any) => boolean }) => {
   const selections = ref([]);
   const bkTableRef = ref();
+  const isSelectable = isRowSelectEnable || (() => true);
 
   const handleSelectionChange = (selection: SelectionType) => {
     // 选择某一个
@@ -30,7 +30,7 @@ export const useSelection = () => {
 
   const handleSelecAllChange = (selection: SelectionType) => {
     if (selection.checked) {
-      selections.value = JSON.parse(JSON.stringify(selection.data));
+      selections.value = cloneDeep(selection.data.filter((item: any) => isSelectable(item)));
     } else {
       selections.value = [];
     }
