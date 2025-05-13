@@ -47,7 +47,7 @@
         >
           <bk-input
             v-model="docForm.service_account.link"
-            :placeholder="t('如wxwork：//message？uin=84444455886')"
+            :placeholder="t('如wxwork: //message?uin=00000')"
           />
         </bk-form-item>
 

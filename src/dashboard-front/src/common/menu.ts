@@ -327,4 +327,9 @@ export const platformToolsMenu: IMenu[] = [
     title: t('自动化接入网关'),
     icon: 'zidongjieru',
   },
+  {
+    name: 'platformToolsProgrammableGateway',
+    title: t('可编程网关'),
+    icon: 'square-program',
+  },
 ];

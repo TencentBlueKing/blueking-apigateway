@@ -65,6 +65,7 @@ const ComponentsRuntimeDetail = () => import(/* webpackChunkName: 'components-ma
 const PlatformTools = () => import(/* webpackChunkName: 'platform-tools'*/'@/views/platform-tools/index.vue');
 const PlatformToolsToolbox = () => import(/* webpackChunkName: 'platform-tools'*/'@/views/platform-tools/toolbox/index.vue');
 const PlatformToolsAutomatedGateway = () => import(/* webpackChunkName: 'platform-tools'*/'@/views/platform-tools/automatedGateway/index.vue');
+const PlatformToolsProgrammableGateway = () => import(/* webpackChunkName: 'platform-tools'*/'@/views/platform-tools/programmableGateway/index.vue');
 
 // 文档一级路由出口
 const docsComponent = {
@@ -656,6 +657,16 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: t('自动化接入网关'),
           matchRoute: 'platformToolsAutomatedGateway',
+          topMenu: 'platformTools',
+        },
+      },
+      {
+        path: 'programmable-gateway',
+        name: 'platformToolsProgrammableGateway',
+        component: PlatformToolsProgrammableGateway,
+        meta: {
+          title: t('可编程网关'),
+          matchRoute: 'platformToolsProgrammableGateway',
           topMenu: 'platformTools',
         },
       },
