@@ -64,6 +64,8 @@
     "@blueking/cli-service-webpack": "0.0.7",
     "@blueking/eslint-config-bk": "^2.1.0",
     "@blueking/stylelint-config-bk": "^2.1.0-beta.10",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@types/cookie": "^0.6.0",
     "@types/echarts": "^4.9.22",
     "@types/js-cookie": "^3.0.6",
@@ -73,7 +75,6 @@
     "@types/node": "^20.17.44",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
-    "cz-git": "^1.11.1",
     "enhanced-resolve": "^5.18.1",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-vue": "^9.33.0",
@@ -89,17 +90,16 @@
     "postcss-url": "^10.1.3",
     "sass": "^1.87.0",
     "sass-loader": "^13.3.3",
+    "simple-git-hooks": "^2.13.0",
     "ts-loader": "^9.5.2",
     "typescript": "5.8.3",
     "vue-eslint-parser": "^9.4.3"
   },
+  "simple-git-hooks": {
+    "commit-msg": "cd src/dashboard-front && npx commitlint --edit $1"
+  },
   "engines": {
     "node": ">= 14.16.1",
     "npm": ">= 6.4.1 <7"
-  },
-  "config": {
-    "commitizen": {
-      "path": "node_modules/cz-git"
-    }
   }
 }
