@@ -265,6 +265,17 @@ class ResponseRewriteChecker(BaseChecker):
                 raise ValueError(_("remove has duplicate elements：{}").format(", ".join(remove_duplicate_keys)))
 
 
+class RedirectChecker(BaseChecker):
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
+        if not loaded_data:
+            raise ValueError("YAML cannot be empty")
+
+        ret_code = loaded_data.get("ret_code")
+        if ret_code is not None and not (ret_code >= 200):
+            raise ValueError("ret_code must be greater than or equal to 200.")
+
+
 def check_vars(vars, location):
     """check vars of lua-resty-expr
     vars = `[
@@ -314,6 +325,7 @@ class PluginConfigYamlChecker:
         PluginTypeCodeEnum.REQUEST_VALIDATION.value: RequestValidationChecker(),
         PluginTypeCodeEnum.FAULT_INJECTION.value: FaultInjectionChecker(),
         PluginTypeCodeEnum.RESPONSE_REWRITE.value: ResponseRewriteChecker(),
+        PluginTypeCodeEnum.REDIRECT.value: RedirectChecker(),
     }
 
     def __init__(self, type_code: str):

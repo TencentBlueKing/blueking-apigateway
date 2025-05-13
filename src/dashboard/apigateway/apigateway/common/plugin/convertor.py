@@ -180,6 +180,14 @@ class ResponseRewriteConvertor(PluginConvertor):
         return config
 
 
+class RedirectConvertor(PluginConvertor):
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.REDIRECT
+
+    def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        config["ret_code"] = config.get("ret_code", 302)
+        return config
+
+
 class PluginConvertorFactory:
     plugin_convertors: ClassVar[Dict[PluginTypeCodeEnum, PluginConvertor]] = {
         c.plugin_type_code: c
@@ -191,6 +199,7 @@ class PluginConvertorFactory:
             RequestValidationConvertor(),
             FaultInjectionConvertor(),
             ResponseRewriteConvertor(),
+            RedirectConvertor(),
         ]
     }
 

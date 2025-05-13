@@ -25,6 +25,7 @@ from apigateway.common.plugin.convertor import (
     HeaderWriteConvertor,
     IPRestrictionConvertor,
     PluginConvertorFactory,
+    RedirectConvertor,
     ResponseRewriteConvertor,
 )
 from apigateway.utils.yaml import yaml_loads
@@ -256,6 +257,22 @@ class TestResponseRewriteConvertor:
     )
     def test_convert(self, data, expected):
         convertor = ResponseRewriteConvertor()
+        result = convertor.convert(data)
+        assert result == expected
+
+
+class TestRedirectConvertor:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {"uri": "/test/default.html", "ret_code": 301},
+                {"uri": "/test/default.html", "ret_code": 301},
+            )
+        ],
+    )
+    def test_convert(self, data, expected):
+        convertor = RedirectConvertor()
         result = convertor.convert(data)
         assert result == expected
 
