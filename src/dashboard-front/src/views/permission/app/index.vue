@@ -30,7 +30,6 @@
         <bk-table
           show-overflow-tooltip
           class="perm-app-table mt15"
-          :is-row-select-enable="isRowSelectEnable"
           :data="tableData"
           size="small"
           :pagination="pagination"
@@ -38,14 +37,19 @@
           remote-pagination
           @page-limit-change="handlePageSizeChange"
           @page-value-change="handlePageChange"
-          @selection-change="handleSelectionChange"
-          @select-all="handleSelecAllChange"
         >
-          <bk-table-column
-            align="center"
-            type="selection"
-            width="60"
-          />
+          <bk-table-column :label="checkboxColLabel" align="center" width="60">
+            <template #default="{ row }">
+              <div>
+                <bk-checkbox
+                  v-bk-tooltips="{ content: t('权限有效期大于 360 天时，暂无法续期'), disabled: row.renewable }"
+                  :disabled="!row.renewable"
+                  :model-value="!!selections.find(item => item.id === row.id)"
+                  @change="(checked: boolean) => handleCheckboxChange(checked, row)"
+                />
+              </div>
+            </template>
+          </bk-table-column>
           <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
           <bk-table-column :label="t('授权维度')" prop="grant_dimension" :filter="grantDimensionFilterOptions">
             <template #default="{ row }: { row: IPermission }">
@@ -376,7 +380,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script lang="tsx" setup>
 import { isEqual } from 'lodash';
 import {
   InfoBox,
@@ -402,10 +406,7 @@ import {
   getResourcePermissionAppList,
 } from '@/http';
 import { useCommon } from '@/store';
-import {
-  useQueryList,
-  useSelection,
-} from '@/hooks';
+import { useQueryList } from '@/hooks';
 import { IDropList } from '@/types';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import ExpDaySelector from '@/views/permission/app/comps/exp-day-selector.vue';
@@ -514,17 +515,10 @@ const {
   getList,
 } = useQueryList<IPermission>(fetchPermissionList, filterData);
 
-// checkbox hooks
-const {
-  selections,
-  handleSelectionChange,
-  handleSelecAllChange,
-  resetSelections,
-} = useSelection({ isRowSelectEnable: row => row.renewable });
-
 const resourceList = ref<IResource[]>([]);
 const isBatchApplyLoading = ref(false);
 const curPermission = ref<Partial<IPermission>>({ bk_app_code: '', detail: [], id: -1 });
+const selections = ref<IPermission[]>([]);
 const curSelections = ref([]);
 const renewableConfig = ref({
   content: t('权限有效期大于 360 天时，暂无法续期'),
@@ -631,7 +625,7 @@ const selectedApiPermList = computed(() => curSelections.value.filter(perm => pe
 watch(
   filterValues,
   () => {
-    resetSelections();
+    selections.value = [];
     // 当前有资源名称过滤，且过滤值不在资源列表中，则删除该过滤条件
     const resourceIdFilterIndex = filterValues.value.findIndex(filter => filter.id === 'resource_id');
 
@@ -675,6 +669,7 @@ watch(
   },
   { immediate: true, deep: true },
 );
+
 // 监听授权有效时间的类型
 watch(
   () => curAuthData.value.expire_type,
@@ -686,9 +681,10 @@ watch(
     }
   },
 );
+
 watch(
-  () => selections.value,
-  (v: number[]) => {
+  selections,
+  (v) => {
     exportDropData.value.forEach((e: IDropList) => {
       // 已选资源
       if (e.value === 'selected') {
@@ -707,6 +703,25 @@ watch([
 ], () => {
   updateTableEmptyConfig();
 }, { deep: true });
+
+const checkboxColLabel = () =>
+  <bk-checkbox onChange={(checked: boolean) => handleCheckAllClick(checked)}></bk-checkbox>;
+
+const handleCheckAllClick = (checked: boolean) => {
+  if (checked) {
+    selections.value = tableData.value.filter(row => row.renewable);
+  } else {
+    selections.value = [];
+  }
+};
+
+const handleCheckboxChange = (checked: boolean, row: IPermission) => {
+  if (checked) {
+    selections.value.push(row);
+  } else {
+    selections.value = selections.value.filter(item => item.id !== row.id);
+  }
+};
 
 const getBkAppCodes = async () => {
   const appCodeOption = filterConditions.value.find(condition => condition.id === 'bk_app_code');
@@ -787,7 +802,7 @@ const handleBatchConfirm = async () => {
     await batchUpdatePermission(apigwId, data);
     batchApplySliderConf.isShow = false;
     await getList(fetchPermissionList);
-    resetSelections();
+    selections.value = [];
     Message({
       theme: 'success',
       message: t('续期成功！'),

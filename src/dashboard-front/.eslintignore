@@ -13,4 +13,5 @@ src/assets/**
 *bak*
 src/views/resource/setting/detail.vue
 src/views/resource/setting/comps/table-res-to-action.vue
+src/views/permission/app/index.vue
 static/svg/iconcool.js
