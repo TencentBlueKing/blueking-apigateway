@@ -312,8 +312,11 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
             service_account = data.get("service_account", {})
             if not service_account.get("name"):
                 raise serializers.ValidationError(_("服务号名称不可为空。"))
-            if not service_account.get("link"):
+            link = service_account.get("link")
+            if not link:
                 raise serializers.ValidationError(_("服务号链接不可为空。"))
+            if not link.startswith("wxwork://"):
+                raise serializers.ValidationError(_("服务号链接格式不正确，必须以 wxwork:// 开头。"))
         return data
 
 
