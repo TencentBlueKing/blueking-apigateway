@@ -1831,6 +1831,11 @@ const lang: ILANG = {
   '已过期': ['Expired'],
   '有效期为永久，不可续期': ['Permanent validity, cannot be renewed'],
   '插件按优先级从高到低排序，多个插件优先级高的先执行。': ['Plugins are ordered by priority, plugin with higher priority executes first.'],
+  '自定义环境': ['Custom Stages'],
+  '所有环境': ['All Stages'],
+  '仅对已选择的环境生效': ['Only affect selected stages'],
+  '选择后，当前所有环境及后续新增环境都将生效': ['Affect all current and future stages'],
+  '自定义环境不能为空': ['Must hava at least one stage'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

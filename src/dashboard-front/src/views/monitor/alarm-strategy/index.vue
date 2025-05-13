@@ -12,11 +12,20 @@
         <bk-input class="search-input w300" :placeholder="t('请输入告警策略名称，按Enter搜索')" v-model="filterData.keyword" />
       </div>
     </div>
+
     <div class="alarm-strategy-content">
       <bk-loading :loading="isLoading">
         <bk-table
-          class="alarm-strategy-table" :data="tableData" remote-pagination :pagination="pagination"
-          @page-limit-change="handlePageSizeChange" @page-value-change="handlePageChange" row-hover="auto">
+          :border="['outer']"
+          :data="tableData"
+          :pagination="pagination"
+          class="alarm-strategy-table"
+          remote-pagination
+          row-hover="auto"
+          show-overflow-tooltip
+          @page-limit-change="handlePageSizeChange"
+          @page-value-change="handlePageChange"
+        >
           <bk-table-column :label="t('告警策略名称')" prop="name" width="150"></bk-table-column>
           <bk-table-column :label="t('标签')" prop="gateway_labels">
             <template #default="{ data }">
@@ -37,6 +46,15 @@
               <template v-else>
                 --
               </template>
+            </template>
+          </bk-table-column>
+          <bk-table-column :label="t('生效环境')">
+            <template #default="{ row }">
+              <template v-if="Array.isArray(row.effective_stages)">
+                <div v-if="row.effective_stages.length === 0">{{ t('所有环境') }}</div>
+                <div v-else>{{ row.effective_stages.join(', ') }}</div>
+              </template>
+              <div v-else>--</div>
             </template>
           </bk-table-column>
           <bk-table-column :label="t('更新时间')" prop="updated_time" width="230"></bk-table-column>
@@ -81,20 +99,28 @@
         </bk-table>
       </bk-loading>
     </div>
+
     <!-- 新建/编辑sideslider -->
     <bk-sideslider
-      ext-cls="alarm-strategy-slider" v-model:is-show="sidesliderConfig.isShow" :title="sidesliderConfig.title"
+      v-model:is-show="sidesliderConfig.isShow"
+      :title="sidesliderConfig.title"
+      ext-cls="alarm-strategy-slider"
       width="750">
       <template #default>
         <div class="strategy-form p30">
-          <bk-form ref="strategyFormRef" :label-width="160" :model="formData">
+          <bk-form ref="strategyFormRef" :label-width="108" :model="formData">
             <div class="form-bd">
               <dl class="form-content">
                 <div class="content-panel single">
                   <bk-form-item
                     class="mb0"
-                    :label="t('告警策略名称')" :required="true" :rules="rules.name" :property="'name'"
-                    :error-display-type="'normal'">
+                    :label="t('告警策略名称')"
+                    :property="'name'"
+                    :required="true"
+                    :rules="rules.name"
+                    error-display-type="normal"
+                    label-position="left"
+                  >
                     <bk-input :placeholder="t('请输入')" :maxlength="128" v-model="formData.name"></bk-input>
                   </bk-form-item>
                 </div>
@@ -158,7 +184,7 @@
                         </div>
                       </div>
                     </bk-form-item>
-                    <bk-form-item :label="t('告警收敛')" class="mb0">
+                    <bk-form-item :label="t('告警收敛')" class="mb20">
                       <div class="flex-group">
                         <span class="item label"> {{ t('告警产生后') }}， </span>
                         <span class="item flex-0-0 w122">
@@ -170,6 +196,39 @@
                           </bk-select>
                         </span>
                         <span class="item label flex-1-1"> {{ t('内不再发送告警') }} </span>
+                      </div>
+                    </bk-form-item>
+                    <bk-form-item
+                      :label="t('生效环境')"
+                      :rules="rules.effective_stages"
+                      property="effective_stages"
+                    >
+                      <BkRadioGroup v-model="effectiveStageType" @change="handleEffectiveStageTypeChange">
+                        <BkRadio label="all">{{ t('所有环境') }}</BkRadio>
+                        <BkRadio label="custom">{{ t('自定义环境') }}</BkRadio>
+                      </BkRadioGroup>
+                      <div>
+                        <BkSelect
+                          v-if="effectiveStageType === 'custom'"
+                          v-model="formData.effective_stages"
+                          :placeholder="t('请选择环境')"
+                          filterable
+                          multiple
+                        >
+                          <BkOption
+                            v-for="stage in stageList"
+                            :key="stage.id"
+                            :label="stage.name"
+                            :value="stage.name"
+                          />
+                        </BkSelect>
+                        <div class="stage-select-tips">
+                          {{
+                            effectiveStageType === 'all'
+                              ? t('选择后，当前所有环境及后续新增环境都将生效')
+                              : t('仅对已选择的环境生效')
+                          }}
+                        </div>
                       </div>
                     </bk-form-item>
                   </dd>
@@ -216,7 +275,13 @@
               </dl>
             </div>
             <div class="form-ft">
-              <bk-button theme="primary" class="mr10" :loading="isSaveLoading" @click="handleSave"> {{ t('保存') }}
+              <bk-button
+                :loading="isSaveLoading"
+                class="mr10"
+                theme="primary"
+                @click="handleSave"
+              >
+                {{ t('保存') }}
               </bk-button>
               <bk-button @click="handleCancel"> {{ t('取消') }} </bk-button>
             </div>
@@ -229,17 +294,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, watch, nextTick } from 'vue';
+import {
+  computed,
+  nextTick,
+  onBeforeMount,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useCommon, useAccessLog } from '@/store';
-import { InfoBox, Message } from 'bkui-vue';
+import {
+  useAccessLog,
+  useCommon,
+} from '@/store';
+import {
+  InfoBox,
+  Message,
+} from 'bkui-vue';
 import { useQueryList } from '@/hooks';
 import {
-  getGatewayLabels,
-  getStrategyList,
-  getStrategyDetail,
-  deleteStrategy,
   createStrategy,
+  deleteStrategy,
+  getGatewayLabels,
+  getStageList,
+  getStrategyDetail,
+  getStrategyList,
   updateStrategy,
   updateStrategyStatus,
 } from '@/http';
@@ -286,8 +365,12 @@ const formData = ref({
       notice_extra_receiver: [],
     },
   },
-
+  effective_stages: [],
 });
+
+const effectiveStageType = ref('all');
+const stageList = ref<{ id: number, name: string }[]>([]);
+
 const rules = {
   name: [
     {
@@ -301,6 +384,18 @@ const rules = {
       required: true,
       message: t('必填项'),
       trigger: 'blur',
+    },
+  ],
+  effective_stages: [
+    {
+      validator: (values: string[]) => {
+        if (effectiveStageType.value === 'all') {
+          return true;
+        }
+        return values.length > 0;
+      },
+      message: t('自定义环境不能为空'),
+      trigger: 'change',
     },
   ],
 };
@@ -324,6 +419,15 @@ const labelTooltip = computed(() => {
     return labelNameList.join('; ');
   };
 });
+
+watch(
+  () => tableData.value, () => {
+    updateTableEmptyConfig();
+  },
+  {
+    deep: true,
+  },
+);
 
 // 新建
 const handleAdd = () => {
@@ -350,6 +454,7 @@ const handleAdd = () => {
         notice_extra_receiver: [],
       },
     },
+    effective_stages: [],
   };
 };
 
@@ -368,8 +473,6 @@ const handleIsEnable = async (item: any) => {
       width: 'auto',
     });
     await getList(getStrategyList, false);
-  } catch (error) {
-    console.log('error', error);
   } finally {
     item.statusUpdating = false;
   }
@@ -377,45 +480,42 @@ const handleIsEnable = async (item: any) => {
 
 // 编辑
 const handleEdit = async (data: any) => {
-  console.log(data);
   curOperate.value = 'edit';
   sidesliderConfig.isShow = true;
   sidesliderConfig.title = t('编辑告警策略');
-  try {
-    const res = await getStrategyDetail(apigwId, data.id);
-    curStrategyId.value = res.id;
-    formData.value = res;
-    console.log(formData.value);
-  } catch (error) {
-    console.log('error', error);
+  const res = await getStrategyDetail(apigwId, data.id);
+  curStrategyId.value = res.id;
+  formData.value = res;
+
+  // 当生效环境为空时，应该把生效环境初始化为 ‘全部环境’
+  if (Array.isArray(res.effective_stages)) {
+    if (res.effective_stages.length === 0) {
+      effectiveStageType.value = 'all';
+    } else {
+      effectiveStageType.value = 'custom';
+    }
   }
 };
 
 // 删除
 const handleDelete = (item: any) => {
-  console.log(item);
   InfoBox({
     title: t(`确定要删除告警策略【${item.name}】?`),
     infoType: 'warning',
     subTitle: t('策略删除后，将不再接收相关通知'),
     onConfirm: async () => {
-      try {
-        await deleteStrategy(apigwId, item.id);
-        Message({
-          message: t('删除成功'),
-          theme: 'success',
-        });
-        getList();
-      } catch (error) {
-        console.log('error', error);
-      }
+      await deleteStrategy(apigwId, item.id);
+      Message({
+        message: t('删除成功'),
+        theme: 'success',
+      });
+      getList();
     },
   });
 };
 
 // 保存
 const handleSave = async () => {
-  console.log(formData.value);
   const isAdd = curOperate.value === 'add';
   await strategyFormRef.value.validate();
   isSaveLoading.value = true;
@@ -431,8 +531,6 @@ const handleSave = async () => {
     });
     getList();
     sidesliderConfig.isShow = false;
-  } catch (error) {
-    console.log('error', error);
   } finally {
     isSaveLoading.value = false;
   }
@@ -444,18 +542,13 @@ const handleCancel = () => {
 };
 
 const init = async () => {
-  try {
-    labelList.value = await getGatewayLabels(apigwId);
-    nextTick(() => {
-      tableData.value.forEach((item) => {
-        item.statusUpdating = false;
-      });
+  labelList.value = await getGatewayLabels(apigwId);
+  nextTick(() => {
+    tableData.value.forEach((item) => {
+      item.statusUpdating = false;
     });
-  } catch (error) {
-    console.log('error', error);
-  }
+  });
 };
-init();
 
 const handleClearFilterKey = () => {
   filterData.value = { keyword: '' };
@@ -480,14 +573,23 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.keyword = '';
 };
 
-watch(
-  () => tableData.value, () => {
-    updateTableEmptyConfig();
-  },
-  {
-    deep: true,
-  },
-);
+const handleEffectiveStageTypeChange = (type: string) => {
+  if (type === 'all') {
+    formData.value.effective_stages = [];
+  }
+};
+
+const getStages = async () => {
+  const res = await getStageList(apigwId);
+  stageList.value = res || [];
+};
+
+init();
+
+onBeforeMount(async () => {
+  await getStages();
+});
+
 </script>
 
 <style lang="scss" scoped>
@@ -544,9 +646,7 @@ watch(
   .form-content {
     .content-panel {
       overflow: hidden;
-      border: 1px solid #DCDEE5;
       margin-bottom: 16px;
-      border-radius: 2px;
 
       &.single {
         border: none;
@@ -557,9 +657,6 @@ watch(
             line-height: 40px;
             font-size: 14px;
             font-weight: 700;
-            border: 1px solid #DCDEE5;
-            border-right: none;
-            background: #FAFBFD;
           }
 
           .bk-input {
@@ -578,22 +675,25 @@ watch(
       .panel-title {
         height: 40px;
         line-height: 40px;
-        padding-left: 20px;
         font-size: 14px;
         font-weight: 700;
         color: #63656E;
-        background: #FAFBFD;
+        margin-bottom: 12px;
       }
 
       :deep(.panel-content) {
-        padding: 30px 90px 30px 0;
-        border-top: 1px solid #DCDEE5;
 
         .bk-form-item {
           .bk-form-content {
             line-height: 30px;
           }
         }
+      }
+
+      .stage-select-tips {
+        font-weight: 400;
+        font-size: 12px;
+        color: #979ba5;
       }
     }
   }
