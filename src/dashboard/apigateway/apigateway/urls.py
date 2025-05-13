@@ -76,6 +76,7 @@ urlpatterns = [
     path("backend/gateways/<int:gateway_id>/resource-versions/", include("apigateway.apis.web.resource_version.urls")),
     path("backend/gateways/<int:gateway_id>/sdks/", include("apigateway.apis.web.sdk.urls")),
     path("backend/gateways/<int:gateway_id>/audits/", include("apigateway.apis.web.audit.urls")),
+    path("backend/gateways/<int:gateway_id>/ai/", include("apigateway.apis.web.ai_completion.urls")),
     # todo 不应该放在顶层，后续要想办法挪到下层
     path(
         "backend/gateways/monitors/alarm/records/summary/",

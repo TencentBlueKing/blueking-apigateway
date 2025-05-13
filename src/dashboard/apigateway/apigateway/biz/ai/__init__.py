@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,34 +15,3 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import os
-from pathlib import Path
-
-
-def read_file(path):
-    with open(path, "rb") as fp:
-        return fp.read()
-
-
-def write_to_file(content, path, mode="w"):
-    with open(path, mode) as fp:
-        fp.write(content)
-
-
-def iter_files_recursive(path: Path):
-    """Iterate all files in a directory and its subdirectories"""
-
-    for p in path.iterdir():
-        if p.is_dir():
-            yield from iter_files_recursive(p)
-        else:
-            yield p
-
-
-def read_file_content(file_path: str) -> str:
-    """读取文件内容"""
-    content = ""
-    if os.path.isfile(file_path):
-        with open(file_path, encoding="utf-8") as f:
-            content = f.read()
-    return content
