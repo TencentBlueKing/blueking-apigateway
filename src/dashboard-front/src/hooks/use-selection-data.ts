@@ -11,7 +11,7 @@ export type SelectionType = {
   row?: any
 };
 
-export const useSelection = ({ isRowSelectEnable }: { isRowSelectEnable?: (row: any) => boolean }) => {
+export const useSelection = ({ isRowSelectEnable }: { isRowSelectEnable?: (row: any) => boolean } = {}) => {
   const selections = ref([]);
   const bkTableRef = ref();
   const isSelectable = isRowSelectEnable || (() => true);
