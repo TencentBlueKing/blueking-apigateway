@@ -9,8 +9,7 @@ const { BK_LIST_USERS_API_URL } = window;
 /**
  * 使用 Pinia 定义一个名为 useStaffStore 的 store
  */
-export const useStaffStore = defineStore({
-  id: 'staffStore', // store 的唯一标识符
+export const useStaffStore = defineStore('staffStore', {
   state: () => ({
     fetching: false, // 标识是否正在获取数据
     list: shallowRef([]), // 存储员工列表数据

@@ -77,13 +77,13 @@
           v-model="apigwId"
           @change="handleGoPage(activeMenuKey, apigwId)"
           :clearable="false">
-          <template #prefix>
+          <!-- <template #prefix>
             <span
               class="kind-program"
               v-if="currentGateway.kind === 1">
               <i class="apigateway-icon icon-ag-square-program" />
             </span>
-          </template>
+          </template> -->
           <bk-option
             v-for="item in gatewaysList" :key="item.id" :id="item.id" :name="item.name"
           />
@@ -186,7 +186,7 @@ const headerTitle = ref('');
 // 当前离开页面的数据
 const curLeavePageData = ref({});
 
-const currentGateway = computed(() => gatewaysList.value.find((apigw: any) => apigw.id === apigwId.value) || {});
+// const currentGateway = computed(() => gatewaysList.value.find((apigw: any) => apigw.id === apigwId.value) || {});
 
 const routerViewWrapperClass = computed(() => {
   if (route.meta.customHeader) {
@@ -524,13 +524,13 @@ onMounted(async () => {
     }
   }
 }
-.kind-program {
-  margin: 6px 0px 6px 6px;
-  font-size: 16px;
-  line-height: 18px;
-  text-align: center;
-  color: #3A84FF;
-}
+// .kind-program {
+//   margin: 6px 0px 6px 6px;
+//   font-size: 16px;
+//   line-height: 18px;
+//   text-align: center;
+//   color: #3A84FF;
+// }
 </style>
 <style lang="scss">
 .custom-height-navigation {
