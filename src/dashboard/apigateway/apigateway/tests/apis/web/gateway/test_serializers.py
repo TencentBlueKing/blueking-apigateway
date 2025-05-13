@@ -381,6 +381,18 @@ class TestGatewayAPIDocMaintainerSLZ:
                 None,
                 True,
             ),
+            (
+                {
+                    "type": "service_account",
+                    "contacts": [],
+                    "service_account": {
+                        "name": "admin",
+                        "link": "wxxxwork://message?xxx",
+                    },
+                },
+                None,
+                True,
+            ),
         ],
     )
     def test_validate(self, data, expected, will_error):
