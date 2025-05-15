@@ -379,7 +379,7 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
         if not instance.is_programmable:
             raise error_codes.FAILED_PRECONDITION.format(_("当前网关类型不支持开发指引。"), replace=True)
 
-        language = instance.extra_info.get("language", ProgrammableGatewayLanguageEnum.PYTHON.value)
+        language = instance.extra_info.get("language")
         dev_guideline_url = ""
         if language == ProgrammableGatewayLanguageEnum.PYTHON.value:
             dev_guideline_url = settings.PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL
@@ -388,7 +388,6 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
 
         template_name = f"dev_guideline/{get_current_language_code()}/programmable_gateway.md"
 
-        language = instance.extra_info.get("language")
         repo_url = instance.extra_info.get("repository")
 
         slz = GatewayDevGuidelineOutputSLZ(
@@ -397,6 +396,7 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
                     template_name,
                     context={
                         "edition": settings.EDITION,
+                        "bk_api_url_tmple": settings.BK_API_URL_TEMPLATE,
                         "language": language,
                         "repo_url": repo_url,
                         "dev_guideline_url": dev_guideline_url,
