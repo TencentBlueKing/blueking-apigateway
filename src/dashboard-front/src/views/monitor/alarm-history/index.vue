@@ -163,7 +163,6 @@ import {
 } from '@/http';
 import { cloneDeep } from 'lodash';
 import TableEmpty from '@/components/table-empty.vue';
-import { Message } from 'bkui-vue';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -240,23 +239,17 @@ const handleShortcutChange = (value: any, index: any) => {
 };
 // 日期快捷方式改变触发
 const handleTimeChange = () => {
-  const internalValue = datePickerRef.value?.internalValue;
-  if (internalValue) {
-    initDateTimeRange.value = internalValue;
-    nextTick(async () => {
-      const startStr: any = (+new Date(`${initDateTimeRange.value[0]}`)) / 1000;
-      const endStr: any = (+new Date(`${initDateTimeRange.value[1]}`)) / 1000;
-      // eslint-disable-next-line radix
-      const satrt: any = parseInt(startStr);
-      // eslint-disable-next-line radix
-      const end: any = parseInt(endStr);
-      filterData.value.time_start = satrt;
-      filterData.value.time_end = end;
-      await fetchRefreshTable();
-    });
-  } else {
-    Message({ theme: 'warning', message: t('输入的时间错误'), delay: 2000, dismissable: false });
-  }
+  nextTick(async () => {
+    const startStr: any = (+new Date(`${initDateTimeRange.value[0]}`)) / 1000;
+    const endStr: any = (+new Date(`${initDateTimeRange.value[1]}`)) / 1000;
+    // eslint-disable-next-line radix
+    const satrt: any = parseInt(startStr);
+    // eslint-disable-next-line radix
+    const end: any = parseInt(endStr);
+    filterData.value.time_start = satrt;
+    filterData.value.time_end = end;
+    await fetchRefreshTable();
+  });
 };
 
 // 获取状态name

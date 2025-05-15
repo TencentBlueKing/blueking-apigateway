@@ -125,7 +125,6 @@ import publishDetails from './comps/publish-details.vue';
 import { Spinner } from 'bkui-vue/lib/icon';
 import { getReleaseHistories } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
-import { Message } from 'bkui-vue';
 import EventSlider from '@/components/programmable-deploy-events-slider/index.vue';
 import { useCommon } from '@/store';
 
@@ -244,13 +243,7 @@ const getTextFromEnum = (e: Enums, key?: unknown) => {
 };
 
 const handlePickSuccess = () => {
-  const internalValue = datePickerRef.value?.internalValue;
-  if (internalValue) {
-    dateValue.value = internalValue;
-    handleComfirm();
-  } else {
-    Message({ theme: 'warning', message: t('输入的时间错误'), delay: 2000, dismissable: false });
-  }
+  handleComfirm();
 };
 
 watch(() => filterData.value, () => {
