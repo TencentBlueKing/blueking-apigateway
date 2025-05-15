@@ -1,35 +1,46 @@
 <template>
   <div class="page-wrapper-padding alarm-history-container">
     <div class="header flex-row justify-content-between">
-      <bk-form class="flex-row">
+      <bk-form class="flex-row" :model="filterData">
         <bk-form-item :label="t('选择时间')" class="ag-form-item-datepicker" label-width="85">
           <bk-date-picker
-            ref="datePickerRef"
-            class="w320" v-model="initDateTimeRange" :key="dateKey"
-            :placeholder="t('选择日期时间范围')" :type="'datetimerange'"
-            :shortcuts="datepickerShortcuts" :shortcut-close="true" :use-shortcut-text="true" @clear="handleTimeClear"
-            :shortcut-selected-index="shortcutSelectedIndex" @shortcut-change="handleShortcutChange"
+            class="w320"
+            v-model="initDateTimeRange"
+            :key="dateKey"
+            :placeholder="t('选择日期时间范围')"
+            type="datetimerange"
+            :shortcuts="datepickerShortcuts"
+            :shortcut-close="true"
+            :use-shortcut-text="true"
+            @clear="handleTimeClear"
+            :shortcut-selected-index="shortcutSelectedIndex"
+            @shortcut-change="handleShortcutChange"
             @pick-success="handleTimeChange">
           </bk-date-picker>
         </bk-form-item>
-        <bk-form-item :label="t('告警策略')" class="mb10" label-width="108">
+        <bk-form-item :label="t('告警策略')" property="alarm_strategy_id" class="mb10" label-width="108">
           <bk-select
             v-model="filterData.alarm_strategy_id"
             filterable
             :input-search="false"
             :scroll-loading="scrollLoading"
             @scroll-end="handleScrollEnd"
-            @toggle="handleToggle"
-            @change="handleStrategyChange"
-            @clear="handleStrategyClear"
-          >
-            <bk-option v-for="option in alarmStrategies" :key="option.id" :value="option.value" :label="option.label">
+            @toggle="handleToggle">
+            <bk-option
+              v-for="option in alarmStrategies"
+              :key="option.id"
+              :value="option.value"
+              :label="option.label">
             </bk-option>
           </bk-select>
         </bk-form-item>
-        <bk-form-item :label="t('告警状态')" class="mb10" label-width="119">
-          <bk-select v-model="filterData.status" @change="handleStatusChange" @clear="handleStatusClear">
-            <bk-option v-for="option in alarmStatus" :key="option.value" :value="option.value" :label="option.name">
+        <bk-form-item :label="t('告警状态')" property="status" class="mb10" label-width="119">
+          <bk-select v-model="filterData.status">
+            <bk-option
+              v-for="option in alarmStatus"
+              :key="option.value"
+              :value="option.value"
+              :label="option.name">
             </bk-option>
           </bk-select>
         </bk-form-item>
@@ -38,22 +49,24 @@
     <div class="alarm-history-content">
       <bk-loading :loading="isLoading">
         <bk-table
-          class="alarm-history-table" :data="tableData" remote-pagination :pagination="pagination"
-          @page-limit-change="handlePageSizeChange" @page-value-change="handlePageChange" row-hover="auto"
+          class="alarm-history-table"
+          :data="tableData"
+          remote-pagination
+          :pagination="pagination"
+          @page-limit-change="handlePageSizeChange"
+          @page-value-change="handlePageChange"
+          row-hover="auto"
           @row-click="handleRowClick">
           <bk-table-column :label="t('告警ID')" prop="id" width="100">
-            <template #default="{ data }">
-              <bk-link theme="primary">{{ data?.id }}</bk-link>
-            </template>
           </bk-table-column>
           <bk-table-column :label="t('告警时间')" prop="created_time" width="260">
           </bk-table-column>
-          <bk-table-column :label="t('告警策略')" prop="alarm_strategy_names">
+          <bk-table-column :label="t('告警策略')" prop="alarm_strategy_names" width="320">
             <template #default="{ data }">
               <template v-if="data?.alarm_strategy_names.length">
                 <div
                   class="pt10 strategy-names"
-                  v-bk-tooltips.top="labelTooltip(data?.alarm_strategy_names)">
+                  v-bk-tooltips.top="data.alarm_strategy_names?.join('; ')">
                   <template v-for="(label, index) of data?.alarm_strategy_names">
                     <span class="ag-label  mb5" v-if="index < 4" :key="index">
                       {{ label }}
@@ -73,7 +86,7 @@
           </bk-table-column>
           <bk-table-column :label="t('告警内容')" prop="message">
             <template #default="{ data }">
-              <span v-bk-tooltips="{ content: data?.message || '', placement: 'left' }">
+              <span v-bk-tooltips="{ content: data?.message || '', placement: 'left', extCls: 'monitor-tooltips' }">
                 {{ data?.message }}
               </span>
             </template>
@@ -101,8 +114,11 @@
 
     <!-- 详情sideslider -->
     <bk-sideslider
-      ext-cls="alarm-history-slider" v-model:is-show="sidesliderConfig.isShow" :title="sidesliderConfig.title"
-      :quick-close="true" width="600">
+      ext-cls="alarm-history-slider"
+      v-model:is-show="sidesliderConfig.isShow"
+      :title="sidesliderConfig.title"
+      :quick-close="true"
+      width="750">
       <template #default>
         <div class="hitory-form p30">
           <section class="ag-kv-list">
@@ -145,8 +161,6 @@
 
 <script setup lang="ts">
 import {
-  computed,
-  nextTick,
   reactive,
   ref,
   watch,
@@ -163,7 +177,6 @@ import {
 } from '@/http';
 import { cloneDeep } from 'lodash';
 import TableEmpty from '@/components/table-empty.vue';
-import { Message } from 'bkui-vue';
 
 const { t } = useI18n();
 const common = useCommon();
@@ -177,19 +190,18 @@ const scrollLoading = ref<boolean>(false);
 const initDateTimeRange = ref([]);
 const alarmStrategies = ref([]);
 const curStrategyCount = ref<number>(0);
-const datePickerRef = ref(null);
 const initParams = reactive({
   limit: 10,
   offset: 0,
   order_by: 'name',
 });
-const initFilterData = ref({
+const initFilterData = {
   alarm_strategy_id: '',
   status: '',
   time_start: '',
   time_end: '',
-});
-const filterData = cloneDeep(initFilterData);
+};
+const filterData = ref(cloneDeep(initFilterData));
 const sidesliderConfig = reactive({
   isShow: false,
   title: t('告警详情'),
@@ -217,46 +229,28 @@ const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
   isAbnormal: false,
 });
 
-// table 标签的tooltip
-const labelTooltip = computed(() => {
-  return function (labels: any) {
-    const labelNameList = labels.map((item: any) => {
-      return item;
-    });
-    return labelNameList.join('; ');
-  };
-});
-
 // 日期清除
-const handleTimeClear = async () => {
+const handleTimeClear = () => {
   shortcutSelectedIndex.value = -1;
   filterData.value.time_start = '';
   filterData.value.time_end = '';
-  await fetchRefreshTable();
 };
+
 // 日期快捷方式改变触发
 const handleShortcutChange = (value: any, index: any) => {
   shortcutSelectedIndex.value = index;
 };
+
 // 日期快捷方式改变触发
 const handleTimeChange = () => {
-  const internalValue = datePickerRef.value?.internalValue;
-  if (internalValue) {
-    initDateTimeRange.value = internalValue;
-    nextTick(async () => {
-      const startStr: any = (+new Date(`${initDateTimeRange.value[0]}`)) / 1000;
-      const endStr: any = (+new Date(`${initDateTimeRange.value[1]}`)) / 1000;
-      // eslint-disable-next-line radix
-      const satrt: any = parseInt(startStr);
-      // eslint-disable-next-line radix
-      const end: any = parseInt(endStr);
-      filterData.value.time_start = satrt;
-      filterData.value.time_end = end;
-      await fetchRefreshTable();
-    });
-  } else {
-    Message({ theme: 'warning', message: t('输入的时间错误'), delay: 2000, dismissable: false });
-  }
+  const startStr: any = (+new Date(`${initDateTimeRange.value[0]}`)) / 1000;
+  const endStr: any = (+new Date(`${initDateTimeRange.value[1]}`)) / 1000;
+  // eslint-disable-next-line radix
+  const start: any = parseInt(startStr);
+  // eslint-disable-next-line radix
+  const end: any = parseInt(endStr);
+  filterData.value.time_start = start;
+  filterData.value.time_end = end;
 };
 
 // 获取状态name
@@ -270,7 +264,6 @@ const getStrategy = async () => {
     const { results, count } = await getStrategyList(apigwId, initParams);
     curStrategyCount.value = count;
     alarmStrategies.value = results.map((item: any) => ({ label: item.name, value: item.id }));
-    console.log(alarmStrategies.value);
   } catch (error) {
     console.log('error', error);
   }
@@ -290,24 +283,6 @@ const handleScrollEnd = async () => {
   }
 };
 
-const handleStrategyChange = async () => {
-  await fetchRefreshTable();
-};
-
-const handleStrategyClear = async () => {
-  filterData.value.alarm_strategy_id = '';
-  await fetchRefreshTable();
-};
-
-const handleStatusChange = async () => {
-  await fetchRefreshTable();
-};
-
-const handleStatusClear = async () => {
-  filterData.value.status = '';
-  await fetchRefreshTable();
-};
-
 // 刷新表格
 const fetchRefreshTable = async () => {
   await getList();
@@ -315,14 +290,15 @@ const fetchRefreshTable = async () => {
 };
 
 // 切换告警策略选项下拉折叠状态
-const handleToggle = () => {
-  initParams.offset = 0;
-  getStrategy();
+const handleToggle = (value: boolean) => {
+  if (value) {
+    initParams.offset = 0;
+    getStrategy();
+  }
 };
 
 // 鼠标点击
 const handleRowClick = (e: any, row: any) => {
-  console.log('row', row);
   sidesliderConfig.isShow = true;
   sidesliderConfig.data = row;
 };
@@ -331,12 +307,7 @@ const handleClearFilterKey = async () => {
   initDateTimeRange.value = [];
   shortcutSelectedIndex.value = -1;
   dateKey.value = String(+new Date());
-  filterData.value = Object.assign({}, {
-    alarm_strategy_id: '',
-    status: '',
-    time_start: '',
-    time_end: '',
-  });
+  filterData.value = cloneDeep(initFilterData);
   await fetchRefreshTable();
 };
 
@@ -457,7 +428,7 @@ watch(() => filterData.value,  () => {
     }
 
     .key {
-      min-width: 130px;
+      min-width: 120px;
       padding-right: 24px;
       color: #63656E;
       text-align: right;
@@ -470,6 +441,7 @@ watch(() => filterData.value,  () => {
       pre {
         margin: 0;
         white-space: pre-wrap;
+        word-break: break-all;
       }
     }
     .message{
@@ -500,5 +472,12 @@ watch(() => filterData.value,  () => {
     max-height: 280px;
     justify-content: center;
   }
+}
+</style>
+<style lang="scss">
+.bk-popper.monitor-tooltips {
+  width: 520px;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 </style>
