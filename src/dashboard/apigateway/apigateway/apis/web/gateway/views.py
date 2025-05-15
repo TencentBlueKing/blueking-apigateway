@@ -125,6 +125,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         slz.is_valid(raise_exception=True)
 
         bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
+        language = slz.validated_data.get("extra_info", {}).get("language")
 
         # if kind is programmable, create paas app
         if slz.validated_data.get("kind") == GatewayKindEnum.PROGRAMMABLE.value:
@@ -136,6 +137,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 
             ok = create_paas_app(
                 slz.validated_data["name"],
+                language,
                 git_info,
                 user_credentials=get_user_credentials_from_request(request),
             )

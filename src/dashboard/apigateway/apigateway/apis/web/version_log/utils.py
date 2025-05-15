@@ -25,6 +25,8 @@ from typing import Dict, List
 from django.conf import settings
 from django.utils import translation
 
+from apigateway.utils.file import read_file_content
+
 MD_FILE_DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
 MD_FILE_VERSION_PATTERN = re.compile(r"[vV]\d+\.\d+\.\d+")
 
@@ -41,15 +43,6 @@ def _get_change_log_file_name() -> str:
     return "CHANGELOG.md"
 
 
-def _read_file_content(file_path: str) -> str:
-    """读取文件内容"""
-    content = ""
-    if os.path.isfile(file_path):
-        with open(file_path, encoding="utf-8") as f:
-            content = f.read()
-    return content
-
-
 def get_version_list() -> List[Dict[str, str]]:
     """
     获取 md 日志版本列表
@@ -63,7 +56,7 @@ def get_version_list() -> List[Dict[str, str]]:
     if not os.path.isfile(os.path.join(file_dir, file_name)):
         return []
 
-    text = _read_file_content(os.path.join(file_dir, file_name))
+    text = read_file_content(os.path.join(file_dir, file_name))
 
     data = []
     for log in text.split("---"):
