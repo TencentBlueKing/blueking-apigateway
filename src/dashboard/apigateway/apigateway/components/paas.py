@@ -118,7 +118,7 @@ def create_paas_app(
     url = url_join(host, "/prod/bkapps/cloud-native/")
     headers = gen_gateway_headers(user_credentials)
     data = {
-        "is_plugin_app": True,
+        "is_plugin_app": False,
         "region": "default",
         "code": app_code,
         "name": app_code,
