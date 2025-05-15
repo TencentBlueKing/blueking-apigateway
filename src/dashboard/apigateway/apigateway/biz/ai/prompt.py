@@ -52,7 +52,17 @@ api_log_err_code_file_name = {
 }
 
 
-def build_log_analyze_prompt(log_content: str) -> str:
+class PromptBuilder:
+    """AI 提示语句构造器"""
+
+    def __init__(self, content_type: AIContentTypeEnum):
+        self.content_type = content_type
+
+    def build(self, log_content: str) -> str:
+        return ai_content_prompt_builders[self.content_type](log_content)
+
+
+def _build_log_analyze_prompt(log_content: str) -> str:
     """构建日志分析提示语句"""
     file_dir = settings.API_RESPONSE_ERR_CODE_DOC_DIR
     prompt_template = log_language_prompt_template[translation.get_language()]
@@ -62,5 +72,5 @@ def build_log_analyze_prompt(log_content: str) -> str:
 
 
 ai_content_prompt_builders = {
-    AIContentTypeEnum.LOG_ANALYSIS.value: build_log_analyze_prompt,
+    AIContentTypeEnum.LOG_ANALYSIS.value: _build_log_analyze_prompt,
 }

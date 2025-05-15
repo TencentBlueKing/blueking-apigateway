@@ -109,7 +109,10 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
 
 
 def create_paas_app(
-    app_code: str, git_info: Optional[Dict[str, Any]] = None, user_credentials: Optional[UserCredentials] = None
+    app_code: str,
+    language: str,
+    git_info: Optional[Dict[str, Any]] = None,
+    user_credentials: Optional[UserCredentials] = None,
 ) -> bool:
     """
     创建应用
@@ -117,13 +120,18 @@ def create_paas_app(
     host = get_paas_host()
     url = url_join(host, "/prod/bkapps/cloud-native/")
     headers = gen_gateway_headers(user_credentials)
+    source_init_template = "bk-apigw-plugin-python"
+    build_method = "buildpack"
+    if language == "go":
+        source_init_template = "bk-apigw-plugin-go"
+        build_method = "dockerfile"
     data = {
         "is_plugin_app": False,
         "region": "default",
         "code": app_code,
         "name": app_code,
         "source_config": {
-            "source_init_template": "bk-apigw-plugin-python",
+            "source_init_template": source_init_template,
             "source_control_type": "bare_git",
             "source_repo_url": git_info.get("repository", "") if git_info else "",
             "source_origin": 1,
@@ -133,7 +141,7 @@ def create_paas_app(
                 "password": git_info.get("password", "") if git_info else "",
             },
         },
-        "bkapp_spec": {"build_config": {"build_method": "buildpack"}},
+        "bkapp_spec": {"build_config": {"build_method": build_method}},
     }
     ok, resp_data = http_post(url, data, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:

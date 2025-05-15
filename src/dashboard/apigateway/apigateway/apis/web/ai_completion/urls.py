@@ -21,5 +21,5 @@ from django.urls import path
 from .views import AICompletionCreateApi
 
 urlpatterns = [
-    path("completion/create/", AICompletionCreateApi.as_view(), name="ai_completion.create"),
+    path("completion/", AICompletionCreateApi.as_view(), name="ai_completion.create"),
 ]

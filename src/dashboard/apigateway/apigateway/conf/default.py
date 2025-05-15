@@ -656,7 +656,7 @@ VERSION_LOG_DIR = os.path.join(BASE_DIR, "data/version_log")
 # ==============================================================================
 # 网关响应错误码说明文档
 # ==============================================================================
-API_RESPONSE_ERR_CODE_DOC_DIR = os.path.join(BASE_DIR, "data/knowledge_doc")
+API_RESPONSE_ERR_CODE_DOC_DIR = os.path.join(BASE_DIR, "data/knowledge_doc/api_response")
 
 # ==============================================================================
 # 访问日志

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -15,22 +16,16 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-
 from django.conf import settings
+from openai import OpenAI
 
-from apigateway.components.ai import get_ai_client
-
-from .constant import AIContentTypeEnum
-from .prompt import PromptBuilder
+from apigateway.components.utils import gen_gateway_headers
 
 
-class AIHandler:
-    @staticmethod
-    def analyze_content(content_type: AIContentTypeEnum, content: str, stream_enabled=False):
-        """分析内容"""
-        client = get_ai_client()
-        return client.chat.completions.create(
-            model=settings.AI_MODEL,
-            messages=[{"role": "user", "content": PromptBuilder(content_type).build(content)}],
-            stream=stream_enabled,
-        )
+def get_ai_client():
+    """获取 AI 客户端"""
+    return OpenAI(
+        api_key=settings.AI_API_KEY,
+        base_url=settings.AI_OPEN_API_BASE_URL,
+        default_headers=gen_gateway_headers(),
+    )
