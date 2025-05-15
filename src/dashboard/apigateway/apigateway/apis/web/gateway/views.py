@@ -125,6 +125,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         slz.is_valid(raise_exception=True)
 
         bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
+        language = slz.validated_data.get("extra_info", {}).get("language")
 
         # if kind is programmable, create paas app
         if slz.validated_data.get("kind") == GatewayKindEnum.PROGRAMMABLE.value:
@@ -136,6 +137,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 
             ok = create_paas_app(
                 slz.validated_data["name"],
+                language,
                 git_info,
                 user_credentials=get_user_credentials_from_request(request),
             )
@@ -379,7 +381,7 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
         if not instance.is_programmable:
             raise error_codes.FAILED_PRECONDITION.format(_("当前网关类型不支持开发指引。"), replace=True)
 
-        language = instance.extra_info.get("language", ProgrammableGatewayLanguageEnum.PYTHON.value)
+        language = instance.extra_info.get("language")
         dev_guideline_url = ""
         if language == ProgrammableGatewayLanguageEnum.PYTHON.value:
             dev_guideline_url = settings.PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL
@@ -388,7 +390,6 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
 
         template_name = f"dev_guideline/{get_current_language_code()}/programmable_gateway.md"
 
-        language = instance.extra_info.get("language")
         repo_url = instance.extra_info.get("repository")
 
         slz = GatewayDevGuidelineOutputSLZ(
@@ -397,6 +398,7 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
                     template_name,
                     context={
                         "edition": settings.EDITION,
+                        "bk_api_url_tmple": settings.BK_API_URL_TEMPLATE,
                         "language": language,
                         "repo_url": repo_url,
                         "dev_guideline_url": dev_guideline_url,

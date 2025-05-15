@@ -92,15 +92,14 @@
     </div>
     <div class="divider"></div>
     <div class="card-chart">
-      <div :class="{ 'empty-state': !data }" class="request-counter">
+      <div :class="{ 'empty-state': requestCount === null || requestCount === undefined }" class="request-counter">
         <div class="label">{{ t('总请求数') }}</div>
-        <div class="value">{{
-          data ? requestCount : t('无数据')
-        }}
+        <div class="value">{{ requestCount ?? t('无数据') }}
         </div>
       </div>
-      <div v-if="data" class="item-chart-wrapper">
-        <StageCardLineChart />
+      <!--      <div v-if="data" class="item-chart-wrapper">-->
+      <div class="item-chart-wrapper" @click.stop="handleChartClick">
+        <StageCardLineChart :data="data" />
       </div>
     </div>
   </div>
@@ -108,8 +107,10 @@
 
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import {
   computed,
+  onBeforeMount,
   ref,
 } from 'vue';
 import { useCommon } from '@/store';
@@ -117,6 +118,11 @@ import { useGetGlobalProperties } from '@/hooks';
 import { Spinner } from 'bkui-vue/lib/icon';
 import StageCardLineChart from '@/views/stage/overview/comps/stage-card-line-chart.vue';
 import { getStatusText } from '@/common/util';
+import {
+  getApigwMetrics,
+  getApigwMetricsInstant,
+} from '@/http';
+import dayjs from 'dayjs';
 
 interface IRelease {
   status: string;
@@ -207,16 +213,19 @@ const props = withDefaults(defineProps<IProps>(), {
     new_resource_version: '',
   }),
 });
+
 const emit = defineEmits<{
   'check-log': [void],
   'publish': [void],
   'delist': [void],
 }>();
+
 const { t } = useI18n();
 const { GLOBAL_CONFIG } = useGetGlobalProperties();
+const router = useRouter();
 const common = useCommon();
 
-const data = ref(null);
+const data = ref<number[]>([]);
 
 const requestCount = ref(0);
 const hasNewerVersion = ref(false);
@@ -263,6 +272,44 @@ const actionTooltipConfig = computed(() => {
   };
 });
 
+const getRequestCount = async () => {
+  const now = dayjs().unix();
+  const sixHoursAgo = now - 6 * 60 * 60;
+  const { instant } = await getApigwMetricsInstant(common.apigwId, {
+    stage_id: props.stage.id,
+    time_start: sixHoursAgo,
+    time_end: now,
+    metrics: 'requests_total',
+  });
+  requestCount.value = instant;
+};
+
+const getRequestTrend = async () => {
+  const now = dayjs().unix();
+  const sixHoursAgo = now - 6 * 60 * 60;
+
+  const { series } = await getApigwMetrics(common.apigwId, {
+    stage_id: props.stage.id,
+    time_start: sixHoursAgo,
+    time_end: now,
+    metrics: 'requests',
+  });
+
+  const seriesDatapoints = series?.[0]?.datapoints as [number, number][] || [];
+  const results = [] as number[];
+  let count = 0;
+
+  seriesDatapoints.forEach((dataPoint, index) => {
+    count += dataPoint[0];
+    if (index % 12 === 11) {
+      results.push(count);
+      count = 0;
+    }
+  });
+
+  data.value = results;
+};
+
 const handleCheckLog = () => {
   emit('check-log');
 };
@@ -290,6 +337,17 @@ const handlePublishClick = () => {
 const handleDelistClick = () => {
   emit('delist');
 };
+
+const handleChartClick = () => {
+  router.push({ name: 'apigwReport' });
+};
+
+onBeforeMount(async () => {
+  await Promise.all([
+    getRequestCount(),
+    getRequestTrend(),
+  ]);
+});
 
 </script>
 

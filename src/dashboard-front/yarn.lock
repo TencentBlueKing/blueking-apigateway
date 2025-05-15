@@ -956,7 +956,7 @@
   dependencies:
     chalk "^4.1.0"
 
-"@blueking/date-picker@^2.0.0-beta.47":
+"@blueking/date-picker@^2.0.0-beta.27":
   version "2.0.0-beta.47"
   resolved "https://registry.yarnpkg.com/@blueking/date-picker/-/date-picker-2.0.0-beta.47.tgz#c1270750d687e6c3b554b7e711fc922b8fee7a3c"
   integrity sha512-2RsMqV4zag43gKGiNRFc11ezl89MpdZ3ugsCyVdUiZ4nZwQyyGSJf9LLiVNHs5ADcLILytd8kox5+NI3nQOm0Q==

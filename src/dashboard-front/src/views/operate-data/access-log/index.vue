@@ -774,15 +774,8 @@ const handlePickerChange = () => {
   });
 };
 
-// 处理用户自行输入日期，点击确认后的情况。v-model 不会自动更新，要从 picker 内部拿输入的日期。
 const handlePickerConfirm = () => {
-  const internalValue = datePickerRef.value?.internalValue;
-  if (internalValue) {
-    dateTimeRange.value = internalValue;
-    handlePickerChange();
-  } else {
-    Message({ theme: 'warning', message: t('输入的时间错误'), delay: 2000, dismissable: false });
-  }
+  handlePickerChange();
 };
 
 const handleStageChange = (value: number) => {

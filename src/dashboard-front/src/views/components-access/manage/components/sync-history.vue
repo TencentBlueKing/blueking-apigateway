@@ -75,12 +75,15 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, nextTick } from 'vue';
+import {
+  nextTick,
+  reactive,
+  ref,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { getSyncHistory } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
-import { Message } from 'bkui-vue';
 
 const router = useRouter();
 const { t, locale } = useI18n();
@@ -271,16 +274,10 @@ const handleTimeClear = () => {
 };
 
 const handleTimeChange = () => {
-  const internalValue = topDatePicker.value?.internalValue;
-  if (internalValue) {
-    dateTimeRange.value = internalValue;
-    pagination.current = 1;
-    nextTick(() => {
-      getComponents();
-    });
-  } else {
-    Message({ theme: 'warning', message: t('输入的时间错误'), delay: 2000, dismissable: false });
-  }
+  pagination.current = 1;
+  nextTick(() => {
+    getComponents();
+  });
 };
 
 const init = () => {

@@ -91,16 +91,24 @@
 import i18n from '@/language/i18n';
 import TableEmpty from '@/components/table-empty.vue';
 import RenderCustomColumn from '@/components/custom-table-header-filter';
-import { ref, shallowRef, reactive, watch, h } from 'vue';
+import {
+  h,
+  reactive,
+  ref,
+  shallowRef,
+  watch,
+} from 'vue';
 import { cloneDeep } from 'lodash';
 import { useQueryList } from '@/hooks';
-import { useAccessLog, useOperateRecords } from '@/store';
+import {
+  useAccessLog,
+  useOperateRecords,
+} from '@/store';
 import {
   DefaultSearchParamsInterface,
   TableEmptyConfType,
 } from './common/type';
 import { fetchApigwAuditLogs } from '@/http';
-import { Message } from 'bkui-vue';
 
 const { t } = i18n.global;
 const AccessLogStore = useAccessLog();
@@ -356,13 +364,7 @@ const getOpObjectTypeText = (type: string) => {
 };
 
 const handleTimeChange = () => {
-  const internalValue = topDatePicker.value?.internalValue;
-  if (internalValue) {
-    dateTimeRange.value = internalValue;
-    setSearchTimeRange();
-  } else {
-    Message({ theme: 'warning', message: t('输入的时间错误'), delay: 2000, dismissable: false });
-  }
+  setSearchTimeRange();
 };
 
 const handleTimeClear = () => {

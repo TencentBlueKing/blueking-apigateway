@@ -170,15 +170,25 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, shallowRef, reactive, nextTick } from 'vue';
+import {
+  nextTick,
+  reactive,
+  ref,
+  shallowRef,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useAccessLog, useCommon } from '@/store';
+import {
+  useAccessLog,
+  useCommon,
+} from '@/store';
 // @ts-ignore
 import TableEmpty from '@/components/table-empty.vue';
 // @ts-ignore
 import editorMonaco from '@/components/ag-editor.vue';
-import { getTestHistories, getTestHistoriesDetails } from '@/http';
-import { Message } from 'bkui-vue';
+import {
+  getTestHistories,
+  getTestHistoriesDetails,
+} from '@/http';
 import { CopyShape } from 'bkui-vue/lib/icon';
 import { copy } from '@/common/util';
 
@@ -315,13 +325,7 @@ const setSearchTimeRange = () => {
 };
 
 const handleTimeChange = () => {
-  const internalValue = topDatePicker.value?.internalValue;
-  if (internalValue) {
-    dateTimeRange.value = internalValue;
-    setSearchTimeRange();
-  } else {
-    Message({ theme: 'warning', message: t('输入的时间错误'), delay: 2000, dismissable: false });
-  }
+  setSearchTimeRange();
 };
 
 const handleTimeClear = () => {
