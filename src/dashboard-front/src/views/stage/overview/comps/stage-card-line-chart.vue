@@ -14,8 +14,8 @@ import * as echarts from 'echarts';
 import { uniqueId } from 'lodash';
 
 interface IProp {
-  mountId: string;
-  data: any[];
+  mountId?: string;
+  data?: number[];
 }
 
 const props = withDefaults(defineProps<IProp>(), {
@@ -63,14 +63,15 @@ const option: echarts.EChartOption = {
   },
   series: [
     {
-      data: [
-        150,
-        230,
-        224,
-        218,
-        135,
-        147,
-      ],
+      // data: [
+      //   150,
+      //   230,
+      //   224,
+      //   218,
+      //   135,
+      //   147,
+      // ],
+      data: [],
       type: 'line',
       symbol: 'none',
       smooth: true,
@@ -109,6 +110,7 @@ const option: echarts.EChartOption = {
 watch(
   () => props.data,
   () => {
+    option.series[0].data = props.data;
     renderChart();
   },
   { deep: true },
