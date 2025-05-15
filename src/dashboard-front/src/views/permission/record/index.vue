@@ -198,7 +198,6 @@ import { getPermissionRecordList } from '@/http';
 import { useQueryList } from '@/hooks';
 import { sortByKey } from '@/common/util';
 import TableEmpty from '@/components/table-empty.vue';
-import { Message } from 'bkui-vue';
 import AgIcon from '@/components/ag-icon.vue';
 
 const { t } = useI18n();
@@ -409,22 +408,16 @@ const handleShortcutChange = (value: any, index: any) => {
 };
 // 日期快捷方式改变触发
 const handleTimeChange = () => {
-  const internalValue = datePickerRef.value?.internalValue;
-  if (internalValue) {
-    initDateTimeRange.value = internalValue;
-    nextTick(() => {
-      const startStr: any = (+new Date(`${initDateTimeRange.value[0]}`)) / 1000;
-      const endStr: any = (+new Date(`${initDateTimeRange.value[1]}`)) / 1000;
-      // eslint-disable-next-line radix
-      const satrt: any = parseInt(startStr);
-      // eslint-disable-next-line radix
-      const end: any = parseInt(endStr);
-      filterData.value.time_start = satrt;
-      filterData.value.time_end = end;
-    });
-  } else {
-    Message({ theme: 'warning', message: t('输入的时间错误'), delay: 2000, dismissable: false });
-  }
+  nextTick(() => {
+    const startStr: any = (+new Date(`${initDateTimeRange.value[0]}`)) / 1000;
+    const endStr: any = (+new Date(`${initDateTimeRange.value[1]}`)) / 1000;
+    // eslint-disable-next-line radix
+    const satrt: any = parseInt(startStr);
+    // eslint-disable-next-line radix
+    const end: any = parseInt(endStr);
+    filterData.value.time_start = satrt;
+    filterData.value.time_end = end;
+  });
 };
 // 展示详情
 const handleShowRecord = (e: Event, data: any) => {
