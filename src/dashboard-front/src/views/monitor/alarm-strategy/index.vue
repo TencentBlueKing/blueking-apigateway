@@ -238,13 +238,13 @@
                   <dd class="panel-content">
                     <bk-form-item :label="t('通知方式')" :required="true">
                       <bk-checkbox-group v-model="formData.config.notice_config.notice_way" class="checkbox-group">
-                        <bk-checkbox :label="'wechat'">
-                          <span class="icon apigateway-icon icon-ag-wechat-color"></span>
-                          {{ t('微信') }}
-                        </bk-checkbox>
                         <bk-checkbox :label="'im'">
                           <span class="icon apigateway-icon icon-ag-qw"></span>
                           {{ t('企业微信') }}
+                        </bk-checkbox>
+                        <bk-checkbox :label="'wechat'">
+                          <span class="icon apigateway-icon icon-ag-wechat-color"></span>
+                          {{ t('微信') }}
                         </bk-checkbox>
                         <bk-checkbox :label="'mail'">
                           <span class="icon apigateway-icon icon-ag-email-color"></span>
@@ -360,7 +360,7 @@ const formData = ref({
       duration: 86400,
     },
     notice_config: {
-      notice_way: ['wechat', 'im'],
+      notice_way: ['im'],
       notice_role: ['maintainer'],
       notice_extra_receiver: [],
     },
@@ -449,7 +449,7 @@ const handleAdd = () => {
         duration: 86400,
       },
       notice_config: {
-        notice_way: ['wechat', 'im'],
+        notice_way: ['im'],
         notice_role: ['maintainer'],
         notice_extra_receiver: [],
       },
