@@ -235,7 +235,7 @@ class TestResponseRewriteConvertor:
                     "status_code": 200,
                     "body": '{"code":"ok","message":"new json body"}',
                     "headers": {
-                        "add": [{"key": "name:value"}],
+                        "add": [{"key": "name1", "value": "value1"}],
                         "set": [
                             {"key": "key1", "value": "value1"},
                             {"key": "key2", "value": "value2"},
@@ -247,12 +247,28 @@ class TestResponseRewriteConvertor:
                     "status_code": 200,
                     "body": '{"code":"ok","message":"new json body"}',
                     "headers": {
-                        "add": ["name:value"],
+                        "add": ["name1:value1"],
                         "set": {"key1": "value1", "key2": "value2"},
                         "remove": ["key2"],
                     },
                 },
-            )
+            ),
+            (
+                {
+                    "status_code": 200,
+                    "body": '{"code":"ok","message":"new json body"}',
+                    "headers": {
+                        "add": [],
+                        "set": [],
+                        "remove": [],
+                    },
+                },
+                {
+                    "status_code": 200,
+                    "body": '{"code":"ok","message":"new json body"}',
+                    "headers": {},
+                },
+            ),
         ],
     )
     def test_convert(self, data, expected):
