@@ -578,8 +578,14 @@ REQUESTS_POOL_CONNECTIONS = env.int("REQUESTS_POOL_CONNECTIONS", default=20)
 REQUESTS_POOL_MAXSIZE = env.int("REQUESTS_POOL_MAXSIZE", default=20)
 
 # 可编程网关开发文档链接地址
-PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL = env.str("PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL", "")
-PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_GO_URL = env.str("PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_GO_URL", "")
+PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL = env.str(
+    "PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL",
+    "https://github.com/TencentBlueKing/bk-apigateway-framework/blob/master/docs/python.md",
+)
+PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_GO_URL = env.str(
+    "PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_GO_URL",
+    "https://github.com/TencentBlueKing/bk-apigateway-framework/blob/master/docs/golang.md",
+)
 
 # ==============================================================================
 # bkpaas-auth 配置
