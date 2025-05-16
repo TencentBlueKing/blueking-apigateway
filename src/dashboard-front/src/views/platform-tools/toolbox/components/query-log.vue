@@ -29,6 +29,7 @@
             theme="primary"
             text
             @click="handleClickCopyLink(details.result)"
+            v-show="!isEmpty"
           >
             <copy-shape />
             <span class="copy-text">
@@ -40,7 +41,7 @@
 
       <bk-loading :loading="isDataLoading" color="#fafbfd" :opacity="1">
 
-        <div class="body-content" v-show="!!details.fields?.length">
+        <div class="body-content" v-show="!isEmpty">
           <dl class="details">
             <div
               class="item"
@@ -75,7 +76,7 @@
           </dl>
         </div>
 
-        <div class="empty-wrapper" v-show="!details.fields?.length">
+        <div class="empty-wrapper" v-show="isEmpty">
           <bk-exception
             class="exception-part"
             :title="t('暂无数据')"
@@ -90,7 +91,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { CopyShape } from 'bkui-vue/lib/icon';
@@ -107,6 +108,10 @@ const requestId = ref<string>('');
 const details = ref<any>({
   fields: [],
   result: {},
+});
+
+const isEmpty = computed(() => {
+  return !Object.keys(details.value.result)?.length;
 });
 
 onMounted(() => {

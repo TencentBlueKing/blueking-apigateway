@@ -18,7 +18,7 @@
             </bk-option>
           </bk-select>
         </bk-form-item>
-        <bk-form-item :label="t('调用方')">
+        <bk-form-item :label="t('蓝鲸应用')">
           <bk-select
             style="width: 316px;"
             v-model="searchParams.bk_app_code"

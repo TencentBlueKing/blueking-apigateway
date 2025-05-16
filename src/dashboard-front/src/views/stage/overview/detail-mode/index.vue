@@ -159,16 +159,19 @@
           </div>
         </section>
       </bk-loading>
-      <bk-alert
-        theme="warning"
-        class="mt15 mb15"
-      >
-        <template #title>
-          <div>
-            {{ t('修改环境的配置信息（含后端服务配置、插件配置、变量配置）后，会') }}<span class="stress">{{ t('立即在线上环境生效，请谨慎操作') }}</span>
-          </div>
-        </template>
-      </bk-alert>
+      <div class="mt15">
+        <bk-alert
+          theme="warning"
+          class="mb15"
+          v-if="common.curApigwData?.kind !== 1"
+        >
+          <template #title>
+            <div>
+              {{ t('修改环境的配置信息（含后端服务配置、插件配置、变量配置）后，会') }}<span class="stress">{{ t('立即在线上环境生效，请谨慎操作') }}</span>
+            </div>
+          </template>
+        </bk-alert>
+      </div>
       <div class="tab-wrapper">
         <bk-tab
           v-model:active="active"

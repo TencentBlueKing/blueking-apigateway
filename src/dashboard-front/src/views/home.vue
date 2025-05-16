@@ -310,7 +310,7 @@ const showAddDialog = () => {
 const handleGoPage = (routeName: string, gateway: GatewayListItem) => {
   if (gateway.kind === 1 && routeName === 'apigwResource') {
     router.push({
-      name: 'apigwResourceVersion',
+      name: 'apigwStageOverview',
       params: {
         id: gateway.id,
       },

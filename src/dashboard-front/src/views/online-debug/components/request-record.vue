@@ -48,7 +48,7 @@
             @row-click="handleRowClick"
           >
             <bk-table-column :label="t('资源名称')" prop="resource_name"></bk-table-column>
-            <bk-table-column :label="t('响应状态码')" prop="status_code">
+            <bk-table-column :label="t('响应状态码')" prop="status_code" width="120">
               <template #default="{ data }">
                 <span
                   :class="['dot', String(data?.response?.data?.status_code)?.startsWith('2') ? 'success' : 'failure']">
@@ -56,13 +56,13 @@
                 {{ data?.response?.data?.status_code }}
               </template>
             </bk-table-column>
-            <bk-table-column :label="t('耗时')" prop="proxy_time">
+            <bk-table-column :label="t('耗时')" prop="proxy_time" width="120">
               <template #default="{ data }">
                 {{ data?.response?.data?.proxy_time }} ms
               </template>
             </bk-table-column>
             <bk-table-column :label="t('调用时间')" prop="created_time"></bk-table-column>
-            <bk-table-column :label="t('操作')">
+            <bk-table-column :label="t('操作')" width="120">
               <template #default="{ row }">
                 <bk-button theme="primary" text @click="(e: any) => handleShowDetails(e, row)">
                   {{ t('请求详情') }}
