@@ -318,7 +318,7 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
             # todo: 编程网关启用需要特殊处理
             if instance.is_programmable and source == PublishSourceEnum.GATEWAY_DISABLE:
                 # 编程网关停用时，需要调用paas的module_offline接口下架所有环境
-                active_stages = Stage.objects.get_gateway_name_to_active_stage_names([instance]).get(instance.name)
+                active_stages = Stage.objects.get_gateway_name_to_active_stage_names([instance]).get(instance.name, [])
                 for stage_name in active_stages:
                     paas_app_module_offline(
                         app_code=request.gateway.name,
