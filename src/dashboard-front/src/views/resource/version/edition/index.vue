@@ -1,7 +1,7 @@
 <template>
   <div class="resource-container page-wrapper-padding">
     <bk-alert
-      v-if="!tableData?.length"
+      v-if="!tableData?.length && !commonStore.isProgrammableGateway"
       theme="warning"
       title="如需生成新版本，请前往'资源配置'页面操作"
       class="mb20"
@@ -41,7 +41,7 @@
             border="outer"
           >
             <bk-table-column width="80" type="selection" align="center" />
-            <bk-table-column :label="t('版本号')" min-width="120">
+            <bk-table-column :label="t('版本号')">
               <template #default="{ data }">
                 <bk-button text theme="primary" @click="handleShowInfo(data.id)">
                   {{ data?.version }}
@@ -51,15 +51,15 @@
             <bk-table-column
               :label="t('生效环境')"
               prop="released_stages"
-              min-width="120"
+
             >
               <template #default="{ data }">
                 {{ data?.released_stages?.map((item: any) => item.name).join(", ") }}
               </template>
             </bk-table-column>
-            <bk-table-column :label="t('生成时间')" prop="created_time" min-width="120">
+            <bk-table-column :label="t('生成时间')" prop="created_time">
             </bk-table-column>
-            <bk-table-column min-width="120" :label="t('SDK')">
+            <bk-table-column :label="t('SDK')">
               <template #default="{ data }">
                 <bk-button
                   text

@@ -21,10 +21,10 @@
                   <div class="alert-content">
                     <span class="pr12">
                       <span class="pr4">{{ t('当前版本号') }}: </span>
-                      <span class="pr4">{{ stageDetail.version }}</span>
+                      <span class="pr4">{{ stageDetail.version || '--' }}</span>
                     </span>
-                    <span class="pr12">{{ t('代码分支') }}: <span>{{ stageDetail.branch }}</span></span>
-                    <span class="pr12">CommitID: <span>{{ stageDetail.commit_id }}</span></span>
+                    <span class="pr12">{{ t('代码分支') }}: <span> {{ stageDetail.branch || '--' }}</span></span>
+                    <span class="pr12">CommitID: <span> {{ stageDetail.commit_id || '--' }}</span></span>
                     <span class="pr12">
                       {{
                         `由 ${stageDetail.created_by || '--'}  于 ${dayjs(stageDetail.created_time)
@@ -78,7 +78,11 @@
                     <div class="commit-id-wrapper">
                       <span class="id-content">{{ currentCommitInfo.commit_id }}</span>
                       <span class="commit-suffix">{{
-                        `于 ${dayjs(currentCommitInfo.last_update).format('YYYY-MM-DD HH:mm:ss') || '--'}  提交`
+                        `${
+                          currentCommitInfo.last_update ?
+                            dayjs(currentCommitInfo.last_update).format('YYYY-MM-DD HH:mm:ss')
+                            : '--'
+                        }  提交`
                       }}</span>
                     </div>
                   </bk-form-item>
@@ -263,7 +267,7 @@ const stepsConfig = ref({
 });
 const deployId = ref('');
 const stageList = ref<any>([]);
-const semVerType = ref('major');
+const semVerType = ref('minor');
 const currentCommitInfo = ref<ICommitInfo>({
   commit_id: '',
   extra: {},
