@@ -173,10 +173,19 @@ class ResponseRewriteConvertor(PluginConvertor):
             config["vars"] = ast.literal_eval(config["vars"])
 
         headers = config["headers"]
-        headers["add"] = [item["key"] for item in headers["add"]]
+        headers["add"] = ["{}:{}".format(item["key"], item["value"]) for item in headers["add"]]
         headers["set"] = {item["key"]: item["value"] for item in headers["set"]}
         headers["remove"] = [item["key"] for item in headers["remove"]]
 
+        new_headers = {}
+        if headers["add"]:
+            new_headers["add"] = headers["add"]
+        if headers["set"]:
+            new_headers["set"] = headers["set"]
+        if headers["remove"]:
+            new_headers["remove"] = headers["remove"]
+
+        config["headers"] = new_headers
         return config
 
 
