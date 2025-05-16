@@ -59,6 +59,7 @@ class PluginStyleEnum(StructuredEnum):
 class PluginBindingSourceEnum(StructuredEnum):
     YAML_IMPORT = EnumField("yaml_import", label=_("yaml导入"))
     USER_CREATE = EnumField("user_create", label=_("用户创建"))
+    USER_UPDATE = EnumField("user_update", label=_("用户更新"))
 
 
 Draft7Schema = {

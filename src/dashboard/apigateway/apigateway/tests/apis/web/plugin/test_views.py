@@ -19,6 +19,7 @@ import pytest
 from django.utils.translation import override
 
 from apigateway.apis.web.plugin.views import PluginConfigRetrieveUpdateDestroyApi
+from apigateway.apps.plugin.models import PluginBinding
 from apigateway.utils.yaml import yaml_dumps
 
 
@@ -169,6 +170,7 @@ class TestPluginConfigRetrieveUpdateDestroyApi:
         fake_stage,
         fake_plugin_bk_header_rewrite,
         fake_plugin_type_bk_header_rewrite,
+        fake_plugin_stage_bk_header_rewrite_binding,
         config_tmpl,
         status_code,
     ):
@@ -191,12 +193,20 @@ class TestPluginConfigRetrieveUpdateDestroyApi:
             },
         )
 
+        binding = PluginBinding.objects.filter(
+            gateway=fake_gateway,
+            scope_type="stage",
+            scope_id=fake_stage.id,
+            config=fake_plugin_bk_header_rewrite,
+        ).first()
+
         assert response.status_code == status_code
 
         if status_code == 200:
             result = response.json()
             plugin = result["data"]
             assert plugin["id"] == fake_plugin_bk_header_rewrite.pk
+            assert binding.source == "user_update"
 
     def test_delete(
         self, request_view, fake_gateway, fake_stage, echo_plugin, echo_plugin_type, echo_plugin_stage_binding
