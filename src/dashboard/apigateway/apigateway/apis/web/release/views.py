@@ -288,8 +288,7 @@ class DeployHistoryListApi(generics.ListAPIView):
             context={
                 "release_history_events_map": PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
                     [deploy_history.publish_id for deploy_history in page if deploy_history.publish_id]
-                ),
-                "user_credentials": get_user_credentials_from_request(request),
+                )
             },
         )
         return self.get_paginated_response(slz.data)
