@@ -95,7 +95,7 @@
             <template #default="{ data }">
               <span :class="['ag-ouline-dot', data?.status]"></span>
               <span
-                v-bk-tooltips="{ content: data.comment || '--', disabled: data?.status !== 'skipped' }"
+                v-bk-tooltips="{ content: data?.comment || '--', disabled: data?.status !== 'skipped' }"
                 class="status-text"
               >{{ getAlarmStatusText(data?.status) }}</span>
             </template>
