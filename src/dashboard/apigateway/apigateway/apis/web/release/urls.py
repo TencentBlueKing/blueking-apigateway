@@ -52,6 +52,7 @@ urlpatterns = [
                     HistoryIdEventsRetrieveApi.as_view(),
                     name="gateway.programmable.histories.events",
                 ),
+                path("histories/", DeployHistoryListApi.as_view(), name="gateway.programmable.deploy.histories"),
             ]
         ),
     ),
@@ -68,7 +69,6 @@ urlpatterns = [
             ]
         ),
     ),
-    path("deploy_histories/", DeployHistoryListApi.as_view(), name="gateway.release.deploy_histories"),
     path(
         "histories/",
         include(
