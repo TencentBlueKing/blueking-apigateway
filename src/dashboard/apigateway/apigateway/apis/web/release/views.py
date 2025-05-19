@@ -49,6 +49,7 @@ from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.user_credentials import get_user_credentials_from_request
 
 from .serializers import (
+    DeployHistoryOutputSLZ,
     ProgrammableDeployCreateInputSLZ,
     ProgrammableDeployEventGetOutputSLZ,
     ReleaseHistoryEventRetrieveOutputSLZ,
@@ -253,6 +254,50 @@ class ReleaseHistoryListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
+        query_serializer=ReleaseHistoryQueryInputSLZ(),
+        responses={status.HTTP_200_OK: DeployHistoryOutputSLZ(many=True)},
+        tags=["WebAPI.Release"],
+        operation_description="编程部署历史列表获取接口",
+    ),
+)
+class DeployHistoryListApi(generics.ListAPIView):
+    serializer_class = DeployHistoryOutputSLZ
+
+    def get_queryset(self):
+        return ProgrammableGatewayDeployHistory.objects.filter(gateway=self.request.gateway)
+
+    def list(self, request, *args, **kwargs):
+        slz = ReleaseHistoryQueryInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+        queryset = ProgrammableGatewayDeployHistory.objects.filter_deploy_history(
+            gateway=request.gateway,
+            query=data.get("keyword"),
+            stage_id=data.get("stage_id"),
+            created_by=data.get("created_by"),
+            time_start=data.get("time_start"),
+            time_end=data.get("time_end"),
+            order_by="-created_time",
+            fuzzy=True,
+        )
+        page = self.paginate_queryset(queryset)
+        slz = self.get_serializer(
+            page,
+            many=True,
+            context={
+                "release_history_events_map": PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
+                    [deploy_history.publish_id for deploy_history in page if deploy_history.publish_id]
+                ),
+                "user_credentials": get_user_credentials_from_request(request),
+            },
+        )
+        return self.get_paginated_response(slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ReleaseHistoryOutputSLZ()},
         tags=["WebAPI.Release"],
         operation_description="发布详情接口",
@@ -403,6 +448,15 @@ class BaseProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
         release_history = ReleaseHistory.objects.filter(
             gateway=self.request.gateway, stage=instance.stage, resource_version__version=instance.version
         ).first()
+        deploy_result = {}
+        if len(events) == 0:
+            # 如果paas event没有了，补充返回 result
+            deploy_result = get_paas_deployment_result(
+                app_code=self.request.gateway.name,
+                module="default",
+                deploy_id=instance.deploy_id,
+                user_credentials=user_credentials,
+            )
 
         release_history_events = []
         release_history_events_map = {}
@@ -415,6 +469,7 @@ class BaseProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
             "events_framework": events_framework,
             "events_instance": events_instance,
             "events": events,
+            "deploy_result": deploy_result,
             "release_history_events": release_history_events,
             "release_history_events_map": release_history_events_map,
         }

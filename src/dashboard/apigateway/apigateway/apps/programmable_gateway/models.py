@@ -19,6 +19,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from apigateway.apps.programmable_gateway.managers import ProgrammableGatewayDeployHistoryManager
 from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.models import Gateway, Stage
 
@@ -33,7 +34,10 @@ class ProgrammableGatewayDeployHistory(TimestampedModelMixin, OperatorModelMixin
     branch = models.CharField(max_length=128, blank=True, null=True)
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))
     commit_id = models.CharField(max_length=128, blank=True, null=True)
-    deploy_id = models.CharField(max_length=128, blank=True, null=True)
+    deploy_id = models.CharField(max_length=128, blank=True, db_index=True, null=True)
+    # publish_id -> ReleaseHistory.id
+    publish_id = models.IntegerField(blank=True, null=True)
+    objects = ProgrammableGatewayDeployHistoryManager()
 
     def __str__(self):
         return f"<Deploy: {self.gateway}/{self.stage}/{self.version}>"

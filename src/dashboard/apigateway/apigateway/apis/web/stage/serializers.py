@@ -121,6 +121,9 @@ class StageOutputSLZ(serializers.ModelSerializer):
         """
         获取发布校验结果
         """
+        # 如果是编程网关，直接返回空字符串，编程网关部署的时候才会进行各种资源的注册
+        if obj.gateway.is_programmable:
+            return ""
 
         validate_err_message: str = ""
 
