@@ -39,7 +39,8 @@ urlpatterns = [
         include(
             [
                 path("", ProgrammableDeployCreateApi.as_view(), name="gateway.programmable.deploy.create"),
-                path("historiess/", DeployHistoryListApi.as_view(), name="gateway.programmable.deploy.histories"),
+                # 注意：需要放到 <str:deploy_id>/ 之前，否则会先匹配到 deploy_id
+                path("histories/", DeployHistoryListApi.as_view(), name="gateway.programmable.deploy.histories"),
                 path(
                     "<str:deploy_id>/", ProgrammableDeployRetrieveApi.as_view(), name="gateway.programmable.deploy.get"
                 ),
