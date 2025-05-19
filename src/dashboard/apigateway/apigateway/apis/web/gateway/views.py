@@ -398,7 +398,7 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
                     template_name,
                     context={
                         "edition": settings.EDITION,
-                        "bk_api_url_tmple": settings.BK_API_URL_TEMPLATE,
+                        "bk_api_url_tmple": settings.BK_API_URL_TMPL,
                         "language": language,
                         "repo_url": repo_url,
                         "dev_guideline_url": dev_guideline_url,
