@@ -135,7 +135,7 @@ def create_paas_app(
             "source_control_type": "bare_git",
             "source_repo_url": git_info.get("repository", "") if git_info else "",
             "source_origin": 1,
-            "source_dir": "plugin",
+            "source_dir": "",
             "source_repo_auth_info": {
                 "username": git_info.get("account", "") if git_info else "",
                 "password": git_info.get("password", "") if git_info else "",

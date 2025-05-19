@@ -109,8 +109,23 @@ class BaseGatewayReleaser:
     def release(self):
         self._pre_release()
 
+        # 如果是编程网关，查询一下deploy部署历史
+        deploy_history = None
+        if self.gateway.is_programmable:
+            deploy_history = ProgrammableGatewayDeployHistory.objects.filter(
+                gateway_id=self.gateway.id, stage_id=self.stage.id, version=self.resource_version.version
+            ).first()
+            # 如果通过网关点击的部署按钮，则使用部署人作为发布人
+            if deploy_history:
+                self.username = deploy_history.created_by
+
         # save release history
         history = self._save_release_history()
+        if deploy_history:
+            # 补充publish_id
+            deploy_history.publish_id = history.id
+            deploy_history.save()
+
         PublishEventReporter.report_config_validate_success(history)
 
         instance = Release.objects.get_or_create_release(
