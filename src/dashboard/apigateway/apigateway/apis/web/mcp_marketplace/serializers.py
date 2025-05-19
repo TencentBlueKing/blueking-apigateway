@@ -21,15 +21,6 @@ from typing import Any, Dict
 from rest_framework import serializers
 
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
-from apigateway.apps.mcp_server.models import MCPServer
-
-
-class MCPServerCreateInputSLZ(serializers.ModelSerializer):
-    class Meta:
-        model = MCPServer
-        fields = ("name", "description", "stage", "is_public", "labels", "resource_ids")
-        lookup_field = "id"
-        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCreateInputSLZ"
 
 
 class MCPServerBaseOutputSLZ(serializers.Serializer):
@@ -54,33 +45,9 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
 
 class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
     class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerListOutputSLZ"
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerListOutputSLZ"
 
 
 class MCPServerRetrieveOutputSLZ(MCPServerBaseOutputSLZ):
     class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerRetrieveOutputSLZ"
-
-
-class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
-    class Meta:
-        model = MCPServer
-        fields = ("description", "is_public", "labels", "resource_ids")
-        lookup_field = "id"
-        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateInputSLZ"
-
-
-class MCPServerUpdateStatusInputSLZ(serializers.ModelSerializer):
-    class Meta:
-        model = MCPServer
-        fields = ("status",)
-        lookup_field = "id"
-        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateStatusInputSLZ"
-
-
-class MCPServerUpdateLabelsInputSLZ(serializers.ModelSerializer):
-    class Meta:
-        model = MCPServer
-        fields = ("labels",)
-        lookup_field = "id"
-        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateLabelsInputSLZ"
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerRetrieveOutputSLZ"
