@@ -16,7 +16,7 @@ deb-src https://mirrors.cloud.tencent.com/debian-security/ bullseye-security mai
 ' > /etc/apt/sources.list
 
 
-RUN apt-get update && apt-get install -y libssl-dev libffi-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends libssl-dev libffi-dev \
     build-essential libc6-dev libjpeg-dev zlib1g-dev vim procps default-mysql-client curl zip unzip
 
 # install kona-jdk maven

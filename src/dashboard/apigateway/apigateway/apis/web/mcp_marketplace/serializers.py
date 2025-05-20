@@ -21,6 +21,7 @@ from typing import Any, Dict
 from rest_framework import serializers
 
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
+from apigateway.apps.mcp_server.utils import build_mcp_server_url
 
 
 class MCPServerBaseOutputSLZ(serializers.Serializer):
@@ -41,12 +42,16 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     gateway = serializers.SerializerMethodField(help_text="MCPServer 网关")
 
     tools_count = serializers.IntegerField(read_only=True, help_text="MCPServer 工具数量")
+    url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
 
     def get_stage(self, obj) -> Dict[str, Any]:
         return self.context["stages"][obj.stage.id]
 
     def get_gateway(self, obj) -> Dict[str, Any]:
         return self.context["gateways"][obj.gateway.id]
+
+    def get_url(self, obj) -> str:
+        return build_mcp_server_url(obj.name)
 
 
 class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
@@ -55,5 +60,10 @@ class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
 
 
 class MCPServerRetrieveOutputSLZ(MCPServerBaseOutputSLZ):
+    guideline = serializers.SerializerMethodField(help_text="MCPServer 使用指南")
+
+    def get_guideline(self, obj) -> str:
+        return self.context["guideline"]
+
     class Meta:
         ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerRetrieveOutputSLZ"

@@ -18,6 +18,7 @@
 
 
 from django.db import transaction
+from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -26,7 +27,9 @@ from rest_framework import generics, status
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
+from apigateway.apps.mcp_server.utils import build_mcp_server_url
 from apigateway.biz.audit import Auditor
+from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Stage
 from apigateway.utils.django import get_model_dict
@@ -83,7 +86,7 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         ctx = {
-            "gateway_id": self.request.gateway.id,
+            "gateway": self.request.gateway,
             "created_by": request.user.username,
             "status": MCPServerStatusEnum.ACTIVE.value,
         }
@@ -155,7 +158,16 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
                 "name": instance.stage.name,
             }
         }
-        serializer = self.get_serializer(instance, context={"stages": stages})
+        template_name = f"mcp_server/{get_current_language_code()}/guideline.md"
+        guideline = render_to_string(
+            template_name,
+            context={
+                "name": instance.name,
+                "sse_url": build_mcp_server_url(instance.name),
+            },
+        )
+
+        serializer = self.get_serializer(instance, context={"stages": stages, "guideline": guideline})
         # FIXME: return the tools details and usage page
         # 返回工具列表页面需要的信息
 

@@ -17,6 +17,7 @@
 #
 
 
+from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from drf_yasg.utils import swagger_auto_schema
@@ -24,6 +25,8 @@ from rest_framework import generics, status
 
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
+from apigateway.apps.mcp_server.utils import build_mcp_server_url
+from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Stage
@@ -113,6 +116,15 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
         if instance.stage.status != StageStatusEnum.ACTIVE.value:
             raise error_codes.NOT_FOUND.format(_("当前 MCPServer 所属网关对应的环境未启用，无法访问。"))
 
+        template_name = f"mcp_server/{get_current_language_code()}/guideline.md"
+        guideline = render_to_string(
+            template_name,
+            context={
+                "name": instance.name,
+                "sse_url": build_mcp_server_url(instance.name),
+            },
+        )
+
         gateways = {
             instance.gateway.id: {
                 "id": instance.gateway.id,
@@ -131,6 +143,7 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
             context={
                 "gateways": gateways,
                 "stages": stages,
+                "guideline": guideline,
             },
         )
         # FIXME: return the tools details and usage page
