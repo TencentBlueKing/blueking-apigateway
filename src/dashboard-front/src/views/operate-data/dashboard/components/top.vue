@@ -86,6 +86,7 @@
 import {
   computed,
   ref,
+  watch,
 } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
@@ -103,6 +104,7 @@ import { SearchParamsType } from '../type';
 import { IStageData } from '@/views/stage/overview/types/stage';
 import { ResourcesItem } from '@/views/resource/setting/types';
 import ResourceSearcher from './resource-searcher.vue';
+import { useRoute } from 'vue-router';
 
 type InfoTypeItem = {
   formatText: null | string;
@@ -115,9 +117,11 @@ type IntervalItem = {
 };
 
 const emit = defineEmits(['search-change', 'refresh-change']);
+
 const { t } = useI18n();
 const stage = useStage();
 const common = useCommon();
+const route = useRoute();
 const { apigwId } = common;
 
 const searchParams = ref<SearchParamsType>({
@@ -197,6 +201,25 @@ const getStageName = computed(() => (id: string | number) => {
   return name;
 });
 
+watch(() => route.query, () => {
+  const span = route.query?.time_span;
+  const stageId = route.query?.stage_id;
+
+  if (span && span === 'now-6h' && stageId) {
+    searchParams.value.stage_id = Number(stageId);
+    dateTime.value = [
+      'now-6h',
+      'now',
+    ];
+    const now = dayjs();
+    const sixHoursAgo = now.subtract(6, 'hours');
+    formatTime.value = [
+      sixHoursAgo.format('YYYY-MM-DD HH:mm:ss'),
+      now.format('YYYY-MM-DD HH:mm:ss'),
+    ];
+  }
+}, { deep: true, immediate: true });
+
 const getStages = async () => {
   const pageParams = {
     no_page: true,
@@ -206,7 +229,9 @@ const getStages = async () => {
   try {
     const response = await getApigwStages(apigwId, pageParams);
     stageList.value = response;
-    searchParams.value.stage_id = stageList.value[0]?.id;
+    if (!searchParams.value.stage_id) {
+      searchParams.value.stage_id = stageList.value[0]?.id;
+    }
   } catch (e) {
     // isDataLoading.value = false;
   }
