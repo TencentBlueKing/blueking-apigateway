@@ -83,7 +83,7 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         ctx = {
-            "gateway": self.request.gateway,
+            "gateway_id": self.request.gateway.id,
             "created_by": request.user.username,
             "status": MCPServerStatusEnum.ACTIVE.value,
         }
@@ -148,8 +148,17 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = self.get_serializer(instance)
+
+        stages = {
+            instance.stage.id: {
+                "id": instance.stage.id,
+                "name": instance.stage.name,
+            }
+        }
+        serializer = self.get_serializer(instance, context={"stages": stages})
         # FIXME: return the tools details and usage page
+        # 返回工具列表页面需要的信息
+
         return OKJsonResponse(data=serializer.data)
 
     def update(self, request, *args, **kwargs):
@@ -199,7 +208,7 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
 
 @method_decorator(
-    name="put",
+    name="patch",
     decorator=swagger_auto_schema(
         operation_description="更新 MCPServer 状态，如启用、停用",
         request_body=MCPServerUpdateStatusInputSLZ,
@@ -234,7 +243,7 @@ class MCPServerUpdateStatusApi(generics.UpdateAPIView):
 
 
 @method_decorator(
-    name="put",
+    name="patch",
     decorator=swagger_auto_schema(
         operation_description="更新 MCPServer 标签",
         request_body=MCPServerUpdateLabelsInputSLZ,

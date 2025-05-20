@@ -38,9 +38,15 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     )
 
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
+    gateway = serializers.SerializerMethodField(help_text="MCPServer 网关")
+
+    tools_count = serializers.IntegerField(read_only=True, help_text="MCPServer 工具数量")
 
     def get_stage(self, obj) -> Dict[str, Any]:
         return self.context["stages"][obj.stage.id]
+
+    def get_gateway(self, obj) -> Dict[str, Any]:
+        return self.context["gateways"][obj.gateway.id]
 
 
 class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
