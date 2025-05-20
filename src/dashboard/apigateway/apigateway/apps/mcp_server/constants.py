@@ -17,8 +17,24 @@
 #
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
+from django.utils.translation import gettext_lazy as _
 
 
 class MCPServerStatusEnum(StructuredEnum):
     INACTIVE = EnumField(0, "已停用")
     ACTIVE = EnumField(1, "启用中")
+
+
+class MCPServerAppPermissionApplyExpireDaysEnum(StructuredEnum):
+    FOREVER = EnumField(0, label=_("永久"))
+
+
+class MCPServerAppPermissionGrantTypeEnum(StructuredEnum):
+    GRANT = EnumField("grant", label=_("授权"))
+    APPLY = EnumField("apply", label=_("申请"))
+
+
+class MCPServerAppPermissionApplyStatusEnum(StructuredEnum):
+    APPROVED = EnumField("approved", label=_("通过"))
+    REJECTED = EnumField("rejected", label=_("驳回"))
+    PENDING = EnumField("pending", label=_("待审批"))
