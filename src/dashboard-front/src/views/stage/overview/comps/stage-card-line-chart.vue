@@ -8,18 +8,17 @@
 import {
   nextTick,
   onMounted,
+  onUnmounted,
   watch,
 } from 'vue';
 import * as echarts from 'echarts';
-import { uniqueId } from 'lodash';
 
 interface IProp {
-  mountId?: string;
+  mountId: string;
   data?: number[];
 }
 
 const props = withDefaults(defineProps<IProp>(), {
-  mountId: uniqueId(),
   data: () => [],
 });
 
@@ -126,6 +125,11 @@ onMounted(() => {
   const chartDom = document.getElementById(props.mountId);
   chartInstance = echarts.init(chartDom as HTMLDivElement);
   renderChart();
+});
+
+onUnmounted(() => {
+  chartInstance?.dispose();
+  chartInstance = null;
 });
 
 </script>

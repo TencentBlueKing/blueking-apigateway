@@ -91,15 +91,14 @@
       </div>
     </div>
     <div class="divider"></div>
-    <div class="card-chart">
+    <div class="card-chart" @click.stop="handleChartClick">
       <div :class="{ 'empty-state': requestCount === null || requestCount === undefined }" class="request-counter">
         <div class="label">{{ t('总请求数') }}</div>
         <div class="value">{{ requestCount ?? t('无数据') }}
         </div>
       </div>
-      <!--      <div v-if="data" class="item-chart-wrapper">-->
-      <div class="item-chart-wrapper" @click.stop="handleChartClick">
-        <StageCardLineChart :data="data" />
+      <div class="item-chart-wrapper">
+        <StageCardLineChart :data="data" :mount-id="uniqueId()" />
       </div>
     </div>
   </div>
@@ -123,6 +122,7 @@ import {
   getApigwMetricsInstant,
 } from '@/http';
 import dayjs from 'dayjs';
+import { uniqueId } from 'lodash';
 
 interface IRelease {
   status: string;
@@ -300,7 +300,7 @@ const getRequestTrend = async () => {
   let count = 0;
 
   seriesDatapoints.forEach((dataPoint, index) => {
-    count += dataPoint[0];
+    count += (dataPoint[0] || 0);
     if (index % 12 === 11) {
       results.push(count);
       count = 0;
@@ -339,7 +339,7 @@ const handleDelistClick = () => {
 };
 
 const handleChartClick = () => {
-  router.push({ name: 'apigwReport' });
+  router.push({ name: 'apigwDashboard', query: { time_span: 'now-6h', stage_id: props.stage.id } });
 };
 
 onBeforeMount(async () => {
@@ -484,6 +484,7 @@ onBeforeMount(async () => {
     height: 60px;
     display: flex;
     justify-content: space-between;
+    cursor: pointer;
 
     .request-counter {
       display: flex;

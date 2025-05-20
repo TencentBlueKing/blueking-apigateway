@@ -44,9 +44,10 @@
           <date-picker
             class="date-choose"
             v-model="dateTime"
-            @update:model-value="handleValueChange"
             :valid-date-range="['now-6M', 'now/d']"
-            format="YYYY-MM-DD HH:mm:ss" />
+            format="YYYY-MM-DD HH:mm:ss"
+            @update:model-value="handleValueChange"
+          />
         </bk-form-item>
       </bk-form>
     </div>
@@ -110,7 +111,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, watch } from 'vue';
+import {
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import dayjs from 'dayjs';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
@@ -118,7 +123,13 @@ import { useCommon } from '@/store';
 import DatePicker from '@blueking/date-picker';
 import '@blueking/date-picker/vue3/vue3.css';
 import ResourceSearcher from '@/views/operate-data/dashboard/components/resource-searcher.vue';
-import { getApigwStages, getApigwResources, getReportSummary, exportReportSummary, getCallers } from '@/http';
+import {
+  exportReportSummary,
+  getApigwResources,
+  getApigwStages,
+  getCallers,
+  getReportSummary,
+} from '@/http';
 import Chart from './components/chart.vue';
 import { ChartDataLoading } from './type';
 
@@ -155,6 +166,17 @@ const metricsList = ref<string[]>([
   'requests_failed_total', // 请求失败总数
 ]);
 
+watch(
+  () => [
+    formatTime.value,
+    searchParams.stage_id,
+  ],
+  () => {
+    setSearchTimeRange();
+    getCallersData();
+  },
+);
+
 const getStages = async () => {
   const { apigwId } = common;
   const pageParams = {
@@ -166,7 +188,9 @@ const getStages = async () => {
     const res = await getApigwStages(apigwId, pageParams);
 
     stageList.value = res;
-    searchParams.stage_id = stageList.value[0]?.id;
+    if (!searchParams.stage_id) {
+      searchParams.stage_id = stageList.value[0]?.id;
+    }
   } catch (e) {
     console.log(e);
   }
@@ -330,14 +354,6 @@ const init = async () => {
 };
 
 init();
-
-watch(
-  () => [formatTime.value, searchParams.stage_id],
-  () => {
-    setSearchTimeRange();
-    getCallersData();
-  },
-);
 </script>
 
 <style lang="scss" scoped>

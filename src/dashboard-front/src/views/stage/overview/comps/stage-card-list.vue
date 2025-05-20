@@ -1,54 +1,56 @@
 <template>
-  <BkLoading :loading="isLoading">
-    <div class="card-list">
-      <StageCardItem
-        v-for="stage in stageList"
-        :key="stage.id"
-        :stage="stage"
-        @click="handleToDetail(stage)"
-        @delist="() => handleStageUnlist(stage.id)"
-        @publish="() => handleRelease(stage)"
-        @check-log="() => showLogs(stage)"
-      />
+  <div>
+    <BkLoading :loading="isLoading">
+      <div class="card-list">
+        <StageCardItem
+          v-for="stage in stageList"
+          :key="stage.id"
+          :stage="stage"
+          @click="handleToDetail(stage)"
+          @delist="() => handleStageUnlist(stage.id)"
+          @publish="() => handleRelease(stage)"
+          @check-log="() => showLogs(stage)"
+        />
 
-      <div v-if="!common.isProgrammableGateway" class="card-item add-stage" @click="handleAddStage">
-        <i class="apigateway-icon icon-ag-add-small" />
+        <div v-if="!common.isProgrammableGateway" class="card-item add-stage" @click="handleAddStage">
+          <i class="apigateway-icon icon-ag-add-small" />
+        </div>
       </div>
+    </BkLoading>
 
-      <!-- 环境侧边栏 -->
-      <edit-stage-sideslider ref="stageSidesliderRef" />
+    <!-- 环境侧边栏 -->
+    <edit-stage-sideslider ref="stageSidesliderRef" />
 
-      <!-- 发布资源至环境 -->
-      <release-sideslider
-        ref="releaseSidesliderRef"
-        :current-assets="currentStage"
-        @hidden="handleReleaseSuccess(false)"
-        @release-success="handleReleaseSuccess"
-      />
+    <!-- 发布资源至环境 -->
+    <release-sideslider
+      ref="releaseSidesliderRef"
+      :current-assets="currentStage"
+      @hidden="handleReleaseSuccess(false)"
+      @release-success="handleReleaseSuccess"
+    />
 
-      <!-- 发布可编程网关的资源至环境 -->
-      <ReleaseProgrammableSlider
-        ref="releaseProgrammableSliderRef"
-        :current-stage="currentStage"
-        @hidden="handleReleaseSuccess(false)"
-        @release-success="handleReleaseSuccess"
-        @closed-on-publishing="handleSliderHideWhenPending"
-      />
+    <!-- 发布可编程网关的资源至环境 -->
+    <ReleaseProgrammableSlider
+      ref="releaseProgrammableSliderRef"
+      :current-stage="currentStage"
+      @hidden="handleReleaseSuccess(false)"
+      @release-success="handleReleaseSuccess"
+      @closed-on-publishing="handleSliderHideWhenPending"
+    />
 
-      <!-- 日志抽屉 -->
-      <log-details ref="logDetailsRef" :history-id="historyId" />
+    <!-- 日志抽屉 -->
+    <log-details ref="logDetailsRef" :history-id="historyId" />
 
-      <!-- 可编程网关日志抽屉 -->
-      <ProgrammableEventSlider
-        ref="programmableEventSliderRef"
-        :deploy-id="deployId"
-        :history-id="historyId"
-        :stage="currentStage"
-        @retry="handleRetry"
-        @hide-when-pending="handleSliderHideWhenPending"
-      />
-    </div>
-  </BkLoading>
+    <!-- 可编程网关日志抽屉 -->
+    <ProgrammableEventSlider
+      ref="programmableEventSliderRef"
+      :deploy-id="deployId"
+      :history-id="historyId"
+      :stage="currentStage"
+      @retry="handleRetry"
+      @hide-when-pending="handleSliderHideWhenPending"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -290,25 +292,11 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
+
 .card-list {
-  min-width: calc(1280px - 260px);
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-gap: 18px; /* 设置盒子之间的间隔 */
-}
-
-/* 分辨率大于1920时 */
-@media (min-width: 1921px) {
-  .card-list {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-/* 适应更小的分辨率，每行最多显示三个盒子 */
-@media (max-width: 1920px) {
-  .card-list {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
 }
 
 .card-item {
@@ -400,7 +388,7 @@ onUnmounted(() => {
   }
 
   &.add-stage {
-    flex: 1;
+    width: 517px;
     display: flex;
     align-items: center;
     justify-content: center;
