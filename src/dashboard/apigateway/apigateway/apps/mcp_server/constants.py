@@ -25,18 +25,16 @@ class MCPServerStatusEnum(StructuredEnum):
     ACTIVE = EnumField(1, "启用中")
 
 
-class McpServerAppPermissionApplyExpireDaysEnum(StructuredEnum):
+class MCPServerAppPermissionApplyExpireDaysEnum(StructuredEnum):
     FOREVER = EnumField(0, label=_("永久"))
 
 
-class GrantTypeEnum(StructuredEnum):
-    # 初始化方式主动授权
-    INITIALIZE = EnumField("initialize", label=_("主动授权"))
-    # 申请审批方式授权
-    APPLY = EnumField("apply", label=_("申请审批"))
+class MCPServerAppPermissionGrantTypeEnum(StructuredEnum):
+    GRANT = EnumField("grant", label=_("授权"))
+    APPLY = EnumField("apply", label=_("申请"))
 
 
-class McpServerAppPermissionApplyStatusEnum(StructuredEnum):
+class MCPServerAppPermissionApplyStatusEnum(StructuredEnum):
     APPROVED = EnumField("approved", label=_("通过"))
     REJECTED = EnumField("rejected", label=_("驳回"))
     PENDING = EnumField("pending", label=_("待审批"))
