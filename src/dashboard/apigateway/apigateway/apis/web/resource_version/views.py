@@ -117,7 +117,8 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
                 data=ResourceDocVersion.objects.make_version(request.gateway.id),
             )
         exporter = OpenAPIExportManager(
-            title="the OpenAPI Specification of %s" % request.gateway.name,
+            api_version=instance.version,
+            title="the openapi of %s" % request.gateway.name,
         )
         # 创建openapi file版本
         OpenAPIFileResourceSchemaVersion.objects.create(
@@ -342,7 +343,10 @@ class ResourceVersionExportApi(generics.CreateAPIView):
         slz = ResourceVersionExportInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
         file_type = slz.validated_data["file_type"]
-        exporter = OpenAPIExportManager()
+        exporter = OpenAPIExportManager(
+            api_version=instance.version,
+            title=f"the openapi of {request.gateway.name}",
+        )
         content = exporter.export_resource_version_openapi(instance, file_type=file_type)
         # 导出的文件名，需满足规范：bk_产品名_功能名_文件名.后缀
         export_filename = f"bk_apigw_resources_{self.request.gateway.name}_{instance.version}.{file_type}"
