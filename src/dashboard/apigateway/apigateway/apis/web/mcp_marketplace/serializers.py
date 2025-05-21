@@ -59,11 +59,38 @@ class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
         ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerListOutputSLZ"
 
 
-class MCPServerRetrieveOutputSLZ(MCPServerBaseOutputSLZ):
-    guideline = serializers.SerializerMethodField(help_text="MCPServer 使用指南")
+class MCPServerToolOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="资源 ID")
+    name = serializers.CharField(read_only=True, help_text="资源名称")
+    description = serializers.CharField(read_only=True, help_text="资源描述")
+    method = serializers.CharField(read_only=True, help_text="资源前端请求方法")
+    path = serializers.CharField(read_only=True, help_text="资源前端请求路径")
 
-    def get_guideline(self, obj) -> str:
-        return self.context["guideline"]
+    verified_user_required = serializers.BooleanField(read_only=True, help_text="是否需要认证用户")
+    verified_app_required = serializers.BooleanField(read_only=True, help_text="是否需要认证应用")
+    resource_perm_required = serializers.BooleanField(read_only=True, help_text="是否验证应用访问资源的权限")
+    allow_apply_permission = serializers.BooleanField(read_only=True, help_text="是否需要申请权限")
+    labels = serializers.SerializerMethodField(help_text="资源标签列表")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.MCPServerToolOutputSLZ"
+
+    def get_labels(self, obj):
+        return self.context["labels"].get(obj.id, [])
+
+
+class MCPServerRetrieveOutputSLZ(MCPServerBaseOutputSLZ):
+    guideline = serializers.CharField(read_only=True, help_text="MCPServer 使用指南")
+    tools = serializers.ListField(child=MCPServerToolOutputSLZ(), help_text="MCPServer 工具列表")
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerRetrieveOutputSLZ"
+
+
+class MCPServerToolDocOutputSLZ(serializers.Serializer):
+    type = serializers.CharField(read_only=True, help_text="文档类型")
+    content = serializers.CharField(read_only=True, help_text="文档内容")
+    updated_time = serializers.DateTimeField(read_only=True, help_text="文档更新时间")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerToolDocOutputSLZ"

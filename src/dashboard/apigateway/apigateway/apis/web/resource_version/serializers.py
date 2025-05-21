@@ -59,6 +59,8 @@ class ResourceInfoSLZ(serializers.Serializer):
 
     plugins = serializers.SerializerMethodField(help_text="绑定插件")
 
+    has_openapi_schema = serializers.SerializerMethodField(help_text="是否配置了 openapi schema")
+
     def get_doc_updated_time(self, obj):
         return self.context["resource_doc_updated_time"].get(obj["id"], "")
 
@@ -111,6 +113,9 @@ class ResourceInfoSLZ(serializers.Serializer):
         plugins.extend(merge_plugins)
 
         return sorted(plugins, key=lambda x: (x["priority"], x["binding_type"]))
+
+    def get_has_openapi_schema(self, obj) -> bool:
+        return self.context["resource_id_with_schema_dict"].get(obj["id"], False)
 
 
 class ResourceVersionRetrieveOutputSLZ(serializers.Serializer):

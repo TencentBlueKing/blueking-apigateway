@@ -18,7 +18,6 @@
 #
 import re
 import textwrap
-from typing import Optional
 
 from django.conf import settings
 
@@ -40,12 +39,16 @@ class DocGenerator:
         resource_data: ReleasedResourceData,
         doc_data: ResourceDocData,
         language: str,
+        with_resource_url_part: bool = True,
+        with_common_request_params_part: bool = True,
     ):
         self.gateway = gateway
         self.stage_name = stage_name
         self.resource_data = resource_data
         self.doc_data = doc_data
         self.language = language
+        self.with_resource_url_part = with_resource_url_part
+        self.with_common_request_params_part = with_common_request_params_part
 
     def get_doc(self) -> dict:
         return {
@@ -55,11 +58,13 @@ class DocGenerator:
         }
 
     def _get_doc_content(self) -> str:
-        parts = [
-            self._get_resource_url_part(),
-            self._get_common_request_params_part(),
-            self._replace_bkapi_authorization_description(self.doc_data.content),
-        ]
+        parts = []
+        if self.with_resource_url_part:
+            parts.append(self._get_resource_url_part())
+        if self.with_common_request_params_part:
+            parts.append(self._get_common_request_params_part())
+        parts.append(self._replace_bkapi_authorization_description(self.doc_data.content))
+
         return "\n\n".join(filter(None, parts))
 
     def _get_resource_url_part(self) -> str:
@@ -83,9 +88,9 @@ class DocGenerator:
         )
         return description.strip()
 
-    def _replace_bkapi_authorization_description(self, content: Optional[str]) -> Optional[str]:
+    def _replace_bkapi_authorization_description(self, content: str) -> str:
         if not content:
-            return None
+            return ""
 
         return re.sub(r"{{ *bkapi_authorization_description *}}", "", content)
 
