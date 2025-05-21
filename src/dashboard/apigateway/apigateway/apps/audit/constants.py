@@ -45,6 +45,7 @@ class OpObjectTypeEnum(StructuredEnum):
     GATEWAY_LABEL = EnumField("gateway_label", label=_("网关标签"))
     PLUGIN = EnumField("plugin", label=_("插件"))
     RESOURCE_DOC = EnumField("resource_doc", label=_("资源文档"))
+    MCP_SERVER = EnumField("mcp_server", label=_("MCPServer"))
 
 
 # for translation only
@@ -75,6 +76,10 @@ COMMENTS = (
     _("删除环境"),
     _("版本发布"),
     _("生成版本"),
+    # MCPServer
+    _("创建 MCPServer"),
+    _("更新 MCPServer"),
+    _("删除 MCPServer"),
     # extras
     _("环境状态变更"),
     _("更新环境变量"),

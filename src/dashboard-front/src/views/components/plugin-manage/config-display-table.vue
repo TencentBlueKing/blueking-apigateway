@@ -12,12 +12,12 @@
 </template>
 
 <script setup lang="ts">
+import type { Component } from 'vue';
 import {
   computed,
-  toRefs,
   h,
+  toRefs,
 } from 'vue';
-import type { Component } from 'vue';
 import ConfigDisplayTableHeaderRewrite from '@/views/components/plugin-manage/config-display-table-header-rewrite.vue';
 import ConfigDisplayTableRateLimit from '@/views/components/plugin-manage/config-display-table-rate-limit.vue';
 import ConfigDisplayTableIpRestriction from '@/views/components/plugin-manage/config-display-table-ip-restriction.vue';
@@ -53,6 +53,9 @@ const props = withDefaults(defineProps<IProps>(), {
           return h('pre', { class: 'multi-line-table-cell-pre', innerHTML: row.value });
         }
         return row.value;
+      }
+      if (typeof row.value === 'boolean') {
+        return row.value ? 'true' : 'false';
       }
       return JSON.stringify(row.value || {});
     };

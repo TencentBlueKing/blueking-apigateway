@@ -18,7 +18,7 @@
 #
 import datetime
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from cachetools import TTLCache, cached
 from django.conf import settings
@@ -275,6 +275,14 @@ class ResourceVersionHandler:
                 return resource["id"]
         return -1
 
+    @staticmethod
+    @cached(cache=TTLCache(maxsize=300, ttl=CACHE_TIME_5_MINUTES))
+    def get_resource_names_set(resource_version_id: int) -> Set[str]:
+        resource_version = ResourceVersion.objects.filter(id=resource_version_id).first()
+        if not resource_version:
+            return set()
+        return {resource["name"] for resource in resource_version.data}
+
 
 class ResourceDocVersionHandler:
     @staticmethod
@@ -326,5 +334,5 @@ class ResourceDocVersionHandler:
         if doc_last_updated_time and doc_last_updated_time > latest_version.created_time:
             return True
 
-        # 文档不可直接删除，资源删除导致的文档删除，在判断“是否需要创建资源版本”时校验
+        # 文档不可直接删除，资源删除导致的文档删除，在判断"是否需要创建资源版本"时校验
         return False

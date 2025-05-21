@@ -16,25 +16,24 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from blue_krill.data_types.enum import EnumField, StructuredEnum
-from django.utils.translation import gettext_lazy as _
+from typing import Set
+
+from django.utils.translation import gettext as _
+
+from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.common.error_codes import error_codes
+from apigateway.core.constants import StageStatusEnum
+from apigateway.core.models import Release
 
 
-class MCPServerStatusEnum(StructuredEnum):
-    INACTIVE = EnumField(0, "已停用")
-    ACTIVE = EnumField(1, "启用中")
-
-
-class MCPServerAppPermissionApplyExpireDaysEnum(StructuredEnum):
-    FOREVER = EnumField(0, label=_("永久"))
-
-
-class MCPServerAppPermissionGrantTypeEnum(StructuredEnum):
-    GRANT = EnumField("grant", label=_("授权"))
-    APPLY = EnumField("apply", label=_("申请"))
-
-
-class MCPServerAppPermissionApplyStatusEnum(StructuredEnum):
-    APPROVED = EnumField("approved", label=_("通过"))
-    REJECTED = EnumField("rejected", label=_("驳回"))
-    PENDING = EnumField("pending", label=_("待审批"))
+def get_valid_resource_names(gateway_id: int, stage_id: int) -> Set[str]:
+    release = Release.objects.filter(
+        gateway_id=gateway_id,
+        stage_id=stage_id,
+        stage__status=StageStatusEnum.ACTIVE.value,
+    ).first()
+    if not release:
+        raise error_codes.FAILED_PRECONDITION.format(
+            _("环境已下架或者未发布，请先发布资源到该环境，再更新 MCPServer。"), replace=True
+        )
+    return ResourceVersionHandler.get_resource_names_set(release.resource_version.id)

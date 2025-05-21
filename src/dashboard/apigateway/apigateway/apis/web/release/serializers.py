@@ -170,6 +170,7 @@ class DeployHistoryOutputSLZ(serializers.Serializer):
     history_id = serializers.IntegerField(source="publish_id", read_only=True, help_text="网关发布历史id")
     commit_id = serializers.CharField(read_only=True, help_text="commit_id")
     branch = serializers.CharField(read_only=True, help_text="分支")
+    stage = ReleaseStageSLZ()
     status = serializers.SerializerMethodField(read_only=True, help_text="paas部署状态")
     created_time = serializers.DateTimeField(read_only=True, help_text="paas部署创建时间")
     version = serializers.CharField(read_only=True, help_text="发布版本")
