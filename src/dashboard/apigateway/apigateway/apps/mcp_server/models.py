@@ -43,7 +43,7 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
     is_public = models.BooleanField(default=False)
 
     _labels = models.CharField(db_column="labels", max_length=1024, blank=True, null=True, default="")
-    _resource_ids = models.CharField(db_column="resource_ids", max_length=1024, blank=True, null=True, default="")
+    _resource_names = models.CharField(db_column="resource_names", max_length=1024, blank=True, null=True, default="")
 
     status = models.IntegerField(choices=MCPServerStatusEnum.get_choices())
 
@@ -66,18 +66,18 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
         self._labels = ";".join(value)
 
     @property
-    def resource_ids(self) -> List[int]:
-        if not self._resource_ids:
+    def resource_names(self) -> List[str]:
+        if not self._resource_names:
             return []
-        return [int(resource_id) for resource_id in self._resource_ids.split(";")]
+        return self._resource_names.split(";")
 
-    @resource_ids.setter
-    def resource_ids(self, value: List[int]):
-        self._resource_ids = ";".join(str(resource_id) for resource_id in value)
+    @resource_names.setter
+    def resource_names(self, value: List[str]):
+        self._resource_names = ";".join(value)
 
     @property
     def tools_count(self) -> int:
-        return len(self.resource_ids)
+        return len(self.resource_names)
 
     @property
     def is_active(self) -> bool:
