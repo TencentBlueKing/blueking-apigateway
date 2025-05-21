@@ -32,10 +32,10 @@ class TestMCPServer:
 
     def test_resource_ids(self):
         mcp_server = G(MCPServer)
-        assert mcp_server.resource_ids == []
+        assert mcp_server.resource_names == []
 
-        mcp_server.resource_ids = [2, 4]
-        assert mcp_server.resource_ids == [2, 4]
+        mcp_server.resource_names = ["resource1", "resource2"]
+        assert mcp_server.resource_names == ["resource1", "resource2"]
 
     def test_is_active(self):
         mcp_server = G(MCPServer)
@@ -48,5 +48,5 @@ class TestMCPServer:
         mcp_server = G(MCPServer)
         assert mcp_server.tools_count == 0
 
-        mcp_server.resource_ids = [2, 4]
+        mcp_server.resource_names = ["resource1", "resource2"]
         assert mcp_server.tools_count == 2
