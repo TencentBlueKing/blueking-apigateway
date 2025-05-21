@@ -702,7 +702,9 @@ const getApigwStages = async () => {
     const res = await getStages(common.apigwId, pageParams);
     stageList.value = res || [];
     if (stageList.value.length) {
-      const { id, release } = stageList.value[0];
+      const effectiveStage = stageList.value.find((item: any) => item.release?.status === 'success') || stageList.value[0];
+      const { id, release } = effectiveStage;
+
       if (!stage.value) {
         stage.value = id;
       }
