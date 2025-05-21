@@ -4,10 +4,10 @@
  */
 
 import {
-  ref,
   onMounted,
-  watch,
+  ref,
   Ref,
+  watch,
 } from 'vue';
 import { IPagination } from '@/types';
 import { useCommon } from '@/store';
@@ -22,6 +22,7 @@ export function useQueryList<T>(
   id?: number,
   filterNoResetPage?: boolean,
   initialPagination: Partial<IPagination> = {},
+  immediate = true,
 ) {
   const common = useCommon();
   const { apigwId } = common;
@@ -111,7 +112,9 @@ export function useQueryList<T>(
   };
 
   onMounted(async () => {
-    await getList();
+    if (immediate) {
+      await getList();
+    }
   });
 
 

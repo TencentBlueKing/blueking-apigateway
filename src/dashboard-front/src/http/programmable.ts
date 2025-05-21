@@ -222,3 +222,6 @@ export const getDeployEvents = (apigwId: number, deploy_id: string): Promise<IEv
 
 // 查询已完成部署后的发布事件
 export const getFinishedDeployEvents = (apigwId: number, history_id: number): Promise<IEventResponse> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/programmable/deploy/histories/${history_id}/events/`);
+
+// 查询部署历史
+export const getDeployHistories = (apigwId: number): Promise<IEventResponse> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/programmable/deploy/histories/`);

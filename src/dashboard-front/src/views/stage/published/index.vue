@@ -34,53 +34,12 @@
         remote-pagination
         :pagination="pagination"
         show-overflow-tooltip
+        :columns="columns"
+        border="outer"
+        row-hover="auto"
         @page-limit-change="handlePageSizeChange"
         @page-value-change="handlePageChange"
-        row-hover="auto"
-        border="outer">
-        <bk-table-column
-          :label="t('已发布的环境')"
-          prop="stage.name"
-        >
-        </bk-table-column>
-        <bk-table-column :label="t('类型')">
-          <template #default="{ data }">
-            {{ getTextFromEnum(publishSourceEnum, data?.source) }}
-          </template>
-        </bk-table-column>
-        <bk-table-column
-          :label="t('版本号')"
-          prop="resource_version_display"
-        >
-          <template #default="{ row }">
-            <bk-button text theme="primary" @click="goVersionList(row)">
-              {{ row?.resource_version_display }}
-            </bk-button>
-          </template>
-        </bk-table-column>
-        <bk-table-column :label="t('操作状态')">
-          <template #default="{ data }">
-            <spinner v-if="data?.status === 'doing'" fill="#3A84FF" />
-            <span v-else :class="['dot', data?.status]"></span>
-            {{ getTextFromEnum(publishStatusEnum, data?.status) }}
-          </template>
-        </bk-table-column>
-        <bk-table-column :label="t('操作时间')" prop="created_time">
-        </bk-table-column>
-        <bk-table-column :label="t('操作人')" prop="created_by">
-        </bk-table-column>
-        <bk-table-column :label="t('耗时')" prop="duration">
-        </bk-table-column>
-        <bk-table-column :label="t('操作')">
-          <template #default="{ data }">
-            <!-- <bk-button text theme="primary" @click="showDetails(data.id)">
-              {{ t("查看详情") }}
-            </bk-button> -->
-            <bk-button text theme="primary" @click="showLogs(data.id)">
-              {{ t("发布日志") }}
-            </bk-button>
-          </template>
-        </bk-table-column>
+      >
         <template #empty>
           <TableEmpty
             :keyword="tableEmptyConf.keyword"
@@ -106,9 +65,9 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script lang="tsx" setup>
 import {
-  onMounted,
+  computed,
   onUnmounted,
   ref,
   watch,
@@ -127,11 +86,14 @@ import { getReleaseHistories } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
 import EventSlider from '@/components/programmable-deploy-events-slider/index.vue';
 import { useCommon } from '@/store';
+import { getDeployHistories } from '@/http/programmable';
 
+type Enums = typeof publishSourceEnum | typeof publishStatusEnum;
+
+const { t } = useI18n();
 const router = useRouter();
 const common = useCommon();
 
-const { t } = useI18n();
 const filterData = ref({ keyword: '' });
 const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
   keyword: '',
@@ -166,7 +128,14 @@ const {
   handlePageChange,
   handlePageSizeChange,
   getList,
-} = useQueryList(getReleaseHistories, filterData);
+} = useQueryList(
+  common.isProgrammableGateway ? getDeployHistories : getReleaseHistories,
+  filterData,
+  null,
+  false,
+  undefined,
+  false,
+);
 
 // datepicker 时间选择器 hooks 适用于列表筛选
 const {
@@ -183,10 +152,121 @@ const programmableLogDetailsRef = ref(null);
 const detailId = ref();
 const detailsRef = ref(null);
 
-// const showDetails = (id: string) => {
-//   detailId.value = id;
-//   detailsRef.value?.showSideslider();
-// };
+let timerId: any = null;
+
+const columns = computed(() =>
+  common.isProgrammableGateway
+  ? [
+      {
+        label: t('已发布的环境'),
+        field: 'stage.name',
+      },
+      {
+        label: t('分支'),
+        field: 'branch',
+      },
+      {
+        label: 'commit_id',
+        field: 'commit_id',
+      },
+      {
+        label: t('版本号'),
+        field: 'version',
+      },
+      {
+        label: t('部署状态'),
+        render: ({ row }: any) =>
+          <div>
+            {
+              row?.status === 'doing'
+              ? <Spinner fill="#3A84FF" />
+              : <span class={`dot ${row?.status}`}></span>
+            }
+            <span>{getTextFromEnum(publishStatusEnum, row?.status)}</span>
+          </div>,
+      },
+      {
+        label: t('操作时间'),
+        field: 'created_time',
+      },
+      {
+        label: t('操作人'),
+        field: 'created_by',
+      },
+      {
+        label: t('操作'),
+        render: ({ row }: any) =>
+          <bk-button text theme="primary" disabled={!row.history_id} onClick={() => showLogs(row.history_id)}>
+            {t("发布日志")}
+          </bk-button>,
+      },
+    ]
+  : [
+      {
+        label: t('已发布的环境'),
+        field: 'stage.name',
+      },
+      {
+        label: t('类型'),
+        render: ({ row }: any) => <div>{getTextFromEnum(publishSourceEnum, row.source)}</div>,
+      },
+      {
+        label: t('版本号'),
+        render: ({ row }: any) => <bk-button
+          text theme="primary" onClick={() => goVersionList(row)}
+        >{row.resource_version_display}</bk-button>,
+      },
+      {
+        label: t('操作状态'),
+        render: ({ row }: any) =>
+          <div>
+            {
+              row?.status === 'doing'
+              ? <Spinner fill="#3A84FF" />
+              : <span class={`dot ${row?.status}`}></span>
+            }
+            <span>{getTextFromEnum(publishStatusEnum, row?.status)}</span>
+          </div>,
+      },
+      {
+        label: t('操作时间'),
+        field: 'created_time',
+      },
+      {
+        label: t('操作人'),
+        field: 'created_by',
+      },
+      {
+        label: t('耗时'),
+        field: 'duration',
+      },
+      {
+        label: t('操作'),
+        render: ({ row }: any) =>
+          <bk-button text theme="primary" onClick={() => showLogs(row.id)}>
+            {t("发布日志")}
+          </bk-button>,
+      },
+    ],
+);
+
+watch(() => filterData.value, () => {
+  updateTableEmptyConfig();
+}, {
+  deep: true,
+});
+
+watch(() => common.isProgrammableGateway, () => {
+  if (common.isProgrammableGateway) {
+    getList(getDeployHistories);
+  } else {
+    getList(getReleaseHistories);
+  }
+  clearInterval(timerId);
+  timerId = setInterval(() => {
+    getList(common.isProgrammableGateway ? getDeployHistories : getReleaseHistories, false);
+  }, 1000 * 30);
+}, { immediate: true });
 
 const showLogs = (id: string) => {
   historyId.value = id;
@@ -235,7 +315,6 @@ const goVersionList = (data: any) => {
   });
 };
 
-type Enums = typeof publishSourceEnum | typeof publishStatusEnum;
 // 从枚举对象中获取文本
 const getTextFromEnum = (e: Enums, key?: unknown) => {
   if (!key) return '--';
@@ -246,21 +325,8 @@ const handlePickSuccess = () => {
   handleComfirm();
 };
 
-watch(() => filterData.value, () => {
-  updateTableEmptyConfig();
-}, {
-  deep: true,
-});
-
-
-let timeId: any = null;
-onMounted(() => {
-  timeId = setInterval(() => {
-    getList(getReleaseHistories, false);
-  }, 1000 * 30);
-});
 onUnmounted(() => {
-  clearInterval(timeId);
+  clearInterval(timerId);
 });
 
 </script>
