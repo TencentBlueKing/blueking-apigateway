@@ -177,7 +177,7 @@ class DeployHistoryOutputSLZ(serializers.Serializer):
     created_by = serializers.CharField(read_only=True, help_text="发布人")
 
     def get_status(self, obj: ProgrammableGatewayDeployHistory) -> str:
-        event = self.context["release_history_events_map"].get(obj.id, None)
+        event = self.context["release_history_events_map"].get(obj.publish_id, None)
         if event:
             return event.get_release_history_status()
 
