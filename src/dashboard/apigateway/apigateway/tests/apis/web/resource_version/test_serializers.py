@@ -75,6 +75,7 @@ class TestResourceVersionListOutputSLZ:
                     ]
                 },
                 "resource_version_ids_sdk_count": {},
+                "resource_id_with_schema_dict": {},
             },
         )
         assert slz.data == [
@@ -117,6 +118,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                 "plugin_priority": {
                     obj["code"]: obj["priority"] for obj in PluginType.objects.values("code", "priority")
                 },
+                "resource_id_with_schema_dict": {},
             },
         )
         expected_data = {
@@ -152,6 +154,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                     },
                     "contexts": fake_resource_version_v1.data[0]["contexts"],
                     "plugins": [],
+                    "has_openapi_schema": False,
                 }
             ],
             "created_time": fake_resource_version_v1.created_time,
@@ -181,6 +184,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                 "plugin_priority": {
                     obj["code"]: obj["priority"] for obj in PluginType.objects.values("code", "priority")
                 },
+                "resource_id_with_schema_dict": {},
             },
         )
         expected_data = {
@@ -225,6 +229,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                             "priority": -1,
                         },
                     ],
+                    "has_openapi_schema": False,
                 }
             ],
             "created_time": fake_resource_version_v2.created_time,
@@ -261,6 +266,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                 "plugin_priority": {
                     obj["code"]: obj["priority"] for obj in PluginType.objects.values("code", "priority")
                 },
+                "resource_id_with_schema_dict": {},
             },
         )
         for resource in slz.data["resources"]:
@@ -315,6 +321,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                 "plugin_priority": {
                     obj["code"]: obj["priority"] for obj in PluginType.objects.values("code", "priority")
                 },
+                "resource_id_with_schema_dict": {},
             },
         )
 
@@ -352,6 +359,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                 "plugin_priority": {
                     obj["code"]: obj["priority"] for obj in PluginType.objects.values("code", "priority")
                 },
+                "resource_id_with_schema_dict": {},
             },
         )
 

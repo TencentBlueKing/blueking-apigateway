@@ -135,6 +135,7 @@ class TestResourceVersionRetrieveApi:
                     },
                     "contexts": fake_resource_version_v2.data[0]["contexts"],
                     "plugins": [],
+                    "has_openapi_schema": False,
                 }
             ],
             "created_time": fake_resource_version_v2.created_time,
