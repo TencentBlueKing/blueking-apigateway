@@ -73,7 +73,7 @@ class MCPServerToolOutputSLZ(serializers.Serializer):
     labels = serializers.SerializerMethodField(help_text="资源标签列表")
 
     class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.MCPServerToolOutputSLZ"
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerToolOutputSLZ"
 
     def get_labels(self, obj):
         return self.context["labels"].get(obj.id, [])
