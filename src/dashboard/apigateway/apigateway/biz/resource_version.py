@@ -48,6 +48,7 @@ class ResourceVersionHandler:
     @staticmethod
     def make_version(gateway: Gateway):
         resource_queryset = Resource.objects.filter(gateway_id=gateway.id).all()
+
         resource_ids = list(resource_queryset.values_list("id", flat=True))
 
         proxy_map = ProxyHandler.get_resource_id_to_snapshot(resource_ids)
@@ -251,6 +252,18 @@ class ResourceVersionHandler:
             if resource_id == schema_info["resource_id"]:
                 return schema
         return {}
+
+    @staticmethod
+    def get_resource_id_to_schema_by_resource_version(resource_version_id: int) -> dict:
+        """
+        获取资源版本下的资源与 api schema 的映射关系
+        """
+        resources_version_schema = OpenAPIResourceSchemaVersion.objects.filter(
+            resource_version_id=resource_version_id
+        ).first()
+        if resources_version_schema is None:
+            return {}
+        return {schema_info["resource_id"]: schema_info["schema"] for schema_info in resources_version_schema.schema}
 
     @staticmethod
     def get_resource_id(resource_version_id: int, resource_name: str) -> int:

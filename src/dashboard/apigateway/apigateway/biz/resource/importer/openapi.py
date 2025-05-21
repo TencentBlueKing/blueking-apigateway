@@ -24,6 +24,7 @@ from openapi_spec_validator.versions import OPENAPIV2, get_spec_version
 from openapi_spec_validator.versions.exceptions import OpenAPIVersionNotFound
 from prance import ResolvingParser
 
+from apigateway.biz.backend import BackendHandler
 from apigateway.biz.constants import OpenAPIFormatEnum
 from apigateway.biz.resource.importer.constants import OpenAPIVersionKeyEnum
 from apigateway.biz.resource.importer.parser import BaseExporter, BaseParser, OpenAPIV3Parser, ResourceDataConvertor
@@ -34,7 +35,9 @@ from apigateway.biz.resource.importer.schema import (
 )
 from apigateway.biz.resource.importer.validate import ResourceImportValidator
 from apigateway.biz.resource.models import ResourceData
-from apigateway.core.models import Gateway
+from apigateway.biz.resource_label import ResourceLabelHandler
+from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.core.models import Gateway, ResourceVersion
 from apigateway.utils.yaml import yaml_loads
 
 # 初始化openapi validator schema
@@ -183,6 +186,35 @@ class OpenAPIExportManager:
         self._exporter = BaseExporter(
             self.api_version, self.include_bk_apigateway_resource, self.title, self.description
         )
+
+    def export_resource_version_openapi(self, resource_version: ResourceVersion, file_type: str = ""):
+        """
+        根据资源版本数据导出openapi
+        """
+        backend_id_to_config = BackendHandler.get_id_to_instance(resource_version.gateway.id)
+        resource_labels = ResourceLabelHandler.get_labels_by_gateway(resource_version.gateway.id)
+        resource_id_to_schema = ResourceVersionHandler.get_resource_id_to_schema_by_resource_version(
+            resource_version.id
+        )
+
+        resource_data_list = []
+        for resource in resource_version.data:
+            labels = resource_labels.get(resource["id"], [])
+            resource["labels"] = [label["name"] for label in labels]
+            resource["openapi_schema"] = resource_id_to_schema.get(resource["id"], {})
+            resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
+            resource["auth_config"] = {
+                "userVerifiedRequired": resource_auth_config["auth_verified_required"],
+                "appVerifiedRequired": resource_auth_config["app_verified_required"],
+                "resourcePermissionRequired": resource_auth_config["resource_perm_required"],
+            }
+            resource["backend"] = {
+                "name": backend_id_to_config[resource["proxy"]["backend_id"]].name,
+                "config": json.loads(resource["proxy"]["config"]),
+            }
+            resource_data_list.append(resource)
+
+        return self.export_openapi(resource_data_list, file_type)
 
     def export_openapi(self, resources: list, file_type: str = ""):
         """
