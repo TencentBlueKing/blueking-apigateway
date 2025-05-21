@@ -58,7 +58,7 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
         queryset = queryset.select_related("gateway", "stage")
 
         # note: the stage offline will update related mcp server status to inactive,
-        # the stage publish will update the mcp server resource_ids,
+        # the stage publish will update the mcp server resource_names,
         # so we don't need to care about is the mcp server stage is correctly published here
 
         page = self.paginate_queryset(queryset)

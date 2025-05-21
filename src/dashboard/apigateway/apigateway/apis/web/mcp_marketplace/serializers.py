@@ -32,7 +32,7 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     is_public = serializers.BooleanField(read_only=True, help_text="MCPServer 是否公开")
 
     labels = serializers.ListField(read_only=True, help_text="MCPServer 标签")
-    resource_ids = serializers.ListField(read_only=True, help_text="MCPServer 资源 ID")
+    resource_names = serializers.ListField(read_only=True, help_text="MCPServer 资源名称")
 
     status = serializers.ChoiceField(
         read_only=True, help_text="MCPServer 状态", choices=MCPServerStatusEnum.get_choices()

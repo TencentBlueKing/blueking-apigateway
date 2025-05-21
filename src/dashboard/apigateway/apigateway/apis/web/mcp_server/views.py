@@ -43,6 +43,7 @@ from .serializers import (
     MCPServerUpdateLabelsInputSLZ,
     MCPServerUpdateStatusInputSLZ,
 )
+from .utils import get_valid_resource_names
 
 
 @method_decorator(
@@ -179,11 +180,15 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         instance = self.get_object()
         data_before = get_model_dict(instance)
 
-        slz = MCPServerUpdateInputSLZ(instance, data=request.data, partial=partial)
+        valid_resource_names = get_valid_resource_names(gateway_id=self.request.gateway.id, stage_id=instance.stage.id)
+
+        slz = MCPServerUpdateInputSLZ(
+            instance, data=request.data, partial=partial, context={"valid_resource_names": valid_resource_names}
+        )
         slz.is_valid(raise_exception=True)
         slz.save(updated_by=request.user.username)
 
-        # FIXME: trigger the mcp server permission refresh if update the resource_ids
+        # FIXME: trigger the mcp server permission refresh if update the resource_names
 
         Auditor.record_mcp_server_op_success(
             op_type=OpTypeEnum.MODIFY,

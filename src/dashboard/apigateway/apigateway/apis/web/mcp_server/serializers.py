@@ -27,18 +27,20 @@ from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.apps.mcp_server.utils import build_mcp_server_url
 from apigateway.core.models import Stage
 
+from .utils import get_valid_resource_names
+
 
 class MCPServerCreateInputSLZ(serializers.ModelSerializer):
     stage_id = serializers.IntegerField(help_text="Stage ID")
     labels = serializers.ListField(child=serializers.CharField(), required=False, help_text="MCPServer 标签列表")
-    resource_ids = serializers.ListField(
-        child=serializers.IntegerField(), required=True, help_text="MCPServer 资源 ID 列表"
+    resource_names = serializers.ListField(
+        child=serializers.CharField(), required=True, help_text="MCPServer 资源名称列表"
     )
     name = serializers.CharField(required=True, help_text="MCPServer 名称", max_length=64)
 
     class Meta:
         model = MCPServer
-        fields = ("name", "description", "stage_id", "is_public", "labels", "resource_ids")
+        fields = ("name", "description", "stage_id", "is_public", "labels", "resource_names")
         lookup_field = "id"
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCreateInputSLZ"
 
@@ -46,7 +48,7 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         # 1.First validate stage_id
         stage_id = attrs.get("stage_id")
         if not stage_id:
-            raise serializers.ValidationError(_("stage_id 不能为空"))
+            raise serializers.ValidationError(_("stage_id 不能为空/不能为 0"))
 
         try:
             stage = Stage.objects.get(id=stage_id, gateway=self.context["gateway"])
@@ -75,6 +77,19 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         if MCPServer.objects.filter(name=name).exists():
             raise serializers.ValidationError(_("MCPServer 名称已存在"))
 
+        # 3. validate the resource_names
+        resource_names = attrs.get("resource_names")
+        if not resource_names:
+            raise serializers.ValidationError(_("资源名称列表不能为空"))
+
+        valid_resource_names = get_valid_resource_names(gateway_id=self.context["gateway"].id, stage_id=stage_id)
+        for resource_name in resource_names:
+            if resource_name not in valid_resource_names:
+                raise serializers.ValidationError(
+                    _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
+                    + f"resource_name={resource_name}"
+                )
+
         return attrs
 
     def create(self, validated_data):
@@ -92,7 +107,7 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     is_public = serializers.BooleanField(read_only=True, help_text="MCPServer 是否公开")
 
     labels = serializers.ListField(read_only=True, help_text="MCPServer 标签")
-    resource_ids = serializers.ListField(read_only=True, help_text="MCPServer 资源 ID")
+    resource_names = serializers.ListField(read_only=True, help_text="MCPServer 资源名称")
 
     tools_count = serializers.IntegerField(read_only=True, help_text="MCPServer 工具数量")
     url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
@@ -127,13 +142,26 @@ class MCPServerRetrieveOutputSLZ(MCPServerBaseOutputSLZ):
 
 class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
     labels = serializers.ListField(child=serializers.CharField(), required=False, help_text="MCPServer 标签列表")
-    resource_ids = serializers.ListField(
-        child=serializers.IntegerField(), required=False, help_text="MCPServer 资源 ID 列表"
+    resource_names = serializers.ListField(
+        child=serializers.CharField(), required=False, help_text="MCPServer 资源名称列表"
     )
+
+    def validate_resource_names(self, resource_names):
+        if resource_names is not None:
+            if len(resource_names) == 0:
+                raise serializers.ValidationError(_("资源名称列表不能为空"))
+            valid_resource_names = self.context["valid_resource_names"]
+
+            for resource_name in resource_names:
+                if resource_name not in valid_resource_names:
+                    raise serializers.ValidationError(
+                        _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
+                        + f"resource_name={resource_name}"
+                    )
 
     class Meta:
         model = MCPServer
-        fields = ("description", "is_public", "labels", "resource_ids")
+        fields = ("description", "is_public", "labels", "resource_names")
         lookup_field = "id"
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateInputSLZ"
 
