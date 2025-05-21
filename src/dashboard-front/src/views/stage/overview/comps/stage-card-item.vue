@@ -83,7 +83,7 @@
         <BkButton
           size="small"
           v-bk-tooltips="actionTooltipConfig"
-          :disabled="isActionDisabled"
+          :disabled="isUnlistDisabled"
           @click.stop="handleDelistClick"
         >
           {{ t('下架') }}
@@ -249,9 +249,14 @@ const status = computed(() => {
   return props.stage.release?.status;
 });
 
-// 发布和下架操作是否禁用
+// 发布操作是否禁用
 const isActionDisabled = computed(() => {
   return status.value === 'doing' || !!props.stage.publish_validate_msg;
+});
+
+// 下架操作是否禁用
+const isUnlistDisabled = computed(() => {
+  return status.value === 'doing' || status.value === 'unreleased' || !!props.stage.publish_validate_msg;
 });
 
 const actionTooltipConfig = computed(() => {
