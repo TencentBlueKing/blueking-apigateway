@@ -19,7 +19,7 @@
 from django.db import models
 
 from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
-from apigateway.core.models import Resource, ResourceVersion
+from apigateway.core.models import Gateway, Resource, ResourceVersion
 
 
 class OpenAPIResourceSchema(TimestampedModelMixin, OperatorModelMixin):
@@ -50,3 +50,16 @@ class OpenAPIResourceSchemaVersion(TimestampedModelMixin, OperatorModelMixin):
 
     def __str__(self):
         return f"<OpenAPIResourceSchemaVersion: {self.id}/{self.resource_version.version}>"
+
+
+class OpenAPIFileResourceSchemaVersion(TimestampedModelMixin, OperatorModelMixin):
+    """
+    openapi_gateway_resource_version_spec: resource openapi 文件接口协议版本表
+    """
+
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
+    resource_version = models.OneToOneField(ResourceVersion, on_delete=models.PROTECT)
+    schema = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = "openapi_gateway_resource_version_spec"

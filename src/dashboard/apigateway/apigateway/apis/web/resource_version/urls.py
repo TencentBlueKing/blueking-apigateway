@@ -22,6 +22,7 @@ from .views import (
     NextProgramGatewayResourceVersionRetrieveApi,
     NextResourceVersionRetrieveApi,
     ResourceVersionDiffRetrieveApi,
+    ResourceVersionExportApi,
     ResourceVersionListCreateApi,
     ResourceVersionNeedNewVersionRetrieveApi,
     ResourceVersionRetrieveApi,
@@ -29,6 +30,11 @@ from .views import (
 
 urlpatterns = [
     path("", ResourceVersionListCreateApi.as_view(), name="gateway.resource_version.list_create"),
+    path(
+        "<int:id>/export/",
+        ResourceVersionExportApi.as_view(),
+        name="gateway.resource_version.export",
+    ),
     path(
         "<int:id>/",
         ResourceVersionRetrieveApi.as_view(),
