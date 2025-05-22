@@ -6,7 +6,7 @@
           <slot>
             <template v-if="membersText">
               <span class="member-item">
-                <bk-popover>
+                <bk-popover :width="480">
                   <bk-user-display-name :user-id="membersText" />
                   <template #content>
                     <span><bk-user-display-name :user-id="membersText" /></span>
