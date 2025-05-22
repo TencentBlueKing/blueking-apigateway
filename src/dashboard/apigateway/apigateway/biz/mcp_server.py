@@ -92,7 +92,7 @@ class MCPServerHandler:
         return f"v_mcp_{mcp_server_id}_{app_code}"
 
     @staticmethod
-    def _cleanup_all_resource_permissions(mcp_server_id: int):
+    def _cleanup_all_resource_permissions(gateway_id: int, mcp_server_id: int):
         """清理 mcp_server 的所有权限
         特征：bk_app_code 以 v_mcp_{mcp_server_id}_ 开头
         只有虚拟 app_code 能带下划线
@@ -101,7 +101,7 @@ class MCPServerHandler:
             mcp_server_id (int): mcp_server 的 id
         """
         AppResourcePermission.objects.filter(
-            bk_app_code__startswith=MCPServerHandler._virtual_app_code_prefix(mcp_server_id)
+            gateway_id=gateway_id, bk_app_code__startswith=MCPServerHandler._virtual_app_code_prefix(mcp_server_id)
         ).delete()
 
     @staticmethod
@@ -118,7 +118,10 @@ class MCPServerHandler:
         if not app_codes:
             logger.debug("no app_codes, cleanup the permissions of the mcp_server %d", mcp_server_id)
             # if no app_codes, cleanup the permissions of the mcp_server
-            MCPServerHandler._cleanup_all_resource_permissions(mcp_server_id)
+            MCPServerHandler._cleanup_all_resource_permissions(
+                gateway_id=mcp_server.gateway_id,
+                mcp_server_id=mcp_server_id,
+            )
             return
 
         # 2. check the resource names, and get the resource_ids
