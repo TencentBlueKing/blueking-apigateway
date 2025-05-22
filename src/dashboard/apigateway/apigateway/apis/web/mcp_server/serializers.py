@@ -174,7 +174,7 @@ class MCPServerUpdateStatusInputSLZ(serializers.ModelSerializer):
             if self.instance.gateway.status == GatewayStatusEnum.INACTIVE.value:
                 raise serializers.ValidationError(_("请先启用网关，然后再启用 MCPServer。"))
             if self.instance.stage.status == StageStatusEnum.INACTIVE.value:
-                raise serializers.ValidationError(_("请先发布发布资源版本到对应环境，然后再启用 MCPServer。"))
+                raise serializers.ValidationError(_("请先发布资源版本到对应环境，然后再启用 MCPServer。"))
 
         return status
 
