@@ -289,7 +289,7 @@
         <div class="basic-info-detail-item" v-if="basicInfoData.kind === 1">
           <div class="detail-item-title">{{ t('可编程网关工作流') }}</div>
           <div class="detail-item-content">
-            <img :src="processImg" :alt="t('可编程网关的流程图')">
+            <img class="process-img" :src="processImg" :alt="t('可编程网关的流程图')">
           </div>
         </div>
         <div class="basic-info-detail-item" v-if="basicInfoData.kind === 1">
@@ -393,7 +393,7 @@ import guide from '@/components/guide.vue';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 // @ts-ignore
-import programProcess from '@/images/program-process.svg';
+import programProcess from '@/images/program-process.png';
 import EditApiDoc from './common/editApiDoc.vue';
 
 const { t } = useI18n();
@@ -950,6 +950,11 @@ watch(
               }
             }
           }
+        }
+        .process-img {
+          width: 912px;
+          height: 223px;
+          background: #F5F7FA;
         }
       }
     }
