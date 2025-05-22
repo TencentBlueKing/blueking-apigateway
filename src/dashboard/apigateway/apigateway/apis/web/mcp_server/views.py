@@ -29,6 +29,7 @@ from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.apps.mcp_server.utils import build_mcp_server_url
 from apigateway.biz.audit import Auditor
+from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Stage
@@ -37,8 +38,11 @@ from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
     MCPServerCreateInputSLZ,
+    MCPServerGuidelineOutputSLZ,
     MCPServerListOutputSLZ,
     MCPServerRetrieveOutputSLZ,
+    MCPServerToolDocOutputSLZ,
+    MCPServerToolOutputSLZ,
     MCPServerUpdateInputSLZ,
     MCPServerUpdateLabelsInputSLZ,
     MCPServerUpdateStatusInputSLZ,
@@ -159,19 +163,8 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
                 "name": instance.stage.name,
             }
         }
-        template_name = f"mcp_server/{get_current_language_code()}/guideline.md"
-        guideline = render_to_string(
-            template_name,
-            context={
-                "name": instance.name,
-                "sse_url": build_mcp_server_url(instance.name),
-            },
-        )
 
-        serializer = self.get_serializer(instance, context={"stages": stages, "guideline": guideline})
-        # FIXME: return the tools details and usage page
-        # 返回工具列表页面需要的信息
-
+        serializer = self.get_serializer(instance, context={"stages": stages})
         return OKJsonResponse(data=serializer.data)
 
     def update(self, request, *args, **kwargs):
@@ -292,3 +285,89 @@ class MCPServerUpdateLabelsApi(generics.UpdateAPIView):
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCPServer 工具列表",
+        responses={status.HTTP_200_OK: MCPServerToolOutputSLZ(many=True)},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerToolsListApi(generics.ListAPIView):
+    queryset = MCPServer.objects.all()
+    lookup_url_kwarg = "mcp_server_id"
+
+    def list(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        tool_resources, labels = MCPServerHandler.get_tools_resources_and_labels(
+            gateway_id=request.gateway.id,
+            stage_name=instance.stage.name,
+            resource_names=instance.resource_names,
+        )
+
+        slz = MCPServerToolOutputSLZ(
+            tool_resources,
+            many=True,
+            context={"labels": labels},
+        )
+
+        return OKJsonResponse(status=status.HTTP_200_OK, data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCPServer 使用指南",
+        responses={status.HTTP_200_OK: MCPServerGuidelineOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
+    queryset = MCPServer.objects.all()
+    serializer_class = MCPServerGuidelineOutputSLZ
+    lookup_url_kwarg = "mcp_server_id"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        template_name = f"mcp_server/{get_current_language_code()}/guideline.md"
+        content = render_to_string(
+            template_name,
+            context={
+                "name": instance.name,
+                "sse_url": build_mcp_server_url(instance.name),
+            },
+        )
+        slz = self.get_serializer({"content": content})
+
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCPServer 某个工具的文档",
+        responses={status.HTTP_200_OK: MCPServerToolDocOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerToolDocRetrieveApi(generics.RetrieveAPIView):
+    queryset = MCPServer.objects.all()
+    serializer_class = MCPServerToolDocOutputSLZ
+    lookup_url_kwarg = "mcp_server_id"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        resource_name = kwargs.get("tool_name")
+
+        doc = MCPServerHandler.get_tool_doc(
+            gateway_id=request.gateway.id,
+            stage_name=instance.stage.name,
+            tool_name=resource_name,
+        )
+
+        slz = MCPServerToolDocOutputSLZ(doc)
+        return OKJsonResponse(data=slz.data)

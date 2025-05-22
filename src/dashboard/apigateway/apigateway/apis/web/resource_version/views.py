@@ -162,11 +162,17 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
         # 查询网关后端服务
         resource_backends = BackendHandler.get_id_to_instance(request.gateway.id)
 
+        # 查询哪些资源有配置对应的 schema
+        resource_id_with_schema_dict = ResourceVersionHandler.get_resource_ids_has_openapi_schema_by_resource_version(
+            instance.id
+        )
+
         context = {
             "resource_doc_updated_time": resource_docs_updated_time,
             "resource_backends": resource_backends,
             "is_schema_v2": instance.is_schema_v2,
             "plugin_priority": {obj["code"]: obj["priority"] for obj in PluginType.objects.values("code", "priority")},
+            "resource_id_with_schema_dict": resource_id_with_schema_dict,
         }
 
         # 如果传入了stage,返回对应stage的backend_config以及合并资源插件

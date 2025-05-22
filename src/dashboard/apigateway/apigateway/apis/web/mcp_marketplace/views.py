@@ -26,6 +26,7 @@ from rest_framework import generics, status
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.apps.mcp_server.utils import build_mcp_server_url
+from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
@@ -35,6 +36,7 @@ from apigateway.utils.responses import OKJsonResponse
 from .serializers import (
     MCPServerListOutputSLZ,
     MCPServerRetrieveOutputSLZ,
+    MCPServerToolDocOutputSLZ,
 )
 
 
@@ -95,7 +97,7 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="获取指定网关的信息",
+        operation_description="获取 MCP 市场中某个 Server 的详情",
         responses={status.HTTP_200_OK: MCPServerRetrieveOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
@@ -124,6 +126,8 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
                 "sse_url": build_mcp_server_url(instance.name),
             },
         )
+        # set the guideline here, for slz
+        instance.guideline = guideline
 
         gateways = {
             instance.gateway.id: {
@@ -138,14 +142,57 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
             }
         }
 
+        tool_resources, labels = MCPServerHandler.get_tools_resources_and_labels(
+            gateway_id=instance.gateway.id,
+            stage_name=instance.stage.name,
+            resource_names=instance.resource_names,
+        )
+        instance.tools = tool_resources
+
         serializer = self.get_serializer(
             instance,
             context={
                 "gateways": gateways,
                 "stages": stages,
-                "guideline": guideline,
+                "labels": labels,
             },
         )
         # FIXME: return the tools details and usage page
         # 返回工具列表页面需要的信息
         return OKJsonResponse(data=serializer.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCP 市场中某个 Server 的某个工具的文档",
+        responses={status.HTTP_200_OK: MCPServerToolDocOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPMarketplaceServerToolDocRetrieveApi(generics.RetrieveAPIView):
+    queryset = MCPServer.objects.all()
+    serializer_class = MCPServerToolDocOutputSLZ
+    lookup_url_kwarg = "mcp_server_id"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if not instance.is_public:
+            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 未公开，无法访问。"))
+        if instance.status != MCPServerStatusEnum.ACTIVE.value:
+            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 未启用，无法访问。"))
+        if instance.gateway.status != GatewayStatusEnum.ACTIVE.value:
+            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 所属网关未启用，无法访问。"))
+        if instance.stage.status != StageStatusEnum.ACTIVE.value:
+            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 所属网关对应的环境未启用，无法访问。"))
+
+        resource_name = kwargs.get("tool_name")
+
+        doc = MCPServerHandler.get_tool_doc(
+            gateway_id=instance.gateway.id,
+            stage_name=instance.stage.name,
+            tool_name=resource_name,
+        )
+
+        slz = MCPServerToolDocOutputSLZ(doc)
+        return OKJsonResponse(data=slz.data)

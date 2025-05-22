@@ -266,6 +266,30 @@ class ResourceVersionHandler:
         return {schema_info["resource_id"]: schema_info["schema"] for schema_info in resources_version_schema.schema}
 
     @staticmethod
+    def get_resource_ids_has_openapi_schema_by_resource_version(resource_version_id: int) -> Dict[int, bool]:
+        """
+        判断资源版本中每个资源是否有配置
+        """
+        resource_id_to_schema = ResourceVersionHandler.get_resource_id_to_schema_by_resource_version(
+            resource_version_id
+        )
+        resource_id_to_has_openapi_schema = {}
+        for resource_id, schema in resource_id_to_schema.items():
+            if schema is None:
+                resource_id_to_has_openapi_schema[resource_id] = False
+                continue
+
+            # currently, the schema.responses is initialized during import openapi file
+            # so, we can't judge whether the schema has configured the schema or not
+            if "requestBody" in schema or "parameters" in schema:
+                resource_id_to_has_openapi_schema[resource_id] = True
+                continue
+
+            resource_id_to_has_openapi_schema[resource_id] = False
+
+        return resource_id_to_has_openapi_schema
+
+    @staticmethod
     def get_resource_id(resource_version_id: int, resource_name: str) -> int:
         resource_version = ResourceVersion.objects.filter(id=resource_version_id).first()
         if not resource_version:

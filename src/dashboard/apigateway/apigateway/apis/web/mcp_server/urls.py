@@ -19,8 +19,11 @@
 from django.urls import include, path
 
 from .views import (
+    MCPServerGuidelineRetrieveApi,
     MCPServerListCreateApi,
     MCPServerRetrieveUpdateDestroyApi,
+    MCPServerToolDocRetrieveApi,
+    MCPServerToolsListApi,
     MCPServerUpdateLabelsApi,
     MCPServerUpdateStatusApi,
 )
@@ -35,6 +38,20 @@ urlpatterns = [
                 path("", MCPServerRetrieveUpdateDestroyApi.as_view(), name="mcp_server.retrieve_update_destroy"),
                 path("status/", MCPServerUpdateStatusApi.as_view(), name="mcp_server.update_status"),
                 path("labels/", MCPServerUpdateLabelsApi.as_view(), name="mcp_server.update_labels"),
+                path(
+                    "tools/",
+                    include(
+                        [
+                            path("", MCPServerToolsListApi.as_view(), name="mcp_server.tools_list"),
+                            path(
+                                "<str:tool_name>/doc/",
+                                MCPServerToolDocRetrieveApi.as_view(),
+                                name="mcp_server.tool_doc_retrieve",
+                            ),
+                        ]
+                    ),
+                ),
+                path("guideline/", MCPServerGuidelineRetrieveApi.as_view(), name="mcp_server.guideline_retrieve"),
             ]
         ),
     ),
