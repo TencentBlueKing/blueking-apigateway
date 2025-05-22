@@ -94,13 +94,13 @@
     </div>
     <div class="divider"></div>
     <div class="card-chart" @click.stop="handleChartClick">
-      <div :class="{ 'empty-state': requestCount === null || requestCount === undefined }" class="request-counter">
+      <div :class="{ 'empty-state': status === 'unreleased' }" class="request-counter">
         <div class="label">{{ t('总请求数') }}</div>
-        <div class="value">{{ requestCount ?? t('无数据') }}
+        <div class="value">{{ status === 'unreleased' ? t('尚未发布，无数据') : requestCount }}
         </div>
       </div>
       <div class="item-chart-wrapper">
-        <StageCardLineChart :data="data" :mount-id="uniqueId()" />
+        <StageCardLineChart v-if="status !== 'unreleased'" :data="data" :mount-id="uniqueId()" />
       </div>
     </div>
   </div>
@@ -315,6 +315,10 @@ const getRequestTrend = async () => {
       count = 0;
     }
   });
+
+  while (results.length < 6) {
+    results.push(0);
+  }
 
   data.value = results;
 };
