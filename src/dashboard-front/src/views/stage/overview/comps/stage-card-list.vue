@@ -1,22 +1,24 @@
 <template>
   <div>
-    <BkLoading :loading="isLoading">
-      <div class="card-list">
-        <StageCardItem
-          v-for="stage in stageList"
-          :key="stage.id"
-          :stage="stage"
-          @click="handleToDetail(stage)"
-          @delist="() => handleStageUnlist(stage.id)"
-          @publish="() => handleRelease(stage)"
-          @check-log="() => showLogs(stage)"
-        />
-
-        <div v-if="!common.isProgrammableGateway" class="card-item add-stage" @click="handleAddStage">
-          <i class="apigateway-icon icon-ag-add-small" />
-        </div>
-      </div>
+    <BkLoading :loading="isLoading && !stageList.length">
+      <div style="width: 100%;"></div>
     </BkLoading>
+    <div class="card-list">
+      <StageCardItem
+        v-for="stage in stageList"
+        :key="stage.id"
+        :loading="isLoading"
+        :stage="stage"
+        @click="handleToDetail(stage)"
+        @delist="() => handleStageUnlist(stage.id)"
+        @publish="() => handleRelease(stage)"
+        @check-log="() => showLogs(stage)"
+      />
+
+      <div v-if="!common.isProgrammableGateway" class="card-item add-stage" @click="handleAddStage">
+        <i class="apigateway-icon icon-ag-add-small" />
+      </div>
+    </div>
 
     <!-- 环境侧边栏 -->
     <edit-stage-sideslider ref="stageSidesliderRef" />
@@ -189,6 +191,9 @@ watch(() => common.curApigwData, () => {
 
 // 环境详情
 const handleToDetail = (data: any) => {
+  if (isLoading.value) {
+    return;
+  }
   mitt.emit('switch-mode', { id: data.id, name: data.name });
 };
 
