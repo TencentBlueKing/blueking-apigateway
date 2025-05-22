@@ -1843,6 +1843,9 @@ const lang: ILANG = {
   '仅对已选择的环境生效': ['Only affect selected stages'],
   '选择后，当前所有环境及后续新增环境都将生效': ['Affect all current and future stages'],
   '自定义环境不能为空': ['Must hava at least one stage'],
+  '请输入已发布的环境或版本号': ['Input published stage or version'],
+  '分支': ['Branch'],
+  '部署状态': ['Deploy Status'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
