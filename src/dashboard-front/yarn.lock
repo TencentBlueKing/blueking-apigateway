@@ -956,7 +956,7 @@
   dependencies:
     chalk "^4.1.0"
 
-"@blueking/date-picker@^2.0.0-beta.27":
+"@blueking/date-picker@^2.0.0-beta.47":
   version "2.0.0-beta.47"
   resolved "https://registry.yarnpkg.com/@blueking/date-picker/-/date-picker-2.0.0-beta.47.tgz#c1270750d687e6c3b554b7e711fc922b8fee7a3c"
   integrity sha512-2RsMqV4zag43gKGiNRFc11ezl89MpdZ3ugsCyVdUiZ4nZwQyyGSJf9LLiVNHs5ADcLILytd8kox5+NI3nQOm0Q==
@@ -2976,10 +2976,10 @@ birpc@^2.3.0:
   resolved "https://registry.yarnpkg.com/birpc/-/birpc-2.3.0.tgz#e5a402dc785ef952a2383ef3cfc075e0842f3e8c"
   integrity sha512-ijbtkn/F3Pvzb6jHypHRyve2QApOCZDR25D/VnkY2G/lBNcXCTsnsCxgY4k4PkVB7zfwzYbY3O9Lcqe3xufS5g==
 
-bkui-vue@2.0.2-beta.13:
-  version "2.0.2-beta.13"
-  resolved "https://registry.yarnpkg.com/bkui-vue/-/bkui-vue-2.0.2-beta.13.tgz#8c5dcc31d204f85f1e49b0d2b8be3b5edda42e79"
-  integrity sha512-ADiHOvk0z3ROBNGrPT82yydEfwwfr88+yC8FTkChvF4dyGVVvCWzMiTi2kUWe2dQiKu+esf3gtboJorjpoRaPw==
+bkui-vue@2.0.1-beta.70.search.1:
+  version "2.0.1-beta.70.search.1"
+  resolved "https://registry.yarnpkg.com/bkui-vue/-/bkui-vue-2.0.1-beta.70.search.1.tgz#aff2d4458216cfa9909518a5c6bd879dc5a13cf3"
+  integrity sha512-Gz84wwewScQ4ygSZVBvbLdB15/xwk0Y1bIs4JVL1EaUGYamFXk4EG1UdP9uJvg8c/DbkZFKMfXzTmg4teNYbrg==
   dependencies:
     "@floating-ui/dom" "~1.5.0"
     "@popperjs/core" "~2.11.8"

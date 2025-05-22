@@ -76,6 +76,7 @@
           theme="primary"
           v-bk-tooltips="actionTooltipConfig"
           :disabled="isActionDisabled"
+          :loading="loading"
           @click.stop="handlePublishClick"
         >
           {{ t('发布资源') }}
@@ -84,6 +85,7 @@
           size="small"
           v-bk-tooltips="actionTooltipConfig"
           :disabled="isUnlistDisabled"
+          :loading="loading"
           @click.stop="handleDelistClick"
         >
           {{ t('下架') }}
@@ -185,6 +187,7 @@ interface IStageItem {
 
 interface IProps {
   stage: IStageItem,
+  loading?: boolean,
 }
 
 const props = withDefaults(defineProps<IProps>(), {
@@ -212,6 +215,7 @@ const props = withDefaults(defineProps<IProps>(), {
     publish_validate_msg: '',
     new_resource_version: '',
   }),
+  loading: false,
 });
 
 const emit = defineEmits<{

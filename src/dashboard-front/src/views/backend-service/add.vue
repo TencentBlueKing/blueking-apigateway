@@ -20,7 +20,17 @@
       </template>
       <template #default>
         <div class="content">
-          <bk-alert theme="warning" :title="editTitle" class="service-tips" v-if="editId && isPublish" />
+          <bk-alert
+            v-if="common.isProgrammableGateway"
+            :title="t('发布可编程网关后，系统将在蓝鲸开发者中心部署一个 SaaS 以提供 API 后端服务，并自动获取其访问地址。')"
+            class="service-tips"
+          />
+          <bk-alert
+            v-else-if="editId && isPublish"
+            :title="t('如果环境和资源已经发布，服务配置修改后，将立即对所有已发布资源生效')"
+            class="service-tips"
+            theme="warning"
+          />
 
           <bk-collapse v-model="activeKey" class="bk-collapse-service">
             <bk-collapse-panel name="base-info">
@@ -286,7 +296,7 @@ const sidesliderConfi = reactive({
   isShow: false,
   title: '',
 });
-const editTitle = ref<string>(t('如果环境和资源已经发布，服务配置修改后，将立即对所有已发布资源生效'));
+
 // 基础信息校验规则
 const baseInfoRules = {
   name: [
