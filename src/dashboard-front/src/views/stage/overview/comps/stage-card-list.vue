@@ -21,14 +21,15 @@
     </div>
 
     <!-- 环境侧边栏 -->
-    <edit-stage-sideslider ref="stageSidesliderRef" />
+    <EditStageSideslider ref="stageSidesliderRef" />
 
     <!-- 发布资源至环境 -->
-    <release-sideslider
+    <ReleaseSideslider
       ref="releaseSidesliderRef"
       :current-assets="currentStage"
       @hidden="handleReleaseSuccess(false)"
       @release-success="handleReleaseSuccess"
+      @closed-on-publishing="handleSliderHideWhenPending"
     />
 
     <!-- 发布可编程网关的资源至环境 -->
@@ -41,7 +42,7 @@
     />
 
     <!-- 日志抽屉 -->
-    <log-details ref="logDetailsRef" :history-id="historyId" />
+    <LogDetails ref="logDetailsRef" :history-id="historyId" @release-doing="handleSliderHideWhenPending" />
 
     <!-- 可编程网关日志抽屉 -->
     <ProgrammableEventSlider
@@ -70,7 +71,7 @@ import {
   InfoBox,
   Message,
 } from 'bkui-vue';
-import logDetails from '@/components/log-details/index.vue';
+import LogDetails from '@/components/log-details/index.vue';
 import mitt from '@/common/event-bus';
 import {
   useCommon,
@@ -82,8 +83,8 @@ import {
   removalStage,
 } from '@/http';
 import { BasicInfoParams } from '@/views/basic-info/common/type';
-import editStageSideslider from './edit-stage-sideslider.vue';
-import releaseSideslider from './release-sideslider.vue';
+import EditStageSideslider from './edit-stage-sideslider.vue';
+import ReleaseSideslider from './release-sideslider.vue';
 import ReleaseProgrammableSlider from './release-programmable-slider.vue';
 import StageCardItem from '@/views/stage/overview/comps/stage-card-item.vue';
 import { getProgrammableStageDetail } from '@/http/programmable';

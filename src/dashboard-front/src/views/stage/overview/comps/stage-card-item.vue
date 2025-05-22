@@ -34,7 +34,7 @@
           </div>
           <div v-else class="value">
             <BkBadge
-              v-if="hasNewerVersion"
+              v-if="stage.new_resource_version"
               v-bk-tooltips="{ content: `有新版本 ${stage.new_resource_version || '--'} 可以发布` }"
               :count="999"
               dot
@@ -54,7 +54,7 @@
             <span v-else-if="status === 'doing'" class="suffix">（<span
               style="font-weight: bold;"
             >{{
-              stage.paasInfo?.latest_deployment?.version || '--'
+              stage.paasInfo?.latest_deployment?.version || stage.publish_version || '--'
             }}</span> 版本正在发布中，<span><BkButton text theme="primary" @click.stop="handleCheckLog">{{
               t('查看日志')
             }}</BkButton></span>）</span>
@@ -232,7 +232,6 @@ const common = useCommon();
 const data = ref<number[]>([]);
 
 const requestCount = ref(0);
-const hasNewerVersion = ref(false);
 
 const status = computed(() => {
   if (!props.stage) {
