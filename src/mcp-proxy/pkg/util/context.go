@@ -20,6 +20,7 @@ package util
 
 import (
 	"context"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -82,4 +83,13 @@ func GetInnerJwtTokenFromContext(ctx context.Context) string {
 
 func SetBKAPITimeout(c *gin.Context, timeout int) {
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BKAPITimeoutKey, timeout))
+}
+
+func GetBKAPITimeout(ctx context.Context) time.Duration {
+	timeout, ok := ctx.Value(constant.BKAPITimeoutKey).(int)
+	if !ok {
+		// default timeout is 1 minute
+		return time.Minute
+	}
+	return time.Duration(timeout) * time.Second
 }
