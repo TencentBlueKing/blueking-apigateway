@@ -25,6 +25,7 @@ from rest_framework import serializers
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.apps.mcp_server.utils import build_mcp_server_url
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Stage
 
 from .utils import get_valid_resource_names
@@ -167,6 +168,15 @@ class MCPServerUpdateStatusInputSLZ(serializers.ModelSerializer):
         fields = ("status",)
         lookup_field = "id"
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateStatusInputSLZ"
+
+    def validate_status(self, status):
+        if status == MCPServerStatusEnum.ACTIVE.value:
+            if self.instance.gateway.status == GatewayStatusEnum.INACTIVE.value:
+                raise serializers.ValidationError(_("请先启用网关，然后再启用 MCPServer。"))
+            if self.instance.stage.status == StageStatusEnum.INACTIVE.value:
+                raise serializers.ValidationError(_("请先发布发布资源版本到对应环境，然后再启用 MCPServer。"))
+
+        return status
 
 
 class MCPServerUpdateLabelsInputSLZ(serializers.ModelSerializer):
