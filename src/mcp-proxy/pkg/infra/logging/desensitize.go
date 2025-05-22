@@ -73,7 +73,6 @@ func (r *Desensitize) Write(entry zapcore.Entry, fields []zapcore.Field) error {
 					indexJsonPath := strings.ReplaceAll(jsonPath, "#", fmt.Sprintf("%d", index))
 					fields[i].String, _ = sjson.Set(fields[i].String, indexJsonPath, maskValue)
 				}
-
 			}
 		}
 	}

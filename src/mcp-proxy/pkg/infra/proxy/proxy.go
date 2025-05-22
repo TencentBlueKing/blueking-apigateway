@@ -99,6 +99,7 @@ func (m *McpProxy) AddMcpServerFromConfigs(configs []*McpServerConfig) error {
 	return nil
 }
 
+// nolint:gofmt
 func (m *McpProxy) AddMcpServerFromOpenApiSpec(name string, openApiSpec *openapi3.T,
 	operationIDMap map[string]struct{},
 ) error {
@@ -258,6 +259,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 			msg := fmt.Sprintf("call %s error:%s\n", toolApiConfig, err.Error())
 			auditLog.Error("call tool err", zap.Error(err))
 			log.Println(msg)
+			// nolint:nilerr
 			return &protocol.CallToolResult{
 				Content: []protocol.Content{
 					&protocol.TextContent{

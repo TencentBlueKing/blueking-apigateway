@@ -31,15 +31,6 @@ import (
 	"mcp_proxy/pkg/config"
 )
 
-func newZapSugarLogger() *zap.SugaredLogger {
-	logger, _ := zap.NewProduction()
-	// nolint: errcheck
-	defer logger.Sync() // flushes buffer, if any
-	sugar := logger.Sugar()
-
-	return sugar
-}
-
 // newSentryLogCore
 func newSentryLogCore(cfg *config.Config) (zapcore.Core, error) {
 	rawCore := zapsentry.NewCore(zapcore.Level(cfg.Sentry.ReportLogLevel), sentry.CurrentHub().Client())

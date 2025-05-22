@@ -26,6 +26,7 @@ import (
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
 
+// nolint:gocyclo
 func OpenapiToMcpToolConfig(openApiSpec *openapi3.T, operationIDMap map[string]struct{}) []*ToolConfig {
 	var toolConfigs []*ToolConfig
 	for path, pathItem := range openApiSpec.Paths.Map() {
@@ -162,7 +163,6 @@ func OpenapiToMcpToolConfig(openApiSpec *openapi3.T, operationIDMap map[string]s
 
 			toolConfig.ParamSchema = paramSchema
 			toolConfigs = append(toolConfigs, toolConfig)
-
 		}
 	}
 	return toolConfigs

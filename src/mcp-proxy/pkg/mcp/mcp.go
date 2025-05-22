@@ -43,8 +43,6 @@ type Config struct {
 
 type Mcp struct {
 	proxy *proxy.McpProxy
-	// mcp server reload interval
-	reloadInterval time.Duration
 }
 
 func Init(ctx context.Context, mcpProxy *proxy.McpProxy) (*Mcp, error) {
@@ -116,7 +114,6 @@ func LoadMcpServer(ctx context.Context, mcpProxy *proxy.McpProxy) error {
 		if err != nil {
 			return err
 		}
-
 	}
 	// 启动所有的mcp server
 	util.GoroutineWithRecovery(ctx, func() {

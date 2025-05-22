@@ -33,16 +33,12 @@ type McpServer struct {
 	Server    *server.Server
 	Transport transport.ServerTransport
 	Handler   *transport.SSEHandler
-	version   string
 	name      string
 	tools     map[string]struct{}
 	rwLock    *sync.RWMutex
 }
 
-func NewMcpServer(transport transport.ServerTransport,
-	handler *transport.SSEHandler,
-	name string,
-) *McpServer {
+func NewMcpServer(transport transport.ServerTransport, handler *transport.SSEHandler, name string) *McpServer {
 	mcpServer, err := server.NewServer(transport)
 	if err != nil {
 		panic(err)
