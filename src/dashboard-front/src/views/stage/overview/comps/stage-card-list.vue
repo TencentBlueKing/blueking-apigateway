@@ -95,8 +95,8 @@ const route = useRoute();
 const common = useCommon();
 const stageStore = useStage();
 
-const historyId = ref<number | undefined>(undefined);
-const deployId = ref<string | undefined>(undefined);
+const historyId = ref<number>();
+const deployId = ref<string>();
 const currentStage = ref<any>({});
 
 const releaseSidesliderRef = ref();

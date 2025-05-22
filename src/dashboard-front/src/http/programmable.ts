@@ -224,4 +224,4 @@ export const getDeployEvents = (apigwId: number, deploy_id: string): Promise<IEv
 export const getFinishedDeployEvents = (apigwId: number, history_id: number): Promise<IEventResponse> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/programmable/deploy/histories/${history_id}/events/`);
 
 // 查询部署历史
-export const getDeployHistories = (apigwId: number): Promise<IEventResponse> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/programmable/deploy/histories/`);
+export const getDeployHistories = (apigwId: number, data: Record<string, any>): Promise<IEventResponse> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/releases/programmable/deploy/histories/?${json2Query(data)}`);

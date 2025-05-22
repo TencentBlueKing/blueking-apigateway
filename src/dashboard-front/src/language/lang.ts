@@ -1845,6 +1845,9 @@ const lang: ILANG = {
   '可编程网关的配置信息（如后端服务、插件配置、变量配置等）均在代码仓库中声明。': ['Programmable Gateway configurations are presented in code repo.'],
   '查看开发指南': ['Dev Guide'],
   '发布可编程网关后，系统将在蓝鲸开发者中心部署一个 SaaS 以提供 API 后端服务，并自动获取其访问地址。': ['An Saas will be deployed in Paas to provide API services and its URL after deployment'],
+  '请输入已发布的环境或版本号': ['Input published stage or version'],
+  '分支': ['Branch'],
+  '部署状态': ['Deploy Status'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

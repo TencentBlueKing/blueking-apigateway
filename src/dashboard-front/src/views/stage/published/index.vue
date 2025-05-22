@@ -20,11 +20,11 @@
       </div>
       <div class="flex-row justify-content-end">
         <bk-input
+          v-model="filterData.keyword"
+          :placeholder="t('请输入已发布的环境或版本号')"
           class="ml10 mr10 operate-input"
           style="width: 500px"
-          placeholder="请输入已发布的环境或版本号"
-          v-model="filterData.keyword">
-        </bk-input>
+        />
       </div>
     </div>
     <bk-loading :loading="isLoading">
@@ -57,7 +57,7 @@
     <!-- 日志弹窗 -->
     <EventSlider
       ref="programmableLogDetailsRef"
-      :history-id="historyId"
+      :deploy-id="deployId"
     />
 
     <!-- 详情 -->
@@ -94,7 +94,11 @@ const { t } = useI18n();
 const router = useRouter();
 const common = useCommon();
 
-const filterData = ref({ keyword: '' });
+const filterData = ref({
+  keyword: '',
+  time_start: '',
+  time_end: '',
+});
 const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
   keyword: '',
   isAbnormal: false,
@@ -146,7 +150,8 @@ const {
   handleComfirm,
 } = useDatePicker(filterData);
 
-const historyId = ref();
+const historyId = ref<number>();
+const deployId = ref<string>();
 const logDetailsRef = ref(null);
 const programmableLogDetailsRef = ref(null);
 const detailId = ref();
@@ -196,7 +201,7 @@ const columns = computed(() =>
       {
         label: t('操作'),
         render: ({ row }: any) =>
-          <bk-button text theme="primary" disabled={!row.history_id} onClick={() => showLogs(row.history_id)}>
+          <bk-button text theme="primary" disabled={!row.deploy_id} onClick={() => showLogs(row.deploy_id)}>
             {t("发布日志")}
           </bk-button>,
       },
@@ -268,14 +273,15 @@ watch(() => common.isProgrammableGateway, () => {
   }, 1000 * 30);
 }, { immediate: true });
 
-const showLogs = (id: string) => {
-  historyId.value = id;
-  // 普通网关
-  if (common.curApigwData?.kind !== 1) {
-    logDetailsRef.value?.showSideslider();
-  } else {
-    // 可编程网关
+const showLogs = (id: number | string) => {
+  // 可编程网关
+  if (common.isProgrammableGateway) {
+    deployId.value = id as string;
     programmableLogDetailsRef.value?.showSideslider();
+  } else {
+    // 普通网关
+    historyId.value = id as number;
+    logDetailsRef.value?.showSideslider();
   }
 };
 
