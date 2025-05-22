@@ -116,6 +116,7 @@ class MCPServerHandler:
         # 1. fetch the app codes in mcp_server_app_permission
         app_codes = MCPServerAppPermission.objects.filter(mcp_server=mcp_server).values_list("bk_app_code", flat=True)
         if not app_codes:
+            logger.debug("no app_codes, cleanup the permissions of the mcp_server %d", mcp_server_id)
             # if no app_codes, cleanup the permissions of the mcp_server
             MCPServerHandler._cleanup_all_resource_permissions(mcp_server_id)
             return
@@ -123,6 +124,7 @@ class MCPServerHandler:
         # 2. check the resource names, and get the resource_ids
         resource_names = mcp_server.resource_names
         if not resource_names:
+            logger.debug("no resource_names, skip sync the permissions of the mcp_server %d", mcp_server_id)
             return
         resource_ids = Resource.objects.filter(gateway_id=mcp_server.gateway_id, name__in=resource_names).values_list(
             "id", flat=True
@@ -148,6 +150,7 @@ class MCPServerHandler:
 
         # 3.1 if no change, return
         if newest_virtual_app_code_resource_id_set == current_virtual_app_code_resource_id_set:
+            logger.debug("no change, skip sync the permissions of the mcp_server %d", mcp_server_id)
             return
 
         # 3.2 check to add
@@ -177,5 +180,8 @@ class MCPServerHandler:
                 continue
 
         # 3.4 add and delete
-        AppResourcePermission.objects.bulk_create(to_add)
-        AppResourcePermission.objects.filter(id__in=to_delete).delete()
+        logger.debug("add %d permissions, delete %d permissions", len(to_add), len(to_delete))
+        if to_add:
+            AppResourcePermission.objects.bulk_create(to_add)
+        if to_delete:
+            AppResourcePermission.objects.filter(id__in=to_delete).delete()
