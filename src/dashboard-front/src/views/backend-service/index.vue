@@ -4,7 +4,7 @@
       <div class="header-btn flex-row ">
         <span class="mr10">
           <bk-button
-            v-if="common.curApigwData.kind !== 1"
+            v-if="!common.isProgrammableGateway"
             v-bk-tooltips="{
               content: t('当前有版本正在发布，请稍后再进行后端服务修改'),
               disabled: !hasPublishingStage,
@@ -56,7 +56,13 @@
           <bk-table-column :label="t('关联的资源')" prop="resource_count">
             <template #default="{ data }">
               <span v-if="data?.resource_count === 0">{{ data?.resource_count }}</span>
-              <bk-button v-else text theme="primary" @click="handleResource(data)">
+              <bk-button
+                v-else
+                :disabled="common.isProgrammableGateway"
+                text
+                theme="primary"
+                @click="handleResource(data)"
+              >
                 {{ data?.resource_count }}
               </bk-button>
             </template>
@@ -217,6 +223,16 @@ const {
   },
 );
 
+watch(
+  () => tableData.value, () => {
+    updateTableEmptyConfig();
+  },
+  { deep: true },
+);
+
+watch(() => common.curApigwData.kind, () => {
+  tableKey.value = _.uniqueId();
+});
 
 const isNewCreate = (row: any) => {
   return isWithinTime(row?.updated_time) ? 'new-created' : '';
@@ -261,7 +277,6 @@ const handleEdit = async (data: any) => {
 
 // 点击关联的资源数
 const handleResource = (data: any) => {
-  console.log(data);
   const params = {
     name: 'apigwResource',
     params: {
@@ -317,17 +332,6 @@ const updateTableEmptyConfig = () => {
 const getStageListData = async () => {
   stageList.value = await getStageList(apigwId);
 };
-
-watch(
-  () => tableData.value, () => {
-    updateTableEmptyConfig();
-  },
-  { deep: true },
-);
-
-watch(() => common.curApigwData.kind, () => {
-  tableKey.value = _.uniqueId();
-});
 
 onBeforeMount(async () => {
   await getStageListData();
