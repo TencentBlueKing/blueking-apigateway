@@ -1848,6 +1848,7 @@ const lang: ILANG = {
   '请输入已发布的环境或版本号': ['Input published stage or version'],
   '分支': ['Branch'],
   '部署状态': ['Deploy Status'],
+  '尚未发布，无数据': ['No data until released'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
