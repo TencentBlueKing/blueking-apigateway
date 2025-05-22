@@ -247,7 +247,7 @@ class TestResponseRewriteConvertor:
                     "status_code": 200,
                     "body": '{"code":"ok","message":"new json body"}',
                     "headers": {
-                        "add": ["name1:value1"],
+                        "add": ["name1: value1"],
                         "set": {"key1": "value1", "key2": "value2"},
                         "remove": ["key2"],
                     },
