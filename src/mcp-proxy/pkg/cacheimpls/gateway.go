@@ -34,7 +34,7 @@ type GatewayIDKey struct {
 	ID int
 }
 
-// Key return the key string of gateway
+// Key returns the string representation of the gateway name.
 func (k GatewayIDKey) Key() string {
 	return cast.ToString(k.ID)
 }
@@ -45,7 +45,7 @@ func retrieveGatewayByID(ctx context.Context, k cache.Key) (interface{}, error) 
 	return repo.Gateway.WithContext(ctx).Where(r.ID.Eq(key.ID)).Take()
 }
 
-// GetGatewayByID GetGatewayByName will get the gateway object from cache by name
+// GetGatewayByID retrieves the gateway object from cache by its ID.
 func GetGatewayByID(ctx context.Context, id int) (gateway *model.Gateway, err error) {
 	key := GatewayIDKey{
 		ID: id,
@@ -73,7 +73,7 @@ type GatewayNameKey struct {
 // This function returns a string representation of the GatewayIDKey's ID
 func (k GatewayNameKey) Key() string {
 	// Convert the ID to a string using the cast package
-	return cast.ToString(k.Name)
+	return k.Name
 }
 
 func retrieveGatewayByName(ctx context.Context, k cache.Key) (interface{}, error) {

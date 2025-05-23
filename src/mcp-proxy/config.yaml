@@ -49,6 +49,11 @@ logger:
           jsonPath:
             - "bk_app_secret"
             - "data.#.bk_app_secret"
+  audit:
+    level: debug
+    writer: os
+    buffered: false
+    settings: { name: stdout }
 
 ## config for trace
 tracing:

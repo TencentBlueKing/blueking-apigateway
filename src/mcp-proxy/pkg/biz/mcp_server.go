@@ -25,6 +25,7 @@ import (
 	"mcp_proxy/pkg/repo"
 )
 
-func GetAllMcpServerList(ctx context.Context) ([]*model.McpServer, error) {
-	return repo.McpServer.WithContext(ctx).Find()
+func GetAllActiveMCPServers(ctx context.Context) ([]*model.MCPServer, error) {
+	q := repo.McpServer
+	return repo.McpServer.WithContext(ctx).Where(q.Status.Eq(model.McpServerStatusActive)).Find()
 }

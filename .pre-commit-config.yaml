@@ -73,7 +73,7 @@ repos:
         name: lint
         entry: bash -c 'cd src/mcp-proxy && make lint'
         language: system
-        files: src/apiserver/
+        files: src/mcp-proxy/
         pass_filenames: false
 
   - repo: https://github.com/Lucas-C/pre-commit-hooks

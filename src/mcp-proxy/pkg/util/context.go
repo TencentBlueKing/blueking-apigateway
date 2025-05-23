@@ -27,30 +27,30 @@ import (
 	"mcp_proxy/pkg/constant"
 )
 
-// SetBkUserName ...
-func SetBkUserName(c *gin.Context, userName string) {
-	c.Set(string(constant.BKUserName), userName)
+// SetBkUsername ...
+func SetBkUsername(c *gin.Context, userName string) {
+	c.Set(string(constant.BkUsername), userName)
 	if c.Request != nil {
-		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BKUserName, userName))
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BkUsername, userName))
 	}
 }
 
 func SetBkAppCode(c *gin.Context, appCode string) {
-	c.Set(string(constant.BkAPPCode), appCode)
+	c.Set(string(constant.BkAppCode), appCode)
 	if c.Request != nil {
-		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BkAPPCode, appCode))
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BkAppCode, appCode))
 	}
 }
 
 func GetBkAppCode(c *gin.Context) string {
-	appCode, ok := c.Get(string(constant.BkAPPCode))
+	appCode, ok := c.Get(string(constant.BkAppCode))
 	if !ok {
 		return ""
 	}
 	return appCode.(string)
 }
 
-func SetInnerJwtToken(c *gin.Context, jwtToken string) {
+func SetInnerJWTToken(c *gin.Context, jwtToken string) {
 	c.Set(string(constant.BkGatewayInnerJWT), jwtToken)
 	if c.Request != nil {
 		c.Request = c.Request.WithContext(
@@ -58,22 +58,37 @@ func SetInnerJwtToken(c *gin.Context, jwtToken string) {
 	}
 }
 
-func SetMcpServerID(c *gin.Context, mcpServerID int) {
-	c.Set(string(constant.McpServerID), mcpServerID)
+func SetMCPServerID(c *gin.Context, mcpServerID int) {
+	c.Set(string(constant.MCPServerID), mcpServerID)
 	if c.Request != nil {
-		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.McpServerID, mcpServerID))
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.MCPServerID, mcpServerID))
 	}
 }
 
-func GetMcpServerID(c *gin.Context) int {
-	mcpServerID, ok := c.Get(string(constant.McpServerID))
+func GetMCPServerID(c *gin.Context) int {
+	mcpServerID, ok := c.Get(string(constant.MCPServerID))
 	if !ok {
 		return 0
 	}
 	return mcpServerID.(int)
 }
 
-func GetInnerJwtTokenFromContext(ctx context.Context) string {
+func SetGatewayID(c *gin.Context, gatewayID int) {
+	c.Set(string(constant.GatewayID), gatewayID)
+	if c.Request != nil {
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.GatewayID, gatewayID))
+	}
+}
+
+func GetGatewayID(c *gin.Context) int {
+	mcpServerID, ok := c.Get(string(constant.GatewayID))
+	if !ok {
+		return 0
+	}
+	return mcpServerID.(int)
+}
+
+func GetInnerJWTTokenFromContext(ctx context.Context) string {
 	jwtToken := ctx.Value(constant.BkGatewayInnerJWT)
 	if innerJwt, ok := jwtToken.(string); ok {
 		return innerJwt
@@ -81,12 +96,12 @@ func GetInnerJwtTokenFromContext(ctx context.Context) string {
 	return ""
 }
 
-func SetBKAPITimeout(c *gin.Context, timeout int) {
-	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BKAPITimeoutKey, timeout))
+func SetBKApiTimeout(c *gin.Context, timeout int) {
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BKApiTimeout, timeout))
 }
 
-func GetBKAPITimeout(ctx context.Context) time.Duration {
-	timeout, ok := ctx.Value(constant.BKAPITimeoutKey).(int)
+func GetBKApiTimeout(ctx context.Context) time.Duration {
+	timeout, ok := ctx.Value(constant.BKApiTimeout).(int)
 	if !ok {
 		// default timeout is 1 minute
 		return time.Minute

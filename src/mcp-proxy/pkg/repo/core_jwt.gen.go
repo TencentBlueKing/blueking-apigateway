@@ -42,7 +42,7 @@ func newCoreJWT(db *gorm.DB, opts ...gen.DOOption) coreJWT {
 	_coreJWT := coreJWT{}
 
 	_coreJWT.coreJWTDo.UseDB(db, opts...)
-	_coreJWT.coreJWTDo.UseModel(&model.CoreJWT{})
+	_coreJWT.coreJWTDo.UseModel(&model.JWT{})
 
 	tableName := _coreJWT.coreJWTDo.TableName()
 	_coreJWT.ALL = field.NewAsterisk(tableName)
@@ -156,17 +156,17 @@ type ICoreJWTDo interface {
 	Count() (count int64, err error)
 	Scopes(funcs ...func(gen.Dao) gen.Dao) ICoreJWTDo
 	Unscoped() ICoreJWTDo
-	Create(values ...*model.CoreJWT) error
-	CreateInBatches(values []*model.CoreJWT, batchSize int) error
-	Save(values ...*model.CoreJWT) error
-	First() (*model.CoreJWT, error)
-	Take() (*model.CoreJWT, error)
-	Last() (*model.CoreJWT, error)
-	Find() ([]*model.CoreJWT, error)
-	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*model.CoreJWT, err error)
-	FindInBatches(result *[]*model.CoreJWT, batchSize int, fc func(tx gen.Dao, batch int) error) error
+	Create(values ...*model.JWT) error
+	CreateInBatches(values []*model.JWT, batchSize int) error
+	Save(values ...*model.JWT) error
+	First() (*model.JWT, error)
+	Take() (*model.JWT, error)
+	Last() (*model.JWT, error)
+	Find() ([]*model.JWT, error)
+	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*model.JWT, err error)
+	FindInBatches(result *[]*model.JWT, batchSize int, fc func(tx gen.Dao, batch int) error) error
 	Pluck(column field.Expr, dest interface{}) error
-	Delete(...*model.CoreJWT) (info gen.ResultInfo, err error)
+	Delete(...*model.JWT) (info gen.ResultInfo, err error)
 	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
 	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
 	Updates(value interface{}) (info gen.ResultInfo, err error)
@@ -178,9 +178,9 @@ type ICoreJWTDo interface {
 	Assign(attrs ...field.AssignExpr) ICoreJWTDo
 	Joins(fields ...field.RelationField) ICoreJWTDo
 	Preload(fields ...field.RelationField) ICoreJWTDo
-	FirstOrInit() (*model.CoreJWT, error)
-	FirstOrCreate() (*model.CoreJWT, error)
-	FindByPage(offset int, limit int) (result []*model.CoreJWT, count int64, err error)
+	FirstOrInit() (*model.JWT, error)
+	FirstOrCreate() (*model.JWT, error)
+	FindByPage(offset int, limit int) (result []*model.JWT, count int64, err error)
 	ScanByPage(result interface{}, offset int, limit int) (count int64, err error)
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
@@ -282,60 +282,60 @@ func (c coreJWTDo) Unscoped() ICoreJWTDo {
 	return c.withDO(c.DO.Unscoped())
 }
 
-func (c coreJWTDo) Create(values ...*model.CoreJWT) error {
+func (c coreJWTDo) Create(values ...*model.JWT) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return c.DO.Create(values)
 }
 
-func (c coreJWTDo) CreateInBatches(values []*model.CoreJWT, batchSize int) error {
+func (c coreJWTDo) CreateInBatches(values []*model.JWT, batchSize int) error {
 	return c.DO.CreateInBatches(values, batchSize)
 }
 
 // Save : !!! underlying implementation is different with GORM
 // The method is equivalent to executing the statement: db.Clauses(clause.OnConflict{UpdateAll: true}).Create(values)
-func (c coreJWTDo) Save(values ...*model.CoreJWT) error {
+func (c coreJWTDo) Save(values ...*model.JWT) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return c.DO.Save(values)
 }
 
-func (c coreJWTDo) First() (*model.CoreJWT, error) {
+func (c coreJWTDo) First() (*model.JWT, error) {
 	if result, err := c.DO.First(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.CoreJWT), nil
+		return result.(*model.JWT), nil
 	}
 }
 
-func (c coreJWTDo) Take() (*model.CoreJWT, error) {
+func (c coreJWTDo) Take() (*model.JWT, error) {
 	if result, err := c.DO.Take(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.CoreJWT), nil
+		return result.(*model.JWT), nil
 	}
 }
 
-func (c coreJWTDo) Last() (*model.CoreJWT, error) {
+func (c coreJWTDo) Last() (*model.JWT, error) {
 	if result, err := c.DO.Last(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.CoreJWT), nil
+		return result.(*model.JWT), nil
 	}
 }
 
-func (c coreJWTDo) Find() ([]*model.CoreJWT, error) {
+func (c coreJWTDo) Find() ([]*model.JWT, error) {
 	result, err := c.DO.Find()
-	return result.([]*model.CoreJWT), err
+	return result.([]*model.JWT), err
 }
 
 func (c coreJWTDo) FindInBatch(
 	batchSize int,
 	fc func(tx gen.Dao, batch int) error,
-) (results []*model.CoreJWT, err error) {
-	buf := make([]*model.CoreJWT, 0, batchSize)
+) (results []*model.JWT, err error) {
+	buf := make([]*model.JWT, 0, batchSize)
 	err = c.DO.FindInBatches(&buf, batchSize, func(tx gen.Dao, batch int) error {
 		defer func() { results = append(results, buf...) }()
 		return fc(tx, batch)
@@ -343,7 +343,7 @@ func (c coreJWTDo) FindInBatch(
 	return results, err
 }
 
-func (c coreJWTDo) FindInBatches(result *[]*model.CoreJWT, batchSize int, fc func(tx gen.Dao, batch int) error) error {
+func (c coreJWTDo) FindInBatches(result *[]*model.JWT, batchSize int, fc func(tx gen.Dao, batch int) error) error {
 	return c.DO.FindInBatches(result, batchSize, fc)
 }
 
@@ -369,23 +369,23 @@ func (c coreJWTDo) Preload(fields ...field.RelationField) ICoreJWTDo {
 	return &c
 }
 
-func (c coreJWTDo) FirstOrInit() (*model.CoreJWT, error) {
+func (c coreJWTDo) FirstOrInit() (*model.JWT, error) {
 	if result, err := c.DO.FirstOrInit(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.CoreJWT), nil
+		return result.(*model.JWT), nil
 	}
 }
 
-func (c coreJWTDo) FirstOrCreate() (*model.CoreJWT, error) {
+func (c coreJWTDo) FirstOrCreate() (*model.JWT, error) {
 	if result, err := c.DO.FirstOrCreate(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.CoreJWT), nil
+		return result.(*model.JWT), nil
 	}
 }
 
-func (c coreJWTDo) FindByPage(offset int, limit int) (result []*model.CoreJWT, count int64, err error) {
+func (c coreJWTDo) FindByPage(offset int, limit int) (result []*model.JWT, count int64, err error) {
 	result, err = c.Offset(offset).Limit(limit).Find()
 	if err != nil {
 		return
@@ -414,7 +414,7 @@ func (c coreJWTDo) Scan(result interface{}) (err error) {
 	return c.DO.Scan(result)
 }
 
-func (c coreJWTDo) Delete(models ...*model.CoreJWT) (result gen.ResultInfo, err error) {
+func (c coreJWTDo) Delete(models ...*model.JWT) (result gen.ResultInfo, err error) {
 	return c.DO.Delete(models)
 }
 

@@ -26,9 +26,9 @@ import (
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
 
-type McpServerConfig struct {
-	Name        string        `json:"name"` // 唯一标识name，可以是：gateway_name+stage或者其他id
-	ToolConfigs []*ToolConfig `json:"tools"`
+type MCPServerConfig struct {
+	Name  string        `json:"name"` // 唯一标识name，可以是：gateway_name+stage或者其他id
+	Tools []*ToolConfig `json:"tools"`
 }
 
 type ToolConfig struct {

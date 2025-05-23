@@ -35,7 +35,7 @@ var (
 			Help:        "How many HTTP requests processed, partitioned by status code, method and HTTP path.",
 			ConstLabels: prometheus.Labels{"service": serviceName},
 		},
-		[]string{"method", "path", "status"},
+		[]string{"method", "path", "status", "mcp_server_name"},
 	)
 
 	// RequestDuration api响应时间分布
@@ -45,7 +45,7 @@ var (
 		ConstLabels: prometheus.Labels{"service": serviceName},
 		Buckets:     []float64{50, 100, 200, 500, 1000, 2000, 5000},
 	},
-		[]string{"method", "path", "status"},
+		[]string{"method", "path", "status", "mcp_server_name"},
 	)
 )
 

@@ -43,7 +43,7 @@ func TestGetJWTPublicKey(t *testing.T) {
 
 	// valid
 	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return &model.CoreJWT{}, nil
+		return &model.JWT{}, nil
 	}
 	mockCache := memory.NewCache(
 		"mockCache", retrieveFunc, expiration, nil)

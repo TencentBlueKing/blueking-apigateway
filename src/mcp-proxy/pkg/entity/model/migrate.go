@@ -32,11 +32,11 @@ func RunGenDao() {
 	})
 	g.UseDB(database.Client())
 	g.ApplyBasic(
-		McpServer{},
+		MCPServer{},
 		McpServerAppPermission{},
-		CoreRelease{},
-		CoreReleasedResource{},
-		CoreJWT{},
+		Release{},
+		ReleasedResource{},
+		JWT{},
 		Gateway{},
 		Stage{},
 		OpenapiGatewayResourceVersionSpec{},

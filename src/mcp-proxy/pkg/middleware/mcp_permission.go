@@ -31,7 +31,7 @@ import (
 func McpServerPermissionMiddleware() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// 获取mcp server id and appCode
-		id := util.GetMcpServerID(c)
+		id := util.GetMCPServerID(c)
 		appCode := util.GetBkAppCode(c)
 		permission, err := cacheimpls.GetMcpPermission(c, appCode, id)
 		if err != nil {

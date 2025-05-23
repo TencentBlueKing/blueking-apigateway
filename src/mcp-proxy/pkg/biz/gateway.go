@@ -26,7 +26,7 @@ import (
 	"mcp_proxy/pkg/repo"
 )
 
-func GetRelease(ctx context.Context, gatewayID int, stageID int) (*model.CoreRelease, error) {
+func GetRelease(ctx context.Context, gatewayID int, stageID int) (*model.Release, error) {
 	r := repo.CoreRelease
 	return repo.CoreRelease.WithContext(ctx).Where(r.GatewayID.Eq(gatewayID), r.StageID.Eq(stageID)).First()
 }
@@ -39,7 +39,7 @@ func GetOpenapiGatewayResourceVersionSpec(ctx context.Context, gatewayID int, re
 		r.GatewayID.Eq(gatewayID), r.ResourceVersionID.Eq(resourceVersionID)).First()
 }
 
-func GetJwtInfoByGatewayName(ctx context.Context, gatewayName string) (*model.CoreJWT, error) {
+func GetJwtInfoByGatewayName(ctx context.Context, gatewayName string) (*model.JWT, error) {
 	// get gateway
 	gateway, err := cacheimpls.GetGatewayByName(ctx, gatewayName)
 	if err != nil {

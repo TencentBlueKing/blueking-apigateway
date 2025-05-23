@@ -42,7 +42,7 @@ func newMcpServer(db *gorm.DB, opts ...gen.DOOption) mcpServer {
 	_mcpServer := mcpServer{}
 
 	_mcpServer.mcpServerDo.UseDB(db, opts...)
-	_mcpServer.mcpServerDo.UseModel(&model.McpServer{})
+	_mcpServer.mcpServerDo.UseModel(&model.MCPServer{})
 
 	tableName := _mcpServer.mcpServerDo.TableName()
 	_mcpServer.ALL = field.NewAsterisk(tableName)
@@ -178,17 +178,17 @@ type IMcpServerDo interface {
 	Count() (count int64, err error)
 	Scopes(funcs ...func(gen.Dao) gen.Dao) IMcpServerDo
 	Unscoped() IMcpServerDo
-	Create(values ...*model.McpServer) error
-	CreateInBatches(values []*model.McpServer, batchSize int) error
-	Save(values ...*model.McpServer) error
-	First() (*model.McpServer, error)
-	Take() (*model.McpServer, error)
-	Last() (*model.McpServer, error)
-	Find() ([]*model.McpServer, error)
-	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*model.McpServer, err error)
-	FindInBatches(result *[]*model.McpServer, batchSize int, fc func(tx gen.Dao, batch int) error) error
+	Create(values ...*model.MCPServer) error
+	CreateInBatches(values []*model.MCPServer, batchSize int) error
+	Save(values ...*model.MCPServer) error
+	First() (*model.MCPServer, error)
+	Take() (*model.MCPServer, error)
+	Last() (*model.MCPServer, error)
+	Find() ([]*model.MCPServer, error)
+	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*model.MCPServer, err error)
+	FindInBatches(result *[]*model.MCPServer, batchSize int, fc func(tx gen.Dao, batch int) error) error
 	Pluck(column field.Expr, dest interface{}) error
-	Delete(...*model.McpServer) (info gen.ResultInfo, err error)
+	Delete(...*model.MCPServer) (info gen.ResultInfo, err error)
 	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
 	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
 	Updates(value interface{}) (info gen.ResultInfo, err error)
@@ -200,9 +200,9 @@ type IMcpServerDo interface {
 	Assign(attrs ...field.AssignExpr) IMcpServerDo
 	Joins(fields ...field.RelationField) IMcpServerDo
 	Preload(fields ...field.RelationField) IMcpServerDo
-	FirstOrInit() (*model.McpServer, error)
-	FirstOrCreate() (*model.McpServer, error)
-	FindByPage(offset int, limit int) (result []*model.McpServer, count int64, err error)
+	FirstOrInit() (*model.MCPServer, error)
+	FirstOrCreate() (*model.MCPServer, error)
+	FindByPage(offset int, limit int) (result []*model.MCPServer, count int64, err error)
 	ScanByPage(result interface{}, offset int, limit int) (count int64, err error)
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
@@ -304,60 +304,60 @@ func (m mcpServerDo) Unscoped() IMcpServerDo {
 	return m.withDO(m.DO.Unscoped())
 }
 
-func (m mcpServerDo) Create(values ...*model.McpServer) error {
+func (m mcpServerDo) Create(values ...*model.MCPServer) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return m.DO.Create(values)
 }
 
-func (m mcpServerDo) CreateInBatches(values []*model.McpServer, batchSize int) error {
+func (m mcpServerDo) CreateInBatches(values []*model.MCPServer, batchSize int) error {
 	return m.DO.CreateInBatches(values, batchSize)
 }
 
 // Save : !!! underlying implementation is different with GORM
 // The method is equivalent to executing the statement: db.Clauses(clause.OnConflict{UpdateAll: true}).Create(values)
-func (m mcpServerDo) Save(values ...*model.McpServer) error {
+func (m mcpServerDo) Save(values ...*model.MCPServer) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return m.DO.Save(values)
 }
 
-func (m mcpServerDo) First() (*model.McpServer, error) {
+func (m mcpServerDo) First() (*model.MCPServer, error) {
 	if result, err := m.DO.First(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.McpServer), nil
+		return result.(*model.MCPServer), nil
 	}
 }
 
-func (m mcpServerDo) Take() (*model.McpServer, error) {
+func (m mcpServerDo) Take() (*model.MCPServer, error) {
 	if result, err := m.DO.Take(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.McpServer), nil
+		return result.(*model.MCPServer), nil
 	}
 }
 
-func (m mcpServerDo) Last() (*model.McpServer, error) {
+func (m mcpServerDo) Last() (*model.MCPServer, error) {
 	if result, err := m.DO.Last(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.McpServer), nil
+		return result.(*model.MCPServer), nil
 	}
 }
 
-func (m mcpServerDo) Find() ([]*model.McpServer, error) {
+func (m mcpServerDo) Find() ([]*model.MCPServer, error) {
 	result, err := m.DO.Find()
-	return result.([]*model.McpServer), err
+	return result.([]*model.MCPServer), err
 }
 
 func (m mcpServerDo) FindInBatch(
 	batchSize int,
 	fc func(tx gen.Dao, batch int) error,
-) (results []*model.McpServer, err error) {
-	buf := make([]*model.McpServer, 0, batchSize)
+) (results []*model.MCPServer, err error) {
+	buf := make([]*model.MCPServer, 0, batchSize)
 	err = m.DO.FindInBatches(&buf, batchSize, func(tx gen.Dao, batch int) error {
 		defer func() { results = append(results, buf...) }()
 		return fc(tx, batch)
@@ -366,7 +366,7 @@ func (m mcpServerDo) FindInBatch(
 }
 
 func (m mcpServerDo) FindInBatches(
-	result *[]*model.McpServer,
+	result *[]*model.MCPServer,
 	batchSize int,
 	fc func(tx gen.Dao, batch int) error,
 ) error {
@@ -395,23 +395,23 @@ func (m mcpServerDo) Preload(fields ...field.RelationField) IMcpServerDo {
 	return &m
 }
 
-func (m mcpServerDo) FirstOrInit() (*model.McpServer, error) {
+func (m mcpServerDo) FirstOrInit() (*model.MCPServer, error) {
 	if result, err := m.DO.FirstOrInit(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.McpServer), nil
+		return result.(*model.MCPServer), nil
 	}
 }
 
-func (m mcpServerDo) FirstOrCreate() (*model.McpServer, error) {
+func (m mcpServerDo) FirstOrCreate() (*model.MCPServer, error) {
 	if result, err := m.DO.FirstOrCreate(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.McpServer), nil
+		return result.(*model.MCPServer), nil
 	}
 }
 
-func (m mcpServerDo) FindByPage(offset int, limit int) (result []*model.McpServer, count int64, err error) {
+func (m mcpServerDo) FindByPage(offset int, limit int) (result []*model.MCPServer, count int64, err error) {
 	result, err = m.Offset(offset).Limit(limit).Find()
 	if err != nil {
 		return
@@ -440,7 +440,7 @@ func (m mcpServerDo) Scan(result interface{}) (err error) {
 	return m.DO.Scan(result)
 }
 
-func (m mcpServerDo) Delete(models ...*model.McpServer) (result gen.ResultInfo, err error) {
+func (m mcpServerDo) Delete(models ...*model.MCPServer) (result gen.ResultInfo, err error) {
 	return m.DO.Delete(models)
 }
 

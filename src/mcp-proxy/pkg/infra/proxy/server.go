@@ -29,7 +29,7 @@ import (
 	"mcp_proxy/pkg/util"
 )
 
-type McpServer struct {
+type MCPServer struct {
 	Server    *server.Server
 	Transport transport.ServerTransport
 	Handler   *transport.SSEHandler
@@ -38,12 +38,12 @@ type McpServer struct {
 	rwLock    *sync.RWMutex
 }
 
-func NewMcpServer(transport transport.ServerTransport, handler *transport.SSEHandler, name string) *McpServer {
+func NewMCPServer(transport transport.ServerTransport, handler *transport.SSEHandler, name string) *MCPServer {
 	mcpServer, err := server.NewServer(transport)
 	if err != nil {
 		panic(err)
 	}
-	return &McpServer{
+	return &MCPServer{
 		Server:    mcpServer,
 		Transport: transport,
 		Handler:   handler,
@@ -54,14 +54,14 @@ func NewMcpServer(transport transport.ServerTransport, handler *transport.SSEHan
 }
 
 // IsRegisteredTool checks if the tool is registered
-func (s *McpServer) IsRegisteredTool(toolName string) bool {
+func (s *MCPServer) IsRegisteredTool(toolName string) bool {
 	s.rwLock.RLock()
 	defer s.rwLock.RUnlock()
 	_, ok := s.tools[toolName]
 	return ok
 }
 
-func (s *McpServer) GetTools() []string {
+func (s *MCPServer) GetTools() []string {
 	s.rwLock.RLock()
 	defer s.rwLock.RUnlock()
 	toolNames := make([]string, 0, len(s.tools))
@@ -71,7 +71,7 @@ func (s *McpServer) GetTools() []string {
 	return toolNames
 }
 
-func (s *McpServer) Run(ctx context.Context) {
+func (s *MCPServer) Run(ctx context.Context) {
 	util.GoroutineWithRecovery(ctx, func() {
 		if err := s.Server.Run(); err != nil {
 			panic(err)
@@ -79,7 +79,7 @@ func (s *McpServer) Run(ctx context.Context) {
 	})
 }
 
-func (s *McpServer) Shutdown(ctx context.Context) {
+func (s *MCPServer) Shutdown(ctx context.Context) {
 	util.GoroutineWithRecovery(ctx, func() {
 		if err := s.Server.Shutdown(ctx); err != nil {
 			panic(err)
@@ -87,7 +87,7 @@ func (s *McpServer) Shutdown(ctx context.Context) {
 	})
 }
 
-func (s *McpServer) RegisterTool(tool *protocol.Tool, toolHandler server.ToolHandlerFunc) {
+func (s *MCPServer) RegisterTool(tool *protocol.Tool, toolHandler server.ToolHandlerFunc) {
 	s.Server.RegisterTool(tool, toolHandler)
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
@@ -95,13 +95,13 @@ func (s *McpServer) RegisterTool(tool *protocol.Tool, toolHandler server.ToolHan
 }
 
 // UnregisterTool unregisterTool unregisters a tool from the server
-func (s *McpServer) UnregisterTool(toolName string) {
+func (s *MCPServer) UnregisterTool(toolName string) {
 	s.Server.UnregisterTool(toolName)
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
 	delete(s.tools, toolName)
 }
 
-func (s *McpServer) RegisterResources(resource *protocol.Resource, resourceHandler server.ResourceHandlerFunc) {
+func (s *MCPServer) RegisterResources(resource *protocol.Resource, resourceHandler server.ResourceHandlerFunc) {
 	s.Server.RegisterResource(resource, resourceHandler)
 }

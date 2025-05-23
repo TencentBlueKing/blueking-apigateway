@@ -36,29 +36,29 @@ func (Stage) TableName() string {
 	return "core_stage"
 }
 
-type CoreJWT struct {
+type JWT struct {
 	GatewayID           int    `gorm:"column:api_id;primaryKey"`
 	PrivateKey          string `gorm:"column:private_key;type:longtext"`
 	PublicKey           string `gorm:"column:public_key;type:longtext"`
 	EncryptedPrivateKey string `gorm:"column:encrypted_private_key;type:longtext"`
 }
 
-func (CoreJWT) TableName() string {
+func (JWT) TableName() string {
 	return "core_jwt"
 }
 
-type CoreRelease struct {
+type Release struct {
 	ID                int `gorm:"primaryKey;autoIncrement;column:id"`
 	GatewayID         int `gorm:"column:api_id"`
 	ResourceVersionID int `gorm:"column:resource_version_id"`
 	StageID           int `gorm:"column:stage_id;uniqueIndex"`
 }
 
-func (CoreRelease) TableName() string {
+func (Release) TableName() string {
 	return "core_release"
 }
 
-type CoreReleasedResource struct {
+type ReleasedResource struct {
 	ID                int    `gorm:"primaryKey;autoIncrement;column:id"`
 	ResourceVersionID int    `gorm:"column:resource_version_id"`
 	ResourceID        int    `gorm:"column:resource_id"`
@@ -69,11 +69,11 @@ type CoreReleasedResource struct {
 	Data              string `gorm:"column:data;type:longtext"`
 }
 
-func (CoreReleasedResource) TableName() string {
+func (ReleasedResource) TableName() string {
 	return "core_released_resource"
 }
 
-type CoreResource struct {
+type Resource struct {
 	ID                   int    `gorm:"primaryKey;autoIncrement;column:id"`
 	Name                 string `gorm:"column:name;size:256"`
 	Description          string `gorm:"column:description;size:512"`
@@ -88,11 +88,11 @@ type CoreResource struct {
 	EnableWebsocket      bool   `gorm:"column:enable_websocket"`
 }
 
-func (CoreResource) TableName() string {
+func (Resource) TableName() string {
 	return "core_resource"
 }
 
-type CoreResourceVersion struct {
+type ResourceVersion struct {
 	ID            int    `gorm:"primaryKey;autoIncrement;column:id"`
 	Data          string `gorm:"column:data;type:longtext"`
 	GatewayID     int64  `gorm:"column:api_id"`
@@ -100,7 +100,7 @@ type CoreResourceVersion struct {
 	SchemaVersion string `gorm:"column:schema_version;size:32;default:'1.0'"`
 }
 
-func (CoreResourceVersion) TableName() string {
+func (ResourceVersion) TableName() string {
 	return "core_resource_version"
 }
 

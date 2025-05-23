@@ -57,10 +57,10 @@ var (
 		newRandomDuration(30),
 	)
 
-	// mcp cache
-	mcpCache = memory.NewCache(
-		"mcp",
-		tracedFuncWrapper("mcp", retrieveMcpByName),
+	// mcp server cache
+	mcpServerCache = memory.NewCache(
+		"mcp_server",
+		tracedFuncWrapper("mcp_server", retrieveMcpByName),
 		12*time.Hour,
 		newRandomDuration(30),
 	)
@@ -74,7 +74,7 @@ var (
 	)
 
 	// app_code + mcp_server_id => permission, may change frequently
-	appGatewayPermissionCache = memory.NewCache(
+	appMCPServerPermission = memory.NewCache(
 		"app_mcp_server_permission",
 		tracedFuncWrapper("app_mcp_server_permission", retrievePermission),
 		1*time.Minute,

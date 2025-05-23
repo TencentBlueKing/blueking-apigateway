@@ -28,6 +28,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
+	"mcp_proxy/pkg/cacheimpls"
 	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/infra/sentry"
 	"mcp_proxy/pkg/util"
@@ -68,6 +69,21 @@ func logContextFields(c *gin.Context) []zap.Field {
 	newWriter := &bodyLogWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
 	c.Writer = newWriter
 
+	// set inner app code
+	mcpName := c.Param("name")
+	if mcpName != "" {
+		// get mcp_id by name
+		mcp, err := cacheimpls.GetMcpByName(c.Request.Context(), mcpName)
+		if err != nil {
+			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("get mcp by name %s failed: %v", mcpName, err))
+			c.Abort()
+		}
+		// set mcp_id to ctx
+		util.SetMCPServerID(c, mcp.ID)
+		// set gateway_id to ctx
+		util.SetGatewayID(c, mcp.GatewayID)
+	}
+
 	c.Next()
 
 	duration := time.Since(start)
@@ -80,6 +96,9 @@ func logContextFields(c *gin.Context) []zap.Field {
 
 	params := stringx.Truncate(c.Request.URL.RawQuery, 1024)
 	fields := []zap.Field{
+		zap.Int("gateway_id", util.GetGatewayID(c)),
+		zap.String("mcp_server_name", mcpName),
+		zap.Int("mcp_server_id", util.GetMCPServerID(c)),
 		zap.String("method", c.Request.Method),
 		zap.String("path", c.Request.URL.Path),
 		zap.String("params", params),
@@ -89,7 +108,6 @@ func logContextFields(c *gin.Context) []zap.Field {
 		zap.String("request_id", c.GetString(util.RequestIDKey)),
 		zap.String("instance_id", c.GetString(util.InstanceIDKey)),
 		zap.String("client_ip", c.ClientIP()),
-		// zap.Any("error", e),
 	}
 
 	if hasError {

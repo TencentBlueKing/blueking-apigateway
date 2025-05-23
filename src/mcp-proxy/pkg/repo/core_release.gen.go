@@ -42,7 +42,7 @@ func newCoreRelease(db *gorm.DB, opts ...gen.DOOption) coreRelease {
 	_coreRelease := coreRelease{}
 
 	_coreRelease.coreReleaseDo.UseDB(db, opts...)
-	_coreRelease.coreReleaseDo.UseModel(&model.CoreRelease{})
+	_coreRelease.coreReleaseDo.UseModel(&model.Release{})
 
 	tableName := _coreRelease.coreReleaseDo.TableName()
 	_coreRelease.ALL = field.NewAsterisk(tableName)
@@ -158,17 +158,17 @@ type ICoreReleaseDo interface {
 	Count() (count int64, err error)
 	Scopes(funcs ...func(gen.Dao) gen.Dao) ICoreReleaseDo
 	Unscoped() ICoreReleaseDo
-	Create(values ...*model.CoreRelease) error
-	CreateInBatches(values []*model.CoreRelease, batchSize int) error
-	Save(values ...*model.CoreRelease) error
-	First() (*model.CoreRelease, error)
-	Take() (*model.CoreRelease, error)
-	Last() (*model.CoreRelease, error)
-	Find() ([]*model.CoreRelease, error)
-	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*model.CoreRelease, err error)
-	FindInBatches(result *[]*model.CoreRelease, batchSize int, fc func(tx gen.Dao, batch int) error) error
+	Create(values ...*model.Release) error
+	CreateInBatches(values []*model.Release, batchSize int) error
+	Save(values ...*model.Release) error
+	First() (*model.Release, error)
+	Take() (*model.Release, error)
+	Last() (*model.Release, error)
+	Find() ([]*model.Release, error)
+	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*model.Release, err error)
+	FindInBatches(result *[]*model.Release, batchSize int, fc func(tx gen.Dao, batch int) error) error
 	Pluck(column field.Expr, dest interface{}) error
-	Delete(...*model.CoreRelease) (info gen.ResultInfo, err error)
+	Delete(...*model.Release) (info gen.ResultInfo, err error)
 	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
 	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
 	Updates(value interface{}) (info gen.ResultInfo, err error)
@@ -180,9 +180,9 @@ type ICoreReleaseDo interface {
 	Assign(attrs ...field.AssignExpr) ICoreReleaseDo
 	Joins(fields ...field.RelationField) ICoreReleaseDo
 	Preload(fields ...field.RelationField) ICoreReleaseDo
-	FirstOrInit() (*model.CoreRelease, error)
-	FirstOrCreate() (*model.CoreRelease, error)
-	FindByPage(offset int, limit int) (result []*model.CoreRelease, count int64, err error)
+	FirstOrInit() (*model.Release, error)
+	FirstOrCreate() (*model.Release, error)
+	FindByPage(offset int, limit int) (result []*model.Release, count int64, err error)
 	ScanByPage(result interface{}, offset int, limit int) (count int64, err error)
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
@@ -284,60 +284,60 @@ func (c coreReleaseDo) Unscoped() ICoreReleaseDo {
 	return c.withDO(c.DO.Unscoped())
 }
 
-func (c coreReleaseDo) Create(values ...*model.CoreRelease) error {
+func (c coreReleaseDo) Create(values ...*model.Release) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return c.DO.Create(values)
 }
 
-func (c coreReleaseDo) CreateInBatches(values []*model.CoreRelease, batchSize int) error {
+func (c coreReleaseDo) CreateInBatches(values []*model.Release, batchSize int) error {
 	return c.DO.CreateInBatches(values, batchSize)
 }
 
 // Save : !!! underlying implementation is different with GORM
 // The method is equivalent to executing the statement: db.Clauses(clause.OnConflict{UpdateAll: true}).Create(values)
-func (c coreReleaseDo) Save(values ...*model.CoreRelease) error {
+func (c coreReleaseDo) Save(values ...*model.Release) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return c.DO.Save(values)
 }
 
-func (c coreReleaseDo) First() (*model.CoreRelease, error) {
+func (c coreReleaseDo) First() (*model.Release, error) {
 	if result, err := c.DO.First(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.CoreRelease), nil
+		return result.(*model.Release), nil
 	}
 }
 
-func (c coreReleaseDo) Take() (*model.CoreRelease, error) {
+func (c coreReleaseDo) Take() (*model.Release, error) {
 	if result, err := c.DO.Take(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.CoreRelease), nil
+		return result.(*model.Release), nil
 	}
 }
 
-func (c coreReleaseDo) Last() (*model.CoreRelease, error) {
+func (c coreReleaseDo) Last() (*model.Release, error) {
 	if result, err := c.DO.Last(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.CoreRelease), nil
+		return result.(*model.Release), nil
 	}
 }
 
-func (c coreReleaseDo) Find() ([]*model.CoreRelease, error) {
+func (c coreReleaseDo) Find() ([]*model.Release, error) {
 	result, err := c.DO.Find()
-	return result.([]*model.CoreRelease), err
+	return result.([]*model.Release), err
 }
 
 func (c coreReleaseDo) FindInBatch(
 	batchSize int,
 	fc func(tx gen.Dao, batch int) error,
-) (results []*model.CoreRelease, err error) {
-	buf := make([]*model.CoreRelease, 0, batchSize)
+) (results []*model.Release, err error) {
+	buf := make([]*model.Release, 0, batchSize)
 	err = c.DO.FindInBatches(&buf, batchSize, func(tx gen.Dao, batch int) error {
 		defer func() { results = append(results, buf...) }()
 		return fc(tx, batch)
@@ -346,7 +346,7 @@ func (c coreReleaseDo) FindInBatch(
 }
 
 func (c coreReleaseDo) FindInBatches(
-	result *[]*model.CoreRelease,
+	result *[]*model.Release,
 	batchSize int,
 	fc func(tx gen.Dao, batch int) error,
 ) error {
@@ -375,23 +375,23 @@ func (c coreReleaseDo) Preload(fields ...field.RelationField) ICoreReleaseDo {
 	return &c
 }
 
-func (c coreReleaseDo) FirstOrInit() (*model.CoreRelease, error) {
+func (c coreReleaseDo) FirstOrInit() (*model.Release, error) {
 	if result, err := c.DO.FirstOrInit(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.CoreRelease), nil
+		return result.(*model.Release), nil
 	}
 }
 
-func (c coreReleaseDo) FirstOrCreate() (*model.CoreRelease, error) {
+func (c coreReleaseDo) FirstOrCreate() (*model.Release, error) {
 	if result, err := c.DO.FirstOrCreate(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.CoreRelease), nil
+		return result.(*model.Release), nil
 	}
 }
 
-func (c coreReleaseDo) FindByPage(offset int, limit int) (result []*model.CoreRelease, count int64, err error) {
+func (c coreReleaseDo) FindByPage(offset int, limit int) (result []*model.Release, count int64, err error) {
 	result, err = c.Offset(offset).Limit(limit).Find()
 	if err != nil {
 		return
@@ -420,7 +420,7 @@ func (c coreReleaseDo) Scan(result interface{}) (err error) {
 	return c.DO.Scan(result)
 }
 
-func (c coreReleaseDo) Delete(models ...*model.CoreRelease) (result gen.ResultInfo, err error) {
+func (c coreReleaseDo) Delete(models ...*model.Release) (result gen.ResultInfo, err error) {
 	return c.DO.Delete(models)
 }
 

@@ -41,22 +41,22 @@ type Config struct {
 	openapiFileData *openapi3.T
 }
 
-type Mcp struct {
-	proxy *proxy.McpProxy
+type MCP struct {
+	proxy *proxy.MCPProxy
 }
 
-func Init(ctx context.Context, mcpProxy *proxy.McpProxy) (*Mcp, error) {
+func Init(ctx context.Context, mcpProxy *proxy.MCPProxy) (*MCP, error) {
 	// 查询当前所有配置的mcp server
 	err := LoadMcpServer(ctx, mcpProxy)
 	if err != nil {
 		return nil, err
 	}
-	return &Mcp{
+	return &MCP{
 		proxy: mcpProxy,
 	}, nil
 }
 
-func (m *Mcp) Run(ctx context.Context) *proxy.McpProxy {
+func (m *MCP) Run(ctx context.Context) *proxy.MCPProxy {
 	ticker := time.NewTicker(config.G.McpServer.Interval)
 	util.GoroutineWithRecovery(ctx, func() {
 		for range ticker.C {
@@ -72,12 +72,15 @@ func (m *Mcp) Run(ctx context.Context) *proxy.McpProxy {
 	return m.proxy
 }
 
-func LoadMcpServer(ctx context.Context, mcpProxy *proxy.McpProxy) error {
-	servers, err := biz.GetAllMcpServerList(ctx)
+func LoadMcpServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
+	servers, err := biz.GetAllActiveMCPServers(ctx)
 	if err != nil {
 		return err
 	}
+
+	activeMcpServer := make(map[string]struct{})
 	for _, server := range servers {
+		activeMcpServer[server.Name] = struct{}{}
 		registeredToolMap := make(map[string]struct{})
 		for _, tool := range server.ResourceNames {
 			registeredToolMap[tool] = struct{}{}
@@ -87,22 +90,15 @@ func LoadMcpServer(ctx context.Context, mcpProxy *proxy.McpProxy) error {
 			logging.GetLogger().Errorf("get mcp server[name:%s] openapi file error: %v", server.Name, err)
 			continue
 		}
-		if !mcpProxy.IsMcpServerExist(server.Name) {
-			err = mcpProxy.AddMcpServerFromOpenApiSpec(server.Name, conf.openapiFileData, registeredToolMap)
+		if !mcpProxy.IsMCPServerExist(server.Name) {
+			err = mcpProxy.AddMCPServerFromOpenApiSpec(server.Name, conf.openapiFileData, registeredToolMap)
 			if err != nil {
 				logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", server.Name, err)
 				continue
 			}
 			continue
 		}
-		mcpServer := mcpProxy.GetMcpServer(server.Name)
-
-		// 如果mcp server已经存在，判断状态是否停用
-		if !server.IsActive() {
-			// 停用mcp server
-			mcpProxy.DeleteMcpServer(server.Name)
-			continue
-		}
+		mcpServer := mcpProxy.GetMCPServer(server.Name)
 		for _, tool := range mcpServer.GetTools() {
 			// 如果当前mcp server的工具不在当前生效的资源列表中，删除该工具
 			if !arrutil.Contains(server.ResourceNames, tool) {
@@ -110,9 +106,16 @@ func LoadMcpServer(ctx context.Context, mcpProxy *proxy.McpProxy) error {
 				continue
 			}
 		}
-		err = mcpProxy.AddMcpServerFromOpenApiSpec(server.Name, conf.openapiFileData, registeredToolMap)
+		err = mcpProxy.AddMCPServerFromOpenApiSpec(server.Name, conf.openapiFileData, registeredToolMap)
 		if err != nil {
 			return err
+		}
+	}
+
+	// 删除已经不存在的mcp server
+	for _, server := range mcpProxy.GetActiveMCPServerNames() {
+		if _, ok := activeMcpServer[server]; !ok {
+			mcpProxy.DeleteMCPServer(server)
 		}
 	}
 	// 启动所有的mcp server
@@ -122,7 +125,7 @@ func LoadMcpServer(ctx context.Context, mcpProxy *proxy.McpProxy) error {
 	return nil
 }
 
-func GetMcpServerConfig(ctx context.Context, server *model.McpServer) (*Config, error) {
+func GetMcpServerConfig(ctx context.Context, server *model.MCPServer) (*Config, error) {
 	// 查看每个mcp server当前生效的资源版本
 	release, err := biz.GetRelease(ctx, server.GatewayID, server.StageID)
 	if err != nil {

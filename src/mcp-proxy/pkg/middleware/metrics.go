@@ -38,16 +38,18 @@ func Metrics() gin.HandlerFunc {
 		duration := time.Since(start)
 		status := strconv.Itoa(c.Writer.Status())
 		metric.RequestCount.With(prometheus.Labels{
-			"method": c.Request.Method,
-			"path":   c.FullPath(),
-			"status": status,
+			"method":          c.Request.Method,
+			"path":            c.FullPath(),
+			"status":          status,
+			"mcp_server_name": c.Param("name"),
 		}).Inc()
 
 		// request duration, in ms
 		metric.RequestDuration.With(prometheus.Labels{
-			"method": c.Request.Method,
-			"path":   c.FullPath(),
-			"status": status,
+			"method":          c.Request.Method,
+			"path":            c.FullPath(),
+			"status":          status,
+			"mcp_server_name": c.Param("name"),
 		}).Observe(float64(duration) / float64(time.Microsecond))
 	}
 }

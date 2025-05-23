@@ -88,10 +88,10 @@ func GetAuditLoggerWithContext(ctx context.Context) *zap.Logger {
 	if requestID, ok := ctx.Value(constant.RequestID).(string); ok {
 		ctxLogger = auditLogger.With(zap.String("request_id", requestID))
 	}
-	if appCode, ok := ctx.Value(constant.BkAPPCode).(string); ok {
+	if appCode, ok := ctx.Value(constant.BkAppCode).(string); ok {
 		ctxLogger = auditLogger.With(zap.String("bk_app_code", appCode))
 	}
-	if mcpServerID, ok := ctx.Value(constant.McpServerID).(string); ok {
+	if mcpServerID, ok := ctx.Value(constant.MCPServerID).(string); ok {
 		ctxLogger = auditLogger.With(zap.String("mcp_server_id", mcpServerID))
 	}
 	return ctxLogger

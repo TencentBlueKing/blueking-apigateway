@@ -37,6 +37,11 @@ logger:
     writer: file
     buffered: true
     settings: {name: core_api.log, size: 100, backups: 10, age: 7, path: ./}
+  audit:
+    level: info
+    writer: file
+    buffered: true
+    settings: {name: core_api.log, size: 100, backups: 10, age: 7, path: ./}
 
 
 

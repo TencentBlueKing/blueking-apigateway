@@ -42,7 +42,7 @@ func newCoreReleasedResource(db *gorm.DB, opts ...gen.DOOption) coreReleasedReso
 	_coreReleasedResource := coreReleasedResource{}
 
 	_coreReleasedResource.coreReleasedResourceDo.UseDB(db, opts...)
-	_coreReleasedResource.coreReleasedResourceDo.UseModel(&model.CoreReleasedResource{})
+	_coreReleasedResource.coreReleasedResourceDo.UseModel(&model.ReleasedResource{})
 
 	tableName := _coreReleasedResource.coreReleasedResourceDo.TableName()
 	_coreReleasedResource.ALL = field.NewAsterisk(tableName)
@@ -176,17 +176,17 @@ type ICoreReleasedResourceDo interface {
 	Count() (count int64, err error)
 	Scopes(funcs ...func(gen.Dao) gen.Dao) ICoreReleasedResourceDo
 	Unscoped() ICoreReleasedResourceDo
-	Create(values ...*model.CoreReleasedResource) error
-	CreateInBatches(values []*model.CoreReleasedResource, batchSize int) error
-	Save(values ...*model.CoreReleasedResource) error
-	First() (*model.CoreReleasedResource, error)
-	Take() (*model.CoreReleasedResource, error)
-	Last() (*model.CoreReleasedResource, error)
-	Find() ([]*model.CoreReleasedResource, error)
-	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*model.CoreReleasedResource, err error)
-	FindInBatches(result *[]*model.CoreReleasedResource, batchSize int, fc func(tx gen.Dao, batch int) error) error
+	Create(values ...*model.ReleasedResource) error
+	CreateInBatches(values []*model.ReleasedResource, batchSize int) error
+	Save(values ...*model.ReleasedResource) error
+	First() (*model.ReleasedResource, error)
+	Take() (*model.ReleasedResource, error)
+	Last() (*model.ReleasedResource, error)
+	Find() ([]*model.ReleasedResource, error)
+	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*model.ReleasedResource, err error)
+	FindInBatches(result *[]*model.ReleasedResource, batchSize int, fc func(tx gen.Dao, batch int) error) error
 	Pluck(column field.Expr, dest interface{}) error
-	Delete(...*model.CoreReleasedResource) (info gen.ResultInfo, err error)
+	Delete(...*model.ReleasedResource) (info gen.ResultInfo, err error)
 	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
 	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
 	Updates(value interface{}) (info gen.ResultInfo, err error)
@@ -198,9 +198,9 @@ type ICoreReleasedResourceDo interface {
 	Assign(attrs ...field.AssignExpr) ICoreReleasedResourceDo
 	Joins(fields ...field.RelationField) ICoreReleasedResourceDo
 	Preload(fields ...field.RelationField) ICoreReleasedResourceDo
-	FirstOrInit() (*model.CoreReleasedResource, error)
-	FirstOrCreate() (*model.CoreReleasedResource, error)
-	FindByPage(offset int, limit int) (result []*model.CoreReleasedResource, count int64, err error)
+	FirstOrInit() (*model.ReleasedResource, error)
+	FirstOrCreate() (*model.ReleasedResource, error)
+	FindByPage(offset int, limit int) (result []*model.ReleasedResource, count int64, err error)
 	ScanByPage(result interface{}, offset int, limit int) (count int64, err error)
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
@@ -302,60 +302,60 @@ func (c coreReleasedResourceDo) Unscoped() ICoreReleasedResourceDo {
 	return c.withDO(c.DO.Unscoped())
 }
 
-func (c coreReleasedResourceDo) Create(values ...*model.CoreReleasedResource) error {
+func (c coreReleasedResourceDo) Create(values ...*model.ReleasedResource) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return c.DO.Create(values)
 }
 
-func (c coreReleasedResourceDo) CreateInBatches(values []*model.CoreReleasedResource, batchSize int) error {
+func (c coreReleasedResourceDo) CreateInBatches(values []*model.ReleasedResource, batchSize int) error {
 	return c.DO.CreateInBatches(values, batchSize)
 }
 
 // Save : !!! underlying implementation is different with GORM
 // The method is equivalent to executing the statement: db.Clauses(clause.OnConflict{UpdateAll: true}).Create(values)
-func (c coreReleasedResourceDo) Save(values ...*model.CoreReleasedResource) error {
+func (c coreReleasedResourceDo) Save(values ...*model.ReleasedResource) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return c.DO.Save(values)
 }
 
-func (c coreReleasedResourceDo) First() (*model.CoreReleasedResource, error) {
+func (c coreReleasedResourceDo) First() (*model.ReleasedResource, error) {
 	if result, err := c.DO.First(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.CoreReleasedResource), nil
+		return result.(*model.ReleasedResource), nil
 	}
 }
 
-func (c coreReleasedResourceDo) Take() (*model.CoreReleasedResource, error) {
+func (c coreReleasedResourceDo) Take() (*model.ReleasedResource, error) {
 	if result, err := c.DO.Take(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.CoreReleasedResource), nil
+		return result.(*model.ReleasedResource), nil
 	}
 }
 
-func (c coreReleasedResourceDo) Last() (*model.CoreReleasedResource, error) {
+func (c coreReleasedResourceDo) Last() (*model.ReleasedResource, error) {
 	if result, err := c.DO.Last(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.CoreReleasedResource), nil
+		return result.(*model.ReleasedResource), nil
 	}
 }
 
-func (c coreReleasedResourceDo) Find() ([]*model.CoreReleasedResource, error) {
+func (c coreReleasedResourceDo) Find() ([]*model.ReleasedResource, error) {
 	result, err := c.DO.Find()
-	return result.([]*model.CoreReleasedResource), err
+	return result.([]*model.ReleasedResource), err
 }
 
 func (c coreReleasedResourceDo) FindInBatch(
 	batchSize int,
 	fc func(tx gen.Dao, batch int) error,
-) (results []*model.CoreReleasedResource, err error) {
-	buf := make([]*model.CoreReleasedResource, 0, batchSize)
+) (results []*model.ReleasedResource, err error) {
+	buf := make([]*model.ReleasedResource, 0, batchSize)
 	err = c.DO.FindInBatches(&buf, batchSize, func(tx gen.Dao, batch int) error {
 		defer func() { results = append(results, buf...) }()
 		return fc(tx, batch)
@@ -364,7 +364,7 @@ func (c coreReleasedResourceDo) FindInBatch(
 }
 
 func (c coreReleasedResourceDo) FindInBatches(
-	result *[]*model.CoreReleasedResource,
+	result *[]*model.ReleasedResource,
 	batchSize int,
 	fc func(tx gen.Dao, batch int) error,
 ) error {
@@ -393,26 +393,26 @@ func (c coreReleasedResourceDo) Preload(fields ...field.RelationField) ICoreRele
 	return &c
 }
 
-func (c coreReleasedResourceDo) FirstOrInit() (*model.CoreReleasedResource, error) {
+func (c coreReleasedResourceDo) FirstOrInit() (*model.ReleasedResource, error) {
 	if result, err := c.DO.FirstOrInit(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.CoreReleasedResource), nil
+		return result.(*model.ReleasedResource), nil
 	}
 }
 
-func (c coreReleasedResourceDo) FirstOrCreate() (*model.CoreReleasedResource, error) {
+func (c coreReleasedResourceDo) FirstOrCreate() (*model.ReleasedResource, error) {
 	if result, err := c.DO.FirstOrCreate(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.CoreReleasedResource), nil
+		return result.(*model.ReleasedResource), nil
 	}
 }
 
 func (c coreReleasedResourceDo) FindByPage(
 	offset int,
 	limit int,
-) (result []*model.CoreReleasedResource, count int64, err error) {
+) (result []*model.ReleasedResource, count int64, err error) {
 	result, err = c.Offset(offset).Limit(limit).Find()
 	if err != nil {
 		return
@@ -441,7 +441,7 @@ func (c coreReleasedResourceDo) Scan(result interface{}) (err error) {
 	return c.DO.Scan(result)
 }
 
-func (c coreReleasedResourceDo) Delete(models ...*model.CoreReleasedResource) (result gen.ResultInfo, err error) {
+func (c coreReleasedResourceDo) Delete(models ...*model.ReleasedResource) (result gen.ResultInfo, err error) {
 	return c.DO.Delete(models)
 }
 

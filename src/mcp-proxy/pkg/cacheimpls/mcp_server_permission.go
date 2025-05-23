@@ -61,7 +61,7 @@ func GetMcpPermission(ctx context.Context, bkAppCode string, mcpServerID int) (
 		AppCode:     bkAppCode,
 	}
 	var value interface{}
-	value, err = cacheGet(ctx, appGatewayPermissionCache, key)
+	value, err = cacheGet(ctx, appMCPServerPermission, key)
 	if err != nil {
 		return
 	}

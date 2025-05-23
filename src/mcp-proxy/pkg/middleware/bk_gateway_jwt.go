@@ -29,7 +29,6 @@ import (
 	"github.com/spf13/cast"
 
 	"mcp_proxy/pkg/biz"
-	"mcp_proxy/pkg/cacheimpls"
 	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/constant"
 	"mcp_proxy/pkg/util"
@@ -92,47 +91,32 @@ func BkGatewayJWTAuthMiddleware() func(c *gin.Context) {
 			return
 		}
 		// verify token
-		err = verifyJwtToken(claims)
+		err = verifyJWTToken(claims)
 		if err != nil {
 			util.UnauthorizedJSONResponse(c, err.Error())
 			c.Abort()
 			return
 		}
 		util.SetBkAppCode(c, claims.App.AppCode)
-		util.SetBkUserName(c, claims.User.Username)
+		util.SetBkUsername(c, claims.User.Username)
 
 		// sign inner jwt
-		err = SignBKInnerJWTToken(c, claims, []byte(jwtInfo.PrivateKey))
+		err = SignBkInnerJWTToken(c, claims, []byte(jwtInfo.PrivateKey))
 		if err != nil {
 			util.SystemErrorJSONResponse(c, err)
 			c.Abort()
 			return
 		}
-		util.SetInnerJwtToken(c, signedToken)
-		util.SetBKAPITimeout(c, cast.ToInt(c.Request.Header.Get(constant.BKAPITimeoutHeaderKey)))
+		util.SetInnerJWTToken(c, signedToken)
+		util.SetBKApiTimeout(c, cast.ToInt(c.Request.Header.Get(constant.BKApiTimeoutHeaderKey)))
 		c.Next()
 	}
 }
 
-func SignBKInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKey []byte) error {
-	// set inner app code
-	mcpName := c.Param("name")
-	if mcpName == "" {
-		return fmt.Errorf("mcp name is empty")
-	}
-
-	// get mcp_id by name
-	mcp, err := cacheimpls.GetMcpByName(c.Request.Context(), mcpName)
-	if err != nil {
-		return fmt.Errorf("get mcp by name fail, err=%w", err)
-	}
-
-	// set mcp_id to ctx
-	util.SetMcpServerID(c, mcp.ID)
-
+func SignBkInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKey []byte) error {
 	innerJwtClaims := CustomClaims{
 		App: AppInfo{
-			AppCode:  fmt.Sprintf(constant.BkInnerAppCodeFormat, mcp.ID, claims.App.AppCode),
+			AppCode:  fmt.Sprintf(constant.BkInnerAppCodeFormat, util.GetMCPServerID(c), claims.App.AppCode),
 			Verified: claims.App.Verified,
 		},
 		User: UserInfo{
@@ -152,7 +136,7 @@ func SignBKInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKey []byte
 		return err
 	}
 	// set inner jwt to context
-	util.SetInnerJwtToken(c, token)
+	util.SetInnerJWTToken(c, token)
 	return nil
 }
 
@@ -189,8 +173,8 @@ func parseBKJWTToken(tokenString string, publicKey []byte) (*CustomClaims, error
 	return claims, nil
 }
 
-// verifyJwtToken verify the jwtToken
-func verifyJwtToken(claims *CustomClaims) error {
+// verifyJWTToken verify the jwtToken
+func verifyJWTToken(claims *CustomClaims) error {
 	// verify app info
 	if claims.App.AppCode == "" {
 		return ErrAPIGatewayJWTAppInfoNoAppCode

@@ -28,35 +28,35 @@ import (
 	"mcp_proxy/pkg/repo"
 )
 
-// McpKey  is the key of mcp
-type McpKey struct {
+// MCPKey  is the key of mcp
+type MCPKey struct {
 	Name string
 }
 
 // Key return the key string of stage
-func (k McpKey) Key() string {
+func (k MCPKey) Key() string {
 	return k.Name
 }
 
 func retrieveMcpByName(ctx context.Context, k cache.Key) (interface{}, error) {
-	key := k.(McpKey)
+	key := k.(MCPKey)
 	r := repo.McpServer
 	return repo.McpServer.WithContext(ctx).Where(r.Name.Eq(key.Key())).Take()
 }
 
 // GetMcpByName will return mcp by name from cache
-func GetMcpByName(ctx context.Context, name string) (mcp *model.McpServer, err error) {
-	key := McpKey{
+func GetMcpByName(ctx context.Context, name string) (mcp *model.MCPServer, err error) {
+	key := MCPKey{
 		Name: name,
 	}
 	var value interface{}
-	value, err = cacheGet(ctx, mcpCache, key)
+	value, err = cacheGet(ctx, mcpServerCache, key)
 	if err != nil {
 		return
 	}
 
 	var ok bool
-	mcp, ok = value.(*model.McpServer)
+	mcp, ok = value.(*model.MCPServer)
 	if !ok {
 		err = errors.New("not model.mcp in cache")
 		return

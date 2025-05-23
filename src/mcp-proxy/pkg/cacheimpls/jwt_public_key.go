@@ -46,7 +46,7 @@ func retrieveJWTInfo(ctx context.Context, k cache.Key) (interface{}, error) {
 }
 
 // GetJWTInfo will get the jwt info from cache by gatewayID
-func GetJWTInfo(ctx context.Context, gatewayID int) (jwt *model.CoreJWT, err error) {
+func GetJWTInfo(ctx context.Context, gatewayID int) (jwt *model.JWT, err error) {
 	key := JWTInfoCacheKey{
 		GatewayID: gatewayID,
 	}
@@ -57,7 +57,7 @@ func GetJWTInfo(ctx context.Context, gatewayID int) (jwt *model.CoreJWT, err err
 	}
 
 	var ok bool
-	jwt, ok = value.(*model.CoreJWT)
+	jwt, ok = value.(*model.JWT)
 	if !ok {
 		err = errors.New("not model.CoreJWT in cache")
 		return

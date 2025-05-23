@@ -30,7 +30,7 @@ const (
 	McpServerStatusInactive = 0
 )
 
-type McpServer struct {
+type MCPServer struct {
 	ID            int         `gorm:"primaryKey;autoIncrement;column:id"`
 	Name          string      `gorm:"column:name;size:64;uniqueIndex"`
 	Description   string      `gorm:"column:description;size:512"`
@@ -42,11 +42,11 @@ type McpServer struct {
 	StageID       int         `gorm:"column:stage_id"`
 }
 
-func (m *McpServer) IsActive() bool {
+func (m *MCPServer) IsActive() bool {
 	return m.Status == McpServerStatusActive
 }
 
-func (m *McpServer) TableName() string {
+func (m *MCPServer) TableName() string {
 	return "mcp_server"
 }
 

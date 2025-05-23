@@ -23,5 +23,5 @@ var (
 	Version   = "0.0.0"
 	Commit    = "none"
 	BuildTime = "unknown"
-	GoVersion = "1.20.X"
+	GoVersion = "1.23.X"
 )

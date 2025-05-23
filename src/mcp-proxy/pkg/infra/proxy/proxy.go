@@ -43,73 +43,83 @@ import (
 	"mcp_proxy/pkg/util"
 )
 
-type McpProxy struct {
-	mcpServers map[string]*McpServer
+type MCPProxy struct {
+	mcpServers map[string]*MCPServer
 	rwLock     *sync.RWMutex
 	// 运行的mcp server
-	activeMcpServer map[string]*McpServer
+	activeMcpServer map[string]*MCPServer
 }
 
-func NewMcpProxy() *McpProxy {
-	return &McpProxy{
-		mcpServers:      map[string]*McpServer{},
+func NewMcpProxy() *MCPProxy {
+	return &MCPProxy{
+		mcpServers:      map[string]*MCPServer{},
 		rwLock:          &sync.RWMutex{},
-		activeMcpServer: map[string]*McpServer{},
+		activeMcpServer: map[string]*MCPServer{},
 	}
 }
 
-func (m *McpProxy) AddMcpServer(name string, mcpServer *McpServer) {
+func (m *MCPProxy) AddMCPServer(name string, mcpServer *MCPServer) {
 	m.rwLock.Lock()
 	defer m.rwLock.Unlock()
 	log.Printf("add mcp server: %s\n", name)
 	m.mcpServers[name] = mcpServer
 }
 
-func (m *McpProxy) IsMcpServerExist(name string) bool {
+func (m *MCPProxy) GetActiveMCPServerNames() []string {
+	m.rwLock.Lock()
+	defer m.rwLock.Unlock()
+	var names []string
+	for name := range m.activeMcpServer {
+		names = append(names, name)
+	}
+	return names
+}
+
+func (m *MCPProxy) IsMCPServerExist(name string) bool {
 	m.rwLock.RLock()
 	defer m.rwLock.RUnlock()
 	_, ok := m.mcpServers[name]
 	return ok
 }
 
-func (m *McpProxy) GetMcpServer(name string) *McpServer {
+func (m *MCPProxy) GetMCPServer(name string) *MCPServer {
 	m.rwLock.RLock()
 	defer m.rwLock.RUnlock()
 	return m.mcpServers[name]
 }
 
-func (m *McpProxy) AddMcpServerFromConfigs(configs []*McpServerConfig) error {
+func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 	for _, config := range configs {
 		trans, sseHandler, err := transport.NewSSEServerTransportAndHandler(
 			fmt.Sprintf("/%s/sse/message", config.Name))
 		if err != nil {
 			return err
 		}
-		mcpServer := NewMcpServer(trans, sseHandler, config.Name)
+		mcpServer := NewMCPServer(trans, sseHandler, config.Name)
 		// register tool
-		for _, toolConfig := range config.ToolConfigs {
+		for _, toolConfig := range config.Tools {
 			bytes, _ := toolConfig.ParamSchema.JSONSchemaBytes()
 			tool := protocol.NewToolWithRawSchema(toolConfig.Name, toolConfig.Description, bytes)
 			toolHandler := genToolHandler(toolConfig)
 			mcpServer.RegisterTool(tool, toolHandler)
 		}
-		m.AddMcpServer(config.Name, mcpServer)
+		m.AddMCPServer(config.Name, mcpServer)
 	}
 	return nil
 }
 
 // nolint:gofmt
-func (m *McpProxy) AddMcpServerFromOpenApiSpec(name string, openApiSpec *openapi3.T,
+func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi3.T,
 	operationIDMap map[string]struct{},
 ) error {
-	mcpServerConfig := &McpServerConfig{
-		Name:        name,
-		ToolConfigs: OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
+	mcpServerConfig := &MCPServerConfig{
+		Name:  name,
+		Tools: OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
 	}
-	return m.AddMcpServerFromConfigs([]*McpServerConfig{mcpServerConfig})
+	return m.AddMCPServerFromConfigs([]*MCPServerConfig{mcpServerConfig})
 }
 
-func (m *McpProxy) SseHandler() gin.HandlerFunc {
+func (m *MCPProxy) SseHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		name := c.Param("name")
 		if _, ok := m.mcpServers[name]; !ok {
@@ -121,7 +131,7 @@ func (m *McpProxy) SseHandler() gin.HandlerFunc {
 	}
 }
 
-func (m *McpProxy) SseMessageHandler() gin.HandlerFunc {
+func (m *MCPProxy) SseMessageHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		name := c.Param("name")
 		if _, ok := m.mcpServers[name]; !ok {
@@ -133,7 +143,7 @@ func (m *McpProxy) SseMessageHandler() gin.HandlerFunc {
 	}
 }
 
-func (m *McpProxy) Run(ctx context.Context) {
+func (m *MCPProxy) Run(ctx context.Context) {
 	m.rwLock.RLock()
 	defer m.rwLock.RUnlock()
 	for _, mcpServer := range m.mcpServers {
@@ -145,8 +155,8 @@ func (m *McpProxy) Run(ctx context.Context) {
 	}
 }
 
-// DeleteMcpServer delete and shutdown mcp server
-func (m *McpProxy) DeleteMcpServer(name string) {
+// DeleteMCPServer delete and shutdown mcp server
+func (m *MCPProxy) DeleteMCPServer(name string) {
 	m.rwLock.Lock()
 	defer m.rwLock.Unlock()
 	if _, ok := m.mcpServers[name]; !ok {
@@ -163,7 +173,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 	handler := func(ctx context.Context, request *protocol.CallToolRequest) (*protocol.CallToolResult, error) {
 		auditLog := logging.GetAuditLoggerWithContext(ctx)
 		auditLog = auditLog.With(zap.String("tool", toolApiConfig.String()))
-		innerJwt := util.GetInnerJwtTokenFromContext(ctx)
+		innerJwt := util.GetInnerJWTTokenFromContext(ctx)
 		auditLog.Info("call tool", zap.Any("request", request.RawArguments))
 		var handlerRequest HandlerRequest
 		err := json.Unmarshal(request.RawArguments, &handlerRequest)
@@ -176,7 +186,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 		client := http.DefaultClient
-		client.Timeout = util.GetBKAPITimeout(ctx)
+		client.Timeout = util.GetBKApiTimeout(ctx)
 		client.Transport = tr
 		requestParam := runtime.ClientRequestWriterFunc(func(req runtime.ClientRequest, _ strfmt.Registry) error {
 			// 设置innerJwt
