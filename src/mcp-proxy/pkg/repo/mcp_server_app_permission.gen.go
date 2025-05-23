@@ -42,7 +42,7 @@ func newMcpServerAppPermission(db *gorm.DB, opts ...gen.DOOption) mcpServerAppPe
 	_mcpServerAppPermission := mcpServerAppPermission{}
 
 	_mcpServerAppPermission.mcpServerAppPermissionDo.UseDB(db, opts...)
-	_mcpServerAppPermission.mcpServerAppPermissionDo.UseModel(&model.McpServerAppPermission{})
+	_mcpServerAppPermission.mcpServerAppPermissionDo.UseModel(&model.MCPServerAppPermission{})
 
 	tableName := _mcpServerAppPermission.mcpServerAppPermissionDo.TableName()
 	_mcpServerAppPermission.ALL = field.NewAsterisk(tableName)
@@ -164,20 +164,20 @@ type IMcpServerAppPermissionDo interface {
 	Count() (count int64, err error)
 	Scopes(funcs ...func(gen.Dao) gen.Dao) IMcpServerAppPermissionDo
 	Unscoped() IMcpServerAppPermissionDo
-	Create(values ...*model.McpServerAppPermission) error
-	CreateInBatches(values []*model.McpServerAppPermission, batchSize int) error
-	Save(values ...*model.McpServerAppPermission) error
-	First() (*model.McpServerAppPermission, error)
-	Take() (*model.McpServerAppPermission, error)
-	Last() (*model.McpServerAppPermission, error)
-	Find() ([]*model.McpServerAppPermission, error)
+	Create(values ...*model.MCPServerAppPermission) error
+	CreateInBatches(values []*model.MCPServerAppPermission, batchSize int) error
+	Save(values ...*model.MCPServerAppPermission) error
+	First() (*model.MCPServerAppPermission, error)
+	Take() (*model.MCPServerAppPermission, error)
+	Last() (*model.MCPServerAppPermission, error)
+	Find() ([]*model.MCPServerAppPermission, error)
 	FindInBatch(
 		batchSize int,
 		fc func(tx gen.Dao, batch int) error,
-	) (results []*model.McpServerAppPermission, err error)
-	FindInBatches(result *[]*model.McpServerAppPermission, batchSize int, fc func(tx gen.Dao, batch int) error) error
+	) (results []*model.MCPServerAppPermission, err error)
+	FindInBatches(result *[]*model.MCPServerAppPermission, batchSize int, fc func(tx gen.Dao, batch int) error) error
 	Pluck(column field.Expr, dest interface{}) error
-	Delete(...*model.McpServerAppPermission) (info gen.ResultInfo, err error)
+	Delete(...*model.MCPServerAppPermission) (info gen.ResultInfo, err error)
 	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
 	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
 	Updates(value interface{}) (info gen.ResultInfo, err error)
@@ -189,9 +189,9 @@ type IMcpServerAppPermissionDo interface {
 	Assign(attrs ...field.AssignExpr) IMcpServerAppPermissionDo
 	Joins(fields ...field.RelationField) IMcpServerAppPermissionDo
 	Preload(fields ...field.RelationField) IMcpServerAppPermissionDo
-	FirstOrInit() (*model.McpServerAppPermission, error)
-	FirstOrCreate() (*model.McpServerAppPermission, error)
-	FindByPage(offset int, limit int) (result []*model.McpServerAppPermission, count int64, err error)
+	FirstOrInit() (*model.MCPServerAppPermission, error)
+	FirstOrCreate() (*model.MCPServerAppPermission, error)
+	FindByPage(offset int, limit int) (result []*model.MCPServerAppPermission, count int64, err error)
 	ScanByPage(result interface{}, offset int, limit int) (count int64, err error)
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
@@ -293,60 +293,60 @@ func (m mcpServerAppPermissionDo) Unscoped() IMcpServerAppPermissionDo {
 	return m.withDO(m.DO.Unscoped())
 }
 
-func (m mcpServerAppPermissionDo) Create(values ...*model.McpServerAppPermission) error {
+func (m mcpServerAppPermissionDo) Create(values ...*model.MCPServerAppPermission) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return m.DO.Create(values)
 }
 
-func (m mcpServerAppPermissionDo) CreateInBatches(values []*model.McpServerAppPermission, batchSize int) error {
+func (m mcpServerAppPermissionDo) CreateInBatches(values []*model.MCPServerAppPermission, batchSize int) error {
 	return m.DO.CreateInBatches(values, batchSize)
 }
 
 // Save : !!! underlying implementation is different with GORM
 // The method is equivalent to executing the statement: db.Clauses(clause.OnConflict{UpdateAll: true}).Create(values)
-func (m mcpServerAppPermissionDo) Save(values ...*model.McpServerAppPermission) error {
+func (m mcpServerAppPermissionDo) Save(values ...*model.MCPServerAppPermission) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return m.DO.Save(values)
 }
 
-func (m mcpServerAppPermissionDo) First() (*model.McpServerAppPermission, error) {
+func (m mcpServerAppPermissionDo) First() (*model.MCPServerAppPermission, error) {
 	if result, err := m.DO.First(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.McpServerAppPermission), nil
+		return result.(*model.MCPServerAppPermission), nil
 	}
 }
 
-func (m mcpServerAppPermissionDo) Take() (*model.McpServerAppPermission, error) {
+func (m mcpServerAppPermissionDo) Take() (*model.MCPServerAppPermission, error) {
 	if result, err := m.DO.Take(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.McpServerAppPermission), nil
+		return result.(*model.MCPServerAppPermission), nil
 	}
 }
 
-func (m mcpServerAppPermissionDo) Last() (*model.McpServerAppPermission, error) {
+func (m mcpServerAppPermissionDo) Last() (*model.MCPServerAppPermission, error) {
 	if result, err := m.DO.Last(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.McpServerAppPermission), nil
+		return result.(*model.MCPServerAppPermission), nil
 	}
 }
 
-func (m mcpServerAppPermissionDo) Find() ([]*model.McpServerAppPermission, error) {
+func (m mcpServerAppPermissionDo) Find() ([]*model.MCPServerAppPermission, error) {
 	result, err := m.DO.Find()
-	return result.([]*model.McpServerAppPermission), err
+	return result.([]*model.MCPServerAppPermission), err
 }
 
 func (m mcpServerAppPermissionDo) FindInBatch(
 	batchSize int,
 	fc func(tx gen.Dao, batch int) error,
-) (results []*model.McpServerAppPermission, err error) {
-	buf := make([]*model.McpServerAppPermission, 0, batchSize)
+) (results []*model.MCPServerAppPermission, err error) {
+	buf := make([]*model.MCPServerAppPermission, 0, batchSize)
 	err = m.DO.FindInBatches(&buf, batchSize, func(tx gen.Dao, batch int) error {
 		defer func() { results = append(results, buf...) }()
 		return fc(tx, batch)
@@ -355,7 +355,7 @@ func (m mcpServerAppPermissionDo) FindInBatch(
 }
 
 func (m mcpServerAppPermissionDo) FindInBatches(
-	result *[]*model.McpServerAppPermission,
+	result *[]*model.MCPServerAppPermission,
 	batchSize int,
 	fc func(tx gen.Dao, batch int) error,
 ) error {
@@ -384,26 +384,26 @@ func (m mcpServerAppPermissionDo) Preload(fields ...field.RelationField) IMcpSer
 	return &m
 }
 
-func (m mcpServerAppPermissionDo) FirstOrInit() (*model.McpServerAppPermission, error) {
+func (m mcpServerAppPermissionDo) FirstOrInit() (*model.MCPServerAppPermission, error) {
 	if result, err := m.DO.FirstOrInit(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.McpServerAppPermission), nil
+		return result.(*model.MCPServerAppPermission), nil
 	}
 }
 
-func (m mcpServerAppPermissionDo) FirstOrCreate() (*model.McpServerAppPermission, error) {
+func (m mcpServerAppPermissionDo) FirstOrCreate() (*model.MCPServerAppPermission, error) {
 	if result, err := m.DO.FirstOrCreate(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.McpServerAppPermission), nil
+		return result.(*model.MCPServerAppPermission), nil
 	}
 }
 
 func (m mcpServerAppPermissionDo) FindByPage(
 	offset int,
 	limit int,
-) (result []*model.McpServerAppPermission, count int64, err error) {
+) (result []*model.MCPServerAppPermission, count int64, err error) {
 	result, err = m.Offset(offset).Limit(limit).Find()
 	if err != nil {
 		return
@@ -432,7 +432,7 @@ func (m mcpServerAppPermissionDo) Scan(result interface{}) (err error) {
 	return m.DO.Scan(result)
 }
 
-func (m mcpServerAppPermissionDo) Delete(models ...*model.McpServerAppPermission) (result gen.ResultInfo, err error) {
+func (m mcpServerAppPermissionDo) Delete(models ...*model.MCPServerAppPermission) (result gen.ResultInfo, err error) {
 	return m.DO.Delete(models)
 }
 

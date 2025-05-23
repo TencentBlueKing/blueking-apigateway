@@ -96,12 +96,14 @@ func GetInnerJWTTokenFromContext(ctx context.Context) string {
 	return ""
 }
 
-func SetBKApiTimeout(c *gin.Context, timeout int) {
-	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BKApiTimeout, timeout))
+func SetBkApiTimeout(c *gin.Context, timeout int) {
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BkApiTimeout, timeout))
 }
 
-func GetBKApiTimeout(ctx context.Context) time.Duration {
-	timeout, ok := ctx.Value(constant.BKApiTimeout).(int)
+// GetBkApiTimeout returns the timeout duration for the BK API call
+func GetBkApiTimeout(ctx context.Context) time.Duration {
+	// Get the timeout value from the context
+	timeout, ok := ctx.Value(constant.BkApiTimeout).(int)
 	if !ok {
 		// default timeout is 1 minute
 		return time.Minute

@@ -73,7 +73,7 @@ func logContextFields(c *gin.Context) []zap.Field {
 	mcpName := c.Param("name")
 	if mcpName != "" {
 		// get mcp_id by name
-		mcp, err := cacheimpls.GetMcpByName(c.Request.Context(), mcpName)
+		mcp, err := cacheimpls.GetMCPServerByName(c.Request.Context(), mcpName)
 		if err != nil {
 			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("get mcp by name %s failed: %v", mcpName, err))
 			c.Abort()

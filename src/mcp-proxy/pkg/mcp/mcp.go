@@ -47,7 +47,7 @@ type MCP struct {
 
 func Init(ctx context.Context, mcpProxy *proxy.MCPProxy) (*MCP, error) {
 	// 查询当前所有配置的mcp server
-	err := LoadMcpServer(ctx, mcpProxy)
+	err := LoadMCPServer(ctx, mcpProxy)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (m *MCP) Run(ctx context.Context) *proxy.MCPProxy {
 	util.GoroutineWithRecovery(ctx, func() {
 		for range ticker.C {
 			logging.GetLogger().Infof("reload mcp server start")
-			err := LoadMcpServer(ctx, m.proxy)
+			err := LoadMCPServer(ctx, m.proxy)
 			if err != nil {
 				logging.GetLogger().Errorf("reload mcp server error: %v", err)
 				continue
@@ -72,7 +72,7 @@ func (m *MCP) Run(ctx context.Context) *proxy.MCPProxy {
 	return m.proxy
 }
 
-func LoadMcpServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
+func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 	servers, err := biz.GetAllActiveMCPServers(ctx)
 	if err != nil {
 		return err
@@ -85,7 +85,7 @@ func LoadMcpServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 		for _, tool := range server.ResourceNames {
 			registeredToolMap[tool] = struct{}{}
 		}
-		conf, err := GetMcpServerConfig(ctx, server)
+		conf, err := GetMCPServerConfig(ctx, server)
 		if err != nil {
 			logging.GetLogger().Errorf("get mcp server[name:%s] openapi file error: %v", server.Name, err)
 			continue
@@ -125,7 +125,7 @@ func LoadMcpServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 	return nil
 }
 
-func GetMcpServerConfig(ctx context.Context, server *model.MCPServer) (*Config, error) {
+func GetMCPServerConfig(ctx context.Context, server *model.MCPServer) (*Config, error) {
 	// 查看每个mcp server当前生效的资源版本
 	release, err := biz.GetRelease(ctx, server.GatewayID, server.StageID)
 	if err != nil {

@@ -26,8 +26,8 @@ const (
 
 	BkAPIAuthorizationHeaderKey = "X-Bkapi-Authorization"
 
-	// BKApiTimeoutHeaderKey is a key to set the timeout in header
-	BKApiTimeoutHeaderKey = "X-Bkapi-Timeout"
+	// BkApiTimeoutHeaderKey is a key to set the timeout in header
+	BkApiTimeoutHeaderKey = "X-Bkapi-Timeout"
 )
 
 type CtxKey string
@@ -39,7 +39,7 @@ const (
 	MCPServerID       CtxKey = "mcp_server_id"
 	GatewayID         CtxKey = "gateway_id"
 	RequestID         CtxKey = "request_id"
-	BKApiTimeout      CtxKey = "bk_api_timeout"
+	BkApiTimeout      CtxKey = "bk_api_timeout"
 )
 
 const BkInnerAppCodeFormat = "v_%d_%s" // v_{mcp_server_id}_{bk_app_code}

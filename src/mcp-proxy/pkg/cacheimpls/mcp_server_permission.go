@@ -29,35 +29,35 @@ import (
 	"mcp_proxy/pkg/repo"
 )
 
-// McpPermissionCacheKey is the key of mcp permission
-type McpPermissionCacheKey struct {
-	McpServerID int
+// MCPPermissionCacheKey is the key of mcp permission
+type MCPPermissionCacheKey struct {
+	MCPServerID int
 	AppCode     string
 }
 
 // Key return the key string of jwt public key
-// This function returns a string representation of the GatewayID field of the McpPermissionCacheKey struct
-func (k McpPermissionCacheKey) Key() string {
+// This function returns a string representation of the GatewayID field of the MCPPermissionCacheKey struct
+func (k MCPPermissionCacheKey) Key() string {
 	// Convert the GatewayID field to a string using the cast.ToString function
-	return fmt.Sprintf("%d:%s", k.McpServerID, k.AppCode)
+	return fmt.Sprintf("%d:%s", k.MCPServerID, k.AppCode)
 }
 
 // This function retrieves a permission from the cache using a given key
-func retrievePermission(ctx context.Context, k cache.Key) (interface{}, error) {
+func retrieveMCPServerPermission(ctx context.Context, k cache.Key) (interface{}, error) {
 	// Cast the key to the correct type
-	key := k.(McpPermissionCacheKey)
+	key := k.(MCPPermissionCacheKey)
 	// Set the repository to the McpServerAppPermission
 	r := repo.McpServerAppPermission
 	// Use the CoreJWT repository to query the database for the permission
-	return repo.CoreJWT.WithContext(ctx).Where(r.McpServerId.Eq(key.McpServerID), r.BkAppCode.Eq(key.AppCode)).Take()
+	return repo.CoreJWT.WithContext(ctx).Where(r.McpServerId.Eq(key.MCPServerID), r.BkAppCode.Eq(key.AppCode)).Take()
 }
 
-// GetMcpPermission will get the mcp permission from cache by mcpServerID and appCode
-func GetMcpPermission(ctx context.Context, bkAppCode string, mcpServerID int) (
-	permission *model.McpServerAppPermission, err error,
+// GetMCPServerPermission will get the mcp permission from cache by mcpServerID and appCode
+func GetMCPServerPermission(ctx context.Context, bkAppCode string, mcpServerID int) (
+	permission *model.MCPServerAppPermission, err error,
 ) {
-	key := McpPermissionCacheKey{
-		McpServerID: mcpServerID,
+	key := MCPPermissionCacheKey{
+		MCPServerID: mcpServerID,
 		AppCode:     bkAppCode,
 	}
 	var value interface{}
@@ -67,7 +67,7 @@ func GetMcpPermission(ctx context.Context, bkAppCode string, mcpServerID int) (
 	}
 
 	var ok bool
-	permission, ok = value.(*model.McpServerAppPermission)
+	permission, ok = value.(*model.MCPServerAppPermission)
 	if !ok {
 		err = errors.New("not model.McpServerAppPermission in cache")
 		return

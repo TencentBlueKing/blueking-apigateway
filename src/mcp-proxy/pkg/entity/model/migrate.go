@@ -33,7 +33,7 @@ func RunGenDao() {
 	g.UseDB(database.Client())
 	g.ApplyBasic(
 		MCPServer{},
-		McpServerAppPermission{},
+		MCPServerAppPermission{},
 		Release{},
 		ReleasedResource{},
 		JWT{},

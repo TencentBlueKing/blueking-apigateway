@@ -28,12 +28,12 @@ import (
 	"mcp_proxy/pkg/util"
 )
 
-func McpServerPermissionMiddleware() func(c *gin.Context) {
+func MCPServerPermissionMiddleware() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// 获取mcp server id and appCode
 		id := util.GetMCPServerID(c)
 		appCode := util.GetBkAppCode(c)
-		permission, err := cacheimpls.GetMcpPermission(c, appCode, id)
+		permission, err := cacheimpls.GetMCPServerPermission(c, appCode, id)
 		if err != nil {
 			util.BadRequestErrorJSONResponse(c, err.Error())
 			c.Abort()

@@ -28,25 +28,25 @@ import (
 	"mcp_proxy/pkg/repo"
 )
 
-// MCPKey  is the key of mcp
-type MCPKey struct {
+// MCPServerKey is the key of mcp
+type MCPServerKey struct {
 	Name string
 }
 
 // Key return the key string of stage
-func (k MCPKey) Key() string {
+func (k MCPServerKey) Key() string {
 	return k.Name
 }
 
-func retrieveMcpByName(ctx context.Context, k cache.Key) (interface{}, error) {
-	key := k.(MCPKey)
+func retrieveMCPServerByName(ctx context.Context, k cache.Key) (interface{}, error) {
+	key := k.(MCPServerKey)
 	r := repo.McpServer
 	return repo.McpServer.WithContext(ctx).Where(r.Name.Eq(key.Key())).Take()
 }
 
-// GetMcpByName will return mcp by name from cache
-func GetMcpByName(ctx context.Context, name string) (mcp *model.MCPServer, err error) {
-	key := MCPKey{
+// GetMCPServerByName will return mcp by name from cache
+func GetMCPServerByName(ctx context.Context, name string) (mcp *model.MCPServer, err error) {
+	key := MCPServerKey{
 		Name: name,
 	}
 	var value interface{}

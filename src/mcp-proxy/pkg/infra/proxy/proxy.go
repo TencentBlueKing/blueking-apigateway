@@ -47,14 +47,14 @@ type MCPProxy struct {
 	mcpServers map[string]*MCPServer
 	rwLock     *sync.RWMutex
 	// 运行的mcp server
-	activeMcpServer map[string]*MCPServer
+	activeMCPServer map[string]*MCPServer
 }
 
-func NewMcpProxy() *MCPProxy {
+func NewMCPProxy() *MCPProxy {
 	return &MCPProxy{
 		mcpServers:      map[string]*MCPServer{},
 		rwLock:          &sync.RWMutex{},
-		activeMcpServer: map[string]*MCPServer{},
+		activeMCPServer: map[string]*MCPServer{},
 	}
 }
 
@@ -69,7 +69,7 @@ func (m *MCPProxy) GetActiveMCPServerNames() []string {
 	m.rwLock.Lock()
 	defer m.rwLock.Unlock()
 	var names []string
-	for name := range m.activeMcpServer {
+	for name := range m.activeMCPServer {
 		names = append(names, name)
 	}
 	return names
@@ -147,11 +147,11 @@ func (m *MCPProxy) Run(ctx context.Context) {
 	m.rwLock.RLock()
 	defer m.rwLock.RUnlock()
 	for _, mcpServer := range m.mcpServers {
-		if _, ok := m.activeMcpServer[mcpServer.name]; ok {
+		if _, ok := m.activeMCPServer[mcpServer.name]; ok {
 			continue
 		}
 		mcpServer.Run(ctx)
-		m.activeMcpServer[mcpServer.name] = mcpServer
+		m.activeMCPServer[mcpServer.name] = mcpServer
 	}
 }
 
@@ -165,7 +165,7 @@ func (m *MCPProxy) DeleteMCPServer(name string) {
 	mcpServer := m.mcpServers[name]
 	mcpServer.Shutdown(context.Background())
 	delete(m.mcpServers, name)
-	delete(m.activeMcpServer, name)
+	delete(m.activeMCPServer, name)
 }
 
 func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
@@ -186,7 +186,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 		client := http.DefaultClient
-		client.Timeout = util.GetBKApiTimeout(ctx)
+		client.Timeout = util.GetBkApiTimeout(ctx)
 		client.Transport = tr
 		requestParam := runtime.ClientRequestWriterFunc(func(req runtime.ClientRequest, _ strfmt.Registry) error {
 			// 设置innerJwt

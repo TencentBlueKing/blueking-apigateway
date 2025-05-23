@@ -39,7 +39,7 @@ func GetOpenapiGatewayResourceVersionSpec(ctx context.Context, gatewayID int, re
 		r.GatewayID.Eq(gatewayID), r.ResourceVersionID.Eq(resourceVersionID)).First()
 }
 
-func GetJwtInfoByGatewayName(ctx context.Context, gatewayName string) (*model.JWT, error) {
+func GetJWTInfoByGatewayName(ctx context.Context, gatewayName string) (*model.JWT, error) {
 	// get gateway
 	gateway, err := cacheimpls.GetGatewayByName(ctx, gatewayName)
 	if err != nil {

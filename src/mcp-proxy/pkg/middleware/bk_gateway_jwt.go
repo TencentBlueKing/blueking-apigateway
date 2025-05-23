@@ -72,7 +72,7 @@ func BkGatewayJWTAuthMiddleware() func(c *gin.Context) {
 			c.Abort()
 			return
 		}
-		jwtInfo, err := biz.GetJwtInfoByGatewayName(c.Request.Context(), constant.OfficialGatewayName)
+		jwtInfo, err := biz.GetJWTInfoByGatewayName(c.Request.Context(), constant.OfficialGatewayName)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				util.NotFoundJSONResponse(c, err.Error())
@@ -108,7 +108,7 @@ func BkGatewayJWTAuthMiddleware() func(c *gin.Context) {
 			return
 		}
 		util.SetInnerJWTToken(c, signedToken)
-		util.SetBKApiTimeout(c, cast.ToInt(c.Request.Header.Get(constant.BKApiTimeoutHeaderKey)))
+		util.SetBkApiTimeout(c, cast.ToInt(c.Request.Header.Get(constant.BkApiTimeoutHeaderKey)))
 		c.Next()
 	}
 }

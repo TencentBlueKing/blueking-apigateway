@@ -77,7 +77,7 @@ func (r ArrayString) Value() (driver.Value, error) {
 	return strings.Join(strIDs, ";"), nil
 }
 
-type McpServerAppPermission struct {
+type MCPServerAppPermission struct {
 	Id          int       `gorm:"column:id;AUTO_INCREMENT;primary_key"`
 	BkAppCode   string    `gorm:"column:bk_app_code;NOT NULL"`
 	Expires     time.Time `gorm:"column:expires"`
@@ -85,6 +85,6 @@ type McpServerAppPermission struct {
 	McpServerId int       `gorm:"column:mcp_server_id;NOT NULL"`
 }
 
-func (m *McpServerAppPermission) TableName() string {
+func (m *MCPServerAppPermission) TableName() string {
 	return "mcp_server_app_permission"
 }
