@@ -19,7 +19,6 @@
 package middleware
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -153,8 +152,7 @@ func SignBKInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKey []byte
 		return err
 	}
 	// set inner jwt to context
-	ctx := context.WithValue(c.Request.Context(), constant.BkGatewayJWTHeaderKey, token)
-	c.Request = c.Request.WithContext(ctx)
+	util.SetInnerJwtToken(c, token)
 	return nil
 }
 

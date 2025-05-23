@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	serviceName = "apigateway-core-api"
+	serviceName = "apigateway-mcp-proxy"
 )
 
 // RequestCount ...

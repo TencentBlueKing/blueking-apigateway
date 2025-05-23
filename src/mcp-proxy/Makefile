@@ -63,11 +63,11 @@ build:
 
 .PHONY: serve
 serve: build
-	./bk-apigateway-core-api -c config.yaml
+	./bk-apigateway-mcp-proxy -c config.yaml
 
 .PHONY: dev-image
 dev-image:
-	docker build --build-arg VERSION=`git describe --tags --abbrev=0` --build-arg COMMIT=`git rev-parse HEAD`  -f  Dockerfile . -t bk-apigateway-core-api:development
+	docker build --build-arg VERSION=`git describe --tags --abbrev=0` --build-arg COMMIT=`git rev-parse HEAD`  -f  Dockerfile . -t bk-apigateway-mcp-proxy:development
 
 
 

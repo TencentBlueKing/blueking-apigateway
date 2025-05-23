@@ -60,7 +60,7 @@ tracing:
   sampler: "trace_id_ratio"
   samplerRatio: 0.001
   token: "blueking"
-  serviceName: "apigateway-core-api"
+  serviceName: "apigateway-mcp-proxy"
   instrument:
     ginAPI: true
     dbAPI: true
