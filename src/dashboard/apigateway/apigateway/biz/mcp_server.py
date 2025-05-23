@@ -90,13 +90,3 @@ class MCPServerHandler:
             queryset = queryset.filter(stage_id=stage_id)
 
         queryset.update(status=MCPServerStatusEnum.INACTIVE.value)
-
-    @staticmethod
-    def update_stage_mcp_server_related_resource_names(
-        stage_id: int,
-        resource_version_id: int,
-    ):
-        # 1. get the mcp_servers
-        # 2. get the resource_names of the mcp_servers
-        # 3. do update
-        pass
