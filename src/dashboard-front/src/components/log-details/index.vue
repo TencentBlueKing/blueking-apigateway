@@ -40,7 +40,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, watch, computed } from 'vue';
+import {
+  computed,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { useRoute } from 'vue-router';
 import dayjs from 'dayjs';
 import { getLogs } from '@/http';
@@ -193,14 +198,14 @@ const showSideslider = () => {
 
 watch(
   () => isShow.value,
-  (v) => {
-    if (!v && logDetails.value?.status === 'success') {
+  () => {
+    if (!isShow.value && logDetails.value?.status === 'success') {
       emit('release-success');
     }
-    if (!v && logDetails.value?.status !== 'success') {
+    if (!isShow.value && logDetails.value?.status !== 'success') {
       emit('release-doing');
     }
-    if (!v) {
+    if (!isShow.value) {
       clearInterval(timeId);
     }
   },

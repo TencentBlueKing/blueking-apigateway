@@ -13,7 +13,8 @@
         <div class="sideslider-content">
           <div class="top-steps">
             <bk-steps
-              :controllable="stepsConfig.controllable" :cur-step="stepsConfig.curStep"
+              :controllable="stepsConfig.controllable"
+              :cur-step="stepsConfig.curStep"
               :steps="stepsConfig.objectSteps"
             />
           </div>
@@ -22,7 +23,7 @@
               <div class="main">
                 <bk-alert
                   theme="info"
-                  :title="$t('尚未发布')"
+                  :title="t('尚未发布')"
                   v-if="chooseAssets.release?.status === 'unreleased'"
                   class="mt15 mb15"
                 />
@@ -40,7 +41,7 @@
                 />
 
                 <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
-                  <bk-form-item property="stage_id" :label="$t('发布的环境')">
+                  <bk-form-item :label="t('发布的环境')" property="stage_id">
                     <bk-select v-model="formData.stage_id" :clearable="false">
                       <bk-option
                         v-for="item in stageList"
@@ -119,26 +120,26 @@
                     </bk-select>
                     <p class="change-msg">
                       <span>
-                        {{ $t("新增") }}
+                        {{ t("新增") }}
                         <strong class="ag-strong success">{{ diffData.add.length }}</strong>
-                        {{ $t("个资源") }}，
+                        {{ t("个资源") }}，
                       </span>
                       <span>
-                        {{ $t("更新") }}
+                        {{ t("更新") }}
                         <strong class="ag-strong warning">{{ diffData.update.length }}</strong>
-                        {{ $t("个资源") }}，
+                        {{ t("个资源") }}，
                       </span>
                       <span>
-                        {{ $t("删除") }}
+                        {{ t("删除") }}
                         <strong class="ag-strong danger">{{ diffData.delete.length }}</strong>
-                        {{ $t("个资源") }}
+                        {{ t("个资源") }}
                       </span>
                     </p>
                   </bk-form-item>
-                  <!-- <bk-form-item property="comment" :label="$t('发布日志')">
+                  <!-- <bk-form-item property="comment" :label="t('发布日志')">
                     <bk-input v-model="formData.comment" type="textarea" :rows="4" :maxlength="100" />
                   </bk-form-item> -->
-                  <bk-form-item property="comment" :label="$t('版本日志')">
+                  <bk-form-item :label="t('版本日志')" property="comment">
                     <bk-input
                       v-model="chooseVersionComment"
                       placeholder="--"
@@ -173,19 +174,19 @@
                 v-bk-tooltips="{ content: t('请新建版本再发布'), disabled: !isNextBtnDisabled }"
                 @click="handleNext"
               >
-                {{ $t('下一步') }}
+                {{ t('下一步') }}
               </bk-button>
               <template v-else-if="stepsConfig.curStep === 2">
                 <bk-button theme="primary" style="width: 100px" @click="showPublishDia">
-                  <!-- {{ isRollback ? $t('确认回滚') : $t('确认发布') }} -->
-                  {{ $t('确认发布') }}
+                  <!-- {{ isRollback ? t('确认回滚') : t('确认发布') }} -->
+                  {{ t('确认发布') }}
                 </bk-button>
                 <bk-button style="margin-left: 4px; width: 100px" @click="handleBack">
-                  {{ $t('上一步') }}
+                  {{ t('上一步') }}
                 </bk-button>
               </template>
               <bk-button style="margin-left: 4px; width: 100px" @click="handleCancel">
-                {{ $t('取消') }}
+                {{ t('取消') }}
               </bk-button>
             </div>
           </div>
@@ -564,7 +565,7 @@ watch(
     } else {
       resetSliderData();
       emit('hidden');
-    };
+    }
   },
 );
 

@@ -24,6 +24,7 @@ from rest_framework import generics, status
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
+from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
@@ -404,6 +405,10 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
 
         username = request.user.username
         StageHandler.set_status(instance, data["status"], username)
+
+        # 环境下架时，将环境下的所有 MCPServer 设置为停用
+        if data["status"] == StageStatusEnum.INACTIVE.value:
+            MCPServerHandler.disable_servers(gateway_id=request.gateway.id, stage_id=instance.id)
 
         if data["status"] == StageStatusEnum.INACTIVE.value and instance.gateway.is_programmable:
             # 调用paas下架接口

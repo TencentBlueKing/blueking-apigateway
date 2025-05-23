@@ -11,6 +11,41 @@
       navigation-type="left-right"
       @toggle="handleCollapse"
     >
+      <!-- 左上角的网关选择器 -->
+      <template #side-header>
+        <bk-select
+          ref="apigwSelect"
+          v-model="apigwId"
+          :clearable="false"
+          class="header-select"
+          filterable
+          @change="handleGoPage(activeMenuKey, apigwId)"
+        >
+          <template #prefix>
+            <div class="gateway-selector-prefix">
+              <AgIcon
+                v-if="common.isProgrammableGateway"
+                name="square-program"
+                size="20"
+              />
+            </div>
+          </template>
+          <bk-option
+            v-for="item in gatewaysList"
+            :id="item.id"
+            :key="item.id"
+            :name="item.name"
+          >
+            <div class="gateway-select-option">
+              <AgIcon
+                v-if="item.kind === 1" name="square-program" style="color: #3a84ff;margin-right: 6px;"
+              />
+              <div v-else style="width: 14px;margin-right: 6px;"></div>
+              <span>{{ item.name }}</span>
+            </div>
+          </bk-option>
+        </bk-select>
+      </template>
       <template #menu>
         <bk-menu
           :collapse="collapse"
@@ -68,26 +103,6 @@
             </template>
           </template>
         </bk-menu>
-      </template>
-      <template #side-header>
-        <bk-select
-          ref="apigwSelect"
-          class="header-select"
-          filterable
-          v-model="apigwId"
-          @change="handleGoPage(activeMenuKey, apigwId)"
-          :clearable="false">
-          <!-- <template #prefix>
-            <span
-              class="kind-program"
-              v-if="currentGateway.kind === 1">
-              <i class="apigateway-icon icon-ag-square-program" />
-            </span>
-          </template> -->
-          <bk-option
-            v-for="item in gatewaysList" :key="item.id" :id="item.id" :name="item.name"
-          />
-        </bk-select>
       </template>
       <!-- 提示发布 -->
       <tips-publish-bar v-show="stage.getNotUpdatedStages?.length" />
@@ -152,6 +167,7 @@ import { cloneDeep } from 'lodash';
 import versionReleaseNote from '@/components/version-release-note.vue';
 import tipsPublishBar from '@/components/tips-publish-bar.vue';
 import { IMenu } from '@/types';
+import AgIcon from '@/components/ag-icon.vue';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const route = useRoute();
@@ -524,13 +540,22 @@ onMounted(async () => {
     }
   }
 }
-// .kind-program {
-//   margin: 6px 0px 6px 6px;
-//   font-size: 16px;
-//   line-height: 18px;
-//   text-align: center;
-//   color: #3A84FF;
-// }
+
+.gateway-selector-prefix {
+  margin-left: 6px;
+  width: 20px;
+  color: #3a84ff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.gateway-select-option {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 </style>
 <style lang="scss">
 .custom-height-navigation {

@@ -1,32 +1,35 @@
 <template>
   <div>
-    <BkLoading :loading="isLoading">
-      <div class="card-list">
-        <StageCardItem
-          v-for="stage in stageList"
-          :key="stage.id"
-          :stage="stage"
-          @click="handleToDetail(stage)"
-          @delist="() => handleStageUnlist(stage.id)"
-          @publish="() => handleRelease(stage)"
-          @check-log="() => showLogs(stage)"
-        />
-
-        <div v-if="!common.isProgrammableGateway" class="card-item add-stage" @click="handleAddStage">
-          <i class="apigateway-icon icon-ag-add-small" />
-        </div>
-      </div>
+    <BkLoading :loading="isLoading && !stageList.length">
+      <div style="width: 100%;"></div>
     </BkLoading>
+    <div class="card-list">
+      <StageCardItem
+        v-for="stage in stageList"
+        :key="stage.id"
+        :loading="isLoading"
+        :stage="stage"
+        @click="handleToDetail(stage)"
+        @delist="() => handleStageUnlist(stage.id)"
+        @publish="() => handleRelease(stage)"
+        @check-log="() => showLogs(stage)"
+      />
+
+      <div v-if="!common.isProgrammableGateway" class="card-item add-stage" @click="handleAddStage">
+        <i class="apigateway-icon icon-ag-add-small" />
+      </div>
+    </div>
 
     <!-- 环境侧边栏 -->
-    <edit-stage-sideslider ref="stageSidesliderRef" />
+    <EditStageSideslider ref="stageSidesliderRef" />
 
     <!-- 发布资源至环境 -->
-    <release-sideslider
+    <ReleaseSideslider
       ref="releaseSidesliderRef"
       :current-assets="currentStage"
       @hidden="handleReleaseSuccess(false)"
       @release-success="handleReleaseSuccess"
+      @closed-on-publishing="handleSliderHideWhenPending"
     />
 
     <!-- 发布可编程网关的资源至环境 -->
@@ -39,7 +42,7 @@
     />
 
     <!-- 日志抽屉 -->
-    <log-details ref="logDetailsRef" :history-id="historyId" />
+    <LogDetails ref="logDetailsRef" :history-id="historyId" @release-doing="handleSliderHideWhenPending" />
 
     <!-- 可编程网关日志抽屉 -->
     <ProgrammableEventSlider
@@ -68,7 +71,7 @@ import {
   InfoBox,
   Message,
 } from 'bkui-vue';
-import logDetails from '@/components/log-details/index.vue';
+import LogDetails from '@/components/log-details/index.vue';
 import mitt from '@/common/event-bus';
 import {
   useCommon,
@@ -80,8 +83,8 @@ import {
   removalStage,
 } from '@/http';
 import { BasicInfoParams } from '@/views/basic-info/common/type';
-import editStageSideslider from './edit-stage-sideslider.vue';
-import releaseSideslider from './release-sideslider.vue';
+import EditStageSideslider from './edit-stage-sideslider.vue';
+import ReleaseSideslider from './release-sideslider.vue';
 import ReleaseProgrammableSlider from './release-programmable-slider.vue';
 import StageCardItem from '@/views/stage/overview/comps/stage-card-item.vue';
 import { getProgrammableStageDetail } from '@/http/programmable';
@@ -93,8 +96,8 @@ const route = useRoute();
 const common = useCommon();
 const stageStore = useStage();
 
-const historyId = ref<number | undefined>(undefined);
-const deployId = ref<string | undefined>(undefined);
+const historyId = ref<number>();
+const deployId = ref<string>();
 const currentStage = ref<any>({});
 
 const releaseSidesliderRef = ref();
@@ -189,6 +192,9 @@ watch(() => common.curApigwData, () => {
 
 // 环境详情
 const handleToDetail = (data: any) => {
+  if (isLoading.value) {
+    return;
+  }
   mitt.emit('switch-mode', { id: data.id, name: data.name });
 };
 
