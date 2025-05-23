@@ -135,6 +135,8 @@ def get_data_differ_number(data: dict) -> int:
             # "data": {"metrics": [],
             # "series": [{"datapoints": [[30, 1728291600000], , [44, 1728464400000], [null, 1758373200000]]}]}}
             last_number = datapoints[-2][0] if last_value is None else last_value
+            if last_number is None:
+                last_number = 0
 
             # 返回计算的差值，并确保结果是整数
             total = int(last_number) - int(first_number)
