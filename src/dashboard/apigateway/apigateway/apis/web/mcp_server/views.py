@@ -25,8 +25,8 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
-from apigateway.apps.mcp_server.models import MCPServer
+from apigateway.apps.mcp_server.constants import MCPServerAppPermissionGrantTypeEnum, MCPServerStatusEnum
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.mcp_server.utils import build_mcp_server_url
 from apigateway.biz.audit import Auditor
 from apigateway.biz.mcp_server import MCPServerHandler
@@ -35,8 +35,15 @@ from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Stage
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.time import now_datetime
 
 from .serializers import (
+    MCPServerAppPermissionApplyListInputSLZ,
+    MCPServerAppPermissionApplyListOutputSLZ,
+    MCPServerAppPermissionApplyUpdateInputSLZ,
+    MCPServerAppPermissionCreateInputSLZ,
+    MCPServerAppPermissionListInputSLZ,
+    MCPServerAppPermissionListOutputSLZ,
     MCPServerCreateInputSLZ,
     MCPServerGuidelineOutputSLZ,
     MCPServerListOutputSLZ,
@@ -371,3 +378,162 @@ class MCPServerToolDocRetrieveApi(generics.RetrieveAPIView):
 
         slz = MCPServerToolDocOutputSLZ(doc)
         return OKJsonResponse(data=slz.data)
+
+
+class MCPServerAppPermissionQuerySetMixin:
+    def get_queryset(self):
+        return MCPServerAppPermission.objects.filter(
+            mcp_server_id=self.kwargs["mcp_server_id"],
+            mcp_server__gateway=self.request.gateway,
+        )
+
+
+class MCPServerAppPermissionApplyQuerySetMixin:
+    def get_queryset(self):
+        return MCPServerAppPermissionApply.objects.filter(
+            mcp_server_id=self.kwargs["mcp_server_id"],
+            mcp_server__gateway=self.request.gateway,
+        )
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        query_serializer=MCPServerAppPermissionListInputSLZ,
+        operation_description="获取已授权应用列表",
+        responses={status.HTTP_200_OK: MCPServerAppPermissionListOutputSLZ(many=True)},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="主动授权应用",
+        request_body=MCPServerAppPermissionCreateInputSLZ,
+        responses={status.HTTP_201_CREATED: ""},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerAppPermissionListCreateApi(MCPServerAppPermissionQuerySetMixin, generics.ListCreateAPIView):
+    def list(self, request, *args, **kwargs):
+        slz = MCPServerAppPermissionListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        bk_app_code = slz.validated_data.get("bk_app_code")
+        grant_type = slz.validated_data.get("grant_type")
+
+        queryset = self.get_queryset()
+        if bk_app_code:
+            queryset = queryset.filter(bk_app_code__icontains=bk_app_code)
+
+        if grant_type:
+            queryset = queryset.filter(grant_type=grant_type)
+
+        page = self.paginate_queryset(queryset)
+        slz = MCPServerAppPermissionListOutputSLZ(page, many=True)
+
+        return self.get_paginated_response(slz.data)
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        slz = MCPServerAppPermissionCreateInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+
+        MCPServerAppPermission.objects.save_permissions(
+            mcp_server_id=kwargs["mcp_server_id"],
+            bk_app_code=data["bk_app_code"],
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+            expire_days=None,
+        )
+
+        return OKJsonResponse(status=status.HTTP_201_CREATED)
+
+
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        operation_description="删除授权应用",
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerAppPermissionDestroyApi(MCPServerAppPermissionQuerySetMixin, generics.DestroyAPIView):
+    lookup_url_kwarg = "id"
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        query_serializer=MCPServerAppPermissionApplyListInputSLZ,
+        operation_description="获取授权审批列表",
+        responses={status.HTTP_200_OK: MCPServerAppPermissionApplyListOutputSLZ(many=True)},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerAppPermissionApplyListApi(MCPServerAppPermissionApplyQuerySetMixin, generics.ListAPIView):
+    def list(self, request, *args, **kwargs):
+        slz = MCPServerAppPermissionApplyListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+
+        queryset = self.get_queryset()
+        queryset = MCPServerAppPermissionApply.objects.filter_app_permission_apply(
+            queryset,
+            data.get("status"),
+            data.get("bk_app_code"),
+            data.get("applied_by"),
+        )
+
+        page = self.paginate_queryset(queryset)
+
+        slz = MCPServerAppPermissionApplyListOutputSLZ(page, many=True)
+        return self.get_paginated_response(slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取授权审批申请人列表",
+        responses={status.HTTP_200_OK: ""},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerAppPermissionApplyApplicantListApi(MCPServerAppPermissionApplyQuerySetMixin, generics.ListAPIView):
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        applied_by_list = list(queryset.values_list("applied_by", flat=True).distinct().order_by("applied_by"))
+
+        return OKJsonResponse(data={"applicants": applied_by_list})
+
+
+@method_decorator(
+    name="patch",
+    decorator=swagger_auto_schema(
+        operation_description="更新授权审批状态，通过/驳回",
+        request_body=MCPServerAppPermissionApplyUpdateInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuerySetMixin, generics.UpdateAPIView):
+    serializer_class = MCPServerAppPermissionApplyUpdateInputSLZ
+    lookup_url_kwarg = "id"
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        slz = MCPServerAppPermissionApplyUpdateInputSLZ(instance, data=request.data)
+        slz.is_valid(raise_exception=True)
+        slz.save(handled_by=request.user.username, handled_time=now_datetime())
+
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
