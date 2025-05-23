@@ -494,7 +494,7 @@ class MCPServerAppPermissionApplyListApi(MCPServerAppPermissionApplyQuerySetMixi
 
         queryset = MCPServerAppPermissionApply.objects.filter_app_permission_apply(
             self.get_queryset(),
-            data.get("status"),
+            data.get("state"),
             data.get("bk_app_code"),
             data.get("applied_by"),
         )

@@ -23,7 +23,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from apigateway.apps.mcp_server.constants import (
-    MCPServerAppPermissionApplyProcessedStatusEnum,
+    MCPServerAppPermissionApplyProcessedStateEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerStatusEnum,
@@ -243,14 +243,11 @@ class MCPServerAppPermissionListInputSLZ(serializers.Serializer):
 
 class MCPServerAppPermissionListOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-    bk_app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
-    expires = serializers.SerializerMethodField(help_text="过期时间")
+    bk_app_code = serializers.CharField(required=True, help_text="蓝鲸应用 ID")
+    expires = serializers.DateTimeField(help_text="过期时间")
     grant_type = serializers.ChoiceField(
         choices=MCPServerAppPermissionGrantTypeEnum.get_choices(), help_text="授权类型"
     )
-
-    def get_expires(self, obj):
-        return serializers.DateTimeField(allow_null=True, required=False).to_representation(obj.expires)
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.MCPServerAppPermissionListOutputSLZ"
@@ -266,8 +263,8 @@ class MCPServerAppPermissionCreateInputSLZ(serializers.Serializer):
 class MCPServerAppPermissionApplyListInputSLZ(serializers.Serializer):
     bk_app_code = serializers.CharField(required=False, help_text="蓝鲸应用 ID")
     applied_by = serializers.CharField(required=False, help_text="申请人")
-    status = serializers.ChoiceField(
-        choices=MCPServerAppPermissionApplyProcessedStatusEnum.get_choices(),
+    state = serializers.ChoiceField(
+        choices=MCPServerAppPermissionApplyProcessedStateEnum.get_choices(),
         required=True,
         help_text="审批处理状态",
     )

@@ -20,7 +20,7 @@
 from django.db import models
 
 from apigateway.apps.mcp_server.constants import (
-    MCPServerAppPermissionApplyProcessedStatusEnum,
+    MCPServerAppPermissionApplyProcessedStateEnum,
     MCPServerAppPermissionApplyStatusEnum,
 )
 from apigateway.apps.permission.utils import calculate_renew_time
@@ -39,15 +39,15 @@ class MCPServerAppPermissionManager(models.Manager):
 
 
 class MCPServerAppPermissionApplyManager(models.Manager):
-    def filter_app_permission_apply(self, queryset, status: str, bk_app_code: str, applied_by: str):
-        if status == MCPServerAppPermissionApplyProcessedStatusEnum.PROCESSED.value:
+    def filter_app_permission_apply(self, queryset, state: str, bk_app_code: str, applied_by: str):
+        if state == MCPServerAppPermissionApplyProcessedStateEnum.PROCESSED.value:
             queryset = queryset.filter(
                 status__in=[
                     MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
                     MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
                 ],
             )
-        elif status == MCPServerAppPermissionApplyProcessedStatusEnum.UNPROCESSED.value:
+        elif state == MCPServerAppPermissionApplyProcessedStateEnum.UNPROCESSED.value:
             queryset = queryset.filter(status=MCPServerAppPermissionApplyStatusEnum.PENDING.value)
         else:
             queryset = queryset.filter(status=MCPServerAppPermissionApplyStatusEnum.PENDING.value)

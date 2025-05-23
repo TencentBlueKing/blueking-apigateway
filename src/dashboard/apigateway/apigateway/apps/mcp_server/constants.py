@@ -40,6 +40,6 @@ class MCPServerAppPermissionApplyStatusEnum(StructuredEnum):
     PENDING = EnumField("pending", label=_("待审批"))
 
 
-class MCPServerAppPermissionApplyProcessedStatusEnum(StructuredEnum):
+class MCPServerAppPermissionApplyProcessedStateEnum(StructuredEnum):
     PROCESSED = EnumField("processed", label=_("已处理"))
     UNPROCESSED = EnumField("unprocessed", label=_("未处理"))
