@@ -453,6 +453,8 @@ class MCPServerAppPermissionListCreateApi(MCPServerAppPermissionQuerySetMixin, g
             expire_days=None,
         )
 
+        MCPServerHandler.sync_permissions(kwargs["mcp_server_id"])
+
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
 
@@ -547,5 +549,7 @@ class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuer
                 grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
                 expire_days=None,
             )
+
+            MCPServerHandler.sync_permissions(kwargs["mcp_server_id"])
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
