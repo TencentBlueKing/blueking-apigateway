@@ -21,6 +21,7 @@ from typing import List
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from apigateway.apps.mcp_server import managers
 from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.models import Gateway, Stage
 from apigateway.utils.time import NeverExpiresTime
@@ -93,6 +94,7 @@ class MCPServerAppPermission(TimestampedModelMixin, OperatorModelMixin):
     grant_type = models.CharField(
         max_length=16, choices=MCPServerAppPermissionGrantTypeEnum.get_choices(), db_index=True
     )
+    objects = managers.MCPServerAppPermissionManager()
 
     def __str__(self):
         return f"<MCPServerAppPermission: {self.pk}>"
@@ -115,6 +117,7 @@ class MCPServerAppPermissionApply(TimestampedModelMixin, OperatorModelMixin):
     handled_time = models.DateTimeField(blank=True, null=True)
     comment = models.CharField(max_length=512, blank=True, default="")
     status = models.CharField(max_length=16, choices=MCPServerAppPermissionApplyStatusEnum.get_choices())
+    objects = managers.MCPServerAppPermissionApplyManager()
 
     def __str__(self):
         return f"<MCPServerAppPermissionApply: {self.pk}>"

@@ -17,9 +17,12 @@
 #
 
 from django.contrib import admin
+from djangoql.admin import DjangoQLSearchMixin
+
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 
 
-class MCPServerAdmin(admin.ModelAdmin):
+class MCPServerAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = [
         "id",
@@ -34,3 +37,33 @@ class MCPServerAdmin(admin.ModelAdmin):
     ]
     search_fields = ["id", "name", "gateway__name", "_labels"]
     list_filter = ["gateway", "is_public", "status"]
+
+
+class MCPServerAppPermissionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
+    list_display = ["id", "bk_app_code", "mcp_server", "expires", "grant_type", "created_time", "updated_time"]
+    search_fields = ["bk_app_code", "mcp_server__name"]
+    list_filter = ["mcp_server", "grant_type"]
+
+
+class MCPServerAppPermissionApplyAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
+    list_display = [
+        "id",
+        "bk_app_code",
+        "mcp_server",
+        "applied_by",
+        "applied_time",
+        "handled_by",
+        "handled_time",
+        "status",
+        "created_time",
+        "updated_time",
+    ]
+    search_fields = ["bk_app_code", "mcp_server__name", "applied_by"]
+    list_filter = ["mcp_server", "status"]
+
+
+admin.site.register(MCPServer, MCPServerAdmin)
+admin.site.register(MCPServerAppPermission, MCPServerAppPermissionAdmin)
+admin.site.register(MCPServerAppPermissionApply, MCPServerAppPermissionApplyAdmin)
