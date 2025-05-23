@@ -55,10 +55,11 @@
           </bk-table-column>
           <bk-table-column :label="t('关联的资源')" prop="resource_count">
             <template #default="{ data }">
-              <span v-if="data?.resource_count === 0">{{ data?.resource_count }}</span>
+              <span
+                v-if="data?.resource_count === 0 || common.isProgrammableGateway"
+              >{{ data?.resource_count || '--' }}</span>
               <bk-button
                 v-else
-                :disabled="common.isProgrammableGateway"
                 text
                 theme="primary"
                 @click="handleResource(data)"
