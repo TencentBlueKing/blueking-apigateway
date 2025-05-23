@@ -20,10 +20,10 @@ from typing import Dict, List, Tuple
 
 from django.db import transaction
 
-from apigateway.apps.permission.constants import GrantTypeEnum
-from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission
+from apigateway.apps.permission.constants import GrantTypeEnum
+from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway, Resource
@@ -189,6 +189,8 @@ class MCPServerHandler:
             AppResourcePermission.objects.bulk_create(to_add)
         if to_delete:
             AppResourcePermission.objects.filter(id__in=to_delete).delete()
+
+    @staticmethod
     def disable_servers(gateway_id: int, stage_id: int = 0) -> None:
         """set the status of the servers to inactive
         e.g. gateway inactivated, stage offline, etc.
