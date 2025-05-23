@@ -19,6 +19,7 @@
   - dashboard：API 网关的控制面
   - dashboard-front:  API 网关控制面前端
   - core-api: 网关高性能核心 API
+  - mcp-proxy: 网关 MCP server 代理
   - esb: ESB 组件服务
 - 蓝鲸 API 网关 - [数据面](https://github.com/TencentBlueKing/blueking-apigateway-apisix)
 - 蓝鲸 API 网关 - [Operator](https://github.com/TencentBlueKing/blueking-apigateway-operator)

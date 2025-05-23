@@ -19,6 +19,7 @@ This project is the "BlueKing API Gateway - Control Plane".
   - dashboard: Control plane for the API gateway
   - dashboard-front: Frontend for the API gateway control plane
   - core-api: Gateway high performance core API
+  - mcp-proxy: Gateway MCP server proxy
   - esb: ESB component service
 - BlueKing API Gateway - [Data Plane](https://github.com/TencentBlueKing/blueking-apigateway-apisix)
 - BlueKing API Gateway - [Operator](https://github.com/TencentBlueKing/blueking-apigateway-operator)
