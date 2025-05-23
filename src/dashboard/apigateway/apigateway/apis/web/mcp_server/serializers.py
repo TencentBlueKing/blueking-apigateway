@@ -154,6 +154,7 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
                         _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
                         + f"resource_name={resource_name}"
                     )
+        return resource_names
 
     class Meta:
         model = MCPServer
@@ -226,8 +227,8 @@ class MCPServerToolDocOutputSLZ(serializers.Serializer):
 
 
 class MCPServerStageReleaseCheckInputSLZ(serializers.Serializer):
-    stage_id = serializers.IntegerField(read_only=True, help_text="Stage ID")
-    resource_version_id = serializers.IntegerField(read_only=True, help_text="资源版本 ID")
+    stage_id = serializers.IntegerField(required=True, help_text="Stage ID")
+    resource_version_id = serializers.IntegerField(required=True, help_text="资源版本 ID")
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.MCPServerStageReleaseCheckInputSLZ"

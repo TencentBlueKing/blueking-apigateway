@@ -376,6 +376,15 @@ class MCPServerToolDocRetrieveApi(generics.RetrieveAPIView):
         return OKJsonResponse(data=slz.data)
 
 
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="环境发布前检查对应环境 MCP Server 是否存在资源变更",
+        query_serializer=MCPServerStageReleaseCheckInputSLZ,
+        responses={status.HTTP_200_OK: MCPServerStageReleaseCheckOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
 class MCPServerStageReleaseCheckApi(generics.RetrieveAPIView):
     serializer_class = MCPServerStageReleaseCheckOutputSLZ
 
@@ -397,7 +406,7 @@ class MCPServerStageReleaseCheckApi(generics.RetrieveAPIView):
             return OKJsonResponse(data=data)
 
         changed_mcp_servers = []
-        valid_resource_names = ResourceVersionHandler.get_resource_names_set(resource_version_id)
+        valid_resource_names = ResourceVersionHandler.get_resource_names_set(resource_version_id, raise_exception=True)
         for mcp_server in mcp_servers:
             mcp_server_resource_names = set(mcp_server.resource_names)
             changed_resource_names = mcp_server_resource_names - valid_resource_names
@@ -425,5 +434,5 @@ class MCPServerStageReleaseCheckApi(generics.RetrieveAPIView):
         data["deleted_resource_count"] = len(unique_resource_names)
         data["details"] = changed_resources
 
-        output_slz = self.get_serializer(data=data)
+        output_slz = self.get_serializer(data)
         return OKJsonResponse(data=output_slz.data)
