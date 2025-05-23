@@ -80,9 +80,6 @@ class ResourceHandler:
         # 5. delete resource
         Resource.objects.filter(id__in=resource_ids).delete()
 
-        # 6. delete resource schema
-        OpenAPIResourceSchema.objects.filter(resource_id__in=resource_ids).delete()
-
     @staticmethod
     def get_resource_use_stage_vars(resource: dict) -> dict:
         """
