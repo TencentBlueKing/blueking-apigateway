@@ -192,7 +192,8 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         slz.is_valid(raise_exception=True)
         slz.save(updated_by=request.user.username)
 
-        # FIXME: trigger the mcp server permission refresh if update the resource_names
+        # sync the permissions, if any changes in the resource_names
+        MCPServerHandler.sync_permissions(instance.id)
 
         Auditor.record_mcp_server_op_success(
             op_type=OpTypeEnum.MODIFY,
