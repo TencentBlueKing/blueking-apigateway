@@ -58,7 +58,7 @@ urlpatterns = [
                 ),
                 path("guideline/", MCPServerGuidelineRetrieveApi.as_view(), name="mcp_server.guideline_retrieve"),
                 path(
-                    "permission/",
+                    "permissions/",
                     include(
                         [
                             path(

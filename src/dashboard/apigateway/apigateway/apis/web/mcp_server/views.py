@@ -25,7 +25,11 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.mcp_server.constants import MCPServerAppPermissionGrantTypeEnum, MCPServerStatusEnum
+from apigateway.apps.mcp_server.constants import (
+    MCPServerAppPermissionApplyStatusEnum,
+    MCPServerAppPermissionGrantTypeEnum,
+    MCPServerStatusEnum,
+)
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.mcp_server.utils import build_mcp_server_url
 from apigateway.biz.audit import Auditor
@@ -441,7 +445,7 @@ class MCPServerAppPermissionListCreateApi(MCPServerAppPermissionQuerySetMixin, g
 
         data = slz.validated_data
 
-        MCPServerAppPermission.objects.save_permissions(
+        MCPServerAppPermission.objects.save_permission(
             mcp_server_id=kwargs["mcp_server_id"],
             bk_app_code=data["bk_app_code"],
             grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
@@ -485,9 +489,8 @@ class MCPServerAppPermissionApplyListApi(MCPServerAppPermissionApplyQuerySetMixi
 
         data = slz.validated_data
 
-        queryset = self.get_queryset()
         queryset = MCPServerAppPermissionApply.objects.filter_app_permission_apply(
-            queryset,
+            self.get_queryset(),
             data.get("status"),
             data.get("bk_app_code"),
             data.get("applied_by"),
@@ -535,5 +538,13 @@ class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuer
         slz = MCPServerAppPermissionApplyUpdateInputSLZ(instance, data=request.data)
         slz.is_valid(raise_exception=True)
         slz.save(handled_by=request.user.username, handled_time=now_datetime())
+
+        if slz.instance.status == MCPServerAppPermissionApplyStatusEnum.APPROVED.value:
+            MCPServerAppPermission.objects.save_permission(
+                mcp_server_id=slz.instance.mcp_server.id,
+                bk_app_code=slz.instance.bk_app_code,
+                grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+                expire_days=None,
+            )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)

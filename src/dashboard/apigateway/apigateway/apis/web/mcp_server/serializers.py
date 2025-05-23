@@ -23,6 +23,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from apigateway.apps.mcp_server.constants import (
+    MCPServerAppPermissionApplyProcessedStatusEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerStatusEnum,
@@ -243,6 +244,7 @@ class MCPServerAppPermissionListInputSLZ(serializers.Serializer):
 class MCPServerAppPermissionListOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     bk_app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
+    expires = serializers.SerializerMethodField(help_text="过期时间")
     grant_type = serializers.ChoiceField(
         choices=MCPServerAppPermissionGrantTypeEnum.get_choices(), help_text="授权类型"
     )
@@ -265,9 +267,9 @@ class MCPServerAppPermissionApplyListInputSLZ(serializers.Serializer):
     bk_app_code = serializers.CharField(required=False, help_text="蓝鲸应用 ID")
     applied_by = serializers.CharField(required=False, help_text="申请人")
     status = serializers.ChoiceField(
-        choices=[MCPServerAppPermissionApplyStatusEnum.PENDING.value],
-        required=False,
-        help_text="审批状态，pending：待审批，为空则查询通过和驳回记录",
+        choices=MCPServerAppPermissionApplyProcessedStatusEnum.get_choices(),
+        required=True,
+        help_text="审批处理状态",
     )
 
     class Meta:
