@@ -179,6 +179,15 @@ class HttpBackendSLZ(serializers.Serializer):
     config = HttpBackendConfigSLZ(help_text="后端配置")
 
 
+class OpenapiSchemaSLZ(serializers.Serializer):
+    version = serializers.CharField(required=False, allow_null=True, max_length=256, help_text="OpenAPI schema 版本")
+    request_body = serializers.DictField(source="requestBody", required=False, allow_null=True, help_text="body参数")
+    responses = serializers.DictField(required=False, allow_null=True, help_text="response参数")
+    parameters = serializers.ListField(
+        required=False, allow_empty=True, child=serializers.DictField(), help_text="请求参数列表"
+    )
+
+
 class ResourceInputSLZ(serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     name = serializers.RegexField(
@@ -198,6 +207,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
         max_length=MAX_LABEL_COUNT_PER_RESOURCE,
         help_text="标签 ID 列表",
     )
+    openapi_schema = OpenapiSchemaSLZ(default={}, allow_null=True, help_text="OpenAPI Schema")
 
     class Meta:
         model = Resource
@@ -219,6 +229,8 @@ class ResourceInputSLZ(serializers.ModelSerializer):
             "backend",
             # 标签
             "label_ids",
+            # OpenAPI Schema
+            "openapi_schema",
         ]
         lookup_field = "id"
 
