@@ -17,6 +17,8 @@
 #
 from typing import Dict, List, Tuple
 
+from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
+from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway
@@ -73,6 +75,21 @@ class MCPServerHandler:
         )
 
         return generator.get_doc()
+
+    @staticmethod
+    def disable_servers(gateway_id: int, stage_id: int = 0) -> None:
+        """set the status of the servers to inactive
+        e.g. gateway inactivated, stage offline, etc.
+
+        Args:
+            gateway_id (int): the id of the gateway
+            stage_id (int, optional): the id of the stage. Defaults to 0.
+        """
+        queryset = MCPServer.objects.filter(gateway_id=gateway_id)
+        if stage_id:
+            queryset = queryset.filter(stage_id=stage_id)
+
+        queryset.update(status=MCPServerStatusEnum.INACTIVE.value)
 
     @staticmethod
     def update_stage_mcp_server_related_resource_names(
