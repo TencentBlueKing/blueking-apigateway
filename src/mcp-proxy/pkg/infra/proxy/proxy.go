@@ -47,14 +47,14 @@ type MCPProxy struct {
 	mcpServers map[string]*MCPServer
 	rwLock     *sync.RWMutex
 	// 运行的mcp server
-	activeMCPServer map[string]*MCPServer
+	activeMCPServers map[string]struct{}
 }
 
 func NewMCPProxy() *MCPProxy {
 	return &MCPProxy{
-		mcpServers:      map[string]*MCPServer{},
-		rwLock:          &sync.RWMutex{},
-		activeMCPServer: map[string]*MCPServer{},
+		mcpServers:       map[string]*MCPServer{},
+		rwLock:           &sync.RWMutex{},
+		activeMCPServers: map[string]struct{}{},
 	}
 }
 
@@ -69,7 +69,7 @@ func (m *MCPProxy) GetActiveMCPServerNames() []string {
 	m.rwLock.Lock()
 	defer m.rwLock.Unlock()
 	var names []string
-	for name := range m.activeMCPServer {
+	for name := range m.activeMCPServers {
 		names = append(names, name)
 	}
 	return names
@@ -147,11 +147,11 @@ func (m *MCPProxy) Run(ctx context.Context) {
 	m.rwLock.RLock()
 	defer m.rwLock.RUnlock()
 	for _, mcpServer := range m.mcpServers {
-		if _, ok := m.activeMCPServer[mcpServer.name]; ok {
+		if _, ok := m.activeMCPServers[mcpServer.name]; ok {
 			continue
 		}
 		mcpServer.Run(ctx)
-		m.activeMCPServer[mcpServer.name] = mcpServer
+		m.activeMCPServers[mcpServer.name] = struct{}{}
 	}
 }
 
@@ -165,7 +165,7 @@ func (m *MCPProxy) DeleteMCPServer(name string) {
 	mcpServer := m.mcpServers[name]
 	mcpServer.Shutdown(context.Background())
 	delete(m.mcpServers, name)
-	delete(m.activeMCPServer, name)
+	delete(m.activeMCPServers, name)
 }
 
 func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
@@ -190,10 +190,10 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 		client.Transport = tr
 		requestParam := runtime.ClientRequestWriterFunc(func(req runtime.ClientRequest, _ strfmt.Registry) error {
 			// 设置innerJwt
-			err = req.SetHeaderParam(constant.BkAPIAuthorizationHeaderKey, innerJwt)
+			err = req.SetHeaderParam(constant.BkApiAuthorizationHeaderKey, innerJwt)
 			if err != nil {
 				auditLog.Error("set header param err",
-					zap.String(constant.BkAPIAuthorizationHeaderKey, innerJwt), zap.Error(err))
+					zap.String(constant.BkApiAuthorizationHeaderKey, innerJwt), zap.Error(err))
 				return err
 			}
 

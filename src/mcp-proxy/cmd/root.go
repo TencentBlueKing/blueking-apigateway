@@ -33,7 +33,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "mcp-proxy",
 	Short: "The mcp-proxy for bk-apigateway",
-	Long:  `The mcp-proxy for bk-apigateway, it provides the mcp service for mcp bk-apigatewa`,
+	Long:  `The mcp-proxy for bk-apigateway, it provides the mcp service for mcp bk-apigateway`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {

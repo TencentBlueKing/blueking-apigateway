@@ -31,7 +31,7 @@ var (
 	// RequestCount api状态计数 + server_ip的请求数量和状态
 	RequestCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name:        "apigateway_core_api_requests_total",
+			Name:        "apigateway_mcp_proxy_requests_total",
 			Help:        "How many HTTP requests processed, partitioned by status code, method and HTTP path.",
 			ConstLabels: prometheus.Labels{"service": serviceName},
 		},
@@ -40,10 +40,10 @@ var (
 
 	// RequestDuration api响应时间分布
 	RequestDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name:        "apigateway_core_api_request_duration_milliseconds",
+		Name:        "apigateway_mcp_proxy_request_duration_milliseconds",
 		Help:        "How long it took to process the request, partitioned by status code, method and HTTP path.",
 		ConstLabels: prometheus.Labels{"service": serviceName},
-		Buckets:     []float64{50, 100, 200, 500, 1000, 2000, 5000},
+		Buckets:     []float64{500, 1000, 2000, 5000, 10000, 30000, 60000},
 	},
 		[]string{"method", "path", "status", "mcp_server_name"},
 	)

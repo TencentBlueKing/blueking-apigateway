@@ -116,7 +116,7 @@ func BkGatewayJWTAuthMiddleware() func(c *gin.Context) {
 func SignBkInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKey []byte) error {
 	innerJwtClaims := CustomClaims{
 		App: AppInfo{
-			AppCode:  fmt.Sprintf(constant.BkInnerAppCodeFormat, util.GetMCPServerID(c), claims.App.AppCode),
+			AppCode:  fmt.Sprintf(constant.BkVirtualAppCodeFormat, util.GetMCPServerID(c), claims.App.AppCode),
 			Verified: claims.App.Verified,
 		},
 		User: UserInfo{

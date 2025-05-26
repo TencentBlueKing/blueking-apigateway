@@ -24,7 +24,7 @@ const (
 	// RequestIDHeaderKey is a key to set the request id in header
 	RequestIDHeaderKey = "X-Request-Id"
 
-	BkAPIAuthorizationHeaderKey = "X-Bkapi-Authorization"
+	BkApiAuthorizationHeaderKey = "X-Bkapi-Authorization"
 
 	// BkApiTimeoutHeaderKey is a key to set the timeout in header
 	BkApiTimeoutHeaderKey = "X-Bkapi-Timeout"
@@ -42,4 +42,4 @@ const (
 	BkApiTimeout      CtxKey = "bk_api_timeout"
 )
 
-const BkInnerAppCodeFormat = "v_%d_%s" // v_{mcp_server_id}_{bk_app_code}
+const BkVirtualAppCodeFormat = "v_mcp_%d_%s" // 格式 v_mcp_%d_%s 【mcp 代表虚拟app_code 的类型】
