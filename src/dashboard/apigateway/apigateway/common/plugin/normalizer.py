@@ -38,3 +38,25 @@ def format_fault_injection_config(config: Dict[str, Any]) -> Dict[str, Any]:
             del config["delay"]
 
     return config
+
+
+def format_response_rewrite_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    """while the dynamic form input many empty values, should be normalized!"""
+    if config.get("vars") == "":
+        del config["vars"]
+
+    if config.get("body") == "":
+        del config["body"]
+
+    headers = config["headers"]
+    new_headers = {}
+    if headers.get("add"):
+        new_headers["add"] = headers["add"]
+    if headers.get("remove"):
+        new_headers["remove"] = headers["remove"]
+    if headers.get("set"):
+        new_headers["set"] = headers["set"]
+
+    config["headers"] = new_headers
+
+    return config
