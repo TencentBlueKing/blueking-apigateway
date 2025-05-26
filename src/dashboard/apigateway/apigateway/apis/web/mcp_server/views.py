@@ -26,6 +26,7 @@ from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import (
+    MCPServerAppPermissionApplyProcessedStateEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerStatusEnum,
@@ -473,6 +474,8 @@ class MCPServerAppPermissionDestroyApi(MCPServerAppPermissionQuerySetMixin, gene
         instance = self.get_object()
         instance.delete()
 
+        MCPServerHandler.sync_permissions(kwargs["mcp_server_id"])
+
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -492,9 +495,18 @@ class MCPServerAppPermissionApplyListApi(MCPServerAppPermissionApplyQuerySetMixi
 
         data = slz.validated_data
 
+        state = data.get("state")
+        if state == MCPServerAppPermissionApplyProcessedStateEnum.PROCESSED.value:
+            status_list = [
+                MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+                MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
+            ]
+        else:
+            status_list = [MCPServerAppPermissionApplyStatusEnum.PENDING.value]
+
         queryset = MCPServerAppPermissionApply.objects.filter_app_permission_apply(
             self.get_queryset(),
-            data.get("state"),
+            status_list,
             data.get("bk_app_code"),
             data.get("applied_by"),
         )

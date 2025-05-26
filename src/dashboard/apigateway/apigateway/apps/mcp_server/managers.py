@@ -16,13 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import List
 
 from django.db import models
 
-from apigateway.apps.mcp_server.constants import (
-    MCPServerAppPermissionApplyProcessedStateEnum,
-    MCPServerAppPermissionApplyStatusEnum,
-)
 from apigateway.apps.permission.utils import calculate_renew_time
 
 
@@ -39,18 +36,8 @@ class MCPServerAppPermissionManager(models.Manager):
 
 
 class MCPServerAppPermissionApplyManager(models.Manager):
-    def filter_app_permission_apply(self, queryset, state: str, bk_app_code: str, applied_by: str):
-        if state == MCPServerAppPermissionApplyProcessedStateEnum.PROCESSED.value:
-            queryset = queryset.filter(
-                status__in=[
-                    MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
-                    MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
-                ],
-            )
-        elif state == MCPServerAppPermissionApplyProcessedStateEnum.UNPROCESSED.value:
-            queryset = queryset.filter(status=MCPServerAppPermissionApplyStatusEnum.PENDING.value)
-        else:
-            queryset = queryset.filter(status=MCPServerAppPermissionApplyStatusEnum.PENDING.value)
+    def filter_app_permission_apply(self, queryset, status_list: List[str], bk_app_code: str, applied_by: str):
+        queryset = queryset.filter(status__in=status_list)
 
         if bk_app_code:
             queryset = queryset.filter(bk_app_code=bk_app_code)
