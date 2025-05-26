@@ -30,7 +30,7 @@ class TestMCPServer:
         mcp_server.labels = ["label1", "label2"]
         assert mcp_server.labels == ["label1", "label2"]
 
-    def test_resource_ids(self):
+    def test_resource_names(self):
         mcp_server = G(MCPServer)
         assert mcp_server.resource_names == []
 
