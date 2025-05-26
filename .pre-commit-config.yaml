@@ -60,3 +60,30 @@ repos:
         language: system
         require_serial: true
         entry: bash -c "if [[ -d pre_commit_hooks ]]; then pre_commit_hooks/ip.sh $@; fi"
+
+  - repo: local
+    hooks:
+      - id: fmt
+        name: fmt
+        entry:  bash -c 'cd src/mcp-proxy && make fmt'
+        language: system
+        files: src/mcp-proxy/
+        pass_filenames: false
+      - id: lint
+        name: lint
+        entry: bash -c 'cd src/mcp-proxy && make lint'
+        language: system
+        files: src/mcp-proxy/
+        pass_filenames: false
+
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.5
+    hooks:
+      - id: insert-license
+        exclude: "^src/mcp-proxy/docs/docs.go"
+        files: ^src/mcp-proxy/.*\.go$
+        args:
+          - --license-filepath
+          - src/mcp-proxy/license_header.txt        # defaults to: LICENSE.txt
+          - --comment-style
+          - ""
