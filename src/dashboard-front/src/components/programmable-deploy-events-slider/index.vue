@@ -13,7 +13,6 @@
           </div>
           <div class="main-text">{{ t('正在发布中，请稍等...') }}</div>
           <div class="mr50">{{ t('已耗时') }}: <span>{{ totalDuration }}s</span></div>
-          <!--          <div>{{ t('操作人') }}: <span>{{ deployedBy }}</span></div>-->
         </div>
         <BkAlert
           v-else-if="status === 'fail' || status === 'failed' || status === 'failure'"
@@ -22,7 +21,7 @@
           <div class="alert-content">
             <div class="mr80"><span class="pr4">{{ t('版本') }}</span><span
               class="pr4"
-            >{{ stage.paasInfo?.latest_deployment?.version || version || historyVersion || '--' }}</span><span
+            >{{ historyVersion || stage.paasInfo?.latest_deployment?.version || version || '--' }}</span><span
               style="color: #ea3636;"
             >{{ t('发布失败') }}</span></div>
             <div class="mr50">{{ t('已耗时') }}: <span>{{ totalDuration }}s</span></div>
@@ -37,11 +36,10 @@
           <div class="alert-content">
             <div class="mr80"><span class="pr4">{{ t('版本') }}</span><span
               class="pr4"
-            >{{ stage.paasInfo?.latest_deployment?.version || version || historyVersion || '--' }}</span><span
+            >{{ historyVersion || stage.paasInfo?.latest_deployment?.version || version || '--' }}</span><span
               style="color: #2dcb56;"
             >{{ t('发布成功') }}</span></div>
             <div class="mr50">{{ t('已耗时') }}: <span>{{ totalDuration }}s</span></div>
-            <!--            <div>{{ t('操作人') }}: <span>{{ deployedBy }}</span></div>-->
             <div class="action">
               <div class="divider"></div>
               <BkButton style="height: 26px;font-size: 12px;" @click="handleGoDebug">{{ t('去调试') }}</BkButton>
@@ -292,6 +290,7 @@ const paasTimelineLists = computed(() => {
   return list;
 });
 
+// 网关发布的时间线数据
 const gatewayPublishTimeline = computed(() => {
   let list: ITimelineItem[] = [];// 整理步骤
 
@@ -300,6 +299,7 @@ const gatewayPublishTimeline = computed(() => {
     const step: any = {
       // size: 'large',
       tag: eventTemplate.description,
+      isParent: false,
     };
     const currentEvents = gatewayEvents.value.filter(event => event.step === eventTemplate.step);
 
@@ -352,11 +352,44 @@ const gatewayPublishTimeline = computed(() => {
     return step;
   });
 
-  return list;
+  const allStepDuration = sumBy(list, step => step.duration || 0);
+
+  const parentNode: ITimelineItem = {
+    color: 'green',
+    content: `${allStepDuration}s`,
+    duration: allStepDuration,
+    filled: true,
+    status: 'success',
+    isParent: true,
+    tag: h(
+      'div',
+      {
+        style: { color: 'black', fontWeight: '700' },
+      },
+      t('网关发布'),
+    ),
+    nodeType: 'vnode',
+  };
+
+  if (list.some(step => step.status === 'doing')) {
+    parentNode.status = 'doing';
+    parentNode.color = 'blue';
+    parentNode.icon = Spinner;
+    parentNode.filled = false;
+  } else if (list.some(step => step.status === 'failure')) {
+    parentNode.color = 'red';
+    parentNode.status = 'failure';
+    parentNode.filled = false;
+  }
+
+  return [
+    parentNode,
+    ...list,
+  ];
 });
 
 const gatewayPublishTotalDuration = computed(() => {
-  return sumBy(gatewayPublishTimeline.value, step => step.duration || 0);
+  return gatewayPublishTimeline.value?.[0].duration || 0;
 });
 
 const paasDeployTotalDuration = computed(() => {
@@ -371,7 +404,7 @@ const paasDeployTotalDuration = computed(() => {
 });
 
 const totalDuration = computed(() => {
-  return gatewayPublishTotalDuration.value + paasDeployTotalDuration.value;
+  return paasDeployTotalDuration.value + gatewayPublishTotalDuration.value;
 });
 
 const eventOutputLines = computed(() => {
@@ -383,10 +416,13 @@ const eventOutputLines = computed(() => {
 });
 
 const status = computed(() => {
+  if (deployStatus.value) {
+    return deployStatus.value;
+  }
   if (props.stage?.paasInfo?.status) {
     return props.stage.paasInfo.status;
   }
-  return deployStatus.value;
+  return '';
 });
 
 const isFinished = computed(() => {
@@ -467,25 +503,33 @@ const getEvents = async () => {
   gatewayEvents.value = gatewayEventsResponse || [];
 
   const paasEvents = (paasResponse.events && Array.isArray(paasResponse.events)) ? paasResponse.events : [];
-  const paasOutputLines: string[] = [];
+  let paasOutputLines: string[] = [];
   const gatewayOutputLines: string[] = [];
 
-  paasEvents.forEach((event) => {
-    let line = '';
-    try {
-      const data = JSON.parse(event.data);
-      if (data.line) {
-        line = data.line;
+  // events 为空，且 deploy_result 里有返回信息，实则paas部署出问题了，展示 logs
+  if (!paasEvents.length && paasResponse?.deploy_result?.logs) {
+    paasOutputLines = [
+      paasResponse.deploy_result.logs || 'Error',
+      '\n\n',
+    ];
+  } else {
+    paasEvents.forEach((event) => {
+      let line = '';
+      try {
+        const data = JSON.parse(event.data);
+        if (data.line) {
+          line = data.line;
+        }
+      } catch {
+        line = event.data;
+      } finally {
+        if (line && !line.endsWith('\n')) {
+          line += '\n';
+        }
+        paasOutputLines.push(line);
       }
-    } catch {
-      line = event.data;
-    } finally {
-      if (line && !line.endsWith('\n')) {
-        line += '\n';
-      }
-      paasOutputLines.push(line);
-    }
-  });
+    });
+  }
 
   gatewayEvents.value.forEach((event) => {
     let line = event.status === 'failure'
@@ -693,10 +737,11 @@ defineExpose({
 
         .bk-timeline-title {
           padding-bottom: 0;
-          margin-top: 0;
           font-size: 12px;
-          color: black;
-          font-weight: 700;
+        }
+
+        .bk-timeline-content {
+          font-size: 12px;
         }
       }
 
