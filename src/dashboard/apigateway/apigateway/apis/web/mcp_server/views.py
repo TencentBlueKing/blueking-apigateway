@@ -35,6 +35,7 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission,
 from apigateway.apps.mcp_server.utils import build_mcp_server_url
 from apigateway.biz.audit import Auditor
 from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Stage
@@ -53,6 +54,8 @@ from .serializers import (
     MCPServerGuidelineOutputSLZ,
     MCPServerListOutputSLZ,
     MCPServerRetrieveOutputSLZ,
+    MCPServerStageReleaseCheckInputSLZ,
+    MCPServerStageReleaseCheckOutputSLZ,
     MCPServerToolDocOutputSLZ,
     MCPServerToolOutputSLZ,
     MCPServerUpdateInputSLZ,
@@ -384,6 +387,68 @@ class MCPServerToolDocRetrieveApi(generics.RetrieveAPIView):
 
         slz = MCPServerToolDocOutputSLZ(doc)
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="环境发布前检查对应环境 MCP Server 是否存在资源变更",
+        query_serializer=MCPServerStageReleaseCheckInputSLZ,
+        responses={status.HTTP_200_OK: MCPServerStageReleaseCheckOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerStageReleaseCheckApi(generics.RetrieveAPIView):
+    serializer_class = MCPServerStageReleaseCheckOutputSLZ
+
+    def retrieve(self, request, *args, **kwargs):
+        slz = MCPServerStageReleaseCheckInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        stage_id = slz.validated_data["stage_id"]
+        resource_version_id = slz.validated_data["resource_version_id"]
+
+        mcp_servers = MCPServer.objects.filter(
+            gateway=request.gateway,
+            stage_id=stage_id,
+        ).all()
+
+        data = {}
+        if not mcp_servers:
+            data["has_related_changes"] = False
+            return OKJsonResponse(data=data)
+
+        changed_mcp_servers = []
+        valid_resource_names = ResourceVersionHandler.get_resource_names_set(resource_version_id, raise_exception=True)
+        for mcp_server in mcp_servers:
+            mcp_server_resource_names = set(mcp_server.resource_names)
+            changed_resource_names = mcp_server_resource_names - valid_resource_names
+            if changed_resource_names:
+                changed_mcp_servers.append((mcp_server, changed_resource_names))
+
+        # expand the changed_resources to the resource_names
+        changed_resources = []
+        unique_resource_names = set()
+        for mcp_server, changed_resource_names in changed_mcp_servers:
+            for resource_name in changed_resource_names:
+                unique_resource_names.add(resource_name)
+
+                changed_resources.append(
+                    {
+                        "resource_name": resource_name,
+                        "mcp_server": {
+                            "id": mcp_server.id,
+                            "name": mcp_server.name,
+                        },
+                    }
+                )
+
+        data["has_related_changes"] = len(changed_resources) > 0
+        data["deleted_resource_count"] = len(unique_resource_names)
+        data["details"] = changed_resources
+
+        output_slz = self.get_serializer(data)
+        return OKJsonResponse(data=output_slz.data)
 
 
 class MCPServerAppPermissionQuerySetMixin:

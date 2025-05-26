@@ -17,6 +17,7 @@
 #
 
 
+from django.db.models import Q
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
@@ -34,6 +35,7 @@ from apigateway.core.models import Gateway, Stage
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
+    MCPServerListInputSLZ,
     MCPServerListOutputSLZ,
     MCPServerRetrieveOutputSLZ,
     MCPServerToolDocOutputSLZ,
@@ -44,18 +46,29 @@ from .serializers import (
     name="get",
     decorator=swagger_auto_schema(
         operation_description="获取网关的 MCPServer 列表",
+        query_serializer=MCPServerListInputSLZ,
         responses={status.HTTP_200_OK: MCPServerListOutputSLZ(many=True)},
         tags=["WebAPI.MCPServer"],
     ),
 )
 class MCPMarketplaceServerListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
+        slz = MCPServerListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
         # mcp server should be public and active
         queryset = MCPServer.objects.filter(is_public=True, status=MCPServerStatusEnum.ACTIVE.value)
         # gateway should be active
         queryset = queryset.filter(gateway__status=GatewayStatusEnum.ACTIVE.value)
         # the stage should be active and online
         queryset = queryset.filter(stage__status=StageStatusEnum.ACTIVE.value)
+
+        if slz.validated_data.get("keyword"):
+            queryset = queryset.filter(
+                Q(name__icontains=slz.validated_data["keyword"])
+                | Q(description__icontains=slz.validated_data["keyword"])
+            )
+
         # optimize query by using select_related
         queryset = queryset.select_related("gateway", "stage")
 

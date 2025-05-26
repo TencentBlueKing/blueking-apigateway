@@ -27,6 +27,7 @@ from .views import (
     MCPServerGuidelineRetrieveApi,
     MCPServerListCreateApi,
     MCPServerRetrieveUpdateDestroyApi,
+    MCPServerStageReleaseCheckApi,
     MCPServerToolDocRetrieveApi,
     MCPServerToolsListApi,
     MCPServerUpdateLabelsApi,
@@ -99,4 +100,5 @@ urlpatterns = [
             ]
         ),
     ),
+    path("-/stage-release-check/", MCPServerStageReleaseCheckApi.as_view(), name="mcp_server.stage_release_check"),
 ]
