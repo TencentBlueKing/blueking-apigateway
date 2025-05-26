@@ -256,7 +256,9 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
         schema_changed = False
         old_schema = ResourceHandler.get_id_to_schema([instance.id]).get(instance.id)
         if (old_schema and old_schema.schema != slz.validated_data["openapi_schema"]) or (
-            old_schema is None and len(slz.validated_data["openapi_schema"]) > 0
+            old_schema is None
+            and slz.validated_data["openapi_schema"] is not None
+            and len(slz.validated_data["openapi_schema"]) > 0
         ):
             schema_changed = True
 
@@ -282,25 +284,26 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
-    @transaction.atomic
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        data_before = get_model_dict(instance)
-        instance_id = instance.id
 
-        ResourceHandler.delete_resources([instance_id])
+@transaction.atomic
+def destroy(self, request, *args, **kwargs):
+    instance = self.get_object()
+    data_before = get_model_dict(instance)
+    instance_id = instance.id
 
-        Auditor.record_resource_op_success(
-            op_type=OpTypeEnum.DELETE,
-            username=request.user.username,
-            gateway_id=request.gateway.id,
-            instance_id=instance_id,
-            instance_name=instance.identity,
-            data_before=data_before,
-            data_after={},
-        )
+    ResourceHandler.delete_resources([instance_id])
 
-        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+    Auditor.record_resource_op_success(
+        op_type=OpTypeEnum.DELETE,
+        username=request.user.username,
+        gateway_id=request.gateway.id,
+        instance_id=instance_id,
+        instance_name=instance.identity,
+        data_before=data_before,
+        data_after={},
+    )
+
+    return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 @method_decorator(
