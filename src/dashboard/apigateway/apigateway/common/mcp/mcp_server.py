@@ -26,6 +26,13 @@ def update_stage_mcp_server_related_resource_names(
     stage_id: int,
     resource_version_id: int,
 ) -> None:
+    """发布后同步 mcp server 中的 resource_names 列表，删除已删除的资源
+
+    Args:
+        stage_id (int): stage ID
+        resource_version_id (int): 资源版本 ID
+    """
+
     mcp_servers = MCPServer.objects.filter(stage_id=stage_id).all()
     if not mcp_servers:
         return

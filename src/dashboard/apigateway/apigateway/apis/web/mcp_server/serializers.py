@@ -234,10 +234,28 @@ class MCPServerStageReleaseCheckInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.mcp_server.MCPServerStageReleaseCheckInputSLZ"
 
 
+class MCPServerBaseSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
+    name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.MCPServerBaseSLZ"
+
+
+class MCPServerStageReleaseCheckDetailOutputSLZ(serializers.Serializer):
+    resource_name = serializers.CharField(read_only=True, help_text="资源名称")
+    mcp_server = MCPServerBaseSLZ()
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.MCPServerStageReleaseCheckDetailOutputSLZ"
+
+
 class MCPServerStageReleaseCheckOutputSLZ(serializers.Serializer):
     has_related_changes = serializers.BooleanField(read_only=True, help_text="是否存在相关变更")
     deleted_resource_count = serializers.IntegerField(read_only=True, help_text="删除的资源数量")
-    details = serializers.ListField(read_only=True, help_text="变更详情")
+    details = serializers.ListField(
+        child=MCPServerStageReleaseCheckDetailOutputSLZ(), read_only=True, help_text="变更详情"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.MCPServerStageReleaseCheckOutputSLZ"
