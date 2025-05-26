@@ -284,26 +284,25 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
+    @transaction.atomic
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        data_before = get_model_dict(instance)
+        instance_id = instance.id
 
-@transaction.atomic
-def destroy(self, request, *args, **kwargs):
-    instance = self.get_object()
-    data_before = get_model_dict(instance)
-    instance_id = instance.id
+        ResourceHandler.delete_resources([instance_id])
 
-    ResourceHandler.delete_resources([instance_id])
+        Auditor.record_resource_op_success(
+            op_type=OpTypeEnum.DELETE,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=instance_id,
+            instance_name=instance.identity,
+            data_before=data_before,
+            data_after={},
+        )
 
-    Auditor.record_resource_op_success(
-        op_type=OpTypeEnum.DELETE,
-        username=request.user.username,
-        gateway_id=request.gateway.id,
-        instance_id=instance_id,
-        instance_name=instance.identity,
-        data_before=data_before,
-        data_after={},
-    )
-
-    return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 @method_decorator(
