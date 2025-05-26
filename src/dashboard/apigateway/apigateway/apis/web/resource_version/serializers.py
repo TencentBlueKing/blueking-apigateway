@@ -112,7 +112,7 @@ class ResourceInfoSLZ(serializers.Serializer):
 
         plugins.extend(merge_plugins)
 
-        return sorted(plugins, key=lambda x: (x["priority"], x["binding_type"]))
+        return sorted(plugins, key=lambda x: (-x["priority"], x["binding_type"]))
 
     def get_has_openapi_schema(self, obj) -> bool:
         return self.context["resource_id_with_schema_dict"].get(obj["id"], False)
