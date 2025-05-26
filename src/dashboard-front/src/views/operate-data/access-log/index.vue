@@ -1,68 +1,59 @@
 <template>
   <div class="access-log-wrapper page-wrapper-padding">
+    <div class="ag-top-header">
+      <bk-form class="search-form" form-type="vertical">
+        <bk-form-item :label="t('起止时间')" class="ag-form-item-datepicker">
+          <bk-date-picker
+            :key="dateKey"
+            ref="datePickerRef"
+            v-model="dateTimeRange"
+            :clearable="false"
+            :placeholder="t('选择日期时间范围')"
+            :shortcut-close="true"
+            :shortcut-selected-index="shortcutSelectedIndex"
+            :shortcuts="AccessLogStore.datepickerShortcuts"
+            :use-shortcut-text="true"
+            style="width: 310px"
+            type="datetimerange"
+            @change="handlePickerChange"
+            @shortcut-change="handleShortcutChange"
+            @pick-success="handlePickerConfirm"
+          />
+        </bk-form-item>
+        <bk-form-item :label="t('环境')">
+          <bk-select
+            v-model="searchParams.stage_id" :clearable="false" searchable style="width: 200px"
+            @change="handleStageChange"
+          >
+            <bk-option v-for="option in stageList" :id="option.id" :key="option.id" :name="option.name">
+            </bk-option>
+          </bk-select>
+        </bk-form-item>
+        <bk-form-item :label="t('资源')">
+          <ResourceSearcher
+            v-model="searchParams.resource_id"
+            :list="resourceList"
+            :need-prefix="false"
+            style="width: 250px; margin-right: 8px;"
+            @change="handleResourceChange"
+          />
+        </bk-form-item>
+        <bk-form-item :label="t('查询语句')" class="ag-form-item-inline">
+          <SearchInput
+            v-model:mode-value="keyword"
+            class="top-search-input"
+            @choose="handleChoose"
+            @search="handleSearch"
+          />
+        </bk-form-item>
+        <bk-form-item label="" style="margin-left: 0">
+          <bk-button theme="primary" @click="handleSearch(keyword)">{{ t('查询') }}</bk-button>
+          <bk-button class="ml10" @click="handleClearFilterKey">{{ t('重置') }}</bk-button>
+        </bk-form-item>
+      </bk-form>
+    </div>
     <bk-loading :loading="!isPageLoading && isDataLoading" :z-index="100">
       <bk-collapse v-model="activeIndex">
-        <bk-collapse-panel :name="1" class="collapse-panel mb16">
-          <template #header>
-            <div class="collapse-panel-header">
-              <angle-up-fill :class="['panel-title-icon', activeIndex?.includes(1) ? '' : 'packUp']" />
-              <span class="panel-title">{{ t('查询条件') }}</span>
-            </div>
-          </template>
-          <template #content>
-            <div class="ag-top-header">
-              <bk-form class="search-form" form-type="vertical">
-                <bk-form-item :label="t('起止时间')" class="ag-form-item-datepicker">
-                  <bk-date-picker
-                    ref="datePickerRef"
-                    type="datetimerange"
-                    style="width: 310px"
-                    v-model="dateTimeRange"
-                    :key="dateKey"
-                    :placeholder="t('选择日期时间范围')"
-                    :shortcuts="AccessLogStore.datepickerShortcuts"
-                    :shortcut-close="true"
-                    :use-shortcut-text="true"
-                    :clearable="false"
-                    :shortcut-selected-index="shortcutSelectedIndex"
-                    @shortcut-change="handleShortcutChange"
-                    @change="handlePickerChange"
-                    @pick-success="handlePickerConfirm"
-                  />
-                </bk-form-item>
-                <bk-form-item :label="t('环境')">
-                  <bk-select
-                    style="width: 200px" v-model="searchParams.stage_id" :clearable="false" searchable
-                    @change="handleStageChange">
-                    <bk-option v-for="option in stageList" :key="option.id" :id="option.id" :name="option.name">
-                    </bk-option>
-                  </bk-select>
-                </bk-form-item>
-                <bk-form-item :label="t('资源')">
-                  <ResourceSearcher
-                    v-model="searchParams.resource_id"
-                    :list="resourceList"
-                    :need-prefix="false"
-                    style="width: 250px; margin-right: 8px;"
-                    @change="handleResourceChange"
-                  />
-                </bk-form-item>
-                <bk-form-item :label="t('查询语句')" class="ag-form-item-inline">
-                  <SearchInput
-                    v-model:mode-value="keyword"
-                    @search="handleSearch"
-                    @choose="handleChoose"
-                    class="top-search-input"
-                  />
-                </bk-form-item>
-                <bk-form-item label="" style="margin-left: 0">
-                  <bk-button theme="primary" @click="handleSearch(keyword)">{{ t('查询') }}</bk-button>
-                  <bk-button class="ml10" @click="handleClearFilterKey">{{ t('重置') }}</bk-button>
-                </bk-form-item>
-              </bk-form>
-            </div>
-          </template>
-        </bk-collapse-panel>
         <div class="search-term" v-show="!!searchConditions?.length">
           <funnel class="icon" />
           <span class="title">{{ t('检索项：') }}</span>
@@ -219,7 +210,14 @@ import TableEmpty from '@/components/table-empty.vue';
 import echarts from 'echarts';
 import 'echarts/lib/chart/bar';
 import 'echarts/lib/component/tooltip';
-import { ref, computed, nextTick, onMounted, onBeforeUnmount, markRaw } from 'vue';
+import {
+  computed,
+  markRaw,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+} from 'vue';
 import {
   merge,
   trim,
@@ -227,23 +225,26 @@ import {
 } from 'lodash';
 import { copy } from '@/common/util';
 import { SearchParamsInterface } from './common/type';
-import { useCommon, useAccessLog } from '@/store';
+import {
+  useAccessLog,
+  useCommon,
+} from '@/store';
 import { userChartIntervalOption } from '@/hooks';
 import {
-  fetchApigwAccessLogList,
-  fetchApigwAccessLogChart,
-  fetchApigwStages,
-  fetchApigwAccessLogShareLink,
-  getApigwResources,
   exportLogs,
+  fetchApigwAccessLogChart,
+  fetchApigwAccessLogList,
+  fetchApigwAccessLogShareLink,
+  fetchApigwStages,
+  getApigwResources,
 } from '@/http';
 import {
   AngleUpFill,
   CopyShape,
   EnlargeLine,
-  NarrowLine,
-  InfoLine,
   Funnel,
+  InfoLine,
+  NarrowLine,
 } from 'bkui-vue/lib/icon';
 import { Message } from 'bkui-vue';
 import { useStorage } from '@vueuse/core';
@@ -741,7 +742,8 @@ const handleDownload = async (e: Event) => {
         theme: 'success',
       });
     }
-  } catch ({ error }: any) {
+  } catch (e) {
+    const error = e as Error;
     Message({
       message: error.message || t('导出失败'),
       theme: 'error',
@@ -900,7 +902,7 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 .access-log-wrapper {
   min-height: calc(100vh - 208px);
-  padding-bottom: 24px;
+  padding: 20px 24px;
 
   .collapse-panel {
     background-color: #fff;
@@ -948,7 +950,7 @@ onBeforeUnmount(() => {
   }
 
   .search-term {
-    margin-bottom: 16px;
+    margin-bottom: 24px;
     display: flex;
     align-items: center;
     .icon {
@@ -979,13 +981,11 @@ onBeforeUnmount(() => {
   }
 
   .ag-top-header {
-    padding-left: 24px;
-    padding-right: 4px;
+    margin-bottom: 24px;
 
     :deep(.search-form) {
       .bk-form-item {
         display: inline-block;
-        margin-bottom: 16px;
         margin-left: 8px;
 
         &:first-child {
@@ -993,7 +993,6 @@ onBeforeUnmount(() => {
         }
 
         .bk-form-label {
-          line-height: 32px;
           padding: 0 15px 0 0;
 
           span {
@@ -1008,8 +1007,8 @@ onBeforeUnmount(() => {
       }
 
       .ag-form-item-inline {
-        margin-top: 0px !important;
-        margin-left: 0px !important;
+        margin-top: 0 !important;
+        margin-left: 0 !important;
         margin-right: 8px;
 
         .bk-form-content {
