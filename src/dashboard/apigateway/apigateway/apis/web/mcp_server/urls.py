@@ -19,6 +19,11 @@
 from django.urls import include, path
 
 from .views import (
+    MCPServerAppPermissionApplyApplicantListApi,
+    MCPServerAppPermissionApplyListApi,
+    MCPServerAppPermissionApplyUpdateStatusApi,
+    MCPServerAppPermissionDestroyApi,
+    MCPServerAppPermissionListCreateApi,
     MCPServerGuidelineRetrieveApi,
     MCPServerListCreateApi,
     MCPServerRetrieveUpdateDestroyApi,
@@ -53,6 +58,45 @@ urlpatterns = [
                     ),
                 ),
                 path("guideline/", MCPServerGuidelineRetrieveApi.as_view(), name="mcp_server.guideline_retrieve"),
+                path(
+                    "permissions/",
+                    include(
+                        [
+                            path(
+                                "",
+                                MCPServerAppPermissionListCreateApi.as_view(),
+                                name="mcp_server.app-permission.list_create",
+                            ),
+                            path(
+                                "<int:id>/",
+                                MCPServerAppPermissionDestroyApi.as_view(),
+                                name="mcp_server.app-permission.destroy",
+                            ),
+                            path(
+                                "app-permission-apply/",
+                                include(
+                                    [
+                                        path(
+                                            "",
+                                            MCPServerAppPermissionApplyListApi.as_view(),
+                                            name="mcp_server.app-permission-apply.list",
+                                        ),
+                                        path(
+                                            "applicant/",
+                                            MCPServerAppPermissionApplyApplicantListApi.as_view(),
+                                            name="mcp_server.app-permission-apply.applicant_list",
+                                        ),
+                                        path(
+                                            "<int:id>/status/",
+                                            MCPServerAppPermissionApplyUpdateStatusApi.as_view(),
+                                            name="mcp_server.app-permission-apply.update_status",
+                                        ),
+                                    ]
+                                ),
+                            ),
+                        ]
+                    ),
+                ),
             ]
         ),
     ),

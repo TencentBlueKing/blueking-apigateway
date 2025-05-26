@@ -127,6 +127,9 @@ export interface IPaasEventInstance {
 
 // PaaS部署信息接口
 interface IPaasDeployInfo {
+  deploy_result: {
+    logs?: string;
+  };
   events: IEvent[]; // 事件数组
   events_framework: IEventsFramework[]; // 事件框架数组
   events_instance: IPaasEventInstance[]; // 事件实例数组

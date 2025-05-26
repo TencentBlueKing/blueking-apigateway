@@ -22,9 +22,15 @@ from typing import Any, Dict
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
-from apigateway.apps.mcp_server.models import MCPServer
+from apigateway.apps.mcp_server.constants import (
+    MCPServerAppPermissionApplyProcessedStateEnum,
+    MCPServerAppPermissionApplyStatusEnum,
+    MCPServerAppPermissionGrantTypeEnum,
+    MCPServerStatusEnum,
+)
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.mcp_server.utils import build_mcp_server_url
+from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Stage
 
@@ -259,3 +265,79 @@ class MCPServerStageReleaseCheckOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.MCPServerStageReleaseCheckOutputSLZ"
+
+
+class MCPServerAppPermissionListInputSLZ(serializers.Serializer):
+    bk_app_code = serializers.CharField(required=False, help_text="蓝鲸应用 ID")
+    grant_type = serializers.ChoiceField(
+        choices=MCPServerAppPermissionGrantTypeEnum.get_choices(), required=False, help_text="授权类型"
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.MCPServerAppPermissionListInputSLZ"
+
+
+class MCPServerAppPermissionListOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    bk_app_code = serializers.CharField(required=True, help_text="蓝鲸应用 ID")
+    expires = serializers.DateTimeField(help_text="过期时间")
+    grant_type = serializers.ChoiceField(
+        choices=MCPServerAppPermissionGrantTypeEnum.get_choices(), help_text="授权类型"
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.MCPServerAppPermissionListOutputSLZ"
+
+
+class MCPServerAppPermissionCreateInputSLZ(serializers.Serializer):
+    bk_app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.MCPServerAppPermissionCreateInputSLZ"
+
+
+class MCPServerAppPermissionApplyListInputSLZ(serializers.Serializer):
+    bk_app_code = serializers.CharField(required=False, help_text="蓝鲸应用 ID")
+    applied_by = serializers.CharField(required=False, help_text="申请人")
+    state = serializers.ChoiceField(
+        choices=MCPServerAppPermissionApplyProcessedStateEnum.get_choices(),
+        required=True,
+        help_text="审批处理状态",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.MCPServerAppPermissionApplyListInputSLZ"
+
+
+class MCPServerAppPermissionApplyListOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    bk_app_code = serializers.CharField(read_only=True, help_text="蓝鲸应用 ID")
+    mcp_server_name = serializers.SerializerMethodField(help_text="MCPServer 名称")
+    applied_by = serializers.CharField(read_only=True, help_text="申请人")
+    applied_time = serializers.DateTimeField(read_only=True, help_text="申请时间")
+    status = serializers.ChoiceField(
+        read_only=True, choices=MCPServerAppPermissionApplyStatusEnum.get_choices(), help_text="审批状态"
+    )
+
+    def get_mcp_server_name(self, obj):
+        return obj.mcp_server.name
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.MCPServerAppPermissionApplyListOutputSLZ"
+
+
+class MCPServerAppPermissionApplyUpdateInputSLZ(serializers.ModelSerializer):
+    status = serializers.ChoiceField(
+        required=True,
+        choices=[
+            MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
+        ],
+        help_text="审批状态",
+    )
+
+    class Meta:
+        model = MCPServerAppPermissionApply
+        fields = ("status", "comment")
+        lookup_field = "id"
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionApplyUpdateInputSLZ"

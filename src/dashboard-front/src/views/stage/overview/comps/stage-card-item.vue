@@ -34,7 +34,7 @@
           </div>
           <div v-else class="value">
             <BkBadge
-              v-if="stage.new_resource_version"
+              v-if="!common.isProgrammableGateway && stage.new_resource_version"
               v-bk-tooltips="{ content: `有新版本 ${stage.new_resource_version || '--'} 可以发布` }"
               :count="999"
               dot
@@ -238,11 +238,15 @@ const status = computed(() => {
     return '';
   }
   if (common.isProgrammableGateway) {
-    if (props.stage.paasInfo?.latest_deployment?.status) {
-      return props.stage.paasInfo?.latest_deployment?.status;
-    }
     if (props.stage.paasInfo?.status) {
       return props.stage.paasInfo?.status;
+    }
+    // 未发布
+    if (props.stage.status === 0 || props.stage.release?.status === 'unreleased') {
+      return 'unreleased';
+    }
+    if (props.stage.paasInfo?.latest_deployment?.status) {
+      return props.stage.paasInfo?.latest_deployment?.status;
     }
   }
   // 未发布
@@ -263,12 +267,6 @@ const isUnlistDisabled = computed(() => {
 });
 
 const actionTooltipConfig = computed(() => {
-  // if (props.stage.status === 0) {
-  //   return {
-  //     content: t('当前网关已停用，如需使用，请先启用'),
-  //     disabled: false,
-  //   };
-  // }
   if (status.value === 'doing') {
     return { content: t('发布中'), disabled: false };
   }

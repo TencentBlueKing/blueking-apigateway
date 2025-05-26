@@ -18,7 +18,7 @@
 
 import pytest
 
-from apigateway.common.plugin.normalizer import format_fault_injection_config
+from apigateway.common.plugin.normalizer import format_fault_injection_config, format_response_rewrite_config
 
 
 @pytest.mark.parametrize(
@@ -33,3 +33,33 @@ from apigateway.common.plugin.normalizer import format_fault_injection_config
 )
 def test_format_fault_injection_config(config, expected):
     assert format_fault_injection_config(config) == expected
+
+
+@pytest.mark.parametrize(
+    "config, expected",
+    [
+        ({"body": "", "vars": "", "headers": {"add": [], "set": [], "remove": []}}, {"headers": {}}),
+        (
+            {
+                "body": "test",
+                "vars": "test",
+                "headers": {
+                    "add": [{"key": "name1", "value": "value1"}],
+                    "set": [{"key": "key1", "value": "value1"}],
+                    "remove": [{"key": "key2"}],
+                },
+            },
+            {
+                "body": "test",
+                "vars": "test",
+                "headers": {
+                    "add": [{"key": "name1", "value": "value1"}],
+                    "set": [{"key": "key1", "value": "value1"}],
+                    "remove": [{"key": "key2"}],
+                },
+            },
+        ),
+    ],
+)
+def test_format_response_rewrite_config(config, expected):
+    assert format_response_rewrite_config(config) == expected

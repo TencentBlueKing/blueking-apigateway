@@ -252,7 +252,17 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
         )
         slz.is_valid(raise_exception=True)
 
-        if self._check_if_changed(dict(slz.validated_data), instance):
+        # check schema 是否有变化
+        schema_changed = False
+        old_schema = ResourceHandler.get_id_to_schema([instance.id]).get(instance.id)
+        if (old_schema and old_schema.schema != slz.validated_data["openapi_schema"]) or (
+            old_schema is None
+            and slz.validated_data["openapi_schema"] is not None
+            and len(slz.validated_data["openapi_schema"]) > 0
+        ):
+            schema_changed = True
+
+        if self._check_if_changed(dict(slz.validated_data), instance) or schema_changed:
             saver = ResourcesSaver.from_resources(
                 gateway=request.gateway,
                 resources=[slz.validated_data],

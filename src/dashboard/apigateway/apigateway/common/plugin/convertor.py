@@ -26,7 +26,7 @@ from typing import Any, ClassVar, Dict, List, Union
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.utils.ip import parse_ip_content_to_list
 
-from .normalizer import format_fault_injection_config
+from .normalizer import format_fault_injection_config, format_response_rewrite_config
 
 
 class PluginConvertor(ABC):
@@ -167,25 +167,20 @@ class ResponseRewriteConvertor(PluginConvertor):
     plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.RESPONSE_REWRITE
 
     def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        if config.get("vars") == "":
-            del config["vars"]
+        config = format_response_rewrite_config(config)
         if config.get("vars"):
             config["vars"] = ast.literal_eval(config["vars"])
 
         headers = config["headers"]
-        headers["add"] = ["{}: {}".format(item["key"], item["value"]) for item in headers["add"]]
-        headers["set"] = {item["key"]: item["value"] for item in headers["set"]}
-        headers["remove"] = [item["key"] for item in headers["remove"]]
+        if headers.get("add"):
+            headers["add"] = ["{}: {}".format(item["key"], item["value"]) for item in headers["add"]]
 
-        new_headers = {}
-        if headers["add"]:
-            new_headers["add"] = headers["add"]
-        if headers["set"]:
-            new_headers["set"] = headers["set"]
-        if headers["remove"]:
-            new_headers["remove"] = headers["remove"]
+        if headers.get("set"):
+            headers["set"] = {item["key"]: item["value"] for item in headers["set"]}
 
-        config["headers"] = new_headers
+        if headers.get("remove"):
+            headers["remove"] = [item["key"] for item in headers["remove"]]
+
         return config
 
 

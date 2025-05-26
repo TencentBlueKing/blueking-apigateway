@@ -1849,6 +1849,7 @@ const lang: ILANG = {
   '分支': ['Branch'],
   '部署状态': ['Deploy Status'],
   '尚未发布，无数据': ['No data until released'],
+  '网关发布': ['Publish Gateway'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
