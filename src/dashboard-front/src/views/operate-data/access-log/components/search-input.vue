@@ -105,6 +105,7 @@ import {
 import i18n from '@/language/i18n';
 import { useGetGlobalProperties } from '@/hooks';
 import { useStorage } from '@vueuse/core';
+
 const props = defineProps({
   modeValue: {
     type: String,
@@ -194,15 +195,17 @@ defineExpose({
 }
 .search-input-container {
   position: relative;
+
   .statement-example {
     position: absolute;
     right: 0;
-    top: -38px;
+    top: -32px;
     display: flex;
     align-items: center;
     color: #3A84FF;
     font-size: 16px;
     cursor: pointer;
+
     .example-text {
       margin-left: 4px;
       font-size: 12px;
@@ -212,6 +215,7 @@ defineExpose({
 
 .access-log-search-usage-content {
   padding: 8px 4px -2px;
+
   .sample {
     border-bottom: 1px solid #DCDEE5;
     margin-bottom: 8px;
