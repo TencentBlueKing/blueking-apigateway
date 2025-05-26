@@ -24,6 +24,7 @@ from celery import shared_task
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.common.event.event import PublishEventReporter
+from apigateway.common.mcp.mcp_server import update_stage_mcp_server_related_resource_names
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.etcd import EtcdDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
@@ -218,6 +219,12 @@ def update_release_data_after_success(
     )
     ReleasedResourceDoc.objects.save_released_resource_doc(resource_doc_version)
     ReleasedResourceDoc.objects.clear_unreleased_resource_doc(release.gateway.id)
+
+    # update the mcp_server related resource_names
+    update_stage_mcp_server_related_resource_names(
+        release.stage.id,
+        resource_version.id,
+    )
 
 
 def clear_unreleased_resource(gateway_id: int) -> None:

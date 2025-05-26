@@ -179,6 +179,15 @@ class HttpBackendSLZ(serializers.Serializer):
     config = HttpBackendConfigSLZ(help_text="后端配置")
 
 
+class OpenapiSchemaSLZ(serializers.Serializer):
+    version = serializers.CharField(required=False, allow_null=True, max_length=256, help_text="OpenAPI schema 版本")
+    request_body = serializers.DictField(source="requestBody", required=False, allow_null=True, help_text="body参数")
+    responses = serializers.DictField(required=False, allow_null=True, help_text="response参数")
+    parameters = serializers.ListField(
+        required=False, allow_empty=True, child=serializers.DictField(), help_text="请求参数列表"
+    )
+
+
 class ResourceInputSLZ(serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     name = serializers.RegexField(
@@ -198,6 +207,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
         max_length=MAX_LABEL_COUNT_PER_RESOURCE,
         help_text="标签 ID 列表",
     )
+    openapi_schema = OpenapiSchemaSLZ(default=dict, allow_null=True, help_text="OpenAPI Schema")
 
     class Meta:
         model = Resource
@@ -219,6 +229,8 @@ class ResourceInputSLZ(serializers.ModelSerializer):
             "backend",
             # 标签
             "label_ids",
+            # OpenAPI Schema
+            "openapi_schema",
         ]
         lookup_field = "id"
 
@@ -275,6 +287,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
     def validate(self, data):
         self._validate_method(data["gateway"], data["path"], data["method"])
         self._validate_match_subpath(data)
+        self._validate_openapi_schema(data)
 
         data["resource"] = self.instance
 
@@ -307,6 +320,15 @@ class ResourceInputSLZ(serializers.ModelSerializer):
                     method_any=HTTP_METHOD_ANY,
                 )
             )
+
+    def _validate_openapi_schema(self, data):
+        if not data.get("openapi_schema"):
+            return
+        openapi_schema = data.get("openapi_schema")
+        request_body = openapi_schema.get("requestBody")
+        parameters = openapi_schema.get("parameters")
+        if not request_body and not parameters:
+            raise serializers.ValidationError(_("OpenAPI Schema 中必须包含 requestBody 或者 parameters。"))
 
     def _validate_match_subpath(self, data):
         if data.get("match_subpath", False) != data["backend"]["config"].get("match_subpath", False):

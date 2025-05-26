@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from cachetools import TTLCache, cached
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
@@ -38,6 +39,7 @@ from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_openapi_schema import ResourceOpenAPISchemaVersionHandler
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
 from apigateway.common.constants import CACHE_TIME_5_MINUTES
+from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
 from apigateway.utils import time as time_utils
@@ -301,9 +303,17 @@ class ResourceVersionHandler:
 
     @staticmethod
     @cached(cache=TTLCache(maxsize=300, ttl=CACHE_TIME_5_MINUTES))
-    def get_resource_names_set(resource_version_id: int) -> Set[str]:
+    def get_resource_names_set(resource_version_id: int, raise_exception: bool = False) -> Set[str]:
+        """获取资源版本中的资源名称列表, 缓存 5 分钟
+
+        Args:
+            resource_version_id (int): 资源版本 ID
+            raise_exception (bool, optional): 是否抛出异常, 如果资源版本不存在, 则抛出异常. 默认 False
+        """
         resource_version = ResourceVersion.objects.filter(id=resource_version_id).first()
         if not resource_version:
+            if raise_exception:
+                raise error_codes.NOT_FOUND.format(_("资源版本不存在"))
             return set()
         return {resource["name"] for resource in resource_version.data}
 
