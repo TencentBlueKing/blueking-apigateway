@@ -35,7 +35,7 @@ from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
-from apigateway.components.paas import create_paas_app, paas_app_module_offline
+from apigateway.components.paas import create_paas_app
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import (
     GatewayKindEnum,
@@ -43,7 +43,7 @@ from apigateway.core.constants import (
     ProgrammableGatewayLanguageEnum,
     PublishSourceEnum,
 )
-from apigateway.core.models import Gateway, Stage
+from apigateway.core.models import Gateway
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.user_credentials import get_user_credentials_from_request
@@ -318,19 +318,9 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
         # 触发网关发布
         if is_need_publish:
             # 由于没有办法知道停用状态 (网关停用会变更环境的发布状态) 之前的各环境发布状态，则启用会发布所有环境
+            # todo: 编程网关启用需要特殊处理
             source = PublishSourceEnum.GATEWAY_ENABLE if instance.is_active else PublishSourceEnum.GATEWAY_DISABLE
             trigger_gateway_publish(source, request.user.username, instance.id)
-            # todo: 编程网关启用需要特殊处理
-            if instance.is_programmable and source == PublishSourceEnum.GATEWAY_DISABLE:
-                # 编程网关停用时，需要调用 paas 的 module_offline 接口下架所有环境
-                active_stages = Stage.objects.get_gateway_name_to_active_stage_names([instance]).get(instance.name, [])
-                for stage_name in active_stages:
-                    paas_app_module_offline(
-                        app_code=request.gateway.name,
-                        module="default",
-                        env=stage_name,
-                        user_credentials=get_user_credentials_from_request(request),
-                    )
 
         Auditor.record_gateway_op_success(
             op_type=OpTypeEnum.MODIFY,

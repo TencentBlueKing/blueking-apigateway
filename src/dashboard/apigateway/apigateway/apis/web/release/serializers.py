@@ -29,6 +29,7 @@ from apigateway.core.constants import (
     PublishEventEnum,
     PublishEventNameTypeEnum,
     PublishEventStatusEnum,
+    PublishSourceEnum,
     ReleaseHistoryStatusEnum,
 )
 from apigateway.core.models import PublishEvent, ReleaseHistory, ResourceVersion, Stage
@@ -82,7 +83,7 @@ class ReleaseResourceSchemaOutputSLZ(serializers.Serializer):
     response_schema = serializers.JSONField(required=False, help_text="response schema")
 
 
-class ReleaseHistoryQueryInputSLZ(serializers.Serializer):
+class ReleaseHistoryQueryInputSLutSLZ(serializers.Serializer):
     keyword = serializers.CharField(allow_blank=True, required=False, help_text="查询参数关键字")
     stage_id = serializers.IntegerField(allow_null=True, required=False, help_text="环境 id")
     created_by = serializers.CharField(allow_blank=True, required=False, help_text="创建者")
@@ -170,6 +171,7 @@ class DeployHistoryOutputSLZ(serializers.Serializer):
     history_id = serializers.IntegerField(source="publish_id", read_only=True, help_text="网关发布历史id")
     commit_id = serializers.CharField(read_only=True, help_text="commit_id")
     branch = serializers.CharField(read_only=True, help_text="分支")
+    source = serializers.CharField(read_only=True, help_text="发布来源")
     stage = ReleaseStageSLZ()
     status = serializers.SerializerMethodField(read_only=True, help_text="paas部署状态")
     created_time = serializers.DateTimeField(read_only=True, help_text="paas部署创建时间")
@@ -198,11 +200,16 @@ class ProgrammableDeployCreateInputSLZ(serializers.Serializer):
     version = serializers.CharField(required=True, help_text="发布版本号")
     comment = serializers.CharField(help_text="版本日志")
 
-    def validate_version(self, value):
-        if ReleaseHistory.objects.filter(resource_version__version=value).exists():
+    def validate(self, data):
+        gateway = self.context["gateway"]
+        # 判断该版本是否已经发布过
+        if ProgrammableGatewayDeployHistory.objects.filter(
+            gateway=gateway,
+            stage_id=data["stage_id"],
+            source=PublishSourceEnum.VERSION_PUBLISH.value,
+            version=data["version"],
+        ).exists():
             raise serializers.ValidationError(_("编程网关每个版本只允许发布一次"))
-
-        return value
 
 
 class ProgrammableDeployEventGetOutputSLZ(ReleaseHistoryEventRetrieveOutputSLZ):
