@@ -36,6 +36,7 @@ class GatewayPermission(permissions.BasePermission):
         gateway_obj = self.get_gateway_object(view)
 
         # FIXME: 可能的越权，待重构 open api 之后，确认剩下的逻辑哪里有需要这个的
+        # 注意，例如文档/sdk 等 web API 接口，没有带 gateway_id 路径参数，只校验了是否登录，使用的这个 Permission
         # 路径参数 gateway_id 不存在，不需要校验网关权限
         if not gateway_obj:
             return True

@@ -49,4 +49,4 @@ def update_stage_mcp_server_related_resource_names(
         to_update.append(mcp_server)
 
     if to_update:
-        MCPServer.objects.bulk_update(to_update, fields=["resource_names"])
+        MCPServer.objects.bulk_update(to_update, fields=["_resource_names"])
