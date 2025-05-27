@@ -22,7 +22,7 @@ from rest_framework import serializers
 from apigateway.biz.ai.constant import AIContentTypeEnum
 
 
-class AICompletionInputSLZ(serializers.Serializer):
+class AICompletionContentInfo(serializers.Serializer):
     type = serializers.ChoiceField(
         choices=AIContentTypeEnum.get_choices(),
         required=True,
@@ -30,3 +30,8 @@ class AICompletionInputSLZ(serializers.Serializer):
     )
     content = serializers.CharField(required=True, help_text="ai content")
     enable_streaming = serializers.BooleanField(default=False, help_text="开启流式返回")
+
+
+class AICompletionInputSLZ(serializers.Serializer):
+    # 前端组件规定传入的参数必须放在一个名为inputs的对象中
+    inputs = AICompletionContentInfo()
