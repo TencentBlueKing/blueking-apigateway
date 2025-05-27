@@ -83,7 +83,7 @@ class ReleaseResourceSchemaOutputSLZ(serializers.Serializer):
     response_schema = serializers.JSONField(required=False, help_text="response schema")
 
 
-class ReleaseHistoryQueryInputSLutSLZ(serializers.Serializer):
+class ReleaseHistoryQueryInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(allow_blank=True, required=False, help_text="查询参数关键字")
     stage_id = serializers.IntegerField(allow_null=True, required=False, help_text="环境 id")
     created_by = serializers.CharField(allow_blank=True, required=False, help_text="创建者")
