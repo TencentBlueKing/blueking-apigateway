@@ -44,6 +44,7 @@
           <date-picker
             class="date-choose"
             v-model="dateTime"
+            :common-use-list="AccessLogStore.commonUseList"
             :valid-date-range="['now-6M', 'now/d']"
             format="YYYY-MM-DD HH:mm:ss"
             @update:model-value="handleValueChange"
@@ -119,7 +120,7 @@ import {
 import dayjs from 'dayjs';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
-import { useCommon } from '@/store';
+import { useAccessLog, useCommon } from '@/store';
 import DatePicker from '@blueking/date-picker';
 import '@blueking/date-picker/vue3/vue3.css';
 import ResourceSearcher from '@/views/operate-data/dashboard/components/resource-searcher.vue';
@@ -140,6 +141,7 @@ type InfoTypeItem = {
 
 const { t } = useI18n();
 const common = useCommon();
+const AccessLogStore = useAccessLog();
 
 const dateTime = ref(['now-30d', 'now']);
 const formatTime = ref<string[]>([dayjs().subtract(30, 'day')
