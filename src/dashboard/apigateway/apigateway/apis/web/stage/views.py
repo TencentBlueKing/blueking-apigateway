@@ -408,7 +408,9 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
         data_before = {"status": instance.status}
 
         username = request.user.username
-        StageHandler.set_status(instance, data["status"], username)
+        StageHandler.set_status(
+            instance, data["status"], username, user_credentials=get_user_credentials_from_request(request)
+        )
 
         # 环境下架时，将环境下的所有 MCPServer 设置为停用
         if data["status"] == StageStatusEnum.INACTIVE.value:
