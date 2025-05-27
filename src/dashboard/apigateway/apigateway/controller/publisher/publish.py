@@ -20,7 +20,9 @@ from typing import List, Optional, Tuple
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 
+from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.common.event.event import PublishEventReporter
+from apigateway.components.paas import paas_app_module_offline
 from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.tasks import revoke_release, rolling_update_release
 from apigateway.core.constants import (
@@ -31,6 +33,7 @@ from apigateway.core.constants import (
     TriggerPublishTypeEnum,
 )
 from apigateway.core.models import Gateway, Release, ReleaseHistory
+from apigateway.utils.user_credentials import UserCredentials
 
 logger = logging.getLogger(__name__)
 
@@ -134,12 +137,41 @@ def _trigger_revoke_publish_for_disable(
     author: str,
     release_list: List[Release],
     is_sync: Optional[bool] = False,
+    user_credentials: Optional[UserCredentials] = None,
 ):
     """触发撤销发布"""
 
     for release in release_list:
         # 创建发布历史
         release_history = _save_release_history(release, source, author)
+
+        # 如果是编程网关需要特殊处理
+        if release.gateway.is_programmable and user_credentials:
+            # 需要调用paas 下线接口
+            # 停用时，需要调用 paas 的 module_offline 接口下架环境
+            offline_operation_id = paas_app_module_offline(
+                app_code=release.gateway.name,
+                module="default",
+                env=release.stage.name,
+                user_credentials=user_credentials,
+            )
+            last_deploy_history = ProgrammableGatewayDeployHistory.objects.filter(
+                gateway=release.gateway,
+                version=release.resource_version.version,
+            ).first()
+            if last_deploy_history:
+                ProgrammableGatewayDeployHistory.objects.create(
+                    gateway=release.gateway,
+                    stage=release.stage,
+                    branch=last_deploy_history.branch,
+                    version=release.resource_version.version,
+                    commit_id=last_deploy_history.commit_id,
+                    deploy_id=offline_operation_id,
+                    publish_id=release_history.id,
+                    created_by=author,
+                    source=source.value,
+                )
+
         # 发布 check
         ok, msg = _is_gateway_ok_for_releasing(release, source)
         # 上报发布配置校验事件
@@ -179,6 +211,7 @@ def trigger_gateway_publish(
     gateway_id: int,
     stage_id: Optional[int] = None,
     is_sync: Optional[bool] = False,
+    user_credentials: Optional[UserCredentials] = None,
 ):
     """触发网关发布"""
     """
@@ -206,7 +239,9 @@ def trigger_gateway_publish(
         return _trigger_rolling_publish(source, author, release_list, is_sync=is_sync)
 
     if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE:
-        return _trigger_revoke_publish_for_disable(source, author, release_list, is_sync=is_sync)
+        return _trigger_revoke_publish_for_disable(
+            source, author, release_list, is_sync=is_sync, user_credentials=user_credentials
+        )
 
     if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_REVOKE_DELETE_RELEASE:
         return _trigger_revoke_publish_for_deleting(release_list, is_sync=is_sync)
