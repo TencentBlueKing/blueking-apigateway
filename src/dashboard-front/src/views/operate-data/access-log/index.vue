@@ -7,13 +7,13 @@
             :key="dateKey"
             ref="datePickerRef"
             v-model="dateTimeRange"
+            style="width: 300px;"
             :clearable="false"
             :placeholder="t('选择日期时间范围')"
             :shortcut-close="true"
             :shortcut-selected-index="shortcutSelectedIndex"
             :shortcuts="AccessLogStore.datepickerShortcuts"
             :use-shortcut-text="true"
-            style="width: 416px;"
             type="datetimerange"
             @change="handlePickerChange"
             @shortcut-change="handleShortcutChange"
@@ -25,7 +25,7 @@
             v-model="searchParams.stage_id"
             :clearable="false"
             searchable
-            style="min-width: 296.5px;"
+            style="width: 150px;"
             @change="handleStageChange"
           >
             <bk-option v-for="option in stageList" :id="option.id" :key="option.id" :name="option.name">
@@ -45,7 +45,7 @@
         <bk-form-item :label="t('查询语句')" class="ag-form-item-inline">
           <SearchInput
             v-model:mode-value="keyword"
-            class="top-search-input"
+            style="width: 466px;"
             @choose="handleChoose"
             @search="handleSearch"
           />
@@ -1025,10 +1025,6 @@ onBeforeUnmount(() => {
         .suffix {
           margin-left: 4px;
         }
-      }
-
-      .top-search-input {
-        width: 274px;
       }
     }
   }
