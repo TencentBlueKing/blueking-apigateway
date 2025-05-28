@@ -21,6 +21,7 @@ from django.utils.translation import gettext_lazy as _
 
 from apigateway.apps.programmable_gateway.managers import ProgrammableGatewayDeployHistoryManager
 from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
+from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Gateway, Stage
 
 
@@ -35,6 +36,26 @@ class ProgrammableGatewayDeployHistory(TimestampedModelMixin, OperatorModelMixin
     version = models.CharField(max_length=128, default="", db_index=True, help_text=_("符合 semver 规范"))
     commit_id = models.CharField(max_length=128, blank=True, null=True)
     deploy_id = models.CharField(max_length=128, blank=True, db_index=True, null=True)
+    # 发布来源
+    source = models.CharField(
+        max_length=64,
+        choices=[
+            # 编程网关部署只有三种发布来源：版本发布、环境下架、网关停用
+            (
+                PublishSourceEnum.GATEWAY_DISABLE.value,
+                PublishSourceEnum.get_choice_label(PublishSourceEnum.GATEWAY_DISABLE),
+            ),
+            (
+                PublishSourceEnum.VERSION_PUBLISH.value,
+                PublishSourceEnum.get_choice_label(PublishSourceEnum.VERSION_PUBLISH.value),
+            ),
+            (
+                PublishSourceEnum.STAGE_DISABLE.value,
+                PublishSourceEnum.get_choice_label(PublishSourceEnum.STAGE_DISABLE),
+            ),
+        ],
+        default=PublishSourceEnum.VERSION_PUBLISH.value,
+    )
     # publish_id -> ReleaseHistory.id
     publish_id = models.IntegerField(blank=True, null=True)
     objects = ProgrammableGatewayDeployHistoryManager()

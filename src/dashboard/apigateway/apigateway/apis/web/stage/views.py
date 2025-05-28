@@ -30,10 +30,14 @@ from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.components.paas import get_paas_deployment_result, get_paas_repo_branch_info, paas_app_module_offline
+from apigateway.components.paas import (
+    get_paas_deployment_result,
+    get_paas_offline_result,
+    get_paas_repo_branch_info,
+)
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum, ReleaseHistoryStatusEnum, StageStatusEnum
-from apigateway.core.models import BackendConfig, ReleaseHistory, Stage
+from apigateway.core.models import BackendConfig, Gateway, ReleaseHistory, Stage
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.user_credentials import get_user_credentials_from_request
@@ -404,20 +408,13 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
         data_before = {"status": instance.status}
 
         username = request.user.username
-        StageHandler.set_status(instance, data["status"], username)
+        StageHandler.set_status(
+            instance, data["status"], username, user_credentials=get_user_credentials_from_request(request)
+        )
 
         # 环境下架时，将环境下的所有 MCPServer 设置为停用
         if data["status"] == StageStatusEnum.INACTIVE.value:
             MCPServerHandler.disable_servers(gateway_id=request.gateway.id, stage_id=instance.id)
-
-        if data["status"] == StageStatusEnum.INACTIVE.value and instance.gateway.is_programmable:
-            # 调用paas下架接口
-            paas_app_module_offline(
-                app_code=request.gateway.name,
-                module="default",
-                env=instance.name,
-                user_credentials=get_user_credentials_from_request(request),
-            )
 
         Auditor.record_stage_op_success(
             op_type=OpTypeEnum.MODIFY,
@@ -445,6 +442,23 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
     lookup_field = "id"
     serializer_class = ProgrammableStageDeployOutputSLZ
     queryset = Stage.objects.all()
+
+    def _get_deploy_result(self, gateway: Gateway, deploy_history: ProgrammableGatewayDeployHistory, request):
+        # 查询paas部署结果
+        is_offline = deploy_history.source != PublishSourceEnum.VERSION_PUBLISH.value
+        if not is_offline:
+            return get_paas_deployment_result(
+                app_code=gateway.name,
+                module="default",
+                deploy_id=deploy_history.deploy_id,
+                user_credentials=get_user_credentials_from_request(request),
+            )
+        return get_paas_offline_result(
+            app_code=gateway.name,
+            module="default",
+            deploy_id=deploy_history.deploy_id,
+            user_credentials=get_user_credentials_from_request(request),
+        )
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -490,23 +504,14 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
                 latest_publish_status = ReleaseHistoryStatusEnum.DOING.value
 
         if deploy_history and latest_publish_status != "":
-            latest_history = ReleaseHistory.objects.filter(
-                gateway=gateway, stage_id=stage_id, resource_version__version=deploy_history.version
-            ).first()
-            if not latest_history:
+            if not deploy_history.publish_id:
                 latest_publish_status = ReleaseHistoryStatusEnum.DOING.value
             else:
-                latest_history_id = latest_history.id
-                latest_publish_status = ReleaseHandler.get_release_status(latest_history.id)
+                latest_publish_status = ReleaseHandler.get_release_status(deploy_history.publish_id)
+                latest_history_id = deploy_history.publish_id
 
         if deploy_history:
-            # 查询paas部署结果
-            result = get_paas_deployment_result(
-                app_code=gateway.name,
-                module="default",
-                deploy_id=deploy_history.deploy_id,
-                user_credentials=get_user_credentials_from_request(request),
-            )
+            result = self._get_deploy_result(gateway, deploy_history, request)
             # 正在发布的话需要判断是否失败
             if latest_publish_status != "" and result.get("status", "") == "failed":
                 latest_publish_status = ReleaseHistoryStatusEnum.FAILURE.value
@@ -517,11 +522,8 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
                 last_publish_status = ReleaseHistoryStatusEnum.FAILURE.value
             elif last_publish_status == "" and result.get("status", "") != "failed":
                 latest_deploy_history = deploy_history
-                latest_history = ReleaseHistory.objects.filter(
-                    gateway=gateway, stage_id=stage_id, resource_version__version=deploy_history.version
-                ).first()
-                if latest_history:
-                    latest_publish_status = ReleaseHandler.get_release_status(latest_history.id)
+                if deploy_history.publish_id:
+                    latest_publish_status = ReleaseHandler.get_release_status(deploy_history.publish_id)
                 else:
                     latest_publish_status = ReleaseHistoryStatusEnum.DOING.value
 

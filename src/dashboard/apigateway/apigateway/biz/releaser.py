@@ -288,6 +288,7 @@ class ProgramGatewayReleaser:
             commit_id=commit_id,
             deploy_id=deploy_id,
             created_by=username,
+            source=PublishSourceEnum.VERSION_PUBLISH.value,
         )
 
         # record audit log

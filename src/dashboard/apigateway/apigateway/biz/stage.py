@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from django.db import transaction
 from django.utils.translation import gettext as _
@@ -32,6 +32,7 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import Backend, BackendConfig, Release, Stage
 from apigateway.utils.time import now_datetime
+from apigateway.utils.user_credentials import UserCredentials
 
 
 class StageHandler:
@@ -86,14 +87,14 @@ class StageHandler:
         BackendConfig.objects.bulk_update(backends.values(), fields=["config", "updated_by", "updated_time"])
 
         # 触发环境发布
-        trigger_gateway_publish(PublishSourceEnum.STAGE_UPDATE, updated_by, stage.gateway_id, stage.id)
+        trigger_gateway_publish(PublishSourceEnum.STAGE_UPDATE, updated_by, stage.gateway.id, stage.id)
 
         return stage
 
     @staticmethod
     def delete(stage: Stage):
         # 删除stage CR  先删除crd，发布过程需要用到,发布过程中有用到release相关数据，这里需要同步发布
-        trigger_gateway_publish(PublishSourceEnum.STAGE_DELETE, "admin", stage.gateway_id, stage.id, is_sync=True)
+        trigger_gateway_publish(PublishSourceEnum.STAGE_DELETE, "admin", stage.gateway.id, stage.id, is_sync=True)
 
         with transaction.atomic():
             BackendConfig.objects.filter(gateway=stage.gateway, stage=stage).delete()
@@ -106,7 +107,7 @@ class StageHandler:
             stage.delete()
 
     @staticmethod
-    def set_status(stage: Stage, status: int, updated_by: str):
+    def set_status(stage: Stage, status: int, updated_by: str, user_credentials: Optional[UserCredentials] = None):
         stage.status = status
         stage.updated_by = updated_by
         stage.save()
@@ -114,7 +115,12 @@ class StageHandler:
         if status == StageStatusEnum.INACTIVE.value:
             # 触发环境发布
             trigger_gateway_publish(
-                PublishSourceEnum.STAGE_DISABLE, updated_by, stage.gateway_id, stage.id, is_sync=True
+                PublishSourceEnum.STAGE_DISABLE,
+                updated_by,
+                stage.gateway.id,
+                stage.id,
+                is_sync=True,
+                user_credentials=user_credentials,
             )
 
     @staticmethod

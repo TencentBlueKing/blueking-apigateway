@@ -13,7 +13,7 @@
             :shortcut-selected-index="shortcutSelectedIndex"
             :shortcuts="AccessLogStore.datepickerShortcuts"
             :use-shortcut-text="true"
-            style="width: 310px"
+            style="width: 416px;"
             type="datetimerange"
             @change="handlePickerChange"
             @shortcut-change="handleShortcutChange"
@@ -22,7 +22,10 @@
         </bk-form-item>
         <bk-form-item :label="t('环境')">
           <bk-select
-            v-model="searchParams.stage_id" :clearable="false" searchable style="width: 200px"
+            v-model="searchParams.stage_id"
+            :clearable="false"
+            searchable
+            style="min-width: 296.5px;"
             @change="handleStageChange"
           >
             <bk-option v-for="option in stageList" :id="option.id" :key="option.id" :name="option.name">
@@ -34,7 +37,8 @@
             v-model="searchParams.resource_id"
             :list="resourceList"
             :need-prefix="false"
-            style="width: 250px; margin-right: 8px;"
+            :placeholder="t('请输入资源名称或资源URL链接')"
+            style="min-width: 296.5px;"
             @change="handleResourceChange"
           />
         </bk-form-item>
@@ -46,9 +50,11 @@
             @search="handleSearch"
           />
         </bk-form-item>
-        <bk-form-item label="" style="margin-left: 0">
-          <bk-button theme="primary" @click="handleSearch(keyword)">{{ t('查询') }}</bk-button>
-          <bk-button class="ml10" @click="handleClearFilterKey">{{ t('重置') }}</bk-button>
+        <bk-form-item label=" ">
+          <div style="display: flex;justify-content: center;align-items: center;">
+            <bk-button theme="primary" @click="handleSearch(keyword)">{{ t('查询') }}</bk-button>
+            <bk-button class="ml10" @click="handleClearFilterKey">{{ t('重置') }}</bk-button>
+          </div>
         </bk-form-item>
       </bk-form>
     </div>
@@ -984,10 +990,11 @@ onBeforeUnmount(() => {
     margin-bottom: 24px;
 
     :deep(.search-form) {
-      .bk-form-item {
-        display: inline-block;
-        margin-left: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 16px;
 
+      .bk-form-item {
         &:first-child {
           margin-left: 0;
         }
@@ -1009,7 +1016,6 @@ onBeforeUnmount(() => {
       .ag-form-item-inline {
         margin-top: 0 !important;
         margin-left: 0 !important;
-        margin-right: 8px;
 
         .bk-form-content {
           display: flex !important;
@@ -1022,7 +1028,7 @@ onBeforeUnmount(() => {
       }
 
       .top-search-input {
-        width: 400px;
+        width: 274px;
       }
     }
   }
@@ -1196,16 +1202,6 @@ onBeforeUnmount(() => {
 
     .link {
       color: #3a84ff;
-    }
-  }
-}
-
-@media (max-width: 1753px) {
-  :deep(.search-form) {
-
-    .ag-form-item-inline {
-      margin-left: 0px !important;
-      margin-top: 10px !important;
     }
   }
 }

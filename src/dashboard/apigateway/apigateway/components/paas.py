@@ -226,6 +226,7 @@ def paas_app_module_offline(app_code: str, module: str, env: str, user_credentia
             local.request_id,
             resp_data["error"],
         )
+    return resp_data.get("offline_operation_id", "")
 
 
 def set_paas_stage_env(
@@ -334,6 +335,29 @@ def get_paas_deployment_result(
     """
     host = get_paas_host()
     url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/deployments/{deploy_id}/result/")
+    headers = gen_gateway_headers(user_credentials)
+    ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
+    if not ok:
+        logger.error(
+            "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
+            "paasv3",
+            "http_get",
+            url,
+            "",
+            local.request_id,
+            resp_data["error"],
+        )
+    return resp_data
+
+
+def get_paas_offline_result(
+    app_code: str, module: str, deploy_id: str, user_credentials: Optional[UserCredentials] = None
+):
+    """
+    获取部署详情
+    """
+    host = get_paas_host()
+    url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/offlines/{deploy_id}/result/")
     headers = gen_gateway_headers(user_credentials)
     ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
