@@ -8,6 +8,7 @@
             :valid-date-range="['now-6M', 'now/d']"
             class="date-choose"
             format="YYYY-MM-DD HH:mm:ss"
+            :common-use-list="AccessLogStore.commonUseList"
             style="width: 416px;"
             @update:model-value="handleValueChange"
           />
@@ -50,6 +51,15 @@
               :name="option">
             </bk-option>
           </bk-select>
+        </bk-form-item>
+        <bk-form-item :label="t('资源')">
+          <ResourceSearcher
+            v-model="searchParams.resource_id"
+            :list="resourceList"
+            :need-prefix="false"
+            style="width: 316px;"
+            @change="handleSearchChange()"
+          />
         </bk-form-item>
       </bk-form>
     </div>
@@ -121,7 +131,7 @@ import {
 import dayjs from 'dayjs';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
-import { useCommon } from '@/store';
+import { useAccessLog, useCommon } from '@/store';
 import DatePicker from '@blueking/date-picker';
 import '@blueking/date-picker/vue3/vue3.css';
 import ResourceSearcher from '@/views/operate-data/dashboard/components/resource-searcher.vue';
@@ -142,6 +152,7 @@ type InfoTypeItem = {
 
 const { t } = useI18n();
 const common = useCommon();
+const AccessLogStore = useAccessLog();
 
 const dateTime = ref(['now-30d', 'now']);
 const formatTime = ref<string[]>([dayjs().subtract(30, 'day')
