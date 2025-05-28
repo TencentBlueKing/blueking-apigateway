@@ -7,7 +7,7 @@
             :key="dateKey"
             ref="datePickerRef"
             v-model="dateTimeRange"
-            style="width: 300px;"
+            style="width: 312px;"
             :clearable="false"
             :placeholder="t('选择日期时间范围')"
             :shortcut-close="true"
