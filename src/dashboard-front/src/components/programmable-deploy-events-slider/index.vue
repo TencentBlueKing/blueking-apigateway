@@ -7,7 +7,11 @@
     </template>
     <template #default>
       <div class="deploy-status-alert-wrapper">
-        <div v-if="status === 'pending' || status === 'doing'" class="deploying-alert">
+        <!-- 环境下线操作，展示下线状态 -->
+        <div v-if="source === 'stage_disable'" class="deploying-alert">
+          <div class="main-text">{{ t('已下线') }}</div>
+        </div>
+        <div v-else-if="status === 'pending' || status === 'doing'" class="deploying-alert">
           <div class="loading-icon">
             <Spinner />
           </div>
@@ -244,6 +248,9 @@ const deployStatus = ref('');
 
 const historyStage = ref<{ id: number, name: string } | null>();
 const historyVersion = ref('');
+
+// 操作类型
+const source = ref('');
 
 const editorRef = ref();
 
@@ -489,6 +496,7 @@ const getEvents = async () => {
     events_template,
     events: gatewayEventsResponse,
     paas_deploy_info: paasResponse,
+    source: sourceResponse,
     status,
   } = await requestFunc(apigwId.value, props.deployId || props.historyId);
 
@@ -496,6 +504,7 @@ const getEvents = async () => {
   historyVersion.value = resource_version_display || '';
   deployedBy.value = created_by || '';
   deployStatus.value = status || '';
+  source.value = sourceResponse || '';
 
   paasEventInstances.value = (paasResponse.events_instance && Array.isArray(paasResponse.events_instance))
     ? paasResponse.events_instance : [];
@@ -506,11 +515,27 @@ const getEvents = async () => {
   let paasOutputLines: string[] = [];
   const gatewayOutputLines: string[] = [];
 
+  const paasLogs = paasResponse?.deploy_result?.logs
+    || paasResponse?.deploy_result?.log
+    || paasResponse?.deploy_result?.err_detail;
+
   // events 为空，且 deploy_result 里有返回信息，实则paas部署出问题了，展示 logs
-  if (!paasEvents.length && paasResponse?.deploy_result?.logs) {
+  if (!paasEvents.length && paasLogs) {
     paasOutputLines = [
-      paasResponse.deploy_result.logs || 'Error',
+      paasLogs || 'Error',
       '\n\n',
+    ];
+    paasEventInstances.value = [
+      {
+        display_name: t('PaaS 部署'),
+        type: '',
+        steps: [],
+        display_blocks: null,
+        uuid: '',
+        status: 'successful',
+        start_time: '',
+        complete_time: '',
+      },
     ];
   } else {
     paasEvents.forEach((event) => {
@@ -588,6 +613,7 @@ const resetStates = () => {
   deployStatus.value = '';
   historyStage.value = null;
   historyVersion.value = '';
+  source.value = '';
 };
 
 const handleGoDebug = () => {

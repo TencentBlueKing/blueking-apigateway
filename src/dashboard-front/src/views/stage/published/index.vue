@@ -54,7 +54,7 @@
     <!-- 日志抽屉 -->
     <log-details ref="logDetailsRef" :history-id="historyId" />
 
-    <!-- 日志弹窗 -->
+    <!-- 可编程网关日志抽屉 -->
     <EventSlider
       ref="programmableLogDetailsRef"
       :deploy-id="deployId"
@@ -167,6 +167,11 @@ const columns = computed(() =>
         field: 'stage.name',
       },
       {
+        label: t('类型'),
+        width: 100,
+        render: ({ row }: any) => <div>{getTextFromEnum(publishSourceEnum, row.source)}</div>,
+      },
+      {
         label: t('分支'),
         field: 'branch',
       },
@@ -180,6 +185,7 @@ const columns = computed(() =>
       },
       {
         label: t('部署状态'),
+        width: 120,
         render: ({ row }: any) =>
           <div>
             {

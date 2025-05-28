@@ -118,7 +118,7 @@ export interface IPaasEventInstance {
   display_name: string; // 显示名称
   type: string; // 类型
   steps: IInstanceStep[]; // 步骤数组
-  display_blocks: DisplayBlocksPreparation | DisplayBlocksBuild | DisplayBlocksRelease; // 显示块
+  display_blocks: DisplayBlocksPreparation | DisplayBlocksBuild | DisplayBlocksRelease | null; // 显示块
   uuid: string; // 唯一标识符
   status: null | string; // 状态
   start_time: null | string; // 开始时间
@@ -129,6 +129,8 @@ export interface IPaasEventInstance {
 interface IPaasDeployInfo {
   deploy_result: {
     logs?: string;
+    log?: string;
+    err_detail?: string;
   };
   events: IEvent[]; // 事件数组
   events_framework: IEventsFramework[]; // 事件框架数组
