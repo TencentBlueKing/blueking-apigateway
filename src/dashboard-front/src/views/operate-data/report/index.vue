@@ -2,13 +2,23 @@
   <div class="page-wrapper-padding app-content">
     <div class="ag-top-header">
       <bk-form class="search-form" form-type="vertical">
+        <bk-form-item :label="t('日期选择器')">
+          <date-picker
+            v-model="dateTime"
+            :valid-date-range="['now-6M', 'now/d']"
+            class="date-choose"
+            format="YYYY-MM-DD HH:mm:ss"
+            style="width: 416px;"
+            @update:model-value="handleValueChange"
+          />
+        </bk-form-item>
         <bk-form-item :label="t('环境')">
           <bk-select
-            style="width: 316px;"
             v-model="searchParams.stage_id"
             :clearable="false"
             filterable
             :input-search="false"
+            style="min-width: 296.5px;"
             @change="handleSearchChange()">
             <bk-option
               v-for="option in stageList"
@@ -18,9 +28,19 @@
             </bk-option>
           </bk-select>
         </bk-form-item>
+        <bk-form-item :label="t('资源')">
+          <ResourceSearcher
+            v-model="searchParams.resource_id"
+            :list="resourceList"
+            :need-prefix="false"
+            :placeholder="t('请输入资源名称或资源URL链接')"
+            style="min-width: 296.5px;"
+            @change="handleSearchChange()"
+          />
+        </bk-form-item>
         <bk-form-item :label="t('蓝鲸应用')">
           <bk-select
-            style="width: 316px;"
+            style="min-width: 296.5px;"
             v-model="searchParams.bk_app_code"
             @change="handleSearchChange()">
             <bk-option
@@ -30,24 +50,6 @@
               :name="option">
             </bk-option>
           </bk-select>
-        </bk-form-item>
-        <bk-form-item :label="t('资源')">
-          <ResourceSearcher
-            v-model="searchParams.resource_id"
-            :list="resourceList"
-            :need-prefix="false"
-            style="width: 316px;"
-            @change="handleSearchChange()"
-          />
-        </bk-form-item>
-        <bk-form-item :label="t('日期选择器')">
-          <date-picker
-            class="date-choose"
-            v-model="dateTime"
-            :valid-date-range="['now-6M', 'now/d']"
-            format="YYYY-MM-DD HH:mm:ss"
-            @update:model-value="handleValueChange"
-          />
         </bk-form-item>
       </bk-form>
     </div>
@@ -441,11 +443,12 @@ init();
 .search-form {
   width: 100%;
   display: flex;
-  :deep(.bk-form-item) {
-    margin-right: 16px;
-  }
+  flex-wrap: wrap;
+  gap: 0 16px;
+
   .date-choose {
     background: #FFFFFF;
+    flex-shrink: 0;
   }
 }
 </style>
