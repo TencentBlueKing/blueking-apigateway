@@ -15,7 +15,7 @@
         @check-log="() => showLogs(stage)"
       />
 
-      <div v-if="!common.isProgrammableGateway" class="card-item add-stage" @click="handleAddStage">
+      <div v-if="!common.isProgrammableGateway && !isLoading" class="card-item add-stage" @click="handleAddStage">
         <i class="apigateway-icon icon-ag-add-small" />
       </div>
     </div>
@@ -23,7 +23,7 @@
     <!-- 环境侧边栏 -->
     <EditStageSideslider ref="stageSidesliderRef" />
 
-    <!-- 发布资源至环境 -->
+    <!-- 发布普通网关的资源至环境 -->
     <ReleaseSideslider
       ref="releaseSidesliderRef"
       :current-assets="currentStage"
@@ -213,6 +213,7 @@ const handleRelease = async (stage: any) => {
 // 发布成功
 const handleReleaseSuccess = async (loading = true) => {
   await mitt.emit('get-environment-list-data', loading);
+  await fetchStageList();
 };
 
 // 查看日志
@@ -246,18 +247,14 @@ const handleStageUnlist = async (id: number) => {
       const data = {
         status: 0,
       };
-      try {
-        await removalStage(apigwId.value, id, data);
-        Message({
-          message: t('下架成功'),
-          theme: 'success',
-        });
-        // 获取网关列表
-        await mitt.emit('get-environment-list-data', true);
-        // 开启loading
-      } catch (error) {
-        console.error(error);
-      }
+      await removalStage(apigwId.value, id, data);
+      Message({
+        message: t('下架成功'),
+        theme: 'success',
+      });
+      // 获取网关列表
+      await mitt.emit('get-environment-list-data', true);
+      await fetchStageList();
     },
   });
 };

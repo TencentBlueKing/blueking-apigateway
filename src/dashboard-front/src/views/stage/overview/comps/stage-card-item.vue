@@ -1,8 +1,7 @@
 <template>
   <div class="stage-card-item">
     <div class="card-header">
-      <div class="name">{{ stage.name }}</div>
-      <div class="status-indicator">
+      <div v-if="!loading" class="status-indicator">
         <Spinner v-if="status === 'doing'" style="color:#3a84f6; font-size: 16px;" />
         <div
           v-else
@@ -14,6 +13,7 @@
         >
         </div>
       </div>
+      <div class="name">{{ stage.name }}</div>
     </div>
     <div class="card-main">
       <div class="text-info">
@@ -238,16 +238,20 @@ const status = computed(() => {
     return '';
   }
   if (common.isProgrammableGateway) {
-    if (props.stage.paasInfo?.status) {
-      return props.stage.paasInfo?.status;
+    if (props.stage.paasInfo?.status === 'doing'
+      || props.stage.paasInfo?.status === 'pending'
+      || props.stage.paasInfo?.latest_deployment?.status === 'doing'
+      || props.stage.paasInfo?.latest_deployment?.status === 'pending') {
+      return 'doing';
     }
     // 未发布
     if (props.stage.status === 0 || props.stage.release?.status === 'unreleased') {
       return 'unreleased';
     }
-    if (props.stage.paasInfo?.latest_deployment?.status) {
-      return props.stage.paasInfo?.latest_deployment?.status;
-    }
+    return props.stage.paasInfo?.status
+      || props.stage.paasInfo?.latest_deployment?.status
+      || props.stage.release?.status
+      || '';
   }
   // 未发布
   if (props.stage.status === 0 || props.stage.release?.status === 'unreleased') {
