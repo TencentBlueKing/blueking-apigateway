@@ -178,14 +178,17 @@
 
                       </dd>
                     </div>
-                    <bk-button
-                      class="share-btn"
-                      theme="primary"
-                      outline
-                      @click="handleClickCopyLink(row)"
-                      :loading="isShareLoading">
-                      {{ t('复制分享链接') }}
-                    </bk-button>
+                    <div class="share-btn">
+                      <AiBluekingButton v-if="user.isAIEnabled" @click="() => handleAIChatClick(row)" />
+                      <bk-button
+                        :loading="isShareLoading"
+                        outline
+                        theme="primary"
+                        @click="handleClickCopyLink(row)"
+                      >
+                        {{ t('复制分享链接') }}
+                      </bk-button>
+                    </div>
                   </dl>
                 </template>
                 <template #empty>
@@ -199,12 +202,17 @@
         </bk-collapse-panel>
       </bk-collapse>
     </bk-loading>
+    <AiChatSlider
+      v-if="user.isAIEnabled"
+      v-model="isAISliderShow"
+      :message="aiRequestMessage"
+      :title="t('日志详情分析')"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
 import dayjs from 'dayjs';
-import i18n from '@/language/i18n';
 import SearchInput from './components/search-input.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import echarts from 'echarts';
@@ -228,6 +236,7 @@ import { SearchParamsInterface } from './common/type';
 import {
   useAccessLog,
   useCommon,
+  useUser,
 } from '@/store';
 import { userChartIntervalOption } from '@/hooks';
 import {
@@ -250,15 +259,20 @@ import { Message } from 'bkui-vue';
 import { useStorage } from '@vueuse/core';
 import AgIcon from '@/components/ag-icon.vue';
 import ResourceSearcher from '@/views/operate-data/dashboard/components/resource-searcher.vue';
+import AiBluekingButton from '@/components/ai-blueking-button.vue';
+import AiChatSlider from '@/components/ai-chat-slider.vue';
+import { useI18n } from 'vue-i18n';
 
-const { t } = i18n.global;
+const { t } = useI18n();
 const { getChartIntervalOption } = userChartIntervalOption();
 const commonStore = useCommon();
 const AccessLogStore = useAccessLog();
+const user = useUser();
 // const globalProperties = useGetGlobalProperties();
 // const { GLOBAL_CONFIG } = globalProperties;
 // 从localStorage 提取搜索历史
 const queryHistory = useStorage('access-log-query-history', []);
+
 const activeIndex = ref<number[]>([1, 2, 3]);
 const keyword = ref('');
 const chartInstance = ref(null);
@@ -328,6 +342,14 @@ const table = ref({
 const includeObj = ref<string[]>([]);
 const excludeObj = ref<string[]>([]);
 
+// const searchUsage = ref({
+//   showed: false,
+// });
+const chartData: Record<string, any> = ref({});
+const stageList = ref([]);
+const isAISliderShow = ref(false);
+const aiRequestMessage = ref('');
+
 const searchConditions = computed(() => {
   const res: string[] = [];
   includeObj.value?.forEach((item: string) => {
@@ -345,19 +367,9 @@ const pageCount = computed(() => {
   return pagination.value.count;
 });
 
-// const searchUsage = ref({
-//   showed: false,
-// });
-const chartData: Record<string, any> = ref({});
-const stageList = ref([]);
-
 const isShowChart = computed(() => {
   return chartData.value?.series?.length > 0;
 });
-
-// const localLanguage = computed(() => {
-//   return 'zh-cn';
-// });
 
 const formatterValue = (params: Record<string, any>) => {
   return `${params.value.toLocaleString()}次`;
@@ -566,14 +578,10 @@ const getApigwStages = async () => {
     no_page: true,
     order_by: 'name',
   };
-  try {
-    const res = await fetchApigwStages(apigwId.value, pageParams);
-    stageList.value = res || [];
-    if (stageList.value.length) {
-      searchParams.value.stage_id = stageList.value[0].id;
-    }
-  } catch (e) {
-    console.error(e);
+  const res = await fetchApigwStages(apigwId.value, pageParams);
+  stageList.value = res || [];
+  if (stageList.value.length) {
+    searchParams.value.stage_id = stageList.value[0].id;
   }
 };
 
@@ -889,6 +897,19 @@ const initChart = async () => {
   });
 };
 
+const handleAIChatClick = (row: any) => {
+  const res: Record<string, any> = {};
+  table.value.fields.forEach(({ label, field }) => {
+    res[`${label}(${field})`] = row[field] || '--';
+  });
+  try {
+    aiRequestMessage.value = JSON.stringify(res);
+    isAISliderShow.value = true;
+  } catch {
+    aiRequestMessage.value = '';
+  }
+};
+
 onMounted(() => {
   initData();
   initChart();
@@ -1119,6 +1140,9 @@ onBeforeUnmount(() => {
         position: absolute;
         right: 28px;
         top: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
     }
   }

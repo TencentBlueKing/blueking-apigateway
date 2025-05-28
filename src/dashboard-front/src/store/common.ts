@@ -16,6 +16,8 @@ interface State {
   noGlobalError: boolean; // 请求出错是否显示全局的错误消息
 }
 
+const { BK_DASHBOARD_URL } = window;
+
 export const useCommon = defineStore('common', {
   state: (): State => ({
     // 网关id
@@ -96,6 +98,7 @@ export const useCommon = defineStore('common', {
   getters: {
     // 网关是否为可编程网关 kind === 1
     isProgrammableGateway: state => state?.curApigwData?.kind === 1,
+    aiCompletionAPI: state => `${BK_DASHBOARD_URL}/gateways/${state.apigwId}/ai/completion/`,
   },
   actions: {
     // 设置网关id

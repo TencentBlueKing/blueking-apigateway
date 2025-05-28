@@ -25,7 +25,7 @@
           </div>
           <div class="search">
             <bk-input
-              :placeholder="$t('请输入API名称')" right-icon="bk-icon icon-search" clearable
+              :placeholder="t('请输入API名称')" clearable right-icon="bk-icon icon-search"
               v-model="keyword"></bk-input>
           </div>
           <ul class="component-list" v-if="curComponentList.length">
@@ -116,12 +116,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { useRoute, useRouter } from 'vue-router';
 import {
-  getComponentSystemList,
+  computed,
+  ref,
+  watch,
+} from 'vue';
+import { useI18n } from 'vue-i18n';
+import {
+  useRoute,
+  useRouter,
+} from 'vue-router';
+import {
   getComponenSystemDetail,
+  getComponentSystemList,
   getSystemAPIList,
 } from '@/http';
 import logo1 from '@/images/1.svg';

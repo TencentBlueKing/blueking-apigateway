@@ -23,6 +23,9 @@
               </bk-tab>
             </div>
             <div class="response-status flex" @click="stopPropa" v-show="activeIndex?.includes(1)">
+              <div v-if="user.isAIEnabled" class="response-status-item">
+                <AiBluekingButton @click="handleAIClick" />
+              </div>
               <div class="response-status-item">
                 <span class="label">Status：</span>
                 <span :class="statusColor">
@@ -132,14 +135,34 @@
         </template>
       </bk-collapse-panel>
     </bk-collapse>
+    <AiChatSlider
+      v-if="user.isAIEnabled"
+      v-model="isAISliderShow"
+      :message="aiRequestMessage"
+      message-type="doc_translate"
+      :title="t('状态分析')"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, computed, nextTick } from 'vue';
+import {
+  computed,
+  nextTick,
+  ref,
+  watch,
+} from 'vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useI18n } from 'vue-i18n';
 import editorMonaco from '@/components/ag-editor.vue';
+import AiBluekingButton from '@/components/ai-blueking-button.vue';
+import { useUser } from '@/store';
+import AiChatSlider from '@/components/ai-chat-slider.vue';
+
+type TableDataItem = {
+  name: String;
+  value: String;
+};
 
 const props = defineProps({
   res: {
@@ -151,11 +174,7 @@ const props = defineProps({
 const emit = defineEmits(['response-fold', 'response-unfold']);
 
 const { t } = useI18n();
-
-type TableDataItem = {
-  name: String;
-  value: String;
-};
+const user = useUser();
 
 const activeIndex = ref<number[]>([]);
 const tabActive = ref<string>('body');
@@ -190,6 +209,9 @@ const detailsTypeList = ref([
 const editorText = ref<any>('');
 const resourceEditorRef: any = ref<InstanceType<typeof editorMonaco>>();
 const data = ref<any>({});
+
+const isAISliderShow = ref(false);
+const aiRequestMessage = ref('');
 
 const statusColor = computed(() => {
   let color = 'value';
@@ -301,6 +323,15 @@ watch(
     setTableData();
   },
 );
+
+const handleAIClick = () => {
+  try {
+    aiRequestMessage.value = JSON.stringify(props.res);
+    isAISliderShow.value = true;
+  } catch {
+    aiRequestMessage.value = '';
+  }
+};
 
 defineExpose({
   setInit,
