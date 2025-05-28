@@ -28,7 +28,7 @@ class AICompletionContentInfo(serializers.Serializer):
         required=True,
         help_text="ai content type",
     )
-    content = serializers.CharField(required=True, help_text="ai content")
+    input = serializers.CharField(required=True, help_text="ai content")
     enable_streaming = serializers.BooleanField(default=False, help_text="开启流式返回")
 
 
