@@ -160,7 +160,7 @@ import {
 } from '@/store';
 import {
   getGatewaysDetail,
-  getPermissionApplyList,
+  // getPermissionApplyList,
 } from '@/http';
 import mitt from '@/common/event-bus';
 import { cloneDeep } from 'lodash';
@@ -278,14 +278,14 @@ watch(
 );
 
 // 获取权限审批的数量
-const getPermList = async () => {
-  try {
-    const res = await getPermissionApplyList(apigwId.value, { offset: 0, limit: 10 });
-    permission.setCount(res.count);
-  } catch (error) {
-    console.log('error', error);
-  }
-};
+// const getPermList = async () => {
+//   try {
+//     const res = await getPermissionApplyList(apigwId.value, { offset: 0, limit: 10 });
+//     permission.setCount(res.count);
+//   } catch (error) {
+//     console.log('error', error);
+//   }
+// };
 
 const handleGoPage = async (routeName: string, id?: number) => {
   let result = true;
@@ -309,7 +309,7 @@ const getRouteData = (routeName: string, id?: number) => {
       id,
     },
   });
-  getPermList();
+  // getPermList();
 };
 
 mitt.on('update-name', ({ name }) => {
@@ -345,7 +345,7 @@ onMounted(async () => {
   gatewaysList.value = await getGatewaysListData();
   // 初始化设置一次
   handleSetApigwName();
-  getPermList();
+  // getPermList();
 });
 </script>
 
