@@ -10,7 +10,7 @@
             :valid-date-range="['now-2d', 'now/d']"
             class="date-choose"
             format="YYYY-MM-DD HH:mm:ss"
-            style="width: 416px; background: #fff;"
+            style="min-width: 154px;background: #fff;"
             @update:model-value="handleValueChange"
           />
         </bk-form-item>
@@ -20,7 +20,7 @@
             :clearable="false"
             :input-search="false"
             filterable
-            style="min-width: 296.5px;"
+            style="width: 150px;"
           >
             <bk-option
               v-for="option in stageList"
