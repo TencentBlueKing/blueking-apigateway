@@ -152,7 +152,7 @@ paths:
           resourcePermissionRequired: false
         descriptionEn: None
 
-  /api/v1/apis/{mcp_server_name}/see:
+  /mcp-servers/{mcp_server_name}/see:
     get:
       operationId: mcp_proxy_see
       description: mcp proxy see接口
@@ -181,7 +181,7 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: false
         descriptionEn: None
-  /api/v1/apis/{mcp_server_name}/see/message:
+  /mcp-servers/{mcp_server_name}/see/message:
     post:
       operationId: mcp_proxy_message
       description: mcp proxy message接口
