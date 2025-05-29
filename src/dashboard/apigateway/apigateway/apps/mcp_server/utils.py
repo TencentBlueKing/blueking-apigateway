@@ -21,4 +21,4 @@ from django.conf import settings
 
 def build_mcp_server_url(mcp_server_name: str) -> str:
     bk_apigateway_url = settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")
-    return f"{bk_apigateway_url}/prod/mcp-servers/{mcp_server_name}/sse/"
+    return f"{bk_apigateway_url}/prod/api/v2/mcp-servers/{mcp_server_name}/sse/"

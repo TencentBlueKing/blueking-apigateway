@@ -31,7 +31,7 @@ stage:
             weight: 100
     - name: "mcp-proxy"
       config:
-        timeout: 60
+        timeout: 300
         loadbalance: "roundrobin"
         hosts:
           - host: "{{ environ.MCP_PROXY_INNER_URL }}"

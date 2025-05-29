@@ -152,12 +152,12 @@ paths:
           resourcePermissionRequired: false
         descriptionEn: None
 
-  /mcp-servers/{mcp_server_name}/see:
+  /api/v2/mcp-servers/{mcp_server_name}/sse:
     get:
-      operationId: mcp_proxy_see
-      description: mcp proxy see接口
+      operationId: mcp_proxy_sse
+      description: mcp proxy sse接口
       tags:
-        - v1
+        - v2_mcp
       responses:
         default:
           description: ''
@@ -165,7 +165,7 @@ paths:
             application/json:
               schema: { }
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: false
         matchSubpath: false
         enableWebsocket: false
@@ -181,12 +181,12 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: false
         descriptionEn: None
-  /mcp-servers/{mcp_server_name}/see/message:
+  /api/v2/mcp-servers/{mcp_server_name}/sse/message:
     post:
       operationId: mcp_proxy_message
       description: mcp proxy message接口
       tags:
-        - v1
+        - v2_mcp
       responses:
         default:
           description: ''
@@ -194,7 +194,7 @@ paths:
             application/json:
               schema: { }
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: false
         matchSubpath: false
         enableWebsocket: false
