@@ -28,12 +28,15 @@ from rest_framework import generics, status
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
 from apigateway.apps.esb.bkcore.models import AppPermissionApplyRecord, ComponentSystem, ESBChannel
+from apigateway.apps.mcp_server.models import MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import GrantDimensionEnum, GrantTypeEnum, PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.models import AppPermissionRecord, AppResourcePermission
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.esb.permissions import ComponentPermissionManager
+from apigateway.biz.mcp_server import MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
+from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
@@ -631,4 +634,163 @@ class EsbAppPermissionApplyRecordRetrieveApi(generics.RetrieveAPIView):
         manager.patch_permission_apply_records([instance])
 
         slz = serializers.EsbAppPermissionApplyRecordRetrieveOutputSLZ(instance)
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="MCPServer 权限列表",
+        query_serializer=serializers.MCPServerPermissionListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.MCPServerPermissionListOutputSLZ()},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class MCPServerPermissionListApi(generics.ListAPIView):
+    permission_classes = [OpenAPIV2Permission]
+
+    def list(self, request, *args, **kwargs):
+        slz = serializers.MCPServerPermissionListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+
+        queryset = MCPServerPermissionHandler.list_permissions(
+            data["target_app_code"],
+            data.get("name"),
+            data.get("description"),
+        )
+
+        slz = serializers.MCPServerPermissionListOutputSLZ(queryset, many=True)
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="MCPServer 申请权限/批量申请权限",
+        request_body=serializers.MCPServerAppPermissionApplyCreateInputSLZ,
+        responses={status.HTTP_201_CREATED: ""},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
+    permission_classes = [OpenAPIV2Permission]
+    serializer_class = serializers.MCPServerAppPermissionApplyCreateInputSLZ
+
+    def create(self, request, *args, **kwargs):
+        slz = self.get_serializer(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+
+        MCPServerPermissionHandler.create_apply(
+            data["target_app_code"],
+            data["mcp_server_ids"],
+            data["reason"],
+            data["applied_by"],
+        )
+
+        return OKJsonResponse(status=status.HTTP_201_CREATED)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="MCPServer 已申请权限列表",
+        query_serializer=serializers.MCPServerAppPermissionListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.MCPServerAppPermissionListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class MCPServerAppPermissionListApi(generics.ListAPIView):
+    permission_classes = [OpenAPIV2Permission]
+    serializer_class = serializers.MCPServerAppPermissionListInputSLZ
+
+    def list(self, request, *args, **kwargs):
+        slz = self.get_serializer(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+
+        queryset = MCPServerPermissionHandler.list_applied_permissions(data["target_app_code"])
+
+        slz = serializers.MCPServerAppPermissionListOutputSLZ(queryset, many=True)
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="MCPServer 申请记录列表",
+        query_serializer=serializers.MCPServerAppPermissionRecordListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.MCPServerAppPermissionRecordListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
+    permission_classes = [OpenAPIV2Permission]
+    serializer_class = serializers.MCPServerAppPermissionRecordListInputSLZ
+
+    def list(self, request, *args, **kwargs):
+        slz = self.get_serializer(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+
+        queryset = MCPServerPermissionHandler.filter_records(
+            data["target_app_code"],
+            data.get("applied_by"),
+            data.get("apply_status"),
+            data.get("query"),
+            data.get("applied_time_start"),
+            data.get("applied_time_end"),
+        )
+
+        slz = serializers.MCPServerAppPermissionRecordListOutputSLZ(queryset, many=True)
+
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="MCPServer 申请记录详情",
+        query_serializer=serializers.MCPServerAppPermissionRecordRetrieveInputSLZ,
+        responses={status.HTTP_200_OK: serializers.MCPServerAppPermissionRecordRetrieveOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
+    permission_classes = [OpenAPIV2Permission]
+    queryset = MCPServerAppPermissionApply.objects.all()
+    serializer_class = serializers.MCPServerAppPermissionRecordRetrieveOutputSLZ
+    lookup_field = "id"
+
+    def get_object(self):
+        record_id = self.kwargs["record_id"]
+
+        slz = serializers.MCPServerAppPermissionRecordRetrieveInputSLZ(data=self.request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        try:
+            return MCPServerAppPermissionApply.objects.get(bk_app_code=data["target_app_code"], id=record_id)
+        except AppPermissionRecord.DoesNotExist:
+            raise error_codes.NOT_FOUND
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        stage_released_resources = ReleasedResourceHandler.get_public_released_resource_data_list(
+            instance.mcp_server.gateway.id,
+            instance.mcp_server.stage.name,
+            False,
+        )
+
+        instance.tool_names = [
+            r.name for r in stage_released_resources if r.name in set(instance.mcp_server.resource_names)
+        ]
+
+        slz = self.get_serializer(instance)
         return OKJsonResponse(data=slz.data)
