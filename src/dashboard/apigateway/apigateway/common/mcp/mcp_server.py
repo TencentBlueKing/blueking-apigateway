@@ -33,6 +33,7 @@ def update_stage_mcp_server_related_resource_names(
         resource_version_id (int): 资源版本 ID
     """
 
+    # 1. stage without mcp servers, do nothing
     mcp_servers = MCPServer.objects.filter(stage_id=stage_id).all()
     if not mcp_servers:
         return

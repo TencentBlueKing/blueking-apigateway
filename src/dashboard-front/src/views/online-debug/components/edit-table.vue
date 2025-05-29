@@ -2,17 +2,18 @@
   <bk-table
     class="variable-table"
     ref="bkTableRef"
-    row-hover="auto"
-    :data="tableData"
+    :cell-class="getCellClass"
     :checked="checkedList"
+    :data="tableData"
+    border="outer"
+    row-hover="auto"
     @select="handleSelect"
     @select-all="handleSelectAll"
-    :cell-class="getCellClass"
-    border="outer">
+  >
     <bk-table-column :width="55" type="selection" align="center" />
     <bk-table-column :label="t('参数名')" prop="name">
       <template #default="{ row, column, index }">
-        <bk-form :ref="(el: HTMLElement | null) => setRefs(el, `name-${index}`)" :model="row" label-width="0">
+        <bk-form :ref="(el: HTMLElement | null) => setRefs(el, 'name-', index)" :model="row" label-width="0">
           <bk-form-item
             property="name"
             error-display-type="tooltips"
@@ -20,10 +21,10 @@
             <bk-input
               v-if="type !== 'headers'"
               v-model="row.name"
+              :ref="(el: HTMLElement | null) => setInputRefs(el, `name-input-`, index, column?.index)"
               :clearable="false"
               class="edit-input"
               @blur="handleCellBlur(index)"
-              :ref="(el: HTMLElement | null) => setInputRefs(el, `name-input-${index}-${column?.index}`)"
             />
             <bk-select
               v-else
@@ -31,8 +32,9 @@
               :clearable="false"
               allow-create
               v-model="row.name"
+              :ref="(el: HTMLElement | null) => setInputRefs(el, `name-input-`, index, column?.index)"
               @change="handleNameChange(index, row.name)"
-              :ref="(el: HTMLElement | null) => setInputRefs(el, `name-input-${index}-${column?.index}`)"
+              @blur="() => handleHeaderKeySelectBlur(row, `name-input-`, index, column?.index)"
             >
               <bk-option
                 v-for="item in headersNameList"
@@ -47,7 +49,11 @@
     </bk-table-column>
     <bk-table-column :label="t('参数值')" prop="value">
       <template #default="{ row, column, index }">
-        <bk-form :ref="(el: HTMLElement | null) => setRefs(el, `value-${index}`)" :model="row" label-width="0">
+        <bk-form
+          :ref="(el: HTMLElement | null) => setRefs(el, `value-`, index)"
+          :model="row"
+          label-width="0"
+        >
           <bk-form-item
             property="value"
             error-display-type="tooltips"
@@ -58,7 +64,7 @@
               :clearable="false"
               v-model="row.value"
               @change="handleCellBlur(index)"
-              :ref="(el: HTMLElement | null) => setInputRefs(el, `value-input-${index}-${column?.index}`)"
+              :ref="(el: HTMLElement | null) => setInputRefs(el, `value-input-`, index, column?.index)"
             >
               <bk-option
                 v-for="item in row.options"
@@ -73,7 +79,7 @@
               :clearable="false"
               class="edit-input"
               @blur="handleCellBlur(index)"
-              :ref="(el: HTMLElement | null) => setInputRefs(el, `value-input-${index}-${column?.index}`)"
+              :ref="(el: HTMLElement | null) => setInputRefs(el, 'value-input-', index, column?.index)"
             />
           </bk-form-item>
         </bk-form>
@@ -81,7 +87,11 @@
     </bk-table-column>
     <bk-table-column :label="t('类型')" prop="type">
       <template #default="{ row, column, index }">
-        <bk-form :ref="(el: HTMLElement | null) => setRefs(el, `type-${index}`)" :model="row" label-width="0">
+        <bk-form
+          :ref="(el: HTMLElement | null) => setRefs(el, 'type-', index)"
+          :model="row"
+          label-width="0"
+        >
           <bk-form-item
             property="type"
             error-display-type="tooltips"
@@ -92,7 +102,7 @@
               :filterable="false"
               v-model="row.type"
               @change="handleCellBlur(index)"
-              :ref="(el: HTMLElement | null) => setInputRefs(el, `type-input-${index}-${column?.index}`)"
+              :ref="(el: HTMLElement | null) => setInputRefs(el, 'type-input-', index, column?.index)"
             >
               <bk-option
                 v-for="item in typeList"
@@ -107,7 +117,11 @@
     </bk-table-column>
     <bk-table-column :label="t('说明')" prop="instructions">
       <template #default="{ row, column, index }">
-        <bk-form :ref="(el: HTMLElement | null) => setRefs(el, `instructions-${index}`)" :model="row" label-width="0">
+        <bk-form
+          :ref="(el: HTMLElement | null) => setRefs(el, 'instructions-', index)"
+          :model="row"
+          label-width="0"
+        >
           <bk-form-item
             property="instructions"
             error-display-type="tooltips"
@@ -117,7 +131,7 @@
               :clearable="false"
               class="edit-input"
               @blur="handleCellBlur(index)"
-              :ref="(el: HTMLElement | null) => setInputRefs(el, `instructions-input-${index}-${column?.index}`)"
+              :ref="(el: HTMLElement | null) => setInputRefs(el, 'instructions-input-', index, column?.index)"
             />
           </bk-form-item>
         </bk-form>
@@ -137,7 +151,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, computed } from 'vue';
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
 import headersNames from '@/common/headers-name';
@@ -178,16 +196,16 @@ interface SelectPayload {
 }
 
 const formRefs = ref(new Map());
-const setRefs = (el: HTMLElement | null, name: string) => {
-  if (el) {
-    formRefs.value?.set(name, el);
+const setRefs = (el: HTMLElement | null, prefix: string, index: number) => {
+  if (el && index !== undefined) {
+    formRefs.value?.set(`${prefix}${index}`, el);
   }
 };
 
 const formInputRef = ref(new Map());
-const setInputRefs = (el: HTMLElement | null, name: string) => {
-  if (el) {
-    formInputRef.value?.set(name, el);
+const setInputRefs = (el: HTMLElement | null, prefix: string, index: number, columnIndex: number) => {
+  if (el && index !== undefined && columnIndex !== undefined) {
+    formInputRef.value?.set(`${prefix}${index}-${columnIndex}`, el);
   }
 };
 const getDefaultTbRow = () => {
@@ -349,6 +367,14 @@ watch(
     immediate: true,
   },
 );
+
+// Headers 选择器失焦后，去获取用户手动输入的值
+const handleHeaderKeySelectBlur = (row: RowType, inputRefNamePrefix: string, index: number, columnIndex: number) => {
+  if (inputRefNamePrefix && index !== undefined && columnIndex !== undefined) {
+    const selectRef = formInputRef.value.get(`${inputRefNamePrefix}${index}-${columnIndex}`);
+    row.name = selectRef?.curSearchValue || row.name || '';
+  }
+};
 
 defineExpose({
   validate,

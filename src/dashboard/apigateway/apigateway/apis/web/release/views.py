@@ -440,8 +440,7 @@ class BaseProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
         is_offline = instance.source != PublishSourceEnum.VERSION_PUBLISH.value
 
         # 获取发布历史事件
-        release_history = ReleaseHistory.objects.filter(id=instance.publihs_id).first()
-
+        release_history = ReleaseHistory.objects.filter(id=instance.publish_id).first()
         if not is_offline:
             # 获取部署阶段框架数据
             events_framework = get_paas_deploy_phases_framework(
@@ -497,9 +496,7 @@ class BaseProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
 
     def build_response_data(self, instance):
         """构造响应数据"""
-        release_history = ReleaseHistory.objects.filter(
-            gateway=self.request.gateway, stage=instance.stage, resource_version__version=instance.version
-        ).first()
+        release_history = ReleaseHistory.objects.filter(pk=instance.publish_id).first()
         slz = self.get_serializer(
             release_history
             or ReleaseHistory(

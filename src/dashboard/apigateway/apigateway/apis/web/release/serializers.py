@@ -210,6 +210,7 @@ class ProgrammableDeployCreateInputSLZ(serializers.Serializer):
             version=data["version"],
         ).exists():
             raise serializers.ValidationError(_("编程网关每个版本只允许发布一次"))
+        return data
 
 
 class ProgrammableDeployEventGetOutputSLZ(ReleaseHistoryEventRetrieveOutputSLZ):

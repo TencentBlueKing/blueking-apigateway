@@ -318,9 +318,10 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
         # 触发网关发布
         if is_need_publish:
             # 由于没有办法知道停用状态 (网关停用会变更环境的发布状态) 之前的各环境发布状态，则启用会发布所有环境
-            # todo: 编程网关启用需要特殊处理
             source = PublishSourceEnum.GATEWAY_ENABLE if instance.is_active else PublishSourceEnum.GATEWAY_DISABLE
-            trigger_gateway_publish(source, request.user.username, instance.id)
+            trigger_gateway_publish(
+                source, request.user.username, instance.id, user_credentials=get_user_credentials_from_request(request)
+            )
 
         Auditor.record_gateway_op_success(
             op_type=OpTypeEnum.MODIFY,

@@ -47,9 +47,9 @@ class AICompletionCreateApi(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
 
         # 获取验证后的参数
-        content_type = serializer.validated_data["type"]
-        user_content = serializer.validated_data["content"]
-        enable_streaming = serializer.validated_data["enable_streaming"]
+        content_type = serializer.validated_data["inputs"]["type"]
+        user_content = serializer.validated_data["inputs"]["input"]
+        enable_streaming = serializer.validated_data["inputs"]["enable_streaming"]
         if enable_streaming:
             # 流式响应处理
             return self.handle_streaming_response(content_type, user_content)

@@ -64,6 +64,93 @@ export const useAccessLog = defineStore('accessLog', {
         },
       },
     ],
+    // 业务组件-时间选择器的常用列表
+    commonUseList: [
+      {
+        name: t('近 5 分钟'),
+        id: ['now-5m', 'now'],
+      },
+      {
+        name: t('近 15 分钟'),
+        id: ['now-15m', 'now'],
+      },
+      {
+        name: t('近 30 分钟'),
+        id: ['now-30m', 'now'],
+      },
+      {
+        name: t('近 1 小时'),
+        id: ['now-1h', 'now'],
+      },
+      {
+        name: t('近 6 小时'),
+        id: ['now-6h', 'now'],
+      },
+      {
+        name: t('近 12 小时'),
+        id: ['now-12h', 'now'],
+      },
+      {
+        name: t('近 24 小时'),
+        id: ['now-24h', 'now'],
+      },
+      {
+        name: t('近 7 天'),
+        id: ['now-7d', 'now'],
+      },
+      {
+        name: t('近 30 天'),
+        id: ['now-30d', 'now'],
+      },
+      {
+        name: t('近 180 天'),
+        id: ['now-180d', 'now'],
+      },
+      {
+        name: t('今天'),
+        id: ['now/d', 'now/d'],
+      },
+      {
+        name: t('今天（至今）'),
+        id: ['now/d', 'now'],
+      },
+      {
+        name: t('昨天'),
+        id: ['now-1d/d', 'now-1d/d'],
+      },
+      {
+        name: t('前天'),
+        id: ['now-2d/d', 'now-2d/d'],
+      },
+      {
+        name: t('本周'),
+        id: ['now/w', 'now/w'],
+      },
+      {
+        name: t('本周（至今）'),
+        id: ['now/w', 'now'],
+      },
+      {
+        name: t('上周'),
+        id: ['now-1w/w', 'now-1w/w'],
+      },
+      {
+        name: t('本月'),
+        id: ['now/M', 'now/M'],
+      },
+      {
+        name: t('本月（至今）'),
+        id: ['now/M', 'now'],
+      },
+      {
+        name: t('上月'),
+        id: ['now-1M/M', 'now-1M/M'],
+      },
+      {
+        name: t('上月（至今）'),
+        id: ['now-1M/M', 'now'],
+      },
+    ],
     // 一天内的快捷方式
     shortcutsInDay: [
       {
