@@ -25,4 +25,4 @@ class TestBuildMCPServerURL:
         settings.BK_API_URL_TMPL = "http://test.com/{api_name}"
 
         url = build_mcp_server_url("test-mcp-server")
-        assert url == "http://test.com/bk-apigateway/prod/mcp-servers/test-mcp-server/sse/"
+        assert url == "http://test.com/bk-apigateway/prod/api/v2/mcp-servers/test-mcp-server/sse/"

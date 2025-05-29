@@ -1,9 +1,9 @@
 spec_version: 1
 
 release:
-  version: 1.3.0
-  title: 重构 api v2 接口
-  comment: 重构 api v2 接口
+  version: 1.3.1
+  title: 添加mcp接口
+  comment: 添加mcp接口
 
 apigateway:
   description: 蓝鲸 API 网关（BlueKing API Gateway）是一种高性能、高可用的 API 托管服务。网关提供了该服务的基础通用接口，包含网关、资源、环境、版本发布、权限等相关接口。(官方内置网关，请勿修改!)
@@ -28,6 +28,13 @@ stage:
         loadbalance: "roundrobin"
         hosts:
           - host: "{{ environ.CORE_API_INNER_URL }}"
+            weight: 100
+    - name: "mcp-proxy"
+      config:
+        timeout: 300
+        loadbalance: "roundrobin"
+        hosts:
+          - host: "{{ environ.MCP_PROXY_INNER_URL }}"
             weight: 100
 
 grant_permissions:

@@ -151,6 +151,64 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: false
         descriptionEn: None
+
+  /api/v2/mcp-servers/{mcp_server_name}/sse:
+    get:
+      operationId: mcp_proxy_sse
+      description: mcp proxy sse接口
+      tags:
+        - v2_mcp
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: mcp-proxy
+          method: get
+          path: /{mcp_server_name}/sse
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: true
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
+  /api/v2/mcp-servers/{mcp_server_name}/sse/message:
+    post:
+      operationId: mcp_proxy_message
+      description: mcp proxy message接口
+      tags:
+        - v2_mcp
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: mcp-proxy
+          method: post
+          path: /{mcp_server_name}/sse/message
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: true
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
   /api/v1/apis/{api_name}/related-apps/:
     post:
       operationId: add_related_apps
