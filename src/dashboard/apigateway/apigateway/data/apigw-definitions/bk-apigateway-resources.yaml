@@ -172,7 +172,7 @@ paths:
         backend:
           name: mcp-proxy
           method: get
-          path: /{mcp_server_name}/see
+          path: /{mcp_server_name}/sse
           matchSubpath: false
           timeout: 0
         pluginConfigs: [ ]
@@ -201,7 +201,7 @@ paths:
         backend:
           name: mcp-proxy
           method: post
-          path: /{mcp_server_name}/see/message
+          path: /{mcp_server_name}/sse/message
           matchSubpath: false
           timeout: 0
         pluginConfigs: [ ]
