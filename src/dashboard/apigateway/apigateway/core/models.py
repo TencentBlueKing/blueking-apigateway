@@ -76,7 +76,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     _maintainers = models.CharField(db_column="maintainers", max_length=1024, default="")
     _developers = models.CharField(db_column="developers", max_length=1024, blank=True, null=True, default="")
     _doc_maintainers = JSONField(
-        db_column="doc_maintainers", default={}, dump_kwargs={"indent": None}, blank=True, null=True
+        db_column="doc_maintainers", default=dict, dump_kwargs={"indent": None}, blank=True, null=True
     )
 
     # status
@@ -89,7 +89,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         choices=GatewayKindEnum.get_choices(), default=GatewayKindEnum.NORMAL.value, null=True, blank=True
     )
     # NOTE: 后续所有的 JSONField，必须使用 models.JSONField
-    _extra_info = models.JSONField(db_column="extra_info", default={}, blank=True, null=True)
+    _extra_info = models.JSONField(db_column="extra_info", default=dict, blank=True, null=True)
 
     is_public = models.BooleanField(default=False)
 
