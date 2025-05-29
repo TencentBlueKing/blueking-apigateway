@@ -1873,6 +1873,9 @@ const lang: ILANG = {
   '请输入资源名称或资源URL链接': ['Input resource name or URL'],
   '已下线': ['Offline'],
   'PaaS 部署': ['Paas Deployment'],
+  '日志详情分析': ['Log Analysis'],
+  '状态分析': ['Doc Translation'],
+  '问问AI': ['Ask AI'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

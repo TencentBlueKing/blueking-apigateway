@@ -19,6 +19,10 @@ export const useUser = defineStore('user', {
     // 功能标志
     featureFlags: {},
   }),
+  getters: {
+    // 是否启用了 ai 问答功能
+    isAIEnabled: state => state.featureFlags?.ENABLE_AI_COMPLETION,
+  },
   actions: {
     // 设置用户信息
     setUser(user: IUser) {

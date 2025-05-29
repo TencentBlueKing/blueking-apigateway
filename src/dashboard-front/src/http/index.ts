@@ -46,3 +46,5 @@ export * from './system';
 export * from './components-access';
 // 导出运行时间相关的模块
 export * from './runner-time';
+// 导出AI相关的模块
+export * from './ai';

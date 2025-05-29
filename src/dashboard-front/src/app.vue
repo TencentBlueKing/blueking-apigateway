@@ -43,8 +43,6 @@
           </div>
         </template>
       </bk-navigation>
-
-      <!-- <AppAuth ref="authRef" /> -->
     </div>
   </BkConfigProvider>
 </template>
