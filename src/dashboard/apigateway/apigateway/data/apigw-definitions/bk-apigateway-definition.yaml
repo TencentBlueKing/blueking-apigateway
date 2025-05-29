@@ -29,6 +29,13 @@ stage:
         hosts:
           - host: "{{ environ.CORE_API_INNER_URL }}"
             weight: 100
+    - name: "mcp-proxy"
+      config:
+        timeout: 60
+        loadbalance: "roundrobin"
+        hosts:
+          - host: "{{ environ.MCP_PROXY_INNER_URL }}"
+            weight: 100
 
 grant_permissions:
   - bk_app_code: {{ settings.BK_APP_CODE }}
