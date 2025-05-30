@@ -30,7 +30,8 @@ from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeplo
 from apigateway.biz.audit import Auditor
 from apigateway.biz.validators import PublishValidator, ReleaseValidationError
 from apigateway.common.event.event import PublishEventReporter
-from apigateway.components.paas import deploy_paas_app, set_paas_stage_env
+from apigateway.common.tenant.user_credentials import UserCredentials
+from apigateway.components.bkpaas import deploy_paas_app, set_paas_stage_env
 from apigateway.controller.tasks import (
     release_gateway_by_registry,
     update_release_data_after_success,
@@ -45,7 +46,6 @@ from apigateway.core.models import (
     Stage,
 )
 from apigateway.utils.django import get_model_dict
-from apigateway.utils.user_credentials import UserCredentials
 
 
 class ReleaseError(Exception):

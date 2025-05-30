@@ -1,5 +1,21 @@
-# paas via apigateway
-
+# -*- coding: utf-8 -*-
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
 import logging
 from typing import Any, Dict, Iterable, List, Optional
 from urllib.parse import urlparse
@@ -8,24 +24,23 @@ from cachetools import TTLCache, cached
 from django.conf import settings
 
 from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.constants import (
+    TENANT_ID_OPERATION,
+    TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
+    TenantModeEnum,
+)
+from apigateway.common.tenant.request import gen_tenant_header
+from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.utils.local import local
-from apigateway.utils.user_credentials import UserCredentials
+from apigateway.utils.url import url_join
 
+from .bkauth import get_app_info as bkauth_get_app_info
 from .http import http_get, http_post
 from .utils import gen_gateway_headers
 
 logger = logging.getLogger(__name__)
 
 REQ_PAAS_API_TIMEOUT = 10
-
-
-def url_join(host: str, path: str) -> str:
-    """
-    拼接 host, path 生成 url
-
-    处理 host, path 有多余/的情况
-    """
-    return "{}/{}".format(host.rstrip("/"), path.lstrip("/"))
 
 
 def get_paas_host() -> str:
@@ -39,6 +54,7 @@ def get_paas_host() -> str:
 
 
 def _call_paasv3_uni_apps_query_by_id(
+    tenant_id: str,
     app_codes: List[str],
 ) -> List[Dict[str, Any]]:
     data = {
@@ -46,11 +62,13 @@ def _call_paasv3_uni_apps_query_by_id(
     }
 
     headers = gen_gateway_headers()
-    # headers.update(gen_tenant_header(tenant_id))
+    headers.update(gen_tenant_header(tenant_id))
 
-    url = url_join(get_paas_host(), "/prod/system/uni_applications/query/by_id/")
+    host = get_paas_host()
+    url = url_join(host, "/prod/system/uni_applications/query/by_id/")
+    timeout = REQ_PAAS_API_TIMEOUT
 
-    ok, resp_data = http_get(url, data, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
+    ok, resp_data = http_get(url, data, headers=headers, timeout=timeout)
     if not ok:
         logger.error(
             "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
@@ -70,13 +88,13 @@ def _call_paasv3_uni_apps_query_by_id(
     return resp_data
 
 
-def is_app_code_occupied(app_code: str) -> bool:
-    app = get_app_no_cache(app_code)
+def is_app_code_occupied(tenant_id: str, app_code: str) -> bool:
+    app = get_app_no_cache(tenant_id, app_code)
     return app is not None
 
 
-def get_app_no_cache(app_code: str) -> Optional[Dict[str, Any]]:
-    result_data = _call_paasv3_uni_apps_query_by_id([app_code])
+def get_app_no_cache(tenant_id: str, app_code: str) -> Optional[Dict[str, Any]]:
+    result_data = _call_paasv3_uni_apps_query_by_id(tenant_id, [app_code])
     apps: Iterable[Dict] = filter(None, result_data)
 
     result = {app["code"]: app for app in apps} or {}
@@ -85,8 +103,8 @@ def get_app_no_cache(app_code: str) -> Optional[Dict[str, Any]]:
 
 
 @cached(cache=TTLCache(maxsize=2000, ttl=300))
-def get_app(app_code: str) -> Optional[Dict[str, Any]]:
-    return get_app_no_cache(app_code)
+def get_app(tenant_id: str, app_code: str) -> Optional[Dict[str, Any]]:
+    return get_app_no_cache(tenant_id, app_code)
 
 
 def get_app_maintainers(bk_app_code: str) -> List[str]:
@@ -94,7 +112,14 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
     # NOTE: here we need to get maintainers from paasv3
     #       but the X-Bk-Tenant-Id required
     #       so, we query it from bkauth first
-    app = get_app(bk_app_code)
+    info = bkauth_get_app_info(bk_app_code)
+    tenant_mode = info["bk_tenant"]["mode"]
+    tenant_id = info["bk_tenant"]["id"]
+    # 全租户应用，使用 tenant_id = system 去查询应用信息
+    if tenant_mode == TenantModeEnum.GLOBAL.value:
+        app = get_app(TENANT_ID_OPERATION, bk_app_code)
+    else:
+        app = get_app(tenant_id, bk_app_code)
 
     if not app:
         return []
@@ -106,6 +131,17 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
         return [app["creator"]]
 
     return []
+
+
+def get_tenant_id_for_app_developers(bk_app_code: str) -> str:
+    if not settings.ENABLE_MULTI_TENANT_MODE:
+        return TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
+
+    info = bkauth_get_app_info(bk_app_code)
+    # if the tenant_id is empty, it means the app is a global app
+    # so the cmsi use could only be the `system`
+
+    return info["bk_tenant"]["id"] or TENANT_ID_OPERATION
 
 
 def create_paas_app(

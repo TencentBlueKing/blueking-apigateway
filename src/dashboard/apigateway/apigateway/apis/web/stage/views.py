@@ -30,7 +30,8 @@ from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.components.paas import (
+from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
+from apigateway.components.bkpaas import (
     get_paas_deployment_result,
     get_paas_offline_result,
     get_paas_repo_branch_info,
@@ -40,7 +41,6 @@ from apigateway.core.constants import PublishSourceEnum, ReleaseHistoryStatusEnu
 from apigateway.core.models import BackendConfig, Gateway, ReleaseHistory, Stage
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.user_credentials import get_user_credentials_from_request
 
 from .serializers import (
     BackendConfigInputSLZ,

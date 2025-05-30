@@ -17,12 +17,17 @@
 #
 from django.conf import settings
 
-from apigateway.utils.user_credentials import UserCredentials, get_user_credentials_from_request
+from apigateway.common.tenant.user_credentials import (
+    UserCredentials,
+    get_user_credentials_from_request,
+)
 
 
 def test_get_user_access_token_from_request(mocker, faker):
     request = mocker.MagicMock(COOKIES={settings.BK_LOGIN_TICKET_KEY: "user_credentials"})
-    assert get_user_credentials_from_request(request) == UserCredentials(credentials="user_credentials")
+    assert get_user_credentials_from_request(request) == UserCredentials(
+        credentials="user_credentials", tenant_id=faker.uuid4()
+    )
 
     # No access_token
     request = mocker.MagicMock(COOKIES={})

@@ -27,9 +27,9 @@ from apigateway.biz.releaser import (
     ReleaseError,
     ReleaseValidationError,
 )
+from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.core.constants import PublishEventEnum, PublishEventStatusEnum
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
-from apigateway.utils.user_credentials import UserCredentials
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
@@ -71,6 +71,7 @@ class TestBaseGatewayReleaser:
             "",
             user_credentials=UserCredentials(
                 credentials="access_token",
+                tenant_id="",
             ),
         )
         assert isinstance(releaser, BaseGatewayReleaser)
@@ -84,6 +85,7 @@ class TestBaseGatewayReleaser:
                 "",
                 user_credentials=UserCredentials(
                     credentials="access_token",
+                    tenant_id="",
                 ),
             )
 
@@ -96,6 +98,7 @@ class TestBaseGatewayReleaser:
             release_data.get("comment", ""),
             user_credentials=UserCredentials(
                 credentials="access_token",
+                tenant_id="",
             ),
         )
         # 校验失败
@@ -134,6 +137,7 @@ class TestMicroGatewayReleaser:
             release_data["comment"],
             user_credentials=UserCredentials(
                 credentials="access_token",
+                tenant_id="",
             ),
         )
 

@@ -42,9 +42,10 @@ from apigateway.common.tenant.constants import (
     TenantModeEnum,
 )
 from apigateway.common.tenant.request import get_user_tenant_id
+from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
 from apigateway.components.bkauth import list_all_apps_of_tenant, list_available_apps_for_tenant
+from apigateway.components.bkpaas import create_paas_app
 from apigateway.components.bkuser import list_tenants
-from apigateway.components.paas import create_paas_app
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import (
     GatewayKindEnum,
@@ -55,7 +56,6 @@ from apigateway.core.constants import (
 from apigateway.core.models import Gateway
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
-from apigateway.utils.user_credentials import get_user_credentials_from_request
 
 from .serializers import (
     GatewayCreateInputSLZ,
@@ -142,6 +142,24 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
         language = slz.validated_data.get("extra_info", {}).get("language")
 
+        if settings.ENABLE_MULTI_TENANT_MODE:
+            if slz.validated_data["tenant_mode"] == TenantModeEnum.GLOBAL.value:
+                # 只有运营租户下的用户能创建 全租户网关
+                if user_tenant_id != TENANT_ID_OPERATION:
+                    raise error_codes.NO_PERMISSION.format(_("只有运营租户下的用户才能创建全租户网关。"), replace=True)
+
+                # set the tenant_id to "" if in global mode
+                slz.validated_data["tenant_id"] = TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID
+            elif slz.validated_data["tenant_mode"] == TenantModeEnum.SINGLE.value:
+                if slz.validated_data["tenant_id"] != user_tenant_id:
+                    raise error_codes.NO_PERMISSION.format(
+                        _("普通租户（非运营租户）只能创建当前用户租户下的单租户网关。"), replace=True
+                    )
+        else:
+            # set the tenant_mode/tenant_id if not in multi-tenant mode => the frontend can ignore these fields
+            slz.validated_data["tenant_mode"] = TenantModeEnum.SINGLE.value
+            slz.validated_data["tenant_id"] = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
+
         # if kind is programmable, create paas app
         if slz.validated_data.get("kind") == GatewayKindEnum.PROGRAMMABLE.value:
             git_info = None
@@ -151,49 +169,13 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
                     raise error_codes.INVALID_ARGUMENT.format(_("可编程网关 Git 信息不能为空。"), replace=True)
 
             ok = create_paas_app(
-                slz.validated_data["name"],
-                language,
-                git_info,
+                app_code=slz.validated_data["name"],
+                language=language,
+                git_info=git_info,
                 user_credentials=get_user_credentials_from_request(request),
             )
             if not ok:
                 raise error_codes.INTERNAL.format(_("创建蓝鲸应用失败。"), replace=True)
-
-        if settings.ENABLE_MULTI_TENANT_MODE:
-            if slz.validated_data["tenant_mode"] == TenantModeEnum.GLOBAL.value:
-                # 只有运营租户下的用户能创建 全租户网关
-                if user_tenant_id != TENANT_ID_OPERATION:
-                    raise error_codes.NO_PERMISSION.format(_("只有运营租户下的用户才能创建全租户网关。"), replace=True)
-
-                # set the tenant_id to "" if in global mode
-                slz.validated_data["tenant_id"] = TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID
-            elif slz.validated_data["tenant_mode"] == TenantModeEnum.SINGLE.value:
-                if slz.validated_data["tenant_id"] != user_tenant_id:
-                    raise error_codes.NO_PERMISSION.format(
-                        _("普通租户（非运营租户）只能创建当前用户租户下的单租户网关。"), replace=True
-                    )
-        else:
-            # set the tenant_mode/tenant_id if not in multi-tenant mode => the frontend can ignore these fields
-            slz.validated_data["tenant_mode"] = TenantModeEnum.SINGLE.value
-            slz.validated_data["tenant_id"] = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
-
-        if settings.ENABLE_MULTI_TENANT_MODE:
-            if slz.validated_data["tenant_mode"] == TenantModeEnum.GLOBAL.value:
-                # 只有运营租户下的用户能创建 全租户网关
-                if user_tenant_id != TENANT_ID_OPERATION:
-                    raise error_codes.NO_PERMISSION.format(_("只有运营租户下的用户才能创建全租户网关。"), replace=True)
-
-                # set the tenant_id to "" if in global mode
-                slz.validated_data["tenant_id"] = TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID
-            elif slz.validated_data["tenant_mode"] == TenantModeEnum.SINGLE.value:
-                if slz.validated_data["tenant_id"] != user_tenant_id:
-                    raise error_codes.NO_PERMISSION.format(
-                        _("普通租户（非运营租户）只能创建当前用户租户下的单租户网关。"), replace=True
-                    )
-        else:
-            # set the tenant_mode/tenant_id if not in multi-tenant mode => the frontend can ignore these fields
-            slz.validated_data["tenant_mode"] = TenantModeEnum.SINGLE.value
-            slz.validated_data["tenant_id"] = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
 
         # 1. save gateway
         slz.save(

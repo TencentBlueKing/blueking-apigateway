@@ -20,7 +20,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 
-from apigateway.components.paas import is_app_code_occupied
+from apigateway.components.bkpaas import is_app_code_occupied
 from apigateway.core.constants import GatewayKindEnum
 
 
@@ -50,5 +50,6 @@ class ProgrammableGatewayNameValidator:
         if attrs.get("kind") == GatewayKindEnum.PROGRAMMABLE.value:
             name = attrs.get("name", "")
             # check if the name is already occupied on PaaS
+            # FIXME: add tenant_id
             if is_app_code_occupied(name):
                 raise serializers.ValidationError(self.message)

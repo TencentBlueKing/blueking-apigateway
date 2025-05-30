@@ -54,7 +54,7 @@ from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
-from apigateway.components.paasv3 import get_app
+from apigateway.components.bkpaas import get_app
 from apigateway.core.models import Gateway, Resource
 from apigateway.utils.responses import V1OKJsonResponse
 

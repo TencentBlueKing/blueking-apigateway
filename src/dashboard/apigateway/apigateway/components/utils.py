@@ -27,21 +27,31 @@ from django.utils.translation import get_language
 
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import gen_operation_tenant_header
+from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.utils.local import local
-from apigateway.utils.user_credentials import UserCredentials
 
 logger = logging.getLogger("component")
 
 
 def gen_gateway_headers(
-    with_operation_tenant_headers: bool = False, user_credentials: Optional[UserCredentials] = None
+    user_credentials: Optional[UserCredentials] = None,
+    with_operation_tenant_headers: bool = False,
 ) -> Dict[str, str]:
+    """gen gateway headers while calling apigateway api
+
+    Args:
+        user_credentials (Optional[UserCredentials], optional): the user's credentials from request, including the bk_token and tenant_id. Defaults to None.
+        with_operation_tenant_headers (bool, optional): add `system` as the X-Bk-Tenant-Id. Defaults to False. only works if the user_credentials is None!
+
+    Returns:
+        Dict[str, str]: header key values
+    """
     bk_api_authorization = {
         "bk_app_code": settings.BK_APP_CODE,
         "bk_app_secret": settings.BK_APP_SECRET,
     }
     if user_credentials:
-        bk_api_authorization.update(user_credentials.to_dict())
+        bk_api_authorization.update(user_credentials.auth_dict())
 
     headers = {
         "Content-Type": "application/json",
@@ -51,7 +61,10 @@ def gen_gateway_headers(
     if language:
         headers["Accept-Language"] = language
 
-    if with_operation_tenant_headers:
+    # if not user_credentials, then the with_operation_tenant_headers works
+    if user_credentials:
+        headers.update(user_credentials.tenant_dict())
+    elif with_operation_tenant_headers:
         headers.update(gen_operation_tenant_header())
 
     return headers

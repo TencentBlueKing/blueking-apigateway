@@ -17,24 +17,33 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from dataclasses import dataclass
-from typing import Optional
+from typing import Dict, Optional
 
 from django.conf import settings
+
+from .request import get_user_tenant_id
 
 
 @dataclass
 class UserCredentials:
     credentials: str
+    tenant_id: str
 
-    def to_dict(self):
+    def auth_dict(self) -> Dict[str, str]:
         return {
             settings.BK_LOGIN_TICKET_KEY: self.credentials,
         }
 
+    def tenant_dict(self) -> Dict[str, str]:
+        return {
+            "X-Bk-Tenant-Id": self.tenant_id,
+        }
 
-# FIXME: maybe we don't need this anymore? can we remove it?
+
 def get_user_credentials_from_request(request) -> Optional[UserCredentials]:
     credentials = request.COOKIES.get(settings.BK_LOGIN_TICKET_KEY, None)
     if not credentials:
         return None
-    return UserCredentials(credentials=credentials)
+
+    tenant_id = get_user_tenant_id(request)
+    return UserCredentials(credentials=credentials, tenant_id=tenant_id)

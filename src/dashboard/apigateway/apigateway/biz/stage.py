@@ -23,6 +23,7 @@ from django.db import transaction
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
@@ -32,7 +33,6 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import Backend, BackendConfig, Release, Stage
 from apigateway.utils.time import now_datetime
-from apigateway.utils.user_credentials import UserCredentials
 
 
 class StageHandler:

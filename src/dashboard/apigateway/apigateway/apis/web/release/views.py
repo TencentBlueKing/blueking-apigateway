@@ -35,7 +35,8 @@ from apigateway.biz.releaser import ProgramGatewayReleaser, ReleaseError, releas
 from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.components.paas import (
+from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
+from apigateway.components.bkpaas import (
     get_paas_deploy_phases_framework,
     get_paas_deploy_phases_instance,
     get_paas_deployment_result,
@@ -48,7 +49,6 @@ from apigateway.utils import openapi as openapi_utils
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
-from apigateway.utils.user_credentials import get_user_credentials_from_request
 
 from .serializers import (
     DeployHistoryOutputSLZ,
