@@ -119,7 +119,7 @@ def create_paas_app(
     """
     host = get_paas_host()
     url = url_join(host, "/prod/bkapps/cloud-native/")
-    headers = gen_gateway_headers(user_credentials)
+    headers = gen_gateway_headers(user_credentials=user_credentials)
     source_init_template = "bk-apigw-plugin-python"
     build_method = "buildpack"
     if language == "go":
@@ -183,7 +183,7 @@ def deploy_paas_app(
     """
     host = get_paas_host()
     url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/envs/{env}/deployments/")
-    headers = gen_gateway_headers(user_credentials)
+    headers = gen_gateway_headers(user_credentials=user_credentials)
     data = {
         "revision": revision,
         "version_name": branch,
@@ -214,7 +214,7 @@ def paas_app_module_offline(app_code: str, module: str, env: str, user_credentia
     """
     host = get_paas_host()
     url = url_join(host, f"prod/bkapps/applications/{app_code}/modules/{module}/envs/{env}/offlines/")
-    headers = gen_gateway_headers(user_credentials)
+    headers = gen_gateway_headers(user_credentials=user_credentials)
     ok, resp_data = http_post(url, None, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
@@ -238,7 +238,7 @@ def set_paas_stage_env(
     host = get_paas_host()
     for config_var_key, config_var_value in env.items():
         url = url_join(host, f"prod/bkapps/applications/{app_code}/modules/{module}/config_vars/{config_var_key}/")
-        headers = gen_gateway_headers(user_credentials)
+        headers = gen_gateway_headers(user_credentials=user_credentials)
         data = {
             "environment_name": stage,  # 环境：stag、prod
             "value": config_var_value,
@@ -266,7 +266,7 @@ def get_paas_deploy_phases_framework(
     """
     host = get_paas_host()
     url = url_join(host, f"prod/bkapps/applications/{app_code}/modules/{module}/envs/{env}/deploy_phases/")
-    headers = gen_gateway_headers(user_credentials)
+    headers = gen_gateway_headers(user_credentials=user_credentials)
     ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
@@ -291,7 +291,7 @@ def get_paas_deploy_phases_instance(
     url = url_join(
         host, f"/prod/bkapps/applications/{app_code}/modules/{module}/envs/{env}/deploy_phases/{deploy_id}/"
     )
-    headers = gen_gateway_headers(user_credentials)
+    headers = gen_gateway_headers(user_credentials=user_credentials)
     ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
@@ -312,7 +312,7 @@ def get_pass_deploy_streams_history_events(deploy_id: str, user_credentials: Opt
     """
     host = get_paas_host()
     url = url_join(host, f"/prod/streams/{deploy_id}/history_events")
-    headers = gen_gateway_headers(user_credentials)
+    headers = gen_gateway_headers(user_credentials=user_credentials)
     ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
@@ -335,7 +335,7 @@ def get_paas_deployment_result(
     """
     host = get_paas_host()
     url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/deployments/{deploy_id}/result/")
-    headers = gen_gateway_headers(user_credentials)
+    headers = gen_gateway_headers(user_credentials=user_credentials)
     ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
@@ -358,7 +358,7 @@ def get_paas_offline_result(
     """
     host = get_paas_host()
     url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/offlines/{deploy_id}/result/")
-    headers = gen_gateway_headers(user_credentials)
+    headers = gen_gateway_headers(user_credentials=user_credentials)
     ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
@@ -379,7 +379,7 @@ def get_paas_runtime_info(app_code: str, module: str, user_credentials: Optional
     """
     host = get_paas_host()
     url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/runtime/overview/")
-    headers = gen_gateway_headers(user_credentials)
+    headers = gen_gateway_headers(user_credentials=user_credentials)
     ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
@@ -400,7 +400,7 @@ def get_paas_repo_branch_info(app_code: str, module: str, user_credentials: Opti
     """
     host = get_paas_host()
     url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/repo/branches/")
-    headers = gen_gateway_headers(user_credentials)
+    headers = gen_gateway_headers(user_credentials=user_credentials)
     ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(

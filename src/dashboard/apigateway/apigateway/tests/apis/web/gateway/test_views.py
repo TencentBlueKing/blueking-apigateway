@@ -63,6 +63,7 @@ class TestGatewayListCreateApi:
         assert Stage.objects.filter(gateway=gateway).exists()
         assert JWT.objects.filter(gateway=gateway).count() == 1
         assert GatewayAppBinding.objects.filter(gateway=gateway).count() == 1
+        assert gateway.kind == GatewayKindEnum.NORMAL.value
 
         auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
         assert auth_config["allow_auth_from_params"] is False
@@ -139,7 +140,6 @@ class TestGatewayListCreateApi:
                 assert Stage.objects.filter(gateway=gateway).exists()
                 assert JWT.objects.filter(gateway=gateway).count() == 1
                 assert GatewayAppBinding.objects.filter(gateway=gateway).count() == 1
-        assert gateway.kind == GatewayKindEnum.NORMAL.value
 
                 auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
                 assert auth_config["allow_auth_from_params"] is False

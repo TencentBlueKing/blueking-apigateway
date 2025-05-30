@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("core", "0042_add_gateway_tenant"),
     ]
@@ -75,11 +74,13 @@ class Migration(migrations.Migration):
         ),
         # alter fields, with default value and allow null
         # those fields would be remove from code definition in the next version, then remove the field from db in the future
-        migrations.AlterField(
-            model_name="gateway",
-            name="hosting_type",
-            field=models.IntegerField(blank=True, default=1, null=True),
-        ),
+        # COMMENT: finally been remove at 0043_remove_microgatewayreleasehistory_gateway_and_more.py
+        # migrations.AlterField(
+        #     model_name="gateway",
+        #     name="hosting_type",
+        #     field=models.IntegerField(blank=True, default=1, null=True),
+        # ),
+        # KEEP: still used
         migrations.AlterField(
             model_name="proxy",
             name="schema",
@@ -90,36 +91,38 @@ class Migration(migrations.Migration):
                 to="schema.schema",
             ),
         ),
-        migrations.AlterField(
-            model_name="resourceversion",
-            name="name",
-            field=models.CharField(
-                blank=True,
-                default="",
-                max_length=128,
-                null=True,
-                verbose_name="[Deprecated] 版本名",
-            ),
-        ),
-        migrations.AlterField(
-            model_name="releasehistory",
-            name="message",
-            field=models.TextField(blank=True, default="", null=True),
-        ),
-        migrations.AlterField(
-            model_name="releasehistory",
-            name="stages",
-            field=models.ManyToManyField(blank=True, to="core.stage"),
-        ),
-        migrations.AlterField(
-            model_name="releasehistory",
-            name="status",
-            field=models.CharField(
-                blank=True,
-                default="",
-                max_length=16,
-                null=True,
-                verbose_name="发布状态",
-            ),
-        ),
+        # COMMENT: finally been remove at 0043_remove_microgatewayreleasehistory_gateway_and_more.py
+        # migrations.AlterField(
+        #     model_name="resourceversion",
+        #     name="name",
+        #     field=models.CharField(
+        #         blank=True,
+        #         default="",
+        #         max_length=128,
+        #         null=True,
+        #         verbose_name="[Deprecated] 版本名",
+        #     ),
+        # ),
+        # COMMENT: finally been remove at 0043_remove_microgatewayrelasehistory_gateway_and_more.py
+        # migrations.AlterField(
+        #     model_name="releasehistory",
+        #     name="message",
+        #     field=models.TextField(blank=True, default="", null=True),
+        # ),
+        # migrations.AlterField(
+        #     model_name="releasehistory",
+        #     name="stages",
+        #     field=models.ManyToManyField(blank=True, to="core.stage"),
+        # ),
+        # migrations.AlterField(
+        #     model_name="releasehistory",
+        #     name="status",
+        #     field=models.CharField(
+        #         blank=True,
+        #         default="",
+        #         max_length=16,
+        #         null=True,
+        #         verbose_name="发布状态",
+        #     ),
+        # ),
     ]

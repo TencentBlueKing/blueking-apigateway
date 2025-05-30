@@ -126,7 +126,6 @@ class StageConvertor(BaseConvertor):
         else:
             default_stage_plugins.append(PluginConfig(name="bk-default-tenant"))
 
-
         return default_stage_plugins
 
     def _get_stage_plugins(self) -> List[PluginConfig]:

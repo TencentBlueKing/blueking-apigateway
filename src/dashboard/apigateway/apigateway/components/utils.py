@@ -23,24 +23,19 @@ from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
 from django.conf import settings
-import json
-from typing import Dict, Optional
-
-from django.conf import settings
 from django.utils.translation import get_language
-
-from apigateway.utils.user_credentials import UserCredentials
-
-from apigateway.utils.user_credentials import UserCredentials
 
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import gen_operation_tenant_header
 from apigateway.utils.local import local
+from apigateway.utils.user_credentials import UserCredentials
 
 logger = logging.getLogger("component")
 
 
-def gen_gateway_headers(with_operation_tenant_headers: bool = False, user_credentials: Optional[UserCredentials] = None) -> Dict[str, str]:
+def gen_gateway_headers(
+    with_operation_tenant_headers: bool = False, user_credentials: Optional[UserCredentials] = None
+) -> Dict[str, str]:
     bk_api_authorization = {
         "bk_app_code": settings.BK_APP_CODE,
         "bk_app_secret": settings.BK_APP_SECRET,
@@ -164,5 +159,3 @@ def do_blueking_http_request(
         )
 
     return resp_data["data"]
-
-

@@ -4,122 +4,151 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0042_auto_20250403_1733'),
+        ("core", "0042_auto_20250403_1733"),
     ]
 
     operations = [
+        # -------- begin
+        # 以下这些都没有在代码中使用，延迟到 1.17 中删除，1.16 不处理
+        # 确保全新安装，从 1.15 升级，从 1.17 升级到这个版本都不会报错
+        # remove fields already not in code definition
+        # migrations.RemoveField(
+        #     model_name="proxy",
+        #     name="backend_config_type",
+        # ),
+        # migrations.RemoveField(
+        #     model_name="proxy",
+        #     name="backend_service",
+        # ),
+        # # remove fields of models already not in code definition
+        # migrations.RemoveField(
+        #     model_name="sslcertificate",
+        #     name="gateway",
+        # ),
+        # migrations.AlterUniqueTogether(
+        #     name="sslcertificatebinding",
+        #     unique_together=None,
+        # ),
+        # migrations.RemoveField(
+        #     model_name="sslcertificatebinding",
+        #     name="gateway",
+        # ),
+        # migrations.RemoveField(
+        #     model_name="sslcertificatebinding",
+        #     name="ssl_certificate",
+        # ),
+        # migrations.RemoveField(
+        #     model_name="stageitem",
+        #     name="api",
+        # ),
+        # migrations.AlterUniqueTogether(
+        #     name="stageitemconfig",
+        #     unique_together=None,
+        # ),
+        # migrations.RemoveField(
+        #     model_name="stageitemconfig",
+        #     name="api",
+        # ),
+        # migrations.RemoveField(
+        #     model_name="stageitemconfig",
+        #     name="stage",
+        # ),
+        # migrations.RemoveField(
+        #     model_name="stageitemconfig",
+        #     name="stage_item",
+        # ),
+        # # remove table already not in code definition
+        # migrations.DeleteModel(
+        #     name="BackendService",
+        # ),
+        # migrations.DeleteModel(
+        #     name="SslCertificate",
+        # ),
+        # migrations.DeleteModel(
+        #     name="SslCertificateBinding",
+        # ),
+        # migrations.DeleteModel(
+        #     name="StageItem",
+        # ),
+        # migrations.DeleteModel(
+        #     name="StageItemConfig",
+        # ),
+        # -------- end
+        # KEEP: new delete
         migrations.RemoveField(
-            model_name='microgatewayreleasehistory',
-            name='gateway',
+            model_name="microgatewayreleasehistory",
+            name="gateway",
         ),
         migrations.RemoveField(
-            model_name='microgatewayreleasehistory',
-            name='micro_gateway',
+            model_name="microgatewayreleasehistory",
+            name="micro_gateway",
         ),
         migrations.RemoveField(
-            model_name='microgatewayreleasehistory',
-            name='release_history',
+            model_name="microgatewayreleasehistory",
+            name="release_history",
         ),
         migrations.RemoveField(
-            model_name='microgatewayreleasehistory',
-            name='stage',
+            model_name="microgatewayreleasehistory",
+            name="stage",
         ),
+        # KEEP: new delete
         migrations.RemoveField(
-            model_name='sslcertificate',
-            name='gateway',
-        ),
-        migrations.AlterUniqueTogether(
-            name='sslcertificatebinding',
-            unique_together=None,
-        ),
-        migrations.RemoveField(
-            model_name='sslcertificatebinding',
-            name='gateway',
-        ),
-        migrations.RemoveField(
-            model_name='sslcertificatebinding',
-            name='ssl_certificate',
-        ),
-        migrations.RemoveField(
-            model_name='stageitem',
-            name='api',
-        ),
-        migrations.AlterUniqueTogether(
-            name='stageitemconfig',
-            unique_together=None,
-        ),
-        migrations.RemoveField(
-            model_name='stageitemconfig',
-            name='api',
-        ),
-        migrations.RemoveField(
-            model_name='stageitemconfig',
-            name='stage',
-        ),
-        migrations.RemoveField(
-            model_name='stageitemconfig',
-            name='stage_item',
-        ),
-        migrations.RemoveField(
-            model_name='gateway',
-            name='hosting_type',
-        ),
-        migrations.RemoveField(
-            model_name='proxy',
-            name='backend_config_type',
-        ),
-        migrations.RemoveField(
-            model_name='proxy',
-            name='backend_service',
+            model_name="gateway",
+            name="hosting_type",
         ),
         migrations.AlterField(
-            model_name='context',
-            name='type',
-            field=models.CharField(choices=[('api_auth', 'Gateway auth'), ('resource_auth', 'Resource auth'), ('stage_proxy_http', 'Stage proxy http'), ('api_feature_flag', 'Gateway feature flag')], max_length=32),
+            model_name="context",
+            name="type",
+            field=models.CharField(
+                choices=[
+                    ("api_auth", "Gateway auth"),
+                    ("resource_auth", "Resource auth"),
+                    ("stage_proxy_http", "Stage proxy http"),
+                    ("api_feature_flag", "Gateway feature flag"),
+                ],
+                max_length=32,
+            ),
         ),
         migrations.AlterField(
-            model_name='publishevent',
-            name='name',
-            field=models.CharField(blank=True, choices=[('validata_configuration', '配置校验'), ('generate_release_task', '生成发布任务'), ('distribute_configuration', '下发配置'), ('parse_configuration', '解析配置'), ('apply_configuration', '应用配置'), ('load_configuration', '加载配置')], max_length=64),
+            model_name="publishevent",
+            name="name",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("validata_configuration", "配置校验"),
+                    ("generate_release_task", "生成发布任务"),
+                    ("distribute_configuration", "下发配置"),
+                    ("parse_configuration", "解析配置"),
+                    ("apply_configuration", "应用配置"),
+                    ("load_configuration", "加载配置"),
+                ],
+                max_length=64,
+            ),
         ),
         migrations.DeleteModel(
-            name='BackendService',
+            name="MicroGatewayReleaseHistory",
         ),
-        migrations.DeleteModel(
-            name='MicroGatewayReleaseHistory',
-        ),
-        migrations.DeleteModel(
-            name='SslCertificate',
-        ),
-        migrations.DeleteModel(
-            name='SslCertificateBinding',
-        ),
-        migrations.DeleteModel(
-            name='StageItem',
-        ),
-        migrations.DeleteModel(
-            name='StageItemConfig',
+        # KEEP: finally removed releasehistory.message/stages/status
+        migrations.RemoveField(
+            model_name="releasehistory",
+            name="message",
         ),
         migrations.RemoveField(
-            model_name='releasehistory',
-            name='message',
+            model_name="releasehistory",
+            name="stages",
         ),
         migrations.RemoveField(
-            model_name='releasehistory',
-            name='stages',
+            model_name="releasehistory",
+            name="status",
+        ),
+        # KEEP: new delete
+        migrations.RemoveField(
+            model_name="resourceversion",
+            name="name",
         ),
         migrations.RemoveField(
-            model_name='releasehistory',
-            name='status',
-        ),
-        migrations.RemoveField(
-            model_name='resourceversion',
-            name='name',
-        ),
-        migrations.RemoveField(
-            model_name='resourceversion',
-            name='title',
+            model_name="resourceversion",
+            name="title",
         ),
     ]

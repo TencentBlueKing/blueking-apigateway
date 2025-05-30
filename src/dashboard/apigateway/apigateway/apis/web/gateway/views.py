@@ -134,7 +134,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         return queryset.order_by(order_by)
 
     @transaction.atomic
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):  # noqa
         slz = GatewayCreateInputSLZ(data=request.data, context={"created_by": request.user.username})
         slz.is_valid(raise_exception=True)
         user_tenant_id = get_user_tenant_id(request)
