@@ -20,6 +20,7 @@ import logging
 from typing import Dict, List, Optional, Tuple
 
 from django.db import transaction
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from apigateway.apps.mcp_server.constants import (
@@ -214,10 +215,15 @@ class MCPServerHandler:
 
 class MCPServerPermissionHandler:
     @staticmethod
-    def filter_mcp_servers(name: str, description: str):
+    def filter_mcp_servers(name: str, description: str, keyword: str):
         queryset = MCPServer.objects.filter(is_public=True, status=MCPServerStatusEnum.ACTIVE.value)
+
+        if keyword:
+            return queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
+
         if name:
             queryset = queryset.filter(name__icontains=name)
+
         if description:
             queryset = queryset.filter(description__icontains=description)
 

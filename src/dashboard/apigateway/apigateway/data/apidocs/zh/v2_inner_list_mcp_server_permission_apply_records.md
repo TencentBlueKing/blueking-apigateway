@@ -30,19 +30,24 @@ mcp_server 申请记录列表
 {
   "data": [
     {
-      "id": 1,
-      "mcp_server_name": "bk-apigateway-prod-test",
-      "applied_by": "admin",
-      "applied_time": "2025-01-01 00:00:00 +0800",
-      "handled_by": [
-        "admin"
-      ],
-      "handled_time": null,
-      "apply_status": "pending",
-      "apply_status_display": "待审批",
-      "comment": "",
-      "reason": "",
-      "expire_days": 0
+      "mcp_server": {
+        "id": 1,
+        "name": "bk-apigateway-prod-s1",
+        "description": "test",
+        "tools_count": "1",
+        "doc_link": ""
+      },
+      "record": {
+        "applied_by": "admin",
+        "applied_time": "2025-01-01 00:00:00 +0800",
+        "handled_by": ["admin"],
+        "handled_time": null,
+        "apply_status": "pending",
+        "apply_status_display": "待审批",
+        "comment": "",
+        "reason": "",
+        "expire_days": 0
+      }
     }
   ]
 }
@@ -56,16 +61,33 @@ mcp_server 申请记录列表
 
 #### data
 
-| 参数名称                 | 参数类型   | 描述            |
-|----------------------|--------|---------------|
-| id                   | int    | 申请 ID         |
-| mcp_server_name      | string | mcp_server 名称 |
-| applied_by           | string | 申请人           |
-| applied_time         | string | 申请时间          |
-| handled_by           | array  | 审批人           |
-| handled_time         | int    | 审批时间          |
-| apply_status         | string | 审批状态          |
-| apply_status_display | string | 审批状态描述        |
-| comment              | string | 审批内容          |
-| reason               | string | 申请理由          |
-| expire_days          | int    | 过期时间          |
+| 参数名称       | 参数类型   | 描述                           |
+|------------|--------|------------------------------|
+| mcp_server | object | mcp_server 数据，详细信息请见下面说明     |
+| record     | object | mcp_server 申请记录数据，详细信息请见下面说明 |
+
+
+#### data.mcp_server
+
+| 参数名称            | 参数类型   | 描述                |
+|-----------------|--------|-------------------|
+| id              | int    | mcp_server ID     |
+| name            | string | mcp_server 名称     |
+| description     | string | mcp_server 描述     |
+| tools_count     | int    | mcp_server 工具数量   |
+| doc_link        | string | mcp_server 文档访问地址 |
+
+
+#### data.record
+
+| 参数名称                 | 参数类型   | 描述               |
+|----------------------|--------|------------------|
+| applied_by           | string | 申请人              |
+| applied_time         | string | 申请时间             |
+| handled_by           | array  | 审批人              |
+| handled_time         | int    | 审批时间             |
+| apply_status         | string | 审批状态             |
+| apply_status_display | string | 审批状态描述           |
+| comment              | string | 审批内容             |
+| reason               | string | 申请理由             |
+| expire_days          | int    | 过期时间             |

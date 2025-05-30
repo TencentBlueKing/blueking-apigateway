@@ -27,14 +27,18 @@ mcp_server 已申请权限列表
 {
   "data": [
     {
-      "id": 1,
-      "name": "bk-esb-prod-test",
-      "description": "test",
-      "tools_count": 1,
-      "doc_link": "",
-      "permission_status": "owned",
-      "permission_action": "",
-      "expires_in": null
+      "mcp_server": {
+        "id": 1,
+        "name": "bk-apigateway-prod-test",
+        "description": "test",
+        "tools_count": "1",
+        "doc_link": ""
+      },
+      "permission": {
+        "status": "owned",
+        "action": "",
+        "expires_in": null
+      }
     }
   ]
 }
@@ -48,13 +52,27 @@ mcp_server 已申请权限列表
 
 #### data
 
-| 参数名称               | 参数类型   | 描述                |
-|--------------------|--------|-------------------|
-| id                 | int    | mcp_server ID     |
-| name               | string | mcp_server 名称     |
-| description        | string | mcp_server 描述     |
-| tools_count        | int    | mcp_server 工具数量   |
-| expires_in         | int    | 有效期               |
-| permission_status  | string | 权限状态              |
-| permission_action  | string | 权限操作              |
-| doc_link           | string | MCPServer 文档访问地址  |
+| 参数名称             | 参数类型   | 描述                           |
+|------------------|--------|------------------------------|
+| mcp_server       | object | mcp_server 数据，详细信息请见下面说明     |
+| permission       | object | mcp_server 权限数据，详细信息请见下面说明   |
+
+
+#### data.mcp_server
+
+| 参数名称            | 参数类型   | 描述                |
+|-----------------|--------|-------------------|
+| id              | int    | mcp_server ID     |
+| name            | string | mcp_server 名称     |
+| description     | string | mcp_server 描述     |
+| tools_count     | int    | mcp_server 工具数量   |
+| doc_link        | string | mcp_server 文档访问地址 |
+
+
+#### data.permission
+
+| 参数名称              | 参数类型   | 描述                |
+|-------------------|--------|-------------------|
+| expires_in        | int    | 有效期               |
+| permission_status | string | 权限状态              |
+| permission_action | string | 权限操作              |

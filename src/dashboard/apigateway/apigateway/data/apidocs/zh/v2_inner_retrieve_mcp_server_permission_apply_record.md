@@ -28,19 +28,24 @@ mcp_server 申请记录详情
 ```json
 {
   "data": {
-    "id": 1,
-    "mcp_server_name": "bk-apigateway-prod-s1",
-    "applied_by": "admin",
-    "applied_time": "2025-05-23 10:35:36 +0800",
-    "handled_by": [
-      "admin"
-    ],
-    "handled_time": "2025-05-26 16:35:00 +0800",
-    "apply_status": "rejected",
-    "apply_status_display": "驳回",
-    "comment": "test",
-    "reason": "test",
-    "expire_days": 0,
+    "mcp_server": {
+      "id": 1,
+      "name": "bk-apigateway-prod-s1",
+      "description": "test",
+      "tools_count": "1",
+      "doc_link": ""
+    },
+    "record": {
+      "applied_by": "admin",
+      "applied_time": "2025-01-01 00:00:00 +0800",
+      "handled_by": ["admin"],
+      "handled_time": "2025-01-01 00:00:00 +0800",
+      "apply_status": "rejected",
+      "apply_status_display": "驳回",
+      "comment": "test",
+      "reason": "test",
+      "expire_days": 0
+    },
     "tool_names": [
       "v2_inner_get_app_permission_apply_record"
     ]
@@ -50,23 +55,40 @@ mcp_server 申请记录详情
 
 ### 响应参数说明
 
-| 字段    | 类型     | 描述                               |
-| ------- |--------| ---------------------------------- |
-| data    | object | 结果数据，详细信息请见下面说明     |
+| 字段    | 类型   | 描述                |
+| -------| ------ |-------------------|
+| data   | array  | 结果数据，详细信息请见下面说明   |
 
 #### data
 
-| 参数名称                  | 参数类型   | 描述            |
-|-----------------------|--------|---------------|
-| id                    | int    | 申请 ID         |
-| mcp_server_name       | string | mcp_server 名称 |
-| applied_by            | string | 申请人           |
-| applied_time          | string | 申请时间          |
-| handled_by            | array  | 审批人           |
-| handled_time          | int    | 审批时间          |
-| apply_status          | string | 审批状态          |
-| apply_status_display  | string | 审批状态描述        |
-| comment               | string | 审批内容          |
-| reason                | string | 申请理由          |
-| expire_days           | int    | 过期时间          |
-| tool_names            | array  | 工具名称列表        |
+| 参数名称         | 参数类型    | 描述                           |
+|--------------|---------|------------------------------|
+| mcp_server   | object  | mcp_server 数据，详细信息请见下面说明     |
+| record       | object  | mcp_server 申请记录数据，详细信息请见下面说明 |
+| tool_names   | array   | mcp_server 工具名称列表            |
+
+
+#### data.mcp_server
+
+| 参数名称            | 参数类型   | 描述                |
+|-----------------|--------|-------------------|
+| id              | int    | mcp_server ID     |
+| name            | string | mcp_server 名称     |
+| description     | string | mcp_server 描述     |
+| tools_count     | int    | mcp_server 工具数量   |
+| doc_link        | string | mcp_server 文档访问地址 |
+
+
+#### data.record
+
+| 参数名称                 | 参数类型   | 描述               |
+|----------------------|--------|------------------|
+| applied_by           | string | 申请人              |
+| applied_time         | string | 申请时间             |
+| handled_by           | array  | 审批人              |
+| handled_time         | int    | 审批时间             |
+| apply_status         | string | 审批状态             |
+| apply_status_display | string | 审批状态描述           |
+| comment              | string | 审批内容             |
+| reason               | string | 申请理由             |
+| expire_days          | int    | 过期时间             |
