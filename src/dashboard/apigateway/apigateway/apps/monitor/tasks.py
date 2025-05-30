@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from __future__ import absolute_import, unicode_literals
+
 
 import logging
 from typing import Any, Dict

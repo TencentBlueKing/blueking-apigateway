@@ -133,8 +133,8 @@ class APITestApi(generics.CreateAPIView):
                 "gateway": request.gateway,
                 "stage": stage,
                 "resource_name": released_resource.name,
-                "request": validated_request.dict(),
-                "response": validated_response.dict(),
+                "request": validated_request.model_dump(),
+                "response": validated_response.model_dump(),
             }
             APIDebugHistory.objects.create(**success_history_data)
         except Exception as err:  # pylint: disable=broad-except
@@ -148,8 +148,8 @@ class APITestApi(generics.CreateAPIView):
                 "gateway": request.gateway,
                 "stage": stage,
                 "resource_name": released_resource.name,
-                "request": validated_request.dict(),
-                "response": validated_response.dict(),
+                "request": validated_request.model_dump(),
+                "response": validated_response.model_dump(),
             }
             APIDebugHistory.objects.create(**fail_history_data)
             return FailJsonResponse(

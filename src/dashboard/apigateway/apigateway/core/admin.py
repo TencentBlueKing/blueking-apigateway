@@ -47,6 +47,8 @@ class GatewayAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
         "name",
         "status",
         "is_public",
+        "tenant_mode",
+        "tenant_id",
         "kind",
         "created_by",
         "created_time",

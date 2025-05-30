@@ -67,9 +67,6 @@ class ReleasedResourceData:
             gateway_labels=released_resource_data["api_labels"],
         )
 
-    def is_disabled_in_stage(self, stage_name: str) -> bool:
-        return stage_name in self.disabled_stages
-
     @property
     def path_display(self):
         return get_path_display(self.path, self.match_subpath)

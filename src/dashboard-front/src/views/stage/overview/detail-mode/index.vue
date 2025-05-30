@@ -18,6 +18,7 @@
           <div :class="['stage-name', stageData.release.status === 'unreleased' ? 'no-release' : '']">
             <template v-if="stageData.release.status === 'unreleased'">
               <span class="no-release-label">{{ t('未发布') }}</span>
+              <span class="no-release-label">{{ t('未发布') }}</span>
               <span class="no-release-dot"></span>
               <!-- <span class="no-release-icon apigateway-icon icon-ag-edit-line" @click="handleEditStage">
               </span> -->
@@ -73,7 +74,7 @@
               <div class="apigw-form-item">
                 <div class="label">{{ `${t('发布人')}：` }}</div>
                 <div class="value">
-                  {{ stageData.release.created_by || '--' }}
+                  <bk-user-display-name :user-id="stageData.release.created_by" />
                 </div>
               </div>
               <div class="apigw-form-item">
@@ -238,6 +239,13 @@ import {
   shallowRef,
   watch,
 } from 'vue';
+import {
+  computed,
+  onMounted,
+  ref,
+  shallowRef,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
   useRoute,
@@ -265,12 +273,19 @@ import {
   getGateWaysInfo,
   removalStage,
 } from '@/http';
+import {
+  deleteStage,
+  getGateWaysInfo,
+  removalStage,
+} from '@/http';
 import mitt from '@/common/event-bus';
 import { BasicInfoParams } from '@/views/basic-info/common/type';
 
 import resourceInfo from './resource-info.vue';
 import pluginManage from './plugin-manage.vue';
 import variableManage from './variable-manage.vue';
+
+type TabComponents = typeof resourceInfo | typeof pluginManage | typeof variableManage;
 
 type TabComponents = typeof resourceInfo | typeof pluginManage | typeof variableManage;
 
@@ -480,7 +495,6 @@ const basicInfoData = ref<BasicInfoParams>({
   created_by: '',
   created_time: '',
   public_key: '',
-  publish_validate_msg: '',
   maintainers: [],
   developers: [],
   is_public: true,

@@ -144,6 +144,7 @@ class TestAlerter:
         mocker.patch("apigateway.apps.monitor.flow.handlers.base.Alerter.get_message", return_value="message")
 
         mocker.patch("apigateway.apps.monitor.flow.handlers.base.Alerter.get_receivers", return_value=[])
+        mocker.patch("apigateway.apps.monitor.flow.handlers.base.Alerter.get_tenant_id", return_value="")
         status, _, _ = self.alerter._alert(mock_event)
         assert status == "failure"
 

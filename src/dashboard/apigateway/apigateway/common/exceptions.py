@@ -24,7 +24,3 @@ class SchemaNotExist(Exception):
 
 class SchemaValidationError(Exception):
     pass
-
-
-class InstanceDeleteError(Exception):
-    pass

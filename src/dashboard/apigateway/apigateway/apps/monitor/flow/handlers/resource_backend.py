@@ -26,6 +26,7 @@ from apigateway.apps.monitor.constants import AlarmStatusEnum, ResourceBackendAl
 from apigateway.apps.monitor.flow.handlers.base import Alerter
 from apigateway.apps.monitor.flow.helpers import AlertHandler, MonitorEvent
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
+from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.utils import time as time_utils
 from apigateway.utils.string import truncate_string
 
@@ -39,7 +40,7 @@ class ResourceBackendDimension(BaseModel):
 
 class ResourceBackendAlarmStrategyEnabledFilter(AlertHandler):
     def _do(self, event: MonitorEvent) -> Optional[MonitorEvent]:
-        dimension = ResourceBackendDimension.parse_obj(event.event_dimensions)
+        dimension = ResourceBackendDimension.model_validate(event.event_dimensions)
 
         alarm_strategies = AlarmStrategy.objects.get_resource_alarm_strategy(
             gateway_id=dimension.api_id,
@@ -106,6 +107,9 @@ class ResourceBackendAlerter(Alerter):
 
         return list(receivers)
 
+    def get_tenant_id(self, event: MonitorEvent):
+        return get_tenant_id_for_gateway_maintainers(event.extend["gateway"].tenant_id)
+
     def get_message(self, event: MonitorEvent):
         log_records = event.extend["log_records"]
         record_source = log_records[0]["_source"]
@@ -157,7 +161,7 @@ class ResourceBackendAlerter(Alerter):
         if label:
             return label
 
-        dimension = ResourceBackendDimension.parse_obj(event.event_dimensions)
+        dimension = ResourceBackendDimension.model_validate(event.event_dimensions)
         return dimension.code_name or "网关请求后端接口错误"
 
     def _get_backend_url(self, record_source: Dict[str, Any]) -> str:

@@ -17,71 +17,112 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from operator import itemgetter
 from typing import Any, Dict, Iterable, List, Optional
+from urllib.parse import urlparse
 
-from bkapi.paasv3.shortcuts import get_client_by_username
 from cachetools import TTLCache, cached
 from django.conf import settings
 
-from apigateway.components.handler import RequestAPIHandler
-from apigateway.components.utils import inject_accept_language
-from apigateway.utils.list import chunk_list
+from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.constants import (
+    TENANT_ID_OPERATION,
+    TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
+    TenantModeEnum,
+)
+from apigateway.common.tenant.request import gen_tenant_header
+from apigateway.utils.local import local
+from apigateway.utils.url import url_join
+
+from .bkauth import get_app_info as bkauth_get_app_info
+from .http import http_get
+from .utils import gen_gateway_headers
 
 logger = logging.getLogger(__name__)
 
 # FIXME: LEGACY CODE, should use paas.py instead
 
 
-class PaaSV3Component:
-    """API 网关 paasv3 相关接口"""
+def _call_paasv3_uni_apps_query_by_id(
+    tenant_id: str,
+    app_codes: List[str],
+) -> List[Dict[str, Any]]:
+    data = {
+        "id": ",".join(app_codes),
+    }
 
-    def __init__(self):
-        self._client = get_client_by_username(username="admin", endpoint=settings.BK_PAAS3_API_URL)
-        self._client.session.register_hook("request", inject_accept_language)
-        self._request_handler = RequestAPIHandler("bkpaas3")
+    headers = gen_gateway_headers()
+    headers.update(gen_tenant_header(tenant_id))
 
-    @cached(cache=TTLCache(maxsize=2000, ttl=300))
-    def get_app(self, app_code: str) -> Optional[Dict[str, Any]]:
-        data = self.get_apps([app_code])
-        return data.get(app_code)
+    gateway_name = "bkpaas3"
+    if settings.EDITION == "te":
+        gateway_name = "paasv3"
+    host = settings.BK_API_URL_TMPL.format(api_name=gateway_name)
 
-    def get_apps(self, app_code_list: List[str]) -> Dict[str, Any]:
-        """
-        :param app_code_list: 蓝鲸应用 bk_app_code 列表
-        """
-        result_data = []
+    url = url_join(host, "/prod/system/uni_applications/query/by_id/")
+    timeout = 10
 
-        # paas 限制参数 id 列表最大长度 20，因此将 app_code_list 拆分成多组
-        for app_codes in chunk_list(app_code_list, n=20):
-            params = {
-                "private_token": getattr(settings, "BK_PAAS3_PRIVATE_TOKEN", ""),
-                "id": app_codes,
-                "format": "bk_std_json",
-            }
-            api_result, response = self._request_handler.call_api(
-                self._client.api.uni_apps_query_by_id,
-                data=params,
-            )
-            data = self._request_handler.parse_api_result(api_result, response, {"code": 0}, itemgetter("data"))
-            result_data.extend(data)
+    ok, resp_data = http_get(url, data, headers=headers, timeout=timeout)
+    if not ok:
+        logger.error(
+            "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
+            "paasv3",
+            "http_get",
+            url,
+            data,
+            local.request_id,
+            resp_data["error"],
+        )
+        raise error_codes.REMOTE_REQUEST_ERROR.format(
+            f"request paasv3 fail! "
+            f"Request=[http_get {urlparse(url).path} request_id={local.request_id}]"
+            f"error={resp_data['error']}"
+        )
 
-        apps: Iterable[Dict] = filter(None, result_data)
-        return {app["code"]: app for app in apps} or {}
+    return resp_data
 
-    def get_app_maintainers(self, bk_app_code: str) -> List[str]:
-        """获取应用负责人"""
-        app = self.get_app(bk_app_code)
-        if not app:
-            return []
 
-        if app.get("developers"):
-            return app["developers"]
+@cached(cache=TTLCache(maxsize=2000, ttl=300))
+def get_app(tenant_id: str, app_code: str) -> Optional[Dict[str, Any]]:
+    result_data = _call_paasv3_uni_apps_query_by_id(tenant_id, [app_code])
+    apps: Iterable[Dict] = filter(None, result_data)
 
-        if app.get("creator"):
-            return [app["creator"]]
+    result = {app["code"]: app for app in apps} or {}
 
+    return result.get(app_code)
+
+
+def get_app_maintainers(bk_app_code: str) -> List[str]:
+    """获取应用负责人"""
+    # NOTE: here we need to get maintainers from paasv3
+    #       but the X-Bk-Tenant-Id required
+    #       so, we query it from bkauth first
+    info = bkauth_get_app_info(bk_app_code)
+    tenant_mode = info["bk_tenant"]["mode"]
+    tenant_id = info["bk_tenant"]["id"]
+    # 全租户应用，使用 tenant_id = system 去查询应用信息
+    if tenant_mode == TenantModeEnum.GLOBAL.value:
+        app = get_app(TENANT_ID_OPERATION, bk_app_code)
+    else:
+        app = get_app(tenant_id, bk_app_code)
+
+    if not app:
         return []
 
+    if app.get("developers"):
+        return app["developers"]
 
-paasv3_component = PaaSV3Component()
+    if app.get("creator"):
+        return [app["creator"]]
+
+    return []
+
+
+def get_tenant_id_for_app_developers(bk_app_code: str) -> str:
+    if not settings.ENABLE_MULTI_TENANT_MODE:
+        return TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
+
+    info = bkauth_get_app_info(bk_app_code)
+    # if the tenant_id is empty, it means the app is a global app
+    # so the cmsi use could only be the `system`
+
+    return info["bk_tenant"]["id"] or TENANT_ID_OPERATION

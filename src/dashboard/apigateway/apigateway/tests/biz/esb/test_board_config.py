@@ -76,7 +76,7 @@ class TestBoardConfigManager:
         settings.ESB_BOARD_CONFIGS = board_configs
         board_config = BoardConfigManager.get_board_config(board)
 
-        assert board_config.dict() == expected
+        assert board_config.model_dump() == expected
 
     @pytest.mark.parametrize(
         "board_configs, board, expected",

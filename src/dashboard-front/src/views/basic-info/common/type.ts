@@ -6,7 +6,7 @@ export interface BasicInfoParams {
   description_en?: string // 可选，英文描述
   public_key_fingerprint?: string // 可选，公钥指纹
   bk_app_codes: string // 蓝鲸应用代码
-  related_app_codes: string // 相关应用代码
+  related_app_codes: string[] // 相关应用代码[]
   docs_url: string // 文档URL
   api_domain?: string // 可选，API域名
   developers?: string[] // 可选，开发者列表
@@ -36,6 +36,8 @@ export interface BasicInfoParams {
       link: string // 链接
     }
   }
+  tenant_mode?: string
+  tenant_id?: string
 }
 
 export interface DialogParams {

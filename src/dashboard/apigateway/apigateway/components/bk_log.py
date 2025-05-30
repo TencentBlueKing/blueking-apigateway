@@ -16,45 +16,30 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from operator import itemgetter
-from typing import Any, Dict
+from typing import Any
 
-from bkapi_client_core.apigateway import OperationGroup
-from bkapi_client_core.apigateway.django_helper import get_client_by_username as get_client_by_username_for_apigateway
 from django.conf import settings
 
-from apigateway.components.bkapi_client.log_search import Client as LogSearchClient
-from apigateway.components.esb_components import get_client_by_username as get_client_by_username_for_esb
-from apigateway.components.handler import RequestAPIHandler
-from apigateway.components.utils import inject_accept_language
+from apigateway.utils.url import url_join
+
+from .http import http_post
+from .utils import do_legacy_blueking_http_request, gen_gateway_headers
 
 
-class BKLogComponent:
-    def __init__(self):
-        self._api_client: OperationGroup = self._get_api_client()
-        self._request_handler = RequestAPIHandler("bk-log")
+def esquery_dsl(index: str, body: Any) -> Any:
+    data = {
+        "indices": index,
+        "body": body,
+    }
 
-    def esquery_dsl(self, index: str, body: Any) -> Dict[str, Any]:
-        data = {
-            "indices": index,
-            "body": body,
-        }
+    headers = gen_gateway_headers(with_operation_tenant_headers=True)
 
-        headers = {"Content-Type": "application/json"}
+    gateway_name = "bk-log-search"
+    if settings.EDITION == "te":
+        gateway_name = "log-search"
+    host = settings.BK_API_URL_TMPL.format(api_name=gateway_name)
 
-        api_result, response = self._request_handler.call_api(self._api_client.esquery_dsl, data, headers=headers)
-        return self._request_handler.parse_api_result(api_result, response, {"result": True}, itemgetter("data"))
+    url = url_join(host, "/prod/esquery_dsl/")
+    timeout = 30
 
-    def _get_api_client(self) -> OperationGroup:
-        # use gateway: log-search
-        if settings.USE_BKAPI_BK_LOG:
-            apigw_client = get_client_by_username_for_apigateway(LogSearchClient, username="admin")
-            apigw_client.session.register_hook("request", inject_accept_language)
-            return apigw_client.api
-
-        esb_client = get_client_by_username_for_esb("admin")
-        esb_client.session.register_hook("request", inject_accept_language)
-        return esb_client.bk_log
-
-
-bk_log_component = BKLogComponent()
+    return do_legacy_blueking_http_request("bklog", http_post, url, data, headers, timeout)

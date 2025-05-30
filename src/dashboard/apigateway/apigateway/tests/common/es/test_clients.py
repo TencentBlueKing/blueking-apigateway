@@ -16,13 +16,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-from bkapi_client_core.exceptions import BKAPIError
 
-from apigateway.common.error_codes import APIError
+from apigateway.common.error_codes import APIError, error_codes
 from apigateway.common.es.clients import (
     BKLogESClient,
 )
-from apigateway.components.exceptions import RemoteRequestError
 
 
 class TestBKLogESClientMixin:
@@ -33,14 +31,14 @@ class TestBKLogESClientMixin:
         es_client = BKLogESClient(es_index)
 
         mocker.patch(
-            "apigateway.common.es.clients.bk_log_component.esquery_dsl",
-            side_effect=RemoteRequestError(faker.pystr, BKAPIError("error")),
+            "apigateway.common.es.clients.esquery_dsl",
+            side_effect=error_codes.REMOTE_REQUEST_ERROR,
         )
         with pytest.raises(APIError):
             es_client.execute_search(es_body)
 
         mocked_esquery_dsl = mocker.patch(
-            "apigateway.common.es.clients.bk_log_component.esquery_dsl",
+            "apigateway.common.es.clients.esquery_dsl",
             return_value={"test": 1},
         )
         result = es_client.execute_search(es_body)

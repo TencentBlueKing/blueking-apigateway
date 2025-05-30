@@ -97,21 +97,6 @@
             </div>
           </div>
           <div class="detail-item-content">
-            <div class="detail-item-content-item" v-if="basicInfoData.kind === 1">
-              <div class="label">{{ `${t('开发语言')}：` }}</div>
-              <div class="value">
-                <span>{{ basicInfoData.extra_info?.language || '--' }}</span>
-              </div>
-            </div>
-            <div class="detail-item-content-item" v-if="basicInfoData.kind === 1">
-              <div class="label">{{ `${t('代码仓库')}：` }}</div>
-              <div class="value">
-                <span>{{ basicInfoData.extra_info?.repository || '--' }}</span>
-                <i
-                  class="apigateway-icon icon-ag-jump"
-                  @click.stop="handleOpenNav(basicInfoData.extra_info.repository)"></i>
-              </div>
-            </div>
             <div class="detail-item-content-item">
               <div class="label">{{ `${t('是否公开')}：` }}</div>
               <div class="value">
@@ -157,6 +142,7 @@
               <div class="label">{{ `${t('维护人员')}：` }}</div>
               <div class="value">
                 <GateWaysEditMemberSelector
+                  v-if="!user.isTenantMode"
                   mode="edit"
                   width="600px"
                   field="maintainers"
@@ -167,12 +153,24 @@
                   :error-value="t('维护人员不能为空')"
                   @on-change="(e:Record<string, any>) => handleInfoChange(e)"
                 />
+                <GateWaysEditTenantUserSelector
+                  v-else
+                  :content="basicInfoData.maintainers"
+                  :error-value="t('维护人员不能为空')"
+                  :is-error-class="'maintainers-error-tip'"
+                  :is-required="true"
+                  :placeholder="t('请选择维护人员')"
+                  field="maintainers"
+                  mode="edit"
+                  width="600px"
+                  @on-change="(e:Record<string, any>) => handleInfoChange(e)"
+                />
               </div>
             </div>
             <div class="detail-item-content-item">
               <div class="label">{{ `${t('创建人')}：` }}</div>
               <div class="value">
-                <span>{{ basicInfoData.created_by || '--' }}</span>
+                <span><bk-user-display-name :user-id="basicInfoData.created_by" /></span>
               </div>
             </div>
             <div class="detail-item-content-item">
@@ -359,42 +357,114 @@
       </template>
     </bk-dialog>
 
-    <bk-sideslider
-      v-model:is-show="isShowMarkdown"
-      :title="t('查看开发指引')"
-      width="960"
-    >
-      <section class="markdown-box">
-        <guide :markdown-html="markdownHtml" />
-      </section>
-    </bk-sideslider>
-
-    <create-gateway-com v-model="createGatewayShow" :init-data="basicInfoDetailData" @done="getBasicInfo()" />
-
-    <edit-api-doc v-model="isShowApiDoc" :data="basicInfoData" @done="getBasicInfo()" />
+    <bk-dialog
+      width="600"
+      theme="primary"
+      :is-show="dialogEditData.isShow"
+      :title="dialogEditData.title"
+      quick-close
+      :is-loading="dialogEditData.loading"
+      @confirm="handleConfirmEdit"
+      @closed="handleCloseEdit">
+      <bk-form ref="formRef" form-type="vertical" :model="basicInfoDetailData" :rules="rules">
+        <bk-form-item
+          :label="t('名称')"
+          property="name"
+          required
+        >
+          <bk-input
+            v-model="basicInfoDetailData.name"
+            :maxlength="30"
+            :disabled="true"
+            :placeholder="t('请输入小写字母、数字、连字符(-)，以小写字母开头')"
+          />
+          <div class="gateways-name-tip">
+            <span>{{ t('网关唯一标识，创建后不可修改') }}</span>
+          </div>
+        </bk-form-item>
+        <bk-form-item
+          :label="t('维护人员')"
+          property="maintainers"
+          required
+        >
+          <MemberSelect v-model="basicInfoDetailData.maintainers" :placeholder="t('请选择维护人员')" :has-delete-icon="true" />
+        </bk-form-item>
+        <bk-form-item
+          :label="t('描述')"
+          property="description"
+        >
+          <bk-input
+            type="textarea"
+            v-model="basicInfoDetailData.description"
+            :placeholder="t('请输入网关描述')"
+            :maxlength="500"
+            :rows="5"
+            clearable
+          />
+        </bk-form-item>
+        <bk-form-item
+          :label="t('是否公开')"
+          property="is_public"
+          required
+        >
+          <bk-switcher v-model="basicInfoDetailData.is_public" theme="primary" />
+          <span class="common-form-tips">{{ t('公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏') }}</span>
+        </bk-form-item>
+        <bk-form-item
+          :label="t('关联蓝鲸应用')"
+          property="bk_app_codes"
+          v-if="user?.featureFlags?.GATEWAY_APP_BINDING_ENABLED"
+        >
+          <bk-tag-input
+            v-model="basicInfoDetailData.bk_app_codes"
+            :placeholder="t('请输入蓝鲸应用ID，并按enter确认')"
+            allow-create
+            has-delete-icon
+            collapse-tags
+            :list="[]"
+          />
+          <span class="common-form-tips">{{ t('仅影响 HomePage 中运维开发分数的计算') }}</span>
+        </bk-form-item>
+        <bk-form-item
+          :label="t('管理网关的应用列表 ')"
+          property="related_app_codes"
+        >
+          <bk-tag-input
+            v-model="basicInfoDetailData.related_app_codes"
+            :placeholder="t('请输入蓝鲸应用ID，并按enter确认')"
+            allow-create
+            has-delete-icon
+            collapse-tags
+          />
+          <span class="common-form-tips">{{ t('允许列表中的应用使用 sdk 或者开放 API 调用网关接口，同步环境/资源以及发布版本') }}</span>
+        </bk-form-item>
+      </bk-form>
+    </bk-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import {  ref, computed, watch } from 'vue';
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue';
 import _ from 'lodash';
-import { Message, InfoBox } from 'bkui-vue';
+import {
+  InfoBox,
+  Message,
+} from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
-import { HelpDocumentFill } from 'bkui-vue/lib/icon';
 import { useRoute, useRouter } from 'vue-router';
+import { useUser } from '@/store';
 import {  copy } from '@/common/util';
 import { useGetGlobalProperties } from '@/hooks';
+// import { useStage } from '@/store';
 import { BasicInfoParams, DialogParams } from './common/type';
-import { getGateWaysInfo, toggleGateWaysStatus, deleteGateWays, editGateWays, getGuideDocs } from '@/http';
+import { getGateWaysInfo, toggleGateWaysStatus, deleteGateWays, editGateWays } from '@/http';
 import GateWaysEditTextarea from '@/components/gateways-edit/textarea.vue';
 import GateWaysEditMemberSelector from '@/components/gateways-edit/member-selector.vue';
-import CreateGatewayCom from '@/components/create-gateway.vue';
-import guide from '@/components/guide.vue';
-import MarkdownIt from 'markdown-it';
-import hljs from 'highlight.js';
-// @ts-ignore
-import programProcess from '@/images/program-process.png';
-import EditApiDoc from './common/editApiDoc.vue';
+import MemberSelect from '@/components/member-select';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -422,7 +492,7 @@ const basicInfoData = ref<BasicInfoParams>({
   description_en: '',
   public_key_fingerprint: '',
   bk_app_codes: '',
-  related_app_codes: '',
+  related_app_codes: [],
   docs_url: '',
   api_domain: '',
   created_by: '',
@@ -432,16 +502,6 @@ const basicInfoData = ref<BasicInfoParams>({
   developers: [],
   is_public: true,
   is_official: false,
-  kind: 0,
-  extra_info: {
-    language: 'python',
-    repository: '',
-  },
-  programmable_gateway_git_info: {
-    repository: '',
-    account: '',
-    password: '',
-  },
 });
 const basicInfoDetailData = ref(_.cloneDeep(basicInfoData.value));
 const delApigwDialog = ref<DialogParams>({

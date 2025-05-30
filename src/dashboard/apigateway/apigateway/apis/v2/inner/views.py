@@ -21,10 +21,12 @@ import operator
 from typing import List
 
 from blue_krill.async_utils.django_utils import apply_async_on_commit
+from django.conf import settings
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
+from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
 from apigateway.apps.esb.bkcore.models import AppPermissionApplyRecord, ComponentSystem, ESBChannel
@@ -37,6 +39,7 @@ from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.responses import OKJsonResponse
@@ -81,6 +84,16 @@ class GatewayListApi(generics.ListAPIView):
         fuzzy = slz.validated_data.get("fuzzy")
 
         queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
+
+        # 可以看到 全租户网关 + 本租户网关
+        tenant_id = None
+        if settings.ENABLE_MULTI_TENANT_MODE:
+            if not request.tenant_id:
+                raise ValidationError("tenant_id is required in multi-tenant mode")
+            tenant_id = request.tenant_id
+        if tenant_id:
+            queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
+
         if name:
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
             queryset = queryset.filter(name__contains=name) if fuzzy else queryset.filter(name=name)

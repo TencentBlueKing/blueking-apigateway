@@ -146,6 +146,7 @@ class Alerter(AlertHandler):
         sender = self.get_sender(event)
         receivers = self.get_receivers(event)
         message = self.get_message(event)
+        tenant_id = self.get_tenant_id(event)
 
         if not receivers:
             return AlarmStatusEnum.FAILURE.value, "告警接收人为空", message
@@ -154,7 +155,7 @@ class Alerter(AlertHandler):
         result_messages = []
 
         for notice_way in self.notice_ways:
-            ok, result_message = NoticeWay.send_notice(notice_way, sender, receivers, message)
+            ok, result_message = NoticeWay.send_notice(tenant_id, notice_way, sender, receivers, message)
             result_messages.append(f"{notice_way}: {result_message}")
             if not ok:
                 status = AlarmStatusEnum.FAILURE.value
@@ -180,3 +181,6 @@ class Alerter(AlertHandler):
 
     def render_template(self, template: str, **kwargs) -> str:
         return Template(textwrap.dedent(template).strip()).render(Context(kwargs))
+
+    def get_tenant_id(self, event: MonitorEvent) -> str:
+        raise NotImplementedError

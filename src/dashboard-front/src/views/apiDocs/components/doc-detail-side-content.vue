@@ -30,7 +30,17 @@
         </article>
         <article>
           <header class="content-title">{{ t('网关负责人') }}</header>
-          <main class="content-main">{{ basics.maintainers.join(', ') }}</main>
+          <main class="content-main">
+            <bk-user-display-name :user-id="basics.maintainers.join(', ')" style="word-break: break-all;" />
+          </main>
+        </article>
+        <article>
+          <header class="content-title">{{ t('租户模式') }}</header>
+          <main class="content-main">{{ TENANT_MODE_TEXT_MAP[basics.tenant_mode] || '--' }}</main>
+        </article>
+        <article>
+          <header class="content-title">{{ t('租户 ID') }}</header>
+          <main class="content-main">{{ basics.tenant_id || '--' }}</main>
         </article>
         <article>
           <header class="content-title">{{ t('文档联系人') }}</header>
@@ -111,6 +121,7 @@ import {
   TabType,
 } from '@/views/apiDocs/types';
 import LangSelector from '@/views/apiDocs/components/lang-selector.vue';
+import { TENANT_MODE_TEXT_MAP } from '@/enums';
 
 const props = withDefaults(defineProps<IProps>(), {
   basics: () => null,

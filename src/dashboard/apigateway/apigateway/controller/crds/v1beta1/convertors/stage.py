@@ -71,7 +71,7 @@ class StageConvertor(BaseConvertor):
 
     def _get_default_stage_plugins(self) -> List[PluginConfig]:
         """Get the default plugins for stage, which is shared by all resources in the stage"""
-        default_plugins = [
+        default_stage_plugins = [
             # 2024-08-19 disable the bk-opentelemetry plugin, we should let each gateway set their own opentelemetry
             # PluginConfig(name="bk-opentelemetry"),
             PluginConfig(name="prometheus"),
@@ -107,9 +107,27 @@ class StageConvertor(BaseConvertor):
         ]
 
         if settings.GATEWAY_CONCURRENCY_LIMIT_ENABLED:
-            default_plugins.append(PluginConfig(name="bk-concurrency-limit"))
+            default_stage_plugins.append(PluginConfig(name="bk-concurrency-limit"))
 
-        return default_plugins
+        # 多租户模式
+        if settings.ENABLE_MULTI_TENANT_MODE:
+            default_stage_plugins.extend(
+                [
+                    PluginConfig(name="bk-tenant-verify"),
+                    PluginConfig(
+                        name="bk-tenant-validate",
+                        config={
+                            "tenant_mode": self._release_data.gateway.tenant_mode,
+                            "tenant_id": self._release_data.gateway.tenant_id,
+                        },
+                    ),
+                ]
+            )
+        else:
+            default_stage_plugins.append(PluginConfig(name="bk-default-tenant"))
+
+
+        return default_stage_plugins
 
     def _get_stage_plugins(self) -> List[PluginConfig]:
         return [

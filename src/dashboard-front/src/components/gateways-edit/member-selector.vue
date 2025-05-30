@@ -5,8 +5,13 @@
         <div class="edit-content">
           <slot>
             <template v-if="membersText">
-              <span class="member-item" v-bk-tooltips="{ content: membersText, placement: 'top-start' }">
-                {{ membersText }}
+              <span class="member-item">
+                <bk-popover>
+                  <bk-user-display-name :user-id="membersText" />
+                  <template #content>
+                    <span><bk-user-display-name :user-id="membersText" /></span>
+                  </template>
+                </bk-popover>
               </span>
             </template>
             <template v-else>--</template>
@@ -56,7 +61,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, nextTick, watch, onBeforeMount, onMounted } from 'vue';
+import {
+  computed,
+  nextTick,
+  ref,
+  watch,
+} from 'vue';
 import MemberSelector from '../member-select';
 import { useUser } from '@/store/user';
 import { useI18n } from 'vue-i18n';
@@ -108,10 +118,10 @@ const isEditable = ref(false);
 const errorTips = ref('');
 const displayValue = ref([]);
 
-const handleValidate = () => {
-  isShowError.value = false;
-  errorTips.value = '';
-};
+// const handleValidate = () => {
+//   isShowError.value = false;
+//   errorTips.value = '';
+// };
 
 const handleEdit = () => {
   document.body.click();
@@ -218,13 +228,13 @@ watch(
   { immediate: true },
 );
 
-onMounted(() => {
-  document.body.addEventListener('click', hideEdit);
-});
-
-onBeforeMount(() => {
-  document.body.removeEventListener('click', hideEdit);
-});
+// onMounted(() => {
+//   document.body.addEventListener('click', hideEdit);
+// });
+//
+// onBeforeMount(() => {
+//   document.body.removeEventListener('click', hideEdit);
+// });
 </script>
 
 <style lang="scss" scoped>

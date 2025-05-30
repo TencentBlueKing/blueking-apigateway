@@ -19,21 +19,6 @@
 from django.conf import settings
 
 from apigateway.apps.monitor.constants import AlarmTypeEnum
-from apigateway.components.paasv3 import paasv3_component
-
-
-def get_app_maintainers(app_code):
-    app = paasv3_component.get_app(app_code)
-    if not app:
-        return []
-
-    if app.get("developers"):
-        return app["developers"]
-
-    if app.get("creator"):
-        return [app["creator"]]
-
-    return []
 
 
 def get_es_index(alarm_type: AlarmTypeEnum) -> str:

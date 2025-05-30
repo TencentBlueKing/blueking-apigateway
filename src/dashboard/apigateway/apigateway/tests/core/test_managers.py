@@ -31,7 +31,6 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import (
     Gateway,
-    MicroGateway,
     Release,
     ReleasedResource,
     ReleaseHistory,

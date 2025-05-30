@@ -16,6 +16,5 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from .gateway_auth import GatewayAuthConfig, GatewayAuthContext  # noqa
-from .gateway_feature_flag import GatewayFeatureFlagContext  # noqa
 from .resource_auth import ResourceAuthContext  # noqa
 from .stage_proxy_http import StageProxyHTTPContext  # noqa

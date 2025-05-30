@@ -18,13 +18,14 @@
 
 from typing import Any, Dict
 
+from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.settings import api_settings
 
 from apigateway.apis.web.plugin.convertor import PluginConfigYamlConvertor
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginConfig, PluginForm, PluginType
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.plugin.validator import PluginConfigYamlValidator
@@ -156,6 +157,12 @@ class PluginConfigCreateInputSLZ(PluginConfigBaseSLZ):
         plugin_type = validated_data["type_id"]
         if not plugin_type.is_public:
             raise ValidationError(_("此插件类型未公开，不能用于绑定插件。"))
+
+        if (
+            settings.ENABLE_MULTI_TENANT_MODE
+            and plugin_type.code == PluginTypeCodeEnum.BK_VERIFIED_USER_EXEMPTED_APPS.value
+        ):
+            raise ValidationError(_("多租户模式，不支持免用户认证应用白名单插件。"))
 
         return self._update_plugin(
             PluginConfig(gateway=validated_data["gateway"], type=validated_data["type_id"]), validated_data

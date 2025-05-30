@@ -32,7 +32,7 @@ from apigateway.apps.metrics.constants import (
 )
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.common.error_codes import error_codes
-from apigateway.components.prometheus import prometheus_component
+from apigateway.components.prometheus import query_range
 
 from .base import BasePrometheusMetrics
 
@@ -67,7 +67,7 @@ class BaseMetrics(BasePrometheusMetrics):
         promql = self._get_query_promql(gateway_name, stage_name, step, stage_id, resource_id, resource_name)
 
         # request prometheus http api to get metrics data
-        return prometheus_component.query_range(
+        return query_range(
             bk_biz_id=getattr(settings, "BCS_CLUSTER_BK_BIZ_ID", ""),
             promql=promql,
             start=start,
@@ -89,7 +89,7 @@ class BaseMetrics(BasePrometheusMetrics):
         # generate query expression
         promql = self._get_query_promql(gateway_name, stage_name, step, stage_id, resource_id, resource_name)
         result: Dict[str, Any] = {}
-        data = prometheus_component.query_range(
+        data = query_range(
             bk_biz_id=getattr(settings, "BCS_CLUSTER_BK_BIZ_ID", ""),
             promql=promql,
             start=start,

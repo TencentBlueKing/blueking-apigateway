@@ -36,6 +36,7 @@ from apigateway.utils import time
 
 
 class ResourceHandler:
+    # NOTE: only unittest use this func
     @classmethod
     def save_auth_config(cls, resource_id: int, config: Dict[str, Any]):
         """存储资源认证配置"""

@@ -235,22 +235,6 @@ files = [
 bkapi-client-core = ">=1.0.2,<2.0.0"
 
 [[package]]
-name = "bkapi-bcs-api-gateway"
-version = "1.12.1"
-description = "bk-bcs容器化部署方案api-gateway"
-optional = false
-python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,<4.0,>=2.7"
-files = [
-    {file = "bkapi-bcs-api-gateway-1.12.1.tar.gz", hash = "sha256:9c1ac07071ee185b41eb989ebc8040bb9ab6541951250b4b80809a62f6472a65"},
-]
-
-[package.dependencies]
-bkapi-client-core = ">=1.0.2,<2.0.0"
-
-[package.extras]
-django = ["bkapi-client-core[django] (>=1.0.2,<2.0.0)"]
-
-[[package]]
 name = "bkapi-bk-apigateway"
 version = "1.0.11"
 description = "蓝鲸API网关"
@@ -310,30 +294,13 @@ files = [
 bkapi-client-core = ">=1.1.0,<2.0.0"
 
 [[package]]
-name = "bkapi-paasv3"
-version = "1.0.1"
-description = "蓝鲸 PaaS 平台 - 开发者中心"
-optional = false
-python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,<4.0,>=2.7"
-files = [
-    {file = "bkapi-paasv3-1.0.1.tar.gz", hash = "sha256:318d4fc77139e76c69846e7a1399feb5715b24150cad12864e56b182077b1b18"},
-]
-
-[package.dependencies]
-bkapi-client-core = ">=1.0.2,<2.0.0"
-
-[package.extras]
-django = ["bkapi-client-core[django] (>=1.0.2,<2.0.0)"]
-
-[[package]]
 name = "bkpaas-auth"
-version = "3.0.0"
+version = "3.1.0"
 description = "User authentication django app for blueking internal projects"
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "bkpaas_auth-3.0.0-py3-none-any.whl", hash = "sha256:cbad6348510b856147c3647413aab7da49345ec6f7276c435c10556209571606"},
-    {file = "bkpaas_auth-3.0.0.tar.gz", hash = "sha256:85786155fd8f379cd0ee3330b33d704718cc31d178cecb1bb6a6c5ccf348f782"},
+    {file = "bkpaas_auth-3.1.0.tar.gz", hash = "sha256:5cc418e08153b633c6e306fcf699571cea64f87aea25aae6a75d4ef2b5a98c11"},
 ]
 
 [package.dependencies]
@@ -979,8 +946,8 @@ description = "A high-level Python web framework that encourages rapid developme
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "Django-4.2.20-py3-none-any.whl", hash = "sha256:213381b6e4405f5c8703fffc29cd719efdf189dec60c67c04f76272b3dc845b9"},
-    {file = "Django-4.2.20.tar.gz", hash = "sha256:92bac5b4432a64532abb73b2ac27203f485e40225d2640a7fbef2b62b876e789"},
+    {file = "Django-4.2.16-py3-none-any.whl", hash = "sha256:1ddc333a16fc139fd253035a1606bb24261951bbc3a6ca256717fa06cc41a898"},
+    {file = "Django-4.2.16.tar.gz", hash = "sha256:6f1616c2786c408ce86ab7e10f792b8f15742f7b7b7460243929cb371e7f1dad"},
 ]
 
 [package.dependencies]

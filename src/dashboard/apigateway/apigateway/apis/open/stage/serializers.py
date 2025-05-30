@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional
 from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
@@ -126,7 +126,7 @@ class TransformHeadersSLZ(serializers.Serializer):
     def _validate_headers_key(self, value):
         for key in value:
             if not HEADER_KEY_PATTERN.match(key):
-                raise serializers.ValidationError(_("Header 键由字母、数字、连接符（-）组成，长度小于100个字符。"))
+                raise serializers.ValidationError(_("Header 键由字母、数字、连接符（-）组成，长度小于 100 个字符。"))
         return value
 
     def validate_set(self, value):
@@ -159,7 +159,7 @@ class BackendSLZ(serializers.Serializer):
 
 class PluginConfigSLZ(serializers.Serializer):
     type = serializers.CharField(help_text="插件类型名称")
-    yaml = serializers.CharField(help_text="插件yaml配置")
+    yaml = serializers.CharField(help_text="插件 yaml 配置")
 
 
 class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
@@ -468,8 +468,10 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             validator.validate_scheme()
 
     def _sync_plugins(self, gateway_id: int, stage_id: int, plugin_configs: Optional[Dict[str, Any]] = None):
-        # plugin_configs为None则，plugin_config_datas 设置[]则清空对应配置
-        plugin_config_datas = parse_obj_as(Optional[List[PluginConfigData]], plugin_configs) if plugin_configs else []
+        # plugin_configs 为 None 则，plugin_config_datas 设置 [] 则清空对应配置
+        plugin_config_datas = (
+            TypeAdapter(Optional[List[PluginConfigData]]).validate_python(plugin_configs) if plugin_configs else []
+        )
         scope_id_to_plugin_configs = {stage_id: plugin_config_datas}
         synchronizer = PluginSynchronizer()
         synchronizer.sync(

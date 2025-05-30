@@ -38,6 +38,7 @@ class GatewayStatusEnum(StructuredEnum):
     ACTIVE = EnumField(1, "启用中")
 
 
+# FIXME: should be removed
 class MicroGatewayStatusEnum(StructuredEnum):
     """微网关实例状态"""
 
@@ -48,6 +49,13 @@ class MicroGatewayStatusEnum(StructuredEnum):
     # 可能会因为 helm install 超时导致失败，此时资源可能更新了，但 release 状态未更新
     # 所以不能简单标识安装或者未安装
     ABNORMAL = EnumField("abnormal", _("安装异常"))
+
+
+# FIXME: should be removed
+class ServiceDiscoveryTypeEnum(StructuredEnum):
+    """服务发现注册中心类型"""
+
+    GO_MICRO_ETCD = EnumField("go_micro_etcd", "Go Micro - Etcd")
 
 
 class GatewayTypeEnum(StructuredEnum):

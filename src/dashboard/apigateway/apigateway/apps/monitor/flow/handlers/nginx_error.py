@@ -22,11 +22,15 @@ from django.conf import settings
 
 from apigateway.apps.monitor.flow.handlers.base import Alerter
 from apigateway.apps.monitor.flow.helpers import MonitorEvent
+from apigateway.common.tenant.constants import TENANT_ID_OPERATION
 
 
 class NginxErrorAlerter(Alerter):
     def get_receivers(self, event: MonitorEvent) -> List[str]:
         return settings.APIGW_MANAGERS
+
+    def get_tenant_id(self, event: MonitorEvent) -> str:
+        return TENANT_ID_OPERATION
 
     def get_message(self, event: MonitorEvent) -> str:
         log_records = event.extend["log_records"]

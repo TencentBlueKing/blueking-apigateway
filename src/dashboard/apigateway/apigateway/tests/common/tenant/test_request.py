@@ -15,22 +15,25 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from bkapi_client_core.apigateway import APIGatewayClient, Operation, OperationGroup, bind_property
+
+from unittest.mock import Mock, patch
+
+from apigateway.common.tenant.request import gen_operation_tenant_header, get_user_tenant_id
 
 
-class Group(OperationGroup):
-    # 统一查询时序数据
-    esquery_dsl = bind_property(
-        Operation,
-        name="esquery_dsl",
-        method="POST",
-        path="/esquery_dsl/",
-    )
+@patch("apigateway.common.tenant.request.settings")
+def test_get_user_tenant_id_multi_tenant_mode(mock_settings):
+    mock_settings.ENABLE_MULTI_TENANT_MODE = True
+    request = Mock()
+    request.user.tenant_id = "tenant_123"
+    assert get_user_tenant_id(request) == "tenant_123"
 
 
-class Client(APIGatewayClient):
-    """Bkapi log-search client"""
+@patch("apigateway.common.tenant.request.settings")
+def test_get_user_tenant_id_single_tenant_mode(mock_settings):
+    mock_settings.ENABLE_MULTI_TENANT_MODE = False
+    assert get_user_tenant_id(Mock()) == "default"
 
-    _api_name = "log-search"
 
-    api = bind_property(Group, name="api")
+def test_gen_operation_tenant_headers():
+    assert gen_operation_tenant_header() == {"X-Bk-Tenant-Id": "system"}

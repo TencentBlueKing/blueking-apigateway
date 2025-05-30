@@ -98,12 +98,15 @@ import logoWithoutName from '@/images/APIgateway-logo.png';
 import { isChinese } from '@/language/i18n';
 import constantConfig from '@/constant/config';
 import { useScriptTag } from '@vueuse/core';
+import BkUserDisplayName from '@blueking/bk-user-display-name';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const { t, locale } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const common = useCommon();
+// 获取用户数据
+const user = useUser();
 
 const { BK_DASHBOARD_URL } = window;
 
@@ -181,8 +184,6 @@ const appLogo = computed(() => {
 // 加载完用户数据才会展示页面
 const userLoaded = ref(false);
 const activeIndex = ref(0);
-// 获取用户数据
-const user = useUser();
 // 跑马灯数据
 const showNoticeAlert = ref(true);
 const enableShowNotice = ref(false);
@@ -218,7 +219,7 @@ const headerList = computed(() => ([
     name: t('组件管理'),
     id: 2,
     url: 'componentsMain',
-    enabled: user.featureFlags?.MENU_ITEM_ESB_API,
+    enabled: user.featureFlags?.MENU_ITEM_ESB_API && !user.featureFlags?.ENABLE_MULTI_TENANT_MODE,
     link: '',
   },
   {
@@ -310,6 +311,15 @@ watch(
       enableShowNotice.value = flagsRes?.ENABLE_BK_NOTICE || false;
       user.setFeatureFlags(flagsRes);
 
+      // 多租户 display_name 组件展示配置
+      // 在 template 中使用时，不需再 import，否则报错
+      // if (user.featureFlags?.ENABLE_MULTI_TENANT_MODE) {
+      BkUserDisplayName.configure({
+        tenantId: user.user.tenant_id,
+        apiBaseUrl: user.apiBaseUrl,
+      });
+      // }
+
       userLoaded.value = true;
     } catch (e: any) {
       console.error(e);
@@ -390,9 +400,10 @@ onMounted(() => {
 // });
 </script>
 
-<style>
+<style lang="scss">
 @import './css/app.css';
 </style>
+
 <style lang="scss" scoped>
 .navigation-content {
   // :deep(.bk-navigation-header) {
@@ -401,7 +412,7 @@ onMounted(() => {
 
   :deep(.bk-navigation-wrapper) {
     .container-content{
-      padding: 0px !important;
+      padding: 0 !important;
       // 最小宽度应为 1280px 减去左侧菜单栏展开时的宽度 260px，即为 1020px
       min-width: 1020px;
     }

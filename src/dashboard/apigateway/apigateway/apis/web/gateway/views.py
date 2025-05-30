@@ -35,6 +35,15 @@ from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.constants import (
+    TENANT_ID_OPERATION,
+    TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID,
+    TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
+    TenantModeEnum,
+)
+from apigateway.common.tenant.request import get_user_tenant_id
+from apigateway.components.bkauth import list_all_apps_of_tenant, list_available_apps_for_tenant
+from apigateway.components.bkuser import list_tenants
 from apigateway.components.paas import create_paas_app
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import (
@@ -51,10 +60,10 @@ from apigateway.utils.user_credentials import get_user_credentials_from_request
 from .serializers import (
     GatewayCreateInputSLZ,
     GatewayDevGuidelineOutputSLZ,
-    GatewayFeatureFlagsOutputSLZ,
     GatewayListInputSLZ,
     GatewayListOutputSLZ,
     GatewayRetrieveOutputSLZ,
+    GatewayTenantAppListOutputSLZ,
     GatewayUpdateInputSLZ,
     GatewayUpdateStatusInputSLZ,
 )
@@ -82,7 +91,10 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 
     def list(self, request, *args, **kwargs):
         # 获取用户有权限的网关列表，后续切换到 IAM
-        gateways = GatewayHandler.list_gateways_by_user(request.user.username)
+
+        user_tenant_id = get_user_tenant_id(request)
+
+        gateways = GatewayHandler.list_gateways_by_user(request.user.username, user_tenant_id)
         gateway_ids = [gateway.id for gateway in gateways]
 
         slz = GatewayListInputSLZ(data=request.query_params)
@@ -100,6 +112,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         page = self.paginate_queryset(queryset)
         gateway_ids = [gateway.id for gateway in page]
 
+        # FIXME: created_by to display_name
         output_slz = GatewayListOutputSLZ(
             page,
             many=True,
@@ -124,6 +137,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         slz = GatewayCreateInputSLZ(data=request.data, context={"created_by": request.user.username})
         slz.is_valid(raise_exception=True)
+        user_tenant_id = get_user_tenant_id(request)
 
         bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
         language = slz.validated_data.get("extra_info", {}).get("language")
@@ -144,6 +158,42 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             )
             if not ok:
                 raise error_codes.INTERNAL.format(_("创建蓝鲸应用失败。"), replace=True)
+
+        if settings.ENABLE_MULTI_TENANT_MODE:
+            if slz.validated_data["tenant_mode"] == TenantModeEnum.GLOBAL.value:
+                # 只有运营租户下的用户能创建 全租户网关
+                if user_tenant_id != TENANT_ID_OPERATION:
+                    raise error_codes.NO_PERMISSION.format(_("只有运营租户下的用户才能创建全租户网关。"), replace=True)
+
+                # set the tenant_id to "" if in global mode
+                slz.validated_data["tenant_id"] = TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID
+            elif slz.validated_data["tenant_mode"] == TenantModeEnum.SINGLE.value:
+                if slz.validated_data["tenant_id"] != user_tenant_id:
+                    raise error_codes.NO_PERMISSION.format(
+                        _("普通租户（非运营租户）只能创建当前用户租户下的单租户网关。"), replace=True
+                    )
+        else:
+            # set the tenant_mode/tenant_id if not in multi-tenant mode => the frontend can ignore these fields
+            slz.validated_data["tenant_mode"] = TenantModeEnum.SINGLE.value
+            slz.validated_data["tenant_id"] = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
+
+        if settings.ENABLE_MULTI_TENANT_MODE:
+            if slz.validated_data["tenant_mode"] == TenantModeEnum.GLOBAL.value:
+                # 只有运营租户下的用户能创建 全租户网关
+                if user_tenant_id != TENANT_ID_OPERATION:
+                    raise error_codes.NO_PERMISSION.format(_("只有运营租户下的用户才能创建全租户网关。"), replace=True)
+
+                # set the tenant_id to "" if in global mode
+                slz.validated_data["tenant_id"] = TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID
+            elif slz.validated_data["tenant_mode"] == TenantModeEnum.SINGLE.value:
+                if slz.validated_data["tenant_id"] != user_tenant_id:
+                    raise error_codes.NO_PERMISSION.format(
+                        _("普通租户（非运营租户）只能创建当前用户租户下的单租户网关。"), replace=True
+                    )
+        else:
+            # set the tenant_mode/tenant_id if not in multi-tenant mode => the frontend can ignore these fields
+            slz.validated_data["tenant_mode"] = TenantModeEnum.SINGLE.value
+            slz.validated_data["tenant_id"] = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
 
         # 1. save gateway
         slz.save(
@@ -339,23 +389,32 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="获取网关特性开关",
-        responses={status.HTTP_200_OK: GatewayFeatureFlagsOutputSLZ()},
+        operation_description="获取网关可配置的应用列表，用于应用选择器",
+        responses={status.HTTP_200_OK: GatewayTenantAppListOutputSLZ(many=True)},
         tags=["WebAPI.Gateway"],
     ),
 )
-class GatewayFeatureFlagsApi(generics.ListAPIView):
+class GatewayTenantAppListApi(generics.ListAPIView):
     queryset = Gateway.objects.all()
-    serializer_class = GatewayFeatureFlagsOutputSLZ
     lookup_url_kwarg = "gateway_id"
 
-    def list(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        feature_flags = GatewayHandler.get_feature_flags(instance.pk)
-        slz = self.get_serializer({"feature_flags": feature_flags})
+        # 全租户网关，需要能配置所有的应用 => get tenant list, then get all apps of each tenant
+        if instance.tenant_mode == TenantModeEnum.GLOBAL.value:
+            apps = list_all_apps_of_tenant(TenantModeEnum.GLOBAL.value, "")
 
-        return OKJsonResponse(data=slz.data)
+            tenant_list = list_tenants()
+            tenant_ids = [tenant["id"] for tenant in tenant_list]
+            for tenant_id in tenant_ids:
+                apps.extend(list_all_apps_of_tenant(TenantModeEnum.SINGLE.value, tenant_id))
+
+        # 单租户网关，只能配置 全租户应用 + 本租户应用
+        else:
+            apps = list_available_apps_for_tenant(instance.tenant_mode, instance.tenant_id)
+
+        return OKJsonResponse(data=apps)
 
 
 @method_decorator(

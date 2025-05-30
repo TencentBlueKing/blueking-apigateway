@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import os
+
 from celery.schedules import crontab
 
 # celery configuration
@@ -28,13 +30,15 @@ CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
-CELERY_IMPORTS = (
+CELERY_IMPORTS = [
     "apigateway.apps.monitor.tasks",
     "apigateway.apps.metrics.tasks",
     "apigateway.apps.permission.tasks",
-    "apigateway.apps.esb.component.tasks",
     "apigateway.controller.tasks",
-)
+]
+
+if os.getenv("ENABLE_MULTI_TENANT_MODE", "False").lower() not in ("true", "on", "ok", "y", "yes", "1"):
+    CELERY_IMPORTS.append("apigateway.apps.esb.component.tasks")
 
 CELERY_BEAT_SCHEDULE = {
     # "add-every-minute": {

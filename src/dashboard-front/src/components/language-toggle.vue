@@ -33,8 +33,8 @@
 
 <script setup lang="ts">
 import {
-  ref,
   onMounted,
+  ref,
 } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -42,11 +42,17 @@ import jsCookie from 'js-cookie';
 import { jsonpRequest } from '@/common/util';
 import { useSidebar } from '@/hooks';
 import mitt from '@/common/event-bus';
+import { useUser } from '@/store';
+import { changeTenantLocales } from '@/http';
+
+const { BK_COMPONENT_API_URL, BK_DOMAIN } = window;
+
+const { locale } = useI18n();
+const router = useRouter();
+const user = useUser();
 
 const curLeavePageData = ref({});
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
-const { locale } = useI18n();
-const router = useRouter();
 
 const toggleLanguage = async (idx: string) => {
   let result = true;
@@ -54,23 +60,37 @@ const toggleLanguage = async (idx: string) => {
     result = await isSidebarClosed(JSON.stringify(curLeavePageData.value)) as boolean;
   }
   if (result) {
-    curLeavePageData.value = {};
     const targetLanguage = idx === 'english' ? 'en' : 'zh-cn';
-    const res: any = await jsonpRequest(
-      `${window.BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fe_update_user_language/`,
-      {
-        language: targetLanguage,
-      },
-      'languageToggle',
-    );
-    if (res.code === 0) {
-      jsCookie.set('blueking_language', targetLanguage, {
-        domain: window.BK_DOMAIN,
-        path: '/',
-      });
-      router.go(0);
+    curLeavePageData.value = {};
+
+    if (!user.isTenantMode) {
+      const res: any = await jsonpRequest(
+        `${BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fe_update_user_language/`,
+        {
+          language: targetLanguage,
+        },
+        'languageToggle',
+      );
+      if (res.code === 0) {
+        handleToggleSuccess(targetLanguage);
+      }
+    } else {
+      try {
+        await changeTenantLocales(user.user.tenant_id, { language: targetLanguage });
+        handleToggleSuccess(targetLanguage);
+      } catch {
+        console.log('locale toggle failed');
+      }
     }
   }
+};
+
+const handleToggleSuccess = (language: string) => {
+  jsCookie.set('blueking_language', language, {
+    domain: BK_DOMAIN,
+    path: '/',
+  });
+  router.go(0);
 };
 
 onMounted(() => {
