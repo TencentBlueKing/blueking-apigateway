@@ -53,13 +53,6 @@ class MCPServerPermissionStatusEnum(StructuredEnum):
     OWNED = EnumField("owned", label="已申请，且未过期")
 
 
-class MCPServerPermissionLevelEnum(StructuredEnum):
-    UNLIMITED = EnumField("unlimited", label=_("无限制"))
-    NORMAL = EnumField("normal", label=_("普通"))
-    SENSITIVE = EnumField("sensitive", label=_("敏感"))
-    SPECIAL = EnumField("special", label=_("特殊"))
-
-
 class MCPServerPermissionActionEnum(StructuredEnum):
     APPLY = EnumField("apply")
     RENEW = EnumField("renew")

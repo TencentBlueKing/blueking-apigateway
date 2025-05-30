@@ -18,7 +18,7 @@
 #
 import logging
 import operator
-from typing import List
+from typing import Dict, List
 
 from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.db import transaction
@@ -641,8 +641,8 @@ class EsbAppPermissionApplyRecordRetrieveApi(generics.RetrieveAPIView):
     name="get",
     decorator=swagger_auto_schema(
         operation_description="MCPServer 权限列表",
-        query_serializer=serializers.MCPServerPermissionListInputSLZ,
-        responses={status.HTTP_200_OK: serializers.MCPServerPermissionListOutputSLZ()},
+        query_serializer=serializers.MCPServerListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.MCPServerListOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
     ),
 )
@@ -650,18 +650,33 @@ class MCPServerPermissionListApi(generics.ListAPIView):
     permission_classes = [OpenAPIV2Permission]
 
     def list(self, request, *args, **kwargs):
-        slz = serializers.MCPServerPermissionListInputSLZ(data=request.query_params)
+        slz = serializers.MCPServerListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
 
-        queryset = MCPServerPermissionHandler.list_permissions(
-            data["target_app_code"],
+        queryset = MCPServerPermissionHandler.filter_mcp_servers(
             data.get("name"),
             data.get("description"),
         )
 
-        slz = serializers.MCPServerPermissionListOutputSLZ(queryset, many=True)
+        mcp_server_permission_status: Dict[int, str] = {}
+        mcp_server_permission_apply_status = (
+            MCPServerAppPermissionApply.objects.filter(
+                bk_app_code=data["target_app_code"],
+                mcp_server_id__in=list(queryset.values_list("id", flat=True)),
+            )
+            .order_by("-applied_time")
+            .values("mcp_server_id", "status")
+        )
+
+        for obj in mcp_server_permission_apply_status:
+            if not mcp_server_permission_status.get(obj["mcp_server_id"]):
+                mcp_server_permission_status[obj["mcp_server_id"]] = obj["status"]
+
+        slz = serializers.MCPServerListOutputSLZ(
+            queryset, many=True, context={"mcp_server_permission_status": mcp_server_permission_status}
+        )
         return OKJsonResponse(data=slz.data)
 
 
@@ -713,7 +728,7 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
 
         data = slz.validated_data
 
-        queryset = MCPServerPermissionHandler.list_applied_permissions(data["target_app_code"])
+        queryset = MCPServerPermissionHandler.filter_mcp_server_permissions(data["target_app_code"])
 
         slz = serializers.MCPServerAppPermissionListOutputSLZ(queryset, many=True)
         return OKJsonResponse(data=slz.data)
@@ -788,9 +803,7 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
             False,
         )
 
-        instance.tool_names = [
-            r.name for r in stage_released_resources if r.name in set(instance.mcp_server.resource_names)
-        ]
+        tool_names = [r.name for r in stage_released_resources if r.name in set(instance.mcp_server.resource_names)]
 
-        slz = self.get_serializer(instance)
+        slz = self.get_serializer(instance, context={"tool_names": tool_names})
         return OKJsonResponse(data=slz.data)

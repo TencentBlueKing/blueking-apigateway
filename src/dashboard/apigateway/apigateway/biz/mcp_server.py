@@ -17,7 +17,6 @@
 #
 import datetime
 import logging
-import math
 from typing import Dict, List, Optional, Tuple
 
 from django.db import transaction
@@ -26,9 +25,6 @@ from django.utils.translation import gettext_lazy as _
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyExpireDaysEnum,
     MCPServerAppPermissionApplyStatusEnum,
-    MCPServerPermissionActionEnum,
-    MCPServerPermissionLevelEnum,
-    MCPServerPermissionStatusEnum,
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
@@ -218,55 +214,21 @@ class MCPServerHandler:
 
 class MCPServerPermissionHandler:
     @staticmethod
-    def list_permissions(bk_app_code: str, name: str, description: str):
+    def filter_mcp_servers(name: str, description: str):
         queryset = MCPServer.objects.filter(is_public=True, status=MCPServerStatusEnum.ACTIVE.value)
         if name:
             queryset = queryset.filter(name__icontains=name)
         if description:
             queryset = queryset.filter(description__icontains=description)
 
-        mcp_server_ids = list(queryset.values_list("id", flat=True))
-        permission_queryset = MCPServerAppPermissionApply.objects.filter(
-            bk_app_code=bk_app_code,
-            mcp_server_id__in=mcp_server_ids,
-        ).order_by("-applied_time")
-
-        mcp_server_permission_status: Dict[int, str] = {}
-        for obj in permission_queryset:
-            if not mcp_server_permission_status.get(obj.mcp_server.id):
-                mcp_server_permission_status[obj.mcp_server.id] = obj.status
-
-        for obj in queryset:
-            permission_status = mcp_server_permission_status.get(
-                obj.id, MCPServerPermissionStatusEnum.NEED_APPLY.value
-            )
-            obj.expires_in = math.inf
-            obj.permission_status = permission_status
-            obj.permission_level = MCPServerPermissionLevelEnum.NORMAL.value
-            if permission_status in [
-                MCPServerPermissionStatusEnum.REJECTED.value,
-                MCPServerPermissionStatusEnum.NEED_APPLY.value,
-            ]:
-                obj.permission_action = MCPServerPermissionActionEnum.APPLY.value
-            else:
-                obj.permission_action = ""
-
         return queryset
 
     @staticmethod
-    def list_applied_permissions(bk_app_code: str):
-        queryset = MCPServerAppPermissionApply.objects.filter(
+    def filter_mcp_server_permissions(bk_app_code: str):
+        return MCPServerAppPermissionApply.objects.filter(
             bk_app_code=bk_app_code,
             status__in=[MCPServerAppPermissionApplyStatusEnum.APPROVED.value],
         ).order_by("-applied_time")
-
-        for obj in queryset:
-            obj.expires_in = math.inf
-            obj.permission_status = MCPServerPermissionStatusEnum.OWNED.value
-            obj.permission_level = MCPServerPermissionLevelEnum.NORMAL.value
-            obj.permission_action = ""
-
-        return queryset
 
     @staticmethod
     def create_apply(bk_app_code: str, mcp_server_ids: List[int], reason: str, applied_by: str):

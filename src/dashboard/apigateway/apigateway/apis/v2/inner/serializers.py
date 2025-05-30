@@ -30,6 +30,7 @@ from apigateway.apps.esb.utils import get_related_boards
 from apigateway.apps.esb.validators import ComponentIDValidator
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
+    MCPServerPermissionActionEnum,
     MCPServerPermissionStatusEnum,
 )
 from apigateway.apps.permission.constants import (
@@ -559,41 +560,68 @@ class EsbAppPermissionApplyRecordRetrieveInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.EsbAppPermissionApplyRecordRetrieveInputSLZ"
 
 
-class MCPServerPermissionListInputSLZ(serializers.Serializer):
+class MCPServerListInputSLZ(serializers.Serializer):
     target_app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
     name = serializers.CharField(required=False, help_text="MCPServer 名称")
     description = serializers.CharField(required=False, help_text="MCPServer 描述")
 
     class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.MCPServerPermissionListInputSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.MCPServerListInputSLZ"
 
 
-class MCPServerPermissionListOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
-    name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
-    description = serializers.CharField(read_only=True, help_text="MCPServer 描述")
-    tools_count = serializers.IntegerField(read_only=True, help_text="MCPServer 工具数量")
+class MCPServerBaseSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.SerializerMethodField(read_only=True, help_text="MCPServer 名称")
+    description = serializers.SerializerMethodField(read_only=True, help_text="MCPServer 描述")
+    tools_count = serializers.SerializerMethodField(read_only=True, help_text="MCPServer 工具数量")
     doc_link = serializers.SerializerMethodField(help_text="MCPServer 文档访问地址")
-    permission_status = serializers.ChoiceField(
-        choices=MCPServerPermissionStatusEnum.get_choices(),
-        help_text="MCPServer 权限状态",
-    )
-    permission_level = serializers.CharField(help_text="MCPServer 权限级别")
-    permission_action = serializers.CharField(help_text="MCPServer 权限操作")
-    expires_in = serializers.SerializerMethodField()
 
     def get_doc_link(self, obj):
         # todo 待确认前端文档地址
         return ""
 
-    def get_expires_in(self, obj):
-        if math.isinf(obj.expires_in):
-            return None
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.MCPServerBaseSLZ"
 
-        return obj.expires_in
+
+class MCPServerPermissionBaseSLZ(serializers.Serializer):
+    permission_status = serializers.SerializerMethodField(help_text="MCPServer 权限状态")
+    permission_action = serializers.SerializerMethodField(help_text="MCPServer 权限操作")
+    expires_in = serializers.SerializerMethodField()
+
+    def get_expires_in(self, obj):
+        return None
 
     class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.MCPServerPermissionListOutputSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.MCPServerPermissionBaseSLZ"
+
+
+class MCPServerListOutputSLZ(MCPServerBaseSLZ, MCPServerPermissionBaseSLZ):
+    def get_name(self, obj):
+        return obj.name
+
+    def get_description(self, obj):
+        return obj.description
+
+    def get_tools_count(self, obj):
+        return obj.tools_count
+
+    def get_permission_status(self, obj):
+        return self.context["mcp_server_permission_status"].get(
+            obj.id,
+            MCPServerPermissionStatusEnum.NEED_APPLY.value,
+        )
+
+    def get_permission_action(self, obj):
+        if self.get_permission_status(obj) in [
+            MCPServerPermissionStatusEnum.REJECTED.value,
+            MCPServerPermissionStatusEnum.NEED_APPLY.value,
+        ]:
+            return MCPServerPermissionActionEnum.APPLY.value
+        return ""
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.MCPServerListOutputSLZ"
 
 
 class MCPServerAppPermissionApplyCreateInputSLZ(serializers.Serializer):
@@ -617,37 +645,20 @@ class MCPServerAppPermissionListInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerAppPermissionListInputSLZ"
 
 
-class MCPServerAppPermissionListOutputSLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    mcp_server_name = serializers.SerializerMethodField(help_text="MCPServer 名称")
-    description = serializers.SerializerMethodField(read_only=True, help_text="MCPServer 描述")
-    permission_status = serializers.ChoiceField(
-        choices=MCPServerPermissionStatusEnum.get_choices(),
-        help_text="MCPServer 权限状态",
-    )
-    permission_level = serializers.CharField(help_text="MCPServer 权限级别")
-    permission_action = serializers.CharField(help_text="MCPServer 权限操作")
-    expires_in = serializers.SerializerMethodField()
-    tools_count = serializers.SerializerMethodField(read_only=True, help_text="MCPServer 工具数量")
-    doc_link = serializers.SerializerMethodField(help_text="MCPServer 文档访问地址")
-
-    def get_mcp_server_name(self, obj):
+class MCPServerAppPermissionListOutputSLZ(MCPServerBaseSLZ, MCPServerPermissionBaseSLZ):
+    def get_name(self, obj):
         return obj.mcp_server.name
 
     def get_description(self, obj):
         return obj.mcp_server.description
 
-    def get_expires_in(self, obj):
-        if math.isinf(obj.expires_in):
-            return None
-
-        return obj.expires_in
-
     def get_tools_count(self, obj):
         return obj.mcp_server.tools_count
 
-    def get_doc_link(self, obj):
-        # todo 待确认前端文档地址
+    def get_permission_status(self, obj):
+        return MCPServerPermissionStatusEnum.OWNED.value
+
+    def get_permission_action(self, obj):
         return ""
 
     class Meta:
@@ -715,11 +726,10 @@ class MCPServerAppPermissionRecordRetrieveInputSLZ(serializers.Serializer):
 
 
 class MCPServerAppPermissionRecordRetrieveOutputSLZ(MCPServerAppPermissionRecordBaseSLZ):
-    tool_names = serializers.ListField(
-        child=serializers.CharField(),
-        read_only=True,
-        help_text="工具名称列表",
-    )
+    tool_names = serializers.SerializerMethodField(help_text="工具名称列表")
+
+    def get_tool_names(self, obj):
+        return self.context["tool_names"]
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerAppPermissionRecordRetrieveOutputSLZ"
