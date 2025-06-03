@@ -153,4 +153,41 @@ urlpatterns = [
             ]
         ),
     ),
+    path(
+        "mcp-server/permissions/",
+        include(
+            [
+                # GET /api/v2/inner/mcp-server/permissions/
+                path(
+                    "",
+                    views.MCPServerPermissionListApi.as_view(),
+                    name="openapi.v2.inner.mcp_server.permission.list",
+                ),
+                # POST /api/v2/inner/mcp-server/apply/
+                path(
+                    "apply/",
+                    views.MCPServerAppPermissionApplyCreateApi.as_view(),
+                    name="openapi.v2.inner.mcp_server.permission.apply",
+                ),
+                # GET /api/v2/inner/mcp-server/permissions/app-permissions/
+                path(
+                    "permissions/app-permissions/",
+                    views.MCPServerAppPermissionListApi.as_view(),
+                    name="openapi.v2.inner.mcp_server.permission.app-permissions",
+                ),
+                # GET /api/v2/inner/mcp-server/permissions/apply-records/
+                path(
+                    "apply-records/",
+                    views.MCPServerAppPermissionRecordListApi.as_view(),
+                    name="openapi.v2.inner.mcp_server.permission.app-records",
+                ),
+                # GET /api/v2/inner/mcp-server/permissions/apply-records/{record_id}/
+                path(
+                    "apply-records/<int:record_id>/",
+                    views.MCPServerAppPermissionRecordRetrieveApi.as_view(),
+                    name="openapi.v2.inner.mcp_server.permission.app-record-detail",
+                ),
+            ]
+        ),
+    ),
 ]
