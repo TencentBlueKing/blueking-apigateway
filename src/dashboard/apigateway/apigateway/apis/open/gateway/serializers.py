@@ -22,10 +22,9 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apis.web.constants import UserAuthTypeEnum
-from apigateway.apis.web.gateway.constants import GATEWAY_NAME_PATTERN
 from apigateway.apis.web.gateway.serializers import GatewayAPIDocMaintainerSLZ
 from apigateway.biz.validators import BKAppCodeListValidator
+from apigateway.common.constants import GATEWAY_NAME_PATTERN, UserAuthTypeEnum
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import (

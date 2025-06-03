@@ -43,7 +43,6 @@ from apigateway.apps.permission.constants import (
     PermissionApplyExpireDaysEnum,
 )
 from apigateway.apps.permission.models import (
-    AppGatewayPermission,
     AppPermissionRecord,
     AppResourcePermission,
 )
@@ -59,16 +58,6 @@ from . import serializers
 from .serializers import PaaSAppPermissionApplyV2InputSLZ
 
 logger = logging.getLogger(__name__)
-
-
-def get_permission_model(dimension: str):
-    if dimension == GrantDimensionEnum.API.value:
-        return AppGatewayPermission
-
-    if dimension == GrantDimensionEnum.RESOURCE.value:
-        return AppResourcePermission
-
-    raise ValueError(f"unsupported dimension: {dimension}")
 
 
 class ResourceViewSet(viewsets.ViewSet):
@@ -212,7 +201,7 @@ class AppPermissionGrantViewSet(viewsets.ViewSet):
             )
         )
 
-        permission_model = get_permission_model(data["grant_dimension"])
+        permission_model = PermissionDimensionManager.get_permission_model(data["grant_dimension"])
         permission_model.objects.save_permissions(
             gateway=request.gateway,
             resource_ids=resource_ids,
@@ -235,7 +224,7 @@ class RevokeAppPermissionViewSet(viewsets.ViewSet):
 
         data = slz.validated_data
 
-        permission_model = get_permission_model(data["grant_dimension"])
+        permission_model = PermissionDimensionManager.get_permission_model(data["grant_dimension"])
         permission_model.objects.filter(
             gateway=request.gateway,
             bk_app_code__in=data["target_app_codes"],

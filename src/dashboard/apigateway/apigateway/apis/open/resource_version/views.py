@@ -57,7 +57,7 @@ from .serializers import (
 )
 class ResourceVersionListCreateApi(generics.ListCreateAPIView):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
-    serializer_class = ResourceVersionCreateV1InputSLZ
+    serializer_class = ResourceVersionQueryV1InputSLZ
 
     def list(self, request, *args, **kwargs):
         slz = ResourceVersionQueryV1InputSLZ(data=request.query_params)

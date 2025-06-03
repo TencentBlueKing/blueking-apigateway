@@ -26,12 +26,12 @@ from pydantic import parse_obj_as
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from apigateway.apis.web.stage.validators import StageVarsValidator
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData, PluginSynchronizer
-from apigateway.biz.validators import MaxCountPerGatewayValidator, SchemeInputValidator
+from apigateway.biz.validators import MaxCountPerGatewayValidator, SchemeInputValidator, StageVarsValidator
+from apigateway.common.constants import DOMAIN_PATTERN, HEADER_KEY_PATTERN
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
@@ -45,8 +45,6 @@ from apigateway.core.constants import (
     LoadBalanceTypeEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, Stage
-
-from .constants import DOMAIN_PATTERN, HEADER_KEY_PATTERN
 
 
 class StageV1SLZ(serializers.Serializer):

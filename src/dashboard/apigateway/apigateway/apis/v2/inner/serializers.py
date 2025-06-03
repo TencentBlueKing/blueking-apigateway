@@ -22,8 +22,6 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apis.open.esb.permission.serializers import ComponentInRecordSLZ
-from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apps.esb.bkcore.models import AppPermissionApplyRecord
 from apigateway.apps.esb.helpers import BoardConfigManager
 from apigateway.apps.esb.utils import get_related_boards
@@ -38,6 +36,7 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.biz.validators import BKAppCodeValidator
+from apigateway.common.constants import UserAuthTypeEnum
 from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.utils import time
@@ -489,6 +488,14 @@ class EsbAppPermissionApplyRecordListInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.EsbAppPermissionApplyRecordListInputSLZ"
+
+
+class ComponentInRecordSLZ(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    description = SerializerTranslatedField(translated_fields={"en": "description_en"})
+    description_en = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    apply_status = serializers.CharField()
 
 
 class AppPermissionApplyRecordBaseSLZ(serializers.ModelSerializer):

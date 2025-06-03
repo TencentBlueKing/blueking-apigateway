@@ -20,12 +20,6 @@ from blue_krill.data_types.enum import EnumField, StructuredEnum
 from apigateway.core.constants import BackendTypeEnum
 
 
-class UserAuthTypeEnum(StructuredEnum):
-    IEOD = EnumField("ieod")
-    TENCENT = EnumField("tencent")
-    DEFAULT = EnumField("default")
-
-
 class ExportTypeEnum(StructuredEnum):
     # 全部资源
     ALL = EnumField("all")
@@ -59,11 +53,6 @@ BACKEND_CONFIG_SCHEME_MAP = {
     BackendTypeEnum.HTTP.value: [BackendConfigSchemeEnum.HTTP.value, BackendConfigSchemeEnum.HTTPS.value],
     BackendTypeEnum.GRPC.value: [BackendConfigSchemeEnum.GRPC.value, BackendConfigSchemeEnum.GRPCS.value],
 }
-
-
-class GatewayAPIDocMaintainerTypeEnum(StructuredEnum):
-    USER = EnumField("user", label="用户")
-    SERVICE_ACCOUNT = EnumField("service_account", label="服务号")
 
 
 PLUGIN_MERGE_TYPE = {

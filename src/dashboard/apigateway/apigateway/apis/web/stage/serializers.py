@@ -25,7 +25,12 @@ from rest_framework.validators import UniqueTogetherValidator
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.biz.releaser import ReleaseValidationError
-from apigateway.biz.validators import MaxCountPerGatewayValidator, PublishValidator, SchemeInputValidator
+from apigateway.biz.validators import (
+    MaxCountPerGatewayValidator,
+    PublishValidator,
+    SchemeInputValidator,
+    StageVarsValidator,
+)
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
@@ -37,8 +42,6 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import Backend, Stage
 from apigateway.utils.version import is_version1_greater_than_version2
-
-from .validators import StageVarsValidator
 
 
 class StageOutputSLZ(serializers.ModelSerializer):
