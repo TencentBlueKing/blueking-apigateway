@@ -1,3 +1,27 @@
+<!-- 2025-05-29 -->
+# V1.16.0 Release Log
+
+### New Features
+
+- Support programmable gateway
+- Support MCP Server
+- Log and online debugging support AI assistant
+- Added: Statistical Report
+- Added: Platform Tool
+
+### Features
+
+- Basic Information: Support configuring document contact
+- Monitoring Alarm: Alarm policy supports configuration effective environment
+- Online Debugging: Optimize header filling interaction
+- Online Debugging: Debug history displays more details
+- Environment Overview supports statistical data display
+- Approval history merged into permission approval page
+- Plugin list displayed in order of priority
+- Basic Information: Management staff has a secondary confirmation when deleting themselves
+
+---
+
 <!-- 2025-05-08 -->
 # V1.15.8 Release Log
 
