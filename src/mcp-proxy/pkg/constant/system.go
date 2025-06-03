@@ -18,6 +18,7 @@
 
 package constant
 
+// BkGatewayJWTHeaderKey ...
 const (
 	BkGatewayJWTHeaderKey = "X-Bkapi-Jwt"
 	OfficialGatewayName   = "bk-apigateway"
@@ -30,8 +31,10 @@ const (
 	BkApiTimeoutHeaderKey = "X-Bkapi-Timeout"
 )
 
+// CtxKey ...
 type CtxKey string
 
+// BkAppCode ...
 const (
 	BkAppCode         CtxKey = "bk_app_code"
 	BkUsername        CtxKey = "bk_username"
@@ -42,4 +45,5 @@ const (
 	BkApiTimeout      CtxKey = "bk_api_timeout"
 )
 
+// BkVirtualAppCodeFormat ...
 const BkVirtualAppCodeFormat = "v_mcp_%d_%s" // 格式 v_mcp_%d_%s 【mcp 代表虚拟app_code 的类型】

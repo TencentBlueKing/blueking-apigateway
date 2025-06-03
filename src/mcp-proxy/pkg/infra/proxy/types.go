@@ -18,6 +18,7 @@
 
 package proxy
 
+// HandlerRequest ...
 type HandlerRequest struct {
 	HeaderParam map[string]string `json:"header_param,omitempty"`
 	QueryParam  map[string]string `json:"query_param,omitempty"`

@@ -27,6 +27,7 @@ import (
 )
 
 // nolint:gocyclo
+// OpenapiToMcpToolConfig
 func OpenapiToMcpToolConfig(openApiSpec *openapi3.T, operationIDMap map[string]struct{}) []*ToolConfig {
 	var toolConfigs []*ToolConfig
 	for path, pathItem := range openApiSpec.Paths.Map() {

@@ -43,6 +43,7 @@ import (
 	"mcp_proxy/pkg/util"
 )
 
+// MCPProxy ...
 type MCPProxy struct {
 	mcpServers map[string]*MCPServer
 	rwLock     *sync.RWMutex
@@ -50,6 +51,7 @@ type MCPProxy struct {
 	activeMCPServers map[string]struct{}
 }
 
+// NewMCPProxy ...
 func NewMCPProxy() *MCPProxy {
 	return &MCPProxy{
 		mcpServers:       map[string]*MCPServer{},
@@ -58,6 +60,7 @@ func NewMCPProxy() *MCPProxy {
 	}
 }
 
+// AddMCPServer ...
 func (m *MCPProxy) AddMCPServer(name string, mcpServer *MCPServer) {
 	m.rwLock.Lock()
 	defer m.rwLock.Unlock()
@@ -65,6 +68,7 @@ func (m *MCPProxy) AddMCPServer(name string, mcpServer *MCPServer) {
 	m.mcpServers[name] = mcpServer
 }
 
+// GetActiveMCPServerNames ...
 func (m *MCPProxy) GetActiveMCPServerNames() []string {
 	m.rwLock.Lock()
 	defer m.rwLock.Unlock()
@@ -75,6 +79,7 @@ func (m *MCPProxy) GetActiveMCPServerNames() []string {
 	return names
 }
 
+// IsMCPServerExist ...
 func (m *MCPProxy) IsMCPServerExist(name string) bool {
 	m.rwLock.RLock()
 	defer m.rwLock.RUnlock()
@@ -82,12 +87,14 @@ func (m *MCPProxy) IsMCPServerExist(name string) bool {
 	return ok
 }
 
+// GetMCPServer ...
 func (m *MCPProxy) GetMCPServer(name string) *MCPServer {
 	m.rwLock.RLock()
 	defer m.rwLock.RUnlock()
 	return m.mcpServers[name]
 }
 
+// AddMCPServerFromConfigs ...
 func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 	for _, config := range configs {
 		trans, sseHandler, err := transport.NewSSEServerTransportAndHandler(
@@ -108,7 +115,7 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 	return nil
 }
 
-// nolint:gofmt
+// AddMCPServerFromOpenApiSpec nolint:gofmt
 func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi3.T,
 	operationIDMap map[string]struct{},
 ) error {
@@ -119,6 +126,7 @@ func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi
 	return m.AddMCPServerFromConfigs([]*MCPServerConfig{mcpServerConfig})
 }
 
+// SseHandler ...
 func (m *MCPProxy) SseHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		name := c.Param("name")
@@ -131,6 +139,7 @@ func (m *MCPProxy) SseHandler() gin.HandlerFunc {
 	}
 }
 
+// SseMessageHandler ...
 func (m *MCPProxy) SseMessageHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		name := c.Param("name")
@@ -143,6 +152,7 @@ func (m *MCPProxy) SseMessageHandler() gin.HandlerFunc {
 	}
 }
 
+// Run ...
 func (m *MCPProxy) Run(ctx context.Context) {
 	m.rwLock.RLock()
 	defer m.rwLock.RUnlock()

@@ -28,6 +28,7 @@ import (
 	"mcp_proxy/pkg/util"
 )
 
+// MCPServerPermissionMiddleware ...
 func MCPServerPermissionMiddleware() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// 获取mcp server id and appCode
