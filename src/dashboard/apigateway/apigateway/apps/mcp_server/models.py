@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import List
+from typing import ClassVar, List
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -94,7 +94,7 @@ class MCPServerAppPermission(TimestampedModelMixin, OperatorModelMixin):
     grant_type = models.CharField(
         max_length=16, choices=MCPServerAppPermissionGrantTypeEnum.get_choices(), db_index=True
     )
-    objects = managers.MCPServerAppPermissionManager()
+    objects: ClassVar[managers.MCPServerAppPermissionManager] = managers.MCPServerAppPermissionManager()
 
     def __str__(self):
         return f"<MCPServerAppPermission: {self.pk}>"
@@ -117,7 +117,7 @@ class MCPServerAppPermissionApply(TimestampedModelMixin, OperatorModelMixin):
     handled_time = models.DateTimeField(blank=True, null=True)
     comment = models.CharField(max_length=512, blank=True, default="")
     status = models.CharField(max_length=16, choices=MCPServerAppPermissionApplyStatusEnum.get_choices())
-    objects = managers.MCPServerAppPermissionApplyManager()
+    objects: ClassVar[managers.MCPServerAppPermissionApplyManager] = managers.MCPServerAppPermissionApplyManager()
 
     def __str__(self):
         return f"<MCPServerAppPermissionApply: {self.pk}>"

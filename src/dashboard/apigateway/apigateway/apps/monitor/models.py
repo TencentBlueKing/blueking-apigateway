@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import List
+from typing import ClassVar, List
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -49,7 +49,7 @@ class AlarmFilterConfig(ConfigModelMixin):
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
     comment = models.CharField(max_length=512, blank=True, default="")
 
-    objects = AlarmFilterConfigManager()
+    objects: ClassVar[AlarmFilterConfigManager] = AlarmFilterConfigManager()
 
     def __str__(self):
         return f"<AlarmFilterConfig: {self.id}>"
@@ -91,7 +91,7 @@ class AlarmStrategy(ConfigModelMixin):
     # 开发者：用户根据是否启用告警策略来关闭所有告警，而不是将生效环境置空
     _effective_stages = models.TextField(db_column="effective_stages", blank=True, default="")
 
-    objects = AlarmStrategyManager()
+    objects: ClassVar[AlarmStrategyManager] = AlarmStrategyManager()
 
     def __str__(self):
         return f"<AlarmStrategy: {self.id}>"
@@ -152,7 +152,7 @@ class AlarmRecord(models.Model):
     created_time = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_time = models.DateTimeField(auto_now=True)
 
-    objects = AlarmRecordManager()
+    objects: ClassVar[AlarmRecordManager] = AlarmRecordManager()
 
     def __str__(self):
         return f"<AlarmRecord: {self.id}>"

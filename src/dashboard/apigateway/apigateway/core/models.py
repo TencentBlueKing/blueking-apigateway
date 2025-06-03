@@ -20,7 +20,7 @@ import json
 import logging
 import uuid
 from datetime import datetime
-from typing import Dict, List
+from typing import ClassVar, Dict, List
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -201,7 +201,7 @@ class Stage(TimestampedModelMixin, OperatorModelMixin):
 
     is_public = models.BooleanField(default=True)
 
-    objects = managers.StageManager()
+    objects: ClassVar[managers.StageManager] = managers.StageManager()
 
     def __str__(self):
         return f"<Stage: {self.pk}/{self.name}>"
@@ -424,7 +424,7 @@ class Context(ConfigModelMixin):
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
     # config = from ConfigModelMixin
 
-    objects = managers.ContextManager()
+    objects: ClassVar[managers.ContextManager] = managers.ContextManager()
 
     def __str__(self):
         return f"<Context: {self.scope_type}/{self.scope_id}/{self.type}>"
@@ -495,7 +495,7 @@ class ResourceVersion(TimestampedModelMixin, OperatorModelMixin):
 
     created_time = models.DateTimeField(null=True, blank=True)
 
-    objects = managers.ResourceVersionManager()
+    objects: ClassVar[managers.ResourceVersionManager] = managers.ResourceVersionManager()
 
     @property
     def data(self) -> list:
@@ -539,7 +539,7 @@ class Release(TimestampedModelMixin, OperatorModelMixin):
 
     comment = models.CharField(max_length=512, blank=True, null=True)
 
-    objects = managers.ReleaseManager()
+    objects: ClassVar[managers.ReleaseManager] = managers.ReleaseManager()
 
     def __str__(self):
         return f"<Release: {self.gateway}/{self.stage}/{self.resource_version}>"
@@ -561,7 +561,7 @@ class ReleasedResource(TimestampedModelMixin):
     resource_path = models.CharField(max_length=2048, blank=False, null=False)
     data = JSONField(help_text="resource data in resource version")
 
-    objects = managers.ReleasedResourceManager()
+    objects: ClassVar[managers.ReleasedResourceManager] = managers.ReleasedResourceManager()
 
     def __str__(self):
         return f"<ReleasedResource: {self.pk}>"
@@ -598,7 +598,7 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
         default=PublishSourceEnum.VERSION_PUBLISH.value,
     )
 
-    objects = managers.ReleaseHistoryManager()
+    objects: ClassVar[managers.ReleaseHistoryManager] = managers.ReleaseHistoryManager()
 
     def __str__(self):
         return f"<Release: {self.gateway}/{self.stage}/{self.resource_version}>"
@@ -632,7 +632,7 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
     )
     _detail = models.TextField(help_text="detail", null=True, default="{}", db_column="detail")
 
-    objects = managers.PublishEventManager()
+    objects: ClassVar[managers.PublishEventManager] = managers.PublishEventManager()
 
     @property
     def detail(self):
@@ -767,7 +767,7 @@ class MicroGateway(ConfigModelMixin):
 
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
 
-    objects = managers.MicroGatewayManager()
+    objects: ClassVar[managers.MicroGatewayManager] = managers.MicroGatewayManager()
 
     class Meta:
         db_table = "core_micro_gateway"

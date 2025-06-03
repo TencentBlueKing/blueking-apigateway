@@ -18,7 +18,7 @@
 #
 import datetime
 import operator
-from typing import List, Optional
+from typing import ClassVar, List, Optional
 
 from django.db import models
 from django.utils import timezone
@@ -58,7 +58,7 @@ class ComponentSystem(ModelWithBoard, TimestampedModelMixin, OperatorModelMixin)
     data_type = models.IntegerField(default=3, db_index=True)
     _maintainers = models.CharField(db_column="maintainers", max_length=1024, default="", blank=True)
 
-    objects = managers.ComponentSystemManager()
+    objects: ClassVar[managers.ComponentSystemManager] = managers.ComponentSystemManager()
 
     def __str__(self):
         return f"<System: {self.name}>"
@@ -105,7 +105,7 @@ class ESBChannel(ModelWithBoard, TimestampedModelMixin, OperatorModelMixin):
     is_public = models.BooleanField(default=True)
     data_type = models.IntegerField(default=3, db_index=True)
 
-    objects = managers.ESBChannelManager()
+    objects: ClassVar[managers.ESBChannelManager] = managers.ESBChannelManager()
 
     def __str__(self):
         return f"<ESBChannel: {self.id}/{self.name}>"
@@ -127,7 +127,7 @@ class ESBChannelExtend(ModelWithBoard):
     component = models.OneToOneField(ESBChannel, on_delete=models.CASCADE)
     config_fields = JSONField(null=True, blank=True, dump_kwargs={"indent": None})
 
-    objects = managers.ESBChannelExtendManager()
+    objects: ClassVar[managers.ESBChannelExtendManager] = managers.ESBChannelExtendManager()
 
     def __str__(self):
         return f"<ESBChannelExtend: {self.component.name}>"
@@ -144,7 +144,7 @@ class ComponentResourceBinding(ModelWithBoard):
     component_path = models.CharField(max_length=255, default="", blank=True)
     resource_id = models.IntegerField(_("网关资源 ID"), unique=True)
 
-    objects = managers.ComponentResourceBindingManager()
+    objects: ClassVar[managers.ComponentResourceBindingManager] = managers.ComponentResourceBindingManager()
 
     def __str__(self):
         return f"<ComponentResourceBinding: {self.component_id}/{self.resource_id}>"
@@ -169,7 +169,7 @@ class AppComponentPermission(ModelWithBoard, TimestampedModelMixin):
     component_id = models.IntegerField(_("组件API ID"))
     expires = models.DateTimeField(default=generate_expire_time)
 
-    objects = managers.AppComponentPermissionManager()
+    objects: ClassVar[managers.AppComponentPermissionManager] = managers.AppComponentPermissionManager()
 
     def __str__(self):
         return f"<AppComponentPermission: {self.bk_app_code}/{self.component_id}>"
@@ -213,7 +213,7 @@ class AppPermissionApplyRecord(ModelWithBoard, TimestampedModelMixin):
         help_text="网关 bk-esb 权限申请单ID，用于关联申请单，以获取网关申请单状态",
     )
 
-    objects = managers.AppPermissionApplyRecordManager()
+    objects: ClassVar[managers.AppPermissionApplyRecordManager] = managers.AppPermissionApplyRecordManager()
 
     def __str__(self):
         return f"<AppPermissionApplyRecord: {self.id}>"
@@ -274,7 +274,7 @@ class AppPermissionApplyStatus(ModelWithBoard, TimestampedModelMixin):
     component = models.ForeignKey(ESBChannel, on_delete=models.CASCADE)
     status = models.CharField(max_length=16, choices=ApplyStatusEnum.get_choices())
 
-    objects = managers.AppPermissionApplyStatusManager()
+    objects: ClassVar[managers.AppPermissionApplyStatusManager] = managers.AppPermissionApplyStatusManager()
 
     def __str__(self):
         return f"<AppPermissionApplyStatus: {self.id}>"
@@ -292,7 +292,7 @@ class ComponentDoc(ModelWithBoard, TimestampedModelMixin):
     content = models.TextField(blank=True, default="")
     content_md5 = models.CharField(max_length=128, default="", blank=True)
 
-    objects = managers.ComponentDocManager()
+    objects: ClassVar[managers.ComponentDocManager] = managers.ComponentDocManager()
 
     def __str__(self):
         return f"<ComponentDoc: {self.component_id}>"
@@ -328,7 +328,7 @@ class ComponentReleaseHistory(ModelWithBoard, TimestampedModelMixin, OperatorMod
     )
     message = models.TextField(blank=True, default="")
 
-    objects = managers.ComponentReleaseHistoryManager()
+    objects: ClassVar[managers.ComponentReleaseHistoryManager] = managers.ComponentReleaseHistoryManager()
 
     class Meta:
         verbose_name = _("组件同步网关及发布历史")
@@ -345,7 +345,7 @@ class DocCategory(ModelWithBoard, TimestampedModelMixin, OperatorModelMixin):
     priority = models.IntegerField(default=1000, help_text=_("数字大优先级高"))
     data_type = models.IntegerField(default=3, db_index=True)
 
-    objects = managers.DocCategoryManager()
+    objects: ClassVar[managers.DocCategoryManager] = managers.DocCategoryManager()
 
     def __str__(self):
         return f"<DocCategory: {self.name}>"
@@ -365,7 +365,7 @@ class SystemDocCategory(ModelWithBoard, TimestampedModelMixin, OperatorModelMixi
     doc_category = models.ForeignKey(DocCategory, on_delete=models.PROTECT)
     system = models.OneToOneField(ComponentSystem, on_delete=models.PROTECT)
 
-    objects = managers.SystemDocCategoryManager()
+    objects: ClassVar[managers.SystemDocCategoryManager] = managers.SystemDocCategoryManager()
 
     def __str__(self):
         return "<SystemDocCategory: {self.doc_category_id}/{self.system_id}>"
@@ -388,7 +388,7 @@ class FunctionController(ModelWithBoard, TimestampedModelMixin):
         help_text=_("支持两种格式数据，以逗号、分号分隔的字符串，及JSON格式字符串"),
     )
 
-    objects = managers.FunctionControllerManager()
+    objects: ClassVar[managers.FunctionControllerManager] = managers.FunctionControllerManager()
 
     def __str__(self):
         return f"<FunctionController: {self.board}/{self.func_code}>"

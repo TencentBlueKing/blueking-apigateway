@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Any, Dict
+from typing import Any, ClassVar, Dict
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -70,7 +70,7 @@ class PluginType(models.Model):
     )
     priority = models.IntegerField("优先级", default=-1, blank=True, null=True)
 
-    objects = PluginTypeManager()
+    objects: ClassVar[PluginTypeManager] = PluginTypeManager()
 
     def __str__(self) -> str:
         return f"<PluginType {self.pk}/{self.name}>"
@@ -107,7 +107,7 @@ class PluginForm(models.Model):
         help_text="ui schema for config form",
     )
 
-    objects = PluginFormManager()
+    objects: ClassVar[PluginFormManager] = PluginFormManager()
 
     class Meta:
         db_table = "plugin_form"
@@ -133,7 +133,7 @@ class PluginConfig(OperatorModelMixin, TimestampedModelMixin):
     description_en = description_i18n.field("en")
     yaml = models.TextField(blank=True, default=None, null=True)
 
-    objects = PluginConfigManager()
+    objects: ClassVar[PluginConfigManager] = PluginConfigManager()
 
     class Meta:
         db_table = "plugin_config"
@@ -177,7 +177,7 @@ class PluginBinding(TimestampedModelMixin, OperatorModelMixin):
         null=True,
     )
 
-    objects = PluginBindingManager()
+    objects: ClassVar[PluginBindingManager] = PluginBindingManager()
 
     class Meta:
         verbose_name = _("插件绑定")

@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+from typing import ClassVar
 
 from django.db import models
 from django.db.transaction import atomic
@@ -78,7 +79,7 @@ class ResourceDocVersion(TimestampedModelMixin, OperatorModelMixin):
     resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)
     _data = models.TextField(db_column="data")
 
-    objects = ResourceDocVersionManager()
+    objects: ClassVar[ResourceDocVersionManager] = ResourceDocVersionManager()
 
     def __str__(self):
         return f"<ResourceDocVersion: {self.gateway}/{self.resource_version}>"
@@ -112,7 +113,7 @@ class ReleasedResourceDoc(TimestampedModelMixin):
     )
     data = JSONField(help_text="resource doc data in resource doc version")
 
-    objects = ReleasedResourceDocManager()
+    objects: ClassVar[ReleasedResourceDocManager] = ReleasedResourceDocManager()
 
     def __str__(self):
         return f"<ReleasedResourceDoc: {self.id}"
@@ -145,7 +146,7 @@ class GatewaySDK(ConfigModelMixin):
 
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT, null=True)
 
-    objects = APISDKManager()
+    objects: ClassVar[APISDKManager] = APISDKManager()
 
     def __self__(self):
         return f"<APISDK: {self.gateway}>"
