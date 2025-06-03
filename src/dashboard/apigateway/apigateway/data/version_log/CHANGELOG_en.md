@@ -1,15 +1,15 @@
 <!-- 2025-05-29 -->
 # V1.16.0 Release Log
 
-### New Features
+### Features
 
 - Support programmable gateway
 - Support MCP Server
-- Log and online debugging support AI assistant
+- Support AI assistant for logs and online debugging
 - Added: Statistical Report
 - Added: Platform Tool
 
-### Features
+### Enhancements
 
 - Basic Information: Support configuring document contact
 - Monitoring Alarm: Alarm policy supports configuration effective environment
