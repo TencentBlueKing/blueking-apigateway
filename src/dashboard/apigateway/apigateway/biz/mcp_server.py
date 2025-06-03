@@ -20,7 +20,6 @@ import logging
 from typing import Dict, List, Optional, Tuple
 
 from django.db import transaction
-from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from apigateway.apps.mcp_server.constants import (
@@ -214,41 +213,6 @@ class MCPServerHandler:
 
 
 class MCPServerPermissionHandler:
-    @staticmethod
-    def get_tools_names(gateway_id: int, stage_name: str, resource_names: List[str]) -> List[str]:
-        tool_resource_names = set(resource_names)
-
-        stage_released_resources = ReleasedResourceHandler.get_public_released_resource_data_list(
-            gateway_id,
-            stage_name,
-            False,
-        )
-
-        tools_names: List[str] = [r.name for r in stage_released_resources if r.name in set(tool_resource_names)]
-        return tools_names
-
-    @staticmethod
-    def filter_mcp_servers(name: str, description: str, keyword: str):
-        queryset = MCPServer.objects.filter(is_public=True, status=MCPServerStatusEnum.ACTIVE.value)
-
-        if keyword:
-            return queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
-
-        if name:
-            queryset = queryset.filter(name__icontains=name)
-
-        if description:
-            queryset = queryset.filter(description__icontains=description)
-
-        return queryset
-
-    @staticmethod
-    def filter_mcp_server_permissions(bk_app_code: str):
-        return MCPServerAppPermissionApply.objects.filter(
-            bk_app_code=bk_app_code,
-            status__in=[MCPServerAppPermissionApplyStatusEnum.APPROVED.value],
-        ).order_by("-applied_time")
-
     @staticmethod
     def create_apply(bk_app_code: str, mcp_server_ids: List[int], reason: str, applied_by: str):
         queryset = MCPServer.objects.filter(

@@ -22,6 +22,7 @@ from typing import Dict, List
 
 from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.db import transaction
+from django.db.models import Q
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -32,8 +33,9 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerPermissionActionEnum,
     MCPServerPermissionStatusEnum,
+    MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServerAppPermissionApply
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import GrantDimensionEnum, GrantTypeEnum, PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.models import AppPermissionRecord, AppResourcePermission
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
@@ -659,11 +661,11 @@ class MCPServerPermissionListApi(generics.ListAPIView):
 
         data = slz.validated_data
 
-        queryset = MCPServerPermissionHandler.filter_mcp_servers(
-            data.get("name"),
-            data.get("description"),
-            data.get("keyword"),
-        )
+        queryset = MCPServer.objects.filter(is_public=True, status=MCPServerStatusEnum.ACTIVE.value)
+
+        keyword = data.get("keyword")
+        if keyword:
+            queryset = queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
 
         mcp_server_permission_status: Dict[int, str] = {}
         mcp_server_permission_apply_status = (
@@ -698,11 +700,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                         "name": obj.name,
                         "description": obj.description,
                         "tools_count": obj.tools_count,
-                        "tool_names": MCPServerPermissionHandler.get_tools_names(
-                            obj.gateway.id,
-                            obj.stage.name,
-                            obj.resource_names,
-                        ),
+                        "tool_names": obj.resource_names,
                     },
                     "permission": {
                         "status": permission_status,
@@ -762,9 +760,10 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
         slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        data = slz.validated_data
-
-        queryset = MCPServerPermissionHandler.filter_mcp_server_permissions(data["target_app_code"])
+        queryset = MCPServerAppPermissionApply.objects.filter(
+            bk_app_code=slz.validated_data["target_app_code"],
+            status__in=[MCPServerAppPermissionApplyStatusEnum.APPROVED.value],
+        ).order_by("-applied_time")
 
         mcp_server_permissions = [
             {
@@ -773,11 +772,7 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
                     "name": obj.mcp_server.name,
                     "description": obj.mcp_server.description,
                     "tools_count": obj.mcp_server.tools_count,
-                    "tool_names": MCPServerPermissionHandler.get_tools_names(
-                        obj.mcp_server.gateway.id,
-                        obj.mcp_server.stage.name,
-                        obj.mcp_server.resource_names,
-                    ),
+                    "tool_names": obj.mcp_server.resource_names,
                 },
                 "permission": {
                     "status": MCPServerPermissionStatusEnum.OWNED.value,
@@ -827,11 +822,7 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
                     "name": obj.mcp_server.name,
                     "description": obj.mcp_server.description,
                     "tools_count": obj.mcp_server.tools_count,
-                    "tool_names": MCPServerPermissionHandler.get_tools_names(
-                        obj.mcp_server.gateway.id,
-                        obj.mcp_server.stage.name,
-                        obj.mcp_server.resource_names,
-                    ),
+                    "tool_names": obj.mcp_server.resource_names,
                 },
                 "record": {
                     "applied_by": obj.applied_by,
@@ -889,11 +880,7 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
                 "name": instance.mcp_server.name,
                 "description": instance.mcp_server.description,
                 "tools_count": instance.mcp_server.tools_count,
-                "tool_names": MCPServerPermissionHandler.get_tools_names(
-                    instance.mcp_server.gateway.id,
-                    instance.mcp_server.stage.name,
-                    instance.mcp_server.resource_names,
-                ),
+                "tool_names": instance.mcp_server.resource_names,
             },
             "record": {
                 "applied_by": instance.applied_by,

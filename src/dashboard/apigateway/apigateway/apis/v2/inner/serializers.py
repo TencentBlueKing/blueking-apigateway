@@ -560,8 +560,6 @@ class EsbAppPermissionApplyRecordRetrieveInputSLZ(serializers.Serializer):
 
 class MCPServerPermissionListInputSLZ(serializers.Serializer):
     target_app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
-    name = serializers.CharField(required=False, help_text="MCPServer 名称")
-    description = serializers.CharField(required=False, help_text="MCPServer 描述")
     keyword = serializers.CharField(required=False, help_text="keyword")
 
     class Meta:

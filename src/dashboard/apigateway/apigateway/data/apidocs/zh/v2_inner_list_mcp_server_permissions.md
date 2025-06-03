@@ -12,16 +12,12 @@ mcp_server 申请权限列表
 | 参数名称            | 参数类型    | 必选 | 描述                                    |
 |-----------------|---------|----|---------------------------------------|
 | target_app_code | string  | 是  | 申请权限的应用，应于当前请求的应用一致                   |
-| name            | string  | 否  | mcp_server 名称                         |
-| description     | string  | 否  | mcp_server 描述                         |
 | keyword         | string  | 否  | mcp_server 关键字（同时搜索 name+description） |
 
 
 ```json
 {
   "target_app_code": "test",
-  "name": "",
-  "description": "",
   "keyword": ""
 }
 ```
