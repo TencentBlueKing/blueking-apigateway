@@ -1,6 +1,6 @@
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -58,3 +58,23 @@ def gateway_filter_by_app_tenant_id(queryset: QuerySet, app_tenant_id: str) -> Q
         Q(tenant_mode=TenantModeEnum.GLOBAL.value)
         | Q(tenant_mode=TenantModeEnum.SINGLE.value, tenant_id=app_tenant_id)
     )
+
+
+def gateway_mcp_server_filter_by_user_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
+    """网关管理员维度查看网关 MCP Server 列表，运营租户能看到全租户网关 + 本租户网关的 MCP Server，其他租户只能看到本租户网关的 MCP Server
+
+    Args:
+        queryset (QuerySet): mcp_server queryset
+        user_tenant_id (str): user tenant id
+
+    Returns:
+        QuerySet: filtered queryset
+    """
+    # 运营租户可以看到 全租户网关 + 自己租户网关
+    if user_tenant_id == TENANT_ID_OPERATION:
+        return queryset.filter(
+            Q(gateway__tenant_mode=TenantModeEnum.GLOBAL.value)
+            | Q(gateway__tenant_mode=TenantModeEnum.SINGLE.value, gateway__tenant_id=user_tenant_id)
+        )
+    # only list the gateways under the tenant
+    return queryset.filter(gateway__tenant_mode=TenantModeEnum.SINGLE.value, gateway__tenant_id=user_tenant_id)

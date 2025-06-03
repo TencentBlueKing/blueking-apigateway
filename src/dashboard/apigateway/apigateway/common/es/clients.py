@@ -26,7 +26,7 @@ from elasticsearch.exceptions import (
 )
 
 from apigateway.common.error_codes import APIError, error_codes
-from apigateway.components.bk_log import esquery_dsl
+from apigateway.components.bklog import esquery_dsl
 
 logger = logging.getLogger(__name__)
 
