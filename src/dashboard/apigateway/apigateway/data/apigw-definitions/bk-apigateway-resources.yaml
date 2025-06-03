@@ -1333,7 +1333,7 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
-  /api/v2/inner/mcp_server/permissions/:
+  /api/v2/inner/mcp-server/permissions/:
     get:
       operationId: v2_inner_list_mcp_server_permissions
       description: 'mcp_server 申请权限列表'
@@ -1353,7 +1353,7 @@ paths:
         backend:
           name: default
           method: get
-          path: /backend/api/v2/inner/mcp_server/permissions/
+          path: /backend/api/v2/inner/mcp-server/permissions/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []
@@ -1362,7 +1362,7 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
-  /api/v2/inner/mcp_server/apply/:
+  /api/v2/inner/mcp-server/apply/:
     get:
       operationId: v2_inner_apply_mcp_server_permission
       description: 'mcp_server 权限申请/批量申请'
@@ -1382,7 +1382,7 @@ paths:
         backend:
           name: default
           method: post
-          path: /backend/api/v2/inner/mcp_server/apply/
+          path: /backend/api/v2/inner/mcp-server/apply/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []
@@ -1391,7 +1391,7 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
-  /api/v2/inner/mcp_server/permissions/app-permissions/:
+  /api/v2/inner/mcp-server/permissions/app-permissions/:
     get:
       operationId: v2_inner_list_mcp_server_app_permissions
       description: 'mcp_server 已申请权限列表'
@@ -1411,7 +1411,7 @@ paths:
         backend:
           name: default
           method: get
-          path: /backend/api/v2/inner/mcp_server/permissions/app-permissions/
+          path: /backend/api/v2/inner/mcp-server/permissions/app-permissions/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []
@@ -1420,7 +1420,7 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
-  /api/v2/inner/mcp_server/permissions/apply-records/:
+  /api/v2/inner/mcp-server/permissions/apply-records/:
     get:
       operationId: v2_inner_list_mcp_server_permission_apply_records
       description: 'mcp_server 申请记录列表'
@@ -1440,7 +1440,7 @@ paths:
         backend:
           name: default
           method: get
-          path: /backend/api/v2/inner/mcp_server/permissions/apply-records/
+          path: /backend/api/v2/inner/mcp-server/permissions/apply-records/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []
@@ -1449,7 +1449,7 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
-  /api/v2/inner/mcp_server/permissions/appapply-records/{record_id}/:
+  /api/v2/inner/mcp-server/permissions/appapply-records/{record_id}/:
     get:
       operationId: v2_inner_retrieve_mcp_server_permission_apply_record
       description: 'mcp_server 申请记录详情'
@@ -1469,7 +1469,7 @@ paths:
         backend:
           name: default
           method: get
-          path: /backend/api/v2/inner/mcp_server/permissions/apply-records/{record_id}/
+          path: /backend/api/v2/inner/mcp-server/permissions/apply-records/{record_id}/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []

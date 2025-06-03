@@ -41,7 +41,6 @@ from apigateway.biz.esb.permissions import ComponentPermissionManager
 from apigateway.biz.mcp_server import MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
@@ -699,6 +698,11 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                         "name": obj.name,
                         "description": obj.description,
                         "tools_count": obj.tools_count,
+                        "tool_names": MCPServerPermissionHandler.get_tools_names(
+                            obj.gateway.id,
+                            obj.stage.name,
+                            obj.resource_names,
+                        ),
                     },
                     "permission": {
                         "status": permission_status,
@@ -769,6 +773,11 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
                     "name": obj.mcp_server.name,
                     "description": obj.mcp_server.description,
                     "tools_count": obj.mcp_server.tools_count,
+                    "tool_names": MCPServerPermissionHandler.get_tools_names(
+                        obj.mcp_server.gateway.id,
+                        obj.mcp_server.stage.name,
+                        obj.mcp_server.resource_names,
+                    ),
                 },
                 "permission": {
                     "status": MCPServerPermissionStatusEnum.OWNED.value,
@@ -818,6 +827,11 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
                     "name": obj.mcp_server.name,
                     "description": obj.mcp_server.description,
                     "tools_count": obj.mcp_server.tools_count,
+                    "tool_names": MCPServerPermissionHandler.get_tools_names(
+                        obj.mcp_server.gateway.id,
+                        obj.mcp_server.stage.name,
+                        obj.mcp_server.resource_names,
+                    ),
                 },
                 "record": {
                     "applied_by": obj.applied_by,
@@ -869,18 +883,17 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        stage_released_resources = ReleasedResourceHandler.get_public_released_resource_data_list(
-            instance.mcp_server.gateway.id,
-            instance.mcp_server.stage.name,
-            False,
-        )
-
         mcp_server_permission_record = {
             "mcp_server": {
                 "id": instance.mcp_server_id,
                 "name": instance.mcp_server.name,
                 "description": instance.mcp_server.description,
                 "tools_count": instance.mcp_server.tools_count,
+                "tool_names": MCPServerPermissionHandler.get_tools_names(
+                    instance.mcp_server.gateway.id,
+                    instance.mcp_server.stage.name,
+                    instance.mcp_server.resource_names,
+                ),
             },
             "record": {
                 "applied_by": instance.applied_by,
@@ -895,9 +908,6 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
                 "reason": instance.reason,
                 "expire_days": instance.expire_days,
             },
-            "tool_names": [
-                r.name for r in stage_released_resources if r.name in set(instance.mcp_server.resource_names)
-            ],
         }
 
         slz = self.get_serializer(mcp_server_permission_record)

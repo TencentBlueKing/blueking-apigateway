@@ -574,6 +574,10 @@ class MCPServerBaseSLZ(serializers.Serializer):
     description = serializers.CharField(read_only=True, help_text="MCPServer 描述")
     tools_count = serializers.CharField(read_only=True, help_text="MCPServer 工具数量")
     doc_link = serializers.SerializerMethodField(help_text="MCPServer 文档访问地址")
+    tool_names = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="工具名称列表",
+    )
 
     def get_doc_link(self, obj):
         # todo 待确认前端文档地址
@@ -679,10 +683,6 @@ class MCPServerAppPermissionRecordRetrieveInputSLZ(serializers.Serializer):
 class MCPServerAppPermissionRecordRetrieveOutputSLZ(serializers.Serializer):
     mcp_server = MCPServerBaseSLZ()
     record = MCPServerAppPermissionRecordBaseSLZ()
-    tool_names = serializers.ListField(
-        child=serializers.CharField(),
-        help_text="工具名称列表",
-    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerAppPermissionRecordRetrieveOutputSLZ"

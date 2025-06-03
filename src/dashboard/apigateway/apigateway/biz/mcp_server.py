@@ -215,6 +215,19 @@ class MCPServerHandler:
 
 class MCPServerPermissionHandler:
     @staticmethod
+    def get_tools_names(gateway_id: int, stage_name: str, resource_names: List[str]) -> List[str]:
+        tool_resource_names = set(resource_names)
+
+        stage_released_resources = ReleasedResourceHandler.get_public_released_resource_data_list(
+            gateway_id,
+            stage_name,
+            False,
+        )
+
+        tools_names: List[str] = [r.name for r in stage_released_resources if r.name in set(tool_resource_names)]
+        return tools_names
+
+    @staticmethod
     def filter_mcp_servers(name: str, description: str, keyword: str):
         queryset = MCPServer.objects.filter(is_public=True, status=MCPServerStatusEnum.ACTIVE.value)
 
