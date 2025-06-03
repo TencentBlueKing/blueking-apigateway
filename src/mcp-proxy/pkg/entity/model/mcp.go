@@ -25,11 +25,13 @@ import (
 	"time"
 )
 
+// McpServerStatusActive ...
 const (
 	McpServerStatusActive   = 1
 	McpServerStatusInactive = 0
 )
 
+// MCPServer ...
 type MCPServer struct {
 	ID            int         `gorm:"primaryKey;autoIncrement;column:id"`
 	Name          string      `gorm:"column:name;size:64;uniqueIndex"`
@@ -42,14 +44,17 @@ type MCPServer struct {
 	StageID       int         `gorm:"column:stage_id"`
 }
 
+// IsActive ...
 func (m *MCPServer) IsActive() bool {
 	return m.Status == McpServerStatusActive
 }
 
+// TableName ...
 func (m *MCPServer) TableName() string {
 	return "mcp_server"
 }
 
+// ArrayString ...
 type ArrayString []string
 
 // Scan 实现 Scanner 接口用于从数据库读取
@@ -77,6 +82,7 @@ func (r ArrayString) Value() (driver.Value, error) {
 	return strings.Join(strIDs, ";"), nil
 }
 
+// MCPServerAppPermission ...
 type MCPServerAppPermission struct {
 	Id          int       `gorm:"column:id;AUTO_INCREMENT;primary_key"`
 	BkAppCode   string    `gorm:"column:bk_app_code;NOT NULL"`
@@ -85,6 +91,7 @@ type MCPServerAppPermission struct {
 	McpServerId int       `gorm:"column:mcp_server_id;NOT NULL"`
 }
 
+// TableName ...
 func (m *MCPServerAppPermission) TableName() string {
 	return "mcp_server_app_permission"
 }

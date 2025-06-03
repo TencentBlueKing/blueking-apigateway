@@ -28,6 +28,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// G ...
 var G *Config
 
 // Server is the config for http server
@@ -52,6 +53,7 @@ type LogConfig struct {
 	Desensitization DesensitizationConfig
 }
 
+// DesensitizationConfig ...
 type DesensitizationConfig struct {
 	// 脱敏日志开关
 	Enabled bool
@@ -103,6 +105,7 @@ type Database struct {
 	TLS TLS
 }
 
+// DSN ...
 func (cfg *Database) DSN() string {
 	return fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?parseTime=true",
@@ -138,6 +141,7 @@ type Instrument struct {
 	DbAPI  bool
 }
 
+// McpServer ...
 type McpServer struct {
 	// the interval of mcp server reload
 	Interval           time.Duration

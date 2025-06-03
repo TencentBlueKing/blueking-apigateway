@@ -26,11 +26,13 @@ import (
 	"mcp_proxy/pkg/repo"
 )
 
+// GetRelease ...
 func GetRelease(ctx context.Context, gatewayID int, stageID int) (*model.Release, error) {
 	r := repo.CoreRelease
 	return repo.CoreRelease.WithContext(ctx).Where(r.GatewayID.Eq(gatewayID), r.StageID.Eq(stageID)).First()
 }
 
+// GetOpenapiGatewayResourceVersionSpec ...
 func GetOpenapiGatewayResourceVersionSpec(ctx context.Context, gatewayID int, resourceVersionID int) (
 	*model.OpenapiGatewayResourceVersionSpec, error,
 ) {
@@ -39,6 +41,7 @@ func GetOpenapiGatewayResourceVersionSpec(ctx context.Context, gatewayID int, re
 		r.GatewayID.Eq(gatewayID), r.ResourceVersionID.Eq(resourceVersionID)).First()
 }
 
+// GetJWTInfoByGatewayName ...
 func GetJWTInfoByGatewayName(ctx context.Context, gatewayName string) (*model.JWT, error) {
 	// get gateway
 	gateway, err := cacheimpls.GetGatewayByName(ctx, gatewayName)

@@ -18,24 +18,29 @@
 
 package model
 
+// Gateway ...
 type Gateway struct {
 	ID   int    `gorm:"primaryKey;autoIncrement;column:id"`
 	Name string `gorm:"column:name;size:64;uniqueIndex"`
 }
 
+// TableName ...
 func (Gateway) TableName() string {
 	return "core_api"
 }
 
+// Stage ...
 type Stage struct {
 	ID   int    `gorm:"primaryKey;autoIncrement;column:id"`
 	Name string `gorm:"column:name"`
 }
 
+// TableName ...
 func (Stage) TableName() string {
 	return "core_stage"
 }
 
+// JWT ...
 type JWT struct {
 	GatewayID           int    `gorm:"column:api_id;primaryKey"`
 	PrivateKey          string `gorm:"column:private_key;type:longtext"`
@@ -43,10 +48,12 @@ type JWT struct {
 	EncryptedPrivateKey string `gorm:"column:encrypted_private_key;type:longtext"`
 }
 
+// TableName ...
 func (JWT) TableName() string {
 	return "core_jwt"
 }
 
+// Release ...
 type Release struct {
 	ID                int `gorm:"primaryKey;autoIncrement;column:id"`
 	GatewayID         int `gorm:"column:api_id"`
@@ -54,10 +61,12 @@ type Release struct {
 	StageID           int `gorm:"column:stage_id;uniqueIndex"`
 }
 
+// TableName ...
 func (Release) TableName() string {
 	return "core_release"
 }
 
+// ReleasedResource ...
 type ReleasedResource struct {
 	ID                int    `gorm:"primaryKey;autoIncrement;column:id"`
 	ResourceVersionID int    `gorm:"column:resource_version_id"`
@@ -69,10 +78,12 @@ type ReleasedResource struct {
 	Data              string `gorm:"column:data;type:longtext"`
 }
 
+// TableName ...
 func (ReleasedResource) TableName() string {
 	return "core_released_resource"
 }
 
+// Resource ...
 type Resource struct {
 	ID                   int    `gorm:"primaryKey;autoIncrement;column:id"`
 	Name                 string `gorm:"column:name;size:256"`
@@ -88,10 +99,12 @@ type Resource struct {
 	EnableWebsocket      bool   `gorm:"column:enable_websocket"`
 }
 
+// TableName ...
 func (Resource) TableName() string {
 	return "core_resource"
 }
 
+// ResourceVersion ...
 type ResourceVersion struct {
 	ID            int    `gorm:"primaryKey;autoIncrement;column:id"`
 	Data          string `gorm:"column:data;type:longtext"`
@@ -100,10 +113,12 @@ type ResourceVersion struct {
 	SchemaVersion string `gorm:"column:schema_version;size:32;default:'1.0'"`
 }
 
+// TableName ...
 func (ResourceVersion) TableName() string {
 	return "core_resource_version"
 }
 
+// OpenapiGatewayResourceVersionSpec ...
 type OpenapiGatewayResourceVersionSpec struct {
 	ID                int    `gorm:"primaryKey;autoIncrement;column:id"`
 	Schema            string `gorm:"column:schema;type:longtext"`
@@ -111,6 +126,7 @@ type OpenapiGatewayResourceVersionSpec struct {
 	ResourceVersionID int    `gorm:"column:resource_version_id;unique"`
 }
 
+// TableName ...
 func (OpenapiGatewayResourceVersionSpec) TableName() string {
 	return "openapi_gateway_resource_version_spec"
 }

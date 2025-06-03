@@ -36,15 +36,18 @@ import (
 	"mcp_proxy/pkg/util"
 )
 
+// Config ...
 type Config struct {
 	resourceVersion int
 	openapiFileData *openapi3.T
 }
 
+// MCP ...
 type MCP struct {
 	proxy *proxy.MCPProxy
 }
 
+// Init ...
 func Init(ctx context.Context, mcpProxy *proxy.MCPProxy) (*MCP, error) {
 	// 查询当前所有配置的mcp server
 	err := LoadMCPServer(ctx, mcpProxy)
@@ -56,6 +59,7 @@ func Init(ctx context.Context, mcpProxy *proxy.MCPProxy) (*MCP, error) {
 	}, nil
 }
 
+// Run ...
 func (m *MCP) Run(ctx context.Context) *proxy.MCPProxy {
 	ticker := time.NewTicker(config.G.McpServer.Interval)
 	util.GoroutineWithRecovery(ctx, func() {
@@ -72,6 +76,7 @@ func (m *MCP) Run(ctx context.Context) *proxy.MCPProxy {
 	return m.proxy
 }
 
+// LoadMCPServer ...
 func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 	servers, err := biz.GetAllActiveMCPServers(ctx)
 	if err != nil {
@@ -125,6 +130,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 	return nil
 }
 
+// GetMCPServerConfig ...
 func GetMCPServerConfig(ctx context.Context, server *model.MCPServer) (*Config, error) {
 	// 查看每个mcp server当前生效的资源版本
 	release, err := biz.GetRelease(ctx, server.GatewayID, server.StageID)

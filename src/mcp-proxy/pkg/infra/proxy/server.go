@@ -29,6 +29,7 @@ import (
 	"mcp_proxy/pkg/util"
 )
 
+// MCPServer ...
 type MCPServer struct {
 	Server    *server.Server
 	Transport transport.ServerTransport
@@ -38,6 +39,7 @@ type MCPServer struct {
 	rwLock    *sync.RWMutex
 }
 
+// NewMCPServer ...
 func NewMCPServer(transport transport.ServerTransport, handler *transport.SSEHandler, name string) *MCPServer {
 	mcpServer, err := server.NewServer(transport)
 	if err != nil {
@@ -61,6 +63,7 @@ func (s *MCPServer) IsRegisteredTool(toolName string) bool {
 	return ok
 }
 
+// GetTools ...
 func (s *MCPServer) GetTools() []string {
 	s.rwLock.RLock()
 	defer s.rwLock.RUnlock()
@@ -71,6 +74,7 @@ func (s *MCPServer) GetTools() []string {
 	return toolNames
 }
 
+// Run ...
 func (s *MCPServer) Run(ctx context.Context) {
 	util.GoroutineWithRecovery(ctx, func() {
 		if err := s.Server.Run(); err != nil {
@@ -79,6 +83,7 @@ func (s *MCPServer) Run(ctx context.Context) {
 	})
 }
 
+// Shutdown ...
 func (s *MCPServer) Shutdown(ctx context.Context) {
 	util.GoroutineWithRecovery(ctx, func() {
 		if err := s.Server.Shutdown(ctx); err != nil {
@@ -87,6 +92,7 @@ func (s *MCPServer) Shutdown(ctx context.Context) {
 	})
 }
 
+// RegisterTool ...
 func (s *MCPServer) RegisterTool(tool *protocol.Tool, toolHandler server.ToolHandlerFunc) {
 	s.Server.RegisterTool(tool, toolHandler)
 	s.rwLock.Lock()
@@ -102,6 +108,7 @@ func (s *MCPServer) UnregisterTool(toolName string) {
 	delete(s.tools, toolName)
 }
 
+// RegisterResources ...
 func (s *MCPServer) RegisterResources(resource *protocol.Resource, resourceHandler server.ResourceHandlerFunc) {
 	s.Server.RegisterResource(resource, resourceHandler)
 }
