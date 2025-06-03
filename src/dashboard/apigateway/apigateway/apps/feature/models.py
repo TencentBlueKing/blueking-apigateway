@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import ClassVar
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -31,7 +33,7 @@ class UserFeatureFlag(TimestampedModelMixin):
     name = models.CharField(_("特性名称(key)"), max_length=64, choices=UserFeatureFlagEnum.get_choices())
     effect = models.BooleanField(_("是否允许(value)"), default=False)
 
-    objects = UserFeatureFlagManager()
+    objects: ClassVar[UserFeatureFlagManager] = UserFeatureFlagManager()
 
     def __str__(self):
         return f"<UserFeatureFlag: {self.username}/{self.name}>"

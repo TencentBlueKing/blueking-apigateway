@@ -18,7 +18,7 @@
 #
 import datetime
 import json
-from typing import Dict, List, Optional
+from typing import ClassVar, Dict, List, Optional
 
 from django.db import models
 from django.utils import timezone
@@ -55,7 +55,7 @@ class AppGatewayPermission(TimestampedModelMixin):
         default=generate_expire_time, blank=True, null=True, help_text=_("默认过期时间为180天")
     )
 
-    objects = managers.AppGatewayPermissionManager()
+    objects: ClassVar[managers.AppGatewayPermissionManager] = managers.AppGatewayPermissionManager()
 
     def __str__(self):
         return f"<AppGatewayPermission: {self.id}>"
@@ -103,7 +103,7 @@ class AppResourcePermission(TimestampedModelMixin):
     )
     grant_type = models.CharField(max_length=16, choices=GrantTypeEnum.get_choices(), db_index=True)
 
-    objects = managers.AppResourcePermissionManager()
+    objects: ClassVar[managers.AppResourcePermissionManager] = managers.AppResourcePermissionManager()
 
     def __str__(self):
         return f"<AppResourcePermission: {self.id}>"
@@ -205,7 +205,7 @@ class AppPermissionRecord(models.Model):
     status = models.CharField(max_length=16, choices=ApplyStatusEnum.get_choices(), db_index=True)
     comment = models.CharField(max_length=512, blank=True, default="")
 
-    objects = managers.AppPermissionRecordManager()
+    objects: ClassVar[managers.AppPermissionRecordManager] = managers.AppPermissionRecordManager()
 
     def __str__(self):
         return f"<AppPermissionRecord: {self.id}>"
@@ -254,7 +254,7 @@ class AppPermissionApplyStatus(TimestampedModelMixin):
     )
     status = models.CharField(max_length=16, choices=ApplyStatusEnum.get_choices())
 
-    objects = managers.AppPermissionApplyStatusManager()
+    objects: ClassVar[managers.AppPermissionApplyStatusManager] = managers.AppPermissionApplyStatusManager()
 
     def __str__(self):
         return f"<AppPermissionApplyStatus: {self.id}>"
