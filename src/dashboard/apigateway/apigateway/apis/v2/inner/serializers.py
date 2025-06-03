@@ -684,8 +684,5 @@ class MCPServerAppPermissionRecordRetrieveOutputSLZ(serializers.Serializer):
         help_text="工具名称列表",
     )
 
-    def get_tool_names(self, obj):
-        return self.context["tool_names"]
-
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerAppPermissionRecordRetrieveOutputSLZ"
