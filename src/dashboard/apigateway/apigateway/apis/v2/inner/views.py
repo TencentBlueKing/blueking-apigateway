@@ -863,7 +863,7 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
 
         try:
             return MCPServerAppPermissionApply.objects.get(bk_app_code=data["target_app_code"], id=record_id)
-        except AppPermissionRecord.DoesNotExist:
+        except MCPServerAppPermissionApply.DoesNotExist:
             raise error_codes.NOT_FOUND
 
     def retrieve(self, request, *args, **kwargs):
