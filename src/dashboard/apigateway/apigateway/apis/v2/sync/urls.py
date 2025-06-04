@@ -68,13 +68,14 @@ urlpatterns = [
                         [
                             # POST /api/v2/sync/gateways/{gateway_name}/resource-docs/
                             path(
-                                "by-archive/",
+                                "",
                                 views.DocImportByArchiveApi.as_view(),
-                                name="openapi.v2.sync.resource_doc.import.by_archive",
+                                name="openapi.v2.sync.resource_doc.import",
                             ),
                         ]
                     ),
                 ),
+                # POST /api/v2/sync/gateways/{gateway_name}/sdk/
                 path(
                     "sdk/",
                     views.SDKGenerateApi.as_view(),
@@ -110,7 +111,7 @@ urlpatterns = [
                                 views.GatewayPermissionListApi.as_view(),
                                 name="openapi.v2.sync.gateway.permissions.list",
                             ),
-                            # POST /api/v2/sync/gateways/{gateway_name}/permissions/
+                            # POST /api/v2/sync/gateways/{gateway_name}/permissions/grant/
                             path(
                                 "grant/",
                                 views.GatewayAppPermissionGrantApi.as_view(),
@@ -123,14 +124,14 @@ urlpatterns = [
                     "resource_versions/",
                     include(
                         [
-                            # GET /api/v2/sync/gateways/{gateway_name}/resource_versions/
+                            # GET /api/v2/sync/gateways/{gateway_name}/resource_versions/latest/
                             path(
                                 "latest/",
                                 views.ResourceVersionLatestRetrieveApi.as_view(),
                                 name="openapi.v2.sync.gateway.resource_versions.latest.retrieve",
                             ),
-                            # GET /api/v2/sync/gateways/{gateway_name}/resource_versions/
-                            # POST /api/v2/sync/gateways/{gateway_name}/resource_versions/
+                            # GET list /api/v2/sync/gateways/{gateway_name}/resource_versions/
+                            # POST  creat /api/v2/sync/gateways/{gateway_name}/resource_versions/
                             path(
                                 "",
                                 views.ResourceVersionListCreateApi.as_view(),
