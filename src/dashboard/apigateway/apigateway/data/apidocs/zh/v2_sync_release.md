@@ -28,32 +28,12 @@
 }
 ```
 
-### SDK 调用示例
-
-```python
-from bkapi.bk_apigateway.shortcuts import get_client_by_request
-
-client = get_client_by_request(request)
-result = client.api.release(
-    {
-        "version": "1.0.0",
-        "stage_names": ["prod", "test", "dev"],
-        "comment": "发布"
-    },
-    path_params={
-        "api_name": "demo",
-    },
-    headers={"Content-Type": "application/json"},
-)
-```
 
 
 ### 响应示例
 
 ```json
 {
-    "code": 0,
-    "message": "OK",
     "data": {
         "version": "1.0.0",
         "stage_names": ["prod", "test", "dev"]
@@ -65,8 +45,6 @@ result = client.api.release(
 
 | 字段    | 类型   | 描述                               |
 | ------- | ------ | ---------------------------------- |
-| code    | int    | 返回码，0 表示成功，其它值表示失败 |
-| message | string | 错误信息                           |
 | data    | object | 结果数据，详细信息请见下面说明     |
 
 #### data
