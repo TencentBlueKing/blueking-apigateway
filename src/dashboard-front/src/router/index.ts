@@ -312,6 +312,29 @@ const routes: RouteRecordRaw[] = [
           topMenu: 'home',
         },
       },
+      // MCP 服务器
+      {
+        path: '/:id/mcp-server',
+        name: 'mcpServer',
+        component: () => import('@/views/mcp-server/index.vue'),
+        meta: {
+          title: 'MCP Server',
+          matchRoute: 'mcpServer',
+          topMenu: 'mcpServer',
+        },
+        children: [
+          // {
+          //   path: 'toolbox',
+          //   name: 'platformToolsToolbox',
+          //   component: PlatformToolsToolbox,
+          //   meta: {
+          //     title: t('工具箱'),
+          //     matchRoute: 'platformToolsToolbox',
+          //     topMenu: 'platformTools',
+          //   },
+          // },
+        ],
+      },
       {
         path: '/:id/audit',
         name: 'apigwOperateRecords',

@@ -15,4 +15,5 @@ src/views/resource/setting/detail.vue
 src/views/resource/setting/comps/table-res-to-action.vue
 src/views/permission/app/index.vue
 src/views/stage/published/index.vue
+src/views/mcp-server/components/CreateSlider.vue
 static/svg/iconcool.js
