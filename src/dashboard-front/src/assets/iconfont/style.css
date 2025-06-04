@@ -239,6 +239,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-arrows--right--line:before {
 	content: "\e1b5";
 }
+.icon-ag-more-fill:before {
+	content: "\e1b9";
+}
 .icon-ag-lock-fill1:before {
 	content: "\e15a";
 }

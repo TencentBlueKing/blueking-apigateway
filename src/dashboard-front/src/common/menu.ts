@@ -144,6 +144,12 @@ export const createMenuData = (): IMenu[] => {
       icon: 'jibenxinxi',
     },
     {
+      name: 'mcpServer',
+      enabled: true,
+      title: 'MCP Server',
+      icon: 'history',
+    },
+    {
       name: 'apigwOperateRecords',
       enabled: true,
       title: t('操作记录'),
