@@ -26,8 +26,8 @@ import (
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
 
-// nolint:gocyclo
 // OpenapiToMcpToolConfig
+// nolint:gocyclo
 func OpenapiToMcpToolConfig(openApiSpec *openapi3.T, operationIDMap map[string]struct{}) []*ToolConfig {
 	var toolConfigs []*ToolConfig
 	for path, pathItem := range openApiSpec.Paths.Map() {

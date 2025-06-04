@@ -16,6 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+// Package mcp is the package for mcp server
 package mcp
 
 import (
