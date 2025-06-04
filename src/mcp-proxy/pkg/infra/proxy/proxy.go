@@ -16,6 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+// Package proxy is the package for proxy
 package proxy
 
 import (
