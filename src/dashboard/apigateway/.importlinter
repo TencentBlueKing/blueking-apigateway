@@ -43,4 +43,4 @@ modules =
     apigateway.apis.web
     apigateway.apis.v2.inner
     apigateway.apis.v2.sync
-    apigateway.apis.v2.inner
+    apigateway.apis.v2.open
