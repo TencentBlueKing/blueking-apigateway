@@ -162,6 +162,9 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
         )
         instance.tools = tool_resources
 
+        # append the maintainers
+        instance.maintainers = instance.gateway.maintainers
+
         serializer = self.get_serializer(
             instance,
             context={

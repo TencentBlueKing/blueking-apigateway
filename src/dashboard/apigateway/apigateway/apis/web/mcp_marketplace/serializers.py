@@ -88,6 +88,7 @@ class MCPServerToolOutputSLZ(serializers.Serializer):
 class MCPServerRetrieveOutputSLZ(MCPServerBaseOutputSLZ):
     guideline = serializers.CharField(read_only=True, help_text="MCPServer 使用指南")
     tools = serializers.ListField(child=MCPServerToolOutputSLZ(), help_text="MCPServer 工具列表")
+    maintainers = serializers.ListField(child=serializers.CharField(), help_text="MCPServer 维护者")
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerRetrieveOutputSLZ"
