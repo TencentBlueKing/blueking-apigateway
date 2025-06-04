@@ -17,7 +17,7 @@
 #
 import pytest
 
-from apigateway.apis.web.gateway.constants import GATEWAY_NAME_PATTERN
+from apigateway.common.constants import GATEWAY_NAME_PATTERN
 
 
 @pytest.mark.parametrize(

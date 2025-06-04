@@ -18,7 +18,7 @@
 #
 import pytest
 
-from apigateway.apis.open.stage import constants
+from apigateway.common import constants
 
 
 class TestConstants:

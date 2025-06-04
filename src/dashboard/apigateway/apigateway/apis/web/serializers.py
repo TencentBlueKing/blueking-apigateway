@@ -19,9 +19,9 @@
 from rest_framework import serializers
 
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
-from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN
+from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, LoadBalanceTypeEnum
 
-from .constants import BackendConfigSchemeEnum, BackendConfigTypeEnum, LoadBalanceTypeEnum
+from .constants import BackendConfigSchemeEnum, BackendConfigTypeEnum
 
 
 class HostSLZ(serializers.Serializer):

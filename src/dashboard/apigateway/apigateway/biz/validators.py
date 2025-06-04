@@ -22,15 +22,17 @@ from django.db.models import Count
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+from apigateway.apps.plugin.models import PluginBinding
+from apigateway.common.constants import STAGE_VAR_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
 from apigateway.core import constants as core_constants
 from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, BackendTypeEnum, GatewayStatusEnum
 from apigateway.core.models import BackendConfig, Gateway, Proxy, Resource, ResourceVersion, Stage
 
 from .constants import APP_CODE_PATTERN, STAGE_VAR_FOR_PATH_PATTERN
+from .released_resource import ReleasedResourceHandler
 from .resource_version import ResourceVersionHandler
-from ..apps.plugin.constants import PluginBindingScopeEnum
-from ..apps.plugin.models import PluginBinding
 
 
 class ReleaseValidationError(Exception):
@@ -340,3 +342,74 @@ class SchemeInputValidator:
                     backend_name=self.backend.name
                 )
             )
+
+
+class StageVarsValidator(GetGatewayFromContextMixin):
+    """
+    Stage Serializer 中校验 vars 变量
+    """
+
+    requires_context = True
+
+    def __call__(self, attrs: dict, serializer):
+        gateway = self._get_gateway(serializer)
+        instance = getattr(serializer, "instance", None)
+
+        context = getattr(serializer, "context", {})
+        allow_var_not_exist = context.get("allow_var_not_exist", False)
+
+        self._validate_vars_keys(attrs["vars"])
+        self._validate_vars_values(attrs["vars"], gateway, instance, allow_var_not_exist)
+
+    def _validate_vars_keys(self, _vars: dict):
+        """
+        校验变量的 key 是否符合正则表达式
+        """
+        for key in _vars:
+            if not STAGE_VAR_NAME_PATTERN.match(key):
+                raise serializers.ValidationError(
+                    _(
+                        "变量名【{key}】非法，应由字母、数字、下划线（_）组成，首字符必须是字母，长度小于50个字符。"
+                    ).format(key=key),
+                )
+
+    def _validate_vars_values(self, _vars: dict, gateway, instance, allow_var_not_exist: bool):
+        """
+        校验变量的值是否符合要求
+        - 用作路径变量时：值应符合路径片段规则
+        - 用作Host变量时：值应符合 Host 规则
+        """
+        if not instance:
+            return
+
+        stage_id = instance.id
+        stage_release = ReleasedResourceHandler.get_stage_release(gateway, [stage_id]).get(stage_id)
+        if not stage_release:
+            return
+
+        validator = StageVarsValuesValidator()
+        validator(
+            {
+                "gateway": gateway,
+                "stage_name": instance.name,
+                "vars": _vars,
+                "resource_version_id": stage_release["resource_version_id"],
+                "allow_var_not_exist": allow_var_not_exist,
+            }
+        )
+
+
+class APIDocMaintainerValidator:
+    def __call__(self, data: dict):
+        if data.get("type") == GatewayAPIDocMaintainerTypeEnum.USER.value and not data.get("contacts"):
+            raise serializers.ValidationError(_("联系人不可为空。"))
+
+        if data.get("type") == GatewayAPIDocMaintainerTypeEnum.SERVICE_ACCOUNT.value:
+            service_account = data.get("service_account", {})
+            if not service_account.get("name"):
+                raise serializers.ValidationError(_("服务号名称不可为空。"))
+            link = service_account.get("link")
+            if not link:
+                raise serializers.ValidationError(_("服务号链接不可为空。"))
+            if not link.startswith("wxwork://"):
+                raise serializers.ValidationError(_("服务号链接格式不正确，必须以 wxwork:// 开头。"))

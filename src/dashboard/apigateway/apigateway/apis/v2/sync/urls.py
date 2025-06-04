@@ -35,9 +35,52 @@ urlpatterns = [
         include(
             [
                 # POST /api/v2/sync/gateways/{gateway_name}/
-                # path("", views.GatewaySyncApi.as_view(), name="openapi.v2.sync.gateway.sync"),
-                # GET /api/v2/sync/gateways/{gateway_name}/public_key/
-                # NOTE: this url been redirected to core-api, so no need to implement this
+                path("", views.GatewaySyncApi.as_view(), name="openapi.v2.sync.gateway.sync"),
+                path(
+                    "stages/",
+                    include(
+                        [
+                            # POST /api/v2/sync/gateways/{gateway_name}/stages/
+                            path(
+                                "",
+                                views.GatewayStageSyncViewSet.as_view(),
+                                name="openapi.v2.sync.gateway.stages.sync",
+                            ),
+                        ]
+                    ),
+                ),
+                path(
+                    "resources/",
+                    include(
+                        [
+                            # POST /api/v2/sync/gateways/{gateway_name}/resources/
+                            path(
+                                "",
+                                views.GatewayResourceSyncApi.as_view(),
+                                name="openapi.v2.sync.gateway.resources.sync",
+                            ),
+                        ]
+                    ),
+                ),
+                path(
+                    "resource-docs/",
+                    include(
+                        [
+                            # POST /api/v2/sync/gateways/{gateway_name}/resource-docs/
+                            path(
+                                "",
+                                views.DocImportByArchiveApi.as_view(),
+                                name="openapi.v2.sync.resource_doc.import",
+                            ),
+                        ]
+                    ),
+                ),
+                # POST /api/v2/sync/gateways/{gateway_name}/sdk/
+                path(
+                    "sdk/",
+                    views.SDKGenerateApi.as_view(),
+                    name="openapi.v2.sync.sdk.generate",
+                ),
                 path(
                     "related-apps/",
                     include(
@@ -67,6 +110,38 @@ urlpatterns = [
                                 "",
                                 views.GatewayPermissionListApi.as_view(),
                                 name="openapi.v2.sync.gateway.permissions.list",
+                            ),
+                            # POST /api/v2/sync/gateways/{gateway_name}/permissions/grant/
+                            path(
+                                "grant/",
+                                views.GatewayAppPermissionGrantApi.as_view(),
+                                name="openapi.v2.sync.gateway.permissions.grant",
+                            ),
+                        ]
+                    ),
+                ),
+                path(
+                    "resource_versions/",
+                    include(
+                        [
+                            # GET /api/v2/sync/gateways/{gateway_name}/resource_versions/latest/
+                            path(
+                                "latest/",
+                                views.ResourceVersionLatestRetrieveApi.as_view(),
+                                name="openapi.v2.sync.gateway.resource_versions.latest.retrieve",
+                            ),
+                            # GET list /api/v2/sync/gateways/{gateway_name}/resource_versions/
+                            # POST  creat /api/v2/sync/gateways/{gateway_name}/resource_versions/
+                            path(
+                                "",
+                                views.ResourceVersionListCreateApi.as_view(),
+                                name="openapi.v2.sync.resource_versions.list_create",
+                            ),
+                            # POST /api/v2/sync/gateways/{gateway_name}/resource_versions/release/
+                            path(
+                                "release/",
+                                views.ResourceVersionReleaseApi.as_view(),
+                                name="openapi.v2.sync.resource_version.release",
                             ),
                         ]
                     ),

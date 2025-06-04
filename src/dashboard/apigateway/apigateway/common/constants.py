@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import re
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 
@@ -48,3 +49,37 @@ HEADER_BKAPI_AUTHORIZATION = "X-Bkapi-Authorization"
 
 # release gateway interval
 RELEASE_GATEWAY_INTERVAL_SECOND = 15
+
+
+# 网关名正则
+GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,29}$")
+
+
+# 用户认证类型
+class UserAuthTypeEnum(StructuredEnum):
+    IEOD = EnumField("ieod")
+    TENCENT = EnumField("tencent")
+    DEFAULT = EnumField("default")
+
+
+# 网关文档维护者类型
+class GatewayAPIDocMaintainerTypeEnum(StructuredEnum):
+    USER = EnumField("user", label="用户")
+    SERVICE_ACCOUNT = EnumField("service_account", label="服务号")
+
+
+DOMAIN_WITH_HTTP_AND_IPV6_PATTERN = re.compile(
+    r"^http(s)?:\/\/\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?\/?$"
+)
+
+
+DOMAIN_PATTERN = re.compile(
+    r"^(?=^.{3,255}$)http(s)?:\/\/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?\/?$"
+    + "|"
+    + DOMAIN_WITH_HTTP_AND_IPV6_PATTERN.pattern
+)
+
+HEADER_KEY_PATTERN = re.compile(r"^[a-zA-Z0-9-]{1,100}$")
+
+
+STAGE_VAR_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,49}$")
