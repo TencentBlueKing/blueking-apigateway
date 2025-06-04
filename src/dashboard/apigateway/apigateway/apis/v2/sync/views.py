@@ -21,6 +21,7 @@ import logging
 
 from django.conf import settings
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -35,6 +36,8 @@ from apigateway.apps.permission.models import (
     AppGatewayPermission,
     AppResourcePermission,
 )
+from apigateway.apps.support.api_sdk import exceptions
+from apigateway.apps.support.api_sdk.helper import SDKHelper
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
@@ -58,7 +61,7 @@ from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from . import serializers
 from .serializers import (
     DocImportByArchiveInputSLZ,
-    GatewayAppPermissionApplyOutputSLZ,
+    GatewayResourceVersionLatestRetrieveOutputSLZ,
     GatewaySyncOutputSLZ,
     ReleaseInputSLZ,
     ReleaseOutputSLZ,
@@ -67,6 +70,8 @@ from .serializers import (
     ResourceVersionCreateInputSLZ,
     ResourceVersionListInputSLZ,
     ResourceVersionListOutputSLZ,
+    SDKGenerateInputSLZ,
+    SDKGenerateOutputSLZ,
     StageSyncInputSLZ,
     StageSyncOutputSLZ,
 )
@@ -417,7 +422,7 @@ class GatewayPermissionListApi(generics.ListAPIView):
         tags=["OpenAPI.V2.Sync"],
     ),
 )
-class GatewayAppPermissionGrantViewSet(generics.CreateAPIView):
+class GatewayAppPermissionGrantApi(generics.CreateAPIView):
     """网关关联应用，主动为应用授权访问网关 API 的权限"""
 
     permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
@@ -509,13 +514,13 @@ class ResourceVersionLatestRetrieveApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
 
     @swagger_auto_schema(tags=["OpenAPI.V1"])
-    def get(self, request, gateway_name: str, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         resource_version = ResourceVersion.objects.get_latest_version(request.gateway.id)
 
         if not resource_version:
             return OKJsonResponse(data={})
 
-        output_slz = GatewayAppPermissionApplyOutputSLZ({"version": resource_version.version})
+        output_slz = GatewayResourceVersionLatestRetrieveOutputSLZ({"version": resource_version.version})
         return OKJsonResponse(data=output_slz.data)
 
 
@@ -569,3 +574,63 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
             }
         )
         return OKJsonResponse(data=output_slz.data)
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="生成网关sdk",
+        request_body=ReleaseInputSLZ(),
+        responses={status.HTTP_201_CREATED: SDKGenerateOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Sync"],
+    ),
+)
+class SDKGenerateApi(generics.CreateAPIView):
+    permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
+    serializer_class = SDKGenerateInputSLZ
+
+    @transaction.atomic
+    def post(self, request, gateway_name: str, *args, **kwargs):
+        """创建资源版本对应的 SDK"""
+
+        slz = self.get_serializer(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        resource_version = get_object_or_404(
+            ResourceVersion, gateway=request.gateway, version=slz.data["resource_version"]
+        )
+        results = []
+        with SDKHelper(resource_version=resource_version) as helper:
+            for language in slz.data["languages"]:
+                try:
+                    info = helper.create(
+                        language=language,
+                        version=slz.data["version"] or resource_version.version,
+                        operator=None,
+                    )
+                    results.append(
+                        {
+                            "name": info.sdk.name,
+                            "version": info.sdk.version_number,
+                            "url": info.sdk.url,
+                        }
+                    )
+                except exceptions.ResourcesIsEmpty:
+                    raise error_codes.INTERNAL.format(_("网关下无资源，无法生成 SDK。"), replace=True)
+                except exceptions.GenerateError:
+                    raise error_codes.INTERNAL.format(_("网关 SDK 生成失败，请联系管理员。"), replace=True)
+                except exceptions.PackError:
+                    raise error_codes.INTERNAL.format(_("网关 SDK 打包失败，请联系管理员。"), replace=True)
+                except exceptions.DistributeError:
+                    raise error_codes.INTERNAL.format(_("网关 SDK 发布失败，请联系管理员。"), replace=True)
+                except exceptions.TooManySDKVersion as err:
+                    raise error_codes.INTERNAL.format(
+                        _("同一资源版本，最多只能生成 {count} 个 SDK。").format(count=err.max_count), replace=True
+                    )
+                except Exception:  # pylint: disable=broad-except
+                    logger.exception(
+                        "create sdk failed for gateway %s, release %s", gateway_name, resource_version.version
+                    )
+                    raise error_codes.INTERNAL.format(_("网关 SDK 创建失败，请联系管理员。"), replace=True)
+
+        return OKJsonResponse(status=status.HTTP_201_CREATED, data={"results": results})

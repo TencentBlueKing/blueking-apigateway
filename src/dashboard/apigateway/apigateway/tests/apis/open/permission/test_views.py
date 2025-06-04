@@ -339,6 +339,6 @@ class TestRevokeAppPermissionViewSet:
         result = get_response_json(response)
         assert result["code"] == 0, result
 
-        permission_model = views.get_permission_model("api")
+        permission_model = PermissionDimensionManager.get_permission_model("api")
         assert not permission_model.objects.filter(gateway=fake_gateway, bk_app_code__in=["app1", "app2"]).exists()
         assert permission_model.objects.filter(gateway=fake_gateway, bk_app_code__in=["app3"]).exists()

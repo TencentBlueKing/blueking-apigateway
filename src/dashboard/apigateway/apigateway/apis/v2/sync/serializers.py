@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import uuid
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
@@ -26,11 +25,10 @@ from pydantic import parse_obj_as
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from apigateway.apis.web.constants import LoadBalanceTypeEnum
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantDimensionEnum
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
-from apigateway.apps.support.constants import DocLanguageEnum
+from apigateway.apps.support.constants import DocLanguageEnum, ProgrammingLanguageEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SEMVER_PATTERN
 from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData, PluginSynchronizer
 from apigateway.biz.stage import StageHandler
@@ -60,6 +58,7 @@ from apigateway.core.constants import (
     STAGE_NAME_PATTERN,
     GatewayStatusEnum,
     GatewayTypeEnum,
+    LoadBalanceTypeEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, Gateway, ResourceVersion, Stage
 from apigateway.utils.time import NeverExpiresTime
@@ -95,7 +94,7 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
     service_account = ServiceAccountSLZ(required=False, help_text="服务号")
 
     class Meta:
-        validators = [APIDocMaintainerValidator]
+        validators = [APIDocMaintainerValidator()]
         ref_name = "apigateway.apis.v2.sync.serializers.GatewayAPIDocMaintainerSLZ"
 
 
@@ -161,9 +160,12 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         )
 
 
-class GatewaySyncOutputSLZ(serializers.ModelSerializer):
+class GatewaySyncOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="网关ID")
     name = serializers.CharField(read_only=True, help_text="网关名称")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.GatewaySyncOutputSLZ"
 
 
 class HostSLZ(serializers.Serializer):
@@ -171,12 +173,15 @@ class HostSLZ(serializers.Serializer):
     weight = serializers.IntegerField(min_value=1, required=False)
 
     class Meta:
-        ref_name = "apis.open.stage.HostSLZ"
+        ref_name = "apigateway.apis.v2.sync.stage.HostSLZ"
 
 
 class UpstreamsSLZ(serializers.Serializer):
     loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices())
     hosts = serializers.ListField(child=HostSLZ(), allow_empty=False)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.stage.UpstreamsSLZ"
 
     def __init__(self, *args, **kwargs):
         self.allow_empty = kwargs.pop("allow_empty", False)
@@ -216,6 +221,9 @@ class TransformHeadersSLZ(serializers.Serializer):
     set = serializers.DictField(label="设置", child=serializers.CharField(), required=False, allow_empty=True)
     delete = serializers.ListField(label="删除", child=serializers.CharField(), required=False, allow_empty=True)
 
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.stage.TransformHeadersSLZ"
+
     def _validate_headers_key(self, value):
         for key in value:
             if not HEADER_KEY_PATTERN.match(key):
@@ -234,12 +242,15 @@ class StageProxyHTTPConfigSLZ(serializers.Serializer):
     upstreams = UpstreamsSLZ(allow_empty=False)
     transform_headers = TransformHeadersSLZ(required=False, default=dict)
 
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.stage.StageProxyHTTPConfigSLZ"
+
 
 class BackendConfigSLZ(UpstreamsSLZ):
     timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1)
 
     class Meta:
-        ref_name = "apis.open.stage.BackendConfigSLZ"
+        ref_name = "apigateway.apis.v2.sync.stage.BackendConfigSLZ"
 
 
 class BackendSLZ(serializers.Serializer):
@@ -247,12 +258,15 @@ class BackendSLZ(serializers.Serializer):
     config = BackendConfigSLZ(allow_empty=False)
 
     class Meta:
-        ref_name = "apis.open.stage.BackendSLZ"
+        ref_name = "apigateway.apis.v2.sync.stage.BackendSLZ"
 
 
 class PluginConfigSLZ(serializers.Serializer):
     type = serializers.CharField(help_text="插件类型名称")
     yaml = serializers.CharField(help_text="插件yaml配置")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.stage.PluginConfigSLZ"
 
 
 class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
@@ -274,13 +288,12 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         help_text="插件配置", child=PluginConfigSLZ(), allow_null=True, required=False
     )
 
-    micro_gateway_id = serializers.UUIDField(allow_null=True, required=False)
     description = SerializerTranslatedField(
         default_field="description_i18n", allow_blank=True, allow_null=True, max_length=512, required=False
     )
 
     class Meta:
-        ref_name = "apigateway.apis.web.serializers.StageSyncOutputSLZ"
+        ref_name = "apigateway.apis.v2.sync.stage.StageSyncInputSLZ"
         model = Stage
         fields = (
             "gateway",
@@ -293,7 +306,6 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "proxy_http",
             "backends",
             "plugin_configs",
-            "micro_gateway_id",
         )
         extra_kwargs = {
             "description_en": {
@@ -319,7 +331,6 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         ]
 
     def validate(self, data):
-        self._validate_micro_gateway_stage_unique(data.get("micro_gateway_id"))
         self._validate_plugin_configs(data.get("plugin_configs"))
         self._validate_scheme(data.get("backends"))
         # validate stage backend
@@ -496,18 +507,6 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
         return instance
 
-    def _validate_micro_gateway_stage_unique(self, micro_gateway_id: Optional[uuid.UUID]):
-        """校验 micro_gateway 仅绑定到一个环境"""
-        if not micro_gateway_id:
-            return
-
-        queryset = Stage.objects.filter(micro_gateway_id=micro_gateway_id)
-        if self.instance is not None:
-            queryset = queryset.exclude(pk=self.instance.pk)
-
-        if queryset.exists():
-            raise serializers.ValidationError(_("微网关实例已绑定到其它环境。"))
-
     def _validate_plugin_configs(self, plugin_configs):
         """
         校验插件配置
@@ -577,7 +576,7 @@ class StageSyncOutputSLZ(serializers.Serializer):
     name = serializers.CharField(read_only=True, help_text="stage name")
 
     class Meta:
-        ref_name = "apigateway.apis.web.serializers.StageSyncOutputSLZ"
+        ref_name = "apigateway.apis.v2.sync.serializers.StageSyncOutputSLZ"
 
 
 class ResourceSyncOutputSLZ(serializers.Serializer):
@@ -603,6 +602,28 @@ class ResourceImportInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.ResourceImportInputSLZ"
+
+
+class SDKGenerateInputSLZ(serializers.Serializer):
+    resource_version = serializers.CharField(max_length=128, help_text="资源版本")
+    languages = serializers.ListField(
+        child=serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices()),
+        help_text="需要生成SDK的语言列表",
+        default=[ProgrammingLanguageEnum.PYTHON.value],
+    )
+    version = serializers.CharField(default="", max_length=128, help_text="版本号")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.SDKGenerateInputSLZ"
+
+
+class SDKGenerateOutputSLZ(serializers.Serializer):
+    name = serializers.CharField(help_text="SDK名称")
+    version = serializers.CharField(help_text="版本号")
+    url = serializers.CharField(help_text="下载链接")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.SDKGenerateOutputSLZ"
 
 
 class DocImportByArchiveInputSLZ(serializers.Serializer):
@@ -644,6 +665,9 @@ class GatewayPermissionListOutputSLZ(serializers.Serializer):
     resource_id = serializers.IntegerField(required=False)
     resource_name = serializers.CharField(required=False)
 
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.GatewayPermissionListOutputSLZ"
+
     def get_expires(self, obj):
         expires = (
             None
@@ -670,13 +694,6 @@ class GatewayAppPermissionGrantInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.sync.serializers.GatewayAppPermissionGrantInputSLZ"
 
 
-class GatewayAppPermissionApplyOutputSLZ(serializers.Serializer):
-    record_id = serializers.IntegerField(help_text="申请记录ID")
-
-    class Meta:
-        ref_name = "apigateway.apis.v2.sync.serializers.GatewayAppPermissionApplyOutputSLZ"
-
-
 class ResourceVersionCreateInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     version = serializers.RegexField(SEMVER_PATTERN, max_length=64, required=True)
@@ -697,6 +714,9 @@ class ResourceVersionListInputSLZ(serializers.Serializer):
 class ResourceVersionListOutputSLZ(serializers.Serializer):
     version = serializers.CharField(read_only=True)
     comment = serializers.CharField(read_only=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.ResourceVersionListOutputSLZ"
 
 
 class GatewayResourceVersionLatestRetrieveOutputSLZ(serializers.Serializer):

@@ -117,7 +117,7 @@ class GatewayRetrieveApi(generics.RetrieveAPIView):
         operation_description="创建申请资源权限的申请单据",
         request_body=serializers.GatewayAppPermissionApplyInputSLZ,
         responses={status.HTTP_200_OK: GatewayAppPermissionApplyOutputSLZ()},
-        tags=["OpenAPI.V2.Sync"],
+        tags=["OpenAPI.V2.Open"],
     ),
 )
 class GatewayAppPermissionApplyAPI(generics.CreateAPIView):

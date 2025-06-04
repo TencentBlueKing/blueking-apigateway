@@ -35,11 +35,6 @@ class BackendConfigTypeEnum(StructuredEnum):
     SERVICE_DISCOVERY = EnumField("service_discovery", label="服务发现")
 
 
-class LoadBalanceTypeEnum(StructuredEnum):
-    RR = EnumField("roundrobin", "RR")
-    WRR = EnumField("weighted-roundrobin", "Weighted-RR")
-
-
 class BackendConfigSchemeEnum(StructuredEnum):
     # for http type backend
     HTTP = EnumField("http", label="HTTP")

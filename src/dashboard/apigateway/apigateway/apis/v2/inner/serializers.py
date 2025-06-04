@@ -497,6 +497,9 @@ class ComponentInRecordSLZ(serializers.Serializer):
     description_en = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     apply_status = serializers.CharField()
 
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.ComponentInRecordSLZ"
+
 
 class AppPermissionApplyRecordBaseSLZ(serializers.ModelSerializer):
     system_name = serializers.CharField(read_only=True)

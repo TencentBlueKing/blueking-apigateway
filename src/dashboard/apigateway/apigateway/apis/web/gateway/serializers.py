@@ -304,7 +304,7 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
     service_account = ServiceAccountSLZ(required=False, help_text="服务号")
 
     class Meta:
-        validators = [APIDocMaintainerValidator]
+        validators = [APIDocMaintainerValidator()]
 
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):

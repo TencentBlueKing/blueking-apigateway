@@ -41,6 +41,9 @@ urlpatterns = [
                         [
                             # GET /api/v2/open/gateways/{gateway_name}/
                             path("", views.GatewayRetrieveApi.as_view(), name="openapi.v2.open.gateway.retrieve"),
+                            # GET /api/v2/open/gateways/{gateway_name}/public_key/
+                            # FIXME: this url been redirected to core-api, so no need to implement this
+                            # POST /api/v2/open/gateways/{gateway_name}/permissions/apply/
                             path(
                                 "permissions/apply/",
                                 views.GatewayAppPermissionApplyAPI.as_view(),

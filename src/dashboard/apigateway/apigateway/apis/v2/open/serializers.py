@@ -84,6 +84,9 @@ class GatewayAppPermissionApplyInputSLZ(serializers.Serializer):
     )
     grant_dimension = serializers.ChoiceField(choices=[GrantDimensionEnum.API.value])
 
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GatewayAppPermissionApplyInputSLZ"
+
     def validate_target_app_code(self, value):
         request = self.context["request"]
         if request.app.app_code != value:
@@ -111,3 +114,10 @@ class GatewayAppPermissionApplyInputSLZ(serializers.Serializer):
         )
         if not allow:
             raise serializers.ValidationError(reason)
+
+
+class GatewayAppPermissionApplyOutputSLZ(serializers.Serializer):
+    record_id = serializers.IntegerField(help_text="申请记录ID")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GatewayAppPermissionApplyOutputSLZ"

@@ -40,6 +40,7 @@ urlpatterns = [
                     "stages/",
                     include(
                         [
+                            # POST /api/v2/sync/gateways/{gateway_name}/stages/
                             path(
                                 "",
                                 views.GatewayStageSyncViewSet.as_view(),
@@ -52,6 +53,7 @@ urlpatterns = [
                     "resources/",
                     include(
                         [
+                            # POST /api/v2/sync/gateways/{gateway_name}/resources/
                             path(
                                 "",
                                 views.GatewayResourceSyncApi.as_view(),
@@ -64,13 +66,19 @@ urlpatterns = [
                     "resource-docs/",
                     include(
                         [
+                            # POST /api/v2/sync/gateways/{gateway_name}/resource-docs/
                             path(
                                 "by-archive/",
                                 views.DocImportByArchiveApi.as_view(),
-                                name="openapi.resource_doc.import.by_archive",
+                                name="openapi.v2.sync.resource_doc.import.by_archive",
                             ),
                         ]
                     ),
+                ),
+                path(
+                    "sdk/",
+                    views.SDKGenerateApi.as_view(),
+                    name="openapi.v2.sync.sdk.generate",
                 ),
                 path(
                     "related-apps/",
@@ -102,9 +110,10 @@ urlpatterns = [
                                 views.GatewayPermissionListApi.as_view(),
                                 name="openapi.v2.sync.gateway.permissions.list",
                             ),
+                            # POST /api/v2/sync/gateways/{gateway_name}/permissions/
                             path(
                                 "grant/",
-                                views.GatewayAppPermissionGrantViewSet.as_view(),
+                                views.GatewayAppPermissionGrantApi.as_view(),
                                 name="openapi.v2.sync.gateway.permissions.grant",
                             ),
                         ]
@@ -114,20 +123,24 @@ urlpatterns = [
                     "resource_versions/",
                     include(
                         [
+                            # GET /api/v2/sync/gateways/{gateway_name}/resource_versions/
                             path(
                                 "latest/",
                                 views.ResourceVersionLatestRetrieveApi.as_view(),
                                 name="openapi.v2.sync.gateway.resource_versions.latest.retrieve",
                             ),
+                            # GET /api/v2/sync/gateways/{gateway_name}/resource_versions/
+                            # POST /api/v2/sync/gateways/{gateway_name}/resource_versions/
                             path(
                                 "",
                                 views.ResourceVersionListCreateApi.as_view(),
-                                name="openapi.resource_versions.list_create",
+                                name="openapi.v2.sync.resource_versions.list_create",
                             ),
+                            # POST /api/v2/sync/gateways/{gateway_name}/resource_versions/release/
                             path(
                                 "release/",
                                 views.ResourceVersionReleaseApi.as_view(),
-                                name="openapi.resource_version.release",
+                                name="openapi.v2.sync.resource_version.release",
                             ),
                         ]
                     ),
