@@ -146,6 +146,9 @@ export default {
 
     // 升级到 1.13 的指引说明
     UPGRADE_TO_113_TIP: '',
+
+    // mcp 权限申请指引
+    MCP_SERVER_PERMISSION_APPLY: `${BK_DOCS_URL_PREFIX_MARKDOWN}/UserGuide/HowTo/apply-mcp-server-permission.md`,
   },
 
   // 网站默认配置
