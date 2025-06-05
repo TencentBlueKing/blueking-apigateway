@@ -111,7 +111,6 @@ func BkGatewayJWTAuthMiddleware() func(c *gin.Context) {
 			c.Abort()
 			return
 		}
-		util.SetInnerJWTToken(c, signedToken)
 		util.SetBkApiTimeout(c, cast.ToInt(c.Request.Header.Get(constant.BkApiTimeoutHeaderKey)))
 		c.Next()
 	}

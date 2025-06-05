@@ -284,7 +284,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 		submit, err := openAPIClient.Submit(operation)
 		if err != nil {
 			msg := fmt.Sprintf("call %s header:%+v,error:%s\n", headerInfo, toolApiConfig, err.Error())
-			auditLog.Error("call tool err", zap.Error(err))
+			auditLog.Error("call tool err", zap.Any("header", headerInfo), zap.Error(err))
 			log.Println(msg)
 			// nolint:nilerr
 			return &protocol.CallToolResult{
