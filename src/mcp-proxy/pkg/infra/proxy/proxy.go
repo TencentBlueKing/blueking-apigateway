@@ -202,7 +202,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 		requestParam := runtime.ClientRequestWriterFunc(func(req runtime.ClientRequest, _ strfmt.Registry) error {
 			// 设置innerJwt
 			innerJwtConfig := map[string]string{
-				"inner-jwt": innerJwt,
+				"inner_jwt": innerJwt,
 			}
 			innerJwtHeaderValue, _ := json.Marshal(innerJwtConfig)
 			err = req.SetHeaderParam(constant.BkApiAuthorizationHeaderKey, string(innerJwtHeaderValue))
