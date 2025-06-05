@@ -49,20 +49,20 @@ urlpatterns = [
                                         # GET /api/v2/inner/gateways/{gateway_name}/permissions/resources/
                                         path(
                                             "resources/",
-                                            views.GatewayPermissionsResourceListApi.as_view(),
-                                            name="openapi.v2.inner.gateway.permission.resource",
+                                            views.GatewayPermissionResourceListApi.as_view(),
+                                            name="openapi.v2.inner.gateway.permission.resource.list",
                                         ),
                                         # GET /api/v2/inner/gateways/{gateway_name}/permissions/app-permissions/allow-apply-by-gateway/
                                         path(
                                             "app-permissions/allow-apply-by-gateway/",
-                                            views.AppGatewayPermissionApi.as_view(),
+                                            views.GatewayAppPermissionIsAllowedApplyCheckApi.as_view(),
                                             name="openapi.v2.inner.gateway.permission.allow_apply_by_gateway",
                                         ),
                                         # POST /api/v2/inner/gateways/{gateway_name}/permissions/app-permissions/apply/
                                         path(
                                             "app-permissions/apply/",
-                                            views.PaaSAppPermissionApplyCreateApi.as_view(),
-                                            name="openapi.v2.inner.gateway.permission.apply.paas",
+                                            views.GatewayAppPermissionApplyCreateApi.as_view(),
+                                            name="openapi.v2.inner.gateway.permission.apply",
                                         ),
                                     ]
                                 ),
@@ -90,13 +90,13 @@ urlpatterns = [
                             path(
                                 "apply-records/",
                                 views.AppPermissionRecordListApi.as_view(),
-                                name="openapi.v2.inner.permission.app-records",
+                                name="openapi.v2.inner.permission.apply-records",
                             ),
                             # GET /api/v2/inner/gateways/permissions/apply-records/{record_id}/
                             path(
                                 "apply-records/<int:record_id>/",
                                 views.AppPermissionRecordRetrieveApi.as_view(),
-                                name="openapi.v2.inner.permission.app-record-detail",
+                                name="openapi.v2.inner.permission.apply-record-detail",
                             ),
                         ]
                     ),
@@ -114,41 +114,55 @@ urlpatterns = [
                     views.EsbSystemListApi.as_view(),
                     name="openapi.v2.inner.esb.systems.list",
                 ),
-                # GET /api/v2/inner/esb/systems/{system_id}/permissions/components/
                 path(
-                    "<int:system_id>/permissions/components/",
-                    views.EsbPermissionComponentListApi.as_view(),
-                    name="openapi.v2.inner.esb.permission.apply",
+                    "<int:system_id>/",
+                    include(
+                        [
+                            # GET /api/v2/inner/esb/systems/{system_id}/permissions/components/
+                            path(
+                                "permissions/components/",
+                                views.EsbPermissionComponentListApi.as_view(),
+                                name="openapi.v2.inner.esb.permission.apply",
+                            ),
+                            # POST /api/v2/inner/esb/systems/{system_id}/permissions/apply/
+                            path(
+                                "permissions/apply/",
+                                views.EsbAppPermissionApplyCreateApi.as_view(),
+                                name="openapi.v2.inner.esb.permission.apply",
+                            ),
+                        ]
+                    ),
                 ),
-                # POST /api/v2/inner/esb/systems/{system_id}/permissions/apply/
                 path(
-                    "<int:system_id>/permissions/apply/",
-                    views.EsbAppPermissionApplyCreateApi.as_view(),
-                    name="openapi.v2.inner.esb.permission.apply",
-                ),
-                # POST /api/v2/inner/esb/systems/permissions/renew/
-                path(
-                    "permissions/renew/",
-                    views.EsbAppPermissionRenewPutApi.as_view(),
-                    name="openapi.v2.inner.esb.permission.renew",
-                ),
-                # GET /api/v2/inner/esb/systems/permissions/app-permissions/
-                path(
-                    "permissions/app-permissions/",
-                    views.EsbAppPermissionListApi.as_view(),
-                    name="openapi.v2.inner.esb.permission.app-permissions",
-                ),
-                # GET /api/v2/inner/esb/systems/permissions/apply-records/
-                path(
-                    "permissions/apply-records/",
-                    views.EsbAppPermissionApplyRecordListApi.as_view(),
-                    name="openapi.v2.inner.esb.permission.app-records",
-                ),
-                # GET /api/v2/inner/esb/systems/permissions/apply-records/{record_id}/
-                path(
-                    "permissions/apply-records/<int:record_id>/",
-                    views.EsbAppPermissionApplyRecordRetrieveApi.as_view(),
-                    name="openapi.v2.inner.esb.permission.app-record-detail",
+                    "permissions/",
+                    include(
+                        [
+                            # POST /api/v2/inner/esb/systems/permissions/renew/
+                            path(
+                                "renew/",
+                                views.EsbAppPermissionRenewPutApi.as_view(),
+                                name="openapi.v2.inner.esb.permission.renew",
+                            ),
+                            # GET /api/v2/inner/esb/systems/permissions/app-permissions/
+                            path(
+                                "app-permissions/",
+                                views.EsbAppPermissionListApi.as_view(),
+                                name="openapi.v2.inner.esb.permission.app-permissions",
+                            ),
+                            # GET /api/v2/inner/esb/systems/permissions/apply-records/
+                            path(
+                                "apply-records/",
+                                views.EsbAppPermissionApplyRecordListApi.as_view(),
+                                name="openapi.v2.inner.esb.permission.apply-records",
+                            ),
+                            # GET /api/v2/inner/esb/systems/permissions/apply-records/{record_id}/
+                            path(
+                                "apply-records/<int:record_id>/",
+                                views.EsbAppPermissionApplyRecordRetrieveApi.as_view(),
+                                name="openapi.v2.inner.esb.permission.apply-record-detail",
+                            ),
+                        ]
+                    ),
                 ),
             ]
         ),
@@ -163,7 +177,7 @@ urlpatterns = [
                     views.MCPServerPermissionListApi.as_view(),
                     name="openapi.v2.inner.mcp_server.permission.list",
                 ),
-                # POST /api/v2/inner/mcp-server/apply/
+                # POST /api/v2/inner/mcp-server/permissions/apply/
                 path(
                     "apply/",
                     views.MCPServerAppPermissionApplyCreateApi.as_view(),
@@ -171,7 +185,7 @@ urlpatterns = [
                 ),
                 # GET /api/v2/inner/mcp-server/permissions/app-permissions/
                 path(
-                    "permissions/app-permissions/",
+                    "app-permissions/",
                     views.MCPServerAppPermissionListApi.as_view(),
                     name="openapi.v2.inner.mcp_server.permission.app-permissions",
                 ),
@@ -179,13 +193,13 @@ urlpatterns = [
                 path(
                     "apply-records/",
                     views.MCPServerAppPermissionRecordListApi.as_view(),
-                    name="openapi.v2.inner.mcp_server.permission.app-records",
+                    name="openapi.v2.inner.mcp_server.permission.apply-records",
                 ),
                 # GET /api/v2/inner/mcp-server/permissions/apply-records/{record_id}/
                 path(
                     "apply-records/<int:record_id>/",
                     views.MCPServerAppPermissionRecordRetrieveApi.as_view(),
-                    name="openapi.v2.inner.mcp_server.permission.app-record-detail",
+                    name="openapi.v2.inner.mcp_server.permission.apply-record-detail",
                 ),
             ]
         ),

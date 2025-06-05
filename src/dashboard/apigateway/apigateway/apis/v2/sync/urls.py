@@ -75,9 +75,9 @@ urlpatterns = [
                         ]
                     ),
                 ),
-                # POST /api/v2/sync/gateways/{gateway_name}/sdk/
+                # POST /api/v2/sync/gateways/{gateway_name}/sdks/
                 path(
-                    "sdk/",
+                    "sdks/",
                     views.SDKGenerateApi.as_view(),
                     name="openapi.v2.sync.sdk.generate",
                 ),
@@ -124,18 +124,17 @@ urlpatterns = [
                     "resource_versions/",
                     include(
                         [
+                            # GET/POST /api/v2/sync/gateways/{gateway_name}/resource_versions/
+                            path(
+                                "",
+                                views.ResourceVersionListCreateApi.as_view(),
+                                name="openapi.v2.sync.resource_versions.list_create",
+                            ),
                             # GET /api/v2/sync/gateways/{gateway_name}/resource_versions/latest/
                             path(
                                 "latest/",
                                 views.ResourceVersionLatestRetrieveApi.as_view(),
                                 name="openapi.v2.sync.gateway.resource_versions.latest.retrieve",
-                            ),
-                            # GET list /api/v2/sync/gateways/{gateway_name}/resource_versions/
-                            # POST  creat /api/v2/sync/gateways/{gateway_name}/resource_versions/
-                            path(
-                                "",
-                                views.ResourceVersionListCreateApi.as_view(),
-                                name="openapi.v2.sync.resource_versions.list_create",
                             ),
                             # POST /api/v2/sync/gateways/{gateway_name}/resource_versions/release/
                             path(
