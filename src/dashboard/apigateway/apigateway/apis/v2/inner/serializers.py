@@ -141,7 +141,7 @@ class GatewayAppPermissionApplyCreateInputSLZ(serializers.Serializer):
         return data
 
     class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.PaaSAppPermissionApplyCreateInputSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayAppPermissionApplyCreateInputSLZ"
 
 
 class AppResourcePermissionListOutputSLZ(serializers.Serializer):
@@ -395,7 +395,7 @@ class GatewayAppPermissionApplyCreateOutputSLZ(serializers.Serializer):
     record_id = serializers.IntegerField(read_only=True)
 
     class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionApplyCreateOutputSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayAppPermissionApplyCreateOutputSLZ"
 
 
 class EsbAppPermissionListInputSLZ(serializers.Serializer):
