@@ -56,6 +56,8 @@ const PlatformTools = () => import(/* webpackChunkName: 'platform-tools'*/'@/vie
 const PlatformToolsToolbox = () => import(/* webpackChunkName: 'platform-tools'*/'@/views/platform-tools/toolbox/index.vue');
 const PlatformToolsAutomatedGateway = () => import(/* webpackChunkName: 'platform-tools'*/'@/views/platform-tools/automatedGateway/index.vue');
 const PlatformToolsProgrammableGateway = () => import(/* webpackChunkName: 'platform-tools'*/'@/views/platform-tools/programmableGateway/index.vue');
+const McpMarket = () => import(/* webpackChunkName: 'mcp-market'*/'@/views/mcp-market/index.vue');
+const McpMarketDetails = () => import(/* webpackChunkName: 'mcp-market'*/'@/views/mcp-market/components/details.vue');
 
 // 文档一级路由出口
 const docsComponent = {
@@ -571,6 +573,29 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
+
+  // MCP 市场
+  {
+    path: '/mcp-market',
+    name: 'mcpMarket',
+    component: McpMarket,
+    meta: {
+      title: t('MCP 市场'),
+      matchRoute: 'mcpMarket',
+      topMenu: 'mcpMarket',
+    },
+  },
+  {
+    path: '/mcp-market-details/:id',
+    name: 'mcpMarketDetails',
+    component: McpMarketDetails,
+    meta: {
+      title: t('MCP 详情'),
+      matchRoute: 'mcpMarketDetails',
+      topMenu: 'mcpMarket',
+    },
+  },
+
   {
     path: '/:pathMatch(.*)*',
     name: '404',

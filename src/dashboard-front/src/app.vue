@@ -235,6 +235,13 @@ const headerList = computed(() => ([
     enabled: true,
     link: '',
   },
+  {
+    name: 'MCP Server',
+    id: 5,
+    url: 'mcpMarket',
+    enabled: true,
+    link: '',
+  },
 ]));
 
 const systemCls = ref('mac');
