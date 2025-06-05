@@ -536,7 +536,7 @@ RESERVED_GATEWAY_NAME_PREFIXES = ["bk-", "bp-"]
 # 官方网关命名前缀，仅做标记
 OFFICIAL_GATEWAY_NAME_PREFIXES = ["bk-"]
 # 网关名校验白名单
-IGNORE_GATEWAY_NAME_CHECK_WHITELIST = env.list("GATEWAY_NAME_WHITE_LIST", default=["bkpaas3", "paasv3"])
+IGNORE_GATEWAY_NAME_CHECK_WHITELIST = env.list("IGNORE_GATEWAY_NAME_CHECK_WHITELIST", default=["bkpaas3", "paasv3"])
 
 # 允许管理端更新网关认证信息
 DEFAULT_ALLOW_UPDATE_API_AUTH = True

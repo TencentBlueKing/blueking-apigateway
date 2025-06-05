@@ -25,7 +25,7 @@ X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y", "{{bk_login_ti
 ```shell
 X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y", "access_token": "z"}
 ```
-> 推荐使用 `access_token`, 有效期较长, 具体获取方法见：{{bk_access_token_doc_url}}
+> 推荐使用 `access_token`, 有效期较长, 具体获取方法见 [access_token 说明]({{bk_access_token_doc_url}})
 
 ## 其他
 ### MCP proxy 超时配置
