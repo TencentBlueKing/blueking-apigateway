@@ -192,7 +192,7 @@ func verifyJWTToken(claims *CustomClaims) error {
 	if claims.User.Username == "" {
 		return ErrAPIGatewayJWTUserInfoNoUsername
 	}
-	if claims.User.Verified {
+	if !claims.User.Verified {
 		return ErrAPIGatewayJWTUserNotVerified
 	}
 
