@@ -93,7 +93,9 @@ class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
                 "stage_publish_status": ReleaseHandler.batch_get_stage_release_status(stage_ids),
                 "stage_deploy_status": ReleaseHandler.batch_get_stage_deploy_status(
                     request.gateway, stage_ids, get_user_credentials_from_request(request)
-                ),
+                )
+                if request.gateway.is_programmable
+                else {},
                 "new_resource_version": ResourceVersionHandler.get_latest_version_by_gateway(request.gateway.id),
             },
         )
@@ -169,6 +171,11 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
                     gateway=request.gateway, stage_ids=[instance.id]
                 ),
                 "stage_publish_status": ReleaseHandler.batch_get_stage_release_status([instance.id]),
+                "stage_deploy_status": ReleaseHandler.batch_get_stage_deploy_status(
+                    request.gateway, [instance.id], get_user_credentials_from_request(request)
+                )
+                if request.gateway.is_programmable
+                else {},
                 "new_resource_version": ResourceVersionHandler.get_latest_version_by_gateway(request.gateway.id),
             },
         )
