@@ -152,8 +152,8 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         if api_type is None or api_type == GatewayTypeEnum.CLOUDS_API.value:
             return
 
-        # 如果网关名在白名单中，则跳过校验
-        if name in settings.GATEWAY_NAME_WHITELIST:
+        # 场景：某些官方网关名不是 bk-开头，但是需要标记为官方网关
+        if name in settings.IGNORE_GATEWAY_NAME_CHECK_WHITELIST:
             return
 
         for prefix in settings.OFFICIAL_GATEWAY_NAME_PREFIXES:
