@@ -199,12 +199,14 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 		client := http.DefaultClient
 		client.Timeout = util.GetBkApiTimeout(ctx)
 		client.Transport = tr
+		headerInfo := make(map[string]string)
 		requestParam := runtime.ClientRequestWriterFunc(func(req runtime.ClientRequest, _ strfmt.Registry) error {
 			// 设置innerJwt
 			innerJwtConfig := map[string]string{
 				"inner_jwt": innerJwt,
 			}
 			innerJwtHeaderValue, _ := json.Marshal(innerJwtConfig)
+			headerInfo[constant.BkApiAuthorizationHeaderKey] = string(innerJwtHeaderValue)
 			err = req.SetHeaderParam(constant.BkApiAuthorizationHeaderKey, string(innerJwtHeaderValue))
 			if err != nil {
 				auditLog.Error("set header param err",
@@ -219,6 +221,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 						auditLog.Error("set header param err", zap.String(k, v), zap.Error(err))
 						return err
 					}
+					headerInfo[k] = v
 				}
 			}
 			if handlerRequest.QueryParam != nil {
@@ -280,7 +283,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 		openAPIClient.SetLogger(logger.StandardLogger{})
 		submit, err := openAPIClient.Submit(operation)
 		if err != nil {
-			msg := fmt.Sprintf("call %s error:%s\n", toolApiConfig, err.Error())
+			msg := fmt.Sprintf("call %s header:%+v,error:%s\n", headerInfo, toolApiConfig, err.Error())
 			auditLog.Error("call tool err", zap.Error(err))
 			log.Println(msg)
 			// nolint:nilerr
@@ -295,7 +298,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 			}, nil
 		}
 		log.Printf("call %s result: %s\n", toolApiConfig, submit)
-		auditLog.Info("call tool", zap.String("response", submit.(string)))
+		auditLog.Info("call tool", zap.String("response", submit.(string)), zap.Any("header", headerInfo))
 		return &protocol.CallToolResult{
 			Content: []protocol.Content{
 				&protocol.TextContent{
