@@ -131,7 +131,7 @@ func SignBkInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKey []byte
 			Issuer:    claims.Issuer,                                                             // 签发人
 			Audience:  claims.Audience,                                                           // 签发目标
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(config.G.McpServer.InnerJwtExpireTime)), // 过期时间
-			NotBefore: jwt.NewNumericDate(time.Now().Add(time.Second)),                           // 生效时间
+			NotBefore: jwt.NewNumericDate(time.Now()),                                            // 生效时间
 			IssuedAt:  jwt.NewNumericDate(time.Now()),                                            // 签发时间
 		},
 	}
