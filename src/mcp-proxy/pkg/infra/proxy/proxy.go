@@ -99,7 +99,7 @@ func (m *MCPProxy) GetMCPServer(name string) *MCPServer {
 func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 	for _, config := range configs {
 		trans, sseHandler, err := transport.NewSSEServerTransportAndHandler(
-			fmt.Sprintf("/%s/sse/message", config.Name))
+			fmt.Sprintf("/api/bk-apigateway/prod/api/v2/mcp-servers/%s/sse/message", config.Name))
 		if err != nil {
 			return err
 		}
