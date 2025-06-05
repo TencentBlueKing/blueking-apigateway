@@ -130,9 +130,9 @@ class BaseSDKManager(SDKManager):
         distribute_result = None
         try:
             distribute_result = distributor.distribute(output_dir, files)
-        except DistributeError as err:
+        except DistributeError:
             if not context.is_public:
-                logger.warning("distribute sdk by private distributor %s failed, skipped, %s", distributor.name, err)
+                logger.exception("distribute sdk by private distributor %s failed, skipped", distributor.name)
             else:
                 raise
 
