@@ -985,7 +985,7 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: false
         descriptionEn: None
-  /api/v2/sync/gateways/{gateway_name}/sdk/:
+  /api/v2/sync/gateways/{gateway_name}/sdks/:
     post:
       operationId: v2_sync_generate_sdk
       description: 生成网关sdk
