@@ -124,8 +124,8 @@ func SignBkInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKey []byte
 			Verified: claims.App.Verified,
 		},
 		User: UserInfo{
-			Verified: claims.User.Verified,
 			Username: claims.User.Username,
+			Verified: claims.User.Verified,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    claims.Issuer,                                                             // 签发人
@@ -135,12 +135,14 @@ func SignBkInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKey []byte
 			IssuedAt:  jwt.NewNumericDate(time.Now()),                                            // 签发时间
 		},
 	}
-	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, innerJwtClaims).SignedString(privateKey)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, innerJwtClaims)
+	token.Header["kid"] = constant.OfficialGatewayName
+	signedJwt, err := token.SignedString(privateKey)
 	if err != nil {
 		return err
 	}
 	// set inner jwt to context
-	util.SetInnerJWTToken(c, token)
+	util.SetInnerJWTToken(c, signedJwt)
 	return nil
 }
 
