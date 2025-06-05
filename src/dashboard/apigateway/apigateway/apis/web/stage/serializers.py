@@ -111,7 +111,7 @@ class StageOutputSLZ(serializers.ModelSerializer):
 
         # 如果是编程网关，返回部署的版本
         if obj.gateway.is_programmable:
-            latest_deploy_info = self.context["stage_deploy_status"].get(obj.id, {}).get("latest_deploy_info")
+            latest_deploy_info = self.context["stage_deploy_status"].get(obj.id, {}).get("latest_deploy_history")
             if latest_deploy_info:
                 return latest_deploy_info.version
             return ""
