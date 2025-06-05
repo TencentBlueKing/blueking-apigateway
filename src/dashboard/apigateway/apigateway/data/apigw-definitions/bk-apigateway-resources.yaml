@@ -1249,7 +1249,7 @@ paths:
         descriptionEn: None
   /api/v2/inner/gateways/{gateway_name}/permissions/resources/:
     get:
-      operationId: v2_inner_get_gateway_resources
+      operationId: v2_inner_list_gateway_permission_resources
       description: 获取网关资源
       tags:
       - v2_inner
@@ -1278,7 +1278,7 @@ paths:
         descriptionEn: None
   /api/v2/inner/gateways/{gateway_name}/permissions/app-permissions/allow-apply-by-gateway/:
     get:
-      operationId: v2_inner_allow_apply_by_gateway
+      operationId: v2_inner_check_is_allowed_apply_by_gateway
       description: 是否允许按网关申请资源权限
       tags:
       - v2_inner
@@ -1307,7 +1307,7 @@ paths:
         descriptionEn: None
   /api/v2/inner/gateways/{gateway_name}/permissions/app-permissions/apply/:
     post:
-      operationId: v2_inner_apply_resource_permission
+      operationId: v2_inner_apply_gateway_resource_permission
       description: 网关资源权限申请
       tags:
       - v2_inner
@@ -1424,7 +1424,7 @@ paths:
   /api/v2/inner/gateways/permissions/apply-records/{record_id}/:
     get:
       operationId: v2_inner_retrieve_resource_permission_apply_record
-      description: '资源权限申请记录详情'
+      description: 资源权限申请记录详情
       tags:
       - v2_inner
       responses:
@@ -1452,8 +1452,8 @@ paths:
         descriptionEn: None
   /api/v2/inner/esb/systems/:
     get:
-      operationId: v2_inner_get_esb_systems
-      description: '查询组件系统列表'
+      operationId: v2_inner_list_esb_systems
+      description: 查询组件系统列表
       tags:
       - v2_inner
       responses:
@@ -1481,8 +1481,8 @@ paths:
         descriptionEn: None
   /api/v2/inner/esb/systems/{system_id}/permissions/components/:
     get:
-      operationId: v2_inner_get_system_permission_components
-      description: '查询系统权限组件'
+      operationId: v2_inner_list_esb_system_permission_components
+      description: 查询系统权限组件
       tags:
       - v2_inner
       responses:
@@ -1510,7 +1510,7 @@ paths:
         descriptionEn: None
   /api/v2/inner/esb/systems/{system_id}/permissions/apply/:
     get:
-      operationId: v2_inner_apply_esb_component_permissions
+      operationId: v2_inner_apply_esb_system_component_permissions
       description: '创建申请ESB组件权限的申请单据'
       tags:
       - v2_inner
@@ -1540,7 +1540,7 @@ paths:
   /api/v2/inner/esb/systems/permissions/renew/:
     post:
       operationId: v2_inner_renew_esb_component_permissions
-      description: 'ESB组件权限续期'
+      description: ESB 组件权限续期
       tags:
       - v2_inner
       responses:
@@ -1568,8 +1568,8 @@ paths:
         descriptionEn: None
   /api/v2/inner/esb/systems/permissions/app-permissions/:
     post:
-      operationId: v2_inner_get_app_component_systems
-      description: '已申请权限列表'
+      operationId: v2_inner_list_app_esb_component_permissions
+      description: 已申请权限列表
       tags:
       - v2_inner
       responses:
@@ -1597,8 +1597,8 @@ paths:
         descriptionEn: None
   /api/v2/inner/esb/systems/permissions/apply-records/:
     get:
-      operationId: v2_inner_get_app_permission_apply_records
-      description: '查询应用权限申请记录列表'
+      operationId: v2_inner_list_app_esb_component_permission_apply_records
+      description: 查询应用权限申请记录列表
       tags:
       - v2_inner
       responses:
@@ -1626,8 +1626,8 @@ paths:
         descriptionEn: None
   /api/v2/inner/esb/systems/permissions/apply-records/{record_id}/:
     get:
-      operationId: v2_inner_get_app_permission_apply_record
-      description: '查询应用权限申请记录详情'
+      operationId: v2_inner_get_app_esb_component_permission_apply_record
+      description: 查询应用权限申请记录详情
       tags:
       - v2_inner
       responses:
@@ -1682,7 +1682,7 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
-  /api/v2/inner/mcp-server/apply/:
+  /api/v2/inner/mcp-server/permissions/apply/:
     get:
       operationId: v2_inner_apply_mcp_server_permission
       description: 'mcp_server 权限申请/批量申请'
@@ -1702,7 +1702,7 @@ paths:
         backend:
           name: default
           method: post
-          path: /backend/api/v2/inner/mcp-server/apply/
+          path: /backend/api/v2/inner/mcp-server/permissions/apply/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []
@@ -1769,7 +1769,7 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
-  /api/v2/inner/mcp-server/permissions/appapply-records/{record_id}/:
+  /api/v2/inner/mcp-server/permissions/apply-records/{record_id}/:
     get:
       operationId: v2_inner_retrieve_mcp_server_permission_apply_record
       description: 'mcp_server 申请记录详情'

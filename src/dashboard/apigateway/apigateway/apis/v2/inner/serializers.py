@@ -109,7 +109,7 @@ class AppGatewayPermissionOutputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.AppGatewayPermissionOutputSLZ"
 
 
-class PaaSAppPermissionApplyCreateInputSLZ(serializers.Serializer):
+class GatewayAppPermissionApplyCreateInputSLZ(serializers.Serializer):
     """
     PaaS中应用申请访问网关API的权限
     - 提供给 paas 开发者中心的接口
@@ -193,7 +193,7 @@ class AppResourcePermissionListOutputSLZ(serializers.Serializer):
         return False
 
 
-class AppPermissionRenewPutInputSLZ(serializers.Serializer):
+class AppPermissionRenewInputSLZ(serializers.Serializer):
     target_app_code = serializers.CharField(label="", validators=[BKAppCodeValidator()])
     resource_ids = serializers.ListField(
         child=serializers.IntegerField(),
@@ -207,7 +207,7 @@ class AppPermissionRenewPutInputSLZ(serializers.Serializer):
     )
 
     class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionRenewPutInputSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionRenewInputSLZ"
 
 
 class AppPermissionListInputSLZ(serializers.Serializer):
@@ -379,7 +379,7 @@ class EsbAppPermissionApplyCreateInputSLZ(AppPermissionBaseSLZ):
         ref_name = "apigateway.apis.v2.inner.serializers.EsbAppPermissionApplyCreateInputSLZ"
 
 
-class EsbAppPermissionRenewPutInputSLZ(AppPermissionBaseSLZ):
+class EsbAppPermissionRenewInputSLZ(AppPermissionBaseSLZ):
     component_ids = serializers.ListField(
         child=serializers.IntegerField(),
         allow_empty=False,
@@ -388,10 +388,10 @@ class EsbAppPermissionRenewPutInputSLZ(AppPermissionBaseSLZ):
     )
 
     class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.EsbAppPermissionRenewPutInputSLZ"
+        ref_name = "apigateway.apis.v2.inner.serializers.EsbAppPermissionRenewInputSLZ"
 
 
-class AppPermissionApplyCreateOutputSLZ(serializers.Serializer):
+class GatewayAppPermissionApplyCreateOutputSLZ(serializers.Serializer):
     record_id = serializers.IntegerField(read_only=True)
 
     class Meta:
