@@ -563,7 +563,10 @@ BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME = {
 }
 
 # access token 文档链接地址
-BK_ACCESS_TOKEN_DOC_URL = env.str("BK_ACCESS_TOKEN_DOC_URL", "")
+BK_ACCESS_TOKEN_DOC_URL = env.str(
+    "BK_ACCESS_TOKEN_DOC_URL",
+    "https://bk.tencent.com/docs/markdown/ZH/APIGateway/1.14/UserGuide/Explanation/access-token.md",
+)
 
 BK_API_DEFAULT_STAGE_MAPPINGS = env.dict("BK_API_DEFAULT_STAGE_MAPPINGS", default={})
 
