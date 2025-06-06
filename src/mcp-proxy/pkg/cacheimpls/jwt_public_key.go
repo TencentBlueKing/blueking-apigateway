@@ -25,8 +25,10 @@ import (
 	"github.com/TencentBlueKing/gopkg/cache"
 	"github.com/spf13/cast"
 
+	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/entity/model"
 	"mcp_proxy/pkg/repo"
+	"mcp_proxy/pkg/util"
 )
 
 // JWTInfoCacheKey is the key of jwt info
@@ -42,7 +44,17 @@ func (k JWTInfoCacheKey) Key() string {
 func retrieveJWTInfo(ctx context.Context, k cache.Key) (interface{}, error) {
 	key := k.(JWTInfoCacheKey)
 	r := repo.CoreJWT
-	return repo.CoreJWT.WithContext(ctx).Where(r.GatewayID.Eq(key.GatewayID)).Take()
+	jwtInfo, err := repo.CoreJWT.WithContext(ctx).Where(r.GatewayID.Eq(key.GatewayID)).Take()
+	if err != nil {
+		return nil, err
+	}
+	decodePrivateKey, err := util.AESGCMDecrypt(
+		config.G.McpServer.EncryptKey, config.G.McpServer.CryptoNonce, jwtInfo.EncryptedPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	jwtInfo.PrivateKey = string(decodePrivateKey)
+	return jwtInfo, nil
 }
 
 // GetJWTInfo will get the jwt info from cache by gatewayID

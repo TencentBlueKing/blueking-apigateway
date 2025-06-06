@@ -103,8 +103,6 @@ func BkGatewayJWTAuthMiddleware() func(c *gin.Context) {
 		}
 		util.SetBkAppCode(c, claims.App.AppCode)
 		util.SetBkUsername(c, claims.User.Username)
-
-		// sign inner jwt
 		err = SignBkInnerJWTToken(c, claims, []byte(jwtInfo.PrivateKey))
 		if err != nil {
 			util.SystemErrorJSONResponse(c, err)
