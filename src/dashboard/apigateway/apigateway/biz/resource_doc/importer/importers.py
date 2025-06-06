@@ -83,7 +83,8 @@ class DocImporter:
                 doc.resource_doc.updated_time = now
                 update_resource_docs.append(doc.resource_doc)
 
-                doc.resource.updated_time = now
+                if doc.resource:
+                    doc.resource.updated_time = now
                 update_resources.append(doc.resource)
 
         if add_resource_docs:
