@@ -133,7 +133,7 @@ func SignBkInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKey []byte
 			IssuedAt:  jwt.NewNumericDate(time.Now()),                                            // 签发时间
 		},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodRS512, innerJwtClaims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, innerJwtClaims)
 	token.Header["kid"] = constant.OfficialGatewayName
 	signedJwt, err := token.SignedString(privateKey)
 	if err != nil {
