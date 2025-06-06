@@ -35,6 +35,7 @@ func SetBkUsername(c *gin.Context, userName string) {
 	}
 }
 
+// SetBkAppCode ...
 func SetBkAppCode(c *gin.Context, appCode string) {
 	c.Set(string(constant.BkAppCode), appCode)
 	if c.Request != nil {
@@ -42,6 +43,7 @@ func SetBkAppCode(c *gin.Context, appCode string) {
 	}
 }
 
+// GetBkAppCode ...
 func GetBkAppCode(c *gin.Context) string {
 	appCode, ok := c.Get(string(constant.BkAppCode))
 	if !ok {
@@ -50,6 +52,7 @@ func GetBkAppCode(c *gin.Context) string {
 	return appCode.(string)
 }
 
+// SetInnerJWTToken ...
 func SetInnerJWTToken(c *gin.Context, jwtToken string) {
 	c.Set(string(constant.BkGatewayInnerJWT), jwtToken)
 	if c.Request != nil {
@@ -58,6 +61,7 @@ func SetInnerJWTToken(c *gin.Context, jwtToken string) {
 	}
 }
 
+// SetMCPServerID ...
 func SetMCPServerID(c *gin.Context, mcpServerID int) {
 	c.Set(string(constant.MCPServerID), mcpServerID)
 	if c.Request != nil {
@@ -65,6 +69,7 @@ func SetMCPServerID(c *gin.Context, mcpServerID int) {
 	}
 }
 
+// GetMCPServerID ...
 func GetMCPServerID(c *gin.Context) int {
 	mcpServerID, ok := c.Get(string(constant.MCPServerID))
 	if !ok {
@@ -73,6 +78,7 @@ func GetMCPServerID(c *gin.Context) int {
 	return mcpServerID.(int)
 }
 
+// SetGatewayID ...
 func SetGatewayID(c *gin.Context, gatewayID int) {
 	c.Set(string(constant.GatewayID), gatewayID)
 	if c.Request != nil {
@@ -80,6 +86,7 @@ func SetGatewayID(c *gin.Context, gatewayID int) {
 	}
 }
 
+// GetGatewayID ...
 func GetGatewayID(c *gin.Context) int {
 	mcpServerID, ok := c.Get(string(constant.GatewayID))
 	if !ok {
@@ -88,6 +95,7 @@ func GetGatewayID(c *gin.Context) int {
 	return mcpServerID.(int)
 }
 
+// GetInnerJWTTokenFromContext ...
 func GetInnerJWTTokenFromContext(ctx context.Context) string {
 	jwtToken := ctx.Value(constant.BkGatewayInnerJWT)
 	if innerJwt, ok := jwtToken.(string); ok {
@@ -96,6 +104,7 @@ func GetInnerJWTTokenFromContext(ctx context.Context) string {
 	return ""
 }
 
+// SetBkApiTimeout ...
 func SetBkApiTimeout(c *gin.Context, timeout int) {
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BkApiTimeout, timeout))
 }

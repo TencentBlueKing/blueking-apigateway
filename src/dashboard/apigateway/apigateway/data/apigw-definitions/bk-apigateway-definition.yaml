@@ -60,6 +60,11 @@ grant_permissions:
       - v2_inner_get_app_component_systems
       - v2_inner_get_app_permission_apply_records
       - v2_inner_get_app_permission_apply_record
+      - v2_inner_list_mcp_server_permissions
+      - v2_inner_apply_mcp_server_permission
+      - v2_inner_list_mcp_server_app_permissions
+      - v2_inner_list_mcp_server_permission_apply_records
+      - v2_inner_retrieve_mcp_server_permission_apply_record
   # bk_lesscode
   - bk_app_code: bk_lesscode
     grant_dimension: "resource"

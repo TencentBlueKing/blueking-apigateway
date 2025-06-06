@@ -34,22 +34,26 @@ import (
 	"mcp_proxy/pkg/util"
 )
 
+// AppInfo ...
 type AppInfo struct {
 	AppCode  string `json:"app_code"`
 	Verified bool   `json:"verified"`
 }
 
+// UserInfo ...
 type UserInfo struct {
 	Verified bool   `json:"verified"`
 	Username string `json:"username"`
 }
 
+// CustomClaims ...
 type CustomClaims struct {
 	App  AppInfo  `json:"app"`
 	User UserInfo `json:"user"`
 	jwt.RegisteredClaims
 }
 
+// ErrUnauthorized ...
 var (
 	ErrUnauthorized = errors.New("jwtauth: token is unauthorized")
 
@@ -113,6 +117,7 @@ func BkGatewayJWTAuthMiddleware() func(c *gin.Context) {
 	}
 }
 
+// SignBkInnerJWTToken ...
 func SignBkInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKey []byte) error {
 	innerJwtClaims := CustomClaims{
 		App: AppInfo{
@@ -187,7 +192,7 @@ func verifyJWTToken(claims *CustomClaims) error {
 	if claims.User.Username == "" {
 		return ErrAPIGatewayJWTUserInfoNoUsername
 	}
-	if claims.User.Verified {
+	if !claims.User.Verified {
 		return ErrAPIGatewayJWTUserNotVerified
 	}
 

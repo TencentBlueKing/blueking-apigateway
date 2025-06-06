@@ -1,4 +1,4 @@
-<!-- 2025-04-02 -->
+<!-- 2025-06-06 -->
 # V1.17.0 Release Log
 
 ### Features
@@ -10,6 +10,30 @@
 - Fix: Backend service resource query error
 - Fix: Incorrect tooltips content in one-click group
 - Fix: Incorrect number of resource changes displayed when generating versions
+
+---
+
+<!-- 2025-05-29 -->
+# V1.16.0 Release Log
+
+### Features
+
+- Support programmable gateway
+- Support MCP Server
+- Support AI assistant for logs and online debugging
+- Added: Statistical Report
+- Added: Platform Tool
+
+### Enhancements
+
+- Basic Information: Support configuring document contact
+- Monitoring Alarm: Alarm policy supports configuration effective environment
+- Online Debugging: Optimize header filling interaction
+- Online Debugging: Debug history displays more details
+- Environment Overview supports statistical data display
+- Approval history merged into permission approval page
+- Plugin list displayed in order of priority
+- Basic Information: Management staff has a secondary confirmation when deleting themselves
 
 ---
 

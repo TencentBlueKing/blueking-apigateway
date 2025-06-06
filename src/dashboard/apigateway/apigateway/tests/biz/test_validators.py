@@ -33,11 +33,15 @@ from apigateway.biz.validators import (
     ResourceIDValidator,
     ResourceVersionValidator,
     SchemeInputValidator,
+    StageVarsValidator,
 )
 from apigateway.common.factories import SchemaFactory
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import BackendTypeEnum, GatewayStatusEnum, ProxyTypeEnum
-from apigateway.core.models import Backend, BackendConfig, Gateway, Proxy, Resource, ResourceVersion, Stage
+from apigateway.core.models import Backend, BackendConfig, Gateway, Proxy, Release, Resource, ResourceVersion, Stage
+from apigateway.tests.utils.testing import create_request
+
+pytestmark = pytest.mark.django_db
 
 
 class TestMaxCountPerGatewayValidator:
@@ -516,3 +520,212 @@ class TestSchemeInputValidator:
                 validator.validate_scheme()
             expected_msg = expected["error_message"].replace("Test Backend", backend_name)
             assert str(exc_info.value) == expected_msg
+
+
+class TestStageVarsValidator:
+    class StageSLZ(serializers.ModelSerializer):
+        gateway = serializers.HiddenField(default=CurrentGatewayDefault())
+        vars = serializers.DictField(label="环境变量", child=serializers.CharField())
+
+        class Meta:
+            model = Stage
+            fields = (
+                "gateway",
+                "vars",
+            )
+
+            validators = [StageVarsValidator()]
+
+    @pytest.fixture(autouse=True)
+    def setup_fixture(self):
+        self.gateway = G(Gateway)
+        self.request = create_request()
+        self.request.gateway = self.gateway
+
+    def test_validate_vars_keys(self):
+        data = [
+            {
+                "params": {
+                    # error, first is not char
+                    "vars": {
+                        "12345": "a",
+                    },
+                },
+                "will_error": True,
+            },
+            {
+                "params": {
+                    # error, over length
+                    "vars": {
+                        "a" * 51: "a",
+                    },
+                },
+                "will_error": True,
+            },
+            {
+                "params": {
+                    # error, include -
+                    "vars": {
+                        "abc-d": "a",
+                    },
+                },
+                "will_error": True,
+            },
+            {
+                "params": {
+                    "vars": {
+                        "domian_2": "a",
+                    },
+                },
+                "will_error": False,
+            },
+            {
+                "params": {
+                    "vars": {
+                        "a" * 50: "a",
+                    },
+                },
+                "will_error": False,
+            },
+        ]
+        for test in data:
+            slz = self.StageSLZ(data=test["params"], context={"request": self.request})
+            slz.is_valid()
+            if test.get("will_error"):
+                assert slz.errors, test["params"]
+            else:
+                assert not slz.errors, test["params"]
+
+    def test_validate_vars_values(self, mocker):
+        stage = G(Stage, gateway=self.gateway, status=1)
+        resource_version = G(ResourceVersion, gateway=self.gateway)
+        G(Release, gateway=self.gateway, stage=stage, resource_version=resource_version)
+
+        data = [
+            # ok
+            {
+                "vars": {
+                    "prefix": "/o",
+                    "domain": "bking.com",
+                },
+                "mock_used_stage_vars": {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                "will_error": False,
+            },
+            # allow_var_not_exist=True
+            {
+                "vars": {
+                    "domain": "bking.com",
+                },
+                "mock_used_stage_vars": {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                "allow_var_not_exist": True,
+                "will_error": False,
+            },
+            {
+                "vars": {
+                    "prefix": "/test/",
+                },
+                "mock_used_stage_vars": {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                "allow_var_not_exist": True,
+                "will_error": False,
+            },
+            # var in path not exist
+            {
+                "vars": {
+                    "domain": "bking.com",
+                },
+                "mock_used_stage_vars": {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                "will_error": True,
+            },
+            # var in path invalid
+            {
+                "vars": {
+                    "prefix": "/test/?a=b",
+                    "domain": "bking.com",
+                },
+                "mock_used_stage_vars": {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                "will_error": True,
+            },
+            {
+                "vars": {
+                    "prefix": "/test/?a=b",
+                    "domain": "bking.com",
+                },
+                "mock_used_stage_vars": {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                "allow_var_not_exist": True,
+                "will_error": True,
+            },
+            # var in hosts not exist
+            {
+                "vars": {
+                    "prefix": "/test/",
+                },
+                "mock_used_stage_vars": {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                "will_error": True,
+            },
+            # var in hosts invalid
+            {
+                "vars": {
+                    "prefix": "/test/",
+                    "domain": "http://bking.com",
+                },
+                "mock_used_stage_vars": {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                "will_error": True,
+            },
+            {
+                "vars": {
+                    "prefix": "/test/",
+                    "domain": "http://bking.com",
+                },
+                "mock_used_stage_vars": {
+                    "in_path": ["prefix"],
+                    "in_host": ["domain"],
+                },
+                "allow_var_not_exist": True,
+                "will_error": True,
+            },
+        ]
+        for test in data:
+            slz = self.StageSLZ(
+                instance=stage,
+                data={
+                    "vars": test["vars"],
+                },
+                context={
+                    "request": self.request,
+                    "allow_var_not_exist": test.get("allow_var_not_exist", False),
+                },
+            )
+            mocker.patch(
+                "apigateway.biz.validators.ResourceVersionHandler.get_used_stage_vars",
+                return_value=test["mock_used_stage_vars"],
+            )
+
+            slz.is_valid()
+            if test.get("will_error"):
+                assert slz.errors
+            else:
+                assert not slz.errors

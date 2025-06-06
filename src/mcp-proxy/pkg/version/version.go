@@ -19,6 +19,7 @@
 // Package version is the version for the whole project
 package version
 
+// Version ...
 var (
 	Version   = "0.0.0"
 	Commit    = "none"

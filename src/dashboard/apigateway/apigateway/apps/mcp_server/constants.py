@@ -43,3 +43,16 @@ class MCPServerAppPermissionApplyStatusEnum(StructuredEnum):
 class MCPServerAppPermissionApplyProcessedStateEnum(StructuredEnum):
     PROCESSED = EnumField("processed", label=_("已处理"))
     UNPROCESSED = EnumField("unprocessed", label=_("未处理"))
+
+
+class MCPServerPermissionStatusEnum(StructuredEnum):
+    APPROVED = EnumField("approved", label="已审批")
+    REJECTED = EnumField("rejected", label="已拒绝")
+    PENDING = EnumField("pending", label="申请中")
+    NEED_APPLY = EnumField("need_apply", label="待申请")
+    OWNED = EnumField("owned", label="已申请，且未过期")
+
+
+class MCPServerPermissionActionEnum(StructuredEnum):
+    APPLY = EnumField("apply")
+    RENEW = EnumField("renew")

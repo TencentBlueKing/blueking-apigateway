@@ -16,16 +16,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-
+import logging
 import operator
 
+from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
+from django.db import transaction
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
+from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
+from apigateway.apps.permission.tasks import send_mail_for_perm_apply
+from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.core.constants import GatewayStatusEnum
@@ -33,8 +38,11 @@ from apigateway.core.models import Gateway
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
+from .serializers import GatewayAppPermissionApplyOutputSLZ
 
 # 注意：请使用 OpenAPIV2Permission / OpenAPIV2GatewayNamePermission, 有特殊情况请在类注释中说明
+
+logger = logging.getLogger(__name__)
 
 
 @method_decorator(
@@ -114,3 +122,52 @@ class GatewayRetrieveApi(generics.RetrieveAPIView):
         instance = self.get_object()
         slz = self.get_serializer(instance)
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="创建申请资源权限的申请单据",
+        request_body=serializers.GatewayAppPermissionApplyInputSLZ,
+        responses={status.HTTP_200_OK: GatewayAppPermissionApplyOutputSLZ()},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class GatewayAppPermissionApplyAPI(generics.CreateAPIView):
+    permission_classes = [OpenAPIV2GatewayNamePermission]
+    serializer_class = serializers.GatewayAppPermissionApplyInputSLZ
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        """
+        创建申请资源权限的申请单据
+        """
+        slz = self.get_serializer_class()(
+            data=request.data,
+            context={
+                "request": request,
+            },
+        )
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+
+        manager = PermissionDimensionManager.get_manager(data["grant_dimension"])
+        record = manager.create_apply_record(
+            data["target_app_code"],
+            request.gateway,
+            data.get("resource_ids") or [],
+            data["grant_dimension"],
+            data["reason"],
+            data.get("expire_days", PermissionApplyExpireDaysEnum.FOREVER.value),
+            request.user.username,
+        )
+
+        try:
+            apply_async_on_commit(send_mail_for_perm_apply, args=[record.id])
+        except Exception:  # pylint: disable=broad-except
+            logger.exception("send mail to gateway manager fail. apply_record_id=%s", record.id)
+
+        output_slz = GatewayAppPermissionApplyOutputSLZ({"record_id": record.id})
+
+        return OKJsonResponse(data=output_slz.data)

@@ -592,6 +592,9 @@ CHECK_RESERVED_GATEWAY_NAME = True
 RESERVED_GATEWAY_NAME_PREFIXES = ["bk-", "bp-"]
 # 官方网关命名前缀，仅做标记
 OFFICIAL_GATEWAY_NAME_PREFIXES = ["bk-"]
+# 网关名校验白名单
+IGNORE_GATEWAY_NAME_CHECK_WHITELIST = env.list("IGNORE_GATEWAY_NAME_CHECK_WHITELIST", default=["bkpaas3", "paasv3"])
+
 # 允许管理端更新网关认证信息
 DEFAULT_ALLOW_UPDATE_API_AUTH = True
 
@@ -615,6 +618,12 @@ BK_LOGIN_TICKET_KEY = "bk_token"
 BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME = {
     "bk_token": "bk_token",
 }
+
+# access token 文档链接地址
+BK_ACCESS_TOKEN_DOC_URL = env.str(
+    "BK_ACCESS_TOKEN_DOC_URL",
+    "https://bk.tencent.com/docs/markdown/ZH/APIGateway/1.14/UserGuide/Explanation/access-token.md",
+)
 
 BK_API_DEFAULT_STAGE_MAPPINGS = env.dict("BK_API_DEFAULT_STAGE_MAPPINGS", default={})
 

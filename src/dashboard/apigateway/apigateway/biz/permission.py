@@ -69,6 +69,16 @@ class PermissionDimensionManager(metaclass=ABCMeta):
 
         raise error_codes.INVALID_ARGUMENT.format(f"unsupported grant_dimension: {grant_dimension}")
 
+    @classmethod
+    def get_permission_model(cls, grant_dimension: str):
+        if grant_dimension == GrantDimensionEnum.API.value:
+            return AppGatewayPermission
+
+        if grant_dimension == GrantDimensionEnum.RESOURCE.value:
+            return AppResourcePermission
+
+        raise ValueError(f"unsupported dimension: {grant_dimension}")
+
     @abstractmethod
     def handle_permission_apply(
         self,

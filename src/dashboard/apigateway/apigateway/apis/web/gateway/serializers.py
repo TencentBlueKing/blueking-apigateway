@@ -16,15 +16,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from apigateway.apis.web.constants import GatewayAPIDocMaintainerTypeEnum
 from apigateway.biz.constants import APP_CODE_PATTERN
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_type import GatewayTypeHandler
+from apigateway.biz.validators import APIDocMaintainerValidator
+from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.paas import gen_programmable_gateway_links
@@ -36,7 +36,6 @@ from apigateway.core.constants import (
 from apigateway.core.models import Gateway
 from apigateway.utils.crypto import calculate_fingerprint
 
-from .constants import GATEWAY_NAME_PATTERN
 from .validators import (
     ProgrammableGatewayNameValidator,
     ReservedGatewayNameValidator,
@@ -314,20 +313,8 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
     )
     service_account = ServiceAccountSLZ(required=False, help_text="服务号")
 
-    def validate(self, data):
-        if data.get("type") == GatewayAPIDocMaintainerTypeEnum.USER.value and not data.get("contacts"):
-            raise serializers.ValidationError(_("联系人不可为空。"))
-
-        if data.get("type") == GatewayAPIDocMaintainerTypeEnum.SERVICE_ACCOUNT.value:
-            service_account = data.get("service_account", {})
-            if not service_account.get("name"):
-                raise serializers.ValidationError(_("服务号名称不可为空。"))
-            link = service_account.get("link")
-            if not link:
-                raise serializers.ValidationError(_("服务号链接不可为空。"))
-            if not link.startswith("wxwork://"):
-                raise serializers.ValidationError(_("服务号链接格式不正确，必须以 wxwork:// 开头。"))
-        return data
+    class Meta:
+        validators = [APIDocMaintainerValidator()]
 
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):

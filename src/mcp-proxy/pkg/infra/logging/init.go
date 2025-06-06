@@ -70,6 +70,7 @@ func GetLogger() *zap.SugaredLogger {
 	return defaultLogger
 }
 
+// GetLoggerWithContext ...
 func GetLoggerWithContext(ctx context.Context) *zap.SugaredLogger {
 	ctxLogger := defaultLogger
 	if requestID, ok := ctx.Value(constant.RequestID).(string); ok {
@@ -83,6 +84,7 @@ func GetAPILogger() *zap.Logger {
 	return apiLogger
 }
 
+// GetAuditLoggerWithContext ...
 func GetAuditLoggerWithContext(ctx context.Context) *zap.Logger {
 	ctxLogger := auditLogger
 	if requestID, ok := ctx.Value(constant.RequestID).(string); ok {

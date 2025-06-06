@@ -15,8 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-
-
+from django.conf import settings
 from django.db.models import Q
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
@@ -148,6 +147,9 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
             context={
                 "name": instance.name,
                 "sse_url": build_mcp_server_url(instance.name),
+                "description": instance.description,
+                "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
+                "bk_access_token_doc_url": settings.BK_ACCESS_TOKEN_DOC_URL,
             },
         )
         # set the guideline here, for slz
@@ -172,6 +174,9 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
             resource_names=instance.resource_names,
         )
         instance.tools = tool_resources
+
+        # append the maintainers
+        instance.maintainers = instance.gateway.maintainers
 
         serializer = self.get_serializer(
             instance,

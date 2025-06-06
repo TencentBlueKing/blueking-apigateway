@@ -14,10 +14,6 @@ const { t } = i18n.global;
 const Home = () => import(/* webpackChunkName: "Home" */ '@/views/home.vue');
 const ApiDocs = () => import(/* webpackChunkName: "ApiDocs" */ '@/views/apiDocs/index.vue');
 const APIDocDetail = () => import(/* webpackChunkName: "ApiDocDetail" */ '@/views/apiDocs/doc-detail.vue');
-const ApigwDocs = () => import(/* webpackChunkName: "ApigwDocs" */ '@/views/apigwDocs/index.vue');
-const ApigwAPIDetail = () => import(/* webpackChunkName: "apigw-doc" */ '@/views/apigwDocs/components/detail.vue');
-const ApigwAPIDetailIntro = () => import(/* webpackChunkName: "apigw-doc" */ '@/views/apigwDocs/components/intro.vue');
-const ApigwAPIDetailDoc = () => import(/* webpackChunkName: "apigw-doc" */ '@/views/apigwDocs/components/doc.vue');
 const ApigwMain = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/main.vue');
 const ApigwResource = () => import(/* webpackChunkName: 'apigw-main'*/'@/views/resource/setting/index.vue');
 const ApigwResourceEdit = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/resource/setting/edit.vue');
@@ -43,12 +39,6 @@ const ApiBasicInfo = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/bas
 const ApigwOperateRecords  = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/operate-records/index.vue');
 const ApigwMonitorAlarmStrategy = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/monitor/alarm-strategy/index.vue');
 const ApigwMonitorAlarmHistory = () => import(/* webpackChunkName: 'apigw-env'*/'@/views/monitor/alarm-history/index.vue');
-const ApigwSDK = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/sdk/gateway-sdk/index.vue');
-const ApigwESBSDK = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/sdk/esb-sdk/index.vue');
-const ComponentDoc = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/component-doc/index.vue');
-const ComponentAPIDetail = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/component-doc/components/detail.vue');
-const ComponentAPIDetailDoc = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/component-doc/components/doc.vue');
-const ComponentAPIDetailIntro = () => import(/* webpackChunkName: 'apigw-doc'*/'@/views/component-doc/components/intro.vue');
 const ComponentsMain = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/index.vue');
 const ComponentsIntro = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/intro/index.vue');
 const ComponentsSystem = () => import(/* webpackChunkName: 'components-main'*/'@/views/components-access/system/index.vue');
@@ -66,6 +56,8 @@ const PlatformTools = () => import(/* webpackChunkName: 'platform-tools'*/'@/vie
 const PlatformToolsToolbox = () => import(/* webpackChunkName: 'platform-tools'*/'@/views/platform-tools/toolbox/index.vue');
 const PlatformToolsAutomatedGateway = () => import(/* webpackChunkName: 'platform-tools'*/'@/views/platform-tools/automatedGateway/index.vue');
 const PlatformToolsProgrammableGateway = () => import(/* webpackChunkName: 'platform-tools'*/'@/views/platform-tools/programmableGateway/index.vue');
+const McpMarket = () => import(/* webpackChunkName: 'mcp-market'*/'@/views/mcp-market/index.vue');
+const McpMarketDetails = () => import(/* webpackChunkName: 'mcp-market'*/'@/views/mcp-market/components/details.vue');
 
 // 文档一级路由出口
 const docsComponent = {
@@ -322,6 +314,29 @@ const routes: RouteRecordRaw[] = [
           topMenu: 'home',
         },
       },
+      // MCP 服务器
+      {
+        path: '/:id/mcp-server',
+        name: 'mcpServer',
+        component: () => import('@/views/mcp-server/index.vue'),
+        meta: {
+          title: 'MCP Server',
+          matchRoute: 'mcpServer',
+          topMenu: 'mcpServer',
+        },
+        children: [
+          // {
+          //   path: 'toolbox',
+          //   name: 'platformToolsToolbox',
+          //   component: PlatformToolsToolbox,
+          //   meta: {
+          //     title: t('工具箱'),
+          //     matchRoute: 'platformToolsToolbox',
+          //     topMenu: 'platformTools',
+          //   },
+          // },
+        ],
+      },
       {
         path: '/:id/audit',
         name: 'apigwOperateRecords',
@@ -336,7 +351,7 @@ const routes: RouteRecordRaw[] = [
   // 文档路由映射
   {
     path: `${globalConfig.PREV_URL}`,
-    redirect: `${globalConfig.PREV_URL}/apigw-api/`,
+    redirect: `${globalConfig.PREV_URL}/api-docs/`,
     name: 'docsMain',
     component: docsComponent,
     children: [
@@ -361,122 +376,8 @@ const routes: RouteRecordRaw[] = [
           topMenu: 'apiDocs',
         },
       },
-      {
-        path: 'apigw-api',
-        name: 'apigwDoc',
-        component: ApigwDocs,
-        meta: {
-          matchRoute: 'apigwDoc',
-          topMenu: 'apigwDoc',
-          notAppHeader: true,
-          isDocRouter: true,
-          isMenu: false,   // 是否作为侧边栏菜单
-        },
-      },
-      {
-        path: 'component-api',
-        name: 'componentDoc',
-        component: ComponentDoc,
-        meta: {
-          matchRoute: 'componentDoc',
-          topMenu: 'componentDoc',
-          notAppHeader: true,
-          isDocRouter: true,
-        },
-      },
-      {
-        path: 'sdk/apigw',
-        name: 'apigwSDK',
-        component: ApigwSDK,
-        meta: {
-          matchRoute: 'apigwSDK',
-          topMenu: 'apigwSDK',
-          type: 'apigateway',
-          isDocRouter: true,
-        },
-      },
-      {
-        path: 'sdk/esb',
-        name: 'esbSDK',
-        component: ApigwESBSDK,
-        meta: {
-          matchRoute: 'esbSDK',
-          topMenu: 'esbSDK',
-          type: 'esb',
-          isDocRouter: true,
-        },
-      },
-      {
-        path: 'apigw-api/:apigwId/',
-        name: 'apigwAPIDetail',
-        component: ApigwAPIDetail,
-        meta: {
-          matchRoute: 'apigwAPIDetail',
-          topMenu: 'apigwDoc',
-          isDocRouter: true,
-        },
-        children: [
-          {
-            path: 'intro',
-            alias: '',
-            name: 'apigwAPIDetailIntro',
-            component: ApigwAPIDetailIntro,
-            meta: {
-              matchRoute: 'apigwAPIDetailIntro',
-              topMenu: 'apigwDoc',
-              isDocRouter: true,
-            },
-          },
-          {
-            path: ':resourceId/doc',
-            alias: '',
-            name: 'apigwAPIDetailDoc',
-            component: ApigwAPIDetailDoc,
-            meta: {
-              matchRoute: 'apigwAPIDetailDoc',
-              topMenu: 'apigwDoc',
-              isDocRouter: true,
-            },
-          },
-        ],
-      },
-      {
-        path: 'component-api/:version/:id',
-        name: 'componentAPIDetail',
-        component: ComponentAPIDetail,
-        meta: {
-          matchRoute: 'componentDoc',
-          topMenu: 'componentDoc',
-          isDocRouter: true,
-        },
-        children: [
-          {
-            path: 'intro',
-            alias: '',
-            name: 'ComponentAPIDetailIntro',
-            component: ComponentAPIDetailIntro,
-            meta: {
-              matchRoute: 'componentDoc',
-              topMenu: 'componentDoc',
-              isDocRouter: true,
-            },
-          },
-          {
-            path: ':componentId/doc',
-            alias: '',
-            name: 'componentAPIDetailDoc',
-            component: ComponentAPIDetailDoc,
-            meta: {
-              matchRoute: 'componentDoc',
-              topMenu: 'componentDoc',
-              isDocRouter: true,
-            },
-          },
-        ],
-      },
     ],
   },
-
   // 组件管理
   {
     path: '/components',
@@ -672,6 +573,29 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
+
+  // MCP 市场
+  {
+    path: '/mcp-market',
+    name: 'mcpMarket',
+    component: McpMarket,
+    meta: {
+      title: t('MCP 市场'),
+      matchRoute: 'mcpMarket',
+      topMenu: 'mcpMarket',
+    },
+  },
+  {
+    path: '/mcp-market-details/:id',
+    name: 'mcpMarketDetails',
+    component: McpMarketDetails,
+    meta: {
+      title: t('MCP 详情'),
+      matchRoute: 'mcpMarketDetails',
+      topMenu: 'mcpMarket',
+    },
+  },
+
   {
     path: '/:pathMatch(.*)*',
     name: '404',

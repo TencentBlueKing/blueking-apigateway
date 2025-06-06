@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+from typing import ClassVar
 
 from django.db import models
 
@@ -47,7 +48,7 @@ class Schema(TimestampedModelMixin):
     description = models.CharField(max_length=512, blank=False, null=False)
     example = models.TextField()
 
-    objects = SchemaManager()
+    objects: ClassVar[SchemaManager] = SchemaManager()
 
     class Meta:
         verbose_name = "Schema"

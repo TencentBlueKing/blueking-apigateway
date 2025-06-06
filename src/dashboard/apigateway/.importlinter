@@ -35,3 +35,13 @@ ignore_imports =
     apigateway.biz.esb.permissions -> apigateway.apps.esb.utils
     apigateway.controller.crds.release_data.release_data -> apigateway.biz.gateway_jwt
     apigateway.common.audit.shortcuts -> apigateway.apps.audit.signals
+
+[importlinter:contract:apis]
+name=api_layer
+type=independence
+modules =
+    apigateway.apis.open
+    apigateway.apis.web
+    apigateway.apis.v2.inner
+    apigateway.apis.v2.sync
+    apigateway.apis.v2.open

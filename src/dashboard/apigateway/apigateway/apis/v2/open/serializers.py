@@ -17,8 +17,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionApplyExpireDaysEnum
+from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.common.i18n.field import SerializerTranslatedField
 
 
@@ -62,3 +65,59 @@ class GatewayRetrieveOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayRetrieveOutputSLZ"
+
+
+class GatewayAppPermissionApplyInputSLZ(serializers.Serializer):
+    """
+    普通应用直接申请访问网关API的权限
+    - 提供给普通应用的接口
+    - 开源版申请权限，为保障权限有效性，可申请永久有效的权限
+    - 暂支持按网关申请，不支持按资源申请
+    """
+
+    # target_app_code 与发送请求的应用账号一致，此 app_code 必定已存在，不需要重复校验
+    target_app_code = serializers.CharField()
+    reason = serializers.CharField(allow_blank=True, required=False, default="")
+    expire_days = serializers.ChoiceField(
+        choices=PermissionApplyExpireDaysEnum.get_choices(),
+        required=False,
+    )
+    grant_dimension = serializers.ChoiceField(choices=[GrantDimensionEnum.API.value])
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GatewayAppPermissionApplyInputSLZ"
+
+    def validate_target_app_code(self, value):
+        request = self.context["request"]
+        if request.app.app_code != value:
+            raise serializers.ValidationError(
+                _("应用【{app_code}】不能为其它应用【{value}】申请访问网关API的权限。").format(
+                    app_code=request.app.app_code, value=value
+                )
+            )
+
+        return value
+
+    def validate(self, data):
+        self._validate_allow_apply(data["target_app_code"], data["grant_dimension"])
+        return data
+
+    def _validate_allow_apply(self, bk_app_code: str, grant_dimension: str):
+        """
+        校验是否允许申请权限
+        - 已拥有权限，且未过期，不能申请
+        - 已存在待审批单据，不能申请
+        """
+        allow, reason = PermissionDimensionManager.get_manager(grant_dimension).allow_apply_permission(
+            self.context["request"].gateway.id,
+            bk_app_code,
+        )
+        if not allow:
+            raise serializers.ValidationError(reason)
+
+
+class GatewayAppPermissionApplyOutputSLZ(serializers.Serializer):
+    record_id = serializers.IntegerField(help_text="申请记录ID")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GatewayAppPermissionApplyOutputSLZ"

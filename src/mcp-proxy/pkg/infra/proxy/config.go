@@ -26,11 +26,13 @@ import (
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
 
+// MCPServerConfig ...
 type MCPServerConfig struct {
 	Name  string        `json:"name"` // 唯一标识name，可以是：gateway_name+stage或者其他id
 	Tools []*ToolConfig `json:"tools"`
 }
 
+// ToolConfig ...
 type ToolConfig struct {
 	Name         string            `json:"name"`
 	Description  string            `json:"description"`
@@ -43,6 +45,7 @@ type ToolConfig struct {
 	OutputSchema json.RawMessage   `json:"output_schema"`
 }
 
+// String ...
 func (t *ToolConfig) String() string {
 	base := strings.TrimRight(t.Host, "/") + "/" +
 		strings.Trim(strings.TrimLeft(t.BasePath, "/"), "/")

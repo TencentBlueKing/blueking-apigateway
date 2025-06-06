@@ -16,6 +16,8 @@
 #  We undertake not to change the open source license (MIT license) applicable
 #  to the current version of the project delivered to anyone in the future.
 #  #
+from typing import ClassVar
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -58,7 +60,7 @@ class ProgrammableGatewayDeployHistory(TimestampedModelMixin, OperatorModelMixin
     )
     # publish_id -> ReleaseHistory.id
     publish_id = models.IntegerField(blank=True, null=True)
-    objects = ProgrammableGatewayDeployHistoryManager()
+    objects: ClassVar[ProgrammableGatewayDeployHistoryManager] = ProgrammableGatewayDeployHistoryManager()
 
     def __str__(self):
         return f"<Deploy: {self.gateway}/{self.stage}/{self.version}>"

@@ -25,7 +25,12 @@ from rest_framework.validators import UniqueTogetherValidator
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.biz.releaser import ReleaseValidationError
-from apigateway.biz.validators import MaxCountPerGatewayValidator, PublishValidator, SchemeInputValidator
+from apigateway.biz.validators import (
+    MaxCountPerGatewayValidator,
+    PublishValidator,
+    SchemeInputValidator,
+    StageVarsValidator,
+)
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
@@ -37,8 +42,6 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import Backend, Stage
 from apigateway.utils.version import is_version1_greater_than_version2
-
-from .validators import StageVarsValidator
 
 
 class StageOutputSLZ(serializers.ModelSerializer):
@@ -105,6 +108,14 @@ class StageOutputSLZ(serializers.ModelSerializer):
         """
         获取正在发布版本
         """
+
+        # 如果是编程网关，返回部署的版本
+        if obj.gateway.is_programmable:
+            latest_deploy_info = self.context["stage_deploy_status"].get(obj.id, {}).get("latest_deploy_history")
+            if latest_deploy_info:
+                return latest_deploy_info.version
+            return ""
+
         latest_publish_info = self.context["stage_publish_status"].get(obj.id)
         if not latest_publish_info:
             return ""

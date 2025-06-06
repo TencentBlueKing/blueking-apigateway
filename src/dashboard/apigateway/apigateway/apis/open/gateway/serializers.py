@@ -22,10 +22,8 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apis.web.constants import UserAuthTypeEnum
-from apigateway.apis.web.gateway.constants import GATEWAY_NAME_PATTERN
-from apigateway.apis.web.gateway.serializers import GatewayAPIDocMaintainerSLZ
-from apigateway.biz.validators import BKAppCodeListValidator
+from apigateway.biz.validators import APIDocMaintainerValidator, BKAppCodeListValidator
+from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum, UserAuthTypeEnum
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import (
@@ -85,6 +83,28 @@ class GatewayMaintainerUpdateInputSLZ(serializers.Serializer):
     maintainers = serializers.ListField(child=serializers.CharField(), allow_empty=False, required=True)
 
 
+class ServiceAccountSLZ(serializers.Serializer):
+    name = serializers.CharField(allow_blank=True, required=False, help_text="服务号名称")
+    link = serializers.CharField(allow_blank=True, required=False, help_text="服务号链接")
+
+    class Meta:
+        ref_name = "apigateway.apis.open.gateway.serializers.ServiceAccountSLZ"
+
+
+class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
+    type = serializers.ChoiceField(
+        choices=GatewayAPIDocMaintainerTypeEnum.get_choices(), allow_blank=True, required=False, help_text="联系人类型"
+    )
+    contacts = serializers.ListField(
+        child=serializers.CharField(), allow_empty=True, required=False, help_text="联系人"
+    )
+    service_account = ServiceAccountSLZ(required=False, help_text="服务号")
+
+    class Meta:
+        validators = [APIDocMaintainerValidator()]
+        ref_name = "apigateway.apis.open.gateway.serializers.GatewayAPIDocMaintainerSLZ"
+
+
 class GatewaySyncInputSLZ(serializers.ModelSerializer):
     name = serializers.RegexField(
         GATEWAY_NAME_PATTERN,
@@ -121,6 +141,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
                 "required": False,
             }
         }
+        ref_name = "apigateway.apis.open.gateway.serializers.GatewaySyncInputSLZ"
 
     def validate(self, data):
         self._validate_name(data["name"], data.get("api_type"))
@@ -131,6 +152,10 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
 
     def _validate_name(self, name: str, api_type: Optional[int]):
         if api_type is None or api_type == GatewayTypeEnum.CLOUDS_API.value:
+            return
+
+        # 场景：某些官方网关名不是 bk-开头，但是需要标记为官方网关
+        if name in settings.IGNORE_GATEWAY_NAME_CHECK_WHITELIST:
             return
 
         for prefix in settings.OFFICIAL_GATEWAY_NAME_PREFIXES:

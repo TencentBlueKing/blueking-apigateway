@@ -25,13 +25,13 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apis.web.constants import UserAuthTypeEnum
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
 from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.common.constants import UserAuthTypeEnum
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes

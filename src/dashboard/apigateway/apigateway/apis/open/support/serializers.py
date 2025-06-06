@@ -19,27 +19,6 @@
 from rest_framework import serializers
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.core.models import Gateway
-
-
-class APISDKQueryV1SLZ(serializers.Serializer):
-    api_name = serializers.CharField(allow_null=True, default=None)
-    api_id = serializers.IntegerField(allow_null=True, default=None)
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices())
-
-    def validate_api_id(self, value):
-        if value:
-            return value
-
-        gateway_name = self.initial_data.get("gateway_name")
-        if not gateway_name:
-            return value
-
-        gateway = Gateway.objects.filter(name=gateway_name).last()
-        if not gateway:
-            return value
-
-        return gateway.pk
 
 
 class SDKGenerateV1SLZ(serializers.Serializer):
