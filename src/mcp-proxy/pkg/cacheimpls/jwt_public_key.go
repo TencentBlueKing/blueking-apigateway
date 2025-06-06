@@ -53,7 +53,7 @@ func retrieveJWTInfo(ctx context.Context, k cache.Key) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	jwtInfo.PrivateKey = string(decodePrivateKey)
+	jwtInfo.PrivateKey = decodePrivateKey
 	return jwtInfo, nil
 }
 

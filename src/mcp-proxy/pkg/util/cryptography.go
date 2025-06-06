@@ -26,23 +26,23 @@ import (
 )
 
 // AESGCMDecrypt decrypts AES-GCM ciphertext using the given key.
-func AESGCMDecrypt(key string, nonce string, encryptedText string) ([]byte, error) {
+func AESGCMDecrypt(key string, nonce string, encryptedText string) (string, error) {
 	keyBytes, _ := base64.StdEncoding.DecodeString(key)
 	block, err := aes.NewCipher(keyBytes)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	toHex, err := hex.DecodeString(encryptedText)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	aead, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	plaintext, err := aead.Open(nil, []byte(nonce), toHex, nil)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return plaintext, nil
+	return base64.StdEncoding.EncodeToString(plaintext), nil
 }
