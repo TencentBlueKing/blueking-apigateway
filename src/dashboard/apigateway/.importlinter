@@ -1,40 +1,34 @@
 [importlinter]
+# https://import-linter.readthedocs.io/en/stable/contract_types.html
 root_package = apigateway
 include_external_packages = True
 
-[importlinter:contract:layers-apps-biz-core]
-name=apps biz core
+[importlinter:contract:layers-up-down]
+name=global_layers
 type=layers
 layers =
-    apigateway.apis : apigateway.apps
+    apigateway.apis
     apigateway.biz
-    apigateway.core
     apigateway.controller
-    apigateway.common
+    # apigateway.service
     apigateway.components
+    apigateway.apps
+    apigateway.core
+    apigateway.common
     apigateway.utils
 ignore_imports =
     # 可信的依赖
-    apigateway.apis.** -> apigateway.apps.**.models
-    apigateway.biz.** -> apigateway.apps.**.models
-    apigateway.controller.** -> apigateway.apps.**.models
-    apigateway.common.** -> apigateway.apps.**.models
-    apigateway.controller.** -> apigateway.core.models
-    apigateway.common.** -> apigateway.core.models
-    apigateway.biz.** -> apigateway.apps.**.constants
-    apigateway.controller.** -> apigateway.apps.**.constants
-    apigateway.common.** -> apigateway.apps.**.constants
-    apigateway.controller.** -> apigateway.core.constants
-    apigateway.common.** -> apigateway.core.constants
-    apigateway.components.* -> apigateway.common.error_codes
-    apigateway.components.* -> apigateway.common.tenant.*
     # 可忽略的依赖
+    # -- django command
     apigateway.core.management.commands.* -> apigateway.biz.**
+    apigateway.core.management.commands.sync_default_micro_gateway -> apigateway.controller.micro_gateway_config
+    # -- celery task
+    apigateway.apps.permission.tasks -> apigateway.components.*
+    apigateway.apps.permission.tasks -> apigateway.biz.permission
+    # -- esb legacy
+    apigateway.apps.esb.*.* -> apigateway.biz.*
+    apigateway.apps.esb.*.* -> apigateway.biz.*.*
     # 需要重构的依赖
-    apigateway.biz.esb.permissions -> apigateway.apps.esb.helpers
-    apigateway.biz.esb.permissions -> apigateway.apps.esb.utils
-    apigateway.controller.crds.release_data.release_data -> apigateway.biz.gateway_jwt
-    apigateway.common.audit.shortcuts -> apigateway.apps.audit.signals
 
 [importlinter:contract:apis]
 name=api_layer
@@ -45,3 +39,28 @@ modules =
     apigateway.apis.v2.inner
     apigateway.apis.v2.sync
     apigateway.apis.v2.open
+
+
+[importlinter:contract:data_source]
+name=data_source_layer
+type=independence
+modules =
+    apigateway.apps
+    apigateway.core
+    apigateway.components
+ignore_imports =
+    # 可信的依赖
+    apigateway.apps.*.* -> apigateway.core.*
+    # 可忽略的依赖
+    # -- celery task
+    apigateway.apps.permission.tasks -> apigateway.components.*
+    apigateway.apps.permission.tasks -> apigateway.biz.permission
+    # -- django commands
+    apigateway.apps.*.management.commands.* -> apigateway.core.models
+    apigateway.core.management.commands.sync_gateway -> apigateway.biz.gateway.saver
+    # -- esb legacy
+    apigateway.apps.esb.*.* -> apigateway.core.models
+    apigateway.apps.esb.*.* -> apigateway.core.constants
+    apigateway.apps.esb.*.* -> apigateway.biz.*
+    apigateway.apps.esb.*.* -> apigateway.biz.*.*
+    apigateway.apps.esb.*.* -> apigateway.components.*

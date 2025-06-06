@@ -21,7 +21,8 @@ from typing import Any, Dict, List
 
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.released_resource import ReleasedResourceHandler
-from apigateway.components.paas import get_paas_deployment_result, get_paas_offline_result
+from apigateway.common.tenant.user_credentials import UserCredentials
+from apigateway.components.bkpaas import get_paas_deployment_result, get_paas_offline_result
 from apigateway.core.constants import (
     EVENT_FAIL_INTERVAL_TIME,
     GatewayStatusEnum,
@@ -32,7 +33,6 @@ from apigateway.core.constants import (
     StageStatusEnum,
 )
 from apigateway.core.models import Gateway, PublishEvent, Release, ReleaseHistory
-from apigateway.utils.user_credentials import UserCredentials
 
 
 class ReleaseHandler:
