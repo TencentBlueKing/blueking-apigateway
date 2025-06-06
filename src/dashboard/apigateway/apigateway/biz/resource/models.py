@@ -64,6 +64,8 @@ class ResourceData(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     # schema 接口参数
     openapi_schema: Dict[str, Any] = Field(default_factory=dict)
+    # 资源是否更新
+    is_updated: bool = Field(default=False)
 
     class Config:
         arbitrary_types_allowed = True

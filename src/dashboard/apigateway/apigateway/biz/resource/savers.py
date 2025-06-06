@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+from collections import defaultdict
 from typing import Any, Dict, List
 
 from django.db.models import Count
@@ -67,22 +68,25 @@ class ResourcesSaver:
         self._save_auth_configs(resource_ids)
         self._save_resource_labels(resource_ids)
         self._save_resource_openapi_schema(resource_ids)
+        self._save_resource_updated_time()
 
         return [resource_data.resource for resource_data in self.resource_data_list if resource_data.resource]
 
     def _save_resources(self) -> bool:
         add_resources = []
         update_resources = []
-        now = now_datetime()
         for resource_data in self.resource_data_list:
             if resource_data.resource:
                 resource = resource_data.resource
-                resource.updated_by = self.username
-                resource.updated_time = now
                 for key, value in resource_data.basic_data.items():
+                    # 资源信息是否有更新
+                    if not resource_data.is_updated and getattr(resource, key) != value:
+                        resource_data.is_updated = True
+
                     setattr(resource, key, value)
 
-                update_resources.append(resource)
+                if resource_data.is_updated:
+                    update_resources.append(resource)
             else:
                 resource = Resource(
                     gateway=self.gateway,
@@ -97,7 +101,7 @@ class ResourcesSaver:
             Resource.objects.bulk_create(add_resources, batch_size=BULK_BATCH_SIZE)
 
         if update_resources:
-            field_names = ResourceData.basic_field_names() + ["updated_by", "updated_time"]
+            field_names = ResourceData.basic_field_names()
             Resource.objects.bulk_update(update_resources, fields=field_names, batch_size=BULK_BATCH_SIZE)
 
         return bool(add_resources)
@@ -149,13 +153,19 @@ class ResourcesSaver:
 
             proxy = proxies.get(resource_data.resource.id)
             if proxy:
-                proxy.type = ProxyTypeEnum.HTTP.value
-                proxy.backend = resource_data.backend
-                proxy.schema = schema
-                proxy._config = resource_data.backend_config.json()
-                proxy.updated_time = now
+                # proxy 是否有更新
+                if (resource_data.backend and proxy.backend.id != resource_data.backend.id) or (
+                    proxy._config != resource_data.backend_config.json()
+                ):
+                    resource_data.is_updated = True
 
-                update_proxies.append(proxy)
+                    proxy.type = ProxyTypeEnum.HTTP.value
+                    proxy.backend = resource_data.backend
+                    proxy.schema = schema
+                    proxy._config = resource_data.backend_config.json()
+                    proxy.updated_time = now
+
+                    update_proxies.append(proxy)
             else:
                 proxy = Proxy(
                     resource=resource_data.resource,
@@ -200,10 +210,14 @@ class ResourcesSaver:
             auth_config.update(resource_data.auth_config.dict())
 
             if context:
-                context._config = json.dumps(auth_config)
-                context.updated_time = now
+                # context 是否有更新
+                if auth_config != context.config:
+                    resource_data.is_updated = True
 
-                update_contexts.append(context)
+                    context._config = json.dumps(auth_config)
+                    context.updated_time = now
+
+                    update_contexts.append(context)
             else:
                 context = Context(
                     scope_type=ContextScopeTypeEnum.RESOURCE.value,
@@ -227,12 +241,20 @@ class ResourcesSaver:
         gateway_labels = {label.id: label for label in APILabel.objects.filter(gateway=self.gateway)}
 
         remaining_resource_labels = {}
+        current_resource_labels = defaultdict(list)
         for label in ResourceLabel.objects.filter(resource_id__in=resource_ids):
             remaining_resource_labels[f"{label.resource_id}:{label.api_label_id}"] = label.id
+            current_resource_labels[label.resource.id].append(label.api_label_id)
 
         add_resource_labels = []
         for resource_data in self.resource_data_list:
             assert resource_data.resource
+
+            # label 是否有更新
+            if not resource_data.is_updated and (
+                sorted(current_resource_labels[resource_data.resource.id]) != sorted(resource_data.label_ids)
+            ):
+                resource_data.is_updated = True
 
             for label_id in resource_data.label_ids:
                 key = f"{resource_data.resource.id}:{label_id}"
@@ -304,3 +326,19 @@ class ResourcesSaver:
                 fields=["schema", "updated_time", "updated_by"],
                 batch_size=BULK_BATCH_SIZE,
             )
+
+    def _save_resource_updated_time(self):
+        update_resources = []
+        now = now_datetime()
+
+        for resource_data in self.resource_data_list:
+            if resource_data.is_updated:
+                resource_data.resource.updated_by = self.username
+                resource_data.resource.updated_time = now
+                update_resources.append(resource_data.resource)
+
+        Resource.objects.bulk_update(
+            update_resources,
+            fields=["updated_by", "updated_time"],
+            batch_size=BULK_BATCH_SIZE,
+        )

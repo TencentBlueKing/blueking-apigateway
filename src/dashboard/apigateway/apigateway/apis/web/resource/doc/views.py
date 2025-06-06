@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import hashlib
+
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
@@ -138,6 +140,9 @@ class DocUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIView):
     def _get_resource(self):
         return get_object_or_404(Resource, gateway=self.request.gateway, id=self.kwargs["resource_id"])
 
+    def _generate_md5(self, content: str) -> str:
+        return hashlib.md5(content.encode("utf-8")).hexdigest()
+
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         resource = self._get_resource()
@@ -151,6 +156,9 @@ class DocUpdateDestroyApi(generics.UpdateAPIView, generics.DestroyAPIView):
             },
         )
         slz.is_valid(raise_exception=True)
+
+        if self._generate_md5(slz.validated_data["content"]) == self._generate_md5(instance.content):
+            return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
         slz.save(
             type=DocTypeEnum.MARKDOWN.value,
