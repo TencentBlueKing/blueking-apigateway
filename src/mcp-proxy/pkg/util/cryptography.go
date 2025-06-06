@@ -44,5 +44,5 @@ func AESGCMDecrypt(key string, nonce string, encryptedText string) (string, erro
 	if err != nil {
 		return "", err
 	}
-	return base64.StdEncoding.EncodeToString(plaintext), nil
+	return string(plaintext), nil
 }
