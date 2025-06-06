@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from apigateway.apps.support.constants import DocSourceEnum, DocTypeEnum
 from apigateway.apps.support.models import ResourceDoc
+from apigateway.core.models import Resource
 from apigateway.utils.time import now_datetime
 
 from .models import BaseDoc
@@ -60,6 +61,7 @@ class DocImporter:
     def _save_docs(self, docs: List[BaseDoc]):
         add_resource_docs = []
         update_resource_docs = []
+        update_resources = []
         now = now_datetime()
         for doc in docs:
             if doc.resource_doc is None:
@@ -74,12 +76,15 @@ class DocImporter:
                         content=doc.content,
                     )
                 )
-            else:
+            elif doc.content_changed:
                 doc.resource_doc.type = DocTypeEnum.MARKDOWN.value
                 doc.resource_doc.source = DocSourceEnum.IMPORT.value
                 doc.resource_doc.content = doc.content
                 doc.resource_doc.updated_time = now
                 update_resource_docs.append(doc.resource_doc)
+
+                doc.resource.updated_time = now
+                update_resources.append(doc.resource)
 
         if add_resource_docs:
             ResourceDoc.objects.bulk_create(add_resource_docs, batch_size=100)
@@ -88,6 +93,13 @@ class DocImporter:
             ResourceDoc.objects.bulk_update(
                 update_resource_docs,
                 fields=["type", "source", "content", "updated_time"],
+                batch_size=100,
+            )
+
+        if update_resources:
+            Resource.objects.bulk_update(
+                update_resources,
+                fields=["updated_time"],
                 batch_size=100,
             )
 
