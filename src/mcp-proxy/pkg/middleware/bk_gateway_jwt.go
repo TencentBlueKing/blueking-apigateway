@@ -19,7 +19,9 @@
 package middleware
 
 import (
+	"crypto/x509"
 	"database/sql"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"time"
@@ -115,7 +117,7 @@ func BkGatewayJWTAuthMiddleware() func(c *gin.Context) {
 }
 
 // SignBkInnerJWTToken ...
-func SignBkInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKey []byte) error {
+func SignBkInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKeyText []byte) error {
 	innerJwtClaims := CustomClaims{
 		App: AppInfo{
 			AppCode:  fmt.Sprintf(constant.BkVirtualAppCodeFormat, util.GetMCPServerID(c), claims.App.AppCode),
@@ -135,6 +137,14 @@ func SignBkInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKey []byte
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS512, innerJwtClaims)
 	token.Header["kid"] = constant.OfficialGatewayName
+	block, _ := pem.Decode(privateKeyText)
+	if block == nil || block.Type != "RSA PRIVATE KEY" {
+		return errors.New("failed to decode PEM block containing private key")
+	}
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return err
+	}
 	signedJwt, err := token.SignedString(privateKey)
 	if err != nil {
 		return err
