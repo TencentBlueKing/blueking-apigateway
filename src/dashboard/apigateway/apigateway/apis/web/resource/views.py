@@ -46,9 +46,9 @@ from apigateway.biz.resource_doc.importer.parsers import OpenAPIParser
 from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.constants import STAGE_VAR_PATTERN
 from apigateway.core.models import BackendConfig, Proxy, Resource, Stage
+from apigateway.service.contexts import ResourceAuthContext
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, FailJsonResponse, OKJsonResponse
 

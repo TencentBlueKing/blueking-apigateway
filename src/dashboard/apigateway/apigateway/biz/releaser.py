@@ -29,7 +29,6 @@ from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
 from apigateway.biz.validators import PublishValidator, ReleaseValidationError
-from apigateway.common.event.event import PublishEventReporter
 from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.components.bkpaas import deploy_paas_app, set_paas_stage_env
 from apigateway.controller.tasks import (
@@ -45,6 +44,7 @@ from apigateway.core.models import (
     ResourceVersion,
     Stage,
 )
+from apigateway.service.event.event import PublishEventReporter
 from apigateway.utils.django import get_model_dict
 
 

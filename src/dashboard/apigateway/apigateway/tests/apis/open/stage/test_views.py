@@ -96,7 +96,7 @@ class TestStageSyncViewSet:
         )
 
         mocker.patch(
-            "apigateway.common.plugin.header_rewrite.HeaderRewriteConvertor.sync_plugins",
+            "apigateway.service.plugin.header_rewrite.HeaderRewriteConvertor.sync_plugins",
             return_value=True,
         )
 
@@ -141,7 +141,7 @@ class TestStageSyncViewSet:
         )
 
         mocker.patch(
-            "apigateway.common.plugin.header_rewrite.HeaderRewriteConvertor.sync_plugins",
+            "apigateway.service.plugin.header_rewrite.HeaderRewriteConvertor.sync_plugins",
             return_value=True,
         )
 

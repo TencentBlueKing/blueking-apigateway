@@ -21,7 +21,7 @@ import json
 import pytest
 from ddf import G
 
-from apigateway.biz.constants import OpenAPIFormatEnum
+from apigateway.apps.support.constants import OpenAPIFormatEnum
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
 from apigateway.biz.resource.importer.parser import BaseExporter
 from apigateway.core.models import Gateway

@@ -21,7 +21,6 @@ from typing import List, Optional, Tuple
 from blue_krill.async_utils.django_utils import delay_on_commit
 
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
-from apigateway.common.event.event import PublishEventReporter
 from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.components.bkpaas import paas_app_module_offline
 from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
@@ -34,6 +33,7 @@ from apigateway.core.constants import (
     TriggerPublishTypeEnum,
 )
 from apigateway.core.models import Gateway, Release, ReleaseHistory
+from apigateway.service.event.event import PublishEventReporter
 
 logger = logging.getLogger(__name__)
 

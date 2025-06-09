@@ -23,8 +23,6 @@ from celery import shared_task
 
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
-from apigateway.common.event.event import PublishEventReporter
-from apigateway.common.mcp.mcp_server import update_stage_mcp_server_related_resource_names
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.etcd import EtcdDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
@@ -38,6 +36,8 @@ from apigateway.core.models import (
     ResourceVersion,
     Stage,
 )
+from apigateway.service.event.event import PublishEventReporter
+from apigateway.service.mcp.mcp_server import update_stage_mcp_server_related_resource_names
 from apigateway.utils.time import now_datetime
 
 logger = logging.getLogger(__name__)

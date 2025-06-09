@@ -19,8 +19,8 @@ from typing import Dict, List
 
 from django.db.models import Count
 
-from apigateway.apps.support.api_sdk.models import SDKFactory
 from apigateway.apps.support.models import GatewaySDK
+from apigateway.biz.sdk.models import SDKFactory
 from apigateway.core.models import Release
 
 

@@ -24,7 +24,7 @@ from typing import ClassVar, Type
 
 from django.conf import settings
 
-from apigateway.common.es.clients import BaseESClient, BKLogESClient
+from apigateway.service.es.clients import BaseESClient, BKLogESClient
 
 DEFAULT_ES_SEARCH_TIMEOUT = 30
 DEFAULT_ES_AGGS_TERM_SIZE = 1000

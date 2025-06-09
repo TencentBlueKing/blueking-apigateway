@@ -36,8 +36,6 @@ from apigateway.apps.permission.models import (
     AppGatewayPermission,
     AppResourcePermission,
 )
-from apigateway.apps.support.api_sdk import exceptions
-from apigateway.apps.support.api_sdk.helper import SDKHelper
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
@@ -51,6 +49,8 @@ from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceD
 from apigateway.biz.resource_doc.importer import DocImporter
 from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, OpenAPIParser
 from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.biz.sdk import exceptions
+from apigateway.biz.sdk.helper import SDKHelper
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway, Resource, ResourceVersion, Stage
 from apigateway.utils.django import get_model_dict, get_object_or_None

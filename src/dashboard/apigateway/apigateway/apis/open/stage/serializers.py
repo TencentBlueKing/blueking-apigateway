@@ -36,8 +36,6 @@ from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
-from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
-from apigateway.common.plugin.validator import PluginConfigYamlValidator
 from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
@@ -45,6 +43,8 @@ from apigateway.core.constants import (
     LoadBalanceTypeEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, Stage
+from apigateway.service.plugin.header_rewrite import HeaderRewriteConvertor
+from apigateway.service.plugin.validator import PluginConfigYamlValidator
 
 
 class StageV1SLZ(serializers.Serializer):

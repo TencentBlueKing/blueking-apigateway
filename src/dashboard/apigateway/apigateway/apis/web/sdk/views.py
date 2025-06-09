@@ -26,10 +26,10 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.sdk import serializers
-from apigateway.apps.support.api_sdk import exceptions
-from apigateway.apps.support.api_sdk.helper import SDKHelper
-from apigateway.apps.support.api_sdk.models import SDKFactory
 from apigateway.apps.support.models import GatewaySDK
+from apigateway.biz.sdk import exceptions
+from apigateway.biz.sdk.helper import SDKHelper
+from apigateway.biz.sdk.models import SDKFactory
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import ResourceVersion
 from apigateway.utils.responses import OKJsonResponse

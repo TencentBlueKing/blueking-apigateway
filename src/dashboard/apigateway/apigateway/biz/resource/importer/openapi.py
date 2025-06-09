@@ -24,8 +24,8 @@ from openapi_spec_validator.versions import OPENAPIV2, get_spec_version
 from openapi_spec_validator.versions.exceptions import OpenAPIVersionNotFound
 from prance import ResolvingParser
 
+from apigateway.apps.support.constants import OpenAPIFormatEnum
 from apigateway.biz.backend import BackendHandler
-from apigateway.biz.constants import OpenAPIFormatEnum
 from apigateway.biz.resource.importer.constants import OpenAPIVersionKeyEnum
 from apigateway.biz.resource.importer.parser import BaseExporter, BaseParser, OpenAPIV3Parser, ResourceDataConvertor
 from apigateway.biz.resource.importer.schema import (

@@ -23,8 +23,8 @@ from django_dynamic_fixture import G
 
 from apigateway.apis.open.gateway import views
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.core.models import Gateway, GatewayRelatedApp, Release
+from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.tests.utils.testing import get_response_json
 
 

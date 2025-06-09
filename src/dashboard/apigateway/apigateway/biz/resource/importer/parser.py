@@ -26,7 +26,7 @@ from django.utils.translation import gettext as _
 from openapi_spec_validator.versions import OPENAPIV30, OPENAPIV31
 from pydantic import TypeAdapter
 
-from apigateway.biz.constants import OpenAPIFormatEnum
+from apigateway.apps.support.constants import OpenAPIFormatEnum
 from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData
 from apigateway.biz.resource.importer.constants import VALID_METHOD_IN_SWAGGER_PATHITEM, OpenAPIExtensionEnum
 from apigateway.biz.resource.importer.schema import (

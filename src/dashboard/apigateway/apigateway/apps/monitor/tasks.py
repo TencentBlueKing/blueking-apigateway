@@ -31,16 +31,20 @@ from apigateway.apps.monitor.constants import (
     AlarmTypeEnum,
     NoticeWayEnum,
 )
-from apigateway.apps.monitor.flow.handlers.app_request import AppRequestAlerter, AppRequestAppCodeRequiredFilter
-from apigateway.apps.monitor.flow.handlers.base import AlarmRecordCreator, GatewayExistFilter, RelatedLogRecordsFetcher
-from apigateway.apps.monitor.flow.handlers.nginx_error import NginxErrorAlerter
-from apigateway.apps.monitor.flow.handlers.resource_backend import (
+from apigateway.apps.monitor.models import AlarmRecord
+from apigateway.apps.monitor.utils import get_es_index
+from apigateway.service.alert_flow.handlers.app_request import AppRequestAlerter, AppRequestAppCodeRequiredFilter
+from apigateway.service.alert_flow.handlers.base import (
+    AlarmRecordCreator,
+    GatewayExistFilter,
+    RelatedLogRecordsFetcher,
+)
+from apigateway.service.alert_flow.handlers.nginx_error import NginxErrorAlerter
+from apigateway.service.alert_flow.handlers.resource_backend import (
     ResourceBackendAlarmStrategyEnabledFilter,
     ResourceBackendAlerter,
 )
-from apigateway.apps.monitor.flow.helpers import AlertFlow, MonitorEvent
-from apigateway.apps.monitor.models import AlarmRecord
-from apigateway.apps.monitor.utils import get_es_index
+from apigateway.service.alert_flow.helpers import AlertFlow, MonitorEvent
 
 logger = logging.getLogger(__name__)
 

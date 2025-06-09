@@ -23,12 +23,12 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
-from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway, Release
+from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import GatewayOutputSLZ, GatewayQueryInputSLZ

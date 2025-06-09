@@ -18,7 +18,7 @@
 from typing import Optional, Union
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.common.audit.shortcuts import record_audit_log
+from apigateway.service.audit.shortcuts import record_audit_log
 
 # TODO:
 # 1. FIXME: 导入 带来的变更目前没有记录审计 (很多事批量操作)

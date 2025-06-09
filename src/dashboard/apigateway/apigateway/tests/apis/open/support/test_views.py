@@ -19,7 +19,7 @@
 
 import pytest
 
-from apigateway.apps.support.api_sdk.helper import SDKInfo
+from apigateway.biz.sdk.helper import SDKInfo
 
 pytestmark = pytest.mark.django_db
 

@@ -38,7 +38,6 @@ from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, Reso
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
@@ -66,6 +65,7 @@ from apigateway.core.models import (
 )
 from apigateway.schema import instances
 from apigateway.schema.data.meta_schema import init_meta_schemas
+from apigateway.service.contexts import GatewayAuthContext
 from apigateway.tests.utils.testing import dummy_time, get_response_json
 from apigateway.utils.yaml import yaml_dumps
 
