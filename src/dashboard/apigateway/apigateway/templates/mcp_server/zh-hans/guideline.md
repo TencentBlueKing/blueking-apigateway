@@ -29,17 +29,18 @@ X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y", "access_token"
 
 ## 其他
 ### MCP proxy 超时配置
-除了支持 MCP 的客户端超时配置，我们也支持配置 MCP proxy的超时配置，需要配置同样添加一个请求头即可.
+当前的调用链路是：`支持mcp agent客户端` --> `bk-apigateway网关`  --> `mcp-proxy` --> `业务网关`
+我们支持配置 MCP proxy的超时配置，需要添加一个请求头即可.
 
 ```shell
 X-Bkapi-Timeout: 300 # 单位 s
 ```
 
 ### 请求头透传
-如果需要在 MCP 客户端想透传某些 header 到调用的网关后端服务，也可以配置一个请求头即可,值为 JSON 格式字符串.
+如果需要在 MCP 客户端想透传某些 header 到调用的网关后端服务，也可以配置一个请求头即可,不同header直接用 , 分割
 
 ```shell
-X-Bkapi-Allowed-Headers: ["X-Bk-Tenant-Id"]
+X-Bkapi-Allowed-Headers: "X-Bk-Tenant-Id,X-xxx-Header"
 ```
 
 
