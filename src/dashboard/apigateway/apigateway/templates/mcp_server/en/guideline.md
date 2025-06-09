@@ -29,7 +29,7 @@ X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y", "access_token"
 
 ## Others
 ### MCP Proxy Timeout Configuration
-In addition to client-side timeout configurations for MCP, we also support configuring timeout settings for the MCP proxy by adding a request header:
+The current invocation chain is: `MCP Agent Client` --> `BK-APIGateway` --> `MCP-Proxy` --> `Business Gateway`. We support configuring timeout settings for MCP Proxy by simply adding a request header.
 
 ```shell
 X-Bkapi-Timeout: 300 # Unit: seconds
