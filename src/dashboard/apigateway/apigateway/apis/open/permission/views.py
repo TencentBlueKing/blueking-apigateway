@@ -48,7 +48,7 @@ from apigateway.apps.permission.models import (
     AppResourcePermission,
 )
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
-from apigateway.biz.permission import PermissionDimensionManager
+from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
@@ -274,7 +274,7 @@ class AppPermissionRenewAPIView(APIView):
         for gateway_id, resource_ids in ResourceHandler.group_by_gateway_id(data["resource_ids"]).items():
             gateway = Gateway.objects.get(id=gateway_id)
             # 如果应用 - 资源权限不存在，则将按网关的权限同步到应用 - 资源权限
-            AppResourcePermission.objects.sync_from_gateway_permission(
+            ResourcePermissionHandler.sync_from_gateway_permission(
                 gateway=gateway,
                 bk_app_code=data["target_app_code"],
                 resource_ids=resource_ids,

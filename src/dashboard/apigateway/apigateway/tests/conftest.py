@@ -37,6 +37,7 @@ from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginFor
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
+from apigateway.biz.resource_doc_version import ResourceDocVersionHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import (
@@ -635,7 +636,7 @@ def fake_resource_doc2(fake_resource2):
 @pytest.fixture
 def fake_resource_doc_version(fake_gateway, fake_resource_version, fake_resource_doc1, fake_resource_doc2):
     resource_doc_version = G(ResourceDocVersion, gateway=fake_gateway, resource_version=fake_resource_version)
-    resource_doc_version.data = ResourceDocVersion.objects.make_version(fake_gateway.id)
+    resource_doc_version.data = ResourceDocVersionHandler().make_version(fake_gateway.id)
     resource_doc_version.save()
     return resource_doc_version
 

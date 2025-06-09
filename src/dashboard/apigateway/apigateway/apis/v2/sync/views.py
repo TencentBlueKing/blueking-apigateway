@@ -48,6 +48,7 @@ from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.importer import DocImporter
 from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, OpenAPIParser
+from apigateway.biz.resource_doc_version import ResourceDocVersionHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.sdk import exceptions
 from apigateway.biz.sdk.helper import SDKHelper
@@ -497,7 +498,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
             ResourceDocVersion.objects.create(
                 gateway=request.gateway,
                 resource_version=instance,
-                data=ResourceDocVersion.objects.make_version(request.gateway.id),
+                data=ResourceDocVersionHandler().make_version(request.gateway.id),
             )
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 

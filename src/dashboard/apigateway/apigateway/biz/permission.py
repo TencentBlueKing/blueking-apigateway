@@ -58,6 +58,30 @@ class ResourcePermissionHandler:
                 expire_days=expire_days,
             )
 
+    @staticmethod
+    def sync_from_gateway_permission(gateway: Gateway, bk_app_code: str, resource_ids: List[int]):
+        api_perm = AppGatewayPermission.objects.filter(bk_app_code=bk_app_code, gateway_id=gateway.id).first()
+        if not api_perm or api_perm.has_expired:
+            return
+
+        has_perm_resource_ids = list(
+            AppResourcePermission.objects.filter(
+                bk_app_code=bk_app_code, gateway_id=gateway.id, resource_id__in=resource_ids
+            ).values_list("resource_id", flat=True)
+        )
+
+        for resource_id in set(resource_ids) - set(has_perm_resource_ids):
+            # 此处使用 get_or_create, 其它功能同时添加权限时，可跳过此处的同步
+            AppResourcePermission.objects.get_or_create(
+                gateway=gateway,
+                resource_id=resource_id,
+                bk_app_code=bk_app_code,
+                defaults={
+                    "expires": api_perm.expires,
+                    "grant_type": GrantTypeEnum.SYNC.value,
+                },
+            )
+
 
 class PermissionDimensionManager(metaclass=ABCMeta):
     @classmethod

@@ -22,6 +22,7 @@ from datetime import datetime
 from celery import shared_task
 
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
+from apigateway.biz.resource_doc_version import ResourceDocVersionHandler
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.etcd import EtcdDistributor
@@ -218,7 +219,7 @@ def update_release_data_after_success(
         resource_version.id,
     )
     ReleasedResourceDoc.objects.save_released_resource_doc(resource_doc_version)
-    ReleasedResourceDoc.objects.clear_unreleased_resource_doc(release.gateway.id)
+    ResourceDocVersionHandler().clear_unreleased_resource_doc(release.gateway.id)
 
     # update the mcp_server related resource_names
     update_stage_mcp_server_related_resource_names(

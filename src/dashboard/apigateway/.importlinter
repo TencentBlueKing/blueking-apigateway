@@ -32,6 +32,7 @@ ignore_imports =
     apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*
     apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*.*
     apigateway.apps.metrics.tasks -> apigateway.service.statistics
+    apigateway.controller.tasks.release -> apigateway.biz.resource_doc_version
     # -- esb legacy
     apigateway.apps.esb.*.* -> apigateway.biz.*
     apigateway.apps.esb.*.* -> apigateway.biz.*.*

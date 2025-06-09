@@ -31,7 +31,8 @@ from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin_binding import PluginBindingHandler
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
-from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
+from apigateway.biz.resource_doc_version import ResourceDocVersionHandler
+from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.resource_version_diff import ResourceDifferHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.core.models import Release, Resource, ResourceVersion
@@ -114,7 +115,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
             ResourceDocVersion.objects.create(
                 gateway=self.request.gateway,
                 resource_version=instance,
-                data=ResourceDocVersion.objects.make_version(request.gateway.id),
+                data=ResourceDocVersionHandler().make_version(request.gateway.id),
             )
         exporter = OpenAPIExportManager(
             api_version=instance.version,
@@ -157,7 +158,7 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
         instance = self.get_object()
 
         # 查询资源文档的更新时间
-        resource_docs_updated_time = ResourceDocVersion.objects.get_doc_updated_time(request.gateway.id, instance.id)
+        resource_docs_updated_time = ResourceDocVersionHandler().get_doc_updated_time(request.gateway.id, instance.id)
 
         # 查询网关后端服务
         resource_backends = BackendHandler.get_id_to_instance(request.gateway.id)
@@ -268,10 +269,10 @@ class ResourceVersionDiffRetrieveApi(generics.RetrieveAPIView):
         data = ResourceDifferHandler.diff_resource_version_data(
             source_resource_data,
             target_resource_data,
-            source_resource_doc_updated_time=ResourceDocVersion.objects.get_doc_updated_time(
+            source_resource_doc_updated_time=ResourceDocVersionHandler().get_doc_updated_time(
                 request.gateway.id, data.get("source_resource_version_id")
             ),
-            target_resource_doc_updated_time=ResourceDocVersion.objects.get_doc_updated_time(
+            target_resource_doc_updated_time=ResourceDocVersionHandler().get_doc_updated_time(
                 request.gateway.id, data.get("target_resource_version_id")
             ),
         )

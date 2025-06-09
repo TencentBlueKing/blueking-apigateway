@@ -27,6 +27,7 @@ from apigateway.apis.open.permissions import (
 )
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.releaser import ReleaseError, release
+from apigateway.biz.resource_doc_version import ResourceDocVersionHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import ResourceVersion, Stage
 from apigateway.utils.exception import LockTimeout
@@ -83,7 +84,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
             ResourceDocVersion.objects.create(
                 gateway=request.gateway,
                 resource_version=instance,
-                data=ResourceDocVersion.objects.make_version(request.gateway.id),
+                data=ResourceDocVersionHandler().make_version(request.gateway.id),
             )
 
         return V1OKJsonResponse(

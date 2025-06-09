@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import datetime
 from unittest import mock
 
 import pytest
@@ -35,7 +36,8 @@ from apigateway.biz.permission import (
     ResourcePermissionDimensionManager,
     ResourcePermissionHandler,
 )
-from apigateway.core.models import Resource
+from apigateway.core.models import Gateway, Resource
+from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
 
@@ -58,6 +60,31 @@ class TestResourcePermissionHandler:
                 bk_app_code=test["bk_app_code"],
             )
             assert not app_resource_permission.has_expired
+
+    def test_sync_from_gateway_permission(self):
+        bk_app_code = "test"
+        gateway = G(Gateway)
+        resource = G(Resource, gateway=gateway)
+
+        # has no api-perm
+        handler = ResourcePermissionHandler()
+        handler.sync_from_gateway_permission(gateway, bk_app_code, [resource.id])
+        assert AppResourcePermission.objects.filter(gateway=gateway, bk_app_code=bk_app_code).count() == 0
+
+        # api-perm expired
+        api_perm = G(
+            AppGatewayPermission,
+            gateway=gateway,
+            bk_app_code=bk_app_code,
+            expires=now_datetime() - datetime.timedelta(seconds=10),
+        )
+        ResourcePermissionHandler.sync_from_gateway_permission(gateway, bk_app_code, [1])
+        assert AppResourcePermission.objects.filter(gateway=gateway, bk_app_code=bk_app_code).count() == 0
+
+        api_perm.expires = now_datetime() + datetime.timedelta(seconds=10)
+        api_perm.save()
+        ResourcePermissionHandler.sync_from_gateway_permission(gateway, bk_app_code, [resource.id])
+        assert AppResourcePermission.objects.filter(gateway=gateway, bk_app_code=bk_app_code).count() == 1
 
 
 class TestPermissionDimensionManager:

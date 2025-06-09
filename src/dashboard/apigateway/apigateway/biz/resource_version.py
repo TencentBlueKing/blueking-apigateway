@@ -28,13 +28,10 @@ from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
-from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.apps.support.models import ResourceDocVersion
 from apigateway.biz.audit import Auditor
 from apigateway.biz.context import ContextHandler
 from apigateway.biz.proxy import ProxyHandler
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_openapi_schema import ResourceOpenAPISchemaVersionHandler
 from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
@@ -316,57 +313,3 @@ class ResourceVersionHandler:
                 raise error_codes.NOT_FOUND.format(_("资源版本不存在"))
             return set()
         return {resource["name"] for resource in resource_version.data}
-
-
-class ResourceDocVersionHandler:
-    @staticmethod
-    def get_doc_data_by_rv_or_new(gateway_id: int, resource_version_id: Optional[int]) -> List[Any]:
-        """获取版本中文档内容"""
-        if resource_version_id:
-            try:
-                return ResourceDocVersion.objects.get(
-                    gateway_id=gateway_id, resource_version_id=resource_version_id
-                ).data
-            except ResourceDocVersion.DoesNotExist:
-                return []
-
-        return ResourceDocVersion.objects.make_version(gateway_id)
-
-    @staticmethod
-    def get_doc_updated_time(gateway_id: int, resource_version_id: Optional[int]):
-        """获取文档更新时间
-
-        @return:
-        {
-            1: {
-                "zh": "1970-01-01 12:30:50 +8000",
-                "en": "1970-01-01 12:30:50 +8000"
-            }
-        }
-        """
-        doc_data = ResourceDocVersionHandler.get_doc_data_by_rv_or_new(gateway_id, resource_version_id)
-
-        result: Dict[int, Dict[str, Any]] = defaultdict(dict)
-        for doc in doc_data:
-            language = doc.get("language", DocLanguageEnum.ZH.value)
-            result[doc["resource_id"]][language] = doc["updated_time"]
-
-        return result
-
-    @staticmethod
-    def need_new_version(gateway_id: int) -> bool:
-        """是否需要创建新的资源文档版本"""
-        latest_version = ResourceDocVersion.objects.get_latest_version(gateway_id)
-        doc_last_updated_time = ResourceDocHandler.get_last_updated_time(gateway_id)
-
-        if not (latest_version or doc_last_updated_time):
-            return False
-
-        if not latest_version:
-            return True
-
-        if doc_last_updated_time and doc_last_updated_time > latest_version.created_time:
-            return True
-
-        # 文档不可直接删除，资源删除导致的文档删除，在判断"是否需要创建资源版本"时校验
-        return False
