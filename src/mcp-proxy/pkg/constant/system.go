@@ -29,6 +29,9 @@ const (
 
 	// BkApiTimeoutHeaderKey is a key to set the timeout in header
 	BkApiTimeoutHeaderKey = "X-Bkapi-Timeout"
+
+	// BkApiAllowedHeadersKey is a key to set the allowed headers in header
+	BkApiAllowedHeadersKey = "X-Bkapi-Allowed-Headers"
 )
 
 // CtxKey ...
@@ -36,13 +39,14 @@ type CtxKey string
 
 // BkAppCode ...
 const (
-	BkAppCode         CtxKey = "bk_app_code"
-	BkUsername        CtxKey = "bk_username"
-	BkGatewayInnerJWT CtxKey = "bk_api_inner_jwt"
-	MCPServerID       CtxKey = "mcp_server_id"
-	GatewayID         CtxKey = "gateway_id"
-	RequestID         CtxKey = "request_id"
-	BkApiTimeout      CtxKey = "bk_api_timeout"
+	BkAppCode           CtxKey = "bk_app_code"
+	BkUsername          CtxKey = "bk_username"
+	BkGatewayInnerJWT   CtxKey = "bk_api_inner_jwt"
+	MCPServerID         CtxKey = "mcp_server_id"
+	GatewayID           CtxKey = "gateway_id"
+	RequestID           CtxKey = "request_id"
+	BkApiTimeout        CtxKey = "bk_api_timeout"
+	BkApiAllowedHeaders CtxKey = "bk_api_allowed_headers"
 )
 
 // BkVirtualAppCodeFormat ...

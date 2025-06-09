@@ -50,14 +50,17 @@ type MCPProxy struct {
 	rwLock     *sync.RWMutex
 	// 运行的mcp server
 	activeMCPServers map[string]struct{}
+	// message url prefix
+	messageUrlFormat string
 }
 
 // NewMCPProxy ...
-func NewMCPProxy() *MCPProxy {
+func NewMCPProxy(messageUrlFormat string) *MCPProxy {
 	return &MCPProxy{
 		mcpServers:       map[string]*MCPServer{},
 		rwLock:           &sync.RWMutex{},
 		activeMCPServers: map[string]struct{}{},
+		messageUrlFormat: messageUrlFormat,
 	}
 }
 
@@ -99,7 +102,7 @@ func (m *MCPProxy) GetMCPServer(name string) *MCPServer {
 func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 	for _, config := range configs {
 		trans, sseHandler, err := transport.NewSSEServerTransportAndHandler(
-			fmt.Sprintf("/api/bk-apigateway/prod/api/v2/mcp-servers/%s/sse/message", config.Name))
+			fmt.Sprintf(m.messageUrlFormat, config.Name))
 		if err != nil {
 			return err
 		}
@@ -117,8 +120,7 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 }
 
 // AddMCPServerFromOpenApiSpec nolint:gofmt
-func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi3.T,
-	operationIDMap map[string]struct{},
+func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi3.T, operationIDMap map[string]struct{},
 ) error {
 	mcpServerConfig := &MCPServerConfig{
 		Name:  name,
@@ -212,6 +214,18 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 				auditLog.Error("set header param err",
 					zap.String(constant.BkApiAuthorizationHeaderKey, innerJwt), zap.Error(err))
 				return err
+			}
+
+			// 设置header
+			headers := util.GetBkApiAllowedHeaders(ctx)
+			for key, vlue := range headers {
+				_ = req.SetHeaderParam(key, vlue)
+				headerInfo[key] = vlue
+			}
+			// 如果没有单独设置 Content-Type，则默认设置为 application/json
+			if _, ok := headers["Content-Type"]; !ok {
+				headerInfo["Content-Type"] = "application/json"
+				_ = req.SetHeaderParam("Content-Type", "application/json")
 			}
 
 			if handlerRequest.HeaderParam != nil {

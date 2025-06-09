@@ -146,6 +146,7 @@ type McpServer struct {
 	// the interval of mcp server reload
 	Interval           time.Duration
 	BkApiUrlTmpl       string
+	MessageUrlFormat   string
 	InnerJwtExpireTime time.Duration
 	EncryptKey         string
 	CryptoNonce        string
@@ -191,6 +192,9 @@ func Load(v *viper.Viper) (*Config, error) {
 	}
 	if cfg.McpServer.BkApiUrlTmpl == "" {
 		cfg.McpServer.BkApiUrlTmpl = os.Getenv("BK_API_URL_TMPL")
+	}
+	if cfg.McpServer.MessageUrlFormat == "" {
+		cfg.McpServer.MessageUrlFormat = "/api/bk-apigateway/prod/api/v2/mcp-servers/%s/sse/message"
 	}
 	if cfg.McpServer.InnerJwtExpireTime == 0 {
 		cfg.McpServer.InnerJwtExpireTime = time.Minute * 5

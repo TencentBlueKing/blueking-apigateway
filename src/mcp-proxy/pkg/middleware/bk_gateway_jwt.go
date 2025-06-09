@@ -28,7 +28,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	jwt "github.com/golang-jwt/jwt/v4"
-	"github.com/spf13/cast"
 
 	"mcp_proxy/pkg/biz"
 	"mcp_proxy/pkg/config"
@@ -111,7 +110,6 @@ func BkGatewayJWTAuthMiddleware() func(c *gin.Context) {
 			c.Abort()
 			return
 		}
-		util.SetBkApiTimeout(c, cast.ToInt(c.Request.Header.Get(constant.BkApiTimeoutHeaderKey)))
 		c.Next()
 	}
 }

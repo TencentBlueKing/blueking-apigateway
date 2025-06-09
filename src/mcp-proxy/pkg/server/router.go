@@ -71,7 +71,7 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	ctx := context.Background()
-	mcpProxy := proxy.NewMCPProxy()
+	mcpProxy := proxy.NewMCPProxy(cfg.McpServer.MessageUrlFormat)
 	mcpSvc, err := mcp.Init(ctx, mcpProxy)
 	if err != nil {
 		logging.GetLogger().Panic("mcp init failed: %v", err)
@@ -85,6 +85,7 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	seeRouter.Use(middleware.APILogger())
 	seeRouter.Use(middleware.BkGatewayJWTAuthMiddleware())
 	seeRouter.Use(middleware.MCPServerPermissionMiddleware())
+	seeRouter.Use(middleware.MCPServerHeaderMiddleware())
 	seeRouter.GET("/sse", mcpProxy.SseHandler())
 	seeRouter.POST("/sse/message", mcpProxy.SseMessageHandler())
 
