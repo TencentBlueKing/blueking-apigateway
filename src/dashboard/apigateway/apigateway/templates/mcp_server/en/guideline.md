@@ -35,9 +35,9 @@ In addition to client-side timeout configurations for MCP, we also support confi
 X-Bkapi-Timeout: 300 # Unit: seconds
 ```
 
-### Header Passthrough
-To forward specific headers from the MCP client to backend gateway services, configure a request header with a JSON-formatted string:
+### Request Header Pass-Through
+If you need to pass through certain headers from the MCP client to the backend service called by the gateway, you can configure a request header. Different headers can be separated by commas.
 
 ```shell
-X-Bkapi-Allowed-Headers: ["X-Bk-Tenant-Id"]
+X-Bkapi-Allowed-Headers: "X-Bk-Tenant-Id,X-xxx-Header"
 ```
