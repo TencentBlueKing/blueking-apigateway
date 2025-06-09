@@ -36,10 +36,10 @@ X-Bkapi-Timeout: 300 # 单位 s
 ```
 
 ### 请求头透传
-如果需要在 MCP 客户端想透传某些 header 到调用的网关后端服务，也可以配置一个请求头即可,值为 JSON 格式字符串.
+如果需要在 MCP 客户端想透传某些 header 到调用的网关后端服务，也可以配置一个请求头即可,不同header直接用 , 分割
 
 ```shell
-X-Bkapi-Allowed-Headers: ["X-Bk-Tenant-Id"]
+X-Bkapi-Allowed-Headers: "X-Bk-Tenant-Id,X-xxx-Header"
 ```
 
 
