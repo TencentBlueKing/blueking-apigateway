@@ -44,7 +44,6 @@ const (
 	BkGatewayInnerJWT   CtxKey = "bk_api_inner_jwt"
 	MCPServerID         CtxKey = "mcp_server_id"
 	GatewayID           CtxKey = "gateway_id"
-	RequestID           CtxKey = "request_id"
 	BkApiTimeout        CtxKey = "bk_api_timeout"
 	BkApiAllowedHeaders CtxKey = "bk_api_allowed_headers"
 )

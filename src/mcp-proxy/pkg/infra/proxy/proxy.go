@@ -186,8 +186,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 	handler := func(ctx context.Context, request *protocol.CallToolRequest) (*protocol.CallToolResult, error) {
 		auditLog := logging.GetAuditLoggerWithContext(ctx)
 		requestID := util.GetRequestIDFromContext(ctx)
-		auditLog = auditLog.With(zap.String("tool", toolApiConfig.String()),
-			zap.String("request_id", requestID))
+		auditLog = auditLog.With(zap.String("tool", toolApiConfig.String()))
 		innerJwt := util.GetInnerJWTTokenFromContext(ctx)
 		auditLog.Info("call tool", zap.Any("request", request.RawArguments))
 		var handlerRequest HandlerRequest
