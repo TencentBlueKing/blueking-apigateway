@@ -185,7 +185,9 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 	// 生成handler
 	handler := func(ctx context.Context, request *protocol.CallToolRequest) (*protocol.CallToolResult, error) {
 		auditLog := logging.GetAuditLoggerWithContext(ctx)
-		auditLog = auditLog.With(zap.String("tool", toolApiConfig.String()))
+		requestID := util.GetRequestIDFromContext(ctx)
+		auditLog = auditLog.With(zap.String("tool", toolApiConfig.String()),
+			zap.String("request_id", requestID))
 		innerJwt := util.GetInnerJWTTokenFromContext(ctx)
 		auditLog.Info("call tool", zap.Any("request", request.RawArguments))
 		var handlerRequest HandlerRequest
@@ -214,6 +216,11 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 				auditLog.Error("set header param err",
 					zap.String(constant.BkApiAuthorizationHeaderKey, innerJwt), zap.Error(err))
 				return err
+			}
+			// 设置request id
+			if requestID != "" {
+				headerInfo[constant.RequestIDHeaderKey] = requestID
+				_ = req.SetHeaderParam(constant.RequestIDHeaderKey, requestID)
 			}
 
 			// 设置header

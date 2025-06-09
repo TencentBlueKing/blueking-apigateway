@@ -53,6 +53,14 @@ func GetRequestID(c *gin.Context) string {
 	return c.GetString(RequestIDKey)
 }
 
+func GetRequestIDFromContext(ctx context.Context) string {
+	requestID, ok := ctx.Value(RequestIDKey).(string)
+	if !ok {
+		return ""
+	}
+	return requestID
+}
+
 // SetRequestID set the request id to context
 func SetRequestID(c *gin.Context, requestID string) {
 	c.Set(RequestIDKey, requestID)
