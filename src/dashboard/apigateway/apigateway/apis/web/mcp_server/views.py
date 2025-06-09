@@ -17,6 +17,7 @@
 #
 
 
+from django.conf import settings
 from django.db import transaction
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
@@ -355,6 +356,9 @@ class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
             context={
                 "name": instance.name,
                 "sse_url": build_mcp_server_url(instance.name),
+                "description": instance.description,
+                "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
+                "bk_access_token_doc_url": settings.BK_ACCESS_TOKEN_DOC_URL,
             },
         )
         slz = self.get_serializer({"content": content})

@@ -39,11 +39,13 @@ class SourcePackager(Packager):
             }
         }
 
-        check_output(
+        stdout = check_output(
             [sys.executable, "setup.py", "sdist"],
             env={"HOME": output_dir},
             cwd=output_dir,
         )
+
+        logger.info("stdout %s", stdout)
 
         dist_path = os.path.join(
             output_dir, "dist", f"{self.context.name}-{parse_version(self.context.version)}.tar.gz"

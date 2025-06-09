@@ -120,7 +120,8 @@
                               @click="handleApiClick(api.id, api.name)"
                             >
                               <header
-                                class="res-item-name" v-dompurify-html="getHighlightedHtml(api.name)" v-bk-overflow-tips
+                                v-dompurify-html="getHighlightedHtml(api.name)"
+                                class="res-item-name"
                               ></header>
                               <main class="res-item-desc" v-dompurify-html="getHighlightedHtml(api.description)"></main>
                             </article>
@@ -198,15 +199,15 @@ import {
 import {
   IApiGatewayBasics,
   IApiGatewaySdkDoc,
+  IBoard,
   IComponent,
   IComponentSdk,
   INavItem,
   IResource,
   IStage,
-  IBoard,
+  ISystem,
   ISystemBasics,
   TabType,
-  ISystem,
 } from '@/views/apiDocs/types';
 import MarkdownIt from 'markdown-it';
 import { ResizeLayout } from 'bkui-vue';

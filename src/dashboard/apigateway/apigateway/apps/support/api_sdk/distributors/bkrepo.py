@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 import os
 from dataclasses import dataclass, field
 from typing import List, Optional
@@ -22,6 +23,8 @@ from typing import List, Optional
 from apigateway.apps.support.api_sdk.exceptions import DistributeError
 from apigateway.apps.support.api_sdk.models import DistributeResult, Distributor
 from apigateway.components.bkrepo import BKRepoComponent
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -35,6 +38,7 @@ class GenericDistributor(Distributor):
         result = DistributeResult(repository="bkrepo", is_local=True)
 
         if not files:
+            logger.info("no files to distribute")
             return result
 
         language = self.context.language.value
@@ -50,10 +54,14 @@ class GenericDistributor(Distributor):
             }
         )
 
+        logger.info("bkrepo_key: %s", key)
+
         self.bkrepo.upload_generic_file(filepath, key)
 
         result.url = self.bkrepo.generate_generic_download_url(key)
         result.is_local = False
+
+        logger.info("generated download url: %s", result.url)
 
         return result
 

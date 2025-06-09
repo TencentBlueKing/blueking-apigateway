@@ -336,18 +336,17 @@ const routes: RouteRecordRaw[] = [
           matchRoute: 'mcpServer',
           topMenu: 'mcpServer',
         },
-        children: [
-          // {
-          //   path: 'toolbox',
-          //   name: 'platformToolsToolbox',
-          //   component: PlatformToolsToolbox,
-          //   meta: {
-          //     title: t('工具箱'),
-          //     matchRoute: 'platformToolsToolbox',
-          //     topMenu: 'platformTools',
-          //   },
-          // },
-        ],
+      },
+      // MCP 服务器详情
+      {
+        path: '/:id/mcp-server/detail/:serverId',
+        name: 'mcpServerDetail',
+        component: () => import('@/views/mcp-server/detail/index.vue'),
+        meta: {
+          title: t('详情'),
+          matchRoute: 'mcpServer',
+          topMenu: 'mcpServer',
+        },
       },
       {
         path: '/:id/audit',

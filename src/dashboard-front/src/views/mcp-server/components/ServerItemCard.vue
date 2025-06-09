@@ -21,21 +21,21 @@
             :disabled="server.status === 0"
             size="small"
             theme="primary"
-            @click="handleEditClick"
+            @click.stop="handleEditClick"
           >
             {{ t('编辑') }}
           </BkButton>
           <BkButton
             v-if="server.status === 1"
             size="small"
-            @click="handleSuspendClick"
+            @click.stop="handleSuspendClick"
           >
             {{ t('停用') }}
           </BkButton>
           <BkButton
             v-else
             size="small"
-            @click="handleEnableClick"
+            @click.stop="handleEnableClick"
           >
             {{ t('启用') }}
           </BkButton>

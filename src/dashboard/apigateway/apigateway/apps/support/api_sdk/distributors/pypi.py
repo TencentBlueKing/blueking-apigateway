@@ -71,6 +71,7 @@ class PypiSourceDistributor(Distributor):
             return result
 
         if not self.repository_config.repository_url:
+            logger.error("pypi repository [%s] configuration is not set", self.repository)
             raise DistributeError(f"pypi repository [{self.repository}] configuration is not set")
 
         self.context.update_language_config(
@@ -87,6 +88,8 @@ class PypiSourceDistributor(Distributor):
         env["HOME"] = source_dir
 
         try:
+            logger.info("start uploading package to pypi repository [%s]", self.repository)
+
             check_call(
                 ["twine", "upload", "dist/*", "-r", self.repository],
                 env=env,
@@ -98,6 +101,8 @@ class PypiSourceDistributor(Distributor):
 
         result.url = self.get_download_url()
         result.is_local = result.url == ""
+
+        logger.info("distribution completed, download url: %s", result.url)
 
         return result
 
