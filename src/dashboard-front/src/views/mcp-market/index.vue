@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="banner">
-
+      <!-- <img :src="bannerImg" alt="banner" /> -->
     </div>
     <div class="main">
       <div class="top">
@@ -69,6 +69,8 @@ import { useI18n } from 'vue-i18n';
 import AgIcon from '@/components/ag-icon.vue';
 import { getMcpMarketplace, IMarketplaceItem } from '@/http/mcp-market';
 import { copy } from '@/common/util';
+// @ts-ignore
+// import mcpBanner from '@/images/mcp-banner.jpg';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -76,6 +78,10 @@ const router = useRouter();
 const search = ref<string>('');
 const isPublic = ref<boolean>(false);
 const mcpAllList = ref<IMarketplaceItem[]>([]);
+
+// const bannerImg = computed(() => {
+//   return mcpBanner;
+// });
 
 const mcpList = computed(() => {
   return mcpAllList.value.filter((item: IMarketplaceItem) => {
@@ -117,6 +123,9 @@ const goDetails = (id: number) => {
 .banner {
   height: 214px;
   background: #D8D8D8;
+  // img {
+  //   height: 100%;
+  // }
 }
 
 .main {
@@ -144,6 +153,7 @@ const goDetails = (id: number) => {
   .card-list {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     .card {
       border-radius: 2px;
       background: #FFFFFF;
@@ -152,6 +162,7 @@ const goDetails = (id: number) => {
       padding: 0 24px;
       box-sizing: border-box;
       cursor: pointer;
+      margin-bottom: 16px;
       &:not(:nth-child(3n)) {
         margin-right: 16px;
       }
