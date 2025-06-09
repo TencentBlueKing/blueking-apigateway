@@ -28,8 +28,8 @@ from django.core.management.base import BaseCommand, CommandError
 from apigateway.apps.esb.exceptions import EsbGatewayNotFound
 from apigateway.apps.esb.utils import get_esb_gateway
 from apigateway.apps.permission.models import AppGatewayPermission
-from apigateway.apps.permission.utils import calculate_expires
 from apigateway.biz.constants import APP_CODE_PATTERN
+from apigateway.common.time import calculate_expires
 
 logger = logging.getLogger(__name__)
 

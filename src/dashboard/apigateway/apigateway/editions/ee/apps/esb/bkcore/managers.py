@@ -28,8 +28,8 @@ from django.utils.encoding import smart_str
 from django.utils.translation import gettext as _
 
 from apigateway.apps.esb.constants import DEFAULT_DOC_CATEGORY, DataTypeEnum, FunctionControllerCodeEnum
-from apigateway.apps.permission.utils import calculate_expires
 from apigateway.common.constants import LanguageCodeEnum
+from apigateway.common.time import calculate_expires
 from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.utils.time import to_datetime_from_now
 

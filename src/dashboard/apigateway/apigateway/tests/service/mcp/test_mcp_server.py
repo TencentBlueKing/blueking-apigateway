@@ -23,7 +23,7 @@ from ddf import G
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.core.models import Gateway, ResourceVersion, Stage
-from apigateway.service.mcp.mcp_server import update_stage_mcp_server_related_resource_names
+from apigateway.service.mcp.mcp_server import build_mcp_server_url, update_stage_mcp_server_related_resource_names
 
 
 class TestUpdateStageMcpServerRelatedResourceNames:
@@ -204,3 +204,11 @@ class TestUpdateStageMcpServerRelatedResourceNames:
         assert set(mcp_server2.resource_names) == {"resource1", "resource3"}  # unchanged
         assert mcp_server3.resource_names == []
         assert mcp_server4.resource_names == []  # unchanged
+
+
+class TestBuildMCPServerURL:
+    def test_build_mcp_server_url(self, settings):
+        settings.BK_API_URL_TMPL = "http://test.com/{api_name}"
+
+        url = build_mcp_server_url("test-mcp-server")
+        assert url == "http://test.com/bk-apigateway/prod/api/v2/mcp-servers/test-mcp-server/sse/"

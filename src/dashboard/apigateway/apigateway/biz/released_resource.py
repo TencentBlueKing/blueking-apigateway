@@ -21,7 +21,8 @@ from typing import Any, Dict, List, Optional
 
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Stage
-from apigateway.core.utils import get_path_display, get_resource_doc_link
+from apigateway.core.utils import get_path_display
+from apigateway.service.utils import get_resource_doc_link
 
 
 @dataclass

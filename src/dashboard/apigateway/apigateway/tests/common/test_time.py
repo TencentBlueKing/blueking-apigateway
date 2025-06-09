@@ -20,7 +20,7 @@ import datetime
 
 import pytest
 
-from apigateway.apps.permission.utils import calculate_expires, calculate_renew_time
+from apigateway.common.time import calculate_expires, calculate_renew_time
 from apigateway.utils.time import now_datetime
 
 

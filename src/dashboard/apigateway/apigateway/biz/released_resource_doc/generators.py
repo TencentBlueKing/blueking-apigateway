@@ -24,7 +24,8 @@ from django.conf import settings
 from apigateway.biz.released_resource import ReleasedResourceData
 from apigateway.biz.resource_url import ResourceURLHandler
 from apigateway.core.models import Gateway
-from apigateway.core.utils import get_path_display, get_resource_url
+from apigateway.core.utils import get_path_display
+from apigateway.service.utils import get_resource_url
 from apigateway.utils.jinja2 import render_to_string
 
 from .constants import BKAPI_AUTHORIZATION_DESCRIPTIONS, RESOURCE_URL_PARTS, APIDocTypeEnum

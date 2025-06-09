@@ -18,6 +18,8 @@
 
 from typing import List
 
+from django.conf import settings
+
 from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.core.models import ResourceVersion
 
@@ -58,3 +60,8 @@ def update_stage_mcp_server_related_resource_names(
 
     if to_update:
         MCPServer.objects.bulk_update(to_update, fields=["_resource_names"])
+
+
+def build_mcp_server_url(mcp_server_name: str) -> str:
+    bk_apigateway_url = settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")
+    return f"{bk_apigateway_url}/prod/api/v2/mcp-servers/{mcp_server_name}/sse/"

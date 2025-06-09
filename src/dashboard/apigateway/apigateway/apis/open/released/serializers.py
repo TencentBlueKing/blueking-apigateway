@@ -19,7 +19,8 @@
 from rest_framework import serializers
 
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.core.utils import get_path_display, get_resource_url
+from apigateway.core.utils import get_path_display
+from apigateway.service.utils import get_resource_url
 
 
 class ResourceV1SLZ(serializers.Serializer):

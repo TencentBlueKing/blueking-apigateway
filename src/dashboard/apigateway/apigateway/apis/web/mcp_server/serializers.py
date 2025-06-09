@@ -29,10 +29,10 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
-from apigateway.apps.mcp_server.utils import build_mcp_server_url
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Stage
+from apigateway.service.mcp.mcp_server import build_mcp_server_url
 
 from .utils import get_valid_resource_names
 

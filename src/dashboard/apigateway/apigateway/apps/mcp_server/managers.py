@@ -20,7 +20,7 @@ from typing import List
 
 from django.db import models
 
-from apigateway.apps.permission.utils import calculate_renew_time
+from apigateway.common.time import calculate_renew_time
 
 
 class MCPServerAppPermissionManager(models.Manager):

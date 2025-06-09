@@ -25,7 +25,7 @@ from requests.structures import CaseInsensitiveDict
 
 from apigateway.biz.resource_url import ResourceURLHandler
 from apigateway.common.constants import HEADER_BKAPI_AUTHORIZATION
-from apigateway.core.utils import get_resource_url
+from apigateway.service.utils import get_resource_url
 from apigateway.utils.sensitive_cleaner import SensitiveCleaner
 
 

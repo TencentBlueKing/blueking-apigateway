@@ -27,13 +27,13 @@ from apigateway.biz.validators import APIDocMaintainerValidator
 from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.common.paas import gen_programmable_gateway_links
 from apigateway.core.constants import (
     GatewayKindEnum,
     GatewayStatusEnum,
     ProgrammableGatewayLanguageEnum,
 )
 from apigateway.core.models import Gateway
+from apigateway.service.paas import gen_programmable_gateway_links
 from apigateway.utils.crypto import calculate_fingerprint
 
 from .validators import (
