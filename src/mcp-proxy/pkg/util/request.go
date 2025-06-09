@@ -53,11 +53,15 @@ func GetRequestID(c *gin.Context) string {
 	return c.GetString(RequestIDKey)
 }
 
+// GetRequestIDFromContext retrieves the request ID from the context.
 func GetRequestIDFromContext(ctx context.Context) string {
+	// Get the value associated with the RequestIDKey key from the context
 	requestID, ok := ctx.Value(RequestIDKey).(string)
+	// If the value is not a string, return an empty string
 	if !ok {
 		return ""
 	}
+	// Otherwise, return the requestID
 	return requestID
 }
 
