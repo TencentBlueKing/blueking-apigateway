@@ -6,7 +6,7 @@ const { BK_DASHBOARD_URL } = window;
 export interface IMarketplace {
   limit: number
   offset: number
-  keyword: string
+  keyword?: string
 }
 
 export interface IStageReleaseCheckMcp {
@@ -23,6 +23,7 @@ export interface IMcpAppPermissionApply {
   bk_app_code: string
   state: string
   applied_by: string
+  mcp_server_id: number
 }
 
 export interface IMarketplaceItem {
@@ -116,7 +117,7 @@ export const deleteMcpPermissions = (apigwId: number, mcp_server_id: number, id:
  *  权限审批列表
  * @param apigwId 网关id
  */
-export const getMcpAppPermissionApply = (apigwId: number, mcp_server_id: number, data: IMcpAppPermissionApply) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/mcp-servers/${mcp_server_id}/permissions/app-permission-apply/?${json2Query(data)}`);
+export const getMcpAppPermissionApply = (apigwId: number, data: IMcpAppPermissionApply) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/mcp-servers/${data?.mcp_server_id}/permissions/app-permission-apply/?${json2Query(data)}`);
 
 /**
  *  授权审批申请人列表
