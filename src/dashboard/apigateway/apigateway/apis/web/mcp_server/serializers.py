@@ -312,19 +312,12 @@ class MCPServerAppPermissionApplyListInputSLZ(serializers.Serializer):
 class MCPServerAppPermissionApplyListOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     bk_app_code = serializers.CharField(read_only=True, help_text="蓝鲸应用 ID")
-    mcp_server_id = serializers.SerializerMethodField(help_text="MCPServer ID")
-    mcp_server_name = serializers.SerializerMethodField(help_text="MCPServer 名称")
     applied_by = serializers.CharField(read_only=True, help_text="申请人")
     applied_time = serializers.DateTimeField(read_only=True, help_text="申请时间")
     status = serializers.ChoiceField(
         read_only=True, choices=MCPServerAppPermissionApplyStatusEnum.get_choices(), help_text="审批状态"
     )
-
-    def get_mcp_server_id(self, obj):
-        return obj.mcp_server.id
-
-    def get_mcp_server_name(self, obj):
-        return obj.mcp_server.name
+    mcp_server = MCPServerBaseSLZ()
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.MCPServerAppPermissionApplyListOutputSLZ"
