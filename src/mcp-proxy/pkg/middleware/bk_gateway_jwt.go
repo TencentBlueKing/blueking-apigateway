@@ -19,9 +19,7 @@
 package middleware
 
 import (
-	"crypto/x509"
 	"database/sql"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"time"
@@ -135,11 +133,7 @@ func SignBkInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKeyText []
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS512, innerJwtClaims)
 	token.Header["kid"] = constant.OfficialGatewayName
-	block, _ := pem.Decode(privateKeyText)
-	if block == nil || block.Type != "RSA PRIVATE KEY" {
-		return errors.New("failed to decode PEM block containing private key")
-	}
-	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	privateKey, err := util.ParsePrivateKey(privateKeyText)
 	if err != nil {
 		return err
 	}

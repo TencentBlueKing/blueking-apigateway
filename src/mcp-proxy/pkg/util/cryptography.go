@@ -21,13 +21,21 @@ package util
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/pem"
+	"errors"
+	"fmt"
 )
 
 // AESGCMDecrypt decrypts AES-GCM ciphertext using the given key.
 func AESGCMDecrypt(key string, nonce string, encryptedText string) (string, error) {
-	keyBytes, _ := base64.StdEncoding.DecodeString(key)
+	keyBytes, err := base64.StdEncoding.DecodeString(key)
+	if err != nil {
+		return "", err
+	}
 	block, err := aes.NewCipher(keyBytes)
 	if err != nil {
 		return "", err
@@ -45,4 +53,39 @@ func AESGCMDecrypt(key string, nonce string, encryptedText string) (string, erro
 		return "", err
 	}
 	return string(plaintext), nil
+}
+
+// ParsePrivateKey This function parses a private key from a byte slice
+func ParsePrivateKey(privateKeyText []byte) (any, error) {
+	// Decode the PEM block from the byte slice
+	block, _ := pem.Decode(privateKeyText)
+	// If the block is nil, return an error
+	if block == nil {
+		return nil, errors.New("failed to decode PEM block: no PEM data found")
+	}
+	// Declare a variable to hold the private key
+	var privateKey interface{}
+	// Declare a variable to hold any error that occurs
+	var err error
+	// Switch on the type of the PEM block
+	switch block.Type {
+	// If the type is RSA PRIVATE KEY
+	case "RSA PRIVATE KEY":
+		// Parse the private key from the bytes
+		privateKey, err = x509.ParsePKCS1PrivateKey(block.Bytes)
+	// If the type is PRIVATE KEY
+	case "PRIVATE KEY":
+		// Parse the private key from the bytes
+		privateKey, err = x509.ParsePKCS8PrivateKey(block.Bytes)
+		// If no error occurred, ensure it's an RSA key
+		if err == nil {
+			privateKey, _ = privateKey.(*rsa.PrivateKey) // Ensure it's an RSA key
+		}
+	default:
+		return nil, fmt.Errorf("unsupported PEM block type: %s", block.Type)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return privateKey, nil
 }
