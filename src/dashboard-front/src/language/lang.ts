@@ -1430,7 +1430,6 @@ const lang: ILANG = {
   '工具': ['Tools'],
   '请输入 MCP 名称或描述搜索': ['Please enter MCP name or description to search'],
   '仅展示官方': ['Only show official'],
-  '工具数量': ['Tool number'],
   '权限申请指引': ['Permission application guide'],
   '负责人': ['Maintainer'],
   '今天': ['Today'],
@@ -1886,7 +1885,6 @@ const lang: ILANG = {
   '问问AI': ['Ask AI'],
   '编辑 {n}': ['Edit {n}'],
   '结果预览': ['Preview'],
-  '工具': ['Tools'],
   '工具数量': ['Tools'],
   '创建 MCP Server': ['Create MCP Server'],
   '不公开则不会展示到 MCP 市场，且蓝鲸应用无法申请主动申请权限，只能由网关管理员给应用主动授权': ['False means the server will not be displayed in the MCP market, and the application cannot apply for permission actively. Only the gateway administrator can apply for permission.'],
@@ -1894,6 +1892,12 @@ const lang: ILANG = {
   '请从已经发布到该环境的资源列表选取资源作为 MCP Server 的工具': ['Choose resources from the list of resources published to current stage as MCP Server tools'],
   '请求参数': ['OpenAPI Schema'],
   '请先停用再删除': ['Suspend it before deletion'],
+  '确定删除 {n}？': ['Delete {n}?'],
+  '删除后，{n} 不可恢复，请谨慎操作！': ['{n} can not be restored, be cautious!'],
+  '确定停用 {n}？': ['Suspend {n}?'],
+  '停用后，{n} 下所有工具不可访问，请确认！': ['Tools under {n} can not be used after suspension, be cautious!'],
+  '请输入工具名称，描述搜索': ['Search tools name and description'],
+  '可用工具': ['Available Tools'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

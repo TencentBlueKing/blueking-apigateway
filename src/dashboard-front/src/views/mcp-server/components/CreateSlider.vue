@@ -176,6 +176,10 @@ const isShow = defineModel<boolean>({ default: false });
 
 const { serverId } = defineProps<IProps>();
 
+const emit = defineEmits<{
+  updated: [],
+}>();
+
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
@@ -329,6 +333,7 @@ const handleSubmit = async () => {
       theme: 'success',
       message: t('编辑成功'),
     });
+    emit('updated');
   } else {
     const params = Object.assign({}, formData.value, {
       name: `${serverNamePrefix.value}${formData.value.name}`,
