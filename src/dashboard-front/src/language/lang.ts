@@ -1354,6 +1354,8 @@ const lang: ILANG = {
   '版本生成成功': ['Version generated successfully'],
   '接下来，可以前往 “资源发布” 发布到不同的环境': ['Next, you can go to “Resource Release” to deploy to different environments'],
   '全部': ['All'],
+  '删除的资源中以下 {count} 个资源被 MCP Server 用到，删除后也会同步删除 MCP Server 中的资源': ['{count} resources in the deleted resources are used by MCP Server, and they will also be deleted in MCP Server'],
+  '确认删除风险': ['Confirm risk'],
   '发布的环境': ['Published environment'],
   '系统错误，请稍后重试': ['System error, please try again later'],
   '发布资源至环境【{stage}】': ['Publishing resources to the environment 【{stage}】'],
