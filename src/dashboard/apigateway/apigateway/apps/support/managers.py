@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Dict
+from typing import Dict, Optional
 
 from django.db import models
 
@@ -30,7 +30,7 @@ class ResourceDocVersionManager(models.Manager):
     def get_by_resource_version_id(self, gateway_id: int, resource_version_id: int):
         return self.filter(gateway_id=gateway_id, resource_version_id=resource_version_id).first()
 
-    def get_latest_version(self, gateway_id):
+    def get_latest_version(self, gateway_id: int):
         return self.filter(gateway_id=gateway_id).order_by("-id").first()
 
 
@@ -70,10 +70,10 @@ class ReleasedResourceDocManager(models.Manager):
 
 
 class GatewaySDKManager(models.Manager):
-    def get_latest_sdk(self, gateway_id, language):
+    def get_latest_sdk(self, gateway_id: int, language: str):
         return self.filter(gateway_id=gateway_id, language=language).order_by("-id").first()
 
-    def get_resource_version_language_sdk_count(self, resource_version_id, language):
+    def get_resource_version_language_sdk_count(self, resource_version_id: int, language: str):
         return self.filter(resource_version_id=resource_version_id, language=language).count()
 
     def should_be_set_to_public_latest(
@@ -94,7 +94,7 @@ class GatewaySDKManager(models.Manager):
 
         return True
 
-    def filter_recommended_sdks(self, language, gateway_id=None):
+    def filter_recommended_sdks(self, language: str, gateway_id: Optional[int] = None):
         """
         获取公开网关的最新公开 SDK
         """

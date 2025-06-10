@@ -195,7 +195,7 @@ class StageHandler:
 
     @staticmethod
     def get_stage_ids(gateway, stage_names: List[str]) -> List[int]:
-        name_to_id_map = Stage.objects.get_name_id_map(gateway)
+        name_to_id_map = Stage.objects.get_name_id_map(gateway.id)
 
         # 如果未指定 stage_names，则默认处理网关下所有环境
         if not stage_names:
