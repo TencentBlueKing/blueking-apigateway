@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="banner">
-      <!-- <img :src="bannerImg" alt="banner" /> -->
+      <img :src="bannerImg" alt="banner" />
     </div>
     <div class="main">
       <div class="top">
@@ -16,7 +16,7 @@
             @clear="getList"
             type="search"
           />
-          <bk-checkbox v-model="isPublic">{{ t('仅展示官方') }}</bk-checkbox>
+          <!-- <bk-checkbox v-model="isPublic">{{ t('仅展示官方') }}</bk-checkbox> -->
         </div>
 
         <!-- <div class="guide">
@@ -51,8 +51,8 @@
             </div>
             <div class="info-item">
               <div class="label">{{ t('标签') }}：</div>
-              <div class="value" v-for="label in item.labels" :key="label">
-                <bk-tag class="mr8">{{ label }}</bk-tag>
+              <div class="value">
+                <bk-tag class="mr8" v-for="label in item.labels" :key="label">{{ label }}</bk-tag>
               </div>
             </div>
           </div>
@@ -70,7 +70,7 @@ import AgIcon from '@/components/ag-icon.vue';
 import { getMcpMarketplace, IMarketplaceItem } from '@/http/mcp-market';
 import { copy } from '@/common/util';
 // @ts-ignore
-// import mcpBanner from '@/images/mcp-banner.jpg';
+import mcpBanner from '@/images/mcp-banner.jpg';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -79,9 +79,9 @@ const search = ref<string>('');
 const isPublic = ref<boolean>(false);
 const mcpAllList = ref<IMarketplaceItem[]>([]);
 
-// const bannerImg = computed(() => {
-//   return mcpBanner;
-// });
+const bannerImg = computed(() => {
+  return mcpBanner;
+});
 
 const mcpList = computed(() => {
   return mcpAllList.value.filter((item: IMarketplaceItem) => {
@@ -121,11 +121,11 @@ const goDetails = (id: number) => {
 
 <style lang="scss" scoped>
 .banner {
-  height: 214px;
+  // height: 214px;
   background: #D8D8D8;
-  // img {
-  //   height: 100%;
-  // }
+  img {
+    width: 100%;
+  }
 }
 
 .main {

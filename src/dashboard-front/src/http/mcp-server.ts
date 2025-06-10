@@ -20,6 +20,7 @@ export interface IMCPServer {
     id: number,
     name: string,
   },
+  tools?: IMCPServerTool[]
 }
 
 export interface IMCPServerTool {

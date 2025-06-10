@@ -222,8 +222,8 @@ const submitAuth = async () => {
       theme: 'success',
       message: t('操作成功'),
     });
+    cancelAuth();
     refreshTableData();
-    isShowAuth.value = false;
   } catch (e) {
     console.log(e);
   } finally {
@@ -285,6 +285,10 @@ watch(
 </script>
 
 <style lang="scss" scoped>
+.auth {
+  padding: 16px 24px 24px;
+  background: #FFFFFF;
+}
 .auth-dialog {
   p {
     font-size: 14px;

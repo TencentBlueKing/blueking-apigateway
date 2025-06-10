@@ -130,6 +130,7 @@ import {
   getServerTools,
   type IMCPServerTool,
 } from '@/http/mcp-server';
+import { getMcpServerToolDoc } from '@/http/mcp-market';
 import { useCommon } from '@/store';
 import { copy } from '@/common/util';
 import MarkdownIt from 'markdown-it';
@@ -140,9 +141,10 @@ type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 
 interface IProps {
   server: MCPServerType,
+  page?: String,
 }
 
-const { server } = defineProps<IProps>();
+const { server, page = 'server' } = defineProps<IProps>();
 
 const emit = defineEmits<{
   'update-count': [count: number],
@@ -185,19 +187,22 @@ const filteredToolList = computed(() => {
 
 // tool 分类列表
 const toolGroupList = computed(() => {
-  return filteredToolList.value.reduce((groupList, tool) => {
-    const { id, name } = tool.labels[0];
-    const group = groupList.find(item => item.id === id);
+  return filteredToolList.value?.reduce((groupList, tool) => {
+    if (tool.labels[0]) {
+      const { id, name } = tool.labels[0];
+      const group = groupList.find(item => item.id === id);
 
-    if (group) {
-      group.toolList.push(tool);
-    } else {
-      groupList.push({
-        id,
-        name,
-        toolList: [tool],
-      });
+      if (group) {
+        group.toolList.push(tool);
+      } else {
+        groupList.push({
+          id,
+          name,
+          toolList: [tool],
+        });
+      }
     }
+
     return groupList;
   }, [] as { id: number, name: string, toolList: typeof toolList.value }[]);
 });
@@ -235,8 +240,12 @@ watch(toolList, () => {
 
 const fetchToolList = async () => {
   try {
-    const res = await getServerTools(common.apigwId, server.id);
-    toolList.value = res ?? [];
+    if (page === 'market') {
+      toolList.value = server?.tools ?? [];
+    } else {
+      const res = await getServerTools(common.apigwId, server.id);
+      toolList.value = res ?? [];
+    }
 
     if (route.query?.tool_name) {
       selectedToolName.value = route.query.tool_name as string;
@@ -282,7 +291,14 @@ const handleToolClick = async (resId: number, toolName: string) => {
 const getDoc = async () => {
   try {
     isLoading.value = true;
-    const res = await getServerToolDoc(common.apigwId, server.id, selectedTool.value.name);
+
+    let res: any = {};
+    if (page === 'market') {
+      res = await getMcpServerToolDoc(server.id, selectedTool.value.name);
+    } else {
+      res = await getServerToolDoc(common.apigwId, server.id, selectedTool.value.name);
+    }
+
     const { content, updated_time } = res;
     selectedToolMarkdownHtml.value = md.render(content);
     updatedTime.value = updated_time;

@@ -1,4 +1,5 @@
 <template>
+  <CustomTop :server="server" />
   <div class="page-wrapper">
     <section class="server-info">
       <div :class="{ 'no-release': server.status === 0 }" class="server-name">
@@ -103,6 +104,9 @@
               :server="server"
               @update-count="(count) => updateCount(count, item.name)"
             />
+            <AuthApplications
+              :mcp-server-id="serverId"
+              v-if="item.name === 'auth'" />
           </div>
         </bk-tab-panel>
       </bk-tab>
@@ -132,6 +136,8 @@ import {
 } from 'bkui-vue';
 import router from '@/router';
 import CreateSlider from '@/views/mcp-server/components/CreateSlider.vue';
+import AuthApplications from '@/views/mcp-server/components/AuthApplications.vue';
+import CustomTop from '@/views/mcp-server/components/CustomTop.vue';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 
@@ -162,6 +168,11 @@ const panels = ref([
   {
     name: 'tools',
     label: t('工具'),
+    count: 0,
+  },
+  {
+    name: 'auth',
+    label: t('已授权应用'),
     count: 0,
   },
   {

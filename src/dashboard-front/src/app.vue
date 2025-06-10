@@ -236,7 +236,7 @@ const headerList = computed(() => ([
     link: '',
   },
   {
-    name: 'MCP Server',
+    name: t('MCP 市场'),
     id: 5,
     url: 'mcpMarket',
     enabled: true,
