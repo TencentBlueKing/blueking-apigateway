@@ -22,7 +22,7 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.biz.validators import APIDocMaintainerValidator, BKAppCodeListValidator
+from apigateway.biz.validators import BKAppCodeListValidator, GatewayAPIDocMaintainerValidator
 from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum, UserAuthTypeEnum
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
@@ -101,7 +101,7 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
     service_account = ServiceAccountSLZ(required=False, help_text="服务号")
 
     class Meta:
-        validators = [APIDocMaintainerValidator()]
+        validators = [GatewayAPIDocMaintainerValidator()]
         ref_name = "apigateway.apis.open.gateway.serializers.GatewayAPIDocMaintainerSLZ"
 
 

@@ -33,8 +33,8 @@ from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SEMVER_PATTE
 from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData, PluginSynchronizer
 from apigateway.biz.stage import StageHandler
 from apigateway.biz.validators import (
-    APIDocMaintainerValidator,
     BKAppCodeListValidator,
+    GatewayAPIDocMaintainerValidator,
     MaxCountPerGatewayValidator,
     ResourceVersionValidator,
     SchemeInputValidator,
@@ -94,7 +94,7 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
     service_account = ServiceAccountSLZ(required=False, help_text="服务号")
 
     class Meta:
-        validators = [APIDocMaintainerValidator()]
+        validators = [GatewayAPIDocMaintainerValidator()]
         ref_name = "apigateway.apis.v2.sync.serializers.GatewayAPIDocMaintainerSLZ"
 
 

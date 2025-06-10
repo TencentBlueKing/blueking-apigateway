@@ -399,7 +399,7 @@ class StageVarsValidator(GetGatewayFromContextMixin):
         )
 
 
-class APIDocMaintainerValidator:
+class GatewayAPIDocMaintainerValidator:
     def __call__(self, data: dict):
         if data.get("type") == GatewayAPIDocMaintainerTypeEnum.USER.value and not data.get("contacts"):
             raise serializers.ValidationError(_("联系人不可为空。"))

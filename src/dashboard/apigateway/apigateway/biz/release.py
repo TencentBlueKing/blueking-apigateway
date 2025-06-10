@@ -19,20 +19,15 @@ import copy
 from datetime import datetime
 from typing import Any, Dict, List
 
-from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
-from apigateway.biz.released_resource import ReleasedResourceHandler
-from apigateway.common.tenant.user_credentials import UserCredentials
-from apigateway.components.bkpaas import get_paas_deployment_result, get_paas_offline_result
 from apigateway.core.constants import (
     EVENT_FAIL_INTERVAL_TIME,
     GatewayStatusEnum,
     PublishEventStatusEnum,
-    PublishSourceEnum,
     ReleaseHistoryStatusEnum,
     ReleaseStatusEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import Gateway, PublishEvent, Release, ReleaseHistory
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory
 
 
 class ReleaseHandler:
@@ -115,7 +110,7 @@ class ReleaseHandler:
         """return {"stage_id":{"status"/"publish_id"}}"""
 
         # 获取多个 stage_id 对应的最新的 ReleaseHistory 记录
-        # FIXME: 每个对应的release如果直接关联了对应的release_history就不需要通过这种方式去查了
+        # FIXME: 每个对应的 release 如果直接关联了对应的 release_history 就不需要通过这种方式去查了
         latest_release_histories = []
         latest_release_history_ids = []
         for stage_id in stage_ids:
@@ -150,108 +145,6 @@ class ReleaseHandler:
             stage_publish_status[stage_id] = state
 
         return stage_publish_status
-
-    @staticmethod
-    def get_paas_deploy_result(
-        gateway: Gateway, deploy_history: ProgrammableGatewayDeployHistory, user_credentials: UserCredentials
-    ) -> Dict[str, Any]:
-        """查询 paas 的deploy结果"""
-        # 查询paas部署结果
-        is_offline = deploy_history.source != PublishSourceEnum.VERSION_PUBLISH.value
-        if not is_offline:
-            return get_paas_deployment_result(
-                app_code=gateway.name,
-                module="default",
-                deploy_id=deploy_history.deploy_id,
-                user_credentials=user_credentials,
-            )
-        return get_paas_offline_result(
-            app_code=gateway.name,
-            module="default",
-            deploy_id=deploy_history.deploy_id,
-            user_credentials=user_credentials,
-        )
-
-    @staticmethod
-    def get_stage_deploy_status(gateway: Gateway, stage_id: int, user_credentials: UserCredentials) -> Dict[str, Any]:
-        """查询 stage 的deploy状态"""
-        latest_deploy_history = ProgrammableGatewayDeployHistory()
-        last_deploy_history = ProgrammableGatewayDeployHistory()
-        # 查询当前deploy历史
-        deploy_history = (
-            ProgrammableGatewayDeployHistory.objects.filter(
-                gateway=gateway,
-                stage_id=stage_id,
-            )
-            .order_by("-id")
-            .first()
-        )
-        stage_release = ReleasedResourceHandler.get_stage_release(gateway, [stage_id]).get(stage_id)
-        # 正在发布版本状态
-        latest_publish_status = ""
-        latest_history_id = 0
-        # 当前生效版本状态
-        last_publish_status = ""
-        if stage_release:
-            # 优先使用与 stage_release 匹配的记录
-            last_deploy_history = (
-                ProgrammableGatewayDeployHistory.objects.filter(
-                    gateway=gateway, stage_id=stage_id, version=stage_release["resource_version_display"]
-                ).first()
-                or deploy_history  # 回退到最新记录
-            )
-            # 查询当前生效环境的 release history
-            last_release_history = ReleaseHistory.objects.filter(
-                gateway=gateway, stage_id=stage_id, resource_version__version=stage_release["resource_version_display"]
-            ).first()
-            if last_release_history:
-                last_publish_status = ReleaseHandler.get_release_status(last_release_history.id)
-
-            # 如果 stage_release 的版本和 deploy_history的第一个不一致，说明正在发布
-            if stage_release["resource_version_display"] != deploy_history.version:
-                latest_deploy_history = deploy_history
-                latest_publish_status = ReleaseHistoryStatusEnum.DOING.value
-
-        if deploy_history and latest_publish_status != "":
-            if not deploy_history.publish_id:
-                latest_publish_status = ReleaseHistoryStatusEnum.DOING.value
-            else:
-                latest_publish_status = ReleaseHandler.get_release_status(deploy_history.publish_id)
-                latest_history_id = deploy_history.publish_id
-
-        if deploy_history:
-            result = ReleaseHandler.get_paas_deploy_result(gateway, deploy_history, user_credentials)
-            # 正在发布的话需要判断是否失败
-            if latest_publish_status != "" and result.get("status", "") == "failed":
-                latest_publish_status = ReleaseHistoryStatusEnum.FAILURE.value
-
-            # 第一次发布
-            if last_publish_status == "" and result.get("status", "") == "failed":
-                last_deploy_history = deploy_history
-                last_publish_status = ReleaseHistoryStatusEnum.FAILURE.value
-            elif last_publish_status == "" and result.get("status", "") != "failed":
-                latest_deploy_history = deploy_history
-                if deploy_history.publish_id:
-                    latest_publish_status = ReleaseHandler.get_release_status(deploy_history.publish_id)
-                else:
-                    latest_publish_status = ReleaseHistoryStatusEnum.DOING.value
-        return {
-            "latest_deploy_history": latest_deploy_history,
-            "latest_history_id": latest_history_id,
-            "latest_publish_status": latest_publish_status,
-            "last_publish_status": last_publish_status,
-            "last_deploy_history": last_deploy_history,
-        }
-
-    @staticmethod
-    def batch_get_stage_deploy_status(
-        gateway: Gateway, stage_ids: List[int], user_credentials: UserCredentials
-    ) -> dict[int, dict[str, Any]]:
-        """批量查询 stage 的deploy状态"""
-        return {
-            stage_id: ReleaseHandler.get_stage_deploy_status(gateway, stage_id, user_credentials)
-            for stage_id in stage_ids
-        }
 
     @staticmethod
     def filter_released_gateway_ids(gateway_ids: List[int]) -> List[int]:

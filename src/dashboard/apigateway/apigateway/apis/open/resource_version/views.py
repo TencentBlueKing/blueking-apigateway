@@ -125,7 +125,7 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
                         resource_version_id=data["resource_version_id"],
                         comment=data["comment"],
                         username=request.user.username,
-                    )  # TODO open api 不能创建微网关, 这里不需要传BCS需要的user credentials, 后续有需求再补充
+                    )
             except LockTimeout as err:
                 return V1FailJsonResponse(str(err))
             except ReleaseError as err:

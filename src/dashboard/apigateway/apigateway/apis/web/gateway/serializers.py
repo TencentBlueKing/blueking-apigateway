@@ -23,7 +23,7 @@ from rest_framework.validators import UniqueTogetherValidator
 from apigateway.biz.constants import APP_CODE_PATTERN
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_type import GatewayTypeHandler
-from apigateway.biz.validators import APIDocMaintainerValidator
+from apigateway.biz.validators import GatewayAPIDocMaintainerValidator
 from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
@@ -314,7 +314,7 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
     service_account = ServiceAccountSLZ(required=False, help_text="服务号")
 
     class Meta:
-        validators = [APIDocMaintainerValidator()]
+        validators = [GatewayAPIDocMaintainerValidator()]
 
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):

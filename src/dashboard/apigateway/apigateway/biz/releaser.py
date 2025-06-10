@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -17,20 +17,16 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from dataclasses import dataclass
-from typing import Optional
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 from django.conf import settings
 from django.utils.functional import cached_property
-from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
 from apigateway.biz.validators import PublishValidator, ReleaseValidationError
-from apigateway.common.tenant.user_credentials import UserCredentials
-from apigateway.components.bkpaas import deploy_paas_app, set_paas_stage_env
 from apigateway.controller.tasks import (
     release_gateway_by_registry,
     update_release_data_after_success,
@@ -52,22 +48,13 @@ class ReleaseError(Exception):
     """发布失败"""
 
 
-class NonRelatedMicroGatewayError(Exception):
-    """环境未关联微网关实例"""
-
-
-class SharedMicroGatewayNotFound(Exception):
-    """未找到共享微网关实例"""
-
-
 @dataclass
-class BaseGatewayReleaser:
+class GatewayReleaser:
     gateway: Gateway
     stage: Stage
     resource_version: ResourceVersion
     comment: str = ""
     username: str = ""
-    user_credentials: Optional[UserCredentials] = None
 
     @classmethod
     def from_data(
@@ -77,14 +64,12 @@ class BaseGatewayReleaser:
         resource_version_id: int,
         comment: str,
         username: str = "",
-        user_credentials: Optional[UserCredentials] = None,
     ):
         """
         :param gateway: 待操作的网关
         :param stage_id: 发布的环境 id
         :param resource_version_id: 发布的版本 id
         :param comment: 发布备注
-        :param user_credentials: user_credentials
         :param username: 发布人
         """
         return cls(
@@ -93,7 +78,6 @@ class BaseGatewayReleaser:
             resource_version=ResourceVersion.objects.get(id=resource_version_id),
             comment=comment,
             username=username,
-            user_credentials=user_credentials,
         )
 
     def _save_release_history(self) -> ReleaseHistory:
@@ -109,7 +93,7 @@ class BaseGatewayReleaser:
     def release(self):
         self._pre_release()
 
-        # 如果是编程网关，查询一下deploy部署历史
+        # 如果是编程网关，查询一下 deploy 部署历史
         deploy_history = None
         if self.gateway.is_programmable:
             deploy_history = ProgrammableGatewayDeployHistory.objects.filter(
@@ -122,7 +106,7 @@ class BaseGatewayReleaser:
         # save release history
         history = self._save_release_history()
         if deploy_history:
-            # 补充publish_id
+            # 补充 publish_id
             deploy_history.publish_id = history.id
             deploy_history.save()
 
@@ -160,7 +144,7 @@ class BaseGatewayReleaser:
         # 因此，将普通参数校验，环境参数校验分开处理
         try:
             self._validate()
-        except (ValidationError, ReleaseValidationError, NonRelatedMicroGatewayError) as err:
+        except (ValidationError, ReleaseValidationError) as err:
             message = err.detail[0] if isinstance(err, ValidationError) else str(err)
             history = self._save_release_history()
             PublishEventReporter.report_config_validate_failure(history, message)
@@ -171,23 +155,33 @@ class BaseGatewayReleaser:
         publish_validator = PublishValidator(self.gateway, self.stage, self.resource_version)
         publish_validator()
 
-    def _do_release(self, releases: Release, release_history: ReleaseHistory):  # ruff: noqa: B027
+    def _do_release(self, release: Release, release_history: ReleaseHistory):  # ruff: noqa: B027
         """发布资源版本"""
+        release_success_callback = update_release_data_after_success.si(
+            publish_id=release_history.id,
+            release_id=release.id,
+            resource_version_id=release_history.resource_version.id,
+            author=release.updated_by,
+            comment=release.comment,
+        )
 
+        # create publish event
+        PublishEventReporter.report_create_publish_task_doing(release_history)
 
-@dataclass
-class MicroGatewayReleaser(BaseGatewayReleaser):
-    """微网关发布器"""
+        # NOTE: only support release for shared gateway
+        task = self._create_release_task_for_shared_gateway(release_history)
+
+        # 使用 celery 的编排能力，task 执行成功才会执行 release_success_callback
+        delay_on_commit(task | release_success_callback)
 
     @cached_property
     def _shared_micro_gateway(self):
-        # TODO: 根据网关集群分组来找到对应的网关
         try:
             return MicroGateway.objects.get_default_shared_gateway()
         except MicroGateway.DoesNotExist:
-            raise SharedMicroGatewayNotFound(_("共享微网关实例不存在。"))
+            raise ValueError("共享微网关实例不存在。")
 
-    def _create_release_task_for_shared_gateway(self, release: Release, release_history: ReleaseHistory):
+    def _create_release_task_for_shared_gateway(self, release_history: ReleaseHistory):
         shared_gateway = self._shared_micro_gateway
         if not shared_gateway:
             return None
@@ -197,31 +191,6 @@ class MicroGatewayReleaser(BaseGatewayReleaser):
             publish_id=release_history.pk,
         )  # type: ignore
 
-    def _create_release_task(self, release: Release, release_history: ReleaseHistory):
-        # create publish event
-        PublishEventReporter.report_create_publish_task_doing(release_history)
-        # NOTE: 发布专享网关时，不再将资源同时发布到共享网关
-        micro_gateway = release.stage.micro_gateway
-        # FIXME: refactor here
-        if not micro_gateway or micro_gateway.is_shared:
-            return self._create_release_task_for_shared_gateway(release, release_history)
-
-        raise ValueError("not support release for micro gateway")
-
-    def _do_release(self, release: Release, release_history: ReleaseHistory):
-        release_success_callback = update_release_data_after_success.si(
-            publish_id=release_history.id,
-            release_id=release.id,
-            resource_version_id=release_history.resource_version.id,
-            author=release.updated_by,
-            comment=release.comment,
-        )
-
-        task = self._create_release_task(release, release_history)
-
-        # 使用 celery 的编排能力，task执行成功才会执行release_success_callback
-        delay_on_commit(task | release_success_callback)
-
 
 def release(
     gateway: Gateway,
@@ -229,76 +198,11 @@ def release(
     resource_version_id: int,
     comment: str,
     username: str = "",
-    user_credentials: Optional[UserCredentials] = None,
 ) -> ReleaseHistory:
-    return MicroGatewayReleaser.from_data(
-        gateway, stage_id, resource_version_id, comment, username, user_credentials
+    return GatewayReleaser.from_data(
+        gateway,
+        stage_id,
+        resource_version_id,
+        comment,
+        username,
     ).release()
-
-
-@dataclass
-class ProgramGatewayReleaser:
-    @staticmethod
-    def deploy(
-        gateway: Gateway,
-        stage_id: int,
-        branch: str,
-        version_type: str,
-        commit_id: str,
-        version: str,
-        comment: str,
-        user_credentials: Optional[UserCredentials] = None,
-        username: str = "",
-    ) -> str:
-        """
-        编程网关部署
-        """
-        stage = Stage.objects.get(id=stage_id)
-
-        # 调用pass平台接口设置环境变量: 版本号+版本日志
-        set_paas_stage_env(
-            app_code=gateway.name,
-            module="default",
-            stage=stage.name,
-            env={
-                # "1.0.0+prod": 代码模版有通过版本号和环境名拼接的方式获取版本号，所以这里需要去掉
-                "BK_APIGW_RELEASE_VERSION": version.split("+")[0],  # 不带环境name
-                "BK_APIGW_RELEASE_COMMENT": comment,
-            },
-            user_credentials=user_credentials,
-        )
-
-        # 调用pass平台部署接口
-        deploy_id = deploy_paas_app(
-            app_code=gateway.name,
-            module="default",
-            env=stage.name,
-            revision=commit_id,
-            branch=branch,
-            version_type=version_type,
-            user_credentials=user_credentials,
-        )
-
-        # 创建部署历史
-        instance = ProgrammableGatewayDeployHistory.objects.create(
-            gateway=gateway,
-            stage=stage,
-            branch=branch,
-            version=version,
-            commit_id=commit_id,
-            deploy_id=deploy_id,
-            created_by=username,
-            source=PublishSourceEnum.VERSION_PUBLISH.value,
-        )
-
-        # record audit log
-        Auditor.record_release_op_success(
-            op_type=OpTypeEnum.CREATE,
-            username=username or settings.GATEWAY_DEFAULT_CREATOR,
-            gateway_id=gateway.id,
-            instance_id=instance.id,
-            instance_name=f"{stage.name}:{version}",
-            data_before={},
-            data_after=get_model_dict(instance),
-        )
-        return deploy_id

@@ -22,12 +22,10 @@ import pytest
 from ddf import G
 
 from apigateway.biz.releaser import (
-    BaseGatewayReleaser,
-    MicroGatewayReleaser,
+    GatewayReleaser,
     ReleaseError,
     ReleaseValidationError,
 )
-from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.core.constants import PublishEventEnum, PublishEventStatusEnum
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
 
@@ -62,44 +60,32 @@ def get_release_data(gateway):
     }
 
 
-class TestBaseGatewayReleaser:
+class TestGatewayReleaserBase:
     def test_from_data(self, fake_gateway, fake_stage, fake_resource_version):
-        releaser = BaseGatewayReleaser.from_data(
+        releaser = GatewayReleaser.from_data(
             fake_gateway,
             fake_stage.id,
             fake_resource_version.id,
             "",
-            user_credentials=UserCredentials(
-                credentials="access_token",
-                tenant_id="",
-            ),
         )
-        assert isinstance(releaser, BaseGatewayReleaser)
+        assert isinstance(releaser, GatewayReleaser)
 
         # 资源版本 不存在
         with pytest.raises(ResourceVersion.DoesNotExist):
-            BaseGatewayReleaser.from_data(
+            GatewayReleaser.from_data(
                 fake_gateway,
                 fake_stage.id,
                 0,
                 "",
-                user_credentials=UserCredentials(
-                    credentials="access_token",
-                    tenant_id="",
-                ),
             )
 
     def test_release(self, mocker, fake_gateway, celery_mock_task):
         release_data = get_release_data(fake_gateway)
-        releaser = BaseGatewayReleaser.from_data(
+        releaser = GatewayReleaser.from_data(
             fake_gateway,
             release_data["stage_id"],
             release_data["resource_version_id"],
             release_data.get("comment", ""),
-            user_credentials=UserCredentials(
-                credentials="access_token",
-                tenant_id="",
-            ),
         )
         # 校验失败
         mocker.patch.object(releaser, "_validate", side_effect=ReleaseValidationError)
@@ -124,21 +110,16 @@ class TestBaseGatewayReleaser:
         # mock_post_release.assert_called()
 
 
-class TestMicroGatewayReleaser:
+class TestGatewayReleaser:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self, fake_gateway):
         self.gateway = fake_gateway
         release_data = get_release_data(self.gateway)
-        # self.releaser = BaseGatewayReleaser.from_data(
-        self.releaser = MicroGatewayReleaser.from_data(
+        self.releaser = GatewayReleaser.from_data(
             self.gateway,
             release_data["stage_id"],
             release_data["resource_version_id"],
             release_data["comment"],
-            user_credentials=UserCredentials(
-                credentials="access_token",
-                tenant_id="",
-            ),
         )
 
     def test_do_release_shared_gateway(
@@ -158,7 +139,7 @@ class TestMicroGatewayReleaser:
             "apigateway.biz.releaser.release_gateway_by_registry",
             wraps=celery_mock_task,
         )
-        releaser = MicroGatewayReleaser(gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+        releaser = GatewayReleaser(gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
 
         releaser._do_release(fake_release, fake_release_history)
 
