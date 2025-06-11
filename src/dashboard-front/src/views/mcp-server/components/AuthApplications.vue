@@ -35,7 +35,7 @@
         @page-limit-change="handlePageSizeChange"
       >
         <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code" />
-        <bk-table-column :label="t('申请时间')" prop="expires" />
+        <!-- <bk-table-column :label="t('过期时间')" prop="expires" /> -->
         <bk-table-column :label="renderTypeLabel">
           <template #default="{ row }">
             {{ getOpTypeText(row.grant_type) || '--'}}
@@ -45,6 +45,7 @@
           <template #default="{ row }">
             <bk-pop-confirm
               placement="top"
+              trigger="click"
               :content="t('确认删除？')"
               @confirm="handleDel(row?.id)">
               <bk-button text theme="primary">

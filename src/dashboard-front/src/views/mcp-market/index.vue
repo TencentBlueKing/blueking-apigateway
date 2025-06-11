@@ -129,9 +129,7 @@ const goDetails = (id: number) => {
 }
 
 .main {
-  width: 1600px;
-  margin: 0 auto;
-
+  padding: 0px 145px 26px;
   .top {
     display: flex;
     justify-content: space-between;
@@ -163,9 +161,7 @@ const goDetails = (id: number) => {
       box-sizing: border-box;
       cursor: pointer;
       margin-bottom: 16px;
-      &:not(:nth-child(3n)) {
-        margin-right: 16px;
-      }
+      margin-right: 16px;
       .header {
         display: flex;
         align-items: center;
