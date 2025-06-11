@@ -60,54 +60,58 @@
                 @clear-filter="keyword = ''"
               />
             </template>
+            <TableEmpty v-else />
           </main>
         </div>
       </template>
       <!--  中间栏，当前 API 文档内容  -->
       <template #main>
         <div class="main-content-wrap">
-          <header v-if="selectedTool" class="tool-name">
-            <span class="name">{{ selectedTool.name }}</span>
-            <span class="desc">（{{ selectedTool.description }}）</span>
-          </header>
-          <article class="tool-basics">
-            <section class="basic-cell">
-              <span>
-                <span class="label">{{ t('更新时间') }}</span>：
-                {{ updatedTime || '--' }}
-              </span>
-            </section>
-            <section class="basic-cell">
-              <span>
-                <span v-bk-tooltips="t('应用访问该网关API时，是否需提供应用认证信息')" class="label">
-                  {{ t('应用认证') }}
-                </span>：
-                {{ selectedTool?.verified_app_required ? t('是') : t('否') }}
-              </span>
-            </section>
-            <section class="basic-cell">
-              <span>
-                <span
-                  v-bk-tooltips="t('应用访问该网关API前，是否需要在开发者中心申请该网关API权限')" class="label"
-                >
-                  {{ t('权限申请') }}
-                </span>：
-                {{ selectedTool?.allow_apply_permission ? t('是') : t('否') }}
-              </span>
-            </section>
-            <section class="basic-cell">
-              <span>
-                <span v-bk-tooltips="t('应用访问该网关API时，是否需要提供用户认证信息')" class="label">
-                  {{ t('用户认证') }}
-                </span>：
-                {{ selectedTool?.verified_user_required ? t('是') : t('否') }}
-              </span>
-            </section>
-          </article>
+          <template v-if="selectedTool">
+            <header class="tool-name">
+              <span class="name">{{ selectedTool.name }}</span>
+              <span class="desc">（{{ selectedTool.description }}）</span>
+            </header>
+            <article class="tool-basics">
+              <section class="basic-cell">
+                <span>
+                  <span class="label">{{ t('更新时间') }}</span>：
+                  {{ updatedTime || '--' }}
+                </span>
+              </section>
+              <section class="basic-cell">
+                <span>
+                  <span v-bk-tooltips="t('应用访问该网关API时，是否需提供应用认证信息')" class="label">
+                    {{ t('应用认证') }}
+                  </span>：
+                  {{ selectedTool?.verified_app_required ? t('是') : t('否') }}
+                </span>
+              </section>
+              <section class="basic-cell">
+                <span>
+                  <span
+                    v-bk-tooltips="t('应用访问该网关API前，是否需要在开发者中心申请该网关API权限')" class="label"
+                  >
+                    {{ t('权限申请') }}
+                  </span>：
+                  {{ selectedTool?.allow_apply_permission ? t('是') : t('否') }}
+                </span>
+              </section>
+              <section class="basic-cell">
+                <span>
+                  <span v-bk-tooltips="t('应用访问该网关API时，是否需要提供用户认证信息')" class="label">
+                    {{ t('用户认证') }}
+                  </span>：
+                  {{ selectedTool?.verified_user_required ? t('是') : t('否') }}
+                </span>
+              </section>
+            </article>
+          </template>
           <!--  API markdown 文档  -->
           <article v-if="selectedToolMarkdownHtml" class="tool-detail-content">
             <div id="toolDocMarkdown" v-dompurify-html="selectedToolMarkdownHtml" class="ag-markdown-view"></div>
           </article>
+          <TableEmpty v-else />
         </div>
       </template>
     </bk-resize-layout>
@@ -198,6 +202,17 @@ const toolGroupList = computed(() => {
         groupList.push({
           id,
           name,
+          toolList: [tool],
+        });
+      }
+    } else {
+      const group = groupList.find(item => item.id === 0);
+      if (group) {
+        group.toolList.push(tool);
+      } else {
+        groupList.push({
+          id: 0,
+          name: t('默认分类'),
           toolList: [tool],
         });
       }
