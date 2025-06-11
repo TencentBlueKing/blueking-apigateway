@@ -30,11 +30,11 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.apps.support.constants import DocLanguageEnum, ProgrammingLanguageEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SEMVER_PATTERN
-from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData, PluginSynchronizer
+from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
 from apigateway.biz.stage import StageHandler
 from apigateway.biz.validators import (
-    APIDocMaintainerValidator,
     BKAppCodeListValidator,
+    GatewayAPIDocMaintainerValidator,
     MaxCountPerGatewayValidator,
     ResourceVersionValidator,
     SchemeInputValidator,
@@ -50,8 +50,6 @@ from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
-from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
-from apigateway.common.plugin.validator import PluginConfigYamlValidator
 from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
@@ -61,6 +59,8 @@ from apigateway.core.constants import (
     LoadBalanceTypeEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, Gateway, ResourceVersion, Stage
+from apigateway.service.plugin.header_rewrite import HeaderRewriteConvertor
+from apigateway.service.plugin.validator import PluginConfigYamlValidator
 from apigateway.utils.time import NeverExpiresTime
 
 
@@ -94,7 +94,7 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
     service_account = ServiceAccountSLZ(required=False, help_text="服务号")
 
     class Meta:
-        validators = [APIDocMaintainerValidator()]
+        validators = [GatewayAPIDocMaintainerValidator()]
         ref_name = "apigateway.apis.v2.sync.serializers.GatewayAPIDocMaintainerSLZ"
 
 

@@ -21,7 +21,7 @@ from typing import Any, Dict
 from rest_framework import serializers
 
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
-from apigateway.apps.mcp_server.utils import build_mcp_server_url
+from apigateway.service.mcp.mcp_server import build_mcp_server_url
 
 
 class MCPServerListInputSLZ(serializers.Serializer):

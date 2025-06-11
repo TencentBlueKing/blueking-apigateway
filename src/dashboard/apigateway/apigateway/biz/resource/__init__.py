@@ -16,3 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from .resource import ResourceHandler  # noqa
+from .proxy import ProxyHandler  # noqa
+from .label import ResourceLabelHandler  # noqa
+from .openapi_schema import ResourceOpenAPISchemaVersionHandler  # noqa
+from .url import ResourceURLHandler  # noqa
+from .disabled_stage import ResourceDisabledStageHandler  # noqa

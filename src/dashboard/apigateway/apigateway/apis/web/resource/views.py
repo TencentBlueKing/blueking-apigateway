@@ -36,19 +36,18 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.backend import BackendHandler
-from apigateway.biz.plugin_binding import PluginBindingHandler
-from apigateway.biz.resource import ResourceHandler
+from apigateway.biz.plugin import PluginBindingHandler
+from apigateway.biz.resource import ResourceHandler, ResourceLabelHandler
 from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator, ResourcesImporter
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
 from apigateway.biz.resource.savers import ResourcesSaver
 from apigateway.biz.resource_doc.importer import DocImporter
 from apigateway.biz.resource_doc.importer.parsers import OpenAPIParser
 from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
-from apigateway.biz.resource_label import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.constants import STAGE_VAR_PATTERN
 from apigateway.core.models import BackendConfig, Proxy, Resource, Stage
+from apigateway.service.contexts import ResourceAuthContext
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, FailJsonResponse, OKJsonResponse
 

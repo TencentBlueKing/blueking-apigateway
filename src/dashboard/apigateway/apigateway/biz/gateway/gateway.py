@@ -24,22 +24,23 @@ from typing import Any, Dict, List, Optional
 from django.conf import settings
 from django.db.models import Count
 
-from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
-from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
-from apigateway.biz.gateway_jwt import GatewayJWTHandler
-from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
-from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.tenant.query import gateway_filter_by_user_tenant_id
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
+from apigateway.service.alarm_strategy import create_default_alarm_strategy
+from apigateway.service.contexts import GatewayAuthContext
+from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.utils.dict import deep_update
+
+from .app_binding import GatewayAppBindingHandler
+from .related_app import GatewayRelatedAppHandler
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +198,7 @@ class GatewayHandler:
 
         # 4. create default alarm-strategy
 
-        AlarmStrategy.objects.create_default_strategy(gateway, created_by=username)
+        create_default_alarm_strategy(gateway, created_by=username)
 
         # 5. create related app
         if related_app_code:

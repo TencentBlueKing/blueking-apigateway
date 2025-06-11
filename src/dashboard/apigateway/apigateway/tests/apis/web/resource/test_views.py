@@ -31,9 +31,9 @@ from apigateway.apis.web.resource.views import (
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.savers import ResourcesSaver
-from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core import constants
 from apigateway.core.models import Backend, BackendConfig, Context, Proxy, Resource, Stage
+from apigateway.service.contexts import ResourceAuthContext
 
 
 class TestResourceListCreateApi:

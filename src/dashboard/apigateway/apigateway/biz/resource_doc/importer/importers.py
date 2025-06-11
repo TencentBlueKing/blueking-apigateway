@@ -74,12 +74,16 @@ class DocImporter:
                         content=doc.content,
                     )
                 )
-            else:
+            # 如果文档有更新
+            elif doc.content_changed:
                 doc.resource_doc.type = DocTypeEnum.MARKDOWN.value
                 doc.resource_doc.source = DocSourceEnum.IMPORT.value
                 doc.resource_doc.content = doc.content
                 doc.resource_doc.updated_time = now
                 update_resource_docs.append(doc.resource_doc)
+            # 如果文档没有更新，什么都不做
+            else:
+                pass
 
         if add_resource_docs:
             ResourceDoc.objects.bulk_create(add_resource_docs, batch_size=100)

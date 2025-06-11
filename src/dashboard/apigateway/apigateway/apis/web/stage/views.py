@@ -25,15 +25,14 @@ from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
 from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.biz.programmable import ProgrammableGatewayReleaser
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
-from apigateway.components.bkpaas import (
-    get_paas_repo_branch_info,
-)
+from apigateway.components.bkpaas import get_paas_repo_branch_info
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum, StageStatusEnum
 from apigateway.core.models import BackendConfig, Stage
@@ -91,7 +90,8 @@ class StageListCreateApi(StageQuerySetMixin, generics.ListCreateAPIView):
                     gateway=request.gateway, stage_ids=stage_ids
                 ),
                 "stage_publish_status": ReleaseHandler.batch_get_stage_release_status(stage_ids),
-                "stage_deploy_status": ReleaseHandler.batch_get_stage_deploy_status(
+                # NOTE: this is only for programmable gateway
+                "stage_deploy_status": ProgrammableGatewayReleaser.batch_get_stage_deploy_status(
                     request.gateway, stage_ids, get_user_credentials_from_request(request)
                 )
                 if request.gateway.is_programmable
@@ -171,7 +171,8 @@ class StageRetrieveUpdateDestroyApi(StageQuerySetMixin, generics.RetrieveUpdateD
                     gateway=request.gateway, stage_ids=[instance.id]
                 ),
                 "stage_publish_status": ReleaseHandler.batch_get_stage_release_status([instance.id]),
-                "stage_deploy_status": ReleaseHandler.batch_get_stage_deploy_status(
+                # NOTE: this is only for programmable gateway
+                "stage_deploy_status": ProgrammableGatewayReleaser.batch_get_stage_deploy_status(
                     request.gateway, [instance.id], get_user_credentials_from_request(request)
                 )
                 if request.gateway.is_programmable
@@ -455,7 +456,7 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
         stage = self.get_object()
         gateway = request.gateway
         stage_id = stage.id
-        stage_deploy_result = ReleaseHandler.get_stage_deploy_status(
+        stage_deploy_result = ProgrammableGatewayReleaser.get_stage_deploy_status(
             gateway, stage_id, get_user_credentials_from_request(request)
         )
         context_data = {

@@ -1,6 +1,6 @@
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -21,7 +21,6 @@ from typing import List, Optional, Tuple
 from blue_krill.async_utils.django_utils import delay_on_commit
 
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
-from apigateway.common.event.event import PublishEventReporter
 from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.components.bkpaas import paas_app_module_offline
 from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
@@ -34,6 +33,7 @@ from apigateway.core.constants import (
     TriggerPublishTypeEnum,
 )
 from apigateway.core.models import Gateway, Release, ReleaseHistory
+from apigateway.service.event.event import PublishEventReporter
 
 logger = logging.getLogger(__name__)
 
@@ -67,10 +67,10 @@ def _is_gateway_ok_for_releasing(release: Release, source: PublishSourceEnum) ->
             msg = f"release(id={release.pk})  stage(name={release.stage.name}) is not active, ignored"
             return False, msg
 
-    # 校验版本,现在只支持v2发布
+    # 校验版本，现在只支持 v2 发布
     if not release.resource_version.is_schema_v2:
         msg = (
-            f"The data structure of version 【{release.resource_version.object_display}】 is incompatible and is not "
+            f"The data structure of version [{release.resource_version.object_display}] is incompatible and is not "
             f"allowed to be published. Please create a new version in [Resource Configuration] before publishing."
         )
         return False, msg
@@ -147,7 +147,7 @@ def _trigger_revoke_publish_for_disable(
 
         # 如果是编程网关需要特殊处理
         if release.gateway.is_programmable and user_credentials:
-            # 需要调用paas 下线接口
+            # 需要调用 paas 下线接口
             # 停用时，需要调用 paas 的 module_offline 接口下架环境
             offline_operation_id = paas_app_module_offline(
                 app_code=release.gateway.name,
@@ -213,13 +213,13 @@ def trigger_gateway_publish(
     is_sync: Optional[bool] = False,
     user_credentials: Optional[UserCredentials] = None,
 ):
-    """触发网关发布"""
-    """
-      source: 发布来源
-      author: 发布者
-      gateway_id: 网关 id
-      stage_id: 环境 id
-      is_sync: 同步异步
+    """触发网关发布
+    source: 发布来源
+    author: 发布者
+    gateway_id: 网关 id
+    stage_id: 环境 id
+    is_sync: 同步异步
+    user_credentials: 用户凭证
     """
     trigger_publish_type = PublishSourceTriggerPublishTypeMapping[source]
     if not trigger_publish_type:

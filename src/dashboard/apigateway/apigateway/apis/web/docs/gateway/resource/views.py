@@ -21,7 +21,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.biz.released_resource import ReleasedResourceHandler
-from apigateway.biz.resource_label import ResourceLabelHandler
+from apigateway.biz.resource import ResourceLabelHandler
 from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.utils.responses import OKJsonResponse
 

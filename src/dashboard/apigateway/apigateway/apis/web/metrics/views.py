@@ -31,12 +31,12 @@ from apigateway.apps.metrics.constants import (
     MetricsRangeEnum,
 )
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay
-from apigateway.apps.metrics.prometheus.dimension import (
+from apigateway.core.models import Resource, Stage
+from apigateway.service.prometheus.dimension import (
     MetricsInstantFactory,
     MetricsRangeFactory,
     MetricsSummaryFactory,
 )
-from apigateway.core.models import Resource, Stage
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.time import MetricsSmartTimeRange
 

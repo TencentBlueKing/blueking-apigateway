@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData
+from apigateway.biz.plugin.synchronizers import PluginConfigData
 from apigateway.core.models import Backend, Resource
 
 

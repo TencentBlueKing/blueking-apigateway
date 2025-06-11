@@ -20,6 +20,20 @@ export interface IMCPServer {
     id: number,
     name: string,
   },
+  tools?: IMCPServerTool[]
+}
+
+export interface IMCPServerTool {
+  id: number,
+  name: string,
+  description: string,
+  method: string,
+  path: string,
+  verified_user_required: boolean,
+  verified_app_required: string[],
+  resource_perm_required: string[],
+  allow_apply_permission: string[],
+  labels: { id: number, name: string }[],
 }
 
 const { BK_DASHBOARD_URL } = window;
@@ -57,3 +71,13 @@ export const deleteServer = (apigwId: number, serverId: number) => fetch.delete(
 export const patchServerStatus = (apigwId: number, serverId: number, data: {
   status: number,
 }) => fetch.patch(`${BK_DASHBOARD_URL}/gateways/${apigwId}/mcp-servers/${serverId}/status/`, data);
+
+// 工具列表
+export const getServerTools = (apigwId: number, mcp_server_id: number): Promise<IMCPServerTool[]> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/mcp-servers/${mcp_server_id}/tools/`);
+
+// 工具文档
+export const getServerToolDoc = (apigwId: number, mcp_server_id: number, tool_name: string): Promise<{
+  type: string,
+  content: string,
+  updated_time: string,
+}> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/mcp-servers/${mcp_server_id}/tools/${tool_name}/doc/`);

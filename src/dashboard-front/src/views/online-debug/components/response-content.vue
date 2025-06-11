@@ -139,7 +139,6 @@
       v-if="user.isAIEnabled"
       v-model="isAISliderShow"
       :message="aiRequestMessage"
-      message-type="doc_translate"
       :title="t('状态分析')"
     />
   </div>
@@ -326,7 +325,7 @@ watch(
 
 const handleAIClick = () => {
   try {
-    aiRequestMessage.value = JSON.stringify(props.res);
+    aiRequestMessage.value = JSON.stringify(props.res, null, 2);
     isAISliderShow.value = true;
   } catch {
     aiRequestMessage.value = '';

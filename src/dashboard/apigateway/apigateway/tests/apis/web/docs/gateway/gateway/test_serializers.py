@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from apigateway.apis.web.docs.gateway.gateway.serializers import GatewayOutputSLZ
-from apigateway.common.contexts import GatewayAuthContext
+from apigateway.service.contexts import GatewayAuthContext
 
 
 class TestGatewayOutputSLZ:

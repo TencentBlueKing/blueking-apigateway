@@ -24,13 +24,13 @@ from pydantic import TypeAdapter
 
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.openapi.models import OpenAPIResourceSchema
-from apigateway.biz.resource import ResourceHandler
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, ProxyTypeEnum
 from apigateway.core.models import Context, Gateway, Proxy, Resource
 from apigateway.utils.time import now_datetime
 
 from .models import ResourceData
+from .resource import ResourceHandler
 
 BULK_BATCH_SIZE = 100
 

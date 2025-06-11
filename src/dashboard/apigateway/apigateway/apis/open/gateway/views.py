@@ -37,14 +37,12 @@ from apigateway.apis.open.permissions import (
 )
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
-from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
-from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
+from apigateway.biz.gateway import GatewayData, GatewayRelatedAppHandler, GatewaySaver
 from apigateway.biz.release import ReleaseHandler
 from apigateway.common.constants import (
     CACHE_MAXSIZE,
     CACHE_TIME_5_MINUTES,
 )
-from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.tenant.constants import (
     TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
     TenantModeEnum,
@@ -53,6 +51,7 @@ from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_info, list_all_apps_of_tenant
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import JWT, Gateway
+from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import V1OKJsonResponse
 

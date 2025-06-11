@@ -44,3 +44,8 @@ class DocSourceEnum(StructuredEnum):
 class DocArchiveTypeEnum(StructuredEnum):
     TGZ = EnumField("tgz", label=_("tgz 归档文件"))
     ZIP = EnumField("zip", label=_("zip 归档文件"))
+
+
+class OpenAPIFormatEnum(StructuredEnum):
+    YAML = EnumField("yaml", label="YAML")
+    JSON = EnumField("json", label="JSON")

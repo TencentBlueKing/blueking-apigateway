@@ -21,19 +21,18 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.biz.constants import APP_CODE_PATTERN
-from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.gateway_type import GatewayTypeHandler
-from apigateway.biz.validators import APIDocMaintainerValidator
+from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
+from apigateway.biz.validators import GatewayAPIDocMaintainerValidator
 from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.common.paas import gen_programmable_gateway_links
 from apigateway.core.constants import (
     GatewayKindEnum,
     GatewayStatusEnum,
     ProgrammableGatewayLanguageEnum,
 )
 from apigateway.core.models import Gateway
+from apigateway.service.paas import gen_programmable_gateway_links
 from apigateway.utils.crypto import calculate_fingerprint
 
 from .validators import (
@@ -314,7 +313,7 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
     service_account = ServiceAccountSLZ(required=False, help_text="服务号")
 
     class Meta:
-        validators = [APIDocMaintainerValidator()]
+        validators = [GatewayAPIDocMaintainerValidator()]
 
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):

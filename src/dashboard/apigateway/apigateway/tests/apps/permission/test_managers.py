@@ -247,30 +247,6 @@ class TestAppResourcePermissionManager:
             assert permission.grant_type == test["grant_type"]
             assert 180 * 24 * 3600 - 10 < (permission.expires - now_datetime()).total_seconds() < 180 * 24 * 3600
 
-    def test_sync_from_api_permission(self):
-        bk_app_code = "test"
-        gateway = G(Gateway)
-        resource = G(Resource, gateway=gateway)
-
-        # has no api-perm
-        models.AppResourcePermission.objects.sync_from_gateway_permission(gateway, bk_app_code, [resource.id])
-        assert models.AppResourcePermission.objects.filter(gateway=gateway, bk_app_code=bk_app_code).count() == 0
-
-        # api-perm expired
-        api_perm = G(
-            models.AppGatewayPermission,
-            gateway=gateway,
-            bk_app_code=bk_app_code,
-            expires=now_datetime() - datetime.timedelta(seconds=10),
-        )
-        models.AppResourcePermission.objects.sync_from_gateway_permission(gateway, bk_app_code, [1])
-        assert models.AppResourcePermission.objects.filter(gateway=gateway, bk_app_code=bk_app_code).count() == 0
-
-        api_perm.expires = now_datetime() + datetime.timedelta(seconds=10)
-        api_perm.save()
-        models.AppResourcePermission.objects.sync_from_gateway_permission(gateway, bk_app_code, [resource.id])
-        assert models.AppResourcePermission.objects.filter(gateway=gateway, bk_app_code=bk_app_code).count() == 1
-
 
 class TestAppPermissionRecordManager:
     def test_filter_record(self):

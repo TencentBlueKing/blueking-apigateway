@@ -22,7 +22,7 @@ import pytest
 from ddf import G
 
 from apigateway.apis.open.stage import views
-from apigateway.biz.plugin_binding import PluginBindingHandler
+from apigateway.biz.plugin import PluginBindingHandler
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Backend, BackendConfig, Gateway, Stage
 from apigateway.tests.utils.testing import get_response_json
@@ -96,7 +96,7 @@ class TestStageSyncViewSet:
         )
 
         mocker.patch(
-            "apigateway.common.plugin.header_rewrite.HeaderRewriteConvertor.sync_plugins",
+            "apigateway.service.plugin.header_rewrite.HeaderRewriteConvertor.sync_plugins",
             return_value=True,
         )
 
@@ -141,7 +141,7 @@ class TestStageSyncViewSet:
         )
 
         mocker.patch(
-            "apigateway.common.plugin.header_rewrite.HeaderRewriteConvertor.sync_plugins",
+            "apigateway.service.plugin.header_rewrite.HeaderRewriteConvertor.sync_plugins",
             return_value=True,
         )
 

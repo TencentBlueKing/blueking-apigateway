@@ -25,9 +25,6 @@ from django.utils.functional import cached_property
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
-from apigateway.biz.gateway_jwt import GatewayJWTHandler
-from apigateway.common.contexts import GatewayAuthContext
-from apigateway.common.plugin.convertor import PluginConvertorFactory
 from apigateway.controller.crds.release_data.base import PluginData
 from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
@@ -35,6 +32,9 @@ from apigateway.core.constants import (
     ContextTypeEnum,
 )
 from apigateway.core.models import BackendConfig, Context, Gateway, Release, ResourceVersion, Stage
+from apigateway.service.contexts import GatewayAuthContext
+from apigateway.service.gateway_jwt import GatewayJWTHandler
+from apigateway.service.plugin.convertor import PluginConvertorFactory
 
 logger = logging.getLogger(__name__)
 

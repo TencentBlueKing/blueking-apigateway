@@ -22,9 +22,8 @@ from typing import IO, AnyStr, Dict, List, Optional, Union
 from django.utils.translation import gettext as _
 from openapi_spec_validator.versions import OPENAPIV2
 
-from apigateway.apps.support.constants import DocLanguageEnum
+from apigateway.apps.support.constants import DocLanguageEnum, OpenAPIFormatEnum
 from apigateway.apps.support.models import ResourceDoc
-from apigateway.biz.constants import OpenAPIFormatEnum
 from apigateway.biz.resource.importer.constants import OpenAPIExtensionEnum
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
 from apigateway.biz.resource.importer.schema import convert_operation_v3_to_v2

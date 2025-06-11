@@ -27,7 +27,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from pydantic import TypeAdapter
 
-from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
+from apigateway.biz.gateway import GatewayData, GatewaySaver
 from apigateway.common.tenant.constants import (
     TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
     TenantModeEnum,

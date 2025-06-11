@@ -21,8 +21,8 @@ import json
 from django_dynamic_fixture import G
 
 from apigateway.apis.web.sdk.serializers import GatewaySDKListOutputSLZ
-from apigateway.apps.support.api_sdk.models import SDKFactory
 from apigateway.apps.support.models import GatewaySDK
+from apigateway.biz.sdk.models import SDKFactory
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion
 from apigateway.tests.utils.testing import dummy_time

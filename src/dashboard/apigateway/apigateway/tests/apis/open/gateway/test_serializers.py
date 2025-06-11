@@ -20,8 +20,8 @@ import pytest
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.open.gateway import serializers
-from apigateway.common.contexts import GatewayAuthContext
 from apigateway.core.constants import GatewayStatusEnum
+from apigateway.service.contexts import GatewayAuthContext
 
 
 class TestGatewayListV1InputSLZ:

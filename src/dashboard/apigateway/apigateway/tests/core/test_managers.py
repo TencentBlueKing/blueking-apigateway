@@ -61,7 +61,7 @@ class TestStageManager:
         s1 = G(Stage, gateway=gateway, name="prod")
         s2 = G(Stage, gateway=gateway, name="test")
 
-        result = Stage.objects.get_name_id_map(gateway)
+        result = Stage.objects.get_name_id_map(gateway.id)
         assert result == {"prod": s1.id, "test": s2.id}
 
     def test_create_stage(self):

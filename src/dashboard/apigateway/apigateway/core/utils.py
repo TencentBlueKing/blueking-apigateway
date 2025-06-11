@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.conf import settings
 
 
 def get_path_display(path, match_subpath):
@@ -24,25 +23,3 @@ def get_path_display(path, match_subpath):
         return path
 
     return f"{path.rstrip('/')}/*"
-
-
-def get_resource_url(resource_url_tmpl: str, gateway_name: str, stage_name: str, resource_path: str):
-    """
-    拼接资源请求地址
-    """
-    return resource_url_tmpl.format(
-        api_name=gateway_name,
-        stage_name=stage_name,
-        resource_path=resource_path.lstrip("/"),
-    )
-
-
-def get_resource_doc_link(api_name, stage_name, resource_name):
-    """
-    资源文档链接
-    """
-    return settings.RESOURCE_DOC_URL_TMPL.format(
-        api_name=api_name,
-        stage_name=stage_name,
-        resource_name=resource_name,
-    )

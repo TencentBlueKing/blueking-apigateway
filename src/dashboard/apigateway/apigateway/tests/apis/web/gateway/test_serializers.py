@@ -29,10 +29,10 @@ from apigateway.apis.web.gateway.serializers import (
     GatewayUpdateStatusInputSLZ,
 )
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.gateway_jwt import GatewayJWTHandler
-from apigateway.common.contexts import GatewayAuthConfig
 from apigateway.core.constants import GatewayTypeEnum
 from apigateway.core.models import Gateway, Resource, Stage
+from apigateway.service.contexts import GatewayAuthConfig
+from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.utils.crypto import calculate_fingerprint
 
 

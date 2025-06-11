@@ -21,7 +21,8 @@ from rest_framework import serializers
 
 from apigateway.apis.web.constants import PLUGIN_MERGE_TYPE
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
-from apigateway.biz.constants import SEMVER_PATTERN, OpenAPIFormatEnum
+from apigateway.apps.support.constants import OpenAPIFormatEnum
+from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.validators import ResourceVersionValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import ResourceVersionSchemaEnum, ResourceVersionTypeEnum

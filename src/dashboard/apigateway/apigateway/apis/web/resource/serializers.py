@@ -30,10 +30,9 @@ from apigateway.apis.web.resource.validators import (
     PathVarsValidator,
 )
 from apigateway.apps.plugin.models import PluginConfig
-from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, OpenAPIFormatEnum
-from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.gateway_label import GatewayLabelHandler
+from apigateway.apps.support.constants import DocLanguageEnum, OpenAPIFormatEnum
+from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
+from apigateway.biz.gateway import GatewayHandler, GatewayLabelHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator

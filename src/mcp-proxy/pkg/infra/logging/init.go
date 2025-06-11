@@ -29,6 +29,7 @@ import (
 	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/constant"
 	sty "mcp_proxy/pkg/infra/sentry"
+	"mcp_proxy/pkg/util"
 )
 
 var loggerInitOnce sync.Once
@@ -73,7 +74,7 @@ func GetLogger() *zap.SugaredLogger {
 // GetLoggerWithContext ...
 func GetLoggerWithContext(ctx context.Context) *zap.SugaredLogger {
 	ctxLogger := defaultLogger
-	if requestID, ok := ctx.Value(constant.RequestID).(string); ok {
+	if requestID, ok := ctx.Value(util.RequestIDKey).(string); ok {
 		ctxLogger = defaultLogger.With(zap.String("request_id", requestID))
 	}
 	return ctxLogger
@@ -87,7 +88,7 @@ func GetAPILogger() *zap.Logger {
 // GetAuditLoggerWithContext ...
 func GetAuditLoggerWithContext(ctx context.Context) *zap.Logger {
 	ctxLogger := auditLogger
-	if requestID, ok := ctx.Value(constant.RequestID).(string); ok {
+	if requestID, ok := ctx.Value(util.RequestIDKey).(string); ok {
 		ctxLogger = auditLogger.With(zap.String("request_id", requestID))
 	}
 	if appCode, ok := ctx.Value(constant.BkAppCode).(string); ok {

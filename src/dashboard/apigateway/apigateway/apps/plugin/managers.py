@@ -29,7 +29,7 @@ class PluginConfigManager(models.Manager):
 
 
 class PluginBindingManager(models.Manager):
-    def delete_by_gateway_id(self, gateway_id):
+    def delete_by_gateway_id(self, gateway_id: int):
         self.filter(gateway_id=gateway_id).delete()
 
     def create_or_update_bindings(

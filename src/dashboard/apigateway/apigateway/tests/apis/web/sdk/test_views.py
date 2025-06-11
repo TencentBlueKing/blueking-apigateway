@@ -20,9 +20,9 @@ import json
 
 from django_dynamic_fixture import G
 
-from apigateway.apps.support.api_sdk.models import SDKContext
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.apps.support.models import GatewaySDK
+from apigateway.biz.sdk.models import SDKContext
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion
 from apigateway.tests.utils.testing import dummy_time
@@ -118,7 +118,7 @@ class TestGatewaySDKListCreateApi:
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
 
         mocker.patch(
-            "apigateway.apps.support.api_sdk.managers.python.SDKManager.handle",
+            "apigateway.biz.sdk.managers.python.SDKManager.handle",
             return_value=SDKContext(
                 name=f"bkapigw-{fake_gateway.name}",
                 resource_version=resource_version,

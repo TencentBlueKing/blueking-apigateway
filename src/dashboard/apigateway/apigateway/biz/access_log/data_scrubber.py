@@ -27,7 +27,8 @@ from apigateway.biz.access_log.constants import (
     SENSITIVE_KEYS_MATCH_PATTERN,
     SENSITIVE_KEYS_PART_MATCH_PATTERN,
 )
-from apigateway.biz.access_log.exceptions import NotScrubbedException
+
+from .exceptions import NotScrubbedException
 
 logger = logging.getLogger(__name__)
 
