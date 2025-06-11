@@ -39,7 +39,7 @@ class TestStageHandler:
     )
     def test_get_stage_ids(self, mocker, fake_request, fake_gateway, stage_names, expected, will_error):
         mocker.patch(
-            "apigateway.biz.stage.Stage.objects.get_name_id_map",
+            "apigateway.biz.stage.stage.Stage.objects.get_name_id_map",
             return_value={"prod": 1, "test": 2},
         )
 

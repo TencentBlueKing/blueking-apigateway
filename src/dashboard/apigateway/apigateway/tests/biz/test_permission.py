@@ -100,7 +100,7 @@ class TestPermissionDimensionManager:
         assert isinstance(manager, expected)
 
 
-class TestAPIPermissionDimensionManager:
+class TestGatewayPermissionDimensionManager:
     def _make_fake_apply(self, fake_gateway):
         return G(
             AppPermissionApply,

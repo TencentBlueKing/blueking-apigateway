@@ -418,7 +418,7 @@ class ResourceProxyHTTPConfig:
 
 
 class TestResourceDifferHandler:
-    @patch("apigateway.biz.resource_version_diff.ResourceDifferHandler.model_validate")
+    @patch("apigateway.biz.resource_version.ResourceDifferHandler.model_validate")
     def test_diff_resource_version_data(self, mock_parse_obj):
         class ResourceDifferMock(BaseModel, DiffMixin):
             id: int

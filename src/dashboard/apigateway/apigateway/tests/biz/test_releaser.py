@@ -136,7 +136,7 @@ class TestGatewayReleaser:
         celery_mock_task,
     ):
         mock_release_gateway_by_registry = mocker.patch(
-            "apigateway.biz.releaser.release_gateway_by_registry",
+            "apigateway.biz.gateway.releaser.release_gateway_by_registry",
             wraps=celery_mock_task,
         )
         releaser = GatewayReleaser(gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)

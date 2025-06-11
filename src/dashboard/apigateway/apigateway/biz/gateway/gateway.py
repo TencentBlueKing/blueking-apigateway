@@ -26,7 +26,6 @@ from django.db.models import Count
 
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
-from apigateway.biz.gateway import GatewayAppBindingHandler, GatewayRelatedAppHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
@@ -39,6 +38,9 @@ from apigateway.service.alarm_strategy import create_default_alarm_strategy
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.utils.dict import deep_update
+
+from .app_binding import GatewayAppBindingHandler
+from .related_app import GatewayRelatedAppHandler
 
 logger = logging.getLogger(__name__)
 

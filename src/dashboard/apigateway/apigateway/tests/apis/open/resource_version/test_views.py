@@ -96,7 +96,7 @@ class TestResourceVersionReleaseApi:
     def test_release(self, faker, request_view, fake_admin_user, fake_gateway, mocker):
         G(ResourceVersion, gateway=fake_gateway)
         mocker.patch(
-            "apigateway.biz.releaser.GatewayReleaser.release",
+            "apigateway.biz.gateway.releaser.GatewayReleaser.release",
             return_value=None,
         )
         mocker.patch(
