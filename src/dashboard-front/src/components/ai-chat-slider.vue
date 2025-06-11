@@ -17,7 +17,7 @@
             {{ message }}
           </div>
           <div v-if="response && !loading" class="msg-item out">
-            {{ response }}
+            <div v-dompurify-html="markdownHTML" />
           </div>
         </div>
         <BkLoading v-if="loading" style="width: 100%;justify-content: center;" />
@@ -35,6 +35,8 @@ import {
 import { getAICompletion } from '@/http';
 import { useCommon } from '@/store';
 import { onClickOutside } from '@vueuse/core';
+import MarkdownIt from 'markdown-it';
+import hljs from 'highlight.js';
 
 interface IProps {
   title?: string;
@@ -56,8 +58,25 @@ const {
 const commonStore = useCommon();
 
 const response = ref('');
+const markdownHTML = ref('');
 const loading = ref(false);
 const target = useTemplateRef<HTMLElement>('target');
+
+const md = new MarkdownIt({
+  linkify: false,
+  html: true,
+  breaks: true,
+  highlight(str: string, lang: string) {
+    try {
+      if (lang && hljs.getLanguage(lang)) {
+        return hljs.highlight(str, { language: lang, ignoreIllegals: true }).value;
+      }
+    } catch {
+      return str;
+    }
+    return str;
+  },
+});
 
 watch(() => message, () => {
   getResponse();
@@ -78,6 +97,7 @@ const getResponse = async () => {
       },
     });
     response.value = res.content || '';
+    markdownHTML.value = md.render(res.content);
   } finally {
     loading.value = false;
   }
@@ -122,6 +142,7 @@ onClickOutside(target, () => {
 
       &.out {
         background: #fafbfd;
+        white-space: break-spaces;
       }
     }
   }
