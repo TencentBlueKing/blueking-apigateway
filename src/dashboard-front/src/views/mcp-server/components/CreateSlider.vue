@@ -238,6 +238,7 @@ const columns = [
     align: 'center',
     render: ({ row }: any) => <bk-checkbox
       modelValue={isRowSelected(row)}
+      disabled={row.has_openapi_schema}
       onChange={(checked: boolean) => handleSelectResource(row, checked)}
     />,
   },
@@ -402,7 +403,8 @@ const handleSelectResource = (row: any, checked: boolean) => {
 
 const handleSelectAllResource = (checked: boolean) => {
   if (checked) {
-    selections.value = resourceList.value.map((resource) => resource.name);
+    selections.value = resourceList.value.filter((resource) => !resource.has_openapi_schema)
+                                   .map((resource) => resource.name);
   } else {
     selections.value = [];
   }
