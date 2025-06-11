@@ -201,6 +201,17 @@ const toolGroupList = computed(() => {
           toolList: [tool],
         });
       }
+    } else {
+      const group = groupList.find(item => item.id === 0);
+      if (group) {
+        group.toolList.push(tool);
+      } else {
+        groupList.push({
+          id: 0,
+          name: t('默认分类'),
+          toolList: [tool],
+        });
+      }
     }
 
     return groupList;
