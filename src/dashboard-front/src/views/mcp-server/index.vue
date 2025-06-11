@@ -16,7 +16,7 @@
         <AgIcon name="add-small" size="40" />
       </div>
     </div>
-    <CreateSlider v-model="isCreateSliderShow" :server-id="editingServerId" />
+    <CreateSlider v-model="isCreateSliderShow" :server-id="editingServerId" @updated="handleServerUpdated" />
   </div>
 </template>
 
@@ -144,6 +144,10 @@ const handleDelete = async (id: number) => {
       await fetchServerList();
     },
   });
+};
+
+const handleServerUpdated = () => {
+  fetchServerList();
 };
 
 const handleCardClick = (id: number) => {

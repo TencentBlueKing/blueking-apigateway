@@ -333,7 +333,6 @@ const handleSubmit = async () => {
       theme: 'success',
       message: t('编辑成功'),
     });
-    emit('updated');
   } else {
     const params = Object.assign({}, formData.value, {
       name: `${serverNamePrefix.value}${formData.value.name}`,
@@ -348,6 +347,7 @@ const handleSubmit = async () => {
       message: t('创建成功'),
     });
   }
+  emit('updated');
   isShow.value = false;
 };
 
