@@ -153,17 +153,20 @@
                 </template>
               </div>
             </div> -->
-            <div class="detail-item-content-item maintainers">
+            <div class="detail-item-content-item">
               <div class="label">{{ `${t('维护人员')}：` }}</div>
               <div class="value">
-                <bk-popover max-width="640">
-                  <span>{{ basicInfoData.maintainers.join(', ') }}</span>
-                  <template #content>
-                    <div>
-                      {{ basicInfoData.maintainers.join(', ') }}
-                    </div>
-                  </template>
-                </bk-popover>
+                <GateWaysEditMemberSelector
+                  :content="basicInfoData.maintainers"
+                  :error-value="t('维护人员不能为空')"
+                  :is-error-class="'maintainers-error-tip'"
+                  :is-required="true"
+                  :placeholder="t('请选择维护人员')"
+                  field="maintainers"
+                  mode="edit"
+                  width="600px"
+                  @on-change="(e:Record<string, any>) => handleMaintainerChange(e)"
+                />
               </div>
             </div>
             <div class="detail-item-content-item">
@@ -400,6 +403,7 @@ import {
   editGateWays,
   getGateWaysInfo,
   getGuideDocs,
+  putGatewaysBasics,
   toggleGateWaysStatus,
 } from '@/http';
 import GateWaysEditTextarea from '@/components/gateways-edit/textarea.vue';
@@ -410,6 +414,7 @@ import hljs from 'highlight.js';
 // @ts-ignore
 import programProcess from '@/images/program-process.png';
 import EditApiDoc from './common/editApiDoc.vue';
+import GateWaysEditMemberSelector from '@/components/gateways-edit/member-selector.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -634,6 +639,16 @@ const handleInfoChange = async (payload: Record<string, string>) => {
   };
   await editGateWays(apigwId.value, params);
   basicInfoData.value = Object.assign(basicInfoData.value, params);
+  Message({
+    message: t('编辑成功'),
+    theme: 'success',
+    width: 'auto',
+  });
+};
+
+const handleMaintainerChange = async (payload: { maintainers: string[] }) => {
+  await putGatewaysBasics(apigwId.value, payload);
+  basicInfoData.value = Object.assign(basicInfoData.value, payload);
   Message({
     message: t('编辑成功'),
     theme: 'success',
@@ -925,10 +940,6 @@ watch(
                 padding: 0 12px;
               }
             }
-          }
-
-          &.maintainers {
-            max-width: 640px;
           }
         }
 
