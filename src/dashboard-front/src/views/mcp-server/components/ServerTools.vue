@@ -549,6 +549,10 @@ $code-color: #63656e;
     }
   }
 
+  :deep(.bk-resize-layout.bk-resize-layout-left) {
+    flex: 1 !important;
+  }
+
   // 去掉右侧伸缩栏的拉伸线
   :deep(.bk-resize-layout-right > .bk-resize-layout-aside) {
     border-left: none;
