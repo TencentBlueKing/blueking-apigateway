@@ -1,22 +1,22 @@
 export interface BasicInfoParams {
-  name: string // 名称
+  name?: string // 名称
   id?: number // 可选，ID
   url?: string // 可选，URL
   description?: string // 可选，描述
   description_en?: string // 可选，英文描述
   public_key_fingerprint?: string // 可选，公钥指纹
-  bk_app_codes: string // 蓝鲸应用代码
-  related_app_codes: string // 相关应用代码
-  docs_url: string // 文档URL
+  bk_app_codes?: string // 蓝鲸应用代码
+  related_app_codes?: string // 相关应用代码
+  docs_url?: string // 文档URL
   api_domain?: string // 可选，API域名
   developers?: string[] // 可选，开发者列表
   maintainers?: string[] // 可选，维护者列表
   status?: number // 可选，状态
   is_public?: boolean // 可选，是否公开
-  created_by: string // 创建者
-  created_time: string // 创建时间
-  public_key: string // 公钥
-  is_official: boolean // 是否官方
+  created_by?: string // 创建者
+  created_time?: string // 创建时间
+  public_key?: string // 公钥
+  is_official?: boolean // 是否官方
   publish_validate_msg?: string // 可选，发布验证消息
   kind?: number // 可选，类型
   links?: { // 可选，链接
