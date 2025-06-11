@@ -21,8 +21,9 @@ from pydantic import BaseModel
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginBindingSourceEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
-from apigateway.biz.plugin import PluginBindingHandler
 from apigateway.utils.time import now_datetime
+
+from .binding import PluginBindingHandler
 
 
 class PluginConfigData(BaseModel):

@@ -21,11 +21,12 @@ from tempfile import TemporaryDirectory
 from typing import Dict, Optional
 
 from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.sdk.managers import SDKManagerFactory
-from apigateway.biz.sdk.models import SDKContext
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion
 from apigateway.utils import time as time_utils
+
+from .managers import SDKManagerFactory
+from .models import SDKContext
 
 
 @dataclass
