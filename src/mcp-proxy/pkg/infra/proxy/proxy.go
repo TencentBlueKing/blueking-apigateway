@@ -50,14 +50,17 @@ type MCPProxy struct {
 	rwLock     *sync.RWMutex
 	// 运行的mcp server
 	activeMCPServers map[string]struct{}
+	// message url prefix
+	messageUrlFormat string
 }
 
 // NewMCPProxy ...
-func NewMCPProxy() *MCPProxy {
+func NewMCPProxy(messageUrlFormat string) *MCPProxy {
 	return &MCPProxy{
 		mcpServers:       map[string]*MCPServer{},
 		rwLock:           &sync.RWMutex{},
 		activeMCPServers: map[string]struct{}{},
+		messageUrlFormat: messageUrlFormat,
 	}
 }
 
@@ -99,7 +102,7 @@ func (m *MCPProxy) GetMCPServer(name string) *MCPServer {
 func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 	for _, config := range configs {
 		trans, sseHandler, err := transport.NewSSEServerTransportAndHandler(
-			fmt.Sprintf("/%s/sse/message", config.Name))
+			fmt.Sprintf(m.messageUrlFormat, config.Name))
 		if err != nil {
 			return err
 		}
@@ -117,8 +120,7 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 }
 
 // AddMCPServerFromOpenApiSpec nolint:gofmt
-func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi3.T,
-	operationIDMap map[string]struct{},
+func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi3.T, operationIDMap map[string]struct{},
 ) error {
 	mcpServerConfig := &MCPServerConfig{
 		Name:  name,
@@ -183,6 +185,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 	// 生成handler
 	handler := func(ctx context.Context, request *protocol.CallToolRequest) (*protocol.CallToolResult, error) {
 		auditLog := logging.GetAuditLoggerWithContext(ctx)
+		requestID := util.GetRequestIDFromContext(ctx)
 		auditLog = auditLog.With(zap.String("tool", toolApiConfig.String()))
 		innerJwt := util.GetInnerJWTTokenFromContext(ctx)
 		auditLog.Info("call tool", zap.Any("request", request.RawArguments))
@@ -199,13 +202,36 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 		client := http.DefaultClient
 		client.Timeout = util.GetBkApiTimeout(ctx)
 		client.Transport = tr
+		headerInfo := make(map[string]string)
 		requestParam := runtime.ClientRequestWriterFunc(func(req runtime.ClientRequest, _ strfmt.Registry) error {
 			// 设置innerJwt
-			err = req.SetHeaderParam(constant.BkApiAuthorizationHeaderKey, innerJwt)
+			innerJwtConfig := map[string]string{
+				"inner_jwt": innerJwt,
+			}
+			innerJwtHeaderValue, _ := json.Marshal(innerJwtConfig)
+			headerInfo[constant.BkApiAuthorizationHeaderKey] = string(innerJwtHeaderValue)
+			err = req.SetHeaderParam(constant.BkApiAuthorizationHeaderKey, string(innerJwtHeaderValue))
 			if err != nil {
 				auditLog.Error("set header param err",
 					zap.String(constant.BkApiAuthorizationHeaderKey, innerJwt), zap.Error(err))
 				return err
+			}
+			// 设置request id
+			if requestID != "" {
+				headerInfo[constant.RequestIDHeaderKey] = requestID
+				_ = req.SetHeaderParam(constant.RequestIDHeaderKey, requestID)
+			}
+
+			// 设置header
+			headers := util.GetBkApiAllowedHeaders(ctx)
+			for key, vlue := range headers {
+				_ = req.SetHeaderParam(key, vlue)
+				headerInfo[key] = vlue
+			}
+			// 如果没有单独设置 Content-Type，则默认设置为 application/json
+			if _, ok := headers["Content-Type"]; !ok {
+				headerInfo["Content-Type"] = "application/json"
+				_ = req.SetHeaderParam("Content-Type", "application/json")
 			}
 
 			if handlerRequest.HeaderParam != nil {
@@ -215,6 +241,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 						auditLog.Error("set header param err", zap.String(k, v), zap.Error(err))
 						return err
 					}
+					headerInfo[k] = v
 				}
 			}
 			if handlerRequest.QueryParam != nil {
@@ -276,8 +303,8 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 		openAPIClient.SetLogger(logger.StandardLogger{})
 		submit, err := openAPIClient.Submit(operation)
 		if err != nil {
-			msg := fmt.Sprintf("call %s error:%s\n", toolApiConfig, err.Error())
-			auditLog.Error("call tool err", zap.Error(err))
+			msg := fmt.Sprintf("call %s header:%+v,error:%s\n", toolApiConfig, headerInfo, err.Error())
+			auditLog.Error("call tool err", zap.Any("header", headerInfo), zap.Error(err))
 			log.Println(msg)
 			// nolint:nilerr
 			return &protocol.CallToolResult{
@@ -291,7 +318,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 			}, nil
 		}
 		log.Printf("call %s result: %s\n", toolApiConfig, submit)
-		auditLog.Info("call tool", zap.String("response", submit.(string)))
+		auditLog.Info("call tool", zap.String("response", submit.(string)), zap.Any("header", headerInfo))
 		return &protocol.CallToolResult{
 			Content: []protocol.Content{
 				&protocol.TextContent{

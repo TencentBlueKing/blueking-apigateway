@@ -58,6 +58,7 @@ const PlatformToolsAutomatedGateway = () => import(/* webpackChunkName: 'platfor
 const PlatformToolsProgrammableGateway = () => import(/* webpackChunkName: 'platform-tools'*/'@/views/platform-tools/programmableGateway/index.vue');
 const McpMarket = () => import(/* webpackChunkName: 'mcp-market'*/'@/views/mcp-market/index.vue');
 const McpMarketDetails = () => import(/* webpackChunkName: 'mcp-market'*/'@/views/mcp-market/components/details.vue');
+const McpServerPermission = () => import(/* webpackChunkName: 'mcp-server'*/'@/views/mcp-server/components/McpPermission.vue');
 
 // 文档一级路由出口
 const docsComponent = {
@@ -314,6 +315,17 @@ const routes: RouteRecordRaw[] = [
           topMenu: 'home',
         },
       },
+      {
+        path: '/:id/mcp-permission',
+        name: 'mcpPermission',
+        component: McpServerPermission,
+        meta: {
+          title: t('权限审批'),
+          matchRoute: 'mcpServer',
+          topMenu: 'home',
+          showBackIcon: true,
+        },
+      },
       // MCP 服务器
       {
         path: '/:id/mcp-server',
@@ -324,18 +336,17 @@ const routes: RouteRecordRaw[] = [
           matchRoute: 'mcpServer',
           topMenu: 'mcpServer',
         },
-        children: [
-          // {
-          //   path: 'toolbox',
-          //   name: 'platformToolsToolbox',
-          //   component: PlatformToolsToolbox,
-          //   meta: {
-          //     title: t('工具箱'),
-          //     matchRoute: 'platformToolsToolbox',
-          //     topMenu: 'platformTools',
-          //   },
-          // },
-        ],
+      },
+      // MCP 服务器详情
+      {
+        path: '/:id/mcp-server/detail/:serverId',
+        name: 'mcpServerDetail',
+        component: () => import('@/views/mcp-server/detail/index.vue'),
+        meta: {
+          title: t('详情'),
+          matchRoute: 'mcpServer',
+          topMenu: 'mcpServer',
+        },
       },
       {
         path: '/:id/audit',

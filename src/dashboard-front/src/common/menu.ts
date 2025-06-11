@@ -147,7 +147,7 @@ export const createMenuData = (): IMenu[] => {
       name: 'mcpServer',
       enabled: true,
       title: 'MCP Server',
-      icon: 'history',
+      icon: 'cardd',
     },
     {
       name: 'apigwOperateRecords',

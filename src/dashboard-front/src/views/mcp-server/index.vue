@@ -9,13 +9,14 @@
         @edit="handleEdit"
         @enable="handleEnable"
         @suspend="handleSuspend"
+        @click="() => handleCardClick(server.id)"
       />
       <!-- 添加按钮卡片 -->
       <div class="add-server-card" @click="handleAddServerClick">
         <AgIcon name="add-small" size="40" />
       </div>
     </div>
-    <CreateSlider v-model="isCreateSliderShow" :server-id="editingServerId" />
+    <CreateSlider v-model="isCreateSliderShow" :server-id="editingServerId" @updated="handleServerUpdated" />
   </div>
 </template>
 
@@ -33,13 +34,18 @@ import {
   patchServerStatus,
 } from '@/http/mcp-server';
 import { useCommon } from '@/store';
-import { Message } from 'bkui-vue';
+import {
+  InfoBox,
+  Message,
+} from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 
 type MCPServerType = Awaited<ReturnType<typeof getServers>>['results'][number];
 
 const { t } = useI18n();
 const common = useCommon();
+const router = useRouter();
 
 const serverList = ref<MCPServerType[]>([
   // {
@@ -98,11 +104,19 @@ const handleEdit = (id: number) => {
 };
 
 const handleSuspend = async (id: number) => {
-  await patchServerStatus(common.apigwId, id, { status: 0 });
-  await fetchServerList();
-  Message({
-    theme: 'success',
-    message: t('已停用'),
+  const server = serverList.value.find(server => server.id === id);
+  InfoBox({
+    title: t('确定停用 {n}？', { n: server.name }),
+    infoType: 'warning',
+    subTitle: t('停用后，{n} 下所有工具不可访问，请确认！', { n: server.name }),
+    onConfirm: async () => {
+      await patchServerStatus(common.apigwId, id, { status: 0 });
+      Message({
+        theme: 'success',
+        message: t('已停用'),
+      });
+      await fetchServerList();
+    },
   });
 };
 
@@ -116,12 +130,28 @@ const handleEnable = async (id: number) => {
 };
 
 const handleDelete = async (id: number) => {
-  await deleteServer(common.apigwId, id);
-  await fetchServerList();
-  Message({
-    theme: 'success',
-    message: t('已删除'),
+  const server = serverList.value.find(server => server.id === id);
+  InfoBox({
+    title: t('确定删除 {n}？', { n: server.name }),
+    infoType: 'danger',
+    subTitle: t('删除后，{n} 不可恢复，请谨慎操作！', { n: server.name }),
+    onConfirm: async () => {
+      await deleteServer(common.apigwId, id);
+      Message({
+        theme: 'success',
+        message: t('已删除'),
+      });
+      await fetchServerList();
+    },
   });
+};
+
+const handleServerUpdated = () => {
+  fetchServerList();
+};
+
+const handleCardClick = (id: number) => {
+  router.replace({ name: 'mcpServerDetail', params: { serverId: id } });
 };
 
 onMounted(() => {

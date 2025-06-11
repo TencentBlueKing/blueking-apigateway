@@ -149,7 +149,7 @@ class GatewayRetrieveApi(generics.RetrieveAPIView):
         tags=["OpenAPI.V2.Inner"],
     ),
 )
-class GatewayPermissionsResourceListApi(generics.ListAPIView):
+class GatewayPermissionResourceListApi(generics.ListAPIView):
     permission_classes = [OpenAPIV2GatewayNamePermission]
 
     def list(self, request, *args, **kwargs):
@@ -184,7 +184,7 @@ class GatewayPermissionsResourceListApi(generics.ListAPIView):
         tags=["OpenAPI.V2.Inner"],
     ),
 )
-class AppGatewayPermissionApi(generics.RetrieveAPIView):
+class GatewayAppPermissionIsAllowedApplyCheckApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIV2GatewayNamePermission]
     serializer_class = serializers.AppGatewayPermissionInputSLZ
 
@@ -207,12 +207,12 @@ class AppGatewayPermissionApi(generics.RetrieveAPIView):
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        request_body=serializers.PaaSAppPermissionApplyCreateInputSLZ,
-        responses={status.HTTP_201_CREATED: serializers.AppPermissionApplyCreateOutputSLZ()},
+        request_body=serializers.GatewayAppPermissionApplyCreateInputSLZ,
+        responses={status.HTTP_201_CREATED: serializers.GatewayAppPermissionApplyCreateOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
     ),
 )
-class PaaSAppPermissionApplyCreateApi(generics.CreateAPIView):
+class GatewayAppPermissionApplyCreateApi(generics.CreateAPIView):
     """
     PaaS 中应用申请访问网关 API 的权限
     - 提供给 paas3 开发者中心的接口
@@ -225,7 +225,7 @@ class PaaSAppPermissionApplyCreateApi(generics.CreateAPIView):
         """
         创建申请资源权限的申请单据
         """
-        slz = serializers.PaaSAppPermissionApplyCreateInputSLZ(
+        slz = serializers.GatewayAppPermissionApplyCreateInputSLZ(
             data=request.data,
             context={
                 "request": request,
@@ -263,7 +263,7 @@ class PaaSAppPermissionApplyCreateApi(generics.CreateAPIView):
     name="post",
     decorator=swagger_auto_schema(
         operation_description="权限续期",
-        request_body=serializers.AppPermissionRenewPutInputSLZ,
+        request_body=serializers.AppPermissionRenewInputSLZ,
         responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -276,7 +276,7 @@ class AppPermissionRenewApi(generics.CreateAPIView):
     permission_classes = [OpenAPIV2Permission]
 
     def post(self, request, *args, **kwargs):
-        slz = serializers.AppPermissionRenewPutInputSLZ(
+        slz = serializers.AppPermissionRenewInputSLZ(
             data=request.data,
             context={
                 "request": request,
@@ -472,7 +472,7 @@ class EsbPermissionComponentListApi(generics.ListAPIView):
     decorator=swagger_auto_schema(
         operation_description="创建申请资源权限的申请单据",
         request_body=serializers.EsbAppPermissionApplyCreateInputSLZ,
-        responses={status.HTTP_201_CREATED: serializers.AppPermissionApplyCreateOutputSLZ()},
+        responses={status.HTTP_201_CREATED: serializers.GatewayAppPermissionApplyCreateOutputSLZ()},
         tags=["OpenAPI.V2.Inner"],
     ),
 )
@@ -520,7 +520,7 @@ class EsbAppPermissionApplyCreateApi(generics.CreateAPIView):
     name="post",
     decorator=swagger_auto_schema(
         operation_description="权限续期",
-        request_body=serializers.EsbAppPermissionRenewPutInputSLZ,
+        request_body=serializers.EsbAppPermissionRenewInputSLZ,
         responses={status.HTTP_204_NO_CONTENT: ""},
         tags=["OpenAPI.V2.Inner"],
     ),
@@ -531,7 +531,7 @@ class EsbAppPermissionRenewPutApi(generics.CreateAPIView):
     """
 
     permission_classes = [OpenAPIV2Permission]
-    serializer_class = serializers.EsbAppPermissionRenewPutInputSLZ
+    serializer_class = serializers.EsbAppPermissionRenewInputSLZ
 
     def post(self, request, *args, **kwargs):
         slz = self.get_serializer(data=request.data)

@@ -176,6 +176,10 @@ const isShow = defineModel<boolean>({ default: false });
 
 const { serverId } = defineProps<IProps>();
 
+const emit = defineEmits<{
+  updated: [],
+}>();
+
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
@@ -343,6 +347,7 @@ const handleSubmit = async () => {
       message: t('创建成功'),
     });
   }
+  emit('updated');
   isShow.value = false;
 };
 
@@ -519,16 +524,17 @@ const resetSliderData = () => {
   }
 
   .result-preview {
+    width: 275px;
+    height: 653px;
     background: #f5f7fa;
-    flex-grow: 1;
     padding: 16px;
     display: flex;
     flex-direction: column;
     border-left: 1px solid #dcdee5;
+    overflow-y: auto;
 
     .result-preview-list {
       flex: 1;
-      overflow-y: auto;
     }
 
     .header-title-wrapper {
