@@ -76,7 +76,12 @@
             property="maintainers"
             required
           >
-            <member-select v-model="formData.maintainers" />
+            <member-select
+              v-model="formData.maintainers"
+              :has-delete-icon="true"
+              :placeholder="t('请选择维护人员')"
+              style="color: #313238;"
+            />
           </bk-form-item>
           <bk-form-item
             :label="t('描述')"
@@ -247,11 +252,20 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, computed } from 'vue';
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useUser } from '@/store/user';
-import { createGateway, getEnvVars, editGateWays, getGuideDocs } from '@/http';
+import {
+  createGateway,
+  editGateWays,
+  getEnvVars,
+  getGuideDocs,
+} from '@/http';
 import { Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash';
 // @ts-ignore

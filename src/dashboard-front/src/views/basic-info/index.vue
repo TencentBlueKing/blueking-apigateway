@@ -63,7 +63,7 @@
               </bk-button>
             </div>
             <template v-if="basicInfoData.status > 0">
-              <bk-popover :content="$t('请先停用才可删除')">
+              <bk-popover :content="t('请先停用才可删除')">
                 <bk-button class="operate-btn" :disabled="basicInfoData.status > 0">
                   {{ t('删除') }}
                 </bk-button>
@@ -153,20 +153,17 @@
                 </template>
               </div>
             </div> -->
-            <div class="detail-item-content-item">
+            <div class="detail-item-content-item maintainers">
               <div class="label">{{ `${t('维护人员')}：` }}</div>
               <div class="value">
-                <GateWaysEditMemberSelector
-                  mode="edit"
-                  width="600px"
-                  field="maintainers"
-                  :is-required="true"
-                  :placeholder="t('请选择维护人员')"
-                  :content="basicInfoData.maintainers"
-                  :is-error-class="'maintainers-error-tip'"
-                  :error-value="t('维护人员不能为空')"
-                  @on-change="(e:Record<string, any>) => handleInfoChange(e)"
-                />
+                <bk-popover max-width="640">
+                  <span>{{ basicInfoData.maintainers.join(', ') }}</span>
+                  <template #content>
+                    <div>
+                      {{ basicInfoData.maintainers.join(', ') }}
+                    </div>
+                  </template>
+                </bk-popover>
               </div>
             </div>
             <div class="detail-item-content-item">
@@ -337,7 +334,7 @@
     <bk-dialog
       width="540"
       :is-show="delApigwDialog.isShow"
-      :title="$t(`确认删除网关【{basicInfoDataName}】？`, { basicInfoDataName: basicInfoData.name })"
+      :title="t(`确认删除网关【{basicInfoDataName}】？`, { basicInfoDataName: basicInfoData.name })"
       :theme="'primary'"
       :loading="delApigwDialog.loading"
       @closed="delApigwDialog.isShow = false">
@@ -376,18 +373,36 @@
 </template>
 
 <script setup lang="ts">
-import {  ref, computed, watch } from 'vue';
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue';
 import _ from 'lodash';
-import { Message, InfoBox } from 'bkui-vue';
+import {
+  InfoBox,
+  Message,
+} from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
 import { HelpDocumentFill } from 'bkui-vue/lib/icon';
-import { useRoute, useRouter } from 'vue-router';
-import {  copy } from '@/common/util';
+import {
+  useRoute,
+  useRouter,
+} from 'vue-router';
+import { copy } from '@/common/util';
 import { useGetGlobalProperties } from '@/hooks';
-import { BasicInfoParams, DialogParams } from './common/type';
-import { getGateWaysInfo, toggleGateWaysStatus, deleteGateWays, editGateWays, getGuideDocs } from '@/http';
+import {
+  BasicInfoParams,
+  DialogParams,
+} from './common/type';
+import {
+  deleteGateWays,
+  editGateWays,
+  getGateWaysInfo,
+  getGuideDocs,
+  toggleGateWaysStatus,
+} from '@/http';
 import GateWaysEditTextarea from '@/components/gateways-edit/textarea.vue';
-import GateWaysEditMemberSelector from '@/components/gateways-edit/member-selector.vue';
 import CreateGatewayCom from '@/components/create-gateway.vue';
 import guide from '@/components/guide.vue';
 import MarkdownIt from 'markdown-it';
@@ -814,7 +829,7 @@ watch(
         padding-left: 100px;
         padding-top: 24px;
 
-        &-item {
+        .detail-item-content-item {
           display: flex;
           align-items: center;
           line-height: 32px;
@@ -911,7 +926,12 @@ watch(
               }
             }
           }
+
+          &.maintainers {
+            max-width: 640px;
+          }
         }
+
         .explain {
           font-size: 12px;
           color: #4D4F56;
