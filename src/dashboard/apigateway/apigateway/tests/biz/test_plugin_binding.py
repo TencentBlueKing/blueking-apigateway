@@ -19,7 +19,7 @@ from ddf import G
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig
-from apigateway.biz.plugin_binding import PluginBindingHandler
+from apigateway.biz.plugin import PluginBindingHandler
 
 
 class TestPluginBindingHandler:

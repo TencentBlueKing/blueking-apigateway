@@ -21,8 +21,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.biz.constants import APP_CODE_PATTERN
-from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.gateway_type import GatewayTypeHandler
+from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
 from apigateway.biz.validators import GatewayAPIDocMaintainerValidator
 from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum
 from apigateway.common.django.validators import NameValidator

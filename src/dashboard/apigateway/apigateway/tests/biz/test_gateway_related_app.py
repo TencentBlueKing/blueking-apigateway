@@ -19,7 +19,7 @@ import pytest
 from ddf import G
 from django.conf import settings
 
-from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
+from apigateway.biz.gateway import GatewayRelatedAppHandler
 from apigateway.common.error_codes import APIError
 from apigateway.core.models import GatewayRelatedApp
 

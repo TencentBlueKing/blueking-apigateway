@@ -22,7 +22,7 @@ import operator
 from apigateway.core.models import Stage, StageResourceDisabled
 
 
-class StageResourceDisabledHandler:
+class ResourceDisabledStageHandler:
     @staticmethod
     def filter_disabled_stages_by_gateway(gateway):
         stage_ids = Stage.objects.get_ids(gateway.id)

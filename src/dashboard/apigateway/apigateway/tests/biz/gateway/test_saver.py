@@ -18,8 +18,7 @@
 import pytest
 from pydantic import TypeAdapter
 
-from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
+from apigateway.biz.gateway import GatewayData, GatewayHandler, GatewaySaver
 from apigateway.core.constants import GatewayTypeEnum
 from apigateway.core.models import Gateway, GatewayRelatedApp
 from apigateway.service.contexts import GatewayAuthContext

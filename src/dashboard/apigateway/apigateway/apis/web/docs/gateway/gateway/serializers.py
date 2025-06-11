@@ -18,8 +18,7 @@
 #
 from rest_framework import serializers
 
-from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.gateway_type import GatewayTypeHandler
+from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
 from apigateway.common.i18n.field import SerializerTranslatedField
 
 

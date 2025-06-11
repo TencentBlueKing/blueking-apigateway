@@ -22,7 +22,7 @@ from datetime import datetime
 from celery import shared_task
 
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
-from apigateway.biz.resource_doc_version import ResourceDocVersionHandler
+from apigateway.biz.resource_version import ResourceDocVersionHandler
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.etcd import EtcdDistributor

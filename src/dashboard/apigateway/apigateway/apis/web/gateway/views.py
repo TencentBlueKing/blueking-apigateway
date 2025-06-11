@@ -27,9 +27,7 @@ from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
-from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
-from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
+from apigateway.biz.gateway import GatewayAppBindingHandler, GatewayHandler, GatewayRelatedAppHandler
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.common.constants import UserAuthTypeEnum
 from apigateway.common.django.translation import get_current_language_code

@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from apigateway.apps.label.models import APILabel
-from apigateway.biz.gateway_label import GatewayLabelHandler
+from apigateway.biz.gateway import GatewayLabelHandler
 
 
 class TestGatewayLabelHandler:

@@ -19,7 +19,7 @@ from ddf import G
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
-from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData, PluginSynchronizer
+from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
 
 
 class TestPluginSynchronizer:

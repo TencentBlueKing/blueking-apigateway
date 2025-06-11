@@ -29,11 +29,11 @@ from openapi_schema_to_json_schema import to_json_schema
 from rest_framework import generics, status
 
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
-from apigateway.biz.programmable.releaser import ProgrammableGatewayReleaser
+from apigateway.biz.gateway import ReleaseError, release
+from apigateway.biz.programmable import ProgrammableGatewayReleaser
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceHandler
-from apigateway.biz.releaser import ReleaseError, release
-from apigateway.biz.resource_label import ResourceLabelHandler
+from apigateway.biz.resource import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.user_credentials import get_user_credentials_from_request

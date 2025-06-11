@@ -21,7 +21,7 @@ import json
 from django_dynamic_fixture import G
 
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
-from apigateway.biz.resource_doc_version import ResourceDocVersionHandler
+from apigateway.biz.resource_version import ResourceDocVersionHandler
 from apigateway.core.models import Resource, ResourceVersion
 
 

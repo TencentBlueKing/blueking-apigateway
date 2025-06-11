@@ -23,7 +23,7 @@ from unittest.mock import patch
 import pytest
 from pydantic import BaseModel
 
-from apigateway.biz.resource_version_diff import (
+from apigateway.biz.resource_version import (
     DiffMixin,
     ResourceContexts,
     ResourceDifferHandler,

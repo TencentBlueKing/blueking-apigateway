@@ -39,17 +39,14 @@ from apigateway.apps.permission.models import (
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
-from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
-from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
+from apigateway.biz.gateway import GatewayData, GatewayRelatedAppHandler, GatewaySaver, ReleaseError, release
 from apigateway.biz.permission import PermissionDimensionManager
-from apigateway.biz.releaser import ReleaseError, release
 from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.importer import DocImporter
 from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, OpenAPIParser
-from apigateway.biz.resource_doc_version import ResourceDocVersionHandler
-from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.biz.sdk import exceptions
 from apigateway.biz.sdk.helper import SDKHelper
 from apigateway.common.error_codes import error_codes

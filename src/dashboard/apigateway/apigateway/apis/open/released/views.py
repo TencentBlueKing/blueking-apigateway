@@ -26,7 +26,7 @@ from apigateway.apis.open.permissions import (
     OpenAPIGatewayNamePermission,
 )
 from apigateway.apis.open.released import serializers
-from apigateway.biz.resource_url import ResourceURLHandler
+from apigateway.biz.resource import ResourceURLHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Release, ReleasedResource
 from apigateway.utils.paginator import LimitOffsetPaginator

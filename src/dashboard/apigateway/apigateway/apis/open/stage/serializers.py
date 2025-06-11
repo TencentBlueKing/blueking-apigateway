@@ -29,7 +29,7 @@ from rest_framework.validators import UniqueTogetherValidator
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
-from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData, PluginSynchronizer
+from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
 from apigateway.biz.validators import MaxCountPerGatewayValidator, SchemeInputValidator, StageVarsValidator
 from apigateway.common.constants import DOMAIN_PATTERN, HEADER_KEY_PATTERN
 from apigateway.common.django.validators import NameValidator

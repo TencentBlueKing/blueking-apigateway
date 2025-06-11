@@ -24,7 +24,7 @@ from rest_framework import serializers
 
 from apigateway.apps.monitor.constants import DETECT_METHOD_CHOICES, AlarmStatusEnum, NoticeRoleEnum, NoticeWayEnum
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
-from apigateway.biz.gateway_label import GatewayLabelHandler
+from apigateway.biz.gateway import GatewayLabelHandler
 from apigateway.common.fields import CurrentGatewayDefault, TimestampField
 from apigateway.core.models import Stage
 

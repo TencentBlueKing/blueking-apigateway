@@ -31,7 +31,7 @@ from apigateway.apps.permission.models import (
     AppResourcePermission,
 )
 from apigateway.biz.permission import (
-    APIPermissionDimensionManager,
+    GatewayPermissionDimensionManager,
     PermissionDimensionManager,
     ResourcePermissionDimensionManager,
     ResourcePermissionHandler,
@@ -91,7 +91,7 @@ class TestPermissionDimensionManager:
     @pytest.mark.parametrize(
         "grant_dimension, expected",
         [
-            ("api", APIPermissionDimensionManager),
+            ("api", GatewayPermissionDimensionManager),
             ("resource", ResourcePermissionDimensionManager),
         ],
     )
@@ -126,7 +126,7 @@ class TestAPIPermissionDimensionManager:
         # 审批同意
         apply = self._make_fake_apply(fake_gateway)
         self._make_fake_apply_status(apply)
-        record = APIPermissionDimensionManager().handle_permission_apply(
+        record = GatewayPermissionDimensionManager().handle_permission_apply(
             gateway=apply.gateway,
             apply=apply,
             status=ApplyStatusEnum.APPROVED.value,
@@ -143,7 +143,7 @@ class TestAPIPermissionDimensionManager:
         apply = self._make_fake_apply(fake_gateway)
         self._make_fake_apply_status(apply)
 
-        record = APIPermissionDimensionManager().handle_permission_apply(
+        record = GatewayPermissionDimensionManager().handle_permission_apply(
             gateway=fake_gateway,
             apply=apply,
             status=ApplyStatusEnum.REJECTED.value,
@@ -159,7 +159,7 @@ class TestAPIPermissionDimensionManager:
         apply = self._make_fake_apply(fake_gateway)
 
         # 新建
-        manager = APIPermissionDimensionManager()
+        manager = GatewayPermissionDimensionManager()
         manager.save_permission_apply_status(
             bk_app_code=apply.bk_app_code,
             gateway=fake_gateway,
@@ -198,7 +198,7 @@ class TestAPIPermissionDimensionManager:
         )
 
     def test_allow_apply_permission(self, mocker, fake_gateway):
-        manager = APIPermissionDimensionManager()
+        manager = GatewayPermissionDimensionManager()
         target_app_code = "test"
 
         # 权限申请中
@@ -232,7 +232,7 @@ class TestAPIPermissionDimensionManager:
         assert result is True
 
     def test_create_apply_record(self, fake_gateway, fake_resource):
-        manager = APIPermissionDimensionManager()
+        manager = GatewayPermissionDimensionManager()
         record = manager.create_apply_record(
             "test",
             fake_gateway,

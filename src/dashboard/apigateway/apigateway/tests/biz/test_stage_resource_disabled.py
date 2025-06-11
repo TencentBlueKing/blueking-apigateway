@@ -18,7 +18,7 @@
 #
 from django_dynamic_fixture import G
 
-from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
+from apigateway.biz.resource import ResourceDisabledStageHandler
 from apigateway.core.models import Resource, Stage, StageResourceDisabled
 
 
@@ -33,7 +33,7 @@ class TestStageResourceDisabledHandler:
         G(StageResourceDisabled, resource=resource2, stage=stage_prod)
         G(StageResourceDisabled, resource=resource1, stage=stage_test)
 
-        result = StageResourceDisabledHandler.filter_disabled_stages_by_gateway(fake_gateway)
+        result = ResourceDisabledStageHandler.filter_disabled_stages_by_gateway(fake_gateway)
         assert result == {
             resource1.id: [
                 {

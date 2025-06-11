@@ -23,9 +23,9 @@ from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
 from apigateway.biz.gateway import GatewayHandler
 
 
-class ResourceMonitorHandler:
+class MonitorHandler:
     @staticmethod
-    def statistics_api_alarm_record(username, time_start, time_end):
+    def statistics_gateway_alarm_record(username, time_start, time_end):
         """
         统计网关下，各策略的告警信息
         """

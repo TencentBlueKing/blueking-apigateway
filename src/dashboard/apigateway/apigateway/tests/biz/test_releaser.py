@@ -21,7 +21,7 @@ import json
 import pytest
 from ddf import G
 
-from apigateway.biz.releaser import (
+from apigateway.biz.gateway import (
     GatewayReleaser,
     ReleaseError,
     ReleaseValidationError,

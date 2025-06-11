@@ -30,7 +30,7 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.apps.support.constants import DocLanguageEnum, ProgrammingLanguageEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SEMVER_PATTERN
-from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData, PluginSynchronizer
+from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
 from apigateway.biz.stage import StageHandler
 from apigateway.biz.validators import (
     BKAppCodeListValidator,

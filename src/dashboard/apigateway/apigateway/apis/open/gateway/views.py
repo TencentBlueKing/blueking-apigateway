@@ -37,8 +37,7 @@ from apigateway.apis.open.permissions import (
 )
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
-from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
-from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
+from apigateway.biz.gateway import GatewayData, GatewayRelatedAppHandler, GatewaySaver
 from apigateway.biz.release import ReleaseHandler
 from apigateway.common.constants import (
     CACHE_MAXSIZE,

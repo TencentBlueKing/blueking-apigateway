@@ -29,11 +29,9 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.backend import BackendHandler
-from apigateway.biz.plugin_binding import PluginBindingHandler
+from apigateway.biz.plugin import PluginBindingHandler
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
-from apigateway.biz.resource_doc_version import ResourceDocVersionHandler
-from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.biz.resource_version_diff import ResourceDifferHandler
+from apigateway.biz.resource_version import ResourceDifferHandler, ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse

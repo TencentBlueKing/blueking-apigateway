@@ -24,7 +24,7 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
-from apigateway.biz.releaser import ReleaseValidationError
+from apigateway.biz.gateway import ReleaseValidationError
 from apigateway.biz.validators import (
     MaxCountPerGatewayValidator,
     PublishValidator,

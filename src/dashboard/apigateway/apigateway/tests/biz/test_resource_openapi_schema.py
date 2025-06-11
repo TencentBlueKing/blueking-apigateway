@@ -19,7 +19,7 @@
 
 
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
-from apigateway.biz.resource_openapi_schema import ResourceOpenAPISchemaVersionHandler
+from apigateway.biz.resource import ResourceOpenAPISchemaVersionHandler
 
 
 class TestResourceOpenAPISchemaVersionHandler:

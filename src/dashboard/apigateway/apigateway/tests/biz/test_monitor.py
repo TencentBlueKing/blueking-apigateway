@@ -21,7 +21,7 @@ import pytest
 from django_dynamic_fixture import G
 
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
-from apigateway.biz.monitor import ResourceMonitorHandler
+from apigateway.biz.monitor import MonitorHandler
 from apigateway.tests.utils.testing import create_gateway, dummy_time
 
 
@@ -76,7 +76,7 @@ class TestResourceMonitorHandler:
         ]
 
         for test in data:
-            result = ResourceMonitorHandler.statistics_api_alarm_record(
+            result = MonitorHandler.statistics_gateway_alarm_record(
                 username=test["params"].get("user_name"),
                 time_start=test["params"].get("time_start"),
                 time_end=test["params"].get("time_end"),

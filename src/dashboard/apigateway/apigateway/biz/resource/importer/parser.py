@@ -27,7 +27,7 @@ from openapi_spec_validator.versions import OPENAPIV30, OPENAPIV31
 from pydantic import TypeAdapter
 
 from apigateway.apps.support.constants import OpenAPIFormatEnum
-from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData
+from apigateway.biz.plugin.synchronizers import PluginConfigData
 from apigateway.biz.resource.importer.constants import VALID_METHOD_IN_SWAGGER_PATHITEM, OpenAPIExtensionEnum
 from apigateway.biz.resource.importer.schema import (
     convert_openapi2_formdata_to_openapi,

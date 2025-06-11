@@ -30,11 +30,13 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.biz.audit import Auditor
 from apigateway.biz.context import ContextHandler
-from apigateway.biz.proxy import ProxyHandler
-from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource_label import ResourceLabelHandler
-from apigateway.biz.resource_openapi_schema import ResourceOpenAPISchemaVersionHandler
-from apigateway.biz.stage_resource_disabled import StageResourceDisabledHandler
+from apigateway.biz.resource import (
+    ProxyHandler,
+    ResourceDisabledStageHandler,
+    ResourceHandler,
+    ResourceLabelHandler,
+    ResourceOpenAPISchemaVersionHandler,
+)
 from apigateway.common.constants import CACHE_TIME_5_MINUTES
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
@@ -58,7 +60,7 @@ class ResourceVersionHandler:
         )
         disabled_stage_map = {
             resource_id: [stage["name"] for stage in stages]
-            for resource_id, stages in StageResourceDisabledHandler.filter_disabled_stages_by_gateway(gateway).items()
+            for resource_id, stages in ResourceDisabledStageHandler.filter_disabled_stages_by_gateway(gateway).items()
         }
 
         gateway_label_map = {

@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from apigateway.apps.gateway.models import GatewayAppBinding
-from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
+from apigateway.biz.gateway import GatewayAppBindingHandler
 
 
 class TestGatewayAppBindingHandler:

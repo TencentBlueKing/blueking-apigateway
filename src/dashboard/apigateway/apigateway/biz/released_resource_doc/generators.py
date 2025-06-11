@@ -22,7 +22,7 @@ import textwrap
 from django.conf import settings
 
 from apigateway.biz.released_resource import ReleasedResourceData
-from apigateway.biz.resource_url import ResourceURLHandler
+from apigateway.biz.resource import ResourceURLHandler
 from apigateway.core.models import Gateway
 from apigateway.core.utils import get_path_display
 from apigateway.service.utils import get_resource_url

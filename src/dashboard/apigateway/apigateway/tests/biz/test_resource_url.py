@@ -20,7 +20,7 @@ import json
 
 from django_dynamic_fixture import G
 
-from apigateway.biz.resource_url import ResourceURLHandler
+from apigateway.biz.resource import ResourceURLHandler
 from apigateway.core.models import Gateway, MicroGateway, Stage
 
 

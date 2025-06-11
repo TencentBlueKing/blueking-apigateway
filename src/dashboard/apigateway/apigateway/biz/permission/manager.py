@@ -39,55 +39,11 @@ from apigateway.core.models import Gateway, Resource
 from apigateway.utils.time import now_datetime
 
 
-class ResourcePermissionHandler:
-    @staticmethod
-    def grant_or_renewal_expire_soon(
-        gateway: Gateway, resource_id: int, bk_app_code: str, expire_days: int, expires_soon_seconds: int = 300
-    ):
-        app_resource_permission = AppResourcePermission.objects.get_permission_or_none(
-            gateway=gateway,
-            resource_id=resource_id,
-            bk_app_code=bk_app_code,
-        )
-        if not app_resource_permission or app_resource_permission.will_expired_in(seconds=expires_soon_seconds):
-            AppResourcePermission.objects.save_permissions(
-                gateway=gateway,
-                resource_ids=[resource_id],
-                bk_app_code=bk_app_code,
-                grant_type=GrantTypeEnum.INITIALIZE.value,
-                expire_days=expire_days,
-            )
-
-    @staticmethod
-    def sync_from_gateway_permission(gateway: Gateway, bk_app_code: str, resource_ids: List[int]):
-        api_perm = AppGatewayPermission.objects.filter(bk_app_code=bk_app_code, gateway_id=gateway.id).first()
-        if not api_perm or api_perm.has_expired:
-            return
-
-        has_perm_resource_ids = list(
-            AppResourcePermission.objects.filter(
-                bk_app_code=bk_app_code, gateway_id=gateway.id, resource_id__in=resource_ids
-            ).values_list("resource_id", flat=True)
-        )
-
-        for resource_id in set(resource_ids) - set(has_perm_resource_ids):
-            # 此处使用 get_or_create, 其它功能同时添加权限时，可跳过此处的同步
-            AppResourcePermission.objects.get_or_create(
-                gateway=gateway,
-                resource_id=resource_id,
-                bk_app_code=bk_app_code,
-                defaults={
-                    "expires": api_perm.expires,
-                    "grant_type": GrantTypeEnum.SYNC.value,
-                },
-            )
-
-
 class PermissionDimensionManager(metaclass=ABCMeta):
     @classmethod
     def get_manager(cls, grant_dimension: str) -> "PermissionDimensionManager":
         if grant_dimension == GrantDimensionEnum.API.value:
-            return APIPermissionDimensionManager()
+            return GatewayPermissionDimensionManager()
         if grant_dimension == GrantDimensionEnum.RESOURCE.value:
             return ResourcePermissionDimensionManager()
 
@@ -188,7 +144,7 @@ class PermissionDimensionManager(metaclass=ABCMeta):
         return record
 
 
-class APIPermissionDimensionManager(PermissionDimensionManager):
+class GatewayPermissionDimensionManager(PermissionDimensionManager):
     def handle_permission_apply(
         self,
         gateway: Gateway,

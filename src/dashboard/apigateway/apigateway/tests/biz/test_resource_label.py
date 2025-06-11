@@ -18,7 +18,7 @@
 from ddf import G
 
 from apigateway.apps.label.models import APILabel, ResourceLabel
-from apigateway.biz.resource_label import ResourceLabelHandler
+from apigateway.biz.resource import ResourceLabelHandler
 
 
 class TestResourceLabelHandler:

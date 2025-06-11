@@ -26,8 +26,7 @@ from django.db.models import Count
 
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
-from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
-from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
+from apigateway.biz.gateway import GatewayAppBindingHandler, GatewayRelatedAppHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler

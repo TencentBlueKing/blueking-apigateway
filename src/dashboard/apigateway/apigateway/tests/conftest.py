@@ -37,8 +37,7 @@ from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginFor
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
-from apigateway.biz.resource_doc_version import ResourceDocVersionHandler
-from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
