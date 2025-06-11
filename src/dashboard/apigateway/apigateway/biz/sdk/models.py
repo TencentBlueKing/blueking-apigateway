@@ -193,7 +193,7 @@ class PythonSDK(SDK):
         self.repository = self.config.get("repository", "")
         self._update_repository(self.repository)
 
-    def _update_repository(self, repository):
+    def _update_repository(self, repository: str):
         if not repository:
             return
 

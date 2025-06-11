@@ -31,7 +31,7 @@ def get_resource_url(resource_url_tmpl: str, gateway_name: str, stage_name: str,
     )
 
 
-def get_resource_doc_link(api_name, stage_name, resource_name):
+def get_resource_doc_link(api_name: str, stage_name: str, resource_name: str) -> str:
     """
     资源文档链接
     """

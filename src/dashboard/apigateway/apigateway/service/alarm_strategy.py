@@ -25,9 +25,10 @@ from apigateway.apps.monitor.constants import (
 )
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.common.factories import SchemaFactory
+from apigateway.core.models import Gateway
 
 
-def create_default_alarm_strategy(gateway, created_by=""):
+def create_default_alarm_strategy(gateway: Gateway, created_by: str = ""):
     for alarm_type in [AlarmTypeEnum.RESOURCE_BACKEND]:
         for alarm_subtype in [
             ResourceBackendAlarmSubTypeEnum.STATUS_CODE_5XX,

@@ -27,7 +27,7 @@ from apigateway.core.models import Release
 
 class ResourceDocVersionHandler:
     @staticmethod
-    def make_version(gateway_id):
+    def make_version(gateway_id: int):
         docs = ResourceDoc.objects.filter(gateway_id=gateway_id).all()
         return [d.snapshot(as_dict=True) for d in docs]
 
