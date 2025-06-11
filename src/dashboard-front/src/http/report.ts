@@ -1,5 +1,8 @@
 import fetch from './fetch';
-import { json2Query, blobDownLoad } from '@/common/util';
+import {
+  blobDownLoad,
+  json2Query,
+} from '@/common/util';
 import { SearchParamsType } from '@/views/operate-data/dashboard/type';
 
 const { BK_DASHBOARD_URL } = window;
@@ -8,7 +11,7 @@ const { BK_DASHBOARD_URL } = window;
  *  查询 metrics
  * @param apigwId 网关id
  */
-export const getApigwMetrics = (apigwId: number, params: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/metrics/query-range/?${json2Query(params)}`);
+export const getApigwMetrics = (apigwId: number, params: any) => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/metrics/query-range/?${json2Query(params)}`, {}, { globalError: false });
 
 /**
  *  请求总数健康率
