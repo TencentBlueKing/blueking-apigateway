@@ -23,7 +23,7 @@
               </p>
               <i
                 class="apigateway-icon icon-ag-copy-info"
-                @click.self.stop="copy('')"
+                @click.self.stop="copy(server.url)"
               ></i>
             </div>
           </div>
