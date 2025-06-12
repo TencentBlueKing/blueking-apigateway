@@ -37,7 +37,7 @@
             <div class="info-item">
               <div class="label">{{ t('访问地址') }}：</div>
               <div class="value flex-row align-items-center">
-                <bk-overflow-title style="width: 390px;">{{ item.url }}</bk-overflow-title>
+                <bk-overflow-title style="width: 350px;">{{ item.url }}</bk-overflow-title>
                 <ag-icon name="copy" size="14" class="icon" @click="handleCopy(item.url)" />
               </div>
             </div>
@@ -129,7 +129,7 @@ const goDetails = (id: number) => {
 }
 
 .main {
-  padding: 0px 145px 26px;
+  padding: 0px 0px 26px 130px;
   .top {
     display: flex;
     justify-content: space-between;
@@ -150,18 +150,15 @@ const goDetails = (id: number) => {
 
   .card-list {
     display: flex;
-    align-items: center;
+    gap: 18px;
     flex-wrap: wrap;
     .card {
       border-radius: 2px;
       background: #FFFFFF;
       box-shadow: 0 2px 4px 0 #1919290d;
-      width: 522px;
       padding: 0 24px;
       box-sizing: border-box;
       cursor: pointer;
-      margin-bottom: 16px;
-      margin-right: 16px;
       .header {
         display: flex;
         align-items: center;
