@@ -56,6 +56,7 @@
                     <bk-input
                       ref="editInputRef"
                       :value="option.name"
+                      :maxlength="20"
                       size="small"
                       @click="(e: any) => stopEvent(e)"
                       @change="(v: string, e: any) => handlePresupposeChange(option, v, e)"
