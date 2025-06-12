@@ -63,13 +63,11 @@
         <bk-col style="margin-bottom: -4px;" :span="10">
           <template v-if="localData.api_labels?.length">
             <bk-tag
+              v-for="tag in labels?.filter((label) =>
+                localData.api_labels?.includes(label.id) || localData.api_labels?.includes(String(label.id)))"
+              :key="tag.id"
               class="ag-value"
               style="margin-left: 4px; margin-bottom: 4px;"
-              v-for="tag in labels?.filter((label) => {
-                if (localData.api_labels?.includes(String(label.id)))
-                  return true;
-              })"
-              :key="tag.id"
             >{{ tag.name }}</bk-tag>
           </template>
           <div class="ag-value" v-else>--</div>
