@@ -156,7 +156,7 @@ watch(
 }
 
 .main {
-  padding: 24px 145px 42px;
+  padding: 24px 130px 42px;
   background-color: #f5f7fa;
   .base-info {
     padding: 0 24px;

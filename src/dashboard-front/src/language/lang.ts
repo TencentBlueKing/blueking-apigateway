@@ -1023,6 +1023,7 @@ const lang: ILANG = {
   '文档联系人': ['Doc Contact'],
   '联系 BK 助手': ['Contact BK Helper'],
   '联系': ['Contact'],
+  '请输入 request_id 进行查询': ['Please enter request_id to search'],
   '请输入群成员': ['Please enter the group member'],
   '请填写服务号链接': ['Please fill in the service number link'],
   '请输入正确的服务号链接，支持以下协议：wxwork://': ['Please enter the correct service number link, support the following protocols: wxwork://'],
