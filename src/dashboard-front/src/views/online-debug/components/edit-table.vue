@@ -29,12 +29,12 @@
             <bk-select
               v-else
               class="edit-select"
-              :clearable="false"
               allow-create
               v-model="row.name"
               :ref="(el: HTMLElement | null) => setInputRefs(el, `name-input-`, index, column?.index)"
               @change="handleNameChange(index, row.name)"
               @blur="() => handleHeaderKeySelectBlur(row, `name-input-`, index, column?.index)"
+              @select="(value: string) => handleHeaderKeySelect(row, value)"
             >
               <bk-option
                 v-for="item in headersNameList"
@@ -372,8 +372,19 @@ watch(
 const handleHeaderKeySelectBlur = (row: RowType, inputRefNamePrefix: string, index: number, columnIndex: number) => {
   if (inputRefNamePrefix && index !== undefined && columnIndex !== undefined) {
     const selectRef = formInputRef.value.get(`${inputRefNamePrefix}${index}-${columnIndex}`);
-    row.name = selectRef?.curSearchValue || row.name || '';
+    if (!selectRef?.curSearchValue) {
+      selectRef?.handleClear();
+      row.name = '';
+    } else {
+      row.name = selectRef?.curSearchValue || '';
+    }
   }
+};
+
+const handleHeaderKeySelect = (row: RowType, value: string) => {
+  setTimeout(() => {
+    row.name = value;
+  });
 };
 
 defineExpose({
