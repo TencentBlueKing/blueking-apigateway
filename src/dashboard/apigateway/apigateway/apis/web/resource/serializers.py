@@ -181,6 +181,7 @@ class HttpBackendSLZ(serializers.Serializer):
 
 class OpenapiSchemaSLZ(serializers.Serializer):
     version = serializers.CharField(required=False, allow_null=True, max_length=256, help_text="OpenAPI schema 版本")
+    none_schema = serializers.BooleanField(required=False, allow_null=True, help_text="是否有无schema")
     request_body = serializers.DictField(source="requestBody", required=False, allow_null=True, help_text="body参数")
     responses = serializers.DictField(required=False, allow_null=True, help_text="response参数")
     parameters = serializers.ListField(
