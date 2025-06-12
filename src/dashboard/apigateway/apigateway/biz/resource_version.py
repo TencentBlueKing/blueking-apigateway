@@ -281,7 +281,7 @@ class ResourceVersionHandler:
                 resource_id_to_has_openapi_schema[resource_id] = False
                 continue
 
-            if "none_schema" in schema and schema["none_schema"] is False:
+            if "none_schema" in schema and schema["none_schema"] is True:
                 # 对于确认过没有 schema 的资源，直接返回 True
                 resource_id_to_has_openapi_schema[resource_id] = True
                 continue
