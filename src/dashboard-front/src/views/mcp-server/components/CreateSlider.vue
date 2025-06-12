@@ -97,7 +97,7 @@
                     <template v-if="selections.length">
                       <div v-for="(name, index) in selections" :key="index" class="list-main">
                         <div class="list-item">
-                          <span class="name">
+                          <span class="name" @click="() => handleToolPreviewNameClick(name)">
                             {{ name }}
                           </span>
                           <AgIcon
@@ -244,7 +244,16 @@ const columns = [
   },
   {
     label: t('资源名称'),
-    field: 'name',
+    render: ({ row }: any) =>
+      <bk-button
+        text
+        theme="primary"
+        v-bk-tooltips={{
+          content: (<div>{t('资源需要确认请求参数后才能添加到MCP Server')}</div>),
+          disabled: row.has_openapi_schema,
+        }}
+        onClick={() => handleToolNameClick(row)}
+      >{row.name}</bk-button>,
   },
   {
     label: t('请求参数'),
@@ -439,7 +448,18 @@ const handleRefreshClick = async () => {
 
 const handleStageSelectChange = () => {
   fetchStageResources();
-}
+};
+
+const handleToolNameClick = (row: { id: number }) => {
+  router.push({ name: 'apigwResourceEdit', params: { id: common.curApigwData.id, resourceId: row.id } });
+};
+
+const handleToolPreviewNameClick = (name: string) => {
+  const resource = resourceList.value.find((resource) => resource.name === name);
+  if (resource) {
+    handleToolNameClick({ id: resource.id });
+  }
+};
 
 const handleCancel = () => {
   isShow.value = false;

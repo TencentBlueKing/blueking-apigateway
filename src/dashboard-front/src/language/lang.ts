@@ -1904,6 +1904,7 @@ const lang: ILANG = {
   '停用后，{n} 下所有工具不可访问，请确认！': ['Tools under {n} can not be used after suspension, be cautious!'],
   '请输入工具名称，描述搜索': ['Search tools name and description'],
   '可用工具': ['Available Tools'],
+  '资源需要确认请求参数后才能添加到MCP Server': ['Need request params to be added to MCP server'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
