@@ -97,7 +97,10 @@
         <div class="content-item">
           <div class="item-label">{{ t('标签') }}:</div>
           <div class="item-value">
-            <BkTag v-for="(label, index) in server.labels" :key="index" class="mr8" size="small">{{ label }}</BkTag>
+            <template v-if="server.labels.length">
+              <BkTag v-for="(label, index) in server.labels" :key="index" class="mr8" size="small">{{ label }}</BkTag>
+            </template>
+            <span v-else>--</span>
           </div>
         </div>
       </div>
