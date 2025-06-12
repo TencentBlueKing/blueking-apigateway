@@ -76,7 +76,7 @@
           theme="primary"
           v-bk-tooltips="actionTooltipConfig"
           :disabled="isActionDisabled"
-          :loading="loading"
+          :loading="status === 'doing'"
           @click.stop="handlePublishClick"
         >
           {{ t('发布资源') }}
@@ -85,7 +85,7 @@
           size="small"
           v-bk-tooltips="actionTooltipConfig"
           :disabled="isUnlistDisabled"
-          :loading="loading"
+          :loading="status === 'doing'"
           @click.stop="handleDelistClick"
         >
           {{ t('下架') }}
