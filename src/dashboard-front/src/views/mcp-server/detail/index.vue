@@ -105,8 +105,13 @@
               @update-count="(count) => updateCount(count, item.name)"
             />
             <AuthApplications
+              v-if="item.name === 'auth'"
               :mcp-server-id="serverId"
-              v-if="item.name === 'auth'" />
+            />
+            <Guideline
+              v-if="active === 'guide'"
+              :markdown-str="markdownStr"
+            />
           </div>
         </bk-tab-panel>
       </bk-tab>
@@ -122,6 +127,7 @@ import { useCommon } from '@/store';
 import {
   deleteServer,
   getServer,
+  getServerGuideDoc,
   patchServerStatus,
 } from '@/http/mcp-server';
 import {
@@ -138,6 +144,7 @@ import router from '@/router';
 import CreateSlider from '@/views/mcp-server/components/CreateSlider.vue';
 import AuthApplications from '@/views/mcp-server/components/AuthApplications.vue';
 import CustomTop from '@/views/mcp-server/components/CustomTop.vue';
+import Guideline from '@/views/mcp-market/components/guideline.vue';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 
@@ -162,6 +169,7 @@ const server = ref<MCPServerType>({
   },
 });
 const showDropdown = ref(false);
+const markdownStr = ref('');
 
 const active = ref('tools');
 const panels = ref([
@@ -188,11 +196,19 @@ const fetchServer = async () => {
   server.value = await getServer(common.apigwId, serverId.value);
 };
 
-watch(() => route.params, () => {
+const fetchGuide = async () => {
+  const { content } = await getServerGuideDoc(common.apigwId, serverId.value);
+  markdownStr.value = content;
+};
+
+watch(() => route.params, async () => {
   const { serverId: id } = route.params;
   if (id) {
     serverId.value = Number(id);
-    fetchServer();
+    await Promise.all([
+      fetchServer(),
+      fetchGuide(),
+    ]);
   }
 }, { immediate: true, deep: true });
 
