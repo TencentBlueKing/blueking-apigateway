@@ -610,6 +610,13 @@ watch(
       if (props.currentAssets?.id) {
         formData.stage_id = props.currentAssets.id;
         chooseAssets.value = props.currentAssets;
+
+        const params = {
+          stepsConfig: stepsConfig.value,
+          formData,
+          diffData: diffData.value,
+        };
+        initSidebarFormData(params);
       }
 
       if (props.version?.id) {
