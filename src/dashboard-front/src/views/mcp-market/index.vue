@@ -27,9 +27,9 @@
       <div class="card-list">
         <div class="card" @click="goDetails(item.id)" v-for="item in mcpList" :key="item.id">
           <div class="header">
-            <div class="title">
+            <bk-overflow-title class="title" style="max-width: calc(100% - 115px)">
               {{ item.name }}
-            </div>
+            </bk-overflow-title>
             <bk-tag theme="success" class="mr8" v-if="item.is_public">{{ t('官方') }}</bk-tag>
             <bk-tag theme="info">{{ item.stage?.name }}</bk-tag>
           </div>
@@ -121,8 +121,6 @@ const goDetails = (id: number) => {
 
 <style lang="scss" scoped>
 .banner {
-  // height: 214px;
-  background: #D8D8D8;
   img {
     width: 100%;
   }
