@@ -5,7 +5,10 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import {
+  ref,
+  watch,
+} from 'vue';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import guide from '@/components/guide.vue';
@@ -33,13 +36,18 @@ const md = new MarkdownIt({
   },
 });
 
-const markdownHtml = ref<string>('');
+const markdownHtml = ref('');
 
 watch(
   () => props.markdownStr,
   (newVal) => {
-    markdownHtml.value = md.render(newVal);
+    if (newVal) {
+      markdownHtml.value = md.render(newVal);
+    } else {
+      markdownHtml.value = '';
+    }
   },
+  { immediate: true },
 );
 
 </script>
@@ -47,5 +55,6 @@ watch(
 <style lang="scss" scoped>
 .content {
   padding: 24px 40px 48px;
+  background: #fff;
 }
 </style>
