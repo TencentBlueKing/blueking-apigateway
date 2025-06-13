@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.core.validators import RegexValidator, URLValidator
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
@@ -112,7 +113,17 @@ class GatewayExtraInfoSLZ(serializers.Serializer):
 
 
 class ProgrammableGatewayGitInfoSLZ(serializers.Serializer):
-    repository = serializers.CharField(allow_blank=True, required=True, help_text="仓库地址")
+    repository = serializers.CharField(
+        allow_blank=True,
+        required=True,
+        help_text="仓库地址 (仅支持 HTTP/HTTPS 协议并以 .git 结尾)",
+        validators=[
+            # 协议校验 (只允许 http/https)
+            URLValidator(schemes=["http", "https"]),
+            # 路径校验 (强制以 .git 结尾)
+            RegexValidator(regex=r"^https?://.*\.git$", message="仓库地址必须以 .git 结尾"),
+        ],
+    )
     account = serializers.CharField(allow_blank=True, required=True, help_text="账号")
     password = serializers.CharField(allow_blank=True, required=True, help_text="密码")
 
@@ -133,7 +144,9 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
         child=serializers.RegexField(APP_CODE_PATTERN), allow_empty=True, required=False, help_text="网关关联的应用"
     )
     extra_info = GatewayExtraInfoSLZ(required=False, help_text="网关额外信息")
-    programmable_gateway_git_info = ProgrammableGatewayGitInfoSLZ(required=False, help_text="可编程网关 Git 信息")
+    programmable_gateway_git_info = ProgrammableGatewayGitInfoSLZ(
+        required=False, help_text="可编程网关 Git 信息", validators=[]
+    )
 
     class Meta:
         model = Gateway
