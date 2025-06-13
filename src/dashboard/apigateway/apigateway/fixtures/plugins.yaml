@@ -860,7 +860,7 @@
     language: ''
     type:
     - bk-rate-limit
-    notes: "对请求进行频率限制。\n如果在环境和资源上都配置，两个都会生效，并且在环境上配置表示对应用访问环境下所有资源的总访问频率进行限制。"
+    notes: "限制每个应用调用的请求频率。默认应用频率限制对所有应用生效，特殊应用频率限制对指定应用单独生效。\n如果在环境和资源上都配置，两个都会生效，并且在环境上配置表示对应用访问环境下所有资源的总访问频率进行限制。"
     example: "作用：默认每个应用 100 次/秒，应用 demo 200 次/秒\n\n默认频率限制：次数：100 时间范围：秒\n特殊应用频率限制：次数：200  时间范围：秒  蓝鲸应用 ID: demo"
     style: dynamic
     default_value: ''
@@ -875,7 +875,8 @@
               "properties": {
                 "default": {
                   "type": "object",
-                  "title": "默认频率限制",
+                  "title": "默认应用频率限制",
+                  "description": "每个应用可以调用的默认频率，以应用维度进行限制",
                   "ui:group": {
                     "type": "card",
                     "showTitle": true,
@@ -942,6 +943,7 @@
                 "specials": {
                   "type": "array",
                   "title": "特殊应用频率限制",
+                  "description": "特殊应用可以调用的频率限制，例如针对某些应用给到更大的调用频率",
                   "ui:group": {
                     "type": "card",
                     "showTitle": true,
@@ -967,7 +969,7 @@
                       "tokens": {
                         "type": "integer",
                         "title": "次数",
-                        "default": 1,
+                        "default": 200,
                         "ui:rules": [
                           "required"
                         ],
@@ -1076,7 +1078,7 @@
     language: en
     type:
     - bk-rate-limit
-    notes: rate limit for requests, including default rate limit, which represents the default rate limit for a single application;
+    notes: rate limit for requests of each application, including default application rate limit, which represents the default rate limit for a single application;
       special application rate limit, which sets a separate rate limit for a specified application.
       If both are configured on the stage and resource, both will take effect, and the configuration on the stage indicates the total access rate limit of all resources under the stage.
     example: "Purpose: By default, each application is performed 100 times/second, and demo is performed 200 times/second\n\nDefault frequency limit: Times: 100 Time range: seconds\nSpecial application frequency limit: Times: 200  Time range: seconds Blue  Whale application ID: demo"
@@ -1093,7 +1095,7 @@
               "properties": {
                 "default": {
                   "type": "object",
-                  "title": "Default Rate Limit",
+                  "title": "Default App Rate Limit",
                   "ui:group": {
                     "type": "card",
                     "showTitle": true,
@@ -1185,7 +1187,7 @@
                       "tokens": {
                         "type": "integer",
                         "title": "Count",
-                        "default": 1,
+                        "default": 200,
                         "ui:rules": [
                           "required"
                         ],
@@ -2518,7 +2520,7 @@
                         }
                       },
                       "set": {
-                          "type": "array", 
+                          "type": "array",
                           "title": "设置",
                           "minItems": 0,
                           "description": "改写响应头。",
