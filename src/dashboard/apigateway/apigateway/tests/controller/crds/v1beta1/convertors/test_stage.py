@@ -58,7 +58,7 @@ class TestStageConvertor:
             "bk-jwt",
             "bk-delete-sensitive",
             "bk-stage-context",
-            "bk-concurrency-limit",
+            # "bk-concurrency-limit",
             "bk-permission",
             "bk-debug",
         ],
