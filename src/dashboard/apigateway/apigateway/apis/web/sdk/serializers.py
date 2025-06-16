@@ -31,6 +31,9 @@ class GatewaySDKGenerateInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="sdk语言")
     version = serializers.CharField(label="版本", default="", allow_null=True, allow_blank=True, help_text="sdk版本号")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.sdk.serializers.GatewaySDKGenerateInputSLZ"
+
     def validate(self, data):
         # 用户指定版本号的情况下，需要检查一下版本是否存在
         if (
@@ -61,10 +64,16 @@ class GatewaySDKQueryInputSLZ(serializers.Serializer):
     resource_version_id = serializers.IntegerField(allow_null=True, required=False, help_text="资源版本号id")
     keyword = serializers.CharField(allow_blank=True, required=False, help_text="查询关键字，支持模糊匹配")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.sdk.serializers.GatewaySDKQueryInputSLZ"
+
 
 class ResourceVersionInfoSlz(serializers.Serializer):
     id = serializers.IntegerField(help_text="资源版本号id")
     version = serializers.CharField(help_text="资源版本")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.sdk.serializers.ResourceVersionInfoSlz"
 
 
 class GatewaySDKListOutputSLZ(serializers.Serializer):

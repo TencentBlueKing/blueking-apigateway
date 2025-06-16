@@ -39,6 +39,7 @@ class PluginTypeOutputSLZ(serializers.ModelSerializer):
     is_bound = serializers.SerializerMethodField(help_text="插件类型是否已绑定到当前环境或资源")
 
     class Meta:
+        ref_name = "apigateway.apis.web.plugin.serializers.PluginTypeOutputSLZ"
         model = PluginType
         fields = (
             "id",
@@ -70,6 +71,9 @@ class PluginTypeQueryInputSLZ(serializers.Serializer):
     )
     scope_id = serializers.IntegerField(required=True, help_text="范围 id: stage_id or resource_id")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.plugin.serializers.PluginTypeQueryInputSLZ"
+
 
 class PluginFormOutputSLZ(serializers.ModelSerializer):
     type_code = serializers.CharField(source="type.code", read_only=True, help_text="插件类型编码")
@@ -77,6 +81,7 @@ class PluginFormOutputSLZ(serializers.ModelSerializer):
     config = serializers.DictField(help_text="插件配置")
 
     class Meta:
+        ref_name = "apigateway.apis.web.plugin.serializers.PluginFormOutputSLZ"
         model = PluginForm
         fields = (
             "id",
@@ -98,6 +103,7 @@ class PluginConfigBaseSLZ(serializers.ModelSerializer):
     # description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, help_text="描述")
 
     class Meta:
+        ref_name = "apigateway.apis.web.plugin.serializers.PluginConfigBaseSLZ"
         model = PluginConfig
         fields = [
             "id",
@@ -145,6 +151,9 @@ class PluginConfigBaseSLZ(serializers.ModelSerializer):
 
 
 class PluginConfigRetrieveUpdateInputSLZ(PluginConfigBaseSLZ):
+    class Meta:
+        ref_name = "apigateway.apis.web.plugin.serializers.PluginConfigRetrieveUpdateInputSLZ"
+
     def update(self, instance, validated_data):
         if instance.type.code != validated_data["type_id"].code:
             raise ValidationError(_("插件类型不允许更改。"))
@@ -153,6 +162,9 @@ class PluginConfigRetrieveUpdateInputSLZ(PluginConfigBaseSLZ):
 
 
 class PluginConfigCreateInputSLZ(PluginConfigBaseSLZ):
+    class Meta:
+        ref_name = "apigateway.apis.web.plugin.serializers.PluginConfigCreateInputSLZ"
+
     def create(self, validated_data):
         plugin_type = validated_data["type_id"]
         if not plugin_type.is_public:
@@ -173,10 +185,16 @@ class BindingScopeObjectSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="id")
     name = serializers.CharField(help_text="名称")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.plugin.serializers.BindingScopeObjectSLZ"
+
 
 class PluginBindingListOutputSLZ(serializers.Serializer):
     stages = serializers.ListField(child=BindingScopeObjectSLZ(), help_text="环境列表")
     resources = serializers.ListField(child=BindingScopeObjectSLZ(), help_text="资源列表")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.plugin.serializers.PluginBindingListOutputSLZ"
 
 
 class ScopePluginConfigListOutputSLZ(serializers.Serializer):
@@ -189,3 +207,6 @@ class ScopePluginConfigListOutputSLZ(serializers.Serializer):
     def get_related_scope_count(self, obj):
         related_scope_count = self.context.get("type_related_scope_count", {})
         return related_scope_count.get(obj["code"], {"stage": 0, "resource": 0})
+
+    class Meta:
+        ref_name = "apigateway.apis.web.plugin.serializers.ScopePluginConfigListOutputSLZ"

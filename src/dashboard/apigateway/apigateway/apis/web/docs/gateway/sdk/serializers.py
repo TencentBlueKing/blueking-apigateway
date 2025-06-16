@@ -29,6 +29,9 @@ class GatewaySLZ(serializers.Serializer):
         translated_fields={"en": "description_en"}, read_only=True, help_text="网关描述"
     )
 
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.sdk.serializers.GatewaySLZ"
+
 
 class SDKDocInputSLZ(serializers.Serializer):
     language = serializers.ChoiceField(
@@ -36,11 +39,11 @@ class SDKDocInputSLZ(serializers.Serializer):
     )
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.sdk.SDKDocInputSLZ"
+        ref_name = "apigateway.apis.web.docs.gateway.sdk.serializers.SDKDocInputSLZ"
 
 
 class SDKDocOutputSLZ(serializers.Serializer):
     content = serializers.CharField(allow_blank=True, help_text="文档内容")
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.sdk.SDKDocOutputSLZ"
+        ref_name = "apigateway.apis.web.docs.gateway.sdk.serializers.SDKDocOutputSLZ"

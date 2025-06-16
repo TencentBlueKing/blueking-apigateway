@@ -30,7 +30,7 @@ class HostSLZ(serializers.Serializer):
     weight = serializers.IntegerField(min_value=1, required=False, help_text="权重")
 
     class Meta:
-        ref_name = "apis.web.HostSLZ"
+        ref_name = "apigateway.apis.web.serializers.HostSLZ"
 
 
 class BaseBackendConfigSLZ(serializers.Serializer):
@@ -54,3 +54,6 @@ class BaseBackendConfigSLZ(serializers.Serializer):
                 raise serializers.ValidationError("hosts中的scheme和host组合必须唯一。")
             unique_combinations.add(scheme_host_combination)
         return value
+
+    class Meta:
+        ref_name = "apigateway.apis.web.serializers.BaseBackendConfigSLZ"

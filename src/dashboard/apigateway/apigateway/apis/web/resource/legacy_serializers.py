@@ -34,10 +34,16 @@ class LegacyResourceHostSLZ(serializers.Serializer):
     host = serializers.RegexField(RESOURCE_DOMAIN_PATTERN)
     weight = serializers.IntegerField(min_value=1, default=DEFAULT_LB_HOST_WEIGHT)
 
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.legacy_serializers.LegacyResourceHostSLZ"
+
 
 class LegacyUpstreamsSLZ(serializers.Serializer):
     loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices(), required=False)
     hosts = serializers.ListField(child=LegacyResourceHostSLZ(), allow_empty=False, required=False)
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.legacy_serializers.LegacyUpstreamsSLZ"
 
     def validate(self, data):
         if "hosts" in data and not data.get("loadbalance"):
@@ -49,6 +55,9 @@ class LegacyUpstreamsSLZ(serializers.Serializer):
 class LegacyTransformHeadersSLZ(serializers.Serializer):
     set = serializers.DictField(label="设置", child=serializers.CharField(), required=False, allow_empty=True)
     delete = serializers.ListField(label="删除", child=serializers.CharField(), required=False, allow_empty=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.legacy_serializers.LegacyTransformHeadersSLZ"
 
     def _validate_headers_key(self, value):
         for key in value:

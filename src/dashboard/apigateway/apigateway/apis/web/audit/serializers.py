@@ -41,9 +41,13 @@ class AuditEventLogQueryInputSLZ(serializers.Serializer):
     op_object = serializers.CharField(allow_blank=True, required=False, help_text="实例")
     username = serializers.CharField(allow_blank=True, required=False, help_text="操作人")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.audit.serializers.AuditEventLogQueryInputSLZ"
+
 
 class AuditEventLogOutputSLZ(serializers.ModelSerializer):
     class Meta:
+        ref_name = "apigateway.apis.web.audit.serializers.AuditEventLogOutputSLZ"
         model = AuditEventLog
         fields = (
             "event_id",

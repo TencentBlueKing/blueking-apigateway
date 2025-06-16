@@ -34,9 +34,15 @@ class DetectConfigSLZ(serializers.Serializer):
     method = serializers.ChoiceField(choices=DETECT_METHOD_CHOICES, help_text="检测方法")
     count = serializers.IntegerField(min_value=0, help_text="次数")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.monitor.serializers.DetectConfigSLZ"
+
 
 class ConvergeConfigSLZ(serializers.Serializer):
     duration = serializers.IntegerField(min_value=0, help_text="持续时间")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.monitor.serializers.ConvergeConfigSLZ"
 
 
 class NoticeConfigSLZ(serializers.Serializer):
@@ -60,11 +66,17 @@ class NoticeConfigSLZ(serializers.Serializer):
             raise serializers.ValidationError(_("通知对象、其他通知对象不能同时为空。"))
         return data
 
+    class Meta:
+        ref_name = "apigateway.apis.web.monitor.serializers.NoticeConfigSLZ"
+
 
 class AlarmStrategyConfigSLZ(serializers.Serializer):
     detect_config = DetectConfigSLZ(help_text="检测配置")
     converge_config = ConvergeConfigSLZ(help_text="收敛配置")
     notice_config = NoticeConfigSLZ(help_text="通知配置")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.monitor.serializers.AlarmStrategyConfigSLZ"
 
 
 class AlarmStrategyInputSLZ(serializers.ModelSerializer):
@@ -79,6 +91,7 @@ class AlarmStrategyInputSLZ(serializers.ModelSerializer):
     )
 
     class Meta:
+        ref_name = "apigateway.apis.web.monitor.serializers.AlarmStrategyInputSLZ"
         model = AlarmStrategy
         fields = [
             "gateway",
@@ -124,6 +137,7 @@ class AlarmStrategyListOutputSLZ(serializers.ModelSerializer):
     gateway_labels = serializers.SerializerMethodField(help_text="网关标签列表")
 
     class Meta:
+        ref_name = "apigateway.apis.web.monitor.serializers.AlarmStrategyListOutputSLZ"
         model = AlarmStrategy
         fields = [
             "id",
@@ -143,6 +157,7 @@ class AlarmStrategyListOutputSLZ(serializers.ModelSerializer):
 
 class AlarmStrategyUpdateStatusInputSLZ(serializers.ModelSerializer):
     class Meta:
+        ref_name = "apigateway.apis.web.monitor.serializers.AlarmStrategyUpdateStatusInputSLZ"
         model = AlarmStrategy
         fields = [
             "enabled",
@@ -158,11 +173,15 @@ class AlarmRecordQueryInputSLZ(serializers.Serializer):
         choices=AlarmStatusEnum.get_choices(), allow_blank=True, required=False, help_text="告警状态"
     )
 
+    class Meta:
+        ref_name = "apigateway.apis.web.monitor.serializers.AlarmRecordQueryInputSLZ"
+
 
 class AlarmRecordQueryOutputSLZ(serializers.ModelSerializer):
     alarm_strategy_names = serializers.SerializerMethodField(help_text="告警策略名称列表")
 
     class Meta:
+        ref_name = "apigateway.apis.web.monitor.serializers.AlarmRecordQueryOutputSLZ"
         model = AlarmRecord
         fields = [
             "id",
@@ -189,10 +208,16 @@ class AlarmStrategyQueryInputSLZ(serializers.Serializer):
         help_text="排序字段",
     )
 
+    class Meta:
+        ref_name = "apigateway.apis.web.monitor.serializers.AlarmStrategyQueryInputSLZ"
+
 
 class AlarmRecordSummaryQueryInputSLZ(serializers.Serializer):
     time_start = TimestampField(allow_null=True, required=False, help_text="开始时间")
     time_end = TimestampField(allow_null=True, required=False, help_text="结束时间")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.monitor.serializers.AlarmRecordSummaryQueryInputSLZ"
 
 
 class AlarmStrategySummaryQuerySLZ(serializers.Serializer):
@@ -201,6 +226,9 @@ class AlarmStrategySummaryQuerySLZ(serializers.Serializer):
     alarm_record_count = serializers.IntegerField(read_only=True, help_text="告警记录总数")
     latest_alarm_record = serializers.DictField(read_only=True, help_text="最新告警记录")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.monitor.serializers.AlarmStrategySummaryQuerySLZ"
+
 
 class AlarmRecordSummaryQueryOutputSLZ(serializers.Serializer):
     gateway = serializers.DictField(read_only=True, help_text="网关")
@@ -208,3 +236,6 @@ class AlarmRecordSummaryQueryOutputSLZ(serializers.Serializer):
     strategy_summary = serializers.ListField(
         child=AlarmStrategySummaryQuerySLZ(), read_only=True, help_text="策略汇总"
     )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.monitor.serializers.AlarmRecordSummaryQueryOutputSLZ"

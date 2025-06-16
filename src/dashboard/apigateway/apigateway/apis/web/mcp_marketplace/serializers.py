@@ -29,6 +29,9 @@ class MCPServerListInputSLZ(serializers.Serializer):
         allow_blank=True, required=False, help_text="MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述"
     )
 
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerListInputSLZ"
+
 
 class MCPServerBaseOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
@@ -49,6 +52,9 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
 
     tools_count = serializers.IntegerField(read_only=True, help_text="MCPServer 工具数量")
     url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerBaseOutputSLZ"
 
     def get_stage(self, obj) -> Dict[str, Any]:
         return self.context["stages"][obj.stage.id]

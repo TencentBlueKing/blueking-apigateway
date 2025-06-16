@@ -26,6 +26,7 @@ class DocInputSLZ(serializers.ModelSerializer):
     language = serializers.ChoiceField(choices=DocLanguageEnum.get_choices())
 
     class Meta:
+        ref_name = "apigateway.apis.web.resource.doc.DocInputSLZ"
         model = ResourceDoc
         fields = ["language", "content"]
 
@@ -53,6 +54,7 @@ class DocInputSLZ(serializers.ModelSerializer):
 
 class DocOutputSLZ(serializers.ModelSerializer):
     class Meta:
+        ref_name = "apigateway.apis.web.resource.doc.DocOutputSLZ"
         model = ResourceDoc
         fields = [
             "id",
@@ -60,7 +62,6 @@ class DocOutputSLZ(serializers.ModelSerializer):
             "content",
         ]
         read_only_fields = fields
-        ref_name = "apigateway.apis.web.resource.doc.DocOutputSLZ"
 
         extra_kwargs = {
             "id": {
