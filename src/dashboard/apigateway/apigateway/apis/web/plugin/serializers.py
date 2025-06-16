@@ -151,9 +151,6 @@ class PluginConfigBaseSLZ(serializers.ModelSerializer):
 
 
 class PluginConfigRetrieveUpdateInputSLZ(PluginConfigBaseSLZ):
-    class Meta:
-        ref_name = "apigateway.apis.web.plugin.serializers.PluginConfigRetrieveUpdateInputSLZ"
-
     def update(self, instance, validated_data):
         if instance.type.code != validated_data["type_id"].code:
             raise ValidationError(_("插件类型不允许更改。"))
@@ -162,9 +159,6 @@ class PluginConfigRetrieveUpdateInputSLZ(PluginConfigBaseSLZ):
 
 
 class PluginConfigCreateInputSLZ(PluginConfigBaseSLZ):
-    class Meta:
-        ref_name = "apigateway.apis.web.plugin.serializers.PluginConfigCreateInputSLZ"
-
     def create(self, validated_data):
         plugin_type = validated_data["type_id"]
         if not plugin_type.is_public:
