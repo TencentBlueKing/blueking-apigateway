@@ -27,6 +27,9 @@ class GatewayQueryInputSLZ(serializers.Serializer):
         allow_blank=True, required=False, help_text="网关筛选条件，支持模糊匹配网关名称、描述"
     )
 
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.gateway.serializers.GatewayQueryInputSLZ"
+
 
 class GatewayOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="网关 ID")

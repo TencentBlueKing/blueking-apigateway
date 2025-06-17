@@ -61,6 +61,7 @@ class StageOutputSLZ(serializers.ModelSerializer):
     )
 
     class Meta:
+        ref_name = "apigateway.apis.web.stage.serializers.StageOutputSLZ"
         model = Stage
         fields = (
             "id",
@@ -163,6 +164,9 @@ class BackendSLZ(serializers.Serializer):
     id = serializers.IntegerField()
     config = BaseBackendConfigSLZ(help_text="配置")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.stage.serializers.BackendSLZ"
+
 
 class StageInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
@@ -177,6 +181,7 @@ class StageInputSLZ(serializers.Serializer):
     backends = serializers.ListField(child=BackendSLZ(), allow_empty=False, help_text="后端服务")
 
     class Meta:
+        ref_name = "apigateway.apis.web.stage.serializers.StageInputSLZ"
         validators = [
             UniqueTogetherValidator(
                 queryset=Stage.objects.all(),
@@ -238,6 +243,7 @@ class StageVarsSLZ(serializers.Serializer):
     )
 
     class Meta:
+        ref_name = "apigateway.apis.web.stage.serializers.StageVarsSLZ"
         validators = [StageVarsValidator()]
 
 
@@ -245,6 +251,9 @@ class StageBackendOutputSLZ(serializers.Serializer):
     id = serializers.SerializerMethodField()
     name = serializers.SerializerMethodField(help_text="名称")
     config = serializers.SerializerMethodField(help_text="配置")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.stage.serializers.StageBackendOutputSLZ"
 
     def get_id(self, obj):
         return obj.backend.id
@@ -257,6 +266,9 @@ class StageBackendOutputSLZ(serializers.Serializer):
 
 
 class BackendConfigInputSLZ(BaseBackendConfigSLZ):
+    class Meta:
+        ref_name = "apigateway.apis.web.stage.serializers.BackendConfigInputSLZ"
+
     def validate(self, attrs):
         backend = self.context["backend"]
 
@@ -269,13 +281,22 @@ class BackendConfigInputSLZ(BaseBackendConfigSLZ):
 class StagePartialInputSLZ(serializers.Serializer):
     description = serializers.CharField(allow_blank=True, allow_null=True, max_length=512, help_text="描述")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.stage.serializers.StagePartialInputSLZ"
+
 
 class StageStatusInputSLZ(serializers.Serializer):
     status = serializers.ChoiceField(choices=[(StageStatusEnum.INACTIVE.value, "INACTIVE")], help_text="状态")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.stage.serializers.StageStatusInputSLZ"
+
 
 class StageDeployInputSLZ(serializers.Serializer):
     resource_version = serializers.SerializerMethodField(help_text="当前生效资源版本")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.stage.serializers.StageDeployInputSLZ"
 
 
 class ProgrammableDeploymentInfoSLZ(serializers.Serializer):
@@ -288,6 +309,9 @@ class ProgrammableDeploymentInfoSLZ(serializers.Serializer):
         default=0,  # 确保默认值存在
     )
     status = serializers.SerializerMethodField(help_text="部署状态", default="", required=False)
+
+    class Meta:
+        ref_name = "apigateway.apis.web.stage.serializers.ProgrammableDeploymentInfoSLZ"
 
     def get_history_id(self, obj):
         return self.context.get("latest_history_id", 0)
@@ -322,6 +346,9 @@ class ProgrammableStageDeployOutputSLZ(serializers.Serializer):
         default=dict,  # 设置默认空字典
     )
     status = serializers.SerializerMethodField(help_text="部署状态", default="", required=False)
+
+    class Meta:
+        ref_name = "apigateway.apis.web.stage.serializers.ProgrammableStageDeployOutputSLZ"
 
     def get_status(self, obj):
         return self.context.get("last_publish_status", "")

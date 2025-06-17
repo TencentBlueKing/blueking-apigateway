@@ -23,6 +23,12 @@ class LoginTicket(serializers.Serializer):
     key = serializers.CharField()
     cookie_name = serializers.CharField()
 
+    class Meta:
+        ref_name = "apigateway.apis.web.setting.serializers.LoginTicket"
+
 
 class UserAuthTypeOutputSLZ(serializers.Serializer):
     login_ticket = serializers.ListField(child=LoginTicket(), help_text="登录票据")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.setting.serializers.UserAuthTypeOutputSLZ"
