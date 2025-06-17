@@ -25,7 +25,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
@@ -109,7 +109,7 @@ class GatewaySyncApi(generics.CreateAPIView):
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
         saver = GatewaySaver(
             id=gateway and gateway.id,
-            data=parse_obj_as(GatewayData, slz.validated_data),
+            data=TypeAdapter(GatewayData).validate_python(slz.validated_data),
             bk_app_code=request.app.app_code,
             username=username,
         )

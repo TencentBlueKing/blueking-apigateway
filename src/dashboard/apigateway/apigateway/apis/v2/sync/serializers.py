@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional
 from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation.trans_null import gettext_lazy
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
@@ -560,8 +560,11 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             validator.validate_scheme()
 
     def _sync_plugins(self, gateway_id: int, stage_id: int, plugin_configs: Optional[Dict[str, Any]] = None):
-        # plugin_configs为None则，plugin_config_datas 设置[]则清空对应配置
-        plugin_config_datas = parse_obj_as(Optional[List[PluginConfigData]], plugin_configs) if plugin_configs else []
+        # plugin_configs 为 None 则，plugin_config_datas 设置 [] 则清空对应配置
+        plugin_config_datas = (
+            TypeAdapter(Optional[List[PluginConfigData]]).validate_python(plugin_configs) if plugin_configs else []
+        )
+
         scope_id_to_plugin_configs = {stage_id: plugin_config_datas}
         synchronizer = PluginSynchronizer()
         synchronizer.sync(
