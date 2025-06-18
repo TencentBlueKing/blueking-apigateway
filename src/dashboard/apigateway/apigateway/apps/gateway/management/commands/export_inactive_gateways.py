@@ -66,7 +66,7 @@ class Command(BaseCommand):
                 "desc": obj.description or "",
                 "access_url": template.format(gateway_id=obj.id),
                 "deactivated": "否" if obj.is_active else "是",
-                "maintainers": obj.maintainers,
+                "maintainers": obj._maintainers,
                 "created_by": obj.created_by,
                 "created_time": obj.created_time,
                 "options": "",
