@@ -71,7 +71,7 @@ class Command(BaseCommand):
                 "created_time": obj.created_time,
                 "options": "",
             }
-            for obj in gateways.exclude(id__in=exclude_gateway_ids).order_by("created_time")
+            for obj in gateways.exclude(id__in=exclude_gateway_ids).order_by("name")
         ]
 
         if not data:
