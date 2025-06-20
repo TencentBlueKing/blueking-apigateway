@@ -76,7 +76,14 @@
             property="maintainers"
             required
           >
-            <member-select v-model="formData.maintainers" />
+            <member-select v-if="!user.isTenantMode" v-model="formData.maintainers" />
+            <bk-user-selector
+              v-else
+              v-model="formData.maintainers"
+              :api-base-url="user.apiBaseUrl"
+              :multiple="true"
+              :tenant-id="user.user.tenant_id"
+            />
           </bk-form-item>
           <bk-form-item
             :label="t('描述')"
@@ -151,6 +158,39 @@
             <bk-switcher theme="primary" v-model="formData.is_public" />
             <span class="common-form-tips">{{ t('公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏') }}</span>
           </bk-form-item>
+
+          <template v-if="user.isTenantMode && !isEdit">
+            <template v-if="user.user.tenant_id === 'system'">
+              <bk-form-item
+                :label="t('租户模式')"
+                property="tenant_mode"
+              >
+                <bk-select
+                  v-model="formData.tenant_mode"
+                  :clearable="false"
+                  :filterable="false"
+                  :input-search="false"
+                  @change="handleTenantModeChange"
+                >
+                  <bk-option
+                    value="global"
+                    :label="t('全租户（Global）')"
+                  />
+                  <bk-option
+                    value="single"
+                    :label="t('单租户（Single）')"
+                  />
+                </bk-select>
+              </bk-form-item>
+              <bk-form-item
+                v-if="formData.tenant_mode === 'single'"
+                :label="t('租户 ID')"
+                property="tenant_id"
+              >
+                <bk-input v-model="formData.tenant_id" disabled />
+              </bk-form-item>
+            </template>
+          </template>
 
           <template v-if="isEdit">
             <bk-form-item
@@ -257,6 +297,7 @@ import { cloneDeep } from 'lodash';
 // @ts-ignore
 import { BasicInfoParams } from '@/basic-info/common/type';
 import MemberSelect from '@/components/member-select';
+import BkUserSelector from '@blueking/bk-user-selector';
 // @ts-ignore
 import bareGit from '@/images/bare_git.png';
 import guide from '@/components/guide.vue';
@@ -464,6 +505,14 @@ const getUrlPrefix = async () => {
 if (BK_APP_VERSION === 'te') {
   getUrlPrefix();
 }
+
+const handleTenantModeChange = (tenant_mode: string) => {
+  if (tenant_mode === 'global') {
+    formData.value.tenant_id = '';
+  } else if (tenant_mode === 'single') {
+    formData.value.tenant_id = user.user.tenant_id || 'system';
+  }
+};
 
 const handleConfirmCreate = async () => {
   try {
