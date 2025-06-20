@@ -668,7 +668,8 @@ BKAUTH_BACKEND_TYPE = "bk_token"
 BKAUTH_ENABLE_MULTI_TENANT_MODE = ENABLE_MULTI_TENANT_MODE
 
 # 验证用户信息的网关 API(租户版本) => 走网关，不走 esb
-if EDITION == "ee":
+# FIXME: remove `and ENABLE_MULTI_TENANT_MODE` when all env has the newest bk-login
+if EDITION == "ee" and ENABLE_MULTI_TENANT_MODE:
     BKAUTH_USER_INFO_APIGW_URL = (
         BK_API_URL_TMPL.format(api_name="bk-login") + "/prod/login/api/v3/open/bk-tokens/userinfo/"
     )

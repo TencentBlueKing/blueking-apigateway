@@ -32,7 +32,7 @@ from apigateway.apps.metrics.constants import (
 )
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.common.error_codes import error_codes
-from apigateway.components.prometheus import query_range
+from apigateway.components.bkmonitor import query_range
 
 from .base import BasePrometheusMetrics
 

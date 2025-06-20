@@ -119,6 +119,11 @@ def build_logging_config(log_level: str, to_console: bool, file_directory: Optio
                 "level": log_level,
                 "propagate": False,
             },
+            "bkpaas_auth": {
+                "handlers": [*logger_handlers_map["component"], "sentry"],
+                "level": "WARNING",
+                "propagate": True,
+            },
             "celery": {
                 "handlers": [*logger_handlers_map["celery"], "sentry"],
                 "level": "INFO",

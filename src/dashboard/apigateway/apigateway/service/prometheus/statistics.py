@@ -25,7 +25,7 @@ from typing import Optional
 from django.conf import settings
 
 from apigateway.common.error_codes import APIError
-from apigateway.components.prometheus import query as prometheus_query
+from apigateway.components.bkmonitor import query as prometheus_query
 
 from .base import BasePrometheusMetrics
 
