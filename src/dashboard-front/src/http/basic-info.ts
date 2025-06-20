@@ -37,4 +37,4 @@ export const editGateWays = (apigwId: number, data: BasicInfoParams) => fetch.pa
  * @param apigwId 网关id
  * @param data 网关基本数据
  */
-export const getGatewaysLabels = (apigwId: number, data: BasicInfoParams) => fetch.put(`${BK_DASHBOARD_URL}/gateways/${apigwId}/`, data);
+export const putGatewaysBasics = (apigwId: number, data: BasicInfoParams) => fetch.put(`${BK_DASHBOARD_URL}/gateways/${apigwId}/`, data);
