@@ -2,6 +2,8 @@
   <bk-sideslider
     v-model:is-show="isShow"
     :title="isEdit ? t('编辑网关') : t('新建网关')"
+    :before-close="handleBeforeClose"
+    @closed="handleCancel"
     width="1020"
   >
     <section class="create-gateway">
@@ -287,11 +289,20 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, computed } from 'vue';
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useUser } from '@/store/user';
-import { createGateway, getEnvVars, editGateWays, getGuideDocs } from '@/http';
+import {
+  createGateway,
+  editGateWays,
+  getEnvVars,
+  getGuideDocs,
+} from '@/http';
 import { Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash';
 // @ts-ignore
@@ -303,6 +314,7 @@ import bareGit from '@/images/bare_git.png';
 import guide from '@/components/guide.vue';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
+import { useSidebar } from '@/hooks';
 
 const props = defineProps({
   modelValue: {
@@ -324,6 +336,7 @@ const emit = defineEmits(['update:modelValue', 'done']);
 const router = useRouter();
 const user = useUser();
 const { t } = useI18n();
+const { isSidebarClosed, initSidebarFormData } = useSidebar();
 
 const { BK_APP_VERSION } = window;
 
@@ -479,6 +492,7 @@ const md = new MarkdownIt({
   },
 });
 
+initSidebarFormData(formData.value);
 const showGuide = async () => {
   try {
     const data = await getGuideDocs(newGateway.value?.id);
@@ -568,6 +582,10 @@ const handleCancel = () => {
   formData.value = cloneDeep(defaultFormData);
 };
 
+const handleBeforeClose = async () => {
+  return isSidebarClosed(JSON.stringify(formData.value));
+};
+
 watch(
   () => formData.value.name,
   () => {
@@ -596,6 +614,7 @@ watch(
   (payload: BasicInfoParams) => {
     if (payload) {
       formData.value = payload;
+      initSidebarFormData(payload);
     }
   },
 );

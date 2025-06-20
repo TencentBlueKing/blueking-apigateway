@@ -1,6 +1,6 @@
 import fetch from './fetch';
 // import { json2Query } from '@/common/util';
-import {  BasicInfoParams } from '@/views/basic-info/common/type';
+import { BasicInfoParams } from '@/views/basic-info/common/type';
 
 const { BK_DASHBOARD_URL } = window;
 

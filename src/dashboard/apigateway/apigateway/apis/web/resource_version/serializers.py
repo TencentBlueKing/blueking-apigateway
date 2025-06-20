@@ -39,6 +39,7 @@ class ResourceVersionCreateInputSLZ(serializers.Serializer):
 
 
 class ResourceInfoSLZ(serializers.Serializer):
+    id = serializers.IntegerField(help_text="资源id")
     name = serializers.CharField(help_text="资源名称")
     method = serializers.CharField(help_text="前端请求方法")
     path = serializers.CharField(help_text="前端请求路径")

@@ -974,6 +974,7 @@ watch(
             }
           }
         }
+
         .explain {
           font-size: 12px;
           color: #4D4F56;

@@ -1022,6 +1022,8 @@ const lang: ILANG = {
   '联系服务号': ['Contact Service'],
   '文档联系人': ['Doc Contact'],
   '联系 BK 助手': ['Contact BK Helper'],
+  '联系': ['Contact'],
+  '请输入 request_id 进行查询': ['Please enter request_id to search'],
   '请输入群成员': ['Please enter the group member'],
   '请填写服务号链接': ['Please fill in the service number link'],
   '请输入正确的服务号链接，支持以下协议：wxwork://': ['Please enter the correct service number link, support the following protocols: wxwork://'],
@@ -1910,6 +1912,7 @@ const lang: ILANG = {
   '停用后，{n} 下所有工具不可访问，请确认！': ['Tools under {n} can not be used after suspension, be cautious!'],
   '请输入工具名称，描述搜索': ['Search tools name and description'],
   '可用工具': ['Available Tools'],
+  '资源需要确认请求参数后才能添加到MCP Server': ['Need request params to be added to MCP server'],
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

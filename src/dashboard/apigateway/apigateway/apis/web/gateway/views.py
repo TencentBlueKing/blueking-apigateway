@@ -53,6 +53,7 @@ from apigateway.core.constants import (
 from apigateway.core.models import Gateway
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.django import get_model_dict
+from apigateway.utils.git import check_git_credentials
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
@@ -165,6 +166,13 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
                 git_info = slz.validated_data.pop("programmable_gateway_git_info", None)
                 if not git_info:
                     raise error_codes.INVALID_ARGUMENT.format(_("可编程网关 Git 信息不能为空。"), replace=True)
+                # 校验 git_info 合法性
+                if not check_git_credentials(
+                    repo_url=git_info.get("repository"),
+                    username=git_info.get("account"),
+                    token=git_info.get("password"),
+                ):
+                    raise error_codes.INVALID_ARGUMENT.format(_("Git 信息无效。"), replace=True)
 
             ok = create_paas_app(
                 app_code=slz.validated_data["name"],

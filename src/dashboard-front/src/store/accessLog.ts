@@ -413,6 +413,10 @@ export const useAccessLog = defineStore('accessLog', {
           name: t('后端服务'),
           value: 'backend',
         },
+        {
+          name: 'MCP Server',
+          value: 'mcp_server',
+        },
       ],
       OPType: [
         {

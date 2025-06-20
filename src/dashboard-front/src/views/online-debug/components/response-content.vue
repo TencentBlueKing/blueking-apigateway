@@ -399,6 +399,7 @@ defineExpose({
   .response-main {
     padding-bottom: 15px;
     height: 100%;
+    overflow-y: auto;
     box-sizing: border-box;
     .response-content-type {
       margin-bottom: 12px;

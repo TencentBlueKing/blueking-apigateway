@@ -18,7 +18,7 @@
       <aside v-else>
         <a target="_blank" class="link-item" :href="basics.doc_maintainers?.service_account?.link">
           <i class="ag-doc-icon doc-qw f16 apigateway-icon icon-ag-qw"></i>
-          {{ t('联系 BK 助手') }}
+          {{ t('联系') }} {{ basics.doc_maintainers?.service_account?.name }}
         </a>
       </aside>
     </header>

@@ -27,6 +27,7 @@ from apigateway.apis.web.gateway.serializers import (
     GatewayRetrieveOutputSLZ,
     GatewayUpdateInputSLZ,
     GatewayUpdateStatusInputSLZ,
+    ProgrammableGatewayGitInfoSLZ,
 )
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.core.constants import GatewayTypeEnum
@@ -587,3 +588,17 @@ class TestGatewayUpdateStatusInputSLZ:
             return
 
         assert slz.validated_data == expected
+
+
+class TestProgrammableGatewayGitInfoSLZ:
+    def test_valid_http_git_repo(self):
+        data = {"repository": "http://github.com/user/repo.git", "account": "user", "password": "pass"}
+        slz = ProgrammableGatewayGitInfoSLZ(data=data)
+        assert slz.is_valid()
+
+    def test_missing_git_suffix(self):
+        data = {"repository": "https://github.com/user/repo", "account": "user", "password": "pass"}
+        slz = ProgrammableGatewayGitInfoSLZ(data=data)
+        with pytest.raises(ValidationError) as e:
+            slz.is_valid(raise_exception=True)
+        assert "必须以 .git 结尾" in str(e.value)

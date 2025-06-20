@@ -25,8 +25,10 @@ from rest_framework import generics, status
 from apigateway.apis.open.permissions import (
     OpenAPIGatewayRelatedAppPermission,
 )
+from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.gateway import ReleaseError, release
+from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.core.models import ResourceVersion, Stage
 from apigateway.utils.exception import LockTimeout
@@ -85,6 +87,17 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
                 resource_version=instance,
                 data=ResourceDocVersionHandler().make_version(request.gateway.id),
             )
+
+        exporter = OpenAPIExportManager(
+            api_version=instance.version,
+            title="the openapi of %s" % request.gateway.name,
+        )
+        # 创建openapi file版本
+        OpenAPIFileResourceSchemaVersion.objects.create(
+            gateway=request.gateway,
+            resource_version=instance,
+            schema=exporter.export_resource_version_openapi(instance),
+        )
 
         return V1OKJsonResponse(
             "OK",

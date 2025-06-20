@@ -1,4 +1,5 @@
 <template>
+<<<<<<< HEAD
   <div class="card-list">
     <div class="card-item" v-for="(stageData, index) in stageList" :key="index">
       <div class="title">
@@ -99,6 +100,26 @@
             {{ stageData.release.created_time || '--' }}
           </div>
         </div>
+=======
+  <div>
+    <BkLoading :loading="isLoading && !stageList.length">
+      <div style="width: 100%;"></div>
+    </BkLoading>
+    <div class="card-list">
+      <StageCardItem
+        v-for="stage in stageList"
+        :key="stage.id"
+        :loading="loadingProgrammableStageIds.includes(stage.id)"
+        :stage="stage"
+        @click="handleToDetail(stage)"
+        @delist="() => handleStageUnlist(stage.id)"
+        @publish="() => handleRelease(stage)"
+        @check-log="() => showLogs(stage)"
+      />
+
+      <div v-if="!common.isProgrammableGateway && !isLoading" class="card-item add-stage" @click="handleAddStage">
+        <i class="apigateway-icon icon-ag-add-small" />
+>>>>>>> master
       </div>
     </div>
 
@@ -199,6 +220,7 @@ const basicInfoData = ref<BasicInfoParams>({
 const stageList = ref<any[]>([]);
 const stageSidesliderRef = ref(null);
 const isLoading = ref(false);
+const loadingProgrammableStageIds = ref<number[]>([]);
 
 const fetchStageList = async () => {
   isLoading.value = true;
@@ -213,7 +235,16 @@ const fetchStageList = async () => {
     const tasks: ReturnType<typeof getProgrammableStageDetail>[] = [];
 
     for (const stage of _stageList) {
-      tasks.push(getProgrammableStageDetail(common.apigwId, stage.id));
+      if (stage.publish_version) {
+        tasks.push(getProgrammableStageDetail(common.apigwId, stage.id));
+        loadingProgrammableStageIds.value.push(stage.id);
+      } else {
+        tasks.push(Promise.resolve(undefined));
+        const index = loadingProgrammableStageIds.value.findIndex(id => id === stage.id);
+        if (index !== -1) {
+          loadingProgrammableStageIds.value.splice(index, 1);
+        }
+      }
     }
 
     const responses = await Promise.all(tasks);
@@ -221,6 +252,7 @@ const fetchStageList = async () => {
     for (let i = 0; i < _stageList.length; i++) {
       _stageList[i].paasInfo = responses[i];
     }
+    loadingProgrammableStageIds.value = [];
   }
   stageList.value = _stageList || [];
   stageStore.setStageList(_stageList);

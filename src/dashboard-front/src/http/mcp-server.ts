@@ -81,3 +81,8 @@ export const getServerToolDoc = (apigwId: number, mcp_server_id: number, tool_na
   content: string,
   updated_time: string,
 }> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/mcp-servers/${mcp_server_id}/tools/${tool_name}/doc/`);
+
+// 指引文档
+export const getServerGuideDoc = (apigwId: number, mcp_server_id: number): Promise<{
+  content: string,
+}> => fetch.get(`${BK_DASHBOARD_URL}/gateways/${apigwId}/mcp-servers/${mcp_server_id}/guideline/`);
