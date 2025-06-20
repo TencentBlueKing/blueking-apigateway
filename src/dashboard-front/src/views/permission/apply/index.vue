@@ -467,6 +467,7 @@ const handleRowSelectionChange = (payload: any, rowSelections: SelectionType) =>
   );
   renderTableIndex.value++;
   setTableHeader();
+  // console.log(curPermission.value);
 }
 
 const handleRowSelectionAllChange= (payload: any, rowSelections: SelectionType) => {
@@ -577,7 +578,7 @@ const handleRowClick = (e:Event, row:any) => {
     setTimeout(() => {
       permissionApplyList.value.forEach((item) => {
         if(item.id === curExpandRow.value.id) {
-          item.selection = cloneDeep(item.resourceList);
+          // item.selection = cloneDeep(item.resourceList);
           permissionTableRef.value.setRowExpand(row, row.isExpand);
           childPermTableRef.value[row.id]?.toggleAllSelection();
         } else {
