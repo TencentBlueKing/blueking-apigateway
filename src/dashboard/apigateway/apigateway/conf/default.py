@@ -619,12 +619,6 @@ BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME = {
     "bk_token": "bk_token",
 }
 
-# access token 文档链接地址
-BK_ACCESS_TOKEN_DOC_URL = env.str(
-    "BK_ACCESS_TOKEN_DOC_URL",
-    "https://bk.tencent.com/docs/markdown/ZH/APIGateway/1.14/UserGuide/Explanation/access-token.md",
-)
-
 BK_API_DEFAULT_STAGE_MAPPINGS = env.dict("BK_API_DEFAULT_STAGE_MAPPINGS", default={})
 
 FAKE_SEND_NOTICE = env.bool("FAKE_SEND_NOTICE", default=False)
@@ -644,6 +638,10 @@ PAAS_RENEW_API_PERMISSION_URL = f"{BK_PAAS3_URL}/developer-center/apps/{{bk_app_
 REQUESTS_POOL_CONNECTIONS = env.int("REQUESTS_POOL_CONNECTIONS", default=20)
 REQUESTS_POOL_MAXSIZE = env.int("REQUESTS_POOL_MAXSIZE", default=20)
 
+
+# ==============================================================================
+# API 使用指南文档地址
+# ==============================================================================
 # 可编程网关开发文档链接地址
 PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL = env.str(
     "PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL",
@@ -653,6 +651,17 @@ PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_GO_URL = env.str(
     "PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_GO_URL",
     "https://github.com/TencentBlueKing/bk-apigateway-framework/blob/master/docs/golang.md",
 )
+
+# access token 文档链接地址
+BK_ACCESS_TOKEN_DOC_URL = env.str(
+    "BK_ACCESS_TOKEN_DOC_URL",
+    "https://bk.tencent.com/docs/markdown/ZH/APIGateway/1.14/UserGuide/Explanation/access-token.md",
+)
+
+DOCS_URLS = {
+    "USE_GATEWAY_API": "https://bk.tencent.com/docs/markdown/ZH/APIGateway/1.14/UserGuide/HowTo/call-gateway-api.md",
+    "ACCESS_TOKEN_API": BK_ACCESS_TOKEN_DOC_URL,
+}
 
 # ==============================================================================
 # bkpaas-auth 配置
