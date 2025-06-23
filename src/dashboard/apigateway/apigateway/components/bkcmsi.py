@@ -128,7 +128,7 @@ cmsi_component: BaseCMSIComponent
 
 # FIXME: remove `and ENABLE_MULTI_TENANT_MODE` when all env has the newest bk-cmsi
 if settings.EDITION == "ee" and settings.ENABLE_MULTI_TENANT_MODE:
-    print("multi-tenant mode enabled, use bkcmsi gateway instead of cmsi component in esb")
+    logger.info("multi-tenant mode enabled, use bkcmsi gateway instead of cmsi component in esb")
     cmsi_component = BKCMSIGateway()
 else:
     # NOTE: ieod-clouds should use this component, not the bk-cmsi-gateway
