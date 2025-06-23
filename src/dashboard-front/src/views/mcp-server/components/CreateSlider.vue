@@ -374,12 +374,13 @@ const fetchStageList = async () => {
   }
 };
 
+
 const fetchServer = async () => {
   const response = await getServer(common.apigwId, serverId!);
   formData.value.name = response.name || '';
   formData.value.description = response.description || '';
   formData.value.labels = response.labels || [];
-  formData.value.is_public = response.is_public || true;
+  formData.value.is_public = response.is_public ?? true;
   formData.value.stage_id = response.stage.id || 0;
   selections.value = response.resource_names;
 }
