@@ -1,0 +1,516 @@
+<template>
+  <div class="response-params-table-wrapper">
+    <bk-collapse
+      v-model="activeIndex"
+      class="table-collapse"
+      use-card-theme
+    >
+      <bk-collapse-panel name="currentCollapse">
+        <template #header>
+          <div class="panel-header">
+            <AngleUpFill
+              :class="[activeIndex.includes('currentCollapse') ? 'panel-header-show' : 'panel-header-hide']"
+            />
+            <div v-if="!isEditingCode" class="title">{{ response.code }}</div>
+            <div v-else style="padding-left: 14px;" @click.stop>
+              <bk-input
+                v-model="localCode"
+                :placeholder="t('请输入状态码')"
+                @blur="handleCodeInputDone"
+                @enter="handleCodeInputDone"
+              />
+            </div>
+            <div class="sub-title">
+              <AgIcon
+                class="icon-btn"
+                name="edit-line"
+                size="15"
+                @click.stop="handleEditCode"
+              />
+              <AgIcon
+                class="icon-btn"
+                name="delet"
+                size="15"
+                @click.stop="handleDelete"
+              />
+            </div>
+          </div>
+        </template>
+        <template #content>
+          <div class="response-table-wrapper">
+            <table v-for="row in tableData" :key="row.id" class="response-table">
+              <thead class="table-head">
+                <tr class="table-head-row">
+                  <th class="table-head-row-cell arrow-col"></th>
+                  <th class="table-head-row-cell name-col">{{ t('参数名') }}</th>
+                  <th class="table-head-row-cell">{{ t('参数类型') }}</th>
+                  <th class="table-head-row-cell">{{ t('备注') }}</th>
+                  <th class="table-head-row-cell"></th>
+                </tr>
+              </thead>
+              <tbody class="table-body">
+                <tr class="table-body-row">
+                  <td class="table-body-row-cell arrow-col">
+                    <AgIcon
+                      v-if="row.type === 'object'"
+                      :class="{ expanded: row.properties?.length }"
+                      class="expand-icon"
+                      name="right-shape"
+                    />
+                  </td>
+                  <!-- 字段名 -->
+                  <td class="table-body-row-cell name-col">
+                    <bk-input v-model="row.name" :placeholder="t('字段名')" disabled />
+                  </td>
+                  <!-- 字段类型 -->
+                  <td class="table-body-row-cell type">
+                    <bk-select
+                      v-model="row.type"
+                      :clearable="false"
+                      :filterable="false"
+                      @change="() => handleTypeChange(row)"
+                    >
+                      <bk-option
+                        v-for="item in typeList"
+                        :id="item.value"
+                        :key="item.value"
+                        :name="item.label"
+                      />
+                    </bk-select>
+                  </td>
+                  <!-- 字段备注 -->
+                  <td class="table-body-row-cell description">
+                    <bk-input v-model="row.description" :placeholder="t('备注')" />
+                  </td>
+                  <!-- 字段操作 -->
+                  <td class="table-body-row-cell actions">
+                    <AgIcon
+                      v-if="row.type === 'object'"
+                      v-bk-tooltips="t('添加字段')"
+                      class="tb-btn add-btn"
+                      name="plus-circle-shape"
+                      @click="() => addField(row)"
+                    />
+                    <AgIcon
+                      v-bk-tooltips="t('删除字段')"
+                      class="tb-btn delete-btn"
+                      name="minus-circle-shape"
+                      @click="() => removeField(row)"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot v-if="row?.properties?.length">
+                <tr>
+                  <td colspan="5" style="padding-left: 16px;">
+                    <ResponseParamsSubTable v-model="row.properties" />
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </template>
+      </bk-collapse-panel>
+    </bk-collapse>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import {
+  nextTick,
+  onMounted,
+  ref,
+  watch,
+} from 'vue';
+import { useI18n } from 'vue-i18n';
+import AgIcon from '@/components/ag-icon.vue';
+import _ from 'lodash';
+import {
+  JSONSchema7,
+  JSONSchema7TypeName,
+} from 'json-schema';
+import { Message } from 'bkui-vue';
+import { AngleUpFill } from 'bkui-vue/lib/icon';
+import ResponseParamsSubTable from '@/views/resource/setting/comps/response-params-sub-table.vue';
+
+interface ITableRow {
+  id: string;
+  name: string;
+  type: JSONSchema7TypeName;
+  description: string;
+  properties?: ITableRow[];
+}
+
+interface IProps {
+  response: IResponse,
+}
+
+interface IResponse {
+  id: string,
+  code: string,
+  body: {
+    description: string,
+    content: {
+      'application/json': {
+        schema: JSONSchema7,
+      }
+    },
+  },
+}
+
+const { response } = defineProps<IProps>();
+
+const emit = defineEmits<{
+  'delete': [],
+  'change-code': [code: string],
+}>();
+
+const { t } = useI18n();
+
+const tableData = ref<ITableRow[]>([]);
+const activeIndex = ref<string[]>(['currentCollapse']);
+const tableRef = ref();
+const localCode = ref('');
+const isEditingCode = ref(false);
+
+const typeList = ref([
+  {
+    label: 'String',
+    value: 'string',
+  },
+  {
+    label: 'Number',
+    value: 'number',
+  },
+  {
+    label: 'Boolean',
+    value: 'boolean',
+  },
+  {
+    label: 'Array',
+    value: 'array',
+  },
+  {
+    label: 'Object',
+    value: 'object',
+  },
+]);
+
+const convertSchemaToBodyRow = (schema: JSONSchema7) => {
+  if (!schema) {
+    return null;
+  }
+  const body: ITableRow[] = [];
+  if (Object.keys(schema.properties || {}).length) {
+    for (const propertyName in schema.properties) {
+      const property = schema.properties[propertyName];
+      const row: ITableRow = {
+        id: _.uniqueId(),
+        name: propertyName,
+        type: property.type as JSONSchema7TypeName,
+        description: property.description ?? '',
+      };
+      if (Object.keys(property.properties || {}).length) {
+        row.properties = convertSchemaToBodyRow(property);
+      }
+      body.push(row);
+    }
+  } else {
+    return null;
+  }
+  return body;
+};
+
+watch(() => response, () => {
+  if (response) {
+    tableData.value = [];
+    const { body } = response;
+    const { type } = body.content['application/json'].schema;
+    const row = {
+      id: _.uniqueId(),
+      name: t('根节点'),
+      type: 'object' as JSONSchema7TypeName,
+      description: body.description ?? '',
+    };
+    if (type === 'object') {
+      const rowProperties = convertSchemaToBodyRow(body?.content?.['application/json']?.schema);
+      if (rowProperties) {
+        Object.assign(row, {
+          properties: rowProperties,
+        });
+      }
+    }
+    tableData.value.push(row);
+    nextTick(() => {
+      tableRef.value?.setAllRowExpand(true);
+    });
+  }
+}, { immediate: true });
+
+const genRow = () => {
+  return {
+    id: _.uniqueId(),
+    name: '',
+    type: 'string' as JSONSchema7TypeName,
+    description: '',
+  };
+};
+
+const addField = (row: ITableRow) => {
+  const targetRow = tableData.value.find(data => data.id === row.id);
+  if (targetRow) {
+    if (targetRow.properties) {
+      targetRow.properties.push(genRow());
+    } else {
+      targetRow.properties = [genRow()];
+    }
+  }
+};
+
+const handleTypeChange = () => {
+  const rootRow = tableData.value[0];
+  if (rootRow.type === 'object') {
+    if (rootRow.properties?.length) {
+      rootRow.properties.push(genRow());
+    } else {
+      rootRow.properties = [genRow()];
+    }
+  } else {
+    rootRow.properties = [];
+  }
+};
+
+const genBody = () => {
+  const bodyRow = tableData.value[0];
+  const requestBody = {
+    description: bodyRow.description,
+    content: {
+      'application/json': {},
+    },
+  };
+  const schema: JSONSchema7 = {};
+  Object.assign(schema, genSchema(bodyRow));
+  Object.assign(requestBody.content['application/json'], { schema });
+  return requestBody;
+};
+
+const genSchema = (row: ITableRow) => {
+  const schema: JSONSchema7 = {
+    type: row.type,
+  };
+
+  if (row.description) {
+    schema.description = row.description;
+  }
+
+  if (row.properties?.length) {
+    schema.properties = {};
+    row.properties.forEach((item) => {
+      Object.assign(schema.properties, {
+        [item.name]: genSchema(item),
+      });
+    });
+  }
+  return schema;
+};
+
+const removeField = (row: ITableRow) => {
+  const index = tableData.value.findIndex(data => data.id === row.id);
+  if (index !== -1) {
+    tableData.value.splice(index, 1);
+  }
+};
+
+const handleEditCode = () => {
+  localCode.value = response.code;
+  isEditingCode.value = true;
+};
+
+const handleCodeInputDone = () => {
+  const code = Number(localCode.value);
+  if (
+    Number.isNaN(code)
+    || !Number.isInteger(code)
+    || code < 100
+    || code > 599
+  ) {
+    Message({
+      theme: 'warning',
+      message: t('请输入合法的状态码'),
+    });
+    isEditingCode.value = false;
+    return;
+  }
+  if (localCode.value) {
+    emit('change-code', localCode.value);
+  }
+  isEditingCode.value = false;
+};
+
+const handleDelete = () => {
+  emit('delete');
+};
+
+onMounted(() => {
+  tableRef.value?.setAllRowExpand(true);
+});
+
+defineExpose({
+  getValue: () => ({
+    code: response.code,
+    body: genBody(),
+  }),
+});
+</script>
+
+<style lang="scss" scoped>
+
+.response-params-table-wrapper {
+  :deep(.table-collapse) {
+    margin-bottom: 0 !important;
+
+    .bk-collapse-item {
+      box-shadow: none !important;
+      margin-bottom: 0 !important;
+
+      .bk-collapse-content {
+        padding: 0 !important;
+      }
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      padding: 24px 24px 8px;
+      cursor: pointer;
+
+      .title {
+        font-weight: 700;
+        font-size: 14px;
+        color: #313238;
+        margin-left: 14px;
+      }
+
+      .sub-title {
+        margin-left: 12px;
+        font-size: 14px;
+        color: #979ba5;
+
+        .icon-btn {
+          margin: 0 4px;
+
+          &:hover {
+            color: #3a84ff;
+          }
+        }
+      }
+
+      .panel-header-show {
+        transition: .2s;
+        transform: rotate(0deg);
+      }
+
+      .panel-header-hide {
+        transition: .2s;
+        transform: rotate(-90deg);
+      }
+    }
+  }
+}
+
+.response-table-wrapper {
+  margin-left: 30px;
+  padding-left: 18px;
+  padding-top: 8px;
+  border-left: 1px solid #eaebf0;;
+}
+
+.response-table {
+  border-collapse: collapse;
+  border: 1px solid #dcdee5;
+  border-spacing: 0;
+
+  .table-head-row-cell,
+  .table-body-row-cell {
+    border: 1px solid #dcdee5;
+    height: 42px;
+    font-size: 12px;
+
+    &.arrow-col {
+      border-right: none;
+
+      .expand-icon.expanded {
+        transform: rotate(90deg);
+      }
+    }
+
+    &.name-col {
+      border-left: none;
+    }
+  }
+
+  .table-head-row-cell {
+    background-color: #f0f1f5;
+    padding-left: 16px;
+  }
+
+  .table-body {
+    .table-body-row {
+      .table-body-row-cell {
+
+        &:first-child {
+          width: 32px;
+          text-align: center;
+        }
+
+        &.type {
+          width: 100px;
+        }
+
+        &.description {
+          width: 120px;
+        }
+
+        &.actions {
+          width: 110px;
+          padding-left: 16px;
+        }
+
+        :deep(.bk-select),
+        :deep(.bk-select-trigger),
+        :deep(.bk-input),
+        :deep(.bk-input--text) {
+          height: 100%;
+          border: none;
+        }
+
+        :deep(.bk-input):hover {
+          border: 1px solid #a3c5fd;
+        }
+
+        .tb-btn {
+          font-size: 14px;
+          color: #c4c6cc;
+          cursor: pointer;
+
+          &:hover {
+            color: #979ba5;
+          }
+
+          &.add-btn {
+            margin-right: 16px;
+          }
+        }
+      }
+    }
+  }
+}
+
+.add-param-btn-row {
+  padding-left: 14px;
+  height: 42px;
+  align-content: center;
+  border: 1px solid #dcdee5;
+  border-top: none;
+}
+</style>

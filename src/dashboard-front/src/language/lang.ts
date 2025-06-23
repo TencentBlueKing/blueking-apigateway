@@ -1907,6 +1907,25 @@ const lang: ILANG = {
   '请输入工具名称，描述搜索': ['Search tools name and description'],
   '可用工具': ['Available Tools'],
   '资源需要确认请求参数后才能添加到MCP Server': ['Need request params to be added to MCP server'],
+  '请求参数非必填，可用于生成文档、在线调试、生成 MCP Server 等': ['Parameters are not required. They can be used for document generation, online debugging, and generating MCP Server.'],
+  '位置': ['in'],
+  '必填': ['Required'],
+  '默认值': ['Default'],
+  '新增参数': ['Add Parameter'],
+  '根节点': ['Root Node'],
+  '字段名': ['Field'],
+  '添加字段': ['New Field'],
+  '删除字段': ['Remove Field'],
+  '删除参数': ['Remove Parameter'],
+  '该资源无请求参数': ['No request parameters'],
+  '响应参数': ['Response Parameters'],
+  '响应参数非必填，可用于生成文档、在线调试、生成 MCP Server 等': ['Response parameters are not required. They can be used for document generation, online debugging, and generating MCP Server.'],
+  '参数类型': ['Type'],
+  '新增状态码': ['New Status'],
+  '请输入合法的状态码': ['Please input a valid status code'],
+  '请求配置': ['Request Config'],
+  '请输入状态码': ['Input status code'],
+
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
