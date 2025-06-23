@@ -297,6 +297,9 @@ onBeforeMount(async () => {
 
 onMounted(async () => {
   await fetchStageList();
+  mitt.on('rerun-init', () => {
+    fetchStageList();
+  });
 });
 
 onUnmounted(() => {
