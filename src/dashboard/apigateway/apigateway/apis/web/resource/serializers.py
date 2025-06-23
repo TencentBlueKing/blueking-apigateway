@@ -341,6 +341,10 @@ class ResourceInputSLZ(serializers.ModelSerializer):
     def _validate_openapi_schema(self, data):
         if not data.get("openapi_schema"):
             return
+
+        if "none_schema" in data.get("openapi_schema") and data.get("openapi_schema").get("none_schema") is True:
+            return
+
         openapi_schema = data.get("openapi_schema")
         request_body = openapi_schema.get("requestBody")
         parameters = openapi_schema.get("parameters")

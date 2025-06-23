@@ -72,6 +72,7 @@
     "@types/echarts": "^4.9.22",
     "@types/js-cookie": "^3.0.6",
     "@types/js-yaml": "^4.0.9",
+    "@types/json-schema": "^7.0.15",
     "@types/lodash": "^4.17.17",
     "@types/markdown-it": "^13.0.9",
     "@types/node": "^20.17.44",

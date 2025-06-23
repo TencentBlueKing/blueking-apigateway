@@ -34,7 +34,13 @@ def check_git_credentials(repo_url: str, username: str, token: str) -> bool:
     """
     # 标准化 URL（处理 .git 结尾和路径分隔符）
     parsed = urlparse(repo_url)
-    service_path = f"{parsed.path.rstrip('.git')}/info/refs?service=git-upload-pack"
+    original_path = parsed.path
+
+    # 精确删除末尾的 .git（若存在）
+    modified_path = original_path[:-4] if original_path.endswith(".git") else original_path
+
+    # 构造新路径
+    service_path = f"{modified_path}/info/refs?service=git-upload-pack"
     target_url = parsed._replace(path=service_path).geturl()
 
     try:

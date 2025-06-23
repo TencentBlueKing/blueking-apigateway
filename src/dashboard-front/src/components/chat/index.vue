@@ -1,7 +1,7 @@
 <template>
   <div class="chat-box" v-if="allowCreateAppChat">
     <a href="javascript: void(0);" class="support-btn" @click="handleShowDialog">
-      <i class="ag-doc-icon doc-qw f16 apigateway-icon icon-ag-qw" style="margin-right: 3px;"></i> {{ $t('一键拉群') }}
+      <i class="ag-doc-icon doc-qw f16 apigateway-icon icon-ag-qw" style="margin-right: 3px;"></i> {{ t('一键拉群') }}
     </a>
 
     <bk-dialog
@@ -10,7 +10,7 @@
       header-align="left"
       theme="primary"
       :quick-close="false"
-      :title="$t('一键拉群')"
+      :title="t('一键拉群')"
       @confirm="handleConfirm"
       @closed="handleCancel">
       <div class="chat-dialog">
@@ -19,8 +19,8 @@
             <i class="ag-doc-icon doc-qw apigateway-icon icon-ag-qw"></i>
           </div>
           <div class="desc">
-            <p> {{ $t('一键拉群功能') }} </p>
-            <p> {{ $t('可以通过企业微信将需求的相关人员邀请到一个群里进行讨论') }} </p>
+            <p> {{ t('一键拉群功能') }} </p>
+            <p> {{ t('可以通过企业微信将需求的相关人员邀请到一个群里进行讨论') }} </p>
           </div>
         </div>
         <div
@@ -28,10 +28,11 @@
         >
           <bk-input
             :show-overflow-tooltips="false"
-            :placeholder="$t('请输入群成员')"
+            :placeholder="t('请输入群成员')"
             v-model="userlist"
             :key="renderKey"
             class="chat-selector"
+            disabled
           />
         </div>
       </div>
@@ -40,10 +41,20 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, computed, watch, onMounted } from 'vue';
+import {
+  computed,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { Message } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
-import { createChat, sendChat, getFeatures } from '@/http';
+import {
+  createChat,
+  getFeatures,
+  sendChat,
+} from '@/http';
 import { useStage } from '@/store';
 
 const props = defineProps({
@@ -57,9 +68,7 @@ const props = defineProps({
   },
   defaultUserList: {
     type: Array,
-    default: () => {
-      return [];
-    },
+    default: [] as string[],
   },
   content: {
     type: String,

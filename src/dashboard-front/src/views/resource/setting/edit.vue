@@ -22,11 +22,30 @@
             <angle-up-fill
               :class="[activeIndex?.includes('frontConfig') ? 'panel-header-show' : 'panel-header-hide']"
             />
-            <div class="title">{{ t('前端配置') }}</div>
+            <div class="title">{{ t('请求配置') }}</div>
           </div>
         </template>
         <template #content>
           <FrontConfig ref="frontConfigRef" :detail="resourceDetail" :is-clone="isClone"></FrontConfig>
+        </template>
+      </bk-collapse-panel>
+
+      <bk-collapse-panel name="requestParams">
+        <template #header>
+          <div class="panel-header">
+            <angle-up-fill
+              :class="[activeIndex?.includes('requestParams') ? 'panel-header-show' : 'panel-header-hide']"
+            />
+            <div class="title">{{ t('请求参数') }}</div>
+            <div class="sub-title">{{ t('请求参数非必填，可用于生成文档、在线调试、生成 MCP Server 等') }}</div>
+          </div>
+        </template>
+        <template #content>
+          <RequestParams
+            ref="requestParamsRef"
+            v-model:is-no-params="hasNoRequestParams"
+            :detail="resourceDetail"
+          />
         </template>
       </bk-collapse-panel>
 
@@ -39,6 +58,21 @@
         </template>
         <template #content>
           <BackConfig ref="backConfigRef" :detail="resourceDetail" @service-init="setupFormDataBack"></BackConfig>
+        </template>
+      </bk-collapse-panel>
+
+      <bk-collapse-panel name="responseParams">
+        <template #header>
+          <div class="panel-header">
+            <angle-up-fill
+              :class="[activeIndex?.includes('responseParams') ? 'panel-header-show' : 'panel-header-hide']"
+            />
+            <div class="title">{{ t('响应参数') }}</div>
+            <div class="sub-title">{{ t('响应参数非必填，可用于生成文档、在线调试、生成 MCP Server 等') }}</div>
+          </div>
+        </template>
+        <template #content>
+          <ResponseParams ref="responseParamsRef" :detail="resourceDetail" :is-clone="isClone" />
         </template>
       </bk-collapse-panel>
     </bk-collapse>
@@ -69,7 +103,9 @@ import {
 import { useI18n } from 'vue-i18n';
 import BaseInfo from './comps/base-info.vue';
 import FrontConfig from './comps/front-config.vue';
+import RequestParams from './comps/request-params.vue';
 import BackConfig from './comps/back-config.vue';
+import ResponseParams from './comps/response-params.vue';
 import {
   useRoute,
   useRouter,
@@ -96,12 +132,15 @@ const { apigwId } = common; // 网关id
 const activeIndex =  ref(['baseInfo', 'frontConfig', 'backConfig']);
 const baseInfoRef = ref(null);
 const frontConfigRef = ref(null);
+const requestParamsRef = ref(null);
 const backConfigRef = ref(null);
+const responseParamsRef = ref(null);
 const submitLoading = ref(false);
 const resourceId = ref<any>(0);
 const resourceDetail = ref<any>({});
 // 获取初始化表单数据做对比
 const formDataBack = ref({});
+const hasNoRequestParams = ref(true);
 
 const isClone = computed(() => {
   return route.name === 'apigwResourceClone';
@@ -114,14 +153,15 @@ const init = async () => {
     await getResourceDetails();
   }
 };
-const getResourceDetails = async () => {
-  try {
-    const res = await getResourceDetailData(apigwId, resourceId.value);
-    resourceDetail.value = res;
-    mitt.emit('update-name', { name: res.name });
-  } catch (error) {
 
+const getResourceDetails = async () => {
+  const res = await getResourceDetailData(apigwId, resourceId.value);
+  if (res.schema?.parameters?.length || Object.keys(res.schema?.request_body || {}).length) {
+    hasNoRequestParams.value = false;
+    // activeIndex.value.push('requestParams');
   }
+  resourceDetail.value = res;
+  mitt.emit('update-name', { name: res.name });
 };
 
 // 提交
@@ -142,7 +182,7 @@ const handleSubmit = async () => {
     ];
     if (invalidFormElementIds.length) {
       // 根据表单项 #id 获取元素，滚动到视图中间，并 focus
-      const el = document.querySelector(`#${invalidFormElementIds[0]}`);
+      const el = document.querySelector(`#${invalidFormElementIds[0]}`) as HTMLInputElement;
       if (el) {
         el.scrollIntoView({
           behavior: 'smooth', // 平滑滚动
@@ -153,26 +193,50 @@ const handleSubmit = async () => {
     }
     return;
   }
+
   const baseFormData = baseInfoRef.value.formData;
   const frontFormData = frontConfigRef.value.frontConfigData;
+  const requestParamsData = requestParamsRef.value.getValue();
   const backFormData = backConfigRef.value.backConfigData;
+  const responseParamsData = responseParamsRef.value.getValue();
+
   try {
     submitLoading.value = true;
     const params = {
       ...baseFormData,
       ...frontFormData,
       backend: backFormData,
+      openapi_schema: {},
     };
+
+    if (hasNoRequestParams.value) {
+      params.openapi_schema.none_schema = true;
+    } else {
+      if (requestParamsData.parameters?.length) {
+        params.openapi_schema.parameters = requestParamsData.parameters;
+      }
+      if (requestParamsData.requestBody) {
+        params.openapi_schema.request_body = requestParamsData.requestBody;
+      }
+    }
+
+    if (Object.keys(responseParamsData).length) {
+      params.openapi_schema.responses = responseParamsData;
+    }
+
     if (resourceId.value && !isClone.value) {
+      Object.assign(params.openapi_schema, { version: resourceDetail.value.schema.version });
       await updateResources(apigwId, resourceId.value, params);
     } else {
       await createResources(apigwId, params);
     }
+
     formDataBack.value = {
       baseFormData: baseInfoRef.value.formData,
       frontFormData: frontConfigRef.value.frontConfigData,
       backFormData: backConfigRef.value.backConfigData,
     };
+
     mitt.emit('on-leave-page-change', formDataBack.value);
     Message({
       message: t(`${resourceId.value && !isClone.value ? '更新' : '新建'}成功`),
@@ -225,12 +289,14 @@ onMounted(async () => {
   .edit-container {
     :deep(.collapse-cls) {
       margin-bottom: 52px;
+
       .bk-collapse-item {
         background: #fff;
         box-shadow: 0 2px 4px 0 #1919290d;
         margin-bottom: 16px;
       }
     }
+
     .edit-footer {
       background: #fff;
       height: 52px;
@@ -242,28 +308,39 @@ onMounted(async () => {
       width: 100%;
       z-index: 2;
     }
+
     .panel-header {
       display: flex;
       align-items: center;
       padding: 24px;
       cursor: pointer;
+
       .title {
         font-weight: 700;
         font-size: 14px;
         color: #313238;
         margin-left: 8px;
       }
+
+      .sub-title {
+        margin-left: 12px;
+        font-size: 14px;
+        color: #979ba5;
+      }
+
       .panel-header-show {
         transition: .2s;
         transform: rotate(0deg);
       }
+
       .panel-header-hide {
         transition: .2s;
         transform: rotate(-90deg);
       }
     }
+
     :deep(.bk-collapse-content) {
-      padding-top: 0px !important;
+      padding-top: 0 !important;
       padding-left: 160px !important;
       .bk-input--text,
       .bk-select-tag-input {
@@ -274,7 +351,8 @@ onMounted(async () => {
       }
     }
   }
+
   .bk-collapse-demo {
-    box-shadow: 0 0 8px 0px #ccc;
+    box-shadow: 0 0 8px 0 #ccc;
   }
 </style>

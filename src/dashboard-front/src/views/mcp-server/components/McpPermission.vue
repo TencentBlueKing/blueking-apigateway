@@ -159,8 +159,10 @@ import { useQueryList } from '@/hooks';
 import {
   getMcpAppPermissionApply,
   updateMcpPermissions,
-  getMcpMarketplace,
 } from '@/http/mcp-market';
+import {
+  getServers,
+} from '@/http/mcp-server';
 // @ts-ignore
 import TableEmpty from '@/components/table-empty.vue';
 // @ts-ignore
@@ -225,11 +227,7 @@ const rules = reactive({
 });
 
 const getMcpList = async () => {
-  const params = {
-    offset: 0,
-    limit: 999,
-  };
-  const res = await getMcpMarketplace(params);
+  const res = await getServers(common.apigwId);
   mcpList.value = res.results;
 };
 getMcpList();

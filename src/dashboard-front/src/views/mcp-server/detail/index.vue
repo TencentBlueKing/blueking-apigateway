@@ -117,7 +117,11 @@
       </bk-tab>
     </section>
   </div>
-  <CreateSlider v-model="isCreateSliderShow" :server-id="editingServerId" @updated="handleUpdated" />
+  <CreateSlider
+    ref="createSliderRef"
+    :server-id="editingServerId"
+    @updated="handleUpdated"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -152,6 +156,7 @@ const { t } = useI18n();
 const common = useCommon();
 const route = useRoute();
 
+const createSliderRef = ref();
 const serverId = ref(0);
 const server = ref<MCPServerType>({
   id: 0,
@@ -189,7 +194,6 @@ const panels = ref([
     count: 0,
   },
 ]);
-const isCreateSliderShow = ref(false);
 const editingServerId = ref<number>();
 
 const fetchServer = async () => {
@@ -214,7 +218,7 @@ watch(() => route.params, async () => {
 
 const handleEdit = () => {
   editingServerId.value = server.value.id;
-  isCreateSliderShow.value = true;
+  createSliderRef.value?.show();
 };
 
 const handleSuspendToggle = async () => {

@@ -333,12 +333,14 @@ class OpenAPIV3Parser(BaseParser):
         return parsed_url.path
 
     def _get_openapi_schema(self, operation: Dict[str, Any]):
-        openapi_schema = {"version": self._openapi_version}
+        openapi_schema = {"version": self._openapi_version, "none_schema": True}
         if "parameters" in operation:
             openapi_schema["parameters"] = operation.get("parameters", [])
+            openapi_schema["none_schema"] = False
 
         if "requestBody" in operation:
             openapi_schema["requestBody"] = operation.get("requestBody", [])
+            openapi_schema["none_schema"] = False
 
         if "responses" in operation:
             openapi_schema["responses"] = operation.get("responses", [])
