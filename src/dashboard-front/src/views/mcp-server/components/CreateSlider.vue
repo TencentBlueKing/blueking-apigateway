@@ -374,6 +374,7 @@ const fetchStageList = async () => {
   }
 };
 
+
 const fetchServer = async () => {
   const response = await getServer(common.apigwId, serverId!);
   formData.value.name = response.name || '';
