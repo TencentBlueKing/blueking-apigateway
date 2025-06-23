@@ -16,7 +16,11 @@
         <AgIcon name="add-small" size="40" />
       </div>
     </div>
-    <CreateSlider v-model="isCreateSliderShow" :server-id="editingServerId" @updated="handleServerUpdated" />
+    <CreateSlider
+      ref="createSliderRef"
+      :server-id="editingServerId"
+      @updated="handleServerUpdated"
+    />
   </div>
 </template>
 
@@ -47,45 +51,8 @@ const { t } = useI18n();
 const common = useCommon();
 const router = useRouter();
 
-const serverList = ref<MCPServerType[]>([
-  // {
-  //   id: 1,
-  //   name: 'mcp server',
-  //   description: 'mcp server description',
-  //   is_public: true,
-  //   labels: [
-  //     'label1',
-  //     'label2',
-  //   ],
-  //   resource_names: [
-  //     'resource1',
-  //     'resource2',
-  //   ],
-  //   tools_count: 10,
-  //   url: 'http://bkapi.woa.com/api/bk-iam//sse/',
-  //   status: 1,
-  //   stage: 'stage1',
-  // },
-  // {
-  //   id: 2,
-  //   name: 'mcp server',
-  //   description: 'mcp server description',
-  //   is_public: true,
-  //   labels: [
-  //     'label1',
-  //     'label2',
-  //   ],
-  //   resource_names: [
-  //     'resource1',
-  //     'resource2',
-  //   ],
-  //   tools_count: 10,
-  //   url: 'http://bkapi.woa.com/api/bk-iam//sse/',
-  //   status: 0,
-  //   stage: 'stage1',
-  // },
-]);
-const isCreateSliderShow = ref(false);
+const createSliderRef = ref();
+const serverList = ref<MCPServerType[]>([]);
 const editingServerId = ref<number>();
 
 const fetchServerList = async () => {
@@ -95,12 +62,12 @@ const fetchServerList = async () => {
 
 const handleAddServerClick = () => {
   editingServerId.value = undefined;
-  isCreateSliderShow.value = true;
+  createSliderRef.value?.show();
 };
 
 const handleEdit = (id: number) => {
   editingServerId.value = id;
-  isCreateSliderShow.value = true;
+  createSliderRef.value?.show();
 };
 
 const handleSuspend = async (id: number) => {
