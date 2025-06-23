@@ -73,10 +73,10 @@ requests.get(
 | bk_app_secret | string  |  否 | 安全秘钥，可以通过`蓝鲸开发者中心 -> 应用基本设置 -> 基本信息 -> 鉴权信息`获取；*网关 SDK 默认已添加* |
 {%- endif %}
 {%- if verified_user_required %}
-| access_token  | string  |  否 | 用户 access_token{%- if docs_urls.ACCESS_TOKEN_API %}，详情参考 [AccessToken API]({{ docs_urls.ACCESS_TOKEN_API }}){%- endif %}；提供 access_token 时，不需要再提供 {{ settings.BK_LOGIN_TICKET_KEY }}, bk_username |
+| {{ settings.BK_LOGIN_TICKET_KEY }}      | string  |  否 | 用户登录态，用于认证用户；登录蓝鲸，对应 Cookies 中 {{ settings.BK_LOGIN_TICKET_KEY }} 字段的值 |
 {%- endif %}
-{%- if verified_user_required %}
-| {{ settings.BK_LOGIN_TICKET_KEY }}      | string  |  否 | 用户登录态，用于认证用户；登录蓝鲸，对应 Cookies 中 {{ settings.BK_LOGIN_TICKET_KEY }} 字段的值；提供 {{ settings.BK_LOGIN_TICKET_KEY }} 时，不需要再提供 bk_username |
+{%- if verified_app_required and verified_user_required %}
+| access_token  | string  |  否 | 用户 access_token{%- if docs_urls.ACCESS_TOKEN_API %}，详情参考 [AccessToken API]({{ docs_urls.ACCESS_TOKEN_API }}){%- endif %}；提供 access_token 时，不需要再提供 bk_app_code/bk_app_secret/{{ settings.BK_LOGIN_TICKET_KEY }} |
 {%- endif %}
 {%- endif %}
 """  # noqa
@@ -134,10 +134,10 @@ requests.get(
 | bk_app_secret | string  |  否 | 安全秘钥，可以通过`蓝鲸开发者中心 -> 应用基本设置 -> 基本信息 -> 鉴权信息`获取；*网关 SDK 默认已添加* |
 {%- endif %}
 {%- if verified_user_required %}
-| access_token  | string  |  否 | 用户 access_token{%- if docs_urls.ACCESS_TOKEN_API %}，详情参考 [AccessToken API]({{ docs_urls.ACCESS_TOKEN_API }}){%- endif %}；提供 access_token 时，不需要再提供 {{ settings.BK_LOGIN_TICKET_KEY }}, bk_username |
+| {{ settings.BK_LOGIN_TICKET_KEY }}      | string  |  否 | 用户登录态，用于认证用户；登录蓝鲸，对应 Cookies 中 {{ settings.BK_LOGIN_TICKET_KEY }} 字段的值 |
 {%- endif %}
-{%- if verified_user_required %}
-| {{ settings.BK_LOGIN_TICKET_KEY }}      | string  |  否 | 用户登录态，用于认证用户；登录蓝鲸，对应 Cookies 中 {{ settings.BK_LOGIN_TICKET_KEY }} 字段的值；提供 {{ settings.BK_LOGIN_TICKET_KEY }} 时，不需要再提供 bk_username |
+{%- if verified_app_required and verified_user_required %}
+| access_token  | string  |  否 | 用户 access_token{%- if docs_urls.ACCESS_TOKEN_API %}，详情参考 [AccessToken API]({{ docs_urls.ACCESS_TOKEN_API }}){%- endif %}；提供 access_token 时，不需要再提供 bk_app_code/bk_app_secret/{{ settings.BK_LOGIN_TICKET_KEY }} |
 {%- endif %}
 {%- endif %}
 """  # noqa
@@ -146,7 +146,7 @@ BKAPI_AUTHORIZATION_DESCRIPTION_EN = """
 {%- if verified_app_required or verified_user_required %}
 ### Public Request Parameters
 
-Public request parameters are parameters used to identify the application and user. If the cloud API requires authentication of the application or user, the request needs to carry these parameters in order to initiate the request properly. The public request parameters, which can be passed through the request header `X-Bkapi-Authorization`, have the value as a JSON formatted string.
+Public request parameters are parameters used to identify the application and user. If the cloud API requires authentication of the application or user, the request needs to carry these parameters in order to initiate the request properly. The public request parameters, which can be passed through the request header `X-Bkapi-Authorization`, have the value as a JSON formatted string. For more details see {%- if docs_urls.USE_GATEWAY_API %}[Call Gateway API]({{ docs_urls.USE_GATEWAY_API }}){%- endif %}
 
 **Example：** Use `curl` to carry the authorization header
 
@@ -189,10 +189,10 @@ The supported fields of the header `X-Bkapi-Authorization` are shown in the foll
 | bk_app_secret | string  |  No | App Secret, can get from `Developer Center -> App Settings -> Basic Information -> Authentication Information`; *Gateway SDK added by default* |
 {%- endif %}
 {%- if verified_user_required %}
-| access_token  | string  |  No | User access_token{%- if docs_urls.ACCESS_TOKEN_API %}, details [AccessToken API]({{ docs_urls.ACCESS_TOKEN_API }}){%- endif %}; when providing access_token, there is no need to provide {{ settings.BK_LOGIN_TICKET_KEY }}, bk_username |
+| {{ settings.BK_LOGIN_TICKET_KEY }}      | string  |  No | User login token, used to authenticate user; login to BlueKing, corresponding to the value of the {{ settings.BK_LOGIN_TICKET_KEY }} field in Cookies |
 {%- endif %}
-{%- if verified_user_required %}
-| {{ settings.BK_LOGIN_TICKET_KEY }}      | string  |  No | User login token, used to authenticate user; login to BlueKing, corresponding to the value of the {{ settings.BK_LOGIN_TICKET_KEY }} field in Cookies; when providing {{ settings.BK_LOGIN_TICKET_KEY }}, there is no need to provide bk_username |
+{%- if verified_app_required and verified_user_required %}
+| access_token  | string  |  No | User access_token{%- if docs_urls.ACCESS_TOKEN_API %}, details [AccessToken API]({{ docs_urls.ACCESS_TOKEN_API }}){%- endif %}; when providing access_token, there is no need to provide bk_app_code/bk_app_secret/{{ settings.BK_LOGIN_TICKET_KEY }} |
 {%- endif %}
 {%- endif %}
 """  # noqa
@@ -204,7 +204,7 @@ BKAPI_AUTHORIZATION_DESCRIPTION_EN_MULTI_TENANT = """
 Public request parameters are parameters used to identify the tenant, application, and user. If the cloud API requires identifying the tenant, authenticating the application or user, the request needs to carry these parameters in order to initiate the request properly.
 
 Public request parameters include authentication parameters and tenant parameters:
-- Authentication parameters can be passed through the request header `X-Bkapi-Authorization`, with the value as a JSON formatted string. For more details.
+- Authentication parameters can be passed through the request header `X-Bkapi-Authorization`, with the value as a JSON formatted string. For more details see {%- if docs_urls.USE_GATEWAY_API %}[Call Gateway API]({{ docs_urls.USE_GATEWAY_API }}){%- endif %}.
 - Tenant parameters can be passed through the request header `X-Bk-Tenant-Id`. If the application is a single-tenant application, the value is the tenant ID to which the application belongs. If the application is a multi-tenant application, the tenant ID must be specified.
 
 
@@ -250,10 +250,10 @@ The supported fields of the header `X-Bkapi-Authorization` are shown in the foll
 | bk_app_secret | string  |  No | App Secret, can get from `Developer Center -> App Settings -> Basic Information -> Authentication Information`; *Gateway SDK added by default* |
 {%- endif %}
 {%- if verified_user_required %}
-| access_token  | string  |  No | User access_token{%- if docs_urls.ACCESS_TOKEN_API %}, details [AccessToken API]({{ docs_urls.ACCESS_TOKEN_API }}){%- endif %}; when providing access_token, there is no need to provide {{ settings.BK_LOGIN_TICKET_KEY }}, bk_username |
+| {{ settings.BK_LOGIN_TICKET_KEY }}      | string  |  No | User login token, used to authenticate user; login to BlueKing, corresponding to the value of the {{ settings.BK_LOGIN_TICKET_KEY }} field in Cookies |
 {%- endif %}
-{%- if verified_user_required %}
-| {{ settings.BK_LOGIN_TICKET_KEY }}      | string  |  No | User login token, used to authenticate user; login to BlueKing, corresponding to the value of the {{ settings.BK_LOGIN_TICKET_KEY }} field in Cookies; when providing {{ settings.BK_LOGIN_TICKET_KEY }}, there is no need to provide bk_username |
+{%- if verified_app_required and verified_user_required %}
+| access_token  | string  |  No | User access_token{%- if docs_urls.ACCESS_TOKEN_API %}, details [AccessToken API]({{ docs_urls.ACCESS_TOKEN_API }}){%- endif %}; when providing access_token, there is no need to provide bk_app_code/bk_app_secret/{{ settings.BK_LOGIN_TICKET_KEY }} |
 {%- endif %}
 {%- endif %}
 """  # noqa
