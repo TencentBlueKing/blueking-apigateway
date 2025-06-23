@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # remove fieleds already not in code definition
+        # remove fields already not in code definition
         migrations.RemoveField(
             model_name="proxy",
             name="backend_config_type",

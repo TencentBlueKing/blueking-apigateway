@@ -111,7 +111,6 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         page = self.paginate_queryset(queryset)
         gateway_ids = [gateway.id for gateway in page]
 
-        # FIXME: created_by to display_name
         output_slz = GatewayListOutputSLZ(
             page,
             many=True,

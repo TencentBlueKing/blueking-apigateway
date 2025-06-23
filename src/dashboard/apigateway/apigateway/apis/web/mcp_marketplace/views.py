@@ -186,7 +186,6 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
                 "labels": labels,
             },
         )
-        # FIXME: return the tools details and usage page
         # 返回工具列表页面需要的信息
         return OKJsonResponse(data=serializer.data)
 

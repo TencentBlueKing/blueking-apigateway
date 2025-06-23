@@ -115,7 +115,6 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
         slz.is_valid(raise_exception=True)
 
         slz.save()
-        # FIXME: trigger the mcp server permission refresh
 
         # record audit log
         Auditor.record_mcp_server_op_success(

@@ -51,13 +51,6 @@ class MicroGatewayStatusEnum(StructuredEnum):
     ABNORMAL = EnumField("abnormal", _("安装异常"))
 
 
-# FIXME: should be removed
-class ServiceDiscoveryTypeEnum(StructuredEnum):
-    """服务发现注册中心类型"""
-
-    GO_MICRO_ETCD = EnumField("go_micro_etcd", "Go Micro - Etcd")
-
-
 class GatewayTypeEnum(StructuredEnum):
     SUPER_OFFICIAL_API = EnumField(0, "超级官方API")
     OFFICIAL_API = EnumField(1, "官方云API")
