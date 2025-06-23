@@ -356,16 +356,32 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
-import { getBackendsListData, createStage, getStageDetail, getStageBackends, updateStage } from '@/http';
+import {
+  createStage,
+  getBackendsListData,
+  getStageBackends,
+  getStageDetail,
+  updateStage,
+} from '@/http';
 import { Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash';
-import { useCommon, useStage } from '@/store';
+import {
+  useCommon,
+  useStage,
+} from '@/store';
 import { copy } from '@/common/util';
 import mitt from '@/common/event-bus';
-import { useGetGlobalProperties, useSidebar } from '@/hooks';
+import {
+  useGetGlobalProperties,
+  useSidebar,
+} from '@/hooks';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 
 const emit = defineEmits(['hidden']);
@@ -635,41 +651,32 @@ const handleShowSideslider = async (type: string, { backendName = '' } = {}) => 
 
 // 确定
 const handleConfirm = async () => {
-  try {
-    // 表单校验
-    await baseInfoRef.value.validate();
-    for (const item of backendConfigRef.value) {
-      await item.validate();
-    }
-
-    isAdd.value ? handleConfirmCreate() : handleConfirmEdit();
-  } catch (error) {
-    console.error(error);
+  // 表单校验
+  await baseInfoRef.value.validate();
+  for (const item of backendConfigRef.value) {
+    await item.validate();
   }
+  isAdd.value ? handleConfirmCreate() : handleConfirmEdit();
 };
 
 // 新建环境
 const handleConfirmCreate = async () => {
-  try {
-    const params = cloneDeep(curStageData.value);
-    // 删除冗余参数
-    params.backends.forEach((v: any) => {
-      delete v.name;
-    });
-    await createStage(apigwId, params);
-    Message({
-      message: t('创建成功'),
-      theme: 'success',
-    });
-    // 重新获取环境列表(全局事件总线实现)
-    mitt.emit('rerun-init', true);
-    // 数据重置
-    handleCloseSideSlider();
-    // 关闭dialog
-    isShow.value = false;
-  } catch (error) {
-    console.error(error);
-  }
+  const params = cloneDeep(curStageData.value);
+  // 删除冗余参数
+  params.backends.forEach((v: any) => {
+    delete v.name;
+  });
+  await createStage(apigwId, params);
+  Message({
+    message: t('创建成功'),
+    theme: 'success',
+  });
+  // 重新获取环境列表(全局事件总线实现)
+  mitt.emit('rerun-init', true);
+  // 数据重置
+  handleCloseSideSlider();
+  // 关闭dialog
+  isShow.value = false;
 };
 
 // 编辑环境
@@ -731,7 +738,6 @@ const handleAddServiceAddress = (name: string) => {
 const handleDeleteServiceAddress = (name: string, index: number) => {
   curStageData.value.backends.forEach((v) => {
     if (v.name === name) {
-      console.log(v);
       v.config.hosts.splice(index, 1);
     }
   });

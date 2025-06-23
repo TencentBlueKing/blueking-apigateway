@@ -72,7 +72,7 @@
                     </bk-radio-group>
                   </bk-form-item>
                   <bk-form-item :label="t('版本号')" required>
-                    <bk-input v-model="formData.version" :placeholder="t('选择版本类型后自动生成')" disabled />
+                    <bk-input v-model="formData.version" :placeholder="t('选择版本类型后自动生成')" />
                   </bk-form-item>
                   <bk-form-item label="CommitID" property="commit_id" required>
                     <div class="commit-id-wrapper">
