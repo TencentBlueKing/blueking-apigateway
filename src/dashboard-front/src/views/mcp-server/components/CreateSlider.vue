@@ -5,6 +5,7 @@
     :width="1280"
     class="create-slider"
     quick-close
+    :before-close="handleBeforeClose"
   >
     <template #default>
       <div class="slider-content">
@@ -136,10 +137,7 @@ import {
   ref,
   watch,
 } from 'vue';
-import {
-  useRoute,
-  useRouter,
-} from 'vue-router';
+import { useRouter } from 'vue-router';
 import {
   getResourceVersionsInfo,
   getStageList,
@@ -159,6 +157,7 @@ import {
   getServer,
   patchServer,
 } from '@/http/mcp-server';
+import { useSidebar } from '@/hooks';
 
 interface IProps {
   serverId?: number,
@@ -172,8 +171,6 @@ interface FormData {
   labels: string[],
 }
 
-const isShow = defineModel<boolean>({ default: false });
-
 const { serverId } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -181,10 +178,11 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const route = useRoute();
 const router = useRouter();
 const common = useCommon();
+const { initSidebarFormData, isSidebarClosed } = useSidebar();
 
+const isShow = ref(false);
 const formRef = ref<InstanceType<typeof Form>>();
 const formData = ref<FormData>({
   name: '',
@@ -302,12 +300,13 @@ const filteredResourceList = computed(() => {
 
 // const resourceTips = computed(() => t('请从已经发布到 {s} 环境的资源列表选取资源作为 MCP Server 的工具', { s: stage.value.name || '--' }))
 
-watch(isShow, () => {
+watch(isShow, async () => {
   if (isShow.value) {
-    fetchStageList();
+    await fetchStageList();
     if (isEditMode.value) {
-      fetchServer();
+      await fetchServer();
     }
+    initSidebarFormData(formData.value);
   } else {
     resetSliderData();
   }
@@ -477,6 +476,17 @@ const resetSliderData = () => {
   resourceList.value = [];
   selections.value = [];
 };
+
+const handleBeforeClose = () => {
+  return isSidebarClosed(JSON.stringify(formData.value));
+};
+
+defineExpose({
+  show: () => {
+    isShow.value = true;
+  },
+});
+
 </script>
 
 <style lang="scss" scoped>
