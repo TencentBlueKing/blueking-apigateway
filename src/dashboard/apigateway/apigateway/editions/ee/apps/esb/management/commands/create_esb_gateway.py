@@ -29,8 +29,8 @@ from pydantic import TypeAdapter
 
 from apigateway.biz.gateway import GatewayData, GatewaySaver
 from apigateway.common.tenant.constants import (
-    TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
-    TenantModeEnum,
+    SELF_HOST_GATEWAY_DEFAULT_TENANT_ID,
+    SELF_HOST_GATEWAY_DEFAULT_TENANT_MODE,
 )
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway
@@ -55,12 +55,8 @@ class Command(BaseCommand):
                 tenant_mode = None
                 tenant_id = None
                 # assign the tenant_mode and tenant_id
-                if settings.ENABLE_MULTI_TENANT_MODE:
-                    tenant_mode = TenantModeEnum.GLOBAL.value
-                    tenant_id = ""
-                else:
-                    tenant_mode = TenantModeEnum.SINGLE.value
-                    tenant_id = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
+                tenant_mode = SELF_HOST_GATEWAY_DEFAULT_TENANT_MODE
+                tenant_id = SELF_HOST_GATEWAY_DEFAULT_TENANT_ID
 
                 saver = GatewaySaver(
                     id=None,

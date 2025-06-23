@@ -114,7 +114,6 @@ class ProgrammableGatewayReleaser:
     def _get_paas_deploy_result(
         gateway: Gateway, deploy_history: ProgrammableGatewayDeployHistory, user_credentials: UserCredentials
     ) -> Dict[str, Any]:
-        # FIXME: is this programmable gateway only?
         """查询 paas 的 deploy 结果"""
         # 查询 paas 部署结果
         is_offline = deploy_history.source != PublishSourceEnum.VERSION_PUBLISH.value

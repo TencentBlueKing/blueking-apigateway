@@ -22,6 +22,7 @@ from typing import Dict, List, Tuple
 from cachetools import TTLCache, cached
 from django.conf import settings
 
+from apigateway.common.tenant.constants import TENANT_MODE_SINGLE_DEFAULT_TENANT_ID, TenantModeEnum
 from apigateway.utils.local import local
 from apigateway.utils.url import url_join
 
@@ -44,9 +45,39 @@ def _call_bkauth_api(http_func, path, data, timeout=10):
 
 
 def get_app_info(app_code: str) -> Dict:
+    """get app info from bkauth
+
+    Args:
+        app_code (str): the app code
+
+    Returns:
+        Dict: the app info
+
+    only called when ENABLE_MULTI_TENANT_MODE is True
+    """
     url_path = f"/api/v1/apps/{app_code}"
 
     return _call_bkauth_api(http_get, url_path, {})
+
+
+def get_app_tenant_info(app_code: str) -> Tuple[str, str]:
+    """get app tenant info
+
+    Args:
+        app_code (str): _description_
+
+    Returns:
+        Tuple[str, str]: tenant mode and tenant id
+    """
+    if settings.ENABLE_MULTI_TENANT_MODE:
+        app_info = get_app_info(app_code)
+        tenant_mode = app_info["bk_tenant"]["mode"]
+        tenant_id = app_info["bk_tenant"]["id"]
+    else:
+        tenant_mode = TenantModeEnum.SINGLE.value
+        tenant_id = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
+
+    return tenant_mode, tenant_id
 
 
 def list_apps_of_tenant(
@@ -75,6 +106,8 @@ def list_all_apps_of_tenant(tenant_mode: str, tenant_id: str) -> List[Dict]:
 
     Returns:
         List[Dict]: app info list
+
+    only called when ENABLE_MULTI_TENANT_MODE is True
     """
     page_size = 100
 
@@ -105,6 +138,8 @@ def list_available_apps_for_tenant(tenant_mode: str, tenant_id: str) -> List[Dic
 
     Returns:
         List[Dict]: app info list
+
+    only called when ENABLE_MULTI_TENANT_MODE is True
     """
     # list tenant_mode=global apps
     global_apps = list_all_apps_of_tenant("global", "")

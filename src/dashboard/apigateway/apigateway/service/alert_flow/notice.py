@@ -22,7 +22,7 @@ from typing import List, Union
 from django.conf import settings
 
 from apigateway.apps.monitor.constants import NoticeWayEnum
-from apigateway.components.cmsi import cmsi_component
+from apigateway.components.bkcmsi import cmsi_component
 
 
 class BaseNotice(ABC):
