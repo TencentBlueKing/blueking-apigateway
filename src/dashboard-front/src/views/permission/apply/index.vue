@@ -45,7 +45,7 @@
             <bk-table
               :ref="(el: HTMLElement) =>(childPermTableRef[row.id] = el)"
               :max-height="378"
-              :size="'small'"
+              size="small"
               :key="row.id"
               :data="row.resourceList"
               :outer-border="false"
@@ -450,16 +450,24 @@ const handleBatchApply = () => {
 
 // 折叠table 多选发生变化触发
 const handleRowSelectionChange = (payload: any, rowSelections: SelectionType) => {
-  const { checked, row } = rowSelections
+  const { checked, row } = rowSelections;
   if(checked) {
-    payload.selection.push(row)
+    payload.selection.push(row);
   } else {
-    payload.selection = payload.selection.filter((item:Record<string, string | any[]>) => item.id !== row.id)
+    payload.selection = payload.selection.filter((item:Record<string, string | any[]>) => item.id !== row.id);
   }
-  payload.isSelectAll = payload.resourceList.length === payload.selection.length
-  curPermission.value = Object.assign(curPermission.value, { selection: payload.selection, isSelectAll: true })
-  renderTableIndex.value++
-  setTableHeader()
+  const isSelectAll = payload.resourceList.length === payload.selection.length;
+  payload.isSelectAll = isSelectAll;
+  curPermission.value = Object.assign(
+    curPermission.value,
+    {
+      selection: payload.selection,
+      isSelectAll,
+    },
+  );
+  renderTableIndex.value++;
+  setTableHeader();
+  // console.log(curPermission.value);
 }
 
 const handleRowSelectionAllChange= (payload: any, rowSelections: SelectionType) => {
@@ -570,7 +578,7 @@ const handleRowClick = (e:Event, row:any) => {
     setTimeout(() => {
       permissionApplyList.value.forEach((item) => {
         if(item.id === curExpandRow.value.id) {
-          item.selection = cloneDeep(item.resourceList);
+          // item.selection = cloneDeep(item.resourceList);
           permissionTableRef.value.setRowExpand(row, row.isExpand);
           childPermTableRef.value[row.id]?.toggleAllSelection();
         } else {

@@ -66,12 +66,7 @@ class TestResourceVersionListCreateApi:
         result = response.json()
         assert result["data"]["count"] == 0
 
-    def test_create(self, request_view, fake_gateway, fake_resource, mocker):
-        mocker.patch(
-            "apigateway.biz.resource_version.ResourceVersionHandler.make_version",
-            return_value=[{"name": "test"}],
-        )
-
+    def test_create(self, request_view, fake_gateway, fake_resource, fake_resource_version, mocker):
         resp = request_view(
             method="POST",
             view_name="openapi.resource_versions.list_create",

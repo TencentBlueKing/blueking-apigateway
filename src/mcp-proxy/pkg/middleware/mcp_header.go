@@ -16,4 +16,23 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package cacheimpls
+package middleware
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/spf13/cast"
+
+	"mcp_proxy/pkg/constant"
+	"mcp_proxy/pkg/util"
+)
+
+// MCPServerHeaderMiddleware ... 用于处理mcp server的header参数
+func MCPServerHeaderMiddleware() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		// 设置 timeout
+		util.SetBkApiTimeout(c, cast.ToInt(c.Request.Header.Get(constant.BkApiTimeoutHeaderKey)))
+		// 处理 AllowedHeaders
+		util.SetBkApiAllowedHeaders(c, c.Request.Header.Get(constant.BkApiAllowedHeadersKey))
+		c.Next()
+	}
+}

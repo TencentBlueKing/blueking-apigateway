@@ -20,6 +20,7 @@ package util
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -113,9 +114,33 @@ func SetBkApiTimeout(c *gin.Context, timeout int) {
 func GetBkApiTimeout(ctx context.Context) time.Duration {
 	// Get the timeout value from the context
 	timeout, ok := ctx.Value(constant.BkApiTimeout).(int)
-	if !ok {
+	if !ok || timeout == 0 {
 		// default timeout is 1 minute
 		return time.Minute
 	}
 	return time.Duration(timeout) * time.Second
+}
+
+// SetBkApiAllowedHeaders ... 设置允许的请求头
+func SetBkApiAllowedHeaders(c *gin.Context, allowedHeaders string) {
+	allowedHeadersMap := make(map[string]string)
+	for _, header := range strings.Split(allowedHeaders, ",") {
+		header = strings.TrimSpace(header)
+		if header == "" {
+			continue
+		}
+		allowedHeadersMap[header] = c.Request.Header.Get(header)
+	}
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BkApiAllowedHeaders,
+		allowedHeadersMap))
+}
+
+// GetBkApiAllowedHeaders ... 获取允许的请求头
+func GetBkApiAllowedHeaders(ctx context.Context) map[string]string {
+	// Get the timeout value from the context
+	allowedHeaders, ok := ctx.Value(constant.BkApiAllowedHeaders).(map[string]string)
+	if !ok {
+		return map[string]string{}
+	}
+	return allowedHeaders
 }

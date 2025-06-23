@@ -58,6 +58,7 @@ const PlatformToolsAutomatedGateway = () => import(/* webpackChunkName: 'platfor
 const PlatformToolsProgrammableGateway = () => import(/* webpackChunkName: 'platform-tools'*/'@/views/platform-tools/programmableGateway/index.vue');
 const McpMarket = () => import(/* webpackChunkName: 'mcp-market'*/'@/views/mcp-market/index.vue');
 const McpMarketDetails = () => import(/* webpackChunkName: 'mcp-market'*/'@/views/mcp-market/components/details.vue');
+const McpServerPermission = () => import(/* webpackChunkName: 'mcp-server'*/'@/views/mcp-server/components/McpPermission.vue');
 
 // 文档一级路由出口
 const docsComponent = {
@@ -312,6 +313,17 @@ const routes: RouteRecordRaw[] = [
           title: t('基本信息'),
           matchRoute: 'apigwBasicInfo',
           topMenu: 'home',
+        },
+      },
+      {
+        path: '/:id/mcp-permission',
+        name: 'mcpPermission',
+        component: McpServerPermission,
+        meta: {
+          title: t('权限审批'),
+          matchRoute: 'mcpServer',
+          topMenu: 'home',
+          showBackIcon: true,
         },
       },
       // MCP 服务器

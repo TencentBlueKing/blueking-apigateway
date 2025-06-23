@@ -86,6 +86,7 @@ class MCPServerHandler:
             resource_data=resource_data,
             doc_data=doc_data,
             language=ResourceDocHandler.get_doc_language(get_current_language_code()),
+            with_common_request_params_part=False,
         )
 
         return generator.get_doc()

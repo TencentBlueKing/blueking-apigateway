@@ -909,7 +909,7 @@ const handleAIChatClick = (row: any) => {
     res[`${label}(${field})`] = row[field] || '--';
   });
   try {
-    aiRequestMessage.value = JSON.stringify(res);
+    aiRequestMessage.value = JSON.stringify(res, null, 2);
     isAISliderShow.value = true;
   } catch {
     aiRequestMessage.value = '';

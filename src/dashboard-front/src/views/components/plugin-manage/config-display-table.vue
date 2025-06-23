@@ -45,20 +45,18 @@ const props = withDefaults(defineProps<IProps>(), {
   }),
   firstColWidth: '200',
   // 自定义渲染
-  valueRender: () => {
-    return ({ row }: { row: IBaseTableRow }) => {
-      // 为需要展示为多行文本的内容设置独立的自定义渲染
-      if (typeof row.value === 'string') {
-        if (row.value.includes('\n')) {
-          return h('pre', { class: 'multi-line-table-cell-pre', innerHTML: row.value });
-        }
-        return row.value;
+  valueRender: ({ row }: { row: IBaseTableRow }) => {
+    // 为需要展示为多行文本的内容设置独立的自定义渲染
+    if (typeof row.value === 'string') {
+      if (row.value.includes('\n')) {
+        return h('pre', { class: 'multi-line-table-cell-pre', innerHTML: row.value });
       }
-      if (typeof row.value === 'boolean') {
-        return row.value ? 'true' : 'false';
-      }
-      return JSON.stringify(row.value || {});
-    };
+      return row.value;
+    }
+    if (typeof row.value === 'boolean') {
+      return row.value ? 'true' : 'false';
+    }
+    return JSON.stringify(row.value || {});
   },
 });
 

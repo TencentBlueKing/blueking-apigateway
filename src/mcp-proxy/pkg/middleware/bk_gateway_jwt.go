@@ -26,7 +26,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	jwt "github.com/golang-jwt/jwt/v4"
-	"github.com/spf13/cast"
 
 	"mcp_proxy/pkg/biz"
 	"mcp_proxy/pkg/config"
@@ -103,45 +102,47 @@ func BkGatewayJWTAuthMiddleware() func(c *gin.Context) {
 		}
 		util.SetBkAppCode(c, claims.App.AppCode)
 		util.SetBkUsername(c, claims.User.Username)
-
-		// sign inner jwt
 		err = SignBkInnerJWTToken(c, claims, []byte(jwtInfo.PrivateKey))
 		if err != nil {
 			util.SystemErrorJSONResponse(c, err)
 			c.Abort()
 			return
 		}
-		util.SetInnerJWTToken(c, signedToken)
-		util.SetBkApiTimeout(c, cast.ToInt(c.Request.Header.Get(constant.BkApiTimeoutHeaderKey)))
 		c.Next()
 	}
 }
 
 // SignBkInnerJWTToken ...
-func SignBkInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKey []byte) error {
+func SignBkInnerJWTToken(c *gin.Context, claims *CustomClaims, privateKeyText []byte) error {
 	innerJwtClaims := CustomClaims{
 		App: AppInfo{
 			AppCode:  fmt.Sprintf(constant.BkVirtualAppCodeFormat, util.GetMCPServerID(c), claims.App.AppCode),
 			Verified: claims.App.Verified,
 		},
 		User: UserInfo{
-			Verified: claims.User.Verified,
 			Username: claims.User.Username,
+			Verified: claims.User.Verified,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    claims.Issuer,                                                             // 签发人
 			Audience:  claims.Audience,                                                           // 签发目标
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(config.G.McpServer.InnerJwtExpireTime)), // 过期时间
-			NotBefore: jwt.NewNumericDate(time.Now().Add(time.Second)),                           // 生效时间
+			NotBefore: jwt.NewNumericDate(time.Now()),                                            // 生效时间
 			IssuedAt:  jwt.NewNumericDate(time.Now()),                                            // 签发时间
 		},
 	}
-	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, innerJwtClaims).SignedString(privateKey)
+	token := jwt.NewWithClaims(jwt.SigningMethodRS512, innerJwtClaims)
+	token.Header["kid"] = constant.OfficialGatewayName
+	privateKey, err := util.ParsePrivateKey(privateKeyText)
+	if err != nil {
+		return err
+	}
+	signedJwt, err := token.SignedString(privateKey)
 	if err != nil {
 		return err
 	}
 	// set inner jwt to context
-	util.SetInnerJWTToken(c, token)
+	util.SetInnerJWTToken(c, signedJwt)
 	return nil
 }
 

@@ -810,7 +810,7 @@ PLUGIN_METADATA_CONFIG = {
 
 # 是否启用网关并发限制，默认启用；
 # 目前这个插件有缺陷，暂时支持关闭; https://github.com/apache/apisix/issues/11868
-GATEWAY_CONCURRENCY_LIMIT_ENABLED = env.bool("GATEWAY_CONCURRENCY_LIMIT_ENABLED", True)
+GATEWAY_CONCURRENCY_LIMIT_ENABLED = env.bool("GATEWAY_CONCURRENCY_LIMIT_ENABLED", False)
 
 BK_GATEWAY_ETCD_NAMESPACE_PREFIX = env.str("BK_GATEWAY_ETCD_NAMESPACE_PREFIX", default="/bk-gateway-apigw")
 

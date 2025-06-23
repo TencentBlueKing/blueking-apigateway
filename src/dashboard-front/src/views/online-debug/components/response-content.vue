@@ -139,7 +139,6 @@
       v-if="user.isAIEnabled"
       v-model="isAISliderShow"
       :message="aiRequestMessage"
-      message-type="doc_translate"
       :title="t('状态分析')"
     />
   </div>
@@ -326,7 +325,7 @@ watch(
 
 const handleAIClick = () => {
   try {
-    aiRequestMessage.value = JSON.stringify(props.res);
+    aiRequestMessage.value = JSON.stringify(props.res, null, 2);
     isAISliderShow.value = true;
   } catch {
     aiRequestMessage.value = '';
@@ -400,6 +399,7 @@ defineExpose({
   .response-main {
     padding-bottom: 15px;
     height: 100%;
+    overflow-y: auto;
     box-sizing: border-box;
     .response-content-type {
       margin-bottom: 12px;

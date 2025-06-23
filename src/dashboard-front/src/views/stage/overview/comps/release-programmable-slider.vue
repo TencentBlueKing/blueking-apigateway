@@ -258,13 +258,6 @@ const stageDetail = ref<ProgrammableStageDetailType>({
   version: '',
 });
 
-const stepsConfig = ref({
-  objectSteps: [
-    { title: t('发布信息') },
-    { title: t('差异确认') },
-  ],
-  controllable: true,
-});
 const deployId = ref('');
 const stageList = ref<any>([]);
 const semVerType = ref('minor');
@@ -321,6 +314,12 @@ watch(isShow, async (val) => {
       if (props.currentStage?.id) {
         formData.value.stage_id = props.currentStage.id;
       }
+
+      const params = {
+        semVerType: semVerType.value,
+        ...formData.value,
+      };
+      initSidebarFormData(params);
     } finally {
       isLoading.value = false;
     }
@@ -408,7 +407,7 @@ const handleReleaseDoing = () => {
 // 显示侧边栏
 const showReleaseSideslider = () => {
   const params = {
-    stepsConfig: stepsConfig.value,
+    semVerType: semVerType.value,
     ...formData.value,
   };
   initSidebarFormData(params);
@@ -417,7 +416,7 @@ const showReleaseSideslider = () => {
 
 const handleBeforeClose = async () => {
   const params = {
-    stepsConfig: stepsConfig.value,
+    semVerType: semVerType.value,
     ...formData.value,
   };
   return isSidebarClosed(JSON.stringify(params));

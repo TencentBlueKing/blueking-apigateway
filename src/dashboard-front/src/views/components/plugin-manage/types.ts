@@ -38,7 +38,7 @@ interface IBaseTableRow {
  * 值渲染类型，定义了一个函数类型，该函数返回一个渲染函数
  * @template T 表格行的类型，默认为IBaseTableRow
  */
-type ValueRenderType<T = IBaseTableRow> = () => (props: { row: T }) => unknown;
+type ValueRenderType<T = IBaseTableRow> = (props: { row: T }) => unknown;
 
 export {
   IPlugin,

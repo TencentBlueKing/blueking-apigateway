@@ -31,6 +31,7 @@ from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayRelatedAppPermission
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
     AppGatewayPermission,
@@ -46,7 +47,7 @@ from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.releaser import ReleaseError, release
 from apigateway.biz.resource.importer import ResourcesImporter
-from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
+from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.importer import DocImporter
 from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, OpenAPIParser
@@ -499,6 +500,16 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
                 resource_version=instance,
                 data=ResourceDocVersion.objects.make_version(request.gateway.id),
             )
+        exporter = OpenAPIExportManager(
+            api_version=instance.version,
+            title="the openapi of %s" % request.gateway.name,
+        )
+        # 创建openapi file版本
+        OpenAPIFileResourceSchemaVersion.objects.create(
+            gateway=request.gateway,
+            resource_version=instance,
+            schema=exporter.export_resource_version_openapi(instance),
+        )
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
 

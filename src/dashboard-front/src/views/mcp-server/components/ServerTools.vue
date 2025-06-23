@@ -60,54 +60,58 @@
                 @clear-filter="keyword = ''"
               />
             </template>
+            <TableEmpty v-else />
           </main>
         </div>
       </template>
       <!--  中间栏，当前 API 文档内容  -->
       <template #main>
         <div class="main-content-wrap">
-          <header v-if="selectedTool" class="tool-name">
-            <span class="name">{{ selectedTool.name }}</span>
-            <span class="desc">（{{ selectedTool.description }}）</span>
-          </header>
-          <article class="tool-basics">
-            <section class="basic-cell">
-              <span>
-                <span class="label">{{ t('更新时间') }}</span>：
-                {{ updatedTime || '--' }}
-              </span>
-            </section>
-            <section class="basic-cell">
-              <span>
-                <span v-bk-tooltips="t('应用访问该网关API时，是否需提供应用认证信息')" class="label">
-                  {{ t('应用认证') }}
-                </span>：
-                {{ selectedTool?.verified_app_required ? t('是') : t('否') }}
-              </span>
-            </section>
-            <section class="basic-cell">
-              <span>
-                <span
-                  v-bk-tooltips="t('应用访问该网关API前，是否需要在开发者中心申请该网关API权限')" class="label"
-                >
-                  {{ t('权限申请') }}
-                </span>：
-                {{ selectedTool?.allow_apply_permission ? t('是') : t('否') }}
-              </span>
-            </section>
-            <section class="basic-cell">
-              <span>
-                <span v-bk-tooltips="t('应用访问该网关API时，是否需要提供用户认证信息')" class="label">
-                  {{ t('用户认证') }}
-                </span>：
-                {{ selectedTool?.verified_user_required ? t('是') : t('否') }}
-              </span>
-            </section>
-          </article>
+          <template v-if="selectedTool">
+            <header class="tool-name">
+              <span class="name">{{ selectedTool.name }}</span>
+              <span class="desc">（{{ selectedTool.description }}）</span>
+            </header>
+            <article class="tool-basics">
+              <section class="basic-cell">
+                <span>
+                  <span class="label">{{ t('更新时间') }}</span>：
+                  {{ updatedTime || '--' }}
+                </span>
+              </section>
+              <section class="basic-cell">
+                <span>
+                  <span v-bk-tooltips="t('应用访问该网关API时，是否需提供应用认证信息')" class="label">
+                    {{ t('应用认证') }}
+                  </span>：
+                  {{ selectedTool?.verified_app_required ? t('是') : t('否') }}
+                </span>
+              </section>
+              <section class="basic-cell">
+                <span>
+                  <span
+                    v-bk-tooltips="t('应用访问该网关API前，是否需要在开发者中心申请该网关API权限')" class="label"
+                  >
+                    {{ t('权限申请') }}
+                  </span>：
+                  {{ selectedTool?.allow_apply_permission ? t('是') : t('否') }}
+                </span>
+              </section>
+              <section class="basic-cell">
+                <span>
+                  <span v-bk-tooltips="t('应用访问该网关API时，是否需要提供用户认证信息')" class="label">
+                    {{ t('用户认证') }}
+                  </span>：
+                  {{ selectedTool?.verified_user_required ? t('是') : t('否') }}
+                </span>
+              </section>
+            </article>
+          </template>
           <!--  API markdown 文档  -->
           <article v-if="selectedToolMarkdownHtml" class="tool-detail-content">
             <div id="toolDocMarkdown" v-dompurify-html="selectedToolMarkdownHtml" class="ag-markdown-view"></div>
           </article>
+          <TableEmpty v-else />
         </div>
       </template>
     </bk-resize-layout>
@@ -130,6 +134,7 @@ import {
   getServerTools,
   type IMCPServerTool,
 } from '@/http/mcp-server';
+import { getMcpServerToolDoc } from '@/http/mcp-market';
 import { useCommon } from '@/store';
 import { copy } from '@/common/util';
 import MarkdownIt from 'markdown-it';
@@ -140,9 +145,10 @@ type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 
 interface IProps {
   server: MCPServerType,
+  page?: String,
 }
 
-const { server } = defineProps<IProps>();
+const { server, page = 'server' } = defineProps<IProps>();
 
 const emit = defineEmits<{
   'update-count': [count: number],
@@ -185,19 +191,33 @@ const filteredToolList = computed(() => {
 
 // tool 分类列表
 const toolGroupList = computed(() => {
-  return filteredToolList.value.reduce((groupList, tool) => {
-    const { id, name } = tool.labels[0];
-    const group = groupList.find(item => item.id === id);
+  return filteredToolList.value?.reduce((groupList, tool) => {
+    if (tool.labels[0]) {
+      const { id, name } = tool.labels[0];
+      const group = groupList.find(item => item.id === id);
 
-    if (group) {
-      group.toolList.push(tool);
+      if (group) {
+        group.toolList.push(tool);
+      } else {
+        groupList.push({
+          id,
+          name,
+          toolList: [tool],
+        });
+      }
     } else {
-      groupList.push({
-        id,
-        name,
-        toolList: [tool],
-      });
+      const group = groupList.find(item => item.id === 0);
+      if (group) {
+        group.toolList.push(tool);
+      } else {
+        groupList.push({
+          id: 0,
+          name: t('默认分类'),
+          toolList: [tool],
+        });
+      }
     }
+
     return groupList;
   }, [] as { id: number, name: string, toolList: typeof toolList.value }[]);
 });
@@ -235,8 +255,12 @@ watch(toolList, () => {
 
 const fetchToolList = async () => {
   try {
-    const res = await getServerTools(common.apigwId, server.id);
-    toolList.value = res ?? [];
+    if (page === 'market') {
+      toolList.value = server?.tools ?? [];
+    } else {
+      const res = await getServerTools(common.apigwId, server.id);
+      toolList.value = res ?? [];
+    }
 
     if (route.query?.tool_name) {
       selectedToolName.value = route.query.tool_name as string;
@@ -282,7 +306,14 @@ const handleToolClick = async (resId: number, toolName: string) => {
 const getDoc = async () => {
   try {
     isLoading.value = true;
-    const res = await getServerToolDoc(common.apigwId, server.id, selectedTool.value.name);
+
+    let res: any = {};
+    if (page === 'market') {
+      res = await getMcpServerToolDoc(server.id, selectedTool.value.name);
+    } else {
+      res = await getServerToolDoc(common.apigwId, server.id, selectedTool.value.name);
+    }
+
     const { content, updated_time } = res;
     selectedToolMarkdownHtml.value = md.render(content);
     updatedTime.value = updated_time;
@@ -531,6 +562,10 @@ $code-color: #63656e;
         }
       }
     }
+  }
+
+  :deep(.bk-resize-layout.bk-resize-layout-left) {
+    flex: 1 !important;
   }
 
   // 去掉右侧伸缩栏的拉伸线

@@ -128,6 +128,7 @@ class TestResourceVersionRetrieveOutputSLZ:
             "schema_version": fake_resource_version_v1.schema_version,
             "resources": [
                 {
+                    "id": fake_resource_version_v1.data[0]["id"],
                     "name": fake_resource_version_v1.data[0]["name"],
                     "method": fake_resource_version_v1.data[0]["method"],
                     "path": fake_resource_version_v1.data[0]["path"],
@@ -194,6 +195,7 @@ class TestResourceVersionRetrieveOutputSLZ:
             "schema_version": fake_resource_version_v2.schema_version,
             "resources": [
                 {
+                    "id": fake_resource_version_v2.data[0]["id"],
                     "name": fake_resource_version_v2.data[0]["name"],
                     "method": fake_resource_version_v2.data[0]["method"],
                     "path": fake_resource_version_v2.data[0]["path"],

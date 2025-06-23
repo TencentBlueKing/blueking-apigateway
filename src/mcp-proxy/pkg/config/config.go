@@ -146,7 +146,10 @@ type McpServer struct {
 	// the interval of mcp server reload
 	Interval           time.Duration
 	BkApiUrlTmpl       string
+	MessageUrlFormat   string
 	InnerJwtExpireTime time.Duration
+	EncryptKey         string
+	CryptoNonce        string
 }
 
 // Config is the config for the whole project
@@ -188,11 +191,19 @@ func Load(v *viper.Viper) (*Config, error) {
 		cfg.McpServer.Interval = 30 * time.Second
 	}
 	if cfg.McpServer.BkApiUrlTmpl == "" {
-		cfg.McpServer.BkApiUrlTmpl = os.Getenv("BK_API_STAGE_URL_TMPL")
+		cfg.McpServer.BkApiUrlTmpl = os.Getenv("BK_API_URL_TMPL")
 	}
-
+	if cfg.McpServer.MessageUrlFormat == "" {
+		cfg.McpServer.MessageUrlFormat = "/api/bk-apigateway/prod/api/v2/mcp-servers/%s/sse/message"
+	}
 	if cfg.McpServer.InnerJwtExpireTime == 0 {
 		cfg.McpServer.InnerJwtExpireTime = time.Minute * 5
+	}
+	if cfg.McpServer.EncryptKey == "" {
+		cfg.McpServer.EncryptKey = os.Getenv("ENCRYPT_KEY")
+	}
+	if cfg.McpServer.CryptoNonce == "" {
+		cfg.McpServer.CryptoNonce = os.Getenv("BK_APIGW_CRYPTO_NONCE")
 	}
 
 	G = cfg

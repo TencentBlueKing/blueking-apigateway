@@ -44,7 +44,7 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
     is_public = models.BooleanField(default=False)
 
     _labels = models.CharField(db_column="labels", max_length=1024, blank=True, null=True, default="")
-    _resource_names = models.CharField(db_column="resource_names", max_length=1024, blank=True, null=True, default="")
+    _resource_names = models.TextField(db_column="resource_names", blank=True, null=True, default="")
 
     status = models.IntegerField(choices=MCPServerStatusEnum.get_choices())
 

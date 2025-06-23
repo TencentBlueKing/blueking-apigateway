@@ -104,6 +104,7 @@
     <bk-sideslider
       v-model:is-show="sidesliderConfig.isShow"
       :title="sidesliderConfig.title"
+      :before-close="handleBeforeClose"
       ext-cls="alarm-strategy-slider"
       width="750">
       <template #default>
@@ -311,7 +312,7 @@ import {
   InfoBox,
   Message,
 } from 'bkui-vue';
-import { useQueryList } from '@/hooks';
+import { useQueryList, useSidebar } from '@/hooks';
 import {
   createStrategy,
   deleteStrategy,
@@ -327,6 +328,8 @@ import TableEmpty from '@/components/table-empty.vue';
 const { t } = useI18n();
 const common = useCommon();
 const accessLog = useAccessLog();
+const { isSidebarClosed, initSidebarFormData } = useSidebar();
+
 const { apigwId } = common; // 网关id
 const { alarmStrategyOptions } = accessLog; // 触发条件的option
 const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
@@ -456,6 +459,13 @@ const handleAdd = () => {
     },
     effective_stages: [],
   };
+  effectiveStageType.value = 'all';
+
+  const sliderParams = {
+    form: formData.value,
+    effectiveStage: effectiveStageType.value,
+  };
+  initSidebarFormData(sliderParams);
 };
 
 // 是否启用
@@ -495,6 +505,12 @@ const handleEdit = async (data: any) => {
       effectiveStageType.value = 'custom';
     }
   }
+
+  const sliderParams = {
+    form: formData.value,
+    effectiveStage: effectiveStageType.value,
+  };
+  initSidebarFormData(sliderParams);
 };
 
 // 删除
@@ -539,6 +555,14 @@ const handleSave = async () => {
 // 取消
 const handleCancel = () => {
   sidesliderConfig.isShow = false;
+};
+
+const handleBeforeClose = async () => {
+  const sliderParams = {
+    form: formData.value,
+    effectiveStage: effectiveStageType.value,
+  };
+  return isSidebarClosed(JSON.stringify(sliderParams));
 };
 
 const init = async () => {

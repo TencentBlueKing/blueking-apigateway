@@ -69,7 +69,11 @@
             </div>
           </template>
           <div class="panel-content">
-            <div v-show="active === 'tools'">...</div>
+            <ServerTools
+              v-show="active === 'tools'"
+              :server="mcpDetails"
+              page="market"
+            />
             <Guideline v-show="active === 'guide'" :markdown-str="markdownStr" />
           </div>
         </bk-tab-panel>
@@ -86,6 +90,7 @@ import { copy } from '@/common/util';
 import AgIcon from '@/components/ag-icon.vue';
 import { useGetGlobalProperties } from '@/hooks';
 import { getMcpServerDetails, IMarketplaceDetails } from '@/http/mcp-market';
+import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import Guideline from './guideline.vue';
 
 const { t } = useI18n();
@@ -151,9 +156,7 @@ watch(
 }
 
 .main {
-  width: 1600px;
-  padding: 24px 0px 42px;
-  margin: 0 auto;
+  padding: 24px 120px 42px;
   background-color: #f5f7fa;
   .base-info {
     padding: 0 24px;

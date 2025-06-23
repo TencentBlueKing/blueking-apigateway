@@ -76,7 +76,7 @@
           theme="primary"
           v-bk-tooltips="actionTooltipConfig"
           :disabled="isActionDisabled"
-          :loading="loading"
+          :loading="status === 'doing'"
           @click.stop="handlePublishClick"
         >
           {{ t('发布资源') }}
@@ -85,24 +85,26 @@
           size="small"
           v-bk-tooltips="actionTooltipConfig"
           :disabled="isUnlistDisabled"
-          :loading="loading"
+          :loading="status === 'doing'"
           @click.stop="handleDelistClick"
         >
           {{ t('下架') }}
         </BkButton>
       </div>
     </div>
-    <div class="divider"></div>
-    <div class="card-chart" @click.stop="handleChartClick">
-      <div :class="{ 'empty-state': status === 'unreleased' }" class="request-counter">
-        <div class="label">{{ t('总请求数') }}</div>
-        <div class="value">{{ status === 'unreleased' ? t('尚未发布，无数据') : requestCount }}
+    <template v-if="user.featureFlags?.ENABLE_RUN_DATA_METRICS">
+      <div class="divider"></div>
+      <div class="card-chart" @click.stop="handleChartClick">
+        <div :class="{ 'empty-state': status === 'unreleased' }" class="request-counter">
+          <div class="label">{{ t('总请求数') }}</div>
+          <div class="value">{{ status === 'unreleased' ? t('尚未发布，无数据') : requestCount }}
+          </div>
+        </div>
+        <div class="item-chart-wrapper">
+          <StageCardLineChart v-if="status !== 'unreleased'" :data="data" :mount-id="uniqueId()" />
         </div>
       </div>
-      <div class="item-chart-wrapper">
-        <StageCardLineChart v-if="status !== 'unreleased'" :data="data" :mount-id="uniqueId()" />
-      </div>
-    </div>
+    </template>
   </div>
 </template>
 
@@ -114,7 +116,10 @@ import {
   onBeforeMount,
   ref,
 } from 'vue';
-import { useCommon } from '@/store';
+import {
+  useCommon,
+  useUser,
+} from '@/store';
 import { useGetGlobalProperties } from '@/hooks';
 import { Spinner } from 'bkui-vue/lib/icon';
 import StageCardLineChart from '@/views/stage/overview/comps/stage-card-line-chart.vue';
@@ -226,6 +231,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { GLOBAL_CONFIG } = useGetGlobalProperties();
+const user = useUser();
 const router = useRouter();
 const common = useCommon();
 
@@ -295,6 +301,9 @@ const getRequestCount = async () => {
 };
 
 const getRequestTrend = async () => {
+  if (!user.featureFlags?.ENABLE_RUN_DATA_METRICS) {
+    return;
+  }
   const now = dayjs().unix();
   const sixHoursAgo = now - 6 * 60 * 60;
 
