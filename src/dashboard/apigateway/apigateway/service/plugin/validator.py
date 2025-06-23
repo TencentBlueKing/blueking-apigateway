@@ -26,7 +26,6 @@ from .checker import PluginConfigYamlChecker
 from .convertor import PluginConvertorFactory
 
 
-# FIXME: move to other layer uppon
 class PluginConfigYamlValidator:
     """
     插件配置校验

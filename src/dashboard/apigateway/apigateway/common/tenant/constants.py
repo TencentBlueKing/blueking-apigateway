@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from blue_krill.data_types.enum import EnumField, StructuredEnum
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 TENANT_MODE_SINGLE_DEFAULT_TENANT_ID = "default"
@@ -29,3 +30,11 @@ class TenantModeEnum(StructuredEnum):
 
     GLOBAL = EnumField("global", _("全租户"))
     SINGLE = EnumField("single", _("单租户"))
+
+
+if settings.ENABLE_MULTI_TENANT_MODE:
+    SELF_HOST_GATEWAY_DEFAULT_TENANT_MODE = TenantModeEnum.GLOBAL.value
+    SELF_HOST_GATEWAY_DEFAULT_TENANT_ID = ""
+else:
+    SELF_HOST_GATEWAY_DEFAULT_TENANT_MODE = TenantModeEnum.SINGLE.value
+    SELF_HOST_GATEWAY_DEFAULT_TENANT_ID = TENANT_MODE_SINGLE_DEFAULT_TENANT_ID

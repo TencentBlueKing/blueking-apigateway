@@ -126,8 +126,8 @@ class BKCMSIGateway(BaseCMSIComponent):
 
 cmsi_component: BaseCMSIComponent
 
-if settings.ENABLE_MULTI_TENANT_MODE:
-    # FIXME: 应该也支持某些环境启动网关模式
+# FIXME: remove `and ENABLE_MULTI_TENANT_MODE` when all env has the newest bk-cmsi
+if settings.EDITION == "ee" and settings.ENABLE_MULTI_TENANT_MODE:
     print("multi-tenant mode enabled, use bkcmsi gateway instead of cmsi component in esb")
     cmsi_component = BKCMSIGateway()
 else:

@@ -42,8 +42,8 @@ from apigateway.apps.permission.models import (
 )
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
+from apigateway.components.bkcmsi import cmsi_component
 from apigateway.components.bkpaas import get_app_maintainers, get_tenant_id_for_app_developers
-from apigateway.components.cmsi import cmsi_component
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, GatewayStatusEnum
 from apigateway.core.models import Context, Gateway, Resource
 from apigateway.utils.file import read_file

@@ -26,7 +26,6 @@ from django.conf import settings
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import (
     TENANT_ID_OPERATION,
-    TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
     TenantModeEnum,
 )
 from apigateway.common.tenant.request import gen_tenant_header
@@ -34,7 +33,7 @@ from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.utils.local import local
 from apigateway.utils.url import url_join
 
-from .bkauth import get_app_info as bkauth_get_app_info
+from .bkauth import get_app_tenant_info as bkauth_get_app_tenant_info
 from .http import http_get, http_post
 from .utils import gen_gateway_headers
 
@@ -104,6 +103,17 @@ def get_app_no_cache(tenant_id: str, app_code: str) -> Optional[Dict[str, Any]]:
 
 @cached(cache=TTLCache(maxsize=2000, ttl=300))
 def get_app(tenant_id: str, app_code: str) -> Optional[Dict[str, Any]]:
+    """get app info from paasv3
+
+    Args:
+        tenant_id (str): the tenant id
+        app_code (str): the app code
+
+    Returns:
+        Optional[Dict[str, Any]]: the app info
+
+    only called when ENABLE_MULTI_TENANT_MODE is True
+    """
     return get_app_no_cache(tenant_id, app_code)
 
 
@@ -112,9 +122,8 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
     # NOTE: here we need to get maintainers from paasv3
     #       but the X-Bk-Tenant-Id required
     #       so, we query it from bkauth first
-    info = bkauth_get_app_info(bk_app_code)
-    tenant_mode = info["bk_tenant"]["mode"]
-    tenant_id = info["bk_tenant"]["id"]
+    tenant_mode, tenant_id = bkauth_get_app_tenant_info(bk_app_code)
+
     # 全租户应用，使用 tenant_id = system 去查询应用信息
     if tenant_mode == TenantModeEnum.GLOBAL.value:
         app = get_app(TENANT_ID_OPERATION, bk_app_code)
@@ -134,14 +143,11 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
 
 
 def get_tenant_id_for_app_developers(bk_app_code: str) -> str:
-    if not settings.ENABLE_MULTI_TENANT_MODE:
-        return TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
+    tenant_mode, tenant_id = bkauth_get_app_tenant_info(bk_app_code)
 
-    info = bkauth_get_app_info(bk_app_code)
     # if the tenant_id is empty, it means the app is a global app
     # so the cmsi use could only be the `system`
-
-    return info["bk_tenant"]["id"] or TENANT_ID_OPERATION
+    return tenant_id or TENANT_ID_OPERATION
 
 
 def create_paas_app(

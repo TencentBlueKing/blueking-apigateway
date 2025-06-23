@@ -23,6 +23,7 @@ from .constants import (
     TENANT_ID_OPERATION,
     TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID,
     TENANT_MODE_SINGLE_DEFAULT_TENANT_ID,
+    TenantModeEnum,
 )
 
 
@@ -44,6 +45,22 @@ def get_tenant_id_for_gateway_maintainers(gateway_tenant_id: str) -> str:
     # it gateway_tenant_id is empty, it means the gateway is a global gateway
     # so the cmsi user could only be the `system` (the system tenant)
     if gateway_tenant_id == TENANT_MODE_GLOBAL_DEFAULT_TENANT_ID:
+        return TENANT_ID_OPERATION
+
+    return gateway_tenant_id
+
+
+def get_gateway_tenant_id_for_component(gateway_tenant_mode: str, gateway_tenant_id: str) -> str:
+    """获取调用外部接口网关应该使用的 tenant_id
+
+    Returns:
+        str: tenant_id
+    """
+    # 不开启多租户，返回 default
+    if not settings.ENABLE_MULTI_TENANT_MODE:
+        return TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
+
+    if gateway_tenant_mode == TenantModeEnum.GLOBAL.value:
         return TENANT_ID_OPERATION
 
     return gateway_tenant_id

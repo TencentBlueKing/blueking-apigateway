@@ -138,10 +138,9 @@ class TestGatewaySyncApi:
         assert auth_config["allow_delete_sensitive_params"] is False
 
     def test_post_with_multi_tenant_mode(self, mocker, request_view, unique_gateway_name, disable_app_permission):
-        mocker.patch("apigateway.apis.open.gateway.views.settings.ENABLE_MULTI_TENANT_MODE", True)
         mocker.patch(
-            "apigateway.apis.open.gateway.views.get_app_info",
-            return_value={"bk_tenant": {"mode": "global", "id": "abc"}},
+            "apigateway.apis.open.gateway.views.get_app_tenant_info",
+            return_value=("global", "abc"),
         )
 
         resp = request_view(
