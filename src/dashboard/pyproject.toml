@@ -1,119 +1,122 @@
-[tool.poetry]
+[project]
 name = "apigateway-dashboard"
 version = "1.0.0"
 description = ""
 authors = []
-package-mode = false
+requires-python = ">=3.10,<3.11"
+dependencies = [
+    "django==4.2.23",
+    "djangorestframework==3.16.0",
+    "pymysql==1.1.1",
+    "celery==5.5.3",
+    "django-celery-beat==2.8.1",
+    "gevent==25.5.1",
+    "requests==2.32.4",
+    "arrow==1.3.0",
+    "raven==6.10.0",
+    "cachetools==5.5.0",
+    "gunicorn==23.0.0",
+    "jsonschema==4.24.0",
+    "drf-yasg==1.21.10",
+    "whitenoise==6.8.2",
+    "python-json-logger==2.0.7",
+    "django-cors-headers==4.7.0",
+    "elasticsearch==7.7.1",
+    "elasticsearch-dsl==7.4.1",
+    "werkzeug==3.1.3",
+    "redis==5.2.0",
+    "ruamel.yaml==0.18.6",
+    "pyyaml==6.0.2",
+    "PyJWT==2.9.0",
+    "pydantic==2.11.7",
+    "django-environ==0.12.0",
+    "jsonfield==3.1.0",
+    "importlib-metadata==8.4.0",
+    "greenlet==3.2.3",
+    "bkpaas-auth==3.1.2",
+    "blue-krill==2.1.2",
+    "bk-crypto-python-sdk==2.0.1",
+    "cryptography==45.0.4",
+    "apigw-manager==4.1.0",
+    "bkapi-client-generator==0.1.30",
+    "curlify==2.2.1",
+    "bkapi-component-open>=1.0.3,<2",
+    "django-prometheus==2.4.0",
+    "bkapi-client-core==1.2.0",
+    "python-redis-lock==4.0.0",
+    "etcd3==0.12.0",
+    "grpcio==1.44.0",
+    "protobuf==3.20.3",
+    "bkapi-bk-apigateway==1.0.11",
+    "docutils==0.21.2",
+    "Pygments==2.18.0",
+    "Pillow==11.0.0",
+    "opentelemetry-api==1.27.0",
+    "opentelemetry-sdk==1.27.0",
+    "opentelemetry-exporter-otlp==1.27.0",
+    "opentelemetry-exporter-jaeger==1.21.0",
+    "opentelemetry-instrumentation-django==0.48b0",
+    "opentelemetry-instrumentation-dbapi==0.48b0",
+    "opentelemetry-instrumentation-redis==0.48b0",
+    "opentelemetry-instrumentation-requests==0.48b0",
+    "opentelemetry-instrumentation-logging==0.48b0",
+    "opentelemetry-instrumentation-celery==0.48b0",
+    "django-filter==25.1",
+    "django-add-default-value==0.10.0",
+    "pypi-simple==0.8.0",
+    "bk-notice-sdk==1.4.2",
+    "twine==6.1.0",
+    "jinja2==3.1.6",
+    "setuptools==75.3.0",
+    "pycryptodomex==3.23.0",
+    "certifi==2025.6.15",
+    "sqlparse==0.5.3",
+    "future==1.0.0",
+    "openapi-spec-validator>=0.7.2,<0.8",
+    "prance>=23.6.21.0,<24",
+    "py-openapi-schema-to-json-schema==0.0.3",
+    "faker==30.8.1",
+    "concurrent-log-handler==0.9.28",
+    "djangoql>=0.18.1,<0.19",
+    "openai==1.78.0",
+]
 
+[dependency-groups]
+dev = [
+    "nose==1.3.7",
+    "django-nose==1.4.7",
+    "coverage==7.9.1",
+    "django-dynamic-fixture==4.0.1",
+    "pytest-xdist==3.7.0",
+    "pytest==8.4.1",
+    "pytest-cov==6.2.1",
+    "pytest-django==4.11.1",
+    "pytest-benchmark==5.1.0",
+    "pytest-mock==3.14.1",
+    "pytest-pretty==1.3.0",
+    "Faker==30.8.1",
+    "responses==0.25.3",
+    "pre-commit==4.2.0",
+    "mypy==1.16.1",
+    "rope==1.13.0",
+    "watchdog==6.0.0",
+    "tox==4.23.2",
+    "ipython==8.29.0",
+    "fakeredis==2.30.1",
+    "ruff==0.12.0",
+    "types-requests==2.31.0.1",
+    "types-python-dateutil==2.9.0.20250516",
+    "types-redis==4.6.0.20241004",
+    "types-cachetools==5.5.0.20240820",
+    "types-pytz==2025.2.0.20250516",
+    "types-docutils==0.21.0.20250604",
+    "types-PyYAML==6.0.12.20240311",
+    "types-PyMySQL==1.1.0.20240524",
+    "import-linter==2.3",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10,<3.11"
-django = "4.2.20"
-djangorestframework = "3.15.2"
-pymysql = "1.1.1"
-celery = "5.4.0"
-django-celery-beat = "2.7.0"
-gevent = "24.10.3"
-requests = "2.32.3"
-arrow = "1.3.0"
-raven = "6.10.0"
-cachetools = "5.5.0"
-gunicorn = "23.0.0"
-jsonschema = "4.23.0"
-drf-yasg = "1.21.8"
-whitenoise = "6.8.2"
-python-json-logger = "2.0.7"
-django-cors-headers = "4.6.0"
-elasticsearch = "7.7.1"
-elasticsearch-dsl = "7.4.1"
-werkzeug = "3.0.6"
-redis = "5.2.0"
-"ruamel.yaml" = "0.18.6"
-pyyaml = "6.0.2"
-PyJWT = "2.9.0"
-pydantic = "2.9.2"
-django-environ = "0.11.2"
-jsonfield = "3.1.0"
-importlib-metadata = "8.4.0"
-greenlet = "3.1.1"
-bkpaas-auth = "3.1.0"
-blue-krill = "2.1.2"
-bk-crypto-python-sdk = "2.0.0"
-cryptography = "44.0.2"
-apigw-manager = "3.1.2"
-bkapi-client-generator = "0.1.30"
-curlify = "2.2.1"
-bkapi-component-open = "^1.0.3"
-django-prometheus = "2.3.1"
-bkapi-client-core = "1.2.0"
-python-redis-lock = "4.0.0"
-etcd3 = "0.12.0"
-grpcio = "1.44.0"
-protobuf = "3.20.3"
-bkapi-bk-apigateway = "1.0.11"
-docutils = "0.21.2"
-Pygments = "2.18.0"
-Pillow = "11.0.0"
-opentelemetry-api = "1.27.0"
-opentelemetry-sdk = "1.27.0"
-opentelemetry-exporter-otlp = "1.27.0"
-opentelemetry-exporter-jaeger = "1.21.0"
-opentelemetry-instrumentation-django = "0.48b0"
-opentelemetry-instrumentation-dbapi = "0.48b0"
-opentelemetry-instrumentation-redis = "0.48b0"
-opentelemetry-instrumentation-requests = "0.48b0"
-opentelemetry-instrumentation-logging = "0.48b0"
-opentelemetry-instrumentation-celery = "0.48b0"
-django-filter = "24.3"
-django-add-default-value = "0.10.0"
-pypi-simple = "0.8.0"
-bk-notice-sdk = "1.3.2"
-twine= "5.1.1"
-jinja2 = "3.1.6"
-setuptools = "75.3.0"
-pycryptodomex = "3.21.0"
-certifi = "2024.8.30"
-sqlparse = "0.5.1"
-future = "1.0.0"
-openapi-spec-validator = "^0.7.1"
-prance = "^23.6.21.0"
-py-openapi-schema-to-json-schema = "0.0.3"
-faker = "30.8.1"
-concurrent-log-handler = "0.9.25"
-djangoql = "^0.18.1"
-openai = "1.78.0"
-[tool.poetry.group.dev.dependencies]
-nose = "1.3.7"
-django-nose = "1.4.7"
-coverage = "7.6.4"
-django-dynamic-fixture = "4.0.1"
-pytest-xdist = "3.6.1"
-pytest = "8.3.3"
-pytest-cov = "6.0.0"
-pytest-django = "4.9.0"
-pytest-benchmark = "5.0.1"
-pytest-mock = "3.14.0"
-pytest-pretty = "1.2.0"
-Faker = "30.8.1"
-responses = "0.25.3"
-pre-commit = "4.0.1"
-mypy = "1.13.0"
-rope = "1.13.0"
-watchdog = "5.0.3"
-tox = "4.23.2"
-ipython = "8.29.0"
-fakeredis = "2.26.1"
-ruff = "0.7.1"
-types-requests = "2.31.0.1"
-types-python-dateutil = "2.9.0.20241003"
-types-redis = "4.6.0.20241004"
-types-cachetools = "5.5.0.20240820"
-types-pytz = "2024.2.0.20241003"
-types-docutils = "0.21.0.20241005"
-types-PyYAML = "6.0.12.20240311"
-types-PyMySQL = "1.1.0.20240524"
-import-linter = "2.1"
-
+[tool.uv]
+package = false
 
 [tool.mypy]
 ignore_missing_imports = true
@@ -141,8 +144,8 @@ testpaths = [
 ]
 
 [build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
+requires = ["uv==0.7.14"]
+build-backend = "uv.build"
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
