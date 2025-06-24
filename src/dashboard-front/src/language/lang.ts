@@ -426,6 +426,8 @@ const lang: ILANG = {
   '账号': ['Account'],
   '密码': ['Password'],
   'Git 代码库': ['Git Code repository'],
+  '建议使用 access_token': ['Suggest using access_token'],
+  '请输入正确的代码仓库地址，http(s)://xxx.git': ['Please enter the correct code repository address, http(s)://xxx.git'],
   '自动生成版本': ['Auto-build version'],
   '请填写代码仓库地址': ['Please fill in the code repository address'],
   '支持以下协议:http(s)://、git://': ['Support the following protocols :http(s)://, git://'],
