@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/getsentry/raven-go"
+	raven "github.com/getsentry/raven-go"
 	"github.com/gin-gonic/contrib/sentry"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -30,7 +30,6 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
-	// nolint: errcheck
 	_ "core/docs"
 	"core/pkg/api/microgateway"
 	"core/pkg/api/open"
