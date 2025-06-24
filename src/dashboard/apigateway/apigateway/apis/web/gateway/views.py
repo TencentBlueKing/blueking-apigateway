@@ -129,6 +129,8 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         bk_app_codes = slz.validated_data.pop("bk_app_codes", None)
         language = slz.validated_data.get("extra_info", {}).get("language")
 
+        related_app_code = None
+
         # if kind is programmable, create paas app
         if slz.validated_data.get("kind") == GatewayKindEnum.PROGRAMMABLE.value:
             git_info = None
@@ -144,14 +146,19 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
                 ):
                     raise error_codes.INVALID_ARGUMENT.format(_("Git 信息无效。"), replace=True)
 
+            app_code = slz.validated_data["name"]
             ok = create_paas_app(
-                slz.validated_data["name"],
+                app_code,
                 language,
                 git_info,
                 user_credentials=get_user_credentials_from_request(request),
             )
             if not ok:
                 raise error_codes.INTERNAL.format(_("创建蓝鲸应用失败。"), replace=True)
+
+            # set the related app code, while the programmable gateway is created before the app syncing gateway
+            # the sync api will check the gateway_related_app_code
+            related_app_code = app_code
 
         # 1. save gateway
         slz.save(
@@ -170,6 +177,8 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             allow_delete_sensitive_params=False,
             username=request.user.username,
             app_codes_to_binding=bk_app_codes,
+            # 网关关联应用
+            related_app_code=related_app_code,
         )
 
         # 3. record audit log
