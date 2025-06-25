@@ -535,6 +535,9 @@ class BaseExporter:
             # remove openapi version
             if "version" in schema:
                 del schema["version"]
+            # remove none_schema flag
+            if "none_schema" in schema:
+                del schema["none_schema"]
 
             operation.update(schema)
 
