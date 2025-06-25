@@ -26,7 +26,9 @@ from rest_framework import generics, status
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.apps.mcp_server.utils import build_mcp_server_url
+from apigateway.biz.gateway_type import GatewayTypeHandler
 from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
@@ -77,14 +79,17 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
 
         page = self.paginate_queryset(queryset)
 
-        gateway_ids = [mcp_server.gateway.id for mcp_server in page]
+        gateway_ids = list({mcp_server.gateway.id for mcp_server in page})
+        gateway_auth_configs = GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids)
         gateways = {
             gateway.id: {
                 "id": gateway.id,
                 "name": gateway.name,
+                "is_official": GatewayTypeHandler.is_official(gateway_auth_configs[gateway.id].gateway_type),
             }
             for gateway in Gateway.objects.filter(id__in=gateway_ids)
         }
+
         stage_ids = [mcp_server.stage.id for mcp_server in page]
         stages = {
             stage.id: {
