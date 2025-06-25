@@ -40,7 +40,7 @@ class MCPServerAppPermissionApplyManager(models.Manager):
         queryset = queryset.filter(status__in=status_list)
 
         if bk_app_code:
-            queryset = queryset.filter(bk_app_code=bk_app_code)
+            queryset = queryset.filter(bk_app_code__icontains=bk_app_code)
         if applied_by:
             queryset = queryset.filter(applied_by=applied_by)
 
