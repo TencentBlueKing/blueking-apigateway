@@ -81,7 +81,11 @@
                     :pagination="pagination"
                     border="outer"
                     show-overflow-tooltip
-                  />
+                  >
+                    <template #empty>
+                      <TableEmpty :keyword="filterKeyword" @clear-filter="filterKeyword = ''" />
+                    </template>
+                  </bk-table>
                 </div>
                 <div class="result-preview">
                   <div class="result-preview-list">
@@ -117,14 +121,16 @@
             </bk-form-item>
           </bk-form>
         </div>
-        <div class="footer">
-          <bk-button style="width: 100px" theme="primary" @click="handleSubmit">
-            {{ t('确定') }}
-          </bk-button>
-          <bk-button style="margin-left: 4px; width: 100px" @click="handleCancel">
-            {{ t('取消') }}
-          </bk-button>
-        </div>
+      </div>
+    </template>
+    <template #footer>
+      <div style="margin-left: 16px;">
+        <bk-button style="width: 100px" theme="primary" @click="handleSubmit">
+          {{ t('确定') }}
+        </bk-button>
+        <bk-button style="margin-left: 4px; width: 100px" @click="handleCancel">
+          {{ t('取消') }}
+        </bk-button>
       </div>
     </template>
   </BkSideslider>
@@ -254,8 +260,8 @@ const columns = [
       >{row.name}</bk-button>,
   },
   {
-    label: t('请求参数'),
-    width: 100,
+    label: t('是否配置请求参数声明'),
+    width: 170,
     showOverflowTooltips: false,
     render: ({ row }: any) => row.has_openapi_schema ? t('是') : t('否'),
   },
@@ -293,8 +299,7 @@ const filteredResourceList = computed(() => {
     const keyword = filterKeywordDebounced.value.trim().toLowerCase();
     const matchName = resource.name.toLowerCase().includes(keyword);
     const matchPath = resource.path.toLowerCase().includes(keyword);
-    const matchMethod = resource.method.toLowerCase().includes(keyword);
-    return matchName || matchPath || matchMethod;
+    return matchName || matchPath;
   });
 });
 
@@ -501,11 +506,7 @@ defineExpose({
 
     .main {
       color: #4d4f56;
-      padding: 28px 40px;
-    }
-
-    .footer {
-      padding: 8px 40px 24px;
+      padding: 28px 40px 0;
     }
   }
 }
@@ -558,7 +559,7 @@ defineExpose({
 
   .result-preview {
     width: 275px;
-    height: 653px;
+    max-height: 653px;
     background: #f5f7fa;
     padding: 16px;
     display: flex;

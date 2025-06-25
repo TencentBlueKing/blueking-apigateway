@@ -504,14 +504,14 @@ $code-color: #63656e;
 
   .main-content-wrap {
     height: calc(100vh - 354px);
-    overflow-y: scroll;
+    overflow-y: auto;
+    background-color: #fff;
 
     .tool-name,
     .tool-basics,
     .tool-detail-content {
       padding: 24px;
       background-color: #fff;
-      box-shadow: 0 2px 4px 0 #1919290d;
       border-radius: 2px;
     }
 
