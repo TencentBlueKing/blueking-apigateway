@@ -78,8 +78,6 @@ class ResourceIDValidator(GetGatewayFromContextMixin):
 
         assert isinstance(resource_ids, list)
 
-        from apigateway.core.models import Resource
-
         count = Resource.objects.filter(gateway_id=gateway.id, id__in=resource_ids).count()
         if count != len(set(resource_ids)):
             raise serializers.ValidationError(

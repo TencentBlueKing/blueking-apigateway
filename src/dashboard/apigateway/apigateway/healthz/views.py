@@ -73,7 +73,7 @@ class HealthzView(View):
             raise CheckError(f"These django settings should not be empty: {', '.join(empty_keys)}")
 
     def _check_database(self):
-        from apigateway.core.models import Gateway
+        from apigateway.core.models import Gateway  # noqa
 
         try:
             Gateway.objects.exists()

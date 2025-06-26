@@ -83,7 +83,7 @@ def pytest_sessionstart(session):
     # Error:
     #   Add 'bkcore' to pytest_django.fixtures._django_db_helper.<locals>.PytestDjangoTestCase.databases
     #   to ensure proper test isolation and silence this failure
-    from django.test import TestCase
+    from django.test import TestCase  # noqa
 
     TestCase.multi_db = True
     TestCase.databases = "__all__"

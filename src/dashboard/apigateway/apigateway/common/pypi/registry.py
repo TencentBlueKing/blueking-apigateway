@@ -40,7 +40,7 @@ class SimplePypiRegistry:
             return
 
         for p in page.packages:
-            if p.yanked and not include_yanked:
+            if p.is_yanked and not include_yanked:
                 continue
 
             if not p.version:

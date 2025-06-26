@@ -149,13 +149,13 @@ class BKAppInstrumentor(BaseInstrumentor):
         # print("otel instructment: django")
 
         if getattr(settings, "OTEL_INSTRUMENT_REDIS", False):
-            from opentelemetry.instrumentation.redis import RedisInstrumentor
+            from opentelemetry.instrumentation.redis import RedisInstrumentor  # noqa
 
             RedisInstrumentor().instrument()
             print("otel instructment: redis")
 
         if getattr(settings, "OTEL_INSTRUMENT_CELERY", False):
-            from opentelemetry.instrumentation.celery import CeleryInstrumentor
+            from opentelemetry.instrumentation.celery import CeleryInstrumentor  # noqa
 
             CeleryInstrumentor().instrument()
             print("otel instructment: celery")
