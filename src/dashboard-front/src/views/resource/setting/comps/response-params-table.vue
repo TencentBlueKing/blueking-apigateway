@@ -16,7 +16,7 @@
               <bk-input
                 v-model="localCode"
                 :placeholder="t('请输入状态码')"
-                @blur="handleCodeInputDone"
+                @blur="handleCodeInputBlur"
                 @enter="handleCodeInputDone"
               />
             </div>
@@ -68,7 +68,7 @@
                       v-model="row.type"
                       :clearable="false"
                       :filterable="false"
-                      @change="() => handleTypeChange(row)"
+                      @change="handleTypeChange"
                     >
                       <bk-option
                         v-for="item in typeList"
@@ -225,19 +225,22 @@ watch(() => response, () => {
   if (response) {
     tableData.value = [];
     const { body } = response;
-    const { type } = body.content['application/json'].schema;
     const row = {
       id: _.uniqueId(),
       name: t('根节点'),
       type: 'object' as JSONSchema7TypeName,
       description: body.description ?? '',
     };
-    if (type === 'object') {
-      const rowProperties = convertSchemaToBodyRow(body?.content?.['application/json']?.schema);
-      if (rowProperties) {
-        Object.assign(row, {
-          properties: rowProperties,
-        });
+    // 响应没有响应体的情况（不会有 content 字段）
+    if (body.content?.['application/json']?.schema) {
+      const { type } = body.content['application/json'].schema;
+      if (type === 'object') {
+        const rowProperties = convertSchemaToBodyRow(body?.content?.['application/json']?.schema);
+        if (rowProperties) {
+          Object.assign(row, {
+            properties: rowProperties,
+          });
+        }
       }
     }
     tableData.value.push(row);
@@ -284,13 +287,18 @@ const genBody = () => {
   const bodyRow = tableData.value[0];
   const requestBody = {
     description: bodyRow.description,
-    content: {
-      'application/json': {},
-    },
   };
-  const schema: JSONSchema7 = {};
-  Object.assign(schema, genSchema(bodyRow));
-  Object.assign(requestBody.content['application/json'], { schema });
+  if (bodyRow.properties?.length) {
+    const schema: JSONSchema7 = {};
+    Object.assign(schema, genSchema(bodyRow));
+    Object.assign(requestBody, {
+      content: {
+        'application/json': {
+          schema,
+        },
+      },
+    });
+  }
   return requestBody;
 };
 
@@ -326,14 +334,13 @@ const handleEditCode = () => {
   isEditingCode.value = true;
 };
 
+const handleCodeInputBlur = () => {
+  isEditingCode.value = false;
+  localCode.value = response.code;
+};
+
 const handleCodeInputDone = () => {
-  const code = Number(localCode.value);
-  if (
-    Number.isNaN(code)
-    || !Number.isInteger(code)
-    || code < 100
-    || code > 599
-  ) {
+  if (!localCode.value) {
     Message({
       theme: 'warning',
       message: t('请输入合法的状态码'),
