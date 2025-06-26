@@ -95,13 +95,13 @@
     <template v-if="user.featureFlags?.ENABLE_RUN_DATA_METRICS">
       <div class="divider"></div>
       <div class="card-chart" @click.stop="handleChartClick">
-        <div :class="{ 'empty-state': status === 'unreleased' }" class="request-counter">
+        <div :class="{ 'empty-state': stage.status === 0 }" class="request-counter">
           <div class="label">{{ t('总请求数') }}</div>
-          <div class="value">{{ status === 'unreleased' ? t('尚未发布，无数据') : requestCount }}
+          <div class="value">{{ stage.status === 0 ? t('尚未发布，无数据') : requestCount }}
           </div>
         </div>
         <div class="item-chart-wrapper">
-          <StageCardLineChart v-if="status !== 'unreleased'" :data="data" :mount-id="uniqueId()" />
+          <StageCardLineChart v-if="stage.status === 1" :data="data" :mount-id="uniqueId()" />
         </div>
       </div>
     </template>
@@ -366,10 +366,12 @@ const handleChartClick = () => {
 };
 
 onBeforeMount(async () => {
-  await Promise.all([
-    getRequestCount(),
-    getRequestTrend(),
-  ]);
+  if (props.stage.status === 1) {
+    await Promise.all([
+      getRequestCount(),
+      getRequestTrend(),
+    ]);
+  }
 });
 
 </script>
