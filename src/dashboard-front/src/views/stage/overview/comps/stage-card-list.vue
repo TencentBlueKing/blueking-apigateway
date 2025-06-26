@@ -168,6 +168,7 @@ const fetchStageList = async () => {
   stageStore.setStageList(_stageList);
   isLoading.value = false;
 
+  // 所有环境都不是 doing 或 pending 状态时，暂停轮询
   if (stageList.value.every((stage) => {
     let _status = '';
     if (stage.paasInfo?.latest_deployment?.status) {
@@ -266,6 +267,7 @@ const handleStageUnlist = async (id: number) => {
       // 获取网关列表
       await mitt.emit('get-environment-list-data', true);
       await fetchStageList();
+      startPollingStages();
     },
   });
 };
