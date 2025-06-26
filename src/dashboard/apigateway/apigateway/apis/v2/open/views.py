@@ -32,7 +32,10 @@ from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
+from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
+from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.responses import OKJsonResponse
@@ -151,10 +154,21 @@ class GatewayAppPermissionApplyAPI(generics.CreateAPIView):
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
+        app_code = data["target_app_code"]
+
+        # 全租户网关，谁都可以申请，单租户网关，只能本租户应用/全租户应用申请
+        if settings.ENABLE_MULTI_TENANT_MODE and request.gateway.tenant_mode != TenantModeEnum.GLOBAL.value:
+            gateway_tenant_id = request.gateway.tenant_id
+            app_tenant_mode, app_tenant_id = get_app_tenant_info(app_code)
+            if app_tenant_mode != TenantModeEnum.GLOBAL.value and app_tenant_id != gateway_tenant_id:
+                raise error_codes.NO_PERMISSION.format(
+                    f"app_code={app_code} is belongs to tenant {app_tenant_id}, should not apply the gateway of tenant {gateway_tenant_id}",
+                    replace=True,
+                )
 
         manager = PermissionDimensionManager.get_manager(data["grant_dimension"])
         record = manager.create_apply_record(
-            data["target_app_code"],
+            app_code,
             request.gateway,
             data.get("resource_ids") or [],
             data["grant_dimension"],
