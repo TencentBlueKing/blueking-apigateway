@@ -1099,6 +1099,7 @@ const lang: ILANG = {
   '导入资源配置': ['Import resource configuration'],
   '导入资源文档': ['Import resource documents'],
   '请输入用户': ['Please input username'],
+  '请选择用户': ['Please select user'],
   '最近5分钟': ['Last 5 minutes'],
   '最近1小时': ['Last 1 hour'],
   '最近6小时': ['Last 6 hours'],
