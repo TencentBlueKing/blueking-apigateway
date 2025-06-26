@@ -106,7 +106,7 @@
                     <template v-if="selections.length">
                       <div v-for="(name, index) in selections" :key="index" class="list-main">
                         <div class="list-item">
-                          <span class="name" @click="() => handleToolPreviewNameClick(name)">
+                          <span class="name">
                             {{ name }}
                           </span>
                           <AgIcon
@@ -451,7 +451,9 @@ const handleRefreshClick = async () => {
     { stage_id: stage.value.id },
   );
   resourceList.value = response?.resources || [];
-  selections.value = [];
+  selections.value = selections.value.filter(selectedResourceName =>
+    resourceList.value.some(resource => resource.name === selectedResourceName),
+  );
   pagination.value = {
     offset: 0,
     limit: 10,
@@ -465,14 +467,11 @@ const handleStageSelectChange = () => {
 };
 
 const handleToolNameClick = (row: { id: number }) => {
-  router.push({ name: 'apigwResourceEdit', params: { id: common.curApigwData.id, resourceId: row.id } });
-};
-
-const handleToolPreviewNameClick = (name: string) => {
-  const resource = resourceList.value.find((resource) => resource.name === name);
-  if (resource) {
-    handleToolNameClick({ id: resource.id });
-  }
+  const routeData = router.resolve({
+    name: 'apigwResourceEdit',
+    params: { id: common.curApigwData.id, resourceId: row.id },
+  });
+  window.open(routeData.href, '_blank');
 };
 
 const handleCancel = () => {
@@ -602,7 +601,6 @@ defineExpose({
         align-items: center;
         height: 32px;
         padding: 6px 10px;
-        cursor: pointer;
         background: #fff;
         border-radius: 2px;
         box-shadow: 0 1px 2px 0 #0000001f;
@@ -612,11 +610,11 @@ defineExpose({
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          color: #3a84ff;
         }
 
         .delete-icon {
           color: #c4c6cc;
+          cursor: pointer;
 
           &:hover {
             color: #3a84ff;
