@@ -535,6 +535,10 @@ class BaseExporter:
             # remove openapi version
             if "version" in schema:
                 del schema["version"]
+            # remove none_schema flag, 这个字段属于非openapi标准字段，不移除会导致生成文档有一次以及导出的yaml不合法
+            # todo：后续可以将这个字段添加到网关扩展字段里面才行
+            if "none_schema" in schema:
+                del schema["none_schema"]
 
             operation.update(schema)
 
