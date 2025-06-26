@@ -51,7 +51,7 @@ from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceV
 from apigateway.biz.sdk import exceptions
 from apigateway.biz.sdk.helper import SDKHelper
 from apigateway.common.error_codes import error_codes
-from apigateway.components.bkauth import list_all_apps_of_tenant
+from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.models import Gateway, Resource, ResourceVersion, Stage
 from apigateway.utils.django import get_model_dict, get_object_or_None
 from apigateway.utils.exception import LockTimeout
@@ -316,13 +316,12 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
 
         if settings.ENABLE_MULTI_TENANT_MODE:
             # check if all the target_app_codes are in the same tenant
-            apps_of_tenant = list_all_apps_of_tenant(request.gateway.tenant_mode, request.gateway.tenant_id)
-            app_codes_of_tenant = {app["bk_app_code"] for app in apps_of_tenant}
             for app_code in input_app_codes:
-                if app_code not in app_codes_of_tenant:
+                _, app_tenant_id = get_app_tenant_info(app_code)
+                if app_tenant_id != request.gateway.tenant_id:
                     raise ValidationError(
                         {
-                            "input_app_codes": f"app_code {app_code} not belong to the tenant {request.gateway.tenant_id}"
+                            "target_app_codes": f"app_code {app_code} not belong to the tenant {request.gateway.tenant_id}"
                         }
                     )
 

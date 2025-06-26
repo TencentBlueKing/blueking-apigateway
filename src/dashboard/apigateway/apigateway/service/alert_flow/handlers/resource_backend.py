@@ -132,7 +132,9 @@ class ResourceBackendAlerter(Alerter):
         return list(receivers)
 
     def get_tenant_id(self, event: MonitorEvent):
-        return get_tenant_id_for_gateway_maintainers(event.extend["gateway"].tenant_id)
+        return get_tenant_id_for_gateway_maintainers(
+            event.extend["gateway"].tenant_mode, event.extend["gateway"].tenant_id
+        )
 
     def get_message(self, event: MonitorEvent):
         log_records = event.extend["log_records"]

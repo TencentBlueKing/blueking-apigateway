@@ -26,9 +26,8 @@ from django.conf import settings
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import (
     TENANT_ID_OPERATION,
-    TenantModeEnum,
 )
-from apigateway.common.tenant.request import gen_tenant_header
+from apigateway.common.tenant.request import gen_tenant_header, get_tenant_id_for_gateway_maintainers
 from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.utils.local import local
 from apigateway.utils.url import url_join
@@ -116,9 +115,21 @@ def _get_app_with_cache(tenant_id: str, app_code: str) -> Optional[Dict[str, Any
     return _get_app_no_cache(tenant_id, app_code)
 
 
-def is_app_code_occupied(tenant_id: str, app_code: str) -> bool:
-    app = _get_app_no_cache(tenant_id, app_code)
+def is_app_code_occupied(gateway_tenant_mode: str, gateway_tenant_id: str, app_code: str) -> bool:
+    owner_tenant_id = get_tenant_id_for_gateway_maintainers(gateway_tenant_mode, gateway_tenant_id)
+    app = _get_app_no_cache(owner_tenant_id, app_code)
     return app is not None
+
+
+def get_tenant_id_for_app_developers(bk_app_code: str) -> str:
+    _, tenant_id = bkauth_get_app_tenant_info(bk_app_code)
+
+    # if the tenant_id is empty, it means the app is a global app
+    # so the cmsi use could only be the `system`
+    # equals to, while the tenant_id is empty if the app is a global app
+    # if tenant_mode == TenantModeEnum.GLOBAL.value:
+    #     tenant_id = TENANT_ID_OPERATION
+    return tenant_id or TENANT_ID_OPERATION
 
 
 def get_app_maintainers(bk_app_code: str) -> List[str]:
@@ -126,14 +137,9 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
     # NOTE: here we need to get maintainers from paasv3
     #       but the X-Bk-Tenant-Id required
     #       so, we query it from bkauth first
-    tenant_mode, tenant_id = bkauth_get_app_tenant_info(bk_app_code)
+    tenant_id = get_tenant_id_for_app_developers(bk_app_code)
 
-    # 全租户应用，使用 tenant_id = system 去查询应用信息
-    if tenant_mode == TenantModeEnum.GLOBAL.value:
-        app = _get_app_with_cache(TENANT_ID_OPERATION, bk_app_code)
-    else:
-        app = _get_app_with_cache(tenant_id, bk_app_code)
-
+    app = _get_app_with_cache(tenant_id, bk_app_code)
     if not app:
         return []
 
@@ -144,14 +150,6 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
         return [app["creator"]]
 
     return []
-
-
-def get_tenant_id_for_app_developers(bk_app_code: str) -> str:
-    tenant_mode, tenant_id = bkauth_get_app_tenant_info(bk_app_code)
-
-    # if the tenant_id is empty, it means the app is a global app
-    # so the cmsi use could only be the `system`
-    return tenant_id or TENANT_ID_OPERATION
 
 
 def create_paas_app(
