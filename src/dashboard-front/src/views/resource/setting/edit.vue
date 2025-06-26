@@ -156,7 +156,9 @@ const init = async () => {
 
 const getResourceDetails = async () => {
   const res = await getResourceDetailData(apigwId, resourceId.value);
-  if (res.schema?.parameters?.length || Object.keys(res.schema?.request_body || {}).length) {
+  if (res.schema?.none_schema) {
+    hasNoRequestParams.value = true;
+  } else if (res.schema?.parameters?.length || Object.keys(res.schema?.requestBody || {}).length) {
     hasNoRequestParams.value = false;
     // activeIndex.value.push('requestParams');
   }
@@ -196,7 +198,7 @@ const handleSubmit = async () => {
 
   const baseFormData = baseInfoRef.value.formData;
   const frontFormData = frontConfigRef.value.frontConfigData;
-  const requestParamsData = requestParamsRef.value.getValue();
+  const requestParamsData = hasNoRequestParams.value ? {} : requestParamsRef.value.getValue();
   const backFormData = backConfigRef.value.backConfigData;
   const responseParamsData = responseParamsRef.value.getValue();
 
