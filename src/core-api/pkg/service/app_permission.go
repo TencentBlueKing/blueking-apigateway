@@ -152,7 +152,12 @@ func (s *appPermissionService) Query(
 		return permissions, nil
 	}
 	// 2.2 query app-resource permission
-	resourcePermissionExpiredAt, err := cacheimpls.GetAppResourcePermissionExpiredAt(ctx, appCode, gatewayID, resourceID)
+	resourcePermissionExpiredAt, err := cacheimpls.GetAppResourcePermissionExpiredAt(
+		ctx,
+		appCode,
+		gatewayID,
+		resourceID,
+	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"call GetAppResourcePermissionExpiredAt fail: %w, appCode=%s, gatewayID=%d, resourceID=%d",
