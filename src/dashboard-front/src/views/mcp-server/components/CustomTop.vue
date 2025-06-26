@@ -91,7 +91,7 @@ const handleBack = () => {
       color: #3A84FF;
       cursor: pointer;
       span {
-        font-size: 12px;
+        font-size: 14px;
       }
     }
   }

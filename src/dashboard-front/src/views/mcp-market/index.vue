@@ -38,7 +38,7 @@
               <div class="label">{{ t('访问地址') }}：</div>
               <div class="value flex-row align-items-center">
                 <bk-overflow-title style="width: calc(100% - 14px)">{{ item.url }}</bk-overflow-title>
-                <ag-icon name="copy" size="14" class="icon" @click="handleCopy(item.url)" />
+                <ag-icon name="copy" size="14" class="icon" @click.stop="handleCopy(item.url)" />
               </div>
             </div>
             <div class="info-item">
