@@ -1928,6 +1928,7 @@ const lang: ILANG = {
   '请求配置': ['Request Config'],
   '请输入状态码': ['Input status code'],
   '是否配置请求参数声明': ['Has request params'],
+  '没有可用的环境': ['No available Stages'],
 
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
