@@ -302,8 +302,8 @@ class NextResourceVersionRetrieveApi(generics.RetrieveAPIView):
         ),
     )
     def get(self, request, *args, **kwargs):
-        query_set = ResourceVersion.objects.filter(gateway=request.gateway).order_by("-id")
-        obj = query_set.first()
+        queryset = ResourceVersion.objects.filter(gateway=request.gateway).order_by("-id")
+        obj = queryset.first()
         if obj:
             new_version_str = get_next_version(obj.version)
             return OKJsonResponse(
@@ -329,12 +329,12 @@ class NextProgramGatewayResourceVersionRetrieveApi(generics.RetrieveAPIView):
         slz.is_valid(raise_exception=True)
         stage_name = slz.validated_data["stage_name"]
         version_type = slz.validated_data["version_type"]
-        query_set = ProgrammableGatewayDeployHistory.objects.filter(
+        queryset = ProgrammableGatewayDeployHistory.objects.filter(
             gateway=request.gateway,
             stage_name=stage_name,
             source=PublishSourceEnum.VERSION_PUBLISH.value,
         ).order_by("-id")
-        obj = query_set.first()
+        obj = queryset.first()
         if obj:
             new_version_str = get_nex_version_with_type(obj.version, version_type)
             return OKJsonResponse(
