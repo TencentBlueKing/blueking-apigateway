@@ -38,7 +38,16 @@ import AgIcon from '@/components/ag-icon.vue';
 interface IProp {
   detail?: {
     schema: {
-      responses?: ResponseType,
+      responses?: {
+        [key: string]: {
+          description: string,
+          content?: {
+            'application/json': {
+              schema: JSONSchema7,
+            }
+          },
+        }
+      },
     };
   },
 }
@@ -48,7 +57,7 @@ interface IResponse {
   code: string,
   body: {
     description: string,
-    content: {
+    content?: {
       'application/json': {
         schema: JSONSchema7,
       }
