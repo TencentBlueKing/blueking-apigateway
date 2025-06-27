@@ -43,9 +43,9 @@
                 <tr class="table-head-row">
                   <th class="table-head-row-cell arrow-col"></th>
                   <th class="table-head-row-cell name-col">{{ t('参数名') }}</th>
-                  <th class="table-head-row-cell">{{ t('参数类型') }}</th>
-                  <th class="table-head-row-cell">{{ t('备注') }}</th>
-                  <th class="table-head-row-cell"></th>
+                  <th class="table-head-row-cell type-col">{{ t('类型') }}</th>
+                  <th class="table-head-row-cell description-col">{{ t('备注') }}</th>
+                  <th class="table-head-row-cell actions-col">{{ t('操作') }}</th>
                 </tr>
               </thead>
               <tbody class="table-body">
@@ -63,7 +63,7 @@
                     <bk-input v-model="row.name" :placeholder="t('字段名')" disabled />
                   </td>
                   <!-- 字段类型 -->
-                  <td class="table-body-row-cell type">
+                  <td class="table-body-row-cell type-col">
                     <bk-select
                       v-model="row.type"
                       :clearable="false"
@@ -79,11 +79,11 @@
                     </bk-select>
                   </td>
                   <!-- 字段备注 -->
-                  <td class="table-body-row-cell description">
+                  <td class="table-body-row-cell description-col">
                     <bk-input v-model="row.description" :placeholder="t('备注')" />
                   </td>
                   <!-- 字段操作 -->
-                  <td class="table-body-row-cell actions">
+                  <td class="table-body-row-cell actions-col">
                     <AgIcon
                       v-if="row.type === 'object'"
                       v-bk-tooltips="t('添加字段')"
@@ -150,10 +150,10 @@ interface IResponse {
   code: string,
   body: {
     description: string,
-    content: {
+    content?: {
       'application/json': {
         schema: JSONSchema7,
-      }
+      },
     },
   },
 }
@@ -436,49 +436,59 @@ defineExpose({
   border-collapse: collapse;
   border: 1px solid #dcdee5;
   border-spacing: 0;
+  width: 100%;
 
   .table-head-row-cell,
   .table-body-row-cell {
-    border: 1px solid #dcdee5;
     height: 42px;
     font-size: 12px;
 
     &.arrow-col {
-      border-right: none;
+      width: 32px;
 
       .expand-icon.expanded {
         transform: rotate(90deg);
       }
     }
 
+    &.type-col {
+      width: 160px;
+    }
+
     &.name-col {
       border-left: none;
+    }
+
+    &.description-col {
+      width: 300px;
+    }
+
+    &.actions-col {
+      width: 110px;
     }
   }
 
   .table-head-row-cell {
-    background-color: #f0f1f5;
+    border-bottom: 1px solid #dcdee5;
+    background-color: #fafbfd;
     padding-left: 16px;
+    font-weight: normal;
+    color: #313238;
+
+    &:hover {
+      background-color: #f0f1f5;
+    }
   }
 
   .table-body {
     .table-body-row {
       .table-body-row-cell {
 
-        &:first-child {
-          width: 32px;
+        &.arrow-col {
           text-align: center;
         }
 
-        &.type {
-          width: 100px;
-        }
-
-        &.description {
-          width: 120px;
-        }
-
-        &.actions {
+        &.actions-col {
           width: 110px;
           padding-left: 16px;
         }
@@ -491,8 +501,34 @@ defineExpose({
           border: none;
         }
 
-        :deep(.bk-input):hover {
-          border: 1px solid #a3c5fd;
+        // 输入框和 placeholder 样式
+        :deep(.bk-input) {
+          &:hover {
+            border: 1px solid #a3c5fd;
+          }
+
+          &.is-disabled {
+            background-color: #fff;
+
+            &:hover {
+              border: none;
+            }
+          }
+
+          &.is-focused:not(.is-readonly) {
+            border: 1px solid #a3c5fd;
+            box-shadow: none;
+          }
+
+          .bk-input--text {
+            background-color: #fff;
+            font-size: 12px !important;
+            padding-inline: 16px;
+
+            &::placeholder {
+              font-size: 12px !important;
+            }
+          }
         }
 
         .tb-btn {

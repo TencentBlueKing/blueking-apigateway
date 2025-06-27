@@ -9,155 +9,86 @@
       :cell-class="getCellClass"
       :data="tableData"
       :border="['outer', 'row']"
-      class="variable-table"
+      class="request-params-table"
       row-hover="auto"
       @vue:mounted="handleTableMounted"
     >
       <bk-table-column :label="t('参数名')" prop="name">
-        <template #default="{ row, column, index }">
-          <bk-form :ref="(el: HTMLElement | null) => setRefs(el, 'name-', index)" :model="row" label-width="0">
-            <bk-form-item
-              class="table-form-item"
-              error-display-type="tooltips"
-              property="name"
-            >
-              <bk-input
-                :ref="(el: HTMLElement | null) => setInputRefs(el, `name-input-`, index, column?.index)"
-                v-model="row.name"
-                :clearable="false"
-                class="edit-input"
-                :disabled="row.in === 'body'"
-              />
-            </bk-form-item>
-          </bk-form>
+        <template #default="{ row }">
+          <bk-input
+            v-model="row.name"
+            :clearable="false"
+            :disabled="row.in === 'body'"
+            :placeholder="t('参数名')"
+            class="edit-input"
+          />
         </template>
       </bk-table-column>
       <bk-table-column :label="t('位置')" prop="in" width="100">
-        <template #default="{ row, column, index }">
-          <bk-form
-            :ref="(el: HTMLElement | null) => setRefs(el, 'in-', index)"
-            :model="row"
-            label-width="0"
+        <template #default="{ row }">
+          <bk-select
+            v-model="row.in"
+            :clearable="false"
+            :filterable="false"
+            :placeholder="t('位置')"
+            class="edit-select"
+            @change="() => handleInChange(row)"
           >
-            <bk-form-item
-              class="table-form-item"
-              error-display-type="tooltips"
-              property="in"
-            >
-              <bk-select
-                :ref="(el: HTMLElement | null) => setInputRefs(el, 'in-input-', index, column?.index)"
-                v-model="row.in"
-                :clearable="false"
-                :filterable="false"
-                class="edit-select"
-                @change="() => handleInChange(row)"
-              >
-                <bk-option
-                  v-for="item in inList"
-                  :id="item.value"
-                  :key="item.value"
-                  :name="item.label"
-                  :disabled="tableData.find((dataRow) => dataRow.in === 'body') && item.value === 'body'"
-                />
-              </bk-select>
-            </bk-form-item>
-          </bk-form>
+            <bk-option
+              v-for="item in inList"
+              :id="item.value"
+              :key="item.value"
+              :disabled="tableData.find((dataRow) => dataRow.in === 'body') && item.value === 'body'"
+              :name="item.label"
+            />
+          </bk-select>
         </template>
       </bk-table-column>
       <bk-table-column :label="t('类型')" prop="type" width="100">
-        <template #default="{ row, column, index }">
-          <bk-form
-            :ref="(el: HTMLElement | null) => setRefs(el, 'type-', index)"
-            :model="row"
-            label-width="0"
+        <template #default="{ row }">
+          <bk-select
+            v-model="row.type"
+            :clearable="false"
+            :filterable="false"
+            class="edit-select"
           >
-            <bk-form-item
-              class="table-form-item"
-              error-display-type="tooltips"
-              property="type"
-            >
-              <bk-select
-                :ref="(el: HTMLElement | null) => setInputRefs(el, 'type-input-', index, column?.index)"
-                v-model="row.type"
-                :clearable="false"
-                :filterable="false"
-                class="edit-select"
-              >
-                <bk-option
-                  v-for="item in typeList"
-                  :id="item.value"
-                  :key="item.value"
-                  :name="item.label"
-                />
-              </bk-select>
-            </bk-form-item>
-          </bk-form>
+            <bk-option
+              v-for="item in typeList"
+              :id="item.value"
+              :key="item.value"
+              :disabled="row.in !== 'body' && item.value === 'object'"
+              :name="item.label"
+            />
+          </bk-select>
         </template>
       </bk-table-column>
       <bk-table-column :label="t('必填')" prop="required" width="100">
-        <template #default="{ row, column, index }">
-          <bk-form
-            :ref="(el: HTMLElement | null) => setRefs(el, 'required-', index)"
-            :model="row"
-            label-width="0"
-          >
-            <bk-form-item
-              class="table-form-item"
-              error-display-type="tooltips"
-              property="required"
-            >
-              <BkSwitcher
-                :ref="(el: HTMLElement | null) => setInputRefs(el, 'required-input-', index, column?.index)"
-                v-model="row.required"
-                style="margin-left: 16px;"
-                theme="primary"
-              />
-            </bk-form-item>
-          </bk-form>
+        <template #default="{ row }">
+          <BkSwitcher
+            v-model="row.required"
+            style="margin-left: 16px;"
+            theme="primary"
+          />
         </template>
       </bk-table-column>
-      <bk-table-column :label="t('默认值')" prop="default">
-        <template #default="{ row, column, index }">
-          <bk-form
-            :ref="(el: HTMLElement | null) => setRefs(el, `default-`, index)"
-            :model="row"
-            label-width="0"
-          >
-            <bk-form-item
-              class="table-form-item"
-              error-display-type="tooltips"
-              property="default"
-            >
-              <bk-input
-                :ref="(el: HTMLElement | null) => setInputRefs(el, 'default-input-', index, column?.index)"
-                v-model="row.default"
-                :clearable="false"
-                class="edit-input"
-              />
-            </bk-form-item>
-          </bk-form>
+      <bk-table-column :label="t('默认值')" prop="default" width="300">
+        <template #default="{ row }">
+          <bk-input
+            v-model="row.default"
+            :clearable="false"
+            :placeholder="t('默认值')"
+            class="edit-input"
+          />
         </template>
       </bk-table-column>
-      <bk-table-column :label="t('备注')" prop="description">
-        <template #default="{ row, column, index }">
-          <bk-form
-            :ref="(el: HTMLElement | null) => setRefs(el, 'description-', index)"
-            :model="row"
-            label-width="0"
-          >
-            <bk-form-item
-              class="table-form-item"
-              error-display-type="tooltips"
-              property="description"
-            >
-              <bk-input
-                :ref="(el: HTMLElement | null) => setInputRefs(el, 'description-input-', index, column?.index)"
-                v-model="row.description"
-                :clearable="false"
-                class="edit-input"
-              />
-            </bk-form-item>
-          </bk-form>
+      <bk-table-column :label="t('备注')" prop="description" width="300">
+        <template #default="{ row }">
+          <bk-input
+            v-model="row.description"
+            :clearable="false"
+            :placeholder="t('备注')"
+            class="edit-input"
+          />
         </template>
       </bk-table-column>
       <bk-table-column :label="t('操作')" fixed="right" width="110">
@@ -265,19 +196,6 @@ const { detail } = defineProps<IProp>();
 
 const { t } = useI18n();
 const tableRef = ref();
-const formRefs = ref(new Map());
-const setRefs = (el: HTMLElement | null, prefix: string, index: number) => {
-  if (el && index !== undefined) {
-    formRefs.value?.set(`${prefix}${index}`, el);
-  }
-};
-
-const formInputRef = ref(new Map());
-const setInputRefs = (el: HTMLElement | null, prefix: string, index: number, columnIndex: number) => {
-  if (el && index !== undefined && columnIndex !== undefined) {
-    formInputRef.value?.set(`${prefix}${index}-${columnIndex}`, el);
-  }
-};
 
 const tableData = ref<ITableRow[]>([
   {
@@ -440,8 +358,6 @@ const handleInChange = (row: ITableRow) => {
     } else {
       _row.body = [genBodyRow()];
     }
-  } else {
-    _row.name = '';
   }
   nextTick(() => {
     tableRef.value?.setAllRowExpand(true);
@@ -589,9 +505,10 @@ defineExpose({
 .edit-input.bk-input {
   border: none;
   height: 100%;
+  font-size: 12px;
 
   &.is-focused:not(.is-readonly) {
-    border: 1px solid #3a84ff;
+    border: 1px solid #a3c5fd;
     box-shadow: none;
   }
 
@@ -636,13 +553,9 @@ defineExpose({
   }
 }
 
-.variable-table {
+.request-params-table {
   .td-text {
     padding: 0 16px;
-  }
-
-  :deep(.bk-form-error-tips) {
-    transform: translate(-50%, 4px);
   }
 
   :deep(.bk-table-body-content) {
@@ -653,71 +566,25 @@ defineExpose({
         &:hover {
           cursor: pointer;
         }
+      }
+    }
 
-        .bk-form {
-          line-height: 42px;
-          margin-bottom: -1px;
-
-          .table-form-item {
-            margin-bottom: 0;
-
-            .bk-form-content {
-              line-height: 42px;
-
-              .bk-input {
-                height: 42px;
-                line-height: 42px;
-                border: 0;
-
-                &--text {
-                  padding: 0 16px;
-                }
-              }
-
-              .edit-input.bk-input {
-                border-radius: 0;
-
-                &:hover {
-                  border: 1px solid #a3c5fd;
-                }
-
-                &.is-focused {
-                  border: 1px solid #3a84ff;
-                }
-              }
-
-              .bk-select {
-                &:hover {
-                  .bk-input {
-                    border: 1px solid #a3c5fd;
-                  }
-                }
-
-                &.is-focus {
-                  .bk-input {
-                    border: 1px solid #3a84ff;
-                  }
-                }
-              }
-            }
-
-            &.is-error {
-              .bk-form-content {
-                .bk-input--text {
-                  background: #fee;
-                }
-              }
-            }
-          }
-        }
+    // 展开行样式
+    .row_expend {
+      td {
+        border-right: none;
       }
     }
   }
+}
 
-  .custom-table-cell {
-    .cell {
-      padding: 0;
-    }
+// 输入框和 placeholder 样式
+:deep(.bk-input--text) {
+  font-size: 12px !important;
+  padding-inline: 16px;
+
+  &::placeholder {
+    font-size: 12px !important;
   }
 }
 

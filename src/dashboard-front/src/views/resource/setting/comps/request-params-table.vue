@@ -29,19 +29,16 @@
           <td class="table-body-row-cell required">
             <BkSwitcher
               v-model="row.required"
-              :off-text="t('必填')"
-              :on-text="t('必填')"
-              show-text
-              size="small"
               theme="primary"
+              style="margin-left: 16px;"
             />
           </td>
           <!-- 字段默认值 -->
-          <td class="table-body-row-cell">
+          <td class="table-body-row-cell default">
             <bk-input v-model="row.default" :placeholder="t('默认值')" />
           </td>
           <!-- 字段备注 -->
-          <td class="table-body-row-cell">
+          <td class="table-body-row-cell description">
             <bk-input v-model="row.description" :placeholder="t('备注')" />
           </td>
           <!-- 字段操作 -->
@@ -172,6 +169,14 @@ const removeField = (row: IBodyRow) => {
           width: 100px;
         }
 
+        &.default {
+          width: 300px;
+        }
+
+        &.description {
+          width: 300px;
+        }
+
         &.actions {
           width: 110px;
           padding-left: 16px;
@@ -187,6 +192,11 @@ const removeField = (row: IBodyRow) => {
 
         :deep(.bk-input):hover {
           border: 1px solid #a3c5fd;
+        }
+
+        :deep(.bk-input.is-focused:not(.is-readonly)) {
+          border: 1px solid #a3c5fd;
+          box-shadow: none;
         }
 
         .tb-btn {

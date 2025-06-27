@@ -1,6 +1,6 @@
 <template>
   <div>
-    <table v-for="row in tableData" :key="row.id" class="response-table">
+    <table v-for="row in tableData" :key="row.id" class="response-params-sub-table">
       <tbody class="table-body">
         <tr class="table-body-row">
           <td class="table-body-row-cell arrow-col">
@@ -152,38 +152,33 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 
-.response-table {
+.response-params-sub-table {
   border-collapse: collapse;
   border-spacing: 0;
-
-  .table-body-row-cell {
-    height: 42px;
-    font-size: 12px;
-
-    &.arrow-col {
-      border-right: none;
-    }
-
-    &.name-col {
-      border-left: none;
-    }
-  }
+  width: 100%;
 
   .table-body {
     .table-body-row {
       .table-body-row-cell {
+        height: 42px;
+        font-size: 12px;
 
-        &:first-child {
+        &.arrow-col {
           width: 32px;
           text-align: center;
+          border-right: none;
+        }
+
+        &.name-col {
+          border-left: none;
         }
 
         &.type {
-          width: 100px;
+          width: 160px;
         }
 
         &.description {
-          width: 120px;
+          width: 300px;
         }
 
         &.actions {
@@ -199,8 +194,26 @@ onMounted(() => {
           border: none;
         }
 
-        :deep(.bk-input):hover {
-          border: 1px solid #a3c5fd;
+        // 输入框和 placeholder 样式
+        :deep(.bk-input) {
+          &:hover {
+            border: 1px solid #a3c5fd;
+          }
+
+          &.is-focused:not(.is-readonly) {
+            border: 1px solid #a3c5fd;
+            box-shadow: none;
+          }
+
+          .bk-input--text {
+            background-color: #fff;
+            font-size: 12px !important;
+            padding-inline: 16px;
+
+            &::placeholder {
+              font-size: 12px !important;
+            }
+          }
         }
 
         .tb-btn {

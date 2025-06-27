@@ -30,7 +30,7 @@
             <bk-overflow-title class="title" style="max-width: calc(100% - 115px)">
               {{ item.name }}
             </bk-overflow-title>
-            <bk-tag theme="success" class="mr8" v-if="item.is_public">{{ t('官方') }}</bk-tag>
+            <bk-tag theme="success" class="mr8" v-if="item.gateway.is_official">{{ t('官方') }}</bk-tag>
             <bk-tag theme="info">{{ item.stage?.name }}</bk-tag>
           </div>
           <div class="content">
@@ -86,7 +86,7 @@ const bannerImg = computed(() => {
 const mcpList = computed(() => {
   return mcpAllList.value.filter((item: IMarketplaceItem) => {
     if (isPublic.value) {
-      return item.is_public;
+      return item.gateway.is_official;
     }
     return true;
   });
