@@ -3,8 +3,8 @@ FORCE:
 .PHONY: init
 init:
 	pip install -U pip setuptools
-	pip install poetry==1.8.4
-	poetry install
+	pip install uv==0.7.13
+	uv sync
 	pip install pre-commit
 	pre-commit install
 	mypy --install-types
@@ -26,16 +26,16 @@ lint-check:
 
 # ====== dependencies ======
 
-poetry.lock: pyproject.toml
-	poetry lock --no-update
+uv.lock: pyproject.toml
+	uv lock
 
 .PHONY: requirements
-requirements: poetry.lock
-	poetry export -f requirements.txt --without-hashes --with dev | grep -v "index-url" > apigateway/requirements_dev.txt
-	poetry export -f requirements.txt --without-hashes | grep -v "index-url" > apigateway/requirements.txt
+requirements: uv.lock
+	uv export --format requirements-txt --no-dev --no-hashes --no-annotate -o apigateway/requirements.txt
+	uv export --format requirements-txt --no-hashes --no-annotate -o apigateway/requirements_dev.txt
 
 VERSION: pyproject.toml
-	poetry version | awk '{print $$2}' > apigateway/VERSION
+	uvx --from=toml-cli toml get --toml-path=pyproject.toml project.version > apigateway/VERSION
 
 .PHONY: update
 update: VERSION requirements

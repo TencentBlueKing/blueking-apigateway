@@ -22,6 +22,6 @@ class AccountConfig(AppConfig):
     name = "apigateway.account"
 
     def ready(self):
-        from bkpaas_auth.monkey import patch_middleware_get_user
+        from bkpaas_auth.monkey import patch_middleware_get_user  # noqa
 
         patch_middleware_get_user()

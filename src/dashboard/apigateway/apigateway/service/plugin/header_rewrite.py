@@ -96,8 +96,8 @@ class HeaderRewriteConvertor:
             }
 
             bindings = []
-            for scope_id in add_bindings:
-                plugin_name = add_bindings[scope_id].name
+            for scope_id, pc in add_bindings.items():
+                plugin_name = pc.name
                 plugin_config = plugin_configs[plugin_name]
                 bindings.append(
                     PluginBinding(

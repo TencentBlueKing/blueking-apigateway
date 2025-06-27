@@ -74,6 +74,11 @@ EDITION = env.str("EDITION", "ee")
 # 是否开启多租户模式
 ENABLE_MULTI_TENANT_MODE = env.bool("ENABLE_MULTI_TENANT_MODE", default=False)
 
+# for apigw-manager sdk and other blueking sdks
+BK_APP_TENANT_ID = ""
+if ENABLE_MULTI_TENANT_MODE:
+    BK_APP_TENANT_ID = "system"
+
 ALLOWED_HOSTS = ["*"]
 
 # Application definition

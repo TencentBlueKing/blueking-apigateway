@@ -176,7 +176,7 @@ def _trigger_revoke_publish_for_disable(
         ok, msg = _is_gateway_ok_for_releasing(release, source)
         # 上报发布配置校验事件
         if not ok:
-            logging.warning(msg)
+            logger.warning(msg)
             PublishEventReporter.report_config_validate_failure(release_history, msg)
             continue
 

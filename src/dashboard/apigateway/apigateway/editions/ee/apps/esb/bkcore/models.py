@@ -260,7 +260,7 @@ class AppPermissionApplyRecord(ModelWithBoard, TimestampedModelMixin):
                 for component_id in component_ids
             }
 
-        return {component_id: self.status for component_id in self.component_ids}
+        return dict.fromkeys(self.component_ids, self.status)
 
 
 class AppPermissionApplyStatus(ModelWithBoard, TimestampedModelMixin):
