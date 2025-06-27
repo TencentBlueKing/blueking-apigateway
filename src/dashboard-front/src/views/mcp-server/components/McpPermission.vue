@@ -240,7 +240,6 @@ const getApplicant = async () => {
   const response = await getMcpPermissionsApplicant(common.apigwId, filterData.value.mcp_server_id);
   applicantList.value = response?.applicants || [];
 };
-getApplicant();
 
 const handleTabChange = (name: string) => {
   if (name === filterData.value.state) {
@@ -369,6 +368,16 @@ watch(
     if (val) {
       filterData.value.mcp_server_id = Number(val) || 0;
       defaultMcpId.value = Number(val) || 0;
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  () => filterData.value.mcp_server_id,
+  (val) => {
+    if (val) {
+      getApplicant();
     }
   },
   { immediate: true },

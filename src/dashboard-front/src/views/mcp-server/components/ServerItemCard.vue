@@ -40,7 +40,7 @@
             {{ t('启用') }}
           </BkButton>
         </div>
-        <div class="dropdown-wrapper">
+        <div class="dropdown-wrapper" @click.stop="preventDefault">
           <BkDropdown trigger="hover">
             <AgIcon
               class="dropdown-trigger"
@@ -149,6 +149,10 @@ const handleDeleteClick = () => {
   emit('delete', server.id);
 };
 
+const preventDefault = (e: Event) => {
+  e.preventDefault();
+};
+
 </script>
 <style lang="scss" scoped>
 .card-wrapper {
@@ -158,6 +162,7 @@ const handleDeleteClick = () => {
   box-shadow: 0 2px 4px 0 #1919290d;
   border-radius: 2px;
   padding: 20px 40px;
+  cursor: pointer;
 
   .card-header {
     display: flex;
