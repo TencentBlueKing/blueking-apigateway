@@ -134,7 +134,7 @@
               property="programmable_gateway_git_info.repository"
               required
             >
-              <bk-input v-model="formData.programmable_gateway_git_info.repository" :placeholder="t('支持以下协议:http(s)://、git://')" />
+              <bk-input v-model="formData.programmable_gateway_git_info.repository" placeholder="http(s)://xxx.git" />
             </bk-form-item>
             <bk-form-item
               :label="t('账号')"
@@ -148,7 +148,9 @@
               property="programmable_gateway_git_info.password"
               required
             >
-              <bk-input v-model="formData.programmable_gateway_git_info.password" />
+              <bk-input
+                v-model="formData.programmable_gateway_git_info.password"
+                :placeholder="t('建议使用 access_token')" />
             </bk-form-item>
           </template>
 
@@ -402,10 +404,10 @@ const rules = {
     },
     {
       validator: (value: string) => {
-        const reg = /^(https?:\/\/|git:\/\/)[^\s]+$/;
+        const reg = /^https?:\/\/[^\s]+\.git$/;
         return reg.test(value);
       },
-      message: t('请输入正确的代码仓库地址，支持以下协议：http(s)://、git://'),
+      message: t('请输入正确的代码仓库地址，http(s)://xxx.git'),
       trigger: 'change',
     },
   ],

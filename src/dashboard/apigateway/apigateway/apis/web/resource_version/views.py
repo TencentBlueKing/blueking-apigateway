@@ -192,7 +192,16 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
 
         slz = ResourceVersionRetrieveOutputSLZ(instance, context=context)
 
-        return OKJsonResponse(data=slz.data)
+        data = slz.data
+        # some specific logical
+        source = self.request.query_params.get("source")
+        # sort the resources by has_openapi_schema, for mcp server to show the options of tools
+        if source == "mcp_server":
+            resources = data["resources"]
+            resources.sort(key=lambda x: x["has_openapi_schema"], reverse=True)
+            data["resources"] = resources
+
+        return OKJsonResponse(data=data)
 
 
 class ResourceVersionNeedNewVersionRetrieveApi(generics.RetrieveAPIView):

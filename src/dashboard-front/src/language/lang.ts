@@ -426,6 +426,8 @@ const lang: ILANG = {
   '账号': ['Account'],
   '密码': ['Password'],
   'Git 代码库': ['Git Code repository'],
+  '建议使用 access_token': ['Suggest using access_token'],
+  '请输入正确的代码仓库地址，http(s)://xxx.git': ['Please enter the correct code repository address, http(s)://xxx.git'],
   '自动生成版本': ['Auto-build version'],
   '请填写代码仓库地址': ['Please fill in the code repository address'],
   '支持以下协议:http(s)://、git://': ['Support the following protocols :http(s)://, git://'],
@@ -1097,6 +1099,7 @@ const lang: ILANG = {
   '导入资源配置': ['Import resource configuration'],
   '导入资源文档': ['Import resource documents'],
   '请输入用户': ['Please input username'],
+  '请选择用户': ['Please select user'],
   '最近5分钟': ['Last 5 minutes'],
   '最近1小时': ['Last 1 hour'],
   '最近6小时': ['Last 6 hours'],
@@ -1931,6 +1934,8 @@ const lang: ILANG = {
   '请输入合法的状态码': ['Please input a valid status code'],
   '请求配置': ['Request Config'],
   '请输入状态码': ['Input status code'],
+  '是否配置请求参数声明': ['Has request params'],
+  '没有可用的环境': ['No available Stages'],
 
 
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })

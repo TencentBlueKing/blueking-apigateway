@@ -211,6 +211,8 @@ class ResourceHandler:
 
         if condition.get("order_by"):
             queryset = queryset.order_by(condition["order_by"])
+        else:
+            queryset = queryset.order_by("-updated_time")
 
         return queryset
 

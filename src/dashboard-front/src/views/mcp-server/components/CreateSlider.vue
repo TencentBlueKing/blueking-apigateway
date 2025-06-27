@@ -10,12 +10,13 @@
     <template #default>
       <div class="slider-content">
         <div class="main">
+          <BkAlert v-if="noValidStage" style="margin-bottom: 24px;" theme="warning">{{ t('没有可用的环境') }}</BkAlert>
           <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
             <bk-form-item :label="t('环境')" property="stage_id" required>
               <bk-select
                 v-model="formData.stage_id"
                 :clearable="false"
-                :disabled="isEditMode"
+                :disabled="isEditMode || noValidStage"
                 @change="handleStageSelectChange"
               >
                 <bk-option
@@ -30,23 +31,24 @@
             <bk-form-item :label="t('服务名称')" property="name" required>
               <bk-input
                 v-model="formData.name"
-                :disabled="isEditMode"
-                :prefix="isEditMode ? undefined : serverNamePrefix"
+                :disabled="isEditMode || noValidStage"
+                :prefix="(isEditMode || noValidStage )? undefined : serverNamePrefix"
               />
             </bk-form-item>
             <bk-form-item :label="t('描述')" property="description">
-              <bk-input v-model="formData.description" />
+              <bk-input v-model="formData.description" :disabled="noValidStage" />
             </bk-form-item>
             <bk-form-item :label="t('标签')" property="labels">
               <bk-tag-input
                 v-model="formData.labels"
+                :disabled="noValidStage"
                 allow-create
                 collapse-tags
                 has-delete-icon
               />
             </bk-form-item>
             <bk-form-item :label="t('是否公开')" property="is_public" required>
-              <bk-switcher v-model="formData.is_public" theme="primary" />
+              <bk-switcher v-model="formData.is_public" :disabled="noValidStage" theme="primary" />
               <span style="color:#979ba5;font-size: 12px;">{{
                   t('不公开则不会展示到 MCP 市场，且蓝鲸应用无法申请主动申请权限，只能由网关管理员给应用主动授权')
                 }}</span>
@@ -56,7 +58,9 @@
               <template #label>
                 <div class="resource-form-item-label">
                   <div class="label-text"><span>{{ t('工具') }}</span><span class="required-mark">*</span></div>
-                  <BkButton text theme="primary" @click="handleRefreshClick">
+                  <BkButton
+                    :disabled="noValidStage || !isCurrentStageValid" text theme="primary" @click="handleRefreshClick"
+                  >
                     <AgIcon class="mr4" name="refresh-line" />
                     {{ t('刷新') }}
                   </BkButton>
@@ -72,7 +76,7 @@
                 <div class="selector-main">
                   <div class="selector-title">{{ t('资源列表') }}</div>
                   <div class="resource-filter">
-                    <BkInput v-model="filterKeyword" type="search" />
+                    <BkInput v-model="filterKeyword" :disabled="noValidStage" type="search" />
                   </div>
                   <bk-table
                     ref="tableRef"
@@ -81,7 +85,11 @@
                     :pagination="pagination"
                     border="outer"
                     show-overflow-tooltip
-                  />
+                  >
+                    <template #empty>
+                      <TableEmpty :keyword="filterKeyword" @clear-filter="filterKeyword = ''" />
+                    </template>
+                  </bk-table>
                 </div>
                 <div class="result-preview">
                   <div class="result-preview-list">
@@ -98,7 +106,7 @@
                     <template v-if="selections.length">
                       <div v-for="(name, index) in selections" :key="index" class="list-main">
                         <div class="list-item">
-                          <span class="name" @click="() => handleToolPreviewNameClick(name)">
+                          <span class="name">
                             {{ name }}
                           </span>
                           <AgIcon
@@ -117,14 +125,16 @@
             </bk-form-item>
           </bk-form>
         </div>
-        <div class="footer">
-          <bk-button style="width: 100px" theme="primary" @click="handleSubmit">
-            {{ t('确定') }}
-          </bk-button>
-          <bk-button style="margin-left: 4px; width: 100px" @click="handleCancel">
-            {{ t('取消') }}
-          </bk-button>
-        </div>
+      </div>
+    </template>
+    <template #footer>
+      <div style="margin-left: 16px;">
+        <bk-button :disabled="noValidStage" style="width: 100px" theme="primary" @click="handleSubmit">
+          {{ t('确定') }}
+        </bk-button>
+        <bk-button style="margin-left: 4px; width: 100px" @click="handleCancel">
+          {{ t('取消') }}
+        </bk-button>
       </div>
     </template>
   </BkSideslider>
@@ -166,7 +176,7 @@ interface IProps {
 interface FormData {
   name: string,
   description: string,
-  stage_id: number,
+  stage_id: number | undefined,
   is_public: boolean,
   labels: string[],
 }
@@ -209,9 +219,9 @@ const tableRef = ref<InstanceType<typeof Table>>();
 const rules = {
   stage_id: [
     {
-      require: true,
+      required: true,
       message: t('请选择'),
-      trigger: 'change',
+      trigger: 'blur',
     },
   ],
 };
@@ -254,8 +264,8 @@ const columns = [
       >{row.name}</bk-button>,
   },
   {
-    label: t('请求参数'),
-    width: 100,
+    label: t('是否配置请求参数声明'),
+    width: 170,
     showOverflowTooltips: false,
     render: ({ row }: any) => row.has_openapi_schema ? t('是') : t('否'),
   },
@@ -280,9 +290,7 @@ const columns = [
 const isEditMode = computed(() => !!serverId);
 const stage = computed(() => stageList.value.find(stage => stage.id === formData.value.stage_id));
 const stageName = computed(() => stage.value?.name || '');
-const serverNamePrefix = computed(() => {
-  return `${common.curApigwData.name}-${stageName.value}-`
-});
+const serverNamePrefix = computed(() => `${common.curApigwData.name}-${stageName.value}-`);
 const sliderTitle = computed(() => {
   return isEditMode.value ? t('编辑 {n}', { n: `${serverNamePrefix.value}${formData.value.name}` })
                           : t('创建 MCP Server');
@@ -293,8 +301,7 @@ const filteredResourceList = computed(() => {
     const keyword = filterKeywordDebounced.value.trim().toLowerCase();
     const matchName = resource.name.toLowerCase().includes(keyword);
     const matchPath = resource.path.toLowerCase().includes(keyword);
-    const matchMethod = resource.method.toLowerCase().includes(keyword);
-    return matchName || matchPath || matchMethod;
+    return matchName || matchPath;
   });
 });
 
@@ -360,12 +367,17 @@ const handleSubmit = async () => {
   isShow.value = false;
 };
 
+const noValidStage = computed(() => stageList.value.every(stage => stage.status === 0));
+
+const isCurrentStageValid = computed(() => stageList.value.find(stage => stage.id === formData.value.stage_id)?.status === 1);
+
 const fetchStageList = async () => {
   try {
     isLoading.value = true;
     const response = await getStageList(common.apigwId);
     stageList.value = response || [];
-    formData.value.stage_id = stageList.value[0]?.id || 0;
+    const validStage = stageList.value.find(stage => stage.status === 1);
+    formData.value.stage_id = validStage?.id ?? undefined;
     if (formData.value.stage_id) {
       await fetchStageResources();
     }
@@ -373,7 +385,6 @@ const fetchStageList = async () => {
     isLoading.value = false;
   }
 };
-
 
 const fetchServer = async () => {
   const response = await getServer(common.apigwId, serverId!);
@@ -430,6 +441,9 @@ const handleClearSelections = () => {
 const isRowSelected = (row: any) => selections.value.includes(row.name);
 
 const handleRefreshClick = async () => {
+  if (!isCurrentStageValid.value) {
+    return;
+  }
   filterKeyword.value = '';
   const response = await getResourceVersionsInfo(
     common.curApigwData.id,
@@ -437,7 +451,9 @@ const handleRefreshClick = async () => {
     { stage_id: stage.value.id },
   );
   resourceList.value = response?.resources || [];
-  selections.value = [];
+  selections.value = selections.value.filter(selectedResourceName =>
+    resourceList.value.some(resource => resource.name === selectedResourceName),
+  );
   pagination.value = {
     offset: 0,
     limit: 10,
@@ -451,14 +467,11 @@ const handleStageSelectChange = () => {
 };
 
 const handleToolNameClick = (row: { id: number }) => {
-  router.push({ name: 'apigwResourceEdit', params: { id: common.curApigwData.id, resourceId: row.id } });
-};
-
-const handleToolPreviewNameClick = (name: string) => {
-  const resource = resourceList.value.find((resource) => resource.name === name);
-  if (resource) {
-    handleToolNameClick({ id: resource.id });
-  }
+  const routeData = router.resolve({
+    name: 'apigwResourceEdit',
+    params: { id: common.curApigwData.id, resourceId: row.id },
+  });
+  window.open(routeData.href, '_blank');
 };
 
 const handleCancel = () => {
@@ -501,11 +514,7 @@ defineExpose({
 
     .main {
       color: #4d4f56;
-      padding: 28px 40px;
-    }
-
-    .footer {
-      padding: 8px 40px 24px;
+      padding: 28px 40px 0;
     }
   }
 }
@@ -558,7 +567,7 @@ defineExpose({
 
   .result-preview {
     width: 275px;
-    height: 653px;
+    max-height: 653px;
     background: #f5f7fa;
     padding: 16px;
     display: flex;
@@ -592,7 +601,6 @@ defineExpose({
         align-items: center;
         height: 32px;
         padding: 6px 10px;
-        cursor: pointer;
         background: #fff;
         border-radius: 2px;
         box-shadow: 0 1px 2px 0 #0000001f;
@@ -602,11 +610,11 @@ defineExpose({
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          color: #3a84ff;
         }
 
         .delete-icon {
           color: #c4c6cc;
+          cursor: pointer;
 
           &:hover {
             color: #3a84ff;

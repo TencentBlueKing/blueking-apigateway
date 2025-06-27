@@ -15,7 +15,8 @@
             <div>
               <div class="main">
                 <BkAlert
-                  class="mt15 mb15"
+                  v-if="currentStage.status === 1"
+                  class="mt15"
                   theme="info"
                 >
                   <div class="alert-content">
@@ -33,69 +34,71 @@
                     </span>
                   </div>
                 </BkAlert>
-                <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
-                  <bk-form-item :label="t('代码仓库')" required>
-                    <div class="repo-item-wrapper">
-                      <div class="input-item-wrapper">
-                        <bk-input v-model="stageDetail.repo_info.repo_url" disabled />
+                <div class="mt15">
+                  <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
+                    <bk-form-item :label="t('代码仓库')" required>
+                      <div class="repo-item-wrapper">
+                        <div class="input-item-wrapper">
+                          <bk-input v-model="stageDetail.repo_info.repo_url" disabled />
+                        </div>
+                        <div class="icon-wrapper">
+                          <i
+                            class="apigateway-icon icon-ag-copy-info mr8" @click="copyRepo"
+                          />
+                          <i class="apigateway-icon icon-ag-jump" @click="handleRepoClick" />
+                        </div>
                       </div>
-                      <div class="icon-wrapper">
-                        <i
-                          class="apigateway-icon icon-ag-copy-info mr8" @click="copyRepo"
+                    </bk-form-item>
+                    <bk-form-item :label="t('代码分支')" property="branch" required>
+                      <bk-select v-model="formData.branch" :clearable="false">
+                        <bk-option
+                          v-for="branch in stageDetail.repo_info.branch_list"
+                          :id="branch"
+                          :key="branch"
+                          :name="branch"
                         />
-                        <i class="apigateway-icon icon-ag-jump" @click="handleRepoClick" />
+                      </bk-select>
+                      <!--                  <bk-input v-model="formData.branch" disabled />-->
+                    </bk-form-item>
+                    <bk-form-item :label="t('版本类型')" property="version" required>
+                      <bk-radio-group v-model="semVerType" @change="handleSemverChange">
+                        <bk-radio label="major">
+                          {{ t('重大版本') }}
+                        </bk-radio>
+                        <bk-radio label="minor">
+                          {{ t('次版本') }}
+                        </bk-radio>
+                        <bk-radio label="patch">
+                          {{ t('修正版本') }}
+                        </bk-radio>
+                      </bk-radio-group>
+                    </bk-form-item>
+                    <bk-form-item :label="t('版本号')" required>
+                      <bk-input v-model="formData.version" :placeholder="t('选择版本类型后自动生成')" />
+                    </bk-form-item>
+                    <bk-form-item label="CommitID" property="commit_id" required>
+                      <div class="commit-id-wrapper">
+                        <span class="id-content">{{ currentCommitInfo.commit_id }}</span>
+                        <span class="commit-suffix">{{
+                          `${
+                            currentCommitInfo.last_update ?
+                              dayjs(currentCommitInfo.last_update).format('YYYY-MM-DD HH:mm:ss')
+                              : '--'
+                          }  提交`
+                        }}</span>
                       </div>
-                    </div>
-                  </bk-form-item>
-                  <bk-form-item :label="t('代码分支')" property="branch" required>
-                    <bk-select v-model="formData.branch" :clearable="false">
-                      <bk-option
-                        v-for="branch in stageDetail.repo_info.branch_list"
-                        :id="branch"
-                        :key="branch"
-                        :name="branch"
+                    </bk-form-item>
+                    <bk-form-item :label="t('版本日志')" property="comment">
+                      <bk-input
+                        v-model="formData.comment"
+                        :maxlength="100"
+                        :rows="4"
+                        placeholder="--"
+                        type="textarea"
                       />
-                    </bk-select>
-                  <!--                  <bk-input v-model="formData.branch" disabled />-->
-                  </bk-form-item>
-                  <bk-form-item :label="t('版本类型')" property="version" required>
-                    <bk-radio-group v-model="semVerType" @change="handleSemverChange">
-                      <bk-radio label="major">
-                        {{ t('重大版本') }}
-                      </bk-radio>
-                      <bk-radio label="minor">
-                        {{ t('次版本') }}
-                      </bk-radio>
-                      <bk-radio label="patch">
-                        {{ t('修正版本') }}
-                      </bk-radio>
-                    </bk-radio-group>
-                  </bk-form-item>
-                  <bk-form-item :label="t('版本号')" required>
-                    <bk-input v-model="formData.version" :placeholder="t('选择版本类型后自动生成')" />
-                  </bk-form-item>
-                  <bk-form-item label="CommitID" property="commit_id" required>
-                    <div class="commit-id-wrapper">
-                      <span class="id-content">{{ currentCommitInfo.commit_id }}</span>
-                      <span class="commit-suffix">{{
-                        `${
-                          currentCommitInfo.last_update ?
-                            dayjs(currentCommitInfo.last_update).format('YYYY-MM-DD HH:mm:ss')
-                            : '--'
-                        }  提交`
-                      }}</span>
-                    </div>
-                  </bk-form-item>
-                  <bk-form-item :label="t('版本日志')" property="comment">
-                    <bk-input
-                      v-model="formData.comment"
-                      :maxlength="100"
-                      :rows="4"
-                      placeholder="--"
-                      type="textarea"
-                    />
-                  </bk-form-item>
-                </bk-form>
+                    </bk-form-item>
+                  </bk-form>
+                </div>
               </div>
             </div>
             <div class="operate1">
@@ -441,6 +444,7 @@ const resetSliderData = () => {
     comment: '',
     version_type: '',
   };
+  semVerType.value = 'minor';
 };
 
 const copyRepo = () => {
