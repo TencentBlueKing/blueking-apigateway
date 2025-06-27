@@ -25,7 +25,7 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
+from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion, OpenAPIResourceSchemaVersion
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
@@ -106,6 +106,12 @@ class ResourceVersionHandler:
     def delete_by_gateway_id(gateway_id: int):
         # delete gateway release
         Release.objects.filter(gateway_id=gateway_id).delete()
+
+        # delete gateway openapi resource schema version
+        OpenAPIResourceSchemaVersion.objects.filter(resource_version__gateway_id=gateway_id).delete()
+
+        # delete gateway openapi file resource schema version
+        OpenAPIFileResourceSchemaVersion.objects.filter(gateway_id=gateway_id).delete()
 
         # delete resource version
         ResourceVersion.objects.filter(gateway_id=gateway_id).delete()
