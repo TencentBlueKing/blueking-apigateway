@@ -43,6 +43,7 @@ export interface IMarketplaceItem {
   gateway: {
     id: number
     name: string
+    is_official: boolean
   }
 }
 
