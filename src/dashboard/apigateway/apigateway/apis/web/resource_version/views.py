@@ -35,6 +35,7 @@ from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.biz.resource_version_diff import ResourceDifferHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
+from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.version import get_nex_version_with_type, get_next_version
@@ -331,6 +332,7 @@ class NextProgramGatewayResourceVersionRetrieveApi(generics.RetrieveAPIView):
         query_set = ProgrammableGatewayDeployHistory.objects.filter(
             gateway=request.gateway,
             stage_name=stage_name,
+            source=PublishSourceEnum.VERSION_PUBLISH.value,
         ).order_by("-id")
         obj = query_set.first()
         if obj:
