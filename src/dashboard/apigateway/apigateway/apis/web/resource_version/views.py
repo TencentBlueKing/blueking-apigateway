@@ -38,7 +38,7 @@ from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
-from apigateway.utils.version import get_nex_version_with_type, get_next_version
+from apigateway.utils.version import get_next_version, get_next_version_with_type
 
 from .serializers import (
     NeedNewVersionOutputSLZ,
@@ -336,7 +336,7 @@ class NextProgramGatewayResourceVersionRetrieveApi(generics.RetrieveAPIView):
         ).order_by("-id")
         obj = queryset.first()
         if obj:
-            new_version_str = get_nex_version_with_type(obj.version, version_type)
+            new_version_str = get_next_version_with_type(obj.version, version_type)
             return OKJsonResponse(
                 data={"version": new_version_str},
             )
