@@ -401,7 +401,10 @@ const fetchStageResources = async () => {
     const response = await getResourceVersionsInfo(
       common.curApigwData.id,
       stage.value.resource_version.id,
-      { stage_id: stage.value.id },
+      {
+        stage_id: stage.value.id,
+        source: 'mcp_server',
+      },
     );
     resourceList.value = response?.resources || [];
     pagination.value.offset = 0;
@@ -448,7 +451,10 @@ const handleRefreshClick = async () => {
   const response = await getResourceVersionsInfo(
     common.curApigwData.id,
     stage.value.resource_version.id,
-    { stage_id: stage.value.id },
+    {
+      stage_id: stage.value.id,
+      source: 'mcp_server',
+    },
   );
   resourceList.value = response?.resources || [];
   selections.value = selections.value.filter(selectedResourceName =>
