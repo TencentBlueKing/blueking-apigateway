@@ -53,7 +53,7 @@ from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
-from apigateway.components.bkpaas import get_app
+from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.models import Gateway, Resource
 from apigateway.utils.responses import V1OKJsonResponse
 
@@ -138,16 +138,11 @@ class BaseAppPermissionApplyAPIView(APIView, metaclass=ABCMeta):
 
         app_code = data["target_app_code"]
 
-        # 全租户网关，谁都可以申请，单租户网关，只能本租户应用申请
+        # 全租户网关，谁都可以申请，单租户网关，只能本租户应用/全租户应用申请
         if settings.ENABLE_MULTI_TENANT_MODE and request.gateway.tenant_mode != TenantModeEnum.GLOBAL.value:
-            app = get_app(request.gateway.tenant_id, app_code)
-            if not app:
-                raise error_codes.NOT_FOUND.format(
-                    f"app_code={app_code} not found in paasv3 with tenant_id={request.gateway.tenant_id}"
-                )
-            app_tenant_id = app.get("tenant_id")
             gateway_tenant_id = request.gateway.tenant_id
-            if app_tenant_id != gateway_tenant_id:
+            app_tenant_mode, app_tenant_id = get_app_tenant_info(app_code)
+            if app_tenant_mode != TenantModeEnum.GLOBAL.value and app_tenant_id != gateway_tenant_id:
                 raise error_codes.NO_PERMISSION.format(
                     f"app_code={app_code} is belongs to tenant {app_tenant_id}, should not apply the gateway of tenant {gateway_tenant_id}",
                     replace=True,

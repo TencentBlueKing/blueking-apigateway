@@ -93,7 +93,7 @@ def send_mail_for_perm_apply(record_id):
         ],
     }
 
-    tenant_id = get_tenant_id_for_gateway_maintainers(record.gateway.tenant_id)
+    tenant_id = get_tenant_id_for_gateway_maintainers(record.gateway.tenant_mode, record.gateway.tenant_id)
     return cmsi_component.send_mail(tenant_id, params)
 
 
