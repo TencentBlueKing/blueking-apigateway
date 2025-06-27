@@ -27,6 +27,7 @@ from rest_framework import generics, serializers, status
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
+from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin_binding import PluginBindingHandler
@@ -327,9 +328,10 @@ class NextProgramGatewayResourceVersionRetrieveApi(generics.RetrieveAPIView):
         slz.is_valid(raise_exception=True)
         stage_name = slz.validated_data["stage_name"]
         version_type = slz.validated_data["version_type"]
-        query_set = ResourceVersion.objects.filter(gateway=request.gateway, version__icontains=stage_name).order_by(
-            "-id"
-        )
+        query_set = ProgrammableGatewayDeployHistory.objects.filter(
+            gateway=request.gateway,
+            stage_name=stage_name,
+        ).order_by("-id")
         obj = query_set.first()
         if obj:
             new_version_str = get_nex_version_with_type(obj.version, version_type)
