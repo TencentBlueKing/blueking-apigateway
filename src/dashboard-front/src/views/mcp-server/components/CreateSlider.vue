@@ -36,7 +36,7 @@
               />
             </bk-form-item>
             <bk-form-item :label="t('描述')" property="description">
-              <bk-input v-model="formData.description" :disabled="noValidStage" />
+              <bk-input v-model="formData.description" :disabled="noValidStage" clearable />
             </bk-form-item>
             <bk-form-item :label="t('标签')" property="labels">
               <bk-tag-input
