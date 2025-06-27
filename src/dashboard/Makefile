@@ -14,13 +14,13 @@ lint:
 	ruff format --config=pyproject.toml --force-exclude .
 	ruff check --config=pyproject.toml --force-exclude --fix .
 	mypy --config-file=pyproject.toml .
-	cd apigateway && lint-imports --config=./.importlinter && cd ..
+	cd apigateway && lint-imports --config=../pyproject.toml && cd ..
 
 .PHONY: lint-check
 lint-check:
 	ruff check --config=pyproject.toml --force-exclude . || (echo "ruff check fail"; exit 1)
 	mypy --config-file=pyproject.toml . || (echo "mypy check fail"; exit 1)
-	cd apigateway && lint-imports --config=./.importlinter || (echo "importlinter check fail"; exit 1) && cd ..
+	cd apigateway && lint-imports --config=../pyproject.toml || (echo "importlinter check fail"; exit 1) && cd ..
 
 
 
