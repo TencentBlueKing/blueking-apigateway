@@ -101,6 +101,7 @@ func (m *MCPProxy) GetMCPServer(name string) *MCPServer {
 // AddMCPServerFromConfigs ...
 func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 	for _, config := range configs {
+		// 这里注册的 messageEndpointURL 决定了通过sse接口拿到的message的url
 		trans, sseHandler, err := transport.NewSSEServerTransportAndHandler(
 			fmt.Sprintf(m.messageUrlFormat, config.Name))
 		if err != nil {
