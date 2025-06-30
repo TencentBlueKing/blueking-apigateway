@@ -50,6 +50,8 @@ X-Bkapi-Allowed-Headers: "X-Bk-Tenant-Id,X-xxx-Header"
 
 ## FAQ
 
-### 1. How to troubleshoot when encountering `4xx` error codes while adding `MCP Server` via the client?
+### 1. How to troubleshoot 4xx error codes when adding MCP Server via client?
 
-First, verify the `MCP Server` URL is correct. Second, ensure `MCP Server` has enabled `application authentication + user authentication`. Check the format of the `X-Bkapi-Authorization` request header (e.g., cherry-studio configures the header using `=`) and whether the corresponding authentication credentials are valid. Finally, confirm that the `bk_app_code` has permissions for this `MCP Server`.
+- Verify the MCP Server URL is correct.
+- If MCP Server has enabled "application authentication + user authentication", confirm the format of the X-Bkapi-Authorization header (e.g., cherry-studio uses "=" for header configuration) and check whether the authentication credentials are valid.
+- Ensure the corresponding bk_app_code has permission to access this MCP Server.sions for this `MCP Server`.
