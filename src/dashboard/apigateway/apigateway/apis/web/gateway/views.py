@@ -35,7 +35,7 @@ from apigateway.common.constants import UserAuthTypeEnum
 from apigateway.common.contexts import GatewayAuthContext
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
-from apigateway.components.paas import create_paas_app
+from apigateway.components.paas import create_paas_app, update_app_maintainers
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import (
     GatewayKindEnum,
@@ -156,6 +156,12 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             if not ok:
                 raise error_codes.INTERNAL.format(_("创建蓝鲸应用失败。"), replace=True)
 
+            update_app_maintainers(
+                app_code,
+                slz.validated_data["maintainers"],
+                user_credentials=get_user_credentials_from_request(request),
+            )
+
             # set the related app code, while the programmable gateway is created before the app syncing gateway
             # the sync api will check the gateway_related_app_code
             related_app_code = app_code
@@ -265,6 +271,13 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         related_app_codes = slz.validated_data.pop("related_app_codes", None)
         if related_app_codes is not None:
             GatewayRelatedAppHandler.update_related_app_codes(request.gateway, related_app_codes)
+
+        if request.gateway.is_programmable:
+            update_app_maintainers(
+                slz.instance.name,
+                slz.instance.maintainers,
+                user_credentials=get_user_credentials_from_request(request),
+            )
 
         Auditor.record_gateway_op_success(
             op_type=OpTypeEnum.MODIFY,
