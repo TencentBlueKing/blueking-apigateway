@@ -331,7 +331,7 @@ class NextProgramGatewayResourceVersionRetrieveApi(generics.RetrieveAPIView):
         version_type = slz.validated_data["version_type"]
         queryset = ProgrammableGatewayDeployHistory.objects.filter(
             gateway=request.gateway,
-            stage_name=stage_name,
+            stage__name=stage_name,
             source=PublishSourceEnum.VERSION_PUBLISH.value,
         ).order_by("-id")
         obj = queryset.first()
