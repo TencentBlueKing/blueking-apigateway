@@ -137,6 +137,7 @@ class TestResourceVersionRetrieveApi:
                     "contexts": fake_resource_version_v2.data[0]["contexts"],
                     "plugins": [],
                     "has_openapi_schema": False,
+                    "openapi_schema": {},
                 }
             ],
             "created_time": fake_resource_version_v2.created_time,
@@ -291,6 +292,7 @@ class TestResourceVersionDiffApi:
                         "disabled_stages": [],
                         "plugins": [],
                         "doc_updated_time": {},
+                        "openapi_schema": {},
                     }
                 ],
                 "delete": [],

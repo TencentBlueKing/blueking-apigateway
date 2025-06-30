@@ -16,6 +16,8 @@
 #  We undertake not to change the open source license (MIT license) applicable
 #  to the current version of the project delivered to anyone in the future.
 #  #
+from typing import Optional
+
 from apigateway.apps.openapi.models import (
     OpenAPIResourceSchema,
     OpenAPIResourceSchemaVersion,
@@ -46,3 +48,19 @@ class ResourceOpenAPISchemaVersionHandler:
                 resource_version=resource_version,
                 schema=schema_list,
             )
+
+
+class ResourceOpenAPISchemaHandler:
+    @staticmethod
+    def has_openapi_schem(schema: Optional[dict] = None) -> bool:
+        if not schema:
+            return False
+        if "none_schema" in schema and schema["none_schema"] is True:
+            # 对于确认过没有 schema 的资源，直接返回 True
+            return True
+
+            # currently, the schema.responses is initialized during import openapi file
+            # so, we can't judge whether the schema has configured the schema or not
+        if "requestBody" in schema or "parameters" in schema:
+            return True
+        return False
