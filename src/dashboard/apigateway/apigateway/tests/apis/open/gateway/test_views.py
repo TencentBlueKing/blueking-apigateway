@@ -186,18 +186,8 @@ class TestGatewayRelatedAppAddApi:
     def test_post(self, request_view, fake_gateway, disable_app_permission, mocker):
         # mock call bkauth api result
         mocker.patch(
-            "apigateway.apis.open.gateway.views.list_all_apps_of_tenant",
-            return_value=[
-                {
-                    "bk_app_code": "test1",
-                },
-                {
-                    "bk_app_code": "test2",
-                },
-                {
-                    "bk_app_code": "test3",
-                },
-            ],
+            "apigateway.apis.open.gateway.views.get_app_tenant_info",
+            return_value=("single", "default"),
         )
 
         resp = request_view(

@@ -44,7 +44,7 @@ from apigateway.common.constants import (
     CACHE_TIME_5_MINUTES,
 )
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
-from apigateway.components.bkauth import get_app_tenant_info, list_all_apps_of_tenant
+from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import JWT, Gateway
 from apigateway.service.contexts import GatewayAuthContext
@@ -286,10 +286,9 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
 
         if settings.ENABLE_MULTI_TENANT_MODE:
             # check if all the target_app_codes are in the same tenant
-            apps_of_tenant = list_all_apps_of_tenant(request.gateway.tenant_mode, request.gateway.tenant_id)
-            app_codes_of_tenant = {app["bk_app_code"] for app in apps_of_tenant}
             for app_code in target_app_codes:
-                if app_code not in app_codes_of_tenant:
+                _, app_tenant_id = get_app_tenant_info(app_code)
+                if app_tenant_id != request.gateway.tenant_id:
                     raise serializers.ValidationError(
                         {
                             "target_app_codes": f"app_code {app_code} not belong to the tenant {request.gateway.tenant_id}"
