@@ -25,7 +25,11 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion, OpenAPIResourceSchemaVersion
+from apigateway.apps.openapi.models import (
+    OpenAPIFileResourceSchemaVersion,
+    OpenAPIResourceSchema,
+    OpenAPIResourceSchemaVersion,
+)
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
@@ -98,9 +102,23 @@ class ResourceVersionHandler:
         根据版本 ID 获取 Data，或者获取当前资源列表中的版本数据
         """
         if resource_version_id:
-            return ResourceVersion.objects.get(gateway=gateway, id=resource_version_id).data
+            resource_version_data = ResourceVersion.objects.get(gateway=gateway, id=resource_version_id).data
+            resource_id_to_schema = ResourceVersionHandler.get_resource_id_to_schema_by_resource_version(
+                resource_version_id
+            )
+            for resource in resource_version_data:
+                resource["openapi_schema"] = resource_id_to_schema.get(resource["id"], {})
+            return resource_version_data
 
-        return ResourceVersionHandler.make_version(gateway)
+        # 如果没有指定版本 ID，则根据编辑区数据生成版本数据(包含schema信息)
+        resource_version_data = ResourceVersionHandler.make_version(gateway)
+        resource_ids = [resource["id"] for resource in resource_version_data if "id" in resource]
+        # 查询资源所有的schema
+        resource_schemas = OpenAPIResourceSchema.objects.filter(resource_id__in=resource_ids)
+        resource_id_to_schema = {schema.resource_id: schema.schema for schema in resource_schemas}
+        for resource in resource_version_data:
+            resource["openapi_schema"] = resource_id_to_schema.get(resource["id"], {})
+        return resource_version_data
 
     @staticmethod
     def delete_by_gateway_id(gateway_id: int):
@@ -272,35 +290,6 @@ class ResourceVersionHandler:
         if resources_version_schema is None:
             return {}
         return {schema_info["resource_id"]: schema_info["schema"] for schema_info in resources_version_schema.schema}
-
-    @staticmethod
-    def get_resource_ids_has_openapi_schema_by_resource_version(resource_version_id: int) -> Dict[int, bool]:
-        """
-        判断资源版本中每个资源是否有配置
-        """
-        resource_id_to_schema = ResourceVersionHandler.get_resource_id_to_schema_by_resource_version(
-            resource_version_id
-        )
-        resource_id_to_has_openapi_schema = {}
-        for resource_id, schema in resource_id_to_schema.items():
-            if schema is None:
-                resource_id_to_has_openapi_schema[resource_id] = False
-                continue
-
-            if "none_schema" in schema and schema["none_schema"] is True:
-                # 对于确认过没有 schema 的资源，直接返回 True
-                resource_id_to_has_openapi_schema[resource_id] = True
-                continue
-
-            # currently, the schema.responses is initialized during import openapi file
-            # so, we can't judge whether the schema has configured the schema or not
-            if "requestBody" in schema or "parameters" in schema:
-                resource_id_to_has_openapi_schema[resource_id] = True
-                continue
-
-            resource_id_to_has_openapi_schema[resource_id] = False
-
-        return resource_id_to_has_openapi_schema
 
     @staticmethod
     def get_resource_id(resource_version_id: int, resource_name: str) -> int:
