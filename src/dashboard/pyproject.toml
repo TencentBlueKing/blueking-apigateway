@@ -230,3 +230,92 @@ max-complexity = 12
 relative-imports-order = "closest-to-furthest"
 
 # [tool.ruff.pep8-naming]
+
+# https://import-linter.readthedocs.io/en/stable/contract_types.html
+[tool.importlinter]
+root_package = "apigateway"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+id="global-layers"
+name="global-layers"
+type="layers"
+layers = [
+    "apigateway.apis",
+    "apigateway.biz",
+    "apigateway.controller",
+    "apigateway.service",
+    "apigateway.components",
+    "apigateway.apps",
+    "apigateway.core",
+    "apigateway.common",
+    "apigateway.utils",
+]
+ignore_imports = [
+    # 可信的依赖
+    "apigateway.common.permissions.permissions -> apigateway.core.models",
+    "apigateway.common.permissions.permissions -> apigateway.core.constants",
+    "apigateway.common.factories.schema -> apigateway.core.constants",
+    # 可忽略的依赖
+    # -- django command
+    "apigateway.core.management.commands.* -> apigateway.biz.**",
+    "apigateway.core.management.commands.sync_default_micro_gateway -> apigateway.controller.micro_gateway_config",
+    "apigateway.core.management.commands.update_jwt_key -> apigateway.service.gateway_jwt",
+    # -- celery task
+    "apigateway.apps.permission.tasks -> apigateway.components.*",
+    "apigateway.apps.permission.tasks -> apigateway.biz.permission",
+    "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*",
+    "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*.*",
+    "apigateway.apps.metrics.tasks -> apigateway.service.statistics",
+    "apigateway.controller.tasks.release -> apigateway.biz.resource_version",
+    # -- esb legacy
+    "apigateway.apps.esb.*.* -> apigateway.biz.*",
+    "apigateway.apps.esb.*.* -> apigateway.biz.*.*",
+    "apigateway.apps.esb.component.convertor -> apigateway.components.esb_components",
+    "apigateway.apps.esb.status.es_client -> apigateway.service.es.clients",
+    # 需要重构的依赖
+]
+
+[[tool.importlinter.contracts]]
+id="api-layers"
+name="api-layers"
+type="independence"
+modules = [
+    "apigateway.apis.open",
+    "apigateway.apis.web",
+    "apigateway.apis.v2.inner",
+    "apigateway.apis.v2.sync",
+    "apigateway.apis.v2.open",
+]
+
+
+[[tool.importlinter.contracts]]
+id="data-source-layer"
+name="data-source-layer"
+type="independence"
+modules = [
+    "apigateway.apps",
+    "apigateway.core",
+    "apigateway.components",
+]
+ignore_imports = [
+    # 可信的依赖
+    "apigateway.apps.*.* -> apigateway.core.*",
+    # 可忽略的依赖
+    # -- celery task
+    "apigateway.apps.permission.tasks -> apigateway.components.*",
+    "apigateway.apps.permission.tasks -> apigateway.biz.permission",
+    "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*",
+    "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*.*",
+    "apigateway.apps.metrics.tasks -> apigateway.service.statistics",
+    # -- django commands
+    "apigateway.apps.*.management.commands.* -> apigateway.core.models",
+    "apigateway.core.management.commands.* -> apigateway.biz.gateway",
+    # -- esb legacy
+    "apigateway.apps.esb.*.* -> apigateway.core.models",
+    "apigateway.apps.esb.*.* -> apigateway.core.constants",
+    "apigateway.apps.esb.*.* -> apigateway.biz.*",
+    "apigateway.apps.esb.*.* -> apigateway.biz.*.*",
+    "apigateway.apps.esb.*.* -> apigateway.components.*",
+    "apigateway.apps.esb.status.es_client -> apigateway.service.es.clients",
+]
