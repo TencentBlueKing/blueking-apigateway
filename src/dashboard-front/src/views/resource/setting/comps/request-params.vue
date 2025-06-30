@@ -574,6 +574,11 @@ defineExpose({
       td {
         border-right: none;
       }
+
+      // 展开行没有内容时，不应渲染，避免出现多余的 1px 高的元素
+      &:not(:has(.request-param-body-table)) {
+        display: none !important;
+      }
     }
   }
 }
