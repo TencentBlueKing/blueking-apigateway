@@ -3,8 +3,8 @@
     <bk-resize-layout
       :border="false"
       :max="400"
-      :min="288"
-      initial-divide="288px"
+      :min="293"
+      initial-divide="293px"
       placement="left"
     >
       <!--  左栏，API 列表  -->
@@ -380,7 +380,7 @@ $code-color: #63656e;
   box-shadow: 0 2px 4px 0 #1919290d;
 
   .left-aside-wrap {
-    min-width: 280px;
+    min-width: 290px;
     width: auto;
     box-shadow: 0 2px 4px 0 #1919290d;
     border-radius: 2px;
@@ -441,15 +441,15 @@ $code-color: #63656e;
           cursor: pointer;
 
           .tool-group-collapse-title {
-            color: #63656e;
-            margin-left: 4px;
-            font-weight: bold;
+            margin-left: 8px;
+            font-size: 12px;
+            color: #4d4f56;
           }
 
           .menu-header-icon {
             transition: all .2s;
             color: #979ba5;
-            font-size: 14px;
+            font-size: 12px;
 
             &.fold {
               transform: rotate(-90deg);
@@ -463,8 +463,8 @@ $code-color: #63656e;
       }
 
       .tool-item {
-        padding-left: 24px;
-        height: 52px;
+        padding-left: 52px;
+        height: 48px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -480,9 +480,9 @@ $code-color: #63656e;
         }
 
         .tool-item-name {
-          font-size: 14px;
-          color: #313238;
-          line-height: 22px;
+          font-size: 12px;
+          color: #4d4f56;
+          line-height: 20px;
         }
 
         .tool-item-desc {
@@ -494,8 +494,15 @@ $code-color: #63656e;
         &:hover, &.active {
           background: #e1ecff;
 
-          .tool-item-name {
+          .tool-item-name,
+          .tool-item-desc {
             color: #3a84ff;
+          }
+        }
+
+        &.active {
+          .tool-item-name {
+            font-weight: 700;
           }
         }
       }
@@ -510,7 +517,7 @@ $code-color: #63656e;
     .tool-name,
     .tool-basics,
     .tool-detail-content {
-      padding: 24px;
+      padding: 24px 24px 24px 40px;
       background-color: #fff;
       border-radius: 2px;
     }
@@ -535,6 +542,7 @@ $code-color: #63656e;
     }
 
     .tool-basics {
+      padding-block: 0;
       display: grid;
       grid-template-columns: 280px 280px;
       grid-template-rows: 40px 40px;

@@ -236,7 +236,7 @@ class ProgrammableDeployCreateInputSLZ(serializers.Serializer):
             source=PublishSourceEnum.VERSION_PUBLISH.value,
             version=data["version"],
         ).exists():
-            raise serializers.ValidationError(_("编程网关每个版本只允许发布一次"))
+            raise serializers.ValidationError(_("编程网关每个版本只允许发布一次，请修改版本号后再发布"))
         return data
 
 

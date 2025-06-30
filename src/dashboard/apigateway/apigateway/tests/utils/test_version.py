@@ -20,8 +20,8 @@ import pytest
 
 from apigateway.utils.version import (
     _filter_the_valid_versions,
-    get_nex_version_with_type,
     get_next_version,
+    get_next_version_with_type,
     is_version1_greater_than_version2,
     max_version,
 )
@@ -98,4 +98,4 @@ class TestUtilsVersion:
         ],
     )
     def test_generate_new_version_normal(self, current_version, version_type, expected):
-        assert get_nex_version_with_type(current_version, version_type) == expected
+        assert get_next_version_with_type(current_version, version_type) == expected

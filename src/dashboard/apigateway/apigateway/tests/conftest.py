@@ -31,7 +31,11 @@ from django.urls import resolve, reverse
 from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
 from apigateway.apps.api_debug.models import APIDebugHistory
-from apigateway.apps.openapi.models import OpenAPIResourceSchema
+from apigateway.apps.openapi.models import (
+    OpenAPIFileResourceSchemaVersion,
+    OpenAPIResourceSchema,
+    OpenAPIResourceSchemaVersion,
+)
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum, PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
@@ -650,6 +654,25 @@ def fake_released_resource_doc(fake_gateway, fake_resource_version, fake_resourc
         resource_id=fake_resource1.id,
         language="zh",
         data=resource_id_to_data[fake_resource1.id],
+    )
+
+
+@pytest.fixture
+def fake_openapi_resource_schema_version(fake_resource_version):
+    return G(
+        OpenAPIResourceSchemaVersion,
+        resource_version=fake_resource_version,
+        schema={},
+    )
+
+
+@pytest.fixture
+def fake_openapi_file_resource_schema_version(fake_resource_version):
+    return G(
+        OpenAPIFileResourceSchemaVersion,
+        gateway=fake_resource_version.gateway,
+        resource_version=fake_resource_version,
+        schema={},
     )
 
 

@@ -951,7 +951,8 @@ watch(
             }
 
             &.public-key-content {
-              min-width: 670px;
+              flex: none;
+              width: 912px;
               height: 40px;
               line-height: 40px;
               background-color: #F5F7FA;

@@ -36,7 +36,7 @@
               />
             </bk-form-item>
             <bk-form-item :label="t('描述')" property="description">
-              <bk-input v-model="formData.description" :disabled="noValidStage" />
+              <bk-input v-model="formData.description" :disabled="noValidStage" clearable />
             </bk-form-item>
             <bk-form-item :label="t('标签')" property="labels">
               <bk-tag-input
@@ -401,7 +401,10 @@ const fetchStageResources = async () => {
     const response = await getResourceVersionsInfo(
       common.curApigwData.id,
       stage.value.resource_version.id,
-      { stage_id: stage.value.id },
+      {
+        stage_id: stage.value.id,
+        source: 'mcp_server',
+      },
     );
     resourceList.value = response?.resources || [];
     pagination.value.offset = 0;
@@ -448,7 +451,10 @@ const handleRefreshClick = async () => {
   const response = await getResourceVersionsInfo(
     common.curApigwData.id,
     stage.value.resource_version.id,
-    { stage_id: stage.value.id },
+    {
+      stage_id: stage.value.id,
+      source: 'mcp_server',
+    },
   );
   resourceList.value = response?.resources || [];
   selections.value = selections.value.filter(selectedResourceName =>
