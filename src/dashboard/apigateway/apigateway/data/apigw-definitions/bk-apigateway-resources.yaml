@@ -206,13 +206,13 @@ paths:
           timeout: 0
         pluginConfigs: [ ]
         authConfig:
-          userVerifiedRequired: true
+          userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: false
   /api/v2/mcp-servers/{mcp_server_name}/application/sse:
     get:
       operationId: mcp_proxy_application_sse
-      description: mcp proxy sse(用户态)接口
+      description: mcp proxy sse(应用态)接口
       tags:
         - v2_mcp
       responses:
