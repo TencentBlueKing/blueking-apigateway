@@ -131,6 +131,7 @@ interface IPaasDeployInfo {
     logs?: string;
     log?: string;
     err_detail?: string;
+    status?: string;
   };
   events: IEvent[]; // 事件数组
   events_framework: IEventsFramework[]; // 事件框架数组
@@ -156,7 +157,7 @@ export interface IGatewayEventTemplate {
 }
 
 // 事件响应接口
-interface IEventResponse {
+export interface IEventResponse {
   created_by: string; // 创建者
   created_time: string; // 创建时间
   duration: number; // 持续时间

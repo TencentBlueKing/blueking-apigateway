@@ -42,7 +42,7 @@
             required
           >
             <bk-input
-              v-model="formData.name"
+              v-model.trim="formData.name"
               :maxlength="30"
               :disabled="isEdit"
               show-word-limit
@@ -91,7 +91,7 @@
           >
             <bk-input
               type="textarea"
-              v-model="formData.description"
+              v-model.trim="formData.description"
               :placeholder="t('请输入网关描述')"
               :maxlength="500"
               clearable
@@ -132,14 +132,14 @@
               property="programmable_gateway_git_info.repository"
               required
             >
-              <bk-input v-model="formData.programmable_gateway_git_info.repository" placeholder="http(s)://xxx.git" />
+              <bk-input v-model.trim="formData.programmable_gateway_git_info.repository" placeholder="http(s)://xxx.git" />
             </bk-form-item>
             <bk-form-item
               :label="t('账号')"
               property="programmable_gateway_git_info.account"
               required
             >
-              <bk-input v-model="formData.programmable_gateway_git_info.account" />
+              <bk-input v-model.trim="formData.programmable_gateway_git_info.account" />
             </bk-form-item>
             <bk-form-item
               :label="t('密码')"
@@ -147,7 +147,7 @@
               required
             >
               <bk-input
-                v-model="formData.programmable_gateway_git_info.password"
+                v-model.trim="formData.programmable_gateway_git_info.password"
                 :placeholder="t('建议使用 access_token')" />
             </bk-form-item>
           </template>

@@ -25,7 +25,11 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.openapi.models import OpenAPIResourceSchema, OpenAPIResourceSchemaVersion
+from apigateway.apps.openapi.models import (
+    OpenAPIFileResourceSchemaVersion,
+    OpenAPIResourceSchema,
+    OpenAPIResourceSchemaVersion,
+)
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
@@ -106,6 +110,7 @@ class ResourceVersionHandler:
                 resource["openapi_schema"] = resource_id_to_schema.get(resource["id"], {})
             return resource_version_data
 
+        # 如果没有指定版本 ID，则根据编辑区数据生成版本数据(包含schema信息)
         resource_version_data = ResourceVersionHandler.make_version(gateway)
         resource_ids = [resource["id"] for resource in resource_version_data if "id" in resource]
         # 查询资源所有的schema
@@ -119,6 +124,12 @@ class ResourceVersionHandler:
     def delete_by_gateway_id(gateway_id: int):
         # delete gateway release
         Release.objects.filter(gateway_id=gateway_id).delete()
+
+        # delete gateway openapi resource schema version
+        OpenAPIResourceSchemaVersion.objects.filter(resource_version__gateway_id=gateway_id).delete()
+
+        # delete gateway openapi file resource schema version
+        OpenAPIFileResourceSchemaVersion.objects.filter(gateway_id=gateway_id).delete()
 
         # delete resource version
         ResourceVersion.objects.filter(gateway_id=gateway_id).delete()

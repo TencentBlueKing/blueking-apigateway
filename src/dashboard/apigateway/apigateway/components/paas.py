@@ -433,3 +433,41 @@ def get_paas_repo_branch_info(app_code: str, module: str, user_credentials: Opti
         "branch_list": branch_list,
         "branch_commit_info": branch_commit_info,
     }
+
+
+def update_app_maintainers(app_code: str, maintainers: List[str], user_credentials: Optional[UserCredentials] = None):
+    """
+    更新 paas 的 app 成员
+    """
+    host = get_paas_host()
+    url = url_join(host, f"/sys/shim/plugins_center/bk_plugins/{app_code}/members/")
+    headers = gen_gateway_headers(user_credentials)
+
+    data = [
+        {
+            "username": m,
+            "role": {
+                "name": "管理员",
+                "id": "2",
+            },
+        }
+        for m in maintainers
+    ]
+
+    ok, resp_data = http_post(url, data, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
+    if not ok:
+        logger.error(
+            "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
+            "paasv3",
+            "http_post",
+            url,
+            data,
+            local.request_id,
+            resp_data["error"],
+        )
+        raise error_codes.REMOTE_REQUEST_ERROR.format(
+            f"request paasv3 fail! "
+            f"Request=[http_post {urlparse(url).path} request_id={local.request_id}]"
+            f"error={resp_data['error']}"
+        )
+    return True

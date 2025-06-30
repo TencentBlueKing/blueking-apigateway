@@ -157,6 +157,9 @@ watch(
 
 .main {
   padding: 24px 120px 42px;
+  height: calc(100vh - 116px);
+  box-sizing: border-box;
+  overflow-y: auto;
   background-color: #f5f7fa;
   .base-info {
     padding: 0 24px;

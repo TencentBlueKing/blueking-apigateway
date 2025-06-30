@@ -40,8 +40,7 @@ def parse_ip_content_to_list(ip_content: str) -> List[str]:
         #     IPv6Interface('::ffff:c001:101/96')
         # while the apisix not support the `::ffff:192.1.1.1/96`, we need to convert here
         ip_line_lower = ip_line.lower()
-        if ip_line_lower.startswith("0:0:0:0:0:ffff:") or ip_line_lower.startswith("::ffff:") and "/" in ip_line_lower:
-            # ipv4 in ipv6
+        if ip_line_lower.startswith(("0:0:0:0:0:ffff:", "::ffff:")) and "/" in ip_line_lower:
             ips.add(str(ipaddress.ip_interface(ip_line)))
             continue
 

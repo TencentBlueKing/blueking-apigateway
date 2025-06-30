@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="request-param-body-table">
     <table v-for="row in tableData" :key="row.id" class="request-body-table">
       <tbody class="table-body">
         <tr class="table-body-row">
