@@ -437,7 +437,7 @@ def get_paas_repo_branch_info(app_code: str, module: str, user_credentials: Opti
 
 def update_app_maintainers(app_code: str, maintainers: List[str], user_credentials: Optional[UserCredentials] = None):
     """
-    更新 pass 的 app 成员
+    更新 paas 的 app 成员
     """
     host = get_paas_host()
     url = url_join(host, f"/sys/shim/plugins_center/bk_plugins/{app_code}/members/")
@@ -467,7 +467,7 @@ def update_app_maintainers(app_code: str, maintainers: List[str], user_credentia
         )
         raise error_codes.REMOTE_REQUEST_ERROR.format(
             f"request paasv3 fail! "
-            f"Request=[http_get {urlparse(url).path} request_id={local.request_id}]"
+            f"Request=[http_post {urlparse(url).path} request_id={local.request_id}]"
             f"error={resp_data['error']}"
         )
     return True
