@@ -47,3 +47,9 @@ If you need to pass through certain headers from the MCP client to the backend s
 ```shell
 X-Bkapi-Allowed-Headers: "X-Bk-Tenant-Id,X-xxx-Header"
 ```
+
+## FAQ
+
+### 1. How to troubleshoot when encountering `4xx` error codes while adding `MCP Server` via the client?
+
+First, verify the `MCP Server` URL is correct. Second, ensure `MCP Server` has enabled `application authentication + user authentication`. Check the format of the `X-Bkapi-Authorization` request header (e.g., cherry-studio configures the header using `=`) and whether the corresponding authentication credentials are valid. Finally, confirm that the `bk_app_code` has permissions for this `MCP Server`.
