@@ -529,46 +529,15 @@
           </bk-form>
         </div>
       </bk-dialog>
-      <!-- 导出dialog -->
-      <bk-dialog
-        :is-loading="exportDialogConfig.loading"
-        :is-show="exportDialogConfig.isShow"
-        :title="exportDialogConfig.title"
-        quick-close
-        theme="primary"
-        width="600"
-        @closed="exportDialogConfig.isShow = false"
-        @confirm="handleExportDownload"
-      >
-        <span class="resource-number">
-          {{
-            exportParams.export_type === 'all'
-              ? t('已选择全部资源')
-              : t('已选择{num}个资源', { num: selections.length })
-          }}
-        </span>
-        <bk-form>
-          <bk-form-item :label="t('导出内容')">
-            <bk-radio-group v-model="exportDialogConfig.exportFileDocType">
-              <bk-radio label="resource">{{ t('资源配置') }}</bk-radio>
-              <bk-radio label="docs">{{ t('资源文档') }}</bk-radio>
-            </bk-radio-group>
-          </bk-form-item>
 
-          <bk-form-item v-if="exportDialogConfig.exportFileDocType === 'resource'" :label="t('导出格式')">
-            <bk-radio-group v-model="exportParams.file_type">
-              <bk-radio class="mt5" label="yaml"> {{ $t('YAML格式') }}</bk-radio>
-              <bk-radio label="json"> {{ $t('JSON格式') }}</bk-radio>
-            </bk-radio-group>
-          </bk-form-item>
-          <bk-form-item v-else :label="t('导出格式')">
-            <bk-radio-group v-model="exportParams.file_type">
-              <bk-radio class="mt5" label="zip"> {{ $t('Zip') }}</bk-radio>
-              <bk-radio label="tgz"> {{ $t('Tgz') }}</bk-radio>
-            </bk-radio-group>
-          </bk-form-item>
-        </bk-form>
-      </bk-dialog>
+      <!-- 资源配置导出 -->
+      <ExportResourceDialog
+        v-model:dialog-config="exportDialogConfig"
+        v-model:dialog-params="exportParams"
+        :selections="selections"
+        :is-show-export-content="false"
+        @confirm="handleExportDownload"
+      />
 
       <!-- 文档侧边栏 -->
       <ResourceDocSideSlider
@@ -654,6 +623,8 @@ import mitt from '@/common/event-bus';
 import {
   IDialog,
   IDropList,
+  IExportDialog,
+  IExportParams,
   MethodsEnum,
 } from '@/types';
 import { is24HoursAgo } from '@/common/util';
@@ -664,6 +635,7 @@ import {
 } from '@/store';
 import ResourceDocSideSlider from '@/views/components/resource-doc-slider/index.vue';
 import useMaxTableLimit from '@/hooks/use-max-table-limit';
+import ExportResourceDialog from '@/components/export-resource-dialog/index.vue';
 
 const props = defineProps({
   apigwId: {
@@ -671,21 +643,6 @@ const props = defineProps({
     default: 0,
   },
 });
-
-// 导出参数interface
-interface IexportParams {
-  export_type: string
-  query?: string
-  method?: string
-  label_name?: string
-  file_type?: string
-  resource_ids?: Array<number>
-  resource_filter_condition?: any
-}
-
-interface IexportDialog extends IDialog {
-  exportFileDocType: string
-}
 
 type TableEmptyConfType = {
   keyword: string
@@ -735,7 +692,7 @@ const tableEmptyConf = ref<TableEmptyConfType>({
 const versionSidesliderRef = ref(null);
 const selectCheckBoxParentRef = ref(null);
 // 导出参数
-const exportParams: IexportParams = reactive({
+const exportParams: IExportParams = reactive({
   export_type: '',
   file_type: 'yaml',
 });
@@ -817,7 +774,7 @@ const dialogData: IDialog = reactive({
 });
 
 // 导出dialog
-const exportDialogConfig: IexportDialog = reactive({
+const exportDialogConfig: IExportDialog = reactive({
   isShow: false,
   title: t('请选择导出的格式'),
   loading: false,
@@ -1367,7 +1324,7 @@ const handleShowVersion = async () => {
 // 处理标签点击
 const handleEditLabel = (data: any) => {
   resourceId.value = data.id;
-  tableData.value.forEach((item) => {
+  tableData.value.forEach((item: Record<string, any>) => {
     item.isEditLabel = false;
   });
   curLabelIds.value = data.labels.map((item: any) => item.id);
@@ -1395,7 +1352,7 @@ const getLabelsData = async () => {
 
 // 未做变更关闭select下拉
 const handleCloseSelect = (row: any, newLabelData: any = []) => {
-  tableData.value.forEach((item) => {
+  tableData.value.forEach((item: Record<string, any>) => {
     item.isEditLabel = false;
   });
   // 接收新的标签数据，检查标签的 name 是否有变化，有则重新获取列表数据
@@ -1515,7 +1472,7 @@ watch(
 // 监听导出弹窗
 watch(
   () => exportDialogConfig,
-  (v: IexportDialog) => {
+  (v: IExportDialog) => {
     if (v.exportFileDocType === 'docs') {
       exportParams.file_type = 'zip';
     } else {
@@ -1896,9 +1853,6 @@ onBeforeMount(() => {
     transform: rotate(180deg) !important;
     border-radius: 4px 0 0 4px;
   }
-}
-.resource-number{
-  color: #c4c6cc;
 }
 
 :deep(.bk-popover) {
