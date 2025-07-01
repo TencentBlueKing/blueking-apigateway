@@ -50,3 +50,14 @@ class TestGatewaySDKHandler:
         assert GatewaySDKHandler._get_resource_version_latest_public_sdk(
             fake_gateway.id, [fake_resource_version.id], "zh"
         ) == {fake_resource_version.id: latest_sdk}
+
+    def test_mark_is_recommended(self, fake_gateway, fake_resource_version):
+        sdk1 = G(GatewaySDK, gateway=fake_gateway, is_recommended=True, is_public=True, language="zh")
+        sdk2 = G(GatewaySDK, gateway=fake_gateway, is_recommended=True, is_public=True, language="zh")
+        sdk3 = G(GatewaySDK, gateway=fake_gateway, is_recommended=True, is_public=True, language="en")
+
+        GatewaySDKHandler.mark_is_recommended(sdk2)
+
+        assert GatewaySDK.objects.get(id=sdk1.id).is_recommended is False
+        assert GatewaySDK.objects.get(id=sdk2.id).is_recommended is True
+        assert GatewaySDK.objects.get(id=sdk3.id).is_recommended is True

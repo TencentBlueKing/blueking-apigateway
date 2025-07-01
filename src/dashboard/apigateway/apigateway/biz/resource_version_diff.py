@@ -138,6 +138,7 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
     contexts: ResourceContexts
     disabled_stages: List[Text] = Field(default_factory=list)
     plugins: List[ResourcePluginConfig] = Field(default_factory=list)
+    openapi_schema: Dict[str, Any] = Field(default_factory=dict)
     doc_updated_time: Dict[str, str]
 
     def diff_proxy(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:

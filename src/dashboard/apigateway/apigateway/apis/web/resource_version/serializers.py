@@ -16,12 +16,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-
 from rest_framework import serializers
 
 from apigateway.apis.web.constants import PLUGIN_MERGE_TYPE
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.biz.constants import SEMVER_PATTERN, OpenAPIFormatEnum
+from apigateway.biz.resource_openapi_schema import ResourceOpenAPISchemaHandler
 from apigateway.biz.validators import ResourceVersionValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import ResourceVersionSchemaEnum, ResourceVersionTypeEnum
@@ -61,6 +61,8 @@ class ResourceInfoSLZ(serializers.Serializer):
     plugins = serializers.SerializerMethodField(help_text="绑定插件")
 
     has_openapi_schema = serializers.SerializerMethodField(help_text="是否配置了 openapi schema")
+
+    openapi_schema = serializers.SerializerMethodField(help_text="资源openapi schema")
 
     def get_doc_updated_time(self, obj):
         return self.context["resource_doc_updated_time"].get(obj["id"], "")
@@ -116,7 +118,16 @@ class ResourceInfoSLZ(serializers.Serializer):
         return sorted(plugins, key=lambda x: (-x["priority"], x["binding_type"]))
 
     def get_has_openapi_schema(self, obj) -> bool:
-        return self.context["resource_id_with_schema_dict"].get(obj["id"], False)
+        return self._has_openapi_schema(obj)
+
+    def _has_openapi_schema(self, obj) -> bool:
+        schema = self.context["resource_id_with_schema_dict"].get(obj["id"])
+        return ResourceOpenAPISchemaHandler.has_openapi_schem(schema)
+
+    def get_openapi_schema(self, obj):
+        if self._has_openapi_schema(obj):
+            return self.context["resource_id_with_schema_dict"].get(obj["id"])
+        return {}
 
 
 class ResourceVersionRetrieveOutputSLZ(serializers.Serializer):

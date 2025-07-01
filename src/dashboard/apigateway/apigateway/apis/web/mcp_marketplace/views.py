@@ -64,10 +64,10 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
         # the stage should be active and online
         queryset = queryset.filter(stage__status=StageStatusEnum.ACTIVE.value)
 
-        if slz.validated_data.get("keyword"):
+        keyword = slz.validated_data.get("keyword")
+        if keyword:
             queryset = queryset.filter(
-                Q(name__icontains=slz.validated_data["keyword"])
-                | Q(description__icontains=slz.validated_data["keyword"])
+                Q(name__icontains=keyword) | Q(description__icontains=keyword) | Q(_labels__icontains=keyword)
             )
 
         # optimize query by using select_related
