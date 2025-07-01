@@ -288,7 +288,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 				func(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 					responseResult := map[string]any{
 						"status_code": response.Code(),
-						"request_id":  response.GetHeader(constant.BkGatewayRequestIDKey),
+						"request_id":  response.GetHeader(constant.RequestIDHeaderKey),
 					}
 					var res map[string]any
 					if e := consumer.Consume(response.Body(), &res); e == nil {
