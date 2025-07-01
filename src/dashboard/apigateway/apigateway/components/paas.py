@@ -2,6 +2,7 @@
 
 import logging
 import os
+from functools import lru_cache
 from typing import Any, Dict, Iterable, List, Optional
 from urllib.parse import urlparse
 
@@ -29,6 +30,7 @@ def url_join(host: str, path: str) -> str:
     return "{}/{}".format(host.rstrip("/"), path.lstrip("/"))
 
 
+@lru_cache(maxsize=1)
 def get_paas3_url_prefix() -> str:
     """
     获取 paas url
