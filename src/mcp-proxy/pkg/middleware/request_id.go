@@ -28,7 +28,7 @@ import (
 // RequestID add the request_id for each api request
 func RequestID() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		requestID := c.GetHeader(constant.RequestIDHeaderKey)
+		requestID := c.GetHeader(constant.BkGatewayRequestIDKey)
 		if requestID == "" {
 			requestID = util.GenUUID4()
 		}
