@@ -122,6 +122,18 @@ export const exportDocs = async (apigwId: number, data: any) => {
 };
 
 /**
+ * 导出资源版本
+ * @param apigwId 网关id
+ * @param data 导出参数
+ */
+export const exportVersion = async (apigwId: number, data: { id?: number, export_type: string, file_type: string }) => {
+  const { id } = data;
+  delete data.id;
+  const res = await fetch.post(`${BK_DASHBOARD_URL}/gateways/${apigwId}/resource-versions/${id}/export/`, data, { responseType: 'blob' });
+  return blobDownLoad(res);
+};
+
+/**
  * 导入前检查
  * @param apigwId 网关id
  * @param data 检查参数
