@@ -144,12 +144,13 @@ type Instrument struct {
 // McpServer ...
 type McpServer struct {
 	// the interval of mcp server reload
-	Interval           time.Duration
-	BkApiUrlTmpl       string
-	MessageUrlFormat   string
-	InnerJwtExpireTime time.Duration
-	EncryptKey         string
-	CryptoNonce        string
+	Interval                    time.Duration
+	BkApiUrlTmpl                string
+	MessageUrlFormat            string
+	MessageApplicationUrlFormat string
+	InnerJwtExpireTime          time.Duration
+	EncryptKey                  string
+	CryptoNonce                 string
 }
 
 // Config is the config for the whole project
@@ -195,6 +196,10 @@ func Load(v *viper.Viper) (*Config, error) {
 	}
 	if cfg.McpServer.MessageUrlFormat == "" {
 		cfg.McpServer.MessageUrlFormat = "/api/bk-apigateway/prod/api/v2/mcp-servers/%s/sse/message"
+	}
+	// mcp 应用态的url消息地址
+	if cfg.McpServer.MessageApplicationUrlFormat == "" {
+		cfg.McpServer.MessageApplicationUrlFormat = "/api/bk-apigateway/prod/api/v2/mcp-servers/%s/application/sse/message"
 	}
 	if cfg.McpServer.InnerJwtExpireTime == 0 {
 		cfg.McpServer.InnerJwtExpireTime = time.Minute * 5
