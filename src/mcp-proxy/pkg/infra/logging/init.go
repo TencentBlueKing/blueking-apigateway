@@ -89,13 +89,16 @@ func GetAPILogger() *zap.Logger {
 func GetAuditLoggerWithContext(ctx context.Context) *zap.Logger {
 	ctxLogger := auditLogger
 	if requestID, ok := ctx.Value(util.RequestIDKey).(string); ok {
-		ctxLogger = auditLogger.With(zap.String("request_id", requestID))
+		ctxLogger = ctxLogger.With(zap.String("request_id", requestID))
 	}
 	if appCode, ok := ctx.Value(constant.BkAppCode).(string); ok {
-		ctxLogger = auditLogger.With(zap.String("bk_app_code", appCode))
+		ctxLogger = ctxLogger.With(zap.String("bk_app_code", appCode))
 	}
-	if mcpServerID, ok := ctx.Value(constant.MCPServerID).(string); ok {
-		ctxLogger = auditLogger.With(zap.String("mcp_server_id", mcpServerID))
+	if mcpServerID, ok := ctx.Value(constant.MCPServerID).(int); ok {
+		ctxLogger = ctxLogger.With(zap.Int("mcp_server_id", mcpServerID))
+	}
+	if gatewayID, ok := ctx.Value(constant.GatewayID).(int); ok {
+		ctxLogger = ctxLogger.With(zap.Int("gateway_id", gatewayID))
 	}
 	return ctxLogger
 }
