@@ -246,6 +246,7 @@ const exportDialogConfig = reactive<IExportDialog>({
   title: t('请选择导出的格式'),
   loading: false,
   exportFileDocType: 'resource',
+  hiddenExportContent: true,
 });
 // 导出参数
 const exportParams = reactive<IExportParams & { id?: number}>({

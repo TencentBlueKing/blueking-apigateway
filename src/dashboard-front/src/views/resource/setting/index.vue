@@ -535,6 +535,7 @@
         v-model:dialog-config="exportDialogConfig"
         v-model:dialog-params="exportParams"
         :selections="selections"
+        :is-show-export-content="false"
         @confirm="handleExportDownload"
       />
 
