@@ -70,7 +70,7 @@ export type ErrorReasonType = {
 // 资源导出
 export interface IExportDialog extends IDialog {
   [x: string]: any;
-  exportFileDocType: string
+  exportFileDocType: string;
 }
 
 // 自动推导键值对泛型
