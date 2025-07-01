@@ -76,7 +76,7 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	mcpProxy := proxy.NewMCPProxy(cfg.McpServer.MessageUrlFormat)
 	mcpSvc, err := mcp.Init(ctx, mcpProxy)
 	if err != nil {
-		logging.GetLogger().Panic("mcp init failed: %v", err)
+		logging.GetLogger().Panic("mcp user proxy init failed: %v", err)
 		return nil
 	}
 	util.GoroutineWithRecovery(ctx, func() {
@@ -95,7 +95,7 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	mcpApplicationProxy := proxy.NewMCPProxy(cfg.McpServer.MessageApplicationUrlFormat)
 	mcpApplicationSvc, err := mcp.Init(ctx, mcpApplicationProxy)
 	if err != nil {
-		logging.GetLogger().Panic("mcp init failed: %v", err)
+		logging.GetLogger().Panic("mcp application proxy init failed: %v", err)
 		return nil
 	}
 	util.GoroutineWithRecovery(ctx, func() {
