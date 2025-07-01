@@ -37,6 +37,7 @@ import (
 	cli "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/runtime/logger"
 	"github.com/go-openapi/strfmt"
+	"github.com/spf13/cast"
 	"go.uber.org/zap"
 
 	"mcp_proxy/pkg/constant"
@@ -297,7 +298,8 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 					if response.Code() < 200 || response.Code() > 299 {
 						return nil, runtime.NewAPIError("call tool err", responseResult, response.Code())
 					}
-					return responseResult, nil
+					rawResult, _ := json.Marshal(responseResult)
+					return string(rawResult), nil
 				},
 			),
 		}
@@ -325,7 +327,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 			Content: []protocol.Content{
 				&protocol.TextContent{
 					Type: "text",
-					Text: submit.(string),
+					Text: cast.ToString(submit),
 				},
 			},
 		}, nil
