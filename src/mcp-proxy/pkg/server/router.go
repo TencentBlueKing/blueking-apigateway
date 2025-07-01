@@ -91,25 +91,6 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	seeRouter.GET("/sse", mcpProxy.SseHandler())
 	seeRouter.POST("/sse/message", mcpProxy.SseMessageHandler())
 
-	// mcp application 应用态mcp proxy
-	mcpApplicationProxy := proxy.NewMCPProxy(cfg.McpServer.MessageApplicationUrlFormat)
-	mcpApplicationSvc, err := mcp.Init(ctx, mcpApplicationProxy)
-	if err != nil {
-		logging.GetLogger().Panic("mcp application proxy init failed: %v", err)
-		return nil
-	}
-	util.GoroutineWithRecovery(ctx, func() {
-		mcpApplicationSvc.Run(ctx)
-	})
-
-	seeAppRouter := router.Group("/:name/application")
-	seeAppRouter.Use(middleware.APILogger())
-	seeAppRouter.Use(middleware.BkGatewayJWTAuthMiddleware())
-	seeAppRouter.Use(middleware.MCPServerPermissionMiddleware())
-	seeAppRouter.Use(middleware.MCPServerHeaderMiddleware())
-	seeAppRouter.GET("/sse", mcpApplicationProxy.SseHandler())
-	seeAppRouter.POST("/sse/message", mcpApplicationProxy.SseMessageHandler())
-
 	// trace
 	if cfg.Tracing.GinAPIEnabled() {
 		// set gin otel
