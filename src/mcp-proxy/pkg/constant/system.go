@@ -21,6 +21,7 @@ package constant
 // BkGatewayJWTHeaderKey ...
 const (
 	BkGatewayJWTHeaderKey = "X-Bkapi-Jwt"
+	BkGatewayRequestIDKey = "X-Bkapi-Request-ID"
 	OfficialGatewayName   = "bk-apigateway"
 	// RequestIDHeaderKey is a key to set the request id in header
 	RequestIDHeaderKey = "X-Request-Id"
