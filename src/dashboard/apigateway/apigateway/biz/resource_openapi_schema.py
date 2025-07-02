@@ -63,4 +63,5 @@ class ResourceOpenAPISchemaHandler:
             # so, we can't judge whether the schema has configured the schema or not
         if "requestBody" in schema or "parameters" in schema:
             return True
+
         return False

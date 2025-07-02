@@ -876,6 +876,7 @@ ENV_VARS_FOR_FRONTEND = {
     "BK_DASHBOARD_FE_URL": DASHBOARD_FE_URL,
     "BK_DASHBOARD_URL": DASHBOARD_URL,
     "BK_DASHBOARD_CSRF_COOKIE_NAME": CSRF_COOKIE_NAME,
+    "BK_API_URL_TMP": BK_API_URL_TMPL,
 }
 
 # ==============================================================================
