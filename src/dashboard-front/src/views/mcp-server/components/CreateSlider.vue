@@ -38,7 +38,7 @@
                 <div class="text-body">{{ t('唯一标识，以网关名称和环境名称为前缀，创建后不可更改') }}</div>
                 <div class="url">
                   <div class="label">{{ t('访问地址') }}：</div>
-                  <div class="content">{{ serverUrl }}</div>
+                  <div class="content">{{ url || previewUrl }}</div>
                   <div class="suffix">
                     <AgIcon name="copy-info" @click.stop="handleCopyClick" />
                   </div>
@@ -180,7 +180,7 @@ import {
 import { useSidebar } from '@/hooks';
 import { copy } from '@/common/util';
 
-const { BK_API_URL_TMP } = window;
+const { BK_API_RESOURCE_URL_TMPL } = window;
 
 interface IProps {
   serverId?: number,
@@ -214,6 +214,7 @@ const formData = ref<FormData>({
   is_public: true,
   labels: [],
 });
+const url = ref('');
 
 const stageList = ref<any[]>([]);
 const resourceList = ref<any[]>([]);
@@ -318,8 +319,12 @@ const filteredResourceList = computed(() => {
   });
 });
 
-const serverUrl = computed(() => {
-  return `${BK_API_URL_TMP || ''}/prod/api/v2/mcp-servers/${formData.value.name}/sse/`
+const previewUrl = computed(() => {
+  const prefix = BK_API_RESOURCE_URL_TMPL
+    .replace('{api_name}', 'bk-apigateway')
+    .replace('{stage_name}', 'prod')
+    .replace('{resource_path}', 'api/v2/mcp-servers')
+  return `${prefix || ''}/${serverNamePrefix.value}${formData.value.name}/sse/`
 });
 
 // const resourceTips = computed(() => t('请从已经发布到 {s} 环境的资源列表选取资源作为 MCP Server 的工具', { s: stage.value.name || '--' }))
@@ -411,6 +416,7 @@ const fetchServer = async () => {
   formData.value.is_public = response.is_public ?? true;
   formData.value.stage_id = response.stage.id || 0;
   selections.value = response.resource_names;
+  url.value = response.url;
 }
 
 const fetchStageResources = async () => {
@@ -502,7 +508,7 @@ const handleCancel = () => {
 };
 
 const handleCopyClick = () => {
-  copy(serverUrl.value);
+  copy(url.value || previewUrl.value);
 }
 
 const resetSliderData = () => {
@@ -516,6 +522,7 @@ const resetSliderData = () => {
   stageList.value = [];
   resourceList.value = [];
   selections.value = [];
+  url.value = '';
 };
 
 const handleBeforeClose = () => {
