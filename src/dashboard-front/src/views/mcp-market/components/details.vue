@@ -116,7 +116,9 @@ const handleCopy = (str: string) => {
 };
 
 const goBack = () => {
-  router.back();
+  router.push({
+    name: 'mcpMarket',
+  });
 };
 
 const getDetails = async () => {
