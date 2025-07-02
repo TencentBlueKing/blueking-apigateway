@@ -34,6 +34,16 @@
                 :disabled="isEditMode || noValidStage"
                 :prefix="(isEditMode || noValidStage )? undefined : serverNamePrefix"
               />
+              <div class="name-help-text">
+                <div class="text-body">{{ t('唯一标识，以网关名称和环境名称为前缀，创建后不可更改') }}</div>
+                <div class="url">
+                  <div class="label">{{ t('访问地址') }}：</div>
+                  <div class="content">{{ serverUrl }}</div>
+                  <div class="suffix">
+                    <AgIcon name="copy-info" @click.stop="handleCopyClick" />
+                  </div>
+                </div>
+              </div>
             </bk-form-item>
             <bk-form-item :label="t('描述')" property="description">
               <bk-input v-model="formData.description" :disabled="noValidStage" clearable />
@@ -168,6 +178,9 @@ import {
   patchServer,
 } from '@/http/mcp-server';
 import { useSidebar } from '@/hooks';
+import { copy } from '@/common/util';
+
+const { BK_API_URL_TMP } = window;
 
 interface IProps {
   serverId?: number,
@@ -303,6 +316,10 @@ const filteredResourceList = computed(() => {
     const matchPath = resource.path.toLowerCase().includes(keyword);
     return matchName || matchPath;
   });
+});
+
+const serverUrl = computed(() => {
+  return `${BK_API_URL_TMP || ''}/prod/api/v2/mcp-servers/${formData.value.name}/sse/`
 });
 
 // const resourceTips = computed(() => t('请从已经发布到 {s} 环境的资源列表选取资源作为 MCP Server 的工具', { s: stage.value.name || '--' }))
@@ -484,6 +501,10 @@ const handleCancel = () => {
   isShow.value = false;
 };
 
+const handleCopyClick = () => {
+  copy(serverUrl.value);
+}
+
 const resetSliderData = () => {
   formData.value = {
     name: '',
@@ -521,6 +542,42 @@ defineExpose({
     .main {
       color: #4d4f56;
       padding: 28px 40px 0;
+
+      .name-help-text {
+        .text-body {
+          font-size: 12px;
+          color: #979ba5;
+        }
+
+        .url {
+          padding-left: 8px;
+          width: 100%;
+          height: 32px;
+          background: #f5f7fa;
+          font-size: 12px;
+          display: flex;
+          align-items: center;
+
+          .label {
+            color: #4d4f56;
+            line-height: 20px;
+          }
+
+          .content {
+            color: #313238;
+            line-height: 20px;
+          }
+
+          .suffix {
+            margin-left: 8px;
+            cursor: pointer;
+
+            &:hover {
+              color: #3a84ff;
+            }
+          }
+        }
+      }
     }
   }
 }
