@@ -24,7 +24,7 @@
           <span>{{ t('使用指引') }}</span>
         </div> -->
       </div>
-      <div class="card-list">
+      <div class="card-list" v-if="mcpList?.length">
         <div class="card" @click="goDetails(item.id)" v-for="item in mcpList" :key="item.id">
           <div class="header">
             <bk-overflow-title class="title" style="max-width: calc(100% - 115px)">
@@ -37,8 +37,10 @@
             <div class="info-item">
               <div class="label">{{ t('访问地址') }}：</div>
               <div class="value flex-row align-items-center">
-                <bk-overflow-title style="width: calc(100% - 14px)">{{ item.url }}</bk-overflow-title>
-                <ag-icon name="copy" size="14" class="icon" @click.stop="handleCopy(item.url)" />
+                <bk-overflow-title style="width: calc(100% - 28px)">{{ item.url }}</bk-overflow-title>
+                <div class="copy-wrapper" @click.stop="handleCopy(item.url)">
+                  <ag-icon name="copy" size="14" class="icon" />
+                </div>
               </div>
             </div>
             <div class="info-item">
@@ -58,6 +60,14 @@
           </div>
         </div>
       </div>
+      <div class="empty-wrapper" v-else>
+        <TableEmpty
+          :keyword="tableEmptyConf.keyword"
+          :abnormal="tableEmptyConf.isAbnormal"
+          @reacquire="getList"
+          @clear-filter="handleClearFilterKey"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -71,6 +81,7 @@ import { getMcpMarketplace, IMarketplaceItem } from '@/http/mcp-market';
 import { copy } from '@/common/util';
 // @ts-ignore
 import mcpBanner from '@/images/mcp-banner.jpg';
+import TableEmpty from '@/components/table-empty.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -78,18 +89,24 @@ const router = useRouter();
 const search = ref<string>('');
 const isPublic = ref<boolean>(false);
 const mcpAllList = ref<IMarketplaceItem[]>([]);
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
+});
 
 const bannerImg = computed(() => {
   return mcpBanner;
 });
 
 const mcpList = computed(() => {
-  return mcpAllList.value.filter((item: IMarketplaceItem) => {
+  const list = mcpAllList.value.filter((item: IMarketplaceItem) => {
     if (isPublic.value) {
       return item.gateway.is_official;
     }
     return true;
   });
+  updateTableEmptyConfig();
+  return list;
 });
 
 const getList = async () => {
@@ -115,6 +132,19 @@ const goDetails = (id: number) => {
       id,
     },
   });
+};
+
+const updateTableEmptyConfig = () => {
+  if (search.value) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
+const handleClearFilterKey = async () => {
+  search.value = '';
+  getList();
 };
 
 </script>
@@ -188,6 +218,10 @@ const goDetails = (id: number) => {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            .copy-wrapper {
+              width: 28px;
+              text-align: right;
+            }
             .icon {
               color: #3A84FF;
             }
@@ -195,6 +229,10 @@ const goDetails = (id: number) => {
         }
       }
     }
+  }
+
+  .empty-wrapper {
+    padding-top: 120px;
   }
 }
 

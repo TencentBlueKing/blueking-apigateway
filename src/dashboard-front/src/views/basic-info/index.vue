@@ -731,8 +731,8 @@ watch(
     }
 
     &-right {
-      width: calc(100% - 50px);
-      padding: 0 16px;
+      flex: 1;
+      padding: 16px 16px 0px;
 
       .header-info-name {
         display: flex;
@@ -851,7 +851,7 @@ watch(
 
           .label {
             color: #63656E;
-            min-width: 60px;
+            min-width: 70px;
             text-align: right;
             &.w0 {
               min-width: 0px;
@@ -938,7 +938,8 @@ watch(
                 width: calc(100% - 40px);
                 display: flex;
                 justify-content: space-between;
-                padding: 0 12px;
+                padding-left: 32px;
+                padding-right: 12px;
               }
             }
           }
