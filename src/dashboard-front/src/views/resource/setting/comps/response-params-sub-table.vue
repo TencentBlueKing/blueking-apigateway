@@ -33,7 +33,7 @@
           <!-- 字段操作 -->
           <td class="table-body-row-cell actions">
             <AgIcon
-              v-if="row.type === 'object'"
+              v-if="isAddFieldVisible(row)"
               v-bk-tooltips="t('添加字段')"
               class="tb-btn add-btn"
               name="plus-circle-shape"
@@ -116,6 +116,16 @@ const genRow = () => {
   };
 };
 
+const isAddFieldVisible = (row: ITableRow) => {
+  if (row.type === 'object' || row.type === 'array') {
+    if (row.type === 'array') {
+      return row.properties ? row.properties.length === 0 : true;
+    }
+    return true;
+  }
+  return false;
+};
+
 const addField = (row: ITableRow) => {
   const targetRow = tableData.value.find(data => data.id === row.id);
   if (targetRow) {
@@ -137,7 +147,7 @@ const removeField = (row: ITableRow) => {
 const handleTypeChange = (row: ITableRow) => {
   const targetRow = tableData.value.find(data => data.id === row.id);
   if (targetRow) {
-    if (row.type === 'object') {
+    if (row.type === 'object' || row.type === 'array') {
       targetRow.properties = [genRow()];
     } else {
       targetRow.properties = [];

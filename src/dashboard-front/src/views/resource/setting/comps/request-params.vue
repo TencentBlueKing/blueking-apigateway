@@ -56,7 +56,7 @@
               v-for="item in typeList"
               :id="item.value"
               :key="item.value"
-              :disabled="row.in !== 'body' && item.value === 'object'"
+              :disabled="isTypeDisabled(row.in, item.value)"
               :name="item.label"
             />
           </bk-select>
@@ -94,7 +94,7 @@
       <bk-table-column :label="t('操作')" fixed="right" width="110">
         <template #default="{ row, index }">
           <AgIcon
-            v-if="row.in === 'body'"
+            v-if="isAddFieldVisible(row)"
             v-bk-tooltips="t('添加字段')"
             class="tb-btn add-btn"
             name="plus-circle-shape"
@@ -301,7 +301,7 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
       const row: IBodyRow = {
         id: _.uniqueId(),
         name: propertyName,
-        type: schema.type as JSONSchema7TypeName,
+        type: convertPropertyType(property.type),
         required: schema.required?.includes(propertyName) ?? false,
         default: '',
         description: property.description ?? '',
@@ -353,11 +353,17 @@ const handleInChange = (row: ITableRow) => {
   const _row = tableData.value.find(data => data.id === row.id);
   if (row.in === 'body') {
     _row.name = t('根节点');
+    _row.type = 'object';
     if (_row.body) {
       _row.body.push(genBodyRow());
     } else {
       _row.body = [genBodyRow()];
     }
+  } else {
+    if (row.type === 'object' || row.type === 'array') {
+      _row.type = 'string';
+    }
+    delete _row.body;
   }
   nextTick(() => {
     tableRef.value?.setAllRowExpand(true);
@@ -377,6 +383,16 @@ const delRow = (row: ITableRow, index: number) => {
     return;
   }
   tableData.value?.splice(index, 1);
+};
+
+const isAddFieldVisible = (row: ITableRow) => {
+  if (row.in === 'body') {
+    if (row.type === 'array') {
+      return row.body ? row.body.length === 0 : true;
+    }
+    return true;
+  }
+  return false;
 };
 
 const addField = (row: ITableRow) => {
@@ -461,6 +477,31 @@ const genSchemaFromBodyRow = (row: IBodyRow) => {
     });
   }
   return schema;
+};
+
+const convertPropertyType = (type: string): JSONSchema7TypeName => {
+  switch (type) {
+    case 'string':
+      return 'string';
+    case 'boolean':
+      return 'boolean';
+    case 'array':
+      return 'array';
+    case 'object':
+      return 'object';
+    case 'integer':
+    case 'number':
+      return 'number';
+    default:
+      return 'string';
+  }
+};
+
+const isTypeDisabled = (paramIn: string, type: string) => {
+  if (paramIn === 'body') {
+    return type !== 'object' && type !== 'array';
+  }
+  return type === 'object' || type === 'array';
 };
 
 const handleTableMounted = () => {
