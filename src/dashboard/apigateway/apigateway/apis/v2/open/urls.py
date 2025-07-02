@@ -55,4 +55,48 @@ urlpatterns = [
             ]
         ),
     ),
+    path(
+        "mcp-server/",
+        include(
+            [
+                # GET /api/v2/open/mcp-server/
+                path(
+                    "",
+                    views.MCPServerListApi.as_view(),
+                    name="openapi.v2.open.mcp_server.list",
+                ),
+                # GET /api/v2/open/mcp-server/{app_code}/
+                path(
+                    "<str:app_code>/",
+                    views.AppMCPServerListApi.as_view(),
+                    name="openapi.v2.open.mcp_server.app.list",
+                ),
+                # GET /api/v2/open/mcp-server/{mcp_server_id}/apps/
+                path(
+                    "<int:mcp_server_id>/apps/",
+                    views.MCPServerAppListApi.as_view(),
+                    name="openapi.v2.open.mcp_server.apps_list",
+                ),
+                path(
+                    "permission/",
+                    include(
+                        [
+                            # POST /api/v2/open/mcp-server/permission/apply/
+                            path(
+                                "apply/",
+                                views.MCPServerAppPermissionApplyCreateApi.as_view(),
+                                name="openapi.v2.open.mcp_server.permission.apply",
+                            ),
+                            # GET /api/v2/open/mcp-server/permission/apply-record/
+                            path(
+                                "apply-record/",
+                                views.MCPServerAppPermissionRecordRetrieveApi.as_view(),
+                                name="openapi.v2.open.mcp_server.permission.apply-record_retrieve",
+                            ),
+                        ]
+                    ),
+                ),
+            ]
+        ),
+    ),
 ]

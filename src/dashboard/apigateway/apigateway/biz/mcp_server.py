@@ -32,6 +32,7 @@ from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource
 from apigateway.utils.time import NeverExpiresTime, now_datetime
 
@@ -237,6 +238,8 @@ class MCPServerPermissionHandler:
             id__in=mcp_server_ids,
             is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
+            gateway__status=GatewayStatusEnum.ACTIVE.value,
+            stage__status=StageStatusEnum.ACTIVE.value,
         )
 
         selected_mcp_server_ids = list(queryset.values_list("id", flat=True))
