@@ -53,3 +53,14 @@ export interface GatewayListItem {
     released: boolean; // 是否已发布
   }[]; // 阶段列表
 }
+
+// 导出参数interface
+export interface IExportParams {
+  export_type?: string
+  query?: string
+  method?: string
+  label_name?: string
+  file_type?: string
+  resource_ids?: Array<number>
+  resource_filter_condition?: any
+}
