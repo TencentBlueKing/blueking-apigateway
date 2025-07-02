@@ -51,7 +51,8 @@
             </template>
           </bk-table-column>
           <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code"></bk-table-column>
-          <bk-table-column :label="t('授权维度')" prop="grant_dimension" :filter="grantDimensionFilterOptions">
+          <!-- <bk-table-column :label="t('授权维度')" prop="grant_dimension" :filter="grantDimensionFilterOptions"> -->
+          <bk-table-column :label="renderGrantDimensionLabel" prop="grant_dimension">
             <template #default="{ row }: { row: IPermission }">
               <span class="ag-auto-text">
                 {{ getSearchDimensionText(row.grant_dimension) }}
@@ -381,7 +382,7 @@
 </template>
 
 <script lang="tsx" setup>
-import { isEqual } from 'lodash';
+import { cloneDeep, isEqual } from 'lodash';
 import {
   InfoBox,
   Message,
@@ -391,6 +392,7 @@ import {
   reactive,
   ref,
   watch,
+  h
 } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { sortByKey } from '@/common/util';
@@ -410,6 +412,7 @@ import { useQueryList } from '@/hooks';
 import { IDropList } from '@/types';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import ExpDaySelector from '@/views/permission/app/comps/exp-day-selector.vue';
+import RenderCustomColumn from '@/components/custom-table-header-filter';
 import TableEmpty from '@/components/table-empty.vue';
 import {
   IFilterValues,
@@ -430,21 +433,37 @@ const { t } = useI18n();
 const common = useCommon();
 const { apigwId } = common; // 网关id
 
+const defaultFilterData = ref<DefaultSearchParamsInterface>({
+  grant_dimension: 'ALL',
+});
+const singleSelectData = ref<{[key: string]: any}>(cloneDeep(defaultFilterData));
 const checkedGrantDimensionFilterOptions = ref<string[]>([]);
 const checkedGrantTypeFilterOptions = ref<string[]>([]);
 
 // 授权维度表头过滤
-const grantDimensionFilterOptions = {
+const grantDimensionFilterOptions = ref({
+  // list: [
+  //   {
+  //     // value: 'api',
+  //     value: t('按网关'),
+  //     text: t('按网关'),
+  //   },
+  //   {
+  //     // value: 'resource',
+  //     value: t('按资源'),
+  //     text: t('按资源'),
+  //   },
+  // ],
   list: [
     {
       // value: 'api',
-      value: t('按网关'),
-      text: t('按网关'),
+      name: t('按网关'),
+      id: 'api',
     },
     {
       // value: 'resource',
-      value: t('按资源'),
-      text: t('按资源'),
+      name: t('按资源'),
+      id: 'resource',
     },
   ],
   checked: checkedGrantDimensionFilterOptions.value,
@@ -452,21 +471,9 @@ const grantDimensionFilterOptions = {
     if (!checked.length) {
       return true;
     }
-
-    const checkedList = checked.map((value) => {
-      if (value === '按网关' || value === 'By Gateway') {
-        return 'api';
-      }
-      if (value === '按资源' || value === 'By Resource') {
-        return 'resource';
-      }
-
-      return value;
-    });
-
-    return checkedList.includes(row.grant_dimension);
+    return grantDimensionList.value.includes(row.grant_dimension);
   },
-};
+});
 
 // 授权类型表头过滤
 // const grantTypeFilterOptions = {
@@ -488,7 +495,7 @@ const grantDimensionFilterOptions = {
 //       return true;
 //     }
 //
-//     const checkedList = checked.map((value) => {
+//     const grantDimensionList = checked.map((value) => {
 //       if (value === '主动授权' || value === 'Add Permissions') {
 //         return 'initialize';
 //       }
@@ -499,7 +506,7 @@ const grantDimensionFilterOptions = {
 //       return value;
 //     });
 //
-//     return checkedList.includes(row.grant_type);
+//     return grantDimensionList.includes(row.grant_type);
 //   },
 // };
 
@@ -621,6 +628,20 @@ const selectedResourcePermList = computed(() => curSelections.value.filter(perm 
 // 网关维度权限列表
 const selectedApiPermList = computed(() => curSelections.value.filter(perm => perm.grant_dimension === 'api'));
 
+// 授权维度筛选值转换
+const grantDimensionList = computed(() => {
+  const results = checkedGrantDimensionFilterOptions.value.map((v) => {
+    if ([t('按网关'), 'By Gateway'].includes(v)) {
+      return 'api';
+    }
+    if ([t('按资源'), 'By Resource'].includes(v)) {
+      return 'resource';
+    }
+    return v;
+  });
+  return results;
+})
+
 // 监听搜索是否变化
 watch(
   filterValues,
@@ -628,7 +649,9 @@ watch(
     selections.value = [];
     // 当前有资源名称过滤，且过滤值不在资源列表中，则删除该过滤条件
     const resourceIdFilterIndex = filterValues.value.findIndex(filter => filter.id === 'resource_id');
-
+    // 找到授权维度联动表头筛选
+    const rantDimensionIndex = filterValues.value.findIndex(v => ['grant_dimension'].includes(v.id));
+    singleSelectData.value.grant_dimension = rantDimensionIndex > -1 ? filterValues.value[rantDimensionIndex].values?.[0]?.id : 'ALL'
     if (resourceIdFilterIndex > -1) {
       const resourceId = filterValues.value[resourceIdFilterIndex].values[0].id as string;
       const validResourceIds = filterConditions.value
@@ -882,10 +905,13 @@ const handleBeforeClose = () => {
   const isSame = isEqual(initData, curAuthData.value);
   if (!isSame) {
     InfoBox({
+      type: 'warning',
       title: t('确认离开当前页？'),
       subTitle: t('离开将会导致未保存信息丢失'),
       confirmText: t('离开'),
       cancelText: t('取消'),
+      contentAlign: 'left',
+      showContentBgColor: true,
       onConfirm() {
         authSliderConf.isShow = false;
       },
@@ -986,13 +1012,11 @@ const handleSidesliderCancel = () => {
   authSliderConf.isShow = false;
 };
 
-const handleClearFilterKey = () => {
+const handleClearFilterKey = async() => {
   filterData.value = {};
   filterValues.value = [];
   checkedGrantDimensionFilterOptions.value = [];
   checkedGrantTypeFilterOptions.value = [];
-  getList();
-  updateTableEmptyConfig();
 };
 
 const updateTableEmptyConfig = () => {
@@ -1004,7 +1028,7 @@ const updateTableEmptyConfig = () => {
   });
   const list = Object.values(searchParams).filter(item => item !== '');
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (list.length || checkedGrantDimensionFilterOptions.value.length || checkedGrantTypeFilterOptions.value.length) {
+  if ((list.length || checkedGrantDimensionFilterOptions.value.length || checkedGrantTypeFilterOptions.value.length) && !tableData.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
   }
@@ -1076,6 +1100,52 @@ const getDurationTextColor = (expireAt: string | null) => {
 
 const isRowSelectEnable = ({ row }: { row: IPermission }) => {
   return row.renewable;
+};
+
+const getFilterData = (payload: Record<string, string>, curData: Record<string, string>) => {
+  const { id, name } = payload;
+  filterData.value[curData.id] = payload.id;
+  const hasData = filterValues.value.find((item: Record<string, any>) => [curData.id].includes(item.id));
+  if (hasData) {
+    hasData.values = [{
+      id,
+      name,
+    }];
+  } else {
+    filterValues.value.push({
+      id: curData.id,
+      name: curData.name,
+      values: [{
+        id,
+        name,
+      }],
+    });
+  }
+  if (['ALL'].includes(payload.id)) {
+    delete filterData.value[curData.id];
+    filterValues.value = filterValues.value.filter((item: Record<string, any>) => ![curData.id].includes(item.id));
+  }
+};
+
+const renderGrantDimensionLabel = () => {
+  return h('div', { class: 'application-permission-custom-label' }, [
+    h(
+      RenderCustomColumn,
+      {
+        hasAll: true,
+        columnLabel: t('授权维度'),
+        selectValue: singleSelectData.value.grant_dimension,
+        list: grantDimensionFilterOptions.value.list,
+        onSelected: (payload: Record<string, string>) => {
+          const curData = {
+            name: t('授权维度'),
+            id: 'grant_dimension',
+          };
+          getFilterData(payload, curData);
+        },
+      },
+    ),
+  ]);
 };
 
 const init = () => {

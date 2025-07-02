@@ -425,11 +425,13 @@ const handleSave = async () => {
   }
   if (flag) {
     InfoBox({
-      infoType: 'warning',
+      type: 'warning',
       title: t('确认修改变量配置？'),
       subTitle: t('将会立即应用在环境上，请谨慎操作！'),
       confirmText: t('确认修改'),
       cancelText: t('取消'),
+      contentAlign: 'left',
+      showContentBgColor: true,
       onConfirm: async () => {
         try {
           const data: any = {};
@@ -527,7 +529,7 @@ watch(
   .bk-form-error-tips {
     transform: translate(-50%, 4px);
   }
-  .bk-table-body-content {
+  .bk-table-body {
     .custom-table-cell {
       .cell {
         padding: 0;

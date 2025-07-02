@@ -30,7 +30,7 @@
     "@blueking/release-note": "0.0.1-beta.17",
     "@vueuse/core": "^13.3.0",
     "@vueuse/integrations": "^13.3.0",
-    "bkui-vue": "2.0.1-beta.70.search.1",
+    "bkui-vue": "2.0.2-beta.43",
     "change-case": "^5",
     "connect-history-api-fallback": "^2.0.0",
     "cookie": "^0.7.2",

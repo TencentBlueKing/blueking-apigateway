@@ -73,15 +73,18 @@
       <div :class="['doc-btn-wrapper', `${docRootClass}-btn`]" v-if="isAdsorb">
         <template v-if="isEdited">
           <bk-button
-            class="mr5" theme="primary" style="width: 100px;"
+            class="mr5
+            " theme="primary"
             @click="handleSaveMarkdown"
-            :loading="isSaving">{{isUpdate ? $t('更新') : $t('提交')}}</bk-button>
-          <bk-button
-            style="width: 100px;"
-            @click="handleCancelMarkdown"> {{ $t('取消') }} </bk-button>
+            :loading="isSaving">
+            {{isUpdate ? $t('更新') : $t('提交')}}
+          </bk-button>
+          <bk-button @click="handleCancelMarkdown">
+            {{ $t('取消') }}
+          </bk-button>
         </template>
         <template v-else>
-          <bk-button class="mr5" theme="primary" style="width: 100px;" @click="handleEditMarkdown('edit')">
+          <bk-button class="mr5" theme="primary" @click="handleEditMarkdown('edit')">
             {{ $t('修改') }}
           </bk-button>
           <bk-pop-confirm
@@ -100,15 +103,19 @@
       <div v-else class="fixed-doc-btn-wrapper" :style="fixedBtnLeft">
         <template v-if="isEdited">
           <bk-button
-            class="mr5" theme="primary" style="width: 100px;"
+            class="mr5"
+            theme="primary"
             @click="handleSaveMarkdown"
-            :loading="isSaving">{{isUpdate ? $t('更新') : $t('提交')}}</bk-button>
-          <bk-button
-            style="width: 100px;"
-            @click="handleCancelMarkdown"> {{ $t('取消') }} </bk-button>
+            :loading="isSaving"
+          >
+            {{isUpdate ? $t('更新') : $t('提交')}}
+          </bk-button>
+          <bk-button @click="handleCancelMarkdown">
+            {{ $t('取消') }}
+          </bk-button>
         </template>
         <template v-else>
-          <bk-button class="mr5" theme="primary" style="width: 100px;" @click="handleEditMarkdown('edit')">
+          <bk-button class="mr5" theme="primary" @click="handleEditMarkdown('edit')">
             {{ $t('修改') }}
           </bk-button>
           <bk-pop-confirm

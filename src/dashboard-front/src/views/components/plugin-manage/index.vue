@@ -500,11 +500,13 @@ const handleDeletePlugin = (item: any) => {
   }
   const { code, config_id } = item;
   InfoBox({
+    type: 'warning',
     title: t('确定停用插件？'),
-    infoType: 'warning',
     subTitle: t('将删除相关配置，不可恢复，请确认是否删除'),
-    confirmText: t('停用'),
+    confirmText: t('确认停用'),
     cancelText: t('取消'),
+    contentAlign: 'left',
+    showContentBgColor: true,
     onConfirm: async () => {
       if (pluginDeleting.value) {
         return;

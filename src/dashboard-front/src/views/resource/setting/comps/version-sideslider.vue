@@ -328,11 +328,14 @@ const handleBuildVersion = async () => {
     } else {
       // createError.value = true;
       InfoBox({
-        'ext-cls': 'version-publish-error-infobox',
-        infoType: 'danger',
+        class: 'version-publish-error-infobox',
+        type: 'danger',
         title: t('版本生成失败'),
         subTitle: t('版本号创建失败，请联系管理员'),
         confirmText: t('关闭'),
+        confirmButtonTheme: 'danger',
+        contentAlign: 'left',
+        showContentBgColor: true,
       });
     }
   } finally {

@@ -798,6 +798,8 @@ onBeforeRouteLeave((to, from, next) => {
       subTitle: t('离开将会导致未保存信息丢失'),
       confirmText: t('离开'),
       cancelText: t('取消'),
+      contentAlign: 'left',
+      showContentBgColor: true,
       onConfirm() {
         next();
       },

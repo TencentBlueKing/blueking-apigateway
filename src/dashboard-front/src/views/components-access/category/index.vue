@@ -421,8 +421,12 @@ const handleSearch = (payload: any) => {
 const handleDelete = (data: any) => {
   curDocCategory.value = data;
   InfoBox({
-    title: t('确认删除'),
+    title: t('确认删除？'),
     subTitle: `${t('确定要删除文档分类')}【${data.name}】?`,
+    confirmText: t('删除'),
+    confirmButtonTheme: 'danger',
+    contentAlign: 'left',
+    showContentBgColor: true,
     onConfirm() {
       handleDeleteDocCategory(data.id);
     },

@@ -232,9 +232,12 @@ const handleSuspendToggle = async () => {
     return;
   }
   InfoBox({
+    type: 'warning',
     title: t('确定停用 {n}？', { n: server.value.name }),
-    infoType: 'warning',
     subTitle: t('停用后，{n} 下所有工具不可访问，请确认！', { n: server.value.name }),
+    confirmText: t('确认停用'),
+    contentAlign: 'left',
+    showContentBgColor: true,
     onConfirm: async () => {
       await patchServerStatus(common.apigwId, server.value.id, { status: 0 });
       Message({
@@ -252,9 +255,13 @@ const handleUpdated = () => {
 
 const handleDelete = async () => {
   InfoBox({
+    type: 'warning',
     title: t('确定删除 {n}？', { n: server.value.name }),
-    infoType: 'danger',
     subTitle: t('删除后，{n} 不可恢复，请谨慎操作！', { n: server.value.name }),
+    confirmText: t('删除'),
+    confirmButtonTheme: 'danger',
+    contentAlign: 'left',
+    showContentBgColor: true,
     onConfirm: async () => {
       await deleteServer(common.apigwId, server.value.id);
       Message({

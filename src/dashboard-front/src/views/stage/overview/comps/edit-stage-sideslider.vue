@@ -986,7 +986,6 @@ defineExpose({
 .fixed-footer-btn-wrapper {
   position: fixed;
   bottom: 0;
-  left: 0;
   right: 0;
   padding: 10px 0;
   padding-left: 40px;
@@ -994,6 +993,8 @@ defineExpose({
   box-shadow: 0 -2px 4px 0 #0000000f;
   z-index: 9;
   transition: .3s;
+  width: 100%;
+  max-width: 960px;
 }
 .is-pinned {
   opacity: 0;

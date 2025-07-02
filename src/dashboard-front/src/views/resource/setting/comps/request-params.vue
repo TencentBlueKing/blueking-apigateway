@@ -599,7 +599,7 @@ defineExpose({
     padding: 0 16px;
   }
 
-  :deep(.bk-table-body-content) {
+  :deep(.bk-table-body) {
     .custom-table-cell {
       .cell {
         padding: 0;

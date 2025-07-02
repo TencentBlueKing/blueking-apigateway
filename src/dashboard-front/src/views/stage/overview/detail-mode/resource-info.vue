@@ -22,6 +22,7 @@
           :settings="settings"
           @page-limit-change="handlePageSizeChange"
           @page-value-change="handlePageChange"
+          @column-filter="handleFilterChange"
           :row-class="isHighlight"
         >
           <bk-table-column prop="backend" :label="t('后端服务')">
@@ -163,7 +164,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch, isProxy } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getResourceVersionsInfo, getGatewayLabels, getStageList } from '@/http';
 import { useCommon, useStage } from '@/store';
@@ -431,6 +432,21 @@ const curPageData = computed(() => {
 });
 
 const handleMethodFilter = () => true;
+
+const handleFilterChange = ({ column, checked }: Record<string, any>) => {
+  if (['method'].includes(column.field)) {
+    chooseMethod.value = column?.filter?.checked ?? [];
+    if (!checked.length && !isProxy(checked)) {
+      chooseMethod.value = [];
+    }
+  }
+  if (['gateway_label_ids'].includes(column.field)) {
+    chooseLabels.value = column?.filter?.checked ?? [];
+    if (!checked.length && !isProxy(checked)) {
+      chooseLabels.value = [];
+    }
+  }
+};
 
 // 页码变化发生的事件
 const handlePageChange = (current: number) => {

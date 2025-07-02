@@ -124,36 +124,6 @@
       @hide-when-pending="handleReleaseDoing"
       @retry="handleRetry"
     />
-    <!--  发布确认弹窗  -->
-    <bk-dialog
-      v-model:is-show="isConfirmDialogVisible"
-      class="custom-main-dialog"
-      mask-close
-      width="400"
-    >
-      <div class="dialog-content">
-        <header class="dialog-icon"><i class="apigateway-icon icon-ag-exclamation-circle-fill"></i></header>
-        <main class="dialog-main">
-          <div class="dialog-title">
-            {{
-              t('确认发布 {version} 版本至 {stage} 环境？', {
-                version: formData.version,
-                stage: props.currentStage?.name || '--',
-              })
-            }}
-          </div>
-          <div class="dialog-subtitle">
-            {{ t('发布后，将会覆盖原来的资源版本，请谨慎操作！') }}
-          </div>
-        </main>
-        <footer class="dialog-footer">
-          <bk-button theme="primary" @click="handlePublish">
-            {{ t('确认发布') }}
-          </bk-button>
-          <bk-button class="ml10" @click="isConfirmDialogVisible = false">{{ t('取消') }}</bk-button>
-        </footer>
-      </div>
-    </bk-dialog>
   </div>
 </template>
 
@@ -179,7 +149,7 @@ import {
   useRouter,
 } from 'vue-router';
 import ProgrammableEventSlider from '@/components/programmable-deploy-events-slider/index.vue';
-import { Message } from 'bkui-vue';
+import { Message, InfoBox } from 'bkui-vue';
 import {
   useGetStageList,
   useSidebar,
@@ -226,7 +196,6 @@ const { getStagesStatus } = useGetStageList();
 const isShow = ref(false);
 const formRef = ref(null);
 const logDetailsRef = ref(null);
-const isConfirmDialogVisible = ref(false);
 
 // 提交数据
 const formData = ref<FormData>({
@@ -341,7 +310,24 @@ const fetchStageList = async () => {
 };
 
 const showPublishDia = () => {
-  isConfirmDialogVisible.value = true;
+  InfoBox({
+    type: 'warning',
+    title: t(
+      '确认发布 {version} 版本至 {stage} 环境？',
+      {
+        version: formData.value.version,
+        stage: props.currentStage?.name || '--',
+      },
+    ),
+    subTitle: t('发布后，将会覆盖原来的资源版本，请谨慎操作！'),
+    confirmText: t('确认发布'),
+    cancelText: t('取消'),
+    contentAlign: 'left',
+    showContentBgColor: true,
+    onConfirm: () => {
+      handlePublish();
+    },
+  });
 };
 
 const handlePublish = async () => {
@@ -354,7 +340,6 @@ const handlePublish = async () => {
     const res = await deployReleases(apigwId.value, params);
     deployId.value = res.deploy_id;
     isShow.value = false;
-    isConfirmDialogVisible.value = false;
     logDetailsRef.value.showSideslider();
   } catch (e: any) {
     // 自定义错误处理
@@ -427,12 +412,6 @@ const handleBeforeClose = async () => {
 
 const handleAnimationEnd = () => {
   handleCancel();
-};
-
-// 取消
-const handleCancel = () => {
-  isShow.value = false;
-  resetSliderData();
 };
 
 const resetSliderData = () => {
