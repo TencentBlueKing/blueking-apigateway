@@ -27,17 +27,20 @@ export function useSidebar() {
         // isBackDialogShow.value = true;
         // 已编辑
         InfoBox({
-          'ext-cls': 'sideslider-close-cls',
+          type: 'warning',
+          class: 'sideslider-close-cls',
           title: t('确认离开当前页？'),
           subTitle: t('离开将会导致未保存信息丢失'),
           confirmText: t('离开'),
           cancelText: t('取消'),
+          contentAlign: 'left',
+          showContentBgColor: true,
           onConfirm() {
             mitt.emit('on-leave-page-change', {});
             resolve(true);
             // isBackDialogShow.value = false;
           },
-          onClosed() {
+          onCancel() {
             resolve(false);
             // isBackDialogShow.value = false;
           },

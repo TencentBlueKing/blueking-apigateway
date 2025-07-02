@@ -507,9 +507,10 @@ onMounted(async () => {
           }
         }
       }
-      .default-header-view{
+      .default-header-view {
         height: calc(100vh - 105px);
-        overflow: auto;
+        overflow-x: hidden;
+        overflow-y: auto;
 
         &.has-notice {
           height: calc(100vh - 147px);

@@ -454,7 +454,7 @@ defineExpose({
   :deep(.bk-form-error-tips) {
     transform: translate(-50%, 4px);
   }
-  :deep(.bk-table-body-content) {
+  :deep(.bk-table-body) {
     .custom-table-cell {
       .cell {
         padding: 0;

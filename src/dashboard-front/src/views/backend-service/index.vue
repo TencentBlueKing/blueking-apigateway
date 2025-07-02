@@ -293,9 +293,13 @@ const handleResource = (data: any) => {
 // 点击删除
 const handleDelete = (item: any) => {
   InfoBox({
+    type: 'warning',
     title: t(`确定删除【${item.name}】该服务?`),
-    infoType: 'warning',
     subTitle: t('删除操作无法撤回，请谨慎操作'),
+    confirmText: t('删除'),
+    confirmButtonTheme: 'danger',
+    contentAlign: 'left',
+    showContentBgColor: true,
     onConfirm: async () => {
       try {
         await deleteBackendService(apigwId, item.id);

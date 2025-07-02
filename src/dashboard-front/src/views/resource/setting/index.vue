@@ -204,9 +204,21 @@
               @row-mouse-enter="handleMouseEnter"
               @row-mouse-leave="handleMouseLeave"
               @column-sort="handleSortChange"
+              @column-filter="handleFilterChange"
             >
-              <bk-table-column v-if="showBatch" align="center" fixed type="selection" width="80" />
-              <bk-table-column :label="t('资源名称')" fixed prop="name" width="170">
+              <bk-table-column
+                v-if="showBatch"
+                align="center"
+                type="selection"
+                width="80"
+                :fixed="isDetail ? false : 'left'"
+              />
+              <bk-table-column
+                :label="t('资源名称')"
+                prop="name"
+                width="170"
+                :fixed="isDetail ? false : 'left'"
+              >
                 <template #default="{ row }">
                   <div class="resource-name">
                     <div
@@ -579,6 +591,7 @@ import {
   ref,
   shallowRef,
   watch,
+  isProxy,
 } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
@@ -769,7 +782,7 @@ const docSliderConf: any = reactive({
 // 批量删除dialog
 const dialogData: IDialog = reactive({
   isShow: false,
-  title: t(''),
+  title: '',
   loading: false,
 });
 
@@ -1069,6 +1082,22 @@ const handleSortChange = ({ column, type }: Record<string, any>) => {
     },
   };
   return typeMap[type]();
+};
+
+const handleFilterChange = ({ column, checked }: Record<string, any>) => {
+  if (['method'].includes(column.field)) {
+    chooseMethod.value = column?.filter?.checked ?? [];
+    // 处理重置功能bug, 有数据是响应式数组，但length是0， 重置后是原始数组
+    if (!checked.length && !isProxy(checked)) {
+      chooseMethod.value = [];
+    }
+  }
+  if (['labels'].includes(column.field)) {
+    chooseLabels.value = column?.filter?.checked ?? [];
+    if (!checked.length && !isProxy(checked)) {
+      chooseLabels.value = [];
+    }
+  }
 };
 
 // 展示右边内容

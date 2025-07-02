@@ -516,9 +516,13 @@ const handleEdit = async (data: any) => {
 // 删除
 const handleDelete = (item: any) => {
   InfoBox({
+    type: 'warning',
     title: t(`确定要删除告警策略【${item.name}】?`),
-    infoType: 'warning',
     subTitle: t('策略删除后，将不再接收相关通知'),
+    confirmText: t('删除'),
+    confirmButtonTheme: 'danger',
+    contentAlign: 'left',
+    showContentBgColor: true,
     onConfirm: async () => {
       await deleteStrategy(apigwId, item.id);
       Message({

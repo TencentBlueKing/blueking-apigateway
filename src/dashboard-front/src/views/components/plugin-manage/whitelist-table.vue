@@ -677,7 +677,10 @@ const handleBatchRemovePolicy = () => {
   }
 
   InfoBox({
+    type: 'warning',
     title: t('确认要批量删除白名单？'),
+    confirmText: t('删除'),
+    confirmButtonTheme: 'danger',
     onConfirm() {
       deleteInBatchesPolicy();
     },

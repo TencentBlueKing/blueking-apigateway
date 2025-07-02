@@ -608,15 +608,21 @@ const handleChangeApigwStatus = async () => {
 const handleOperate = async (type: string) => {
   if (['enable', 'deactivate'].includes(type)) {
     let title = t('确认要启用网关？');
+    let confirmText = t('确认启用');
     let subTitle = '';
     if (basicInfoData.value.status > 0) {
       title = t('确认是否停用网关？');
+      confirmText = t('确认停用');
       subTitle = t('网关停用后，网关下所有资源不可访问，请确认是否继续操作？');
     }
 
     InfoBox({
+      type: 'warning',
       title,
       subTitle,
+      confirmText,
+      contentAlign: 'left',
+      showContentBgColor: true,
       onConfirm: () => {
         if (statusChanging.value) {
           return;

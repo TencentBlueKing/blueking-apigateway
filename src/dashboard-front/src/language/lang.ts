@@ -1940,6 +1940,8 @@ const lang: ILANG = {
   '如需生成新版本，请前往\'资源配置\'页面操作': ['To generate a new version, please go to the \'Resource Configuration\' page to operate'],
   '唯一标识，以网关名称和环境名称为前缀，创建后不可更改': ['Unique ID, prefixed by gateway name and environment name, cannot be changed after creation'],
   '时间选择器': ['Time Selector'],
+  '确认启用': ['Confirm Enable'],
+  '确认停用': ['Confirm stop'],
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // 'test': ['{vari1} ---english--- {vari2}'],

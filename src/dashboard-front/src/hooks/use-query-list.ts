@@ -12,6 +12,7 @@ import {
 import { IPagination } from '@/types';
 import { useCommon } from '@/store';
 import {
+  debounce,
   sortBy,
   sortedUniq,
 } from 'lodash';
@@ -93,13 +94,12 @@ export function useQueryList<T>(
   // 监听筛选条件的变化
   watch(
     () => filterData,
-    async () => {
+    debounce(() => {
       if (!filterNoResetPage) {
         pagination.value = { ...initPagination };
       }
-
-      await fetchList();
-    },
+      fetchList();
+    }, 100),
     { deep: true },
   );
 

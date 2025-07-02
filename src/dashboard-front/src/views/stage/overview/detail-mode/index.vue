@@ -386,9 +386,12 @@ const handleRelease = () => {
 const handleStageUnlist = async () => {
   showDropdown.value = false;
   InfoBox({
+    type: 'warning',
     title: t('确认下架环境？'),
     subTitle: t('可能会导致正在使用该接口的服务异常，请确认'),
     confirmText: t('确认下架'),
+    contentAlign: 'left',
+    showContentBgColor: true,
     onConfirm: async () => {
       if (isDeleteLoading.value) {
         return;
@@ -426,7 +429,10 @@ const handleStageDelete = async () => {
   }
 
   InfoBox({
+    type: 'waring',
     title: t('确认删除吗？'),
+    confirmText: t('删除'),
+    confirmButtonTheme: 'danger',
     onConfirm: async () => {
       try {
         await deleteStage(apigwId.value, stageData.value.id);
