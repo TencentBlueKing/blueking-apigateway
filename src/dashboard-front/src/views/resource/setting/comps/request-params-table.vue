@@ -16,6 +16,7 @@
               v-model="row.type"
               :clearable="false"
               :filterable="false"
+              @change="() => handleTypeChange(row)"
             >
               <bk-option
                 v-for="item in typeList"
@@ -44,7 +45,7 @@
           <!-- 字段操作 -->
           <td class="table-body-row-cell actions">
             <AgIcon
-              v-if="row.type === 'object'"
+              v-if="isAddFieldVisible(row)"
               v-bk-tooltips="t('添加字段')"
               class="tb-btn add-btn"
               name="plus-circle-shape"
@@ -124,6 +125,27 @@ const genBodyRow = (id?: string) => {
     description: '',
     isEdit: true,
   };
+};
+
+const handleTypeChange = (row: IBodyRow) => {
+  const _row = tableData.value.find(data => data.id === row.id);
+  if (_row) {
+    if (_row.type !== 'object' && _row.type !== 'array') {
+      delete _row.body;
+    } else {
+      addField(row);
+    }
+  }
+};
+
+const isAddFieldVisible = (row: IBodyRow) => {
+  if (row.type === 'object' || row.type === 'array') {
+    if (row.type === 'array') {
+      return row.body ? row.body.length === 0 : true;
+    }
+    return true;
+  }
+  return false;
 };
 
 const addField = (row: IBodyRow) => {
