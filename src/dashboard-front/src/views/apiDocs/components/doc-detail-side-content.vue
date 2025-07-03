@@ -103,9 +103,11 @@
 import {
   computed,
   inject,
+  onBeforeUnmount,
   ref,
   Ref,
   toRefs,
+  watch,
   watchEffect,
 } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -122,6 +124,7 @@ import {
 } from '@/views/apiDocs/types';
 import LangSelector from '@/views/apiDocs/components/lang-selector.vue';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
+import { useBkUserDisplayName } from '@/hooks';
 
 const props = withDefaults(defineProps<IProps>(), {
   basics: () => null,
@@ -144,6 +147,7 @@ const {
 } = toRefs(props);
 
 const userStore = useUser();
+const { configure: configureDisplayName } = useBkUserDisplayName();
 
 const language = ref<LanguageType>('python');
 
@@ -163,8 +167,18 @@ const curSdk = computed(() => {
   return sdks.value.find(item => item.language === language.value) ?? null;
 });
 
+watch(basics, () => {
+  if (basics.value) {
+    configureDisplayName(basics.value.tenant_mode === 'global' ? 'system' : userStore.user.tenant_id);
+  }
+}, { deep: true, immediate: true });
+
 watchEffect(() => {
   language.value = sdks.value[0]?.language || 'python';
+});
+
+onBeforeUnmount(() => {
+  configureDisplayName();
 });
 
 </script>

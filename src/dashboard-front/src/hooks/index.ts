@@ -14,3 +14,4 @@ export * from './user-chart-log';
 export * from './sidebar';
 // 导出所有从 './use-stage-data' 模块中导出的内容
 export * from './use-stage-data';
+export * from './use-bk-user-display-name';
