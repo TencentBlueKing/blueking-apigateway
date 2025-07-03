@@ -86,7 +86,10 @@ import {
   getUser,
 } from '@/http';
 // import { ILoginData } from '@/common/auth';
-import { useSidebar } from '@/hooks';
+import {
+  useBkUserDisplayName,
+  useSidebar,
+} from '@/hooks';
 // @ts-ignore
 import {
   getPlatformConfig,
@@ -98,7 +101,6 @@ import logoWithoutName from '@/images/APIgateway-logo.png';
 import { isChinese } from '@/language/i18n';
 import constantConfig from '@/constant/config';
 import { useScriptTag } from '@vueuse/core';
-import BkUserDisplayName from '@blueking/bk-user-display-name';
 
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const { t, locale } = useI18n();
@@ -107,6 +109,7 @@ const route = useRoute();
 const common = useCommon();
 // 获取用户数据
 const user = useUser();
+const { configure: configureDisplayName } = useBkUserDisplayName();
 
 const { BK_DASHBOARD_URL } = window;
 
@@ -321,11 +324,8 @@ watch(
       // 多租户 display_name 组件展示配置
       // 在 template 中使用时，不需再 import，否则报错
       // if (user.featureFlags?.ENABLE_MULTI_TENANT_MODE) {
-      BkUserDisplayName.configure({
-        tenantId: user.user.tenant_id,
-        apiBaseUrl: user.apiBaseUrl,
-      });
-      // }
+      configureDisplayName();
+      // });
 
       userLoaded.value = true;
     } catch (e: any) {
