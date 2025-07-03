@@ -189,7 +189,7 @@ func Load(v *viper.Viper) (*Config, error) {
 	}
 
 	if cfg.McpServer.Interval == 0 {
-		cfg.McpServer.Interval = 30 * time.Second
+		cfg.McpServer.Interval = 60 * time.Second
 	}
 	if cfg.McpServer.BkApiUrlTmpl == "" {
 		cfg.McpServer.BkApiUrlTmpl = os.Getenv("BK_API_URL_TMPL")
