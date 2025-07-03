@@ -131,6 +131,24 @@ func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi
 	return m.AddMCPServerFromConfigs([]*MCPServerConfig{mcpServerConfig})
 }
 
+// UpdateMCPServerFromOpenApiSpec nolint:gofmt
+func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
+	mcpServer *MCPServer, name string, openApiSpec *openapi3.T, operationIDMap map[string]struct{},
+) error {
+	mcpServerConfig := &MCPServerConfig{
+		Name:  name,
+		Tools: OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
+	}
+	// update tool
+	for _, toolConfig := range mcpServerConfig.Tools {
+		bytes, _ := toolConfig.ParamSchema.JSONSchemaBytes()
+		tool := protocol.NewToolWithRawSchema(toolConfig.Name, toolConfig.Description, bytes)
+		toolHandler := genToolHandler(toolConfig)
+		mcpServer.RegisterTool(tool, toolHandler)
+	}
+	return nil
+}
+
 // SseHandler ...
 func (m *MCPProxy) SseHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
