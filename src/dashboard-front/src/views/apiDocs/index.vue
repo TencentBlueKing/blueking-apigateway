@@ -88,20 +88,40 @@
                 </template>
               </bk-table-column>
               <bk-table-column
+                v-if="!user.isTenantMode"
                 :label="t('网关负责人')"
                 field="maintainers"
+                :show-overflow-tooltip="false"
+                placement="auto-start"
               >
                 <template #default="{ row }">
-                  <span v-if="!row.maintainers">
-                    {{ '--' }}
-                  </span>
-                  <span v-else>
-                    <template v-for="(maintainer, index) in row.maintainers" :key="maintainer.login_name">
-                      <bk-user-display-name
-                        :user-id="maintainer"
-                      /><span v-if="index !== (row.maintainers.length - 1)">,</span>
+                  <bk-popover :component-event-delay="300" :width="480">
+                    <span v-if="!row.maintainers">
+                      {{ '--' }}
+                    </span>
+                    <div
+                      v-else
+                      style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis;"
+                    >
+                      <template v-for="(maintainer, index) in row.maintainers" :key="maintainer.login_name">
+                        <span>
+                          <bk-user-display-name
+                            :user-id="maintainer"
+                          /><span v-if="index !== (row.maintainers.length - 1)">,</span>
+                        </span>
+                      </template>
+                    </div>
+                    <template #content>
+                      <div>
+                        <template v-for="(maintainer, index) in row.maintainers" :key="maintainer.login_name">
+                          <bk-user-display-name
+                            :user-id="maintainer"
+                          />
+                          <span v-if="index !== (row.maintainers.length - 1)">,</span>
+                        </template>
+                      </div>
                     </template>
-                  </span>
+                  </bk-popover>
                 </template>
               </bk-table-column>
               <bk-table-column
