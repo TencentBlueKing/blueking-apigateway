@@ -159,7 +159,6 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             update_app_maintainers(
                 app_code,
                 slz.validated_data["maintainers"],
-                user_credentials=get_user_credentials_from_request(request),
             )
 
             # set the related app code, while the programmable gateway is created before the app syncing gateway
@@ -276,7 +275,6 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
             update_app_maintainers(
                 slz.instance.name,
                 slz.instance.maintainers,
-                user_credentials=get_user_credentials_from_request(request),
             )
 
         Auditor.record_gateway_op_success(
