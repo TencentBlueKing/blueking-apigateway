@@ -59,5 +59,5 @@ class MCPServerPermissionActionEnum(StructuredEnum):
 
 
 class MCPServerPublicStatusEnum(StructuredEnum):
-    PUBLIC = EnumField(0, label="公开")
-    PRIVATE = EnumField(1, label="私有")
+    PRIVATE = EnumField(0, label="私有")
+    PUBLIC = EnumField(1, label="公开")

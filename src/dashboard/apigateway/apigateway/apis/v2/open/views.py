@@ -31,6 +31,7 @@ from apigateway.apps.mcp_server.constants import MCPServerPublicStatusEnum, MCPS
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
+from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway_type import GatewayTypeHandler
 from apigateway.biz.mcp_server import MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
@@ -388,10 +389,21 @@ class UserMCPServerListApi(generics.ListAPIView):
         if public_status == MCPServerPublicStatusEnum.PUBLIC.value:
             queryset = queryset.filter(is_public=True)
         elif public_status == MCPServerPublicStatusEnum.PRIVATE.value:
-            queryset = queryset.filter(is_public=False, created_by=request.user.username)
+            queryset = queryset.filter(
+                is_public=False,
+                gateway_id__in=[gateway.id for gateway in GatewayHandler.list_gateways_by_user(request.user.username)],
+            )
         else:
             # 查询全部
-            queryset = queryset.filter(Q(is_public=True) | Q(is_public=False, created_by=request.user.username))
+            queryset = queryset.filter(
+                Q(is_public=True)
+                | Q(
+                    is_public=False,
+                    gateway_id__in=[
+                        gateway.id for gateway in GatewayHandler.list_gateways_by_user(request.user.username)
+                    ],
+                )
+            )
 
         if slz.validated_data.get("keyword"):
             queryset = queryset.filter(

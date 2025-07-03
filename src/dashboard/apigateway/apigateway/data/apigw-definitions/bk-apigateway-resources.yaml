@@ -895,7 +895,7 @@ paths:
         authConfig:
           userVerifiedRequired: false
           appVerifiedRequired: true
-          resourcePermissionRequired: false
+          resourcePermissionRequired: true
         descriptionEn: None
   /api/v2/open/mcp-servers/{mcp_server_id}/permissions/:
     get:
@@ -924,7 +924,7 @@ paths:
         authConfig:
           userVerifiedRequired: false
           appVerifiedRequired: true
-          resourcePermissionRequired: false
+          resourcePermissionRequired: true
         descriptionEn: None
   /api/v2/open/mcp-servers/permissions/:
     get:
@@ -953,7 +953,7 @@ paths:
         authConfig:
           userVerifiedRequired: false
           appVerifiedRequired: true
-          resourcePermissionRequired: false
+          resourcePermissionRequired: true
         descriptionEn: None
   /api/v2/open/mcp-servers/permissions/apply/:
     post:
@@ -982,7 +982,7 @@ paths:
         authConfig:
           userVerifiedRequired: false
           appVerifiedRequired: true
-          resourcePermissionRequired: false
+          resourcePermissionRequired: true
         descriptionEn: None
   /api/v2/open/mcp-servers/permissions/apply-records/:
     get:
@@ -1011,7 +1011,7 @@ paths:
         authConfig:
           userVerifiedRequired: false
           appVerifiedRequired: true
-          resourcePermissionRequired: false
+          resourcePermissionRequired: true
         descriptionEn: None
   /api/v2/open/user/mcp-servers/:
     get:
@@ -1040,7 +1040,7 @@ paths:
         authConfig:
           userVerifiedRequired: true
           appVerifiedRequired: true
-          resourcePermissionRequired: false
+          resourcePermissionRequired: true
         descriptionEn: None
   /api/v2/sync/gateways/{gateway_name}/public_key/:
     get:
