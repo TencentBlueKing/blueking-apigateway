@@ -27,7 +27,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
-from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
+from apigateway.apps.mcp_server.constants import MCPServerPublicStatusEnum, MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
@@ -50,6 +50,8 @@ from .serializers import (
     MCPServerListInputSLZ,
     MCPServerListOutputSLZ,
     MCPServerPermissionListOutputSLZ,
+    UserMCPServerListInputSLZ,
+    UserMCPServerListOutputSLZ,
 )
 
 # 注意：请使用 OpenAPIV2Permission / OpenAPIV2GatewayNamePermission, 有特殊情况请在类注释中说明
@@ -178,7 +180,7 @@ class GatewayAppPermissionApplyAPI(generics.CreateAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="获取公开的的 MCPServer 列表",
+        operation_description="获取公开的 MCPServer 列表",
         query_serializer=MCPServerListInputSLZ,
         responses={status.HTTP_200_OK: MCPServerListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Open"],
@@ -262,7 +264,7 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
         slz = MCPServerAppPermissionListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        queryset = MCPServerAppPermission.objects.filter(bk_app_code=slz.validated_data["target_app_code"])
+        queryset = MCPServerAppPermission.objects.filter(bk_app_code=slz.validated_data["app_code"])
         page = self.paginate_queryset(queryset)
         output_slz = MCPServerAppPermissionListOutputSLZ(page, many=True)
 
@@ -300,7 +302,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        operation_description="指定应用发起 MCPServer 申请权限",
+        operation_description="指定应用发起 MCPServer 权限申请",
         request_body=serializers.MCPServerAppPermissionApplyCreateInputSLZ,
         responses={status.HTTP_201_CREATED: ""},
         tags=["OpenAPI.V2.Open"],
@@ -317,7 +319,7 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
         data = slz.validated_data
 
         MCPServerPermissionHandler.create_apply(
-            data["target_app_code"],
+            data["app_code"],
             data["mcp_server_ids"],
             data["reason"],
             data["applied_by"],
@@ -329,7 +331,7 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="获取指定应用的 MCPServer 申请权限状态",
+        operation_description="获取指定应用的 MCPServer 权限申请记录列表",
         query_serializer=MCPServerAppPermissionRecordListInputSLZ,
         responses={status.HTTP_200_OK: MCPServerAppPermissionApplyRecordListOutputSLZ()},
         tags=["OpenAPI.V2.Open"],
@@ -345,7 +347,7 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
         data = slz.validated_data
 
         queryset = MCPServerAppPermissionApply.objects.filter(
-            bk_app_code=data["target_app_code"],
+            bk_app_code=data["app_code"],
         )
 
         if data.get("mcp_server_id"):
@@ -358,3 +360,82 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
 
         output_slz = MCPServerAppPermissionApplyRecordListOutputSLZ(output_data.values(), many=True)
         return OKJsonResponse(data=output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCPServer 列表",
+        query_serializer=UserMCPServerListInputSLZ,
+        responses={status.HTTP_200_OK: UserMCPServerListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class UserMCPServerListApi(generics.ListAPIView):
+    permission_classes = [OpenAPIV2Permission]
+
+    def list(self, request, *args, **kwargs):
+        slz = UserMCPServerListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        queryset = MCPServer.objects.filter(
+            status=MCPServerStatusEnum.ACTIVE.value,
+            gateway__status=GatewayStatusEnum.ACTIVE.value,
+            stage__status=StageStatusEnum.ACTIVE.value,
+        )
+
+        public_status = slz.validated_data.get("public_status")
+        if public_status == MCPServerPublicStatusEnum.PUBLIC.value:
+            queryset = queryset.filter(is_public=True)
+        elif public_status == MCPServerPublicStatusEnum.PRIVATE.value:
+            queryset = queryset.filter(is_public=False, created_by=request.user.username)
+        else:
+            # 查询全部
+            queryset = queryset.filter(Q(is_public=True) | Q(is_public=False, created_by=request.user.username))
+
+        if slz.validated_data.get("keyword"):
+            queryset = queryset.filter(
+                Q(name__icontains=slz.validated_data["keyword"])
+                | Q(description__icontains=slz.validated_data["keyword"])
+            )
+
+        # optimize query by using select_related
+        queryset = queryset.select_related("gateway", "stage")
+
+        # note: the stage offline will update related mcp server status to inactive,
+        # the stage publish will update the mcp server resource_names,
+        # so we don't need to care about is the mcp server stage is correctly published here
+
+        page = self.paginate_queryset(queryset)
+
+        gateway_ids = list({mcp_server.gateway.id for mcp_server in page})
+        gateway_auth_configs = GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids)
+        gateways = {
+            gateway.id: {
+                "id": gateway.id,
+                "name": gateway.name,
+                "maintainers": gateway.maintainers,
+                "is_official": GatewayTypeHandler.is_official(gateway_auth_configs[gateway.id].gateway_type),
+            }
+            for gateway in Gateway.objects.filter(id__in=gateway_ids)
+        }
+
+        stage_ids = [mcp_server.stage.id for mcp_server in page]
+        stages = {
+            stage.id: {
+                "id": stage.id,
+                "name": stage.name,
+            }
+            for stage in Stage.objects.filter(id__in=stage_ids)
+        }
+
+        output_slz = UserMCPServerListOutputSLZ(
+            page,
+            many=True,
+            context={
+                "gateways": gateways,
+                "stages": stages,
+            },
+        )
+
+        return self.get_paginated_response(output_slz.data)

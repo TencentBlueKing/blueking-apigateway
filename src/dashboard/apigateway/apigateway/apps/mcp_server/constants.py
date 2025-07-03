@@ -56,3 +56,8 @@ class MCPServerPermissionStatusEnum(StructuredEnum):
 class MCPServerPermissionActionEnum(StructuredEnum):
     APPLY = EnumField("apply")
     RENEW = EnumField("renew")
+
+
+class MCPServerPublicStatusEnum(StructuredEnum):
+    PUBLIC = EnumField(0, label="公开")
+    PRIVATE = EnumField(1, label="私有")

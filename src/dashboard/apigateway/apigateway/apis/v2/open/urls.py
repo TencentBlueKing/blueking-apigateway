@@ -65,12 +65,6 @@ urlpatterns = [
                     views.MCPServerListApi.as_view(),
                     name="openapi.v2.open.mcp_server.list",
                 ),
-                # GET /api/v2/open/mcp-servers/-/permissions/
-                path(
-                    "-/permissions/",
-                    views.MCPServerAppPermissionListApi.as_view(),
-                    name="openapi.v2.open.mcp_server.app.permissions_list",
-                ),
                 # GET /api/v2/open/mcp-servers/{mcp_server_id}/permissions/
                 path(
                     "<int:mcp_server_id>/permissions/",
@@ -81,22 +75,34 @@ urlpatterns = [
                     "permissions/",
                     include(
                         [
+                            # GET /api/v2/open/mcp-servers/permissions/
+                            path(
+                                "",
+                                views.MCPServerAppPermissionListApi.as_view(),
+                                name="openapi.v2.open.mcp_server.app.permissions.list",
+                            ),
                             # POST /api/v2/open/mcp-servers/permissions/apply/
                             path(
                                 "apply/",
                                 views.MCPServerAppPermissionApplyCreateApi.as_view(),
-                                name="openapi.v2.open.mcp_server.permissions.apply",
+                                name="openapi.v2.open.mcp_server.app.permissions.apply",
                             ),
                             # GET /api/v2/open/mcp-servers/permissions/apply-records/
                             path(
                                 "apply-records/",
                                 views.MCPServerAppPermissionRecordListApi.as_view(),
-                                name="openapi.v2.open.mcp_server.permissions.apply-records.list",
+                                name="openapi.v2.open.mcp_server.app.permissions.apply-records.list",
                             ),
                         ]
                     ),
                 ),
             ]
         ),
+    ),
+    # GET /api/v2/open/user/mcp-servers/
+    path(
+        "user/mcp-servers/",
+        views.UserMCPServerListApi.as_view(),
+        name="openapi.v2.open.user.mcp_server.list",
     ),
 ]
