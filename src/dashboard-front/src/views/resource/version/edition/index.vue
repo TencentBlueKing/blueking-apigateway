@@ -177,6 +177,7 @@
 
     <!-- 资源版本导出 -->
     <ExportResourceDialog
+      class="resource-version-export-dialog"
       v-model:dialog-config="exportDialogConfig"
       v-model:dialog-params="exportParams"
       @confirm="handleExportDownload"
@@ -247,6 +248,8 @@ const exportDialogConfig = reactive<IExportDialog>({
   loading: false,
   exportFileDocType: 'resource',
   hiddenExportContent: true,
+  hiddenResourceTip: true,
+  hiddenExportTypeLabel: true,
 });
 // 导出参数
 const exportParams = reactive<IExportParams & { id?: number}>({
@@ -504,6 +507,16 @@ onUnmounted(() => {
     background-color: #dcdee5;
     color: #fff;
     cursor: not-allowed;
+  }
+}
+</style>
+
+<style lang="scss">
+.resource-version-export-dialog {
+  .bk-form-item {
+    .bk-form-content {
+      margin-left: 0 !important;
+    }
   }
 }
 </style>
