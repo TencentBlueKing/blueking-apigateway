@@ -997,6 +997,17 @@ watch(
   color: #979BA5;
   font-size: 14px;
 }
+
+:deep(.ag-markdown-view pre) {
+  background: #F5F7FA;
+}
+:deep(.ag-markdown-view code) {
+  color: #4D4F56;
+}
+:deep(.ag-markdown-view .ag-copy-btn) {
+  color: #3A84FF;
+  background: #F5F7FA;
+}
 </style>
 
 <style>
