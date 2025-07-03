@@ -10,7 +10,7 @@
     @closed="handleClose"
     @confirm="handleExportDownload"
   >
-    <div class="resource-number">
+    <div class="resource-number" v-if="!exportDialogConfig.hiddenResourceTip">
       {{
         ["all"].includes(exportParams.export_type)
           ? $t("已选择全部资源")
@@ -35,7 +35,7 @@
 
         <bk-form-item
           v-if="['resource'].includes(exportDialogConfig.exportFileDocType)"
-          :label="$t('导出格式')"
+          :label="getResourceTypeLabel"
         >
           <bk-radio-group v-model="exportParams.file_type">
             <bk-radio v-for="item in fileTypeList" :key="item.label" :label="item.label">
@@ -49,6 +49,7 @@
 </template>
 
 <script setup lang="tsx">
+import i18n from '@/language/i18n';
 import { computed, PropType, useSlots } from 'vue';
 import { IExportDialog, IExportParams, ReturnRecordType } from '@/types';
 
@@ -86,6 +87,13 @@ const exportParams = computed({
   set: (val) => {
     emit('update:dialogParams', val);
   },
+});
+
+const getResourceTypeLabel = computed(() => {
+  if (!exportDialogConfig.value.hiddenExportTypeLabel) {
+    return i18n.global.t('导出格式');
+  }
+  return '';
 });
 
 const fileTypeList = computed(() => {
