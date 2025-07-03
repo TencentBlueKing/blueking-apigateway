@@ -6,10 +6,12 @@
           <slot>
             <template v-if="membersText">
               <span class="member-item">
-                <bk-popover :width="480">
-                  <bk-user-display-name :user-id="membersText" />
+                <bk-popover :component-event-delay="300" :width="480">
+                  <div style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis;">
+                    <bk-user-display-name :user-id="membersText" />
+                  </div>
                   <template #content>
-                    <span><bk-user-display-name :user-id="membersText" /></span>
+                    <div><bk-user-display-name :user-id="membersText" /></div>
                   </template>
                 </bk-popover>
               </span>
