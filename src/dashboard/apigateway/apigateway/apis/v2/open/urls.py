@@ -56,42 +56,42 @@ urlpatterns = [
         ),
     ),
     path(
-        "mcp-server/",
+        "mcp-servers/",
         include(
             [
-                # GET /api/v2/open/mcp-server/
+                # GET /api/v2/open/mcp-servers/
                 path(
                     "",
                     views.MCPServerListApi.as_view(),
                     name="openapi.v2.open.mcp_server.list",
                 ),
-                # GET /api/v2/open/mcp-server/{app_code}/
+                # GET /api/v2/open/mcp-servers/-/permissions/
                 path(
-                    "<str:app_code>/",
-                    views.AppMCPServerListApi.as_view(),
-                    name="openapi.v2.open.mcp_server.app.list",
+                    "-/permissions/",
+                    views.MCPServerAppPermissionListApi.as_view(),
+                    name="openapi.v2.open.mcp_server.app.permissions_list",
                 ),
-                # GET /api/v2/open/mcp-server/{mcp_server_id}/apps/
+                # GET /api/v2/open/mcp-servers/{mcp_server_id}/permissions/
                 path(
-                    "<int:mcp_server_id>/apps/",
-                    views.MCPServerAppListApi.as_view(),
-                    name="openapi.v2.open.mcp_server.apps_list",
+                    "<int:mcp_server_id>/permissions/",
+                    views.MCPServerPermissionListApi.as_view(),
+                    name="openapi.v2.open.mcp_server.permissions.list",
                 ),
                 path(
-                    "permission/",
+                    "permissions/",
                     include(
                         [
-                            # POST /api/v2/open/mcp-server/permission/apply/
+                            # POST /api/v2/open/mcp-servers/permissions/apply/
                             path(
                                 "apply/",
                                 views.MCPServerAppPermissionApplyCreateApi.as_view(),
-                                name="openapi.v2.open.mcp_server.permission.apply",
+                                name="openapi.v2.open.mcp_server.permissions.apply",
                             ),
-                            # GET /api/v2/open/mcp-server/permission/apply-record/
+                            # GET /api/v2/open/mcp-servers/permissions/apply-records/
                             path(
-                                "apply-record/",
-                                views.MCPServerAppPermissionRecordRetrieveApi.as_view(),
-                                name="openapi.v2.open.mcp_server.permission.apply-record_retrieve",
+                                "apply-records/",
+                                views.MCPServerAppPermissionRecordListApi.as_view(),
+                                name="openapi.v2.open.mcp_server.permissions.apply-records.list",
                             ),
                         ]
                     ),
