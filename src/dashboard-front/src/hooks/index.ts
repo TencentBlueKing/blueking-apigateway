@@ -6,3 +6,4 @@ export * from './use-date-picker';
 export * from './user-chart-log';
 export * from './sidebar';
 export * from './use-stage-data';
+export * from './use-bk-user-display-name';
