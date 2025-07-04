@@ -110,6 +110,29 @@
           <!--  API markdown 文档  -->
           <article v-if="selectedToolMarkdownHtml" class="tool-detail-content">
             <div id="toolDocMarkdown" v-dompurify-html="selectedToolMarkdownHtml" class="ag-markdown-view"></div>
+            <div v-if="Object.keys(selectedToolSchema || {}).length" class="schema-wrapper">
+              <article
+                v-if="selectedToolSchema.parameters?.length || Object.keys(selectedToolSchema.requestBody || {}).length"
+                class="schema-group"
+              >
+                <h3 class="title">{{ t('请求参数') }}</h3>
+                <RequestParams
+                  :detail="{ schema: selectedToolSchema }"
+                  readonly
+                />
+              </article>
+              <article
+                v-if="Object.keys(selectedToolSchema.responses || {}).length"
+                class="schema-group"
+              >
+                <h3 class="title">{{ t('响应参数') }}</h3>
+                <ResponseParams
+                  v-if="Object.keys(selectedToolSchema || {}).length"
+                  :detail="{ schema: selectedToolSchema }"
+                  readonly
+                />
+              </article>
+            </div>
           </article>
           <TableEmpty v-else />
         </div>
@@ -139,6 +162,8 @@ import { useCommon } from '@/store';
 import { copy } from '@/common/util';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
+import ResponseParams from '@/views/resource/setting/comps/response-params.vue';
+import RequestParams from '@/views/resource/setting/comps/request-params.vue';
 
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
@@ -181,6 +206,7 @@ const activeGroupPanelNames = ref<string[]>([]);  // 分类 collapse 展开的 p
 const selectedTool = ref<IMCPServerTool | null>(null); // 当前选中的 tool
 const selectedToolName = ref('');
 const selectedToolMarkdownHtml = ref('');
+const selectedToolSchema = ref();
 const updatedTime = ref<string | null>(null);
 const isLoading = ref(false);
 
@@ -314,9 +340,10 @@ const getDoc = async () => {
       res = await getServerToolDoc(common.apigwId, server.id, selectedTool.value.name);
     }
 
-    const { content, updated_time } = res;
+    const { content, updated_time, schema } = res;
     selectedToolMarkdownHtml.value = md.render(content);
     updatedTime.value = updated_time;
+    selectedToolSchema.value = schema || '';
   } finally {
     isLoading.value = false;
   }
@@ -772,6 +799,20 @@ $code-color: #63656e;
 
     .hljs {
       margin: -10px;
+    }
+  }
+}
+
+.schema-wrapper {
+  .schema-group {
+    .title {
+      font-size: 16px;
+      margin: 25px 0 10px 0;
+      padding: 0;
+      font-weight: bold;
+      text-align: left;
+      color: #313238;
+      line-height: 22px;
     }
   }
 }
