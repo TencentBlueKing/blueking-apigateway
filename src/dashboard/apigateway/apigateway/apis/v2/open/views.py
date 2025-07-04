@@ -265,7 +265,7 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
         slz = MCPServerAppPermissionListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        queryset = MCPServerAppPermission.objects.filter(bk_app_code=slz.validated_data["app_code"])
+        queryset = MCPServerAppPermission.objects.filter(bk_app_code=slz.validated_data["bk_app_code"])
         page = self.paginate_queryset(queryset)
         output_slz = MCPServerAppPermissionListOutputSLZ(page, many=True)
 
@@ -315,7 +315,7 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
         data = slz.validated_data
 
         MCPServerPermissionHandler.create_apply(
-            data["app_code"],
+            data["bk_app_code"],
             data["mcp_server_ids"],
             data["reason"],
             data["applied_by"],
@@ -343,7 +343,7 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
         data = slz.validated_data
 
         queryset = MCPServerAppPermissionApply.objects.filter(
-            bk_app_code=data["app_code"],
+            bk_app_code=data["bk_app_code"],
         )
 
         if data.get("mcp_server_id"):
@@ -380,8 +380,8 @@ class UserMCPServerListApi(generics.ListAPIView):
             stage__status=StageStatusEnum.ACTIVE.value,
         )
 
-        is_public = slz.validated_data.get("is_public", "")
-        if is_public == "":
+        is_public = slz.validated_data.get("is_public", None)
+        if is_public is None:
             # 查询全部
             queryset = queryset.filter(
                 Q(is_public=True)
