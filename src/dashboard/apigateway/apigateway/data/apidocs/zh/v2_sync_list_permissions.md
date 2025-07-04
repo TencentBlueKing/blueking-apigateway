@@ -4,9 +4,17 @@
 
 ### 输入参数
 
+#### 路径参数
+
 | 参数名称 | 参数类型 | 参数位置 | 描述 |
 | -------- | -------- | -------- | ---- |
 | gateway_name | string | path | 网关名称 |
+
+
+#### 请求参数
+
+| 参数名称 | 参数类型 | 参数位置 | 描述 |
+| -------- | -------- | -------- | ---- |
 | bk_app_code | string | query | 应用编码 |
 | grant_dimension | string | query | 授权维度，gateway 为网关，resource 为资源 |
 

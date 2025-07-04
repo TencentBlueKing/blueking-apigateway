@@ -1015,7 +1015,7 @@ paths:
         descriptionEn: None
   /api/v2/open/user/mcp-servers/:
     get:
-      operationId: v2_open_list_user_mcp_servers
+      operationId: v2_open_list_user_mcp_server
       description: 获取 mcp_server 列表
       tags:
         - v2_open
@@ -1740,7 +1740,7 @@ paths:
           resourcePermissionRequired: true
         descriptionEn: None
   /api/v2/inner/esb/systems/{system_id}/permissions/apply/:
-    get:
+    post:
       operationId: v2_inner_apply_esb_system_component_permissions
       description: '创建申请ESB组件权限的申请单据'
       tags:
@@ -1798,7 +1798,7 @@ paths:
           resourcePermissionRequired: true
         descriptionEn: None
   /api/v2/inner/esb/systems/permissions/app-permissions/:
-    post:
+    get:
       operationId: v2_inner_list_app_esb_component_permissions
       description: 已申请权限列表
       tags:
@@ -1914,7 +1914,7 @@ paths:
           resourcePermissionRequired: true
         descriptionEn: None
   /api/v2/inner/mcp-server/permissions/apply/:
-    get:
+    post:
       operationId: v2_inner_apply_mcp_server_permission
       description: 'mcp_server 权限申请/批量申请'
       tags:

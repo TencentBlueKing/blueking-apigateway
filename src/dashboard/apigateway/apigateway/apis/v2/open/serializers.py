@@ -24,7 +24,6 @@ from rest_framework import serializers
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
-    MCPServerPublicStatusEnum,
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.utils import build_mcp_server_detail_url, build_mcp_server_url
@@ -205,7 +204,7 @@ class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
 
 
 class MCPServerAppPermissionListInputSLZ(serializers.Serializer):
-    app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
+    bk_app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.MCPServerAppPermissionListInputSLZ"
@@ -226,7 +225,7 @@ class MCPServerPermissionListOutputSLZ(MCPServerPermissionBaseOutputSLZ):
 
 
 class MCPServerAppPermissionApplyCreateInputSLZ(serializers.Serializer):
-    app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
+    bk_app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
     mcp_server_ids = serializers.ListField(
         child=serializers.IntegerField(),
         allow_empty=False,
@@ -240,7 +239,7 @@ class MCPServerAppPermissionApplyCreateInputSLZ(serializers.Serializer):
 
 
 class MCPServerAppPermissionRecordListInputSLZ(serializers.Serializer):
-    app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
+    bk_app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
     mcp_server_id = serializers.IntegerField(required=False, allow_null=True, help_text="MCPServer ID")
 
     class Meta:
@@ -269,11 +268,10 @@ class MCPServerAppPermissionApplyRecordListOutputSLZ(serializers.Serializer):
 
 
 class UserMCPServerListInputSLZ(serializers.Serializer):
-    public_status = serializers.ChoiceField(
-        choices=MCPServerPublicStatusEnum.get_choices(),
+    is_public = serializers.BooleanField(
         required=False,
         allow_null=True,
-        help_text="公开状态，不传或传空则查询全部",
+        help_text="是否公开，true：公开，false：不公开，不传或传空则查询全部",
     )
     keyword = serializers.CharField(
         allow_blank=True, required=False, help_text="MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述"

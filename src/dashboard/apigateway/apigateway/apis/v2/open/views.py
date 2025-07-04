@@ -27,7 +27,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
-from apigateway.apps.mcp_server.constants import MCPServerPublicStatusEnum, MCPServerStatusEnum
+from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
@@ -385,15 +385,8 @@ class UserMCPServerListApi(generics.ListAPIView):
             stage__status=StageStatusEnum.ACTIVE.value,
         )
 
-        public_status = slz.validated_data.get("public_status")
-        if public_status == MCPServerPublicStatusEnum.PUBLIC.value:
-            queryset = queryset.filter(is_public=True)
-        elif public_status == MCPServerPublicStatusEnum.PRIVATE.value:
-            queryset = queryset.filter(
-                is_public=False,
-                gateway_id__in=[gateway.id for gateway in GatewayHandler.list_gateways_by_user(request.user.username)],
-            )
-        else:
+        is_public = slz.validated_data.get("is_public", "")
+        if is_public == "":
             # 查询全部
             queryset = queryset.filter(
                 Q(is_public=True)
@@ -404,6 +397,13 @@ class UserMCPServerListApi(generics.ListAPIView):
                     ],
                 )
             )
+        elif not is_public:
+            queryset = queryset.filter(
+                is_public=False,
+                gateway_id__in=[gateway.id for gateway in GatewayHandler.list_gateways_by_user(request.user.username)],
+            )
+        else:
+            queryset = queryset.filter(is_public=True)
 
         if slz.validated_data.get("keyword"):
             queryset = queryset.filter(
