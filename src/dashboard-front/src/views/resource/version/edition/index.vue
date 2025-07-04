@@ -51,7 +51,6 @@
             <bk-table-column
               :label="t('生效环境')"
               prop="released_stages"
-
             >
               <template #default="{ data }">
                 {{ data?.released_stages?.map((item: any) => item.name).join(", ") }}
@@ -205,9 +204,9 @@ import {
   useSelection,
 } from '@/hooks';
 import {
+  exportVersion,
   getResourceVersionsList,
   getStageList,
-  exportVersion,
 } from '@/http';
 import createSdk from '../components/createSdk.vue';
 import resourceDetail from '../components/resourceDetail.vue';
@@ -217,7 +216,10 @@ import {
   useResourceVersion,
   useUser,
 } from '@/store';
-import { IExportDialog, IExportParams } from '@/types';
+import {
+  IExportDialog,
+  IExportParams,
+} from '@/types';
 import releaseSideslider from '@/views/stage/overview/comps/release-sideslider.vue';
 import TableEmpty from '@/components/table-empty.vue';
 import ExportResourceDialog from '@/components/export-resource-dialog/index.vue';

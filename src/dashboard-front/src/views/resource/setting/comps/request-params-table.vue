@@ -8,11 +8,16 @@
           </td>
           <!-- 字段名 -->
           <td class="table-body-row-cell">
-            <bk-input v-model="row.name" :placeholder="t('字段名')" />
+            <div v-if="readonly" class="readonly-value-wrapper">{{ row.name || '--' }}</div>
+            <bk-input v-else v-model="row.name" :placeholder="t('字段名')" />
           </td>
           <!-- 字段类型 -->
           <td class="table-body-row-cell type">
+            <div v-if="readonly" class="readonly-value-wrapper">
+              {{ typeList.find(item => item.value === row.type)?.label || '--' }}
+            </div>
             <bk-select
+              v-else
               v-model="row.type"
               :clearable="false"
               :filterable="false"
@@ -28,22 +33,26 @@
           </td>
           <!-- 字段必填 -->
           <td class="table-body-row-cell required">
+            <div v-if="readonly" class="readonly-value-wrapper">{{ row.required ? t('是') : t('否') }}</div>
             <BkSwitcher
+              v-else
               v-model="row.required"
               theme="primary"
               style="margin-left: 16px;"
             />
           </td>
           <!-- 字段默认值 -->
-          <td class="table-body-row-cell default">
-            <bk-input v-model="row.default" :placeholder="t('默认值')" />
+          <td :style="readonly ? '150px' : undefined" class="table-body-row-cell default">
+            <div v-if="readonly" class="readonly-value-wrapper">{{ row.default || '--' }}</div>
+            <bk-input v-else v-model="row.default" :placeholder="t('默认值')" />
           </td>
           <!-- 字段备注 -->
           <td class="table-body-row-cell description">
-            <bk-input v-model="row.description" :placeholder="t('备注')" />
+            <div v-if="readonly" class="readonly-value-wrapper">{{ row.description || '--' }}</div>
+            <bk-input v-else v-model="row.description" :placeholder="t('备注')" />
           </td>
           <!-- 字段操作 -->
-          <td class="table-body-row-cell actions">
+          <td v-if="!readonly" class="table-body-row-cell actions">
             <AgIcon
               v-if="isAddFieldVisible(row)"
               v-bk-tooltips="t('添加字段')"
@@ -62,8 +71,8 @@
       </tbody>
       <tfoot v-if="row?.body?.length">
         <tr>
-          <td colspan="7" style="padding-left: 16px;">
-            <RequestParamsTable v-model="row.body" />
+          <td :colspan="readonly ? 6 : 7" style="padding-left: 16px;">
+            <RequestParamsTable v-model="row.body" :readonly="readonly" />
           </td>
         </tr>
       </tfoot>
@@ -78,6 +87,12 @@ import AgIcon from '@/components/ag-icon.vue';
 import _ from 'lodash';
 
 const tableData = defineModel<IBodyRow[]>();
+
+const { readonly = false } = defineProps<IProps>();
+
+interface IProps {
+  readonly?: boolean,
+}
 
 const { t } = useI18n();
 
@@ -174,6 +189,12 @@ const removeField = (row: IBodyRow) => {
   border-spacing: 0;
 
   .table-body {
+    .readonly-value-wrapper {
+      padding-left: 16px;
+      font-size: 12px;
+      cursor: auto;
+    }
+
     .table-body-row {
       .table-body-row-cell {
         height: 42px;

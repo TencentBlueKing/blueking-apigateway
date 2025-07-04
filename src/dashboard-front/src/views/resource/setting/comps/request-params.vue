@@ -1,6 +1,6 @@
 <template>
   <div class="request-params-table-wrapper">
-    <div style="margin-bottom: 24px;">
+    <div v-if="!readonly" style="margin-bottom: 24px;">
       <BkCheckbox v-model="disabled">{{ t('该资源无请求参数') }}</BkCheckbox>
     </div>
     <bk-table
@@ -15,7 +15,9 @@
     >
       <bk-table-column :label="t('参数名')" prop="name">
         <template #default="{ row }">
+          <div v-if="readonly" class="readonly-value-wrapper">{{ row.name || '--' }}</div>
           <bk-input
+            v-else
             v-model="row.name"
             :clearable="false"
             :disabled="row.in === 'body'"
@@ -26,7 +28,14 @@
       </bk-table-column>
       <bk-table-column :label="t('位置')" prop="in" width="100">
         <template #default="{ row }">
+          <div
+            v-if="readonly"
+            class="readonly-value-wrapper"
+          >
+            {{ inList.find(item => item.value === row.in)?.label || '--' }}
+          </div>
           <bk-select
+            v-else
             v-model="row.in"
             :clearable="false"
             :filterable="false"
@@ -46,7 +55,11 @@
       </bk-table-column>
       <bk-table-column :label="t('类型')" prop="type" width="100">
         <template #default="{ row }">
+          <div v-if="readonly" class="readonly-value-wrapper">
+            {{ typeList.find(item => item.value === row.type)?.label || '--' }}
+          </div>
           <bk-select
+            v-else
             v-model="row.type"
             :clearable="false"
             :filterable="false"
@@ -64,16 +77,20 @@
       </bk-table-column>
       <bk-table-column :label="t('必填')" prop="required" width="100">
         <template #default="{ row }">
+          <div v-if="readonly" class="readonly-value-wrapper">{{ row.required ? t('是') : t('否') }}</div>
           <BkSwitcher
+            v-else
             v-model="row.required"
             style="margin-left: 16px;"
             theme="primary"
           />
         </template>
       </bk-table-column>
-      <bk-table-column :label="t('默认值')" prop="default" width="300">
+      <bk-table-column :label="t('默认值')" :width="readonly ? 150 : 300" prop="default">
         <template #default="{ row }">
+          <div v-if="readonly" class="readonly-value-wrapper">{{ row.default || '--' }}</div>
           <bk-input
+            v-else
             v-model="row.default"
             :clearable="false"
             :placeholder="t('默认值')"
@@ -83,7 +100,9 @@
       </bk-table-column>
       <bk-table-column :label="t('备注')" prop="description" width="300">
         <template #default="{ row }">
+          <div v-if="readonly" class="readonly-value-wrapper">{{ row.description || '--' }}</div>
           <bk-input
+            v-else
             v-model="row.description"
             :clearable="false"
             :placeholder="t('备注')"
@@ -91,7 +110,7 @@
           />
         </template>
       </bk-table-column>
-      <bk-table-column :label="t('操作')" fixed="right" width="110">
+      <bk-table-column v-if="!readonly" :label="t('操作')" fixed="right" width="110">
         <template #default="{ row, index }">
           <AgIcon
             v-if="isAddFieldVisible(row)"
@@ -110,11 +129,11 @@
       </bk-table-column>
       <template #expandRow="row">
         <div v-if="row?.in === 'body'">
-          <RequestParamsTable v-model="row.body" />
+          <RequestParamsTable v-model="row.body" :readonly="readonly" />
         </div>
       </template>
     </bk-table>
-    <div v-if="!disabled" class="add-param-btn-row">
+    <div v-if="!disabled && !readonly" class="add-param-btn-row">
       <bk-button
         text
         theme="primary"
@@ -165,34 +184,42 @@ interface IBodyRow {
   body?: IBodyRow[];
 }
 
+interface ISchema {
+  parameters?: {
+    description?: string,
+    in: string,
+    name: string,
+    required?: boolean,
+    schema: JSONSchema7,
+    default?: string | number | boolean,
+  }[],
+  requestBody?: {
+    content: {
+      'application/json': {
+        schema: JSONSchema7,
+      }
+    },
+    description?: string,
+    required?: boolean,
+  },
+}
+
 interface IProp {
   detail?: {
-    schema: {
-      parameters?: {
-        description?: string,
-        in: string,
-        name: string,
-        required?: boolean,
-        schema: JSONSchema7,
-      }[],
-      requestBody?: {
-        content: {
-          'application/json': {
-            schema: JSONSchema7,
-          }
-        },
-        description?: string,
-        required?: boolean,
-      },
-    };
-  }
+    schema?: ISchema;
+    openapi_schema?: ISchema;
+  },
+  readonly?: boolean,
 }
 
 const disabled = defineModel<boolean>('is-no-params', {
   default: false,
 });
 
-const { detail } = defineProps<IProp>();
+const {
+  detail,
+  readonly = false,
+} = defineProps<IProp>();
 
 const { t } = useI18n();
 const tableRef = ref();
@@ -250,45 +277,23 @@ const typeList = ref([
   },
 ]);
 
-watch(() => detail, () => {
-  if (detail?.schema) {
-    tableData.value = [];
-    if (detail.schema.parameters?.length) {
-      tableData.value = detail.schema.parameters.map(parameter => (
-        {
-          id: _.uniqueId(),
-          name: parameter.name,
-          in: parameter.in,
-          type: parameter.schema.type,
-          required: parameter.required ?? false,
-          default: '',
-          description: parameter.description ?? '',
-        }
-      ));
-    }
-    if (detail.schema.requestBody) {
-      const body = detail.schema.requestBody;
-      const row = {
-        id: _.uniqueId(),
-        name: t('根节点'),
-        in: 'body',
-        type: 'object' as JSONSchema7TypeName,
-        required: body.required ?? false,
-        description: body.description ?? '',
-      };
-      const subBody = convertSchemaToBodyRow(body?.content?.['application/json']?.schema);
-      if (subBody) {
-        Object.assign(row, {
-          body: subBody,
-        });
-      }
-      tableData.value.push(row);
-    }
-    nextTick(() => {
-      tableRef.value?.setAllRowExpand(true);
-    });
+const convertPropertyType = (type: string): JSONSchema7TypeName => {
+  switch (type) {
+    case 'string':
+      return 'string';
+    case 'boolean':
+      return 'boolean';
+    case 'array':
+      return 'array';
+    case 'object':
+      return 'object';
+    case 'integer':
+    case 'number':
+      return 'number';
+    default:
+      return 'string';
   }
-});
+};
 
 const convertSchemaToBodyRow = (schema: JSONSchema7) => {
   if (!schema) {
@@ -316,6 +321,47 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
   }
   return body;
 };
+
+watch(() => detail, () => {
+  if (detail?.schema || detail.openapi_schema) {
+    const resourceSchema = detail.schema || detail.openapi_schema;
+    tableData.value = [];
+    if (resourceSchema.parameters?.length) {
+      tableData.value = resourceSchema.parameters.map(parameter => (
+        {
+          id: _.uniqueId(),
+          name: parameter.name,
+          in: parameter.in,
+          type: parameter.schema.type,
+          required: parameter.required ?? false,
+          default: parameter.default,
+          description: parameter.description ?? '',
+        }
+      ));
+    }
+    if (resourceSchema.requestBody) {
+      const body = resourceSchema.requestBody;
+      const row = {
+        id: _.uniqueId(),
+        name: t('根节点'),
+        in: 'body',
+        type: 'object' as JSONSchema7TypeName,
+        required: body.required ?? false,
+        description: body.description ?? '',
+      };
+      const subBody = convertSchemaToBodyRow(body?.content?.['application/json']?.schema);
+      if (subBody) {
+        Object.assign(row, {
+          body: subBody,
+        });
+      }
+      tableData.value.push(row);
+    }
+    nextTick(() => {
+      tableRef.value?.setAllRowExpand(true);
+    });
+  }
+}, { immediate: true });
 
 const genRow = () => {
   return {
@@ -479,24 +525,6 @@ const genSchemaFromBodyRow = (row: IBodyRow) => {
   return schema;
 };
 
-const convertPropertyType = (type: string): JSONSchema7TypeName => {
-  switch (type) {
-    case 'string':
-      return 'string';
-    case 'boolean':
-      return 'boolean';
-    case 'array':
-      return 'array';
-    case 'object':
-      return 'object';
-    case 'integer':
-    case 'number':
-      return 'number';
-    default:
-      return 'string';
-  }
-};
-
 const isTypeDisabled = (paramIn: string, type: string) => {
   if (paramIn === 'body') {
     return type !== 'object' && type !== 'array';
@@ -595,6 +623,12 @@ defineExpose({
 }
 
 .request-params-table {
+  .readonly-value-wrapper {
+    padding-left: 16px;
+    font-size: 12px;
+    cursor: auto;
+  }
+
   .td-text {
     padding: 0 16px;
   }

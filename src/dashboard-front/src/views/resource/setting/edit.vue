@@ -72,7 +72,7 @@
           </div>
         </template>
         <template #content>
-          <ResponseParams ref="responseParamsRef" :detail="resourceDetail" :is-clone="isClone" />
+          <ResponseParams ref="responseParamsRef" :detail="resourceDetail" />
         </template>
       </bk-collapse-panel>
     </bk-collapse>

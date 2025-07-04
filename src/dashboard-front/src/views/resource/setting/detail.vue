@@ -217,7 +217,7 @@
       </bk-form-item>
     </bk-form>
 
-    <div class="title">{{ t('前端配置') }}</div>
+    <div class="title">{{ t('请求配置') }}</div>
     <bk-form ref="formRef" :model="formData" class="form-cls flex-row">
       <bk-form-item class="form-item-cls">
         <template #label>
@@ -286,13 +286,13 @@
                       native-type="button"
                       @click="frontPathSubmit"
                     >
-                      确定
+                      {{ t('确定') }}
                     </bk-button>
                     <bk-button
                       style="margin-left: 8px;"
                       @click="frontPathEdit = false"
                     >
-                      取消
+                      {{ t('取消') }}
                     </bk-button>
                   </bk-form-item>
                 </bk-form>
@@ -325,6 +325,12 @@
         </div>
       </bk-form-item>
     </bk-form>
+
+    <div class="title">{{ t('请求参数') }}</div>
+    <div style="padding-left: 150px;">
+      <span v-if="formData.schema?.none_schema">{{ t('该资源无请求参数') }}</span>
+      <RequestParams v-else :detail="formData" readonly />
+    </div>
 
     <div class="title">{{ t('后端配置') }}</div>
     <bk-form ref="formRef" :model="formData" class="form-cls flex-row">
@@ -515,6 +521,13 @@
         </div>
       </bk-form-item>
     </bk-form>
+
+    <div class="title">{{ t('响应参数') }}</div>
+    <div style="padding-left: 150px;">
+      <ResponseParams v-if="Object.keys(formData.schema?.responses || {}).length" :detail="formData" readonly />
+      <div v-else>{{ t('该资源无响应参数') }}</div>
+    </div>
+
     <router-link :to="{name: 'apigwResourceEdit', params:{'resourceId': `${formData?.id}`}}">
       <bk-button
         theme="primary"
@@ -537,17 +550,22 @@
   </div>
 </template>
 <script setup lang="tsx">
-import { ref, watch, nextTick, unref } from 'vue';
+import {
+  nextTick,
+  ref,
+  unref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 // import { useRouter } from 'vue-router';
 import {
-  getResourceDetailData,
-  getBackendsDetailData,
-  deleteResources,
-  updateResources,
-  getGatewayLabels,
-  getBackendsListData,
   backendsPathCheck,
+  deleteResources,
+  getBackendsDetailData,
+  getBackendsListData,
+  getGatewayLabels,
+  getResourceDetailData,
+  updateResources,
 } from '@/http';
 import { Message } from 'bkui-vue';
 import { copy } from '@/common/util';
@@ -558,6 +576,8 @@ import {
   useStage,
 } from '@/store';
 import { cloneDeep } from 'lodash';
+import RequestParams from '@/views/resource/setting/comps/request-params.vue';
+import ResponseParams from '@/views/resource/setting/comps/response-params.vue';
 
 const { t } = useI18n();
 
