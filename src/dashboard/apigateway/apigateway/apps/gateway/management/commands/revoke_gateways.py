@@ -57,14 +57,13 @@ class Command(BaseCommand):
         do_deactivate = options["deactivate"]
         do_remove = options["remove"]
         dry_run = options["dry_run"]
-        print("dry_run", dry_run)
 
         if not gateway_names:
             raise CommandError("No gateway names provided.")
         if do_deactivate and do_remove:
-            raise CommandError("Only one of --deactive or --remove can be specified.")
+            raise CommandError("Only one of --deactivate or --remove can be specified.")
         if not (do_deactivate or do_remove):
-            raise CommandError("You must specify either --deactive or --remove.")
+            raise CommandError("You must specify either --deactivate or --remove.")
 
         gateways = Gateway.objects.filter(name__in=gateway_names)
         found_names = set(gateways.values_list("name", flat=True))
