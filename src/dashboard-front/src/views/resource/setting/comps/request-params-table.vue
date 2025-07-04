@@ -42,7 +42,7 @@
             />
           </td>
           <!-- 字段默认值 -->
-          <td :style="readonly ? '150px' : undefined" class="table-body-row-cell default">
+          <td :style="readonly ? 'width: 150px' : undefined" class="table-body-row-cell default">
             <div v-if="readonly" class="readonly-value-wrapper">{{ row.default || '--' }}</div>
             <bk-input v-else v-model="row.default" :placeholder="t('默认值')" />
           </td>
