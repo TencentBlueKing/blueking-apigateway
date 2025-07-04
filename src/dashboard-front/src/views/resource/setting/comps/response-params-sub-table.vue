@@ -57,7 +57,7 @@
       <tfoot v-if="row?.properties?.length">
         <tr>
           <td :colspan="readonly ? 4 : 5" style="padding-left: 16px;">
-            <ResponseParamsSubTable v-model="row.properties" />
+            <ResponseParamsSubTable v-model="row.properties" :readonly="readonly" />
           </td>
         </tr>
       </tfoot>
