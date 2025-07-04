@@ -65,7 +65,7 @@ def parse_version(version: str) -> tuple[int, int, int]:
     return std_version.major, std_version.minor, std_version.micro
 
 
-def get_nex_version_with_type(old_version: str, version_type: str) -> str:
+def get_next_version_with_type(old_version: str, version_type: str) -> str:
     (
         major,
         minor,

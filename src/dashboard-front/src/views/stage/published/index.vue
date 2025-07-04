@@ -58,6 +58,7 @@
     <EventSlider
       ref="programmableLogDetailsRef"
       :deploy-id="deployId"
+      :history="currentHistory"
     />
 
     <!-- 详情 -->
@@ -86,7 +87,10 @@ import { getReleaseHistories } from '@/http';
 import TableEmpty from '@/components/table-empty.vue';
 import EventSlider from '@/components/programmable-deploy-events-slider/index.vue';
 import { useCommon } from '@/store';
-import { getDeployHistories } from '@/http/programmable';
+import {
+  getDeployHistories,
+  type IEventResponse,
+} from '@/http/programmable';
 
 type Enums = typeof publishSourceEnum | typeof publishStatusEnum;
 
@@ -151,6 +155,7 @@ const {
 } = useDatePicker(filterData);
 
 const historyId = ref<number>();
+const currentHistory = ref<IEventResponse>();
 const deployId = ref<string>();
 const logDetailsRef = ref(null);
 const programmableLogDetailsRef = ref(null);
@@ -207,7 +212,7 @@ const columns = computed(() =>
       {
         label: t('操作'),
         render: ({ row }: any) =>
-          <bk-button text theme="primary" disabled={!row.deploy_id} onClick={() => showLogs(row.deploy_id)}>
+          <bk-button text theme="primary" disabled={!row.deploy_id} onClick={() => showLogs(row.deploy_id, row)}>
             {t("发布日志")}
           </bk-button>,
       },
@@ -279,14 +284,16 @@ watch(() => common.isProgrammableGateway, () => {
   }, 1000 * 30);
 }, { immediate: true });
 
-const showLogs = (id: number | string) => {
+const showLogs = (id: number | string, row?: IEventResponse) => {
   // 可编程网关
   if (common.isProgrammableGateway) {
     deployId.value = id as string;
+    currentHistory.value = row;
     programmableLogDetailsRef.value?.showSideslider();
   } else {
     // 普通网关
     historyId.value = id as number;
+    currentHistory.value = undefined;
     logDetailsRef.value?.showSideslider();
   }
 };

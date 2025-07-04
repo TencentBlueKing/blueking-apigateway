@@ -26,12 +26,12 @@
           checkDiff('localData.allow_apply_permission'),
       }"
     >
-      {{ $t("基本信息") }}
+      {{ t("基本信息") }}
     </p>
     <bk-container class="ag-kv-box" :col="14" :margin="6">
       <bk-row :class="{ 'ag-diff': checkDiff('localData.name') }">
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("资源名称") }}:</label>
+          <label class="ag-key">{{ t("资源名称") }}:</label>
         </bk-col>
         <bk-col :span="10">
           <div class="ag-value">{{ localData.name || "--" }}</div>
@@ -40,7 +40,7 @@
 
       <bk-row :class="{ 'ag-diff': checkDiff('localData.path') }">
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("资源地址") }}:</label>
+          <label class="ag-key">{{ t("资源地址") }}:</label>
         </bk-col>
         <bk-col :span="10">
           <div class="ag-value">{{ localData.path || "--" }}</div>
@@ -49,7 +49,7 @@
 
       <bk-row :class="{ 'ag-diff': checkDiff('localData.description') }">
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("描述") }}:</label>
+          <label class="ag-key">{{ t("描述") }}:</label>
         </bk-col>
         <bk-col :span="10">
           <div class="ag-value">{{ localData.description || "--" }}</div>
@@ -58,7 +58,7 @@
 
       <bk-row :class="{ 'ag-diff': checkDiff('localData.api_labels') }">
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("标签") }}:</label>
+          <label class="ag-key">{{ t("标签") }}:</label>
         </bk-col>
         <bk-col style="margin-bottom: -4px;" :span="10">
           <template v-if="localData.api_labels?.length">
@@ -86,7 +86,7 @@
         }"
       >
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("认证方式") }}:</label>
+          <label class="ag-key">{{ t("认证方式") }}:</label>
         </bk-col>
         <bk-col :span="10">
           <div class="ag-value">
@@ -103,14 +103,14 @@
         }"
       >
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("校验应用权限") }}:</label>
+          <label class="ag-key">{{ t("校验应用权限") }}:</label>
         </bk-col>
         <bk-col :span="10">
           <div class="ag-value">
             {{
               localData.contexts.resource_auth.config.resource_perm_required
-                ? $t("校验")
-                : $t("不校验")
+                ? t("校验")
+                : t("不校验")
             }}
           </div>
         </bk-col>
@@ -124,15 +124,15 @@
         }"
       >
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("是否公开") }}:</label>
+          <label class="ag-key">{{ t("是否公开") }}:</label>
         </bk-col>
         <bk-col :span="10">
           <div class="ag-value">
-            {{ localData.is_public ? $t("是") : $t("否") }}
+            {{ localData.is_public ? t("是") : t("否") }}
             {{
               localData.allow_apply_permission
-                ? `(${$t("允许申请权限")})`
-                : `(${$t("不允许申请权限")})`
+                ? `(${t("允许申请权限")})`
+                : `(${t("不允许申请权限")})`
             }}
           </div>
         </bk-col>
@@ -145,12 +145,12 @@
         'ag-diff': checkDiff('localData.method') || checkDiff('localData.path'),
       }"
     >
-      {{ $t("前端配置") }}
+      {{ t("请求配置") }}
     </p>
     <bk-container class="ag-kv-box" :col="14" :margin="6">
       <bk-row :class="{ 'ag-diff': checkDiff('localData.method') }">
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("请求方法") }}:</label>
+          <label class="ag-key">{{ t("请求方法") }}:</label>
         </bk-col>
         <bk-col :span="10">
           <div class="ag-value">{{ localData.method }}</div>
@@ -159,7 +159,7 @@
 
       <bk-row :class="{ 'ag-diff': checkDiff('localData.path') }">
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("请求路径") }}:</label>
+          <label class="ag-key">{{ t("请求路径") }}:</label>
         </bk-col>
         <bk-col :span="10">
           <div class="ag-value">{{ localData.path }}</div>
@@ -168,21 +168,42 @@
 
       <bk-row :class="{ 'ag-diff': checkDiff('localData.match_subpath') }">
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("匹配所有子路径") }}:</label>
+          <label class="ag-key">{{ t("匹配所有子路径") }}:</label>
         </bk-col>
         <bk-col :span="10">
           <div class="ag-value">
-            {{ localData.match_subpath ? $t("是") : $t("否") }}
+            {{ localData.match_subpath ? t("是") : t("否") }}
           </div>
         </bk-col>
       </bk-row>
 
       <bk-row :class="{ 'ag-diff': checkDiff('localData.enable_websocket') }">
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("启用 WebSocket") }}:</label>
+          <label class="ag-key">{{ t("启用 WebSocket") }}:</label>
         </bk-col>
         <bk-col :span="10">
-          <div class="ag-value">{{ localData.enable_websocket ? $t("是") : $t("否") }}</div>
+          <div class="ag-value">{{ localData.enable_websocket ? t("是") : t("否") }}</div>
+        </bk-col>
+      </bk-row>
+    </bk-container>
+
+    <p
+      :class="{
+        'ag-diff': checkDiff('localData.openapi_schema'),
+      }"
+      class="title mt15"
+    >
+      {{ t("请求/响应参数") }}
+    </p>
+    <bk-container :col="14" :margin="6" class="ag-kv-box">
+      <bk-row :class="{ 'ag-diff': checkDiff('localData.openapi_schema') }">
+        <bk-col :span="4">
+          <label class="ag-key">&nbsp;</label>
+        </bk-col>
+        <bk-col :span="10">
+          <div class="ag-value">
+            {{ isSource ? '--' : (checkDiff('localData.openapi_schema') ? t('有更新') : '--') }}
+          </div>
         </bk-col>
       </bk-row>
     </bk-container>
@@ -198,7 +219,7 @@
             checkDiff('localData.proxy.config.path'),
         }"
       >
-        {{ $t("后端配置") }}
+        {{ t("后端配置") }}
       </p>
       <bk-container
         class="ag-kv-box"
@@ -208,7 +229,7 @@
       >
         <!-- <bk-row :class="{ 'ag-diff': checkDiff('localData.proxy.type') }">
           <bk-col :span="4">
-            <label class="ag-key">{{ $t("后端类型:") }}</label>
+            <label class="ag-key">{{ t("后端类型:") }}</label>
           </bk-col>
           <bk-col :span="10">
             <div class="ag-value">{{ localData.proxy.type.toUpperCase() }}</div>
@@ -217,7 +238,7 @@
 
         <!-- <bk-row :class="{ 'ag-diff': checkDiff('localData.proxy.config.path') }">
           <bk-col :span="4">
-            <label class="ag-key">{{ $t("后端服务地址:") }}</label>
+            <label class="ag-key">{{ t("后端服务地址:") }}</label>
           </bk-col>
           <bk-col :span="10">
             <div class="ag-value">{{ localData.proxy.config.path || "--" }}</div>
@@ -228,7 +249,7 @@
           :class="{ 'ag-diff': checkDiff('localData.proxy.backend_name') }"
         >
           <bk-col :span="4">
-            <label class="ag-key">{{ $t("后端服务:") }}</label>
+            <label class="ag-key">{{ t("后端服务:") }}</label>
           </bk-col>
           <bk-col :span="10">
             <div class="ag-value">
@@ -242,7 +263,7 @@
             :class="{ 'ag-diff': checkDiff('localData.proxy.config.method') }"
           >
             <bk-col :span="4">
-              <label class="ag-key">{{ $t("请求方法") }}:</label>
+              <label class="ag-key">{{ t("请求方法") }}:</label>
             </bk-col>
             <bk-col :span="10">
               <div class="ag-value">
@@ -257,7 +278,7 @@
             }"
           >
             <bk-col :span="4">
-              <label class="ag-key">{{ $t("自定义超时时间:") }}</label>
+              <label class="ag-key">{{ t("自定义超时时间:") }}</label>
             </bk-col>
             <bk-col :span="10">
               <div class="ag-value">
@@ -270,7 +291,7 @@
             :class="{ 'ag-diff': checkDiff('localData.proxy.config.path') }"
           >
             <bk-col :span="4">
-              <label class="ag-key">{{ $t("请求路径:") }}</label>
+              <label class="ag-key">{{ t("请求路径:") }}</label>
             </bk-col>
             <bk-col :span="10">
               <div class="ag-value">
@@ -296,8 +317,8 @@
                 <div class="readonly-value">
                   {{
                     localData.useDefaultHost
-                      ? $t("使用环境配置")
-                      : $t("覆盖环境配置")
+                      ? t("使用环境配置")
+                      : t("覆盖环境配置")
                   }}
                 </div>
               </div>
@@ -309,7 +330,7 @@
                 }"
               >
                 <div class="content-item">
-                  <span class="key"> {{ $t("负载均衡类型") }}： </span>
+                  <span class="key"> {{ t("负载均衡类型") }}： </span>
                   <span class="value">{{
                     weightMap[localData.proxy.config.upstreams.loadbalance]
                   }}</span>
@@ -361,7 +382,7 @@
           >
             <bk-col :span="4">
               <label class="ag-key" style="line-height: 32px"
-              >{{ $t("超时时间") }}:</label
+              >{{ t("超时时间") }}:</label
               >
             </bk-col>
             <bk-col :span="10">
@@ -375,8 +396,8 @@
                 <div class="readonly-value">
                   {{
                     localData.useDefaultTimeout
-                      ? $t("使用环境配置")
-                      : $t("覆盖环境配置")
+                      ? t("使用环境配置")
+                      : t("覆盖环境配置")
                   }}
                 </div>
               </div>
@@ -389,9 +410,9 @@
                 }"
               >
                 <div class="content-item">
-                  <span class="key"> {{ $t("超时时间") }}： </span>
+                  <span class="key"> {{ t("超时时间") }}： </span>
                   <span class="value"
-                  >{{ localData.proxy.config.timeout }} {{ $t("秒") }}</span
+                  >{{ localData.proxy.config.timeout }} {{ t("秒") }}</span
                   >
                 </div>
               </div>
@@ -405,7 +426,7 @@
           >
             <bk-col :span="4">
               <label class="ag-key" style="line-height: 32px"
-              >{{ $t("Header转换") }}:</label
+              >{{ t("Header转换") }}:</label
               >
             </bk-col>
             <bk-col :span="10">
@@ -421,8 +442,8 @@
                 <div class="readonly-value">
                   {{
                     localData.useDefaultHeader
-                      ? $t("使用环境配置")
-                      : $t("追加环境配置")
+                      ? t("使用环境配置")
+                      : t("追加环境配置")
                   }}
                 </div>
               </div>
@@ -436,7 +457,7 @@
                 }"
               >
                 <div class="content-item mb5">
-                  <span class="key"> {{ $t("设置") }}： </span>
+                  <span class="key"> {{ t("设置") }}： </span>
                   <div class="value">
                     <ul
                       class="ag-list"
@@ -460,7 +481,7 @@
                   </div>
                 </div>
                 <div class="content-item">
-                  <span class="key"> {{ $t("删除") }}： </span>
+                  <span class="key"> {{ t("删除") }}： </span>
                   <div class="value">
                     <ul
                       class="ag-list"
@@ -541,7 +562,7 @@
     </template>
 
     <!-- <p class="title mt15" :class="{ 'ag-diff': checkAuthConfigDiff() }">
-      {{ $t("安全设置") }}
+      {{ t("安全设置") }}
     </p>
     <bk-container
       class="ag-kv-box"
@@ -562,14 +583,14 @@
         "
       >
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("应用认证") }}:</label>
+          <label class="ag-key">{{ t("应用认证") }}:</label>
         </bk-col>
         <bk-col :span="10">
           <div class="ag-value">
             {{
               localData.contexts.resource_auth.config.app_verified_required
-                ? $t("是")
-                : $t("否")
+                ? t("是")
+                : t("否")
             }}
           </div>
         </bk-col>
@@ -588,14 +609,14 @@
         "
       >
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("校验访问权限") }}:</label>
+          <label class="ag-key">{{ t("校验访问权限") }}:</label>
         </bk-col>
         <bk-col :span="10">
           <div class="ag-value">
             {{
               localData.contexts.resource_auth.config.resource_perm_required
-                ? $t("是")
-                : $t("否")
+                ? t("是")
+                : t("否")
             }}
           </div>
         </bk-col>
@@ -614,14 +635,14 @@
         "
       >
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("用户认证") }}:</label>
+          <label class="ag-key">{{ t("用户认证") }}:</label>
         </bk-col>
         <bk-col :span="10">
           <div class="ag-value">
             {{
               localData.contexts.resource_auth.config.auth_verified_required
-                ? $t("是")
-                : $t("否")
+                ? t("是")
+                : t("否")
             }}
           </div>
         </bk-col>
@@ -629,7 +650,7 @@
 
       <bk-row :class="{ 'ag-diff': checkDiff('localData.disabled_stages') }">
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("禁用环境") }}:</label>
+          <label class="ag-key">{{ t("禁用环境") }}:</label>
         </bk-col>
         <bk-col :span="10">
           <div class="ag-value">
@@ -640,12 +661,12 @@
     </bk-container> -->
 
     <p class="title mt15" :class="{ 'ag-diff': checkDiff('localData.doc_updated_time') }">
-      {{ $t("文档") }}
+      {{ t("文档") }}
     </p>
     <bk-container class="ag-kv-box" :col="14" :margin="6">
       <bk-row :class="{ 'ag-diff': checkDiff('localData.doc_updated_time') }">
         <bk-col :span="4">
-          <label class="ag-key">{{ $t("文档更新时间") }}:</label>
+          <label class="ag-key">{{ t("文档更新时间") }}:</label>
         </bk-col>
         <bk-col :span="10">
           <div class="ag-value">
@@ -665,7 +686,7 @@
       <template v-for="plugin in localData.plugins" :key="plugin.id">
         <div class="container-diff" :class="getPluginDiffClass(plugin)">
           <p class="title mt15">
-            {{ $t('插件:{name}', { name: plugin.name }) }}
+            {{ t('插件:{name}', { name: plugin.name }) }}
           </p>
           <ConfigDisplayTable :plugin="plugin" first-col-width="auto" />
         </div>
@@ -713,7 +734,6 @@ const props = defineProps({
 });
 
 const common = useCommon();
-
 const { t } = useI18n();
 
 // const weightMap = reactive({

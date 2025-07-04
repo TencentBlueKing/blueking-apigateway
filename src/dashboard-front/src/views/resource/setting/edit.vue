@@ -37,7 +37,7 @@
               :class="[activeIndex?.includes('requestParams') ? 'panel-header-show' : 'panel-header-hide']"
             />
             <div class="title">{{ t('请求参数') }}</div>
-            <div class="sub-title">{{ t('请求参数非必填，可用于生成文档、在线调试、生成 MCP Server 等') }}</div>
+            <div class="sub-title">{{ t('非必填，可用于生成文档、在线调试、生成 MCP Server 等') }}</div>
           </div>
         </template>
         <template #content>
@@ -68,11 +68,11 @@
               :class="[activeIndex?.includes('responseParams') ? 'panel-header-show' : 'panel-header-hide']"
             />
             <div class="title">{{ t('响应参数') }}</div>
-            <div class="sub-title">{{ t('响应参数非必填，可用于生成文档、在线调试、生成 MCP Server 等') }}</div>
+            <div class="sub-title">{{ t('非必填，可用于生成文档、在线调试、生成 MCP Server 等') }}</div>
           </div>
         </template>
         <template #content>
-          <ResponseParams ref="responseParamsRef" :detail="resourceDetail" :is-clone="isClone" />
+          <ResponseParams ref="responseParamsRef" :detail="resourceDetail" />
         </template>
       </bk-collapse-panel>
     </bk-collapse>

@@ -82,6 +82,7 @@ import {
 import {
   getDeployEvents,
   getFinishedDeployEvents,
+  IEventResponse,
   IGatewayEvent,
   IGatewayEventTemplate,
   IPaasEventInstance,
@@ -173,6 +174,7 @@ interface IProps {
   historyId?: number,
   stage?: IStageItem,
   version?: string,
+  history?: IEventResponse,
 }
 
 const props = withDefaults(defineProps<IProps>(), {
@@ -378,7 +380,11 @@ const gatewayPublishTimeline = computed(() => {
     nodeType: 'vnode',
   };
 
-  if (list.some(step => step.status === 'doing')) {
+  if (deployStatus.value === 'failed') {
+    delete parentNode.icon;
+    delete parentNode.color;
+    parentNode.filled = false;
+  } else if (list.some(step => step.status === 'doing')) {
     parentNode.status = 'doing';
     parentNode.color = 'blue';
     parentNode.icon = Spinner;
@@ -422,7 +428,13 @@ const eventOutputLines = computed(() => {
   return paasEventTextLines.value;
 });
 
+// 发布记录给的 status
+const eventRecordStatus = computed(() => props.history?.status || '');
+
 const status = computed(() => {
+  if (eventRecordStatus.value === 'failure') {
+    return 'failure';
+  }
   if (deployStatus.value) {
     return deployStatus.value;
   }
@@ -468,7 +480,7 @@ const statusStyleMap: Record<string, any> = {
 };
 
 watch(
-  () => isShow.value,
+  isShow,
   () => {
     if (!isShow.value) {
       if (isFinished.value) {
@@ -503,7 +515,8 @@ const getEvents = async () => {
   historyStage.value = stageResponse || null;
   historyVersion.value = resource_version_display || '';
   deployedBy.value = created_by || '';
-  deployStatus.value = status || '';
+  // 记录 paas 部署状态，断路检查是否失败
+  deployStatus.value = paasResponse.deploy_result?.status === 'failed' ? 'failed' : (status || '');
   source.value = sourceResponse || '';
 
   paasEventInstances.value = (paasResponse.events_instance && Array.isArray(paasResponse.events_instance))
@@ -525,18 +538,20 @@ const getEvents = async () => {
       paasLogs || 'Error',
       '\n\n',
     ];
-    paasEventInstances.value = [
-      {
-        display_name: t('PaaS 部署'),
-        type: '',
-        steps: [],
-        display_blocks: null,
-        uuid: '',
-        status: 'successful',
-        start_time: '',
-        complete_time: '',
-      },
-    ];
+    if (!paasEventInstances.value.length) {
+      paasEventInstances.value = [
+        {
+          display_name: t('PaaS 部署'),
+          type: '',
+          steps: [],
+          display_blocks: null,
+          uuid: '',
+          status: 'failed',
+          start_time: '',
+          complete_time: '',
+        },
+      ];
+    }
   } else {
     paasEvents.forEach((event) => {
       let line = '';

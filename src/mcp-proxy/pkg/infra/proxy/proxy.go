@@ -37,6 +37,7 @@ import (
 	cli "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/runtime/logger"
 	"github.com/go-openapi/strfmt"
+	"github.com/spf13/cast"
 	"go.uber.org/zap"
 
 	"mcp_proxy/pkg/constant"
@@ -101,6 +102,7 @@ func (m *MCPProxy) GetMCPServer(name string) *MCPServer {
 // AddMCPServerFromConfigs ...
 func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 	for _, config := range configs {
+		// 这里注册的 messageEndpointURL 决定了通过sse接口拿到的message的url
 		trans, sseHandler, err := transport.NewSSEServerTransportAndHandler(
 			fmt.Sprintf(m.messageUrlFormat, config.Name))
 		if err != nil {
@@ -127,6 +129,24 @@ func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi
 		Tools: OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
 	}
 	return m.AddMCPServerFromConfigs([]*MCPServerConfig{mcpServerConfig})
+}
+
+// UpdateMCPServerFromOpenApiSpec nolint:gofmt
+func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
+	mcpServer *MCPServer, name string, openApiSpec *openapi3.T, operationIDMap map[string]struct{},
+) error {
+	mcpServerConfig := &MCPServerConfig{
+		Name:  name,
+		Tools: OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
+	}
+	// update tool
+	for _, toolConfig := range mcpServerConfig.Tools {
+		bytes, _ := toolConfig.ParamSchema.JSONSchemaBytes()
+		tool := protocol.NewToolWithRawSchema(toolConfig.Name, toolConfig.Description, bytes)
+		toolHandler := genToolHandler(toolConfig)
+		mcpServer.RegisterTool(tool, toolHandler)
+	}
+	return nil
 }
 
 // SseHandler ...
@@ -285,17 +305,19 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 			Client:      client,
 			Reader: runtime.ClientResponseReaderFunc(
 				func(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
-					if response.Code() < 200 || response.Code() > 299 {
-						return nil, runtime.NewAPIError("call tool err", fmt.Sprintf("%s",
-							toolApiConfig),
-							response.Code())
+					responseResult := map[string]any{
+						"status_code": response.Code(),
+						"request_id":  response.GetHeader(constant.BkGatewayRequestIDKey),
 					}
 					var res map[string]any
-					if e := consumer.Consume(response.Body(), &res); e != nil {
-						return nil, e
+					if e := consumer.Consume(response.Body(), &res); e == nil {
+						responseResult["response_body"] = res
 					}
-					marshal, _ := json.Marshal(res)
-					return string(marshal), nil
+					if response.Code() < 200 || response.Code() > 299 {
+						return nil, runtime.NewAPIError("call tool err", responseResult, response.Code())
+					}
+					rawResult, _ := json.Marshal(responseResult)
+					return string(rawResult), nil
 				},
 			),
 		}
@@ -303,7 +325,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 		openAPIClient.SetLogger(logger.StandardLogger{})
 		submit, err := openAPIClient.Submit(operation)
 		if err != nil {
-			msg := fmt.Sprintf("call %s header:%+v,error:%s\n", toolApiConfig, headerInfo, err.Error())
+			msg := fmt.Sprintf("call %s error:%s\n", toolApiConfig, err.Error())
 			auditLog.Error("call tool err", zap.Any("header", headerInfo), zap.Error(err))
 			log.Println(msg)
 			// nolint:nilerr
@@ -318,12 +340,12 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 			}, nil
 		}
 		log.Printf("call %s result: %s\n", toolApiConfig, submit)
-		auditLog.Info("call tool", zap.String("response", submit.(string)), zap.Any("header", headerInfo))
+		auditLog.Info("call tool", zap.Any("response", submit), zap.Any("header", headerInfo))
 		return &protocol.CallToolResult{
 			Content: []protocol.Content{
 				&protocol.TextContent{
 					Type: "text",
-					Text: submit.(string),
+					Text: cast.ToString(submit),
 				},
 			},
 		}, nil

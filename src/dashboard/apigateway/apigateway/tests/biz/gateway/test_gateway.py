@@ -309,6 +309,8 @@ class TestGatewayHandler:
         fake_stage,
         fake_resource,
         fake_resource_version,
+        fake_openapi_resource_schema_version,
+        fake_openapi_file_resource_schema_version,
         fake_release,
         echo_plugin,
         echo_plugin_stage_binding,

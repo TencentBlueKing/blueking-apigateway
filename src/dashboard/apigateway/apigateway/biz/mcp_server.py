@@ -32,7 +32,8 @@ from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
-from apigateway.core.models import Gateway, Resource
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.core.models import Gateway, Release, Resource
 from apigateway.utils.time import NeverExpiresTime, now_datetime
 
 from .released_resource import ReleasedResourceData, ReleasedResourceHandler
@@ -40,6 +41,7 @@ from .released_resource_doc import ReleasedResourceDocHandler
 from .released_resource_doc.generators import DocGenerator
 from .resource_doc import ResourceDocHandler
 from .resource_label import ResourceLabelHandler
+from .resource_version import ResourceVersionHandler
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +91,23 @@ class MCPServerHandler:
             with_common_request_params_part=False,
         )
 
-        return generator.get_doc()
+        data = generator.get_doc()
+        resource_version_id = (
+            Release.objects.filter(
+                gateway_id=gateway_id,
+                stage__name=stage_name,
+            )
+            .values_list("resource_version_id", flat=True)
+            .first()
+        )
+        # 查询哪些资源有配置对应的 schema
+        schema = ResourceVersionHandler.get_resource_schema(
+            resource_version_id,
+            resource_data.id,
+        )
+        data["schema"] = schema
+
+        return data
 
     @staticmethod
     def _virtual_app_code_prefix(mcp_server_id: int) -> str:
@@ -220,6 +238,8 @@ class MCPServerPermissionHandler:
             id__in=mcp_server_ids,
             is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
+            gateway__status=GatewayStatusEnum.ACTIVE.value,
+            stage__status=StageStatusEnum.ACTIVE.value,
         )
 
         selected_mcp_server_ids = list(queryset.values_list("id", flat=True))

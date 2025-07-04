@@ -1,6 +1,6 @@
 <template>
   <div class="request-params-table-wrapper">
-    <div style="margin-bottom: 24px;">
+    <div v-if="!readonly" style="margin-bottom: 24px;">
       <BkCheckbox v-model="disabled">{{ t('该资源无请求参数') }}</BkCheckbox>
     </div>
     <bk-table
@@ -9,161 +9,111 @@
       :cell-class="getCellClass"
       :data="tableData"
       :border="['outer', 'row']"
-      class="variable-table"
+      class="request-params-table"
       row-hover="auto"
       @vue:mounted="handleTableMounted"
     >
       <bk-table-column :label="t('参数名')" prop="name">
-        <template #default="{ row, column, index }">
-          <bk-form :ref="(el: HTMLElement | null) => setRefs(el, 'name-', index)" :model="row" label-width="0">
-            <bk-form-item
-              class="table-form-item"
-              error-display-type="tooltips"
-              property="name"
-            >
-              <bk-input
-                :ref="(el: HTMLElement | null) => setInputRefs(el, `name-input-`, index, column?.index)"
-                v-model="row.name"
-                :clearable="false"
-                class="edit-input"
-                :disabled="row.in === 'body'"
-              />
-            </bk-form-item>
-          </bk-form>
+        <template #default="{ row }">
+          <div v-if="readonly" class="readonly-value-wrapper">{{ row.name || '--' }}</div>
+          <bk-input
+            v-else
+            v-model="row.name"
+            :clearable="false"
+            :disabled="row.in === 'body'"
+            :placeholder="t('参数名')"
+            class="edit-input"
+          />
         </template>
       </bk-table-column>
       <bk-table-column :label="t('位置')" prop="in" width="100">
-        <template #default="{ row, column, index }">
-          <bk-form
-            :ref="(el: HTMLElement | null) => setRefs(el, 'in-', index)"
-            :model="row"
-            label-width="0"
+        <template #default="{ row }">
+          <div
+            v-if="readonly"
+            class="readonly-value-wrapper"
           >
-            <bk-form-item
-              class="table-form-item"
-              error-display-type="tooltips"
-              property="in"
-            >
-              <bk-select
-                :ref="(el: HTMLElement | null) => setInputRefs(el, 'in-input-', index, column?.index)"
-                v-model="row.in"
-                :clearable="false"
-                :filterable="false"
-                class="edit-select"
-                @change="() => handleInChange(row)"
-              >
-                <bk-option
-                  v-for="item in inList"
-                  :id="item.value"
-                  :key="item.value"
-                  :name="item.label"
-                  :disabled="tableData.find((dataRow) => dataRow.in === 'body') && item.value === 'body'"
-                />
-              </bk-select>
-            </bk-form-item>
-          </bk-form>
+            {{ inList.find(item => item.value === row.in)?.label || '--' }}
+          </div>
+          <bk-select
+            v-else
+            v-model="row.in"
+            :clearable="false"
+            :filterable="false"
+            :placeholder="t('位置')"
+            class="edit-select"
+            @change="() => handleInChange(row)"
+          >
+            <bk-option
+              v-for="item in inList"
+              :id="item.value"
+              :key="item.value"
+              :disabled="tableData.find((dataRow) => dataRow.in === 'body') && item.value === 'body'"
+              :name="item.label"
+            />
+          </bk-select>
         </template>
       </bk-table-column>
       <bk-table-column :label="t('类型')" prop="type" width="100">
-        <template #default="{ row, column, index }">
-          <bk-form
-            :ref="(el: HTMLElement | null) => setRefs(el, 'type-', index)"
-            :model="row"
-            label-width="0"
+        <template #default="{ row }">
+          <div v-if="readonly" class="readonly-value-wrapper">
+            {{ typeList.find(item => item.value === row.type)?.label || '--' }}
+          </div>
+          <bk-select
+            v-else
+            v-model="row.type"
+            :clearable="false"
+            :filterable="false"
+            class="edit-select"
           >
-            <bk-form-item
-              class="table-form-item"
-              error-display-type="tooltips"
-              property="type"
-            >
-              <bk-select
-                :ref="(el: HTMLElement | null) => setInputRefs(el, 'type-input-', index, column?.index)"
-                v-model="row.type"
-                :clearable="false"
-                :filterable="false"
-                class="edit-select"
-              >
-                <bk-option
-                  v-for="item in typeList"
-                  :id="item.value"
-                  :key="item.value"
-                  :name="item.label"
-                />
-              </bk-select>
-            </bk-form-item>
-          </bk-form>
+            <bk-option
+              v-for="item in typeList"
+              :id="item.value"
+              :key="item.value"
+              :disabled="isTypeDisabled(row.in, item.value)"
+              :name="item.label"
+            />
+          </bk-select>
         </template>
       </bk-table-column>
       <bk-table-column :label="t('必填')" prop="required" width="100">
-        <template #default="{ row, column, index }">
-          <bk-form
-            :ref="(el: HTMLElement | null) => setRefs(el, 'required-', index)"
-            :model="row"
-            label-width="0"
-          >
-            <bk-form-item
-              class="table-form-item"
-              error-display-type="tooltips"
-              property="required"
-            >
-              <BkSwitcher
-                :ref="(el: HTMLElement | null) => setInputRefs(el, 'required-input-', index, column?.index)"
-                v-model="row.required"
-                style="margin-left: 16px;"
-                theme="primary"
-              />
-            </bk-form-item>
-          </bk-form>
+        <template #default="{ row }">
+          <div v-if="readonly" class="readonly-value-wrapper">{{ row.required ? t('是') : t('否') }}</div>
+          <BkSwitcher
+            v-else
+            v-model="row.required"
+            style="margin-left: 16px;"
+            theme="primary"
+          />
         </template>
       </bk-table-column>
-      <bk-table-column :label="t('默认值')" prop="default">
-        <template #default="{ row, column, index }">
-          <bk-form
-            :ref="(el: HTMLElement | null) => setRefs(el, `default-`, index)"
-            :model="row"
-            label-width="0"
-          >
-            <bk-form-item
-              class="table-form-item"
-              error-display-type="tooltips"
-              property="default"
-            >
-              <bk-input
-                :ref="(el: HTMLElement | null) => setInputRefs(el, 'default-input-', index, column?.index)"
-                v-model="row.default"
-                :clearable="false"
-                class="edit-input"
-              />
-            </bk-form-item>
-          </bk-form>
+      <bk-table-column :label="t('默认值')" :width="readonly ? 150 : 300" prop="default">
+        <template #default="{ row }">
+          <div v-if="readonly" class="readonly-value-wrapper">{{ row.default || '--' }}</div>
+          <bk-input
+            v-else
+            v-model="row.default"
+            :clearable="false"
+            :placeholder="t('默认值')"
+            class="edit-input"
+          />
         </template>
       </bk-table-column>
-      <bk-table-column :label="t('备注')" prop="description">
-        <template #default="{ row, column, index }">
-          <bk-form
-            :ref="(el: HTMLElement | null) => setRefs(el, 'description-', index)"
-            :model="row"
-            label-width="0"
-          >
-            <bk-form-item
-              class="table-form-item"
-              error-display-type="tooltips"
-              property="description"
-            >
-              <bk-input
-                :ref="(el: HTMLElement | null) => setInputRefs(el, 'description-input-', index, column?.index)"
-                v-model="row.description"
-                :clearable="false"
-                class="edit-input"
-              />
-            </bk-form-item>
-          </bk-form>
+      <bk-table-column :label="t('备注')" prop="description" width="300">
+        <template #default="{ row }">
+          <div v-if="readonly" class="readonly-value-wrapper">{{ row.description || '--' }}</div>
+          <bk-input
+            v-else
+            v-model="row.description"
+            :clearable="false"
+            :placeholder="t('备注')"
+            class="edit-input"
+          />
         </template>
       </bk-table-column>
-      <bk-table-column :label="t('操作')" fixed="right" width="110">
+      <bk-table-column v-if="!readonly" :label="t('操作')" fixed="right" width="110">
         <template #default="{ row, index }">
           <AgIcon
-            v-if="row.in === 'body'"
+            v-if="isAddFieldVisible(row)"
             v-bk-tooltips="t('添加字段')"
             class="tb-btn add-btn"
             name="plus-circle-shape"
@@ -179,11 +129,11 @@
       </bk-table-column>
       <template #expandRow="row">
         <div v-if="row?.in === 'body'">
-          <RequestParamsTable v-model="row.body" />
+          <RequestParamsTable v-model="row.body" :readonly="readonly" />
         </div>
       </template>
     </bk-table>
-    <div v-if="!disabled" class="add-param-btn-row">
+    <div v-if="!disabled && !readonly" class="add-param-btn-row">
       <bk-button
         text
         theme="primary"
@@ -234,50 +184,45 @@ interface IBodyRow {
   body?: IBodyRow[];
 }
 
+interface ISchema {
+  parameters?: {
+    description?: string,
+    in: string,
+    name: string,
+    required?: boolean,
+    schema: JSONSchema7,
+    default?: string | number | boolean,
+  }[],
+  requestBody?: {
+    content: {
+      'application/json': {
+        schema: JSONSchema7,
+      }
+    },
+    description?: string,
+    required?: boolean,
+  },
+}
+
 interface IProp {
   detail?: {
-    schema: {
-      parameters?: {
-        description?: string,
-        in: string,
-        name: string,
-        required?: boolean,
-        schema: JSONSchema7,
-      }[],
-      requestBody?: {
-        content: {
-          'application/json': {
-            schema: JSONSchema7,
-          }
-        },
-        description?: string,
-        required?: boolean,
-      },
-    };
-  }
+    schema?: ISchema;
+    openapi_schema?: ISchema;
+  },
+  readonly?: boolean,
 }
 
 const disabled = defineModel<boolean>('is-no-params', {
   default: false,
 });
 
-const { detail } = defineProps<IProp>();
+const {
+  detail,
+  readonly = false,
+} = defineProps<IProp>();
 
 const { t } = useI18n();
 const tableRef = ref();
-const formRefs = ref(new Map());
-const setRefs = (el: HTMLElement | null, prefix: string, index: number) => {
-  if (el && index !== undefined) {
-    formRefs.value?.set(`${prefix}${index}`, el);
-  }
-};
-
-const formInputRef = ref(new Map());
-const setInputRefs = (el: HTMLElement | null, prefix: string, index: number, columnIndex: number) => {
-  if (el && index !== undefined && columnIndex !== undefined) {
-    formInputRef.value?.set(`${prefix}${index}-${columnIndex}`, el);
-  }
-};
 
 const tableData = ref<ITableRow[]>([
   {
@@ -332,24 +277,70 @@ const typeList = ref([
   },
 ]);
 
+const convertPropertyType = (type: string): JSONSchema7TypeName => {
+  switch (type) {
+    case 'string':
+      return 'string';
+    case 'boolean':
+      return 'boolean';
+    case 'array':
+      return 'array';
+    case 'object':
+      return 'object';
+    case 'integer':
+    case 'number':
+      return 'number';
+    default:
+      return 'string';
+  }
+};
+
+const convertSchemaToBodyRow = (schema: JSONSchema7) => {
+  if (!schema) {
+    return null;
+  }
+  const body: IBodyRow[] = [];
+  if (Object.keys(schema.properties || {}).length) {
+    for (const propertyName in schema.properties) {
+      const property = schema.properties[propertyName];
+      const row: IBodyRow = {
+        id: _.uniqueId(),
+        name: propertyName,
+        type: convertPropertyType(property.type),
+        required: schema.required?.includes(propertyName) ?? false,
+        default: '',
+        description: property.description ?? '',
+      };
+      if (Object.keys(property.properties || {}).length) {
+        row.body = convertSchemaToBodyRow(property);
+      }
+      body.push(row);
+    }
+  } else {
+    return null;
+  }
+  return body;
+};
+
 watch(() => detail, () => {
-  if (detail?.schema) {
+  if (detail?.schema || detail.openapi_schema) {
+    const resourceSchema = detail.schema || detail.openapi_schema;
     tableData.value = [];
-    if (detail.schema.parameters?.length) {
-      tableData.value = detail.schema.parameters.map(parameter => (
+    if (resourceSchema.parameters?.length) {
+      tableData.value = resourceSchema.parameters.map(parameter => (
         {
           id: _.uniqueId(),
           name: parameter.name,
           in: parameter.in,
           type: parameter.schema.type,
           required: parameter.required ?? false,
-          default: '',
+          default: parameter.default,
           description: parameter.description ?? '',
         }
       ));
     }
-    if (detail.schema.requestBody) {
-      const body = detail.schema.requestBody;
+    if (resourceSchema.requestBody) {
+      const body = resourceSchema.requestBody;
       const row = {
         id: _.uniqueId(),
         name: t('根节点'),
@@ -370,34 +361,7 @@ watch(() => detail, () => {
       tableRef.value?.setAllRowExpand(true);
     });
   }
-});
-
-const convertSchemaToBodyRow = (schema: JSONSchema7) => {
-  if (!schema) {
-    return null;
-  }
-  const body: IBodyRow[] = [];
-  if (Object.keys(schema.properties || {}).length) {
-    for (const propertyName in schema.properties) {
-      const property = schema.properties[propertyName];
-      const row: IBodyRow = {
-        id: _.uniqueId(),
-        name: propertyName,
-        type: schema.type as JSONSchema7TypeName,
-        required: schema.required?.includes(propertyName) ?? false,
-        default: '',
-        description: property.description ?? '',
-      };
-      if (Object.keys(property.properties || {}).length) {
-        row.body = convertSchemaToBodyRow(property);
-      }
-      body.push(row);
-    }
-  } else {
-    return null;
-  }
-  return body;
-};
+}, { immediate: true });
 
 const genRow = () => {
   return {
@@ -435,13 +399,17 @@ const handleInChange = (row: ITableRow) => {
   const _row = tableData.value.find(data => data.id === row.id);
   if (row.in === 'body') {
     _row.name = t('根节点');
+    _row.type = 'object';
     if (_row.body) {
       _row.body.push(genBodyRow());
     } else {
       _row.body = [genBodyRow()];
     }
   } else {
-    _row.name = '';
+    if (row.type === 'object' || row.type === 'array') {
+      _row.type = 'string';
+    }
+    delete _row.body;
   }
   nextTick(() => {
     tableRef.value?.setAllRowExpand(true);
@@ -461,6 +429,16 @@ const delRow = (row: ITableRow, index: number) => {
     return;
   }
   tableData.value?.splice(index, 1);
+};
+
+const isAddFieldVisible = (row: ITableRow) => {
+  if (row.in === 'body') {
+    if (row.type === 'array') {
+      return row.body ? row.body.length === 0 : true;
+    }
+    return true;
+  }
+  return false;
 };
 
 const addField = (row: ITableRow) => {
@@ -547,6 +525,13 @@ const genSchemaFromBodyRow = (row: IBodyRow) => {
   return schema;
 };
 
+const isTypeDisabled = (paramIn: string, type: string) => {
+  if (paramIn === 'body') {
+    return type !== 'object' && type !== 'array';
+  }
+  return type === 'object' || type === 'array';
+};
+
 const handleTableMounted = () => {
   tableRef.value?.setAllRowExpand(true);
 };
@@ -589,9 +574,10 @@ defineExpose({
 .edit-input.bk-input {
   border: none;
   height: 100%;
+  font-size: 12px;
 
   &.is-focused:not(.is-readonly) {
-    border: 1px solid #3a84ff;
+    border: 1px solid #a3c5fd;
     box-shadow: none;
   }
 
@@ -636,13 +622,15 @@ defineExpose({
   }
 }
 
-.variable-table {
-  .td-text {
-    padding: 0 16px;
+.request-params-table {
+  .readonly-value-wrapper {
+    padding-left: 16px;
+    font-size: 12px;
+    cursor: auto;
   }
 
-  :deep(.bk-form-error-tips) {
-    transform: translate(-50%, 4px);
+  .td-text {
+    padding: 0 16px;
   }
 
   :deep(.bk-table-body-content) {
@@ -653,71 +641,30 @@ defineExpose({
         &:hover {
           cursor: pointer;
         }
+      }
+    }
 
-        .bk-form {
-          line-height: 42px;
-          margin-bottom: -1px;
+    // 展开行样式
+    .row_expend {
+      td {
+        border-right: none;
+      }
 
-          .table-form-item {
-            margin-bottom: 0;
-
-            .bk-form-content {
-              line-height: 42px;
-
-              .bk-input {
-                height: 42px;
-                line-height: 42px;
-                border: 0;
-
-                &--text {
-                  padding: 0 16px;
-                }
-              }
-
-              .edit-input.bk-input {
-                border-radius: 0;
-
-                &:hover {
-                  border: 1px solid #a3c5fd;
-                }
-
-                &.is-focused {
-                  border: 1px solid #3a84ff;
-                }
-              }
-
-              .bk-select {
-                &:hover {
-                  .bk-input {
-                    border: 1px solid #a3c5fd;
-                  }
-                }
-
-                &.is-focus {
-                  .bk-input {
-                    border: 1px solid #3a84ff;
-                  }
-                }
-              }
-            }
-
-            &.is-error {
-              .bk-form-content {
-                .bk-input--text {
-                  background: #fee;
-                }
-              }
-            }
-          }
-        }
+      // 展开行没有内容时，不应渲染，避免出现多余的 1px 高的元素
+      &:not(:has(.request-param-body-table)) {
+        display: none !important;
       }
     }
   }
+}
 
-  .custom-table-cell {
-    .cell {
-      padding: 0;
-    }
+// 输入框和 placeholder 样式
+:deep(.bk-input--text) {
+  font-size: 12px !important;
+  padding-inline: 16px;
+
+  &::placeholder {
+    font-size: 12px !important;
   }
 }
 

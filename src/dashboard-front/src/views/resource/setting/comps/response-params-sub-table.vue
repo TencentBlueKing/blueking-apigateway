@@ -1,6 +1,6 @@
 <template>
   <div>
-    <table v-for="row in tableData" :key="row.id" class="response-table">
+    <table v-for="row in tableData" :key="row.id" class="response-params-sub-table">
       <tbody class="table-body">
         <tr class="table-body-row">
           <td class="table-body-row-cell arrow-col">
@@ -8,11 +8,16 @@
           </td>
           <!-- 字段名 -->
           <td class="table-body-row-cell name-col">
-            <bk-input v-model="row.name" :placeholder="t('字段名')" />
+            <div v-if="readonly" class="readonly-value-wrapper">{{ row.name || '--' }}</div>
+            <bk-input v-else v-model="row.name" :placeholder="t('字段名')" />
           </td>
           <!-- 字段类型 -->
           <td class="table-body-row-cell type">
+            <div v-if="readonly" class="readonly-value-wrapper">
+              {{ typeList.find(item => item.value === row.type)?.label || '--' }}
+            </div>
             <bk-select
+              v-else
               v-model="row.type"
               :clearable="false"
               :filterable="false"
@@ -27,13 +32,14 @@
             </bk-select>
           </td>
           <!-- 字段备注 -->
-          <td class="table-body-row-cell description">
-            <bk-input v-model="row.description" :placeholder="t('备注')" />
+          <td :style="readonly ? 'width: 150px' : ''" class="table-body-row-cell description">
+            <div v-if="readonly" class="readonly-value-wrapper">{{ row.description || '--' }}</div>
+            <bk-input v-else v-model="row.description" :placeholder="t('备注')" />
           </td>
           <!-- 字段操作 -->
-          <td class="table-body-row-cell actions">
+          <td v-if="!readonly" class="table-body-row-cell actions">
             <AgIcon
-              v-if="row.type === 'object'"
+              v-if="isAddFieldVisible(row)"
               v-bk-tooltips="t('添加字段')"
               class="tb-btn add-btn"
               name="plus-circle-shape"
@@ -50,8 +56,8 @@
       </tbody>
       <tfoot v-if="row?.properties?.length">
         <tr>
-          <td colspan="5" style="padding-left: 16px;">
-            <ResponseParamsSubTable v-model="row.properties" />
+          <td :colspan="readonly ? 4 : 5" style="padding-left: 16px;">
+            <ResponseParamsSubTable v-model="row.properties" :readonly="readonly" />
           </td>
         </tr>
       </tfoot>
@@ -69,6 +75,10 @@ import AgIcon from '@/components/ag-icon.vue';
 import _ from 'lodash';
 import { JSONSchema7TypeName } from 'json-schema';
 
+interface IProps {
+  readonly?: boolean;
+}
+
 interface ITableRow {
   id: string;
   name: string;
@@ -79,10 +89,11 @@ interface ITableRow {
 
 const tableData = defineModel<ITableRow[]>();
 
+const { readonly = false } = defineProps<IProps>();
+
 const { t } = useI18n();
 
 const tableRef = ref();
-
 
 const typeList = ref([
   {
@@ -116,6 +127,16 @@ const genRow = () => {
   };
 };
 
+const isAddFieldVisible = (row: ITableRow) => {
+  if (row.type === 'object' || row.type === 'array') {
+    if (row.type === 'array') {
+      return row.properties ? row.properties.length === 0 : true;
+    }
+    return true;
+  }
+  return false;
+};
+
 const addField = (row: ITableRow) => {
   const targetRow = tableData.value.find(data => data.id === row.id);
   if (targetRow) {
@@ -137,7 +158,7 @@ const removeField = (row: ITableRow) => {
 const handleTypeChange = (row: ITableRow) => {
   const targetRow = tableData.value.find(data => data.id === row.id);
   if (targetRow) {
-    if (row.type === 'object') {
+    if (row.type === 'object' || row.type === 'array') {
       targetRow.properties = [genRow()];
     } else {
       targetRow.properties = [];
@@ -152,38 +173,39 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 
-.response-table {
+.response-params-sub-table {
   border-collapse: collapse;
   border-spacing: 0;
-
-  .table-body-row-cell {
-    height: 42px;
-    font-size: 12px;
-
-    &.arrow-col {
-      border-right: none;
-    }
-
-    &.name-col {
-      border-left: none;
-    }
-  }
+  width: 100%;
 
   .table-body {
+    .readonly-value-wrapper {
+      padding-left: 16px;
+      font-size: 12px;
+      cursor: auto;
+    }
+
     .table-body-row {
       .table-body-row-cell {
+        height: 42px;
+        font-size: 12px;
 
-        &:first-child {
+        &.arrow-col {
           width: 32px;
           text-align: center;
+          border-right: none;
+        }
+
+        &.name-col {
+          border-left: none;
         }
 
         &.type {
-          width: 100px;
+          width: 160px;
         }
 
         &.description {
-          width: 120px;
+          width: 300px;
         }
 
         &.actions {
@@ -199,8 +221,26 @@ onMounted(() => {
           border: none;
         }
 
-        :deep(.bk-input):hover {
-          border: 1px solid #a3c5fd;
+        // 输入框和 placeholder 样式
+        :deep(.bk-input) {
+          &:hover {
+            border: 1px solid #a3c5fd;
+          }
+
+          &.is-focused:not(.is-readonly) {
+            border: 1px solid #a3c5fd;
+            box-shadow: none;
+          }
+
+          .bk-input--text {
+            background-color: #fff;
+            font-size: 12px !important;
+            padding-inline: 16px;
+
+            &::placeholder {
+              font-size: 12px !important;
+            }
+          }
         }
 
         .tb-btn {

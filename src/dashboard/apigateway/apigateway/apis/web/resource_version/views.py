@@ -27,6 +27,7 @@ from rest_framework import generics, serializers, status
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
+from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin_binding import PluginBindingHandler
@@ -34,9 +35,10 @@ from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.biz.resource_version_diff import ResourceDifferHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
+from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
-from apigateway.utils.version import get_nex_version_with_type, get_next_version
+from apigateway.utils.version import get_next_version, get_next_version_with_type
 
 from .serializers import (
     NeedNewVersionOutputSLZ,
@@ -163,7 +165,7 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
         resource_backends = BackendHandler.get_id_to_instance(request.gateway.id)
 
         # 查询哪些资源有配置对应的 schema
-        resource_id_with_schema_dict = ResourceVersionHandler.get_resource_ids_has_openapi_schema_by_resource_version(
+        resource_id_with_schema_dict = ResourceVersionHandler.get_resource_id_to_schema_by_resource_version(
             instance.id
         )
 
@@ -193,7 +195,16 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
 
         slz = ResourceVersionRetrieveOutputSLZ(instance, context=context)
 
-        return OKJsonResponse(data=slz.data)
+        data = slz.data
+        # some specific logical
+        source = self.request.query_params.get("source")
+        # sort the resources by has_openapi_schema, for mcp server to show the options of tools
+        if source == "mcp_server":
+            resources = data["resources"]
+            resources.sort(key=lambda x: x["has_openapi_schema"], reverse=True)
+            data["resources"] = resources
+
+        return OKJsonResponse(data=data)
 
 
 class ResourceVersionNeedNewVersionRetrieveApi(generics.RetrieveAPIView):
@@ -291,8 +302,8 @@ class NextResourceVersionRetrieveApi(generics.RetrieveAPIView):
         ),
     )
     def get(self, request, *args, **kwargs):
-        query_set = ResourceVersion.objects.filter(gateway=request.gateway).order_by("-id")
-        obj = query_set.first()
+        queryset = ResourceVersion.objects.filter(gateway=request.gateway).order_by("-id")
+        obj = queryset.first()
         if obj:
             new_version_str = get_next_version(obj.version)
             return OKJsonResponse(
@@ -318,12 +329,14 @@ class NextProgramGatewayResourceVersionRetrieveApi(generics.RetrieveAPIView):
         slz.is_valid(raise_exception=True)
         stage_name = slz.validated_data["stage_name"]
         version_type = slz.validated_data["version_type"]
-        query_set = ResourceVersion.objects.filter(gateway=request.gateway, version__icontains=stage_name).order_by(
-            "-id"
-        )
-        obj = query_set.first()
+        queryset = ProgrammableGatewayDeployHistory.objects.filter(
+            gateway=request.gateway,
+            stage__name=stage_name,
+            source=PublishSourceEnum.VERSION_PUBLISH.value,
+        ).order_by("-id")
+        obj = queryset.first()
         if obj:
-            new_version_str = get_nex_version_with_type(obj.version, version_type)
+            new_version_str = get_next_version_with_type(obj.version, version_type)
             return OKJsonResponse(
                 data={"version": new_version_str},
             )

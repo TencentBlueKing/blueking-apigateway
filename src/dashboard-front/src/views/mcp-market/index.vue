@@ -24,21 +24,23 @@
           <span>{{ t('使用指引') }}</span>
         </div> -->
       </div>
-      <div class="card-list">
+      <div class="card-list" v-if="mcpList?.length">
         <div class="card" @click="goDetails(item.id)" v-for="item in mcpList" :key="item.id">
           <div class="header">
             <bk-overflow-title class="title" style="max-width: calc(100% - 115px)">
               {{ item.name }}
             </bk-overflow-title>
-            <bk-tag theme="success" class="mr8" v-if="item.is_public">{{ t('官方') }}</bk-tag>
+            <bk-tag theme="success" class="mr8" v-if="item.gateway.is_official">{{ t('官方') }}</bk-tag>
             <bk-tag theme="info">{{ item.stage?.name }}</bk-tag>
           </div>
           <div class="content">
             <div class="info-item">
               <div class="label">{{ t('访问地址') }}：</div>
               <div class="value flex-row align-items-center">
-                <bk-overflow-title style="width: calc(100% - 14px)">{{ item.url }}</bk-overflow-title>
-                <ag-icon name="copy" size="14" class="icon" @click="handleCopy(item.url)" />
+                <bk-overflow-title style="width: calc(100% - 28px)">{{ item.url }}</bk-overflow-title>
+                <div class="copy-wrapper" @click.stop="handleCopy(item.url)">
+                  <ag-icon name="copy" size="14" class="icon" />
+                </div>
               </div>
             </div>
             <div class="info-item">
@@ -58,6 +60,14 @@
           </div>
         </div>
       </div>
+      <div class="empty-wrapper" v-else>
+        <TableEmpty
+          :keyword="tableEmptyConf.keyword"
+          :abnormal="tableEmptyConf.isAbnormal"
+          @reacquire="getList"
+          @clear-filter="handleClearFilterKey"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -71,6 +81,7 @@ import { getMcpMarketplace, IMarketplaceItem } from '@/http/mcp-market';
 import { copy } from '@/common/util';
 // @ts-ignore
 import mcpBanner from '@/images/mcp-banner.jpg';
+import TableEmpty from '@/components/table-empty.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -78,18 +89,24 @@ const router = useRouter();
 const search = ref<string>('');
 const isPublic = ref<boolean>(false);
 const mcpAllList = ref<IMarketplaceItem[]>([]);
+const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+  keyword: '',
+  isAbnormal: false,
+});
 
 const bannerImg = computed(() => {
   return mcpBanner;
 });
 
 const mcpList = computed(() => {
-  return mcpAllList.value.filter((item: IMarketplaceItem) => {
+  const list = mcpAllList.value.filter((item: IMarketplaceItem) => {
     if (isPublic.value) {
-      return item.is_public;
+      return item.gateway.is_official;
     }
     return true;
   });
+  updateTableEmptyConfig();
+  return list;
 });
 
 const getList = async () => {
@@ -117,17 +134,32 @@ const goDetails = (id: number) => {
   });
 };
 
+const updateTableEmptyConfig = () => {
+  if (search.value) {
+    tableEmptyConf.value.keyword = 'placeholder';
+    return;
+  }
+  tableEmptyConf.value.keyword = '';
+};
+
+const handleClearFilterKey = async () => {
+  search.value = '';
+  getList();
+};
+
 </script>
 
 <style lang="scss" scoped>
 .banner {
   img {
     width: 100%;
+    min-width: 1280px;
   }
 }
 
 .main {
-  padding: 0px 120px 26px;
+  padding-bottom: 26px;
+  margin: 0 auto;
   .top {
     display: flex;
     justify-content: space-between;
@@ -148,14 +180,14 @@ const goDetails = (id: number) => {
 
   .card-list {
     display: flex;
-    gap: 18px;
     flex-wrap: wrap;
+    justify-content: flex-start;
+    box-sizing: border-box;
     .card {
-      width: calc(33.33% - 18px);
+      padding: 0 24px;
       border-radius: 2px;
       background: #FFFFFF;
       box-shadow: 0 2px 4px 0 #1919290d;
-      padding: 0 24px;
       box-sizing: border-box;
       cursor: pointer;
       .header {
@@ -165,7 +197,7 @@ const goDetails = (id: number) => {
         height: 54px;
         .title {
           color: #313238;
-          font-size: 20px;
+          font-size: 18px;
           font-weight: Bold;
           line-height: 54px;
           margin-right: 16px;
@@ -176,7 +208,7 @@ const goDetails = (id: number) => {
         .info-item {
           display: flex;
           align-items: center;
-          margin-bottom: 18px;
+          margin-bottom: 12px;
           .label {
             font-size: 14px;
             color: #4D4F56;
@@ -188,6 +220,10 @@ const goDetails = (id: number) => {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            .copy-wrapper {
+              width: 28px;
+              text-align: right;
+            }
             .icon {
               color: #3A84FF;
             }
@@ -196,7 +232,33 @@ const goDetails = (id: number) => {
       }
     }
   }
+
+  .empty-wrapper {
+    padding-top: 120px;
+  }
 }
 
+@media (max-width: 1599.98px) {
+  .main {
+    width: 1280px;
+  }
+  .card-list {
+    gap: 20px 25px;
+    .card {
+      width: 410px;
+    }
+  }
+}
 
+@media (min-width: 1600px) {
+  .main {
+    width: 1600px;
+  }
+  .card-list {
+    gap: 20px 26.67px;
+    .card {
+      width: 380px;
+    }
+  }
+}
 </style>

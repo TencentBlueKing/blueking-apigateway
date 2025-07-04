@@ -66,3 +66,12 @@ export type ErrorReasonType = {
   position?: IPosition | null, // 位置，可能为空
   regex?: RegExp | null, // 正则表达式，可能为空
 };
+
+// 资源导出
+export interface IExportDialog extends IDialog {
+  [x: string]: any;
+  exportFileDocType: string;
+}
+
+// 自动推导键值对泛型
+export type ReturnRecordType<T, U> = Record<string, (arg?: T) => U>;

@@ -34,9 +34,19 @@
                 :disabled="isEditMode || noValidStage"
                 :prefix="(isEditMode || noValidStage )? undefined : serverNamePrefix"
               />
+              <div class="name-help-text">
+                <div class="text-body">{{ t('唯一标识，以网关名称和环境名称为前缀，创建后不可更改') }}</div>
+                <div class="url">
+                  <div class="label">{{ t('访问地址') }}：</div>
+                  <div class="content">{{ url || previewUrl }}</div>
+                  <div class="suffix">
+                    <AgIcon name="copy-info" @click.stop="handleCopyClick" />
+                  </div>
+                </div>
+              </div>
             </bk-form-item>
             <bk-form-item :label="t('描述')" property="description">
-              <bk-input v-model="formData.description" :disabled="noValidStage" />
+              <bk-input v-model="formData.description" :disabled="noValidStage" clearable />
             </bk-form-item>
             <bk-form-item :label="t('标签')" property="labels">
               <bk-tag-input
@@ -106,7 +116,7 @@
                     <template v-if="selections.length">
                       <div v-for="(name, index) in selections" :key="index" class="list-main">
                         <div class="list-item">
-                          <span class="name" @click="() => handleToolPreviewNameClick(name)">
+                          <span class="name">
                             {{ name }}
                           </span>
                           <AgIcon
@@ -168,6 +178,9 @@ import {
   patchServer,
 } from '@/http/mcp-server';
 import { useSidebar } from '@/hooks';
+import { copy } from '@/common/util';
+
+const { BK_API_RESOURCE_URL_TMPL } = window;
 
 interface IProps {
   serverId?: number,
@@ -201,6 +214,7 @@ const formData = ref<FormData>({
   is_public: true,
   labels: [],
 });
+const url = ref('');
 
 const stageList = ref<any[]>([]);
 const resourceList = ref<any[]>([]);
@@ -305,6 +319,14 @@ const filteredResourceList = computed(() => {
   });
 });
 
+const previewUrl = computed(() => {
+  const prefix = BK_API_RESOURCE_URL_TMPL
+    .replace('{api_name}', 'bk-apigateway')
+    .replace('{stage_name}', 'prod')
+    .replace('{resource_path}', 'api/v2/mcp-servers')
+  return `${prefix || ''}/${serverNamePrefix.value}${formData.value.name}/sse/`
+});
+
 // const resourceTips = computed(() => t('请从已经发布到 {s} 环境的资源列表选取资源作为 MCP Server 的工具', { s: stage.value.name || '--' }))
 
 watch(isShow, async () => {
@@ -394,6 +416,7 @@ const fetchServer = async () => {
   formData.value.is_public = response.is_public ?? true;
   formData.value.stage_id = response.stage.id || 0;
   selections.value = response.resource_names;
+  url.value = response.url;
 }
 
 const fetchStageResources = async () => {
@@ -401,7 +424,10 @@ const fetchStageResources = async () => {
     const response = await getResourceVersionsInfo(
       common.curApigwData.id,
       stage.value.resource_version.id,
-      { stage_id: stage.value.id },
+      {
+        stage_id: stage.value.id,
+        source: 'mcp_server',
+      },
     );
     resourceList.value = response?.resources || [];
     pagination.value.offset = 0;
@@ -448,10 +474,15 @@ const handleRefreshClick = async () => {
   const response = await getResourceVersionsInfo(
     common.curApigwData.id,
     stage.value.resource_version.id,
-    { stage_id: stage.value.id },
+    {
+      stage_id: stage.value.id,
+      source: 'mcp_server',
+    },
   );
   resourceList.value = response?.resources || [];
-  selections.value = [];
+  selections.value = selections.value.filter(selectedResourceName =>
+    resourceList.value.some(resource => resource.name === selectedResourceName),
+  );
   pagination.value = {
     offset: 0,
     limit: 10,
@@ -465,19 +496,20 @@ const handleStageSelectChange = () => {
 };
 
 const handleToolNameClick = (row: { id: number }) => {
-  router.push({ name: 'apigwResourceEdit', params: { id: common.curApigwData.id, resourceId: row.id } });
-};
-
-const handleToolPreviewNameClick = (name: string) => {
-  const resource = resourceList.value.find((resource) => resource.name === name);
-  if (resource) {
-    handleToolNameClick({ id: resource.id });
-  }
+  const routeData = router.resolve({
+    name: 'apigwResourceEdit',
+    params: { id: common.curApigwData.id, resourceId: row.id },
+  });
+  window.open(routeData.href, '_blank');
 };
 
 const handleCancel = () => {
   isShow.value = false;
 };
+
+const handleCopyClick = () => {
+  copy(url.value || previewUrl.value);
+}
 
 const resetSliderData = () => {
   formData.value = {
@@ -490,6 +522,7 @@ const resetSliderData = () => {
   stageList.value = [];
   resourceList.value = [];
   selections.value = [];
+  url.value = '';
 };
 
 const handleBeforeClose = () => {
@@ -516,6 +549,42 @@ defineExpose({
     .main {
       color: #4d4f56;
       padding: 28px 40px 0;
+
+      .name-help-text {
+        .text-body {
+          font-size: 12px;
+          color: #979ba5;
+        }
+
+        .url {
+          padding-left: 8px;
+          width: 100%;
+          height: 32px;
+          background: #f5f7fa;
+          font-size: 12px;
+          display: flex;
+          align-items: center;
+
+          .label {
+            color: #4d4f56;
+            line-height: 20px;
+          }
+
+          .content {
+            color: #313238;
+            line-height: 20px;
+          }
+
+          .suffix {
+            margin-left: 8px;
+            cursor: pointer;
+
+            &:hover {
+              color: #3a84ff;
+            }
+          }
+        }
+      }
     }
   }
 }
@@ -602,7 +671,6 @@ defineExpose({
         align-items: center;
         height: 32px;
         padding: 6px 10px;
-        cursor: pointer;
         background: #fff;
         border-radius: 2px;
         box-shadow: 0 1px 2px 0 #0000001f;
@@ -612,11 +680,11 @@ defineExpose({
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          color: #3a84ff;
         }
 
         .delete-icon {
           color: #c4c6cc;
+          cursor: pointer;
 
           &:hover {
             color: #3a84ff;

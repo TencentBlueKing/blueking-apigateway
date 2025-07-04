@@ -6,12 +6,13 @@
     >
       <ResponseParamsTable
         ref="responseParamsTableRefs"
+        :readonly="readonly"
         :response="response"
         @delete="() => handleDelete(response)"
         @change-code="(code) => response.code = code"
       />
     </template>
-    <div>
+    <div v-if="!readonly">
       <bk-button
         text
         theme="primary"
@@ -37,9 +38,22 @@ import AgIcon from '@/components/ag-icon.vue';
 
 interface IProp {
   detail?: {
-    schema: {
-      responses?: ResponseType,
-    };
+    schema?: ISchema;
+    openapi_schema?: ISchema;
+  },
+  readonly?: boolean,
+}
+
+interface ISchema {
+  responses?: {
+    [key: string]: {
+      description: string,
+      content?: {
+        'application/json': {
+          schema: JSONSchema7,
+        }
+      },
+    }
   },
 }
 
@@ -48,7 +62,7 @@ interface IResponse {
   code: string,
   body: {
     description: string,
-    content: {
+    content?: {
       'application/json': {
         schema: JSONSchema7,
       }
@@ -56,7 +70,10 @@ interface IResponse {
   },
 }
 
-const { detail } = defineProps<IProp>();
+const {
+  detail,
+  readonly = false,
+} = defineProps<IProp>();
 
 const { t } = useI18n();
 
@@ -64,8 +81,9 @@ const responseParamsTableRefs = ref<InstanceType<typeof ResponseParamsTable>[]>(
 const responseList = ref<IResponse[]>([]);
 
 watch(() => detail, () => {
-  if (detail?.schema?.responses && Object.keys(detail.schema.responses).length) {
-    responseList.value = Object.entries(detail.schema.responses).map(([code, body]) => ({
+  const resourceSchema = detail?.schema || detail.openapi_schema;
+  if (resourceSchema?.responses && Object.keys(resourceSchema.responses).length) {
+    responseList.value = Object.entries(resourceSchema.responses).map(([code, body]) => ({
       id: _.uniqueId(),
       code,
       body,
@@ -73,7 +91,7 @@ watch(() => detail, () => {
   } else {
     responseList.value = [];
   }
-});
+}, { immediate: true });
 
 const addResponse = () => {
   responseList.value.push({

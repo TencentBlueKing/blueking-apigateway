@@ -3,8 +3,8 @@
     <bk-resize-layout
       :border="false"
       :max="400"
-      :min="288"
-      initial-divide="288px"
+      :min="293"
+      initial-divide="293px"
       placement="left"
     >
       <!--  左栏，API 列表  -->
@@ -110,6 +110,29 @@
           <!--  API markdown 文档  -->
           <article v-if="selectedToolMarkdownHtml" class="tool-detail-content">
             <div id="toolDocMarkdown" v-dompurify-html="selectedToolMarkdownHtml" class="ag-markdown-view"></div>
+            <div v-if="Object.keys(selectedToolSchema || {}).length" class="schema-wrapper">
+              <article
+                v-if="selectedToolSchema.parameters?.length || Object.keys(selectedToolSchema.requestBody || {}).length"
+                class="schema-group"
+              >
+                <h3 class="title">{{ t('请求参数') }}</h3>
+                <RequestParams
+                  :detail="{ schema: selectedToolSchema }"
+                  readonly
+                />
+              </article>
+              <article
+                v-if="Object.keys(selectedToolSchema.responses || {}).length"
+                class="schema-group"
+              >
+                <h3 class="title">{{ t('响应参数') }}</h3>
+                <ResponseParams
+                  v-if="Object.keys(selectedToolSchema || {}).length"
+                  :detail="{ schema: selectedToolSchema }"
+                  readonly
+                />
+              </article>
+            </div>
           </article>
           <TableEmpty v-else />
         </div>
@@ -139,6 +162,8 @@ import { useCommon } from '@/store';
 import { copy } from '@/common/util';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
+import ResponseParams from '@/views/resource/setting/comps/response-params.vue';
+import RequestParams from '@/views/resource/setting/comps/request-params.vue';
 
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
@@ -181,6 +206,7 @@ const activeGroupPanelNames = ref<string[]>([]);  // 分类 collapse 展开的 p
 const selectedTool = ref<IMCPServerTool | null>(null); // 当前选中的 tool
 const selectedToolName = ref('');
 const selectedToolMarkdownHtml = ref('');
+const selectedToolSchema = ref();
 const updatedTime = ref<string | null>(null);
 const isLoading = ref(false);
 
@@ -314,9 +340,10 @@ const getDoc = async () => {
       res = await getServerToolDoc(common.apigwId, server.id, selectedTool.value.name);
     }
 
-    const { content, updated_time } = res;
+    const { content, updated_time, schema } = res;
     selectedToolMarkdownHtml.value = md.render(content);
     updatedTime.value = updated_time;
+    selectedToolSchema.value = schema || '';
   } finally {
     isLoading.value = false;
   }
@@ -380,7 +407,7 @@ $code-color: #63656e;
   box-shadow: 0 2px 4px 0 #1919290d;
 
   .left-aside-wrap {
-    min-width: 280px;
+    min-width: 290px;
     width: auto;
     box-shadow: 0 2px 4px 0 #1919290d;
     border-radius: 2px;
@@ -441,15 +468,15 @@ $code-color: #63656e;
           cursor: pointer;
 
           .tool-group-collapse-title {
-            color: #63656e;
-            margin-left: 4px;
-            font-weight: bold;
+            margin-left: 8px;
+            font-size: 12px;
+            color: #4d4f56;
           }
 
           .menu-header-icon {
             transition: all .2s;
             color: #979ba5;
-            font-size: 14px;
+            font-size: 12px;
 
             &.fold {
               transform: rotate(-90deg);
@@ -463,8 +490,8 @@ $code-color: #63656e;
       }
 
       .tool-item {
-        padding-left: 24px;
-        height: 52px;
+        padding-left: 52px;
+        height: 48px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -480,9 +507,9 @@ $code-color: #63656e;
         }
 
         .tool-item-name {
-          font-size: 14px;
-          color: #313238;
-          line-height: 22px;
+          font-size: 12px;
+          color: #4d4f56;
+          line-height: 20px;
         }
 
         .tool-item-desc {
@@ -494,8 +521,15 @@ $code-color: #63656e;
         &:hover, &.active {
           background: #e1ecff;
 
-          .tool-item-name {
+          .tool-item-name,
+          .tool-item-desc {
             color: #3a84ff;
+          }
+        }
+
+        &.active {
+          .tool-item-name {
+            font-weight: 700;
           }
         }
       }
@@ -510,7 +544,7 @@ $code-color: #63656e;
     .tool-name,
     .tool-basics,
     .tool-detail-content {
-      padding: 24px;
+      padding: 24px 24px 24px 40px;
       background-color: #fff;
       border-radius: 2px;
     }
@@ -535,6 +569,7 @@ $code-color: #63656e;
     }
 
     .tool-basics {
+      padding-block: 0;
       display: grid;
       grid-template-columns: 280px 280px;
       grid-template-rows: 40px 40px;
@@ -764,6 +799,20 @@ $code-color: #63656e;
 
     .hljs {
       margin: -10px;
+    }
+  }
+}
+
+.schema-wrapper {
+  .schema-group {
+    .title {
+      font-size: 16px;
+      margin: 25px 0 10px 0;
+      padding: 0;
+      font-weight: bold;
+      text-align: left;
+      color: #313238;
+      line-height: 22px;
     }
   }
 }

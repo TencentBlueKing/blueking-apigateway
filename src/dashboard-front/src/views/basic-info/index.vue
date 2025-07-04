@@ -731,8 +731,8 @@ watch(
     }
 
     &-right {
-      width: calc(100% - 50px);
-      padding: 0 16px;
+      flex: 1;
+      padding: 16px 16px 0px;
 
       .header-info-name {
         display: flex;
@@ -851,7 +851,7 @@ watch(
 
           .label {
             color: #63656E;
-            min-width: 60px;
+            min-width: 70px;
             text-align: right;
             &.w0 {
               min-width: 0px;
@@ -919,7 +919,8 @@ watch(
             }
 
             &.public-key-content {
-              min-width: 670px;
+              flex: none;
+              width: 912px;
               height: 40px;
               line-height: 40px;
               background-color: #F5F7FA;
@@ -937,7 +938,8 @@ watch(
                 width: calc(100% - 40px);
                 display: flex;
                 justify-content: space-between;
-                padding: 0 12px;
+                padding-left: 32px;
+                padding-right: 12px;
               }
             }
           }
@@ -994,6 +996,17 @@ watch(
 .gateways-name-tip {
   color: #979BA5;
   font-size: 14px;
+}
+
+:deep(.ag-markdown-view pre) {
+  background: #F5F7FA;
+}
+:deep(.ag-markdown-view code) {
+  color: #4D4F56;
+}
+:deep(.ag-markdown-view .ag-copy-btn) {
+  color: #3A84FF;
+  background: #F5F7FA;
 }
 </style>
 
