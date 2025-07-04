@@ -20,7 +20,7 @@
                 @enter="handleCodeInputDone"
               />
             </div>
-            <div class="sub-title">
+            <div v-if="!readonly" class="sub-title">
               <AgIcon
                 class="icon-btn"
                 name="edit-line"
@@ -44,8 +44,13 @@
                   <th class="table-head-row-cell arrow-col"></th>
                   <th class="table-head-row-cell name-col">{{ t('参数名') }}</th>
                   <th class="table-head-row-cell type-col">{{ t('类型') }}</th>
-                  <th class="table-head-row-cell description-col">{{ t('备注') }}</th>
-                  <th class="table-head-row-cell actions-col">{{ t('操作') }}</th>
+                  <th
+                    :style="readonly ? 'width: 150px' : ''"
+                    class="table-head-row-cell description-col"
+                  >
+                    {{ t('备注') }}
+                  </th>
+                  <th v-if="!readonly" class="table-head-row-cell actions-col">{{ t('操作') }}</th>
                 </tr>
               </thead>
               <tbody class="table-body">
@@ -60,11 +65,16 @@
                   </td>
                   <!-- 字段名 -->
                   <td class="table-body-row-cell name-col">
-                    <bk-input v-model="row.name" :placeholder="t('字段名')" disabled />
+                    <div v-if="readonly" class="readonly-value-wrapper">{{ row.name || '--' }}</div>
+                    <bk-input v-else v-model="row.name" :placeholder="t('字段名')" disabled />
                   </td>
                   <!-- 字段类型 -->
                   <td class="table-body-row-cell type-col">
+                    <div v-if="readonly" class="readonly-value-wrapper">
+                      {{ typeList.find(item => item.value === row.type)?.label || '--' }}
+                    </div>
                     <bk-select
+                      v-else
                       v-model="row.type"
                       :clearable="false"
                       :filterable="false"
@@ -79,11 +89,12 @@
                     </bk-select>
                   </td>
                   <!-- 字段备注 -->
-                  <td class="table-body-row-cell description-col">
-                    <bk-input v-model="row.description" :placeholder="t('备注')" />
+                  <td :style="readonly ? 'width: 150px' : ''" class="table-body-row-cell description-col">
+                    <div v-if="readonly" class="readonly-value-wrapper">{{ row.description || '--' }}</div>
+                    <bk-input v-else v-model="row.description" :placeholder="t('备注')" />
                   </td>
                   <!-- 字段操作 -->
-                  <td class="table-body-row-cell actions-col">
+                  <td v-if="!readonly" class="table-body-row-cell actions-col">
                     <AgIcon
                       v-if="isAddFieldVisible(row)"
                       v-bk-tooltips="t('添加字段')"
@@ -102,8 +113,8 @@
               </tbody>
               <tfoot v-if="row?.properties?.length">
                 <tr>
-                  <td colspan="5" style="padding-left: 16px;">
-                    <ResponseParamsSubTable v-model="row.properties" />
+                  <td :colspan="readonly ? 4 : 5" style="padding-left: 16px;">
+                    <ResponseParamsSubTable v-model="row.properties" :readonly="readonly" />
                   </td>
                 </tr>
               </tfoot>
@@ -143,6 +154,7 @@ interface ITableRow {
 
 interface IProps {
   response: IResponse,
+  readonly?: boolean,
 }
 
 interface IResponse {
@@ -158,7 +170,10 @@ interface IResponse {
   },
 }
 
-const { response } = defineProps<IProps>();
+const {
+  response,
+  readonly = false,
+} = defineProps<IProps>();
 
 const emit = defineEmits<{
   'delete': [],
@@ -516,6 +531,12 @@ defineExpose({
   }
 
   .table-body {
+    .readonly-value-wrapper {
+      padding-left: 16px;
+      font-size: 12px;
+      cursor: auto;
+    }
+
     .table-body-row {
       .table-body-row-cell {
 

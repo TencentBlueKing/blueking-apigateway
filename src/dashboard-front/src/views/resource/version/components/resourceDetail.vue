@@ -5,7 +5,7 @@
     <bk-sideslider
       v-model:is-show="renderIsShow"
       :width="960"
-      :title="`${$t('资源详情')}【${info.version || ''}】`"
+      :title="`${t('资源详情')}【${info.version || ''}】`"
       quick-close
       @hidden="handleHidden"
     >
@@ -14,7 +14,7 @@
           <div class="sideslider-content">
             <div class="sideslider-lf">
               <bk-input class="mb12" type="search" clearable v-model="keywords" />
-              <!-- <div class="sideslider-lf-title mb8">{{ $t("版本日志") }}</div> -->
+              <!-- <div class="sideslider-lf-title mb8">{{ t("版本日志") }}</div> -->
               <div class="sideslider-lf-ul">
                 <template v-if="getResources?.length">
                   <div
@@ -56,7 +56,7 @@
                   class="bk-collapse-source"
                 >
                   <bk-collapse-panel :name="1" class="mb12">
-                    <span class="log-name">{{ $t("版本日志") }}</span>
+                    <span class="log-name">{{ t("版本日志") }}</span>
                     <template #content>
                       <div style="padding-left: 32px">
                         <p>{{ info.comment }}</p>
@@ -78,12 +78,12 @@
                         <p
                           class="title mt15"
                         >
-                          {{ $t("基本信息") }}
+                          {{ t("基本信息") }}
                         </p>
                         <bk-container class="ag-kv-box" :col="14" :margin="6">
                           <bk-row>
                             <bk-col :span="4">
-                              <label class="ag-key">{{ $t("资源名称") }}:</label>
+                              <label class="ag-key">{{ t("资源名称") }}:</label>
                             </bk-col>
                             <bk-col :span="10">
                               <div class="ag-value">
@@ -96,7 +96,7 @@
 
                           <bk-row>
                             <bk-col :span="4">
-                              <label class="ag-key">{{ $t("资源地址") }}:</label>
+                              <label class="ag-key">{{ t("资源地址") }}:</label>
                             </bk-col>
                             <bk-col :span="10">
                               <div class="ag-value">{{ source.path }}</div>
@@ -105,7 +105,7 @@
 
                           <bk-row>
                             <bk-col :span="4">
-                              <label class="ag-key">{{ $t("描述") }}:</label>
+                              <label class="ag-key">{{ t("描述") }}:</label>
                             </bk-col>
                             <bk-col :span="10">
                               <div class="ag-value">{{ source.description }}</div>
@@ -114,7 +114,7 @@
 
                           <bk-row>
                             <bk-col :span="4">
-                              <label class="ag-key">{{ $t("标签") }}:</label>
+                              <label class="ag-key">{{ t("标签") }}:</label>
                             </bk-col>
                             <bk-col :span="10">
                               <div class="ag-value">
@@ -137,7 +137,7 @@
 
                           <bk-row>
                             <bk-col :span="4">
-                              <label class="ag-key">{{ $t("认证方式") }}:</label>
+                              <label class="ag-key">{{ t("认证方式") }}:</label>
                             </bk-col>
                             <bk-col :span="10">
                               <div class="ag-value">
@@ -151,7 +151,7 @@
 
                           <bk-row>
                             <bk-col :span="4">
-                              <label class="ag-key">{{ $t("校验应用权限") }}:</label>
+                              <label class="ag-key">{{ t("校验应用权限") }}:</label>
                             </bk-col>
                             <bk-col :span="10">
                               <div class="ag-value">
@@ -166,15 +166,15 @@
 
                           <bk-row>
                             <bk-col :span="4">
-                              <label class="ag-key">{{ $t("是否公开") }}:</label>
+                              <label class="ag-key">{{ t("是否公开") }}:</label>
                             </bk-col>
                             <bk-col :span="10">
                               <div class="ag-value">
-                                {{ source?.is_public ? $t("是") : $t("否") }}
+                                {{ source?.is_public ? t("是") : t("否") }}
                                 {{
                                   source?.allow_apply_permission
-                                    ? `(${ $t("允许申请权限") })`
-                                    : `(${ $t("不允许申请权限") })`
+                                    ? `(${t("允许申请权限")})`
+                                    : `(${t("不允许申请权限")})`
                                 }}
                               </div>
                             </bk-col>
@@ -184,12 +184,12 @@
                         <p
                           class="title mt15"
                         >
-                          {{ $t("前端配置") }}
+                          {{ t("请求配置") }}
                         </p>
                         <bk-container class="ag-kv-box" :col="14" :margin="6">
                           <bk-row>
                             <bk-col :span="4">
-                              <label class="ag-key">{{ $t("请求方法") }}:</label>
+                              <label class="ag-key">{{ t("请求方法") }}:</label>
                             </bk-col>
                             <bk-col :span="10">
                               <div class="ag-value">
@@ -202,7 +202,7 @@
 
                           <bk-row>
                             <bk-col :span="4">
-                              <label class="ag-key">{{ $t("请求路径") }}:</label>
+                              <label class="ag-key">{{ t("请求路径") }}:</label>
                             </bk-col>
                             <bk-col :span="10">
                               <div class="ag-value">{{ source.path }}</div>
@@ -211,24 +211,36 @@
 
                           <bk-row>
                             <bk-col :span="4">
-                              <label class="ag-key">{{ $t("启用 WebSocket") }}:</label>
+                              <label class="ag-key">{{ t("启用 WebSocket") }}:</label>
                             </bk-col>
                             <bk-col :span="10">
-                              <div class="ag-value">{{ source.enable_websocket ? $t("是") : $t("否") }}</div>
+                              <div class="ag-value">{{ source.enable_websocket ? t("是") : t("否") }}</div>
                             </bk-col>
                           </bk-row>
                         </bk-container>
+
+                        <p class="title mt15">
+                          {{ t("请求参数") }}
+                        </p>
+                        <div>
+                          <div
+                            v-if="!Object.keys(source.openapi_schema || {}).length || source.openapi_schema.none_schema"
+                            style="padding-bottom: 24px;"
+                          >{{ t('该资源无请求参数') }}
+                          </div>
+                          <RequestParams v-else :detail="source" readonly />
+                        </div>
 
                         <template v-if="info.schema_version === '2.0'">
                           <p
                             class="title mt15"
                           >
-                            {{ $t("后端配置") }}
+                            {{ t("后端配置") }}
                           </p>
                           <bk-container class="ag-kv-box" :col="14" :margin="6">
                             <bk-row>
                               <bk-col :span="4">
-                                <label class="ag-key">{{ $t("后端服务") }}:</label>
+                                <label class="ag-key">{{ t("后端服务") }}:</label>
                               </bk-col>
                               <bk-col :span="10">
                                 <div class="ag-value">
@@ -241,7 +253,7 @@
 
                             <bk-row>
                               <bk-col :span="4">
-                                <label class="ag-key">{{ $t("请求方法") }}:</label>
+                                <label class="ag-key">{{ t("请求方法") }}:</label>
                               </bk-col>
                               <bk-col :span="10">
                                 <div class="ag-value">
@@ -256,7 +268,7 @@
 
                             <bk-row>
                               <bk-col :span="4">
-                                <label class="ag-key">{{ $t("自定义超时时间") }}:</label>
+                                <label class="ag-key">{{ t("自定义超时时间") }}:</label>
                               </bk-col>
                               <bk-col :span="10">
                                 <div class="ag-value">
@@ -269,7 +281,7 @@
 
                             <bk-row>
                               <bk-col :span="4">
-                                <label class="ag-key">{{ $t("请求路径") }}:</label>
+                                <label class="ag-key">{{ t("请求路径") }}:</label>
                               </bk-col>
                               <bk-col :span="10">
                                 <div class="ag-value">
@@ -280,17 +292,29 @@
                               </bk-col>
                             </bk-row>
                           </bk-container>
+
+                          <p class="title mt15">
+                            {{ t("响应参数") }}
+                          </p>
+                          <div>
+                            <ResponseParams
+                              v-if="Object.keys(source.openapi_schema?.responses || {}).length"
+                              :detail="source"
+                              readonly
+                            />
+                            <div v-else style="padding-bottom: 24px;">{{ t('该资源无响应参数') }}</div>
+                          </div>
                         </template>
 
                         <p
                           class="title mt15"
                         >
-                          {{ $t("文档") }}
+                          {{ t("文档") }}
                         </p>
                         <bk-container class="ag-kv-box" :col="14" :margin="6">
                           <bk-row>
                             <bk-col :span="4">
-                              <label class="ag-key">{{ $t("文档更新时间") }}:</label>
+                              <label class="ag-key">{{ t("文档更新时间") }}:</label>
                             </bk-col>
                             <bk-col :span="10">
                               <div class="ag-value">
@@ -310,7 +334,7 @@
                             <p
                               class="title mt15"
                             >
-                              {{ $t("插件") }}: {{ plugin.name }}
+                              {{ t("插件") }}: {{ plugin.name }}
                             </p>
                             <ConfigDisplayTable :plugin="plugin" first-col-width="auto" />
                           </template>
@@ -329,14 +353,23 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, computed } from 'vue';
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import cookie from 'cookie';
 // import { RightShape, AngleUpFill } from "bkui-vue/lib/icon";
-import { getResourceVersionsInfo, getGatewayLabels } from '@/http';
+import {
+  getGatewayLabels,
+  getResourceVersionsInfo,
+} from '@/http';
 import { getMethodsTheme } from '@/common/util';
 import ConfigDisplayTable from '@/views/components/plugin-manage/config-display-table.vue';
+import RequestParams from '@/views/resource/setting/comps/request-params.vue';
+import ResponseParams from '@/views/resource/setting/comps/response-params.vue';
 
 const props = defineProps<{
   id: number | undefined;

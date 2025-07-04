@@ -34,7 +34,7 @@
                   <angle-up-fill
                     :class="[activeIndex?.includes('frontConfig') ? 'panel-header-show' : 'panel-header-hide']"
                   />
-                  <div class="title">{{ t('前端配置') }}</div>
+                  <div class="title">{{ t('请求配置') }}</div>
                 </div>
               </template>
               <template #content>
@@ -73,7 +73,10 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import {
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import BaseInfo from '@/views/resource/setting/comps/base-info.vue';
