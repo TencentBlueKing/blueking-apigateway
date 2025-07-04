@@ -282,12 +282,7 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
 )
 class MCPServerPermissionListApi(generics.ListAPIView):
     permission_classes = [OpenAPIV2Permission]
-    queryset = MCPServer.objects.filter(
-        is_public=True,
-        status=MCPServerStatusEnum.ACTIVE.value,
-        gateway__status=GatewayStatusEnum.ACTIVE.value,
-        stage__status=StageStatusEnum.ACTIVE.value,
-    )
+    queryset = MCPServer.objects.all()
     lookup_url_kwarg = "mcp_server_id"
 
     def list(self, request, *args, **kwargs):
