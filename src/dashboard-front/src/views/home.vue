@@ -151,7 +151,7 @@
               <bk-button
                 text theme="primary"
                 @click="handleGoPage('apigwStageOverview', item)"
-              >{{ $t('环境概览') }}
+              >{{ t('环境概览') }}
               </bk-button>
               <bk-button
                 text
@@ -159,14 +159,14 @@
                 class="pl20"
                 :disabled="item?.kind === 1"
                 @click="handleGoPage('apigwResource', item)"
-              >{{ $t('资源配置') }}
+              >{{ t('资源配置') }}
               </bk-button>
               <bk-button
                 text
                 theme="primary"
                 class="pl20"
                 @click="handleGoPage('apigwAccessLog', item)"
-              >{{ $t('流水日志') }}
+              >{{ t('流水日志') }}
               </bk-button>
             </div>
           </div>
@@ -191,18 +191,18 @@
     <div class="footer-container">
       <!-- <div>
         <bk-link theme="primary" :href="GLOBAL_CONFIG.FOOT_INFO.NAMEHREF" target="_blank">
-          {{ $t(GLOBAL_CONFIG.FOOT_INFO.NAME) }}
+          {{ t(GLOBAL_CONFIG.FOOT_INFO.NAME) }}
         </bk-link>
         <span>|</span>
         <bk-link theme="primary" :href="GLOBAL_CONFIG.FOOT_INFO.COMMUNITYHREF" target="_blank">
-          {{ $t(GLOBAL_CONFIG.FOOT_INFO.COMMUNITY) }}
+          {{ t(GLOBAL_CONFIG.FOOT_INFO.COMMUNITY) }}
         </bk-link>
         <span v-if="GLOBAL_CONFIG.FOOT_INFO.PRODUCT">|</span>
         <bk-link
           v-if="GLOBAL_CONFIG.FOOT_INFO.PRODUCT"
           theme="primary"
           :href="GLOBAL_CONFIG.FOOT_INFO.PRODUCTHREF" target="_blank">
-          {{ $t(GLOBAL_CONFIG.FOOT_INFO.PRODUCT) }}
+          {{ t(GLOBAL_CONFIG.FOOT_INFO.PRODUCT) }}
         </bk-link>
       </div>
       Copyright © 2012-{{curYear}} Tencent BlueKing. All Rights Reserved. V{{GLOBAL_CONFIG.FOOT_INFO.VERSION}} -->
@@ -573,7 +573,8 @@ watch(
   .deact {
     background: #EAEBF0 !important;
     color: #fff !important;
-    &-name{
+
+    &-name {
       color: #979BA5 !important;
     }
   }
@@ -586,26 +587,29 @@ watch(
     cursor: auto;
   }
 }
-.ag-dot{
-    width: 8px;
-    height: 8px;
-    display: inline-block;
-    vertical-align: middle;
-    border-radius: 50%;
-    border: 1px solid #C4C6CC;
-  }
-  .success{
-    background: #e5f6ea;
-    border: 1px solid #3fc06d;
-  }
 
-  .tips-cls{
-    background: #f0f1f5;
-    padding: 3px 8px;
-    border-radius: 2px;
-    cursor: default;
-    &:hover{
-      background: #d7d9e1 !important;
-    }
+.ag-dot {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  vertical-align: middle;
+  border-radius: 50%;
+  border: 1px solid #c4c6cc;
+}
+
+.success {
+  background: #e5f6ea;
+  border: 1px solid #3fc06d;
+}
+
+.tips-cls {
+  background: #f0f1f5;
+  padding: 3px 8px;
+  border-radius: 2px;
+  cursor: default;
+
+  &:hover {
+    background: #d7d9e1 !important;
   }
+}
 </style>

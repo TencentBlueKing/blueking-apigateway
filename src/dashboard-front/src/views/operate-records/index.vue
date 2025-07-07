@@ -132,7 +132,6 @@ import {
   fetchApigwAuditLogs,
   searchTenantUsers,
 } from '@/http';
-import { Message } from 'bkui-vue';
 
 const { t } = i18n.global;
 const AccessLogStore = useAccessLog();
