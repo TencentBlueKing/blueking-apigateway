@@ -67,6 +67,20 @@ class ZipArchiveFile(BaseArchiveFile):
             return [item.filename for item in zip_.infolist() if not item.is_dir()]
 
 
+def is_within_directory(directory, target):
+    abs_directory = os.path.abspath(directory)
+    abs_target = os.path.abspath(target)
+    return os.path.commonpath([abs_directory]) == os.path.commonpath([abs_directory, abs_target])
+
+
+def safe_extract(tar, path):
+    for member in tar.getmembers():
+        member_path = os.path.join(path, member.name)
+        if not is_within_directory(path, member_path):
+            raise Exception(f"Path traversal detected: {member.name}")
+    tar.extractall(path=path)
+
+
 class TgzArchiveFile(BaseArchiveFile):
     """tgz 归档文件"""
 
@@ -84,7 +98,8 @@ class TgzArchiveFile(BaseArchiveFile):
         fileobj.seek(0)
 
         with tarfile.open(fileobj=fileobj, mode="r:*") as tgz:  # type: ignore
-            tgz.extractall(output_dir)
+            # tgz.extractall(output_dir)
+            safe_extract(tgz, output_dir)
 
             # 文档对应文档文件的路径，因并非所有文档都需更新，此处不读取文件内容
             return {
