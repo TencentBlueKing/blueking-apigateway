@@ -1,5 +1,5 @@
 ARG IMAGE=python
-ARG TAG=3.10.12-slim-bullseye
+ARG TAG=3.10.15-slim-bullseye
 FROM ${IMAGE}:${TAG}
 
 RUN apt-get update && apt-get install -y libssl-dev libffi-dev \
