@@ -77,7 +77,7 @@ def safe_extract(tar, path):
     for member in tar.getmembers():
         member_path = os.path.join(path, member.name)
         if not is_within_directory(path, member_path):
-            raise Exception(f"Path traversal detected: {member.name}")
+            raise Exception(f"Path traversal detected: {member.name}")  # noqa: TRY002
     tar.extractall(path=path)
 
 
