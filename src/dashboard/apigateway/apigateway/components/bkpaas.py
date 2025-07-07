@@ -17,6 +17,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
+import os
+from functools import lru_cache
 from typing import Any, Dict, Iterable, List, Optional
 from urllib.parse import urlparse
 
@@ -41,14 +43,20 @@ logger = logging.getLogger(__name__)
 REQ_PAAS_API_TIMEOUT = 10
 
 
-def get_paas_host() -> str:
+@lru_cache(maxsize=1)
+def get_paas3_url_prefix() -> str:
     """
     获取 paas url
     """
     gateway_name = "bkpaas3"
     if settings.EDITION == "te":
         gateway_name = "paasv3"
-    return settings.BK_API_URL_TMPL.format(api_name=gateway_name)
+
+    custom_paas3_url_prefix = os.environ.get("BK_PAASV3_URL_PREFIX", "")
+    if custom_paas3_url_prefix:
+        return custom_paas3_url_prefix
+
+    return settings.BK_API_URL_TMPL.format(api_name=gateway_name) + "/prod"
 
 
 def _call_paasv3_uni_apps_query_by_id(
@@ -62,11 +70,9 @@ def _call_paasv3_uni_apps_query_by_id(
     headers = gen_gateway_headers()
     headers.update(gen_tenant_header(tenant_id))
 
-    host = get_paas_host()
-    url = url_join(host, "/prod/system/uni_applications/query/by_id/")
-    timeout = REQ_PAAS_API_TIMEOUT
+    url = url_join(get_paas3_url_prefix(), "/system/uni_applications/query/by_id/")
 
-    ok, resp_data = http_get(url, data, headers=headers, timeout=timeout)
+    ok, resp_data = http_get(url, data, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
             "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
@@ -161,9 +167,8 @@ def create_paas_app(
     """
     创建应用
     """
-    host = get_paas_host()
-    url = url_join(host, "/prod/bkapps/cloud-native/")
-    headers = gen_gateway_headers(user_credentials=user_credentials)
+    url = url_join(get_paas3_url_prefix(), "/bkapps/cloud-native/")
+    headers = gen_gateway_headers(user_credentials)
     source_init_template = "bk-apigw-plugin-python"
     build_method = "buildpack"
     if language == "go":
@@ -227,9 +232,8 @@ def deploy_paas_app(
         version_type: 版本类型
     return: deployment id
     """
-    host = get_paas_host()
-    url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/envs/{env}/deployments/")
-    headers = gen_gateway_headers(user_credentials=user_credentials)
+    url = url_join(get_paas3_url_prefix(), f"/bkapps/applications/{app_code}/modules/{module}/envs/{env}/deployments/")
+    headers = gen_gateway_headers(user_credentials)
     data = {
         "revision": revision,
         "version_name": branch,
@@ -258,9 +262,8 @@ def paas_app_module_offline(app_code: str, module: str, env: str, user_credentia
     """
     下线应用
     """
-    host = get_paas_host()
-    url = url_join(host, f"prod/bkapps/applications/{app_code}/modules/{module}/envs/{env}/offlines/")
-    headers = gen_gateway_headers(user_credentials=user_credentials)
+    url = url_join(get_paas3_url_prefix(), f"/bkapps/applications/{app_code}/modules/{module}/envs/{env}/offlines/")
+    headers = gen_gateway_headers(user_credentials)
     ok, resp_data = http_post(url, None, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
@@ -281,10 +284,10 @@ def set_paas_stage_env(
     """
     设置应用环境变量
     """
-    host = get_paas_host()
+    url_prefix = get_paas3_url_prefix()
     for config_var_key, config_var_value in env.items():
-        url = url_join(host, f"prod/bkapps/applications/{app_code}/modules/{module}/config_vars/{config_var_key}/")
-        headers = gen_gateway_headers(user_credentials=user_credentials)
+        url = url_join(url_prefix, f"/bkapps/applications/{app_code}/modules/{module}/config_vars/{config_var_key}/")
+        headers = gen_gateway_headers(user_credentials)
         data = {
             "environment_name": stage,  # 环境：stag、prod
             "value": config_var_value,
@@ -310,9 +313,10 @@ def get_paas_deploy_phases_framework(
     """
     获取部署阶段整体框架
     """
-    host = get_paas_host()
-    url = url_join(host, f"prod/bkapps/applications/{app_code}/modules/{module}/envs/{env}/deploy_phases/")
-    headers = gen_gateway_headers(user_credentials=user_credentials)
+    url = url_join(
+        get_paas3_url_prefix(), f"/bkapps/applications/{app_code}/modules/{module}/envs/{env}/deploy_phases/"
+    )
+    headers = gen_gateway_headers(user_credentials)
     ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
@@ -333,9 +337,9 @@ def get_paas_deploy_phases_instance(
     """
     获取部署实例阶段详情
     """
-    host = get_paas_host()
     url = url_join(
-        host, f"/prod/bkapps/applications/{app_code}/modules/{module}/envs/{env}/deploy_phases/{deploy_id}/"
+        get_paas3_url_prefix(),
+        f"/bkapps/applications/{app_code}/modules/{module}/envs/{env}/deploy_phases/{deploy_id}/",
     )
     headers = gen_gateway_headers(user_credentials=user_credentials)
     ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
@@ -356,9 +360,8 @@ def get_pass_deploy_streams_history_events(deploy_id: str, user_credentials: Opt
     """
     获取部署实例阶段详情
     """
-    host = get_paas_host()
-    url = url_join(host, f"/prod/streams/{deploy_id}/history_events")
-    headers = gen_gateway_headers(user_credentials=user_credentials)
+    url = url_join(get_paas3_url_prefix(), f"/streams/{deploy_id}/history_events")
+    headers = gen_gateway_headers(user_credentials)
     ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
@@ -379,9 +382,10 @@ def get_paas_deployment_result(
     """
     获取部署详情
     """
-    host = get_paas_host()
-    url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/deployments/{deploy_id}/result/")
-    headers = gen_gateway_headers(user_credentials=user_credentials)
+    url = url_join(
+        get_paas3_url_prefix(), f"/bkapps/applications/{app_code}/modules/{module}/deployments/{deploy_id}/result/"
+    )
+    headers = gen_gateway_headers(user_credentials)
     ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
@@ -402,9 +406,10 @@ def get_paas_offline_result(
     """
     获取部署详情
     """
-    host = get_paas_host()
-    url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/offlines/{deploy_id}/result/")
-    headers = gen_gateway_headers(user_credentials=user_credentials)
+    url = url_join(
+        get_paas3_url_prefix(), f"/bkapps/applications/{app_code}/modules/{module}/offlines/{deploy_id}/result/"
+    )
+    headers = gen_gateway_headers(user_credentials)
     ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
@@ -423,9 +428,8 @@ def get_paas_runtime_info(app_code: str, module: str, user_credentials: Optional
     """
     获取运行时信息
     """
-    host = get_paas_host()
-    url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/runtime/overview/")
-    headers = gen_gateway_headers(user_credentials=user_credentials)
+    url = url_join(get_paas3_url_prefix(), f"/bkapps/applications/{app_code}/modules/{module}/runtime/overview/")
+    headers = gen_gateway_headers(user_credentials)
     ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
@@ -444,9 +448,8 @@ def get_paas_repo_branch_info(app_code: str, module: str, user_credentials: Opti
     """
     获取应用代码仓库信息
     """
-    host = get_paas_host()
-    url = url_join(host, f"/prod/bkapps/applications/{app_code}/modules/{module}/repo/branches/")
-    headers = gen_gateway_headers(user_credentials=user_credentials)
+    url = url_join(get_paas3_url_prefix(), f"/bkapps/applications/{app_code}/modules/{module}/repo/branches/")
+    headers = gen_gateway_headers(user_credentials)
     ok, resp_data = http_get(url, data={}, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
     if not ok:
         logger.error(
@@ -477,3 +480,40 @@ def get_paas_repo_branch_info(app_code: str, module: str, user_credentials: Opti
         "branch_list": branch_list,
         "branch_commit_info": branch_commit_info,
     }
+
+
+def update_app_maintainers(app_code: str, maintainers: List[str]):
+    """
+    更新 paas 的 app 成员
+    """
+    url = url_join(get_paas3_url_prefix(), f"/sys/shim/plugins_center/bk_plugins/{app_code}/members/")
+    headers = gen_gateway_headers()
+
+    data = [
+        {
+            "username": m,
+            "role": {
+                "name": "管理员",
+                "id": "2",
+            },
+        }
+        for m in maintainers
+    ]
+
+    ok, resp_data = http_post(url, data, headers=headers, timeout=REQ_PAAS_API_TIMEOUT)
+    if not ok:
+        logger.error(
+            "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
+            "paasv3",
+            "http_post",
+            url,
+            data,
+            local.request_id,
+            resp_data["error"],
+        )
+        raise error_codes.REMOTE_REQUEST_ERROR.format(
+            f"request paasv3 fail! "
+            f"Request=[http_post {urlparse(url).path} request_id={local.request_id}]"
+            f"error={resp_data['error']}"
+        )
+    return True

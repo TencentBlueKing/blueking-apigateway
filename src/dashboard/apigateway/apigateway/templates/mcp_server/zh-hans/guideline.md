@@ -51,6 +51,17 @@ X-Bkapi-Allowed-Headers: "X-Bk-Tenant-Id,X-xxx-Header"
 
 
 
+## FAQ
+
+### 1. 使用客户端添加 `MCP Server`过程中出现 `4xx`的错误码，如何排查？
+
+- 需要确认 `MCP Server` url 是否正确。
+- `MCP Server` 开启了 `应用认证+用户认证`，需要确认 `X-Bkapi-Authorization` 请求头格式(例如：cherry-studio 配置请求头使用 `=`)
+及对应的认证票据是否正确。
+- 确认对应的 `bk_app_code` 是否拥有该 `MCP Server` 的权限。
+
+
+
 
 
 

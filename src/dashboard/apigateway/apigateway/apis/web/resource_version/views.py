@@ -164,7 +164,7 @@ class ResourceVersionRetrieveApi(generics.RetrieveAPIView):
         resource_backends = BackendHandler.get_id_to_instance(request.gateway.id)
 
         # 查询哪些资源有配置对应的 schema
-        resource_id_with_schema_dict = ResourceVersionHandler.get_resource_ids_has_openapi_schema_by_resource_version(
+        resource_id_with_schema_dict = ResourceVersionHandler.get_resource_id_to_schema_by_resource_version(
             instance.id
         )
 

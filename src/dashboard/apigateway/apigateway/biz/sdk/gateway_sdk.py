@@ -18,6 +18,7 @@
 from typing import Dict, List
 
 from django.db.models import Count
+from django.db.transaction import atomic
 
 from apigateway.apps.support.models import GatewaySDK
 from apigateway.core.models import Release
@@ -103,3 +104,17 @@ class GatewaySDKHandler:
                 data[gateway_id].append(sdk_dict)
 
         return data
+
+    @staticmethod
+    @atomic
+    def mark_is_recommended(sdk: GatewaySDK):
+        # 清理之前的标记
+        GatewaySDK.objects.filter(
+            is_recommended=True,
+            gateway=sdk.gateway,
+            language=sdk.language,
+        ).update(is_public_latest=False, is_recommended=False)
+
+        sdk.is_public_latest = True
+        sdk.is_recommended = True
+        sdk.save(update_fields=["is_public_latest", "is_recommended"])

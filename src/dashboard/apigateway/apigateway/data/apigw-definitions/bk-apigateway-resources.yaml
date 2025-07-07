@@ -209,6 +209,63 @@ paths:
           userVerifiedRequired: true
           appVerifiedRequired: true
           resourcePermissionRequired: false
+  /api/v2/mcp-servers/{mcp_server_name}/application/sse:
+    get:
+      operationId: mcp_proxy_application_sse
+      description: mcp proxy sse(应用态)接口
+      tags:
+        - v2_mcp
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: mcp-proxy
+          method: get
+          path: /{mcp_server_name}/application/sse
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
+  /api/v2/mcp-servers/{mcp_server_name}/application/sse/message:
+    post:
+      operationId: mcp_proxy_application_message
+      description: mcp proxy message(应用态)接口
+      tags:
+        - v2_mcp
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: mcp-proxy
+          method: post
+          path: /{mcp_server_name}/application/sse/message
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
   /api/v1/apis/{api_name}/related-apps/:
     post:
       operationId: add_related_apps
@@ -810,6 +867,180 @@ paths:
           userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: false
+        descriptionEn: None
+  /api/v2/open/mcp-servers/:
+    get:
+      operationId: v2_open_list_mcp_server
+      description: 获取公开的 mcp_server 列表
+      tags:
+        - v2_open
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/mcp-servers/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/open/mcp-servers/{mcp_server_id}/permissions/:
+    get:
+      operationId: v2_open_list_mcp_server_permissions
+      description: 获取 mcp_server 的权限列表
+      tags:
+        - v2_open
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/mcp-servers/{mcp_server_id}/permissions/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/open/mcp-servers/permissions/:
+    get:
+      operationId: v2_open_list_mcp_server_app_permissions
+      description: 获取 app_code 的权限列表
+      tags:
+        - v2_open
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/mcp-servers/permissions/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/open/mcp-servers/permissions/apply/:
+    post:
+      operationId: v2_open_mcp_server_app_permissions_apply
+      description: 指定应用发起 mcp_server 权限申请
+      tags:
+        - v2_open
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: post
+          path: /backend/api/v2/open/mcp-servers/permissions/apply/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/open/mcp-servers/permissions/apply-records/:
+    get:
+      operationId: v2_open_list_mcp_server_app_permissions_apply_records
+      description: 获取指定应用的 mcp_server 权限申请记录列表
+      tags:
+        - v2_open
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/mcp-servers/permissions/apply-records/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/open/user/mcp-servers/:
+    get:
+      operationId: v2_open_list_user_mcp_server
+      description: 获取 mcp_server 列表
+      tags:
+        - v2_open
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/user/mcp-servers/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: true
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
         descriptionEn: None
   /api/v2/sync/gateways/{gateway_name}/public_key/:
     get:
@@ -1509,7 +1740,7 @@ paths:
           resourcePermissionRequired: true
         descriptionEn: None
   /api/v2/inner/esb/systems/{system_id}/permissions/apply/:
-    get:
+    post:
       operationId: v2_inner_apply_esb_system_component_permissions
       description: '创建申请ESB组件权限的申请单据'
       tags:
@@ -1567,7 +1798,7 @@ paths:
           resourcePermissionRequired: true
         descriptionEn: None
   /api/v2/inner/esb/systems/permissions/app-permissions/:
-    post:
+    get:
       operationId: v2_inner_list_app_esb_component_permissions
       description: 已申请权限列表
       tags:
@@ -1683,7 +1914,7 @@ paths:
           resourcePermissionRequired: true
         descriptionEn: None
   /api/v2/inner/mcp-server/permissions/apply/:
-    get:
+    post:
       operationId: v2_inner_apply_mcp_server_permission
       description: 'mcp_server 权限申请/批量申请'
       tags:

@@ -156,6 +156,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                     "contexts": fake_resource_version_v1.data[0]["contexts"],
                     "plugins": [],
                     "has_openapi_schema": False,
+                    "openapi_schema": {},
                 }
             ],
             "created_time": fake_resource_version_v1.created_time,
@@ -232,6 +233,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                         },
                     ],
                     "has_openapi_schema": False,
+                    "openapi_schema": {},
                 }
             ],
             "created_time": fake_resource_version_v2.created_time,

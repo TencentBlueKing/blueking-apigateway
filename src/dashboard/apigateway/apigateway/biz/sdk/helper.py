@@ -21,6 +21,7 @@ from tempfile import TemporaryDirectory
 from typing import Dict, Optional
 
 from apigateway.apps.support.models import GatewaySDK
+from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion
 from apigateway.utils import time as time_utils
@@ -115,6 +116,6 @@ class SDKHelper:
         )
 
         if instance.is_public and context.is_latest:
-            instance.mark_is_recommended()
+            GatewaySDKHandler.mark_is_recommended(instance)
 
         return SDKInfo(context=context, sdk=instance)

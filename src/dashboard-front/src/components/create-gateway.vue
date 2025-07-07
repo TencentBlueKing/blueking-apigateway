@@ -5,30 +5,32 @@
     :before-close="handleBeforeClose"
     @closed="handleCancel"
     width="1020"
+    class="gateway-operate-slider"
   >
-    <section class="create-gateway">
-      <div class="create-form">
-        <bk-form ref="formRef" form-type="vertical" class="create-gw-form" :model="formData" :rules="rules">
-          <bk-form-item
-            :label="t('网关类型')"
-            property="kind"
-            required
-          >
-            <bk-radio-group v-model="formData.kind" type="card" :disabled="isEdit">
-              <bk-radio-button :label="0">
-                <!-- <span class="kind normal">{{ t('普') }}</span> -->
-                {{ t('普通网关') }}
-              </bk-radio-button>
-              <bk-radio-button :label="1">
-                <!-- <span class="kind program">{{ t('编') }}</span> -->
-                {{ t('可编程网关') }}
-              </bk-radio-button>
-            </bk-radio-group>
-          </bk-form-item>
-          <bk-alert theme="info" class="form-item-alert" v-show="formData.kind === 1">
-            <template #title>
-              <p class="flex-row">
-                {{ t('通过编码的方式配置和管理网关的功能，支持接口组合、协议转换和接口编排等功能') }}
+    <template #default>
+      <div class="create-gateway">
+        <div class="create-form">
+          <bk-form ref="formRef" form-type="vertical" class="create-gw-form" :model="formData" :rules="rules">
+            <bk-form-item
+              :label="t('网关类型')"
+              property="kind"
+              required
+            >
+              <bk-radio-group v-model="formData.kind" type="card" :disabled="isEdit">
+                <bk-radio-button :label="0">
+                  <!-- <span class="kind normal">{{ t('普') }}</span> -->
+                  {{ t('普通网关') }}
+                </bk-radio-button>
+                <bk-radio-button :label="1">
+                  <!-- <span class="kind program">{{ t('编') }}</span> -->
+                  {{ t('可编程网关') }}
+                </bk-radio-button>
+              </bk-radio-group>
+            </bk-form-item>
+            <bk-alert theme="info" class="form-item-alert" v-show="formData.kind === 1">
+              <template #title>
+                <p class="flex-row">
+                  {{ t('通过编码的方式配置和管理网关的功能，支持接口组合、协议转换和接口编排等功能') }}
                 <!-- <bk-button theme="primary" text>
                   {{ t('查看指引 >') }}
                 </bk-button> -->
@@ -100,59 +102,59 @@
             />
           </bk-form-item>
 
-          <template v-if="formData.kind === 1 && BK_APP_VERSION === 'te'">
-            <bk-form-item
-              :label="t('代码仓库')"
-              class="form-item-name"
-              property="extra_info.repository"
-              required
-            >
-              <bk-input v-model="formData.extra_info.repository" disabled />
-            </bk-form-item>
-            <span class="common-form-tips form-item-name-tips">
-              {{ t('自动创建开源仓库，将模板代码初始化到仓库中，并将创建者设定为仓库管理员') }}
-            </span>
-          </template>
+            <template v-if="formData.kind === 1 && BK_APP_VERSION === 'te'">
+              <bk-form-item
+                :label="t('代码仓库')"
+                class="form-item-name"
+                property="extra_info.repository"
+                required
+              >
+                <bk-input v-model="formData.extra_info.repository" disabled />
+              </bk-form-item>
+              <span class="common-form-tips form-item-name-tips">
+                {{ t('自动创建开源仓库，将模板代码初始化到仓库中，并将创建者设定为仓库管理员') }}
+              </span>
+            </template>
 
-          <template v-if="formData.kind === 1 && BK_APP_VERSION === 'ee' && !isEdit">
-            <bk-form-item
-              :label="t('代码源')"
-              required
-            >
-              <div class="flex-row align-items-center">
-                <div class="repository-item active">
-                  <img :src="bareGitImg" :alt="t('Git 代码库')">
-                  <p class="text">{{ t('Git 代码库') }}</p>
-                  <div class="checked-icon">
-                    <i class="apigateway-icon icon-ag-check-circle-shape"></i>
+            <template v-if="formData.kind === 1 && BK_APP_VERSION === 'ee' && !isEdit">
+              <bk-form-item
+                :label="t('代码源')"
+                required
+              >
+                <div class="flex-row align-items-center">
+                  <div class="repository-item active">
+                    <img :src="bareGitImg" :alt="t('Git 代码库')">
+                    <p class="text">{{ t('Git 代码库') }}</p>
+                    <div class="checked-icon">
+                      <i class="apigateway-icon icon-ag-check-circle-shape"></i>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </bk-form-item>
-            <bk-form-item
-              :label="t('代码仓库地址')"
-              property="programmable_gateway_git_info.repository"
-              required
-            >
-              <bk-input v-model.trim="formData.programmable_gateway_git_info.repository" placeholder="http(s)://xxx.git" />
-            </bk-form-item>
-            <bk-form-item
-              :label="t('账号')"
-              property="programmable_gateway_git_info.account"
-              required
-            >
-              <bk-input v-model.trim="formData.programmable_gateway_git_info.account" />
-            </bk-form-item>
-            <bk-form-item
-              :label="t('密码')"
-              property="programmable_gateway_git_info.password"
-              required
-            >
-              <bk-input
-                v-model.trim="formData.programmable_gateway_git_info.password"
-                :placeholder="t('建议使用 access_token')" />
-            </bk-form-item>
-          </template>
+              </bk-form-item>
+              <bk-form-item
+                :label="t('代码仓库地址')"
+                property="programmable_gateway_git_info.repository"
+                required
+              >
+                <bk-input v-model.trim="formData.programmable_gateway_git_info.repository" placeholder="http(s)://xxx.git" />
+              </bk-form-item>
+              <bk-form-item
+                :label="t('账号')"
+                property="programmable_gateway_git_info.account"
+                required
+              >
+                <bk-input v-model.trim="formData.programmable_gateway_git_info.account" />
+              </bk-form-item>
+              <bk-form-item
+                :label="t('密码')"
+                property="programmable_gateway_git_info.password"
+                required
+              >
+                <bk-input
+                  v-model.trim="formData.programmable_gateway_git_info.password"
+                  :placeholder="t('建议使用 access_token')" />
+              </bk-form-item>
+            </template>
 
           <bk-form-item
             :label="t('是否公开')"
@@ -196,68 +198,69 @@
             </template>
           </template>
 
-          <template v-if="isEdit">
-            <bk-form-item
-              :label="t('关联蓝鲸应用')"
-              property="bk_app_codes"
-              v-if="user?.featureFlags?.GATEWAY_APP_BINDING_ENABLED"
-            >
-              <bk-tag-input
-                v-model="formData.bk_app_codes"
-                :placeholder="t('请输入蓝鲸应用ID，并按enter确认')"
-                allow-create
-                has-delete-icon
-                collapse-tags
-                :list="[]"
-              />
-              <span class="common-form-tips">{{ t('仅影响 HomePage 中运维开发分数的计算') }}</span>
-            </bk-form-item>
-            <bk-form-item
-              :label="t('管理网关的应用列表 ')"
-              property="related_app_codes"
-            >
-              <bk-tag-input
-                v-model="formData.related_app_codes"
-                :placeholder="t('请输入蓝鲸应用ID，并按enter确认')"
-                allow-create
-                has-delete-icon
-                collapse-tags
-              />
-              <span class="common-form-tips">{{ t('允许列表中的应用使用 sdk 或者开放 API 调用网关接口，同步环境/资源以及发布版本') }}</span>
-            </bk-form-item>
-          </template>
-        </bk-form>
-
-        <div class="operate-btn">
-          <bk-pop-confirm
-            width="288"
-            :content="t('您已将自己从维护人员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！')"
-            trigger="click"
-            ext-cls="confirm-custom-btn"
-            @confirm="handleConfirmCreate"
-            @cancel="handleCancel"
-            v-if="!formData.maintainers?.includes(user.user.username) && isEdit"
-          >
-            <bk-button theme="primary" :loading="submitLoading">
-              {{ t('确定') }}
-            </bk-button>
-          </bk-pop-confirm>
-          <bk-button v-else theme="primary" :loading="submitLoading" @click="handleConfirmCreate">
-            {{ t('确定') }}
-          </bk-button>
-          <bk-button @click="handleCancel" class="ml8">
-            {{ t('取消') }}
-          </bk-button>
+            <template v-if="isEdit">
+              <bk-form-item
+                :label="t('关联蓝鲸应用')"
+                property="bk_app_codes"
+                v-if="user?.featureFlags?.GATEWAY_APP_BINDING_ENABLED"
+              >
+                <bk-tag-input
+                  v-model="formData.bk_app_codes"
+                  :placeholder="t('请输入蓝鲸应用ID，并按enter确认')"
+                  allow-create
+                  has-delete-icon
+                  collapse-tags
+                  :list="[]"
+                />
+                <span class="common-form-tips">{{ t('仅影响 HomePage 中运维开发分数的计算') }}</span>
+              </bk-form-item>
+              <bk-form-item
+                :label="t('管理网关的应用列表 ')"
+                property="related_app_codes"
+              >
+                <bk-tag-input
+                  v-model="formData.related_app_codes"
+                  :placeholder="t('请输入蓝鲸应用ID，并按enter确认')"
+                  allow-create
+                  has-delete-icon
+                  collapse-tags
+                />
+                <span class="common-form-tips">{{ t('允许列表中的应用使用 sdk 或者开放 API 调用网关接口，同步环境/资源以及发布版本') }}</span>
+              </bk-form-item>
+            </template>
+          </bk-form>
+        </div>
+        <div class="progress">
+          <div class="title">
+            {{ formData.kind === 0 ? t('普通网关发布流程') : t('编程网关发布流程') }}
+          </div>
+          <bk-timeline :list="progressList" />
         </div>
       </div>
-
-      <div class="progress">
-        <div class="title">
-          {{ formData.kind === 0 ? t('普通网关发布流程') : t('编程网关发布流程') }}
-        </div>
-        <bk-timeline :list="progressList" />
+    </template>
+    <template #footer>
+      <div class="operate-btn">
+        <bk-pop-confirm
+          width="288"
+          :content="t('您已将自己从维护人员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！')"
+          trigger="click"
+          ext-cls="confirm-custom-btn"
+          @confirm="handleConfirmCreate"
+          @cancel="handleCancel"
+          v-if="!formData.maintainers?.includes(user.user.username) && isEdit"
+        >
+          <bk-button theme="primary" :loading="submitLoading">
+            {{ t('保存') }}
+          </bk-button>
+        </bk-pop-confirm>
+        <bk-button v-else theme="primary" :loading="submitLoading" @click="handleConfirmCreate">
+          {{ t(isEdit ? '保存' : '提交') }}
+        </bk-button>
+        <bk-button @click="handleCancel" class="ml8">
+          {{ t('取消') }}
+        </bk-button>
       </div>
-    </section>
+    </template>
   </bk-sideslider>
 
   <bk-sideslider
@@ -624,43 +627,49 @@ watch(
 </script>
 
 <style lang="scss" scoped>
-.create-gateway {
-  display: flex;
-  .create-form {
-    flex: 1;
-    background: #FFFFFF;
-    padding: 0 24px;
-    height: calc(100vh - 68px);
-    overflow-y: auto;
+.gateway-operate-slider {
+  :deep(.bk-modal-content) {
+    overflow: hidden !important;
   }
-  .form-item-name {
-    :deep(.bk-form-error) {
+  .create-gateway {
+    display: flex;
+    .create-form {
+      flex: 1;
+      background: #FFFFFF;
+      padding: 0 24px;
+      max-height: calc(100vh - 130px);
+      overflow-y: auto;
+    }
+    .form-item-name {
+      :deep(.bk-form-error) {
+        position: relative;
+      }
+    }
+    .form-item-name-tips {
       position: relative;
+      top: -20px;
+    }
+    .progress {
+      width: 400px;
+      height: calc(100vh - 90px);
+      padding: 24px;
+      box-sizing: border-box;
+      background: #F5F7FA;
+      margin-top: -16px;
+      margin-right: -14px;
+      overflow-y: auto;
+      .title {
+        color: #4D4F56;
+        font-size: 14px;
+        font-weight: Bold;
+        padding-bottom: 16px;
+      }
     }
   }
-  .form-item-name-tips {
-    position: relative;
-    top: -20px;
+  .form-item-alert {
+    margin-bottom: 16px;
+    margin-top: -10px;
   }
-  .progress {
-    width: 400px;
-    height: calc(100vh - 52px);
-    padding: 24px;
-    box-sizing: border-box;
-    background: #F5F7FA;
-    margin-top: -16px;
-    margin-right: -14px;
-    .title {
-      color: #4D4F56;
-      font-size: 14px;
-      font-weight: Bold;
-      padding-bottom: 16px;
-    }
-  }
-}
-.form-item-alert {
-  margin-bottom: 16px;
-  margin-top: -10px;
 }
 // .kind {
 //   content: ' ';
@@ -756,5 +765,16 @@ watch(
 }
 :deep(.bk-timeline-content) {
   word-break: normal !important;
+}
+
+:deep(.ag-markdown-view pre) {
+  background: #F5F7FA;
+}
+:deep(.ag-markdown-view code) {
+  color: #4D4F56;
+}
+:deep(.ag-markdown-view .ag-copy-btn) {
+  color: #3A84FF;
+  background: #F5F7FA;
 }
 </style>

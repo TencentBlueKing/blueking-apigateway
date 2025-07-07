@@ -650,8 +650,8 @@ const lang: ILANG = {
   '请输入应用ID': ['Please input app id'],
   '包括网关下所有资源，包括未来新创建的资源': ['Includes all resources under the gateway, including new resources created in the future'],
   '仅包含当前选择的资源': ['Contains only the selected resources'],
-  '导出成功！': ['Exported!'],
-  '导出失败！': ['Export failed!'],
+  '导出成功': ['Exported'],
+  '导出失败': ['Export failed'],
   '将申请网关下所有资源的权限，包括未来新创建的资源，请谨慎审批': ['Apply permissions for all resources under the gateway, including new resources created in the future, please be careful'],
   '请选择资源': ['Please select resources'],
   '资源信息：': ['Resource Info: '],
@@ -1927,7 +1927,9 @@ const lang: ILANG = {
   '删除字段': ['Remove Field'],
   '删除参数': ['Remove Parameter'],
   '该资源无请求参数': ['No request parameters'],
+  '该资源无响应参数': ['No response parameters'],
   '响应参数': ['Response Parameters'],
+  '请求/响应参数': ['Request/Response Parameters'],
   '参数类型': ['Type'],
   '新增状态码': ['New Status'],
   '请输入合法的状态码': ['Please input a valid status code'],
@@ -1935,8 +1937,8 @@ const lang: ILANG = {
   '请输入状态码': ['Input status code'],
   '是否配置请求参数声明': ['Has request params'],
   '没有可用的环境': ['No available Stages'],
-
-
+  '如需生成新版本，请前往\'资源配置\'页面操作': ['To generate a new version, please go to the \'Resource Configuration\' page to operate'],
+  '唯一标识，以网关名称和环境名称为前缀，创建后不可更改': ['Unique ID, prefixed by gateway name and environment name, cannot be changed after creation'],
   // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // // 变量的使用 $t('test', { vari1: 1, vari2: 2 })
   // 'test': ['{vari1} ---english--- {vari2}'],

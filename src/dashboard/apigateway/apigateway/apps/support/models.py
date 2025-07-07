@@ -20,7 +20,6 @@ import json
 from typing import ClassVar
 
 from django.db import models
-from django.db.transaction import atomic
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
 
@@ -158,14 +157,3 @@ class GatewaySDK(ConfigModelMixin):
         verbose_name_plural = _("网关SDK")
         db_table = "support_api_sdk"
         unique_together = ("gateway", "language", "version_number")
-
-    @atomic
-    def mark_is_recommended(self):
-        # 清理之前的标记
-        GatewaySDK.objects.filter(
-            is_recommended=True,
-            gateway=self.gateway,
-        ).update(is_recommended=False)
-
-        self.is_recommended = True
-        self.save(update_fields=["is_recommended"])

@@ -65,3 +65,7 @@ def update_stage_mcp_server_related_resource_names(
 def build_mcp_server_url(mcp_server_name: str) -> str:
     bk_apigateway_url = settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")
     return f"{bk_apigateway_url}/prod/api/v2/mcp-servers/{mcp_server_name}/sse/"
+
+
+def build_mcp_server_detail_url(mcp_server_id: int) -> str:
+    return f"{settings.DASHBOARD_FE_URL}/mcp-market-details/{mcp_server_id}/"

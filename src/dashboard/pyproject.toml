@@ -261,6 +261,8 @@ ignore_imports = [
     "apigateway.core.management.commands.* -> apigateway.biz.**",
     "apigateway.core.management.commands.sync_default_micro_gateway -> apigateway.controller.micro_gateway_config",
     "apigateway.core.management.commands.update_jwt_key -> apigateway.service.gateway_jwt",
+    "apigateway.apps.gateway.management.commands.revoke_gateways -> apigateway.biz.gateway",
+    "apigateway.apps.gateway.management.commands.revoke_gateways -> apigateway.controller.publisher.publish",
     # -- celery task
     "apigateway.apps.permission.tasks -> apigateway.components.*",
     "apigateway.apps.permission.tasks -> apigateway.biz.permission",
@@ -311,6 +313,9 @@ ignore_imports = [
     # -- django commands
     "apigateway.apps.*.management.commands.* -> apigateway.core.models",
     "apigateway.core.management.commands.* -> apigateway.biz.gateway",
+    "apigateway.apps.gateway.management.commands.revoke_gateways -> apigateway.biz.gateway",
+    "apigateway.apps.gateway.management.commands.revoke_gateways -> apigateway.controller.publisher.publish",
+    "apigateway.apps.gateway.management.commands.revoke_gateways -> apigateway.core.constants",
     # -- esb legacy
     "apigateway.apps.esb.*.* -> apigateway.core.models",
     "apigateway.apps.esb.*.* -> apigateway.core.constants",

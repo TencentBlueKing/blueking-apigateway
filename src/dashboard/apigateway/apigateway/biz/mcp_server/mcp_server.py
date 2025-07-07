@@ -15,15 +15,19 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import datetime
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from django.db import transaction
+from django.utils.translation import gettext as _
 
 from apigateway.apps.mcp_server.constants import (
+    MCPServerAppPermissionApplyExpireDaysEnum,
+    MCPServerAppPermissionApplyStatusEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.released_resource import ReleasedResourceData, ReleasedResourceHandler
@@ -33,8 +37,11 @@ from apigateway.biz.resource import ResourceLabelHandler
 from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
-from apigateway.core.models import Gateway, Resource
-from apigateway.utils.time import NeverExpiresTime
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.core.models import Gateway, Release, Resource
+from apigateway.utils.time import NeverExpiresTime, now_datetime
+
+from ..resource_version import ResourceVersionHandler
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +91,23 @@ class MCPServerHandler:
             with_common_request_params_part=False,
         )
 
-        return generator.get_doc()
+        data = generator.get_doc()
+        resource_version_id = (
+            Release.objects.filter(
+                gateway_id=gateway_id,
+                stage__name=stage_name,
+            )
+            .values_list("resource_version_id", flat=True)
+            .first()
+        )
+        # 查询哪些资源有配置对应的 schema
+        schema = ResourceVersionHandler.get_resource_schema(
+            resource_version_id,
+            resource_data.id,
+        )
+        data["schema"] = schema
+
+        return data
 
     @staticmethod
     def _virtual_app_code_prefix(mcp_server_id: int) -> str:
@@ -206,3 +229,71 @@ class MCPServerHandler:
             queryset = queryset.filter(stage_id=stage_id)
 
         queryset.update(status=MCPServerStatusEnum.INACTIVE.value)
+
+
+class MCPServerPermissionHandler:
+    @staticmethod
+    def create_apply(bk_app_code: str, mcp_server_ids: List[int], reason: str, applied_by: str):
+        queryset = MCPServer.objects.filter(
+            id__in=mcp_server_ids,
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            gateway__status=GatewayStatusEnum.ACTIVE.value,
+            stage__status=StageStatusEnum.ACTIVE.value,
+        )
+
+        selected_mcp_server_ids = list(queryset.values_list("id", flat=True))
+        existing_permissions = MCPServerAppPermissionApply.objects.filter(
+            bk_app_code=bk_app_code,
+            mcp_server_id__in=selected_mcp_server_ids,
+            status__in=[
+                MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+                MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            ],
+        ).order_by("-applied_time")
+
+        if existing_permissions:
+            existing_names = ", ".join([obj.mcp_server.name for obj in existing_permissions])
+            raise error_codes.INVALID_ARGUMENT.format(
+                _(f"mcp server name：{existing_names} 已经存在待审批或已审批的记录")
+            )
+
+        add_app_permissions_apply_list = [
+            MCPServerAppPermissionApply(
+                bk_app_code=bk_app_code,
+                mcp_server=obj,
+                reason=reason,
+                applied_by=applied_by,
+                applied_time=now_datetime(),
+                expire_days=MCPServerAppPermissionApplyExpireDaysEnum.FOREVER.value,
+                status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            )
+            for obj in queryset
+        ]
+
+        MCPServerAppPermissionApply.objects.bulk_create(add_app_permissions_apply_list)
+
+    @staticmethod
+    def filter_records(
+        bk_app_code: str,
+        applied_by: str,
+        apply_status: str,
+        query: str,
+        applied_time_start: Optional[datetime.datetime] = None,
+        applied_time_end: Optional[datetime.datetime] = None,
+    ):
+        queryset = MCPServerAppPermissionApply.objects.filter(bk_app_code=bk_app_code).order_by("-applied_time")
+
+        if applied_by:
+            queryset = queryset.filter(applied_by=applied_by)
+
+        if applied_time_start and applied_time_end:
+            queryset = queryset.filter(applied_time__range=(applied_time_start, applied_time_end))
+
+        if apply_status:
+            queryset = queryset.filter(status=apply_status)
+
+        if query:
+            queryset = queryset.filter(mcp_server__name__icontains=query)
+
+        return queryset

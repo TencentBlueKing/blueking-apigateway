@@ -3,7 +3,7 @@
     <bk-sideslider
       v-model:is-show="isShow"
       :width="960"
-      :title="`${$t('资源详情')}【${info.name}】`"
+      :title="`${t('资源详情')}【${info.name}】`"
       quick-close
       @hidden="emit('hidden')"
     >
@@ -12,12 +12,12 @@
           <p
             class="title mt15"
           >
-            {{ $t("基本信息") }}
+            {{ t("基本信息") }}
           </p>
           <bk-container class="ag-kv-box" :col="14" :margin="6">
             <bk-row>
               <bk-col :span="4">
-                <label class="ag-key">{{ $t("资源名称") }}:</label>
+                <label class="ag-key">{{ t("资源名称") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">
@@ -28,7 +28,7 @@
 
             <bk-row>
               <bk-col :span="4">
-                <label class="ag-key">{{ $t("资源地址") }}:</label>
+                <label class="ag-key">{{ t("资源地址") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">{{ currentSource.path }}</div>
@@ -37,7 +37,7 @@
 
             <bk-row>
               <bk-col :span="4">
-                <label class="ag-key">{{ $t("描述") }}:</label>
+                <label class="ag-key">{{ t("描述") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">{{ currentSource.description }}</div>
@@ -46,7 +46,7 @@
 
             <bk-row>
               <bk-col :span="4">
-                <label class="ag-key">{{ $t("标签") }}:</label>
+                <label class="ag-key">{{ t("标签") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">
@@ -69,7 +69,7 @@
 
             <bk-row>
               <bk-col :span="4">
-                <label class="ag-key">{{ $t("认证方式") }}:</label>
+                <label class="ag-key">{{ t("认证方式") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">
@@ -83,7 +83,7 @@
 
             <bk-row>
               <bk-col :span="4">
-                <label class="ag-key">{{ $t("校验应用权限") }}:</label>
+                <label class="ag-key">{{ t("校验应用权限") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">
@@ -98,15 +98,15 @@
 
             <bk-row>
               <bk-col :span="4">
-                <label class="ag-key">{{ $t("是否公开") }}:</label>
+                <label class="ag-key">{{ t("是否公开") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">
-                  {{ currentSource?.is_public ? $t("是") : $t("否") }}
+                  {{ currentSource?.is_public ? t("是") : t("否") }}
                   {{
                     currentSource?.allow_apply_permission
-                      ? `(${ $t("允许申请权限") })`
-                      : `(${ $t("不允许申请权限") })`
+                      ? `(${t("允许申请权限")})`
+                      : `(${t("不允许申请权限")})`
                   }}
                 </div>
               </bk-col>
@@ -116,12 +116,12 @@
           <p
             class="title mt15"
           >
-            {{ $t("前端配置") }}
+            {{ t("请求配置") }}
           </p>
           <bk-container class="ag-kv-box" :col="14" :margin="6">
             <bk-row>
               <bk-col :span="4">
-                <label class="ag-key">{{ $t("请求方法") }}:</label>
+                <label class="ag-key">{{ t("请求方法") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">
@@ -134,7 +134,7 @@
 
             <bk-row>
               <bk-col :span="4">
-                <label class="ag-key">{{ $t("请求路径") }}:</label>
+                <label class="ag-key">{{ t("请求路径") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">{{ currentSource.path }}</div>
@@ -143,7 +143,7 @@
 
             <bk-row>
               <bk-col :span="4">
-                <label class="ag-key">{{ $t("启用 Websocket") }}:</label>
+                <label class="ag-key">{{ t("启用 Websocket") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">{{ currentSource.enable_websocket ? t('是') : t('否') }}</div>
@@ -151,15 +151,27 @@
             </bk-row>
           </bk-container>
 
+          <p class="title">
+            {{ t('请求参数') }}
+          </p>
+          <div>
+            <div
+              v-if="!Object.keys(currentSource.openapi_schema || {}).length || currentSource.openapi_schema.none_schema"
+              style="padding-bottom: 24px;color: #313238;"
+            >{{ t('该资源无请求参数') }}
+            </div>
+            <RequestParams v-else :detail="currentSource" readonly />
+          </div>
+
           <p
             class="title mt15"
           >
-            {{ $t("后端配置") }}
+            {{ t("后端配置") }}
           </p>
           <bk-container class="ag-kv-box" :col="14" :margin="6">
             <bk-row>
               <bk-col :span="4">
-                <label class="ag-key">{{ $t("后端服务") }}:</label>
+                <label class="ag-key">{{ t("后端服务") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">
@@ -172,7 +184,7 @@
 
             <bk-row>
               <bk-col :span="4">
-                <label class="ag-key">{{ $t("请求方法") }}:</label>
+                <label class="ag-key">{{ t("请求方法") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">
@@ -187,7 +199,7 @@
 
             <bk-row v-if="currentSource?.proxy?.config?.timeout !== 0">
               <bk-col :span="4">
-                <label class="ag-key">{{ $t("自定义超时时间") }}:</label>
+                <label class="ag-key">{{ t("自定义超时时间") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">
@@ -198,7 +210,7 @@
 
             <bk-row>
               <bk-col :span="4">
-                <label class="ag-key">{{ $t("请求路径") }}:</label>
+                <label class="ag-key">{{ t("请求路径") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">
@@ -210,15 +222,27 @@
             </bk-row>
           </bk-container>
 
+          <p class="title">
+            {{ t("响应参数") }}
+          </p>
+          <div>
+            <ResponseParams
+              v-if="Object.keys(currentSource.openapi_schema?.responses || {}).length"
+              :detail="currentSource"
+              readonly
+            />
+            <div v-else style="padding-bottom: 24px;color: #313238;">{{ t('该资源无响应参数') }}</div>
+          </div>
+
           <p
             class="title mt15"
           >
-            {{ $t("文档") }}
+            {{ t("文档") }}
           </p>
           <bk-container class="ag-kv-box" :col="14" :margin="6">
             <bk-row>
               <bk-col :span="4">
-                <label class="ag-key">{{ $t("文档更新时间") }}:</label>
+                <label class="ag-key">{{ t("文档更新时间") }}:</label>
               </bk-col>
               <bk-col :span="10">
                 <div class="ag-value">
@@ -235,7 +259,7 @@
 
           <template v-for="plugin in currentSource.plugins" :key="plugin.id">
             <p class="title plugin-display">
-              {{ $t("插件") }}: {{ plugin.name }}
+              {{ t("插件") }}: {{ plugin.name }}
             </p>
             <ConfigDisplayTable :plugin="plugin" />
           </template>
@@ -247,13 +271,19 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, computed } from 'vue';
+import {
+  computed,
+  ref,
+  watch,
+} from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import cookie from 'cookie';
 import { getGatewayLabels } from '@/http';
 import { getMethodsTheme } from '@/common/util';
 import ConfigDisplayTable from '@/views/components/plugin-manage/config-display-table.vue';
+import RequestParams from '@/views/resource/setting/comps/request-params.vue';
+import ResponseParams from '@/views/resource/setting/comps/response-params.vue';
 
 const props = defineProps<{
   info: any;

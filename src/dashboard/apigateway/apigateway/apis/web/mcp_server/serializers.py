@@ -230,6 +230,7 @@ class MCPServerToolDocOutputSLZ(serializers.Serializer):
     type = serializers.CharField(read_only=True, help_text="文档类型")
     content = serializers.CharField(read_only=True, help_text="文档内容")
     updated_time = serializers.DateTimeField(read_only=True, help_text="文档更新时间")
+    schema = serializers.DictField(read_only=True, help_text="资源 schema")
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerToolDocOutputSLZ"

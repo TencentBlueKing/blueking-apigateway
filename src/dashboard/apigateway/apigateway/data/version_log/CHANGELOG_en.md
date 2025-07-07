@@ -13,6 +13,25 @@
 
 ---
 
+<!-- 2025-07-04 -->
+# V1.16.1 Release Log
+
+### Features
+
+- Add resource version configuration export
+
+### Enhancements
+
+- Optimize MCP market display
+- MCP market filtering supports labels filtering
+- Optimize resource parameter configuration and comparison
+- Add MCP Server related open api
+- MCP Proxy supports application-side interface
+- Optimize MCP tool documentation display
+- Fix a batch of style issues
+
+---
+
 <!-- 2025-05-29 -->
 # V1.16.0 Release Log
 
