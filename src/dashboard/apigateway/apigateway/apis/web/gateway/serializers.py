@@ -1,6 +1,7 @@
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -21,19 +22,18 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.biz.constants import APP_CODE_PATTERN
-from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.gateway_type import GatewayTypeHandler
-from apigateway.biz.validators import APIDocMaintainerValidator
+from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
+from apigateway.biz.validators import GatewayAPIDocMaintainerValidator
 from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.common.paas import gen_programmable_gateway_links
 from apigateway.core.constants import (
     GatewayKindEnum,
     GatewayStatusEnum,
     ProgrammableGatewayLanguageEnum,
 )
 from apigateway.core.models import Gateway
+from apigateway.service.paas import gen_programmable_gateway_links
 from apigateway.utils.crypto import calculate_fingerprint
 
 from .validators import (
@@ -57,6 +57,9 @@ class GatewayListInputSLZ(serializers.Serializer):
         help_text="排序方式",
     )
 
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayListInputSLZ"
+
 
 class GatewayListOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="网关 ID")
@@ -64,6 +67,8 @@ class GatewayListOutputSLZ(serializers.Serializer):
     description = SerializerTranslatedField(
         allow_blank=True, default_field="description_i18n", read_only=True, help_text="网关描述"
     )
+    tenant_mode = serializers.CharField(read_only=True, help_text="租户模式")
+    tenant_id = serializers.CharField(read_only=True, help_text="租户 ID")
     status = serializers.ChoiceField(
         choices=GatewayStatusEnum.get_choices(), read_only=True, help_text="网关状态，0: 已停用，1：启用中"
     )
@@ -82,6 +87,9 @@ class GatewayListOutputSLZ(serializers.Serializer):
     created_by = serializers.CharField(allow_blank=True, allow_null=True, read_only=True, help_text="创建人")
     created_time = serializers.DateTimeField(allow_null=True, read_only=True, help_text="创建时间")
     updated_time = serializers.DateTimeField(allow_null=True, read_only=True, help_text="更新时间")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayListOutputSLZ"
 
     def get_is_official(self, obj):
         if obj.id not in self.context["gateway_auth_configs"]:
@@ -111,6 +119,9 @@ class GatewayExtraInfoSLZ(serializers.Serializer):
     repository = serializers.CharField(allow_blank=True, required=False, help_text="仓库")
     # 普通网关额外信息字段
 
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayExtraInfoSLZ"
+
 
 class ProgrammableGatewayGitInfoSLZ(serializers.Serializer):
     repository = serializers.CharField(
@@ -126,6 +137,9 @@ class ProgrammableGatewayGitInfoSLZ(serializers.Serializer):
     )
     account = serializers.CharField(allow_blank=True, required=True, help_text="账号")
     password = serializers.CharField(allow_blank=True, required=True, help_text="密码")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.ProgrammableGatewayGitInfoSLZ"
 
 
 class GatewayCreateInputSLZ(serializers.ModelSerializer):
@@ -149,6 +163,7 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
     )
 
     class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayCreateInputSLZ"
         model = Gateway
         fields = (
             "name",
@@ -159,6 +174,8 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
             "kind",
             "extra_info",
             "bk_app_codes",
+            "tenant_mode",
+            "tenant_id",
             "programmable_gateway_git_info",
         )
         lookup_field = "id"
@@ -173,6 +190,7 @@ class GatewayCreateInputSLZ(serializers.ModelSerializer):
         }
 
         # 使用 UniqueTogetherValidator，方便错误提示信息统一处理
+        # 使用 UniqueValidator，错误提示中包含了字段名："参数校验失败：Name: 网关名称已经存在"
         # 使用 UniqueValidator，错误提示中包含了字段名："参数校验失败：Name: 网关名称已经存在"
         validators = [
             UniqueTogetherValidator(
@@ -215,11 +233,14 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
     public_key_fingerprint = serializers.SerializerMethodField(help_text="公钥 (指纹)")
     allow_update_gateway_auth = serializers.SerializerMethodField(help_text="是否允许更新网关认证配置")
     bk_app_codes = serializers.SerializerMethodField(help_text="网关关联的应用")
-    related_app_codes = serializers.SerializerMethodField(help_text="关联的 APP")
+    related_app_codes = serializers.SerializerMethodField(help_text="关联的  APP")
+    tenant_mode = serializers.CharField(help_text="租户模式")
+    tenant_id = serializers.CharField(help_text="租户 ID")
 
     links = serializers.SerializerMethodField(help_text="相关链接")
 
     class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayRetrieveOutputSLZ"
         model = Gateway
         fields = (
             "id",
@@ -242,6 +263,8 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             "public_key_fingerprint",
             "bk_app_codes",
             "related_app_codes",
+            "tenant_mode",
+            "tenant_id",
             "extra_info",
             "links",
         )
@@ -306,6 +329,9 @@ class ServiceAccountSLZ(serializers.Serializer):
     name = serializers.CharField(allow_blank=True, required=False, help_text="服务号名称")
     link = serializers.CharField(allow_blank=True, required=False, help_text="服务号链接")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.ServiceAccountSLZ"
+
 
 class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
     type = serializers.ChoiceField(
@@ -317,7 +343,8 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
     service_account = ServiceAccountSLZ(required=False, help_text="服务号")
 
     class Meta:
-        validators = [APIDocMaintainerValidator()]
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayAPIDocMaintainerSLZ"
+        validators = [GatewayAPIDocMaintainerValidator()]
 
 
 class GatewayUpdateInputSLZ(serializers.ModelSerializer):
@@ -342,6 +369,7 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
     )
 
     class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayUpdateInputSLZ"
         model = Gateway
         fields = (
             "description",
@@ -367,6 +395,7 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
 
 class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
     class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayUpdateStatusInputSLZ"
         model = Gateway
         fields = ("status",)
         lookup_field = "id"
@@ -376,12 +405,44 @@ class GatewayUpdateStatusInputSLZ(serializers.ModelSerializer):
                 "help_text": "网关状态，0：停用，1：启用",
             },
         }
-        ref_name = "apigateway.apis.web.gateway.serializers.GatewayUpdateStatusInputSLZ"
 
 
 class GatewayFeatureFlagsOutputSLZ(serializers.Serializer):
     feature_flags = serializers.DictField(help_text="网关特性集")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayFeatureFlagsOutputSLZ"
+
+
+class GatewayTenantAppInfoTenant(serializers.Serializer):
+    mode = serializers.CharField(help_text="租户模式")
+    id = serializers.CharField(help_text="租户 ID")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayTenantAppInfoTenant"
+
+
+class GatewayTenantAppListOutputSLZ(serializers.Serializer):
+    # {
+    #   "bk_app_code": "bk_ssm",
+    #   "name": "bk_ssm",
+    #   "description": "bk_ssm",
+    #   "bk_tenant": {
+    #     "mode": "global",
+    #     "id": ""
+    #   }
+    # }
+    bk_app_code = serializers.CharField(help_text="应用编码")
+    name = serializers.CharField(help_text="应用名称")
+    description = serializers.CharField(help_text="应用描述")
+    bk_tenant = GatewayTenantAppInfoTenant(help_text="租户信息")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayTenantAppListOutputSLZ"
+
 
 class GatewayDevGuidelineOutputSLZ(serializers.Serializer):
     content = serializers.CharField(help_text="文档内容")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayDevGuidelineOutputSLZ"

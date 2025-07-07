@@ -38,6 +38,7 @@ class GatewayStatusEnum(StructuredEnum):
     ACTIVE = EnumField(1, "启用中")
 
 
+# FIXME: should be removed
 class MicroGatewayStatusEnum(StructuredEnum):
     """微网关实例状态"""
 
@@ -77,6 +78,7 @@ class ReleaseHistoryStatusEnum(StructuredEnum):
 
 class PublishEventEnum(StructuredEnum):
     # dashboard
+    # NOTE: typo here, but it been stored in database, so keep it
     VALIDATE_CONFIGURATION = EnumField("validata_configuration", _("配置校验"))
     GENERATE_TASK = EnumField("generate_release_task", _("生成发布任务"))
     DISTRIBUTE_CONFIGURATION = EnumField("distribute_configuration", _("下发配置"))

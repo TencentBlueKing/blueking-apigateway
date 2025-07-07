@@ -1,4 +1,106 @@
 <template>
+<<<<<<< HEAD
+  <div class="card-list">
+    <div class="card-item" v-for="(stageData, index) in stageList" :key="index">
+      <div class="title">
+        <div class="title-lf">
+          <spinner v-if="getStatus(stageData) === 'doing'" fill="#3A84FF" />
+          <span
+            v-else
+            :class="['dot', getStatus(stageData)]"
+            v-bk-tooltips="{
+              content: getStatusText(getStatus(stageData)),
+              disabled: !getStatusText(getStatus(stageData)) }"
+          >
+          </span>
+          {{ stageData.name }}
+        </div>
+        <div class="title-rg">
+          <template v-if="!basicInfoData.status">
+            <bk-button
+              theme="primary" size="small" :disabled="true"
+              v-bk-tooltips="{ content: t('当前网关已停用，如需使用，请先启用'), delay: 300 }">
+              {{ t('发布资源') }}
+            </bk-button>
+            <bk-button
+              class="ml10" size="small" :disabled="true"
+              v-bk-tooltips="{ content: t('当前网关已停用，如需使用，请先启用'), delay: 300 }">
+              {{ t('下架') }}
+            </bk-button>
+          </template>
+          <template v-else>
+            <bk-button
+              theme="primary"
+              size="small"
+              :disabled="getStatus(stageData) === 'doing' || !!stageData.publish_validate_msg"
+              v-bk-tooltips="{ content: t(stageData.publish_validate_msg), disabled: !stageData.publish_validate_msg }"
+              @click="handleRelease(stageData)"
+            >
+              {{ t('发布资源') }}
+            </bk-button>
+            <bk-button
+              class="ml10"
+              size="small"
+              :disabled="stageData.status !== 1"
+              @click="handleStageUnlist(stageData.id)"
+            >
+              {{ t('下架') }}
+            </bk-button>
+          </template>
+        </div>
+      </div>
+      <div class="content" @click="handleToDetail(stageData)">
+        <div class="apigw-form-item">
+          <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('访问地址')}：` }}</div>
+          <div class="value url">
+            <p
+              class="link"
+              v-if="getStageAddress(stageData.name)"
+              v-bk-tooltips="{ content: getStageAddress(stageData.name) }">
+              {{ getStageAddress(stageData.name) || '--' }}
+            </p>
+            <p
+              v-else
+              class="link"
+            >
+              {{ getStageAddress(stageData.name) || '--' }}
+            </p>
+            <i
+              class="apigateway-icon icon-ag-copy-info"
+              v-if="getStageAddress(stageData.name)"
+              @click.self.stop="copy(getStageAddress(stageData.name))">
+            </i>
+          </div>
+        </div>
+        <div class="apigw-form-item">
+          <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('当前生效资源版本')}：` }}</div>
+          <div class="value">
+            <span class="unrelease" v-if="stageData.release.status === 'unreleased'">--</span>
+            <span v-else>{{ stageData.resource_version.version || '--' }}</span>
+            <template v-if="getStatus(stageData) === 'doing'">
+              <bk-tag theme="info" class="ml10">{{ stageData.publish_version }} {{ t('发布中') }} </bk-tag>
+              <bk-button
+                text
+                theme="primary"
+                @click.stop="showLogs(stageData.publish_id)">
+                {{ t('查看日志') }}
+              </bk-button>
+            </template>
+          </div>
+        </div>
+        <div class="apigw-form-item">
+          <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('发布人')}：` }}</div>
+          <div class="value">
+            {{ stageData.release.created_by || '--' }}
+          </div>
+        </div>
+        <div class="apigw-form-item">
+          <div class="label" :class="locale === 'en' ? 'en' : ''">{{ `${t('发布时间')}：` }}</div>
+          <div class="value">
+            {{ stageData.release.created_time || '--' }}
+          </div>
+        </div>
+=======
   <div>
     <BkLoading :loading="isLoading && !stageList.length">
       <div style="width: 100%;"></div>
@@ -17,6 +119,7 @@
 
       <div v-if="!common.isProgrammableGateway && !isLoading" class="card-item add-stage" @click="handleAddStage">
         <i class="apigateway-icon icon-ag-add-small" />
+>>>>>>> master
       </div>
     </div>
 
@@ -57,31 +160,18 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  onBeforeMount,
-  onMounted,
-  onUnmounted,
-  ref,
-  watch,
-} from 'vue';
+import { ref, toRefs, computed, onUnmounted, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import {
-  InfoBox,
-  Message,
-} from 'bkui-vue';
-import LogDetails from '@/components/log-details/index.vue';
+import { Message, InfoBox } from 'bkui-vue';
+import { Spinner } from 'bkui-vue/lib/icon';
+
+import { copy, getStatus, getStatusText } from '@/common/util';
+import logDetails from '@/components/log-details/index.vue';
 import mitt from '@/common/event-bus';
-import {
-  useCommon,
-  useStage,
-} from '@/store';
-import {
-  getGateWaysInfo,
-  getStageList,
-  removalStage,
-} from '@/http';
+import { useGetGlobalProperties } from '@/hooks';
+import { useCommon } from '@/store';
+import { removalStage, getGateWaysInfo } from '@/http';
 import { BasicInfoParams } from '@/views/basic-info/common/type';
 import EditStageSideslider from './edit-stage-sideslider.vue';
 import ReleaseSideslider from './release-sideslider.vue';
@@ -275,6 +365,26 @@ const handleStageUnlist = async (id: number) => {
 const handleAddStage = () => {
   stageSidesliderRef.value.handleShowSideslider('add');
 };
+
+// 当前基本信息
+const basicInfoData = ref<BasicInfoParams>({
+  status: 1,
+  name: '',
+  url: '',
+  description: '',
+  description_en: '',
+  public_key_fingerprint: '',
+  bk_app_codes: '',
+  docs_url: '',
+  api_domain: '',
+  created_by: '',
+  created_time: '',
+  public_key: '',
+  maintainers: [],
+  developers: [],
+  is_public: true,
+  is_official: false,
+});
 
 // 获取网关基本信息
 const getBasicInfo = async (apigwId: number) => {

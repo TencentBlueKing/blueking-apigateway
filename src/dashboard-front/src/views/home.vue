@@ -56,9 +56,17 @@
     <div class="table-container" v-bkloading="{ loading: isLoading, opacity: 1, color: '#f5f7fb' }">
       <section v-if="gatewaysList.length">
         <div class="table-header flex-row">
-          <div class="flex-1 of3">{{ t('网关名') }}</div>
+          <div :class="user.isTenantMode ? 'of2' : 'of3'" class="flex-1">
+            {{ t('网关名') }}
+          </div>
+          <template v-if="user.isTenantMode">
+            <div class="flex-1 of1">{{ t('租户模式') }}</div>
+            <div class="flex-1 of1">{{ t('租户 ID') }}</div>
+          </template>
           <div class="flex-1 of1">{{ t('创建者') }}</div>
-          <div class="flex-1 of3">{{ t('环境列表') }}</div>
+          <div :class="user.isTenantMode ? 'of2' : 'of3'" class="flex-1">
+            {{ t('环境列表') }}
+          </div>
           <div class="flex-1 of1 text-c">{{ t('资源数量') }}</div>
           <div class="flex-1 of2">{{ t('操作') }}</div>
         </div>
@@ -67,7 +75,10 @@
             class="table-item flex-row align-items-center"
             v-for="item in gatewaysList" :key="item.id"
             :class="item.is24HoursAgo ? '' : 'newly-item'">
-            <div class="flex-1 flex-row align-items-center  of3">
+            <div
+              class="flex-1 flex-row align-items-center"
+              :class="user.isTenantMode ? 'of2' : 'of3'"
+            >
               <div
                 :class="item.status ? '' : 'deact'"
                 class="name-logo mr10"
@@ -91,8 +102,16 @@
               <bk-tag theme="info" v-if="item.is_official">{{ t('官方') }}</bk-tag>
               <bk-tag v-if="item.status === 0">{{ t('已停用') }}</bk-tag>
             </div>
-            <div class="flex-1 of1">{{ item.created_by }}</div>
-            <div class="flex-1 of3 env">
+            <template v-if="user.isTenantMode">
+              <div class="flex-1 of1">
+                {{ TENANT_MODE_TEXT_MAP[item.tenant_mode as string] || '--' }}
+              </div>
+              <div class="flex-1 of1">{{ item.tenant_id || '--' }}</div>
+            </template>
+            <div class="flex-1 of1">
+              <span><bk-user-display-name :user-id="item.created_by" /></span>
+            </div>
+            <div :class="user.isTenantMode ? 'of2' : 'of3'" class="flex-1 env">
               <div class="flex-row">
                 <span
                   v-for="(envItem, index) in item.stages" :key="envItem.id">
@@ -201,6 +220,7 @@ import { useRouter } from 'vue-router';
 import { useGetApiList } from '@/hooks';
 import { is24HoursAgo } from '@/common/util';
 import { useCommon } from '@/store';
+import { useUser } from '@/store/user';
 // @ts-ignore
 import TableEmpty from '@/components/table-empty.vue';
 import {
@@ -211,8 +231,10 @@ import {
 } from 'vue';
 import { GatewayListItem } from '@/types/gateway';
 import CreateGatewayCom from '@/components/create-gateway.vue';
+import { TENANT_MODE_TEXT_MAP } from '@/enums';
 
 const { t } = useI18n();
+const user = useUser();
 const router = useRouter();
 const common = useCommon();
 

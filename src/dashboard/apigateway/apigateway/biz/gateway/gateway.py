@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -17,36 +17,44 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-import copy
+import logging
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.db.models import Count
 
-from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
-from apigateway.biz.gateway_app_binding import GatewayAppBindingHandler
-from apigateway.biz.gateway_jwt import GatewayJWTHandler
-from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
-from apigateway.common.contexts import GatewayAuthContext, GatewayFeatureFlagContext
+from apigateway.common.tenant.query import gateway_filter_by_user_tenant_id
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
+from apigateway.service.alarm_strategy import create_default_alarm_strategy
+from apigateway.service.contexts import GatewayAuthContext
+from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.utils.dict import deep_update
+
+from .app_binding import GatewayAppBindingHandler
+from .related_app import GatewayRelatedAppHandler
+
+logger = logging.getLogger(__name__)
 
 
 class GatewayHandler:
     @staticmethod
-    def list_gateways_by_user(username: str) -> List[Gateway]:
+    def list_gateways_by_user(username: str, tenant_id: str = "") -> List[Gateway]:
         """获取用户有权限的的网关列表"""
-        # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
+
         queryset = Gateway.objects.filter(_maintainers__contains=username)
+        if tenant_id:
+            queryset = gateway_filter_by_user_tenant_id(queryset, tenant_id)
+
+        # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
         return [gateway for gateway in queryset if gateway.has_permission(username)]
 
     @staticmethod
@@ -112,7 +120,7 @@ class GatewayHandler:
         :param api_type: 网关类型，只有 ESB 才能被设置为 SUPER_OFFICIAL_API 网关，网关会将所有请求参数透传给其后端服务
         :param allow_update_api_auth: 是否允许编辑网关资源安全设置中的应用认证配置
         :param unfiltered_sensitive_keys: 网关请求后端时，不去除的敏感字段
-        :param allow_auth_from_params: 网关从请求中获取认证信息时，是否允许从请求参数(querystring, body 等)获取认证信息；如果不允许，则只能从请求头获取
+        :param allow_auth_from_params: 网关从请求中获取认证信息时，是否允许从请求参数 (querystring, body 等) 获取认证信息；如果不允许，则只能从请求头获取
         :param allow_delete_sensitive_params: 网关转发请求到后端时，是否需要删除请求参数（querystring, body 等）中的敏感参数
         """
         new_config: Dict[str, Any] = {}
@@ -135,6 +143,14 @@ class GatewayHandler:
         if allow_auth_from_params is not None:
             new_config["allow_auth_from_params"] = allow_auth_from_params
 
+            # 多租户版本，只允许从请求头获取认证信息，如果注册方配置 allow_auth_from_params 为 True，则强制设置为 False
+            if allow_auth_from_params and settings.ENABLE_MULTI_TENANT_MODE:
+                logger.warning(
+                    "multi-tenant mode, allow_auth_from_params=True is not supported, force set to False, gateway_id=%s",
+                    gateway_id,
+                )
+                new_config["allow_auth_from_params"] = False
+
         if allow_delete_sensitive_params is not None:
             new_config["allow_delete_sensitive_params"] = allow_delete_sensitive_params
 
@@ -144,7 +160,7 @@ class GatewayHandler:
         current_config = GatewayHandler.get_gateway_auth_config(gateway_id)
 
         # 因用户配置为 dict，参数 user_conf 仅传递了部分用户配置，因此需合并当前配置与传入配置
-        api_auth_config = APIAuthConfig.parse_obj(deep_update(current_config, new_config))
+        api_auth_config = APIAuthConfig.model_validate(deep_update(current_config, new_config))
 
         return GatewayAuthContext().save(gateway_id, api_auth_config.config)
 
@@ -182,7 +198,7 @@ class GatewayHandler:
 
         # 4. create default alarm-strategy
 
-        AlarmStrategy.objects.create_default_strategy(gateway, created_by=username)
+        create_default_alarm_strategy(gateway, created_by=username)
 
         # 5. create related app
         if related_app_code:
@@ -230,12 +246,6 @@ class GatewayHandler:
 
         # delete gateway
         Gateway.objects.filter(id=gateway_id).delete()
-
-    @staticmethod
-    def get_feature_flags(gateway_id: int) -> Dict[str, bool]:
-        feature_flags = copy.deepcopy(settings.GLOBAL_GATEWAY_FEATURE_FLAG)
-        feature_flags.update(GatewayFeatureFlagContext().get_config(gateway_id, {}))
-        return feature_flags
 
     @staticmethod
     def get_docs_url(gateway: Gateway) -> str:

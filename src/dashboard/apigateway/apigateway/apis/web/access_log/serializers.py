@@ -36,6 +36,9 @@ class RequestLogQueryInputSLZ(serializers.Serializer):
     offset = serializers.IntegerField(label="偏移量", required=False, min_value=0, default=0, help_text="偏移量")
     limit = serializers.IntegerField(label="限制条数", required=False, min_value=1, default=10, help_text="限制条数")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.access_log.serializers.RequestLogQueryInputSLZ"
+
     def validate(self, data):
         if not (data.get("time_start") and data.get("time_end") or data.get("time_range")):
             raise serializers.ValidationError(_("参数 time_start+time_end, time_range 必须一组有效。"))
@@ -74,6 +77,9 @@ class TimeChartOutputSLZ(serializers.Serializer):
     series = serializers.ListField(child=serializers.IntegerField(), help_text="时间序列")
     timeline = serializers.ListField(child=serializers.IntegerField(), help_text="时间轴")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.access_log.serializers.TimeChartOutputSLZ"
+
 
 class RequestLogOutputSLZ(serializers.Serializer):
     request_id = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求 ID")
@@ -105,9 +111,15 @@ class RequestLogOutputSLZ(serializers.Serializer):
     error = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="错误")
     response_desc = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="响应描述")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.access_log.serializers.RequestLogOutputSLZ"
+
 
 class LogLinkOutputSLZ(serializers.Serializer):
     link = serializers.CharField(read_only=True, help_text="链接地址")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.access_log.serializers.LogLinkOutputSLZ"
 
 
 class LogDetailQueryInputSLZ(serializers.Serializer):
@@ -115,3 +127,6 @@ class LogDetailQueryInputSLZ(serializers.Serializer):
     bk_timestamp = serializers.IntegerField(help_text="时间戳")
     bk_signature = serializers.CharField(help_text="签名")
     shared_by = serializers.CharField(help_text="分享人")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.access_log.serializers.LogDetailQueryInputSLZ"

@@ -24,7 +24,7 @@ import responses
 from ddf import G
 
 from apigateway.apps.api_debug.models import APIDebugHistory
-from apigateway.core.utils import get_resource_url
+from apigateway.service.utils import get_resource_url
 from apigateway.tests.utils.testing import dummy_time
 
 

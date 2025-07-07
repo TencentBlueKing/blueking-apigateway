@@ -17,14 +17,7 @@
 #
 import re
 
-from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.conf import settings
-
-
-class OpenAPIFormatEnum(StructuredEnum):
-    YAML = EnumField("yaml", label="YAML")
-    JSON = EnumField("json", label="JSON")
-
 
 # bk app code
 APP_CODE_PATTERN = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")

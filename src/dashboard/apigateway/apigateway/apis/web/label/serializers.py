@@ -34,6 +34,7 @@ class GatewayLabelInputSLZ(serializers.ModelSerializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
 
     class Meta:
+        ref_name = "apigateway.apis.web.label.serializers.GatewayLabelInputSLZ"
         model = APILabel
         fields = [
             "gateway",

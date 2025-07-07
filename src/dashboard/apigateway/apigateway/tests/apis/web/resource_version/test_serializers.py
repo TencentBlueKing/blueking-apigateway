@@ -24,7 +24,7 @@ from apigateway.apis.web.resource_version import serializers
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.backend import BackendHandler
-from apigateway.biz.plugin_binding import PluginBindingHandler
+from apigateway.biz.plugin import PluginBindingHandler
 from apigateway.core.models import Gateway, ResourceVersion
 
 

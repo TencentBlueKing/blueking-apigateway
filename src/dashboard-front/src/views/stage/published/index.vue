@@ -24,7 +24,13 @@
           :placeholder="t('请输入已发布的环境或版本号')"
           class="ml10 mr10 operate-input"
           style="width: 500px"
+<<<<<<< HEAD
         />
+=======
+          :placeholder="t('请输入已发布的环境或版本号')"
+          v-model="filterData.keyword">
+        </bk-input>
+>>>>>>> ft_tenant
       </div>
     </div>
     <bk-loading :loading="isLoading">
@@ -39,7 +45,58 @@
         row-hover="auto"
         @page-limit-change="handlePageSizeChange"
         @page-value-change="handlePageChange"
+<<<<<<< HEAD
       >
+=======
+        row-hover="auto"
+        border="outer">
+        <bk-table-column
+          :label="t('已发布的环境')"
+          prop="stage.name"
+        >
+        </bk-table-column>
+        <bk-table-column :label="t('类型')">
+          <template #default="{ data }">
+            {{ getTextFromEnum(publishSourceEnum, data?.source) }}
+          </template>
+        </bk-table-column>
+        <bk-table-column
+          :label="t('版本号')"
+          prop="resource_version_display"
+        >
+          <template #default="{ row }">
+            <bk-button text theme="primary" @click="goVersionList(row)">
+              {{ row?.resource_version_display }}
+            </bk-button>
+          </template>
+        </bk-table-column>
+        <bk-table-column :label="t('操作状态')">
+          <template #default="{ data }">
+            <spinner v-if="data?.status === 'doing'" fill="#3A84FF" />
+            <span v-else :class="['dot', data?.status]"></span>
+            {{ getTextFromEnum(publishStatusEnum, data?.status) }}
+          </template>
+        </bk-table-column>
+        <bk-table-column :label="t('操作时间')" prop="created_time">
+        </bk-table-column>
+        <bk-table-column :label="t('操作人')">
+          <template #default="{ row }">
+            <bk-user-display-name :user-id="row.created_by" />
+          </template>
+        </bk-table-column>
+        <bk-table-column :label="t('耗时')" prop="duration">
+        </bk-table-column>
+        <bk-table-column :label="t('操作')">
+          <template #default="{ data }">
+            <!-- <bk-button text theme="primary" @click="showDetails(data.id)">
+              {{ t("查看详情") }}
+            </bk-button> -->
+            <bk-button text theme="primary" @click="showLogs(data.id)">
+              {{ t("发布日志") }}
+            </bk-button>
+          </template>
+        </bk-table-column>
+>>>>>>> ft_tenant
         <template #empty>
           <TableEmpty
             :keyword="tableEmptyConf.keyword"
@@ -66,9 +123,15 @@
   </div>
 </template>
 
+<<<<<<< HEAD
 <script lang="tsx" setup>
 import {
   computed,
+=======
+<script setup lang="ts">
+import {
+  onMounted,
+>>>>>>> ft_tenant
   onUnmounted,
   ref,
   watch,

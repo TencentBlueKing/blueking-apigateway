@@ -22,8 +22,8 @@ from django_dynamic_fixture import G
 
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.biz.resource import ResourceHandler
-from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.models import Gateway, Resource
+from apigateway.service.contexts import ResourceAuthContext
 
 
 class TestResourceHandler:

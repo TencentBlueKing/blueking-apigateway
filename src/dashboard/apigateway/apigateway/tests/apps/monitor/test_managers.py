@@ -21,85 +21,12 @@ import datetime
 from django.test import TestCase
 from django_dynamic_fixture import G
 
-from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
-from apigateway.core.models import Gateway, Resource
+from apigateway.core.models import Gateway
 from apigateway.tests.utils.testing import dummy_time
 
 
 class TestAlarmStrategyManager(TestCase):
-    def test_create_default_strategy(self):
-        gateway = G(Gateway)
-        data = [
-            {
-                "gateway": gateway,
-                "created_by": "admin",
-            },
-        ]
-        for test in data:
-            AlarmStrategy.objects.create_default_strategy(
-                test["gateway"],
-                created_by=test["created_by"],
-            )
-
-            strategy_queryset = AlarmStrategy.objects.filter(gateway=gateway)
-            self.assertEqual(strategy_queryset.count(), 3)
-
-            strategy = strategy_queryset.first()
-            self.assertEqual(strategy.gateway, test["gateway"])
-            self.assertEqual(strategy.enabled, True)
-            self.assertEqual(strategy.created_by, "admin")
-
-    def test_get_resource_alarm_strategy(self):
-        gateway_1 = G(Gateway)
-        gateway_2 = G(Gateway)
-        resource_1 = G(Resource, gateway=gateway_2)
-        resource_2 = G(Resource, gateway=gateway_2)
-
-        api_label = G(APILabel, gateway=gateway_2)
-        G(ResourceLabel, resource=resource_1, api_label=api_label)
-
-        alarm_strategy = G(
-            AlarmStrategy,
-            gateway=gateway_2,
-            enabled=True,
-            alarm_subtype="status_code_5xx",
-        )
-        alarm_strategy.api_labels.set([api_label.id])
-
-        alarm_strategy_2 = G(
-            AlarmStrategy,
-            gateway=gateway_2,
-            enabled=True,
-            alarm_subtype="status_code_5xx",
-        )
-
-        data = [
-            # gateway alarm-strategy not exist
-            {
-                "gateway_id": gateway_1.id,
-                "resource_id": 1,
-                "expected": [],
-            },
-            {
-                "gateway_id": gateway_2.id,
-                "resource_id": resource_1.id,
-                "expected": [alarm_strategy, alarm_strategy_2],
-            },
-            {
-                "gateway_id": gateway_2.id,
-                "resource_id": resource_2.id,
-                "expected": [alarm_strategy_2],
-            },
-        ]
-        for test in data:
-            result = AlarmStrategy.objects.get_resource_alarm_strategy(
-                test["gateway_id"],
-                test["resource_id"],
-                "status_code_5xx",
-            )
-            self.assertEqual(result, test["expected"])
-
     def test_annotate_alarm_record_by_strategy(self):
         gateway = G(Gateway)
 

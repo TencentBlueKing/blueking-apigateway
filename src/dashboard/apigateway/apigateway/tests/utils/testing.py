@@ -49,6 +49,8 @@ def create_gateway(**defaults):
         "created_by": user.username,
         "_maintainers": user.username,
         "status": GatewayStatusEnum.ACTIVE.value,
+        "tenant_mode": "single",
+        "tenant_id": "default",
         "is_public": True,
     }
     data.update(defaults)

@@ -26,11 +26,11 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.utils import build_mcp_server_detail_url, build_mcp_server_url
 from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionApplyExpireDaysEnum
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
+from apigateway.service.mcp.mcp_server import build_mcp_server_detail_url, build_mcp_server_url
 
 
 class GatewayListInputSLZ(serializers.Serializer):

@@ -34,8 +34,8 @@ class SystemDocCategoryHandler:
 
     @staticmethod
     def _get_system_doc_categories_by_db():
-        from apigateway.apps.esb.bkcore.models import DocCategory, SystemDocCategory
-        from apigateway.apps.esb.constants import DataTypeEnum
+        from apigateway.apps.esb.bkcore.models import DocCategory, SystemDocCategory  # noqa
+        from apigateway.apps.esb.constants import DataTypeEnum  # noqa
 
         board_to_category_ids = SystemDocCategory.objects.group_category_id_by_board()
         category_id_to_system_ids = SystemDocCategory.objects.group_system_id_by_category_id()

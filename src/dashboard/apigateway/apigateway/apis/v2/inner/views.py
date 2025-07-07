@@ -21,11 +21,13 @@ import operator
 from typing import Dict, List
 
 from blue_krill.async_utils.django_utils import apply_async_on_commit
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
+from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
 from apigateway.apps.esb.bkcore.models import AppPermissionApplyRecord, ComponentSystem, ESBChannel
@@ -41,11 +43,14 @@ from apigateway.apps.permission.models import AppPermissionRecord, AppResourcePe
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.esb.permissions import ComponentPermissionManager
 from apigateway.biz.mcp_server import MCPServerPermissionHandler
-from apigateway.biz.permission import PermissionDimensionManager
+from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.constants import TenantModeEnum
+from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
+from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.responses import OKJsonResponse
@@ -90,6 +95,16 @@ class GatewayListApi(generics.ListAPIView):
         fuzzy = slz.validated_data.get("fuzzy")
 
         queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
+
+        # 可以看到 全租户网关 + 本租户网关
+        tenant_id = None
+        if settings.ENABLE_MULTI_TENANT_MODE:
+            if not request.tenant_id:
+                raise ValidationError("tenant_id is required in multi-tenant mode")
+            tenant_id = request.tenant_id
+        if tenant_id:
+            queryset = gateway_filter_by_app_tenant_id(queryset, tenant_id)
+
         if name:
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
             queryset = queryset.filter(name__contains=name) if fuzzy else queryset.filter(name=name)
@@ -222,9 +237,20 @@ class GatewayAppPermissionApplyCreateApi(generics.CreateAPIView):
 
         data = slz.validated_data
 
+        app_code = data["target_app_code"]
+        # 全租户网关，谁都可以申请，单租户网关，只能本租户应用/全租户应用申请
+        if settings.ENABLE_MULTI_TENANT_MODE and request.gateway.tenant_mode != TenantModeEnum.GLOBAL.value:
+            gateway_tenant_id = request.gateway.tenant_id
+            app_tenant_mode, app_tenant_id = get_app_tenant_info(app_code)
+            if app_tenant_mode != TenantModeEnum.GLOBAL.value and app_tenant_id != gateway_tenant_id:
+                raise error_codes.NO_PERMISSION.format(
+                    f"app_code={app_code} is belongs to tenant {app_tenant_id}, should not apply the gateway of tenant {gateway_tenant_id}",
+                    replace=True,
+                )
+
         manager = PermissionDimensionManager.get_manager(data["grant_dimension"])
         record = manager.create_apply_record(
-            data["target_app_code"],
+            app_code,
             request.gateway,
             data.get("resource_ids") or [],
             data["grant_dimension"],
@@ -276,7 +302,7 @@ class AppPermissionRenewApi(generics.CreateAPIView):
         for gateway_id, resource_ids in ResourceHandler.group_by_gateway_id(data["resource_ids"]).items():
             gateway = Gateway.objects.get(id=gateway_id)
             # 如果应用 - 资源权限不存在，则将按网关的权限同步到应用 - 资源权限
-            AppResourcePermission.objects.sync_from_gateway_permission(
+            ResourcePermissionHandler.sync_from_gateway_permission(
                 gateway=gateway,
                 bk_app_code=data["target_app_code"],
                 resource_ids=resource_ids,

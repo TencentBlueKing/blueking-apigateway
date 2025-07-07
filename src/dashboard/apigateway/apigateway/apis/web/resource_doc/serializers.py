@@ -24,6 +24,9 @@ from apigateway.apps.support.constants import DocArchiveTypeEnum, DocLanguageEnu
 class DocArchiveParseInputSLZ(serializers.Serializer):
     file = serializers.FileField(required=True, help_text="导入的归档文档文件")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.resource_doc.serializers.DocArchiveParseInputSLZ"
+
 
 class ArchiveParseOutputResourceSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="资源 ID")
@@ -32,10 +35,16 @@ class ArchiveParseOutputResourceSLZ(serializers.Serializer):
     path = serializers.CharField(read_only=True, help_text="请求路径")
     description = serializers.CharField(read_only=True, help_text="资源描述")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.resource_doc.serializers.ArchiveParseOutputResourceSLZ"
+
 
 class ArchiveParseOutputResourceDocSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="文档 ID")
     language = serializers.CharField(read_only=True, help_text="文档语言")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource_doc.serializers.ArchiveParseOutputResourceDocSLZ"
 
 
 class DocArchiveParseOutputSLZ(serializers.Serializer):
@@ -45,12 +54,18 @@ class DocArchiveParseOutputSLZ(serializers.Serializer):
     resource = ArchiveParseOutputResourceSLZ(allow_null=True, read_only=True, help_text="归档文档所属资源")
     resource_doc = ArchiveParseOutputResourceDocSLZ(allow_null=True, read_only=True, help_text="归档文档")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.resource_doc.serializers.DocArchiveParseOutputSLZ"
+
 
 class SelectedResourceDocSLZ(serializers.Serializer):
     language = serializers.ChoiceField(
         choices=DocLanguageEnum.get_choices(), required=False, help_text="文档语言，en: 英文，zh: 中文"
     )
     resource_name = serializers.CharField(help_text="资源名称")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource_doc.serializers.SelectedResourceDocSLZ"
 
 
 class DocImportByArchiveInputSLZ(serializers.Serializer):
@@ -61,6 +76,9 @@ class DocImportByArchiveInputSLZ(serializers.Serializer):
         slz = SelectedResourceDocSLZ(data=value, many=True)
         slz.is_valid(raise_exception=True)
         return slz.validated_data
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource_doc.serializers.DocImportByArchiveInputSLZ"
 
 
 class DocImportBySwaggerInputSLZ(serializers.Serializer):
@@ -81,6 +99,9 @@ class DocImportBySwaggerInputSLZ(serializers.Serializer):
 
         return data
 
+    class Meta:
+        ref_name = "apigateway.apis.web.resource_doc.serializers.DocImportBySwaggerInputSLZ"
+
 
 class ResourceFilterConditionSLZ(serializers.Serializer):
     """导出资源文档时，当导出类型为：已筛选资源时，此处为筛选条件"""
@@ -94,6 +115,9 @@ class ResourceFilterConditionSLZ(serializers.Serializer):
     keyword = serializers.CharField(
         allow_blank=True, required=False, help_text="筛选条件，支持模糊匹配资源名称，前端请求路径"
     )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource_doc.serializers.ResourceFilterConditionSLZ"
 
 
 class DocExportInputSLZ(serializers.Serializer):
@@ -115,3 +139,6 @@ class DocExportInputSLZ(serializers.Serializer):
         required=False,
         help_text="导出的资源 ID 列表，export_type 为 selected 时，应提供当前选择的资源 ID 列表",
     )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource_doc.serializers.DocExportInputSLZ"

@@ -17,6 +17,7 @@
 #
 import re
 
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 ES_LOG_FIELDS = [
@@ -152,6 +153,17 @@ ES_LOG_FIELDS = [
     },
 ]
 
+
+# insert into the 3rd position of ES_LOG_FIELDS
+if settings.ENABLE_MULTI_TENANT_MODE:
+    ES_LOG_FIELDS.insert(
+        2,
+        {
+            "label": _("请求租户"),
+            "field": "bk_tenant_id",
+            "is_filter": True,
+        },
+    )
 
 # ES_QUERY_FIELDS = [field["field"] for field in ES_LOG_FIELDS if field["is_filter"]]
 

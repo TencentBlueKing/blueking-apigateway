@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional
 from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation.trans_null import gettext_lazy
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
@@ -30,11 +30,11 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.apps.support.constants import DocLanguageEnum, ProgrammingLanguageEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SEMVER_PATTERN
-from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData, PluginSynchronizer
+from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
 from apigateway.biz.stage import StageHandler
 from apigateway.biz.validators import (
-    APIDocMaintainerValidator,
     BKAppCodeListValidator,
+    GatewayAPIDocMaintainerValidator,
     MaxCountPerGatewayValidator,
     ResourceVersionValidator,
     SchemeInputValidator,
@@ -50,8 +50,6 @@ from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
-from apigateway.common.plugin.header_rewrite import HeaderRewriteConvertor
-from apigateway.common.plugin.validator import PluginConfigYamlValidator
 from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
@@ -61,6 +59,8 @@ from apigateway.core.constants import (
     LoadBalanceTypeEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, Gateway, ResourceVersion, Stage
+from apigateway.service.plugin.header_rewrite import HeaderRewriteConvertor
+from apigateway.service.plugin.validator import PluginConfigYamlValidator
 from apigateway.utils.time import NeverExpiresTime
 
 
@@ -94,8 +94,8 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
     service_account = ServiceAccountSLZ(required=False, help_text="服务号")
 
     class Meta:
-        validators = [APIDocMaintainerValidator()]
         ref_name = "apigateway.apis.v2.sync.serializers.GatewayAPIDocMaintainerSLZ"
+        validators = [GatewayAPIDocMaintainerValidator()]
 
 
 class GatewaySyncInputSLZ(serializers.ModelSerializer):
@@ -116,6 +116,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
     allow_delete_sensitive_params = serializers.BooleanField(default=True)
 
     class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.GatewaySyncInputSLZ"
         model = Gateway
         fields = [
             "name",
@@ -134,7 +135,6 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
                 "required": False,
             }
         }
-        ref_name = "apigateway.apis.v2.sync.serializers.GatewaySyncInputSLZ"
 
     def validate(self, data):
         self._validate_name(data["name"], data.get("api_type"))
@@ -173,7 +173,7 @@ class HostSLZ(serializers.Serializer):
     weight = serializers.IntegerField(min_value=1, required=False)
 
     class Meta:
-        ref_name = "apigateway.apis.v2.sync.stage.HostSLZ"
+        ref_name = "apigateway.apis.v2.sync.serializers.HostSLZ"
 
 
 class UpstreamsSLZ(serializers.Serializer):
@@ -181,7 +181,7 @@ class UpstreamsSLZ(serializers.Serializer):
     hosts = serializers.ListField(child=HostSLZ(), allow_empty=False)
 
     class Meta:
-        ref_name = "apigateway.apis.v2.sync.stage.UpstreamsSLZ"
+        ref_name = "apigateway.apis.v2.sync.serializers.UpstreamsSLZ"
 
     def __init__(self, *args, **kwargs):
         self.allow_empty = kwargs.pop("allow_empty", False)
@@ -222,7 +222,7 @@ class TransformHeadersSLZ(serializers.Serializer):
     delete = serializers.ListField(label="删除", child=serializers.CharField(), required=False, allow_empty=True)
 
     class Meta:
-        ref_name = "apigateway.apis.v2.sync.stage.TransformHeadersSLZ"
+        ref_name = "apigateway.apis.v2.sync.serializers.TransformHeadersSLZ"
 
     def _validate_headers_key(self, value):
         for key in value:
@@ -243,14 +243,14 @@ class StageProxyHTTPConfigSLZ(serializers.Serializer):
     transform_headers = TransformHeadersSLZ(required=False, default=dict)
 
     class Meta:
-        ref_name = "apigateway.apis.v2.sync.stage.StageProxyHTTPConfigSLZ"
+        ref_name = "apigateway.apis.v2.sync.serializers.StageProxyHTTPConfigSLZ"
 
 
 class BackendConfigSLZ(UpstreamsSLZ):
     timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1)
 
     class Meta:
-        ref_name = "apigateway.apis.v2.sync.stage.BackendConfigSLZ"
+        ref_name = "apigateway.apis.v2.sync.serializers.BackendConfigSLZ"
 
 
 class BackendSLZ(serializers.Serializer):
@@ -258,7 +258,7 @@ class BackendSLZ(serializers.Serializer):
     config = BackendConfigSLZ(allow_empty=False)
 
     class Meta:
-        ref_name = "apigateway.apis.v2.sync.stage.BackendSLZ"
+        ref_name = "apigateway.apis.v2.sync.serializers.BackendSLZ"
 
 
 class PluginConfigSLZ(serializers.Serializer):
@@ -266,7 +266,7 @@ class PluginConfigSLZ(serializers.Serializer):
     yaml = serializers.CharField(help_text="插件yaml配置")
 
     class Meta:
-        ref_name = "apigateway.apis.v2.sync.stage.PluginConfigSLZ"
+        ref_name = "apigateway.apis.v2.sync.serializers.PluginConfigSLZ"
 
 
 class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
@@ -293,7 +293,7 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     )
 
     class Meta:
-        ref_name = "apigateway.apis.v2.sync.stage.StageSyncInputSLZ"
+        ref_name = "apigateway.apis.v2.sync.serializers.StageSyncInputSLZ"
         model = Stage
         fields = (
             "gateway",
@@ -560,8 +560,11 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             validator.validate_scheme()
 
     def _sync_plugins(self, gateway_id: int, stage_id: int, plugin_configs: Optional[Dict[str, Any]] = None):
-        # plugin_configs为None则，plugin_config_datas 设置[]则清空对应配置
-        plugin_config_datas = parse_obj_as(Optional[List[PluginConfigData]], plugin_configs) if plugin_configs else []
+        # plugin_configs 为 None 则，plugin_config_datas 设置 [] 则清空对应配置
+        plugin_config_datas = (
+            TypeAdapter(Optional[List[PluginConfigData]]).validate_python(plugin_configs) if plugin_configs else []
+        )
+
         scope_id_to_plugin_configs = {stage_id: plugin_config_datas}
         synchronizer = PluginSynchronizer()
         synchronizer.sync(
@@ -700,8 +703,8 @@ class ResourceVersionCreateInputSLZ(serializers.Serializer):
     comment = serializers.CharField(allow_blank=True, allow_null=True, max_length=512, required=False)
 
     class Meta:
-        validators = [ResourceVersionValidator()]
         ref_name = "apigateway.apis.v2.sync.serializers.ResourceVersionCreateInputSLZ"
+        validators = [ResourceVersionValidator()]
 
 
 class ResourceVersionListInputSLZ(serializers.Serializer):

@@ -109,7 +109,9 @@
             </div>
             <div class="item">
               <div class="key"> {{ t('申请人：') }} </div>
-              <div class="value">{{curRecord.applied_by}}</div>
+              <div class="value">
+                <bk-user-display-name :user-id="curRecord.applied_by" />
+              </div>
             </div>
             <div class="item">
               <div class="key"> {{ t('授权维度：') }} </div>
@@ -129,7 +131,9 @@
             </div>
             <div class="item">
               <div class="key"> {{ t('审批人：') }} </div>
-              <div class="value">{{curRecord.handled_by}}</div>
+              <div class="value">
+                <bk-user-display-name :user-id="curRecord.handled_by" />
+              </div>
             </div>
             <div class="item">
               <div class="key"> {{ t('审批时间：') }} </div>
@@ -193,14 +197,23 @@ import {
   ref,
   watch,
 } from 'vue';
+import {
+  nextTick,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPermissionRecordList } from '@/http';
+import { useUser } from '@/store';
 import { useQueryList } from '@/hooks';
 import { sortByKey } from '@/common/util';
 import TableEmpty from '@/components/table-empty.vue';
 import AgIcon from '@/components/ag-icon.vue';
 
 const { t } = useI18n();
+const user = useUser();
 
 const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
   keyword: '',
@@ -332,9 +345,17 @@ const setTableHeader = () => {
         return data.expire_days_display || '--'
       }
     },
-    { field: 'applied_by', label: t('申请人') },
+    {
+      field: 'applied_by',
+      label: t('申请人'),
+      render: ({ data }: Record<string, any>) => <span><bk-user-display-name user-id={data.applied_by} /></span>,
+    },
     { field: 'handled_time', label: t('审批时间') },
-    { field: 'handled_by', label: t('审批人') },
+    {
+      field: 'handled_by',
+      label: t('审批人'),
+      render: ({ data }: Record<string, any>) => <span><bk-user-display-name user-id={data.handled_by} /></span>,
+    },
     {
       field: 'status',
       label: t('审批状态'),

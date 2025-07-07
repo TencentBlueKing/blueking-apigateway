@@ -25,7 +25,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
@@ -37,22 +37,21 @@ from apigateway.apps.permission.models import (
     AppGatewayPermission,
     AppResourcePermission,
 )
-from apigateway.apps.support.api_sdk import exceptions
-from apigateway.apps.support.api_sdk.helper import SDKHelper
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
-from apigateway.biz.gateway.saver import GatewayData, GatewaySaver
-from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
+from apigateway.biz.gateway import GatewayData, GatewayRelatedAppHandler, GatewaySaver, ReleaseError, release
 from apigateway.biz.permission import PermissionDimensionManager
-from apigateway.biz.releaser import ReleaseError, release
 from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.importer import DocImporter
 from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, OpenAPIParser
-from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
+from apigateway.biz.sdk import exceptions
+from apigateway.biz.sdk.helper import SDKHelper
 from apigateway.common.error_codes import error_codes
+from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.models import Gateway, Resource, ResourceVersion, Stage
 from apigateway.utils.django import get_model_dict, get_object_or_None
 from apigateway.utils.exception import LockTimeout
@@ -112,7 +111,7 @@ class GatewaySyncApi(generics.CreateAPIView):
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
         saver = GatewaySaver(
             id=gateway and gateway.id,
-            data=parse_obj_as(GatewayData, slz.validated_data),
+            data=TypeAdapter(GatewayData).validate_python(slz.validated_data),
             bk_app_code=request.app.app_code,
             username=username,
         )
@@ -315,6 +314,17 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
 
         input_app_codes = slz.validated_data["related_app_codes"]
 
+        if settings.ENABLE_MULTI_TENANT_MODE:
+            # check if all the target_app_codes are in the same tenant
+            for app_code in input_app_codes:
+                _, app_tenant_id = get_app_tenant_info(app_code)
+                if app_tenant_id != request.gateway.tenant_id:
+                    raise ValidationError(
+                        {
+                            "target_app_codes": f"app_code {app_code} not belong to the tenant {request.gateway.tenant_id}"
+                        }
+                    )
+
         exist_related_app_codes = GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id)
         missing_app_codes = set(input_app_codes) - set(exist_related_app_codes)
         for bk_app_code in missing_app_codes:
@@ -498,7 +508,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
             ResourceDocVersion.objects.create(
                 gateway=request.gateway,
                 resource_version=instance,
-                data=ResourceDocVersion.objects.make_version(request.gateway.id),
+                data=ResourceDocVersionHandler().make_version(request.gateway.id),
             )
         exporter = OpenAPIExportManager(
             api_version=instance.version,

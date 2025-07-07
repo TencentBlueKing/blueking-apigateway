@@ -27,9 +27,9 @@ from apigateway.apis.open.permissions import (
 )
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
-from apigateway.biz.releaser import ReleaseError, release
+from apigateway.biz.gateway import ReleaseError, release
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
-from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.core.models import ResourceVersion, Stage
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
@@ -85,7 +85,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
             ResourceDocVersion.objects.create(
                 gateway=request.gateway,
                 resource_version=instance,
-                data=ResourceDocVersion.objects.make_version(request.gateway.id),
+                data=ResourceDocVersionHandler().make_version(request.gateway.id),
             )
 
         exporter = OpenAPIExportManager(
@@ -137,7 +137,7 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
                         resource_version_id=data["resource_version_id"],
                         comment=data["comment"],
                         username=request.user.username,
-                    )  # TODO open api 不能创建微网关, 这里不需要传BCS需要的user credentials, 后续有需求再补充
+                    )
             except LockTimeout as err:
                 return V1FailJsonResponse(str(err))
             except ReleaseError as err:

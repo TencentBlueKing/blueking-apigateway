@@ -29,10 +29,14 @@ logger = logging.getLogger(__name__)
 
 
 class ApiGatewayJWTAppMiddleware(BaseApiGatewayJWTAppMiddleware):
-    App = namedtuple("App", ["app_code"])
+    App = namedtuple("App", ["app_code", "tenant_mode", "tenant_id"])
 
-    def make_app(self, bk_app_code=None, verified=False, **jwt_app):
-        return self.App(app_code=bk_app_code or "")
+    def make_app(self, bk_app_code=None, verified=False, tenant_mode="", tenant_id="", **jwt_app):
+        return self.App(
+            app_code=bk_app_code or "",
+            tenant_mode=tenant_mode,
+            tenant_id=tenant_id,
+        )
 
 
 class ApiGatewayJWTUserMiddleware(BaseApiGatewayJWTUserMiddleware):

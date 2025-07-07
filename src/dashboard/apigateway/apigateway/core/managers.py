@@ -40,21 +40,14 @@ RELEASED_RESOURCE_CREATE_BATCH_SIZE = 50
 
 
 class StageManager(models.Manager):
-    def get_names(self, gateway_id):
+    def get_names(self, gateway_id: int):
         return list(self.filter(gateway_id=gateway_id).values_list("name", flat=True))
 
-    def get_ids(self, gateway_id):
+    def get_ids(self, gateway_id: int):
         return list(self.filter(gateway_id=gateway_id).values_list("id", flat=True))
 
-    def get_name_id_map(self, gateway):
-        return dict(self.filter(gateway_id=gateway.id).values_list("name", "id"))
-
-    def get_micro_gateway_id_to_fields(self, gateway_id: int) -> Dict[str, Dict[str, Any]]:
-        return {
-            item["micro_gateway_id"]: item
-            for item in self.filter(gateway_id=gateway_id).values("id", "name", "micro_gateway_id")
-            if item["micro_gateway_id"]
-        }
+    def get_name_id_map(self, gateway_id: int):
+        return dict(self.filter(gateway_id=gateway_id).values_list("name", "id"))
 
     def get_gateway_name_to_active_stage_names(self, gateways) -> Dict[str, List[str]]:
         gateway_id_to_name = {g.id: g.name for g in gateways}
@@ -215,10 +208,10 @@ class ReleaseManager(models.Manager):
 
         return obj
 
-    def delete_by_gateway_id(self, gateway_id):
+    def delete_by_gateway_id(self, gateway_id: int):
         self.filter(gateway_id=gateway_id).delete()
 
-    def delete_by_stage_ids(self, stage_ids):
+    def delete_by_stage_ids(self, stage_ids: List[int]):
         self.filter(stage_id__in=stage_ids).delete()
 
     def get_released_resource_version_ids(self, gateway_id: int, stage_name: Optional[str] = None) -> List[int]:
@@ -374,10 +367,10 @@ class PublishEventManager(models.Manager):
 
 
 class ContextManager(models.Manager):
-    def get_config(self, scope_type, scope_id, type):
+    def get_config(self, scope_type: str, scope_id: int, type: str):
         return self.get(scope_type=scope_type, scope_id=scope_id, type=type).config
 
-    def delete_by_scope_ids(self, scope_type, scope_ids):
+    def delete_by_scope_ids(self, scope_type: str, scope_ids: List[int]):
         self.filter(scope_type=scope_type, scope_id__in=scope_ids).delete()
 
 

@@ -28,8 +28,8 @@ from django.utils.encoding import smart_str
 from django.utils.translation import gettext as _
 
 from apigateway.apps.esb.constants import DEFAULT_DOC_CATEGORY, DataTypeEnum, FunctionControllerCodeEnum
-from apigateway.apps.permission.utils import calculate_expires
 from apigateway.common.constants import LanguageCodeEnum
+from apigateway.common.time import calculate_expires
 from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.utils.time import to_datetime_from_now
 
@@ -41,7 +41,7 @@ class ComponentSystemManager(models.Manager):
         return True, ""
 
     def delete_custom_systems(self, ids: List[int]):
-        from apigateway.apps.esb.bkcore.models import ESBChannel, SystemDocCategory
+        from apigateway.apps.esb.bkcore.models import ESBChannel, SystemDocCategory  # noqa
 
         custom_ids = list(self.filter(id__in=ids, data_type=DataTypeEnum.CUSTOM.value).values_list("id", flat=True))
         ESBChannel.objects.filter(system_id__in=custom_ids).delete()
@@ -208,7 +208,7 @@ class ComponentReleaseHistoryManager(models.Manager):
 
     def need_new_release(self) -> bool:
         """是否需要同步并发布到网关"""
-        from apigateway.apps.esb.bkcore.models import ESBChannel
+        from apigateway.apps.esb.bkcore.models import ESBChannel  # noqa
 
         latest_release_time = self.get_latest_release_time()
         latest_component_updated_time = ESBChannel.objects.get_latest_updated_time()
@@ -238,7 +238,7 @@ class ComponentReleaseHistoryManager(models.Manager):
 
 class DocCategoryManager(models.Manager):
     def allow_delete(self, ids: List[int]) -> Tuple[bool, str]:
-        from apigateway.apps.esb.bkcore.models import SystemDocCategory
+        from apigateway.apps.esb.bkcore.models import SystemDocCategory  # noqa
 
         if self.filter(id__in=ids).exclude(data_type=DataTypeEnum.CUSTOM.value).exists():
             return False, _("官方文档分类，不能删除。")
@@ -316,7 +316,7 @@ class AppComponentPermissionManager(models.Manager):
             qs = qs.filter(bk_app_code=bk_app_code)
 
         if system_id is not None:
-            from apigateway.apps.esb.bkcore.models import ESBChannel
+            from apigateway.apps.esb.bkcore.models import ESBChannel  # noqa
 
             qs = qs.filter(component_id__in=ESBChannel.objects.filter_ids(system_id=system_id))
 
@@ -365,7 +365,7 @@ class AppComponentPermissionManager(models.Manager):
         grant_type: str,
         expire_days: Optional[int] = None,
     ):
-        from apigateway.apps.esb.bkcore.models import ESBChannel
+        from apigateway.apps.esb.bkcore.models import ESBChannel  # noqa
 
         expires = calculate_expires(expire_days)
         for component_id in ESBChannel.objects.filter_valid_ids(board, component_ids):
@@ -444,7 +444,7 @@ class AppPermissionApplyRecordManager(models.Manager):
         system_id: Optional[int],
         statuses: List[str],
     ) -> dict:
-        from apigateway.apps.esb.bkcore.models import AppPermissionApplyStatus
+        from apigateway.apps.esb.bkcore.models import AppPermissionApplyStatus  # noqa
 
         if system_id is None:
             return {}
@@ -460,7 +460,7 @@ class AppPermissionApplyRecordManager(models.Manager):
 
 class AppPermissionApplyStatusManager(models.Manager):
     def batch_create(self, record, bk_app_code: str, system, component_ids: List[int], status: str):
-        from apigateway.apps.esb.bkcore.models import ESBChannel
+        from apigateway.apps.esb.bkcore.models import ESBChannel  # noqa
 
         self.bulk_create(
             [

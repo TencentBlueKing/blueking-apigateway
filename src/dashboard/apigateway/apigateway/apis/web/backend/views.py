@@ -25,7 +25,7 @@ from rest_framework import generics, status
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.backend import BackendHandler
-from apigateway.biz.proxy import ProxyHandler
+from apigateway.biz.resource import ProxyHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Backend, BackendConfig, Stage
 from apigateway.utils.django import get_model_dict

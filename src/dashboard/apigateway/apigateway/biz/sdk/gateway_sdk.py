@@ -20,9 +20,10 @@ from typing import Dict, List
 from django.db.models import Count
 from django.db.transaction import atomic
 
-from apigateway.apps.support.api_sdk.models import SDKFactory
 from apigateway.apps.support.models import GatewaySDK
 from apigateway.core.models import Release
+
+from .models import SDKFactory
 
 
 class GatewaySDKHandler:

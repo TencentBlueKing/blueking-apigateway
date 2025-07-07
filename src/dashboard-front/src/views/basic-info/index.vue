@@ -97,6 +97,21 @@
             </div>
           </div>
           <div class="detail-item-content">
+            <template v-if="user.isTenantMode">
+              <div class="detail-item-content-item">
+                <div class="label">{{ `${t('租户模式')}：` }}</div>
+                <div class="value">
+                  <span>{{ TENANT_MODE_TEXT_MAP[basicInfoData.tenant_mode] || '--' }}</span>
+                </div>
+              </div>
+              <div class="detail-item-content-item">
+                <div class="label">{{ `${t('租户 ID')}：` }}</div>
+                <div class="value url">
+                  <span>{{ basicInfoData.tenant_id || '--' }}</span>
+                  <i class="apigateway-icon icon-ag-copy-info" @click.self.stop="copy(basicInfoData.tenant_id)"></i>
+                </div>
+              </div>
+            </template>
             <div class="detail-item-content-item" v-if="basicInfoData.kind === 1">
               <div class="label">{{ `${t('开发语言')}：` }}</div>
               <div class="value">
@@ -157,6 +172,19 @@
               <div class="label">{{ `${t('维护人员')}：` }}</div>
               <div class="value">
                 <GateWaysEditMemberSelector
+                  v-if="!user.isTenantMode"
+                  mode="edit"
+                  width="600px"
+                  field="maintainers"
+                  :is-required="true"
+                  :placeholder="t('请选择维护人员')"
+                  :content="basicInfoData.maintainers"
+                  :is-error-class="'maintainers-error-tip'"
+                  :error-value="t('维护人员不能为空')"
+                  @on-change="(e:Record<string, any>) => handleMaintainerChange(e)"
+                />
+                <GateWaysEditTenantUserSelector
+                  v-else
                   :content="basicInfoData.maintainers"
                   :error-value="t('维护人员不能为空')"
                   :is-error-class="'maintainers-error-tip'"
@@ -172,7 +200,7 @@
             <div class="detail-item-content-item">
               <div class="label">{{ `${t('创建人')}：` }}</div>
               <div class="value">
-                <span>{{ basicInfoData.created_by || '--' }}</span>
+                <span><bk-user-display-name :user-id="basicInfoData.created_by" /></span>
               </div>
             </div>
             <div class="detail-item-content-item">
@@ -387,6 +415,7 @@ import {
   Message,
 } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
+import { useUser } from '@/store';
 import { HelpDocumentFill } from 'bkui-vue/lib/icon';
 import {
   useRoute,
@@ -415,10 +444,13 @@ import hljs from 'highlight.js';
 import programProcess from '@/images/program-process.png';
 import EditApiDoc from './common/editApiDoc.vue';
 import GateWaysEditMemberSelector from '@/components/gateways-edit/member-selector.vue';
+import GateWaysEditTenantUserSelector from '@/components/gateways-edit/tenant-user-selector.vue';
+import { TENANT_MODE_TEXT_MAP } from '@/enums';
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+const user = useUser();
 
 // 全局变量
 const globalProperties = useGetGlobalProperties();
@@ -442,7 +474,7 @@ const basicInfoData = ref<BasicInfoParams>({
   description_en: '',
   public_key_fingerprint: '',
   bk_app_codes: '',
-  related_app_codes: '',
+  related_app_codes: [],
   docs_url: '',
   api_domain: '',
   created_by: '',
@@ -646,7 +678,7 @@ const handleInfoChange = async (payload: Record<string, string>) => {
   });
 };
 
-const handleMaintainerChange = async (payload: { maintainers: string[] }) => {
+const handleMaintainerChange = async (payload: { maintainers?: string[] }) => {
   await putGatewaysBasics(apigwId.value, payload);
   basicInfoData.value = Object.assign(basicInfoData.value, payload);
   Message({

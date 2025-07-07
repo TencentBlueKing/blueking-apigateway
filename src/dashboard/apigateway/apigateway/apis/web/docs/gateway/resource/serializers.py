@@ -40,7 +40,7 @@ class ResourceOutputSLZ(serializers.Serializer):
     labels = serializers.SerializerMethodField(help_text="资源标签列表")
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.resource.ResourceOutputSLZ"
+        ref_name = "apigateway.apis.web.docs.gateway.resource.serializers.ResourceOutputSLZ"
 
     def get_labels(self, obj):
         return self.context["labels"].get(obj.id, [])

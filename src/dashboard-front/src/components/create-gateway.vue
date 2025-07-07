@@ -34,71 +34,73 @@
                 <!-- <bk-button theme="primary" text>
                   {{ t('查看指引 >') }}
                 </bk-button> -->
-                </p>
-              </template>
-            </bk-alert>
-            <bk-form-item
-              class="form-item-name"
-              :label="t('名称')"
-              property="name"
-              required
+              </p>
+            </template>
+          </bk-alert>
+          <bk-form-item
+            class="form-item-name"
+            :label="t('名称')"
+            property="name"
+            required
+          >
+            <bk-input
+              v-model.trim="formData.name"
+              :maxlength="30"
+              :disabled="isEdit"
+              show-word-limit
+              :placeholder="t('请输入小写字母、数字、连字符(-)，以小写字母开头')"
+              clearable
+              autofocus
+            />
+          </bk-form-item>
+          <span class="common-form-tips form-item-name-tips">
+            {{ t('网关的唯一标识，创建后不可更改') }}
+          </span>
+          <bk-form-item
+            :label="t('开发语言')"
+            property="extra_info.language"
+            required
+            v-if="formData.kind === 1"
+          >
+            <bk-select
+              class="bk-select"
+              :disabled="isEdit"
+              v-model="formData.extra_info.language"
             >
-              <bk-input
-                v-model.trim="formData.name"
-                :maxlength="30"
-                :disabled="isEdit"
-                show-word-limit
-                :placeholder="t('请输入小写字母、数字、连字符(-)，以小写字母开头')"
-                clearable
-                autofocus
+              <bk-option
+                v-for="item in languageList"
+                :key="item.value"
+                :id="item.value"
+                :name="item.label"
               />
-            </bk-form-item>
-            <span class="common-form-tips form-item-name-tips">
-              {{ t('网关的唯一标识，创建后不可更改') }}
-            </span>
-            <bk-form-item
-              :label="t('开发语言')"
-              property="extra_info.language"
-              required
-              v-if="formData.kind === 1"
-            >
-              <bk-select
-                class="bk-select"
-                :disabled="isEdit"
-                v-model="formData.extra_info.language"
-              >
-                <bk-option
-                  v-for="item in languageList"
-                  :key="item.value"
-                  :id="item.value"
-                  :name="item.label"
-                />
-              </bk-select>
-            </bk-form-item>
-            <bk-form-item
-              :label="t('维护人员')"
-              property="maintainers"
-              required
-            >
-              <member-select
-                v-model="formData.maintainers"
-                :has-delete-icon="true"
-                :placeholder="t('请选择维护人员')"
-                style="color: #313238;"
-              />
-            </bk-form-item>
-            <bk-form-item
-              :label="t('描述')"
-              property="description"
-            >
-              <bk-input
-                type="textarea"
-                v-model.trim="formData.description"
-                :placeholder="t('请输入网关描述')"
-                :maxlength="500"
-                clearable
-              />
-            </bk-form-item>
+            </bk-select>
+          </bk-form-item>
+          <bk-form-item
+            :label="t('维护人员')"
+            property="maintainers"
+            required
+          >
+            <member-select v-if="!user.isTenantMode" v-model="formData.maintainers" />
+            <bk-user-selector
+              v-else
+              v-model="formData.maintainers"
+              :api-base-url="user.apiBaseUrl"
+              :multiple="true"
+              :tenant-id="user.user.tenant_id"
+            />
+          </bk-form-item>
+          <bk-form-item
+            :label="t('描述')"
+            property="description"
+          >
+            <bk-input
+              type="textarea"
+              v-model.trim="formData.description"
+              :placeholder="t('请输入网关描述')"
+              :maxlength="500"
+              clearable
+            />
+          </bk-form-item>
 
             <template v-if="formData.kind === 1 && BK_APP_VERSION === 'te'">
               <bk-form-item
@@ -154,14 +156,47 @@
               </bk-form-item>
             </template>
 
-            <bk-form-item
-              :label="t('是否公开')"
-              property="is_public"
-              required
-            >
-              <bk-switcher theme="primary" v-model="formData.is_public" />
-              <span class="common-form-tips">{{ t('公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏') }}</span>
-            </bk-form-item>
+          <bk-form-item
+            :label="t('是否公开')"
+            property="is_public"
+            required
+          >
+            <bk-switcher theme="primary" v-model="formData.is_public" />
+            <span class="common-form-tips">{{ t('公开，则用户可查看资源文档、申请资源权限；不公开，则网关对用户隐藏') }}</span>
+          </bk-form-item>
+
+          <template v-if="user.isTenantMode && !isEdit">
+            <template v-if="user.user.tenant_id === 'system'">
+              <bk-form-item
+                :label="t('租户模式')"
+                property="tenant_mode"
+              >
+                <bk-select
+                  v-model="formData.tenant_mode"
+                  :clearable="false"
+                  :filterable="false"
+                  :input-search="false"
+                  @change="handleTenantModeChange"
+                >
+                  <bk-option
+                    value="global"
+                    :label="t('全租户（Global）')"
+                  />
+                  <bk-option
+                    value="single"
+                    :label="t('单租户（Single）')"
+                  />
+                </bk-select>
+              </bk-form-item>
+              <bk-form-item
+                v-if="formData.tenant_mode === 'single'"
+                :label="t('租户 ID')"
+                property="tenant_id"
+              >
+                <bk-input v-model="formData.tenant_id" disabled />
+              </bk-form-item>
+            </template>
+          </template>
 
             <template v-if="isEdit">
               <bk-form-item
@@ -278,6 +313,7 @@ import { cloneDeep } from 'lodash';
 // @ts-ignore
 import { BasicInfoParams } from '@/basic-info/common/type';
 import MemberSelect from '@/components/member-select';
+import BkUserSelector from '@blueking/bk-user-selector';
 // @ts-ignore
 import bareGit from '@/images/bare_git.png';
 import guide from '@/components/guide.vue';
@@ -488,6 +524,14 @@ const getUrlPrefix = async () => {
 if (BK_APP_VERSION === 'te') {
   getUrlPrefix();
 }
+
+const handleTenantModeChange = (tenant_mode: string) => {
+  if (tenant_mode === 'global') {
+    formData.value.tenant_id = '';
+  } else if (tenant_mode === 'single') {
+    formData.value.tenant_id = user.user.tenant_id || 'system';
+  }
+};
 
 const handleConfirmCreate = async () => {
   try {

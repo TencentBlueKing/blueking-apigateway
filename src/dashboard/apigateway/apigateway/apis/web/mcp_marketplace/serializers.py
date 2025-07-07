@@ -21,13 +21,16 @@ from typing import Any, Dict
 from rest_framework import serializers
 
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
-from apigateway.apps.mcp_server.utils import build_mcp_server_url
+from apigateway.service.mcp.mcp_server import build_mcp_server_url
 
 
 class MCPServerListInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(
         allow_blank=True, required=False, help_text="MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述"
     )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerListInputSLZ"
 
 
 class MCPServerBaseOutputSLZ(serializers.Serializer):
@@ -49,6 +52,9 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
 
     tools_count = serializers.IntegerField(read_only=True, help_text="MCPServer 工具数量")
     url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerBaseOutputSLZ"
 
     def get_stage(self, obj) -> Dict[str, Any]:
         return self.context["stages"][obj.stage.id]

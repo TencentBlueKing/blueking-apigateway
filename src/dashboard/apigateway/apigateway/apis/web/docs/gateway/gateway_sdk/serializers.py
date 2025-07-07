@@ -27,7 +27,7 @@ class SDKListInputSLZ(serializers.Serializer):
     )
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.SDKListInputSLZ"
+        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.serializers.SDKListInputSLZ"
 
 
 class StageSLZ(serializers.Serializer):
@@ -35,7 +35,7 @@ class StageSLZ(serializers.Serializer):
     name = serializers.CharField(read_only=True, help_text="网关环境名称")
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.StageSLZ"
+        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.serializers.StageSLZ"
 
 
 class ResourceVersionSLZ(serializers.Serializer):
@@ -50,13 +50,16 @@ class SDKSLZ(serializers.Serializer):
     install_command = serializers.CharField(read_only=True, help_text="SDK 安装命令")
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.SDKSLZ"
+        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.serializers.SDKSLZ"
 
 
 class StageSDKOutputSLZ(serializers.Serializer):
     stage = StageSLZ(help_text="网关环境")
     resource_version = ResourceVersionSLZ(help_text="资源版本")
     sdk = SDKSLZ(allow_null=True, help_text="SDK")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.serializers.StageSDKOutputSLZ"
 
 
 class SDKUsageExampleInputSLZ(serializers.Serializer):
@@ -68,9 +71,12 @@ class SDKUsageExampleInputSLZ(serializers.Serializer):
     # todo：暂时先不加
     resource_id = serializers.IntegerField(help_text="资源id", required=False)
 
+    class Meta:
+        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.serializers.SDKUsageExampleInputSLZ"
+
 
 class SDKUsageExampleOutputSLZ(serializers.Serializer):
     content = serializers.CharField(allow_blank=True, help_text="文档内容")
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.SDKUsageExampleOutputSLZ"
+        ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.serializers.SDKUsageExampleOutputSLZ"

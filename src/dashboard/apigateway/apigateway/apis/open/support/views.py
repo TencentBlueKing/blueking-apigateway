@@ -28,8 +28,8 @@ from apigateway.apis.open.permissions import (
     OpenAPIGatewayRelatedAppPermission,
 )
 from apigateway.apis.open.support import serializers
-from apigateway.apps.support.api_sdk import exceptions
-from apigateway.apps.support.api_sdk.helper import SDKHelper
+from apigateway.biz.sdk import exceptions
+from apigateway.biz.sdk.helper import SDKHelper
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import ResourceVersion
 from apigateway.utils.responses import V1OKJsonResponse

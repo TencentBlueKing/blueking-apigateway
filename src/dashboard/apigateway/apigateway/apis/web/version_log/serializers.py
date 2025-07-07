@@ -23,3 +23,6 @@ class VersionLogSLZ(serializers.Serializer):
     version = serializers.CharField(label="版本号")
     date = serializers.CharField(label="更新日期")
     content = serializers.CharField(label="版本内容", help_text="markdown 文件内容")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.VersionLogSLZ"

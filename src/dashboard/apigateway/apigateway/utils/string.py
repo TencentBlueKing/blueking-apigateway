@@ -29,7 +29,7 @@ def truncate_string(s, length, suffix=""):
         return s
     if not suffix:
         return f"{s[:length]}"
-    return f"{s[:length - len(suffix)]}{suffix}"
+    return f"{s[: length - len(suffix)]}{suffix}"
 
 
 def random_string(length=10):

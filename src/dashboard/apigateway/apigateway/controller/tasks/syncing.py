@@ -23,7 +23,6 @@ from datetime import datetime
 from celery import shared_task
 
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
-from apigateway.common.event.event import PublishEventReporter
 from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.etcd import EtcdDistributor
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
@@ -33,6 +32,7 @@ from apigateway.core.constants import (
     StageStatusEnum,
 )
 from apigateway.core.models import MicroGateway, PublishEvent, Release, ReleaseHistory
+from apigateway.service.event.event import PublishEventReporter
 from apigateway.utils.time import now_datetime
 
 logger = logging.getLogger(__name__)

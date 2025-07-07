@@ -30,10 +30,9 @@ from apigateway.apis.web.resource.validators import (
     PathVarsValidator,
 )
 from apigateway.apps.plugin.models import PluginConfig
-from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, OpenAPIFormatEnum
-from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.gateway_label import GatewayLabelHandler
+from apigateway.apps.support.constants import DocLanguageEnum, OpenAPIFormatEnum
+from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
+from apigateway.biz.gateway import GatewayHandler, GatewayLabelHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
@@ -63,6 +62,9 @@ class ResourceQueryInputSLZ(serializers.Serializer):
         help_text="排序字段",
     )
 
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceQueryInputSLZ"
+
     def validate_label_ids(self, value):
         if not value:
             return []
@@ -82,6 +84,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
     plugin_count = serializers.SerializerMethodField(help_text="插件数量")
 
     class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceListOutputSLZ"
         model = Resource
         fields = [
             "id",
@@ -157,6 +160,9 @@ class ResourceAuthConfigSLZ(serializers.Serializer):
         required=False, help_text="是否需要校验资源权限，true：需要，false：不需要"
     )
 
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceAuthConfigSLZ"
+
 
 class HttpBackendConfigSLZ(serializers.Serializer):
     method = serializers.ChoiceField(choices=RESOURCE_METHOD_CHOICES, help_text="请求方法")
@@ -173,10 +179,16 @@ class HttpBackendConfigSLZ(serializers.Serializer):
         allow_null=True, required=False, help_text="旧版 transform_headers，管理端不需要处理"
     )
 
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.HttpBackendConfigSLZ"
+
 
 class HttpBackendSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="后端服务 ID")
     config = HttpBackendConfigSLZ(help_text="后端配置")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.HttpBackendSLZ"
 
 
 class OpenapiSchemaSLZ(serializers.Serializer):
@@ -187,6 +199,9 @@ class OpenapiSchemaSLZ(serializers.Serializer):
     parameters = serializers.ListField(
         required=False, allow_empty=True, child=serializers.DictField(), help_text="请求参数列表"
     )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.OpenapiSchemaSLZ"
 
 
 class ResourceInputSLZ(serializers.ModelSerializer):
@@ -211,6 +226,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
     openapi_schema = OpenapiSchemaSLZ(default=dict, allow_null=True, help_text="OpenAPI Schema")
 
     class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceInputSLZ"
         model = Resource
         fields = [
             "gateway",
@@ -368,6 +384,7 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
     schema = serializers.SerializerMethodField(help_text="参数协议")
 
     class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceOutputSLZ"
         model = Resource
         fields = [
             "id",
@@ -455,6 +472,9 @@ class ResourceBatchUpdateInputSLZ(serializers.Serializer):
         help_text="标签 ID 列表",
     )
 
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceBatchUpdateInputSLZ"
+
     def validate_ids(self, value):
         gateway_id = self.context["gateway_id"]
         not_exist_ids = set(value) - set(ResourceHandler.get_valid_ids(gateway_id, value))
@@ -466,6 +486,9 @@ class ResourceBatchUpdateInputSLZ(serializers.Serializer):
 
 class ResourceBatchDestroyInputSLZ(serializers.Serializer):
     ids = serializers.ListField(child=serializers.IntegerField(min_value=1), help_text="资源 ID 列表")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceBatchDestroyInputSLZ"
 
     def validate_ids(self, value):
         gateway_id = self.context["gateway_id"]
@@ -484,6 +507,9 @@ class ResourceLabelUpdateInputSLZ(serializers.Serializer):
         help_text="标签 ID 列表",
     )
 
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceLabelUpdateInputSLZ"
+
     def validate_label_ids(self, value):
         gateway_id = self.context["gateway_id"]
         not_exist_ids = set(value) - set(GatewayLabelHandler.get_valid_ids(gateway_id, value))
@@ -496,6 +522,9 @@ class ResourceLabelUpdateInputSLZ(serializers.Serializer):
 class PluginConfigImportSLZ(serializers.Serializer):
     type = serializers.CharField(help_text="插件类型")
     yaml = serializers.CharField(allow_blank=True, help_text="插件 yaml 格式配置")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.PluginConfigImportSLZ"
 
 
 class ResourceDataImportSLZ(serializers.ModelSerializer):
@@ -527,6 +556,7 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
     openapi_schema = serializers.DictField(allow_empty=True, required=False)
 
     class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceDataImportSLZ"
         model = Resource
         fields = [
             # 基本信息
@@ -605,6 +635,9 @@ class ResourceImportInputSLZ(serializers.Serializer):
         help_text="文档语言，en: 英文，zh: 中文",
     )
 
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceImportInputSLZ"
+
 
 class ResourceImportDocPreviewInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
@@ -616,6 +649,9 @@ class ResourceImportDocPreviewInputSLZ(serializers.Serializer):
         help_text="文档语言，en: 英文，zh: 中文",
     )
 
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceImportDocPreviewInputSLZ"
+
     def validate_review_resource(self, value):
         if value.get("method") == HTTP_METHOD_ANY:
             raise serializers.ValidationError(_("ANY的资源不支持文档预览"))
@@ -625,10 +661,16 @@ class ResourceImportDocPreviewInputSLZ(serializers.Serializer):
 class ResourceImportCheckInputSLZ(serializers.Serializer):
     content = serializers.CharField(allow_blank=False, required=True, help_text="导入内容，yaml/json 格式字符串")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceImportCheckInputSLZ"
+
 
 class ResourceImportCheckFailOutputSLZ(serializers.Serializer):
     message = serializers.CharField(read_only=True, help_text="check失败信息")
     json_path = serializers.CharField(read_only=True, help_text="对应的path")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceImportCheckFailOutputSLZ"
 
 
 class ResourceImportInfoSLZ(serializers.Serializer):
@@ -656,6 +698,9 @@ class ResourceImportInfoSLZ(serializers.Serializer):
         required=False,
         help_text="插件配置列表",
     )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceImportInfoSLZ"
 
     def get_id(self, obj):
         return obj.resource and obj.resource.id
@@ -705,6 +750,9 @@ class ResourceExportInputSLZ(serializers.Serializer):
         help_text="导出的资源 ID 列表，export_type 为 selected 时，应提供当前选择的资源 ID 列表",
     )
 
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceExportInputSLZ"
+
 
 class ResourceExportOutputSLZ(serializers.Serializer):
     name = serializers.CharField(help_text="资源名称")
@@ -722,6 +770,9 @@ class ResourceExportOutputSLZ(serializers.Serializer):
     plugin_configs = serializers.SerializerMethodField(help_text="插件配置")
     auth_config = serializers.SerializerMethodField(help_text="认证配置")
     openapi_schema = serializers.SerializerMethodField(help_text="参数协议")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceExportOutputSLZ"
 
     def get_labels(self, obj):
         labels = self.context["labels"].get(obj.id, [])
@@ -769,6 +820,8 @@ class BackendPathCheckInputSLZ(serializers.Serializer):
     )
 
     class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.BackendPathCheckInputSLZ"
+
         validators = [
             BackendPathVarsValidator(check_stage_vars_exist=True),
         ]
@@ -785,7 +838,13 @@ class BackendPathCheckOutputSLZ(serializers.Serializer):
         child=serializers.CharField(read_only=True), allow_empty=True, help_text="后端地址列表"
     )
 
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.BackendPathCheckOutputSLZ"
+
 
 class ResourceWithVerifiedUserRequiredOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceWithVerifiedUserRequiredOutputSLZ"

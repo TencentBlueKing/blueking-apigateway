@@ -22,7 +22,7 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.biz.validators import APIDocMaintainerValidator, BKAppCodeListValidator
+from apigateway.biz.validators import BKAppCodeListValidator, GatewayAPIDocMaintainerValidator
 from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum, UserAuthTypeEnum
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
@@ -48,6 +48,8 @@ class GatewayListV1OutputSLZ(serializers.Serializer):
     doc_maintainers = serializers.SerializerMethodField()
     api_type = serializers.SerializerMethodField()
     user_auth_type = serializers.SerializerMethodField()
+    tenant_mode = serializers.CharField(read_only=True)
+    tenant_id = serializers.CharField(read_only=True)
 
     def get_api_type(self, obj):
         return self.context["gateway_auth_configs"][obj.id].gateway_type
@@ -99,7 +101,7 @@ class GatewayAPIDocMaintainerSLZ(serializers.Serializer):
     service_account = ServiceAccountSLZ(required=False, help_text="服务号")
 
     class Meta:
-        validators = [APIDocMaintainerValidator()]
+        validators = [GatewayAPIDocMaintainerValidator()]
         ref_name = "apigateway.apis.open.gateway.serializers.GatewayAPIDocMaintainerSLZ"
 
 

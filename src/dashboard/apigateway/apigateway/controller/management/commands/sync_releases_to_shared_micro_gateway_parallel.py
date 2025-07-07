@@ -32,7 +32,7 @@ POOL_SIZE = 10
 
 def sync_gateway(gateway):
     # https://groups.google.com/g/django-users/c/eCAIY9DAfG0
-    from django.db import connection
+    from django.db import connection  # noqa
 
     connection.close()
 

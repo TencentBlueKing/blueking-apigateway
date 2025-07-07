@@ -20,7 +20,7 @@ import logging
 
 from django.core.management.base import BaseCommand, CommandError
 
-from apigateway.biz.gateway_related_app import GatewayRelatedAppHandler
+from apigateway.biz.gateway import GatewayRelatedAppHandler
 from apigateway.core.models import Gateway
 from apigateway.utils.django import get_object_or_None
 

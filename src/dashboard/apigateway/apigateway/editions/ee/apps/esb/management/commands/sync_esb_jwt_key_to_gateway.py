@@ -27,8 +27,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils.encoding import smart_bytes
 
 from apigateway.apps.esb.bkcore.models import FunctionController
-from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.core.models import Gateway
+from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.utils.django import get_object_or_None
 
 logger = logging.getLogger(__name__)

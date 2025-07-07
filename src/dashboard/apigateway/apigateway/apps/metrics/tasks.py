@@ -19,7 +19,7 @@
 import arrow
 from celery import shared_task
 
-from .statistics import StatisticsHandler
+from apigateway.service.statistics import StatisticsHandler
 
 
 @shared_task(name="apigateway.apps.metrics.tasks.statistics_request_by_day")

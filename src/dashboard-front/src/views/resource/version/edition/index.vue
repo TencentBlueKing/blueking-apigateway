@@ -74,6 +74,9 @@
               </template>
             </bk-table-column>
             <bk-table-column :label="t('创建者')" prop="created_by">
+              <template #default="{ row }">
+                <span><bk-user-display-name :user-id="row.created_by" /></span>
+              </template>
             </bk-table-column>
             <bk-table-column :label="t('操作')" width="200">
               <template #default="{ data }">
@@ -193,6 +196,14 @@ import {
   ref,
   watch,
 } from 'vue';
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
 import { useRoute } from 'vue-router';
@@ -205,6 +216,14 @@ import {
 } from '@/hooks';
 import {
   exportVersion,
+  getResourceVersionsList,
+  getStageList,
+} from '@/http';
+import {
+  useQueryList,
+  useSelection,
+} from '@/hooks';
+import {
   getResourceVersionsList,
   getStageList,
 } from '@/http';
@@ -231,8 +250,6 @@ const props = defineProps({
     default: '',
   },
 });
-
-const user = useUser();
 
 const route = useRoute();
 const { t } = useI18n();

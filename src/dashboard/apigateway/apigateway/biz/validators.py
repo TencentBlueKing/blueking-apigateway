@@ -78,8 +78,6 @@ class ResourceIDValidator(GetGatewayFromContextMixin):
 
         assert isinstance(resource_ids, list)
 
-        from apigateway.core.models import Resource
-
         count = Resource.objects.filter(gateway_id=gateway.id, id__in=resource_ids).count()
         if count != len(set(resource_ids)):
             raise serializers.ValidationError(
@@ -399,7 +397,7 @@ class StageVarsValidator(GetGatewayFromContextMixin):
         )
 
 
-class APIDocMaintainerValidator:
+class GatewayAPIDocMaintainerValidator:
     def __call__(self, data: dict):
         if data.get("type") == GatewayAPIDocMaintainerTypeEnum.USER.value and not data.get("contacts"):
             raise serializers.ValidationError(_("联系人不可为空。"))

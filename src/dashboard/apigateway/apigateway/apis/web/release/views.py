@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -29,13 +29,15 @@ from openapi_schema_to_json_schema import to_json_schema
 from rest_framework import generics, status
 
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
+from apigateway.biz.gateway import ReleaseError, release
+from apigateway.biz.programmable import ProgrammableGatewayReleaser
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceHandler
-from apigateway.biz.releaser import ProgramGatewayReleaser, ReleaseError, release
-from apigateway.biz.resource_label import ResourceLabelHandler
+from apigateway.biz.resource import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.components.paas import (
+from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
+from apigateway.components.bkpaas import (
     get_paas_deploy_phases_framework,
     get_paas_deploy_phases_instance,
     get_paas_deployment_result,
@@ -48,7 +50,6 @@ from apigateway.utils import openapi as openapi_utils
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
-from apigateway.utils.user_credentials import get_user_credentials_from_request
 
 from .serializers import (
     DeployHistoryOutputSLZ,
@@ -69,7 +70,7 @@ logger = logging.getLogger(__name__)
     name="get",
     decorator=swagger_auto_schema(
         tags=["WebAPI.Release"],
-        operation_description="获取环境下可用的资源列表接口(在线调试)",
+        operation_description="获取环境下可用的资源列表接口 (在线调试)",
         responses={status.HTTP_200_OK: ResourceOutputSLZ(many=True)},
     ),
 )
@@ -107,7 +108,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
     name="get",
     decorator=swagger_auto_schema(
         tags=["WebAPI.Release"],
-        operation_description="获取环境下可用的某个资源接口schema(在线调试)",
+        operation_description="获取环境下可用的某个资源接口 schema(在线调试)",
         responses={status.HTTP_200_OK: ReleaseResourceSchemaOutputSLZ()},
     ),
 )
@@ -120,7 +121,7 @@ class ReleaseAvailableResourceSchemaRetrieveApi(generics.RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         """
-        用于在线调试时，获取某个资源的schema数据,以及自动生成 request_body example
+        用于在线调试时，获取某个资源的 schema 数据，以及自动生成 request_body example
         """
         try:
             instance = self.get_object()
@@ -130,13 +131,13 @@ class ReleaseAvailableResourceSchemaRetrieveApi(generics.RetrieveAPIView):
         resource_id = self.kwargs["resource_id"]
         schema_result = {"resource_id": resource_id}
 
-        # 获取对应资源的schema
+        # 获取对应资源的 schema
         schema = ResourceVersionHandler.get_resource_schema(instance.resource_version.id, resource_id)
         schema_result["parameter_schema"] = schema.get("parameters", [])
         schema_result["response_schema"] = schema.get("responses", {})
         request_body = schema.get("requestBody")
         if request_body and "content" in request_body and "application/json" in request_body["content"]:
-            # todo: 暂时在只支持application/json
+            # todo: 暂时在只支持 application/json
             json_schema = to_json_schema(
                 request_body["content"]["application/json"]["schema"], {"keepNotSupported": ["example"]}
             )
@@ -188,7 +189,6 @@ class ReleaseCreateApi(generics.CreateAPIView):
                     resource_version_id=slz.validated_data["resource_version_id"],
                     comment=slz.validated_data.get("comment", ""),
                     username=request.user.username,
-                    user_credentials=get_user_credentials_from_request(request),
                 )
         except LockTimeout as err:
             logger.exception("retrieve lock timeout")
@@ -334,7 +334,7 @@ class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ReleaseHistoryEventRetrieveOutputSLZ()},
         tags=["WebAPI.Release"],
-        operation_description="查询发布事件(日志)",
+        operation_description="查询发布事件 (日志)",
     ),
 )
 class RelishHistoryEventsRetrieveAPI(generics.RetrieveAPIView):
@@ -383,7 +383,7 @@ class ProgrammableDeployCreateApi(generics.CreateAPIView):
 
         slz.is_valid(raise_exception=True)
 
-        deploy_id = ProgramGatewayReleaser.deploy(
+        deploy_id = ProgrammableGatewayReleaser.deploy(
             gateway=request.gateway,
             stage_id=slz.validated_data["stage_id"],
             branch=slz.validated_data["branch"],
@@ -403,7 +403,7 @@ class ProgrammableDeployCreateApi(generics.CreateAPIView):
     decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ""},
         tags=["WebAPI.Release"],
-        operation_description="编程网关pass部署详情查询",
+        operation_description="编程网关 pass 部署详情查询",
     ),
 )
 class ProgrammableDeployRetrieveApi(generics.RetrieveAPIView):
@@ -412,7 +412,7 @@ class ProgrammableDeployRetrieveApi(generics.RetrieveAPIView):
 
     def get(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), deploy_id=self.kwargs["deploy_id"])
-        # 查询pass部署详情
+        # 查询 pass 部署详情
         data = get_paas_deployment_result(
             app_code=request.gateway.name,
             module="default",
@@ -463,7 +463,7 @@ class BaseProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
                 user_credentials=user_credentials,
             )
             if len(events) == 0:
-                # 如果paas event没有了，补充返回 result
+                # 如果 paas event 没有了，补充返回 result
                 deploy_result = get_paas_deployment_result(
                     app_code=self.request.gateway.name,
                     module="default",
@@ -517,13 +517,13 @@ class BaseProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
                 name="deploy_id",
                 in_=openapi.IN_PATH,
                 type=openapi.TYPE_STRING,
-                description="部署任务ID",
+                description="部署任务 ID",
                 required=True,
             )
         ],
         responses={status.HTTP_200_OK: ProgrammableDeployEventGetOutputSLZ()},
         tags=["WebAPI.Release"],
-        operation_description="通过部署ID查询编程网关事件",
+        operation_description="通过部署 ID 查询编程网关事件",
     ),
 )
 class DeployIdEventsRetrieveApi(BaseProgrammableDeployEventsRetrieveApi):
@@ -550,13 +550,13 @@ class DeployIdEventsRetrieveApi(BaseProgrammableDeployEventsRetrieveApi):
                 name="history_id",
                 in_=openapi.IN_PATH,
                 type=openapi.TYPE_STRING,
-                description="发布历史ID",
+                description="发布历史 ID",
                 required=True,
             )
         ],
         responses={status.HTTP_200_OK: ProgrammableDeployEventGetOutputSLZ()},
         tags=["WebAPI.Release"],
-        operation_description="通过发布历史ID查询编程网关事件",
+        operation_description="通过发布历史 ID 查询编程网关事件",
     ),
 )
 class HistoryIdEventsRetrieveApi(BaseProgrammableDeployEventsRetrieveApi):

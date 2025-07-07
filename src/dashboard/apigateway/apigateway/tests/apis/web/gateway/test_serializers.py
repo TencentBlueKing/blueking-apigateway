@@ -30,17 +30,19 @@ from apigateway.apis.web.gateway.serializers import (
     ProgrammableGatewayGitInfoSLZ,
 )
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.gateway_jwt import GatewayJWTHandler
-from apigateway.common.contexts import GatewayAuthConfig
 from apigateway.core.constants import GatewayTypeEnum
 from apigateway.core.models import Gateway, Resource, Stage
+from apigateway.service.contexts import GatewayAuthConfig
+from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.utils.crypto import calculate_fingerprint
 
 
 class TestGatewayListOutputSLZ:
     def test_to_representation(self):
-        gateway_1 = G(Gateway, created_by="admin", status=1, is_public=True)
-        gateway_2 = G(Gateway, created_by="admin", status=0, is_public=False)
+        gateway_1 = G(Gateway, created_by="admin", status=1, is_public=True, tenant_mode="single", tenant_id="default")
+        gateway_2 = G(
+            Gateway, created_by="admin", status=0, is_public=False, tenant_mode="single", tenant_id="default"
+        )
 
         stage_1 = G(Stage, gateway=gateway_1, name="prod")
         stage_2 = G(Stage, gateway=gateway_1, name="test")
@@ -67,6 +69,8 @@ class TestGatewayListOutputSLZ:
                     },
                 ],
                 "resource_count": 2,
+                "tenant_mode": "single",
+                "tenant_id": "default",
                 "status": 1,
                 "kind": 0,
                 "is_public": True,
@@ -82,6 +86,8 @@ class TestGatewayListOutputSLZ:
                 "created_by": gateway_2.created_by,
                 "stages": [],
                 "resource_count": 0,
+                "tenant_mode": "single",
+                "tenant_id": "default",
                 "status": 0,
                 "kind": 0,
                 "is_public": False,
@@ -122,6 +128,8 @@ class TestGatewayCreateInputSLZ:
                     "developers": ["t1", "t2"],
                     "is_public": True,
                     "bk_app_codes": ["app1", "app2"],
+                    "tenant_mode": "single",
+                    "tenant_id": "default",
                 },
                 {
                     "name": "test",
@@ -130,6 +138,8 @@ class TestGatewayCreateInputSLZ:
                     "developers": ["t1", "t2"],
                     "is_public": True,
                     "bk_app_codes": ["app1", "app2"],
+                    "tenant_mode": "single",
+                    "tenant_id": "default",
                 },
             ),
             # ok, default value
@@ -140,6 +150,8 @@ class TestGatewayCreateInputSLZ:
                     "description": "test",
                     "maintainers": ["guest"],
                     "is_public": True,
+                    "tenant_mode": "single",
+                    "tenant_id": "default",
                 },
                 {
                     "name": "test",
@@ -147,6 +159,8 @@ class TestGatewayCreateInputSLZ:
                     "maintainers": ["guest", "admin"],
                     "developers": [],
                     "is_public": True,
+                    "tenant_mode": "single",
+                    "tenant_id": "default",
                 },
             ),
             # name length < 3
@@ -157,6 +171,8 @@ class TestGatewayCreateInputSLZ:
                     "description": "test",
                     "maintainers": ["admin"],
                     "is_public": True,
+                    "tenant_mode": "single",
+                    "tenant_id": "default",
                 },
                 None,
             ),
@@ -168,6 +184,8 @@ class TestGatewayCreateInputSLZ:
                     "description": "test",
                     "maintainers": ["admin"],
                     "is_public": True,
+                    "tenant_mode": "single",
+                    "tenant_id": "default",
                 },
                 None,
             ),
@@ -179,6 +197,8 @@ class TestGatewayCreateInputSLZ:
                     "description": "test",
                     "maintainers": ["admin"],
                     "is_public": True,
+                    "tenant_mode": "single",
+                    "tenant_id": "default",
                 },
                 None,
             ),
@@ -192,6 +212,8 @@ class TestGatewayCreateInputSLZ:
                     "status": 1,
                     "is_public": True,
                     "user_auth_type": "ieod",
+                    "tenant_mode": "single",
+                    "tenant_id": "default",
                 },
                 None,
             ),
@@ -203,6 +225,8 @@ class TestGatewayCreateInputSLZ:
                     "description": "test",
                     "maintainers": ["admin"],
                     "is_public": True,
+                    "tenant_mode": "single",
+                    "tenant_id": "default",
                 },
                 None,
             ),
@@ -215,6 +239,8 @@ class TestGatewayCreateInputSLZ:
                     "maintainers": ["admin", "guest"],
                     "status": 1,
                     "is_public": True,
+                    "tenant_mode": "single",
+                    "tenant_id": "default",
                 },
                 None,
             ),
@@ -278,6 +304,8 @@ class TestGatewayRetrieveOutputSLZ:
             "is_official": False,
             "bk_app_codes": [],
             "related_app_codes": [],
+            "tenant_id": "default",
+            "tenant_mode": "single",
             "extra_info": {},
             "links": {},
         }

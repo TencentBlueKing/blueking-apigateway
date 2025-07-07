@@ -1,6 +1,7 @@
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -70,6 +71,14 @@ IS_LOCAL = env.bool("DASHBOARD_IS_LOCAL", default=False)
 # te 还是 ee
 EDITION = env.str("EDITION", "ee")
 
+# 是否开启多租户模式
+ENABLE_MULTI_TENANT_MODE = env.bool("ENABLE_MULTI_TENANT_MODE", default=False)
+
+# for apigw-manager sdk and other blueking sdks
+BK_APP_TENANT_ID = ""
+if ENABLE_MULTI_TENANT_MODE:
+    BK_APP_TENANT_ID = "system"
+
 ALLOWED_HOSTS = ["*"]
 
 # Application definition
@@ -104,9 +113,7 @@ INSTALLED_APPS = [
     "bkpaas_auth",
     "apigateway.account",
     "apigateway.apps.feature",
-    "apigateway.apps.esb",
     "apigateway.apps.docs",
-    "apigateway.apps.esb.bkcore",
     "apigateway.apps.api_debug",
     "apigateway.apps.mcp_server",
     "apigw_manager.apigw",
@@ -115,6 +122,13 @@ INSTALLED_APPS = [
     # 蓝鲸通知中心
     "bk_notice_sdk",
 ]
+
+# 非多租户模式才会有 esb 相关的模型
+if not ENABLE_MULTI_TENANT_MODE:
+    INSTALLED_APPS += [
+        "apigateway.apps.esb",
+        "apigateway.apps.esb.bkcore",
+    ]
 
 MIDDLEWARE = [
     # 这个必须在最前
@@ -263,7 +277,11 @@ DATABASES = {
             "isolation_level": env.str("BK_APIGW_DATABASE_ISOLATION_LEVEL", "READ COMMITTED"),
         },
     },
-    "bkcore": {
+}
+
+# 非多租户模式才会有 esb 相关的模型
+if not ENABLE_MULTI_TENANT_MODE:
+    DATABASES["bkcore"] = {
         "ENGINE": env.str("BK_ESB_DATABASE_ENGINE", "django.db.backends.mysql"),
         "NAME": env.str("BK_ESB_DATABASE_NAME", "bk_esb"),
         "USER": env.str("BK_ESB_DATABASE_USER", BK_APP_CODE),
@@ -273,8 +291,50 @@ DATABASES = {
         "OPTIONS": {
             "isolation_level": env.str("BK_ESB_DATABASE_ISOLATION_LEVEL", "READ COMMITTED"),
         },
-    },
-}
+    }
+
+# database ssl
+BK_APIGW_DATABASE_TLS_ENABLED = env.bool("BK_APIGW_DATABASE_TLS_ENABLED", False)
+if BK_APIGW_DATABASE_TLS_ENABLED:
+    default_ssl_options = {
+        "ca": env.str("BK_APIGW_DATABASE_TLS_CERT_CA_FILE", ""),
+    }
+    # mTLS
+    default_cert_file = env.str("BK_APIGW_DATABASE_TLS_CERT_FILE", "")
+    default_key_file = env.str("BK_APIGW_DATABASE_TLS_CERT_KEY_FILE", "")
+    if default_cert_file and default_key_file:
+        default_ssl_options["cert"] = default_cert_file
+        default_ssl_options["key"] = default_key_file
+
+    # 跳过主机名/IP 验证，会降低安全性，正式环境需要设置为 True
+    check_hostname = env.bool("BK_APIGW_DATABASE_TLS_CHECK_HOSTNAME", True)
+    default_ssl_options["check_hostname"] = check_hostname
+
+    if "OPTIONS" not in DATABASES["default"]:
+        DATABASES["default"]["OPTIONS"] = {}
+
+    DATABASES["default"]["OPTIONS"]["ssl"] = default_ssl_options
+
+BK_ESB_DATABASE_TLS_ENABLED = env.bool("BK_ESB_DATABASE_TLS_ENABLED", False)
+if BK_ESB_DATABASE_TLS_ENABLED:
+    bkcore_ssl_options = {
+        "ca": env.str("BK_ESB_DATABASE_TLS_CERT_CA_FILE", ""),
+    }
+    # mTLS
+    bkcore_cert_file = env.str("BK_ESB_DATABASE_TLS_CERT_FILE", "")
+    bkcore_key_file = env.str("BK_ESB_DATABASE_TLS_CERT_KEY_FILE", "")
+    if bkcore_cert_file and bkcore_key_file:
+        bkcore_ssl_options["cert"] = bkcore_cert_file
+        bkcore_ssl_options["key"] = bkcore_key_file
+
+    # 跳过主机名/IP 验证，会降低安全性，正式环境需要设置为 True
+    check_hostname = env.bool("BK_ESB_DATABASE_TLS_CHECK_HOSTNAME", True)
+    bkcore_ssl_options["check_hostname"] = check_hostname
+
+    if "OPTIONS" not in DATABASES["bkcore"]:
+        DATABASES["bkcore"]["OPTIONS"] = {}
+
+    DATABASES["bkcore"]["OPTIONS"]["ssl"] = bkcore_ssl_options
 
 # database ssl
 BK_APIGW_DATABASE_TLS_ENABLED = env.bool("BK_APIGW_DATABASE_TLS_ENABLED", False)
@@ -504,6 +564,8 @@ BK_COMPONENT_API_INNER_URL = env.str("BK_COMPONENT_API_INNER_URL", "") or BK_COM
 BK_PAAS3_API_URL = BK_API_INNER_URL_TMPL.format(api_name="bkpaas3")
 BK_APIGATEWAY_API_URL = env.str("BK_APIGATEWAY_API_URL", "")
 
+BK_AUTH_API_URL = env.str("BK_AUTH_API_URL", "")
+
 # ==============================================================================
 # AI Open API 配置
 # ==============================================================================
@@ -562,12 +624,6 @@ BK_LOGIN_TICKET_KEY_TO_COOKIE_NAME = {
     "bk_token": "bk_token",
 }
 
-# access token 文档链接地址
-BK_ACCESS_TOKEN_DOC_URL = env.str(
-    "BK_ACCESS_TOKEN_DOC_URL",
-    "https://bk.tencent.com/docs/markdown/ZH/APIGateway/1.14/UserGuide/Explanation/access-token.md",
-)
-
 BK_API_DEFAULT_STAGE_MAPPINGS = env.dict("BK_API_DEFAULT_STAGE_MAPPINGS", default={})
 
 FAKE_SEND_NOTICE = env.bool("FAKE_SEND_NOTICE", default=False)
@@ -587,6 +643,10 @@ PAAS_RENEW_API_PERMISSION_URL = f"{BK_PAAS3_URL}/developer-center/apps/{{bk_app_
 REQUESTS_POOL_CONNECTIONS = env.int("REQUESTS_POOL_CONNECTIONS", default=20)
 REQUESTS_POOL_MAXSIZE = env.int("REQUESTS_POOL_MAXSIZE", default=20)
 
+
+# ==============================================================================
+# API 使用指南文档地址
+# ==============================================================================
 # 可编程网关开发文档链接地址
 PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL = env.str(
     "PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_PYTHON_URL",
@@ -597,15 +657,40 @@ PROGRAMMABLE_GATEWAY_DEV_GUIDELINE_GO_URL = env.str(
     "https://github.com/TencentBlueKing/bk-apigateway-framework/blob/master/docs/golang.md",
 )
 
+# access token 文档链接地址
+BK_ACCESS_TOKEN_DOC_URL = env.str(
+    "BK_ACCESS_TOKEN_DOC_URL",
+    "https://bk.tencent.com/docs/markdown/ZH/APIGateway/1.14/UserGuide/Explanation/access-token.md",
+)
+
+DOCS_URLS = {
+    "USE_GATEWAY_API": "https://bk.tencent.com/docs/markdown/ZH/APIGateway/1.14/UserGuide/HowTo/call-gateway-api.md",
+    "ACCESS_TOKEN_API": BK_ACCESS_TOKEN_DOC_URL,
+}
+
 # ==============================================================================
 # bkpaas-auth 配置
 # ==============================================================================
-BKAUTH_BACKEND_TYPE = "bk_token"
-BKAUTH_USER_COOKIE_VERIFY_URL = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/is_login/"
 
 BKAUTH_TOKEN_APP_CODE = BK_APP_CODE
 BKAUTH_TOKEN_SECRET_KEY = BK_APP_SECRET
-BKAUTH_TOKEN_USER_INFO_ENDPOINT = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/get_user/"
+
+# 用户登录态认证类型，默认为 bk_token，te 版本会被 te_default.py 中的值覆盖
+BKAUTH_BACKEND_TYPE = "bk_token"
+
+# 启用多租户模式
+BKAUTH_ENABLE_MULTI_TENANT_MODE = ENABLE_MULTI_TENANT_MODE
+
+# 验证用户信息的网关 API(租户版本) => 走网关，不走 esb
+# FIXME: remove `and ENABLE_MULTI_TENANT_MODE` when all env has the newest bk-login
+if EDITION == "ee" and ENABLE_MULTI_TENANT_MODE:
+    BKAUTH_USER_INFO_APIGW_URL = (
+        BK_API_URL_TMPL.format(api_name="bk-login") + "/prod/login/api/v3/open/bk-tokens/userinfo/"
+    )
+else:
+    # 只在 te 生效，并且会被 te_default.py 中的值覆盖
+    BKAUTH_USER_COOKIE_VERIFY_URL = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/is_login/"
+    BKAUTH_TOKEN_USER_INFO_ENDPOINT = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/get_user/"
 
 # ==============================================================================
 # login 配置
@@ -687,10 +772,6 @@ BK_ESB_ACCESS_LOG_CONFIG = {
     "es_index": env.str("BK_ESB_API_LOG_ES_INDEX", "2_bklog_bkapigateway_esb_container*"),
 }
 
-# 使用 bkmonitorv3 网关 API，还是 monitor_v3 组件 API
-USE_BKAPI_BKMONITORV3 = env.bool("USE_BKAPI_BKMONITORV3", False)
-# 是否使用 bklog 网关 API
-USE_BKAPI_BK_LOG = env.bool("USE_BKAPI_BK_LOG", False)
 
 # ==============================================================================
 # prometheus 配置
@@ -750,6 +831,7 @@ PLUGIN_METADATA_CONFIG = {
             "x_request_id": "$x_request_id",
             "request_duration": "$bk_log_request_duration",
             "bk_username": "$bk_username",
+            "bk_tenant_id": "$bk_tenant_id",
             # 网关信息
             "api_id": "$bk_gateway_id",
             "api_name": "$bk_gateway_name",
@@ -787,6 +869,7 @@ PLUGIN_METADATA_CONFIG = {
         "default_conn_delay": env.int("GATEWAY_CONCURRENCY_LIMIT_DEFAULT_CONN_DELAY", 1),  # second
         "key_type": "var",
         "key": "bk_concurrency_limit_key",
+        "allow_degradation": True,
     },
     "bk-real-ip": {
         "recursive": env.bool("GATEWAY_REAL_IP_RECURSIVE", False),
@@ -844,6 +927,8 @@ DEFAULT_FEATURE_FLAG = {
     # ----------------------------------------------------------------------------
     # 是否展示蓝鲸通知中心组件
     "ENABLE_BK_NOTICE": ENABLE_BK_NOTICE,
+    # 是否开启多租户模式
+    "ENABLE_MULTI_TENANT_MODE": ENABLE_MULTI_TENANT_MODE,
     # 是否开启网关AI相关功能
     "ENABLE_AI_COMPLETION": AI_OPEN_API_BASE_URL != "",
 }

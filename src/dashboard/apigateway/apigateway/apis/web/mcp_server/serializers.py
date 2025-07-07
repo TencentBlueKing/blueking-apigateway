@@ -29,10 +29,10 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
-from apigateway.apps.mcp_server.utils import build_mcp_server_url
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Stage
+from apigateway.service.mcp.mcp_server import build_mcp_server_url
 
 from .utils import get_valid_resource_names
 
@@ -46,10 +46,10 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
     name = serializers.CharField(required=True, help_text="MCPServer 名称", max_length=64)
 
     class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCreateInputSLZ"
         model = MCPServer
         fields = ("name", "description", "stage_id", "is_public", "labels", "resource_names")
         lookup_field = "id"
-        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCreateInputSLZ"
 
     def validate(self, attrs):
         # 1.First validate stage_id
@@ -125,6 +125,9 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
 
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerBaseOutputSLZ"
+
     def get_stage(self, obj) -> Dict[str, Any]:
         return self.context["stages"][obj.stage.id]
 
@@ -163,18 +166,18 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
         return resource_names
 
     class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateInputSLZ"
         model = MCPServer
         fields = ("description", "is_public", "labels", "resource_names")
         lookup_field = "id"
-        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateInputSLZ"
 
 
 class MCPServerUpdateStatusInputSLZ(serializers.ModelSerializer):
     class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateStatusInputSLZ"
         model = MCPServer
         fields = ("status",)
         lookup_field = "id"
-        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateStatusInputSLZ"
 
     def validate_status(self, status):
         if status == MCPServerStatusEnum.ACTIVE.value:
@@ -190,10 +193,10 @@ class MCPServerUpdateLabelsInputSLZ(serializers.ModelSerializer):
     labels = serializers.ListField(child=serializers.CharField(), required=True, help_text="MCPServer 标签列表")
 
     class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateLabelsInputSLZ"
         model = MCPServer
         fields = ("labels",)
         lookup_field = "id"
-        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateLabelsInputSLZ"
 
 
 class MCPServerToolOutputSLZ(serializers.Serializer):
@@ -210,7 +213,7 @@ class MCPServerToolOutputSLZ(serializers.Serializer):
     labels = serializers.SerializerMethodField(help_text="资源标签列表")
 
     class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.MCPServerToolOutputSLZ"
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerToolOutputSLZ"
 
     def get_labels(self, obj):
         return self.context["labels"].get(obj.id, [])
@@ -220,7 +223,7 @@ class MCPServerGuidelineOutputSLZ(serializers.Serializer):
     content = serializers.CharField(read_only=True, help_text="MCPServer 使用指南")
 
     class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.MCPServerGuidelineOutputSLZ"
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerGuidelineOutputSLZ"
 
 
 class MCPServerToolDocOutputSLZ(serializers.Serializer):
@@ -230,7 +233,7 @@ class MCPServerToolDocOutputSLZ(serializers.Serializer):
     schema = serializers.DictField(read_only=True, help_text="资源 schema")
 
     class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.MCPServerToolDocOutputSLZ"
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerToolDocOutputSLZ"
 
 
 class MCPServerStageReleaseCheckInputSLZ(serializers.Serializer):
@@ -238,7 +241,7 @@ class MCPServerStageReleaseCheckInputSLZ(serializers.Serializer):
     resource_version_id = serializers.IntegerField(required=True, help_text="资源版本 ID")
 
     class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.MCPServerStageReleaseCheckInputSLZ"
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerStageReleaseCheckInputSLZ"
 
 
 class MCPServerBaseSLZ(serializers.Serializer):
@@ -246,7 +249,7 @@ class MCPServerBaseSLZ(serializers.Serializer):
     name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
 
     class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.MCPServerBaseSLZ"
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerBaseSLZ"
 
 
 class MCPServerStageReleaseCheckDetailOutputSLZ(serializers.Serializer):
@@ -254,7 +257,7 @@ class MCPServerStageReleaseCheckDetailOutputSLZ(serializers.Serializer):
     mcp_server = MCPServerBaseSLZ()
 
     class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.MCPServerStageReleaseCheckDetailOutputSLZ"
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerStageReleaseCheckDetailOutputSLZ"
 
 
 class MCPServerStageReleaseCheckOutputSLZ(serializers.Serializer):
@@ -265,7 +268,7 @@ class MCPServerStageReleaseCheckOutputSLZ(serializers.Serializer):
     )
 
     class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.MCPServerStageReleaseCheckOutputSLZ"
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerStageReleaseCheckOutputSLZ"
 
 
 class MCPServerAppPermissionListInputSLZ(serializers.Serializer):
@@ -275,7 +278,7 @@ class MCPServerAppPermissionListInputSLZ(serializers.Serializer):
     )
 
     class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.MCPServerAppPermissionListInputSLZ"
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionListInputSLZ"
 
 
 class MCPServerAppPermissionListOutputSLZ(serializers.Serializer):
@@ -287,14 +290,14 @@ class MCPServerAppPermissionListOutputSLZ(serializers.Serializer):
     )
 
     class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.MCPServerAppPermissionListOutputSLZ"
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionListOutputSLZ"
 
 
 class MCPServerAppPermissionCreateInputSLZ(serializers.Serializer):
     bk_app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
 
     class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.MCPServerAppPermissionCreateInputSLZ"
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionCreateInputSLZ"
 
 
 class MCPServerAppPermissionApplyListInputSLZ(serializers.Serializer):
@@ -307,7 +310,7 @@ class MCPServerAppPermissionApplyListInputSLZ(serializers.Serializer):
     )
 
     class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.MCPServerAppPermissionApplyListInputSLZ"
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionApplyListInputSLZ"
 
 
 class MCPServerAppPermissionApplyListOutputSLZ(serializers.Serializer):
@@ -321,7 +324,7 @@ class MCPServerAppPermissionApplyListOutputSLZ(serializers.Serializer):
     mcp_server = MCPServerBaseSLZ()
 
     class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.MCPServerAppPermissionApplyListOutputSLZ"
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionApplyListOutputSLZ"
 
 
 class MCPServerAppPermissionApplyUpdateInputSLZ(serializers.ModelSerializer):
@@ -335,7 +338,7 @@ class MCPServerAppPermissionApplyUpdateInputSLZ(serializers.ModelSerializer):
     )
 
     class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionApplyUpdateInputSLZ"
         model = MCPServerAppPermissionApply
         fields = ("status", "comment")
         lookup_field = "id"
-        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionApplyUpdateInputSLZ"

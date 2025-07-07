@@ -31,7 +31,13 @@ class AICompletionContentInfo(serializers.Serializer):
     input = serializers.CharField(required=True, help_text="ai content")
     enable_streaming = serializers.BooleanField(default=False, help_text="开启流式返回")
 
+    class Meta:
+        ref_name = "apigateway.apis.web.ai_completion.serializers.AICompletionContentInfo"
+
 
 class AICompletionInputSLZ(serializers.Serializer):
     # 前端组件规定传入的参数必须放在一个名为inputs的对象中
     inputs = AICompletionContentInfo()
+
+    class Meta:
+        ref_name = "apigateway.apis.web.ai_completion.serializers.AICompletionInputSLZ"

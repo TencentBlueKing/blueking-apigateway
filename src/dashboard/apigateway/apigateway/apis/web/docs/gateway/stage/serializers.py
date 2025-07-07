@@ -29,4 +29,4 @@ class StageOutputSLZ(serializers.Serializer):
     )
 
     class Meta:
-        ref_name = "apigateway.apis.web.docs.gateway.stage.StageOutputSLZ"
+        ref_name = "apigateway.apis.web.docs.gateway.stage.serializers.StageOutputSLZ"

@@ -23,9 +23,7 @@ from ddf import G
 from pytest import fixture
 
 from apigateway.apps.plugin.models import PluginConfig, PluginType
-from apigateway.biz.gateway_jwt import GatewayJWTHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.common.contexts import StageProxyHTTPContext
 from apigateway.controller.crds.base import KubernetesResource
 from apigateway.controller.crds.release_data.release_data import ReleaseData
 from apigateway.controller.crds.v1beta1.convertor import CustomResourceConvertor
@@ -37,6 +35,8 @@ from apigateway.controller.crds.v1beta1.convertors.service import ServiceConvert
 from apigateway.controller.crds.v1beta1.convertors.stage import StageConvertor
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import MicroGateway, Proxy, Release, ResourceVersion
+from apigateway.service.contexts import StageProxyHTTPContext
+from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.utils.yaml import yaml_dumps
 
 

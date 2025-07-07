@@ -1,7 +1,7 @@
 <template>
   <div class="docs-main" ref="docsMain">
     <!--  顶部 网关 / 组件 Tab  -->
-    <header class="page-tabs">
+    <header v-if="!user.isTenantMode" class="page-tabs">
       <nav class="tabs-group">
         <section
           class="page-tab"
@@ -18,7 +18,7 @@
       </nav>
     </header>
     <!--  正文  -->
-    <main class="docs-main-content">
+    <main :class="{ 'pt24': user.isTenantMode }" class="docs-main-content">
       <!--  当选中 网关API文档 时  -->
       <div v-if="curTab === 'gateway'" class="content-of-apigw">
         <!--  搜索栏和 SDK使用说明  -->
@@ -58,6 +58,26 @@
                   </bk-tag>
                 </template>
               </bk-table-column>
+              <template v-if="user.isTenantMode">
+                <bk-table-column
+                  :label="t('租户模式')"
+                  field="tenant_mode"
+                  :width="120"
+                >
+                  <template #default="{ row }">
+                    {{ TENANT_MODE_TEXT_MAP[row.tenant_mode as string] || '--' }}
+                  </template>
+                </bk-table-column>
+                <bk-table-column
+                  :label="t('租户 ID')"
+                  field="tenant_id"
+                  :width="120"
+                >
+                  <template #default="{ row }">
+                    {{ row.tenant_id || '--' }}
+                  </template>
+                </bk-table-column>
+              </template>
               <bk-table-column
                 :label="t('网关描述')"
                 field="description"
@@ -68,11 +88,40 @@
                 </template>
               </bk-table-column>
               <bk-table-column
+                v-if="!user.isTenantMode"
                 :label="t('网关负责人')"
                 field="maintainers"
+                :show-overflow-tooltip="false"
+                placement="auto-start"
               >
                 <template #default="{ row }">
-                  {{ row.maintainers?.join(', ') || '--' }}
+                  <bk-popover :component-event-delay="300" :width="480">
+                    <span v-if="!row.maintainers">
+                      {{ '--' }}
+                    </span>
+                    <div
+                      v-else
+                      style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis;"
+                    >
+                      <template v-for="(maintainer, index) in row.maintainers" :key="maintainer.login_name">
+                        <span>
+                          <bk-user-display-name
+                            :user-id="maintainer"
+                          /><span v-if="index !== (row.maintainers.length - 1)">,</span>
+                        </span>
+                      </template>
+                    </div>
+                    <template #content>
+                      <div>
+                        <template v-for="(maintainer, index) in row.maintainers" :key="maintainer.login_name">
+                          <bk-user-display-name
+                            :user-id="maintainer"
+                          />
+                          <span v-if="index !== (row.maintainers.length - 1)">,</span>
+                        </template>
+                      </div>
+                    </template>
+                  </bk-popover>
                 </template>
               </bk-table-column>
               <bk-table-column
@@ -264,10 +313,13 @@ import {
 } from '@/views/apiDocs/types';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useTemplateRefsList } from '@vueuse/core';
+import { useUser } from '@/store';
+import { TENANT_MODE_TEXT_MAP } from '@/enums';
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+const user = useUser();
 
 const filterData = ref({ keyword: '' });
 
@@ -412,12 +464,20 @@ const isActiveNavPanel = (panelName: string) => {
 
 onBeforeMount(() => {
   const { params } = route;
+  // 如果是多租户模式，直接跳转到网关API文档
+  if (user.isTenantMode) {
+    curTab.value = 'gateway';
+    return;
+  }
   // 记录返回到此页时选中的 tab
   curTab.value = params.curTab as TabType || 'gateway';
 });
 
 onMounted(async () => {
-  await fetchComponentSystemList();
+  // 如果是多租户模式，不需要获取 esb 列表
+  if (!user.isTenantMode) {
+    await fetchComponentSystemList();
+  }
 });
 
 </script>

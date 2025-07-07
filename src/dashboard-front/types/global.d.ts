@@ -20,6 +20,8 @@ declare interface Window {
   BK_NODE_ENV: string
   BK_ANALYSIS_SCRIPT_SRC: string
   BKANALYSIS?: unknown
+  BK_API_URL_TMPL: string
+  BK_USER_WEB_API_URL: string
 }
 
 declare module "*.svg" {

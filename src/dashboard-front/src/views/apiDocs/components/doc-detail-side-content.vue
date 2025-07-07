@@ -30,7 +30,17 @@
         </article>
         <article>
           <header class="content-title">{{ t('网关负责人') }}</header>
-          <main class="content-main">{{ basics.maintainers.join(', ') }}</main>
+          <main class="content-main">
+            <bk-user-display-name :user-id="basics.maintainers.join(', ')" style="word-break: break-all;" />
+          </main>
+        </article>
+        <article>
+          <header class="content-title">{{ t('租户模式') }}</header>
+          <main class="content-main">{{ TENANT_MODE_TEXT_MAP[basics.tenant_mode] || '--' }}</main>
+        </article>
+        <article>
+          <header class="content-title">{{ t('租户 ID') }}</header>
+          <main class="content-main">{{ basics.tenant_id || '--' }}</main>
         </article>
         <article>
           <header class="content-title">{{ t('文档联系人') }}</header>
@@ -93,9 +103,11 @@
 import {
   computed,
   inject,
+  onBeforeUnmount,
   ref,
   Ref,
   toRefs,
+  watch,
   watchEffect,
 } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -111,6 +123,8 @@ import {
   TabType,
 } from '@/views/apiDocs/types';
 import LangSelector from '@/views/apiDocs/components/lang-selector.vue';
+import { TENANT_MODE_TEXT_MAP } from '@/enums';
+import { useBkUserDisplayName } from '@/hooks';
 
 const props = withDefaults(defineProps<IProps>(), {
   basics: () => null,
@@ -133,6 +147,7 @@ const {
 } = toRefs(props);
 
 const userStore = useUser();
+const { configure: configureDisplayName } = useBkUserDisplayName();
 
 const language = ref<LanguageType>('python');
 
@@ -152,8 +167,18 @@ const curSdk = computed(() => {
   return sdks.value.find(item => item.language === language.value) ?? null;
 });
 
+watch(basics, () => {
+  if (basics.value) {
+    configureDisplayName(basics.value.tenant_mode === 'global' ? 'system' : userStore.user.tenant_id);
+  }
+}, { deep: true, immediate: true });
+
 watchEffect(() => {
   language.value = sdks.value[0]?.language || 'python';
+});
+
+onBeforeUnmount(() => {
+  configureDisplayName();
 });
 
 </script>

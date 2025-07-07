@@ -52,7 +52,7 @@ class TestBoardConfigManager:
         )
 
         board_config = BoardConfigManager.get_board_config(board)
-        assert board_config.dict() == expected
+        assert board_config.model_dump() == expected
 
     @pytest.mark.parametrize(
         "should_display_label, board, expected",

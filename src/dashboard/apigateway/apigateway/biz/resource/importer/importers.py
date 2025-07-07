@@ -20,8 +20,8 @@ from typing import Any, Dict, List, Optional
 
 from apigateway.apps.label.models import APILabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
-from apigateway.biz.gateway_label import GatewayLabelHandler
-from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData, PluginSynchronizer
+from apigateway.biz.gateway import GatewayLabelHandler
+from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.models import ResourceData
 from apigateway.biz.resource.savers import ResourcesSaver

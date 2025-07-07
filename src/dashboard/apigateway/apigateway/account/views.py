@@ -33,5 +33,7 @@ class UserAPIView(APIView):
             "chinese_name": getattr(user, "chinese_name", ""),
             "avatar_url": getattr(user, "avatar_url", ""),
             "username": user.username,
+            "display_name": getattr(user, "display_name", "") or user.username,
+            "tenant_id": getattr(user, "tenant_id", ""),
         }
         return OKJsonResponse(data=data)

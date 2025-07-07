@@ -22,7 +22,7 @@ from ddf import G
 from apigateway.apps.label.models import APILabel
 from apigateway.apps.plugin.constants import PluginBindingSourceEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig
-from apigateway.biz.plugin.plugin_synchronizers import PluginConfigData
+from apigateway.biz.plugin.synchronizers import PluginConfigData
 from apigateway.biz.resource.importer import ResourceDataConvertor, ResourcesImporter
 from apigateway.core.models import Backend, Resource
 from apigateway.utils.yaml import yaml_dumps

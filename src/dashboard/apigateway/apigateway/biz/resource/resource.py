@@ -29,13 +29,14 @@ from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ResourceDoc
-from apigateway.common.contexts import ResourceAuthContext
 from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum
 from apigateway.core.models import Context, Gateway, Proxy, Resource, StageResourceDisabled
+from apigateway.service.contexts import ResourceAuthContext
 from apigateway.utils import time
 
 
 class ResourceHandler:
+    # NOTE: only unittest use this func
     @classmethod
     def save_auth_config(cls, resource_id: int, config: Dict[str, Any]):
         """存储资源认证配置"""

@@ -126,7 +126,7 @@ class Lock(object):
                 time.sleep(1)
         # 获取锁超时，抛出 LockTimeout 异常
         errmsg = "lock[key:%s] timeout|timeout:%s,try_get_times:%s" % (self.key, self.timeout, self.try_get_times)
-        logging.error(errmsg)
+        logger.error(errmsg)
         raise LockTimeout("Timeout while waiting for lock")
 
     def __exit__(self, exc_type, exc_value, traceback):
