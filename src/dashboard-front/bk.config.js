@@ -14,12 +14,10 @@ module.exports = {
   configureWebpack() {
     return {
       devServer: {
-        host: process.env.BK_LOCAL_HOST,
+        host: process.env.BK_APP_HOST,
         client: {
           overlay: false,
         },
-        https: !process.env.BK_HTTPS,
-        // https: false,
       },
     };
   },

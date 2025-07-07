@@ -415,7 +415,6 @@ import {
   Message,
 } from 'bkui-vue';
 import { useI18n } from 'vue-i18n';
-import { useUser } from '@/store';
 import { HelpDocumentFill } from 'bkui-vue/lib/icon';
 import {
   useRoute,
@@ -446,6 +445,7 @@ import EditApiDoc from './common/editApiDoc.vue';
 import GateWaysEditMemberSelector from '@/components/gateways-edit/member-selector.vue';
 import GateWaysEditTenantUserSelector from '@/components/gateways-edit/tenant-user-selector.vue';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
+import { useUser } from '@/store';
 
 const { t } = useI18n();
 const route = useRoute();

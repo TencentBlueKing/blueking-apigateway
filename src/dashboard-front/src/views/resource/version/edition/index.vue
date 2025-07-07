@@ -196,24 +196,12 @@ import {
   ref,
   watch,
 } from 'vue';
-import {
-  computed,
-  onMounted,
-  onUnmounted,
-  reactive,
-  ref,
-  watch,
-} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
 import { useRoute } from 'vue-router';
 import dayjs from 'dayjs';
 
 import { getStatus } from '@/common/util';
-import {
-  useQueryList,
-  useSelection,
-} from '@/hooks';
 import {
   exportVersion,
   getResourceVersionsList,
@@ -223,10 +211,6 @@ import {
   useQueryList,
   useSelection,
 } from '@/hooks';
-import {
-  getResourceVersionsList,
-  getStageList,
-} from '@/http';
 import createSdk from '../components/createSdk.vue';
 import resourceDetail from '../components/resourceDetail.vue';
 import versionDiff from '@/components/version-diff/index.vue';
@@ -255,6 +239,7 @@ const route = useRoute();
 const { t } = useI18n();
 const resourceVersionStore = useResourceVersion();
 const commonStore = useCommon();
+const user = useUser();
 
 const apigwId = computed(() => +route.params.id);
 

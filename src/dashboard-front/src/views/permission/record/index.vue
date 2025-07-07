@@ -197,23 +197,14 @@ import {
   ref,
   watch,
 } from 'vue';
-import {
-  nextTick,
-  onMounted,
-  reactive,
-  ref,
-  watch,
-} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPermissionRecordList } from '@/http';
-import { useUser } from '@/store';
 import { useQueryList } from '@/hooks';
 import { sortByKey } from '@/common/util';
 import TableEmpty from '@/components/table-empty.vue';
 import AgIcon from '@/components/ag-icon.vue';
 
 const { t } = useI18n();
-const user = useUser();
 
 const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
   keyword: '',

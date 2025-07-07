@@ -70,6 +70,7 @@ import {
 import MemberSelector from '../member-select';
 import { useUser } from '@/store/user';
 import { useI18n } from 'vue-i18n';
+
 const props = defineProps({
   field: {
     type: String,
@@ -165,24 +166,6 @@ const handleEnter = (event: any) => {
   }
 };
 
-const hideEdit = (event: any) => {
-  if (props.isRequired && !displayValue.value.length) {
-    isShowError.value = true;
-    errorTips.value = props.errorValue;
-    return;
-  }
-  if (!displayValue.value?.includes(user.user.username)) {
-    isShowError.value = true;
-    errorTips.value = t('您已将自己从维护人员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！');
-    return;
-  }
-  if (memberSelectorEditRef.value?.contains(event.target)) {
-    return;
-  }
-  handleValidate();
-  triggerChange();
-};
-
 const triggerChange = () => {
   if (props.isRequired && !displayValue.value.length) {
     isShowError.value = true;
@@ -228,13 +211,6 @@ watch(
   { immediate: true },
 );
 
-// onMounted(() => {
-//   document.body.addEventListener('click', hideEdit);
-// });
-//
-// onBeforeMount(() => {
-//   document.body.removeEventListener('click', hideEdit);
-// });
 </script>
 
 <style lang="scss" scoped>

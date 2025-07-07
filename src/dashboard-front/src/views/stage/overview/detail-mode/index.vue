@@ -239,13 +239,6 @@ import {
   shallowRef,
   watch,
 } from 'vue';
-import {
-  computed,
-  onMounted,
-  ref,
-  shallowRef,
-  watch,
-} from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
   useRoute,
@@ -273,19 +266,12 @@ import {
   getGateWaysInfo,
   removalStage,
 } from '@/http';
-import {
-  deleteStage,
-  getGateWaysInfo,
-  removalStage,
-} from '@/http';
 import mitt from '@/common/event-bus';
 import { BasicInfoParams } from '@/views/basic-info/common/type';
 
 import resourceInfo from './resource-info.vue';
 import pluginManage from './plugin-manage.vue';
 import variableManage from './variable-manage.vue';
-
-type TabComponents = typeof resourceInfo | typeof pluginManage | typeof variableManage;
 
 type TabComponents = typeof resourceInfo | typeof pluginManage | typeof variableManage;
 
@@ -499,7 +485,7 @@ const basicInfoData = ref<BasicInfoParams>({
   developers: [],
   is_public: true,
   is_official: false,
-  related_app_codes: '',
+  related_app_codes: [],
 });
 
 // 获取网关基本信息
