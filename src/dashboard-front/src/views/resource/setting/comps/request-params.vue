@@ -92,8 +92,9 @@
           <bk-input
             v-else
             v-model="row.default"
+            :disabled="row.in === 'body'"
             :clearable="false"
-            :placeholder="t('默认值')"
+            :placeholder="row.in === 'body' ? '--' : t('默认值')"
             class="edit-input"
           />
         </template>
@@ -307,8 +308,8 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
         id: _.uniqueId(),
         name: propertyName,
         type: convertPropertyType(property.type),
-        required: schema.required?.includes(propertyName) ?? false,
-        default: '',
+        required: schema?.required?.includes(propertyName) ?? false,
+        default: property.default ?? '',
         description: property.description ?? '',
       };
       if (Object.keys(property.properties || {}).length) {
@@ -334,7 +335,7 @@ watch(() => detail, () => {
           in: parameter.in,
           type: parameter.schema.type,
           required: parameter.required ?? false,
-          default: parameter.default,
+          default: parameter.schema?.default ?? '',
           description: parameter.description ?? '',
         }
       ));
@@ -400,6 +401,8 @@ const handleInChange = (row: ITableRow) => {
   if (row.in === 'body') {
     _row.name = t('根节点');
     _row.type = 'object';
+    delete _row.default;
+
     if (_row.body) {
       _row.body.push(genBodyRow());
     } else {
@@ -509,6 +512,10 @@ const genSchemaFromBodyRow = (row: IBodyRow) => {
 
   if (row.description) {
     schema.description = row.description;
+  }
+
+  if (row.default) {
+    schema.default = row.default;
   }
 
   if (row.body?.length) {
