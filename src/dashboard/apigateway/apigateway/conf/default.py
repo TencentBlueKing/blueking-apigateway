@@ -60,6 +60,9 @@ DEFAULT_TEST_APP = {
     "bk_app_secret": env.str("DEFAULT_TEST_APP_SECRET", BK_APP_SECRET),
 }
 
+AI_APP_CODE = env.str("AI_APP_CODE", BK_APP_CODE)
+AI_APP_SECRET = env.str("AI_APP_SECRET", BK_APP_SECRET)
+
 # ==============================================================================
 # django basic
 # ==============================================================================

@@ -24,7 +24,7 @@ repos:
         name: import-linter
         language: python
         types: [python]
-        entry: bash -c 'cd src/dashboard/apigateway && lint-imports --config=./.importlinter'
+        entry: bash -c 'cd src/dashboard/apigateway && lint-imports --config=../pyproject.toml'
         files: src/dashboard/
   - repo: local
     hooks:
