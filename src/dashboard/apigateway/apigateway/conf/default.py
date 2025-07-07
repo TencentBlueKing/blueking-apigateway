@@ -572,6 +572,8 @@ BK_AUTH_API_URL = env.str("BK_AUTH_API_URL", "")
 AI_OPEN_API_BASE_URL = env.str("AI_OPEN_API_BASE_URL", "")
 AI_MODEL = env.str("AI_MODEL", "")
 AI_API_KEY = env.str("AI_API_KEY", "")
+AI_APP_CODE = env.str("AI_APP_CODE", BK_APP_CODE)
+AI_APP_SECRET = env.str("AI_APP_SECRET", BK_APP_SECRET)
 
 # ==============================================================================
 # 网关全局配置
