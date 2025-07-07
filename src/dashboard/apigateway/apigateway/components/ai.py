@@ -19,7 +19,7 @@
 from django.conf import settings
 from openai import OpenAI
 
-from apigateway.components.utils import gen_gateway_headers
+from apigateway.components.utils import gen_ai_request_headers
 
 
 def get_ai_client():
@@ -27,5 +27,5 @@ def get_ai_client():
     return OpenAI(
         api_key=settings.AI_API_KEY,
         base_url=settings.AI_OPEN_API_BASE_URL,
-        default_headers=gen_gateway_headers(),
+        default_headers=gen_ai_request_headers(),
     )
