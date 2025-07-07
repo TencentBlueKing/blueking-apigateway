@@ -141,6 +141,11 @@ def do_legacy_blueking_http_request(
     if code in ("0", 0, "00"):
         return resp_data["data"]
 
+    # the bkmonitorv3 return
+    # {'result': True, 'code': 200, 'message': 'OK', 'data': {'metrics': [], 'series': []}}
+    if code == 200 and resp_data.get("result"):
+        return resp_data["data"]
+
     logger.error(
         "%s api error! %s %s, data: %s, request_id: %s, code: %s, message: %s",
         component,
