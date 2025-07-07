@@ -47,3 +47,19 @@ def gen_gateway_headers(user_credentials: Optional[UserCredentials] = None) -> D
         headers["Accept-Language"] = language
 
     return headers
+
+
+def gen_ai_request_headers():
+    bk_api_authorization = {
+        "bk_app_code": settings.AI_APP_CODE,
+        "bk_app_secret": settings.AI_APP_SECRET,
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "X-Bkapi-Authorization": json.dumps(bk_api_authorization),
+    }
+    language = get_language()
+    if language:
+        headers["Accept-Language"] = language
+
+    return headers
