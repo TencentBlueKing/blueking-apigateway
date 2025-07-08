@@ -22,18 +22,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
     - name: Install a specific version of uv
       uses: astral-sh/setup-uv@v6
       with:
         version: "0.7.19"
         enable-cache: true
         cache-dependency-glob: "src/dashboard/uv.lock"
-        python-version: ${{ matrix.python-version }}
-
-    # - name: Set up Python
-    #   uses: actions/setup-python@v5
-    #   with:
-    #     python-version: ${{ matrix.python-version }}
 
     - name: Install the project
       run: cd src/dashboard && uv sync --locked --all-extras --dev
