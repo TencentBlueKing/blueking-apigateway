@@ -118,6 +118,11 @@ dev = [
 [tool.uv]
 package = false
 
+[[tool.uv.index]]
+# url = "https://mirrors.tencent.com/pypi/simple"
+url = "https://pypi.org/simple/"
+default = true
+
 [tool.mypy]
 ignore_missing_imports = true
 follow_imports="skip"
