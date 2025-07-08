@@ -40,14 +40,12 @@ RUN mvn dependency:get -Dartifact=com.squareup.okhttp3:okhttp:4.12.0 && \
     mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-compiler-plugin:3.8.1 && \
     mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-jar-plugin:3.1.0
 
-#ARG PYPI="https://pypi.org/simple/"
-ARG PYPI="https://mirrors.tencent.com/pypi/simple"
-RUN pip config set global.index-url "${PYPI}"
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
-ADD build/requirements.txt /app/requirements.txt
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+ADD build/uv.lock  /app/uv.lock
+ADD build/pyproject.toml /app/pyproject.toml
+RUN export UV_PROJECT_ENVIRONMENT=/usr/local/ && uv sync --locked
 
 
 ADD build /app
