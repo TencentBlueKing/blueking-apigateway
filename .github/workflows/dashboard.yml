@@ -20,15 +20,20 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install a specific version of uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        version: "0.7.19"
+        enable-cache: true
+        cache-dependency-glob: "src/dashboard/uv.lock"
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-        cache: 'pip'
-        cache-dependency-path: 'src/dashboard/apigateway/requirements_dev.txt'
 
-    - name: Install dependencies
-      run: pip install pip==23.0.1 && pip install -r src/dashboard/apigateway/requirements_dev.txt -i https://pypi.org/simple/
+    - name: Install the project
+      run: cd src/dashboard && uv sync --locked --all-extras --dev
 
     - name: Lint
       run: make edition-ee && make lint-check
