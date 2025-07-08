@@ -205,7 +205,6 @@ select = [
     "LOG",
     "Q",
     "TID",
-    "I",
     "TC",
 ]
 
