@@ -37,14 +37,15 @@ CREATE DATABASE IF NOT EXISTS `bk_esb` DEFAULT CHARACTER SET utf8 COLLATE utf8_g
 
 ```shell
 # 进入项目根路径
-cd src/dashboard/apigateway
+cd src/dashboard
 
 # 建议使用虚拟环境
 # 安装依赖包
-pip install -r requirements.txt
-pip install -r requirements_dev.txt
+uv sync
+
 
 # 修改配置文件
+cd apigateway
 cp apigateway/conf/.env.tpl apigateway/conf/.env
 # 编辑 apigateway/conf/.env 文件，修改数据库连接信息/域名配置等
 

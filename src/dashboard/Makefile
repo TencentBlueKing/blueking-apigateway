@@ -3,7 +3,7 @@ FORCE:
 .PHONY: init
 init:
 	pip install -U pip setuptools
-	pip install uv==0.7.13
+	pip install uv==0.7.19
 	uv sync
 	pip install pre-commit
 	pre-commit install
@@ -29,16 +29,11 @@ lint-check:
 uv.lock: pyproject.toml
 	uv lock
 
-.PHONY: requirements
-requirements: uv.lock
-	uv export --format requirements-txt --no-dev --no-hashes --no-annotate -o apigateway/requirements.txt
-	uv export --format requirements-txt --no-hashes --no-annotate -o apigateway/requirements_dev.txt
-
 VERSION: pyproject.toml
 	uvx --from=toml-cli toml get --toml-path=pyproject.toml project.version > apigateway/VERSION
 
 .PHONY: update
-update: VERSION requirements
+update: VERSION
 
 # ====== test ======
 
@@ -124,6 +119,8 @@ _build_dir:
 	mkdir build build/bin
 	make clean
 	cp -r apigateway/* ./build/
+	cp uv.lock ./build/
+	cp pyproject.toml ./build/
 	cp -r bin/* ./build/bin/
 	rm -rf ./build/apigateway/editions
 	rm -rf ./build/apigateway/tests
@@ -167,6 +164,8 @@ dev-ee-image:
 		--build-arg PYPI="${pypi}" \
 		.
 	make _clean_build_dir
+	# docker tag apigateway-dashboard:development mirrors.tencent.com/build/blueking/apigateway-dashboard:v1.16.0-alpha.4
+	# kubectl get pods | grep bk-apigateway-dashboard | grep -v 'Completed' | grep -v 'fe' | awk "{print $$1}" | xargs -n 1 kubectl delete pod
 
 
 # ====== plugins ======
