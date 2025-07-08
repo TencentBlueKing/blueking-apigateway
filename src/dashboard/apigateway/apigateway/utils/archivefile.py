@@ -75,9 +75,14 @@ def is_within_directory(directory, target):
 
 def safe_extract(tar, path):
     for member in tar.getmembers():
+        if member.islnk() or member.issym():
+            raise ValueError(f"skipping link: {member.name}, you should not upload link file")
+
         member_path = os.path.join(path, member.name)
         if not is_within_directory(path, member_path):
-            raise Exception(f"Path traversal detected: {member.name}")  # noqa: TRY002
+            raise ValueError(
+                f"path traversal detected: {member.name}, you should not upload file outside of the directory"
+            )
     tar.extractall(path=path)
 
 
