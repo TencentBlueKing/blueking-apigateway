@@ -16,8 +16,6 @@ jobs:
       matrix:
         python-version: ["3.10.15"]
         os: [ubuntu-latest]
-    env:
-      UV_PROJECT_ENVIRONMENT: /usr/local/
 
     steps:
     - uses: actions/checkout@v4
@@ -35,7 +33,7 @@ jobs:
         cache-dependency-glob: "src/dashboard/uv.lock"
 
     - name: Install the project
-      run: cd src/dashboard && uv sync --locked --all-extras --dev
+      run: cd src/dashboard && export UV_PROJECT_ENVIRONMENT="${pythonLocation}" && uv sync --locked --all-extras --dev
 
     - name: Lint
       run: make edition-ee && make lint-check
