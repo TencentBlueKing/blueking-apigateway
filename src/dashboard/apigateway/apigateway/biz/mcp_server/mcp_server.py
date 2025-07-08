@@ -35,13 +35,12 @@ from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
 from apigateway.biz.released_resource_doc.generators import DocGenerator
 from apigateway.biz.resource import ResourceLabelHandler
 from apigateway.biz.resource_doc import ResourceDocHandler
+from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource
 from apigateway.utils.time import NeverExpiresTime, now_datetime
-
-from ..resource_version import ResourceVersionHandler
 
 logger = logging.getLogger(__name__)
 
