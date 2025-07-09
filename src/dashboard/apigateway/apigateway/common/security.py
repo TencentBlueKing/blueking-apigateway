@@ -22,19 +22,19 @@ from django.conf import settings
 
 def is_forbidden_host(host: str) -> bool:
     if ":" not in host:
-        return True
+        return False
 
     parts = host.split(":")
 
     port_str = parts[-1]
     if not port_str.isdigit():
-        return False
+        return True
 
     port_int = int(port_str)
     if port_int < 1 or port_int > 65535:
-        return False
+        return True
 
     if port_int in settings.FORBIDDEN_PORTS:
-        return False
+        return True
 
-    return True
+    return False

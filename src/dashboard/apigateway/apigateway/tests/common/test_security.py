@@ -32,12 +32,11 @@ class TestIsForbiddenHost:
         mock_settings.FORBIDDEN_PORTS = [22, 3306]
 
         test_cases = [
-            ("example.com", True),
-            ("example.com:abc", False),
-            ("example.com:22", False),
-            ("192.168.1.1:3306", False),
-            ("redis.example.com:1234", True),
-            ("app.example.com:8080", True),
+            ("example.com", False),
+            ("example.com:abc", True),
+            ("example.com:22", True),
+            ("192.168.1.1:3306", True),
+            ("app.example.com:8080", False),
         ]
 
         for host, expected in test_cases:
