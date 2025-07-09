@@ -54,6 +54,9 @@ def get_redis_pool(redis_conf):
             ssl_certfile=redis_conf.get("tls_cert_file"),
             ssl_keyfile=redis_conf.get("tls_cert_key_file"),
             ssl_check_hostname=redis_conf.get("tls_check_hostname", False),
+            # redis-py will send SETINFO command, not valid for older version redis
+            lib_name=None,
+            lib_version=None,
         )
 
     return redis.BlockingConnectionPool(
@@ -64,6 +67,9 @@ def get_redis_pool(redis_conf):
         max_connections=redis_conf["max_connections"],
         socket_timeout=REDIS_TIMEOUT,
         timeout=REDIS_TIMEOUT,
+        # redis-py will send SETINFO command, not valid for older version redis
+        lib_name=None,
+        lib_version=None,
     )
 
 
