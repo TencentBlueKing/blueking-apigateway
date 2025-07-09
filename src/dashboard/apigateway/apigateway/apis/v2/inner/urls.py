@@ -19,7 +19,7 @@
 from django.conf import settings
 from django.urls import include, path
 
-from . import views, views_esb
+from . import views
 
 urlpatterns = [
     # /api/v2/inner/ 用于 paasv3 内部调用; 鉴权：来自于网关（主动授权）
@@ -146,6 +146,8 @@ urlpatterns = [
 
 # 非多租户模式才会有 esb 相关的接口
 if not settings.ENABLE_MULTI_TENANT_MODE:
+    from . import views_esb
+
     urlpatterns += [
         path(
             "esb/systems/",
