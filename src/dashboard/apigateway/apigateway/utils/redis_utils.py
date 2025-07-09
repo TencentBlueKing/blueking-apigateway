@@ -63,6 +63,9 @@ def get_redis_pool(redis_conf):
         max_connections=redis_conf["max_connections"],
         socket_timeout=REDIS_TIMEOUT,
         timeout=REDIS_TIMEOUT,
+        # redis-py will send SETINFO command, not valid for older version redis
+        lib_name=None,
+        lib_version=None,
     )
 
 
