@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
-from typing import Any, Callable, Dict, List
+from typing import TYPE_CHECKING, Any, Callable, Dict, List
 
 from openapi_spec_validator.validation.exceptions import UnresolvableParameterError
 from openapi_spec_validator.versions import OPENAPIV2, get_spec_version
@@ -35,7 +35,9 @@ from apigateway.biz.resource.importer.schema import (
     openapi_validator_mapping,
 )
 from apigateway.biz.resource.importer.validate import ResourceImportValidator
-from apigateway.biz.resource.models import ResourceData
+
+if TYPE_CHECKING:
+    from apigateway.biz.resource.models import ResourceData
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway, ResourceVersion
 from apigateway.utils.yaml import yaml_loads

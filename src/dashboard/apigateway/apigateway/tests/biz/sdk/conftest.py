@@ -74,7 +74,7 @@ def resource_version_data(public_api_resources, private_api_resources):
 @pytest.fixture
 def resource_version(fake_gateway, resource_version_data, faker):
     resource_version = cast(
-        ResourceVersion,
+        "ResourceVersion",
         G(
             ResourceVersion,
             gateway=fake_gateway,

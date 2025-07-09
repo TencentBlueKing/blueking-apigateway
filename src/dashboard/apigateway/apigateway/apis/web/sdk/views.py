@@ -127,7 +127,7 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
         )
         slz.is_valid(raise_exception=True)
 
-        data = cast(Dict[str, Any], slz.validated_data)
+        data = cast("Dict[str, Any]", slz.validated_data)
         resource_version = get_object_or_404(ResourceVersion, gateway=request.gateway, id=data["resource_version_id"])
 
         with SDKHelper(resource_version=resource_version) as helper:
