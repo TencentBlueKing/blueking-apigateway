@@ -1,4 +1,4 @@
-import i18n from '@/language/i18n';
+import i18n from '@/locales';
 
 const { t } = i18n.global;
 
@@ -7,6 +7,4 @@ const TENANT_MODE_TEXT_MAP: Record<string, string> = {
   single: t('单租户'),
 };
 
-export {
-  TENANT_MODE_TEXT_MAP,
-};
+export { TENANT_MODE_TEXT_MAP };
