@@ -1,41 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <!-- <link rel="icon" href="/static/images/favicon.png" type="image/x-icon" />
-    <link rel="shortcut icon" href="/static/images/favicon.png" type="image/x-icon" /> -->
-    <meta charset="utf-8">
-    <!-- <title> API Gateway | 腾讯蓝鲸智云 </title> -->
+    <meta charset="UTF-8">
+    <link href="/favicon.ico" rel="icon">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title> API Gateway | 腾讯蓝鲸智云 </title>
   </head>
-    <body>
-      <div class="app"></div>
-      <script>
-        // 当前应用的环境，预发布环境为 stag，正式环境为 prod
-        var SITE_URL = '<%= process.env.BK_SITE_URL %>'
-
-        var BK_NODE_ENV = '<%= process.env.NODE_ENV %>'
-        var BK_STATIC_URL = '<%= process.env.BK_STATIC_URL %>'
-        var BK_APP_VERSION = '<%= process.env.BK_APP_VERSION %>'
-        var BK_APIGATEWAY_VERSION = '<%= process.env.BK_APIGATEWAY_VERSION %>' || '1.1.1'
-        var BK_DOMAIN = '<%= process.env.BK_DOMAIN %>'
-        var BK_LOGIN_URL = '<%= process.env.BK_LOGIN_URL %>'
-        var BK_APP_CODE = '<%= process.env.BK_APP_CODE %>'
-        var BK_DEFAULT_TEST_APP_CODE = '<%= process.env.BK_DEFAULT_TEST_APP_CODE %>'
-        var BK_API_RESOURCE_URL_TMPL = '<%= process.env.BK_API_RESOURCE_URL_TMPL %>'
-        var BK_COMPONENT_API_URL = '<%= process.env.BK_COMPONENT_API_URL %>'
-        var BK_DOCS_URL_PREFIX = '<%= process.env.BK_DOCS_URL_PREFIX %>'
-        var BK_REPO_URL = '<%= process.env.BK_REPO_URL %>'
-        var BK_SHARED_RES_URL = '<%= process.env.BK_SHARED_RES_URL %>'
-        var BK_DASHBOARD_FE_URL = '<%= process.env.BK_DASHBOARD_FE_URL %>'
-        var BK_DASHBOARD_URL = '<%= process.env.BK_DASHBOARD_URL %>'
-        var BK_DASHBOARD_CSRF_COOKIE_NAME = '<%= process.env.BK_DASHBOARD_CSRF_COOKIE_NAME %>'
-        var BK_LIST_USERS_API_URL = `${BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fs_list_users/` // 人员选择器接口地址，可选填
-        var BK_DOCS_URL_PREFIX_MARKDOWN = '';
-        var BK_APP_HOST = '<%= process.env.BK_APP_HOST %>'
-        var BK_ANALYSIS_SCRIPT_SRC = '<%= process.env.BK_ANALYSIS_SCRIPT_SRC %>'
-        var BK_API_URL_TMPL = '<%= process.env.BK_API_URL_TMPL %>'
-        var BK_USER_WEB_API_URL = '<%= process.env.BK_USER_WEB_API_URL %>'
-        </script>
-      </script>
-      <script src="/static/svg/iconcool.js"></script>
-    </body>
+  <body>
+  <div id="app"></div>
+  <script src="/src/main.ts" type="module"></script>
+  </body>
 </html>
