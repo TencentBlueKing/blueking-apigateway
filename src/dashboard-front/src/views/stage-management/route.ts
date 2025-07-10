@@ -15,9 +15,21 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
+import type { RouteRecordRaw } from 'vue-router';
+import { t } from '@/locales';
 
-// info-box通用hook
-export * from './use-pop-info-box';
-export * from './use-bk-user-display-name';
-// 获关列表接收搜索参数通用hooks
-export * from './use-gate-way-data';
+const routes: RouteRecordRaw[] = [
+  {
+    path: 'stage',
+    name: 'StageManagement',
+    component: () => import('@/views/stage-management/Index.vue'),
+    meta: {
+      title: t('环境概览'),
+      matchRoute: 'StageOverview',
+    },
+  },
+];
+
+export default function getStageManagementRoutes() {
+  return routes;
+}

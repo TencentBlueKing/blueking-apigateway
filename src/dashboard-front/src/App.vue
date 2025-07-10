@@ -17,12 +17,13 @@
       <template #header>
         <div class="header">
           <div class="header-nav">
-            <template v-for="(item, index) in tabList">
+            <template v-for="(item, index) in menuList">
               <div
                 v-if="item.enabled"
                 :key="item.id"
                 class="header-nav-item"
                 :class="{ 'item-active': index === activeIndex }"
+                @click="() => handleNavClick(item.url, index, item.link)"
               >
                 <span class="text">{{ item.name }}</span>
               </div>
@@ -32,21 +33,23 @@
         </div>
       </template>
       <div class="content">
-        <RouterView />
+        <RouterView v-if="userLoaded" />
       </div>
     </BkNavigation>
   </BkConfigProvider>
 </template>
 
 <script lang="ts" setup>
-import { RouterView } from 'vue-router';
 import LogoWithoutTitle from '@/images/APIgateway-logo.png';
 import En from '../node_modules/bkui-vue/dist/locale/en.esm.js';
 import ZhCn from '../node_modules/bkui-vue/dist/locale/zh-cn.esm.js';
 import { useFeatureFlag, useUserInfo } from '@/stores';
 import { useBkUserDisplayName } from '@/hooks';
+import type { IHeaderNav } from '@/types/common';
 
 const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const userInfoStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
 const { configure: configureDisplayName } = useBkUserDisplayName();
@@ -56,43 +59,46 @@ featureFlagStore.fetchFlags();
 
 const locale = ref('zh-cn');
 const activeIndex = ref(0);
-const tabList = [
+const userLoaded = ref(false);
+const curLeavePageData = ref({});
+
+const menuList = shallowRef<IHeaderNav>([
   {
     name: t('我的网关'),
     id: 1,
-    url: 'home',
+    url: 'Home',
     enabled: true,
     link: '',
   },
   {
     name: t('组件管理'),
     id: 2,
-    url: 'componentsMain',
+    url: 'ComponentsMain',
     enabled: true,
     link: '',
   },
   {
     name: t('API 文档'),
     id: 3,
-    url: 'apiDocs',
+    url: 'ApiDocs',
     enabled: true,
     link: '',
   },
   {
     name: t('平台工具'),
     id: 4,
-    url: 'platformTools',
+    url: 'PlatformTools',
     enabled: true,
     link: '',
   },
   {
     name: t('MCP 市场'),
     id: 5,
-    url: 'mcpMarket',
+    url: 'McpMarket',
     enabled: true,
     link: '',
   },
-];
+]);
 
 const bkuiLocale = computed(() => {
   if (locale.value === 'zh-cn') {
@@ -101,11 +107,61 @@ const bkuiLocale = computed(() => {
   return En;
 });
 
+const apigwId = computed(() => {
+  return route.params.id;
+});
+
 configureDisplayName();
 
-onMounted(() => {
-  console.log('mounted');
-});
+watch(
+  () => route.path,
+  (newVal, oldVal) => {
+    if (newVal === oldVal) {
+      return;
+    }
+    const { meta } = route;
+    activeIndex.value = menuList.value.findIndex(v => v.url === meta?.topMenu);
+    if (activeIndex.value === -1) {
+      activeIndex.value = 0;
+    }
+    userLoaded.value = true;
+  },
+  {
+    immediate: true,
+    deep: true,
+  },
+);
+
+const goPage = (routeName: string): void => {
+  const id = ['home', 'apigwDoc', 'apiDocs'].includes(routeName) ? '' : apigwId.value;
+  router.push({
+    name: routeName,
+    params: { id },
+  });
+};
+
+const getRouteData = (routeName: string, index: number, link: string) => {
+  curLeavePageData.value = {};
+  activeIndex.value = index;
+  // 常用工具
+  if (link) {
+    window.open(routeName);
+    return;
+  }
+  if (['apigwSystem'].includes(routeName)) {
+    router.push({ name: routeName });
+    return;
+  }
+  goPage(routeName);
+};
+
+const handleNavClick = (url: string, index: number, link: string) => {
+  // 禁止重复点击
+  if (index === activeIndex.value) {
+    return;
+  }
+  getRouteData(url, index, link);
+};
 </script>
 
 <style lang="scss">
