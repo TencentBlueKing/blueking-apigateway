@@ -24,6 +24,7 @@ from typing import Any, List
 from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -67,7 +68,11 @@ logger = logging.getLogger(__name__)
 
 class AppGatewayPermissionQuerySetMixin:
     def get_queryset(self):
-        return AppGatewayPermission.objects.filter(gateway=self.request.gateway).order_by("-id")
+        return (
+            AppGatewayPermission.objects.filter(gateway=self.request.gateway)
+            .exclude(bk_app_code__startswith="v_mcp_")
+            .order_by("-id")
+        )
 
 
 class AppResourcePermissionQuerySetMixin:
@@ -76,7 +81,7 @@ class AppResourcePermissionQuerySetMixin:
         resource_ids = Resource.objects.filter(gateway=self.request.gateway).values_list("id", flat=True)
         return (
             AppResourcePermission.objects.filter(gateway=self.request.gateway, resource_id__in=resource_ids)
-            .exclude(bk_app_code=settings.DEFAULT_TEST_APP["bk_app_code"])
+            .exclude(Q(bk_app_code=settings.DEFAULT_TEST_APP["bk_app_code"]) | Q(bk_app_code__startswith="v_mcp_"))
             .order_by("-id")
         )
 
