@@ -15,9 +15,39 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
+// 导航栏菜单
+export interface IHeaderNav {
+  id: number
+  name: string
+  url: string
+  link?: string
+  enabled: boolean
+}
 
-// info-box通用hook
-export * from './use-pop-info-box';
-export * from './use-bk-user-display-name';
-// 获关列表接收搜索参数通用hooks
-export * from './use-gate-way-data';
+export interface IMenu {
+  name: string
+  title: string
+  icon?: string
+  enabled?: boolean
+  children?: IMenu[]
+  // 是否在可编程网关中隐藏，默认 false
+  hideInProgrammable?: boolean
+}
+
+// 分页接口
+export interface IPagination {
+  // 是否使用小型分页样式
+  small?: boolean
+  // 数据偏移量
+  offset: number
+  // 每页显示的数据条数
+  limit: number
+  // 数据总条数;
+  count: number
+  // 是否存在异常
+  abnormal?: boolean
+  // 可选的每页显示条数列表
+  limitList?: number[]
+  // 当前页码
+  current?: number
+}
