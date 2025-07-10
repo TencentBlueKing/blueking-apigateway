@@ -31,7 +31,12 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.constants import ExportTypeEnum
-from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum, GrantTypeEnum
+from apigateway.apps.permission.constants import (
+    VIRTUAL_APP_CODE_PREFIX,
+    ApplyStatusEnum,
+    GrantDimensionEnum,
+    GrantTypeEnum,
+)
 from apigateway.apps.permission.models import (
     AppGatewayPermission,
     AppPermissionApply,
@@ -70,7 +75,7 @@ class AppGatewayPermissionQuerySetMixin:
     def get_queryset(self):
         return (
             AppGatewayPermission.objects.filter(gateway=self.request.gateway)
-            .exclude(bk_app_code__startswith="v_mcp_")
+            .exclude(bk_app_code__startswith=VIRTUAL_APP_CODE_PREFIX)
             .order_by("-id")
         )
 
@@ -81,7 +86,10 @@ class AppResourcePermissionQuerySetMixin:
         resource_ids = Resource.objects.filter(gateway=self.request.gateway).values_list("id", flat=True)
         return (
             AppResourcePermission.objects.filter(gateway=self.request.gateway, resource_id__in=resource_ids)
-            .exclude(Q(bk_app_code=settings.DEFAULT_TEST_APP["bk_app_code"]) | Q(bk_app_code__startswith="v_mcp_"))
+            .exclude(
+                Q(bk_app_code=settings.DEFAULT_TEST_APP["bk_app_code"])
+                | Q(bk_app_code__startswith=VIRTUAL_APP_CODE_PREFIX)
+            )
             .order_by("-id")
         )
 

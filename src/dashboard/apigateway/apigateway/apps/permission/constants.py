@@ -93,3 +93,6 @@ class FormattedGrantDimensionEnum(StructuredEnum):
 DEFAULT_PERMISSION_EXPIRE_DAYS = 180
 # 可续期的过期天数，权限有效期小于此值，允许续期，否则，不允许
 RENEWABLE_EXPIRE_DAYS = 360
+
+# 虚拟应用前缀
+VIRTUAL_APP_CODE_PREFIX = "v_mcp_"
