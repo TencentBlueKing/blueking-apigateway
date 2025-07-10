@@ -19,6 +19,7 @@
 from rest_framework import serializers
 
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
+from apigateway.common.security import is_forbidden_host
 from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, LoadBalanceTypeEnum
 
 from .constants import BackendConfigSchemeEnum, BackendConfigTypeEnum
@@ -53,6 +54,10 @@ class BaseBackendConfigSLZ(serializers.Serializer):
             if scheme_host_combination in unique_combinations:
                 raise serializers.ValidationError("hosts中的scheme和host组合必须唯一。")
             unique_combinations.add(scheme_host_combination)
+
+            if is_forbidden_host(host_data["host"]):
+                raise serializers.ValidationError(f"host: {host_data['host']} 不能使用该端口。")
+
         return value
 
     class Meta:
