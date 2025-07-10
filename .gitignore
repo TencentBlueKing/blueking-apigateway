@@ -14,3 +14,4 @@ src/dashboard-front/.bk.local.env
 pre-*-bkcodeai
 
 bkcodeai.json
+src/dashboard-front/.env.local

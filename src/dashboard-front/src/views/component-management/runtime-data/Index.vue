@@ -15,8 +15,14 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
+<script setup lang="ts">
 
-// info-box通用hook
-export * from './use-pop-info-box';
-// 获关列表接收搜索参数通用hooks
-export * from './useGateWayData';
+</script>
+
+<template>
+  <div>文档分类</div>
+</template>
+
+<style scoped lang="scss">
+
+</style>

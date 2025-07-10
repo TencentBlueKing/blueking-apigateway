@@ -23,6 +23,7 @@
                 :key="item.id"
                 class="header-nav-item"
                 :class="{ 'item-active': index === activeIndex }"
+                @click="handleNavClick(item.url, index, item.link)"
               >
                 <span class="text">{{ item.name }}</span>
               </div>
@@ -32,20 +33,21 @@
         </div>
       </template>
       <div class="content">
-        <RouterView />
+        <RouterView v-if="userLoaded" />
       </div>
     </BkNavigation>
   </BkConfigProvider>
 </template>
 
 <script lang="ts" setup>
-import { RouterView } from 'vue-router';
 import LogoWithoutTitle from '@/images/APIgateway-logo.png';
 import En from '../node_modules/bkui-vue/dist/locale/en.esm.js';
 import ZhCn from '../node_modules/bkui-vue/dist/locale/zh-cn.esm.js';
 import { useFeatureFlag, useUserInfo } from '@/stores';
+import { getMyGateWayMenu } from '@/constants';
 
-const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const userInfoStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
 
@@ -54,43 +56,12 @@ featureFlagStore.fetchFlags();
 
 const locale = ref('zh-cn');
 const activeIndex = ref(0);
-const tabList = [
-  {
-    name: t('我的网关'),
-    id: 1,
-    url: 'home',
-    enabled: true,
-    link: '',
-  },
-  {
-    name: t('组件管理'),
-    id: 2,
-    url: 'componentsMain',
-    enabled: true,
-    link: '',
-  },
-  {
-    name: t('API 文档'),
-    id: 3,
-    url: 'apiDocs',
-    enabled: true,
-    link: '',
-  },
-  {
-    name: t('平台工具'),
-    id: 4,
-    url: 'platformTools',
-    enabled: true,
-    link: '',
-  },
-  {
-    name: t('MCP 市场'),
-    id: 5,
-    url: 'mcpMarket',
-    enabled: true,
-    link: '',
-  },
-];
+const userLoaded = ref(false);
+const curLeavePageData = ref({});
+
+const tabList = computed(() => {
+  return getMyGateWayMenu();
+});
 
 const bkuiLocale = computed(() => {
   if (locale.value === 'zh-cn') {
@@ -99,9 +70,59 @@ const bkuiLocale = computed(() => {
   return En;
 });
 
-onMounted(() => {
-  console.log('mounted');
+const apigwId = computed(() => {
+  return route.params.id;
 });
+
+watch(
+  () => route.path,
+  (newVal, oldVal) => {
+    if (newVal === oldVal) {
+      return;
+    }
+    const { meta } = route;
+    activeIndex.value = tabList.value.findIndex(v => v.url === meta?.topMenu);
+    if (activeIndex.value === -1) {
+      activeIndex.value = 0;
+    }
+    userLoaded.value = true;
+  },
+  {
+    immediate: true,
+    deep: true,
+  },
+);
+
+const goPage = (routeName: string): void => {
+  const id = ['home', 'apigwDoc', 'apiDocs'].includes(routeName) ? '' : apigwId.value;
+  router.push({
+    name: routeName,
+    params: { id },
+  });
+};
+
+const getRouteData = (routeName: string, index: number, link: string) => {
+  curLeavePageData.value = {};
+  activeIndex.value = index;
+  // 常用工具
+  if (link) {
+    window.open(routeName);
+    return;
+  }
+  if (['apigwSystem'].includes(routeName)) {
+    router.push({ name: routeName });
+    return;
+  }
+  goPage(routeName);
+};
+
+const handleNavClick = (url: string, index: number, link: string) => {
+  // 禁止重复点击
+  if (index === activeIndex.value) {
+    return;
+  }
+  getRouteData(url, index, link);
+};
 </script>
 
 <style lang="scss">
