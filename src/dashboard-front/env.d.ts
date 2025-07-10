@@ -1,0 +1,43 @@
+/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  readonly VITE_BK_DASHBOARD_FE_URL: string
+  // 更多环境变量...
+}
+
+interface ImportMeta { readonly env: ImportMetaEnv }
+
+declare module '*.css' {
+  const css: string;
+  export default css;
+}
+
+declare module '*.png' {
+  const css: string;
+  export default png;
+}
+
+declare module '*.js' {
+  const css: string;
+  export default js;
+}
+
+declare module '@blueking/notice-component';
+
+declare module '@blueking/login-modal' {
+  export function showLoginModal(params: { loginUrl: string }): void;
+}
+
+declare interface Window {
+  APIGW_ENV: {
+    BK_API_RESOURCE_URL_TMPL: string
+    BK_APP_CODE: string
+    BK_COMPONENT_API_URL: string
+    BK_DASHBOARD_CSRF_COOKIE_NAME: string
+    BK_DASHBOARD_FE_URL: string
+    BK_DASHBOARD_URL: string
+    BK_DEFAULT_TEST_APP_CODE: string
+    BK_PAAS_APP_REPO_URL_TMPL: string
+    EDITION: string
+  }
+}
