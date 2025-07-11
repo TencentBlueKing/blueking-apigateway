@@ -27,6 +27,8 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@stylistic/eslint-plugin": "^5.1.0",
     "@tsconfig/node22": "^22.0.2",
     "@types/js-cookie": "^3.0.6",
@@ -47,6 +49,7 @@
     "oxlint": "~1.6.0",
     "postcss-html": "^1.8.0",
     "sass-embedded": "^1.89.2",
+    "simple-git-hooks": "^2.13.0",
     "stylelint": "^16.21.1",
     "stylelint-config-standard-scss": "^15.0.1",
     "stylelint-order": "^7.0.0",
@@ -57,6 +60,9 @@
     "vite": "^7.0.0",
     "vite-plugin-vue-devtools": "^7.7.7",
     "vue-tsc": "^2.2.10"
+  },
+  "simple-git-hooks": {
+    "commit-msg": "cd src/dashboard-front && npx commitlint --edit $1"
   },
   "engines": {
     "node": ">=20.19.3"
