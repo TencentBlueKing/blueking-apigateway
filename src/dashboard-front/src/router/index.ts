@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import getStageManagementRoutes from '@/views/stage-management/routes.ts';
+import getPlatformToolsRoutes from '@/views/platform-tools/routes.ts';
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
@@ -15,6 +16,14 @@ const router = createRouter({
       component: () => import('@/layout/my-gateway/Index.vue'),
       children: [
         ...getStageManagementRoutes(),
+      ],
+    },
+    {
+      path: '/platform-tools',
+      name: 'PlatformTools',
+      component: () => import('@/layout/platform-tools/Index.vue'),
+      children: [
+        ...getPlatformToolsRoutes(),
       ],
     },
   ],

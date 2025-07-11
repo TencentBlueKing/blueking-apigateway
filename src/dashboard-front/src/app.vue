@@ -79,7 +79,7 @@ const tabList = [
   {
     name: t('平台工具'),
     id: 4,
-    url: 'platformTools',
+    url: 'PlatformTools',
     enabled: true,
     link: '',
   },
