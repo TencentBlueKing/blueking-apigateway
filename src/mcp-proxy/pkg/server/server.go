@@ -70,7 +70,7 @@ func Run(cfg *config.Config) {
 	}
 	// catching ctx.Done(). timeout of 5 seconds.
 
-	// nolint:gosimple
+	// nolint:staticcheck
 	select {
 	case <-ctx.Done():
 		logging.GetLogger().Info("timeout of 5 seconds.")

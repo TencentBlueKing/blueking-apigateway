@@ -66,6 +66,7 @@ func GetRequestIDFromContext(ctx context.Context) string {
 }
 
 // SetRequestID set the request id to context
+// nolint:staticcheck
 func SetRequestID(c *gin.Context, requestID string) {
 	c.Set(RequestIDKey, requestID)
 	if c.Request != nil {
