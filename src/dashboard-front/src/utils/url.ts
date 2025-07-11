@@ -1,16 +1,4 @@
-/*
- * TencentBlueKing is pleased to support the open source community by making 蓝鲸智云-DB管理系统(BlueKing-BK-DBM) available.
- *
- * Copyright (C) 2017-2023 THL A29 Limited, a Tencent company. All rights reserved.
- *
- * Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at https://opensource.org/licenses/MIT
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for
- * the specific language governing permissions and limitations under the License.
- */
-import _ from 'lodash';
+import { isArray, isDate, isObject } from 'lodash-es';
 
 export const parseURL = (url: string) => {
   const a = document.createElement('a');
@@ -37,16 +25,17 @@ export const buildURLParams = (params: any) => {
 
     // Force an array if not already something iterable
     if (typeof obj !== 'object') {
-      /* eslint no-param-reassign:0*/
+      /* eslint no-param-reassign:0 */
       obj = [obj];
     }
 
-    if (_.isArray(obj)) {
+    if (isArray(obj)) {
       // Iterate over array values
       for (let i = 0, l = obj.length; i < l; i++) {
         fn(obj[i], i, obj);
       }
-    } else {
+    }
+    else {
       // Iterate over object keys
       Object.keys(obj).forEach((key) => {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -65,7 +54,7 @@ export const buildURLParams = (params: any) => {
       .replace(/%5B/gi, '[')
       .replace(/%5D/gi, ']');
   }
-  /* eslint no-param-reassign:0*/
+
   if (!params) {
     return '';
   }
@@ -76,16 +65,18 @@ export const buildURLParams = (params: any) => {
       return;
     }
 
-    if (_.isArray(val)) {
+    if (isArray(val)) {
       key = `${key}[]`;
-    } else {
+    }
+    else {
       val = [val];
     }
 
     forEach(val, (v: any) => {
-      if (_.isDate(v)) {
+      if (isDate(v)) {
         v = v.toISOString();
-      } else if (_.isObject(v)) {
+      }
+      else if (isObject(v)) {
         v = JSON.stringify(v);
       }
       parts.push(`${encode(key)}=${encode(v)}`);

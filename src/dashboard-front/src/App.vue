@@ -135,7 +135,12 @@ onMounted(() => {
     font-size: 14px;
   }
 
-  .header{
+  :deep(.title-desc) {
+    color: #eaebf0;
+    cursor: pointer;
+  }
+
+  .header {
     display: flex;
     width: 100%;
     font-size: 14px;

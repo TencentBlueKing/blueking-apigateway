@@ -1,28 +1,21 @@
 /*
- * Tencent is pleased to support the open source community by making
- * 蓝鲸智云PaaS平台 (BlueKing PaaS) available.
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) 2025 Tencent. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ *     http://opensource.org/licenses/MIT
  *
- * 蓝鲸智云PaaS平台 (BlueKing PaaS) is licensed under the MIT License.
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  *
- * License for 蓝鲸智云PaaS平台 (BlueKing PaaS):
- *
- * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
- * documentation files (the "Software"), to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
- * to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
- * the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
- * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
- * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
  */
+
 /** 基于infoBox二次封装  */
 import { type VNode } from 'vue';
 import { InfoBox } from 'bkui-vue';
@@ -33,34 +26,32 @@ type Theme = 'danger' | 'success' | 'warning' | 'primary';
 type InfoType = 'danger' | 'success' | 'warning' | 'loading';
 
 export interface IProps {
-  isShow?: boolean;
-  width?: number | string;
-  class?: string | string[];
-  type?: InfoType;
-  title?: (() => VNode | string) | VNode | string;
-  subTitle?: (() => VNode) | VNode | string;
-  content?: (() => VNode) | VNode | string;
-  footer?: (() => VNode) | VNode | string;
-  headerAlign?: Align;
-  footerAlign?: Align;
-  contentAlign?: Align;
-  showContentBgColor?: boolean;
-  showMask?: boolean;
-  quickClose?: boolean;
-  escClose?: boolean;
-  closeIcon?: boolean;
-  confirmText?: (() => VNode) | VNode | string;
-  cancelText?: (() => VNode) | VNode | string;
-  confirmButtonTheme?: Theme;
-  beforeClose?: (v: string) => Promise<boolean> | boolean;
-  onConfirm?: () => void;
-  onCancel?: () => void;
+  isShow?: boolean
+  width?: number | string
+  class?: string | string[]
+  type?: InfoType
+  title?: (() => VNode | string) | VNode | string
+  subTitle?: (() => VNode) | VNode | string
+  content?: (() => VNode) | VNode | string
+  footer?: (() => VNode) | VNode | string
+  headerAlign?: Align
+  footerAlign?: Align
+  contentAlign?: Align
+  showContentBgColor?: boolean
+  showMask?: boolean
+  quickClose?: boolean
+  escClose?: boolean
+  closeIcon?: boolean
+  confirmText?: (() => VNode) | VNode | string
+  cancelText?: (() => VNode) | VNode | string
+  confirmButtonTheme?: Theme
+  beforeClose?: (v: string) => Promise<boolean> | boolean
+  onConfirm?: () => void
+  onCancel?: () => void
 }
 
 export function usePopInfoBox(props: Partial<IProps>) {
-  const infoBoxInstance = InfoBox({
-    isShow: false,
-  });
+  const infoBoxInstance = InfoBox({ isShow: false });
 
   const renderTitle = () => {
     if (isFunction(props.title)) {
