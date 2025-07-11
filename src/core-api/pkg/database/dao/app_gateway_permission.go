@@ -16,6 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+// Package dao ...
 package dao
 
 //go:generate mockgen -source=$GOFILE -destination=./mock/$GOFILE -package=mock
