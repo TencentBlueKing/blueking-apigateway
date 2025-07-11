@@ -1,11 +1,13 @@
-<script setup lang="ts">
-
-</script>
-
 <template>
-  <div>环境概览</div>
+  <div>
+    <div>环境概览</div>
+    <IconButton icon="edit-line">
+      copy
+    </IconButton>
+  </div>
 </template>
 
-<style scoped lang="scss">
+<script setup lang="ts">
+import IconButton from '@/components/icon-button/Index.vue';
 
-</style>
+</script>
