@@ -5,6 +5,7 @@ import App from './App.vue';
 import router from './router';
 import 'virtual:uno.css';
 import '@unocss/reset/normalize.css';
+import './styles/base.css';
 
 // 全量引入 bkui-vue
 import bkui from 'bkui-vue';
