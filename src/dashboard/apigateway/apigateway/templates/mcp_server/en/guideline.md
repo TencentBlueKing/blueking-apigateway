@@ -48,6 +48,20 @@ If you need to pass through certain headers from the MCP client to the backend s
 X-Bkapi-Allowed-Headers: "X-Bk-Tenant-Id,X-xxx-Header"
 ```
 
+{% if enable_multi_tenant_mode and user_tenant_id == "system" %}
+### Multi-tenant mode requires configuring the X-Bk-Tenant-Id request header
+
+In multi-tenant mode, when calling MCP Server, the `X-Bk-Tenant-Id` request header must be passed through.
+
+```shell
+X-Bk-Tenant-Id: ""
+```
+
+The value is:
+- If the application is a single-tenant application, the value is the application tenant ID (or can be omitted, the gateway will automatically obtain the tenant ID based on the application ID)
+- If the application is a full-tenant application, the value is the tenant ID of a specific tenant (must be explicitly passed, otherwise it will be intercepted by the gateway)
+{% endif %}
+
 ## FAQ
 
 ### 1. How to troubleshoot 4xx error codes when adding MCP Server via client?

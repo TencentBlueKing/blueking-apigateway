@@ -38,6 +38,7 @@ from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.core.models import Stage
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
 from apigateway.utils.django import get_model_dict
@@ -349,6 +350,7 @@ class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
+        user_tenant_id = get_user_tenant_id(request)
         template_name = f"mcp_server/{get_current_language_code()}/guideline.md"
         content = render_to_string(
             template_name,
@@ -358,6 +360,8 @@ class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
                 "description": instance.description,
                 "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
                 "bk_access_token_doc_url": settings.BK_ACCESS_TOKEN_DOC_URL,
+                "enable_multi_tenant_mode": settings.ENABLE_MULTI_TENANT_MODE,
+                "user_tenant_id": user_tenant_id,
             },
         )
         slz = self.get_serializer({"content": content})
