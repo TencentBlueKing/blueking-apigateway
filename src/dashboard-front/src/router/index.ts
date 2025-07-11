@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import getStageManagementRoutes from '@/views/stage-management/routes.ts';
+import getBasicInfoRoutes from '@/views/basic-info/routes.ts';
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
@@ -15,6 +16,7 @@ const router = createRouter({
       component: () => import('@/layout/my-gateway/Index.vue'),
       children: [
         ...getStageManagementRoutes(),
+        ...getBasicInfoRoutes(),
       ],
     },
   ],

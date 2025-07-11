@@ -6,3 +6,4 @@ export * from './message';
 export * from './random';
 export * from './url';
 export * from './isAfter24h';
+export * from './copy';

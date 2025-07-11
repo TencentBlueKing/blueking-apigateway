@@ -106,11 +106,12 @@
         <!-- 默认头部 -->
         <div
           v-if="!route.meta.customHeader"
-          class="flex-row align-items-center content-header"
+          class="content-header"
         >
-          <i
+          <AgIcon
             v-if="route.meta.showBackIcon"
-            class="icon apigateway-icon icon-ag-return-small"
+            name="return-small"
+            size="32"
             @click="handleBack"
           />
           {{ headerTitle }}
@@ -137,7 +138,6 @@
 
 <script setup lang="ts">
 import { useFeatureFlag, useGateway } from '@/stores';
-import AgIcon from '@/components/ag-icon/Index.vue';
 import { getGatewayList } from '@/services/source/gateway.ts';
 
 interface IMenu {
@@ -284,7 +284,7 @@ const menuList = computed<IMenu[]>(() => [
     icon: 'zaixiandiaoshi',
   },
   {
-    name: 'apigwBasicInfo',
+    name: 'BasicInfo',
     enabled: true,
     title: t('基本信息'),
     icon: 'jibenxinxi',
@@ -500,7 +500,7 @@ onMounted(async () => {
     }
   }
 
-  &-content {
+  .navigation-main-content {
     border: 1px solid #ddd;
 
     .content-view {
@@ -508,8 +508,9 @@ onMounted(async () => {
       overflow: hidden;
       font-size: 14px;
 
-      .content-header{
+      .content-header {
         display: flex;
+        align-items: center;
         height: 52px;
         padding: 0 24px;
         margin-right: auto;
@@ -517,13 +518,11 @@ onMounted(async () => {
         color: #313238;
         background: #fff;
         border-bottom: 1px solid #dcdee5;
-
-        // box-shadow: 0 3px 4px rgba(64,112,203,0.05882);
         box-shadow: 0 3px 4px 0 #0000000a;
         box-sizing: border-box;
         flex-basis: 52px;
 
-        .icon-ag-return-small{
+        .icon-ag-return-small {
           font-size: 32px;
           color: #3a84ff;
           cursor: pointer;
@@ -548,7 +547,7 @@ onMounted(async () => {
         }
       }
 
-      .default-header-view{
+      .default-header-view {
         height: calc(100vh - 105px);
         overflow: auto;
 
@@ -557,7 +556,7 @@ onMounted(async () => {
         }
       }
 
-      .custom-header-view{
+      .custom-header-view {
         height: 100%;
         margin-top: 52px;
         overflow: auto;
@@ -565,7 +564,7 @@ onMounted(async () => {
     }
   }
 
-  :deep(.header-select){
+  :deep(.header-select) {
     width: 224px;
 
     .bk-input {

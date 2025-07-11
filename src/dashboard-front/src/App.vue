@@ -44,10 +44,12 @@ import LogoWithoutTitle from '@/images/APIgateway-logo.png';
 import En from '../node_modules/bkui-vue/dist/locale/en.esm.js';
 import ZhCn from '../node_modules/bkui-vue/dist/locale/zh-cn.esm.js';
 import { useFeatureFlag, useUserInfo } from '@/stores';
+import { useBkUserDisplayName } from '@/hooks';
 
 const { t } = useI18n();
 const userInfoStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
+const { configure: configureDisplayName } = useBkUserDisplayName();
 
 userInfoStore.fetchUserInfo();
 featureFlagStore.fetchFlags();
@@ -99,6 +101,8 @@ const bkuiLocale = computed(() => {
   return En;
 });
 
+configureDisplayName();
+
 onMounted(() => {
   console.log('mounted');
 });
@@ -110,7 +114,6 @@ onMounted(() => {
   height: 100vh;
   min-width: 1280px;
   overflow: auto;
-  font-family: "PingFang SC","Microsoft Yahei",Helvetica,Aria,sans-serif;
   font-size: 14px;
   color: #63656e;
   text-align: left;

@@ -16,7 +16,12 @@ export default defineConfigWithVueTs(
     files: ['**/*.{ts,mts,tsx,vue}'],
   },
 
-  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
+  globalIgnores([
+    '**/dist/**',
+    '**/dist-ssr/**',
+    '**/coverage/**',
+    '**/lib/**',
+  ]),
 
   pluginVue.configs['flat/essential'],
   pluginVue.configs['flat/strongly-recommended'],
@@ -57,7 +62,6 @@ export default defineConfigWithVueTs(
           multiline: true,
           consistent: true,
         }],
-      '@stylistic/line-comment-position': 'error',
       // Vue
       'vue/component-name-in-template-casing': 'error',
       'vue/define-emits-declaration': ['error', 'type-literal'],
