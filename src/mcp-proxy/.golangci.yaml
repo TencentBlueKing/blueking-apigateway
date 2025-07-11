@@ -5,6 +5,7 @@ run:
   tests: false
 linters:
   enable:
+    - revive
     - gocritic
     - gocyclo
     - lll
@@ -18,22 +19,71 @@ linters:
   settings:
     staticcheck:
       checks:
-        - -ST1000
-        - -ST1016
-        - -ST1020
-        - -ST1021
-        - -ST1022
+        - all
+        - -QF1008
+        - -QF1001
+        - -ST1003
+        - -ST1011
+    revive:
+      severity: error
+      enable-all-rules: false
+      rules:
+        - name: package-comments
+          severity: error
+          disabled: false
+          exclude: []
+        - name: exported
+          severity: error
+          disabled: false
+          exclude: []
+          arguments:
+            - "check-private-receivers"
+            - "disableStutteringCheck"
+            - "disable-checks-on-constants"
+            - "disable-checks-on-types"
+            - "disable-checks-on-variables"
+
+    lll:
+      # Max line length, lines longer will be reported.
+      # '\t' is counted as 1 character by default, and can be changed with the tab-width option.
+      # Default: 120.
+      line-length: 120
+      # Tab width in spaces.
+      # Default: 1
+      tab-width: 1
+
   exclusions:
     generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
     paths:
       - third_party$
       - builtin$
       - examples$
+issues:
+  uniq-by-line: false
+  # Show only new issues: if there are unstaged changes or untracked files,
+  # only those changes are analyzed, else only changes in HEAD~ are analyzed.
+  # It's a super-useful option for integration of golangci-lint into existing large codebase.
+  # It's not practical to fix all existing issues at the moment of integration:
+  # much better don't allow issues in new code.
+  #
+  # Default: false
+  new: false
+  # Show only new issues created after the best common ancestor (merge-base against HEAD).
+  # Default: ""
+  new-from-merge-base: master
+  # Show only new issues created after git revision `REV`.
+  # Default: ""
+  new-from-rev: HEAD
+  # Show only new issues created in git patch with set file path.
+  # Default: ""
+  new-from-patch: ""
+  # Show issues in any part of update files (requires new-from-rev or new-from-patch).
+  # Default: false
+  whole-files: true
+  # Fix found issues (if it's supported by the linter).
+  # Default: false
+  fix: true
+
 formatters:
   enable:
     - gofmt
@@ -58,5 +108,3 @@ formatters:
       - third_party$
       - builtin$
       - examples$
-
-
