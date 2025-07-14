@@ -16,8 +16,10 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-import ipaddress
+import logging
 from typing import List
+
+logger = logging.getLogger(__name__)
 
 
 def parse_ip_content_to_list(ip_content: str) -> List[str]:
@@ -39,9 +41,13 @@ def parse_ip_content_to_list(ip_content: str) -> List[str]:
         # >>> ipaddress.ip_interface("::ffff:192.1.1.1/96")
         #     IPv6Interface('::ffff:c001:101/96')
         # while the apisix not support the `::ffff:192.1.1.1/96`, we need to convert here
+
         ip_line_lower = ip_line.lower()
         if ip_line_lower.startswith(("0:0:0:0:0:ffff:", "::ffff:")) and "/" in ip_line_lower:
-            ips.add(str(ipaddress.ip_interface(ip_line)))
+            logger.warning("ip_line: %s is ipv4-mapped ipv6 address, skip", ip_line)
+            # the convert would not work for newer python version, so we skip it
+            # "::ffff:192.1.1.1/96" -> "::ffff:c001:101/96"
+            # ips.add(str(ipaddress.ip_interface(ip_line)))
             continue
 
         ips.add(ip_line)
