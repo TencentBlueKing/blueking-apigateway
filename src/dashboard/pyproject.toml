@@ -3,7 +3,7 @@ name = "apigateway-dashboard"
 version = "1.0.0"
 description = ""
 authors = []
-requires-python = ">=3.10,<3.11"
+requires-python = ">=3.11,<3.12"
 dependencies = [
     "django==4.2.23",
     "djangorestframework==3.16.0",
@@ -45,22 +45,21 @@ dependencies = [
     "bkapi-client-core==1.2.0",
     "python-redis-lock==4.0.0",
     "etcd3==0.12.0",
-    "grpcio==1.44.0",
-    "protobuf==3.20.3",
+    "grpcio==1.73.1",
+    "protobuf==6.31.1",
     "bkapi-bk-apigateway==1.0.11",
     "docutils==0.21.2",
     "Pygments==2.18.0",
     "Pillow==11.0.0",
-    "opentelemetry-api==1.27.0",
-    "opentelemetry-sdk==1.27.0",
-    "opentelemetry-exporter-otlp==1.27.0",
-    "opentelemetry-exporter-jaeger==1.21.0",
-    "opentelemetry-instrumentation-django==0.48b0",
-    "opentelemetry-instrumentation-dbapi==0.48b0",
-    "opentelemetry-instrumentation-redis==0.48b0",
-    "opentelemetry-instrumentation-requests==0.48b0",
-    "opentelemetry-instrumentation-logging==0.48b0",
-    "opentelemetry-instrumentation-celery==0.48b0",
+    "opentelemetry-api==1.35.0",
+    "opentelemetry-sdk==1.35.0",
+    "opentelemetry-exporter-otlp==1.35.0",
+    "opentelemetry-instrumentation-django==0.56b0",
+    "opentelemetry-instrumentation-dbapi==0.56b0",
+    "opentelemetry-instrumentation-redis==0.56b0",
+    "opentelemetry-instrumentation-requests==0.56b0",
+    "opentelemetry-instrumentation-logging==0.56b0",
+    "opentelemetry-instrumentation-celery==0.56b0",
     "django-filter==25.1",
     "django-add-default-value==0.10.0",
     "pypi-simple==1.6.1",
@@ -122,6 +121,10 @@ package = false
 # url = "https://mirrors.tencent.com/pypi/simple"
 url = "https://pypi.org/simple/"
 default = true
+
+[tool.uv.sources]
+etcd3 = { git = "https://github.com/kragniz/python-etcd3.git", rev = "e58a899579ba416449c4e225b61f039457c8072a" }
+
 
 [tool.mypy]
 ignore_missing_imports = true

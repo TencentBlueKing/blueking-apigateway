@@ -1,5 +1,5 @@
 ARG IMAGE=python
-ARG TAG=3.10.15-slim-bullseye
+ARG TAG=3.11.13-slim-bullseye
 FROM ${IMAGE}:${TAG}
 
 # RUN sed -i "s/http/https/g" /etc/apt/sources.list
@@ -45,6 +45,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /app
 ADD build/uv.lock  /app/uv.lock
 ADD build/pyproject.toml /app/pyproject.toml
+# for etcd3 lib installed from git
+RUN apt-get install -y git
 RUN export UV_PROJECT_ENVIRONMENT=/usr/local/ && uv sync --locked
 
 
