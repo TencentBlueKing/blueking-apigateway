@@ -22,7 +22,14 @@ export default defineConfig({
     open: true,
   },
   plugins: [
-    vue(),
+    vue({
+      template: {
+        compilerOptions: {
+          // 多租户名称展示标签不要解析为组件
+          isCustomElement: tag => tag === 'bk-user-display-name',
+        },
+      },
+    }),
     vueJsx(),
     vueDevTools(),
     AutoImport({

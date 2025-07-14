@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import QueryString from 'qs';
 import { unionBy } from 'lodash-es';
+import { useEnv } from '@/stores/useEnv.ts';
 
 /**
  * 使用 Pinia 定义一个名为 useStaffStore 的 store
@@ -16,11 +17,13 @@ export const useStaff = defineStore('useStaff', {
      * @param {string} [name] - 可选参数，员工姓名，用于模糊查询
      */
     async fetchStaffs(name?: string) {
+      const envStore = useEnv();
+
       if (this.fetching) return; // 如果正在获取数据，则直接返回
+
       this.fetching = true; // 设置 fetching 为 true，表示开始获取数据
-      // TODO 改地址
-      // const usersListPath = `${BK_LIST_USERS_API_URL}`; // 获取员工列表的 API URL
-      const usersListPath = ''; // 获取员工列表的 API URL
+      // 获取员工列表的 API URL
+      const usersListPath = `${envStore.env.BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fs_list_users/`;
       const params: any = {
         app_code: 'bk-magicbox', // 应用代码
         page: 1, // 页码
@@ -32,7 +35,8 @@ export const useStaff = defineStore('useStaff', {
       }
       const scriptTag = document.createElement('script'); // 创建 script 标签
       scriptTag.setAttribute('type', 'text/javascript'); // 设置 script 标签类型
-      scriptTag.setAttribute('src', `${usersListPath}?${QueryString.stringify(params)}`); // 设置 script 标签的 src 属性
+      // 设置 script 标签的 src 属性
+      scriptTag.setAttribute('src', `${usersListPath}?${QueryString.stringify(params)}`);
 
       const headTag = document.getElementsByTagName('head')[0]; // 获取 head 标签
       // @ts-expect-error ignore
@@ -43,7 +47,6 @@ export const useStaff = defineStore('useStaff', {
         if (result) {
           this.fetching = false; // 设置 fetching 为 false，表示数据获取完成
           this.list = unionBy(this.list, data.results, 'id'); // 合并新获取的数据到列表中
-          console.log('staffs', this.list.length); // 打印员工列表的长度
         }
         headTag.removeChild(scriptTag); // 移除 script 标签
         delete window[params.callback]; // 删除回调函数

@@ -12,6 +12,7 @@ interface IApiGateway {
   id: number
   name: string
   description: string
+  description_en?: string
   tenant_mode: string
   tenant_id: string
   status: number
@@ -61,7 +62,7 @@ interface IApiGatewayEditParam {
   // 公钥指纹
   public_key_fingerprint: string
   // 蓝鲸应用代码
-  bk_app_codes: string
+  bk_app_codes: string[]
   // 相关应用代码[]
   related_app_codes: string[]
   // 文档URL
@@ -125,6 +126,9 @@ export function getGatewayList(params: {
 export function getGatewayDetail(id: number) {
   return http.get<IApiGatewayDetail>(`${path}/${id}/`);
 }
+
+// 新建网关
+export const createGateway = (param: Partial<IApiGatewayEditParam>) => http.post(`${path}/`, param);
 
 export const deleteGateway = (id: number) => http.delete(`${path}/${id}/`);
 

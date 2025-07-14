@@ -1,8 +1,8 @@
 <template>
   <div
     ref="memberSelectorEditRef"
-    class="gateways-edit-member-selector"
     :style="styles"
+    class="gateways-edit-member-selector"
   >
     <template v-if="!isEditable">
       <div class="edit-wrapper">
@@ -10,10 +10,15 @@
           <slot>
             <template v-if="membersText">
               <span class="member-item">
-                <BkPopover>
-                  <BkUserDisplayName :user-id="membersText" />
+                <BkPopover
+                  :component-event-delay="300"
+                  :width="480"
+                >
+                  <div class="overflow-hidden text-ellipsis whitespace-nowrap">
+                    <bk-user-display-name :user-id="membersText" />
+                  </div>
                   <template #content>
-                    <span><BkUserDisplayName :user-id="membersText" /></span>
+                    <div><bk-user-display-name :user-id="membersText" /></div>
                   </template>
                 </BkPopover>
               </span>
@@ -29,6 +34,7 @@
         >
           <AgIcon
             name="edit-small"
+            size="26"
             class="edit-action"
             @click.self.stop="handleEdit"
           />
@@ -40,46 +46,29 @@
       class="edit-mode-content"
     >
       <main class="edit-member-wrap">
-        <MemberSelector
+        <BkUserSelector
           ref="memberSelectorRef"
           v-model="displayValue"
-          class="edit-selector w-500px"
+          :api-base-url="featureFlagStore.apiBaseUrl"
+          class="edit-selector"
           :class="[{ [isErrorClass]: isShowError }]"
+          multiple
           :placeholder="placeholder"
-          has-delete-icon
+          :tenant-id="userStore.info.tenant_id || ''"
+          required
           @change="handleChange"
-          @keydown="handleEnter"
         />
         <aside class="edit-member-actions">
-          <BkPopConfirm
-            v-if="!displayValue?.includes(userInfoStore.info.username)"
-            width="288"
-            :content="t('您已将自己从维护人员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！')"
-            trigger="click"
-            ext-cls="confirm-custom-btn"
-            @confirm="handleSubmit"
-            @cancel="handleCancel"
-          >
-            <BkButton class="w-32px">
-              <AgIcon
-                name="check-1"
-                class="color-#3A84FF"
-                size="24"
-              />
-            </BkButton>
-          </BkPopConfirm>
           <BkButton
-            v-else
             class="w-32px"
             @click.stop="handleSubmit"
           >
             <AgIcon
               name="check-1"
-              class="color-#3A84FF"
+              class="color-#3a84ff"
               size="24"
             />
           </BkButton>
-
           <BkButton
             class="w-32px"
             @click="handleCancel"
@@ -101,9 +90,12 @@
   </div>
 </template>
 
-<script lang="ts" setup>
-import MemberSelector from '@/components/member-selector/index.tsx';
-import { useUserInfo } from '@/stores';
+<script lang="tsx" setup>
+import BkUserSelector from '@blueking/bk-user-selector';
+import {
+  useFeatureFlag,
+  useUserInfo,
+} from '@/stores';
 
 interface IProps {
   field: string
@@ -129,9 +121,8 @@ const {
 
 const emit = defineEmits<{ 'on-change': [data: { [key: string]: string[] }] }>();
 
-const { t } = useI18n();
-
-const userInfoStore = useUserInfo();
+const userStore = useUserInfo();
+const featureFlagStore = useFeatureFlag();
 
 const memberSelectorRef = ref();
 const memberSelectorEditRef = ref();
@@ -169,7 +160,6 @@ watch(
 );
 
 const handleEdit = () => {
-  document.body.click();
   isEditable.value = true;
   nextTick(() => {
     memberSelectorRef.value?.tagInputRef?.focusInputTrigger();
@@ -198,18 +188,6 @@ const handleChange = () => {
   });
 };
 
-const handleEnter = (event: any) => {
-  if (!isEditable.value) return;
-  if (!displayValue.value?.includes(userInfoStore.info.username)) {
-    isShowError.value = true;
-    errorTips.value = t('您已将自己从维护人员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！');
-    return;
-  }
-  if (event.key === 'Enter' && event.keyCode === 13) {
-    triggerChange();
-  }
-};
-
 const triggerChange = () => {
   if (isRequired && !displayValue.value.length) {
     isShowError.value = true;
@@ -222,7 +200,6 @@ const triggerChange = () => {
   }
   emit('on-change', { [field]: displayValue.value });
 };
-
 </script>
 
 <style lang="scss" scoped>
@@ -272,7 +249,7 @@ const triggerChange = () => {
     }
 
     .edit-selector {
-      width: 100%;
+      width: 500px;
     }
   }
 
@@ -300,7 +277,7 @@ const triggerChange = () => {
   .icon-ag-edit-small {
     display: none;
     font-size: 26px;
-    color: #979BA5;
+    color: #979ba5;
     cursor: pointer;
 
     &:hover {
@@ -319,20 +296,5 @@ const triggerChange = () => {
 .validate-error-tips {
   font-size: 12px;
   color: #ff4d4d;
-}
-</style>
-
-<style lang="scss">
-.confirm-custom-btn {
-
-  .BkButton.BkButton-primary {
-    background-color: #E71818;
-    border-color: #E71818;
-
-    &:hover {
-      background-color: #ff5656;
-      border-color: #ff5656;
-    }
-  }
 }
 </style>

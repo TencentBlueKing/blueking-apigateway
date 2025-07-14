@@ -76,7 +76,7 @@ const {
 
 const emit = defineEmits<{ 'on-change': [data: { [key: string]: string }] }>();
 
-const textareaRef = ref(null);
+const textareaRef = ref();
 const isShowError = ref(false);
 const isEditable = ref(false);
 const errorTips = ref('');
@@ -92,18 +92,12 @@ const isEditMode = computed(() => {
 
 watch(
   () => content,
-  (payload: string) => {
-    newVal.value = payload;
+  () => {
+    newVal.value = content;
   },
 );
 
-const handleValidate = () => {
-  isShowError.value = false;
-  errorTips.value = '';
-};
-
 const handleEdit = () => {
-  document.body.click();
   isEditable.value = true;
   nextTick(() => {
     textareaRef.value?.focus();
@@ -130,18 +124,6 @@ const handleEnter = (value: string, event: any) => {
   }
 };
 
-const hideEdit = (event: any) => {
-  if (event.path && event.path.length > 0) {
-    for (const i of event.path) {
-      const target = event.path[i];
-      if (target.className === 'gateways-edit-textarea') {
-        return;
-      }
-    }
-  }
-  handleValidate();
-};
-
 const triggerChange = () => {
   isEditable.value = false;
   if (newVal.value === content) {
@@ -149,10 +131,6 @@ const triggerChange = () => {
   }
   emit('on-change', { [field]: newVal.value });
 };
-
-onMounted(() => {
-  document.body.addEventListener('click', hideEdit);
-});
 </script>
 
 <style lang="scss" scoped>
