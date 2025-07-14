@@ -22,6 +22,8 @@ import getStageManagementRoutes from '@/views/stage-management/route';
 import getBasicInfoRoutes from '@/views/basic-info/routes';
 // 组件管理
 import getComponentManagementRoutes from '@/views/component-management/route';
+// 后端服务
+import getBackendServicesRoutes from '@/views/backend-services/routes';
 
 function props(route: RouteLocationNormalized) {
   const { id } = route.params;
@@ -41,6 +43,7 @@ const routes: RouteRecordRaw[] = [
     children: [
       ...getStageManagementRoutes(),
       ...getBasicInfoRoutes(),
+      ...getBackendServicesRoutes(),
     ],
   },
   {

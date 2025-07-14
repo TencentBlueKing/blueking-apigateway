@@ -1,0 +1,39 @@
+// 处理升级组件库后兼容bkui组件样式
+.bk-table {
+  .bk-table-body {
+    /* 兼容table滚动条异常 */
+    .bk__rail-x {
+      top: unset !important;
+    }
+  }
+
+ .bk-table-footer {
+    background: #ffffff !important;
+    padding-left: 20px;
+  }
+
+  &.bordered-outer {
+    .bk-table-body {
+      .bk-exception {
+        border-bottom: 1px solid #dcdee5;
+        padding-bottom: 20px;
+      }
+    }
+  }
+}
+
+.bk-sideslider {
+  .bk-modal-footer {
+    &.is-fixed {
+      .bk-sideslider-footer {
+        height: 54px;
+        margin: 0;
+        border-top: 1px solid transparent;
+        background-color: #ffffff;
+        box-shadow: rgba(0, 0, 0, 0.05882) 0 -2px 4px;
+      }
+    }
+  }
+}
+
+

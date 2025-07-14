@@ -51,3 +51,5 @@ export interface IPagination {
   // 当前页码
   current?: number
 }
+
+export type ReturnRecordType<T, U> = Record<string, (arg?: T) => U>;
