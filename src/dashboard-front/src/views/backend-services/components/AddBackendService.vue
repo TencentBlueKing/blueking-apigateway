@@ -1,0 +1,1011 @@
+<template>
+  <div>
+    <BkSideslider
+      v-model:is-show="sliderConfig.isShow"
+      quick-close
+      ext-cls="backend-service-slider"
+      width="960"
+      :before-close="handleBeforeClose"
+      @animation-end="handleAnimationEnd"
+    >
+      <template #header>
+        <div class="custom-side-header">
+          <div class="title">
+            {{ t(editId ? "编辑后端服务" : "新建后端服务") }}
+          </div>
+          <template v-if="editId">
+            <span />
+            <div class="subtitle">
+              {{ baseInfo.name }}
+            </div>
+          </template>
+        </div>
+      </template>
+      <template #default>
+        <div class="slider-content">
+          <BkAlert
+            v-if="gatewayStore.isProgrammableGateway"
+            :title="
+              t(
+                '发布可编程网关后，系统将在蓝鲸开发者中心部署一个 SaaS 以提供 API 后端服务，并自动获取其访问地址。'
+              )
+            "
+            class="service-tips"
+          />
+          <BkAlert
+            v-if="editId && isPublish"
+            :title="
+              t('如果环境和资源已经发布，服务配置修改后，将立即对所有已发布资源生效')
+            "
+            class="service-tips"
+            theme="warning"
+          />
+
+          <BkCollapse
+            v-model="activeKey"
+            class="bk-collapse-service"
+          >
+            <BkCollapsePanel name="base-info">
+              <template #header>
+                <div class="flex items-center panel-header">
+                  <AngleUpFill
+                    :class="[
+                      activeKey?.includes('base-info')
+                        ? 'panel-header-show'
+                        : 'panel-header-hide',
+                    ]"
+                  />
+                  <div class="title">
+                    {{ t("基础信息") }}
+                  </div>
+                </div>
+              </template>
+              <template #content>
+                <div>
+                  <BkForm
+                    ref="baseInfoRef"
+                    class="base-info-form"
+                    :model="baseInfo"
+                    form-type="vertical"
+                  >
+                    <BkFormItem
+                      :label="t('服务名称')"
+                      property="name"
+                      required
+                      :rules="baseInfoRules.name"
+                    >
+                      <BkInput
+                        v-model="baseInfo.name"
+                        :disabled="Boolean(editId) || disabled"
+                        :placeholder="
+                          t('请输入 1-20 字符的字母、数字、连字符(-)，以字母开头')
+                        "
+                      />
+                      <p class="alert-text">
+                        {{ t("后端服务唯一标识，创建后不可修改") }}
+                      </p>
+                    </BkFormItem>
+                    <BkFormItem
+                      :label="t('描述')"
+                      property="description"
+                      class="last-form-item"
+                    >
+                      <BkInput
+                        v-model="baseInfo.description"
+                        :disabled="disabled"
+                        :placeholder="t('请输入描述')"
+                      />
+                    </BkFormItem>
+                  </BkForm>
+                </div>
+              </template>
+            </BkCollapsePanel>
+
+            <BkCollapsePanel name="stage-config">
+              <template #header>
+                <div class="flex items-center panel-header">
+                  <AngleUpFill
+                    :class="[
+                      activeKey?.includes('stage-config')
+                        ? 'panel-header-show'
+                        : 'panel-header-hide',
+                    ]"
+                  />
+                  <div class="title">
+                    {{ t("各环境的服务配置") }}
+                  </div>
+                </div>
+              </template>
+              <template #content>
+                <div class="stage">
+                  <BkCollapse
+                    v-model="activeIndex"
+                    :list="stageConfig"
+                    header-icon="right-shape"
+                  >
+                    <template #title="slotProps">
+                      <span class="stage-name">
+                        {{ slotProps.name || slotProps.configs?.stage?.name }}
+                      </span>
+                    </template>
+                    <template #content="slotProps">
+                      <BkForm
+                        :ref="getStageConfigRef"
+                        class="stage-config-form"
+                        :model="slotProps"
+                        form-type="vertical"
+                      >
+                        <BkFormItem
+                          :label="t('负载均衡类型')"
+                          property="configs.loadbalance"
+                          required
+                          :rules="configRules.loadbalance"
+                        >
+                          <BkSelect
+                            v-model="slotProps.configs.loadbalance"
+                            :clearable="false"
+                            :disabled="disabled"
+                          >
+                            <BkOption
+                              v-for="option of loadbalanceList"
+                              :key="option.id"
+                              :value="option.id"
+                              :label="option.name"
+                            />
+                          </BkSelect>
+                        </BkFormItem>
+                        <BkFormItem
+                          v-for="(hostItem, i) in slotProps.configs.hosts"
+                          :key="i"
+                          :label="t('后端服务地址')"
+                          :rules="configRules.host"
+                          :property="`configs.hosts.${i}.host`"
+                          class="backend-item-cls"
+                          :class="[{ 'form-item-special': i !== 0 }]"
+                          required
+                        >
+                          <div class="flex items-center host-item">
+                            <BkInput
+                              :key="i"
+                              v-model="hostItem.host"
+                              :disabled="disabled"
+                              :placeholder="t('格式如：host:port')"
+                            >
+                              <template #prefix>
+                                <BkSelect
+                                  v-model="hostItem.scheme"
+                                  class="scheme-select-cls w-80px"
+                                  :filterable="false"
+                                  :clearable="false"
+                                  :disabled="disabled"
+                                >
+                                  <BkOption
+                                    v-for="(item, index) in schemeList"
+                                    :key="index"
+                                    :value="item.value"
+                                    :label="item.value"
+                                  />
+                                </BkSelect>
+                                <div class="slash">
+                                  ://
+                                </div>
+                              </template>
+                              <template
+                                v-if="
+                                  ['weighted-roundrobin'].includes(
+                                    slotProps?.configs?.loadbalance
+                                  )
+                                "
+                                #suffix
+                              >
+                                <BkFormItem
+                                  :rules="configRules.weight"
+                                  :property="`configs.hosts.${i}.weight`"
+                                  label=""
+                                  class="weight-input"
+                                >
+                                  <BkInput
+                                    v-model="hostItem.weight"
+                                    :disabled="disabled"
+                                    class="suffix-slot-cls weights-input"
+                                    :placeholder="t('权重')"
+                                    type="number"
+                                    :min="1"
+                                    :max="10000"
+                                  />
+                                </BkFormItem>
+                              </template>
+                            </BkInput>
+                            <i
+                              class="add-host-btn apigateway-icon icon-ag-plus-circle-shape"
+                              @click="() => handleAddServiceAddress(slotProps.name)"
+                            />
+                            <i
+                              class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape"
+                              :class="{ disabled: slotProps.configs.hosts.length < 2 }"
+                              @click="() => handleDeleteServiceAddress(slotProps.name, i)"
+                            />
+                          </div>
+                        </BkFormItem>
+                        <BkFormItem
+                          :label="t('超时时间')"
+                          :property="'configs.timeout'"
+                          class="timeout-item"
+                          required
+                          :rules="configRules.timeout"
+                          :error-display-type="'normal'"
+                        >
+                          <BkInput
+                            v-model="slotProps.configs.timeout"
+                            type="number"
+                            :min="1"
+                            :max="300"
+                            :disabled="disabled"
+                            class="time-input"
+                          >
+                            <template #suffix>
+                              <div
+                                class="group-text group-text-style"
+                                :class="locale === 'en' ? 'long' : ''"
+                              >
+                                {{ t("秒") }}
+                              </div>
+                            </template>
+                          </BkInput>
+                          <span
+                            class="timeout-tip"
+                            :class="locale === 'en' ? 'long' : ''"
+                          >
+                            {{ t("最大 300 秒") }}
+                          </span>
+                        </BkFormItem>
+                      </BkForm>
+                    </template>
+                  </BkCollapse>
+                </div>
+              </template>
+            </BkCollapsePanel>
+          </BkCollapse>
+        </div>
+      </template>
+      <template #footer>
+        <div class="p-l-30px">
+          <BkButton
+            :disabled="disabled"
+            :loading="isSaveLoading"
+            class="m-r-8px w-80px"
+            theme="primary"
+            @click="handleConfirm"
+          >
+            {{ t("确定") }}
+          </BkButton>
+          <BkButton
+            class="w-80px"
+            @click="handleCancel"
+          >
+            {{ t("取消") }}
+          </BkButton>
+        </div>
+      </template>
+    </BkSideslider>
+
+    <!-- 提示弹窗 -->
+    <BkDialog
+      v-model:is-show="publishDialog.isShow"
+      class="custom-main-dialog"
+      width="500"
+    >
+      <div class="dialog-content">
+        <div class="publish-icon">
+          <Success fill="#3FC06D" />
+        </div>
+        <div class="dialog-title">
+          {{ t("内容保存成功，正在发布至对应环境...") }}
+        </div>
+        <div class="dialog-main">
+          <div class="publish-tips">
+            {{ t("当前服务") }} <span>{{ baseInfo.name }}</span>{{ t("，") }} {{ t("已绑定以下") }}
+            <span>{{ publishDialog.stageNames?.length }}</span>
+            {{ t("个环境，所有修改都将发布到这些环境中：") }}
+          </div>
+          <div class="flex flex-wrap publish-stages">
+            <div
+              v-for="stage in publishDialog.stageNames"
+              :key="stage"
+              class="stage-item"
+            >
+              {{ stage }}
+            </div>
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <bk-button
+            theme="primary"
+            @click="toPublishLogs"
+          >
+            {{ t("去查看发布记录") }}
+          </bk-button>
+          <bk-button
+            class="m-l-10px"
+            @click="publishDialog.isShow = false"
+          >
+            {{ t("关闭") }}
+          </bk-button>
+        </div>
+      </div>
+    </BkDialog>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import { Message } from 'bkui-vue';
+import { cloneDeep, isEqual } from 'lodash-es';
+import { useGateway } from '@/stores';
+// import { useSidebar } from '@/hooks';
+import {
+  createBackendService,
+  getBackendServiceDetail,
+  updateBackendService,
+} from '@/services/source/backendServices';
+import { getStageList } from '@/services/source/stage';
+import { AngleUpFill, Success } from 'bkui-lib/icon';
+
+interface IProps {
+  editId?: number
+  disabled?: boolean
+  base: Record<string, any>
+}
+
+interface Emits {
+  (e: 'done'): void
+  (e: 'close'): void
+}
+
+const { editId = 0, base } = defineProps<IProps>();
+const emits = defineEmits<Emits>();
+const router = useRouter();
+const gatewayStore = useGateway();
+const { t, locale } = useI18n();
+// const { isSidebarClosed, initSidebarFormData } = useSidebar();
+
+const activeKey = ref(['base-info', 'stage-config']);
+// 基础信息
+const baseInfo = ref({
+  name: '',
+  description: '',
+});
+const curServiceDetail = ref({
+  id: 0,
+  name: '',
+  description: '',
+  configs: [],
+});
+const stageConfig = ref([]);
+const activeIndex = ref([]);
+const stageList = ref([]);
+const stageConfigRef = ref([]);
+const isPublish = ref(false);
+const isSaveLoading = ref(false);
+const finaConfigs = ref([]);
+const baseInfoEl = useTemplateRef<InstanceType<typeof BkForm> & { validate: () => void }>(
+  'baseInfoRef',
+);
+// 负载均衡类型
+const loadbalanceList = shallowRef([
+  {
+    id: 'roundrobin',
+    name: t('轮询(Round-Robin)'),
+  },
+  {
+    id: 'weighted-roundrobin',
+    name: t('加权轮询(Weighted Round-Robin)'),
+  },
+]);
+let publishDialog = reactive({
+  isShow: false,
+  stageNames: [],
+});
+const sliderConfig = reactive({
+  isShow: false,
+  title: '',
+});
+// scheme 类型
+const schemeList = [{ value: 'http' }, { value: 'https' }];
+// 基础信息校验规则
+const baseInfoRules = {
+  name: [
+    {
+      required: true,
+      message: t('必填项'),
+      trigger: 'blur',
+    },
+    {
+      validator: (value: string) => {
+        const reg = /^[a-zA-Z][a-zA-Z0-9-]{0,19}$/;
+        return reg.test(value);
+      },
+      message: t('请输入 1-20 字符的字母、数字、连字符(-)，以字母开头'),
+      trigger: 'blur',
+    },
+  ],
+};
+// 服务配置校验规则
+const configRules = {
+  loadbalance: [
+    {
+      required: true,
+      message: t('必填项'),
+      trigger: 'change',
+    },
+  ],
+  host: [
+    {
+      required: true,
+      message: t('必填项'),
+      trigger: 'blur',
+    },
+    {
+      validator(value: string) {
+        const reg
+          = /^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?$|^\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?$/;
+        return reg.test(value);
+      },
+      message: t('请输入合法Host，如：example.com'),
+      trigger: 'blur',
+    },
+  ],
+  weight: [
+    {
+      required: true,
+      message: t('必填项'),
+      trigger: 'change',
+    },
+  ],
+  timeout: [
+    {
+      required: true,
+      message: t('必填项'),
+      trigger: 'blur',
+    },
+    {
+      validator(val: number) {
+        if (val < 0 || val > 300) {
+          return false;
+        }
+        return true;
+      },
+      message: t('超时时间不能小于1且不能大于300'),
+      trigger: 'blur',
+    },
+  ],
+};
+
+const apigwId = computed<number>(() => gatewayStore.apigwId);
+
+watch(
+  () => base,
+  (val) => {
+    baseInfo.value = val;
+  },
+  { immediate: true },
+);
+
+const handleBeforeClose = async () => {
+  const sliderParams = {
+    curServiceDetail: curServiceDetail.value,
+    stageConfig: stageConfig.value,
+    baseInfo: baseInfo.value,
+  };
+  console.log(sliderParams);
+  // return isSidebarClosed(JSON.stringify(sliderParams));
+  return true;
+};
+
+const handleAnimationEnd = () => {
+  handleCancel();
+};
+
+// 获取所有stage服务配置的ref
+const getStageConfigRef = (el) => {
+  if (el) {
+    stageConfigRef.value.push(el);
+  }
+};
+
+// 增加服务地址
+const handleAddServiceAddress = (name: string) => {
+  const isAddItem = stageConfig.value;
+  isAddItem.forEach((item) => {
+    if (item.name === name) {
+      item.configs.hosts.push({
+        scheme: 'http',
+        host: '',
+        weight: 100,
+      });
+    }
+  });
+};
+
+// 删除服务地址
+const handleDeleteServiceAddress = (name: string, index: number) => {
+  const isDeleteItem = stageConfig.value;
+  isDeleteItem.forEach((item: Record<string, any>) => {
+    if (item.name === name && item.configs.hosts.length !== 1) {
+      item.configs.hosts.splice(index, 1);
+    }
+  });
+};
+
+const handleCancel = () => {
+  emits('close');
+  sliderConfig.isShow = false;
+  stageConfigRef.value = [];
+};
+
+const handleConfirm = async () => {
+  // 基础信息校验
+  await baseInfoEl.value?.validate();
+  // 逐个stage服务配置的校验
+  for (const item of stageConfigRef.value) {
+    if (!item) break;
+    await item.validate();
+  }
+  finaConfigs.value = stageConfig.value.map((item) => {
+    const id = !editId ? item.id : item.configs.stage.id;
+    const results = Object.assign(
+      {},
+      {
+        timeout: item.configs.timeout,
+        loadbalance: item.configs.loadbalance,
+        hosts: item.configs.hosts,
+        stage_id: id,
+      },
+    );
+    return results;
+  });
+  const { name, description } = baseInfo.value;
+  const params = {
+    name,
+    description,
+    configs: finaConfigs.value,
+  };
+  if (editId) {
+    const detailContent = {
+      name: curServiceDetail.value.name,
+      description: curServiceDetail.value.description,
+      configs: curServiceDetail.value.configs.map((item) => {
+        return {
+          timeout: item.timeout,
+          loadbalance: item.loadbalance,
+          hosts: item.hosts,
+          stage_id: item.stage.id,
+        };
+      }),
+    };
+    // 如果内容一致无需调用编辑接口
+    if (isEqual(detailContent, params)) {
+      handleCancel();
+      return;
+    }
+  }
+  isSaveLoading.value = true;
+  try {
+    let res = {};
+    res = editId
+      ? await updateBackendService(apigwId.value, curServiceDetail.value.id, params)
+      : await createBackendService(apigwId.value, params);
+    if (isPublish.value && editId) {
+      sliderConfig.isShow = false;
+      if (res?.updated_stages?.length) {
+        publishDialog = Object.assign(publishDialog, {
+          isShow: true,
+          stageNames: res?.updated_stages?.map(item => item.name),
+        });
+      }
+      else {
+        Message({
+          message: t('保存成功'),
+          theme: 'success',
+        });
+      }
+    }
+    else {
+      Message({
+        message: t(!editId ? '新建成功' : '更新成功'),
+        theme: 'success',
+      });
+      sliderConfig.isShow = false;
+    }
+    stageConfigRef.value = [];
+    emits('done');
+  }
+  catch (error) {
+    console.log('error', error);
+  }
+  finally {
+    isSaveLoading.value = false;
+  }
+};
+
+const toPublishLogs = () => {
+  router.push({ name: 'ReleaseHistory' });
+};
+
+const setInit = () => {
+  stageConfig.value = stageList.value.map((item: Record<string, string | number>) => {
+    const { name, id, description } = item;
+    const newItem = {
+      name,
+      id,
+      description,
+      configs: {
+        loadbalance: 'roundrobin',
+        timeout: 30,
+        hosts: [
+          {
+            scheme: 'http',
+            host: '',
+            weight: 100,
+          },
+        ],
+        stage_id: id,
+      },
+    };
+    return newItem;
+  });
+  const sliderParams = {
+    curServiceDetail: curServiceDetail.value,
+    stageConfig: stageConfig.value,
+    baseInfo: baseInfo.value,
+  };
+  console.log(sliderParams);
+  // initSidebarFormData(sliderParams);
+};
+
+const getStageListData = async () => {
+  try {
+    const res = await getStageList(apigwId.value);
+    res?.forEach((item: Record<string, any>, index: number) => {
+      activeIndex.value.push(index);
+    });
+    isPublish.value = res?.some(item => item.publish_id !== 0);
+    stageList.value = [...res];
+  }
+  catch (error) {
+    console.log('error', error);
+  }
+};
+
+const getInfo = async () => {
+  try {
+    const res = await getBackendServiceDetail(apigwId.value, editId);
+    curServiceDetail.value = cloneDeep(res);
+    stageConfig.value = res.configs.map((item) => {
+      return {
+        configs: item,
+        name: item?.stage?.name,
+        id: item?.stage?.id,
+      };
+    });
+    const sliderParams = {
+      curServiceDetail: curServiceDetail.value,
+      stageConfig: stageConfig.value,
+      baseInfo: baseInfo.value,
+    };
+    console.log(sliderParams);
+    // initSidebarFormData(sliderParams);
+  }
+  catch (error) {
+    console.log('error', error);
+  }
+};
+
+const show = async () => {
+  await getStageListData();
+  if (editId) {
+    await getInfo();
+  }
+  else {
+    setInit();
+  }
+  sliderConfig.isShow = true;
+};
+
+defineExpose({ show });
+</script>
+
+<style lang="scss" scoped>
+.backend-service-slider {
+  :deep(.bk-modal-content) {
+    height: calc(100vh - 104px) !important;
+    overflow-y: auto;
+  }
+
+  :deep(.bk-sideslider-footer) {
+    margin-top: 0;
+  }
+
+  .title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #323237;
+
+    .icon {
+      color: #62666b;
+      font-size: 18px;
+      margin-right: 10px;
+    }
+  }
+
+  .base-info {
+    .base-info-form {
+      .alert-text {
+        color: #a5a4a7;
+      }
+    }
+  }
+
+  .slider-content {
+    padding: 20px 40px 30px;
+  }
+
+  .service-tips {
+    margin-bottom: 12px;
+  }
+
+  .host-item {
+    i {
+      font-size: 14px;
+      color: #979ba5;
+      margin-left: 10px;
+
+      &:hover {
+        color: #63656e;
+        cursor: pointer;
+      }
+
+      &.disabled {
+        color: #dcdee5;
+        cursor: not-allowed;
+      }
+    }
+
+    :deep(.bk-form-error) {
+      position: relative;
+    }
+  }
+
+  .form-item-special {
+    :deep(.bk-form-label) {
+      display: none;
+    }
+  }
+
+  .weight-input {
+    margin-bottom: 0px;
+    border-left: 1px solid #c4c6cc !important;
+  }
+
+  .suffix-slot-cls {
+    width: 80px;
+    line-height: 28px;
+    font-size: 12px;
+    color: #63656e;
+    text-align: center;
+    height: 28px;
+    border: none;
+    box-shadow: none !important;
+
+    :deep(.bk-input--text) {
+      border-radius: 0;
+    }
+  }
+
+  .scheme-select-cls {
+    color: #63656e;
+    overflow: hidden;
+
+    :deep(.bk-input--default) {
+      border: none;
+      border-right: 1px solid #c4c6cc;
+    }
+  }
+
+  .timeout-item {
+    width: 200px;
+    position: relative;
+
+    .timeout-tip {
+      position: absolute;
+      top: 0px;
+      right: -70px;
+
+      &.long {
+        right: -120px;
+      }
+    }
+
+    .group-text {
+      width: 20px;
+
+      &.long {
+        width: 50px;
+      }
+    }
+  }
+
+  .slash {
+    color: #63656e;
+    background-color: #fafbfd;
+    padding: 0 10px;
+    border-right: 1px solid #c4c6cc;
+  }
+}
+
+.backend-config-item {
+  .item-content {
+    background: #f5f7fa;
+    padding: 20px 32px;
+
+    .host-item {
+      i {
+        font-size: 14px;
+        color: #979ba5;
+        cursor: pointer;
+
+        &.disabled {
+          color: #dcdee5;
+        }
+      }
+
+      :deep(.bk-form-error) {
+        position: relative;
+      }
+    }
+  }
+}
+
+.bk-collapse-service {
+  .panel-header {
+    padding: 12px 0px;
+    cursor: pointer;
+
+    .title {
+      font-weight: 700;
+      font-size: 14px;
+      color: #313238;
+      margin-left: 8px;
+    }
+
+    .panel-header-show {
+      transition: 0.2s;
+      transform: rotate(0deg);
+    }
+
+    .panel-header-hide {
+      transition: 0.2s;
+      transform: rotate(-90deg);
+    }
+  }
+
+  :deep(.bk-collapse-content) {
+    padding: 0px;
+  }
+
+  .stage {
+    .stage-name {
+      color: #63656e;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    :deep(.bk-collapse-title) {
+      margin-left: 23px;
+      font-size: 14px;
+      color: #63656e;
+      font-weight: 700;
+    }
+
+    :deep(.bk-collapse-item) {
+      background-color: #f5f7fb;
+      margin-bottom: 25px;
+
+      .bk-collapse-header {
+        background-color: #f5f7fb;
+        &:hover {
+          background-color: #f0f1f5;
+        }
+      }
+
+      .bk-collapse-content {
+        padding: 5px 40px;
+      }
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    :deep(.bk-collapse-icon) {
+      left: 17px;
+      top: 17px;
+      color: #979aa2;
+
+      svg {
+        font-size: 13px;
+      }
+    }
+  }
+
+  .last-form-item {
+    margin-bottom: 12px;
+  }
+}
+
+.custom-main-dialog {
+  :deep(.bk-dialog-title) {
+    display: none;
+  }
+
+  :deep(.bk-modal-footer) {
+    display: none;
+  }
+
+  .dialog-content {
+    .publish-icon {
+      text-align: center;
+      margin-bottom: 18px;
+      font-size: 42px;
+      line-height: 32px;
+    }
+
+    .dialog-title {
+      font-size: 20px;
+      color: #313238;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .dialog-main {
+      background-color: #f5f6fa;
+      border-radius: 2px;
+      margin-bottom: 25px;
+      padding: 12px 16px 18px;
+
+      .publish-tips {
+        font-size: 14px;
+        color: #63656e;
+        margin-bottom: 10px;
+        span {
+          font-weight: 700;
+        }
+      }
+
+      .publish-stages {
+        .stage-item {
+          font-size: 14px;
+          color: #63656e;
+          position: relative;
+          padding-left: 12px;
+          width: 33%;
+
+          &::after {
+            content: " ";
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: #63656e;
+            top: 10px;
+            left: 0;
+          }
+        }
+      }
+    }
+
+    .dialog-footer {
+      text-align: center;
+    }
+  }
+}
+</style>

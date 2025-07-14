@@ -210,7 +210,7 @@ const menuList = computed<IMenu[]>(() => [
     ],
   },
   {
-    name: 'apigwBackendService',
+    name: 'BackendService',
     enabled: true,
     title: t('后端服务'),
     icon: 'fuwuguanli',
@@ -324,7 +324,7 @@ const routerViewWrapperClass = computed(() => {
   if (route.meta.customHeader) {
     return 'custom-header-view';
   }
-  return 'default-header-view';
+  return `router-${route.name}-wrapper default-header-view`;
 });
 
 // 监听当前路由
@@ -355,6 +355,7 @@ const handleCollapse = (v: boolean) => {
 };
 
 const handleGoPage = (routeName: string, id?: number) => {
+  gatewayStore.setApigwId(id);
   router.push({
     name: routeName,
     params: { id },

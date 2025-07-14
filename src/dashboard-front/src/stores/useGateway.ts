@@ -7,7 +7,15 @@ type GatewayDetailType = Awaited<ReturnType<typeof getGatewayDetail>>;
 const { BK_DASHBOARD_URL } = window;
 
 export const useGateway = defineStore('useGateway', {
-  state: (): { currentGateway: Partial<GatewayDetailType> | null } => ({ currentGateway: null }),
+  state: (): {
+    currentGateway: Partial<GatewayDetailType> | null
+    apigwId: number
+    apigwName: string
+  } => ({
+    currentGateway: null,
+    apigwId: 0,
+    apigwName: '',
+  }),
   getters: {
     // 网关是否为可编程网关 kind === 1
     isProgrammableGateway: state => state.currentGateway?.kind === 1,
@@ -16,11 +24,11 @@ export const useGateway = defineStore('useGateway', {
   actions: {
     // 设置网关id
     setApigwId(id: number) {
-      Object.assign(this.currentGateway ?? {}, { id });
+      this.apigwId = id;
     },
     // 设置网关名称
     setApigwName(name: string) {
-      Object.assign(this.currentGateway ?? {}, { name });
+      this.apigwName = name;
     },
     setCurrentGateway(gateway: Partial<GatewayDetailType>) {
       this.currentGateway = gateway;

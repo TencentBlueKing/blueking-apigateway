@@ -334,13 +334,18 @@ onMounted(async () => {
       .default-header-view {
         height: calc(100vh - 105px);
         overflow: auto;
+
+        &.custom-header-view {
+          margin-top: 52px;
+          height: 100%;
+          overflow: auto;
+        }
+
+        &.router-BackendService-wrapper {
+          overflow-y: hidden;
+        }
       }
 
-      .custom-header-view {
-        margin-top: 52px;
-        height: 100%;
-        overflow: auto;
-      }
     }
   }
 

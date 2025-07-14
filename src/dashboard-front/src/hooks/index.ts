@@ -18,6 +18,11 @@
 
 // info-box通用hook
 export * from './use-pop-info-box';
+// 多租户展示名
 export * from './use-bk-user-display-name';
 // 获关列表接收搜索参数通用hooks
 export * from './use-gate-way-data';
+// 通用表格列表数据
+export * from './use-query-list';
+// 获取页面最大可视化区域limit
+export * from './use-max-table-limit';

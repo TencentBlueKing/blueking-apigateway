@@ -19,6 +19,7 @@
     "@blueking/login-modal": "^1.0.6",
     "@types/markdown-it": "13",
     "@unocss/reset": "^66.3.3",
+    "@vueuse/core": "^13.5.0",
     "axios": "^1.10.0",
     "dayjs": "^1.11.13",
     "highlight.js": "^11.11.1",
