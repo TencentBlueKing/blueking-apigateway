@@ -26,15 +26,21 @@ import (
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
 
-// OpenapiToMcpToolConfig
+// OpenapiToMcpToolConfig ...
 // nolint:gocyclo
+// This function takes an OpenAPI specification and a map of operation IDs and returns a slice of ToolConfig structs.
 func OpenapiToMcpToolConfig(openApiSpec *openapi3.T, operationIDMap map[string]struct{}) []*ToolConfig {
+	// Initialize a slice of ToolConfig structs
 	var toolConfigs []*ToolConfig
+	// Iterate through each path in the OpenAPI specification
 	for path, pathItem := range openApiSpec.Paths.Map() {
+		// Iterate through each operation in the path
 		for method, operation := range pathItem.Operations() {
+			// If the operation does not have an operation ID, skip it
 			if operation.OperationID == "" {
 				continue
 			}
+			// If operationIDMap is not empty, check if the operation ID is in the map
 			if len(operationIDMap) > 0 {
 				// 如果指定了operationID，则只转换指定的operationID
 				if _, ok := operationIDMap[operation.OperationID]; !ok {
