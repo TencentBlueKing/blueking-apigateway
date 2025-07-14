@@ -16,8 +16,6 @@
 </template>
 
 <script setup lang="ts">
-import AgIcon from '@/components/ag-icon/Index.vue';
-
 interface IProps {
   icon?: string
   size?: string

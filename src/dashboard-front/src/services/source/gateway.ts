@@ -47,6 +47,71 @@ interface IApiGatewayDetail extends IApiGateway {
   links: any
 }
 
+interface IApiGatewayEditParam {
+  // 名称
+  name: string
+  // ID
+  id: number
+  // URL
+  url: string
+  // 描述
+  description: string
+  // 英文描述
+  description_en: string
+  // 公钥指纹
+  public_key_fingerprint: string
+  // 蓝鲸应用代码
+  bk_app_codes: string
+  // 相关应用代码[]
+  related_app_codes: string[]
+  // 文档URL
+  docs_url: string
+  // API域名
+  api_domain: string
+  // 开发者列表
+  developers: string[]
+  // 维护者列表
+  maintainers: string[]
+  // 状态
+  status: number
+  // 是否公开
+  is_public: boolean
+  // 创建者
+  created_by: string
+  // 创建时间
+  created_time: string
+  // 公钥
+  public_key: string
+  // 是否官方
+  is_official: boolean
+  // 发布验证消息
+  publish_validate_msg: string
+  // 类型
+  kind: number
+  // 链接
+  links: { [key: string]: any }
+  // 额外信息
+  extra_info: { [key: string]: string }
+  // 可编程网关Git信息
+  programmable_gateway_git_info: { [key: string]: string }
+  // 文档维护者
+  doc_maintainers: {
+    // 类型
+    type: string
+    // 联系人列表
+    contacts: string[]
+    // 服务账号
+    service_account: {
+      // 名称
+      name: string
+      // 链接
+      link: string
+    }
+  }
+  tenant_mode: string
+  tenant_id: string
+}
+
 export function getGatewayList(params: {
   limit?: number
   offset?: number
@@ -60,3 +125,14 @@ export function getGatewayList(params: {
 export function getGatewayDetail(id: number) {
   return http.get<IApiGatewayDetail>(`${path}/${id}/`);
 }
+
+export const deleteGateway = (id: number) => http.delete(`${path}/${id}/`);
+
+export const patchGateway = (id: number, data: Partial<IApiGatewayEditParam>) => http.patch(`${path}/${id}/`, data);
+
+export const putGatewayBasics = (id: number, data: Partial<IApiGatewayEditParam>) => http.put(`${path}/${id}/`, data);
+
+// 获取操作指引
+export const getGuideDocs = (id: number) => http.get(`${path}/${id}/dev-guideline/`);
+
+export const toggleStatus = (id: number, data: { status: number }) => http.put(`${path}/${id}/status/`, data);

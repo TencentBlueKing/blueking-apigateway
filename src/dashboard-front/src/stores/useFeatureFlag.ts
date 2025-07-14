@@ -23,6 +23,7 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
     },
   }),
   getters: {
+    apiBaseUrl: () => '',
     // 是否开启了多租户模式
     isTenantMode: state => !!state.flags?.ENABLE_MULTI_TENANT_MODE,
     // 是否启用了 ai 问答功能
