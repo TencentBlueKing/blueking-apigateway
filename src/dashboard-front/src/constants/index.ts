@@ -15,6 +15,8 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
+import { t } from '@/locales';
+
 // 方法名称
 export const METHODS_CONSTANTS = [
   {
@@ -48,5 +50,33 @@ export const METHODS_CONSTANTS = [
   {
     id: 'ANY',
     name: 'ANY',
+  },
+];
+
+// 授权维度
+export const AUTHORIZATION_DIMENSION = [
+  {
+    id: 'api',
+    name: t('按网关'),
+  },
+  {
+    id: 'resource',
+    name: t('按资源'),
+  },
+];
+
+// 时间维度
+export const EXPIRE_DAYS_CONSTANTS = [
+  {
+    label: t('永久'),
+    value: 0,
+  },
+  {
+    label: t('6个月'),
+    value: 180,
+  },
+  {
+    label: t('12个月'),
+    value: 360,
   },
 ];

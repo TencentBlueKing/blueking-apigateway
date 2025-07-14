@@ -24,6 +24,8 @@ import getBasicInfoRoutes from '@/views/basic-info/routes';
 import getComponentManagementRoutes from '@/views/component-management/route';
 // 后端服务
 import getBackendServicesRoutes from '@/views/backend-services/routes';
+// 权限管理
+import getPermissionManagementRoutes from '@/views/permission/routes';
 
 function props(route: RouteLocationNormalized) {
   const { id } = route.params;
@@ -40,10 +42,12 @@ const routes: RouteRecordRaw[] = [
     path: '/:id',
     name: 'Resources',
     component: () => import('@/layout/my-gateway/Index.vue'),
+    props,
     children: [
       ...getStageManagementRoutes(),
       ...getBasicInfoRoutes(),
       ...getBackendServicesRoutes(),
+      ...getPermissionManagementRoutes(),
     ],
   },
   {

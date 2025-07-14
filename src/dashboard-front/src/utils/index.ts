@@ -7,3 +7,5 @@ export * from './random';
 export * from './url';
 export * from './isAfter24h';
 export * from './copy';
+export * from './sortByKey';
+export * from './downloadFile';

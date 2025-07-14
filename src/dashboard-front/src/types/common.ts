@@ -52,4 +52,10 @@ export interface IPagination {
   current?: number
 }
 
+export interface IDropList {
+  value: string
+  label: string
+  disabled?: boolean
+}
+
 export type ReturnRecordType<T, U> = Record<string, (arg?: T) => U>;
