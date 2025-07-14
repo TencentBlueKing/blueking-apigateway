@@ -43,7 +43,11 @@
 import LogoWithoutTitle from '@/images/APIgateway-logo.png';
 import En from '../node_modules/bkui-vue/dist/locale/en.esm.js';
 import ZhCn from '../node_modules/bkui-vue/dist/locale/zh-cn.esm.js';
-import { useFeatureFlag, useUserInfo } from '@/stores';
+import {
+  useEnv,
+  useFeatureFlag,
+  useUserInfo,
+} from '@/stores';
 import { useBkUserDisplayName } from '@/hooks';
 import type { IHeaderNav } from '@/types/common';
 
@@ -52,10 +56,12 @@ const route = useRoute();
 const router = useRouter();
 const userInfoStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
+const envStore = useEnv();
 const { configure: configureDisplayName } = useBkUserDisplayName();
 
 userInfoStore.fetchUserInfo();
 featureFlagStore.fetchFlags();
+envStore.fetchEnv();
 
 const locale = ref('zh-cn');
 const activeIndex = ref(0);

@@ -1,6 +1,7 @@
 import { createI18n } from 'vue-i18n';
 
 const i18n = createI18n({
+  legacy: false,
   locale: 'zh-cn',
   fallbackLocale: 'zh-cn',
   // TODO 暂时静默语言包缺失

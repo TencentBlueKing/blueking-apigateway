@@ -54,7 +54,7 @@
             </div>
           </div>
           <div class="header-info-description">
-            <GateWaysEditTextarea
+            <EditDesc
               field="description"
               width="600px"
               :placeholder="t('请输入描述')"
@@ -67,7 +67,7 @@
               <BkButton
                 v-if="basicInfoData.status > 0"
                 class="deactivate-btn operate-btn"
-                @click="handleOperate('enable')"
+                @click="() => handleOperate('enable')"
               >
                 {{ t('停用') }}
               </BkButton>
@@ -75,7 +75,7 @@
                 v-else
                 theme="primary"
                 class="operate-btn"
-                @click="handleOperate('deactivate')"
+                @click="() => handleOperate('deactivate')"
               >
                 {{ t('立即启用') }}
               </BkButton>
@@ -93,7 +93,7 @@
             <template v-else>
               <BkButton
                 class="operate-btn"
-                @click="handleOperate('delete')"
+                @click="() => handleOperate('delete')"
               >
                 {{ t('删除') }}
               </BkButton>
@@ -120,7 +120,7 @@
             {{ t('基础信息') }}
             <div
               class="area-edit"
-              @click.stop="handleOperate('edit')"
+              @click.stop="() => handleOperate('edit')"
             >
               <AgIcon name="edit-line" />
               <BkButton
@@ -174,7 +174,7 @@
                 <span>{{ basicInfoData.extra_info?.repository || '--' }}</span>
                 <AgIcon
                   name="jump"
-                  @click.stop="handleOpenNav(basicInfoData.extra_info.repository)"
+                  @click.stop="() => handleOpenNav(basicInfoData.extra_info.repository)"
                 />
               </div>
             </div>
@@ -206,7 +206,7 @@
                 {{ `${t('维护人员')}：` }}
               </div>
               <div class="value">
-                <GateWaysEditMemberSelector
+                <EditMember
                   v-if="!featureFlagStore.isTenantMode"
                   mode="edit"
                   width="600px"
@@ -218,6 +218,18 @@
                   :error-value="t('维护人员不能为空')"
                   @on-change="(e:Record<string, any>) => handleMaintainerChange(e)"
                 />
+                <TenantUserSelector
+                  v-else
+                  :content="basicInfoData.maintainers"
+                  :error-value="t('维护人员不能为空')"
+                  :is-error-class="'maintainers-error-tip'"
+                  is-required
+                  :placeholder="t('请选择维护人员')"
+                  field="maintainers"
+                  mode="edit"
+                  width="600px"
+                  @on-change="(e:Record<string, any>) => handleMaintainerChange(e)"
+                />
               </div>
             </div>
             <div class="detail-item-content-item">
@@ -225,8 +237,7 @@
                 {{ `${t('创建人')}：` }}
               </div>
               <div class="value">
-                <!--                <span><bk-user-display-name :user-id="basicInfoData.created_by" /></span> -->
-                <span><BkUserDisplayName :user-id="basicInfoData.created_by" /></span>
+                <span><bk-user-display-name :user-id="basicInfoData.created_by" /></span>
               </div>
             </div>
             <div class="detail-item-content-item">
@@ -322,15 +333,11 @@
                   {{ basicInfoData.docs_url || '--' }}
                 </span>
                 <template v-if="basicInfoData.docs_url">
-                  <span>
-                    <AgIcon
-                      name="jump"
-                      @click.stop="handleOpenNav(basicInfoData.docs_url)"
-                    />
-                  </span>
-                  <span>
-                    <CopyButton :source="basicInfoData.docs_url" />
-                  </span>
+                  <AgIcon
+                    name="jump"
+                    @click.stop="handleOpenNav(basicInfoData.docs_url)"
+                  />
+                  <CopyButton :source="basicInfoData.docs_url" />
                 </template>
               </div>
             </div>
@@ -508,6 +515,11 @@
         </BkButton>
       </template>
     </BkDialog>
+    <CreateGateway
+      v-model="createGatewayShow"
+      :init-data="basicInfoDetailData"
+      @done="getBasicInfo"
+    />
   </div>
 </template>
 
@@ -525,13 +537,17 @@ import {
   putGatewayBasics,
   toggleStatus,
 } from '@/services/source/gateway.ts';
-import GateWaysEditTextarea from './components/GateWaysEditTextarea.vue';
+import EditDesc from './components/EditDesc.vue';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import ProgramProcess from '@/images/program-process.png';
-import GateWaysEditMemberSelector from './components/GateWaysEditMemberSelector.vue';
+import EditMember from './components/EditMember.vue';
+import CreateGateway from '@/components/create-gateway/Index.vue';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { useFeatureFlag } from '@/stores';
+import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
+
+type BasicInfoType = Awaited<ReturnType<typeof getGatewayDetail>>;
 
 const { t } = useI18n();
 const route = useRoute();
@@ -548,14 +564,13 @@ const markdownHtml = ref('');
 const isShowApiDoc = ref(false);
 
 // 当前基本信息
-const basicInfoData = ref<any>({
+const basicInfoData = ref<BasicInfoType>({
   status: 1,
   name: '',
-  url: '',
   description: '',
   description_en: '',
   public_key_fingerprint: '',
-  bk_app_codes: '',
+  bk_app_codes: [],
   related_app_codes: [],
   docs_url: '',
   api_domain: '',
@@ -578,7 +593,7 @@ const basicInfoData = ref<any>({
   },
 });
 const basicInfoDetailData = ref(cloneDeep(basicInfoData.value));
-const delApigwDialog = ref<any>({
+const delApigwDialog = ref({
   isShow: false,
   loading: false,
 });
@@ -594,16 +609,15 @@ const delTips = computed(() => {
 
 // 获取网关基本信息
 const getBasicInfo = async () => {
-  const res = await getGatewayDetail(apigwId.value);
-  basicInfoData.value = Object.assign({}, res);
+  basicInfoData.value = await getGatewayDetail(apigwId.value);
 };
 
 watch(
-  () => route,
-  async (payload: any) => {
-    if (payload.params?.id) {
-      apigwId.value = Number(payload.params.id);
-      await getBasicInfo();
+  () => route.params,
+  () => {
+    if (route.params?.id) {
+      apigwId.value = Number(route.params.id);
+      getBasicInfo();
     }
   },
   {

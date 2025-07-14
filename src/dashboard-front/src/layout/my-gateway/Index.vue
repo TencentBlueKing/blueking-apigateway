@@ -81,9 +81,9 @@
                   :title="menu.title"
                 >
                   <template #icon>
-                    <i
-                      class="icon apigateway-icon"
-                      :class="[`icon-ag-${menu.icon}`]"
+                    <AgIcon
+                      :name="menu.icon || ''"
+                      size="18"
                     />
                   </template>
                   <template v-for="child in menu.children">
@@ -104,9 +104,9 @@
                   @click.stop="handleGoPage(menu.name, apigwId)"
                 >
                   <template #icon>
-                    <i
-                      class="icon apigateway-icon"
-                      :class="[`icon-ag-${menu.icon}`]"
+                    <AgIcon
+                      :name="menu.icon || ''"
+                      size="18"
                     />
                   </template>
                   {{ menu.title }}
@@ -156,7 +156,6 @@
 <script setup lang="ts">
 import { useFeatureFlag, useGateway } from '@/stores';
 import { getGatewayList } from '@/services/source/gateway.ts';
-import type { IMenu } from '@/types/common';
 
 interface IMenu {
   name: string

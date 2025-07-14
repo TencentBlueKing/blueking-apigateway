@@ -73,6 +73,25 @@ export default defineComponent({
       : {}));
     const popoverProps = { boundary: document.body };
 
+    // 监听 staffStore.list 的变化
+    watch(
+      () => staffStore.list,
+      (list) => {
+        if (list.length) {
+          nextTick(() => {
+            userList.value = cloneDeep(list);
+          });
+        }
+        else {
+          staffStore.fetchStaffs(props.modelValue?.join(',') || '');
+        }
+      },
+      {
+        immediate: true,
+        deep: true,
+      },
+    );
+
     // 渲染员工信息模板
     function tpl(node: IStaff) {
       return (
@@ -111,25 +130,6 @@ export default defineComponent({
       getUserList(userName);
     }
 
-    // 监听 staffStore.list 的变化
-    watch(
-      () => staffStore.list,
-      (list) => {
-        if (list.length) {
-          nextTick(() => {
-            userList.value = cloneDeep(list);
-          });
-        }
-        else {
-          staffStore.fetchStaffs(props.modelValue?.join(',') || '');
-        }
-      },
-      {
-        immediate: true,
-        deep: true,
-      },
-    );
-
     // 组件挂载时执行
     onMounted(() => {
       if (props.modelValue?.length) {
@@ -160,6 +160,7 @@ export default defineComponent({
           clearable={props.clearable}
           allowCreate={props.allowCreate}
           popoverProps={popoverProps}
+          class="color-#63656e"
         >
           {{
             suffix: () => staffStore.fetching && (
