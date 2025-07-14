@@ -18,6 +18,9 @@ import i18n from './locales';
 import VueDOMPurifyHTML from 'vue-dompurify-html';
 
 import directive from '@/directives';
+import AgIcon from '@/components/ag-icon/Index.vue';
+import IconButton from '@/components/icon-button/Index.vue';
+import CopyButton from '@/components/copy-button/Index.vue';
 
 const app = createApp(App);
 
@@ -27,5 +30,10 @@ app.use(bkui);
 app.use(i18n);
 app.use(VueDOMPurifyHTML);
 app.use(directive);
+
+// 全局组件
+app.component('AgIcon', AgIcon)
+  .component('IconButton', IconButton)
+  .component('CopyButton', CopyButton);
 
 app.mount('#app');
