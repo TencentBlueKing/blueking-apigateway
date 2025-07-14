@@ -21,6 +21,7 @@
  */
 import { useGateway } from '@/stores';
 import {
+  debounce,
   sortBy,
   sortedUniq,
 } from 'lodash-es';
@@ -100,7 +101,11 @@ export function useQueryList<T>({
       });
     }
     catch {
-      pagination.value.abnormal = true;
+      tableData.value = [];
+      pagination.value = Object.assign(pagination.value, {
+        count: 0,
+        abnormal: true,
+      });
     }
     finally {
       // 延迟loading展示时间，实现对空状态占位符
@@ -123,7 +128,7 @@ export function useQueryList<T>({
   const handlePageSizeChange = (limit: number) => {
     Object.assign(pagination.value, {
       limit,
-      offset: limit * ((pagination?.value.current ?? 1) - 1),
+      offset: 0,
     });
     // 页码没变化的情况下需要手动请求一次数据
     if (pagination.value.offset <= pagination.value.count) {
@@ -134,12 +139,12 @@ export function useQueryList<T>({
   // 监听筛选条件的变化
   watch(
     () => filterData,
-    async () => {
+    debounce (() => {
       if (!filterNoResetPage) {
         pagination.value = { ...initPagination };
       }
-      await fetchList();
-    },
+      fetchList();
+    }, 100),
     { deep: true },
   );
 

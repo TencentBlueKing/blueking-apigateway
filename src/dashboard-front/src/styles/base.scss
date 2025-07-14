@@ -11,6 +11,37 @@ li {
   list-style: none;
 }
 
+a {
+  -webkit-touch-callout: none;
+  text-decoration: none;
+}
+
 .page-wrapper-padding {
   padding: 20px 24px;
+}
+
+.ag-strong,
+.ag-normal {
+  font-style: normal;
+  color: #313238;
+
+  &.default {
+    color: #979ba5;
+  }
+
+  &.primary {
+    color: #3a84ff;
+  }
+
+  &.success {
+    color: #2dcb56;
+  }
+
+  &.danger {
+    color: #ea3636;
+  }
+
+  &.warning {
+    color: #ff9c01;
+  }
 }

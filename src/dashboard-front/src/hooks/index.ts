@@ -26,3 +26,5 @@ export * from './use-gate-way-data';
 export * from './use-query-list';
 // 获取页面最大可视化区域limit
 export * from './use-max-table-limit';
+// 设置通用表格复选框勾选处理函数
+export * from './use-selection-data';
