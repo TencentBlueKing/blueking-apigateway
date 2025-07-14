@@ -38,7 +38,10 @@
         >
           <template #prefix>
             <div class="prefix-cls">
-              <i class="icon apigateway-icon icon-ag-exchange-line pb-5px" />
+              <AgIcon
+                name="exchange-line"
+                class="pb-5px"
+              />
             </div>
           </template>
           <BkOption
@@ -108,7 +111,10 @@
                   v-bk-tooltips="{ content: t('可编程网关') }"
                   class="kind-program"
                 >
-                  <i class="apigateway-icon icon-ag-program" />
+                  <AgIcon
+                    name="program"
+                    size="12"
+                  />
                 </span>
                 {{ item.name[0].toUpperCase() }}
               </div>
@@ -250,6 +256,7 @@ import { isAfter24h } from '@/utils';
 import { useFeatureFlag } from '@/stores';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { getGatewayList } from '@/services/source/gateway.ts';
+import AgIcon from '@/components/ag-icon/Index.vue';
 
 type GatewayType = Awaited<ReturnType<typeof getGatewayList>>['results'][number];
 

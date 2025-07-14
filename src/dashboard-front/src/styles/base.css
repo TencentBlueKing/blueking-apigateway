@@ -2,3 +2,11 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   line-height: 1.5;
 }
+
+p,
+ul,
+li {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
