@@ -34,7 +34,7 @@
           :clearable="false"
           class="header-select"
           filterable
-          @change="handleGoPage(activeMenuKey, apigwId)"
+          @change="() => handleGoPage(activeMenuKey, apigwId)"
         >
           <template #prefix>
             <div class="gateway-selector-prefix">
@@ -90,7 +90,7 @@
                     <BkMenuItem
                       v-if="child.enabled && !(child.hideInProgrammable && gatewayStore.isProgrammableGateway)"
                       :key="child.name"
-                      @click.stop="handleGoPage(child.name, apigwId)"
+                      @click.stop="() => handleGoPage(child.name, apigwId)"
                     >
                       {{ child.title }}
                     </BkMenuItem>
@@ -101,7 +101,7 @@
                 <BkMenuItem
                   v-if="!(menu.hideInProgrammable && gatewayStore.isProgrammableGateway)"
                   :key="menu.name"
-                  @click.stop="handleGoPage(menu.name, apigwId)"
+                  @click.stop="() => handleGoPage(menu.name, apigwId)"
                 >
                   <template #icon>
                     <AgIcon
@@ -178,11 +178,11 @@ const featureFlagStore = useFeatureFlag();
 
 const collapse = ref(true);
 // 选中的菜单
-const activeMenuKey = ref('apigwOperateRecords');
+const activeMenuKey = ref('StageOverview');
 const gatewayList = ref<GatewayItemType[]>([]);
 const openedKeys = ref<string[]>([]);
 const needMenu = ref(true);
-const pageName = ref<string>('');
+const pageName = ref('');
 
 // 当前网关Id
 const apigwId = ref(0);
