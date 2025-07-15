@@ -51,8 +51,8 @@
 
 #### data
 
-| 参数名称          | 参数类型   | 描述                  |
-|---------------|--------|---------------------|
-| record_id     | int    | 申请记录 ID             |
-| bk_app_code   | string | 蓝鲸应用编码              |
-| mcp_server_id | string | mcp_server ID       |
+| 参数名称          | 参数类型     | 描述                  |
+|---------------|----------|---------------------|
+| record_id     | int      | 申请记录 ID             |
+| bk_app_code   | string   | 蓝鲸应用编码              |
+| mcp_server_id | int      | mcp_server ID       |
