@@ -53,6 +53,7 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       'bkui-vue': 'bkui-vue/dist/index.esm.js',
+      'bkui-lib': 'bkui-vue/lib',
     },
   },
 });
