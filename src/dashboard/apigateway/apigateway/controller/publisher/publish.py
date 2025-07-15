@@ -68,7 +68,10 @@ def _is_gateway_ok_for_releasing(release: Release, source: PublishSourceEnum) ->
             return False, msg
 
     # 校验版本，现在只支持 v2 发布
-    if not release.resource_version.is_schema_v2:
+    if (
+        trigger_publish_type != TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE
+        and not release.resource_version.is_schema_v2
+    ):
         msg = (
             f"The data structure of version [{release.resource_version.object_display}] is incompatible and is not "
             f"allowed to be published. Please create a new version in [Resource Configuration] before publishing."
