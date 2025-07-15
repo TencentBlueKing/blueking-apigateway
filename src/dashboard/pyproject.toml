@@ -153,7 +153,7 @@ testpaths = [
 
 [build-system]
 requires = ["uv==0.7.19"]
-build-backend = "uv.build"
+build-backend = "uv_build"
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
