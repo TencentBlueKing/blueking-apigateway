@@ -75,6 +75,12 @@ class TestTriggerGatewayPublish:
         assert ok is True
         assert msg == ""
 
+    def test__is_gateway_ok_for_releasing_with_skip_gateway_disable_check(self, fake_stage, fake_release):
+        source = PublishSourceEnum.GATEWAY_DISABLE
+        ok, msg = _is_gateway_ok_for_releasing(fake_release, source)
+        assert ok is True
+        assert msg == ""
+
     def test__save_release_history(self, fake_release):
         source = PublishSourceEnum.BACKEND_UPDATE
         release_history = _save_release_history(fake_release, source, "test")

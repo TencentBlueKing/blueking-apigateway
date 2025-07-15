@@ -38,7 +38,7 @@ from apigateway.service.event.event import PublishEventReporter
 logger = logging.getLogger(__name__)
 
 
-def _is_gateway_ok_for_releasing(release: Release, source: PublishSourceEnum) -> Tuple[bool, str]:  # noqa: PLR0911
+def _is_gateway_ok_for_releasing(release: Release, source: PublishSourceEnum) -> Tuple[bool, str]:
     """网关发布校验"""
     if not release:
         return False, "release is None, ignored"
@@ -48,10 +48,6 @@ def _is_gateway_ok_for_releasing(release: Release, source: PublishSourceEnum) ->
     gateway = Gateway.objects.get(pk=gateway_id)
 
     trigger_publish_type = PublishSourceTriggerPublishTypeMapping[source]
-
-    # 下架场景，跳过校验
-    if source == PublishSourceEnum.STAGE_DISABLE:
-        return True, ""
 
     # 校验环境
     if not release.stage:
@@ -72,7 +68,10 @@ def _is_gateway_ok_for_releasing(release: Release, source: PublishSourceEnum) ->
             return False, msg
 
     # 校验版本，现在只支持 v2 发布
-    if not release.resource_version.is_schema_v2:
+    if (
+        trigger_publish_type != TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE
+        and not release.resource_version.is_schema_v2
+    ):
         msg = (
             f"The data structure of version [{release.resource_version.object_display}] is incompatible and is not "
             f"allowed to be published. Please create a new version in [Resource Configuration] before publishing."
