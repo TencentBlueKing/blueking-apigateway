@@ -347,15 +347,7 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
             data["applied_by"],
         )
 
-        records = [
-            {
-                "record_id": obj.id,
-                "mcp_server_id": obj.mcp_server_id,
-                "bk_app_code": obj.bk_app_code,
-            }
-            for obj in queryset
-        ]
-        output_slz = serializers.MCPServerAppPermissionApplyCreateOutputSLZ(records, many=True)
+        output_slz = serializers.MCPServerAppPermissionApplyCreateOutputSLZ(queryset, many=True)
         return OKJsonResponse(data=output_slz.data, status=status.HTTP_201_CREATED)
 
 

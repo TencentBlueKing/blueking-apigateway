@@ -29,7 +29,30 @@
 
 ```json
 {
-  "data": {}
+  "data": [
+    {
+      "record_id": 10,
+      "bk_app_code": "bk-001",
+      "mcp_server_id": 1
+    },
+    {
+      "record_id": 11,
+      "bk_app_code": "bk-001",
+      "mcp_server_id": 2
+    },
+    {
+      "record_id": 12,
+      "bk_app_code": "bk-001",
+      "mcp_server_id": 3
+    }
+  ]
 }
 ```
 
+#### data
+
+| 参数名称          | 参数类型   | 描述                  |
+|---------------|--------|---------------------|
+| record_id     | int    | 申请记录 ID             |
+| bk_app_code   | string | 蓝鲸应用编码              |
+| mcp_server_id | string | mcp_server ID       |
