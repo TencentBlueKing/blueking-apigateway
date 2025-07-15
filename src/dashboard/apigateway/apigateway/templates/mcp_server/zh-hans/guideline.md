@@ -49,14 +49,26 @@ X-Bkapi-Timeout: 300 # 单位 s
 X-Bkapi-Allowed-Headers: "X-Bk-Tenant-Id,X-xxx-Header"
 ```
 
+{% if enable_multi_tenant_mode and user_tenant_id == "system" %}
+### 多租户模式需要配置 X-Bk-Tenant-Id 请求头
 
+在多租户模式下，调用 MCP Server 时，需要透传 `X-Bk-Tenant-Id` 请求头。
+
+```shell
+X-Bk-Tenant-Id: ""
+```
+
+值为：
+- 如果调用的应用是单租户应用，值为应用租户 ID(或者可以不传递，网关会根据调用应用 ID 自动获取)
+- 如果调用的应用是全租户应用，值为具体某个租户的租户 ID (必须显式传递，否则会被网关拦截)
+{% endif %}
 
 ## FAQ
 
 ### 1. 使用客户端添加 `MCP Server`过程中出现 `4xx`的错误码，如何排查？
 
 - 需要确认 `MCP Server` url 是否正确。
-- `MCP Server` 开启了 `应用认证+用户认证`，需要确认 `X-Bkapi-Authorization` 请求头格式(例如：cherry-studio 配置请求头使用 `=`)
+- `MCP Server` 开启了 `应用认证+用户认证`，需要确认 `X-Bkapi-Authorization` 请求头格式 (例如：cherry-studio 配置请求头使用 `=`)
 及对应的认证票据是否正确。
 - 确认对应的 `bk_app_code` 是否拥有该 `MCP Server` 的权限。
 

@@ -155,6 +155,8 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
                 "description": instance.description,
                 "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
                 "bk_access_token_doc_url": settings.BK_ACCESS_TOKEN_DOC_URL,
+                "enable_multi_tenant_mode": settings.ENABLE_MULTI_TENANT_MODE,
+                "user_tenant_id": user_tenant_id,
             },
         )
         # set the guideline here, for slz
