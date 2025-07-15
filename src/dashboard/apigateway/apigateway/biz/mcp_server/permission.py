@@ -71,7 +71,7 @@ class MCPServerPermissionHandler:
             for obj in queryset
         ]
 
-        MCPServerAppPermissionApply.objects.bulk_create(add_app_permissions_apply_list)
+        return MCPServerAppPermissionApply.objects.bulk_create(add_app_permissions_apply_list)
 
     @staticmethod
     def filter_records(

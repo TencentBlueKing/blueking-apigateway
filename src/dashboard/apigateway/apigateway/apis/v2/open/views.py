@@ -326,7 +326,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
     decorator=swagger_auto_schema(
         operation_description="指定应用发起 MCPServer 权限申请",
         request_body=serializers.MCPServerAppPermissionApplyCreateInputSLZ,
-        responses={status.HTTP_201_CREATED: ""},
+        responses={status.HTTP_201_CREATED: serializers.MCPServerAppPermissionApplyCreateOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Open"],
     ),
 )
@@ -340,14 +340,23 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
 
         data = slz.validated_data
 
-        MCPServerPermissionHandler.create_apply(
+        queryset = MCPServerPermissionHandler.create_apply(
             data["bk_app_code"],
             data["mcp_server_ids"],
             data["reason"],
             data["applied_by"],
         )
 
-        return OKJsonResponse(status=status.HTTP_201_CREATED)
+        records = [
+            {
+                "record_id": obj.id,
+                "mcp_server_id": obj.mcp_server_id,
+                "bk_app_code": obj.bk_app_code,
+            }
+            for obj in queryset
+        ]
+        output_slz = serializers.MCPServerAppPermissionApplyCreateOutputSLZ(records, many=True)
+        return OKJsonResponse(data=output_slz.data, status=status.HTTP_201_CREATED)
 
 
 @method_decorator(
