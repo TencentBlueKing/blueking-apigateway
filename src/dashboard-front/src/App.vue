@@ -68,7 +68,7 @@ const activeIndex = ref(0);
 const userLoaded = ref(false);
 const curLeavePageData = ref({});
 
-const menuList = shallowRef<IHeaderNav>([
+const menuList: IHeaderNav[] = [
   {
     name: t('我的网关'),
     id: 1,
@@ -104,7 +104,7 @@ const menuList = shallowRef<IHeaderNav>([
     enabled: true,
     link: '',
   },
-]);
+];
 
 const bkuiLocale = computed(() => {
   if (locale.value === 'zh-cn') {
@@ -126,7 +126,7 @@ watch(
       return;
     }
     const { meta } = route;
-    activeIndex.value = menuList.value.findIndex(v => v.url === meta?.topMenu);
+    activeIndex.value = menuList.findIndex(menu => menu.url === meta?.topMenu);
     if (activeIndex.value === -1) {
       activeIndex.value = 0;
     }
@@ -161,7 +161,7 @@ const getRouteData = (routeName: string, index: number, link: string) => {
   goPage(routeName);
 };
 
-const handleNavClick = (url: string, index: number, link: string) => {
+const handleNavClick = (url: string, index: number, link: string = '') => {
   // 禁止重复点击
   if (index === activeIndex.value) {
     return;
