@@ -238,6 +238,15 @@ class MCPServerAppPermissionApplyCreateInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.open.serializers.MCPServerAppPermissionApplyCreateInputSLZ"
 
 
+class MCPServerAppPermissionApplyCreateOutputSLZ(serializers.Serializer):
+    record_id = serializers.IntegerField(source="id", read_only=True, help_text="申请记录 ID")
+    bk_app_code = serializers.CharField(read_only=True, help_text="蓝鲸应用 ID")
+    mcp_server_id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.MCPServerAppPermissionApplyCreateOutputSLZ"
+
+
 class MCPServerAppPermissionRecordListInputSLZ(serializers.Serializer):
     bk_app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
     mcp_server_id = serializers.IntegerField(required=False, allow_null=True, help_text="MCPServer ID")
