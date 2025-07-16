@@ -63,8 +63,8 @@
                   ( <span
                     v-bk-tooltips="t('复制')"
                     class="fields-main"
+                    @click.stop="copyToClipboard(field)"
                   >
-                    <!-- @click.stop="copyToClipboard(field)" -->
                     {{ field }}
                   </span> ) :
                 </span>
@@ -101,12 +101,12 @@
           v-show="isEmpty"
           class="empty-wrapper"
         >
-          <!-- <TableEmpty
+          <TableEmpty
             :keyword="tableEmptyConf.keyword"
             :abnormal="tableEmptyConf.isAbnormal"
             @reacquire="refreshData"
             @clear-filter="refreshData"
-            /> -->
+          />
         </div>
       </BkLoading>
     </div>
@@ -116,9 +116,9 @@
 <script lang="ts" setup>
 import AgIcon from '@/components/ag-icon/Index.vue';
 import { Message } from 'bkui-vue';
-// import { copy as copyToClipboard } from '@/common/util';
-// import TableEmpty from '@/components/table-empty.vue';
-// import { getLogsInfo } from '@/http';
+import { copy as copyToClipboard } from '@/common/util';
+import TableEmpty from '@/components/table-empty/Index.vue';
+import { getLogsInfo } from '@/services/source/access-log';
 import dayjs from 'dayjs';
 
 const route = useRoute();
@@ -173,9 +173,9 @@ const getDetailData = async () => {
   isDataLoading.value = true;
 
   try {
-    // const res = await getLogsInfo(requestId.value);
-    // details.value.result = res.results[0] || {};
-    // details.value.fields = res.fields;
+    const res = await getLogsInfo(requestId.value);
+    details.value.result = res.results[0] || {};
+    details.value.fields = res.fields;
   }
   catch (e) {
     const error = e as Error;
@@ -194,9 +194,9 @@ const getDetailData = async () => {
   }
 };
 
-// const refreshData = () => {
-//   handleClear();
-// };
+const refreshData = () => {
+  handleClear();
+};
 
 const updateTableEmptyConfig = () => {
   if (requestId.value) {
@@ -215,7 +215,7 @@ const formatValue = (value, field: string) => {
 
 const handleRowCopy = (field: string, row) => {
   const copyStr = `${field}: ${row[field]}`;
-  // copyToClipboard(copyStr);
+  copyToClipboard(copyStr);
 };
 
 const handleClickCopyLink = ({ request_id }) => {
@@ -225,7 +225,7 @@ const handleClickCopyLink = ({ request_id }) => {
 
   try {
     const link = `${window.location.href}/?request_id=${request_id}`;
-    // copyToClipboard(link || '');
+    copyToClipboard(link || '');
   }
   catch (e) {
     console.error(e);
