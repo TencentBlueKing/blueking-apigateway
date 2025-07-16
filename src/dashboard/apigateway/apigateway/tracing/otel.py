@@ -19,7 +19,6 @@ import threading
 
 from django.conf import settings
 from opentelemetry import trace  # type: ignore
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter  # type: ignore
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter as GrpcSpanExporter  # type: ignore
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter as HttpSpanExporter  # type: ignore
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource  # type: ignore
@@ -63,10 +62,9 @@ def setup_trace_config():
         # local environment, use jaeger as trace service
         # docker run -p 16686:16686 -p 6831:6831/udp jaegertracing/all-in-one
         trace.set_tracer_provider(TracerProvider(resource=Resource.create({SERVICE_NAME: settings.OTEL_SERVICE_NAME})))
-        jaeger_exporter = JaegerExporter(
-            agent_host_name="localhost",
-            agent_port=6831,
-            udp_split_oversized_batches=True,
+        jaeger_exporter = GrpcSpanExporter(
+            endpoint="localhost:4317",
+            insecure=True,
         )
         trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(jaeger_exporter))
     else:

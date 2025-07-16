@@ -164,8 +164,8 @@ dev-ee-image:
 		--build-arg PYPI="${pypi}" \
 		.
 	make _clean_build_dir
-	# docker tag apigateway-dashboard:development mirrors.tencent.com/build/blueking/apigateway-dashboard:v1.16.0-alpha.4
-	# kubectl get pods | grep bk-apigateway-dashboard | grep -v 'Completed' | grep -v 'fe' | awk "{print $$1}" | xargs -n 1 kubectl delete pod
+	# docker tag apigateway-dashboard:development mirrors.tencent.com/build/blueking/apigateway-dashboard:v1.17.10-alpha.2
+	# kubectl get pods | grep bk-apigateway-dashboard | grep -v 'Completed' | grep -v 'fe' | awk '{print $$1}' | xargs -n 1 kubectl delete pod
 
 
 # ====== plugins ======

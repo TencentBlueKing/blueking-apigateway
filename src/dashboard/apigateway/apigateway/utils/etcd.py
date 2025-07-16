@@ -18,6 +18,33 @@
 import etcd3
 from django.conf import settings
 
+from .etcd_monkeypatch import Etcd3Client
+
+
+def client(
+    host="localhost",
+    port=2379,
+    ca_cert=None,
+    cert_key=None,
+    cert_cert=None,
+    timeout=None,
+    user=None,
+    password=None,
+    grpc_options=None,
+):
+    """Return an instance of an Etcd3Client."""
+    return Etcd3Client(
+        host=host,
+        port=port,
+        ca_cert=ca_cert,
+        cert_key=cert_key,
+        cert_cert=cert_cert,
+        timeout=timeout,
+        user=user,
+        password=password,
+        grpc_options=grpc_options,
+    )
+
 
 def get_etcd_client() -> etcd3.Etcd3Client:
-    return etcd3.client(**settings.ETCD_CONFIG)
+    return client(**settings.ETCD_CONFIG)
