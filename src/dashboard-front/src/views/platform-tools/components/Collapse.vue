@@ -31,35 +31,35 @@
 <script setup lang="ts">
 import AgIcon from '@/components/ag-icon/Index.vue';
 
-interface Props {
+interface IProps {
   title?: string
   name?: string
 }
-
-interface Emits { (e: 'toggle', value: boolean): void }
 
 interface Slots {
   default: any
   header: any
 }
 
-interface Exposes {
-  show: () => void
-  hide: () => void
-}
+interface Emits { (e: 'toggle', value: boolean): void }
 
-const props = withDefaults(defineProps<Props>(), {
-  title: '',
-  name: 'default',
-});
+const {
+  title = '',
+  name = 'default',
+} = defineProps<IProps>();
 
 const emits = defineEmits<Emits>();
 
 const slots = defineSlots<Slots>();
 
-const activeIndex = ref([props.name]);
+interface Exposes {
+  show: () => void
+  hide: () => void
+}
 
-const isPanelActive = computed(() => !activeIndex.value.includes(props.name));
+const activeIndex = ref([name]);
+
+const isPanelActive = computed(() => !activeIndex.value.includes(name));
 
 watch(isPanelActive, () => {
   emits('toggle', isPanelActive.value);
@@ -67,7 +67,7 @@ watch(isPanelActive, () => {
 
 defineExpose<Exposes>({
   show: () => {
-    activeIndex.value = [props.name];
+    activeIndex.value = [name];
   },
   hide: () => {
     activeIndex.value = [];

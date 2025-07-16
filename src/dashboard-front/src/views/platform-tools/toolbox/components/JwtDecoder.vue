@@ -62,8 +62,8 @@
 
 <script lang="ts" setup>
 import {
-  JwtHeader,
-  JwtPayload,
+  type JwtHeader,
+  type JwtPayload,
   jwtDecode,
 } from 'jwt-decode';
 import highlightJs from 'highlight.js';
