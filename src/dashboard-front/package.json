@@ -26,6 +26,7 @@
     "jwt-decode": "^4.0.0",
     "lodash-es": "^4.17.21",
     "markdown-it": "13",
+    "monaco-editor": "^0.52.2",
     "pinia": "^3.0.3",
     "qs": "^6.14.0",
     "vue": "^3.5.17",
@@ -75,7 +76,9 @@
     "commit-msg": "cd src/dashboard-front && npx commitlint --edit $1"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,vue}": ["eslint --fix"]
+    "*.{js,jsx,ts,tsx,vue}": [
+      "eslint --fix"
+    ]
   },
   "engines": {
     "node": ">=20.19.3"
