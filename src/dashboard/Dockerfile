@@ -1,5 +1,5 @@
 ARG IMAGE=python
-ARG TAG=3.10.15-slim-bullseye
+ARG TAG=3.11.13-slim-bookworm
 FROM ${IMAGE}:${TAG}
 
 # RUN sed -i "s/http/https/g" /etc/apt/sources.list
@@ -16,12 +16,13 @@ deb-src https://mirrors.cloud.tencent.com/debian-security/ bullseye-security mai
 ' > /etc/apt/sources.list
 
 
-RUN apt-get update && apt-get install -y --no-install-recommends libssl-dev libffi-dev \
-    build-essential libc6-dev libjpeg-dev zlib1g-dev vim procps default-mysql-client curl zip unzip
+# RUN apt-get update && apt-get install -y --no-install-recommends libssl-dev libffi-dev \
+    # build-essential libc6-dev libjpeg-dev zlib1g-dev vim procps default-mysql-client curl zip unzip
+RUN apt-get update && apt-get install -y --no-install-recommends vim default-mysql-client curl zip unzip
 
 # install kona-jdk maven
-RUN curl -s "https://get.sdkman.io" | bash
-RUN bash -c "source /root/.sdkman/bin/sdkman-init.sh && sdk install java 11.0.19-kona && rm -rf /root/.sdkman/archives/* && rm -rf /root/.sdkman/tmp/* && apt-get -y install maven"
+RUN curl -s "https://get.sdkman.io?ci=true" | bash
+RUN bash -c "source /root/.sdkman/bin/sdkman-init.sh && sdk install java 11.0.27-kona && rm -rf /root/.sdkman/archives/* && rm -rf /root/.sdkman/tmp/* && apt-get -y install maven"
 
 # install mvn dep
 # replace the source
@@ -45,7 +46,9 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /app
 ADD build/uv.lock  /app/uv.lock
 ADD build/pyproject.toml /app/pyproject.toml
-RUN export UV_PROJECT_ENVIRONMENT=/usr/local/ && uv sync --locked
+# for etcd3 lib installed from git
+RUN apt-get install -y git
+RUN export UV_PROJECT_ENVIRONMENT=/usr/local/ && uv sync --locked && uv clean
 
 
 ADD build /app
