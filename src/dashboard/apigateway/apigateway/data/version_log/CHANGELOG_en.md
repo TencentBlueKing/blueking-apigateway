@@ -1,3 +1,15 @@
+<!-- 2025-07-17 -->
+# V1.16.2 Release Log
+
+### Enhancements
+
+- Fix: Resource request parameter default value display
+- Fix: Old version resource verification failure
+- Update: Open API MCP server permission application interface response protocol
+- Fix: A batch of style issues
+
+---
+
 <!-- 2025-07-04 -->
 # V1.16.1 Release Log
 
