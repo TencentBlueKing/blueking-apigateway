@@ -64,13 +64,13 @@ class BaseSearchClient:
 
         body = {
             "size": 0,
-            "timeout": f"{settings.DEFAULT_ES_SEARCH_TIMEOUT}s",
+            "timeout": f"{DEFAULT_ES_SEARCH_TIMEOUT}s",
             "query": query_dict,
             "aggs": {
                 "systems": {
                     "terms": {
                         "field": "req_system_name",
-                        "size": settings.DEFAULT_ES_AGGS_TERM_SIZE,
+                        "size": DEFAULT_ES_AGGS_TERM_SIZE,
                     },
                     "aggs": {
                         "error_count": {"filter": {"exists": {"field": "req_exception"}}},
@@ -101,13 +101,13 @@ class BaseSearchClient:
 
         body = {
             "size": 0,
-            "timeout": f"{settings.DEFAULT_ES_SEARCH_TIMEOUT}s",
+            "timeout": f"{DEFAULT_ES_SEARCH_TIMEOUT}s",
             "query": query_dict,
             "aggs": {
                 "systems": {
                     "terms": {
                         "field": "req_system_name",
-                        "size": settings.DEFAULT_ES_AGGS_TERM_SIZE,
+                        "size": DEFAULT_ES_AGGS_TERM_SIZE,
                     },
                     "aggs": {
                         "requests_over_time": {
@@ -175,7 +175,7 @@ class BaseSearchClient:
 
         body = {
             "size": 0,
-            "timeout": f"{settings.DEFAULT_ES_SEARCH_TIMEOUT}s",
+            "timeout": f"{DEFAULT_ES_SEARCH_TIMEOUT}s",
             "query": {
                 "bool": {
                     "filter": {
@@ -193,7 +193,7 @@ class BaseSearchClient:
                 "systems": {
                     "terms": {
                         "field": "%s" % group_by,
-                        "size": settings.DEFAULT_ES_AGGS_TERM_SIZE,
+                        "size": DEFAULT_ES_AGGS_TERM_SIZE,
                     },
                     "aggs": {
                         "error_count": {"filter": {"exists": {"field": "req_exception"}}},
