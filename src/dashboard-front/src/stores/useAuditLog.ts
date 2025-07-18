@@ -15,11 +15,29 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
-import http from '../http';
-/**
- * 获取环境列表
- * @param apigwId 网关id
- */
-export function getStageList(apigwId: number) {
-  return http.get<{ apigwId: number }>(`/gateways/${apigwId}/stages/`);
-}
+import { defineStore } from 'pinia';
+import { t } from '@/locales';
+
+export const useAuditLog = defineStore('useAuditLog', {
+  state: () => ({
+    operateStatus: [
+      {
+        name: t('成功'),
+        value: 'success',
+      },
+      // {
+      //   name: t('失败'),
+      //   value: 'failure',
+      // },
+      // {
+      //   name: t('未知'),
+      //   value: 'unknown',
+      // },
+    ],
+  }),
+  getters: {
+    geOperateStatus(state) {
+      return state.operateStatus;
+    },
+  },
+});
