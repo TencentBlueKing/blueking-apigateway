@@ -55,7 +55,7 @@ export function useQueryList<T>({
   filterData?: Ref<Record<string, any>>
   id?: number
   filterNoResetPage?: boolean
-  initialPagination: Partial<IPagination>
+  initialPagination?: Partial<IPagination>
   immediate?: boolean
 }) {
   const { apigwId } = useGateway();

@@ -319,18 +319,18 @@
           </div>
         </div>
         <div class="dialog-footer">
-          <bk-button
+          <BkButton
             theme="primary"
             @click="toPublishLogs"
           >
             {{ t("去查看发布记录") }}
-          </bk-button>
-          <bk-button
+          </BkButton>
+          <BkButton
             class="m-l-10px"
             @click="publishDialog.isShow = false"
           >
             {{ t("关闭") }}
-          </bk-button>
+          </BkButton>
         </div>
       </div>
     </BkDialog>
@@ -716,6 +716,7 @@ defineExpose({ show });
 
 <style lang="scss" scoped>
 .backend-service-slider {
+
   :deep(.bk-modal-content) {
     height: calc(100vh - 104px) !important;
     overflow-y: auto;
@@ -731,14 +732,16 @@ defineExpose({ show });
     color: #323237;
 
     .icon {
-      color: #62666b;
-      font-size: 18px;
       margin-right: 10px;
+      font-size: 18px;
+      color: #62666b;
     }
   }
 
   .base-info {
+
     .base-info-form {
+
       .alert-text {
         color: #a5a4a7;
       }
@@ -754,10 +757,11 @@ defineExpose({ show });
   }
 
   .host-item {
+
     i {
+      margin-left: 10px;
       font-size: 14px;
       color: #979ba5;
-      margin-left: 10px;
 
       &:hover {
         color: #63656e;
@@ -776,23 +780,24 @@ defineExpose({ show });
   }
 
   .form-item-special {
+
     :deep(.bk-form-label) {
       display: none;
     }
   }
 
   .weight-input {
-    margin-bottom: 0px;
+    margin-bottom: 0;
     border-left: 1px solid #c4c6cc !important;
   }
 
   .suffix-slot-cls {
     width: 80px;
-    line-height: 28px;
+    height: 28px;
     font-size: 12px;
+    line-height: 28px;
     color: #63656e;
     text-align: center;
-    height: 28px;
     border: none;
     box-shadow: none !important;
 
@@ -802,8 +807,8 @@ defineExpose({ show });
   }
 
   .scheme-select-cls {
-    color: #63656e;
     overflow: hidden;
+    color: #63656e;
 
     :deep(.bk-input--default) {
       border: none;
@@ -812,12 +817,12 @@ defineExpose({ show });
   }
 
   .timeout-item {
-    width: 200px;
     position: relative;
+    width: 200px;
 
     .timeout-tip {
       position: absolute;
-      top: 0px;
+      top: 0;
       right: -70px;
 
       &.long {
@@ -835,19 +840,21 @@ defineExpose({ show });
   }
 
   .slash {
+    padding: 0 10px;
     color: #63656e;
     background-color: #fafbfd;
-    padding: 0 10px;
     border-right: 1px solid #c4c6cc;
   }
 }
 
 .backend-config-item {
+
   .item-content {
-    background: #f5f7fa;
     padding: 20px 32px;
+    background: #f5f7fa;
 
     .host-item {
+
       i {
         font-size: 14px;
         color: #979ba5;
@@ -866,52 +873,55 @@ defineExpose({ show });
 }
 
 .bk-collapse-service {
+
   .panel-header {
-    padding: 12px 0px;
+    padding: 12px 0;
     cursor: pointer;
 
     .title {
-      font-weight: 700;
-      font-size: 14px;
-      color: #313238;
       margin-left: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #313238;
     }
 
     .panel-header-show {
-      transition: 0.2s;
       transform: rotate(0deg);
+      transition: 0.2s;
     }
 
     .panel-header-hide {
-      transition: 0.2s;
       transform: rotate(-90deg);
+      transition: 0.2s;
     }
   }
 
   :deep(.bk-collapse-content) {
-    padding: 0px;
+    padding: 0;
   }
 
   .stage {
+
     .stage-name {
-      color: #63656e;
       font-size: 14px;
       font-weight: 700;
+      color: #63656e;
     }
 
     :deep(.bk-collapse-title) {
       margin-left: 23px;
       font-size: 14px;
-      color: #63656e;
       font-weight: 700;
+      color: #63656e;
     }
 
     :deep(.bk-collapse-item) {
-      background-color: #f5f7fb;
       margin-bottom: 25px;
+      background-color: #f5f7fb;
 
       .bk-collapse-header {
         background-color: #f5f7fb;
+
         &:hover {
           background-color: #f0f1f5;
         }
@@ -927,8 +937,8 @@ defineExpose({ show });
     }
 
     :deep(.bk-collapse-icon) {
-      left: 17px;
       top: 17px;
+      left: 17px;
       color: #979aa2;
 
       svg {
@@ -943,6 +953,7 @@ defineExpose({ show });
 }
 
 .custom-main-dialog {
+
   :deep(.bk-dialog-title) {
     display: none;
   }
@@ -952,52 +963,55 @@ defineExpose({ show });
   }
 
   .dialog-content {
+
     .publish-icon {
-      text-align: center;
       margin-bottom: 18px;
       font-size: 42px;
       line-height: 32px;
+      text-align: center;
     }
 
     .dialog-title {
+      margin-bottom: 16px;
       font-size: 20px;
       color: #313238;
       text-align: center;
-      margin-bottom: 16px;
     }
 
     .dialog-main {
+      padding: 12px 16px 18px;
+      margin-bottom: 25px;
       background-color: #f5f6fa;
       border-radius: 2px;
-      margin-bottom: 25px;
-      padding: 12px 16px 18px;
 
       .publish-tips {
+        margin-bottom: 10px;
         font-size: 14px;
         color: #63656e;
-        margin-bottom: 10px;
+
         span {
           font-weight: 700;
         }
       }
 
       .publish-stages {
+
         .stage-item {
+          position: relative;
+          width: 33%;
+          padding-left: 12px;
           font-size: 14px;
           color: #63656e;
-          position: relative;
-          padding-left: 12px;
-          width: 33%;
 
           &::after {
-            content: " ";
             position: absolute;
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background-color: #63656e;
             top: 10px;
             left: 0;
+            width: 4px;
+            height: 4px;
+            background-color: #63656e;
+            border-radius: 50%;
+            content: " ";
           }
         }
       }
