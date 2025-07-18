@@ -312,16 +312,7 @@ class TestGatewayRetrieveOutputSLZ:
 
         assert slz.data == expected
 
-    def test_valid_maintainers(self, fake_gateway, fake_release, mocker):
-        mocker.patch(
-            "apigateway.apis.web.gateway.serializers.GatewayHandler.get_api_domain",
-            return_value="http://bkapi.demo.com",
-        )
-        mocker.patch(
-            "apigateway.apis.web.gateway.serializers.GatewayHandler.get_docs_url",
-            return_value="http://apigw.demo.com/docs/",
-        )
-
+    def test_valid_maintainers(self, fake_gateway, fake_release):
         fake_gateway._maintainers = "admin;guest;;,,"
         fake_gateway.save()
 
