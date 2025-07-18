@@ -382,10 +382,8 @@
   </BkResizeLayout>
 
   <!-- 查看文档侧栏 -->
-  <BkSideslider
-    v-model:is-show="isShowDoc"
-    :width="960"
-    quick-close
+  <AgSideslider
+    v-model="isShowDoc"
   >
     <template #header>
       <div class="custom-side-header">
@@ -411,14 +409,14 @@
       </div>
     </template>
     <template #default>
-      <div class="">
+      <div>
         <Doc
           :stage-name="getStageName"
           :resource-name="curResource?.name"
         />
       </div>
     </template>
-  </BkSideslider>
+  </AgSideslider>
 </template>
 
 <script lang="ts" setup>
@@ -436,6 +434,7 @@ import RequestPayload from '@/views/online-debugging/components/RequestPayload.v
 import ResponseContent from '@/views/online-debugging/components/ResponseContent.vue';
 import Doc from '@/views/online-debugging/components/Doc.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
+import AgSideslider from '@/components/ag-sideslider/Index.vue';
 import { useGateway } from '@/stores';
 import {
   getApiDetail,
