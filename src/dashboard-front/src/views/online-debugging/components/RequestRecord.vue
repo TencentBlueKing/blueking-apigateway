@@ -1,10 +1,8 @@
 <template>
-  <BkSideslider
-    v-model:is-show="isShow"
+  <AgSideslider
+    v-model="isShow"
     :title="t('调用历史')"
-    :width="960"
-    class="sutra-scrollbar"
-    quick-close
+    ext-cls="sutra-scrollbar"
   >
     <template #default>
       <div class="history-container">
@@ -199,13 +197,14 @@
         </div>
       </div>
     </template>
-  </BkSideslider>
+  </AgSideslider>
 </template>
 
 <script lang="ts" setup>
 import { useAccessLog, useGateway } from '@/stores';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import EditorMonaco from '@/components/ag-editor/Index.vue';
+import AgSideslider from '@/components/ag-sideslider/Index.vue';
 import {
   getTestHistories,
   getTestHistoriesDetails,

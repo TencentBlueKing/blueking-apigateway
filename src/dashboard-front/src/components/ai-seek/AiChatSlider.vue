@@ -1,11 +1,10 @@
 <template>
-  <BkSideslider
-    v-model:is-show="isShow"
+  <AgSideslider
+    v-model="isShow"
     :show-mask="false"
     :title="title"
-    quick-close
     v-bind="$attrs"
-    width="400"
+    :width="400"
   >
     <template #default>
       <div
@@ -29,7 +28,7 @@
         />
       </div>
     </template>
-  </BkSideslider>
+  </AgSideslider>
 </template>
 
 <script lang="ts" setup>
@@ -38,6 +37,7 @@ import { useGateway } from '@/stores';
 import { onClickOutside } from '@vueuse/core';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
+import AgSideslider from '@/components/ag-sideslider/Index.vue';
 
 interface IProps {
   title?: string
