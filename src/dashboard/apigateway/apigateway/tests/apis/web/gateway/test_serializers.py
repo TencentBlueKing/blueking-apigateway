@@ -323,14 +323,6 @@ class TestGatewayRetrieveOutputSLZ:
         )
 
         fake_gateway._maintainers = "admin;guest;;,,"
-        fake_gateway._doc_maintainers = {
-            "type": "user",
-            "contacts": ["admin", "guest", ""],
-            "service_account": {
-                "name": "",
-                "link": "",
-            },
-        }
         fake_gateway.save()
 
         slz = GatewayRetrieveOutputSLZ(
@@ -347,14 +339,6 @@ class TestGatewayRetrieveOutputSLZ:
         GatewayJWTHandler.create_jwt(fake_gateway)
 
         assert slz.data["maintainers"] == ["admin", "guest"]
-        assert slz.data["doc_maintainers"] == {
-            "type": "user",
-            "contacts": ["admin", "guest"],
-            "service_account": {
-                "name": "",
-                "link": "",
-            },
-        }
 
 
 class TestGatewayAPIDocMaintainerSLZ:
