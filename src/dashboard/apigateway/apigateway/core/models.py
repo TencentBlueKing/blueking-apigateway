@@ -115,7 +115,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     def maintainers(self) -> List[str]:
         if not self._maintainers:
             return []
-        return self._maintainers.split(";")
+        return self._maintainers.rstrip(";,").split(";")
 
     @maintainers.setter
     def maintainers(self, data: List[str]):
@@ -132,6 +132,9 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
                     "link": "",
                 },
             }
+        contacts = self._doc_maintainers.get("contacts", [])
+        if contacts:
+            self._doc_maintainers["contacts"] = ",".join(contacts).rstrip(",").split(",")
         return self._doc_maintainers
 
     @doc_maintainers.setter

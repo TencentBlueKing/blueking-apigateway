@@ -312,6 +312,50 @@ class TestGatewayRetrieveOutputSLZ:
 
         assert slz.data == expected
 
+    def test_valid_maintainers(self, fake_gateway, fake_release, mocker):
+        mocker.patch(
+            "apigateway.apis.web.gateway.serializers.GatewayHandler.get_api_domain",
+            return_value="http://bkapi.demo.com",
+        )
+        mocker.patch(
+            "apigateway.apis.web.gateway.serializers.GatewayHandler.get_docs_url",
+            return_value="http://apigw.demo.com/docs/",
+        )
+
+        fake_gateway._maintainers = "admin;guest;;,,"
+        fake_gateway._doc_maintainers = {
+            "type": "user",
+            "contacts": ["admin", "guest", ""],
+            "service_account": {
+                "name": "",
+                "link": "",
+            },
+        }
+        fake_gateway.save()
+
+        slz = GatewayRetrieveOutputSLZ(
+            instance=fake_gateway,
+            context={
+                "auth_config": GatewayAuthConfig(
+                    gateway_type=GatewayTypeEnum.CLOUDS_API.value,
+                    allow_update_gateway_auth=True,
+                ),
+                "bk_app_codes": [],
+                "related_app_codes": [],
+            },
+        )
+        GatewayJWTHandler.create_jwt(fake_gateway)
+
+        assert slz.data["maintainers"] == ["admin", "guest"]
+        assert slz.data["doc_maintainers"] == {
+            "type": "user",
+            "contacts": ["admin", "guest"],
+            "service_account": {
+                "name": "",
+                "link": "",
+            },
+        }
+
 
 class TestGatewayAPIDocMaintainerSLZ:
     @pytest.mark.parametrize(
