@@ -87,7 +87,7 @@
                     <BkFormItem
                       :label="t('描述')"
                       property="description"
-                      class="last-form-item"
+                      class="m-t-12px"
                     >
                       <BkInput
                         v-model="baseInfo.description"
@@ -268,18 +268,18 @@
         </div>
       </template>
       <template #footer>
-        <div class="p-l-30px">
+        <div class="p-l-16px">
           <BkButton
             :disabled="disabled"
             :loading="isSaveLoading"
-            class="m-r-8px w-80px"
+            class="m-r-8px w-88px"
             theme="primary"
             @click="handleConfirm"
           >
             {{ t("确定") }}
           </BkButton>
           <BkButton
-            class="w-80px"
+            class="w-88px"
             @click="handleCancel"
           >
             {{ t("取消") }}
@@ -318,18 +318,18 @@
           </div>
         </div>
         <div class="dialog-footer">
-          <bk-button
+          <BkButton
             theme="primary"
             @click="toPublishLogs"
           >
             {{ t("去查看发布记录") }}
-          </bk-button>
-          <bk-button
+          </BkButton>
+          <BkButton
             class="m-l-10px"
             @click="publishDialog.isShow = false"
           >
             {{ t("关闭") }}
-          </bk-button>
+          </BkButton>
         </div>
       </div>
     </BkDialog>
@@ -607,9 +607,6 @@ const handleConfirm = async () => {
     stageConfigRef.value = [];
     emits('done');
   }
-  catch (error) {
-    console.log('error', error);
-  }
   finally {
     isSaveLoading.value = false;
   }
@@ -712,7 +709,6 @@ defineExpose({ show });
 <style lang="scss" scoped>
 .backend-service-slider {
   :deep(.bk-modal-content) {
-    height: calc(100vh - 104px) !important;
     overflow-y: auto;
   }
 
@@ -913,7 +909,7 @@ defineExpose({ show });
       }
 
       .bk-collapse-content {
-        padding: 5px 40px;
+        padding: 5px 32px;
       }
 
       &:last-child {
@@ -930,10 +926,6 @@ defineExpose({ show });
         font-size: 13px;
       }
     }
-  }
-
-  .last-form-item {
-    margin-bottom: 12px;
   }
 }
 

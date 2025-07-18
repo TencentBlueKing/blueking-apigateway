@@ -85,6 +85,12 @@
                       :name="menu.icon || ''"
                       size="18"
                     />
+                    <BkBadge
+                      v-if="['PermissionManage'].includes(menu.name) && permissionStore.count > 0"
+                      dot
+                      theme="danger"
+                      class="m-l-5px"
+                    />
                   </template>
                   <template v-for="child in menu.children">
                     <BkMenuItem
@@ -93,6 +99,13 @@
                       @click.stop="() => handleGoPage(child.name, apigwId)"
                     >
                       {{ child.title }}
+                      <BkBadge
+                        v-if="['PermissionApply'].includes(child.name ) && permissionStore.count > 0"
+                        :count="permissionStore.count"
+                        :max="99"
+                        theme="danger"
+                        class="m-l-5px"
+                      />
                     </BkMenuItem>
                   </template>
                 </BkSubmenu>
@@ -143,10 +156,7 @@
           </div>
         </div>
         <div :class="routerViewWrapperClass">
-          <RouterView
-            :key="apigwId"
-            :apigw-id="apigwId"
-          />
+          <RouterView :key="apigwId" />
         </div>
       </div>
     </BkNavigation>
@@ -154,9 +164,9 @@
 </template>
 
 <script setup lang="ts">
-import { useFeatureFlag, useGateway } from '@/stores';
+import { useFeatureFlag, useGateway, usePermission } from '@/stores';
 import { getGatewayList } from '@/services/source/gateway.ts';
-
+import { getPermissionApplyList } from '@/services/source/permission';
 interface IMenu {
   name: string
   title: string
@@ -175,6 +185,7 @@ const router = useRouter();
 
 const gatewayStore = useGateway();
 const featureFlagStore = useFeatureFlag();
+const permissionStore = usePermission();
 
 const collapse = ref(true);
 // 选中的菜单
@@ -236,18 +247,18 @@ const menuList = computed<IMenu[]>(() => [
     ],
   },
   {
-    name: 'apigwPermissionManage',
+    name: 'PermissionManage',
     enabled: true,
     title: t('权限管理'),
     icon: 'quanxianguanli',
     children: [
       {
-        name: 'apigwPermissionApplys',
+        name: 'PermissionApply',
         enabled: true,
         title: t('权限审批'),
       },
       {
-        name: 'apigwPermissionApps',
+        name: 'PermissionApp',
         enabled: true,
         title: t('应用权限'),
       },
@@ -335,7 +346,7 @@ watch(
   ],
   () => {
     activeMenuKey.value = route.meta.matchRoute as string;
-    apigwId.value = Number(route.params.id);
+    apigwId.value = Number(route.params.id || 0);
     headerTitle.value = route.meta.title as string;
     // 设置全局网关
     gatewayStore.fetchGatewayDetail(apigwId.value);
@@ -350,6 +361,21 @@ watch(
   },
 );
 
+const getGatewayData = async () => {
+  const response = await getGatewayList({ limit: 10000 });
+  gatewayList.value = response.results || [];
+};
+
+// 获取权限审批的数量
+const getPermissionData = async () => {
+  const res = await getPermissionApplyList(
+    apigwId.value, {
+      offset: 0,
+      limit: 10,
+    });
+  permissionStore.setCount(res.count);
+};
+
 const handleCollapse = (v: boolean) => {
   collapse.value = !v;
 };
@@ -360,15 +386,15 @@ const handleGoPage = (routeName: string, id?: number) => {
     name: routeName,
     params: { id },
   });
+  getPermissionData();
 };
 
 const handleBack = () => {
   router.back();
 };
 
-onMounted(async () => {
-  const response = await getGatewayList({ limit: 10000 });
-  gatewayList.value = response.results || [];
+onMounted(() => {
+  Promise.all([getGatewayData(), getPermissionData()]);
 });
 </script>
 
@@ -569,15 +595,32 @@ onMounted(async () => {
         height: calc(100vh - 105px);
         overflow: auto;
 
+        &.custom-header-view {
+          height: 100%;
+          margin-top: 52px;
+          overflow: auto;
+        }
+
         &.has-notice {
           height: calc(100vh - 147px);
         }
       }
 
-      .custom-header-view {
-        height: 100%;
-        margin-top: 52px;
-        overflow: auto;
+      .router-BackendService-wrapper,
+      .router-PermissionApply-wrapper,
+      .router-PermissionRecord-wrapper,
+      .router-PermissionApp-wrapper {
+        overflow-y: hidden;
+
+        :deep(.bk-table-body) {
+          &.bk-scrollbar {
+
+            .bk__rail-x,
+            .bk__rail-y {
+              display: none !important;
+            }
+          }
+        }
       }
     }
   }

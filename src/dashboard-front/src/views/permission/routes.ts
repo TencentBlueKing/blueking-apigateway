@@ -20,17 +20,38 @@ import { t } from '@/locales';
 
 const routes: RouteRecordRaw[] = [
   {
-    path: 'backend',
-    name: 'BackendService',
-    component: () => import('@/views/backend-services/Index.vue'),
+    path: '/:id/permission/apply',
+    name: 'PermissionApply',
+    component: () => import('@/views/permission/apply/Index.vue'),
     meta: {
-      title: t('后端服务'),
-      matchRoute: 'BackendService',
+      title: t('权限审批'),
+      matchRoute: 'PermissionApply',
+      topMenu: 'Home',
+    },
+  },
+  {
+    path: '/:id/permission/record',
+    name: 'PermissionRecord',
+    component: import('@/views/permission/record/Index.vue'),
+    meta: {
+      title: t('审批历史'),
+      matchRoute: 'PermissionRecord',
+      topMenu: 'Home',
+      showBackIcon: true,
+    },
+  },
+  {
+    path: '/:id/permission/app',
+    name: 'PermissionApp',
+    component: () => import('@/views/permission/app/Index.vue'),
+    meta: {
+      title: t('应用权限'),
+      matchRoute: 'PermissionApp',
       topMenu: 'Home',
     },
   },
 ];
 
-export default function getBackendServicesRoutes() {
+export default function getPermissionManagementRoutes() {
   return routes;
 }
