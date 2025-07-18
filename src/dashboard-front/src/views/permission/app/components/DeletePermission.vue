@@ -30,7 +30,7 @@ type IDialogParams = {
 };
 
 interface IProps {
-  expireDate: number
+  permissions: IPermission
   dialogParams?: IDialogParams
 }
 
@@ -40,9 +40,9 @@ interface Emits {
 }
 
 const curPermission = defineModel('permissions', {
-  type: Array,
+  type: Object as PropType<IPermission>,
   required: true,
-  default: [],
+  default: {},
 });
 const {
   dialogParams = {

@@ -103,7 +103,7 @@ const handleBeforeClose = async () => {
 .drawer-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 52px);
+  max-height: calc(100vh - 52px);
   overflow: hidden;
 }
 

@@ -1,95 +1,105 @@
 <template>
-  <BkSideslider
-    v-model:is-show="renewalSliderConfig.isShow"
-    :title="renewalSliderConfig.title"
+  <AgSideSlider
+    v-model="renewalSliderConfig.isShow"
     width="960"
     quick-close
     ext-cls="app-renewal-slider"
-    @hidden="handleCancel"
+    :init-data="initData"
+    @closed="handleCancel"
+    @compare="handleCompare"
   >
+    <template #header>
+      <div class="title">
+        {{ renewalSliderConfig.title }}
+      </div>
+    </template>
     <template #default>
-      <ExpireDaySelector
-        v-model:expire-days="expireDays"
-        form-type="vertical"
-        label-position="left"
-      />
-      <div class="collapse-wrap">
-        <BkCollapse
-          v-model="activeIndex"
-          class="collapse-cls"
-          use-card-theme
-        >
-          <BkCollapsePanel name="resource">
-            <template #header>
-              <div class="flex items-center panel-header">
-                <AngleUpFill
-                  :class="[
-                    activeIndex?.includes('resource')
-                      ? 'panel-header-show'
-                      : 'panel-header-hide',
-                  ]"
-                />
-                <div class="title">
-                  {{ t("按资源") }}
+      <div class="p-24px p-b-0">
+        <ExpireDaySelector
+          v-model:expire-days="expireDays"
+          form-type="vertical"
+          label-position="left"
+        />
+        <div class="collapse-wrap">
+          <BkCollapse
+            v-model="activeIndex"
+            class="collapse-cls"
+            use-card-theme
+          >
+            <BkCollapsePanel name="resource">
+              <template #header>
+                <div class="flex items-center panel-header">
+                  <AngleUpFill
+                    :class="[
+                      activeIndex?.includes('resource')
+                        ? 'panel-header-show'
+                        : 'panel-header-hide',
+                    ]"
+                  />
+                  <div class="title">
+                    {{ t("按资源") }}
+                  </div>
                 </div>
-              </div>
-            </template>
-            <template #content>
-              <BkTable
-                size="small"
-                :data="resourceTableList"
-                :columns="tableColumns"
-                :border="['row', 'outer']"
-                show-overflow-tooltip
-              />
-            </template>
-          </BkCollapsePanel>
-          <BkCollapsePanel name="gateway">
-            <template #header>
-              <div class="flex items-center panel-header">
-                <AngleUpFill
-                  :class="[
-                    activeIndex?.includes('gateway')
-                      ? 'panel-header-show'
-                      : 'panel-header-hide',
-                  ]"
+              </template>
+              <template #content>
+                <BkTable
+                  size="small"
+                  :data="resourceTableList"
+                  :columns="tableColumns"
+                  :border="['row', 'outer']"
+                  show-overflow-tooltip
                 />
-                <div class="title">
-                  {{ t("按网关") }}
+              </template>
+            </BkCollapsePanel>
+            <BkCollapsePanel name="gateway">
+              <template #header>
+                <div class="flex items-center panel-header">
+                  <AngleUpFill
+                    :class="[
+                      activeIndex?.includes('gateway')
+                        ? 'panel-header-show'
+                        : 'panel-header-hide',
+                    ]"
+                  />
+                  <div class="title">
+                    {{ t("按网关") }}
+                  </div>
                 </div>
-              </div>
-            </template>
-            <template #content>
-              <BkTable
-                size="small"
-                :data="apiTableList"
-                :columns="tableColumns"
-                :border="['row', 'outer']"
-                show-overflow-tooltip
-              />
-            </template>
-          </BkCollapsePanel>
-        </BkCollapse>
+              </template>
+              <template #content>
+                <BkTable
+                  size="small"
+                  :data="apiTableList"
+                  :columns="tableColumns"
+                  :border="['row', 'outer']"
+                  show-overflow-tooltip
+                />
+              </template>
+            </BkCollapsePanel>
+          </BkCollapse>
+        </div>
       </div>
     </template>
     <template #footer>
-      <BkButton
-        class="w-88px"
-        theme="primary"
-        :disabled="applyCount === 0"
-        :loading="renewalSliderConfig.saveLoading"
-        @click="handleConfirm"
-      >
-        {{ t("确定") }}
-      </BkButton>
-      <BkButton
-        class="m-l-8px w-88px"
-        @click="handleCancel"
-      >
-        {{ t("取消") }}
-      </BkButton>
+      <div class="p-l-24px">
+        <BkButton
+          class="w-88px"
+          theme="primary"
+          :disabled="applyCount === 0"
+          :loading="renewalSliderConfig.saveLoading"
+          @click="handleConfirm"
+        >
+          {{ t("确定") }}
+        </BkButton>
+        <BkButton
+          class="m-l-8px w-88px"
+          @click="handleCancel"
+        >
+          {{ t("取消") }}
+        </BkButton>
+      </div>
     </template>
-  </BkSideslider>
+  </AgSideSlider>
 </template>
 
 <script lang="tsx" setup>
@@ -97,6 +107,7 @@ import { AngleUpFill } from 'bkui-lib/icon';
 import { t } from '@/locales';
 import { usePermission } from '@/stores';
 import { type IPermission } from '@/types/permission';
+import AgSideSlider from '@/components/ag-sideslider/Index.vue';
 import ExpireDaySelector from '@/views/permission/app/components/ExpireDaySelector.vue';
 
 type ISliderParams = {
@@ -184,8 +195,8 @@ const tableColumns = shallowRef([
       );
     },
   },
-
 ]);
+const initData = reactive({ expireDays: 0 });
 
 const renewalSliderConfig = computed({
   get: () => sliderParams,
@@ -197,6 +208,10 @@ const renewalSliderConfig = computed({
 const resourceTableList = computed(() => resourceList);
 // 网关表格
 const apiTableList = computed(() => apiList);
+
+const handleCompare = (callback) => {
+  callback({ expireDays: expireDays.value });
+};
 
 const handleConfirm = () => {
   emits('confirm');
@@ -210,11 +225,6 @@ const handleCancel = () => {
 
 <style lang="scss" scoped>
 .app-renewal-slider {
-  :deep(.bk-modal-content) {
-    padding: 20px 24px 0;
-    overflow-y: auto;
-  }
-
   .collapse-wrap {
     :deep(.collapse-cls) {
       margin-bottom: 24px;

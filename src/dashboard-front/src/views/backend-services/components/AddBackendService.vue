@@ -268,7 +268,7 @@
         </div>
       </template>
       <template #footer>
-        <div class="p-l-16px">
+        <div class="p-l-40px">
           <BkButton
             :disabled="disabled"
             :loading="isSaveLoading"

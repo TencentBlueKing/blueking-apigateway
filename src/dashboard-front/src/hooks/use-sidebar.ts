@@ -28,6 +28,7 @@ export function useSidebar() {
         // isBackDialogShow.value = true;
         // 已编辑
         usePopInfoBox({
+          type: 'warning',
           isShow: true,
           title: t('确认离开当前页？'),
           subTitle: t('离开将会导致未保存信息丢失'),

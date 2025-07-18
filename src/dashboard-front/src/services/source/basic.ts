@@ -55,3 +55,17 @@ export function getEnv() {
     EDITION: string
   }>(`${path}/settings/env-vars/`);
 }
+
+/**
+ * 获取多租户人员
+ */
+export function getTenantUsers(
+  params: { keyword: string },
+  tenant_id: string,
+) {
+  return http.get(
+    `${window.BK_USER_WEB_API_URL}/api/v3/open-web/tenant/users/-/search/`,
+    params,
+    { headers: { 'X-Bk-Tenant-Id': tenant_id || '' } },
+  );
+}
