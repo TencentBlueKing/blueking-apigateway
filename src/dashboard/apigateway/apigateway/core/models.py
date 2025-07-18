@@ -115,7 +115,8 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     def maintainers(self) -> List[str]:
         if not self._maintainers:
             return []
-        return self._maintainers.split(";")
+        # 去除额外字符，避免前端人员选择器失败
+        return self._maintainers.rstrip(";,").split(";")
 
     @maintainers.setter
     def maintainers(self, data: List[str]):

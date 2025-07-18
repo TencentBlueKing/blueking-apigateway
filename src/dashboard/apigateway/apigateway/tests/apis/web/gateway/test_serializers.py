@@ -312,6 +312,25 @@ class TestGatewayRetrieveOutputSLZ:
 
         assert slz.data == expected
 
+    def test_valid_maintainers(self, fake_gateway, fake_release):
+        fake_gateway._maintainers = "admin;guest;;,,"
+        fake_gateway.save()
+
+        slz = GatewayRetrieveOutputSLZ(
+            instance=fake_gateway,
+            context={
+                "auth_config": GatewayAuthConfig(
+                    gateway_type=GatewayTypeEnum.CLOUDS_API.value,
+                    allow_update_gateway_auth=True,
+                ),
+                "bk_app_codes": [],
+                "related_app_codes": [],
+            },
+        )
+        GatewayJWTHandler.create_jwt(fake_gateway)
+
+        assert slz.data["maintainers"] == ["admin", "guest"]
+
 
 class TestGatewayAPIDocMaintainerSLZ:
     @pytest.mark.parametrize(
