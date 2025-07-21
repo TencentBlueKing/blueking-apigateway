@@ -278,7 +278,7 @@ import {
 import { useRouteParams } from '@vueuse/router';
 import CreateStage from './CreateStage.vue';
 import ReleaseProgrammable from './ReleaseProgrammable.vue';
-import ReleaseStage from './ReleaseStage.vue';
+import ReleaseStage from '@/components/release-stage/Index.vue';
 import { usePopInfoBox } from '@/hooks';
 import ResourceInfo from './ResourceInfo.vue';
 // import PluginManagement from './PluginManagement.vue';

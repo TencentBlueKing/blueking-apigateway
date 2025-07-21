@@ -13,3 +13,5 @@ export * from './getStatusText';
 export * from './getStageStatus';
 export * from './json2Yaml';
 export * from './yaml2Json';
+export * from './getMethodsTheme';
+export * from './blobDownload';

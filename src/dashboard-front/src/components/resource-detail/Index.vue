@@ -75,15 +75,14 @@
           :span="10"
         >
           <template v-if="localData.api_labels?.length">
-            <bk-tag
+            <BkTag
               v-for="tag in labels?.filter((label) =>
                 localData.api_labels?.includes(label.id) || localData.api_labels?.includes(String(label.id)))"
               :key="tag.id"
-              class="ag-value"
-              style=" margin-bottom: 4px;margin-left: 4px;"
+              class="ag-value mb-4px ml-4px"
             >
               {{ tag.name }}
-            </bk-tag>
+            </BkTag>
           </template>
           <div
             v-else
@@ -422,6 +421,9 @@
         </div>
       </template>
     </div>
+  </div>
+  <div v-else>
+    --
   </div>
 </template>
 
@@ -862,7 +864,7 @@ initLocalData();
 </style>
 
 <style lang="scss">
-.BkButton-group .readonly-value {
+.bk-button-group .readonly-value {
   height: 32px;
   font-size: 13px;
   line-height: 32px;

@@ -326,7 +326,7 @@ const triggerChange = () => {
 <style lang="scss">
 .confirm-custom-btn {
 
-  .BkButton.BkButton-primary {
+  .bk-button.bk-button-primary {
     background-color: #E71818;
     border-color: #E71818;
 
