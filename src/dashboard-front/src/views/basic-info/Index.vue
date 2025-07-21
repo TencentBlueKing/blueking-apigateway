@@ -563,7 +563,7 @@ const isShowMarkdown = ref(false);
 const markdownHtml = ref('');
 const isShowApiDoc = ref(false);
 
-// 当前基本信息
+// 当前网关基本信息
 const basicInfoData = ref<BasicInfoType>({
   status: 1,
   name: '',

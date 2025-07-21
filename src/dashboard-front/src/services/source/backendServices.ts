@@ -32,7 +32,7 @@ interface IBackendServicesEditParams {
   }[]
 }
 
-export function getBackendServiceList(apigwId: number, params: {
+export function getBackendServiceList(apigwId: number, params?: {
   limit?: number
   offset?: number
   name?: string

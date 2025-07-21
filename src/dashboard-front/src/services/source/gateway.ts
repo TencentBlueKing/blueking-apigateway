@@ -140,3 +140,8 @@ export const putGatewayBasics = (id: number, data: Partial<IApiGatewayEditParam>
 export const getGuideDocs = (id: number) => http.get(`${path}/${id}/dev-guideline/`);
 
 export const toggleStatus = (id: number, data: { status: number }) => http.put(`${path}/${id}/status/`, data);
+
+export const getGatewayLabels = (apigwId: number) => http.get<{
+  id: number
+  name: string
+}[]>(`${path}/${apigwId}/labels/`);
