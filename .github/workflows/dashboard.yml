@@ -28,7 +28,7 @@ jobs:
     - name: Install a specific version of uv
       uses: astral-sh/setup-uv@v6
       with:
-        version: "0.7.19"
+        version: "0.8.0"
         enable-cache: true
         cache-dependency-glob: "src/dashboard/uv.lock"
 
