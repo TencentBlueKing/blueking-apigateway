@@ -1,12 +1,11 @@
 <template>
   <div>
-    <BkSideslider
-      v-model:is-show="sliderConfig.isShow"
-      quick-close
+    <AgSideslider
+      v-model="sliderConfig.isShow"
       ext-cls="backend-service-slider"
-      width="960"
-      :before-close="handleBeforeClose"
-      @animation-end="handleAnimationEnd"
+      :init-data="initData"
+      @closed="handleAnimationEnd"
+      @compare="handleCompare"
     >
       <template #header>
         <div class="custom-side-header">
@@ -88,7 +87,7 @@
                     <BkFormItem
                       :label="t('描述')"
                       property="description"
-                      class="last-form-item"
+                      class="m-t-12px"
                     >
                       <BkInput
                         v-model="baseInfo.description"
@@ -269,25 +268,25 @@
         </div>
       </template>
       <template #footer>
-        <div class="p-l-30px">
+        <div class="p-l-16px">
           <BkButton
             :disabled="disabled"
             :loading="isSaveLoading"
-            class="m-r-8px w-80px"
+            class="m-r-8px w-88px"
             theme="primary"
             @click="handleConfirm"
           >
             {{ t("确定") }}
           </BkButton>
           <BkButton
-            class="w-80px"
+            class="w-88px"
             @click="handleCancel"
           >
             {{ t("取消") }}
           </BkButton>
         </div>
       </template>
-    </BkSideslider>
+    </AgSideslider>
 
     <!-- 提示弹窗 -->
     <BkDialog
@@ -341,7 +340,6 @@
 import { Message } from 'bkui-vue';
 import { cloneDeep, isEqual } from 'lodash-es';
 import { useGateway } from '@/stores';
-// import { useSidebar } from '@/hooks';
 import {
   createBackendService,
   getBackendServiceDetail,
@@ -349,6 +347,7 @@ import {
 } from '@/services/source/backendServices';
 import { getStageList } from '@/services/source/stage';
 import { AngleUpFill, Success } from 'bkui-lib/icon';
+import AgSideslider from '@/components/ag-sideslider/Index.vue';
 
 interface IProps {
   editId?: number
@@ -366,7 +365,6 @@ const emits = defineEmits<Emits>();
 const router = useRouter();
 const gatewayStore = useGateway();
 const { t, locale } = useI18n();
-// const { isSidebarClosed, initSidebarFormData } = useSidebar();
 
 const activeKey = ref(['base-info', 'stage-config']);
 // 基础信息
@@ -380,6 +378,7 @@ const curServiceDetail = ref({
   description: '',
   configs: [],
 });
+const initData = ref();
 const stageConfig = ref([]);
 const activeIndex = ref([]);
 const stageList = ref([]);
@@ -489,17 +488,6 @@ watch(
   },
   { immediate: true },
 );
-
-const handleBeforeClose = async () => {
-  const sliderParams = {
-    curServiceDetail: curServiceDetail.value,
-    stageConfig: stageConfig.value,
-    baseInfo: baseInfo.value,
-  };
-  console.log(sliderParams);
-  // return isSidebarClosed(JSON.stringify(sliderParams));
-  return true;
-};
 
 const handleAnimationEnd = () => {
   handleCancel();
@@ -619,9 +607,6 @@ const handleConfirm = async () => {
     stageConfigRef.value = [];
     emits('done');
   }
-  catch (error) {
-    console.log('error', error);
-  }
   finally {
     isSaveLoading.value = false;
   }
@@ -658,8 +643,16 @@ const setInit = () => {
     stageConfig: stageConfig.value,
     baseInfo: baseInfo.value,
   };
-  console.log(sliderParams);
-  // initSidebarFormData(sliderParams);
+  initData.value = cloneDeep(sliderParams);
+};
+
+const handleCompare = (callback) => {
+  const sliderParams = {
+    curServiceDetail: curServiceDetail.value,
+    stageConfig: stageConfig.value,
+    baseInfo: baseInfo.value,
+  };
+  callback(cloneDeep(sliderParams));
 };
 
 const getStageListData = async () => {
@@ -692,8 +685,7 @@ const getInfo = async () => {
       stageConfig: stageConfig.value,
       baseInfo: baseInfo.value,
     };
-    console.log(sliderParams);
-    // initSidebarFormData(sliderParams);
+    initData.value = cloneDeep(sliderParams);
   }
   catch (error) {
     console.log('error', error);
@@ -718,7 +710,6 @@ defineExpose({ show });
 .backend-service-slider {
 
   :deep(.bk-modal-content) {
-    height: calc(100vh - 104px) !important;
     overflow-y: auto;
   }
 
@@ -928,7 +919,7 @@ defineExpose({ show });
       }
 
       .bk-collapse-content {
-        padding: 5px 40px;
+        padding: 5px 32px;
       }
 
       &:last-child {
@@ -945,10 +936,6 @@ defineExpose({ show });
         font-size: 13px;
       }
     }
-  }
-
-  .last-form-item {
-    margin-bottom: 12px;
   }
 }
 

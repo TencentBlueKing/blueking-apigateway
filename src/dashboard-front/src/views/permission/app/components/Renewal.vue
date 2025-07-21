@@ -1,0 +1,153 @@
+<template>
+  <BkDialog
+    v-model:is-show="renewalDialogConfig.isShow"
+    :title="renewalDialogConfig.title"
+    :width="860"
+    theme="primary"
+    quick-close
+  >
+    <div>
+      <ExpireDaySelector v-model:expire-days="expireDays" />
+      <BkForm
+        label-position="right"
+        label-width="100"
+      >
+        <BkFormItem :label="t('蓝鲸应用ID')">
+          <div>{{ curSelections?.[0].bk_app_code || "--" }}</div>
+        </BkFormItem>
+        <BkFormItem :label="t('资源名称')">
+          <div>{{ curSelections?.[0].resource_name || "--" }}</div>
+        </BkFormItem>
+        <BkFormItem :label="t('有效期')">
+          <div>
+            <span
+              :style="{ color: permissionStore.getDurationTextColor(curSelections?.[0].expires)}"
+            >
+              {{ permissionStore.getDurationText(curSelections?.[0].expires) }}</span>
+            <span class="m-l-4px m-r-4px">
+              <AgIcon
+                name="arrows--right--line"
+                style="color: #699df4"
+              />
+            </span>
+            <span>
+              <span
+                v-if="!curSelections?.[0].renewable"
+                class="ag-strong danger"
+              >
+                {{ t("不可续期") }}
+              </span>
+              <span
+                v-else
+                class="ag-normal primary"
+              >
+                {{ permissionStore.getDurationAfterRenew(curSelections?.[0].expires, expireDays) }}
+              </span>
+            </span>
+          </div>
+        </BkFormItem>
+      </BkForm>
+    </div>
+    <template #footer>
+      <template v-if="applyCount">
+        <BkButton
+          theme="primary"
+          :disabled="applyCount === 0"
+          :loading="renewalDialogConfig.saveLoading"
+          @click="handleConfirm"
+        >
+          {{ t("确定") }}
+        </BkButton>
+      </template>
+      <template v-else>
+        <BkPopover
+          placement="top"
+          :content="t('无可续期的权限')"
+        >
+          <BkButton
+            theme="primary"
+            disabled
+          >
+            {{ t("确定") }}
+          </BkButton>
+        </BkPopover>
+      </template>
+      <BkButton
+        class="m-l-8px"
+        @click="handleApplyDialogClose"
+      >
+        {{ t("取消") }}
+      </BkButton>
+    </template>
+  </BkDialog>
+</template>
+
+<script lang="ts" setup>
+import { usePermission } from '@/stores';
+import { t } from '@/locales';
+import { type IPermission } from '@/types/permission';
+import AgIcon from '@/components/ag-icon/Index.vue';
+import ExpireDaySelector from '@/views/permission/app/components/ExpireDaySelector.vue';
+
+type IDialogParams = {
+  isShow: boolean
+  saveLoading: boolean
+  title: string
+};
+
+interface IProps {
+  applyCount?: number
+  expireDate: number
+  selections: IPermission
+  dialogParams?: IDialogParams
+}
+
+interface Emits {
+  (e: 'update:expireDate', value: number)
+  (e: 'update:dialogParams', value: IDialogParams)
+  (e: 'confirm'): void
+}
+
+const expireDays = defineModel('expireDate', {
+  type: Number,
+  required: true,
+  default: 0,
+});
+const curSelections = defineModel('selections', {
+  type: Array,
+  required: true,
+  default: [],
+});
+const {
+  applyCount = 0,
+  dialogParams = {
+    title: '',
+    saveLoading: false,
+    isShow: false,
+  },
+} = defineProps<IProps>();
+const emits = defineEmits<Emits>();
+
+const permissionStore = usePermission();
+
+const renewalDialogConfig = computed({
+  get: () => dialogParams,
+  set: (params) => {
+    emits('update:dialogParams', params);
+  },
+});
+
+const handleConfirm = () => {
+  emits('confirm');
+};
+
+const handleApplyDialogClose = () => {
+  expireDays.value = 0;
+  renewalDialogConfig.value.isShow = false;
+};
+
+</script>
+
+<style lang="scss" scoped>
+
+</style>

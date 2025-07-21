@@ -3,8 +3,6 @@ import { createPinia } from 'pinia';
 
 import App from './App.vue';
 import router from './router';
-import 'virtual:uno.css';
-import '@unocss/reset/normalize.css';
 import './styles/index.scss';
 
 // 全量引入 bkui-vue
@@ -13,6 +11,8 @@ import bkui from 'bkui-vue';
 import '../node_modules/bkui-vue/dist/style.variable.css';
 // icon font
 import '@/lib/bk_icon_font/style.css';
+import 'virtual:uno.css';
+import '@unocss/reset/tailwind-compat.css';
 
 import i18n from './locales';
 import VueDOMPurifyHTML from 'vue-dompurify-html';

@@ -22,9 +22,13 @@ export * from './use-pop-info-box';
 export * from './use-bk-user-display-name';
 // 获关列表接收搜索参数通用hooks
 export * from './use-gate-way-data';
+// 抽屉数据是否变更
+export * from './use-sidebar';
 // 通用表格列表数据
 export * from './use-query-list';
 // 获取页面最大可视化区域limit
 export * from './use-max-table-limit';
+// 设置通用表格复选框勾选处理函数
+export * from './use-selection-data';
 // datepicker 时间选择器 hooks 适用于列表筛选
 export * from './use-date-picker';

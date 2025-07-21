@@ -1,5 +1,5 @@
 <template>
-  <div class="editor-wrapper">
+  <div class="codemirror">
     <div
       id="monacoEditor"
       ref="monacoEditor"
@@ -7,32 +7,29 @@
       :style="style"
     />
     <div class="tools">
-      <AgIcon
+      <span
         v-if="showFormat"
         v-bk-tooltips="t('格式化')"
-        class="tool-icon"
-        name="geshihua"
+        class="icon apigateway-icon icon-ag-geshihua tool-icon"
         @click="handleFormat"
       />
-      <CopyButton
+      <CopyShape
         v-if="showCopy && !isFullScreen"
         v-bk-tooltips="t('复制')"
         class="tool-icon"
         @click="handleCopy"
       />
       <template v-if="showFullScreen">
-        <AgIcon
+        <FilliscreenLine
           v-show="!isFullScreen"
           v-bk-tooltips="t('全屏')"
           class="tool-icon"
-          name="filliscreen-line"
           @click="handleFullScreen"
         />
-        <AgIcon
+        <span
           v-show="isFullScreen"
           v-bk-tooltips="t('退出全屏')"
-          class="tool-icon"
-          name="un-full-screen-2"
+          class="icon apigateway-icon icon-ag-un-full-screen-2 tool-icon"
           @click="handleFullScreen"
         />
       </template>
@@ -41,88 +38,75 @@
 </template>
 
 <script setup lang="ts">
-// 引入monaco编辑器
 import * as monaco from 'monaco-editor';
-import { copy } from '@/utils';
+import { copy } from '@/common/util';
+import { CopyShape, FilliscreenLine } from 'bkui-vue/lib/icon';
 
-// 定义从父组件接收的属性
-const props = defineProps({
-  modelValue: {
-    type: [String, Object, Array],
-    default: () => 'yaml',
-  },
+interface IProps {
+  modelValue?: string | object | Array<string | object>
+  language?: string
+  readOnly?: boolean
+  width?: string | number
+  height?: string | number
+  theme?: string
+  minimap?: boolean
+  showFormat?: boolean
+  showCopy?: boolean
+  showFullScreen?: boolean
+}
 
-  language: {
-    type: String,
-    default: 'yaml',
-  },
+const {
+  modelValue = 'yaml',
+  language = 'yaml',
+  readOnly = false,
+  width = '100%',
+  height = '100%',
+  theme = 'vs-dark',
+  minimap = true,
+  showFormat = false,
+  showCopy = false,
+  showFullScreen = false,
+} = defineProps<IProps>();
 
-  readOnly: {
-    type: Boolean,
-    default: false,
-  },
-
-  width: {
-    type: [String, Number],
-    default: '100%',
-  },
-
-  height: {
-    type: [String, Number],
-    default: '100%',
-  },
-
-  theme: {
-    type: String,
-    default: 'vs-dark',
-  },
-
-  minimap: {
-    type: Boolean,
-    default: true,
-  },
-
-  showFormat: {
-    type: Boolean,
-    default: false,
-  },
-
-  showCopy: {
-    type: Boolean,
-    default: false,
-  },
-
-  showFullScreen: {
-    type: Boolean,
-    default: false,
-  },
-});
-
-const emit = defineEmits(['change', 'update:modelValue', 'findStateChanged']);
+const emit = defineEmits<{
+  'change': [data: any, data: Event]
+  'update:modelValue': [data: any, data: Event]
+  'findStateChanged': [data: boolean]
+}>();
 
 const { t } = useI18n();
 
-let editor: monaco.editor.IStandaloneCodeEditor | null = null; // 编辑器实例
+let editor = null; // 编辑器实例
 const monacoEditor = ref(null);
 // 编辑器装饰器（高亮效果等）
-let decorations: monaco.editor.IEditorDecorationsCollection[] = [];
+let decorations = [];
 // 编辑器下划波浪线
-let markers: monaco.editor.IMarkerData[] = [];
+let markers = [];
 // 可切换字号范围
 const fontSizeOptions = [14, 20, 24];
 // 可切换行高范围
 const lineHeight = [24, 30, 34];
 // 当前选中字号的index
 const currentFontSizeIndex = ref(0);
-const { modelValue, language, readOnly, width, height, theme } = toRefs(props);
+
+// 挂载
+onMounted(() => {
+  initEditor();
+});
+
+// 卸载
+onBeforeMount(() => {
+  editor?.dispose();
+  editor = null;
+});
 
 const style = computed(() => ({
-  width: typeof width.value === 'number' ? `${width.value}px` : width.value,
-  height: typeof height.value === 'number' ? `${height.value}px` : height.value,
+  width: typeof width === 'number' ? `${width}px` : width,
+  height: typeof height === 'number' ? `${height}px` : height,
 }));
 
 // 设置值
-const setValue = (value: string) => {
+const setValue = (value) => {
   try {
     if (!editor) return null;
     return editor.setValue(value);
@@ -134,8 +118,8 @@ const setValue = (value: string) => {
 
 // 非只读模式时，建议手动调用setValue方法，watch在双向绑定时会让编辑器抖动
 watch(modelValue, () => {
-  if (readOnly.value) {
-    setValue(modelValue.value);
+  if (readOnly) {
+    setValue(modelValue);
   }
 });
 
@@ -147,10 +131,10 @@ const getValue = () => {
 
 // 初始化编辑器
 const initEditor = () => {
-  editor = monaco.editor.create(monacoEditor.value!, {
-    value: modelValue.value,
-    theme: theme.value, // 主题
-    language: language.value,
+  editor = monaco.editor.create(monacoEditor, {
+    value: modelValue,
+    theme: theme, // 主题
+    language: language,
     folding: true, // 是否折叠
     foldingHighlight: true, // 折叠等高线
     foldingStrategy: 'indentation', // 折叠方式  auto | indentation
@@ -165,10 +149,10 @@ const initEditor = () => {
     accessibilitySupport: 'off', // 辅助功能支持  "auto" | "off" | "on"
     lineNumbers: 'on', // 行号 取值： "on" | "off" | "relative" | "interval" | function
     lineNumbersMinChars: 5, // 行号最小字符   number
-    readOnly: readOnly.value, // 是否只读  取值 true | false
+    readOnly: readOnly, // 是否只读  取值 true | false
     lineHeight: 24,
     glyphMargin: false, // 是否显示行号左侧装饰，用于显示当前行的错误信息等级：error | warning
-    minimap: { enabled: props.minimap }, // 小地图
+    minimap: { enabled: minimap }, // 小地图
     wordWrap: 'on', // 启用 soft-wraps
     contextmenu: false, // 禁用右键菜单
   });
@@ -190,7 +174,7 @@ const initEditor = () => {
   if (container) {
     container.addEventListener('fullscreenchange', () => {
       if (!document.fullscreenElement) {
-        isFullScreen.value = false;
+        isFullScreen = false;
       }
     });
   }
@@ -306,7 +290,7 @@ const switchFontSize = () => {
 };
 
 const handleFormat = () => {
-  if (language.value === 'json') { // 格式化 JSON 文档
+  if (language === 'json') { // 格式化 JSON 文档
     editor.trigger('a', 'editor.action.formatDocument');
   }
   // yaml 格式 需 npm i yamljs 拓展支持
@@ -341,17 +325,6 @@ const updateOptions = (options) => {
   editor.updateOptions(options);
 };
 
-// 挂载
-onMounted(() => {
-  initEditor();
-});
-
-// 卸载
-onBeforeMount(() => {
-  editor?.dispose();
-  editor = null;
-});
-
 defineExpose({
   setValue,
   setCursorPos,
@@ -374,29 +347,28 @@ defineExpose({
 </script>
 
 <style scoped lang="scss">
-.editor-wrapper {
+.codemirror {
   position: relative;
   width: 100%;
   height: calc(100% - 26px);
-
   .monaco-editor {
     position: absolute;
-    inset: 26px 0 0;
+    top: 26px;
+    bottom: 0;
+    left: 0;
+    right: 0;
   }
-
   .tools {
     position: absolute;
     top: 5px;
     right: 14px;
     display: flex;
     align-items: center;
-
     .tool-icon {
-      margin-left: 12px;
+      cursor: pointer;
       font-size: 16px;
       color: #979BA5;
-      cursor: pointer;
-
+      margin-left: 12px;
       &:hover {
         color: #3A84FF;
       }
