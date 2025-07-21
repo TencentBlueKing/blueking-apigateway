@@ -65,7 +65,29 @@ export interface ISearchSelect {
     id: number
     name: string
   }[]
+}
 
+// 对话框接口
+export interface IDialog {
+  isShow: boolean // 是否显示对话框
+  title: string // 对话框标题
+  loading?: boolean // 是否显示加载状态
+}
+
+// 资源导出
+export interface IExportDialog extends IDialog {
+  [x: string]: any
+  exportFileDocType: string
+}
+
+export interface IExportParams {
+  export_type?: string
+  query?: string
+  method?: string
+  label_name?: string
+  file_type?: string
+  resource_ids?: Array<number>
+  resource_filter_condition?: any
 }
 
 export type ReturnRecordType<T, U> = Record<string, (arg?: T) => U>;

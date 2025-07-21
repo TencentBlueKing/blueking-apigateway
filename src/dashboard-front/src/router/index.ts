@@ -18,6 +18,8 @@
 import { type RouteLocationNormalized, type RouteRecordRaw, createRouter, createWebHashHistory } from 'vue-router';
 // 环境概览
 import getStageManagementRoutes from '@/views/stage-management/route';
+// 资源管理
+import getResourceManagementRoutes from '@/views/resource-management/route';
 // 基本信息
 import getBasicInfoRoutes from '@/views/basic-info/routes';
 // 组件管理
@@ -47,6 +49,7 @@ const routes: RouteRecordRaw[] = [
     props,
     children: [
       ...getStageManagementRoutes(),
+      ...getResourceManagementRoutes(),
       ...getBasicInfoRoutes(),
       ...getBackendServicesRoutes(),
       ...getPermissionManagementRoutes(),

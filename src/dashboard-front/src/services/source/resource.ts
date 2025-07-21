@@ -1,4 +1,5 @@
 import http from '../http';
+import { blobDownLoad } from '@/utils';
 
 const path = '/gateways';
 
@@ -43,6 +44,17 @@ export const getVersionDiff = (apigwId: number, data: {
   target_resource_version_id: number
 }) =>
   http.get<IDiffData>(`${path}/${apigwId}/resource-versions/diff/`, data);
+
+export const exportVersion = async (apigwId: number, data: {
+  id?: number
+  export_type: string
+  file_type: string
+}) => {
+  const { id } = data;
+  delete data.id;
+  const res = await http.post(`${path}/${apigwId}/resource-versions/${id}/export/`, data, { responseType: 'blob' });
+  return blobDownLoad(res);
+};
 
 /**
  *  过滤出需要认证用户的资源列表，免用户认证应用白名单插件，需要使用此数据过滤资源

@@ -50,7 +50,7 @@
     </BkLoading>
 
     <!-- 日志抽屉 -->
-    <ReleaseEvent
+    <ReleaseStageEvent
       ref="logDetailsRef"
       :history-id="historyId"
     />
@@ -77,7 +77,7 @@ import {
   getDeployHistories,
 } from '@/services/source/programmable';
 import { useGateway } from '@/stores';
-import ReleaseEvent from '../components/ReleaseEvent.vue';
+import ReleaseStageEvent from '@/components/release-stage-event/Index.vue';
 import ReleaseProgrammableEvent from '../components/ReleaseProgrammableEvent.vue';
 
 type Enums = typeof publishSourceEnum | typeof publishStatusEnum;

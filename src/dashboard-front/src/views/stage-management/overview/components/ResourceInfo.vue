@@ -97,7 +97,7 @@
           >
             <template #default="{ row }">
               <template v-if="row?.gateway_label_ids?.length">
-                <bk-tag
+                <BkTag
                   v-for="tag in labels?.filter((label) => {
                     if (row.gateway_label_ids?.includes(label.id))
                       return true;
@@ -105,7 +105,7 @@
                   :key="tag.id"
                 >
                   {{ tag.name }}
-                </bk-tag>
+                </BkTag>
               </template>
               <template v-else>
                 --

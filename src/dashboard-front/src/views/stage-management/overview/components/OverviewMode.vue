@@ -57,7 +57,7 @@
     />
 
     <!-- 日志抽屉 -->
-    <ReleaseEvent
+    <ReleaseStageEvent
       ref="logDetailsRef"
       :history-id="historyId"
       @release-doing="handleSliderHideWhenPending"
@@ -91,10 +91,10 @@ import { getGatewayDetail } from '@/services/source/gateway';
 import { getProgrammableStageDetail } from '@/services/source/programmable';
 import { useTimeoutPoll } from '@vueuse/core';
 import { useRouteParams } from '@vueuse/router';
-import ReleaseStage from './ReleaseStage.vue';
+import ReleaseStage from '@/components/release-stage/Index.vue';
 import ReleaseProgrammable from './ReleaseProgrammable.vue';
 import CreateStage from './CreateStage.vue';
-import ReleaseEvent from '../../components/ReleaseEvent.vue';
+import ReleaseStageEvent from '@/components/release-stage-event/Index.vue';
 import ReleaseProgrammableEvent from '../../components/ReleaseProgrammableEvent.vue';
 
 type GatewayDetailType = Awaited<ReturnType<typeof getGatewayDetail>>;
