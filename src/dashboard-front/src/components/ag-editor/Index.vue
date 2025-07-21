@@ -39,7 +39,7 @@
 
 <script setup lang="ts">
 import * as monaco from 'monaco-editor';
-import { copy } from '@/common/util';
+import { copy } from '@/utils';
 import { CopyShape, FilliscreenLine } from 'bkui-vue/lib/icon';
 
 interface IProps {

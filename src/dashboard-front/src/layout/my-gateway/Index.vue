@@ -255,23 +255,26 @@ const menuList = computed<IMenu[]>(() => [
   },
   {
     name: 'apigwOperatingData',
-    enabled: featureFlagStore.flags.ENABLE_RUN_DATA,
+    // enabled: featureFlagStore.flags.ENABLE_RUN_DATA,
+    enabled: true,
     title: t('运行数据'),
     icon: 'keguancexing',
     children: [
       {
-        name: 'apigwAccessLog',
+        name: 'AccessLog',
         enabled: true,
         title: t('流水日志'),
       },
       {
-        name: 'apigwDashboard',
-        enabled: featureFlagStore.flags.ENABLE_RUN_DATA_METRICS,
+        name: 'Dashboard',
+        // enabled: featureFlagStore.flags.ENABLE_RUN_DATA_METRICS,
+        enabled: true,
         title: t('仪表盘'),
       },
       {
-        name: 'apigwReport',
-        enabled: featureFlagStore.flags.ENABLE_RUN_DATA_METRICS,
+        name: 'Report',
+        // enabled: featureFlagStore.flags.ENABLE_RUN_DATA_METRICS,
+        enabled: true,
         title: t('统计报表'),
       },
     ],

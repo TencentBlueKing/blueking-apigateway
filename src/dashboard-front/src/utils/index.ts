@@ -3,6 +3,7 @@ export * from './dom';
 export * from './encode';
 export * from './getSearchSelectorParams';
 export * from './message';
+export * from './generateColorHue';
 export * from './random';
 export * from './url';
 export * from './isAfter24h';
