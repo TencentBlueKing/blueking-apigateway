@@ -58,6 +58,15 @@ export interface IDropList {
   disabled?: boolean
 }
 
+export interface ISearchSelect {
+  id: number
+  name: string
+  values: {
+    id: number
+    name: string
+  }[]
+}
+
 // 对话框接口
 export interface IDialog {
   isShow: boolean // 是否显示对话框

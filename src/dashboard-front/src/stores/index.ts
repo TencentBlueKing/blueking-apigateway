@@ -5,4 +5,5 @@ export * from './useGateway';
 export * from './useAccessLog';
 export * from './useStaff';
 export * from './usePermission';
+export * from './useAuditLog';
 export * from './useResourceVersion';

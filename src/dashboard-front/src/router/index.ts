@@ -28,6 +28,8 @@ import getComponentManagementRoutes from '@/views/component-management/route';
 import getBackendServicesRoutes from '@/views/backend-services/routes';
 // 权限管理
 import getPermissionManagementRoutes from '@/views/permission/routes';
+// 操作记录
+import getAuditLogRoutes from '@/views/audit-log/routes';
 
 function props(route: RouteLocationNormalized) {
   const { id } = route.params;
@@ -51,6 +53,7 @@ const routes: RouteRecordRaw[] = [
       ...getBasicInfoRoutes(),
       ...getBackendServicesRoutes(),
       ...getPermissionManagementRoutes(),
+      ...getAuditLogRoutes(),
     ],
   },
   {

@@ -322,7 +322,7 @@ const menuList = computed<IMenu[]>(() => [
     icon: 'cardd',
   },
   {
-    name: 'apigwOperateRecords',
+    name: 'AuditLog',
     enabled: true,
     title: t('操作记录'),
     icon: 'history',
@@ -333,7 +333,7 @@ const routerViewWrapperClass = computed(() => {
   if (route.meta.customHeader) {
     return 'custom-header-view';
   }
-  return `router-${route.name}-wrapper default-header-view`;
+  return `default-header-view router-${route.name}-wrapper`;
 });
 
 // 监听当前路由
@@ -607,7 +607,8 @@ onMounted(() => {
       .router-BackendService-wrapper,
       .router-PermissionApply-wrapper,
       .router-PermissionRecord-wrapper,
-      .router-PermissionApp-wrapper {
+      .router-PermissionApp-wrapper,
+      .router-AuditLog-wrapper {
         overflow-y: hidden;
 
         :deep(.bk-table-body) {

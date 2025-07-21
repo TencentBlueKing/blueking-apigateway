@@ -15,32 +15,35 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
-import { defineStore } from 'pinia';
+import http from '../http';
 
-import { getEnv } from '@/services/source/basic';
+export interface IAuditLog {
+  // 操作类型
+  op_type: string
+  // 操作状态
+  op_status: string
+  // 操作对象
+  op_object?: string
+  // 操作对象类型
+  op_object_type: string
+  // 用户名
+  username?: string
+  // 开始时间（可选）
+  time_start?: string
+  // 结束时间（可选）
+  time_end?: string
+  // 关键词（可选）
+  keyword?: string
+  // 排序字段（可选）
+  order_by?: string
+}
 
-export const useEnv = defineStore('useEnv', {
-  state: () => ({
-    env: {
-      BK_API_RESOURCE_URL_TMPL: '',
-      BK_APP_CODE: '',
-      BK_COMPONENT_API_URL: '',
-      BK_DASHBOARD_CSRF_COOKIE_NAME: '',
-      BK_DASHBOARD_FE_URL: '',
-      BK_DASHBOARD_URL: '',
-      BK_DEFAULT_TEST_APP_CODE: '',
-      BK_PAAS_APP_REPO_URL_TMPL: '',
-      EDITION: '',
-    },
-  }),
-  actions: {
-    /**
-     * 查询环境变量信息
-     */
-    fetchEnv() {
-      getEnv().then((result) => {
-        Object.assign(this.env, result);
-      });
-    },
-  },
-});
+/**
+ *  查询操作记录
+ * @param apigwId 网关id
+ * @param params
+ * @returns
+ */
+export async function getAuditLogList(apigwId: number, params: IAuditLog) {
+  return http.get(`/gateways/${apigwId}/audits/logs/`, params);
+}
