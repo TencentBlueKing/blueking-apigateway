@@ -58,4 +58,14 @@ export interface IDropList {
   disabled?: boolean
 }
 
+export interface ISearchSelect {
+  id: number
+  name: string
+  values: {
+    id: number
+    name: string
+  }[]
+
+}
+
 export type ReturnRecordType<T, U> = Record<string, (arg?: T) => U>;

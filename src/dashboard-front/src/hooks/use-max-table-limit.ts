@@ -89,7 +89,7 @@ function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string
 export function useMaxTableLimit(payload?: Partial<ITableLimit>) {
   const viewportHeight = toValue(useWindowSize().height);
   // 默认已占位高度
-  const hasAllocatedHeight = payload?.allocatedHeight ?? 180;
+  const hasAllocatedHeight = payload?.allocatedHeight ?? 186;
   // 默认分页器高度
   const paginationH = payload?.hasPagination || typeof payload?.hasPagination === 'undefined' ? 61 : 0;
   // 获取表格的最大可视化区域
