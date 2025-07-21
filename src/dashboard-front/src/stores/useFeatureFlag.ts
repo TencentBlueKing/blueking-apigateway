@@ -23,7 +23,7 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
     },
   }),
   getters: {
-    apiBaseUrl: () => '',
+    apiBaseUrl: () => import.meta.env.VITE_BK_USER_WEB_API_URL || '',
     // 是否开启了多租户模式
     isTenantMode: state => !!state.flags?.ENABLE_MULTI_TENANT_MODE,
     // 是否启用了 ai 问答功能
@@ -31,7 +31,7 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
   },
   actions: {
     async fetchFlags() {
-      this.info = await getFeatureFlags({
+      this.flags = await getFeatureFlags({
         limit: 10000,
         offset: 0,
       });

@@ -214,7 +214,7 @@ const menuList = computed<IMenu[]>(() => [
         title: t('环境概览'),
       },
       {
-        name: 'apigwReleaseHistory',
+        name: 'StageReleaseRecord',
         enabled: true,
         title: t('发布记录'),
       },

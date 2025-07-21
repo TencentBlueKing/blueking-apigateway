@@ -37,6 +37,15 @@ const routes: RouteRecordRaw[] = [
           matchRoute: 'StageManagement',
         },
       },
+      {
+        path: 'release-record',
+        name: 'StageReleaseRecord',
+        component: () => import('./release-record/Index.vue'),
+        meta: {
+          title: t('发布记录'),
+          matchRoute: 'StageManagement',
+        },
+      },
     ],
   },
 ];

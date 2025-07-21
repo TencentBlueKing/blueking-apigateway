@@ -11,10 +11,16 @@ export const useGateway = defineStore('useGateway', {
     currentGateway: Partial<GatewayDetailType> | null
     apigwId: number
     apigwName: string
+    labels: {
+      id: number
+      name: string
+    }[]
   } => ({
     currentGateway: null,
     apigwId: 0,
     apigwName: '',
+    // 网关标签
+    labels: [],
   }),
   getters: {
     // 网关是否为可编程网关 kind === 1
@@ -38,6 +44,12 @@ export const useGateway = defineStore('useGateway', {
     },
     clearCurrentGateway() {
       this.currentGateway = null;
+    },
+    setGatewayLabels(labels: {
+      id: number
+      name: string
+    }[]) {
+      this.labels = labels;
     },
   },
 });
