@@ -251,7 +251,7 @@
     </BkSideslider>
 
     <!-- 日志弹窗 -->
-    <ReleaseEvent
+    <ReleaseStageEvent
       ref="logDetailsRef"
       :history-id="publishId"
       @release-success="handleReleaseSuccess"
@@ -264,12 +264,12 @@
 import {
   type IStageListItem,
   getStageList,
-} from '@/services/source/stage';
-import { getVersionDiff, getVersionList } from '@/services/source/resource';
-import { createRelease } from '@/services/source/release';
-import { checkMcpServersDel } from '@/services/source/mcp-market';
+} from '@/services/source/stage.ts';
+import { getVersionDiff, getVersionList } from '@/services/source/resource.ts';
+import { createRelease } from '@/services/source/release.ts';
+import { checkMcpServersDel } from '@/services/source/mcp-market.ts';
 import VersionDiff from '@/components/version-diff/Index.vue';
-import ReleaseEvent from '../../components/ReleaseEvent.vue';
+import ReleaseStageEvent from '@/components/release-stage-event/Index.vue';
 import { Message } from 'bkui-vue';
 import dayjs from 'dayjs';
 import { usePopInfoBox } from '@/hooks';

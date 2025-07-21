@@ -19,9 +19,7 @@
   <div class="navigation-main">
     <BkNavigation
       class="navigation-main-content apigw-navigation"
-      :class="[
-        route.name === 'apigwResourceVersion' ? 'custom-height-navigation' : ''
-      ]"
+      :class="{ 'custom-height-navigation': route.meta?.hideHeaderBorder }"
       default-open
       :need-menu="needMenu"
       navigation-type="left-right"
@@ -227,20 +225,20 @@ const menuList = computed<IMenu[]>(() => [
     icon: 'fuwuguanli',
   },
   {
-    name: 'apigwResourceManage',
+    name: 'ResourceManagement',
     enabled: true,
     title: t('资源管理'),
     icon: 'ziyuanguanli',
     children: [
       {
-        name: 'apigwResource',
+        name: 'ResourceSetting',
         enabled: true,
         title: t('资源配置'),
         // 是否在可编程网关中隐藏
         hideInProgrammable: true,
       },
       {
-        name: 'apigwResourceVersion',
+        name: 'ResourceVersion',
         enabled: true,
         title: t('资源版本'),
       },
@@ -614,6 +612,7 @@ onMounted(() => {
         overflow-y: hidden;
 
         :deep(.bk-table-body) {
+
           &.bk-scrollbar {
 
             .bk__rail-x,
