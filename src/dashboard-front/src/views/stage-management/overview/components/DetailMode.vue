@@ -281,7 +281,7 @@ import ReleaseProgrammable from './ReleaseProgrammable.vue';
 import ReleaseStage from './ReleaseStage.vue';
 import { usePopInfoBox } from '@/hooks';
 import ResourceInfo from './ResourceInfo.vue';
-import PluginManagement from './PluginManagement.vue';
+// import PluginManagement from './PluginManagement.vue';
 import VarManagement from './VarManagement.vue';
 
 interface IProps { stageId: number }
@@ -332,7 +332,7 @@ const panels = [
 
 const componentMap = {
   resourceInfo: ResourceInfo,
-  pluginManagement: PluginManagement,
+  // pluginManagement: PluginManagement,
   varManagement: VarManagement,
 };
 

@@ -39,7 +39,7 @@
 
 <script setup lang="ts">
 import * as monaco from 'monaco-editor';
-import { copy } from '@/common/util';
+import { copy } from '@/utils';
 import { CopyShape, FilliscreenLine } from 'bkui-vue/lib/icon';
 
 interface IProps {
@@ -117,7 +117,7 @@ const setValue = (value) => {
 };
 
 // 非只读模式时，建议手动调用setValue方法，watch在双向绑定时会让编辑器抖动
-watch(modelValue, () => {
+watch(() => modelValue, () => {
   if (readOnly) {
     setValue(modelValue);
   }
@@ -351,24 +351,25 @@ defineExpose({
   position: relative;
   width: 100%;
   height: calc(100% - 26px);
+
   .monaco-editor {
     position: absolute;
-    top: 26px;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    inset: 26px 0 0;
   }
+
   .tools {
     position: absolute;
     top: 5px;
     right: 14px;
     display: flex;
     align-items: center;
+
     .tool-icon {
-      cursor: pointer;
+      margin-left: 12px;
       font-size: 16px;
       color: #979BA5;
-      margin-left: 12px;
+      cursor: pointer;
+
       &:hover {
         color: #3A84FF;
       }
