@@ -119,7 +119,7 @@
 
 <script setup lang="ts">
 import { useGateway, useUserInfo } from '@/stores';
-import { copy } from '@/common/util';
+import { copy } from '@/utils';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import {

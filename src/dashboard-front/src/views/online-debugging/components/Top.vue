@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { useStage } from '@/store';
+import { useStage } from '@/stores';
 import RequestRecord from '@/views/online-debugging/components/RequestRecord.vue';
 
 const { t } = useI18n();

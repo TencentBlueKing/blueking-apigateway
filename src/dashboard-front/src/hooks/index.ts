@@ -16,6 +16,8 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+// 图表间隔
+export * from './use-chart-interval-option';
 // info-box通用hook
 export * from './use-pop-info-box';
 // 多租户展示名

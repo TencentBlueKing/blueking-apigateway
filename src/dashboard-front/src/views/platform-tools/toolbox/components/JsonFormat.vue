@@ -78,7 +78,7 @@
 
 <script lang="ts" setup>
 import AgIcon from '@/components/ag-icon/Index.vue';
-// import { copy as copyToClipboard } from '@/common/util';
+import { copy as copyToClipboard } from '@/utils';
 import highlightJs from 'highlight.js';
 
 const { t } = useI18n();
@@ -112,7 +112,7 @@ const handleClear = () => {
 };
 
 const handleCopyClick = () => {
-  // copyToClipboard(result.value);
+  copyToClipboard(result.value);
 };
 
 const highlightJson = (value: string) => {
