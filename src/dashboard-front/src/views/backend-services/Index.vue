@@ -50,6 +50,7 @@
           :row-class="isNewCreate"
           :data="tableData"
           :pagination="pagination"
+          :max-height="clientHeight"
           border="outer"
           class="table-layout"
           remote-pagination
@@ -61,7 +62,7 @@
         >
           <template #empty>
             <TableEmpty
-              :loading="isLoading"
+              :is-loading="isLoading"
               :empty-type="tableEmptyConf.emptyType"
               :abnormal="tableEmptyConf.isAbnormal"
               @refresh="getList"
@@ -94,13 +95,13 @@ import {
 } from '@/services/source/backendServices';
 import { getStageList } from '@/services/source/stage';
 import AddBackendService from '@/views/backend-services/components/AddBackendService.vue';
-import TableEmpty from '@/components/table-empty/index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
 const router = useRouter();
 // 当前视口高度能展示最多多少条表格数据
-const { maxTableLimit } = useMaxTableLimit({ allocatedHeight: 190 });
+const { maxTableLimit, clientHeight } = useMaxTableLimit();
 
 const addBackendServiceEl = useTemplateRef<InstanceType<typeof AddBackendService> & { show: () => void }>('addBackendServiceRef');
 const tableKey = ref(uniqueId());
@@ -115,7 +116,7 @@ const filterData = ref({
   type: '',
 });
 const tableEmptyConf = ref({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 const stageList = ref<{ release: { status: string } }[]>([]);
@@ -341,8 +342,6 @@ const handleDelete = ({ id, name }: {
     subTitle: t('删除操作无法撤回，请谨慎操作'),
     confirmText: t('删除'),
     confirmButtonTheme: 'danger',
-    contentAlign: 'left',
-    showContentBgColor: true,
     onConfirm: async () => {
       try {
         await deleteBackendService(apigwId.value, id);
@@ -359,14 +358,14 @@ const handleDelete = ({ id, name }: {
   });
 };
 
-const handleClearFilterKey = () => {
+const handleClearFilterKey = async () => {
   filterData.value = Object.assign({},
     {
       name: '',
       type: '',
     },
   );
-  getList();
+  await getList();
   updateTableEmptyConfig();
 };
 
@@ -412,19 +411,6 @@ onBeforeMount(() => {
 
   .table-layout {
     :deep(.bk-table-body) {
-    }
-
-    :deep(.bk-table-head) {
-      scrollbar-color: transparent transparent;
-    }
-
-    :deep(.bk-table-body) {
-      scrollbar-color: transparent transparent;
-        tbody > tr {
-          td {
-            background-color: rgba(0,0,0,0);
-          }
-      }
     }
   }
 }

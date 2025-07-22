@@ -19,9 +19,7 @@
   <div class="navigation-main">
     <BkNavigation
       class="navigation-main-content apigw-navigation"
-      :class="[
-        route.name === 'apigwResourceVersion' ? 'custom-height-navigation' : ''
-      ]"
+      :class="{ 'custom-height-navigation': route.meta?.hideHeaderBorder }"
       default-open
       :need-menu="needMenu"
       navigation-type="left-right"
@@ -85,6 +83,12 @@
                       :name="menu.icon || ''"
                       size="18"
                     />
+                    <BkBadge
+                      v-if="['PermissionManage'].includes(menu.name) && permissionStore.count > 0"
+                      dot
+                      theme="danger"
+                      class="m-l-5px"
+                    />
                   </template>
                   <template v-for="child in menu.children">
                     <BkMenuItem
@@ -93,6 +97,13 @@
                       @click.stop="() => handleGoPage(child.name, apigwId)"
                     >
                       {{ child.title }}
+                      <BkBadge
+                        v-if="['PermissionApply'].includes(child.name ) && permissionStore.count > 0"
+                        :count="permissionStore.count"
+                        :max="99"
+                        theme="danger"
+                        class="m-l-5px"
+                      />
                     </BkMenuItem>
                   </template>
                 </BkSubmenu>
@@ -143,10 +154,7 @@
           </div>
         </div>
         <div :class="routerViewWrapperClass">
-          <RouterView
-            :key="apigwId"
-            :apigw-id="apigwId"
-          />
+          <RouterView :key="apigwId" />
         </div>
       </div>
     </BkNavigation>
@@ -154,9 +162,9 @@
 </template>
 
 <script setup lang="ts">
-import { useFeatureFlag, useGateway } from '@/stores';
+import { useFeatureFlag, useGateway, usePermission } from '@/stores';
 import { getGatewayList } from '@/services/source/gateway.ts';
-
+import { getPermissionApplyList } from '@/services/source/permission';
 interface IMenu {
   name: string
   title: string
@@ -175,6 +183,7 @@ const router = useRouter();
 
 const gatewayStore = useGateway();
 const featureFlagStore = useFeatureFlag();
+const permissionStore = usePermission();
 
 const collapse = ref(true);
 // 选中的菜单
@@ -203,7 +212,7 @@ const menuList = computed<IMenu[]>(() => [
         title: t('环境概览'),
       },
       {
-        name: 'apigwReleaseHistory',
+        name: 'StageReleaseRecord',
         enabled: true,
         title: t('发布记录'),
       },
@@ -216,38 +225,38 @@ const menuList = computed<IMenu[]>(() => [
     icon: 'fuwuguanli',
   },
   {
-    name: 'apigwResourceManage',
+    name: 'ResourceManagement',
     enabled: true,
     title: t('资源管理'),
     icon: 'ziyuanguanli',
     children: [
       {
-        name: 'apigwResource',
+        name: 'ResourceSetting',
         enabled: true,
         title: t('资源配置'),
         // 是否在可编程网关中隐藏
         hideInProgrammable: true,
       },
       {
-        name: 'apigwResourceVersion',
+        name: 'ResourceVersion',
         enabled: true,
         title: t('资源版本'),
       },
     ],
   },
   {
-    name: 'apigwPermissionManage',
+    name: 'PermissionManage',
     enabled: true,
     title: t('权限管理'),
     icon: 'quanxianguanli',
     children: [
       {
-        name: 'apigwPermissionApplys',
+        name: 'PermissionApply',
         enabled: true,
         title: t('权限审批'),
       },
       {
-        name: 'apigwPermissionApps',
+        name: 'PermissionApp',
         enabled: true,
         title: t('应用权限'),
       },
@@ -316,7 +325,7 @@ const menuList = computed<IMenu[]>(() => [
     icon: 'cardd',
   },
   {
-    name: 'apigwOperateRecords',
+    name: 'AuditLog',
     enabled: true,
     title: t('操作记录'),
     icon: 'history',
@@ -327,7 +336,7 @@ const routerViewWrapperClass = computed(() => {
   if (route.meta.customHeader) {
     return 'custom-header-view';
   }
-  return `router-${route.name}-wrapper default-header-view`;
+  return `default-header-view router-${route.name}-wrapper`;
 });
 
 // 监听当前路由
@@ -338,7 +347,7 @@ watch(
   ],
   () => {
     activeMenuKey.value = route.meta.matchRoute as string;
-    apigwId.value = Number(route.params.id);
+    apigwId.value = Number(route.params.id || 0);
     headerTitle.value = route.meta.title as string;
     // 设置全局网关
     gatewayStore.fetchGatewayDetail(apigwId.value);
@@ -353,6 +362,21 @@ watch(
   },
 );
 
+const getGatewayData = async () => {
+  const response = await getGatewayList({ limit: 10000 });
+  gatewayList.value = response.results || [];
+};
+
+// 获取权限审批的数量
+const getPermissionData = async () => {
+  const res = await getPermissionApplyList(
+    apigwId.value, {
+      offset: 0,
+      limit: 10,
+    });
+  permissionStore.setCount(res.count);
+};
+
 const handleCollapse = (v: boolean) => {
   collapse.value = !v;
 };
@@ -363,15 +387,15 @@ const handleGoPage = (routeName: string, id?: number) => {
     name: routeName,
     params: { id },
   });
+  getPermissionData();
 };
 
 const handleBack = () => {
   router.back();
 };
 
-onMounted(async () => {
-  const response = await getGatewayList({ limit: 10000 });
-  gatewayList.value = response.results || [];
+onMounted(() => {
+  Promise.all([getGatewayData(), getPermissionData()]);
 });
 </script>
 
@@ -572,15 +596,34 @@ onMounted(async () => {
         height: calc(100vh - 105px);
         overflow: auto;
 
+        &.custom-header-view {
+          height: 100%;
+          margin-top: 52px;
+          overflow: auto;
+        }
+
         &.has-notice {
           height: calc(100vh - 147px);
         }
       }
 
-      .custom-header-view {
-        height: 100%;
-        margin-top: 52px;
-        overflow: auto;
+      .router-BackendService-wrapper,
+      .router-PermissionApply-wrapper,
+      .router-PermissionRecord-wrapper,
+      .router-PermissionApp-wrapper,
+      .router-AuditLog-wrapper {
+        overflow-y: hidden;
+
+        :deep(.bk-table-body) {
+
+          &.bk-scrollbar {
+
+            .bk__rail-x,
+            .bk__rail-y {
+              display: none !important;
+            }
+          }
+        }
       }
     }
   }

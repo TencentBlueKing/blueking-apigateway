@@ -1,12 +1,28 @@
+/*
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) 2025 Tencent. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://opensource.org/licenses/MIT
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
+ */
 <template>
   <div>
-    <BkSideslider
-      v-model:is-show="sliderConfig.isShow"
-      quick-close
+    <AgSideslider
+      v-model="sliderConfig.isShow"
       ext-cls="backend-service-slider"
-      width="960"
-      :before-close="handleBeforeClose"
-      @animation-end="handleAnimationEnd"
+      :init-data="initData"
+      @closed="handleAnimationEnd"
+      @compare="handleCompare"
     >
       <template #header>
         <div class="custom-side-header">
@@ -88,7 +104,7 @@
                     <BkFormItem
                       :label="t('描述')"
                       property="description"
-                      class="last-form-item"
+                      class="m-t-12px"
                     >
                       <BkInput
                         v-model="baseInfo.description"
@@ -269,25 +285,25 @@
         </div>
       </template>
       <template #footer>
-        <div class="p-l-30px">
+        <div class="p-l-40px">
           <BkButton
             :disabled="disabled"
             :loading="isSaveLoading"
-            class="m-r-8px w-80px"
+            class="m-r-8px w-88px"
             theme="primary"
             @click="handleConfirm"
           >
             {{ t("确定") }}
           </BkButton>
           <BkButton
-            class="w-80px"
+            class="w-88px"
             @click="handleCancel"
           >
             {{ t("取消") }}
           </BkButton>
         </div>
       </template>
-    </BkSideslider>
+    </AgSideslider>
 
     <!-- 提示弹窗 -->
     <BkDialog
@@ -319,18 +335,18 @@
           </div>
         </div>
         <div class="dialog-footer">
-          <bk-button
+          <BkButton
             theme="primary"
             @click="toPublishLogs"
           >
             {{ t("去查看发布记录") }}
-          </bk-button>
-          <bk-button
+          </BkButton>
+          <BkButton
             class="m-l-10px"
             @click="publishDialog.isShow = false"
           >
             {{ t("关闭") }}
-          </bk-button>
+          </BkButton>
         </div>
       </div>
     </BkDialog>
@@ -341,7 +357,6 @@
 import { Message } from 'bkui-vue';
 import { cloneDeep, isEqual } from 'lodash-es';
 import { useGateway } from '@/stores';
-// import { useSidebar } from '@/hooks';
 import {
   createBackendService,
   getBackendServiceDetail,
@@ -349,6 +364,7 @@ import {
 } from '@/services/source/backendServices';
 import { getStageList } from '@/services/source/stage';
 import { AngleUpFill, Success } from 'bkui-lib/icon';
+import AgSideslider from '@/components/ag-sideslider/Index.vue';
 
 interface IProps {
   editId?: number
@@ -366,7 +382,6 @@ const emits = defineEmits<Emits>();
 const router = useRouter();
 const gatewayStore = useGateway();
 const { t, locale } = useI18n();
-// const { isSidebarClosed, initSidebarFormData } = useSidebar();
 
 const activeKey = ref(['base-info', 'stage-config']);
 // 基础信息
@@ -380,6 +395,7 @@ const curServiceDetail = ref({
   description: '',
   configs: [],
 });
+const initData = ref();
 const stageConfig = ref([]);
 const activeIndex = ref([]);
 const stageList = ref([]);
@@ -489,17 +505,6 @@ watch(
   },
   { immediate: true },
 );
-
-const handleBeforeClose = async () => {
-  const sliderParams = {
-    curServiceDetail: curServiceDetail.value,
-    stageConfig: stageConfig.value,
-    baseInfo: baseInfo.value,
-  };
-  console.log(sliderParams);
-  // return isSidebarClosed(JSON.stringify(sliderParams));
-  return true;
-};
 
 const handleAnimationEnd = () => {
   handleCancel();
@@ -619,9 +624,6 @@ const handleConfirm = async () => {
     stageConfigRef.value = [];
     emits('done');
   }
-  catch (error) {
-    console.log('error', error);
-  }
   finally {
     isSaveLoading.value = false;
   }
@@ -658,8 +660,16 @@ const setInit = () => {
     stageConfig: stageConfig.value,
     baseInfo: baseInfo.value,
   };
-  console.log(sliderParams);
-  // initSidebarFormData(sliderParams);
+  initData.value = cloneDeep(sliderParams);
+};
+
+const handleCompare = (callback) => {
+  const sliderParams = {
+    curServiceDetail: curServiceDetail.value,
+    stageConfig: stageConfig.value,
+    baseInfo: baseInfo.value,
+  };
+  callback(cloneDeep(sliderParams));
 };
 
 const getStageListData = async () => {
@@ -692,8 +702,7 @@ const getInfo = async () => {
       stageConfig: stageConfig.value,
       baseInfo: baseInfo.value,
     };
-    console.log(sliderParams);
-    // initSidebarFormData(sliderParams);
+    initData.value = cloneDeep(sliderParams);
   }
   catch (error) {
     console.log('error', error);
@@ -716,8 +725,8 @@ defineExpose({ show });
 
 <style lang="scss" scoped>
 .backend-service-slider {
+
   :deep(.bk-modal-content) {
-    height: calc(100vh - 104px) !important;
     overflow-y: auto;
   }
 
@@ -731,14 +740,16 @@ defineExpose({ show });
     color: #323237;
 
     .icon {
-      color: #62666b;
-      font-size: 18px;
       margin-right: 10px;
+      font-size: 18px;
+      color: #62666b;
     }
   }
 
   .base-info {
+
     .base-info-form {
+
       .alert-text {
         color: #a5a4a7;
       }
@@ -754,10 +765,11 @@ defineExpose({ show });
   }
 
   .host-item {
+
     i {
+      margin-left: 10px;
       font-size: 14px;
       color: #979ba5;
-      margin-left: 10px;
 
       &:hover {
         color: #63656e;
@@ -776,23 +788,24 @@ defineExpose({ show });
   }
 
   .form-item-special {
+
     :deep(.bk-form-label) {
       display: none;
     }
   }
 
   .weight-input {
-    margin-bottom: 0px;
+    margin-bottom: 0;
     border-left: 1px solid #c4c6cc !important;
   }
 
   .suffix-slot-cls {
     width: 80px;
-    line-height: 28px;
+    height: 28px;
     font-size: 12px;
+    line-height: 28px;
     color: #63656e;
     text-align: center;
-    height: 28px;
     border: none;
     box-shadow: none !important;
 
@@ -802,8 +815,8 @@ defineExpose({ show });
   }
 
   .scheme-select-cls {
-    color: #63656e;
     overflow: hidden;
+    color: #63656e;
 
     :deep(.bk-input--default) {
       border: none;
@@ -812,12 +825,12 @@ defineExpose({ show });
   }
 
   .timeout-item {
-    width: 200px;
     position: relative;
+    width: 200px;
 
     .timeout-tip {
       position: absolute;
-      top: 0px;
+      top: 0;
       right: -70px;
 
       &.long {
@@ -835,19 +848,21 @@ defineExpose({ show });
   }
 
   .slash {
+    padding: 0 10px;
     color: #63656e;
     background-color: #fafbfd;
-    padding: 0 10px;
     border-right: 1px solid #c4c6cc;
   }
 }
 
 .backend-config-item {
+
   .item-content {
-    background: #f5f7fa;
     padding: 20px 32px;
+    background: #f5f7fa;
 
     .host-item {
+
       i {
         font-size: 14px;
         color: #979ba5;
@@ -866,59 +881,62 @@ defineExpose({ show });
 }
 
 .bk-collapse-service {
+
   .panel-header {
-    padding: 12px 0px;
+    padding: 12px 0;
     cursor: pointer;
 
     .title {
-      font-weight: 700;
-      font-size: 14px;
-      color: #313238;
       margin-left: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #313238;
     }
 
     .panel-header-show {
-      transition: 0.2s;
       transform: rotate(0deg);
+      transition: 0.2s;
     }
 
     .panel-header-hide {
-      transition: 0.2s;
       transform: rotate(-90deg);
+      transition: 0.2s;
     }
   }
 
   :deep(.bk-collapse-content) {
-    padding: 0px;
+    padding: 0;
   }
 
   .stage {
+
     .stage-name {
-      color: #63656e;
       font-size: 14px;
       font-weight: 700;
+      color: #63656e;
     }
 
     :deep(.bk-collapse-title) {
       margin-left: 23px;
       font-size: 14px;
-      color: #63656e;
       font-weight: 700;
+      color: #63656e;
     }
 
     :deep(.bk-collapse-item) {
-      background-color: #f5f7fb;
       margin-bottom: 25px;
+      background-color: #f5f7fb;
 
       .bk-collapse-header {
         background-color: #f5f7fb;
+
         &:hover {
           background-color: #f0f1f5;
         }
       }
 
       .bk-collapse-content {
-        padding: 5px 40px;
+        padding: 5px 32px;
       }
 
       &:last-child {
@@ -927,8 +945,8 @@ defineExpose({ show });
     }
 
     :deep(.bk-collapse-icon) {
-      left: 17px;
       top: 17px;
+      left: 17px;
       color: #979aa2;
 
       svg {
@@ -936,13 +954,10 @@ defineExpose({ show });
       }
     }
   }
-
-  .last-form-item {
-    margin-bottom: 12px;
-  }
 }
 
 .custom-main-dialog {
+
   :deep(.bk-dialog-title) {
     display: none;
   }
@@ -952,52 +967,55 @@ defineExpose({ show });
   }
 
   .dialog-content {
+
     .publish-icon {
-      text-align: center;
       margin-bottom: 18px;
       font-size: 42px;
       line-height: 32px;
+      text-align: center;
     }
 
     .dialog-title {
+      margin-bottom: 16px;
       font-size: 20px;
       color: #313238;
       text-align: center;
-      margin-bottom: 16px;
     }
 
     .dialog-main {
+      padding: 12px 16px 18px;
+      margin-bottom: 25px;
       background-color: #f5f6fa;
       border-radius: 2px;
-      margin-bottom: 25px;
-      padding: 12px 16px 18px;
 
       .publish-tips {
+        margin-bottom: 10px;
         font-size: 14px;
         color: #63656e;
-        margin-bottom: 10px;
+
         span {
           font-weight: 700;
         }
       }
 
       .publish-stages {
+
         .stage-item {
+          position: relative;
+          width: 33%;
+          padding-left: 12px;
           font-size: 14px;
           color: #63656e;
-          position: relative;
-          padding-left: 12px;
-          width: 33%;
 
           &::after {
-            content: " ";
             position: absolute;
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background-color: #63656e;
             top: 10px;
             left: 0;
+            width: 4px;
+            height: 4px;
+            background-color: #63656e;
+            border-radius: 50%;
+            content: " ";
           }
         }
       }

@@ -16,39 +16,45 @@
  * to the current version of the project delivered to anyone in the future.
  */
 <template>
-  <div class="gateways-empty-table-search">
+  <div class="flex items-center gateways-empty-table-search">
     <BkException
-      v-if="!isLoading"
       class="exception-wrap-item exception-part"
       :type="exceptionType"
       scene="part"
     >
-      <div class="exception-part-title">
-        {{ exceptionTitle }}
-      </div>
-      <template v-if="!['empty'].includes(exceptionType)">
-        <div
-          v-if="abnormal"
-          class="refresh-tips"
-          @click="handleRefresh"
-        >
-          {{ t("刷新") }}
+      <template v-if="!isLoading">
+        <div class="exception-part-title">
+          {{ exceptionTitle }}
         </div>
-        <template v-else>
+        <template v-if="!['empty'].includes(exceptionType)">
           <div
-            v-if="['search-empty'].includes(exceptionType)"
-            class="search-empty-tips"
+            v-if="abnormal"
+            class="refresh-tips"
+            @click="handleRefresh"
           >
-            {{ t("可以尝试 调整关键词 或") }}
-            <span
-              class="clear-search"
-              @click="handlerClearFilter"
-            >
-              {{ t("清空搜索条件") }}
-            </span>
+            {{ t("刷新") }}
           </div>
+          <template v-else>
+            <div
+              v-if="['search-empty'].includes(exceptionType)"
+              class="search-empty-tips"
+            >
+              {{ t("可以尝试 调整关键词 或") }}
+              <span
+                class="clear-search"
+                @click="handlerClearFilter"
+              >
+                {{ t("清空搜索条件") }}
+              </span>
+            </div>
+          </template>
         </template>
       </template>
+      <!-- loading给个占位符 -->
+      <div
+        v-else
+        style="height: 100%"
+      />
     </BkException>
   </div>
 </template>
@@ -110,10 +116,7 @@ const handleRefresh = () => {
 
 <style lang="scss" scoped>
 .gateways-empty-table-search {
-  max-height: 280px;
   width: auto !important;
-  display: flex;
-  align-items: center;
   margin: 0 auto;
 
   .search-empty-tips {
@@ -142,16 +145,18 @@ const handleRefresh = () => {
     cursor: pointer;
   }
 
-  .exception-wrap-item .bk-exception-img.part-img {
-    height: 130px;
-  }
-
   .bk-table-empty-text {
     padding: 0 !important;
   }
 
-  :deep(.bk-exception-footer) {
-    margin-top: 0;
+  :deep(.bk-exception) {
+    .bk-exception-img {
+      width: 100%;
+    }
+
+    .bk-exception-footer {
+      margin-top: 0;
+    }
   }
 }
 </style>

@@ -50,8 +50,15 @@ export interface IProps {
   onCancel?: () => void
 }
 
+export class InfoModel implements IProps {
+  isShow?: boolean = false;
+  width?: number | string = 480;
+  contentAlign?: Align = 'left';
+  showContentBgColor?: boolean = true;
+}
+
 export function usePopInfoBox(props: Partial<IProps>) {
-  const infoBoxInstance = InfoBox({ isShow: false });
+  const infoBoxInstance = InfoBox(new InfoModel());
 
   const renderTitle = () => {
     if (isFunction(props.title)) {

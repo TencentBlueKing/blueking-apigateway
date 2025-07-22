@@ -1,7 +1,7 @@
 import type { AxiosError, AxiosInterceptorManager, AxiosResponse } from 'axios';
 import { Message } from 'bkui-vue';
 
-import { messageError, parseURL } from '@/utils';
+import { downloadFile, messageError, parseURL } from '@/utils';
 
 import { showLoginModal } from '@blueking/login-modal';
 
@@ -42,14 +42,16 @@ const redirectLogin = (loginUrl: string) => {
 export default (interceptors: AxiosInterceptorManager<AxiosResponse>) => {
   interceptors.use(
     (response: AxiosResponse) => {
-      // 处理http响应成功，后端返回逻辑
+      if (['application/octet-stream'].includes(response.headers['content-type'])) {
+        downloadFile(response);
+        return response.data;
+      }
       if (response.data.data !== undefined || response.status < 400) {
         hasLoggedIn = true;
         return response.data;
       }
-
       // 后端逻辑处理报错
-      const { code, message = '系统错误' } = response.data.error;
+      const { code, message = '系统错误' } = response.data;
       throw new RequestError(code, message, response);
     },
     (

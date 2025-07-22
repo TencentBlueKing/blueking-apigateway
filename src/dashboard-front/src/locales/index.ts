@@ -17,6 +17,8 @@
  */
 
 import { createI18n } from 'vue-i18n';
+import cn from './cn.json';
+import en from './en.json';
 
 const i18n = createI18n({
   legacy: false,
@@ -26,8 +28,8 @@ const i18n = createI18n({
   missing: () => {
   },
   messages: {
-    'zh-cn': { message: { hello: '你好世界' } },
-    'en': { message: { hello: 'hello world' } },
+    'zh-cn': cn,
+    'en': en,
   },
 });
 

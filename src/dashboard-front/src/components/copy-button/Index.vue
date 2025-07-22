@@ -3,22 +3,25 @@
     class="copy-icon"
     name="copy-info"
     size="16"
-    @click.self.stop="handleClick"
+    v-bind="$attrs"
+    @click="handleClick"
   />
 </template>
 
 <script setup lang="ts">
 import { copy } from '@/utils';
 
-interface IProps { source: string }
+interface IProps {
+  // 复制的内容，不传入就使用自定义的事件处理器，需要在外部监听 click 事件
+  source?: string
+}
 
-const { source } = defineProps<IProps>();
-
-const emit = defineEmits<{ click: [void] }>();
+const { source = '' } = defineProps<IProps>();
 
 const handleClick = () => {
-  copy(source);
-  emit('click');
+  if (source) {
+    copy(source);
+  }
 };
 </script>
 

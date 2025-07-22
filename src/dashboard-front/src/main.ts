@@ -3,8 +3,6 @@ import { createPinia } from 'pinia';
 
 import App from './App.vue';
 import router from './router';
-import 'virtual:uno.css';
-import '@unocss/reset/normalize.css';
 import './styles/index.scss';
 
 // 全量引入 bkui-vue
@@ -13,6 +11,8 @@ import bkui from 'bkui-vue';
 import '../node_modules/bkui-vue/dist/style.variable.css';
 // icon font
 import '@/lib/bk_icon_font/style.css';
+import 'virtual:uno.css';
+import '@unocss/reset/tailwind-compat.css';
 
 import i18n from './locales';
 import VueDOMPurifyHTML from 'vue-dompurify-html';
@@ -21,6 +21,7 @@ import directive from '@/directives';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import IconButton from '@/components/icon-button/Index.vue';
 import CopyButton from '@/components/copy-button/Index.vue';
+import CardContainer from '@/components/card-container/Index.vue';
 
 const app = createApp(App);
 
@@ -34,6 +35,7 @@ app.use(directive);
 // 全局组件
 app.component('AgIcon', AgIcon)
   .component('IconButton', IconButton)
-  .component('CopyButton', CopyButton);
+  .component('CopyButton', CopyButton)
+  .component('CardContainer', CardContainer);
 
 app.mount('#app');

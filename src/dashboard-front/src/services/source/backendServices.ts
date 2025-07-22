@@ -32,7 +32,7 @@ interface IBackendServicesEditParams {
   }[]
 }
 
-export function getBackendServiceList(apigwId: number, params: {
+export function getBackendServiceList(apigwId: number, params?: {
   limit?: number
   offset?: number
   name?: string
@@ -56,7 +56,7 @@ export function getBackendServiceDetail(apigwId: number, id: number) {
 /**
  * 创建后端服务
  * @param apigwId 网关id
- * @param data 新建参数
+ * @param params 新建参数
  */
 export function createBackendService(apigwId: number, params: IBackendServicesEditParams) {
   return http.post(`/gateways/${apigwId}/backends/`, params);
@@ -65,7 +65,7 @@ export function createBackendService(apigwId: number, params: IBackendServicesEd
 /**
  * 更新后端服务
  * @param apigwId 网关id
- * @param data 更新参数
+ * @param params 更新参数
  * @param id 后端服务id
  */
 export function updateBackendService(apigwId: number, id: number, params: IBackendServicesEditParams) {

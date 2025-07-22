@@ -18,12 +18,18 @@
 import { type RouteLocationNormalized, type RouteRecordRaw, createRouter, createWebHashHistory } from 'vue-router';
 // 环境概览
 import getStageManagementRoutes from '@/views/stage-management/route';
+// 资源管理
+import getResourceManagementRoutes from '@/views/resource-management/route';
 // 基本信息
 import getBasicInfoRoutes from '@/views/basic-info/routes';
 // 组件管理
 import getComponentManagementRoutes from '@/views/component-management/route';
 // 后端服务
 import getBackendServicesRoutes from '@/views/backend-services/routes';
+// 权限管理
+import getPermissionManagementRoutes from '@/views/permission/routes';
+// 操作记录
+import getAuditLogRoutes from '@/views/audit-log/routes';
 
 function props(route: RouteLocationNormalized) {
   const { id } = route.params;
@@ -40,10 +46,14 @@ const routes: RouteRecordRaw[] = [
     path: '/:id',
     name: 'Resources',
     component: () => import('@/layout/my-gateway/Index.vue'),
+    props,
     children: [
       ...getStageManagementRoutes(),
+      ...getResourceManagementRoutes(),
       ...getBasicInfoRoutes(),
       ...getBackendServicesRoutes(),
+      ...getPermissionManagementRoutes(),
+      ...getAuditLogRoutes(),
     ],
   },
   {
