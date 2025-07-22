@@ -239,7 +239,7 @@ import AgIcon from '@/components/ag-icon/Index.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 const { t } = useI18n();
-const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 186 });
+const { maxTableLimit, clientHeight } = useMaxTableLimit();
 
 const historyExpandColumn = shallowRef([
   {
@@ -532,7 +532,7 @@ const setTableHeader = () => {
   ];
 };
 
-const handleRowClick = (e: Event, row: Record<string, any>) => {
+const handleRowClick = (e: MouseEvent, row: Partial<IApprovalListItem>) => {
   e.stopPropagation();
   if (['resource'].includes(row.grant_dimension)) {
     row.isExpand = !row.isExpand;
@@ -550,31 +550,33 @@ const handleTimeClear = () => {
 };
 
 // 日期快捷方式改变触发
-const handleShortcutChange = (value: any, index: any) => {
+const handleShortcutChange = (value, index: number) => {
   shortcutSelectedIndex.value = index;
 };
 
 // 日期快捷方式改变触发
 const handleTimeChange = () => {
   nextTick(() => {
-    const startStr: any = (+new Date(`${initDateTimeRange.value[0]}`)) / 1000;
-    const endStr: any = (+new Date(`${initDateTimeRange.value[1]}`)) / 1000;
-
-    const satrt: any = parseInt(startStr);
-
-    const end: any = parseInt(endStr);
-    filterData.value.time_start = satrt;
-    filterData.value.time_end = end;
+    const startStr = (+new Date(`${initDateTimeRange.value[0]}`)) / 1000;
+    const endStr = (+new Date(`${initDateTimeRange.value[1]}`)) / 1000;
+    const start = parseInt(startStr);
+    const end = parseInt(endStr);
+    filterData.value = Object.assign(filterData.value, {
+      time_start: start,
+      time_end: end,
+    });
   });
 };
 
 // 展示详情
-const handleShowRecord = (e: Event, data: Record<string, any>) => {
+const handleShowRecord = (e: MouseEvent, data: IApprovalListItem) => {
   e.stopPropagation();
-  curRecord.value = data;
+  const results: IApprovalListItem[] = [];
   detailSliderConf.title = `${t('申请应用：')}${data.bk_app_code}`;
-  curRecord.value.resourceList = [];
-  const results: any[] = [];
+  curRecord.value = Object.assign({}, {
+    ...data,
+    resourceList: [],
+  });
   curRecord.value.resource_ids.forEach((resourceId) => {
     resourceList.value.forEach((item: { id: number }) => {
       if (item.id === resourceId) {

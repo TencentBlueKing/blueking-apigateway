@@ -30,6 +30,8 @@ import getBackendServicesRoutes from '@/views/backend-services/routes';
 import getPermissionManagementRoutes from '@/views/permission/routes';
 // 操作记录
 import getAuditLogRoutes from '@/views/audit-log/routes';
+// 告警策略
+import getMonitorAlarmRoutes from '@/views/monitor-alarm/routes';
 
 function props(route: RouteLocationNormalized) {
   const { id } = route.params;
@@ -54,6 +56,7 @@ const routes: RouteRecordRaw[] = [
       ...getBackendServicesRoutes(),
       ...getPermissionManagementRoutes(),
       ...getAuditLogRoutes(),
+      ...getMonitorAlarmRoutes(),
     ],
   },
   {
