@@ -174,7 +174,7 @@ const initEditor = () => {
   if (container) {
     container.addEventListener('fullscreenchange', () => {
       if (!document.fullscreenElement) {
-        isFullScreen = false;
+        isFullScreen.value = false;
       }
     });
   }

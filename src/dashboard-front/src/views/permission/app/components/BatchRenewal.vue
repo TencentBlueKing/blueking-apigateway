@@ -18,7 +18,7 @@
 <template>
   <AgSideSlider
     v-model="renewalSliderConfig.isShow"
-    width="960"
+    :width="960"
     quick-close
     ext-cls="app-renewal-slider"
     :init-data="initData"
