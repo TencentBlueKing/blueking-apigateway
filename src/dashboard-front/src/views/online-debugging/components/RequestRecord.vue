@@ -210,7 +210,7 @@ import {
   getTestHistoriesDetails,
 } from '@/services/source/online-debugging';
 import { CopyShape } from 'bkui-vue/lib/icon';
-import { copy } from '@/common/util';
+import { copy } from '@/utils';
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
