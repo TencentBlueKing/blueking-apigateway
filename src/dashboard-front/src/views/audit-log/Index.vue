@@ -88,8 +88,8 @@
       >
         <template #empty>
           <TableEmpty
-            :empty-type="tableEmptyConf.emptyType"
-            :abnormal="tableEmptyConf.isAbnormal"
+            :empty-type="tableEmptyConfig.emptyType"
+            :abnormal="tableEmptyConfig.isAbnormal"
             @refresh="getAuditLogList"
             @clear-filter="handleClearFilterKey"
           />
@@ -170,7 +170,7 @@ const OperateRecordStatus = ref(
     };
   }),
 );
-const tableEmptyConf = reactive({
+const tableEmptyConfig = reactive({
   emptyType: '',
   isAbnormal: false,
 });
@@ -459,11 +459,13 @@ const handleClearFilterKey = () => {
 };
 
 const updateTableEmptyConfig = () => {
-  if (!pagination.value.count) {
-    tableEmptyConf.emptyType = 'searchEmpty';
+  const searchParams = { ...filterData.value };
+  const list = Object.values(searchParams).filter(item => item !== '');
+  if (list.length || shortcutSelectedIndex.value > -1) {
+    tableEmptyConfig.emptyType = 'searchEmpty';
     return;
   }
-  tableEmptyConf.emptyType = '';
+  tableEmptyConfig.emptyType = 'empty';
 };
 
 const refreshTableData = async () => {
@@ -492,7 +494,7 @@ const getMenuList = async (item: { id: string }, keyword: string) => {
 
 watch(
   () => searchValue.value,
-  async (newVal: ISearchSelect[]) => {
+  (newVal: ISearchSelect[]) => {
     if (!newVal.length) {
       filterData.value = Object.assign(
         {},
@@ -505,7 +507,7 @@ watch(
       );
       curSelectData.value = cloneDeep(defaultFilterData.value);
       // tableKey.value = +new Date();
-      await refreshTableData();
+      refreshTableData();
       return;
     }
     let notRefresh = false;
@@ -543,7 +545,7 @@ watch(
     });
     // tableKey.value = +new Date();
     if (!notRefresh) {
-      await refreshTableData();
+      refreshTableData();
     }
   },
   { deep: true },

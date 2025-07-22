@@ -289,18 +289,18 @@ const menuList = computed<IMenu[]>(() => [
     ],
   },
   {
-    name: 'apigwMonitorAlarm',
+    name: 'MonitorAlarm',
     title: t('监控告警'),
     icon: 'notification',
     enabled: featureFlagStore.flags.ENABLE_MONITOR,
     children: [
       {
-        name: 'apigwMonitorAlarmStrategy',
+        name: 'MonitorAlarmStrategy',
         title: t('告警策略'),
         enabled: true,
       },
       {
-        name: 'apigwMonitorAlarmHistory',
+        name: 'MonitorAlarmHistory',
         title: t('告警记录'),
         enabled: true,
       },
@@ -332,11 +332,25 @@ const menuList = computed<IMenu[]>(() => [
   },
 ]);
 
+// 表格需要兼容的页面模块
+const needBkuiTablePage = computed(() => {
+  return [
+    'BackendService',
+    'PermissionApply',
+    'PermissionRecord',
+    'PermissionApp',
+    'AuditLog',
+    'MonitorAlarmStrategy',
+    'MonitorAlarmHistory',
+  ];
+});
+
 const routerViewWrapperClass = computed(() => {
+  const displayBkuiTable = needBkuiTablePage.value.includes(route.name) ? 'need-bkui-table-wrapper' : '';
   if (route.meta.customHeader) {
-    return 'custom-header-view';
+    return `custom-header-view ${displayBkuiTable}`;
   }
-  return `default-header-view router-${route.name}-wrapper`;
+  return `default-header-view ${displayBkuiTable}`;
 });
 
 // 监听当前路由
@@ -607,11 +621,7 @@ onMounted(() => {
         }
       }
 
-      .router-BackendService-wrapper,
-      .router-PermissionApply-wrapper,
-      .router-PermissionRecord-wrapper,
-      .router-PermissionApp-wrapper,
-      .router-AuditLog-wrapper {
+      .need-bkui-table-wrapper {
         overflow-y: hidden;
 
         :deep(.bk-table-body) {

@@ -20,38 +20,27 @@ import { t } from '@/locales';
 
 const routes: RouteRecordRaw[] = [
   {
-    path: '/:id/permission/apply',
-    name: 'PermissionApply',
-    component: () => import('@/views/permission/apply/Index.vue'),
+    path: '/:id/monitor/alarm-strategy',
+    name: 'MonitorAlarmStrategy',
+    component: () => import('@/views//monitor-alarm/alarm-strategy/Index.vue'),
     meta: {
-      title: t('权限审批'),
-      matchRoute: 'PermissionApply',
-      topMenu: 'Home',
+      title: t('告警策略'),
+      matchRoute: 'MonitorAlarmStrategy',
+      enabled: true,
     },
   },
   {
-    path: '/:id/permission/record',
-    name: 'PermissionRecord',
-    component: () => import('@/views/permission/record/Index.vue'),
+    path: '/:id/monitor/alarm-history',
+    name: 'MonitorAlarmHistory',
+    component: () => import('@/views/monitor-alarm/alarm-history/Index.vue'),
     meta: {
-      title: t('审批历史'),
-      matchRoute: 'PermissionRecord',
-      topMenu: 'Home',
-      showBackIcon: true,
-    },
-  },
-  {
-    path: '/:id/permission/app',
-    name: 'PermissionApp',
-    component: () => import('@/views/permission/app/Index.vue'),
-    meta: {
-      title: t('应用权限'),
-      matchRoute: 'PermissionApp',
-      topMenu: 'Home',
+      title: t('告警记录'),
+      matchRoute: 'MonitorAlarmHistory',
+      enabled: true,
     },
   },
 ];
 
-export default function getPermissionManagementRoutes() {
+export default function getMonitorAlarmRoutes() {
   return routes;
 }

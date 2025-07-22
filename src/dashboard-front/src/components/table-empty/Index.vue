@@ -150,6 +150,10 @@ const handleRefresh = () => {
   }
 
   :deep(.bk-exception) {
+    height: 280px;
+    max-height: 280px;
+    justify-content: center;
+
     .bk-exception-img {
       width: 100%;
     }

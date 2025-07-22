@@ -21,7 +21,7 @@
       v-model="sliderConfig.isShow"
       ext-cls="backend-service-slider"
       :init-data="initData"
-      @closed="handleAnimationEnd"
+      @closed="handleCancel"
       @compare="handleCompare"
     >
       <template #header>
@@ -372,13 +372,11 @@ interface IProps {
   base: Record<string, any>
 }
 
-interface Emits {
-  (e: 'done'): void
-  (e: 'close'): void
-}
+interface Emits { (e: 'done'): void }
 
 const { editId = 0, base } = defineProps<IProps>();
 const emits = defineEmits<Emits>();
+
 const router = useRouter();
 const gatewayStore = useGateway();
 const { t, locale } = useI18n();
@@ -506,10 +504,6 @@ watch(
   { immediate: true },
 );
 
-const handleAnimationEnd = () => {
-  handleCancel();
-};
-
 // 获取所有stage服务配置的ref
 const getStageConfigRef = (el) => {
   if (el) {
@@ -542,7 +536,6 @@ const handleDeleteServiceAddress = (name: string, index: number) => {
 };
 
 const handleCancel = () => {
-  emits('close');
   sliderConfig.isShow = false;
   stageConfigRef.value = [];
 };
