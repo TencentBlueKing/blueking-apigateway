@@ -131,7 +131,7 @@ const getValue = () => {
 
 // 初始化编辑器
 const initEditor = () => {
-  editor = monaco.editor.create(monacoEditor, {
+  editor = monaco.editor.create(monacoEditor.value, {
     value: modelValue,
     theme: theme, // 主题
     language: language,
@@ -250,6 +250,7 @@ const clearDecorations = () => {
 };
 
 const genMarkers = (errors) => {
+  // console.log(errors);
   errors.forEach((error) => {
     markers.push({
       severity: monaco.MarkerSeverity.Error,

@@ -28,7 +28,7 @@
         <img
           :src="LogoWithoutTitle"
           alt="API Gateway"
-          class="h-28px cursor-pointer"
+          class="max-w-none h-28px cursor-pointer"
         >
       </template>
       <template #header>

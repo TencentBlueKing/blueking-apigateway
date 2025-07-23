@@ -47,7 +47,7 @@
                 {{ t('应用认证') }}：
                 <i
                   v-bk-tooltips="t('应用访问该网关API时，是否需提供应用认证信息')"
-                  class="ml5 bk-icon icon-question-circle"
+                  class="ml-5px bk-icon icon-question-circle"
                 />
               </div>
               <div class="v">
@@ -59,7 +59,7 @@
                 {{ t('用户认证') }}：
                 <i
                   v-bk-tooltips="t('应用访问该组件API时，是否需要提供用户认证信息')"
-                  class="ml5 bk-icon icon-question-circle"
+                  class="ml-5px bk-icon icon-question-circle"
                 />
               </div>
               <div class="v">
@@ -71,7 +71,7 @@
                 {{ t('是否需申请权限') }}：
                 <i
                   v-bk-tooltips="t('应用访问该网关API前，是否需要在开发者中心申请该网关API权限')"
-                  class="ml5 bk-icon icon-question-circle"
+                  class="ml-5px bk-icon icon-question-circle"
                 />
               </div>
               <div class="v">
@@ -99,7 +99,7 @@
 
           <h3 class="f16">
           {{ t('SDK信息-doc') }}
-          <span class="ag-tip ml10" v-if="!curSdk?.sdk?.version">
+          <span class="ag-tip ml-10px" v-if="!curSdk?.sdk?.version">
           ({{ SDKInfo }})
           </span>
           </h3>
@@ -108,8 +108,8 @@
           <sdk-detail :params="curSdk" :is-apigw="true"></sdk-detail>
           </div>
 
-          <h3 class="f16 mt20"> {{ t('SDK使用样例') }} </h3>
-          <div class="ag-markdown-view mt20" :key="renderHtmlIndex" v-dompurify-html="sdkMarkdownHtml"></div>
+          <h3 class="f16 mt-20px"> {{ t('SDK使用样例') }} </h3>
+          <div class="ag-markdown-view mt-20px" :key="renderHtmlIndex" v-dompurify-html="sdkMarkdownHtml"></div>
           </div>
           </BkTabPanel> -->
       </BkTab>
@@ -361,21 +361,21 @@ init();
 <style lang="scss" scoped>
 .simple-side-nav {
   width: 260px;
-  min-height: 500px;
   height: 100%;
+  min-height: 500px;
   background: #fff;
-  box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.1);
   border-radius: 2px;
+  box-shadow: 0 2px 6px 0 rgb(0 0 0 / 10%);
 
   .metedata {
-    padding: 11px 16px;
     position: relative;
+    padding: 11px 16px;
     border-bottom: 1px solid #dcdee5;
 
     .name {
       font-size: 16px;
-      text-align: left;
       color: #313238;
+      text-align: left;
     }
 
     .desc {
@@ -385,43 +385,44 @@ init();
 
     .more {
       position: absolute;
-      font-size: 24px;
-      right: 10px;
       top: 15px;
-      cursor: pointer;
+      right: 10px;
+      font-size: 24px;
       color: #3a84ff;
+      cursor: pointer;
     }
   }
 
   .component-list-box {
+
     .span {
-      height: 42px;
-      line-height: 42px;
-      margin: 7px 0;
-      padding: 0 21px;
       display: block;
+      height: 42px;
+      padding: 0 21px;
+      margin: 7px 0;
       font-size: 14px;
-      text-align: left;
+      line-height: 42px;
       color: #63656e;
+      text-align: left;
 
       &.active {
-        background: #e1ecff;
         color: #3a84ff;
+        background: #e1ecff;
       }
     }
 
     .list-data {
-      height: 40px;
-      line-height: 40px;
-      font-size: 14px;
-      color: #63656e;
-      padding: 0 16px;
       position: relative;
+      height: 40px;
+      padding: 0 16px;
+      font-size: 14px;
+      line-height: 40px;
+      color: #63656e;
       border-top: 1px solid #f0f1f5;
     }
 
     .search {
-      margin: 0 16px 15px 16px;
+      margin: 0 16px 15px;
     }
 
     .component-list {
@@ -435,18 +436,18 @@ init();
 
       &::-webkit-scrollbar-thumb {
         height: 5px;
-        border-radius: 2px;
         background-color: #c4c6cc;
+        border-radius: 2px;
       }
 
       > li {
         height: 42px;
         padding: 0 16px;
-        cursor: pointer;
         margin-bottom: 15px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        cursor: pointer;
 
         &:hover,
         &.active {
@@ -459,41 +460,41 @@ init();
       }
 
       .name {
-        font-size: 14px;
-        text-align: left;
-        color: #63656e;
-        line-height: 18px;
         margin: 2px 0;
         overflow: hidden;
-        white-space: nowrap;
+        font-size: 14px;
+        line-height: 18px;
+        color: #63656e;
+        text-align: left;
         text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .label {
-        font-size: 12px;
-        text-align: left;
-        color: #979ba5;
-        line-height: 18px;
         overflow: hidden;
-        white-space: nowrap;
+        font-size: 12px;
+        line-height: 18px;
+        color: #979ba5;
+        text-align: left;
         text-overflow: ellipsis;
+        white-space: nowrap;
       }
     }
   }
 }
 
 .component-content {
-  width: 750px;
-  min-height: 500px;
-  background: #fff;
-  padding: 20px 25px;
   position: relative;
-  border-radius: 2px;
-  box-shadow: 0px 2px 6px 0px rgba(0, 0, 0, 0.1);
+  width: 750px;
+  max-height: calc(100vh - 150px);
+  min-height: 500px;
+  padding: 20px 25px;
 
   /* 滚动条 */
   overflow-y: auto;
-  max-height: calc(100vh - 150px);
+  background: #fff;
+  border-radius: 2px;
+  box-shadow: 0 2px 6px 0 rgb(0 0 0 / 10%);
 
   &::-webkit-scrollbar {
     width: 4px;
@@ -502,53 +503,53 @@ init();
 
   &::-webkit-scrollbar-thumb {
     height: 5px;
-    border-radius: 2px;
     background-color: #c4c6cc;
+    border-radius: 2px;
   }
 
   .component-mate {
-    text-overflow: ellipsis;
     overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
 
     .name {
       font-size: 22px;
-      text-align: left;
-      color: #313238;
       line-height: 30px;
+      color: #313238;
+      text-align: left;
     }
 
     .label {
       font-size: 14px;
-      text-align: left;
-      color: #63656e;
       line-height: 30px;
+      color: #63656e;
+      text-align: left;
     }
   }
 }
 
 .support-btn {
   position: absolute;
-  font-size: 12px;
-  color: #3a84ff;
   top: 60px;
   right: 26px;
+  font-size: 12px;
+  color: #3a84ff;
 }
 
 .ag-badge {
-  min-width: 30px;
+  position: absolute;
+  top: 11px;
+  right: 16px;
+  display: inline-block;
   height: 18px;
+  min-width: 30px;
+  padding: 0 5px;
+  font-size: 12px;
+  line-height: 18px;
+  color: #979ba5;
+  text-align: center;
   background: #f0f1f5;
   border-radius: 2px;
-  font-size: 12px;
-  color: #979ba5;
-  display: inline-block;
-  line-height: 18px;
-  text-align: center;
-  padding: 0 5px;
-  position: absolute;
-  right: 16px;
-  top: 11px;
 }
 
 .component-doc {
@@ -556,34 +557,34 @@ init();
 }
 
 .component-nav-box {
-  margin-left: 15px;
   height: auto;
+  margin-left: 15px;
   flex: 1;
 
   .component-nav {
+    position: fixed;
     width: 160px;
     padding-left: 15px;
     font-size: 12px;
-    text-align: left;
-    color: #979ba5;
     line-height: 28px;
+    color: #979ba5;
+    text-align: left;
     border-left: 1px solid #dcdee5;
-    position: fixed;
   }
 }
 
 .nav-panel {
-  min-height: 400px;
   position: absolute;
-  left: 262px;
   top: 0;
-  overflow: auto;
+  left: 262px;
   z-index: 100;
   width: 870px;
   max-height: 640px;
+  min-height: 400px;
+  overflow: auto;
   background: #fff;
   border: 1px solid #dcdee5;
-  box-shadow: 0px 2px 6px 0px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px 0 rgb(0 0 0 / 10%);
 
   .category-icon {
     width: 20px;
@@ -591,9 +592,9 @@ init();
   }
 
   .version-name {
-    line-height: 32px;
     height: 32px;
     padding: 0 10px;
+    line-height: 32px;
 
     &:hover {
       min-width: 140px;
@@ -603,24 +604,25 @@ init();
 
     > strong {
       font-size: 16px;
-      color: #313238;
       font-weight: normal;
+      color: #313238;
     }
   }
 
   .searcher {
-    width: 400px;
     position: absolute;
-    right: 16px;
     top: 16px;
+    right: 16px;
+    width: 400px;
   }
 
   .ag-card {
-    box-shadow: none;
+    padding: 18px 30px 10px;
     margin-top: 0 !important;
-    padding: 18px 30px 10px 30px;
+    box-shadow: none;
 
     .systems {
+
       > li {
         margin-bottom: 10px;
       }
@@ -643,15 +645,15 @@ init();
 
   &::-webkit-scrollbar-thumb {
     height: 5px;
-    border-radius: 2px;
     background-color: #c4c6cc;
+    border-radius: 2px;
   }
 
   .custom-icon {
+    display: inline-block;
     margin: -3px 6px 0 0;
     font-size: 13px;
     vertical-align: middle;
-    display: inline-block;
   }
 
   :deep(.bk-collapse-content) {
@@ -659,16 +661,16 @@ init();
   }
 
   .list {
-    list-style: none;
-    margin: 0;
     padding: 0;
+    margin: 0;
+    list-style: none;
 
     > li {
-      font-size: 14px;
-      height: 36px;
-      line-height: 36px;
-      padding-left: 60px;
       position: relative;
+      height: 36px;
+      padding-left: 60px;
+      font-size: 14px;
+      line-height: 36px;
       color: #63656e;
     }
   }
@@ -676,32 +678,32 @@ init();
 
 .column-key {
   font-size: 14px;
-  color: #63656e;
   line-height: 22px;
+  color: #63656e;
 }
 
 .column-value {
-  font-size: 14px;
-  color: #313238;
-  line-height: 22px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  max-width: 90%;
   display: inline-block;
+  max-width: 90%;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 22px;
+  color: #313238;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .wrapper {
-  margin-top: 10px;
   padding: 10px 5px;
+  margin-top: 10px;
   background: #fafbfd;
 }
 
 .ag-doc-icon {
+  margin-right: 5px;
   font-size: 16px;
   color: #979ba5;
   cursor: pointer;
-  margin-right: 5px;
 
   &:hover {
     color: #3a84ff;
@@ -722,10 +724,10 @@ init();
   }
 
   :deep(.bk-input--text) {
+    padding-left: 0;
+    font-size: 14px;
     font-weight: bold;
     color: #63656e;
-    font-size: 14px;
-    padding-left: 0;
   }
 }
 
@@ -734,6 +736,7 @@ init();
 }
 
 :deep(.ag-apigw-select) {
+
   &.bk-select {
     border: none;
 
@@ -741,7 +744,7 @@ init();
       box-shadow: none;
     }
 
-    &.is-default-trigger.is-unselected:before {
+    &.is-default-trigger.is-unselected::before {
       line-height: 56px;
     }
   }
@@ -751,31 +754,31 @@ init();
   }
 
   .bk-input--text {
-    font-size: 16px;
-    color: #313238;
     height: 56px;
     padding: 0 36px 0 20px;
+    font-size: 16px;
     line-height: 56px;
+    color: #313238;
   }
 
   .angle-up {
-    right: 10px;
     top: 10px;
-    color: #979ba5;
+    right: 10px;
     font-size: 26px;
+    color: #979ba5;
   }
 }
 
 .ag-container {
-  width: 1200px;
   display: flex;
-  margin: 16px auto 20px auto;
+  width: 1200px;
+  margin: 16px auto 20px;
   align-items: stretch;
 
   > .left {
+    position: relative;
     width: 260px;
     margin-right: 16px;
-    position: relative;
   }
 
   > .right {
@@ -792,18 +795,18 @@ init();
     }
 
     .version-name {
+      padding: 10px 0 15px;
       font-size: 16px;
       font-weight: 700;
-      text-align: left;
-      color: #313238;
       line-height: 21px;
-      padding: 10px 0 15px 0;
+      color: #313238;
+      text-align: left;
 
       svg {
         width: 20px;
         height: 20px;
-        vertical-align: middle;
         margin-right: 3px;
+        vertical-align: middle;
       }
 
       span {
@@ -813,15 +816,16 @@ init();
   }
 
   .ag-kv-box {
+
     .kv-row {
+      display: flex;
       font-size: 14px;
       line-height: 30px;
-      display: flex;
 
       .k {
         width: 175px;
-        text-align: left;
         color: #979ba5;
+        text-align: left;
       }
 
       .v {
@@ -832,12 +836,13 @@ init();
 }
 
 h3 {
+  margin: 16px 0;
   font-weight: bold;
   color: #333;
-  margin: 16px 0px;
 }
 
 .bk-special-tab.bk-tab {
+
   :deep(.bk-tab-content) {
     padding-top: 20px;
   }
