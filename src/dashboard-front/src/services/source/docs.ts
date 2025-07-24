@@ -23,13 +23,13 @@ const path = '/docs/gateways';
 export const getGatewaysDetailsDocs = (gatewayName: string) => http.get(`${path}/${gatewayName}/`);
 
 // 获取网关资源的文档
-export const getApigwResourceDocDocs = (gatewayName: string, resourceName: string, data: any) => http.get(`${path}/${gatewayName}/resources/${resourceName}/doc/?${json2Query(data)}`);
+export const getApigwResourceDocDocs = (gatewayName: string, resourceName: string, data: any) => http.get(`${path}/${gatewayName}/resources/${resourceName}/doc/`, data);
 
 // 获取网关 SDK 调用示例
-export const getApigwResourceSDKDocs = (gatewayName: string, data: any) => http.get(`${path}/${gatewayName}/sdks/usage-example/?${json2Query(data)}`);
+export const getApigwResourceSDKDocs = (gatewayName: string, data: any) => http.get(`${path}/${gatewayName}/sdks/usage-example/`, data);
 
 // 获取网关 SDK 列表
-export const getApigwSDKDocs = (gatewayName: string, data: any) => http.get(`${path}/${gatewayName}/sdks/?${json2Query(data)}`);
+export const getApigwSDKDocs = (gatewayName: string, data: any) => http.get(`${path}/${gatewayName}/sdks/`, data);
 
 // 获取网关环境下已发布的资源列表
-export const getApigwResourcesDocs = (gatewayName: string, data: any) => http.get(`${path}/${gatewayName}/resources/?${json2Query(data)}`);
+export const getApigwResourcesDocs = (gatewayName: string, data: any) => http.get(`${path}/${gatewayName}/resources/`, data);

@@ -77,7 +77,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 let editor = null; // 编辑器实例
-const monacoEditor = ref(null);
+const monacoEditor = ref();
 // 编辑器装饰器（高亮效果等）
 let decorations = [];
 // 编辑器下划波浪线
@@ -131,7 +131,7 @@ const getValue = () => {
 
 // 初始化编辑器
 const initEditor = () => {
-  editor = monaco.editor.create(monacoEditor, {
+  editor = monaco.editor.create(monacoEditor.value, {
     value: modelValue,
     theme: theme, // 主题
     language: language,

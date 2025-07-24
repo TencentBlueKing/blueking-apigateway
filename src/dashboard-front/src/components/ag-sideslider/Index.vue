@@ -11,7 +11,10 @@
     :before-close="handleBeforeClose"
     @closed="emit('closed')"
   >
-    <template #header>
+    <template
+      v-if="!title"
+      #header
+    >
       <slot name="header" />
     </template>
     <template #default>

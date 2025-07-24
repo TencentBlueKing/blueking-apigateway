@@ -28,6 +28,14 @@ import getComponentManagementRoutes from '@/views/component-management/route';
 import getBackendServicesRoutes from '@/views/backend-services/routes';
 // 权限管理
 import getPermissionManagementRoutes from '@/views/permission/routes';
+// 平台工具
+import getPlatformToolsRoutes from '@/views/platform-tools/routes.ts';
+// MCP 市场
+import getMcpMarketRoutes from '@/views/mcp-market/routes';
+// 运行数据
+import getOperateDataRoutes from '@/views/operate-data/route';
+// 在线调试
+import getOnlineDebuggingRoutes from '@/views/online-debugging/routes';
 // 操作记录
 import getAuditLogRoutes from '@/views/audit-log/routes';
 
@@ -53,9 +61,22 @@ const routes: RouteRecordRaw[] = [
       ...getBasicInfoRoutes(),
       ...getBackendServicesRoutes(),
       ...getPermissionManagementRoutes(),
+      ...getOperateDataRoutes(),
+      ...getOnlineDebuggingRoutes(),
       ...getAuditLogRoutes(),
     ],
   },
+  {
+    path: '/platform-tools',
+    name: 'PlatformTools',
+    component: () => import('@/layout/platform-tools/Index.vue'),
+    props,
+    redirect: '/platform-tools/toolbox',
+    children: [
+      ...getPlatformToolsRoutes(),
+    ],
+  },
+  ...getMcpMarketRoutes(),
   {
     path: '/components',
     name: 'ComponentsMain',

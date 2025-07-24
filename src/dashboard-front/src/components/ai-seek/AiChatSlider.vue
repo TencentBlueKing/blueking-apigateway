@@ -83,6 +83,8 @@ const md = new MarkdownIt({
   },
 });
 
+const apigwId = computed(() => gatewayStore.apigwId);
+
 watch(() => message, () => {
   getResponse();
 });
@@ -94,7 +96,7 @@ const getResponse = async () => {
   try {
     loading.value = true;
     response.value = '';
-    const res = await getAICompletion(gatewayStore.currentGateway?.id, {
+    const res = await getAICompletion(apigwId.value, {
       inputs: {
         input: message,
         type: messageType,
