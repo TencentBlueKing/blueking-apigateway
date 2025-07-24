@@ -33,7 +33,7 @@
           :name="'doc'"
           :label="t('文档')"
         >
-          <div class="ag-kv-box mb30">
+          <div class="ag-kv-box mb-30px">
             <div class="kv-row">
               <div class="k">
                 {{ t('更新时间') }}：
