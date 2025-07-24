@@ -698,7 +698,7 @@ const resetStates = () => {
 
 const handleGoDebug = () => {
   router.replace({
-    name: 'apigwOnlineTest',
+    name: 'OnlineDebugging',
     query: { stage_id: stage!.id || historyStage.value!.id },
   });
 };

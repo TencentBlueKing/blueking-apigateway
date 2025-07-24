@@ -224,9 +224,9 @@ const filterData = ref<any>({
 });
 const dateTimeRange = ref([]);
 const dateKey = ref<string>('dateKey');
-const topDatePicker = ref(null);
+const topDatePicker = ref();
 const shortcutSelectedIndex = shallowRef(-1);
-const tableRef = ref(null);
+const tableRef = ref();
 const resourceEditorRef: any = ref<InstanceType<typeof EditorMonaco>>();
 const tableList = ref<any>([]);
 const tableEmptyConf = reactive<any>({
@@ -273,6 +273,8 @@ const requestHeaderCols = [
     field: 'value',
   },
 ];
+
+const apigwId = computed(() => gatewayStore.apigwId);
 
 const handleTabClick = (row: Record<string, any>, id: string) => {
   row.activeIndex = id;
@@ -394,7 +396,7 @@ const getList = async () => {
     limit: 10000,
     ...filterData.value,
   };
-  const response = await getTestHistories(gatewayStore.currentGateway?.id, data);
+  const response = await getTestHistories(apigwId.value, data);
   response?.forEach((item: any) => {
     item.editorText = '';
     item.requestBody = '';
@@ -413,7 +415,7 @@ const handleClearFilterKey = () => {
 };
 
 const getDetails = async (id: number, row: Record<string, any>) => {
-  const response = await getTestHistoriesDetails(gatewayStore.currentGateway?.id, id);
+  const response = await getTestHistoriesDetails(apigwId.value, id);
 
   row.editorText = response?.response?.data?.curl;
   row.requestBody = response?.request?.body;

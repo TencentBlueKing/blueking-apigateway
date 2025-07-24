@@ -26,8 +26,7 @@ export const getGatewaysDocs = (apigwId: any, data: any) => http.get(`${path}/`,
 export const getGatewaysDetailsDocs = (gatewayName: string) => http.get(`${path}/${gatewayName}/`);
 
 // 获取网关资源的文档
-export const getApigwResourceDocDocs = (gatewayName: string, resourceName: string, data: any) =>
-  http.get(`${path}/${gatewayName}/resources/${resourceName}/doc/`, data);
+export const getApigwResourceDocDocs = (gatewayName: string, resourceName: string, data: any) => http.get(`${path}/${gatewayName}/resources/${resourceName}/doc/`, data);
 
 // 获取网关 SDK 调用示例
 export const getApigwResourceSDKDocs = (gatewayName: string, data: any) => http.get(`${path}/${gatewayName}/sdks/usage-example/`, data);
@@ -41,3 +40,4 @@ export const getApigwResourcesDocs = (gatewayName: string, data: any) => http.ge
 // 获取网关公开、可用的环境列表
 export const getApigwStagesDocs = (gatewayName: string, data: any) =>
   http.get(`${path}/${gatewayName}/stages/`, data);
+

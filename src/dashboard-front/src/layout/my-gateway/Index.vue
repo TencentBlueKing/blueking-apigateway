@@ -311,7 +311,7 @@ const menuList = computed<IMenu[]>(() => [
     ],
   },
   {
-    name: 'apigwOnlineTest',
+    name: 'OnlineDebugging',
     enabled: true,
     title: t('在线调试'),
     icon: 'zaixiandiaoshi',

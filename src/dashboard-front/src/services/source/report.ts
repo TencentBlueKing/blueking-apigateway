@@ -1,9 +1,5 @@
 import http from '../http';
-
-import {
-  blobDownLoad,
-  json2Query,
-} from '@/utils';
+import { blobDownLoad } from '@/utils';
 
 const path = '/gateways';
 
@@ -42,7 +38,7 @@ export interface IChartDataLoading {
  * @param data 导出参数
  */
 export const exportLogs = async (apigwId: number, data: any, extraStr?: string) => {
-  const res = await http.get(`${path}/${apigwId}/logs/export/?${json2Query(data)}${extraStr}`, {}, { responseType: 'blob' });
+  const res = await http.get(`${path}/${apigwId}/logs/export/?${extraStr}`, data, { responseType: 'blob' });
   return blobDownLoad(res);
 };
 
@@ -50,7 +46,7 @@ export const exportLogs = async (apigwId: number, data: any, extraStr?: string) 
  *  查询请求总量/失败总量接口
  * @param apigwId 网关id
  */
-export const getReportSummary = (apigwId: number, params: any) => http.get(`${path}/${apigwId}/metrics/query-summary/?${json2Query(params)}`);
+export const getReportSummary = (apigwId: number, params: any) => http.get(`${path}/${apigwId}/metrics/query-summary/`, params);
 
 /**
  *  请求总量/失败请求总量导出接口
@@ -58,7 +54,7 @@ export const getReportSummary = (apigwId: number, params: any) => http.get(`${pa
  * @param data 导出参数
  */
 export const exportReportSummary = async (apigwId: number, data: any) => {
-  const res = await http.get(`${path}/${apigwId}/metrics/query-summary/export/?${json2Query(data)}`, {}, { responseType: 'blob' });
+  const res = await http.get(`${path}/${apigwId}/metrics/query-summary/export/`, data, { responseType: 'blob' });
   return blobDownLoad(res);
 };
 
@@ -66,4 +62,4 @@ export const exportReportSummary = async (apigwId: number, data: any) => {
  *  查询调用方接口
  * @param apigwId 网关id
  */
-export const getCallers = (apigwId: number, params: any) => http.get(`${path}/${apigwId}/metrics/query-summary/caller/?${json2Query(params)}`);
+export const getCallers = (apigwId: number, params: any) => http.get(`${path}/${apigwId}/metrics/query-summary/caller/`, params);

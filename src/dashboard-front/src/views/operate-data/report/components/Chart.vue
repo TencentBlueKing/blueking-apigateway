@@ -287,6 +287,8 @@ defineExpose({ syncParams });
 </script>
 
 <style lang="scss" scoped>
+@use "sass:color";
+
 .chart-wrapper {
   position: relative;
   padding-top: 12px;
@@ -348,7 +350,7 @@ defineExpose({ syncParams });
   .custom-scroll-bar {
     &::-webkit-scrollbar {
       width: 4px;
-      background-color: lighten(#c4c6cc, 80%);
+      background-color: color.scale(#C4C6CC, $lightness: 80%);
     }
 
     &::-webkit-scrollbar-thumb {

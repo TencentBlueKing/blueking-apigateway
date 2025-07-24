@@ -31,14 +31,14 @@ export const getReleaseResources = (gatewayId: number, stageId: string) => http.
  * @param gatewayId 网关id
  * @returns
  */
-export const getStages = (gatewayId: number, data: any) => http.get(`${path}/${gatewayId}/stages/?${json2Query(data)}`);
+export const getStages = (gatewayId: number, data: any) => http.get(`${path}/${gatewayId}/stages/`, data);
 
 /**
  *  获取环境下可用的资源列表接口(在线调试)
  * @param gatewayId 网关id
  * @returns
  */
-export const getResourcesOnline = (gatewayId: number, stageId: number, data: any) => http.get(`${path}/${gatewayId}/releases/stages/${stageId}/resources/?${json2Query(data)}`);
+export const getResourcesOnline = (gatewayId: number, stageId: number, data: any) => http.get(`${path}/${gatewayId}/releases/stages/${stageId}/resources/`, data);
 
 /**
  *  在线调试发起请求
@@ -75,7 +75,7 @@ export const resourceSchema = (gatewayId: number, stageId: number, resourceId: n
  * @param gatewayId 网关id
  * @returns
  */
-export const getTestHistories = (gatewayId: number, data: any) => http.get(`${path}/${gatewayId}/tests/histories/?${json2Query(data)}`);
+export const getTestHistories = (gatewayId: number, data: any) => http.get(`${path}/${gatewayId}/tests/histories/`, data);
 
 /**
  *  获取调用历史详情

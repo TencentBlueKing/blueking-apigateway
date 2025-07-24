@@ -49,13 +49,13 @@ export interface ILogDetailInterface {
  *  获取流程日志列表
  * @param gatewayId 网关id
  */
-export const fetchApigwAccessLogList = (gatewayId: number, params: IChartInterface, extraStr?: string) => http.get(`${path}/${gatewayId}/logs/?${json2Query(params)}${extraStr}`);
+export const fetchApigwAccessLogList = (gatewayId: number, params: IChartInterface, extraStr?: string) => http.get(`${path}/${gatewayId}/logs/?${extraStr}`, params);
 
 /**
  *  获取流程日志chart
  * @param gatewayId 网关id
  */
-export const fetchApigwAccessLogChart = (gatewayId: number, params: IChartInterface, extraStr?: string) => http.get(`${path}/${gatewayId}/logs/timechart/?${json2Query(params)}${extraStr}`);
+export const fetchApigwAccessLogChart = (gatewayId: number, params: IChartInterface, extraStr?: string) => http.get(`${path}/${gatewayId}/logs/timechart/?${extraStr}`, params);
 
 /**
  *  获取流程日志link
@@ -67,7 +67,7 @@ export const fetchApigwAccessLogShareLink = (gatewayId: number, params: { reques
  *  获取流程日志详情
  * @param gatewayId 网关id
  */
-export const fetchApigwAccessLogDetail = (gatewayId: number, requestId: string, params: ILogDetailInterface) => http.get(`${path}/${gatewayId}/logs/${requestId}/?${json2Query(params)}`);
+export const fetchApigwAccessLogDetail = (gatewayId: number, requestId: string, params: ILogDetailInterface) => http.get(`${path}/${gatewayId}/logs/${requestId}/`, params);
 
 /**
  *  根据 request_id 查询日志
@@ -78,4 +78,4 @@ export const getLogsInfo = (requestId: string) => http.get(`${path}/logs/query/$
  *  获取stage数据
  * @param gatewayId 网关id
  */
-export const fetchApigwStages = (gatewayId: number, params: any) => http.get(`${path}/${gatewayId}/stages/?${json2Query(params)}`);
+export const fetchApigwStages = (gatewayId: number, params: any) => http.get(`${path}/${gatewayId}/stages/`, params);

@@ -48,7 +48,6 @@
 
 <script setup lang="ts">
 import { useStage } from '@/stores';
-import '@blueking/date-picker/vue3/vue3.css';
 import AgIcon from '@/components/ag-icon/Index.vue';
 
 type IntervalItem = {

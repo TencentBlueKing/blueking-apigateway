@@ -22,7 +22,7 @@
             v-for="item in stageList"
             :id="item.id"
             :key="item.id"
-            :name="() => getItemName(item)"
+            :name="getItemName(item)"
             :disabled="['unreleased', 'failure'].includes(item?.release?.status)"
           />
         </BkSelect>
@@ -68,13 +68,13 @@
                     >
                       <!-- eslint-disable-next-line vue/no-v-html -->
                       <p
-                        v-dompurify-html="() => hightlight(component.name)"
+                        v-dompurify-html="hightlight(component.name)"
                         v-bk-overflow-tips
                         class="name"
                       />
                       <!-- eslint-disable-next-line vue/no-v-html -->
                       <p
-                        v-dompurify-html="() => hightlight(component.description) || t('暂无描述')"
+                        v-dompurify-html="hightlight(component.description) || t('暂无描述')"
                         v-bk-overflow-tips
                         class="label"
                       />
@@ -456,7 +456,7 @@ const stage = ref<number>();
 const stageList = ref<any[]>([]);
 const resourceList = ref<any>([]);
 const activeName = ref<any>([]);
-const testAppCode = ref('apigw-api-test');
+const testAppCode = ref('apigw_api_test');
 const curApigw = ref({
   name: '',
   description: '',
@@ -541,6 +541,8 @@ const userCookies = reactive<any>({
   bk_token: '',
 });
 const response = ref<any>({});
+
+const apigwId = computed(() => gatewayStore.apigwId);
 
 const isDefaultAppAuth = computed(() => formData.value.appAuth === 'use_test_app');
 
@@ -677,7 +679,7 @@ const getApigwReleaseResources = async () => {
       limit: 10000,
       offset: 0,
     };
-    const res = await getResourcesOnline(gatewayStore.currentGateway?.id, stage.value, query);
+    const res = await getResourcesOnline(apigwId.value, stage.value, query);
     const group: any = {};
     const defaultItem: any = {
       labelId: 'default',
@@ -773,8 +775,8 @@ const clearSchema = () => {
 };
 
 const getResourceParams = async () => {
-  if (!gatewayStore.currentGateway?.id || !stage.value || !curResource.value?.id) return;
-  const res = await resourceSchema(gatewayStore.currentGateway?.id, stage.value, curResource.value?.id);
+  if (!apigwId.value || !stage.value || !curResource.value?.id) return;
+  const res = await resourceSchema(apigwId.value, stage.value, curResource.value?.id);
 
   clearSchema();
   if (res?.body_example) {
@@ -850,7 +852,7 @@ const getApigwStages = async () => {
   };
 
   try {
-    const res = await getStages(gatewayStore.currentGateway?.id, pageParams);
+    const res = await getStages(apigwId.value, pageParams);
     stageList.value = res || [];
     if (stageList.value.length) {
       const effectiveStage = stageList.value.find((item: any) => item.release?.status === 'success') || stageList.value[0];
@@ -872,7 +874,7 @@ const getApigwStages = async () => {
 
 const getApigwDetail = async () => {
   try {
-    const res = await getApiDetail(gatewayStore.currentGateway?.id);
+    const res = await getApiDetail(apigwId.value);
     curApigw.value = res;
     curApigw.value.statusBoolean = Boolean(curApigw.value?.status);
   }
@@ -1042,7 +1044,7 @@ const handleSend = async (e: Event) => {
 
   try {
     isLoading.value = true;
-    const res = await postAPITest(gatewayStore.currentGateway?.id, data);
+    const res = await postAPITest(apigwId.value, data);
     response.value = res;
 
     setAsideHeight(400);
@@ -1086,6 +1088,8 @@ init();
 </script>
 
 <style lang="scss" scoped>
+@use "sass:color";
+
 .bk-resize-layout-border {
   border: none;
 }
@@ -1265,7 +1269,7 @@ init();
   }
   &::-webkit-scrollbar {
     width: 4px;
-    background-color: lighten(#C4C6CC, 80%);
+    background-color: color.scale(#C4C6CC, $lightness: 80%);
   }
   &::-webkit-scrollbar-thumb {
     height: 5px;
