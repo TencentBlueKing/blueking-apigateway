@@ -45,3 +45,79 @@ a {
     color: #ff9c01;
   }
 }
+
+.ag-tag {
+  display: inline-block;
+  background: #f0f1f5;
+  color: #63656e;
+  font-size: 12px;
+  vertical-align: middle;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 2px;
+  white-space: nowrap;
+  padding: 0 4px;
+  height: 20px;
+  line-height: 20px;
+  font-weight: 400;
+
+  &.danger,
+  &.delete {
+    background-color: #fedddc;
+    color: #ea3536;
+  }
+
+  &.primary,
+  &.post {
+    background-color: #e1ecff;
+    color: #3a84ff;
+  }
+
+  &.success,
+  &.any {
+    background-color: #dcffe2;
+    color: #2dcb56;
+  }
+
+  &.warning,
+  &.put {
+    background-color: #ffe8c3;
+    color: #fe9c00;
+  }
+
+  &.get {
+    background-color: #d7feff;
+    color: #25a9ad;
+  }
+
+  &.patch {
+    background-color: #dad6fd;
+    color: #5949e1;
+  }
+}
+
+.ag-dot {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  vertical-align: middle;
+  background: #c4c6cc;
+  border-radius: 50%;
+
+  &.default {
+    background: #f0f1f5;
+    border: 1px solid #c9cad2;
+  }
+
+  &.primary,
+  &.releasing,
+  &.pending {
+    background: #f0f1f5;
+    border: 1px solid #c9cad2;
+  }
+
+  &.success {
+    background: #e5f6ea;
+    border: 1px solid #3fc06d;
+  }
+}

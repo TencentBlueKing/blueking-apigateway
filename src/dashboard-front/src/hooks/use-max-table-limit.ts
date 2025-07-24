@@ -52,12 +52,12 @@ function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string
     small: () => {
       if (['bkui'].includes(mode)) {
         return {
-          lineH: 60,
+          lineH: 42,
           topHead: 42,
         };
       }
       return {
-        lineH: 40,
+        lineH: 42,
         topHead: 42,
       };
     },
