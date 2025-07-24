@@ -16,8 +16,8 @@
  * to the current version of the project delivered to anyone in the future.
  */
 <template>
-  <div class="app-content apigw-access-manager-wrapper">
-    <div class="wrapper">
+  <div class="apigw-access-manager-wrapper">
+    <div class="p-24px">
       <div class="m-b-16px flex items-center justify-between ag-table-header">
         <p class="ag-table-change">
           {{ t('请确认以下组件对应网关资源的变更：') }}
@@ -34,7 +34,7 @@
           :placeholder="t('请输入组件名称、请求路径，按Enter搜索')"
           :right-icon="'bk-icon icon-search'"
           style="width: 328px;"
-          @enter="filterData"
+          @enter="handleSearch"
         />
       </div>
 
@@ -63,7 +63,7 @@
         </BkTable>
       </BkLoading>
 
-      <div class="m-t-20px">
+      <div class="p-t-20px">
         <BkPopConfirm
           v-if="componentList.length"
           trigger="click"
@@ -104,6 +104,7 @@
 
 <script lang="tsx" setup>
 import {
+  delay,
   sortBy,
   sortedUniq,
 } from 'lodash-es';
@@ -117,7 +118,7 @@ import { useMaxTableLimit } from '@/hooks';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 const { t } = useI18n();
-const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 240 });
+const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 246 });
 const router = useRouter();
 
 const tableColumns = ref([
@@ -281,6 +282,7 @@ const getDataByPage = (page?: number) => {
     endIndex = displayData.value?.length;
   }
   updateTableEmptyConfig();
+  delay(() => isLoading.value = false, 100);
   return displayData.value?.slice(startIndex, endIndex);
 };
 
@@ -294,8 +296,7 @@ const getComponents = async () => {
     componentList.value = getDataByPage();
     tableEmptyConf.value.isAbnormal = false;
   }
-  catch (e) {
-    console.error(e);
+  catch {
     tableEmptyConf.value.isAbnormal = true;
   }
   finally {
@@ -308,7 +309,7 @@ const getComponents = async () => {
 
 const handleConfirmSync = async () => {
   await getSyncReleaseData();
-  router.push({ path: '/components/access' });
+  router.push({ name: 'ComponentsManage' });
 };
 
 const handlePageLimitChange = (limit: number) => {
@@ -318,6 +319,7 @@ const handlePageLimitChange = (limit: number) => {
 };
 
 const handlePageChange = (page: number) => {
+  isLoading.value = true;
   pagination.current = page;
   const data = getDataByPage(page);
   componentList.value?.splice(0, componentList.value?.length, ...data);
@@ -327,7 +329,8 @@ const goBack = () => {
   router.back();
 };
 
-const filterData = () => {
+const handleSearch = () => {
+  isLoading.value = true;
   displayData.value = allData.value?.filter((item: ISyncApigwItem) => {
     return (item?.component_path?.includes(pathUrl.value)) || (item?.component_name?.includes(pathUrl.value));
   });
@@ -388,10 +391,6 @@ watch(
 
 <style lang="scss" scoped>
 .apigw-access-manager-wrapper {
-  .wrapper {
-    padding: 24px;
-  }
-
   .ag-table-header {
     font-size: 14px;
 

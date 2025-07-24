@@ -28,15 +28,17 @@
             （{{ t('负责人：') }}{{ summaryData?.basic_info?.maintainers?.join(', ') }}）
           </span>
         </strong>
-        <div class="auto-refresh">
-          <BkSwitcher
-            v-model="autoEnable"
-            class="m-r-10px"
-            theme="primary"
-          />
-          <span class="vm text-[13px]">
-            {{ t('每分钟自动刷新') }}
-          </span>
+        <div class="flex">
+          <div class="auto-refresh">
+            <BkSwitcher
+              v-model="autoEnable"
+              class="m-r-10px"
+              theme="primary"
+            />
+            <span class="text-[13px]">
+              {{ t('每分钟自动刷新') }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -539,7 +541,7 @@ watch(
   }
 
   .auto-refresh  {
-    float: right;
+    margin-left: auto;
   }
 
   .card-box {

@@ -91,7 +91,7 @@ export function useMaxTableLimit(payload?: Partial<ITableLimit>) {
   // 默认已占位高度
   const hasAllocatedHeight = payload?.allocatedHeight ?? 186;
   // 默认分页器高度
-  const paginationH = payload?.hasPagination || typeof payload?.hasPagination === 'undefined' ? 61 : 0;
+  const paginationH = payload?.hasPagination || typeof payload?.hasPagination === 'undefined' ? 60 : 0;
   // 获取表格的最大可视化区域
   const clientHeight = viewportHeight - hasAllocatedHeight;
   const name = payload?.className ?? (useRoute()?.name as string);

@@ -18,18 +18,17 @@
 <template>
   <div class="apigw-access-manager-wrapper">
     <div class="p-24px wrapper">
-      <BkInput
-        v-model="pathUrl"
-        clearable
-        :placeholder="t('请输入组件名称、请求路径，按Enter搜索')"
-        :right-icon="'bk-icon icon-search'"
-        class="sync-version-search"
-        @enter="filterData"
-      />
-      <BkLoading
-        :loading="isLoading"
-        :opacity="1"
-      >
+      <div class="flex mb-16px">
+        <BkInput
+          v-model="pathUrl"
+          clearable
+          :placeholder="t('请输入组件名称、请求路径，按Enter搜索')"
+          :right-icon="'bk-icon icon-search'"
+          class="sync-version-search"
+          @enter="handleSearch"
+        />
+      </div>
+      <BkLoading :loading="isLoading">
         <BkTable
           size="small"
           :data="componentList"
@@ -58,6 +57,7 @@
 
 <script lang="tsx" setup>
 import {
+  delay,
   sortBy,
   sortedUniq,
 } from 'lodash-es';
@@ -67,7 +67,7 @@ import { type ISyncApigwItem, getSyncVersion } from '@/services/source/component
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 const { t } = useI18n();
-const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 220 });
+const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 226 });
 const route = useRoute();
 
 const tableColumns = ref([
@@ -226,9 +226,13 @@ const getDataByPage = (page?: number) => {
 };
 
 const handlePageChange = (page: number) => {
+  isLoading.value = true;
   pagination.current = page;
   const data = getDataByPage(page);
   componentList.value?.splice(0, componentList.value?.length, ...data);
+  setTimeout(() => {
+    isLoading.value = false;
+  }, 500);
 };
 
 const handlePageLimitChange = (limit: number) => {
@@ -237,12 +241,15 @@ const handlePageLimitChange = (limit: number) => {
   handlePageChange(pagination.current);
 };
 
-const filterData = () => {
+const handleSearch = () => {
+  isLoading.value = true;
   displayData.value = displayDataLocal.value?.filter((item: IISyncApigwItem) => {
     return (item?.component_path?.includes(pathUrl.value)) || (item?.component_name?.includes(pathUrl.value));
   });
   componentList.value = getDataByPage();
   pagination.count = displayData.value?.length;
+  delay(() => isLoading.value = false, 100);
+  updateTableEmptyConfig();
 };
 
 const init = () => {
@@ -268,8 +275,7 @@ init();
 .apigw-access-manager-wrapper {
   .sync-version-search {
     width: 328px;
-    margin-bottom: 16px;
-    float: right;
+    margin-left: auto;
   }
 }
 </style>
