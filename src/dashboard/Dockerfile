@@ -5,14 +5,14 @@ FROM ${IMAGE}:${TAG}
 # RUN sed -i "s/http/https/g" /etc/apt/sources.list
 
 # replace the source
-RUN echo 'deb https://mirrors.cloud.tencent.com/debian/ bullseye main contrib non-free\n\
-deb-src https://mirrors.cloud.tencent.com/debian/ bullseye main contrib non-free\n\
-deb https://mirrors.cloud.tencent.com/debian/ bullseye-updates main contrib non-free\n\
-deb-src https://mirrors.cloud.tencent.com/debian/ bullseye-updates main contrib non-free\n\
-deb https://mirrors.cloud.tencent.com/debian/ bullseye-backports main contrib non-free\n\
-deb-src https://mirrors.cloud.tencent.com/debian/ bullseye-backports main contrib non-free\n\
-deb https://mirrors.cloud.tencent.com/debian-security/ bullseye-security main contrib non-free\n\
-deb-src https://mirrors.cloud.tencent.com/debian-security/ bullseye-security main contrib non-free\n\
+RUN echo 'deb https://mirrors.cloud.tencent.com/debian/ bookworm main contrib non-free\n\
+deb-src https://mirrors.cloud.tencent.com/debian/ bookworm main contrib non-free\n\
+deb https://mirrors.cloud.tencent.com/debian/ bookworm-updates main contrib non-free\n\
+deb-src https://mirrors.cloud.tencent.com/debian/ bookworm-updates main contrib non-free\n\
+deb https://mirrors.cloud.tencent.com/debian/ bookworm-backports main contrib non-free\n\
+deb-src https://mirrors.cloud.tencent.com/debian/ bookworm-backports main contrib non-free\n\
+deb https://mirrors.cloud.tencent.com/debian-security/ bookworm-security main contrib non-free\n\
+deb-src https://mirrors.cloud.tencent.com/debian-security/ bookworm-security main contrib non-free\n\
 ' > /etc/apt/sources.list
 
 
