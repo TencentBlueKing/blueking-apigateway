@@ -15,6 +15,8 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
+import type { IPosition } from 'monaco-editor';
+
 // 导航栏菜单
 export interface IHeaderNav {
   id: number
@@ -91,3 +93,21 @@ export interface IExportParams {
 }
 
 export type ReturnRecordType<T, U> = Record<string, (arg?: T) => U>;
+
+// monaco editor 代码错误高亮要用的类型
+export type CodeErrorMsgType = 'All' | 'Error' | 'Warning';
+
+// 错误原因类型
+export type ErrorReasonType = {
+  json_path?: string // JSON路径，可能为空
+  paths?: string[] // 路径数组，可能为空
+  pathValue?: any[] // 路径值数组，可能为空
+  quotedValue?: string // 引用值，可能为空
+  stringToFind?: string // 要查找的字符串，可能为空
+  message: string // 错误信息
+  isDecorated?: boolean // 是否装饰，可能为空
+  level: CodeErrorMsgType // 错误级别
+  offset?: number // 偏移量，可能为空
+  position?: IPosition | null // 位置，可能为空
+  regex?: RegExp | null // 正则表达式，可能为空
+};

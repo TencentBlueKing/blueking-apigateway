@@ -7,3 +7,5 @@ export * from './useStaff';
 export * from './usePermission';
 export * from './useAuditLog';
 export * from './useResourceVersion';
+export * from './useResourceSetting';
+export * from './useStage';

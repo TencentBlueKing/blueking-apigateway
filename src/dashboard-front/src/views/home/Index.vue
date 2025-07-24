@@ -183,14 +183,14 @@
             >
               <template v-if="item.kind === 0">
                 {{ item.resource_count }}
-                <!--                <router-link -->
+                <!--                <RouterLink -->
                 <!--                  :to="{ name: 'apigwResource', params: { id: item.id } }" -->
                 <!--                  target="_blank" -->
                 <!--                > -->
                 <!--                  <span :style="{ color: item.resource_count === 0 ? '#c4c6cc' : '#3a84ff' }"> -->
                 <!--                    {{ item.resource_count }} -->
                 <!--                  </span> -->
-                <!--                </router-link> -->
+                <!--                </RouterLink> -->
               </template>
               <template v-else>
                 <span class="none">{{ item.resource_count }}</span>

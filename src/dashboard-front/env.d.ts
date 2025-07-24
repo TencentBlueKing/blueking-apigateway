@@ -33,6 +33,8 @@ declare module '*.js' {
 
 declare module '@blueking/notice-component';
 
+declare module '@blueking/bkui-form';
+
 declare module '@blueking/login-modal' {
   export function showLoginModal(params: { loginUrl: string }): void;
 }

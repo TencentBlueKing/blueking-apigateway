@@ -202,7 +202,7 @@ const tableColumns = shallowRef([
                   </span>
                 )
                 : (
-                  <span class="ag-strong danger">
+                  <span class="font-bold color-#ea3636">
                     { t('不可续期') }
                   </span>
                 )
@@ -242,14 +242,16 @@ const handleCancel = () => {
 
 <style lang="scss" scoped>
 .app-renewal-slider {
+
   .collapse-wrap {
+
     :deep(.collapse-cls) {
       margin-bottom: 24px;
 
       .bk-collapse-item {
-        box-shadow: none;
         margin-bottom: 16px;
         background-color: #f0f1f5;
+        box-shadow: none;
       }
     }
 
@@ -259,19 +261,19 @@ const handleCancel = () => {
       cursor: pointer;
 
       .title {
-        font-weight: 700;
-        font-size: 14px;
         margin-left: 8px;
+        font-size: 14px;
+        font-weight: 700;
       }
 
       .panel-header-show {
-        transition: 0.2s;
         transform: rotate(0deg);
+        transition: 0.2s;
       }
 
       .panel-header-hide {
-        transition: 0.2s;
         transform: rotate(-90deg);
+        transition: 0.2s;
       }
     }
 
