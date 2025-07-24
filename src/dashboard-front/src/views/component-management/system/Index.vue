@@ -22,7 +22,7 @@
         type="info"
         :title="t('请将新系统的接口，直接接入 API 网关')"
       />
-      <div class="p-t-16px">
+      <div class="flex mt-16px mb-16px">
         <BkInput
           v-model="keyword"
           clearable
@@ -33,13 +33,10 @@
         />
       </div>
     </div>
-    <BkLoading
-      :loading="isLoading"
-      :opacity="1"
-    >
+
+    <BkLoading :loading="isLoading">
       <BkTable
         ext-cls="ag-stage-table"
-        class="p-t-16px"
         :data="systemList"
         :pagination="pagination"
         :columns="tableColumns"
@@ -147,6 +144,7 @@
 <script lang="tsx" setup>
 import {
   cloneDeep,
+  delay,
   sortBy,
   sortedUniq,
 } from 'lodash-es';
@@ -335,6 +333,7 @@ const init = () => {
 
 const handleClearFilterKey = () => {
   keyword.value = '';
+  getSystemList(true);
 };
 
 const handleCreateCategory = () => {
@@ -382,9 +381,7 @@ const getSystemList = async (loading = false, curPage = 1) => {
     console.error(e);
   }
   finally {
-    setTimeout(() => {
-      isLoading.value = false;
-    }, 1000);
+    setDelay(1000);
   }
 };
 
@@ -402,9 +399,7 @@ const handlePageChange = (page: number) => {
   pagination.value.offset = page;
   const data = getDataByPage(page);
   systemList.value.splice(0, systemList.value.length, ...data);
-  setTimeout(() => {
-    isLoading.value = false;
-  }, 1000);
+  setDelay(1000);
 };
 
 // 前端分页
@@ -445,6 +440,7 @@ const handleSearch = (payload: string) => {
   if (!payload) {
     return;
   }
+  isLoading.value = true;
   pagination.value = Object.assign(pagination.value, {
     offset: 0,
     limit: maxTableLimit,
@@ -456,7 +452,7 @@ const handleSearch = (payload: string) => {
   });
   pagination.value.count = displayData.value.length;
   systemList.value = getDataByPage();
-  console.log(systemList.value);
+  setDelay(1000);
 };
 
 const handleEditSys = async (data: ISystemItem) => {
@@ -492,14 +488,19 @@ const updateTableEmptyConfig = () => {
   }
   tableEmptyConf.value.emptyType = '';
 };
+
+const setDelay = (duration: number) => {
+  delay(() => {
+    isLoading.value = false;
+  }, duration);
+};
 init();
 </script>
 
 <style lang="scss" scoped>
 .system-search {
   width: 328px;
-  margin-bottom: 16px;
-  float: right;
+  margin-left: auto;
 }
 
 :deep(.official) {
