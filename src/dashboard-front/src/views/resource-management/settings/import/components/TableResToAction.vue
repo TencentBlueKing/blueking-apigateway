@@ -361,7 +361,7 @@ const renderIsPublicColLabel = () => {
         <BkPopConfirm
           width="360"
           trigger="click"
-          title={<span class="f16" style="color: #313238;">{t('批量修改公开设置')}</span>}
+          title={<span class="text-16px color-#313238">{t('批量修改公开设置')}</span>}
           content={(
             <div class="multi-edit-popconfirm-wrap public-config" style="margin-bottom: -12px;">
               <BkForm model={tempPublicConfig.value} labelWidth="100" labelPosition="right">
@@ -422,7 +422,7 @@ const renderDocColLabel = () => {
         <BkPopConfirm
           width="360"
           trigger="click"
-          title={<span class="f16" style="color: #313238;">{t('批量修改资源文档')}</span>}
+          title={<span class="text-16px color-#313238">{t('批量修改资源文档')}</span>}
           content={(
             <div class="multi-edit-popconfirm-wrap public-config" style="margin-bottom: -12px;">
               <BkForm model={localDocConfig.value} labelWidth="100" labelPosition="right">

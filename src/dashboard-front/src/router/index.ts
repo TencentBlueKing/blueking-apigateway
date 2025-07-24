@@ -32,6 +32,8 @@ import getPermissionManagementRoutes from '@/views/permission/routes';
 import getAuditLogRoutes from '@/views/audit-log/routes';
 // 告警策略
 import getMonitorAlarmRoutes from '@/views/monitor-alarm/routes';
+// API 文档
+import getAPIDocsRoutes from '@/views/api-docs/route';
 
 function props(route: RouteLocationNormalized) {
   const { id } = route.params;
@@ -67,6 +69,16 @@ const routes: RouteRecordRaw[] = [
     redirect: '/components/access',
     children: [
       ...getComponentManagementRoutes(),
+    ],
+  },
+  {
+    path: '/docs',
+    name: 'Docs',
+    component: () => import('@/layout/docs/Index.vue'),
+    redirect: { name: 'apiDocs' },
+    props,
+    children: [
+      ...getAPIDocsRoutes(),
     ],
   },
 ];
