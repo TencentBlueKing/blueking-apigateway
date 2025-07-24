@@ -323,7 +323,7 @@ const menuList = computed<IMenu[]>(() => [
     icon: 'jibenxinxi',
   },
   {
-    name: 'mcpServer',
+    name: 'MCPServer',
     enabled: true,
     title: 'MCP Server',
     icon: 'cardd',

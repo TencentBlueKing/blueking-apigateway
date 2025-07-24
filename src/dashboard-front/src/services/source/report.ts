@@ -3,7 +3,7 @@ import http from '../http';
 import {
   blobDownLoad,
   json2Query,
-} from '@/common/util';
+} from '@/utils';
 
 const path = '/gateways';
 

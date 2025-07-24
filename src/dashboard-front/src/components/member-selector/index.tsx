@@ -165,7 +165,7 @@ export default defineComponent({
           {{
             suffix: () => staffStore.fetching && (
               <Loading
-                class="mr10"
+                class="mr-10px"
                 loading={staffStore.fetching}
                 mode="spin"
                 size="mini"

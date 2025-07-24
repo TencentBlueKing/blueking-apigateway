@@ -1,13 +1,13 @@
 <template>
   <div>
     <BkButton
-      class="mr10"
+      class="mr-10px"
       @click="handleBatchRemovePolicy"
     >
       {{ t('批量删除') }}
     </BkButton>
     <BkButton
-      class="mr10"
+      class="mr-10px"
       @click="handleAddResource"
     >
       {{ t('添加') }}
@@ -150,7 +150,7 @@
         >
           <template #default="{ row }">
             <BkButton
-              class="mr10"
+              class="mr-10px"
               text
               theme="primary"
               @click.stop="handleEditResource(row)"
@@ -163,7 +163,7 @@
               @confirm="handlerDeletePolicy(row)"
             >
               <BkButton
-                class="mr10"
+                class="mr-10px"
                 text
                 theme="primary"
               >
@@ -295,7 +295,7 @@
             <BkFormItem label="">
               <BkButton
                 theme="primary"
-                class="mr10"
+                class="mr-10px"
                 :disabled="confirmLoading"
                 @click="handleBindResource"
               >
