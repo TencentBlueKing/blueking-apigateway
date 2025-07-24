@@ -359,6 +359,8 @@ init();
 </script>
 
 <style lang="scss" scoped>
+@use "sass:color";
+
 .simple-side-nav {
   width: 260px;
   height: 100%;
@@ -431,7 +433,7 @@ init();
 
       &::-webkit-scrollbar {
         width: 4px;
-        background-color: lighten(#c4c6cc, 80%);
+        background-color: color.scale(#C4C6CC, $lightness: 80%);
       }
 
       &::-webkit-scrollbar-thumb {
@@ -498,7 +500,7 @@ init();
 
   &::-webkit-scrollbar {
     width: 4px;
-    background-color: lighten(#c4c6cc, 80%);
+    background-color: color.scale(#C4C6CC, $lightness: 80%);
   }
 
   &::-webkit-scrollbar-thumb {
@@ -640,7 +642,7 @@ init();
 
   &::-webkit-scrollbar {
     width: 4px;
-    background-color: lighten(#c4c6cc, 80%);
+    background-color: color.scale(#C4C6CC, $lightness: 80%);
   }
 
   &::-webkit-scrollbar-thumb {

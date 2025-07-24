@@ -206,6 +206,7 @@ import Top from './components/Top.vue';
 import LineChart from './components/LineChart.vue';
 import ResourceSearcher from '@/views/operate-data/dashboard/components/ResourceSearcher.vue';
 import DatePicker from '@blueking/date-picker';
+import '@blueking/date-picker/vue3/vue3.css';
 // import { ResourcesItem } from '@/views/resource/setting/types';
 // import { IStageData } from '@/views/stage/overview/types/stage';
 
@@ -264,6 +265,8 @@ const searchParams = ref<ISearchParamsType>({
 
 let timeId: NodeJS.Timeout | null = null;
 
+const apigwId = computed(() => gatewayStore.apigwId);
+
 watch(() => route.query, () => {
   const span = route.query?.time_span;
   const stageId = route.query?.stage_id;
@@ -297,7 +300,7 @@ const getStages = async () => {
     no_page: true,
     order_by: 'name',
   };
-  const res = await getApigwStages(gatewayStore.currentGateway?.id, pageParams);
+  const res = await getApigwStages(apigwId.value, pageParams);
 
   stageList.value = res || [];
   if (!searchParams.value.stage_id) {
@@ -312,7 +315,7 @@ const getResources = async () => {
     offset: 0,
     limit: 10000,
   };
-  const response = await getApigwResources(gatewayStore.currentGateway?.id, pageParams);
+  const response = await getApigwResources(apigwId.value, pageParams);
   resourceList.value = response.results;
 };
 
@@ -321,7 +324,7 @@ const getData = async (searchParams: ISearchParamsType, type: string) => {
   chartLoading.value[type as keyof IChartDataLoading] = true;
   try {
     chartData.value[type as keyof IChartDataType] = await getApigwMetrics(
-      gatewayStore.currentGateway?.id,
+      apigwId.value,
       {
         ...searchParams,
         metrics: type,
@@ -344,7 +347,7 @@ const getInstantData = () => {
     chartLoading.value[type as keyof IChartDataLoading] = true;
     try {
       statistics.value[type as keyof IStatisticsType] = await getApigwMetricsInstant(
-        gatewayStore.currentGateway?.id,
+        apigwId.value,
         {
           ...searchParams.value,
           metrics: type,

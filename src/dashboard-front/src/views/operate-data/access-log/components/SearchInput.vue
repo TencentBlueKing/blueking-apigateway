@@ -78,7 +78,7 @@
             <a
               class="link"
               target="_blank"
-              :href="GLOBAL_CONFIG.DOC.QUERY_USE"
+              href="GLOBAL_CONFIG.DOC.QUERY_USE"
             >
               {{ t("“请求流水查询规则”") }}
             </a>
@@ -118,7 +118,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useGetGlobalProperties } from '@/hooks';
+// import { useGetGlobalProperties } from '@/hooks';
 import { useStorage } from '@vueuse/core';
 import AgIcon from '@/components/ag-icon/Index.vue';
 
@@ -141,11 +141,11 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const globalProperties = useGetGlobalProperties();
+// const globalProperties = useGetGlobalProperties();
 
 // 从本地存储获取搜索历史
 const queryHistory = useStorage('access-log-query-history', []);
-const { GLOBAL_CONFIG } = globalProperties;
+// const { GLOBAL_CONFIG } = globalProperties;
 
 const popoverOptions = {
   trigger: 'click',

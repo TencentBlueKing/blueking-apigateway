@@ -506,6 +506,8 @@ const stageList = ref([]);
 const isAISliderShow = ref(false);
 const aiRequestMessage = ref('');
 
+const apigwId = computed(() => gatewayStore.apigwId);
+
 const searchConditions = computed(() => {
   const res: string[] = [];
   includeObj.value?.forEach((item: string) => {
@@ -643,7 +645,7 @@ const getResources = async () => {
   };
 
   try {
-    const res = await getApigwResources(gatewayStore.currentGateway?.id, pageParams);
+    const res = await getApigwResources(apigwId.value, pageParams);
     resourceList.value = res.results;
   }
   catch (err) {
@@ -801,7 +803,7 @@ const getApigwStages = async () => {
     no_page: true,
     order_by: 'name',
   };
-  const res = await fetchApigwStages(gatewayStore.currentGateway?.id, pageParams);
+  const res = await fetchApigwStages(apigwId.value, pageParams);
   stageList.value = res || [];
   if (stageList.value.length) {
     searchParams.value.stage_id = stageList.value[0].id;
@@ -834,14 +836,14 @@ const getApigwAccessLogList = async () => {
   params.offset = (pagination.value.current - 1) * pagination.value.limit;
   params.limit = pagination.value.limit;
 
-  return await fetchApigwAccessLogList(gatewayStore.currentGateway?.id, params, path);
+  return await fetchApigwAccessLogList(apigwId.value, params, path);
 };
 
 const getApigwAccessLogChart = async () => {
   const { params, path } = getPayload();
   params.no_page = true;
 
-  return await fetchApigwAccessLogChart(gatewayStore.currentGateway?.id, params, path);
+  return await fetchApigwAccessLogChart(apigwId.value, params, path);
 };
 
 const getSearchData = async () => {
@@ -968,7 +970,7 @@ const handleDownload = async (event: Event) => {
     params.offset = (pagination.value.current - 1) * pagination.value.limit;
     params.limit = 10000;
 
-    const res = await exportLogs(gatewayStore.currentGateway?.id, params, path);
+    const res = await exportLogs(apigwId.value, params, path);
     if (res.success) {
       Message({
         message: t('导出成功'),
@@ -989,7 +991,7 @@ const handleClickCopyLink = async ({ request_id }: any) => {
   const params = { request_id };
   isShareLoading.value = true;
   try {
-    const { link } = await fetchApigwAccessLogShareLink(gatewayStore.currentGateway?.id, params);
+    const { link } = await fetchApigwAccessLogShareLink(apigwId.value, params);
     copy(link || '');
   }
   catch (err) {

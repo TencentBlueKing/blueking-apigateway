@@ -15,7 +15,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: 'access-log/:requestId',
     name: 'AccessLogDetail',
-    component: () => import('@/views/operate-data/access-log/Index.vue'),
+    component: () => import('@/views/operate-data/access-log/Detail.vue'),
     meta: {
       title: t('流水日志'),
       matchRoute: 'AccessLogDetail',
@@ -26,7 +26,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: 'dashboard',
     name: 'Dashboard',
-    component: () => import('@/views/operate-data/access-log/Index.vue'),
+    component: () => import('@/views/operate-data/dashboard/Index.vue'),
     meta: {
       title: t('仪表盘'),
       matchRoute: 'Dashboard',
@@ -36,7 +36,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: 'report',
     name: 'Report',
-    component: () => import('@/views/operate-data/access-log/Index.vue'),
+    component: () => import('@/views/operate-data/report/Index.vue'),
     meta: {
       title: t('统计报表'),
       matchRoute: 'Report',

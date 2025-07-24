@@ -198,6 +198,8 @@ const metricsList = ref<string[]>([
   'requests_failed_total', // 请求失败总数
 ]);
 
+const apigwId = computed(() => gatewayStore.apigwId);
+
 watch(
   () => [
     formatTime.value,
@@ -216,7 +218,7 @@ const getStages = async () => {
   };
 
   try {
-    const res = await getApigwStages(gatewayStore.currentGateway?.id, pageParams);
+    const res = await getApigwStages(apigwId.value, pageParams);
 
     stageList.value = res;
     if (!searchParams.stage_id) {
@@ -236,7 +238,7 @@ const getCallersData = async () => {
   };
 
   try {
-    const res = await getCallers(gatewayStore.currentGateway?.id, pageParams);
+    const res = await getCallers(apigwId.value, pageParams);
     callerOptions.value = res?.app_codes || [];
   }
   catch (err) {
@@ -253,7 +255,7 @@ const getResources = async () => {
   };
 
   try {
-    const res = await getApigwResources(gatewayStore.currentGateway?.id, pageParams);
+    const res = await getApigwResources(apigwId.value, pageParams);
     resourceList.value = res.results;
   }
   catch (err) {
@@ -271,7 +273,7 @@ const handleRefresh = async (metrics: string) => {
       metrics,
     };
 
-    const res = await getReportSummary(gatewayStore.currentGateway?.id, params);
+    const res = await getReportSummary(apigwId.value, params);
 
     chartData.value[metrics] = res;
   }
@@ -291,7 +293,7 @@ const handleDownload = async (metrics: string) => {
       metrics,
     };
 
-    await exportReportSummary(gatewayStore.currentGateway?.id, params);
+    await exportReportSummary(apigwId.value, params);
 
     Message({
       theme: 'success',
@@ -320,7 +322,7 @@ const getChartData = async () => {
       metrics,
     };
 
-    return getReportSummary(gatewayStore.currentGateway?.id, params);
+    return getReportSummary(apigwId.value, params);
   });
 
   try {
