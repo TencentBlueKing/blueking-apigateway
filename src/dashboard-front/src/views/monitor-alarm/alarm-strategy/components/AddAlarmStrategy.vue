@@ -363,8 +363,9 @@ const {
   stageList = [],
 } = defineProps<IProps>();
 const emits = defineEmits<Emits>();
-const gatewayStore = useGateway();
+
 const { t } = useI18n();
+const gatewayStore = useGateway();
 const accessLogStore = useAccessLog();
 
 const { alarmStrategyOptions } = accessLogStore;

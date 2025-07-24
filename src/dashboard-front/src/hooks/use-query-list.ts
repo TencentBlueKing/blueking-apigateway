@@ -51,6 +51,8 @@ export function useQueryList<T>({
   filterNoResetPage = false,
   initialPagination = {},
   immediate = true,
+  // 是否需要网关id参数
+  needApigwId = true,
 }: {
   apiMethod: (...args: any[]) => Promise<unknown>
   filterData?: Ref<Record<string, any>>
@@ -58,6 +60,7 @@ export function useQueryList<T>({
   filterNoResetPage?: boolean
   initialPagination?: Partial<IPagination>
   immediate?: boolean
+  needApigwId?: boolean
 }) {
   const { apigwId } = useGateway();
 
@@ -91,12 +94,20 @@ export function useQueryList<T>({
       ...filterData?.value,
     };
     try {
-      const res = id
-        ? await getMethod.value(apigwId, id, paramsData)
-        : await getMethod.value(apigwId, paramsData);
-      tableData.value = res.results || res.data;
+      let res: Record<string, any> = {};
+      if (needApigwId) {
+        res = id
+          ? await getMethod.value(apigwId, id, paramsData)
+          : await getMethod.value(apigwId, paramsData);
+      }
+      else {
+        res = id
+          ? await getMethod.value(id, paramsData)
+          : await getMethod.value(paramsData);
+      }
+      tableData.value = res?.results ?? res.data ?? [];
       pagination.value = Object.assign(pagination.value, {
-        count: res.count || 0,
+        count: res.count || tableData.value?.length,
         abnormal: false,
       });
     }
