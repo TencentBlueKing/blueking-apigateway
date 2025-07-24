@@ -230,6 +230,7 @@
 
 <script setup lang="tsx">
 import { getPermissionRecordList } from '@/services/source/permission';
+import { useAccessLog } from '@/stores';
 import { useMaxTableLimit, useQueryList } from '@/hooks';
 import type { IApprovalListItem } from '@/types/permission';
 import { sortByKey } from '@/utils';
@@ -240,6 +241,7 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 
 const { t } = useI18n();
 const { maxTableLimit, clientHeight } = useMaxTableLimit();
+const accessLogStore = useAccessLog();
 
 const historyExpandColumn = shallowRef([
   {
@@ -356,62 +358,7 @@ const detailSliderConf = reactive({
   isShow: false,
 });
 // 日期 快捷方式设置
-const datepickerShortcuts = reactive([
-  {
-    text: t('最近5分钟'),
-    value() {
-      const end = new Date();
-      const start = new Date();
-      start.setTime(start.getTime() - 5 * 60 * 1000);
-      return [start, end];
-    },
-  },
-  {
-    text: t('最近1小时'),
-    value() {
-      const end = new Date();
-      const start = new Date();
-      start.setTime(start.getTime() - 60 * 60 * 1000);
-      return [start, end];
-    },
-  },
-  {
-    text: t('最近6小时'),
-    value() {
-      const end = new Date();
-      const start = new Date();
-      start.setTime(start.getTime() - 6 * 60 * 60 * 1000);
-      return [start, end];
-    },
-  },
-  {
-    text: t('最近12小时'),
-    value() {
-      const end = new Date();
-      const start = new Date();
-      start.setTime(start.getTime() - 12 * 60 * 60 * 1000);
-      return [start, end];
-    },
-  },
-  {
-    text: t('最近1天'),
-    value() {
-      const end = new Date();
-      const start = new Date();
-      start.setTime(start.getTime() - 24 * 60 * 60 * 1000);
-      return [start, end];
-    },
-  },
-  {
-    text: t('最近7天'),
-    value() {
-      const end = new Date();
-      const start = new Date();
-      start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
-      return [start, end];
-    },
-  },
-]);
+const datepickerShortcuts = reactive(accessLogStore.datepickerShortcuts);
 
 // 列表hooks
 const {
@@ -666,34 +613,6 @@ onMounted(() => {
       flex: 1;
       padding-top: 10px;
       line-height: 22px;
-    }
-  }
-}
-
-:deep(.perm-record-dot) {
-  .ag-dot {
-    width: 8px;
-    height: 8px;
-    display: inline-block;
-    vertical-align: middle;
-    background: #c4c6cc;
-    border-radius: 50%;
-
-    &.default {
-      background: #f0f1f5;
-      border: 1px solid #c9cad2;
-    }
-
-    &.primary,
-    &.releasing,
-    &.pending {
-      background: #f0f1f5;
-      border: 1px solid #c9cad2;
-    }
-
-    &.success {
-      background: #e5f6ea;
-      border: 1px solid #3fc06d;
     }
   }
 }

@@ -31,7 +31,7 @@
         >
           <template v-for="menu in componentsMenu">
             <template v-if="menu?.children?.length">
-              <BkSubMenu
+              <BkSubmenu
                 :key="menu.name"
                 :title="menu.title"
               >
@@ -48,7 +48,7 @@
                 >
                   {{ child.title }}
                 </BkMenuItem>
-              </BkSubMenu>
+              </BkSubmenu>
             </template>
             <template v-else>
               <BkMenuItem
@@ -81,8 +81,8 @@
           />
           {{ headerTitle }}
         </div>
-        <div :class="route.meta.customHeader ? 'custom-header-view' : 'default-header-view'">
-          <router-view :apigw-id="apigwId" />
+        <div :class="routerViewWrapperClass">
+          <RouterView :key="apigwId" />
         </div>
       </div>
     </BkNavigation>
@@ -137,7 +137,27 @@ const componentsMenu = shallowRef<IMenu>([
 // 获取网关数据方法
 const { getGatewaysListData } = useGatewaysList(filterData);
 
-const openedKeys = computed(() => componentsMenu.value.map(e => e.name));
+const openedKeys = computed(() => componentsMenu.value.map(item => item.name));
+// 表格需要兼容的页面模块
+const needBkuiTablePage = computed(() => {
+  return [
+    'ComponentsSystem',
+    'ComponentsManage',
+    'ComponentsCategory',
+    'ComponentsPermission',
+    'ComponentsRuntimeData',
+    'SyncApigwAccess',
+    'SyncHistory',
+    'SyncVersion',
+  ];
+});
+const routerViewWrapperClass = computed(() => {
+  const displayBkuiTable = needBkuiTablePage.value.includes(route.name) ? 'need-bkui-table-wrapper' : '';
+  if (route.meta.customHeader) {
+    return `custom-header-view ${displayBkuiTable}`;
+  }
+  return `default-header-view ${displayBkuiTable}`;
+});
 
 // 设置网关名
 const handleSetApigwName = () => {
@@ -341,11 +361,19 @@ onMounted(async () => {
           overflow: auto;
         }
 
-        &.router-BackendService-wrapper {
+        &.need-bkui-table-wrapper {
           overflow-y: hidden;
+
+          :deep(.bk-table-body) {
+            &.bk-scrollbar {
+              .bk__rail-x,
+              .bk__rail-y {
+                display: none !important;
+              }
+            }
+          }
         }
       }
-
     }
   }
 

@@ -23,12 +23,10 @@ const ComponentsSystem = () => import('@/views/component-management/system/Index
 const ComponentsManage = () => import('@/views/component-management/manage/Index.vue');
 const ComponentsCategory = () => import('@/views/component-management/category/Index.vue');
 const ComponentsRuntimeData = () => import('@/views/component-management/runtime-data/Index.vue');
-
-// 文档一级路由出口
-const docsComponent = {
-  name: 'DocMain',
-  template: '<router-view></router-view>',
-};
+const ComponentsRuntimeDetail = () => import('@/views/component-management/runtime-data/Detail.vue');
+const SyncApigwAccess = () => import('@/views/component-management/manage/components/SyncAccess.vue');
+const SyncHistory = () => import('@/views/component-management/manage/components/SyncHistory.vue');
+const SyncVersion = () => import('@/views/component-management/manage/components/SyncVersion.vue');
 
 // 组件管理
 const routes: RouteRecordRaw[] = [
@@ -63,22 +61,45 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: 'sync',
+    name: 'SyncApigwAccess',
+    component: SyncApigwAccess,
+    meta: {
+      title: t('同步组件配置到 API 网关'),
+      matchRoute: 'SyncApigwAccess',
+      topMenu: 'ComponentsMain',
+      showBackIcon: true,
+    },
+  },
+  {
+    path: 'history',
+    name: 'SyncHistory',
+    component: SyncHistory,
+    meta: {
+      title: t('组件同步历史'),
+      matchRoute: 'SyncHistory',
+      topMenu: 'ComponentsMain',
+      showBackIcon: true,
+    },
+  },
+  {
+    path: 'version',
+    name: 'SyncVersion',
+    component: SyncVersion,
+    meta: {
+      title: t('组件同步版本'),
+      matchRoute: 'SyncVersion',
+      topMenu: 'ComponentsMain',
+      showBackIcon: true,
+    },
+  },
+  {
     path: 'category',
     name: 'ComponentsCategory',
     component: ComponentsCategory,
     meta: {
       title: t('文档分类'),
       matchRoute: 'ComponentsCategory',
-      topMenu: 'ComponentsMain',
-    },
-  },
-  {
-    path: 'permission',
-    name: 'ComponentsPermission',
-    component: docsComponent,
-    meta: {
-      title: t('权限管理'),
-      matchRoute: 'ComponentsPermission',
       topMenu: 'ComponentsMain',
     },
   },
@@ -90,6 +111,17 @@ const routes: RouteRecordRaw[] = [
       title: t('实时运行数据'),
       matchRoute: 'ComponentsRuntimeData',
       topMenu: 'ComponentsMain',
+    },
+  },
+  {
+    path: 'system/:system/detail',
+    name: 'ComponentsRuntimeDetail',
+    component: ComponentsRuntimeDetail,
+    meta: {
+      title: t('系统实时概况'),
+      matchRoute: 'ComponentsRuntimeDetail',
+      topMenu: 'ComponentsMain',
+      showBackIcon: true,
     },
   },
 ];
