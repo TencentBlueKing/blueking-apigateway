@@ -1,7 +1,7 @@
 <template>
   <!--  SDK使用说明 Slider  -->
   <div class="sdk-instruction-slider">
-    <bk-sideslider
+    <BkSideslider
       v-model:is-show="isShow"
       width="960"
       :title="t('SDK 使用说明')"
@@ -12,7 +12,7 @@
           <SdkInstructionContent />
         </div>
       </template>
-    </bk-sideslider>
+    </BkSideslider>
   </div>
 </template>
 

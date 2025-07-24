@@ -17,41 +17,41 @@
           >
             {{ t('没有可用的环境') }}
           </BkAlert>
-          <bk-form
+          <BkForm
             ref="formRef"
             :model="formData"
             :rules="rules"
             form-type="vertical"
           >
-            <bk-form-item
+            <BkFormItem
               :label="t('环境')"
               property="stage_id"
               required
             >
-              <bk-select
+              <BkSelect
                 v-model="formData.stage_id"
                 :clearable="false"
                 :disabled="isEditMode || noValidStage"
                 @change="handleStageSelectChange"
               >
-                <bk-option
+                <BkOption
                   v-for="_stage in stageList"
                   :id="_stage.id"
                   :key="_stage.id"
                   :disabled="!_stage.resource_version?.version"
                   :name="_stage.name"
                 />
-              </bk-select>
-            </bk-form-item>
-            <bk-form-item
+              </BkSelect>
+            </BkFormItem>
+            <BkFormItem
               :label="t('服务名称')"
               property="name"
               required
             >
-              <bk-input
+              <BkInput
                 v-model="formData.name"
                 :disabled="isEditMode || noValidStage"
-                :prefix="(isEditMode || noValidStage )? undefined : serverNamePrefix"
+                :prefix="(isEditMode || noValidStage) ? undefined : serverNamePrefix"
               />
               <div class="name-help-text">
                 <div class="text-body">
@@ -72,35 +72,35 @@
                   </div>
                 </div>
               </div>
-            </bk-form-item>
-            <bk-form-item
+            </BkFormItem>
+            <BkFormItem
               :label="t('描述')"
               property="description"
             >
-              <bk-input
+              <BkInput
                 v-model="formData.description"
                 :disabled="noValidStage"
                 clearable
               />
-            </bk-form-item>
-            <bk-form-item
+            </BkFormItem>
+            <BkFormItem
               :label="t('标签')"
               property="labels"
             >
-              <bk-tag-input
+              <BkTag-input
                 v-model="formData.labels"
                 :disabled="noValidStage"
                 allow-create
                 collapse-tags
                 has-delete-icon
               />
-            </bk-form-item>
-            <bk-form-item
+            </BkFormItem>
+            <BkFormItem
               :label="t('是否公开')"
               property="is_public"
               required
             >
-              <bk-switcher
+              <BkSwitcher
                 v-model="formData.is_public"
                 :disabled="noValidStage"
                 theme="primary"
@@ -109,9 +109,9 @@
               <span class="text-12px color-#979ba5">{{
                 t('不公开则不会展示到 MCP 市场，且蓝鲸应用无法申请主动申请权限，只能由网关管理员给应用主动授权')
               }}</span>
-            </bk-form-item>
+            </BkFormItem>
             <!-- 资源选择表格 -->
-            <bk-form-item>
+            <BkFormItem>
               <template #label>
                 <div class="resource-form-item-label">
                   <div class="label-text">
@@ -149,7 +149,7 @@
                       type="search"
                     />
                   </div>
-                  <bk-table
+                  <BkTable
                     ref="tableRef"
                     :columns="columns"
                     :data="filteredResourceList"
@@ -163,7 +163,7 @@
                         @clear-filter="filterKeyword = ''"
                       />
                     </template>
-                  </bk-table>
+                  </BkTable>
                 </div>
                 <div class="result-preview">
                   <div class="result-preview-list">
@@ -202,27 +202,27 @@
                   </div>
                 </div>
               </div>
-            </bk-form-item>
-          </bk-form>
+            </BkFormItem>
+          </BkForm>
         </div>
       </div>
     </template>
     <template #footer>
       <div class="ml-16px">
-        <bk-button
+        <BkButton
           :disabled="noValidStage"
           class="w-100px!"
           theme="primary"
           @click="handleSubmit"
         >
           {{ t('确定') }}
-        </bk-button>
-        <bk-button
+        </BkButton>
+        <BkButton
           class="w-100px! ml-4px"
           @click="handleCancel"
         >
           {{ t('取消') }}
-        </bk-button>
+        </BkButton>
       </div>
     </template>
   </BkSideslider>
@@ -337,7 +337,7 @@ const columns = [
   {
     label: t('资源名称'),
     render: ({ row }: any) => (
-      <bk-button
+      <BkButton
         text
         theme="primary"
         v-bk-tooltips={{
@@ -347,7 +347,7 @@ const columns = [
         onClick={() => handleToolNameClick(row)}
       >
         {row.name}
-      </bk-button>
+      </BkButton>
     ),
   },
   {
@@ -361,11 +361,11 @@ const columns = [
     width: 100,
     showOverflowTooltips: false,
     render: ({ row }: any) => (
-      <bk-tag
+      <BkTag
         theme={methodTagThemeMap[row.method as keyof typeof methodTagThemeMap]}
       >
         {row.method}
-      </bk-tag>
+      </BkTag>
     ),
   },
   {

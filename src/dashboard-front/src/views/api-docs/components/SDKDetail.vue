@@ -43,7 +43,7 @@
         <span class="column-key"> {{ t('SDK地址') }}: </span>
       </div>
       <div class="value">
-        <bk-popover
+        <BkPopover
           placement="top"
           width="600"
           :disabled="!sdk.url && !sdk.sdk_download_url"
@@ -56,7 +56,7 @@
               {{ sdk.url || sdk.sdk_download_url }}
             </div>
           </template>
-        </bk-popover>
+        </BkPopover>
       </div>
       <aside class="suffix">
         <i
@@ -79,7 +79,7 @@
         <span class="column-key"> {{ t('安装') }}: </span>
       </div>
       <div class="value">
-        <bk-popover
+        <BkPopover
           v-if="sdk.install_command || sdk.sdk_install_command"
           placement="top"
           width="600"
@@ -92,7 +92,7 @@
               {{ sdk.install_command || sdk.sdk_install_command }}
             </div>
           </template>
-        </bk-popover>
+        </BkPopover>
         <span v-else>--</span>
       </div>
       <aside class="suffix">

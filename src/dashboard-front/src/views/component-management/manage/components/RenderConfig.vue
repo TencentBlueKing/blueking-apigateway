@@ -1,20 +1,20 @@
 /*
- * TencentBlueKing is pleased to support the open source community by making
- * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2025 Tencent. All rights reserved.
- * Licensed under the MIT License (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- *     http://opensource.org/licenses/MIT
- *
- * Unless required by applicable law or agreed to in writing, software distributed under
- * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * We undertake not to change the open source license (MIT license) applicable
- * to the current version of the project delivered to anyone in the future.
- */
+* TencentBlueKing is pleased to support the open source community by making
+* 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+* Copyright (C) 2025 Tencent. All rights reserved.
+* Licensed under the MIT License (the "License"); you may not use this file except
+* in compliance with the License. You may obtain a copy of the License at
+*
+* http://opensource.org/licenses/MIT
+*
+* Unless required by applicable law or agreed to in writing, software distributed under
+* the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+* either express or implied. See the License for the specific language governing permissions and
+* limitations under the License.
+*
+* We undertake not to change the open source license (MIT license) applicable
+* to the current version of the project delivered to anyone in the future.
+*/
 <template>
   <div class="apigw-component-config-wrapper">
     <section class="item header">
@@ -38,7 +38,7 @@
         {{ item.label }}
       </div>
       <div class="value">
-        <bk-select
+        <BkSelect
           v-if="item.type === 'enum'"
           v-model="item.default"
           style="margin-top: 8px;"
@@ -46,29 +46,29 @@
           :input-search="false"
           @selected="handleSelected"
         >
-          <bk-option
+          <BkOption
             v-for="option in item.options"
             :id="option.id"
             :key="option.id"
             :name="option.name"
           />
-        </bk-select>
-        <bk-input
+        </BkSelect>
+        <BkInput
           v-if="item.type === 'string' && !!item.isShow"
           v-model="item.default"
         />
-        <bk-input
+        <BkInput
           v-if="item.type === 'int' && !!item.isShow"
           v-model="item.default"
           type="number"
           :show-controls="false"
         />
-        <bk-input
+        <BkInput
           v-if="item.type === 'password' && !!item.isShow"
           v-model="item.default"
           type="password"
         />
-        <bk-checkbox
+        <BkCheckbox
           v-if="item.type === 'boolean' && !!item.isShow"
           v-model="item.default"
           true-value

@@ -15,16 +15,14 @@
           v-if="curTab === 'component'"
           class="system-dropdown-wrap"
         >
-          <bk-dropdown
-            :popover-options="{ boundary: 'body', placement: 'bottom-start' }"
-          >
+          <BkDropdown :popover-options="{ boundary: 'body', placement: 'bottom-start' }">
             <div class="dropdown-trigger-btn">
               <span>{{ curTargetName }}</span>
               <i class="ag-doc-icon doc-down-shape apigateway-icon icon-ag-down-shape" />
             </div>
             <template #content>
-              <bk-dropdown-menu class="dropdown-trigger-content bk-dropdown-list">
-                <bk-dropdown-item
+              <BkDropdownMenu class="dropdown-trigger-content bk-dropdown-list">
+                <BkDropdownItem
                   v-for="system in allSystemList"
                   :key="system.name"
                   :title="system.description"
@@ -34,16 +32,16 @@
                     <span class="mr-5px">{{ system.description }}</span>
                     ({{ system.name }})
                   </span>
-                </bk-dropdown-item>
-              </bk-dropdown-menu>
+                </BkDropdownItem>
+              </BkDropdownMenu>
             </template>
-          </bk-dropdown>
+          </BkDropdown>
         </aside>
       </main>
     </header>
     <!--  正文  -->
     <main class="page-content">
-      <bk-resize-layout
+      <BkResizeLayout
         ref="outerResizeLayoutRef"
         placement="right"
         :border="false"
@@ -54,7 +52,7 @@
         style="flex-grow: 1;"
       >
         <template #main>
-          <bk-resize-layout
+          <BkResizeLayout
             placement="left"
             style="margin-left: 40px;"
             initial-divide="288px"
@@ -79,7 +77,7 @@
                     </header>
                     <main class="nav-filters">
                       <article v-if="curTab === 'gateway'">
-                        <bk-select
+                        <BkSelect
                           v-model="curStageName"
                           :clearable="false"
                           filterable
@@ -87,16 +85,16 @@
                           :prefix="t('环境')"
                           @change="handleStageChange"
                         >
-                          <bk-option
+                          <BkOption
                             v-for="option in stageList"
                             :key="option.id"
                             :value="option.name"
                             :label="option.name"
                           />
-                        </bk-select>
+                        </BkSelect>
                       </article>
                       <article>
-                        <bk-input
+                        <BkInput
                           v-model="keyword"
                           type="search"
                           :placeholder="searchPlaceholder"
@@ -108,11 +106,11 @@
                   <!--  API 列表  -->
                   <main class="resource-list custom-scroll-bar">
                     <template v-if="filteredApiList.length">
-                      <bk-collapse
+                      <BkCollapse
                         v-model="activeGroupPanelNames"
                         class="api-group-collapse"
                       >
-                        <bk-collapse-panel
+                        <BkCollapsePanel
                           v-for="group of apiGroupList"
                           :key="group.id"
                           :name="group.name"
@@ -146,8 +144,8 @@
                               />
                             </article>
                           </template>
-                        </bk-collapse-panel>
-                      </bk-collapse>
+                        </BkCollapsePanel>
+                      </BkCollapse>
                     </template>
                     <template v-else-if="keyword">
                       <TableEmpty
@@ -172,7 +170,7 @@
                 />
               </div>
             </template>
-          </bk-resize-layout>
+          </BkResizeLayout>
         </template>
         <!--  右栏，网关/组件主要信息和SDK  -->
         <template #aside>
@@ -186,7 +184,7 @@
             </main>
           </aside>
         </template>
-      </bk-resize-layout>
+      </BkResizeLayout>
     </main>
     <!--  SDK使用说明 Slider  -->
     <SDKInstructionSlider v-model="isSdkInstructionSliderShow" />
@@ -576,7 +574,6 @@ onBeforeMount(() => {
 </script>
 
 <style lang="scss" scoped>
-
 .page-header {
   position: sticky;
   top: 0;
@@ -766,7 +763,7 @@ onBeforeMount(() => {
           margin: 0;
           list-style: none;
 
-          > li {
+          >li {
             position: relative;
             padding: 6px 36px 6px 56px;
             overflow: hidden;
@@ -834,7 +831,8 @@ onBeforeMount(() => {
           color: #979ba5;
         }
 
-        &:hover, &.active {
+        &:hover,
+        &.active {
           background: #e1ecff;
 
           .res-item-name {

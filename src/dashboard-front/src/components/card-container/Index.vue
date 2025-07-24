@@ -14,7 +14,7 @@ const { hoverShadow = true } = defineProps<IProps>();
 
 <style scoped lang="scss">
 .card-container {
-  background: #fff;;
+  background: #fff;
   border-radius: 2px;
   box-shadow: 0 2px 4px 0 #1919290d;
 

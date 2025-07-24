@@ -87,7 +87,7 @@
         </aside>
       </div>
       <div class="info-form-container mt-20px">
-        <!-- <bk-form ref="formRef" class="info-form" :model="configFormData" :rules="rules" form-type="vertical">
+        <!-- <BkForm ref="formRef" class="info-form" :model="configFormData" :rules="rules" form-type="vertical">
           <BkFormItem :label="t('名称')" property="name" required>
           <BkInput v-model="configFormData.name" :placeholder="t('请输入')" />
           </BkFormItem>
@@ -96,7 +96,7 @@
           <BkAlert theme="info" :title="t(infoNotes)"></BkAlert>
           </BkFormItem>
           </BkLoading>
-          </bk-form> -->
+          </BkForm> -->
 
         <BkAlert
           v-show="typeId === 1"
@@ -129,9 +129,11 @@
           <BkPopConfirm
             v-if="isStage"
             :title="t('确认{optType}插件（{name}）到 {stage} 环境？',
-                      { optType: isAdd ? t('添加') : t('修改'),
+                      {
+                        optType: isAdd ? t('添加') : t('修改'),
                         name: curPluginInfo?.name,
-                        stage: stageStore?.curStageData?.name })"
+                        stage: stageStore?.curStageData?.name
+                      })"
             :content="t('插件配置变更后，将立即影响线上环境，请确认。')"
             trigger="click"
             @confirm="handleAdd"
@@ -570,7 +572,7 @@ const getSchemaFormData = async (code: string) => {
 
     if (!isAdd.value) {
       const yamlData = yaml2Json(props.editPlugin.yaml).data;
-      schemaFormData.value = { ...(yamlData as {}) };
+      schemaFormData.value = { ...(yamlData as object) };
     }
   }
   catch (error) {
@@ -674,7 +676,7 @@ onBeforeUnmount(() => {
 .info-header {
   display: flex;
   padding: 12px 24px;
-  background-color: #f5f7fa;;
+  background-color: #f5f7fa;
   border-radius: 2px;
   align-items: flex-start;
   gap: 24px;
@@ -800,7 +802,7 @@ onBeforeUnmount(() => {
     border: 1px solid #DCDEE5;
 
     .angle-up {
-      color: #DCDEE5;;
+      color: #DCDEE5;
     }
   }
 }

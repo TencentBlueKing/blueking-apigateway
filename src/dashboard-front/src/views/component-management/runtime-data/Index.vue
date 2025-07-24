@@ -1,26 +1,26 @@
 /*
- * TencentBlueKing is pleased to support the open source community by making
- * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2025 Tencent. All rights reserved.
- * Licensed under the MIT License (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- *     http://opensource.org/licenses/MIT
- *
- * Unless required by applicable law or agreed to in writing, software distributed under
- * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * We undertake not to change the open source license (MIT license) applicable
- * to the current version of the project delivered to anyone in the future.
- */
+* TencentBlueKing is pleased to support the open source community by making
+* 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+* Copyright (C) 2025 Tencent. All rights reserved.
+* Licensed under the MIT License (the "License"); you may not use this file except
+* in compliance with the License. You may obtain a copy of the License at
+*
+* http://opensource.org/licenses/MIT
+*
+* Unless required by applicable law or agreed to in writing, software distributed under
+* the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+* either express or implied. See the License for the specific language governing permissions and
+* limitations under the License.
+*
+* We undertake not to change the open source license (MIT license) applicable
+* to the current version of the project delivered to anyone in the future.
+*/
 <template>
   <div class="page-wrapper-padding runtime-data-wrapper">
     <div class="top-header flex items-center m-b-16px">
       <strong
         class="text-[16px]"
-        style="color: #63656e; font-weight: normal"
+        style=" font-weight: normal;color: #63656e"
       >
         {{ t("所有运营系统实时概况") }}
       </strong>
@@ -28,7 +28,7 @@
         v-model="timeRange"
         :clearable="false"
         :scroll-height="300"
-        style="width: 200px; right: 15px"
+        style=" right: 15px;width: 200px"
         @change="handleTimeChange"
       >
         <BkOption
@@ -121,7 +121,7 @@
           v-if="statusList.length"
           class="timeline-box"
         >
-          <bk-timeline :list="statusList" />
+          <BkTimeline :list="statusList" />
         </div>
       </div>
     </BkLoading>
@@ -133,7 +133,7 @@ import moment from 'moment';
 import { getApigwRuntime, getApigwTimeline } from '@/services/source/runTime';
 import type { ReturnRecordType } from '@/types/common';
 import AgRing from '@/components/ag-ring/Index.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import TableEmpty from '@/components/table-empty/index.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -357,6 +357,7 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .runtime-data-wrapper {
+
   .top-header {
     height: 32px;
     line-height: 32px;
@@ -374,49 +375,49 @@ onUnmounted(() => {
   }
 
   .runtime-container {
-    min-height: 300px;
     display: flex;
+    min-height: 300px;
 
     .chart-box {
       width: 100%;
 
       .chart-card {
-        flex: 1;
         width: 20%;
-        min-width: 20%;
-        max-width: 20%;
         height: 155px;
+        max-width: 20%;
+        min-width: 20%;
+        flex: 1;
 
         .card-content {
+          display: inline-block;
+          display: block;
+          margin: 0 15px 15px 0;
+          cursor: pointer;
           background: #fff;
           border-radius: 2px;
-          margin: 0 15px 15px 0;
-          box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.16);
-          display: inline-block;
-          cursor: pointer;
-          display: block;
+          box-shadow: 0 1px 2px 0 rgb(0 0 0 / 16%);
         }
 
         .header {
+          padding: 15px 20px 10px;
           font-size: 14px;
-          color: #313238;
           line-height: 18px;
-          padding: 15px 20px 10px 20px;
+          color: #313238;
           border-bottom: 1px solid #eee;
 
           p {
-            white-space: nowrap;
-            text-overflow: ellipsis;
             overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
           }
         }
 
         .per_response_time {
+          margin: 15px 0 5px;
           font-size: 16px;
-          text-align: left;
-          color: #63656e;
           line-height: 32px;
-          margin: 15px 0 5px 0;
+          color: #63656e;
+          text-align: left;
 
           strong {
             font-size: 24px;
@@ -427,14 +428,14 @@ onUnmounted(() => {
 
         .response_count {
           font-size: 12px;
-          color: #63656e;
           line-height: 1;
+          color: #63656e;
         }
       }
 
       .wrapper {
         display: flex;
-        padding: 5px 20px 5px 20px;
+        padding: 5px 20px;
 
         .ring-wrapper {
           width: 80px;
@@ -449,8 +450,8 @@ onUnmounted(() => {
     .timeline-box {
       width: 300px;
       height: 100%;
-      overflow: auto;
       padding: 0 20px;
+      overflow: auto;
 
       &::-webkit-scrollbar {
         width: 5px;
@@ -458,14 +459,14 @@ onUnmounted(() => {
 
       &::-webkit-scrollbar-thumb {
         height: 5px;
-        border-radius: 2px;
         background-color: #ccc;
+        border-radius: 2px;
       }
     }
 
     :deep(.BkException) {
-      height: 280px;
       display: flex;
+      height: 280px;
       align-items: center;
       justify-content: center;
     }
@@ -477,10 +478,11 @@ onUnmounted(() => {
 }
 
 @media screen and (max-width: 1920px) {
+
   .runtime-container .chart-box .chart-card {
     width: 25%;
-    min-width: 25%;
     max-width: 25%;
+    min-width: 25%;
   }
 
   .timeline-box {
@@ -489,10 +491,11 @@ onUnmounted(() => {
 }
 
 @media screen and (max-width: 1680px) {
+
   .runtime-container .chart-box .chart-card {
     width: 33.3%;
-    min-width: 33.3%;
     max-width: 33.3%;
+    min-width: 33.3%;
   }
 
   .timeline-box {
