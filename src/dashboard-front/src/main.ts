@@ -22,6 +22,10 @@ import AgIcon from '@/components/ag-icon/Index.vue';
 import IconButton from '@/components/icon-button/Index.vue';
 import CopyButton from '@/components/copy-button/Index.vue';
 import CardContainer from '@/components/card-container/Index.vue';
+import mavonEditor from 'mavon-editor';
+import 'mavon-editor/dist/css/index.css';
+// highlight.js 代码高亮风格
+import 'highlight.js/styles/vs2015.min.css';
 
 const app = createApp(App);
 
@@ -29,6 +33,7 @@ app.use(createPinia());
 app.use(router);
 app.use(bkui);
 app.use(i18n);
+app.use(mavonEditor);
 app.use(VueDOMPurifyHTML);
 app.use(directive);
 

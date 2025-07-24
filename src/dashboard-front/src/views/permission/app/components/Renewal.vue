@@ -50,7 +50,7 @@
             <span>
               <span
                 v-if="!curSelections?.[0].renewable"
-                class="ag-strong danger"
+                class="font-bold color-#ea3636"
               >
                 {{ t("不可续期") }}
               </span>

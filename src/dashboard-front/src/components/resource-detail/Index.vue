@@ -159,7 +159,7 @@
     </BkContainer>
 
     <p
-      class="title mt15"
+      class="title mt-15px"
       :class="{
         'ag-diff': checkDiff('localData.method') || checkDiff('localData.path'),
       }"
@@ -220,7 +220,7 @@
       :class="{
         'ag-diff': checkDiff('localData.openapi_schema'),
       }"
-      class="title mt15"
+      class="title mt-15px"
     >
       {{ t("请求/响应参数") }}
     </p>
@@ -243,7 +243,7 @@
 
     <template v-if="localData.proxy?.backend_id">
       <p
-        class="title mt15"
+        class="title mt-15px"
         :class="{
           'ag-diff':
             checkDiff('localData.proxy.backend_name') ||
@@ -374,7 +374,7 @@
       </BkContainer>
     </template>
     <p
-      class="title mt15"
+      class="title mt-15px"
       :class="{ 'ag-diff': checkDiff('localData.doc_updated_time') }"
     >
       {{ t("文档") }}
@@ -411,7 +411,7 @@
           class="container-diff"
           :class="getPluginDiffClass(plugin)"
         >
-          <p class="title mt15">
+          <p class="title mt-15px">
             {{ t('插件:{name}', { name: plugin.name }) }}
           </p>
           <ConfigDisplayTable

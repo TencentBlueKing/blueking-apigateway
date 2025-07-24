@@ -33,7 +33,7 @@
         <!-- 默认头部 -->
         <div
           v-if="!route.meta.customHeader"
-          class="flex-row align-items-center content-header"
+          class="flex items-center content-header"
         >
           <AgIcon
             v-if="route.meta.showBackIcon"
@@ -121,10 +121,11 @@ const handleBack = () => {
   height: calc(100vh - 52px);
 
   .navigation-main-radio {
-    margin: 10px 0 20px 0;
+    margin: 10px 0 20px;
   }
 
   :deep(.navigation-nav) {
+
     .nav-slider {
       background: #fff !important;
       border-right: 1px solid #dcdee5 !important;
@@ -142,12 +143,13 @@ const handleBack = () => {
       background: #fff !important;
 
       .bk-menu-item {
-        color: rgb(99, 101, 110);
-        margin: 0px;
+        margin: 0;
+        color: rgb(99 101 110);
 
         .item-icon {
+
           .default-icon {
-            background-color: rgb(197, 199, 205);
+            background-color: rgb(197 199 205);
           }
         }
 
@@ -157,12 +159,13 @@ const handleBack = () => {
       }
 
       .bk-menu-item.is-active {
-        color: rgb(58, 132, 255);
-        background: rgb(225, 236, 255);
+        color: rgb(58 132 255);
+        background: rgb(225 236 255);
 
         .item-icon {
+
           .default-icon {
-            background-color: rgb(58, 132, 255);
+            background-color: rgb(58 132 255);
           }
         }
       }
@@ -173,8 +176,8 @@ const handleBack = () => {
 
       .bk-badge-main {
         position: absolute;
-        left: 120px;
         top: 1px;
+        left: 120px;
 
         .bk-badge {
           width: 6px;
@@ -186,7 +189,9 @@ const handleBack = () => {
     }
 
     .submenu-list {
+
       .bk-menu-item {
+
         .item-content {
           position: relative;
 
@@ -196,12 +201,12 @@ const handleBack = () => {
             left: 56px;
 
             .bk-badge {
-              background-color: #ff5656;
               height: 18px;
+              min-width: 18px;
               padding: 0 2px;
               font-size: 12px;
               line-height: 14px;
-              min-width: 18px;
+              background-color: #ff5656;
             }
           }
         }
@@ -209,11 +214,11 @@ const handleBack = () => {
     }
 
     .submenu-header-icon {
-      color: rgb(99, 101, 110);
+      color: rgb(99 101 110);
     }
 
     .submenu-header-content {
-      color: rgb(99, 101, 110);
+      color: rgb(99 101 110);
     }
 
     .bk-menu-submenu.is-opened {
@@ -222,6 +227,7 @@ const handleBack = () => {
   }
 
   :deep(.navigation-container) {
+
     .container-header {
       height: 0 !important;
       flex-basis: 0 !important;
@@ -234,21 +240,21 @@ const handleBack = () => {
 
     .content-view {
       height: 100%;
-      font-size: 14px;
       overflow: hidden;
+      font-size: 14px;
 
       .content-header {
         display: flex;
-        align-items: center;
-        flex-basis: 51px;
+        height: 51px;
         padding: 0 24px;
+        margin-right: auto;
+        font-size: 16px;
+        color: #313238;
         background: #fff;
         border-bottom: 1px solid #dcdee5;
-        box-shadow: 0 3px 4px rgba(64, 112, 203, 0.05882);
-        height: 51px;
-        margin-right: auto;
-        color: #313238;
-        font-size: 16px;
+        box-shadow: 0 3px 4px rgb(64 112 203 / 5.88%);
+        align-items: center;
+        flex-basis: 51px;
 
         .icon-ag-return-small {
           font-size: 32px;
@@ -263,8 +269,8 @@ const handleBack = () => {
       }
 
       .custom-header-view {
-        margin-top: 52px;
         height: 100%;
+        margin-top: 52px;
         overflow: auto;
       }
     }
@@ -274,7 +280,7 @@ const handleBack = () => {
     width: 240px;
 
     .bk-input--text {
-      background: rgb(245, 247, 250);
+      background: rgb(245 247 250);
     }
   }
 }

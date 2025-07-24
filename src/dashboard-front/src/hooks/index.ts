@@ -34,3 +34,5 @@ export * from './use-max-table-limit';
 export * from './use-selection-data';
 // datepicker 时间选择器 hooks 适用于列表筛选
 export * from './use-date-picker';
+export * from './use-stage-data';
+export * from './use-text-getter';

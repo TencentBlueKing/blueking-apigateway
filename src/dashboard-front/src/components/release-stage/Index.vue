@@ -145,17 +145,17 @@
                     <p class="change-msg">
                       <span>
                         {{ t("新增") }}
-                        <strong class="ag-strong success">{{ diffData.add.length }}</strong>
+                        <span class="font-bold color-#2dcb56">{{ diffData.add.length }}</span>
                         {{ t("个资源") }}，
                       </span>
                       <span>
                         {{ t("更新") }}
-                        <strong class="ag-strong warning">{{ diffData.update.length }}</strong>
+                        <span class="font-bold color-#ff9c01">{{ diffData.update.length }}</span>
                         {{ t("个资源") }}，
                       </span>
                       <span>
                         {{ t("删除") }}
-                        <strong class="ag-strong danger">{{ diffData.delete.length }}</strong>
+                        <span class="font-bold color-#ea3636">{{ diffData.delete.length }}</span>
                         {{ t("个资源") }}
                       </span>
                     </p>

@@ -130,7 +130,7 @@
                 :label="t('代码源')"
                 required
               >
-                <div class="flex-row align-items-center">
+                <div class="flex items-center">
                   <div class="repository-item active">
                     <img
                       :src="bareGit"
@@ -326,7 +326,7 @@
             {{ t('环境概览') }}
           </BkButton>
           <BkButton
-            class="ml8"
+            class="ml-8px"
             @click="isShowMarkdown = false"
           >
             {{ t('关闭') }}

@@ -4,7 +4,7 @@
       <!-- 默认展示 -->
       <template v-if="curBindingPlugins.length === 0">
         <BkException
-          v-if="common.curApigwData?.kind !== 1"
+          v-if="gatewayStore.currentGateway?.kind !== 1"
           :class="{ 'exception-gray': false }"
           class="exception-wrap-item"
           type="empty"
@@ -13,9 +13,9 @@
           <BkButton
             v-bk-tooltips="{
               content: t('当前有版本正在发布，请稍后再操作'),
-              disabled: getStatus(stageData) !== 'doing'
+              disabled: getStageStatus(stageData) !== 'doing'
             }"
-            :disabled="getStatus(stageData) === 'doing'"
+            :disabled="getStageStatus(stageData) === 'doing'"
             text
             theme="primary"
             @click="handlePluginAdd"
@@ -32,56 +32,59 @@
       </template>
       <div
         v-else
-        class="bindding-info p10"
+        class="bindding-info p-10px"
       >
-        <div class="pb12 pl12">
+        <div class="pb-12px pl-12px">
           <BkAlert closable>
             {{ t('插件按优先级从高到低排序，多个插件优先级高的先执行。') }}
           </BkAlert>
         </div>
         <BkButton
-          v-if="common.curApigwData?.kind !== 1"
+          v-if="gatewayStore.currentGateway?.kind !== 1"
           v-bk-tooltips="{
             content: t('当前有版本正在发布，请稍后再操作'),
-            disabled: getStatus(stageData) !== 'doing'
+            disabled: getStageStatus(stageData) !== 'doing'
           }"
-          :disabled="getStatus(stageData) === 'doing'"
+          :disabled="getStageStatus(stageData) === 'doing'"
           class="add-plugin-btn"
           theme="primary"
           @click="handlePluginAdd"
         >
-          <i class="icon apigateway-icon icon-ag-plus pr10 f12" />
+          <AgIcon
+            class="icon pr-10px text-12px"
+            name="plus"
+          />
           {{ t('添加插件') }}
         </BkButton>
-        <bk-collapse
+        <BkCollapse
           v-model="activeIndex"
           header-icon="right-shape"
           :list="curBindingPlugins"
-          class="binding-plugins mt20"
+          class="binding-plugins mt-20px"
         >
           <template #title="slotProps">
-            <span class="f15">
+            <span class="text-15px">
               {{ slotProps.name }}
-              <template v-if="common.curApigwData?.kind !== 1">
+              <template v-if="gatewayStore.currentGateway?.kind !== 1">
                 <AgIcon
                   v-bk-tooltips="{
                     content: t('当前有版本正在发布，请稍后再操作'),
-                    disabled: getStatus(stageData) !== 'doing'
+                    disabled: getStageStatus(stageData) !== 'doing'
                   }"
-                  class="ml5 mr5"
+                  class="mx-5px"
                   name="edit-line"
                   size="15"
-                  @click.stop="handleEditePlugin(slotProps)"
+                  @click.stop="() => handleEditePlugin(slotProps)"
                 />
                 <AgIcon
                   v-bk-tooltips="{
                     content: t('当前有版本正在发布，请稍后再操作'),
-                    disabled: getStatus(stageData) !== 'doing'
+                    disabled: getStageStatus(stageData) !== 'doing'
                   }"
-                  class="ml5 mr5"
+                  class="mx-5px"
                   name="delet"
                   size="15"
-                  @click.stop="handleDeletePlugin(slotProps)"
+                  @click.stop="() => handleDeletePlugin(slotProps)"
                 />
               </template>
             </span>
@@ -91,7 +94,7 @@
               <ConfigDisplayTable :plugin="slotProps" />
             </div>
           </template>
-        </bk-collapse>
+        </BkCollapse>
       </div>
     </BkLoading>
 
@@ -115,9 +118,9 @@
           <!-- 选择插件 -->
           <div
             v-if="state.curStep === 1"
-            class="plugins pl20 pr20"
+            class="plugins px-20px"
           >
-            <div class="pt16">
+            <div class="pt-16px">
               <BkAlert closable>
                 {{ t('插件按优先级从高到低排序，多个插件优先级高的先执行。') }}
               </BkAlert>
@@ -137,12 +140,12 @@
                   v-for="item in pluginListDate"
                   :key="item.id"
                   :class="[isBound(item) ? 'plugin disabled' : 'plugin ']"
-                  @click="handleChoosePlugin(item)"
-                  @mouseenter="handlePluginHover((item.code))"
+                  @click="() => handleChoosePlugin(item)"
+                  @mouseenter="() => handlePluginHover((item.code))"
                 >
                   <div class="plungin-head">
                     <span
-                      v-if="pluginIconList.includes(item.code || item.type)"
+                      v-if="PLUGIN_ICONS.includes(item.code || item.type)"
                       class="plugin-icon"
                     >
                       <svg class="icon svg-icon">
@@ -190,22 +193,23 @@
                           </span>
                           <template #content>
                             <div class="bingding-scope">
-                              <p class="scope-header fw700">
+                              <p class="scope-header font-bold">
                                 {{ t('已绑环境') }}
                               </p>
-                              <ul class="scope-list mt10">
+                              <ul class="scope-list mt-10px">
                                 <li
                                   v-for="stageItem in curBindingScopeData.stages"
                                   :key="stageItem.id"
-                                  class="scope-li mb5"
+                                  class="scope-li mb-5px"
                                   @mouseenter="handleScopeHover((stageItem.name))"
                                   @mouseleave="handlScopeLeave"
                                   @click="handeleJumpStage(stageItem)"
                                 >
                                   {{ stageItem.name }}
-                                  <span
+                                  <AgIcon
                                     v-if="stageItem.name === curHover"
-                                    class="icon apigateway-icon icon-ag-jump ml5"
+                                    class="icon ml-5px"
+                                    name="jump"
                                   />
                                 </li>
                               </ul>
@@ -228,22 +232,23 @@
                           </span>
                           <template #content>
                             <div class="bingding-scope">
-                              <p class="scope-header fw700">
+                              <p class="scope-header font-bold">
                                 {{ t('已绑资源') }}
                               </p>
-                              <ul class="scope-list mt10 ">
+                              <ul class="scope-list mt-10px ">
                                 <li
                                   v-for="resourceItem in curBindingScopeData.resources"
                                   :key="resourceItem.id"
-                                  class="scope-li mb5"
+                                  class="scope-li mb-5px"
                                   @mouseenter="handleScopeHover((resourceItem.name))"
                                   @mouseleave="handlScopeLeave"
                                   @click="handeleJumpResource(resourceItem)"
                                 >
                                   {{ resourceItem.name }}
-                                  <span
+                                  <AgIcon
                                     v-if="resourceItem.name === curHover"
-                                    class="icon apigateway-icon icon-ag-jump ml5"
+                                    class="icon ml-5px"
+                                    name="jump"
                                   />
                                 </li>
                               </ul>
@@ -278,17 +283,16 @@
             v-else
             class="px-40px py-20px"
           >
-            <!-- TODO 补回 -->
-            <!--            <PluginInfo -->
-            <!--              :cur-plugin="curChoosePlugin" -->
-            <!--              :scope-info="curScopeInfo" -->
-            <!--              :type="curType" -->
-            <!--              :plugin-list="pluginListDate" -->
-            <!--              :binding-plugins="curBindingPlugins" -->
-            <!--              @choose-plugin="handleChoosePlugin" -->
-            <!--              @on-change="handleOperate" -->
-            <!--              @show-example="handlePluginExampleToggle" -->
-            <!--            /> -->
+            <PluginInfo
+              :cur-plugin="curChoosePlugin"
+              :scope-info="curScopeInfo"
+              :type="curType"
+              :plugin-list="pluginListDate"
+              :binding-plugins="curBindingPlugins"
+              @choose-plugin="handleChoosePlugin"
+              @on-change="handleOperate"
+              @show-example="handlePluginExampleToggle"
+            />
           </div>
         </div>
       </template>
@@ -323,15 +327,14 @@
     >
       <template #default>
         <div class="px-40px py-20px">
-          <!-- TODO 补回 -->
-          <!--          <PluginInfo -->
-          <!--            :cur-plugin="curChoosePlugin" -->
-          <!--            :scope-info="curScopeInfo" -->
-          <!--            :edit-plugin="curEditPlugin" -->
-          <!--            :type="curType" -->
-          <!--            @on-change="handleOperate" -->
-          <!--            @show-example="handlePluginExampleToggle" -->
-          <!--          /> -->
+          <PluginInfo
+            :cur-plugin="curChoosePlugin"
+            :scope-info="curScopeInfo"
+            :edit-plugin="curEditPlugin"
+            :type="curType"
+            @on-change="handleOperate"
+            @show-example="handlePluginExampleToggle"
+          />
         </div>
       </template>
     </BkSideslider>
@@ -339,7 +342,7 @@
 </template>
 
 <script setup lang="ts">
-// import PluginInfo from './PluginInfo.vue';
+import PluginInfo from './PluginInfo.vue';
 import TableEmpty from '@/components/table-empty/index.vue';
 // import mitt from '@/common/event-bus';
 import {
@@ -347,37 +350,41 @@ import {
   Message,
 } from 'bkui-vue';
 import {
-  useCommon,
+  useGateway,
   useStage,
-} from '@/store';
+} from '@/stores';
 import {
   deletePluginConfig,
   getPluginBindingsList,
   getPluginConfig,
   getPluginListData,
   getScopeBindingPluginList,
-} from '@/http';
-import ConfigDisplayTable from '@/views/components/plugin-manage/config-display-table.vue';
-import pluginIconList from '@/common/plugin-icon-list';
-import AgIcon from '@/components/ag-icon.vue';
-import { getStatus } from '@/common/util';
+} from '@/services/source/plugin-manage';
+import ConfigDisplayTable from './ConfigDisplayTable.vue';
+import { getStageStatus } from '@/utils';
+import { useRouteParams } from '@vueuse/router';
+import { PLUGIN_ICONS } from '@/constants';
 
-const props = defineProps({
-  resourceId: {
-    type: Number,
-    default: 0,
-  },
+interface IProps {
+  resourceId?: number
+  stageId: number
+}
 
-  stageId: Number,
-});
+const {
+  resourceId = 0,
+  stageId,
+} = defineProps<IProps>();
+
 const emit = defineEmits(['on-jump']);
+
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const common = useCommon();
+const gatewayStore = useGateway();
 const stageStore = useStage();
+// 网关id
+const gatewayId = useRouteParams('id', 0, { transform: Number });
 
-const { apigwId } = common; // 网关id
 const scopeType = ref('');
 const scopeId = ref(-1);
 const isBindingListLoading = ref(false);
@@ -466,12 +473,12 @@ const handleOperate = (operate: string) => {
     case 'addSuccess':
       resetData();
       isAddSuccess.value = true;
-      mitt.emit('on-update-plugin');
+      // mitt.emit('on-update-plugin');
       break;
     case 'editSuccess':
       getBindingDetails();
       isEditVisible.value = false;
-      mitt.emit('on-update-plugin');
+      // mitt.emit('on-update-plugin');
       break;
     default:
       break;
@@ -522,7 +529,7 @@ const handlePluginHover = async (itemCode: string) => {
   const flag = curBindingPlugins.value.some((item: { code: string }) => item.code === itemCode);
   if (flag) return;
   try {
-    const res = await getPluginBindingsList(apigwId, itemCode);
+    const res = await getPluginBindingsList(gatewayId.value, itemCode);
     curBindingScopeData.value = res;
   }
   catch (error) {
@@ -545,7 +552,7 @@ const handleClearFilterKey = () => {
 
 // 编辑插件
 const handleEditePlugin = async (item: any) => {
-  if (getStatus(stageData.value) === 'doing') {
+  if (getStageStatus(stageData.value) === 'doing') {
     return;
   }
   curType.value = 'edit';
@@ -553,7 +560,7 @@ const handleEditePlugin = async (item: any) => {
   const curEditItem = curBindingPlugins.value.find((pluginItem: { code: string }) => pluginItem.code === code);
   curChoosePlugin.value = curEditItem;
   try {
-    const res = await getPluginConfig(apigwId, scopeType.value, scopeId.value, code, config_id);
+    const res = await getPluginConfig(gatewayId.value, scopeType.value, scopeId.value, code, config_id);
     curEditPlugin.value = res;
     isEditVisible.value = true;
     // mitt.emit('on-update-plugin');
@@ -567,7 +574,7 @@ const pluginDeleting = ref(false);
 
 // 删除插件
 const handleDeletePlugin = (item: any) => {
-  if (getStatus(stageData.value) === 'doing') {
+  if (getStageStatus(stageData.value) === 'doing') {
     return;
   }
   const { code, config_id } = item;
@@ -583,17 +590,14 @@ const handleDeletePlugin = (item: any) => {
       }
       pluginDeleting.value = true;
       try {
-        await deletePluginConfig(apigwId, scopeType.value, scopeId.value, code, config_id);
+        await deletePluginConfig(gatewayId.value, scopeType.value, scopeId.value, code, config_id);
         Message({
           message: t('停用成功'),
           theme: 'success',
           width: 'auto',
         });
-        mitt.emit('on-update-plugin');
+        // mitt.emit('on-update-plugin');
         init();
-      }
-      catch (error) {
-        console.log('error', error);
       }
       finally {
         setTimeout(() => {
@@ -615,7 +619,7 @@ const handeleJumpStage = (item: any) => {
   else {
     router.push({
       name: 'apigwStagePluginManage',
-      params: { id: apigwId },
+      params: { id: gatewayId.value },
       query,
     });
   }
@@ -627,7 +631,7 @@ const handeleJumpResource = (item: any) => {
   if (isRouteStage) {
     router.push({
       name: 'apigwResource',
-      params: { id: apigwId },
+      params: { id: gatewayId.value },
     });
   }
   emit('on-jump', id);
@@ -636,10 +640,10 @@ const handeleJumpResource = (item: any) => {
 const init = () => {
   const isStage = route.path.includes('stage');
   scopeType.value = isStage ? 'stage' : 'resource';
-  scopeId.value = isStage ? props.stageId : props.resourceId;
+  scopeId.value = isStage ? stageId : resourceId;
   curScopeInfo.scopeType = scopeType.value;
   curScopeInfo.scopeId = scopeId.value;
-  curScopeInfo.apigwId = apigwId;
+  curScopeInfo.apigwId = gatewayId.value;
   const params = {
     scope_type: scopeType.value,
     scope_id: scopeId.value,
@@ -662,11 +666,8 @@ const getBindingDetails = async () => {
   try {
     isBindingListLoading.value = true;
     // 当前环境或资源绑定的插件
-    const res = await getScopeBindingPluginList(apigwId, scopeType.value, scopeId.value);
+    const res = await getScopeBindingPluginList(gatewayId.value, scopeType.value, scopeId.value);
     curBindingPlugins.value = res;
-  }
-  catch (error) {
-    console.log('error', error);
   }
   finally {
     isBindingListLoading.value = false;
@@ -681,7 +682,7 @@ const getPluginListDetails = async (params: {
 }) => {
   try {
     isPluginListLoading.value = true;
-    const res = await getPluginListData(apigwId, params);
+    const res = await getPluginListData(gatewayId.value, params);
     pluginListDate.value = res.results || [];
   }
   catch (error) {
@@ -755,24 +756,26 @@ const updateTableEmptyConfig = () => {
 
 watch(
   [
-    () => props.stageId,
-    () => props.resourceId,
+    () => stageId,
+    () => resourceId,
   ],
   () => {
     init();
   },
 );
 
-watch(() => searchValue.value, async (v) => {
+watch(
+  searchValue,
+  async (v) => {
   // 清空搜索框
-  if (!v) {
-    const params = {
-      scope_type: scopeType.value,
-      scope_id: scopeId.value,
-    };
-    await getPluginListDetails(params);
-  }
-});
+    if (!v) {
+      const params = {
+        scope_type: scopeType.value,
+        scope_id: scopeId.value,
+      };
+      await getPluginListDetails(params);
+    }
+  });
 init();
 </script>
 
@@ -996,14 +999,13 @@ init();
 
   .slider-footer {
     display: flex;
-    height: 32px;
+    align-items: center;
     padding: 0 24px;
 
     .fist-step {
       font-size: 0;
-      line-height: 48px;
 
-      .BkButton {
+      .bk-button {
         min-width: 88px;
 
         &:not(&:first-child) {

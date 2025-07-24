@@ -2,13 +2,13 @@
   <div class="plugin-info">
     <main
       class="plugin-form-content"
-      :class="{ 'pr20': isExampleVisible }"
+      :class="{ 'pr-20px': isExampleVisible }"
     >
       <div
         v-if="!isAdd && isStage"
-        class="info-alert mb20"
+        class="info-alert mb-20px"
       >
-        <bk-alert
+        <BkAlert
           theme="warning"
           :title="t(editAlert)"
         />
@@ -16,7 +16,7 @@
       <div class="info-header">
         <header class="choose-plugin">
           <div
-            v-if="pluginIconList.includes(curPluginInfo?.code)"
+            v-if="PLUGIN_ICONS.includes(curPluginInfo?.code)"
             class="cur-icon"
           >
             <svg class="icon svg-icon">
@@ -86,19 +86,19 @@
           {{ t('查看填写示例') }}
         </aside>
       </div>
-      <div class="info-form-container mt20">
+      <div class="info-form-container mt-20px">
         <!-- <bk-form ref="formRef" class="info-form" :model="configFormData" :rules="rules" form-type="vertical">
           <BkFormItem :label="t('名称')" property="name" required>
           <BkInput v-model="configFormData.name" :placeholder="t('请输入')" />
           </BkFormItem>
           <BkLoading :loading="isPluginFormLoading">
-          <BkFormItem class="mt20" v-if="infoNotes">
-          <bk-alert theme="info" :title="t(infoNotes)"></bk-alert>
+          <BkFormItem class="mt-20px" v-if="infoNotes">
+          <BkAlert theme="info" :title="t(infoNotes)"></BkAlert>
           </BkFormItem>
           </BkLoading>
           </bk-form> -->
 
-        <bk-alert
+        <BkAlert
           v-show="typeId === 1"
           theme="warning"
           :title="t('allow_origins 与 allow_origins_by_regex 不能同时为空')"
@@ -118,13 +118,13 @@
           v-else
           ref="formRef"
           v-model="schemaFormData"
-          class="mt20 plugin-form"
+          class="mt-20px plugin-form"
           :schema="formConfig.schema"
           :layout="formConfig.layout"
           :rules="formConfig.rules"
         />
       </div>
-      <div class="info-btn mt20">
+      <div class="info-btn mt-20px">
         <div class="last-step">
           <BkPopConfirm
             v-if="isStage"
@@ -153,13 +153,13 @@
           </BkButton>
           <BkButton
             v-if="isAdd"
-            class="prev-btn ml8"
+            class="prev-btn ml-8px"
             @click="handlePre"
           >
             {{ t('上一步') }}
           </BkButton>
           <BkButton
-            class="default-btn ml8"
+            class="default-btn ml-8px"
             @click="handleCancel"
           >
             {{ t('取消') }}
@@ -174,13 +174,14 @@
     >
       <header class="example-content-header">
         <span class="header-title">{{ t('插件配置示例') }}</span>
-        <i
-          class="close-btn apigateway-icon icon-ag-icon-close f24"
+        <AgIcon
+          class="close-btn"
+          size="24"
+          name="icon-close"
           @click="toggleShowExample"
         />
       </header>
       <main class="example-main">
-        <!-- eslint-disable-next-line vue/no-v-html -->
         <pre
           v-dompurify-html="exampleHtml"
           class="example-pre"
@@ -191,22 +192,14 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  onBeforeUnmount,
-  ref,
-  toRefs,
-} from 'vue';
-import { useI18n } from 'vue-i18n';
-import { creatPlugin, getPluginForm, updatePluginConfig } from '@/http';
+import { creatPlugin, getPluginForm, updatePluginConfig } from '@/services/source/plugin-manage';
 import { Message } from 'bkui-vue';
-// @ts-ignore
 import createForm from '@blueking/bkui-form';
-import { json2yaml, yaml2json } from '@/common/util';
+import { json2Yaml, yaml2Json } from '@/utils';
 import WhitelistTable from './WhitelistTable.vue';
-import { useStage } from '@/store';
+import { useStage } from '@/stores';
 import { onClickOutside } from '@vueuse/core';
-import pluginIconList from '@/common/plugin-icon-list';
+import { PLUGIN_ICONS } from '@/constants';
 
 const props = defineProps({
   curPlugin: { type: Object },
@@ -224,7 +217,9 @@ const props = defineProps({
     default: () => [],
   },
 });
+
 const emit = defineEmits(['on-change', 'choose-plugin', 'show-example']);
+
 const stageStore = useStage();
 const BkSchemaForm = createForm();
 
@@ -237,11 +232,11 @@ const formConfig = ref({
 });
 
 const { curPlugin } = toRefs(props);
-const formRef = ref(null);
-const whitelist = ref(null);
+const formRef = ref();
+const whitelist = ref();
 const curPluginInfo = ref<any>(curPlugin);
 const choosePlugin = ref<string>(curPluginInfo.value?.code);
-const showChoosePlugin = ref<boolean>(false);
+const showChoosePlugin = ref(false);
 const isPluginFormLoading = ref(false);
 const infoNotes = ref('');
 const isAdd = ref(false);
@@ -314,7 +309,7 @@ const handleAdd = async () => {
     }
     else {
       await formRef.value!.validate();
-      Object.assign(data, { yaml: json2yaml(JSON.stringify(schemaFormData.value)).data });
+      Object.assign(data, { yaml: json2Yaml(JSON.stringify(schemaFormData.value)).data });
     }
   }
   catch (err) {
@@ -574,7 +569,7 @@ const getSchemaFormData = async (code: string) => {
     exampleContent.value = res.example || '';
 
     if (!isAdd.value) {
-      const yamlData = yaml2json(props.editPlugin.yaml).data;
+      const yamlData = yaml2Json(props.editPlugin.yaml).data;
       schemaFormData.value = { ...(yamlData as {}) };
     }
   }
@@ -666,6 +661,7 @@ onBeforeUnmount(() => {
       .example-pre {
         overflow-x: auto;
         font-family: inherit;
+        font-size: 14px;
         line-height: 22px;
         color: #4D4F56;
         word-wrap: break-word;
@@ -763,9 +759,10 @@ onBeforeUnmount(() => {
 
   .plugin-example-btn {
     margin-top: 16px;
-    flex-shrink: 0;
+    font-size: 14px;
     color: #3A84FF;
     cursor: pointer;
+    flex-shrink: 0;
   }
 }
 
@@ -789,10 +786,6 @@ onBeforeUnmount(() => {
 
   .prev-btn {
     min-width: 74px;
-  }
-
-  .ml8 {
-    margin-left: 8px;
   }
 }
 

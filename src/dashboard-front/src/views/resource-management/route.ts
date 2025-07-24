@@ -38,6 +38,59 @@ const route: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'edit/:resourceId',
+        name: 'ResourceEdit',
+        component: () => import('./settings/edit/Index.vue'),
+        meta: {
+          title: t('编辑资源'),
+          matchRoute: 'ResourceManagement',
+          showBackIcon: true,
+          showPageName: true,
+        },
+      },
+      {
+        path: 'create',
+        name: 'ResourceCreate',
+        component: () => import('./settings/edit/Index.vue'),
+        meta: {
+          title: t('新建资源'),
+          matchRoute: 'ResourceManagement',
+          showBackIcon: true,
+        },
+      },
+      {
+        path: 'clone/:resourceId',
+        name: 'ResourceClone',
+        component: () => import('./settings/edit/Index.vue'),
+        meta: {
+          title: t('克隆资源'),
+          matchRoute: 'ResourceManagement',
+          showBackIcon: true,
+        },
+      },
+      {
+        path: 'import',
+        name: 'ResourceImport',
+        component: () => import('./settings/import/Index.vue'),
+        meta: {
+          title: t('导入资源配置'),
+          matchRoute: 'ResourceManagement',
+          topMenu: 'home',
+          showBackIcon: true,
+        },
+      },
+      {
+        path: 'import-doc',
+        name: 'ResourceImportDoc',
+        component: () => import('./settings/import-doc/Index.vue'),
+        meta: {
+          title: t('导入资源文档'),
+          matchRoute: 'ResourceManagement',
+          topMenu: 'home',
+          showBackIcon: true,
+        },
+      },
+      {
         path: 'version',
         name: 'ResourceVersion',
         component: () => import('./versions/Index.vue'),
