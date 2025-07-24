@@ -105,7 +105,7 @@ const menuList: IHeaderNav[] = [
   {
     name: t('API 文档'),
     id: 3,
-    url: 'ApiDocs',
+    url: 'Docs',
     enabled: true,
     link: '',
   },
