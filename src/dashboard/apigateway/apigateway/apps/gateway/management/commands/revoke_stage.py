@@ -20,7 +20,7 @@
 from django.core.management.base import BaseCommand, CommandError
 
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import PublishSourceEnum, StageStatusEnum
+from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Gateway, Stage
 
 
@@ -60,17 +60,18 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR("No valid stage found. Exiting."))
             return
 
-        if stage.is_active:
-            # Trigger publish event for stage deactivation
-            trigger_gateway_publish(
-                PublishSourceEnum.STAGE_DISABLE,
-                "system_deactivated",
-                stage.gateway_id,
-                stage.id,
-                is_sync=True,
-            )
-            self.stdout.write(
-                self.style.SUCCESS(f"Deactivated gateway id={gateway.id}, name={gateway.name}, stage={stage.name}")
-            )
-            stage.status = StageStatusEnum.INACTIVE.value
-            stage.save()
+        if not stage.is_active:
+            self.stdout.write(self.style.WARNING(f"Stage {stage.name} is already deactivated. Exiting."))
+            return
+
+        # Trigger publish event for stage deactivation
+        trigger_gateway_publish(
+            PublishSourceEnum.STAGE_DISABLE,
+            "system_deactivated",
+            stage.gateway_id,
+            stage.id,
+            is_sync=True,
+        )
+        self.stdout.write(
+            self.style.SUCCESS(f"Deactivated gateway id={gateway.id}, name={gateway.name}, stage={stage.name}")
+        )
