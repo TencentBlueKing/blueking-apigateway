@@ -28,7 +28,7 @@
         <img
           :src="LogoWithoutTitle"
           alt="API Gateway"
-          class="h-28px cursor-pointer"
+          class="max-w-none h-28px cursor-pointer"
         >
       </template>
       <template #header>
@@ -105,7 +105,7 @@ const menuList: IHeaderNav[] = [
   {
     name: t('API 文档'),
     id: 3,
-    url: 'ApiDocs',
+    url: 'Docs',
     enabled: true,
     link: '',
   },

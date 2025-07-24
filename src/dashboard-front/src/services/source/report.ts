@@ -1,5 +1,4 @@
 import http from '../http';
-
 import { blobDownLoad } from '@/utils';
 
 const path = '/gateways';

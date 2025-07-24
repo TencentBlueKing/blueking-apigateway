@@ -25,6 +25,44 @@
     :title="title"
     @closed="handleClose"
   >
+    <template #default>
+      <BkTable
+        :key="selections.length"
+        :data="selections"
+        :size="'small'"
+        :max-height="200"
+        :columns="approvalColumns"
+        show-overflow-tooltip
+      />
+      <BkForm
+        ref="batchApprovalFormRef"
+        :label-width="0"
+        :model="formData"
+        class="m-t-20px"
+      >
+        <BkFormItem
+          label=""
+          :rules="
+            [
+              {
+                required: true,
+                message: t('必填项'),
+                trigger: 'blur',
+              },
+            ]
+          "
+          required
+          property="comment"
+        >
+          <BkInput
+            v-model="formData.comment"
+            type="textarea"
+            :placeholder="t('请输入备注')"
+            :maxlength="100"
+          />
+        </BkFormItem>
+      </BkForm>
+    </template>
     <template #footer>
       <BkButton
         theme="primary"
@@ -47,42 +85,6 @@
         {{ t("取消") }}
       </BkButton>
     </template>
-    <BkTable
-      :key="selections.length"
-      :data="selections"
-      :size="'small'"
-      style="max-height: 200px"
-      :columns="approvalColumns"
-      show-overflow-tooltip
-    />
-    <BkForm
-      ref="batchApprovalFormRef"
-      :label-width="0"
-      :model="formData"
-      class="m-t-20px"
-    >
-      <BkFormItem
-        label=""
-        :rules="
-          [
-            {
-              required: true,
-              message: t('必填项'),
-              trigger: 'blur',
-            },
-          ]
-        "
-        required
-        property="comment"
-      >
-        <BkInput
-          v-model="formData.comment"
-          type="textarea"
-          :placeholder="t('请输入备注')"
-          :maxlength="100"
-        />
-      </BkFormItem>
-    </BkForm>
   </BkDialog>
 </template>
 

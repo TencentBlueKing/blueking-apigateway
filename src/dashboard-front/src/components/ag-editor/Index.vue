@@ -174,7 +174,7 @@ const initEditor = () => {
   if (container) {
     container.addEventListener('fullscreenchange', () => {
       if (!document.fullscreenElement) {
-        isFullScreen = false;
+        isFullScreen.value = false;
       }
     });
   }
@@ -250,6 +250,7 @@ const clearDecorations = () => {
 };
 
 const genMarkers = (errors) => {
+  // console.log(errors);
   errors.forEach((error) => {
     markers.push({
       severity: monaco.MarkerSeverity.Error,

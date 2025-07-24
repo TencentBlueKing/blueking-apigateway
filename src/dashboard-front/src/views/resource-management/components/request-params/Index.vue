@@ -169,19 +169,21 @@
         width="110"
       >
         <template #default="{ row, index }">
-          <AgIcon
-            v-if="isAddFieldVisible(row)"
-            v-bk-tooltips="t('添加字段')"
-            class="tb-btn add-btn"
-            name="plus-circle-shape"
-            @click="() => addField(row)"
-          />
-          <AgIcon
-            v-bk-tooltips="t('删除参数')"
-            class="tb-btn delete-btn"
-            name="minus-circle-shape"
-            @click="() => delRow(row, index)"
-          />
+          <div>
+            <AgIcon
+              v-if="isAddFieldVisible(row)"
+              v-bk-tooltips="t('添加字段')"
+              class="tb-btn add-btn"
+              name="plus-circle-shape"
+              @click="() => addField(row)"
+            />
+            <AgIcon
+              v-bk-tooltips="t('删除参数')"
+              class="tb-btn delete-btn"
+              name="minus-circle-shape"
+              @click="() => delRow(row, index)"
+            />
+          </div>
         </template>
       </BkTableColumn>
       <template #expandRow="row">
@@ -680,7 +682,9 @@ defineExpose({
     padding: 0 16px;
   }
 
-  :deep(.bk-table-body-content) {
+  // :deep(.bk-table-body-content) {
+
+  :deep(.bk-table-body) {
 
     .custom-table-cell {
 
@@ -715,6 +719,7 @@ defineExpose({
 :deep(.bk-input--text) {
   font-size: 12px !important;
   padding-inline: 16px;
+  line-height: unset;
 
   &::placeholder {
     font-size: 12px !important;

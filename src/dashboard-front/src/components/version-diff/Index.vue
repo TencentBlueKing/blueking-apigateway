@@ -21,7 +21,7 @@
         </span>
         <span>
           {{ t("更新") }}
-          <span class="font-bold color-#ff9c01 m-5px">
+          <span class="font-bold color-#ff9c01! m-5px">
             {{ diffData.update.length }}
           </span>
           {{ t("个资源") }}，
@@ -226,7 +226,7 @@
             <template v-if="checkMatch(addItem, 'add')">
               <div class="source-box">
                 <div
-                  class="metadata pl10"
+                  class="metadata pl-10px"
                   @click="() => handleToggle(addItem)"
                 >
                   <AgIcon
@@ -397,7 +397,7 @@
               </div>
               <div class="target-box">
                 <div
-                  class="metadata color-#ff9c01"
+                  class="metadata color-#ff9c01!"
                   @click="() => handleToggle(updateItem)"
                 >
                   <AgIcon
@@ -440,7 +440,7 @@
             />
             <BkException
               v-else
-              class="mt50 diff-tips"
+              class="mt-50px diff-tips"
               type="search-empty"
               scene="part"
             >

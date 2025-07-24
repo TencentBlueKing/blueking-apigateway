@@ -16,8 +16,8 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import { defineStore } from 'pinia';
-
 import { getEnv } from '@/services/source/basic';
+import { locale } from '@/locales';
 
 export const useEnv = defineStore('useEnv', {
   state: () => ({
@@ -33,6 +33,14 @@ export const useEnv = defineStore('useEnv', {
       EDITION: '',
     },
   }),
+  getters: {
+    swaggerDocURL: () => {
+      // TODO 补充变量
+      const BK_APIGATEWAY_VERSION = '';
+      const docVersion = BK_APIGATEWAY_VERSION.split('.').slice(0, 2).join('.');
+      return `/markdown/${locale.value === 'zh-cn' ? 'ZH' : 'EN'}/APIGateway/${docVersion}`;
+    },
+  },
   actions: {
     /**
      * 查询环境变量信息

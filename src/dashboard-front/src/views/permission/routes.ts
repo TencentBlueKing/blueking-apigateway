@@ -32,7 +32,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/:id/permission/record',
     name: 'PermissionRecord',
-    component: import('@/views/permission/record/Index.vue'),
+    component: () => import('@/views/permission/record/Index.vue'),
     meta: {
       title: t('审批历史'),
       matchRoute: 'PermissionRecord',

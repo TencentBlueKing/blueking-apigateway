@@ -38,6 +38,12 @@ import getOperateDataRoutes from '@/views/operate-data/route';
 import getOnlineDebuggingRoutes from '@/views/online-debugging/routes';
 // 操作记录
 import getAuditLogRoutes from '@/views/audit-log/routes';
+// 告警策略
+import getMonitorAlarmRoutes from '@/views/monitor-alarm/routes';
+// MCP Server
+import getMCPServerRoutes from '@/views/mcp-server/route';
+// API 文档
+import getAPIDocsRoutes from '@/views/api-docs/route';
 
 function props(route: RouteLocationNormalized) {
   const { id } = route.params;
@@ -64,6 +70,8 @@ const routes: RouteRecordRaw[] = [
       ...getOperateDataRoutes(),
       ...getOnlineDebuggingRoutes(),
       ...getAuditLogRoutes(),
+      ...getMonitorAlarmRoutes(),
+      ...getMCPServerRoutes(),
     ],
   },
   {
@@ -85,6 +93,16 @@ const routes: RouteRecordRaw[] = [
     redirect: '/components/access',
     children: [
       ...getComponentManagementRoutes(),
+    ],
+  },
+  {
+    path: '/docs',
+    name: 'Docs',
+    component: () => import('@/layout/docs/Index.vue'),
+    redirect: { name: 'apiDocs' },
+    props,
+    children: [
+      ...getAPIDocsRoutes(),
     ],
   },
 ];

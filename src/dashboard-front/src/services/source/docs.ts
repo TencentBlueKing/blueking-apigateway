@@ -19,6 +19,9 @@ import http from '../http';
 
 const path = '/docs/gateways';
 
+// 网关api文档列表
+export const getGatewaysDocs = (apigwId: any, data: any) => http.get(`${path}/`, data);
+
 // 获取网关文档详情
 export const getGatewaysDetailsDocs = (gatewayName: string) => http.get(`${path}/${gatewayName}/`);
 
@@ -33,3 +36,8 @@ export const getApigwSDKDocs = (gatewayName: string, data: any) => http.get(`${p
 
 // 获取网关环境下已发布的资源列表
 export const getApigwResourcesDocs = (gatewayName: string, data: any) => http.get(`${path}/${gatewayName}/resources/`, data);
+
+// 获取网关公开、可用的环境列表
+export const getApigwStagesDocs = (gatewayName: string, data: any) =>
+  http.get(`${path}/${gatewayName}/stages/`, data);
+

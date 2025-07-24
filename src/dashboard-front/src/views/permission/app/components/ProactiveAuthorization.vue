@@ -18,7 +18,7 @@
 <template>
   <AgSideSlider
     v-model="authSliderConfig.isShow"
-    width="800"
+    :width="800"
     :init-data="initData"
     quick-close
     ext-cls="app-auth-slider"

@@ -15,6 +15,7 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
+
 <template>
   <div class="navigation-main">
     <BkNavigation
@@ -28,11 +29,11 @@
       <!-- 左上角的网关选择器 -->
       <template #side-header>
         <BkSelect
-          v-model="apigwId"
+          v-model="gatewayId"
           :clearable="false"
           class="header-select"
           filterable
-          @change="() => handleGoPage(activeMenuKey, apigwId)"
+          @change="() => handleGoPage(activeMenuKey)"
         >
           <template #prefix>
             <div class="gateway-selector-prefix">
@@ -94,7 +95,7 @@
                     <BkMenuItem
                       v-if="child.enabled && !(child.hideInProgrammable && gatewayStore.isProgrammableGateway)"
                       :key="child.name"
-                      @click.stop="() => handleGoPage(child.name, apigwId)"
+                      @click.stop="() => handleGoPage(child.name)"
                     >
                       {{ child.title }}
                       <BkBadge
@@ -112,7 +113,7 @@
                 <BkMenuItem
                   v-if="!(menu.hideInProgrammable && gatewayStore.isProgrammableGateway)"
                   :key="menu.name"
-                  @click.stop="() => handleGoPage(menu.name, apigwId)"
+                  @click.stop="() => handleGoPage(menu.name)"
                 >
                   <template #icon>
                     <AgIcon
@@ -154,7 +155,10 @@
           </div>
         </div>
         <div :class="routerViewWrapperClass">
-          <RouterView :key="apigwId" />
+          <RouterView
+            :key="gatewayId"
+            :gateway-id="gatewayId"
+          />
         </div>
       </div>
     </BkNavigation>
@@ -194,7 +198,7 @@ const needMenu = ref(true);
 const pageName = ref('');
 
 // 当前网关Id
-const apigwId = ref(0);
+const gatewayId = ref(0);
 
 // 页面header名
 const headerTitle = ref('');
@@ -289,18 +293,18 @@ const menuList = computed<IMenu[]>(() => [
     ],
   },
   {
-    name: 'apigwMonitorAlarm',
+    name: 'MonitorAlarm',
     title: t('监控告警'),
     icon: 'notification',
     enabled: featureFlagStore.flags.ENABLE_MONITOR,
     children: [
       {
-        name: 'apigwMonitorAlarmStrategy',
+        name: 'MonitorAlarmStrategy',
         title: t('告警策略'),
         enabled: true,
       },
       {
-        name: 'apigwMonitorAlarmHistory',
+        name: 'MonitorAlarmHistory',
         title: t('告警记录'),
         enabled: true,
       },
@@ -319,7 +323,7 @@ const menuList = computed<IMenu[]>(() => [
     icon: 'jibenxinxi',
   },
   {
-    name: 'mcpServer',
+    name: 'MCPServer',
     enabled: true,
     title: 'MCP Server',
     icon: 'cardd',
@@ -332,11 +336,25 @@ const menuList = computed<IMenu[]>(() => [
   },
 ]);
 
+// 表格需要兼容的页面模块
+const needBkuiTablePage = computed(() => {
+  return [
+    'BackendService',
+    'PermissionApply',
+    'PermissionRecord',
+    'PermissionApp',
+    'AuditLog',
+    'MonitorAlarmStrategy',
+    'MonitorAlarmHistory',
+  ];
+});
+
 const routerViewWrapperClass = computed(() => {
+  const displayBkuiTable = needBkuiTablePage.value.includes(route.name) ? 'need-bkui-table-wrapper' : '';
   if (route.meta.customHeader) {
-    return 'custom-header-view';
+    return `custom-header-view ${displayBkuiTable}`;
   }
-  return `default-header-view router-${route.name}-wrapper`;
+  return `default-header-view ${displayBkuiTable}`;
 });
 
 // 监听当前路由
@@ -347,10 +365,10 @@ watch(
   ],
   () => {
     activeMenuKey.value = route.meta.matchRoute as string;
-    apigwId.value = Number(route.params.id || 0);
+    gatewayId.value = Number(route.params.id || 0);
     headerTitle.value = route.meta.title as string;
     // 设置全局网关
-    gatewayStore.fetchGatewayDetail(apigwId.value);
+    gatewayStore.fetchGatewayDetail(gatewayId.value);
 
     if (route.meta.isMenu === false) {
       needMenu.value = false;
@@ -370,7 +388,7 @@ const getGatewayData = async () => {
 // 获取权限审批的数量
 const getPermissionData = async () => {
   const res = await getPermissionApplyList(
-    apigwId.value, {
+    gatewayId.value, {
       offset: 0,
       limit: 10,
     });
@@ -381,11 +399,11 @@ const handleCollapse = (v: boolean) => {
   collapse.value = !v;
 };
 
-const handleGoPage = (routeName: string, id?: number) => {
-  gatewayStore.setApigwId(id);
+const handleGoPage = (routeName: string) => {
+  gatewayStore.setApigwId(gatewayId.value);
   router.push({
     name: routeName,
-    params: { id },
+    params: { id: gatewayId.value },
   });
   getPermissionData();
 };
@@ -607,11 +625,7 @@ onMounted(() => {
         }
       }
 
-      .router-BackendService-wrapper,
-      .router-PermissionApply-wrapper,
-      .router-PermissionRecord-wrapper,
-      .router-PermissionApp-wrapper,
-      .router-AuditLog-wrapper {
+      .need-bkui-table-wrapper {
         overflow-y: hidden;
 
         :deep(.bk-table-body) {

@@ -5,7 +5,7 @@ import {
   Loading,
   TagInput,
 } from 'bkui-vue';
-import { cloneDeep, debounce } from 'lodash';
+import { cloneDeep, debounce } from 'lodash-es';
 // 引入组件的样式文件
 import './member-select.scss';
 import Tpl from './Tpl';
@@ -165,7 +165,7 @@ export default defineComponent({
           {{
             suffix: () => staffStore.fetching && (
               <Loading
-                class="mr10"
+                class="mr-10px"
                 loading={staffStore.fetching}
                 mode="spin"
                 size="mini"

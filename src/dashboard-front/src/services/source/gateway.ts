@@ -16,6 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '../http';
+import { blobDownLoad } from '@/utils';
 
 const path = '/gateways';
 
@@ -162,3 +163,13 @@ export const getGatewayLabels = (apigwId: number) => http.get<{
   id: number
   name: string
 }[]>(`${path}/${apigwId}/labels/`);
+
+/**
+ * 导出文档
+ * @param apigwId 网关id
+ * @param data 导出参数
+ */
+export const exportDocs = async (apigwId: number, data: any) => {
+  const res = await http.post(`${path}/${apigwId}/docs/export/`, data, { responseType: 'blob' });
+  return blobDownLoad(res);
+};
