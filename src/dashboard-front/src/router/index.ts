@@ -32,6 +32,8 @@ import getPermissionManagementRoutes from '@/views/permission/routes';
 import getAuditLogRoutes from '@/views/audit-log/routes';
 // 告警策略
 import getMonitorAlarmRoutes from '@/views/monitor-alarm/routes';
+// MCP Server
+import getMCPServerRoutes from '@/views/mcp-server/route';
 // API 文档
 import getAPIDocsRoutes from '@/views/api-docs/route';
 
@@ -59,6 +61,7 @@ const routes: RouteRecordRaw[] = [
       ...getPermissionManagementRoutes(),
       ...getAuditLogRoutes(),
       ...getMonitorAlarmRoutes(),
+      ...getMCPServerRoutes(),
     ],
   },
   {
