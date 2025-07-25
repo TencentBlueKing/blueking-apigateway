@@ -1,6 +1,6 @@
 <template>
   <div class="page-content">
-    <bk-resize-layout
+    <BkResizeLayout
       :border="false"
       :max="400"
       :min="293"
@@ -16,7 +16,7 @@
               {{ t('可用工具') }}
             </header>
             <main class="nav-filters">
-              <bk-input
+              <BkInput
                 v-model="keyword"
                 :placeholder="t('请输入工具名称，描述搜索')"
                 clearable
@@ -27,11 +27,11 @@
           <!--  API 列表  -->
           <main class="tool-list custom-scroll-bar">
             <template v-if="filteredToolList.length">
-              <bk-collapse
+              <BkCollapse
                 v-model="activeGroupPanelNames"
                 class="tool-group-collapse"
               >
-                <bk-collapse-panel
+                <BkCollapsePanel
                   v-for="group of toolGroupList"
                   :key="group.id"
                   :name="group.name"
@@ -65,8 +65,8 @@
                       />
                     </article>
                   </template>
-                </bk-collapse-panel>
-              </bk-collapse>
+                </BkCollapsePanel>
+              </BkCollapse>
             </template>
             <template v-else-if="keyword">
               <TableEmpty
@@ -172,7 +172,7 @@
           <TableEmpty v-else />
         </div>
       </template>
-    </bk-resize-layout>
+    </BkResizeLayout>
   </div>
 </template>
 
@@ -560,7 +560,8 @@ $code-color: #63656e;
           color: #979ba5;
         }
 
-        &:hover, &.active {
+        &:hover,
+        &.active {
           background: #e1ecff;
 
           .tool-item-name,

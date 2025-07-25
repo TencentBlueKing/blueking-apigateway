@@ -1,7 +1,7 @@
 <template>
   <!--  sdk语言选择器  -->
   <div class="lang-selector-wrap bk-button-group">
-    <bk-button
+    <BkButton
       v-for="lang in langList"
       :key="lang"
       v-bk-tooltips="{ content: getTooltipContent(lang), disabled: isSdkGenerated(lang) }"
@@ -14,7 +14,7 @@
       @click="() => handleSelect(lang)"
     >
       {{ useChangeCase(lang, 'capitalCase') }}
-    </bk-button>
+    </BkButton>
   </div>
 </template>
 

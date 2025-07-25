@@ -1,13 +1,13 @@
 <template>
   <div class="page-wrapper-padding">
     <div class="permission">
-      <bk-tab
+      <BkTab
         v-model:active="filterData.state"
         type="unborder-card"
         class="tab"
         @change="handleTabChange"
       >
-        <bk-tab-panel
+        <BkTabPanel
           v-for="item in panels"
           :key="item.name"
           :name="item.name"
@@ -26,65 +26,65 @@
               </div>
             </div>
           </template>
-        </bk-tab-panel>
-      </bk-tab>
+        </BkTabPanel>
+      </BkTab>
 
       <div class="main">
         <div class="search-wrapper">
-          <bk-form class="flex">
-            <bk-form-item
+          <BkForm class="flex">
+            <BkFormItem
               :label="t('蓝鲸应用ID')"
               class="mb-20px flex-grow-1"
               label-width="100"
               label-position="left"
             >
-              <bk-input
+              <BkInput
                 v-model="filterData.bk_app_code"
                 clearable
                 type="search"
                 :placeholder="t('请输入应用ID')"
               />
-            </bk-form-item>
-            <bk-form-item
+            </BkFormItem>
+            <BkFormItem
               label="MCP Server"
               class="mb-20px flex-grow-1"
               label-width="140"
             >
-              <bk-select
+              <BkSelect
                 v-model="filterData.mcp_server_id"
                 :clearable="false"
               >
-                <bk-option
+                <BkOption
                   v-for="option of mcpList"
                   :id="option.id"
                   :key="option.id"
                   :name="option.name"
                 />
-              </bk-select>
-            </bk-form-item>
-            <bk-form-item
+              </BkSelect>
+            </BkFormItem>
+            <BkFormItem
               :label="t('申请人')"
               class="mb-20px flex-grow-1"
               label-width="100"
             >
-              <bk-select
+              <BkSelect
                 v-model="filterData.applied_by"
                 clearable
                 :placeholder="t('请选择用户')"
               >
-                <bk-option
+                <BkOption
                   v-for="option of applicantList"
                   :id="option"
                   :key="option"
                   :name="option"
                 />
-              </bk-select>
-            </bk-form-item>
-          </bk-form>
+              </BkSelect>
+            </BkFormItem>
+          </BkForm>
         </div>
 
-        <bk-loading :loading="isLoading">
-          <bk-table
+        <BkLoading :loading="isLoading">
+          <BkTable
             :key="tableKey"
             size="small"
             class="audit-table"
@@ -96,25 +96,25 @@
             @page-value-change="handlePageChange"
             @page-limit-change="handlePageSizeChange"
           >
-            <bk-table-column
+            <BkTableColumn
               :label="t('蓝鲸应用ID')"
               prop="bk_app_code"
             />
-            <bk-table-column :label="renderTypeLabel">
+            <BkTableColumn :label="renderTypeLabel">
               <template #default="{ row }">
                 <!-- {{ getOpTypeText(row?.mcp_server?.id) || '--' }} -->
                 {{ row?.mcp_server?.name }}
               </template>
-            </bk-table-column>
-            <bk-table-column
+            </BkTableColumn>
+            <BkTableColumn
               :label="t('申请人')"
               prop="applied_by"
             />
-            <bk-table-column
+            <BkTableColumn
               :label="t('申请时间')"
               prop="applied_time"
             />
-            <bk-table-column
+            <BkTableColumn
               :label="t('审批状态')"
               prop="status"
             >
@@ -144,31 +144,31 @@
                   {{ statusMap[row?.status as keyof typeof statusMap] }}
                 </div>
               </template>
-            </bk-table-column>
-            <bk-table-column
+            </BkTableColumn>
+            <BkTableColumn
               v-if="filterData.state === 'unprocessed'"
               :label="t('操作')"
             >
               <template #default="{ row }">
                 <div>
-                  <bk-button
+                  <BkButton
                     text
                     theme="primary"
                     class="mr-10px"
                     @click="() => handleApprove(row, 'approved')"
                   >
                     {{ t('通过') }}
-                  </bk-button>
-                  <bk-button
+                  </BkButton>
+                  <BkButton
                     text
                     theme="primary"
                     @click="() => handleApprove(row, 'rejected')"
                   >
                     {{ t('驳回') }}
-                  </bk-button>
+                  </BkButton>
                 </div>
               </template>
-            </bk-table-column>
+            </BkTableColumn>
             <template #empty>
               <TableEmpty
                 :keyword="tableEmptyConf.keyword"
@@ -177,13 +177,13 @@
                 @clear-filter="handleClearFilterKey"
               />
             </template>
-          </bk-table>
-        </bk-loading>
+          </BkTable>
+        </BkLoading>
       </div>
     </div>
   </div>
 
-  <bk-dialog
+  <BkDialog
     theme="primary"
     :width="600"
     :quick-close="false"
@@ -194,28 +194,28 @@
     @confirm="handleSubmitApprove"
     @closed="applyActionDialogConf.isShow = false"
   >
-    <bk-form
+    <BkForm
       ref="approveForm"
       :label-width="90"
       :model="curAction"
       :rules="rules"
       class="mt-10px mr-20px mb-30px"
     >
-      <bk-form-item
+      <BkFormItem
         :label="t('备注')"
         required
         :property="'comment'"
       >
-        <bk-input
+        <BkInput
           v-model="curAction.comment"
           type="textarea"
           :placeholder="t('请输入备注')"
           :rows="4"
           :maxlength="100"
         />
-      </bk-form-item>
-    </bk-form>
-  </bk-dialog>
+      </BkFormItem>
+    </BkForm>
+  </BkDialog>
 </template>
 
 <script lang="ts" setup>

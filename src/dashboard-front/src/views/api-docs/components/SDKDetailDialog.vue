@@ -1,6 +1,6 @@
 <template>
   <!--  查看 SDK 弹窗  -->
-  <bk-dialog
+  <BkDialog
     v-model:is-show="isShow"
     :title="title"
     class="custom-main-dialog"
@@ -22,7 +22,7 @@
         />
       </div>
     </main>
-  </bk-dialog>
+  </BkDialog>
 </template>
 
 <script setup lang="ts">

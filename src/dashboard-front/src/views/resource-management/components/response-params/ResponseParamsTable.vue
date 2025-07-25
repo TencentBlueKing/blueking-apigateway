@@ -517,7 +517,7 @@ defineExpose({
   padding-top: 8px;
   padding-left: 18px;
   margin-left: 30px;
-  border-left: 1px solid #eaebf0;;
+  border-left: 1px solid #eaebf0;
 }
 
 .response-table {

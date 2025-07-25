@@ -150,12 +150,12 @@
         <article>
           <header class="content-title">
             {{ t('组件 API SDK') }}
-            <bk-tag
+            <BkTag
               class="ml-20px fw-normal"
               theme="info"
             >
               Python
-            </bk-tag>
+            </BkTag>
           </header>
           <main class="content-main">
             <SdkDetail

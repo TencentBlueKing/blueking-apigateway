@@ -1688,7 +1688,7 @@ const handleReturnClick = () => {
           display: flex;
           height: 52px;
           padding-right: 24px;
-          padding-left: 24px;;
+          padding-left: 24px;
           font-size: 12px;
           color: #DCDEE5;
           background-color: #212121;

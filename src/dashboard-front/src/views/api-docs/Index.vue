@@ -34,26 +34,26 @@
       >
         <!--  搜索栏和 SDK使用说明  -->
         <header class="top-bar">
-          <bk-input
+          <BkInput
             v-model="filterData.keyword"
             type="search"
             :placeholder="t('请输入网关名称或描述')"
             clearable
             style="width: 400px"
           />
-          <bk-link
+          <BkLink
             theme="primary"
             class="text-12px ml-24px"
             @click.prevent="isSdkInstructionSliderShow = true"
           >
             <AgIcon name="document" />
             {{ t('SDK 使用说明') }}
-          </bk-link>
+          </BkLink>
         </header>
         <!--  网关列表  -->
         <main class="docs-list">
-          <bk-loading :loading="isLoading">
-            <bk-table
+          <BkLoading :loading="isLoading">
+            <BkTable
               :data="tableData"
               remote-pagination
               :pagination="pagination"
@@ -62,7 +62,7 @@
               @page-limit-change="handlePageSizeChange"
               @page-value-change="handlePageChange"
             >
-              <bk-table-column
+              <BkTableColumn
                 :label="t('网关名称')"
                 field="name"
               >
@@ -71,16 +71,16 @@
                     class="link-name"
                     @click="gotoDetails(row)"
                   >{{ row.name || '--' }}</span>
-                  <bk-tag
+                  <BkTag
                     v-if="row.is_official"
                     theme="success"
                   >
                     {{ t('官方') }}
-                  </bk-tag>
+                  </BkTag>
                 </template>
-              </bk-table-column>
+              </BkTableColumn>
               <template v-if="featureFlagStore.isTenantMode">
-                <bk-table-column
+                <BkTableColumn
                   :label="t('租户模式')"
                   field="tenant_mode"
                   :width="120"
@@ -88,8 +88,8 @@
                   <template #default="{ row }">
                     {{ TENANT_MODE_TEXT_MAP[row.tenant_mode as string] || '--' }}
                   </template>
-                </bk-table-column>
-                <bk-table-column
+                </BkTableColumn>
+                <BkTableColumn
                   :label="t('租户 ID')"
                   field="tenant_id"
                   :width="120"
@@ -97,9 +97,9 @@
                   <template #default="{ row }">
                     {{ row.tenant_id || '--' }}
                   </template>
-                </bk-table-column>
+                </BkTableColumn>
               </template>
-              <bk-table-column
+              <BkTableColumn
                 :label="t('网关描述')"
                 field="description"
                 :min-width="500"
@@ -107,8 +107,8 @@
                 <template #default="{ row }">
                   {{ row.description || '--' }}
                 </template>
-              </bk-table-column>
-              <bk-table-column
+              </BkTableColumn>
+              <BkTableColumn
                 v-if="!featureFlagStore.isTenantMode"
                 :label="t('网关负责人')"
                 field="maintainers"
@@ -116,7 +116,7 @@
                 placement="auto-start"
               >
                 <template #default="{ row }">
-                  <bk-popover
+                  <BkPopover
                     :component-event-delay="300"
                     :width="480"
                   >
@@ -132,9 +132,9 @@
                         :key="maintainer.login_name"
                       >
                         <span>
-                          <bk-user-display-name
-                            :user-id="maintainer"
-                          /><span v-if="index !== (row.maintainers.length - 1)">,</span>
+                          <bk-user-display-name :user-id="maintainer" /><span
+                            v-if="index !== (row.maintainers.length - 1)"
+                          >,</span>
                         </span>
                       </template>
                     </div>
@@ -144,23 +144,21 @@
                           v-for="(maintainer, index) in row.maintainers"
                           :key="maintainer.login_name"
                         >
-                          <bk-user-display-name
-                            :user-id="maintainer"
-                          />
+                          <bk-user-display-name :user-id="maintainer" />
                           <span v-if="index !== (row.maintainers.length - 1)">,</span>
                         </template>
                       </div>
                     </template>
-                  </bk-popover>
+                  </BkPopover>
                 </template>
-              </bk-table-column>
-              <bk-table-column
+              </BkTableColumn>
+              <BkTableColumn
                 :label="t('操作')"
                 width="180"
                 fixed="right"
               >
                 <template #default="{ row }: { row: IApiGatewayBasics }">
-                  <bk-button
+                  <BkButton
                     v-bk-tooltips="{ content: t('SDK未生成，可联系负责人生成SDK'), disabled: row.sdks?.length }"
                     text
                     theme="primary"
@@ -168,9 +166,9 @@
                     @click="handleSdkDetailClick(row)"
                   >
                     {{ t('查看 SDK') }}
-                  </bk-button>
+                  </BkButton>
                 </template>
-              </bk-table-column>
+              </BkTableColumn>
               <template #empty>
                 <TableEmpty
                   :keyword="tableEmptyConf.keyword"
@@ -179,8 +177,8 @@
                   @clear-filter="handleClearFilterKey"
                 />
               </template>
-            </bk-table>
-          </bk-loading>
+            </BkTable>
+          </BkLoading>
         </main>
       </div>
       <!--  当选中 组件API文档 时  -->
@@ -198,7 +196,7 @@
             <header class="top-bar">
               <main class="bar-title">
                 <span class="title">{{ systemBoard.board_label }}</span>
-                <bk-link
+                <BkLink
                   v-bk-tooltips="{ content: t('SDK未生成，可联系负责人生成SDK'), disabled: systemBoard.sdk?.sdk_download_url }"
                   :href="systemBoard.sdk?.sdk_download_url"
                   :disabled="!systemBoard.sdk?.sdk_download_url"
@@ -208,7 +206,7 @@
                   @click.prevent="handleESBSdkDetailClick(systemBoard)"
                 >
                   {{ t('查看 SDK') }}
-                </bk-link>
+                </BkLink>
               </main>
               <aside
                 v-if="index === 0"
@@ -219,14 +217,14 @@
                   class="ag-searcher-box"
                   :version-list="componentSystemList"
                 />
-                <bk-link
+                <BkLink
                   theme="primary"
                   class="text-12px"
                   @click.prevent="isSdkInstructionSliderShow = true"
                 >
                   <AgIcon name="document" />
                   {{ t('SDK 使用说明') }}
-                </bk-link>
+                </BkLink>
               </aside>
             </header>
             <!--  组件  -->
@@ -269,14 +267,14 @@
           </article>
         </main>
         <!--  右侧导航目录  -->
-        <bk-affix :offset-top="128">
+        <BkAffix :offset-top="128">
           <aside class="component-nav-list">
-            <bk-collapse
+            <BkCollapse
               v-model="navPanelNamesList"
               class="collapse-cls"
               use-card-theme
             >
-              <bk-collapse-panel
+              <BkCollapsePanel
                 v-for="systemBoard in componentSystemList"
                 :key="systemBoard.board"
                 :name="systemBoard.board"
@@ -309,10 +307,10 @@
                     </article>
                   </nav>
                 </template>
-              </bk-collapse-panel>
-            </bk-collapse>
+              </BkCollapsePanel>
+            </BkCollapse>
           </aside>
-        </bk-affix>
+        </BkAffix>
       </div>
     </main>
     <!--  SDK使用说明 Slider  -->
@@ -676,7 +674,8 @@ $primary-color: #3a84ff;
 
                   .title {
 
-                    .name, .name-en {
+                    .name,
+                    .name-en {
                       font-size: 14px;
                       line-height: 22px;
                       letter-spacing: 0;

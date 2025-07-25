@@ -13,12 +13,12 @@
       v-else
       class="bk-button-group"
     >
-      <bk-button
+      <BkButton
         class="is-selected"
         style="width: 150px"
       >
         Python
-      </bk-button>
+      </BkButton>
     </div>
     <div
       v-if="sdkDoc"
@@ -27,7 +27,7 @@
       v-dompurify-html="markdownHtml"
       class="ag-markdown-view"
     />
-    <bk-exception
+    <BkException
       v-else
       class="exception-wrap-item exception-part"
       :description="t('没有对应文档')"

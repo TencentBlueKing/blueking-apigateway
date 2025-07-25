@@ -1,6 +1,6 @@
 <template>
   <div class="auth">
-    <bk-alert
+    <BkAlert
       theme="info"
       class="mb-16px"
       :title="t('授权应用将会拥有这个 mcp server 工具列表对应接口的调用权限')"
@@ -8,14 +8,14 @@
     />
 
     <div class="flex items-center justify-between mb-16px">
-      <bk-button
+      <BkButton
         theme="primary"
         @click="showAuthorizeDia"
       >
         {{ t('主动授权') }}
-      </bk-button>
+      </BkButton>
 
-      <bk-input
+      <BkInput
         v-model="filterData.bk_app_code"
         class="w-400px"
         :placeholder="t('请输入应用 ID')"
@@ -24,8 +24,8 @@
       />
     </div>
 
-    <bk-loading :loading="isLoading">
-      <bk-table
+    <BkLoading :loading="isLoading">
+      <BkTable
         size="small"
         class="audit-table"
         border="outer"
@@ -36,33 +36,33 @@
         @page-value-change="handlePageChange"
         @page-limit-change="handlePageSizeChange"
       >
-        <bk-table-column
+        <BkTableColumn
           :label="t('蓝鲸应用ID')"
           prop="bk_app_code"
         />
-        <!-- <bk-table-column :label="t('过期时间')" prop="expires" /> -->
-        <bk-table-column :label="renderTypeLabel">
+        <!-- <BkTableColumn :label="t('过期时间')" prop="expires" /> -->
+        <BkTableColumn :label="renderTypeLabel">
           <template #default="{ row }">
             {{ getOpTypeText(row.grant_type) || '--' }}
           </template>
-        </bk-table-column>
-        <bk-table-column :label="t('操作')">
+        </BkTableColumn>
+        <BkTableColumn :label="t('操作')">
           <template #default="{ row }">
-            <bk-pop-confirm
+            <BkPopConfirm
               placement="top"
               trigger="click"
               :content="t('确认删除？')"
               @confirm="() => handleDel(row?.id)"
             >
-              <bk-button
+              <BkButton
                 text
                 theme="primary"
               >
                 {{ t('删除') }}
-              </bk-button>
-            </bk-pop-confirm>
+              </BkButton>
+            </BkPopConfirm>
           </template>
-        </bk-table-column>
+        </BkTableColumn>
         <template #empty>
           <TableEmpty
             :keyword="tableEmptyConf.keyword"
@@ -71,10 +71,10 @@
             @clear-filter="handleClearFilterKey"
           />
         </template>
-      </bk-table>
-    </bk-loading>
+      </BkTable>
+    </BkLoading>
 
-    <bk-dialog
+    <BkDialog
       v-model:is-show="isShowAuth"
       :title="t('主动授权')"
       width="480px"
@@ -83,39 +83,39 @@
     >
       <div class="auth-dialog">
         <p>{{ t('你将对指定的蓝鲸应用添加访问资源的权限') }}</p>
-        <bk-form
+        <BkForm
           ref="formRef"
           form-type="vertical"
           class="form-main"
           :model="formData"
           :rules="rules"
         >
-          <bk-form-item
+          <BkFormItem
             :label="t('蓝鲸应用ID')"
             property="bk_app_code"
             required
           >
-            <bk-input
+            <BkInput
               v-model="formData.bk_app_code"
               :placeholder="t('请输入应用 ID')"
               clearable
             />
-          </bk-form-item>
-        </bk-form>
+          </BkFormItem>
+        </BkForm>
       </div>
       <template #footer>
-        <bk-button
+        <BkButton
           theme="primary"
           :loading="authLoading"
           @click="submitAuth"
         >
           {{ t('确定') }}
-        </bk-button>
-        <bk-button @click="cancelAuth">
+        </BkButton>
+        <BkButton @click="cancelAuth">
           {{ t('取消') }}
-        </bk-button>
+        </BkButton>
       </template>
-    </bk-dialog>
+    </BkDialog>
   </div>
 </template>
 
