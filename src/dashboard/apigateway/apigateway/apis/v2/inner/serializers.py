@@ -659,6 +659,7 @@ class MCPServerAppPermissionRecordListInputSLZ(serializers.Serializer):
 
 
 class MCPServerAppPermissionRecordBaseSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
     applied_by = serializers.CharField(read_only=True, help_text="申请人")
     applied_time = serializers.DateTimeField(read_only=True, help_text="申请时间")
     handled_by = serializers.ListField(child=serializers.CharField(), help_text="处理人")
