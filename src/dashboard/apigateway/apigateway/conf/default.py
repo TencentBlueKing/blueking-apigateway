@@ -963,7 +963,21 @@ ENV_VARS_FOR_FRONTEND = {
     "BK_DASHBOARD_FE_URL": DASHBOARD_FE_URL,
     "BK_DASHBOARD_URL": DASHBOARD_URL,
     "BK_DASHBOARD_CSRF_COOKIE_NAME": CSRF_COOKIE_NAME,
+    "BK_APIGATEWAY_VERSION": env.str("BK_APIGATEWAY_VERSION", default="1.17.0"),
+    "BK_DOCS_URL_PREFIX": env.str("BK_DOCS_URL_PREFIX", default="https://bk.tencent.com/docs"),
+    "BK_USER_WEB_API_URL": BK_API_URL_TMPL.format(api_name="bk-user-web") + "/prod",
+    # 登录地址，带 /login/
+    "BK_LOGIN_URL": BK_LOGIN_URL,
+    # 访问统计
+    "BK_ANALYSIS_SCRIPT_SRC": env.str("BK_ANALYSIS_SCRIPT_SRC", default=""),
+    "CREATE_CHAT_API": env.str("CREATE_CHAT_API", default=""),
+    "SEND_CHAT_API": env.str("SEND_CHAT_API", default=""),
+    "HELPER": {
+        "name": env.str("HELPER_NAME", default=""),
+        "href": env.str("HELPER_HREF", default=""),
+    },
 }
+
 
 # ==============================================================================
 # 网关资源数量限制
