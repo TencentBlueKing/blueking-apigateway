@@ -78,7 +78,7 @@
             <a
               class="link"
               target="_blank"
-              :href="envStore.doc.QUERY_USE"
+              :href="envStore.env.DOC_LINKS.QUERY_USE"
             >
               {{ t("“请求流水查询规则”") }}
             </a>

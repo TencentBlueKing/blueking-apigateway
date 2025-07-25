@@ -110,7 +110,7 @@
             <BkLink
               theme="primary"
               class="pl-10px"
-              :href="envStore.doc.SWAGGER"
+              :href="envStore.env.DOC_LINKS.SWAGGER"
               target="_blank"
             >
               <AgIcon name="info" />

@@ -376,7 +376,7 @@
                 <AgIcon name="info" />
                 <span>{{ t('可用于解密传入后端接口的请求头 X-Bkapi-JWT') }}，</span>
                 <a
-                  :href="envStore.doc.JWT"
+                  :href="envStore.env.DOC_LINKS.JWT"
                   target="_blank"
                   class="more-detail"
                 >{{ t(' 更多详情') }}</a>

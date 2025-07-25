@@ -42,6 +42,46 @@ export const useEnv = defineStore('useEnv', {
         name: '',
         href: '',
       },
+      DOC_LINKS: {
+        // 使用指南
+        GUIDE: '',
+        // “请求流水查询规则”
+        QUERY_USE: '',
+        // 蓝鲸用户认证
+        USER_VERIFY: '',
+        // API资源模板变量
+        TEMPLATE_VARS: '',
+        // 网关认证
+        AUTH: '',
+        // Swagger说明文档
+        SWAGGER: '',
+        // 跨域资源共享(CORS)
+        CORS: '',
+        // 断路器
+        BREAKER: '',
+        // 频率控制
+        RATELIMIT: '',
+        // JWT
+        JWT: '',
+        // 用户类型
+        USER_TYPE: '',
+        // API网关错误码
+        ERROR_CODE: '',
+        // 组件频率控制
+        COMPONENT_RATE_LIMIT: '',
+        // 如何开发和发布组件
+        COMPONENT_CREATE_API: '',
+        // 文档导入详情
+        IMPORT_RESOURCE_DOCS: '',
+        // 实例类型
+        INSTANCE_TYPE: '',
+        // 调用API
+        USER_API: '',
+        // 升级到 1.13 的指引说明
+        UPGRADE_TO_113_TIP: '',
+        // mcp 权限申请指引
+        MCP_SERVER_PERMISSION_APPLY: '',
+      },
     },
   }),
   getters: {
@@ -49,48 +89,6 @@ export const useEnv = defineStore('useEnv', {
       const lang = locale.value === 'zh-cn' ? 'ZH' : 'EN';
       const docVersion = (state.env.BK_APIGATEWAY_VERSION || '1.17.0').split('.').slice(0, 2).join('.');
       return `${state.env.BK_DOCS_URL_PREFIX}/markdown/${lang}/APIGateway/${docVersion}`;
-    },
-    doc() {
-      return {
-        // 使用指南
-        GUIDE: `${this.docsURLPrefix}/UserGuide/README.md`,
-        // “请求流水查询规则”
-        QUERY_USE: `${this.docsURLPrefix}/UserGuide/Explanation/access-log.md`,
-        // 蓝鲸用户认证
-        USER_VERIFY: `${this.docsURLPrefix}/UserGuide/Explanation/authorization.md`,
-        // API资源模板变量
-        TEMPLATE_VARS: `${this.docsURLPrefix}/UserGuide/Explanation/template-var.md`,
-        // 网关认证
-        AUTH: `${this.docsURLPrefix}/UserGuide/Explanation/authorization.md`,
-        // Swagger说明文档
-        SWAGGER: `${this.docsURLPrefix}/UserGuide/HowTo/Connect/swagger-explain.md`,
-        // 跨域资源共享(CORS)
-        CORS: `${this.docsURLPrefix}/UserGuide/HowTo/Plugins/cors.md`,
-        // 断路器
-        BREAKER: `${this.docsURLPrefix}/UserGuide/HowTo/Plugins/circuit-breaker.md`,
-        // 频率控制
-        RATELIMIT: `${this.docsURLPrefix}/UserGuide/HowTo/Plugins/rate-limit.md`,
-        // JWT
-        JWT: `${this.docsURLPrefix}/UserGuide/Explanation/jwt.md`,
-        // 用户类型
-        USER_TYPE: `${this.docsURLPrefix}/UserGuide/README.md`,
-        // API网关错误码
-        ERROR_CODE: `${this.docsURLPrefix}/UserGuide/FAQ/error-response.md`,
-        // 组件频率控制
-        COMPONENT_RATE_LIMIT: `${this.docsURLPrefix}/component/reference/rate-limit.md`,
-        // 如何开发和发布组件
-        COMPONENT_CREATE_API: `${this.docsURLPrefix}/component/quickstart/create-api.md`,
-        // 文档导入详情
-        IMPORT_RESOURCE_DOCS: `${this.docsURLPrefix}/UserGuide/HowTo/Connect/manage-document.md`,
-        // 实例类型
-        INSTANCE_TYPE: `${this.docsURLPrefix}/`,
-        // 调用API
-        USER_API: `${this.docsURLPrefix}/UserGuide/HowTo/call-gateway-api.md`,
-        // 升级到 1.13 的指引说明
-        UPGRADE_TO_113_TIP: '',
-        // mcp 权限申请指引
-        MCP_SERVER_PERMISSION_APPLY: `${this.docsURLPrefix}/UserGuide/HowTo/apply-mcp-server-permission.md`,
-      };
     },
     userSelectorAPI: state => `${state.env.BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fs_list_users/`,
   },

@@ -33,3 +33,9 @@ declare interface Window {
   BKANALYSIS?: { init: (params: { siteName: string }) => void }
   BK_DASHBOARD_FE_URL: string
 }
+
+declare global {
+  var runtimeEnv: RuntimeEnv;
+}
+
+export type RuntimeEnv = { BK_DASHBOARD_FE_URL: string };

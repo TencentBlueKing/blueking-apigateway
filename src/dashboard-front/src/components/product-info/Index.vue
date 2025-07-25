@@ -16,7 +16,7 @@
     <template #content>
       <BkLink
         class="info-item"
-        :href="envStore.doc.GUIDE"
+        :href="envStore.env.DOC_LINKS.GUIDE"
         target="_blank"
       >
         {{ t('产品文档') }}

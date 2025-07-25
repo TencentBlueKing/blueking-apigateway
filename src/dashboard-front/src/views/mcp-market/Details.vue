@@ -34,7 +34,7 @@
           <div class="permission-guide">
             <BkLink
               theme="primary"
-              :href="envStore.doc.MCP_SERVER_PERMISSION_APPLY"
+              :href="envStore.env.DOC_LINKS.MCP_SERVER_PERMISSION_APPLY"
               target="_blank"
             >
               <AgIcon
