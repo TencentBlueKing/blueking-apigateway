@@ -32,7 +32,7 @@ from apigateway.common.env import Env
 from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
 from apigateway.conf.log_utils import build_logging_config
-from apigateway.conf.utils import PatchFeatures, get_default_keepalive_options
+from apigateway.conf.utils import PatchFeatures, get_default_keepalive_options, get_doc_links
 
 pymysql.install_as_MySQLdb()
 # Patch version info to force pass Django client check
@@ -951,6 +951,8 @@ GLOBAL_GATEWAY_FEATURE_FLAG = {
 # 提供给前端的环境变量值
 # ==============================================================================
 # 后续前端环境变量尽量走这个接口，而不是通过 src/dashboard-front/index.html + src/constant/config.ts 传入
+BK_DOCS_URL_PREFIX = env.str("BK_DOCS_URL_PREFIX", default="https://bk.tencent.com/docs")
+BK_APIGATEWAY_VERSION = env.str("BK_APIGATEWAY_VERSION", default="1.17.0")
 ENV_VARS_FOR_FRONTEND = {
     "EDITION": EDITION,
     "BK_APP_CODE": BK_APP_CODE,
@@ -963,8 +965,8 @@ ENV_VARS_FOR_FRONTEND = {
     "BK_DASHBOARD_FE_URL": DASHBOARD_FE_URL,
     "BK_DASHBOARD_URL": DASHBOARD_URL,
     "BK_DASHBOARD_CSRF_COOKIE_NAME": CSRF_COOKIE_NAME,
-    "BK_APIGATEWAY_VERSION": env.str("BK_APIGATEWAY_VERSION", default="1.17.0"),
-    "BK_DOCS_URL_PREFIX": env.str("BK_DOCS_URL_PREFIX", default="https://bk.tencent.com/docs"),
+    "BK_APIGATEWAY_VERSION": BK_APIGATEWAY_VERSION,
+    "BK_DOCS_URL_PREFIX": BK_DOCS_URL_PREFIX,
     "BK_USER_WEB_API_URL": BK_API_URL_TMPL.format(api_name="bk-user-web") + "/prod",
     # 登录地址，带 /login/
     "BK_LOGIN_URL": BK_LOGIN_URL,
@@ -976,6 +978,7 @@ ENV_VARS_FOR_FRONTEND = {
         "name": env.str("HELPER_NAME", default=""),
         "href": env.str("HELPER_HREF", default=""),
     },
+    "DOC_LINKS": get_doc_links(env, BK_APIGATEWAY_VERSION, BK_DOCS_URL_PREFIX),
 }
 
 
