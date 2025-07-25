@@ -1,7 +1,5 @@
-import { computed } from 'vue';
-import { getStageList } from '@/http';
-import { useStage } from '@/store';
-import { useRoute } from 'vue-router';
+import { getStageList } from '@/services/source/stage';
+import { useStage } from '@/stores';
 
 /**
  * 获取阶段列表的自定义 Hook
@@ -47,7 +45,5 @@ export const useGetStageList = () => {
     };
   };
 
-  return {
-    getStagesStatus,
-  };
+  return { getStagesStatus };
 };

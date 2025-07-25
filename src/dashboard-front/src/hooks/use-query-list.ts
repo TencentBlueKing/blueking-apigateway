@@ -1,31 +1,69 @@
 /*
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) 2025 Tencent. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://opensource.org/licenses/MIT
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
+ */
+/*
  * 列表分页、查询hooks
  * 需要传入获取列表的方法名apiMethod、当前列表的过滤条件filterData
  */
-
+import { useGateway } from '@/stores';
 import {
-  onMounted,
-  ref,
-  Ref,
-  watch,
-} from 'vue';
-import { IPagination } from '@/types';
-import { useCommon } from '@/store';
-import {
+  debounce,
   sortBy,
   sortedUniq,
-} from 'lodash';
+} from 'lodash-es';
 
-export function useQueryList<T>(
-  apiMethod: (...args: any[]) => Promise<unknown>,
-  filterData?: Ref<Record<string, any>>,
-  id?: number,
-  filterNoResetPage?: boolean,
-  initialPagination: Partial<IPagination> = {},
+// 分页接口
+export interface IPagination {
+  // 是否使用小型分页样式
+  small?: boolean
+  // 数据偏移量
+  offset: number
+  // 每页显示的数据条数
+  limit: number
+  // 数据总条数;
+  count: number
+  // 是否存在异常
+  abnormal?: boolean
+  // 可选的每页显示条数列表
+  limitList?: number[]
+  // 当前页码
+  current?: number
+}
+
+export function useQueryList<T>({
+  apiMethod,
+  filterData,
+  id,
+  filterNoResetPage = false,
+  initialPagination = {},
   immediate = true,
-) {
-  const common = useCommon();
-  const { apigwId } = common;
+  // 是否需要网关id参数
+  needApigwId = true,
+}: {
+  apiMethod: (...args: any[]) => Promise<unknown>
+  filterData?: Ref<Record<string, any>>
+  id?: number
+  filterNoResetPage?: boolean
+  initialPagination?: Partial<IPagination>
+  immediate?: boolean
+  needApigwId?: boolean
+}) {
+  const { apigwId } = useGateway();
+
   const initPagination: IPagination = {
     offset: 0,
     limit: 10,
@@ -44,46 +82,65 @@ export function useQueryList<T>(
   const pagination = ref<IPagination>({ ...initPagination });
   const isLoading = ref(false);
   const tableData = ref<T[]>([]);
-  const getMethod = ref<any>(null);
-
+  const getMethod = ref<Ref | null>(null);
   // 获取列表数据的方法
   const getList = async (fetchMethod = apiMethod, needLoading = true) => {
-    getMethod.value = fetchMethod;
-    // const method = fetchMethod;
     isLoading.value = needLoading;
+    getMethod.value = fetchMethod;
     // 列表参数
     const paramsData = {
       offset: pagination.value.offset,
       limit: pagination.value.limit,
-      ...filterData.value,
+      ...filterData?.value,
     };
     try {
-      // const res = id ? await method(apigwId, id, paramsData) : await method(apigwId, paramsData);
-      const res = id ? await getMethod.value(apigwId, id, paramsData) : await getMethod.value(apigwId, paramsData);
-      tableData.value = res.results || res.data;
+      let res: Record<string, any> = {};
+      if (needApigwId) {
+        res = id
+          ? await getMethod.value(apigwId, id, paramsData)
+          : await getMethod.value(apigwId, paramsData);
+      }
+      else {
+        res = id
+          ? await getMethod.value(id, paramsData)
+          : await getMethod.value(paramsData);
+      }
+      tableData.value = res?.results ?? res.data ?? [];
       pagination.value = Object.assign(pagination.value, {
-        count: res.count || 0,
+        count: res.count || tableData.value?.length,
         abnormal: false,
       });
-    } catch (error) {
-      pagination.value.abnormal = true;
-    } finally {
-      isLoading.value = false;
+    }
+    catch {
+      tableData.value = [];
+      pagination.value = Object.assign(pagination.value, {
+        count: 0,
+        abnormal: true,
+      });
+    }
+    finally {
+      // 延迟loading展示时间，实现对空状态占位符
+      setTimeout(() => {
+        isLoading.value = false;
+      }, 500);
     }
   };
 
   // 页码变化发生的事件
   const handlePageChange = (current: number) => {
-    pagination.value.offset = pagination.value.limit * (current - 1);
-    pagination.value.current = current;
+    Object.assign(pagination.value, {
+      current,
+      offset: pagination.value.limit * (current - 1),
+    });
     fetchList();
   };
 
   // 条数变化发生的事件
   const handlePageSizeChange = (limit: number) => {
-    pagination.value.limit = limit;
-    pagination.value.offset = limit * (pagination.value.current - 1);
-
+    Object.assign(pagination.value, {
+      limit,
+      offset: 0,
+    });
     // 页码没变化的情况下需要手动请求一次数据
     if (pagination.value.offset <= pagination.value.count) {
       fetchList();
@@ -93,30 +150,29 @@ export function useQueryList<T>(
   // 监听筛选条件的变化
   watch(
     () => filterData,
-    async () => {
+    debounce(() => {
       if (!filterNoResetPage) {
         pagination.value = { ...initPagination };
       }
-
-      await fetchList();
-    },
+      fetchList();
+    }, 100),
     { deep: true },
   );
 
   const fetchList = async () => {
     if (getMethod.value) {
       await getList(getMethod.value);
-    } else {
+    }
+    else {
       await getList();
     }
   };
 
-  onMounted(async () => {
+  onMounted(() => {
     if (immediate) {
-      await getList();
+      getList();
     }
   });
-
 
   return {
     tableData,

@@ -1,11 +1,6 @@
 /**
  * datepicker 时间选择器 hooks 适用于列表筛选
  */
-import {
-  reactive,
-  ref,
-} from 'vue';
-import { useI18n } from 'vue-i18n';
 
 /**
  * useDatePicker - 时间选择器的自定义钩子函数
@@ -52,7 +47,7 @@ export const useDatePicker = (filterData?: any) => {
     },
   ]);
 
-  const dateValue = ref([]); // 日期值
+  const dateValue = ref<string[]>([]); // 日期值
 
   /**
    * handleChange - 处理日期变化
@@ -83,11 +78,12 @@ export const useDatePicker = (filterData?: any) => {
    */
   const setFilterDate = (date: any[]) => {
     if (date[0] && date[1]) {
-      // @ts-ignore
+      // @ts-expect-error ignore
       filterData.value.time_start = parseInt((+new Date(date[0])) / 1000, 10);
-      // @ts-ignore
+      // @ts-expect-error ignore
       filterData.value.time_end = parseInt((+new Date(date[1])) / 1000, 10);
-    } else {
+    }
+    else {
       filterData.value.time_start = '';
       filterData.value.time_end = '';
     }

@@ -7,12 +7,14 @@
           v-if="server.status === 1"
           size="small"
           theme="success"
-        >{{ t('启用中') }}
+        >
+          {{ t('启用中') }}
         </BkTag>
         <BkTag
           v-else
           size="small"
-        >{{ t('已停用') }}
+        >
+          {{ t('已停用') }}
         </BkTag>
       </div>
       <div class="header-actions">
@@ -40,7 +42,10 @@
             {{ t('启用') }}
           </BkButton>
         </div>
-        <div class="dropdown-wrapper" @click.stop="preventDefault">
+        <div
+          class="dropdown-wrapper"
+          @click.stop="preventDefault"
+        >
           <BkDropdown trigger="hover">
             <AgIcon
               class="dropdown-trigger"
@@ -49,11 +54,11 @@
             />
             <template #content>
               <BkDropdownMenu>
-                <!--                <BkDropdownItem @click="handleCloneClick">-->
-                <!--                  <BkButton text>-->
-                <!--                    {{ t('克隆空间') }}-->
-                <!--                  </BkButton>-->
-                <!--                </BkDropdownItem>-->
+                <!--                <BkDropdownItem @click="handleCloneClick"> -->
+                <!--                  <BkButton text> -->
+                <!--                    {{ t('克隆空间') }} -->
+                <!--                  </BkButton> -->
+                <!--                </BkDropdownItem> -->
                 <BkDropdownItem>
                   <BkButton
                     v-bk-tooltips="{
@@ -75,30 +80,57 @@
     </header>
 
     <!-- 分割线 -->
-    <div class="divider"></div>
+    <div class="divider" />
 
     <main class="card-main">
       <div class="main-content">
         <div class="content-item">
-          <div class="item-label">{{ t('访问地址') }}:</div>
-          <div v-bk-tooltips="server.url" class="item-value">{{ server.url }}</div>
+          <div class="item-label">
+            {{ t('访问地址') }}:
+          </div>
+          <div
+            v-bk-tooltips="server.url"
+            class="item-value"
+          >
+            {{ server.url }}
+          </div>
           <div class="item-suffix copy-btn">
-            <AgIcon name="copy-info" @click.stop="() => copy(server.url)" />
+            <AgIcon
+              name="copy-info"
+              @click.stop="() => copy(server.url)"
+            />
           </div>
         </div>
         <div class="content-item">
-          <div class="item-label">{{ t('环境') }}:</div>
-          <div class="item-value">{{ server.stage.name }}</div>
+          <div class="item-label">
+            {{ t('环境') }}:
+          </div>
+          <div class="item-value">
+            {{ server.stage.name }}
+          </div>
         </div>
         <div class="content-item">
-          <div class="item-label">{{ t('工具数量') }}:</div>
-          <div class="item-value">{{ server.tools_count }}</div>
+          <div class="item-label">
+            {{ t('工具数量') }}:
+          </div>
+          <div class="item-value">
+            {{ server.tools_count }}
+          </div>
         </div>
         <div class="content-item">
-          <div class="item-label">{{ t('标签') }}:</div>
+          <div class="item-label">
+            {{ t('标签') }}:
+          </div>
           <div class="item-value">
             <template v-if="server.labels.length">
-              <BkTag v-for="(label, index) in server.labels" :key="index" class="mr8" size="small">{{ label }}</BkTag>
+              <BkTag
+                v-for="(label, index) in server.labels"
+                :key="index"
+                class="mr-8px"
+                size="small"
+              >
+                {{ label }}
+              </BkTag>
             </template>
             <span v-else>--</span>
           </div>
@@ -107,21 +139,18 @@
     </main>
   </div>
 </template>
-<script lang="ts" setup>
-import { useI18n } from 'vue-i18n';
-import AgIcon from '@/components/ag-icon.vue';
-import { IMCPServer } from '@/http/mcp-server';
-import { copy } from '@/common/util';
 
-interface IProps {
-  server: IMCPServer,
-}
+<script lang="ts" setup>
+import { type IMCPServer } from '@/services/source/mcp-server';
+import { copy } from '@/utils';
+
+interface IProps { server: IMCPServer }
 
 interface IEmits {
-  edit: [id: number],
-  suspend: [id: number],
-  enable: [id: number],
-  delete: [id: number],
+  edit: [id: number]
+  suspend: [id: number]
+  enable: [id: number]
+  delete: [id: number]
 }
 
 const { server } = defineProps<IProps>();
@@ -154,15 +183,16 @@ const preventDefault = (e: Event) => {
 };
 
 </script>
+
 <style lang="scss" scoped>
 .card-wrapper {
   width: 533px;
   height: 228px;
-  background: #fff;
-  box-shadow: 0 2px 4px 0 #1919290d;
-  border-radius: 2px;
   padding: 20px 40px;
   cursor: pointer;
+  background: #fff;
+  border-radius: 2px;
+  box-shadow: 0 2px 4px 0 #1919290d;
 
   .card-header {
     display: flex;
@@ -170,11 +200,13 @@ const preventDefault = (e: Event) => {
     align-items: center;
 
     .header-title-wrapper {
+
       .header-title {
-        font-weight: 700;
+        margin-right: 4px;
         font-size: 16px;
-        color: #313238;
+        font-weight: 700;
         line-height: 22px;
+        color: #313238;
       }
 
       :deep(.bk-tag-text) {
@@ -194,6 +226,7 @@ const preventDefault = (e: Event) => {
       }
 
       .dropdown-wrapper {
+
         .dropdown-trigger {
           display: flex;
           width: 26px;
@@ -220,10 +253,11 @@ const preventDefault = (e: Event) => {
   }
 
   .card-main {
+
     .main-content {
       font-size: 12px;
-      color: #313238;
       line-height: 32px;
+      color: #313238;
 
       .content-item {
         display: flex;
