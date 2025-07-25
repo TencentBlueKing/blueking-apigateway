@@ -269,7 +269,7 @@ const handleSubmit = async () => {
       message: t(`${resourceId.value && !isClone.value ? '更新' : '新建'}成功`),
       theme: 'success',
     });
-    router.push({ name: 'apigwResource' });
+    router.push({ name: 'ResourceSetting' });
   }
   catch (error) {
     console.log('error', error);

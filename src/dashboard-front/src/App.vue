@@ -48,7 +48,8 @@
           </div>
           <div class="header-aside-wrap">
             <LanguageToggle />
-            <UserInfo v-if="userInfoStore.info.display_name || userInfoStore.info.username" />
+            <ProductInfo />
+            <UserInfo v-if="userInfoStore.info?.display_name || userInfoStore.info?.username" />
           </div>
         </div>
       </template>
@@ -61,6 +62,7 @@
 
 <script lang="ts" setup>
 import LanguageToggle from '@/components/language-toggle/Index.vue';
+import ProductInfo from '@/components/product-info/Index.vue';
 import UserInfo from '@/components/user-info/Index.vue';
 import LogoWithoutTitle from '@/images/APIgateway-logo.png';
 import En from '../node_modules/bkui-vue/dist/locale/en.esm.js';
@@ -73,6 +75,7 @@ import {
 } from '@/stores';
 import { useBkUserDisplayName } from '@/hooks';
 import type { IHeaderNav } from '@/types/common';
+import { useScriptTag } from '@vueuse/core';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -83,9 +86,34 @@ const envStore = useEnv();
 const { configure: configureDisplayName } = useBkUserDisplayName();
 const gateway = useGateway();
 
+envStore.fetchEnv();
 userInfoStore.fetchUserInfo();
 featureFlagStore.fetchFlags();
-envStore.fetchEnv();
+
+// 接入访问统计逻辑，只在上云版执行
+if (envStore.env.BK_ANALYSIS_SCRIPT_SRC) {
+  try {
+    const src = envStore.env.BK_ANALYSIS_SCRIPT_SRC;
+    if (src) {
+      useScriptTag(
+        src,
+        // script loaded 后的回调
+        () => {
+          window.BKANALYSIS?.init({ siteName: 'custom:bk-apigateway:default:default' });
+          console.log('BKANALYSIS init success');
+        },
+        // script 标签的 attrs
+        { attrs: { charset: 'utf-8' } },
+      );
+    }
+    else {
+      console.log('BKANALYSIS script not found');
+    }
+  }
+  catch {
+    console.log('BKANALYSIS init fail');
+  }
+}
 
 const locale = ref('zh-cn');
 const activeIndex = ref(0);

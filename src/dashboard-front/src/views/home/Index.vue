@@ -104,7 +104,7 @@
               <div
                 :class="item.status ? '' : 'deact'"
                 class="name-logo"
-                @click="handleGoPage('StageManagement', item)"
+                @click="() => handleGoPage('StageManagement', item)"
               >
                 <span
                   v-if="item.kind === 1"
@@ -121,7 +121,7 @@
               <span
                 :class="item.status ? '' : 'deact-name'"
                 class="name"
-                @click="handleGoPage('StageManagement', item)"
+                @click="() => handleGoPage('StageManagement', item)"
               >
                 {{ item.name }}
               </span>
@@ -184,7 +184,7 @@
               <template v-if="item.kind === 0">
                 {{ item.resource_count }}
                 <!--                <RouterLink -->
-                <!--                  :to="{ name: 'apigwResource', params: { id: item.id } }" -->
+                <!--                  :to="{ name: 'ResourceSetting', params: { id: item.id } }" -->
                 <!--                  target="_blank" -->
                 <!--                > -->
                 <!--                  <span :style="{ color: item.resource_count === 0 ? '#c4c6cc' : '#3a84ff' }"> -->
@@ -200,7 +200,7 @@
               <BkButton
                 text
                 theme="primary"
-                @click="handleGoPage('apigwStageOverview', item)"
+                @click="() => handleGoPage('StageOverview', item)"
               >
                 {{ t('环境概览') }}
               </BkButton>
@@ -209,7 +209,7 @@
                 theme="primary"
                 class="ml-20px"
                 :disabled="item?.kind === 1"
-                @click="handleGoPage('apigwResource', item)"
+                @click="() => handleGoPage('ResourceSetting', item)"
               >
                 {{ t('资源配置') }}
               </BkButton>
@@ -217,7 +217,7 @@
                 text
                 theme="primary"
                 class="ml-20px"
-                @click="handleGoPage('apigwAccessLog', item)"
+                @click="() => handleGoPage('AccessLogDetail', item)"
               >
                 {{ t('流水日志') }}
               </BkButton>
@@ -248,6 +248,36 @@
         </div>
       </div>
     </div>
+    <div class="footer-container">
+      <p class="contact">
+        <BkLink
+          class="text-12px color-#3a84ff!"
+          :href="contacts[0].link"
+          target="_blank"
+        >
+          {{ contacts[0].text }}
+        </BkLink>
+        |
+        <BkLink
+          class="text-12px color-#3a84ff!"
+          :href="contacts[1].link"
+          target="_blank"
+        >
+          {{ contacts[1].text }}
+        </BkLink>
+        |
+        <BkLink
+          class="text-12px color-#3a84ff!"
+          :href="contacts[2].link"
+          target="_blank"
+        >
+          {{ contacts[2].text }}
+        </BkLink>
+      </p>
+      <p class="copyright">
+        {{ copyright }}
+      </p>
+    </div>
     <CreateGateway
       v-model="createGatewayShow"
       @done="init"
@@ -257,9 +287,12 @@
 
 <script setup lang="ts">
 import { isAfter24h } from '@/utils';
-import { useFeatureFlag } from '@/stores';
+import {
+  useEnv,
+  useFeatureFlag,
+} from '@/stores';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
-import { getGatewayList } from '@/services/source/gateway.ts';
+import { getGatewayList } from '@/services/source/gateway';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import CreateGateway from '@/components/create-gateway/Index.vue';
 
@@ -277,6 +310,7 @@ type ConvertedGatewayType = GatewayType & {
 const { t } = useI18n();
 const router = useRouter();
 const featureFlagStore = useFeatureFlag();
+const envStore = useEnv();
 
 const filterKey = ref('updated_time');
 const filterNameData = ref({
@@ -317,6 +351,23 @@ const filterData = ref([
     label: t('字母 A-Z'),
   },
 ]);
+
+const contacts = [
+  {
+    text: t('技术支持'),
+    link: 'https://wpa1.qq.com/KziXGWJs?_type=wpa&qidian=true',
+  },
+  {
+    text: t('社区论坛'),
+    link: 'https://bk.tencent.com/s-mart/community/',
+  },
+  {
+    text: t('产品官网'),
+    link: 'https://bk.tencent.com/index/',
+  },
+];
+
+const copyright = computed(() => `Copyright © 2012-${new Date().getFullYear()} Tencent BlueKing. All Rights Reserved. V${envStore.env.BK_APIGATEWAY_VERSION}`);
 
 // 处理列表项
 const convertGatewaysList = (arr: GatewayType[]): ConvertedGatewayType[] => {

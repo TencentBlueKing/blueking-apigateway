@@ -630,7 +630,7 @@ const handeleJumpResource = (item: any) => {
   const isRouteStage = route.path.includes('stage');
   if (isRouteStage) {
     router.push({
-      name: 'apigwResource',
+      name: 'ResourceSetting',
       params: { id: gatewayId.value },
     });
   }

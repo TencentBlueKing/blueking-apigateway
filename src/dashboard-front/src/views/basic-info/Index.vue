@@ -376,7 +376,7 @@
                 <AgIcon name="info" />
                 <span>{{ t('可用于解密传入后端接口的请求头 X-Bkapi-JWT') }}，</span>
                 <a
-                  href=""
+                  :href="envStore.doc.JWT"
                   target="_blank"
                   class="more-detail"
                 >{{ t(' 更多详情') }}</a>
@@ -544,7 +544,10 @@ import ProgramProcess from '@/images/program-process.png';
 import EditMember from './components/EditMember.vue';
 import CreateGateway from '@/components/create-gateway/Index.vue';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
-import { useFeatureFlag } from '@/stores';
+import {
+  useEnv,
+  useFeatureFlag,
+} from '@/stores';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 
 type BasicInfoType = Awaited<ReturnType<typeof getGatewayDetail>>;
@@ -553,6 +556,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const featureFlagStore = useFeatureFlag();
+const envStore = useEnv();
 
 // 网关id
 const apigwId = ref(0);

@@ -9,6 +9,7 @@
         "@blueking/bkui-form": "1.0.0-beta.6",
         "@blueking/date-picker": "^2.0.0-beta.48",
         "@blueking/login-modal": "^1.0.6",
+        "@blueking/release-note": "^0.0.1-beta.17",
         "@types/js-yaml": "^4.0.9",
         "@types/markdown-it": "13",
         "@unocss/reset": "^66.3.3",
@@ -160,6 +161,8 @@
     "@blueking/date-picker": ["@blueking/date-picker@2.0.0-beta.48", "", { "peerDependencies": { "@blueking/bkui-library": "^0.0.0-beta.4", "bkui-vue": "^1.0.3-beta.38", "dayjs": "^1.11.10", "vue": "^3" } }, "sha512-w7bKluSr1KOrq8ZvqAoscbgrzn69BDFkuBKu/VB2qJVTMV1yk76kys89jA/rf/gf6mZqG7YXUiv1f6uIuSNaOQ=="],
 
     "@blueking/login-modal": ["@blueking/login-modal@1.0.6", "", {}, "sha512-zjDHiCNY2Aydo9BcFiGiiw8uodPkCSK+SthXQZQQ/8Bq4nHnz+Hkuo8rnPrwuDIgB2E2C6X+T5+6jDXqTwrZyg=="],
+
+    "@blueking/release-note": ["@blueking/release-note@0.0.1-beta.17", "", { "peerDependencies": { "bkui-vue": "*", "markdown-it": "^13.0.1", "vue": "^3.2.0" } }, "sha512-yOI/y0svMqIKSFJ+7827/WBXGlXwWaGYL/P8lhQ0PLOSlwIoTuDWJHH8Yj2ZnbySalgOF6iq12NJdJifggd8uA=="],
 
     "@bufbuild/protobuf": ["@bufbuild/protobuf@2.6.0", "", {}, "sha512-6cuonJVNOIL7lTj5zgo/Rc2bKAo4/GvN+rKCrUj7GdEHRzCk8zKOfFwUsL9nAVk5rSIsRmlgcpLzTRysopEeeg=="],
 
