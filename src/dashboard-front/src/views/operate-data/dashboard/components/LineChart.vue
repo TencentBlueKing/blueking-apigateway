@@ -50,7 +50,7 @@
 
 <script lang="ts" setup>
 import * as echarts from 'echarts';
-import { merge } from 'lodash';
+import { merge } from 'lodash-es';
 import dayjs from 'dayjs';
 import { useChartIntervalOption } from '@/hooks';
 import type { ISearchParamsType, ISeriesItemType } from '@/services/source/dashboard';

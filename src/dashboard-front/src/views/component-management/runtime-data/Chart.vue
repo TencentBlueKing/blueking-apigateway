@@ -31,7 +31,7 @@ import 'echarts/lib/component/tooltip';
 import 'echarts/lib/component/legend';
 import 'echarts/lib/component/toolbox';
 import 'echarts/lib/component/dataZoom';
-import { each, extend } from 'lodash';
+import { each, extend } from 'lodash-es';
 import moment from 'moment';
 import { getApigwChartDetail } from '@/services/source/runTime';
 

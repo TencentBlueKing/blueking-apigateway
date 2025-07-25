@@ -118,7 +118,7 @@ import { useMaxTableLimit } from '@/hooks';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 const { t } = useI18n();
-const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 246 });
+const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 242 });
 const router = useRouter();
 
 const tableColumns = ref([

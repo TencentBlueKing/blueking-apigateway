@@ -316,7 +316,7 @@ import {
 import { RESOURCE_IMPORT_EXAMPLE } from '@/constants';
 import { useSelection } from '@/hooks';
 import TmplExampleSideslider from '../components/TmplExampleSideslider.vue';
-import { type UploadFile } from 'bkui-vue/lib/upload/upload.type';
+import { type UploadFile } from 'bkui-vue/lib/upload/upload.type.d.ts';
 import Cookie from 'js-cookie';
 import { useEnv } from '@/stores';
 
