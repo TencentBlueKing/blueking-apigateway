@@ -19,14 +19,14 @@
 import { createI18n } from 'vue-i18n';
 import cn from './cn.json';
 import en from './en.json';
+import Cookie from 'js-cookie';
+
+const cookieLocale = Cookie.get('blueking_language') || 'zh-cn';
 
 const i18n = createI18n({
   legacy: false,
-  locale: 'zh-cn',
+  locale: cookieLocale || 'zh-cn',
   fallbackLocale: 'zh-cn',
-  // TODO 暂时静默语言包缺失
-  missing: () => {
-  },
   messages: {
     'zh-cn': cn,
     'en': en,

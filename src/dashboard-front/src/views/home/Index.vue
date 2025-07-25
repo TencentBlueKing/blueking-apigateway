@@ -248,6 +248,10 @@
         </div>
       </div>
     </div>
+    <CreateGateway
+      v-model="createGatewayShow"
+      @done="init"
+    />
   </div>
 </template>
 
@@ -257,6 +261,7 @@ import { useFeatureFlag } from '@/stores';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { getGatewayList } from '@/services/source/gateway.ts';
 import AgIcon from '@/components/ag-icon/Index.vue';
+import CreateGateway from '@/components/create-gateway/Index.vue';
 
 type GatewayType = Awaited<ReturnType<typeof getGatewayList>>['results'][number];
 

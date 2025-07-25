@@ -46,7 +46,10 @@
               </div>
             </template>
           </div>
-          <div class="header-aside-wrap" />
+          <div class="header-aside-wrap">
+            <LanguageToggle />
+            <UserInfo v-if="userInfoStore.info.display_name || userInfoStore.info.username" />
+          </div>
         </div>
       </template>
       <div class="content">
@@ -57,6 +60,8 @@
 </template>
 
 <script lang="ts" setup>
+import LanguageToggle from '@/components/language-toggle/Index.vue';
+import UserInfo from '@/components/user-info/Index.vue';
 import LogoWithoutTitle from '@/images/APIgateway-logo.png';
 import En from '../node_modules/bkui-vue/dist/locale/en.esm.js';
 import ZhCn from '../node_modules/bkui-vue/dist/locale/zh-cn.esm.js';
