@@ -15,6 +15,7 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
+
 /**
  * 导出下载公共方法
  * @param {Object} res 接口返回值

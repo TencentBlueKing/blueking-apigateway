@@ -15,6 +15,7 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
+
 export interface IApprovalListItem {
   bk_app_code: string
   applied_by: string

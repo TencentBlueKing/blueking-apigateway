@@ -15,6 +15,7 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
+
 /**
  * @desc 正则表达式关键字符转换
  * @param { String } paramStr
