@@ -653,7 +653,7 @@ const resetSliderData = () => {
 };
 
 const handleOpenResource = () => {
-  const routeData = router.resolve({ name: 'apigwResource' });
+  const routeData = router.resolve({ name: 'ResourceSetting' });
   window.open(routeData.href, '_blank');
 };
 

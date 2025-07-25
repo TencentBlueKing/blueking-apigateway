@@ -16,6 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '../http';
+import { useEnv } from '@/stores';
 
 const path = '';
 
@@ -80,9 +81,15 @@ export function getTenantUsers(
   params: { keyword: string },
   tenant_id: string,
 ) {
+  const envStore = useEnv();
   return http.get(
-    `${window.BK_USER_WEB_API_URL}/api/v3/open-web/tenant/users/-/search/`,
+    `${envStore.env.BK_USER_WEB_API_URL}/api/v3/open-web/tenant/users/-/search/`,
     params,
     { headers: { 'X-Bk-Tenant-Id': tenant_id || '' } },
   );
 }
+
+/**
+ * 获取版本日志
+ */
+export const getVersionLog = () => http.get('/version-log');

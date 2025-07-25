@@ -324,7 +324,7 @@ const handleEdit = ({ id, name, description }: {
 // 点击关联的资源数
 const handleResource = ({ id }: { id: number }) => {
   const params = {
-    name: 'apigwResource',
+    name: 'ResourceSetting',
     params: { id: apigwId.value },
     query: { backend_id: id },
   };
@@ -400,8 +400,8 @@ onBeforeMount(() => {
     margin-bottom: 15px;
 
     .header-search {
-      min-width: 500px;
       max-width: calc(100vw - 400px);
+      min-width: 500px;
     }
   }
 
@@ -410,6 +410,7 @@ onBeforeMount(() => {
   }
 
   .table-layout {
+
     :deep(.bk-table-body) {
     }
   }

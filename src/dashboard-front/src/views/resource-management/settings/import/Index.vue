@@ -40,7 +40,7 @@
           <span class="desc">
             <BkLink
               theme="primary"
-              :href="envStore.swaggerDocURL"
+              :href="envStore.env.DOC_LINKS.SWAGGER"
               target="_blank"
               class="text-12px"
             >

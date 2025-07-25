@@ -16,13 +16,16 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '../http';
-
-// TODO 补回 config.ts
+import { useEnv } from '@/stores';
 
 // 拉群
-// export const createChat = (data: any) => http.post(CREATE_CHAT_API, data);
-export const createChat = (data: any) => http.post('/', data);
+export const createChat = (data: any) => {
+  const envStore = useEnv();
+  return http.post(envStore.env.CREATE_CHAT_API, data);
+};
 
 // 发消息
-// export const sendChat = (data: any) => http.post(SEND_CHAT_API, data);
-export const sendChat = (data: any) => http.post('/', data);
+export const sendChat = (data: any) => {
+  const envStore = useEnv();
+  return http.post(envStore.env.SEND_CHAT_API, data);
+};

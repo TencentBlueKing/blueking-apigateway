@@ -78,7 +78,7 @@
             <a
               class="link"
               target="_blank"
-              href="GLOBAL_CONFIG.DOC.QUERY_USE"
+              :href="envStore.env.DOC_LINKS.QUERY_USE"
             >
               {{ t("“请求流水查询规则”") }}
             </a>
@@ -121,6 +121,7 @@
 // import { useGetGlobalProperties } from '@/hooks';
 import { useStorage } from '@vueuse/core';
 import AgIcon from '@/components/ag-icon/Index.vue';
+import { useEnv } from '@/stores';
 
 interface IProps {
   modeValue?: string
@@ -141,6 +142,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const envStore = useEnv();
 // const globalProperties = useGetGlobalProperties();
 
 // 从本地存储获取搜索历史
@@ -200,24 +202,26 @@ defineExpose({ searchInputRef: searchInputRef.value });
 
 <style lang="scss" scoped>
 .search-input {
+
   .search-input-button {
     height: auto;
     border: none;
     border-radius: 0;
   }
 }
+
 .search-input-container {
   position: relative;
 
   .statement-example {
     position: absolute;
-    right: 0;
     top: -32px;
+    right: 0;
     display: flex;
-    align-items: center;
-    color: #3A84FF;
     font-size: 16px;
+    color: #3A84FF;
     cursor: pointer;
+    align-items: center;
 
     .example-text {
       margin-left: 4px;
@@ -230,33 +234,39 @@ defineExpose({ searchInputRef: searchInputRef.value });
   padding: 8px 4px -2px;
 
   .sample {
-    border-bottom: 1px solid #DCDEE5;
-    margin-bottom: 8px;
     padding-bottom: 12px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #DCDEE5;
+
     .sample-item:not(:nth-last-child(1)) {
       margin-bottom: 16px;
     }
+
     .mode {
-      font-weight: bold;
-      font-size: 12px;
-      color: #63656E;
       margin-bottom: 4px;
       font-family: MicrosoftYaHei-Bold;
+      font-size: 12px;
+      font-weight: bold;
+      color: #63656E;
     }
+
     .value {
       font-size: 12px;
       color: #63656E;
+
       span {
-        color: #3A84FF;
-        cursor: pointer;
         margin-left: 2px;
         font-size: 14px;
+        color: #3A84FF;
+        cursor: pointer;
       }
     }
   }
+
   .more {
     font-size: 12px;
     color: #63656e;
+
     .link {
       color: #3a84ff;
       cursor: pointer;

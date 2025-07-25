@@ -129,7 +129,7 @@ const modeList = [
   {
     key: 'overview',
     text: t('缩略模式'),
-    routeName: 'apigwStageOverview',
+    routeName: 'StageOverview',
   },
   {
     key: 'detail',

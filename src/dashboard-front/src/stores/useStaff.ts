@@ -39,8 +39,6 @@ export const useStaff = defineStore('useStaff', {
       if (this.fetching) return; // 如果正在获取数据，则直接返回
 
       this.fetching = true; // 设置 fetching 为 true，表示开始获取数据
-      // 获取员工列表的 API URL
-      const usersListPath = `${envStore.env.BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fs_list_users/`;
       const params: any = {
         app_code: 'bk-magicbox', // 应用代码
         page: 1, // 页码
@@ -53,7 +51,7 @@ export const useStaff = defineStore('useStaff', {
       const scriptTag = document.createElement('script'); // 创建 script 标签
       scriptTag.setAttribute('type', 'text/javascript'); // 设置 script 标签类型
       // 设置 script 标签的 src 属性
-      scriptTag.setAttribute('src', `${usersListPath}?${QueryString.stringify(params)}`);
+      scriptTag.setAttribute('src', `${envStore.userSelectorAPI}?${QueryString.stringify(params)}`);
 
       const headTag = document.getElementsByTagName('head')[0]; // 获取 head 标签
       // @ts-expect-error ignore

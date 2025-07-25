@@ -110,7 +110,7 @@
             <BkLink
               theme="primary"
               class="pl-10px"
-              :href="envStore.swaggerDocURL"
+              :href="envStore.env.DOC_LINKS.SWAGGER"
               target="_blank"
             >
               <AgIcon name="info" />
@@ -511,7 +511,7 @@ const getRowClass = (data: any) => {
 
 // 取消返回到资源列表
 const goBack = () => {
-  router.push({ name: 'apigwResource' });
+  router.push({ name: 'ResourceSetting' });
 };
 
 const deDuplication = (data: any[], k: string) => {

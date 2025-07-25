@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "BK_DASHBOARD_FE_URL": {
+      "type": "string"
+    }
+  },
+  "required": ["BK_DASHBOARD_FE_URL"]
+}
