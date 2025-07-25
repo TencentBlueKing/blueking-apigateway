@@ -32,7 +32,7 @@ from apigateway.common.env import Env
 from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
 from apigateway.conf.log_utils import build_logging_config
-from apigateway.conf.utils import PatchFeatures, get_default_keepalive_options, get_doc_links
+from apigateway.conf.utils import PatchFeatures, get_default_keepalive_options
 
 pymysql.install_as_MySQLdb()
 # Patch version info to force pass Django client check
@@ -978,7 +978,6 @@ ENV_VARS_FOR_FRONTEND = {
         "name": env.str("HELPER_NAME", default=""),
         "href": env.str("HELPER_HREF", default=""),
     },
-    "DOC_LINKS": get_doc_links(env, BK_APIGATEWAY_VERSION, BK_DOCS_URL_PREFIX),
 }
 
 
