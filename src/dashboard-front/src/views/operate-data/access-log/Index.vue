@@ -316,7 +316,7 @@ import {
   merge,
   trim,
   uniq,
-} from 'lodash';
+} from 'lodash-es';
 
 import { copy } from '@/utils';
 import { useChartIntervalOption } from '@/hooks';

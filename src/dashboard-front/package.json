@@ -19,6 +19,7 @@
     "@blueking/date-picker": "^2.0.0-beta.48",
     "@blueking/bkui-form": "1.0.0-beta.6",
     "@blueking/login-modal": "^1.0.6",
+    "@blueking/notice-component": "^2.0.5",
     "@types/js-yaml": "^4.0.9",
     "@types/markdown-it": "13",
     "@unocss/reset": "^66.3.3",
