@@ -115,36 +115,53 @@
         type="card-tab"
       >
         <BkTabPanel
-          v-for="item in panels"
-          :key="item.name"
-          :name="item.name"
+          name="tools"
         >
           <template #label>
             <div class="flex items-center">
-              {{ item.label }}
+              {{ t('工具') }}
               <div
-                v-if="item.count > 0"
+                v-if="toolsCount > 0"
                 class="count"
-                :class="[active === item.name ? 'on' : 'off']"
+                :class="[active === 'tools' ? 'on' : 'off']"
               >
-                {{ item.count }}
+                {{ toolsCount }}
               </div>
             </div>
           </template>
           <div class="panel-content">
             <ServerTools
-              v-if="item.name === 'tools'"
               :server="server"
-              @update-count="(count) => updateCount(count, item.name)"
+              @update-count="(count) => updateCount(count)"
             />
+          </div>
+        </BkTabPanel>
+        <BkTabPanel
+          name="auth"
+        >
+          <template #label>
+            <div class="flex items-center">
+              {{ t('已授权应用') }}
+            </div>
+          </template>
+          <div class="panel-content">
             <AuthApplications
-              v-if="item.name === 'auth'"
               :mcp-server-id="serverId"
             />
-            <!--            <Guideline -->
-            <!--              v-if="active === 'guide'" -->
-            <!--              :markdown-str="markdownStr" -->
-            <!--            /> -->
+          </div>
+        </BkTabPanel>
+        <BkTabPanel
+          name="guide"
+        >
+          <template #label>
+            <div class="flex items-center">
+              {{ t('使用指引') }}
+            </div>
+          </template>
+          <div class="panel-content">
+            <Guideline
+              :markdown-str="markdownStr"
+            />
           </div>
         </BkTabPanel>
       </BkTab>
@@ -174,7 +191,7 @@ import router from '@/router';
 import CreateSlider from '@/views/mcp-server/components/CreateSlider.vue';
 import AuthApplications from '@/views/mcp-server/components/AuthApplications.vue';
 import CustomTop from '@/views/mcp-server/components/CustomTop.vue';
-// import Guideline from '@/views/mcp-market/components/guideline.vue';
+import Guideline from '@/views/mcp-market/components/GuideLine.vue';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 
@@ -206,23 +223,7 @@ const showDropdown = ref(false);
 const markdownStr = ref('');
 
 const active = ref('tools');
-const panels = ref([
-  {
-    name: 'tools',
-    label: t('工具'),
-    count: 0,
-  },
-  {
-    name: 'auth',
-    label: t('已授权应用'),
-    count: 0,
-  },
-  {
-    name: 'guide',
-    label: t('使用指引'),
-    count: 0,
-  },
-]);
+const toolsCount = ref<number>(0);
 const editingServerId = ref<number>();
 
 const fetchServer = async () => {
@@ -301,11 +302,8 @@ const handleDelete = async () => {
   });
 };
 
-const updateCount = (count: number, panelName: string) => {
-  const panel = panels.value.find(panel => panel.name === panelName);
-  if (panel) {
-    panel.count = count;
-  }
+const updateCount = (count: number) => {
+  toolsCount.value = count;
 };
 </script>
 
