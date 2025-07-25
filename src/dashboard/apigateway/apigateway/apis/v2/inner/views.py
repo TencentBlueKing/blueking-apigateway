@@ -599,6 +599,7 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
                     "tool_names": obj.mcp_server.resource_names,
                 },
                 "record": {
+                    "id": obj.id,
                     "applied_by": obj.applied_by,
                     "applied_time": obj.applied_time,
                     "handled_by": [obj.handled_by] if obj.handled_by else obj.mcp_server.gateway.maintainers,
@@ -657,6 +658,7 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
                 "tool_names": instance.mcp_server.resource_names,
             },
             "record": {
+                "id": instance.id,
                 "applied_by": instance.applied_by,
                 "applied_time": instance.applied_time,
                 "handled_by": [instance.handled_by]

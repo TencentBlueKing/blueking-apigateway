@@ -32,6 +32,7 @@ mcp_server 申请记录列表
         "doc_link": ""
       },
       "record": {
+        "id": 1,
         "applied_by": "admin",
         "applied_time": "2025-01-01 00:00:00 +0800",
         "handled_by": ["admin"],
@@ -76,6 +77,7 @@ mcp_server 申请记录列表
 
 | 参数名称                 | 参数类型   | 描述                                        |
 |----------------------|--------|-------------------------------------------|
+| id                   | int    | 申请记录 ID                                   |
 | applied_by           | string | 申请人                                       |
 | applied_time         | string | 申请时间                                      |
 | handled_by           | array  | 审批人                                       |
