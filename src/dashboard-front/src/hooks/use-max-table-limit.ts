@@ -87,6 +87,7 @@ function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string
  * @returns maxTableLimit → 最大展示条数   clientHeight → 剩余可视化最大高度
  */
 export function useMaxTableLimit(payload?: Partial<ITableLimit>) {
+  const route = useRoute();
   const viewportHeight = toValue(useWindowSize().height);
   // 默认已占位高度
   const hasAllocatedHeight = payload?.allocatedHeight ?? 186;
@@ -94,7 +95,8 @@ export function useMaxTableLimit(payload?: Partial<ITableLimit>) {
   const paginationH = payload?.hasPagination || typeof payload?.hasPagination === 'undefined' ? 60 : 0;
   // 获取表格的最大可视化区域
   const clientHeight = viewportHeight - hasAllocatedHeight;
-  const name = payload?.className ?? (useRoute()?.name as string);
+  const routeName = route.name;
+  const name = payload?.className ?? routeName;
   // topHead是指vxe-table根据不同表格大小动态设置了距离表头top
   const { lineH, topHead } = getTableSizeLineHeight(name);
   // 优先获取自定义传入行高，默认设置不同大小表格的固定行高

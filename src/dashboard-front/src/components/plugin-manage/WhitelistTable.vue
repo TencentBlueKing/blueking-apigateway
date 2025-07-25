@@ -316,7 +316,7 @@
 import { json2Yaml, yaml2Json } from '@/utils';
 import { throttle } from 'lodash-es';
 import { InfoBox, Message } from 'bkui-vue';
-import TableEmpty from '@/components/table-empty/index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 import { useRouteParams } from '@vueuse/router';
 import { getVerifiedUserRequiredResources } from '@/services/source/resource.ts';
 

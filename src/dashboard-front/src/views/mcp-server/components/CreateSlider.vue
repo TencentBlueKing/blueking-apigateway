@@ -238,7 +238,7 @@ import {
   Message,
   Table,
 } from 'bkui-vue';
-import TableEmpty from '@/components/table-empty/index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 import {
   createServer,
   getServer,

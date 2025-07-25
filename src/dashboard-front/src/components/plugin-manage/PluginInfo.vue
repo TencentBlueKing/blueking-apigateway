@@ -203,24 +203,29 @@ import { useStage } from '@/stores';
 import { onClickOutside } from '@vueuse/core';
 import { PLUGIN_ICONS } from '@/constants';
 
-const props = defineProps({
-  curPlugin: { type: Object },
-  scopeInfo: { type: Object },
-  editPlugin: { type: Object },
-  type: { type: String },
+interface IProps {
+  curPlugin: any
+  scopeInfo: any
+  editPlugin: any
+  type: string
+  pluginList?: any[]
+  bindingPlugins?: any[]
+}
 
-  pluginList: {
-    type: Array<any>,
-    default: () => [],
-  },
+const {
+  curPlugin,
+  scopeInfo,
+  editPlugin,
+  type,
+  pluginList = [],
+  bindingPlugins = [],
+} = defineProps<IProps>();
 
-  bindingPlugins: {
-    type: Array<any>,
-    default: () => [],
-  },
-});
-
-const emit = defineEmits(['on-change', 'choose-plugin', 'show-example']);
+const emit = defineEmits<{
+  'on-change': [type: string]
+  'choose-plugin': [plugin: any]
+  'show-example': [data: any]
+}>();
 
 const stageStore = useStage();
 const BkSchemaForm = createForm();
@@ -233,7 +238,6 @@ const formConfig = ref({
   rules: {},
 });
 
-const { curPlugin } = toRefs(props);
 const formRef = ref();
 const whitelist = ref();
 const curPluginInfo = ref<any>(curPlugin);
@@ -256,11 +260,11 @@ const isExampleVisible = ref(false);
 // 右侧插件使用示例内容
 const exampleContent = ref('');
 // 插件切换 select
-const pluginSelectRef = ref<HTMLElement | null>(null);
+const pluginSelectRef = ref<HTMLElement>();
 
 const isBound = computed(() => {
   return function (obj: any) {
-    return props?.bindingPlugins?.some((item: { code: string }) => item.code === obj.code);
+    return bindingPlugins?.some((item: { code: string }) => item.code === obj.code);
   };
 });
 
@@ -275,21 +279,21 @@ const handlePre = () => {
 };
 // 确认
 const handleAdd = async () => {
-  const { scopeInfo: { scopeType, scopeId, apigwId } } = props;
-  const { curPlugin: { code } } = props;
+  const { scopeType, scopeId, apigwId } = scopeInfo;
+  const { code } = curPlugin;
 
   const doSubmit = async (data: any) => {
     try {
       if (isAdd.value) {
-        data.name = props.curPlugin?.name;
+        data.name = curPlugin?.name;
         data.type_id = typeId.value;
         await creatPlugin(apigwId, scopeType, scopeId, code, data);
         emit('on-change', 'addSuccess');
       }
       else {
-        data.name = props.editPlugin?.name;
-        data.type_id = props.editPlugin?.type_id;
-        await updatePluginConfig(apigwId, scopeType, scopeId, code, props.editPlugin.id, data);
+        data.name = editPlugin?.name;
+        data.type_id = editPlugin?.type_id;
+        await updatePluginConfig(apigwId, scopeType, scopeId, code, editPlugin.id, data);
         emit('on-change', 'editSuccess');
       }
       Message({
@@ -339,7 +343,7 @@ const handleCancel = () => {
 
 const getSchemaFormData = async (code: string) => {
   try {
-    const { scopeInfo: { apigwId } } = props;
+    const { apigwId } = scopeInfo;
 
     isPluginFormLoading.value = true;
     const res = await getPluginForm(apigwId, code);
@@ -571,7 +575,7 @@ const getSchemaFormData = async (code: string) => {
     exampleContent.value = res.example || '';
 
     if (!isAdd.value) {
-      const yamlData = yaml2Json(props.editPlugin.yaml).data;
+      const yamlData = yaml2Json(editPlugin.yaml).data;
       schemaFormData.value = { ...(yamlData as object) };
     }
   }
@@ -581,7 +585,7 @@ const getSchemaFormData = async (code: string) => {
 };
 
 const handleChoosePlugin = () => {
-  const plugin = props?.pluginList?.filter((item: any) => item.code === choosePlugin.value)[0];
+  const plugin = pluginList?.filter((item: any) => item.code === choosePlugin.value)[0];
   if (plugin) {
     curPluginInfo.value = plugin;
     getSchemaFormData(choosePlugin.value);
@@ -600,10 +604,10 @@ const toggleShowExample = async () => {
 };
 
 const init = async () => {
-  isStage.value = props.scopeInfo.scopeType === 'stage';
-  isAdd.value = props.type === 'add';
-  curPluginInfo.value = props.curPlugin;
-  const { curPlugin: { code } } = props;
+  isStage.value = scopeInfo.scopeType === 'stage';
+  isAdd.value = type === 'add';
+  curPluginInfo.value = curPlugin;
+  const { code } = curPlugin;
   getSchemaFormData(code);
 };
 init();

@@ -6,11 +6,10 @@
           v-if="!loading"
           class="status-indicator"
         >
-          <!-- TODO 补回 spinner 图标 -->
-          <!--        <Spinner -->
-          <!--          v-if="status === 'doing'" -->
-          <!--          style="font-size: 16px;color:#3a84f6;" -->
-          <!--        /> -->
+          <Spinner
+            v-if="status === 'doing'"
+            style="font-size: 16px;color:#3a84f6;"
+          />
           <div
             v-bk-tooltips="{
               content: getStatusText(status),
@@ -162,7 +161,7 @@
 </template>
 
 <script lang="ts" setup>
-// import { Spinner } from 'bkui-vue/lib/icon';
+import { Spinner } from 'bkui-vue/lib/icon';
 import StageCardLineChart from './StageCardLineChart.vue';
 import { getStatusText } from '@/utils';
 import { getGatewayMetrics, getGatewayMetricsInstant } from '@/services/source/metrics';

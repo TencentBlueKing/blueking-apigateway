@@ -315,6 +315,7 @@ const initData = async () => {
     docData.value = await getResourceDocs(gatewayId.value, curResource.id);
   }
   else {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { backend, doc, _localId, _unchecked, ...restOfCurResource } = curResource;
 
     const params = {

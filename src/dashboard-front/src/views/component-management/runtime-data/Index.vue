@@ -133,7 +133,7 @@ import moment from 'moment';
 import { getApigwRuntime, getApigwTimeline } from '@/services/source/runTime';
 import type { ReturnRecordType } from '@/types/common';
 import AgRing from '@/components/ag-ring/Index.vue';
-import TableEmpty from '@/components/table-empty/index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 
 const { t } = useI18n();
 const router = useRouter();

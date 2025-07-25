@@ -343,7 +343,7 @@
 
 <script setup lang="ts">
 import PluginInfo from './PluginInfo.vue';
-import TableEmpty from '@/components/table-empty/index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 // import mitt from '@/common/event-bus';
 import {
   InfoBox,
@@ -375,7 +375,7 @@ const {
   stageId,
 } = defineProps<IProps>();
 
-const emit = defineEmits(['on-jump']);
+const emit = defineEmits<{ 'on-jump': [id: any] }>();
 
 const { t } = useI18n();
 const route = useRoute();

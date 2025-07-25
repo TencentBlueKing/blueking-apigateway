@@ -25,17 +25,15 @@ import { useI18n } from 'vue-i18n';
 import editorMonaco from '@/components/ag-editor/Index.vue';
 import { RESOURCE_IMPORT_EXAMPLE } from '@/constants';
 
-const props = defineProps({
-  isShow: {
-    type: Boolean,
-    default: false,
-  },
-});
-const emits = defineEmits<(event: 'on-hidden') => void>();
+interface IProps { isShow?: boolean }
+
+const { isShow = false } = defineProps<IProps>();
+
+const emits = defineEmits<{ 'on-hidden': [void] }>();
 
 const { t } = useI18n();
 
-const renderShow = ref(props.isShow);
+const renderShow = ref(isShow);
 const editorText = ref<string>(RESOURCE_IMPORT_EXAMPLE.content);
 
 const handleHidden = () => {
@@ -43,7 +41,7 @@ const handleHidden = () => {
   emits('on-hidden');
 };
 
-watch(() => props.isShow, (val) => {
+watch(() => isShow, (val) => {
   renderShow.value = val;
 });
 

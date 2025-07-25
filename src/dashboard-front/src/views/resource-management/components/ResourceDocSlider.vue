@@ -266,6 +266,7 @@ const initData = async () => {
   }
   else {
     // 预览资源文档会走到这里
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { backend, doc, _localId, _unchecked, ...restOfCurResource } = resource;
 
     const params = {

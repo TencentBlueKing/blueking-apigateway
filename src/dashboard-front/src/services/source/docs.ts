@@ -40,4 +40,3 @@ export const getApigwResourcesDocs = (gatewayName: string, data: any) => http.ge
 // 获取网关公开、可用的环境列表
 export const getApigwStagesDocs = (gatewayName: string, data: any) =>
   http.get(`${path}/${gatewayName}/stages/`, data);
-

@@ -27,8 +27,7 @@
           class="deploying-alert"
         >
           <div class="loading-icon">
-            <!-- TODO 补回 Spinner -->
-            <!--            <Spinner /> -->
+            <Spinner />
           </div>
           <div class="main-text">
             {{ t('正在发布中，请稍等...') }}
@@ -132,7 +131,7 @@ import {
 } from '@/services/source/programmable.ts';
 import AgEditor from '@/components/ag-editor/Index.vue';
 import { useTimeoutPoll } from '@vueuse/core';
-// import { Spinner } from 'bkui-vue/lib/icon';
+import { Spinner } from 'bkui-vue/lib/icon';
 import dayjs from 'dayjs';
 import { sumBy } from 'lodash-es';
 
@@ -144,8 +143,7 @@ interface ITimelineItem {
   filled?: boolean
   tag?: any
   content?: string
-  // icon?: typeof Spinner
-  icon?: any
+  icon?: typeof Spinner
   status?: 'doing' | 'success' | 'failure'
   duration?: number
   isParent?: boolean
@@ -380,7 +378,7 @@ const gatewayPublishTimeline = computed(() => {
         const prevEvents = gatewayEvents.value.filter(event => event.step === eventTemplate.step - 1);
         if (prevEvents.find(event => event.status === 'success' || event.status === 'failure')) {
           step.color = 'blue';
-          // step.icon = Spinner;
+          step.icon = Spinner;
         }
       }
     }
@@ -445,7 +443,7 @@ const gatewayPublishTimeline = computed(() => {
   else if (list.some(step => step.status === 'doing')) {
     parentNode.status = 'doing';
     parentNode.color = 'blue';
-    // parentNode.icon = Spinner;
+    parentNode.icon = Spinner;
     parentNode.filled = false;
   }
   else if (list.some(step => step.status === 'failure')) {
@@ -519,8 +517,7 @@ const statusStyleMap: Record<string, any> = {
   },
   pending: {
     color: 'blue',
-    // icon: Spinner,
-    icon: undefined,
+    icon: Spinner,
     // size: 'large',
   },
   success: {
@@ -534,8 +531,7 @@ const statusStyleMap: Record<string, any> = {
   },
   doing: {
     color: 'blue',
-    // icon: Spinner,
-    icon: undefined,
+    icon: Spinner,
     // size: 'large',
   },
 };

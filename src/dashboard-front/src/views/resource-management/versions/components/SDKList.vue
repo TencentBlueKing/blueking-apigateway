@@ -125,7 +125,7 @@ import { getSDKList } from '@/services/source/sdks';
 import { copy } from '@/utils';
 import { useResourceVersion } from '@/stores';
 import CreateSDK from './CreateSDK.vue';
-import TableEmpty from '@/components/table-empty/index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 
 const emits = defineEmits<{ 'on-show-version': [version: string] }>();
 
