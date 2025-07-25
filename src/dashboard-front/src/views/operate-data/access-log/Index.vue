@@ -285,9 +285,9 @@
                 </template>
                 <template #empty>
                   <TableEmpty
-                    :keyword="tableEmptyConf.keyword"
+                    :empty-type="tableEmptyConf.emptyType"
                     :abnormal="tableEmptyConf.isAbnormal"
-                    @reacquire="getSearchData"
+                    @refresh="getSearchData"
                     @clear-filter="handleClearFilterKey"
                   />
                 </template>
@@ -383,7 +383,7 @@ const searchParams = ref<ISearchParamsInterface>({
   query: '',
 });
 const tableEmptyConf = ref({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 const table = ref({
@@ -1078,14 +1078,14 @@ const handleClearFilterKey = () => {
 const updateTableEmptyConfig = () => {
   const time = dateTimeRange.value.some(Boolean);
   if (keyword.value || !table.value.list.length) {
-    tableEmptyConf.value.keyword = 'placeholder';
+    tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
   if (searchParams.value.stage_id || time) {
-    tableEmptyConf.value.keyword = '$CONSTANT';
+    tableEmptyConf.value.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.value.keyword = '';
+  tableEmptyConf.value.emptyType = '';
 };
 
 const getRowClass = (row: Record<string, any>) => {
