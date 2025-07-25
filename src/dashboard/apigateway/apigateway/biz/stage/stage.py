@@ -161,7 +161,8 @@ class StageHandler:
                 "type": "node",
                 "timeout": 30,
                 "loadbalance": "roundrobin",
-                "hosts": [{"scheme": "http", "host": "", "weight": 100}],
+                # 需要兜底host，避免资源没有绑定default backend从而导致发布时 service host 为空
+                "hosts": [{"scheme": "http", "host": "localhost", "weight": 100}],
             },
         )
         backend_config.save()
