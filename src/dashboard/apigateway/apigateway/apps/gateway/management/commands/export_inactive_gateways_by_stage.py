@@ -18,15 +18,15 @@
 #
 import csv
 import datetime
+from collections import defaultdict
 
 from django.core.management.base import BaseCommand
-from django.db.models import Count
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from apigateway.apps.metrics.models import StatisticsGatewayRequestByDay
 from apigateway.core.constants import StageStatusEnum
-from apigateway.core.models import Gateway, ReleasedResource, Stage
+from apigateway.core.models import Release, ResourceVersion, Stage
 
 
 class Command(BaseCommand):
@@ -35,7 +35,7 @@ class Command(BaseCommand):
             "--template",
             type=str,
             required=True,
-            help="网关访问地址",
+            help="环境访问地址（匹配参数：{gateway_id}/{stage_name}）",
         )
 
         parser.add_argument(
@@ -57,60 +57,75 @@ class Command(BaseCommand):
         days = options["days"]
         resource_count = options["resource_count"]
 
-        gateway_ids = (
-            Stage.objects.filter(
-                status=StageStatusEnum.ACTIVE.value,
-            )
-            .values_list("gateway_id", flat=True)
-            .distinct()
-        )
+        # 获取环境已发布的记录
+        release_version_ids = set()
+        gateway_stage_map = defaultdict(list)
+        for obj in Release.objects.filter(
+            stage__status=StageStatusEnum.ACTIVE.value,
+        ).select_related("gateway", "stage", "resource_version"):
+            release_version_ids.add(obj.resource_version_id)
+            gateway_stage_map[obj.gateway.id].append(obj.stage.name)
 
-        released_resource_gateway_id_set = set(
-            ReleasedResource.objects.filter(gateway_id__in=gateway_ids)
-            .values("gateway_id")
-            .annotate(resource_version_count=Count("resource_version_id"))
-            .filter(resource_version_count__gte=resource_count)
-            .values_list("gateway_id", flat=True)
-        )
+        # 获取符合资源数量要求的网关 ID
+        resource_version_gateway_ids = [
+            obj.gateway.id
+            for obj in ResourceVersion.objects.filter(id__in=release_version_ids).select_related("gateway")
+            if len(obj.data) >= resource_count
+        ]
 
+        # 获取符合条件的网关和环境
+        gateway_stage_set = {
+            (gateway_id, stage_name)
+            for gateway_id in resource_version_gateway_ids
+            for stage_name in gateway_stage_map.get(gateway_id, [])
+        }
+
+        # 查询指定时间段内有访问记录的网关和环境
         start_time = timezone.now() + datetime.timedelta(days=-days)
-        statistics_gateway_id_set = set(
+        statistics_gateway_stage_set = set(
             StatisticsGatewayRequestByDay.objects.filter(
-                gateway_id__in=released_resource_gateway_id_set,
+                gateway_id__in={gs[0] for gs in gateway_stage_set},
+                stage_name__in={gs[1] for gs in gateway_stage_set},
                 start_time__gte=start_time,
-            )
-            .values_list("gateway_id", flat=True)
-            .distinct()
+            ).values_list("gateway_id", "stage_name")
         )
 
-        export_gateway_ids = released_resource_gateway_id_set - statistics_gateway_id_set
+        # 获取无访问记录的网关和环境
+        export_gateway_stage_set = gateway_stage_set - statistics_gateway_stage_set
         data = [
             {
-                "name": obj.name,
+                "gateway_name": obj.gateway.name,
+                "stage_name": obj.name,
                 "desc": obj.description or "",
-                "access_url": template.format(gateway_id=obj.id),
+                "access_url": template.format(gateway_id=obj.gateway.id, stage_name=obj.name),
                 "deactivated": "否" if obj.is_active else "是",
-                "maintainers": obj._maintainers,
+                "maintainers": obj.gateway._maintainers,
                 "created_by": obj.created_by,
                 "created_time": obj.created_time,
                 "options": "",
             }
-            for obj in Gateway.objects.filter(id__in=export_gateway_ids).order_by("name")
+            for gateway_id, stage_name in export_gateway_stage_set
+            for obj in Stage.objects.filter(
+                gateway_id=gateway_id,
+                name=stage_name,
+            ).select_related("gateway")
         ]
+        data = sorted(data, key=lambda x: x["gateway_name"])
 
         if not data:
             self.stdout.write("无数据导出")
             return
 
         now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        self.export_to_csv(data, f"gateway_inactive_statistics_by_resource_{days}_{now}")
+        self.export_to_csv(data, f"gateway_inactive_statistics_by_stage_{days}_{now}")
 
     def export_to_csv(self, data, filename):
         full_path = f"{filename}.csv"
 
         with open(full_path, "w", newline="", encoding="utf-8-sig") as csvfile:
             headers = [
-                "name",
+                "gateway_name",
+                "stage_name",
                 "desc",
                 "access_url",
                 "deactivated",
@@ -120,13 +135,14 @@ class Command(BaseCommand):
                 "options",
             ]
             header_row = {
-                "name": _("网关名"),
-                "desc": _("网关描述"),
-                "access_url": _("网关访问地址"),
-                "deactivated": _("是否已停用"),
+                "gateway_name": _("网关名称"),
+                "stage_name": _("环境名称"),
+                "desc": _("环境描述"),
+                "access_url": _("环境访问地址"),
+                "deactivated": _("环境是否已停用"),
                 "maintainers": _("网关负责人"),
-                "created_by": _("网关创建人"),
-                "created_time": _("创建时间"),
+                "created_by": _("环境发布人"),
+                "created_time": _("环境发布时间"),
                 "options": _("操作选项"),
             }
             io_csv = csv.DictWriter(csvfile, fieldnames=headers, extrasaction="ignore")
