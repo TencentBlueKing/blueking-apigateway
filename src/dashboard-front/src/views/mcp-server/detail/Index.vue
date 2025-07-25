@@ -65,32 +65,32 @@
       </div>
       <div class="operate">
         <div class="line" />
-        <bk-button
+        <BkButton
           class="mr-10px"
           theme="primary"
           @click="handleEdit"
         >
           {{ t('编辑') }}
-        </bk-button>
-        <bk-button
+        </BkButton>
+        <BkButton
           class="mr-10px"
           @click="handleSuspendToggle"
         >
           {{ server.status === 1 ? t('停用') : t('启用') }}
-        </bk-button>
-        <bk-dropdown
+        </BkButton>
+        <BkDropdown
           v-model:is-show="showDropdown"
           trigger="click"
         >
-          <bk-button
+          <BkButton
             class="more-cls"
             @click="showDropdown = true"
           >
             <AgIcon name="gengduo" />
-          </bk-button>
+          </BkButton>
           <template #content>
-            <bk-dropdown-menu ext-cls="stage-more-actions">
-              <bk-dropdown-item>
+            <BkDropdownMenu ext-cls="stage-more-actions">
+              <BkDropdownItem>
                 <BkButton
                   v-bk-tooltips="{
                     content: t('请先停用再删除'),
@@ -102,19 +102,19 @@
                 >
                   {{ t('删除') }}
                 </BkButton>
-              </bk-dropdown-item>
-            </bk-dropdown-menu>
+              </BkDropdownItem>
+            </BkDropdownMenu>
           </template>
-        </bk-dropdown>
+        </BkDropdown>
       </div>
     </section>
     <section class="tab-wrapper">
-      <bk-tab
+      <BkTab
         v-model:active="active"
         class="mcp-tab"
         type="card-tab"
       >
-        <bk-tab-panel
+        <BkTabPanel
           v-for="item in panels"
           :key="item.name"
           :name="item.name"
@@ -146,8 +146,8 @@
             <!--              :markdown-str="markdownStr" -->
             <!--            /> -->
           </div>
-        </bk-tab-panel>
-      </bk-tab>
+        </BkTabPanel>
+      </BkTab>
     </section>
   </div>
   <CreateSlider

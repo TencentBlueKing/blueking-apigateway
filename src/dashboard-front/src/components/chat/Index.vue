@@ -12,7 +12,7 @@
       /> {{ t('一键拉群') }}
     </a>
 
-    <bk-dialog
+    <BkDialog
       v-model:is-show="chatDialog.visible"
       width="600"
       header-align="left"
@@ -36,7 +36,7 @@
           </div>
         </div>
         <div v-bk-tooltips="{ content: userlist.join(', ') }">
-          <bk-input
+          <BkInput
             :key="renderKey"
             v-model="userlist"
             :show-overflow-tooltips="false"
@@ -46,7 +46,7 @@
           />
         </div>
       </div>
-    </bk-dialog>
+    </BkDialog>
   </div>
 </template>
 

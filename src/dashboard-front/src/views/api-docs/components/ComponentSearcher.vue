@@ -1,7 +1,7 @@
 <template>
   <!--  组件搜索器  -->
   <div class="searcher">
-    <bk-dropdown
+    <BkDropdown
       ref="dropdown"
       :popover-options="popoverOptions"
       :disabled="curVersionList.length < 2"
@@ -14,8 +14,8 @@
         />
       </div>
       <template #content>
-        <bk-dropdown-menu class="dropdown-trigger-content bk-dropdown-list">
-          <bk-dropdown-item
+        <BkDropdownMenu class="dropdown-trigger-content bk-dropdown-list">
+          <BkDropdownItem
             v-for="item in curVersionList"
             :key="item.board_label"
             :title="item.board_label"
@@ -25,12 +25,12 @@
               href="javascript:;"
               class="f14"
             >{{ item.board_label }}</a>
-          </bk-dropdown-item>
-        </bk-dropdown-menu>
+          </BkDropdownItem>
+        </BkDropdownMenu>
       </template>
-    </bk-dropdown>
-    <div class="input-wrapper bk-dropdown-menu search-result-box">
-      <bk-input
+    </BkDropdown>
+    <div class="input-wrapper BkDropdownMenu search-result-box">
+      <BkInput
         v-model="keyword"
         class="input"
         :placeholder="t('请输入 API 名称')"
@@ -41,7 +41,7 @@
         v-if="keyword"
         class="bk-dropdown-content is-show left-align"
       >
-        <bk-loading
+        <BkLoading
           :loading="isLoading"
           :opacity="1"
         >
@@ -81,7 +81,7 @@
               </li>
             </template>
           </ul>
-        </bk-loading>
+        </BkLoading>
       </div>
     </div>
   </div>
@@ -230,7 +230,6 @@ const handleKeyup = (e: any) => {
 </script>
 
 <style lang="scss" scoped>
-
 .search-empty {
   line-height: 30px;
   text-align: center;
@@ -328,7 +327,7 @@ const handleKeyup = (e: any) => {
   }
 }
 
-.search-empty{
+.search-empty {
   line-height: 30px !important;
   text-align: center;
 }
