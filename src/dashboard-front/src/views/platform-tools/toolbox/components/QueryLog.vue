@@ -102,9 +102,9 @@
           class="empty-wrapper"
         >
           <TableEmpty
-            :keyword="tableEmptyConf.keyword"
+            :empty-type="tableEmptyConf.emptyType"
             :abnormal="tableEmptyConf.isAbnormal"
-            @reacquire="refreshData"
+            @refresh="refreshData"
             @clear-filter="refreshData"
           />
         </div>
@@ -131,10 +131,10 @@ const details = ref<any>({
   result: {},
 });
 const tableEmptyConf = ref<{
-  keyword: string
+  emptyType: string
   isAbnormal: boolean
 }>({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 
@@ -200,10 +200,10 @@ const refreshData = () => {
 
 const updateTableEmptyConfig = () => {
   if (requestId.value) {
-    tableEmptyConf.value.keyword = 'placeholder';
+    tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
-  tableEmptyConf.value.keyword = '';
+  tableEmptyConf.value.emptyType = '';
 };
 
 const formatValue = (value, field: string) => {

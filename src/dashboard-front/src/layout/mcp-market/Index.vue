@@ -114,9 +114,9 @@
         class="empty-wrapper"
       >
         <TableEmpty
-          :keyword="tableEmptyConf.keyword"
+          :empty-type="tableEmptyConf.emptyType"
           :abnormal="tableEmptyConf.isAbnormal"
-          @reacquire="getList"
+          @refresh="getList"
           @clear-filter="handleClearFilterKey"
         />
       </div>
@@ -138,10 +138,10 @@ const search = ref<string>('');
 const isPublic = ref<boolean>(false);
 const mcpAllList = ref<IMarketplaceItem[]>([]);
 const tableEmptyConf = ref<{
-  keyword: string
+  emptyType: string
   isAbnormal: boolean
 }>({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 
@@ -185,10 +185,10 @@ const goDetails = (id: number) => {
 
 const updateTableEmptyConfig = () => {
   if (search.value) {
-    tableEmptyConf.value.keyword = 'placeholder';
+    tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
-  tableEmptyConf.value.keyword = '';
+  tableEmptyConf.value.emptyType = 'empty';
 };
 
 const handleClearFilterKey = async () => {

@@ -39,9 +39,9 @@
       class="ap-nodata basic-height"
     >
       <TableEmpty
-        :keyword="tableEmptyConf.keyword"
+        :empty-type="tableEmptyConf.emptyType"
         :abnormal="tableEmptyConf.isAbnormal"
-        @reacquire="handleInit"
+        @refresh="handleInit"
         @clear-filter="handleClearFilterKey"
       />
     </div>
@@ -101,10 +101,10 @@ const chartLegend = ref<ChartLegend>({});
 const searchParams = ref<ISearchParamsType>();
 const isEmpty = ref<boolean>(false);
 const tableEmptyConf = ref<{
-  keyword: string
+  emptyType: string
   isAbnormal: boolean
 }>({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 
@@ -145,14 +145,14 @@ const handleInit = () => {
 const updateTableEmptyConfig = () => {
   const list = Object.values(searchParams.value).filter(item => !!item);
   if (list.length > 0) {
-    tableEmptyConf.value.keyword = 'placeholder';
+    tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
   if (searchParams.value.stage_id) {
-    tableEmptyConf.value.keyword = '$CONSTANT';
+    tableEmptyConf.value.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.value.keyword = '';
+  tableEmptyConf.value.emptyType = '';
 };
 
 const chartResize = () => {
