@@ -574,6 +574,8 @@ onBeforeMount(() => {
 </script>
 
 <style lang="scss" scoped>
+@use "sass:color";
+
 .page-header {
   position: sticky;
   top: 0;
@@ -715,7 +717,7 @@ onBeforeMount(() => {
 
         &::-webkit-scrollbar {
           width: 4px;
-          background-color: lighten(#c4c6cc, 80%);
+          background-color: color.scale(#c4c6cc, $lightness: 80%);
         }
 
         &::-webkit-scrollbar-thumb {
@@ -886,7 +888,7 @@ onBeforeMount(() => {
 
   &::-webkit-scrollbar {
     width: 4px;
-    background-color: lighten(#c4c6cc, 80%);
+    background-color: color.scale(#c4c6cc, $lightness: 80%);
   }
 
   &::-webkit-scrollbar-thumb {
