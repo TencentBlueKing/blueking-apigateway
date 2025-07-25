@@ -578,7 +578,7 @@ const showGuide = async () => {
 
 const handleGoToEnvOverview = () => {
   router.push({
-    name: 'apigwStageOverview',
+    name: 'StageOverview',
     params: { id: newGateway.value?.id },
   });
 };

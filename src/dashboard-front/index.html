@@ -7,8 +7,12 @@
     <title> API Gateway | 腾讯蓝鲸智云 </title>
   </head>
   <body>
-  <div id="app"></div>
-  <script src="/src/lib/bk_icon_font/iconcool.js"></script>
-  <script src="/src/main.ts" type="module"></script>
+    <div id="app"></div>
+    <script src="./runtime-env.js"></script>
+    <script>
+      var BK_DASHBOARD_FE_URL = globalThis.runtimeEnv?.BK_DASHBOARD_FE_URL || '/';
+    </script>
+    <script src="/src/lib/bk_icon_font/iconcool.js"></script>
+    <script src="/src/main.ts" type="module"></script>
   </body>
 </html>

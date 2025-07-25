@@ -378,9 +378,10 @@ watch(
   [
     () => route.meta,
     () => route.params,
+    () => route.name,
   ],
   () => {
-    activeMenuKey.value = route.meta.matchRoute as string;
+    activeMenuKey.value = route.name as string;
     gatewayId.value = Number(route.params.id || 0);
     headerTitle.value = route.meta.title as string;
     // 设置全局网关
@@ -388,6 +389,15 @@ watch(
 
     if (!route.meta?.isMenu) {
       needMenu.value = false;
+    }
+
+    // 设置一下默认展开的菜单项
+    for (let i = 0; i < menuList.value.length; i++) {
+      const item = menuList.value[i];
+      const menuItem = item.children?.find((child: any) => child.name === activeMenuKey.value);
+      if (menuItem) {
+        openedKeys.value.push(item.name);
+      }
     }
   },
   {

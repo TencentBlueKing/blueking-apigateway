@@ -31,15 +31,66 @@ export const useEnv = defineStore('useEnv', {
       BK_DEFAULT_TEST_APP_CODE: '',
       BK_PAAS_APP_REPO_URL_TMPL: '',
       EDITION: '',
+      BK_APIGATEWAY_VERSION: '',
+      BK_DOCS_URL_PREFIX: '',
+      BK_USER_WEB_API_URL: '',
+      BK_LOGIN_URL: '',
+      BK_ANALYSIS_SCRIPT_SRC: '',
+      CREATE_CHAT_API: '',
+      SEND_CHAT_API: '',
+      HELPER: {
+        name: '',
+        href: '',
+      },
+      DOC_LINKS: {
+        // 使用指南
+        GUIDE: '',
+        // “请求流水查询规则”
+        QUERY_USE: '',
+        // 蓝鲸用户认证
+        USER_VERIFY: '',
+        // API资源模板变量
+        TEMPLATE_VARS: '',
+        // 网关认证
+        AUTH: '',
+        // Swagger说明文档
+        SWAGGER: '',
+        // 跨域资源共享(CORS)
+        CORS: '',
+        // 断路器
+        BREAKER: '',
+        // 频率控制
+        RATELIMIT: '',
+        // JWT
+        JWT: '',
+        // 用户类型
+        USER_TYPE: '',
+        // API网关错误码
+        ERROR_CODE: '',
+        // 组件频率控制
+        COMPONENT_RATE_LIMIT: '',
+        // 如何开发和发布组件
+        COMPONENT_CREATE_API: '',
+        // 文档导入详情
+        IMPORT_RESOURCE_DOCS: '',
+        // 实例类型
+        INSTANCE_TYPE: '',
+        // 调用API
+        USER_API: '',
+        // 升级到 1.13 的指引说明
+        UPGRADE_TO_113_TIP: '',
+        // mcp 权限申请指引
+        MCP_SERVER_PERMISSION_APPLY: '',
+      },
     },
   }),
   getters: {
-    swaggerDocURL: () => {
-      // TODO 补充变量
-      const BK_APIGATEWAY_VERSION = '';
-      const docVersion = BK_APIGATEWAY_VERSION.split('.').slice(0, 2).join('.');
-      return `/markdown/${locale.value === 'zh-cn' ? 'ZH' : 'EN'}/APIGateway/${docVersion}`;
+    docsURLPrefix: (state) => {
+      const lang = locale.value === 'zh-cn' ? 'ZH' : 'EN';
+      const docVersion = (state.env.BK_APIGATEWAY_VERSION || '1.17.0').split('.').slice(0, 2).join('.');
+      return `${state.env.BK_DOCS_URL_PREFIX}/markdown/${lang}/APIGateway/${docVersion}`;
     },
+    userSelectorAPI: state => `${state.env.BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fs_list_users/`,
   },
   actions: {
     /**

@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { AngleDownLine } from 'bkui-vue/lib/icon';
 import { getLoginURL } from '@/utils';
-import { useUserInfo } from '@/stores';
+import { useEnv, useUserInfo } from '@/stores';
 
 const { t } = useI18n();
 const userInfoStore = useUserInfo();
+const envStore = useEnv();
 
 const handleLogout = () => {
-  location.href = getLoginURL(window.BK_LOGIN_URL, location.origin, 'small');
+  location.href = getLoginURL(envStore.env.BK_LOGIN_URL, location.origin, 'small');
 };
 </script>
 
