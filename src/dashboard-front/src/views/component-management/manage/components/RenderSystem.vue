@@ -28,7 +28,12 @@
           @input="handleSearch"
         />
       </section>
-      <div class="system-list">
+      <div
+        class="system-list"
+        :class="[
+          { 'show-notice-wrapper': isShowNoticeAlert}
+        ]"
+      >
         <template v-if="curList.length > 0">
           <div
             class="item all-item"
@@ -92,7 +97,8 @@
 </template>
 
 <script lang="ts" setup>
-import { debounce } from 'lodash';
+import { debounce } from 'lodash-es';
+import { useFeatureFlag } from '@/stores';
 import { type ISystemItem } from '@/services/source/system';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
@@ -104,6 +110,7 @@ const { list = [] } = defineProps<IProps>();
 const emit = defineEmits<Emits>();
 
 const { t } = useI18n();
+const featureFlagStore = useFeatureFlag();
 
 const curList = ref([]);
 const searchValue = ref('');
@@ -114,6 +121,7 @@ const tableEmptyConf = reactive({
   isAbnormal: false,
 });
 
+const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const systemList = computed(() => list);
 const allCount = computed(() => {
   return curList.value?.reduce((accumulator: number, current: ISystemItem) => {
@@ -233,9 +241,8 @@ defineExpose({
   .system-list {
     position: relative;
     margin-top: 6px;
-    height: 100%;
+    height: calc(100% - 40px);
     overflow-y: auto;
-    padding-bottom: 40px;
 
     &::-webkit-scrollbar {
       width: 6px;
@@ -351,15 +358,18 @@ defineExpose({
         }
       }
     }
+
     .set-pf {
       padding-left: 20px;
     }
+
     .empty-wrapper {
       width: 100%;
       position: absolute;
       top: 208px;
       left: 50%;
       transform: translate(-50%, -50%);
+
       i {
         font-size: 48px;
         color: #c3cdd7;
@@ -368,10 +378,15 @@ defineExpose({
         white-space: nowrap !important;
       }
     }
+
     .line {
       height: 1px;
       background-color: #dcdee5;
       margin: 6px 16px;
+    }
+
+    &.show-notice-wrapper {
+      height: calc(100% - 80px);
     }
   }
 }
@@ -383,6 +398,7 @@ sysmark {
   color: #3a84ff;
   font-style: normal;
 }
+
 .system-input-cls .bk-input-text input {
   background-color: #f6f7fb;
 }

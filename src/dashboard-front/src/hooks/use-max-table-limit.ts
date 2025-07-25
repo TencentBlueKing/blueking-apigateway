@@ -15,9 +15,9 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
-import { toValue } from 'vue';
 import { useWindowSize } from '@vueuse/core';
-import i18n from '@/locales';
+import { locale } from '@/locales';
+import { useFeatureFlag } from '@/stores';
 import type { ReturnRecordType } from '@/types/common';
 
 type ITableLimit = {
@@ -33,7 +33,7 @@ type ITableLimit = {
  * @returns lineH行高  topHead 表头高度
  */
 function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string, number> {
-  const curSetting = localStorage.getItem(`table-setting-${i18n.global.locale}-${className}`);
+  const curSetting = localStorage.getItem(`table-setting-${locale}-${className}`);
   const tableSize = curSetting ? JSON.parse(curSetting)?.size : 'mini';
   // 后续其他表格也可以适配，默认先以bkui-vue表格为例
   const sizeMap: ReturnRecordType<string, Record<string, number>> = {
@@ -88,17 +88,19 @@ function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string
  */
 export function useMaxTableLimit(payload?: Partial<ITableLimit>) {
   const route = useRoute();
+  const featureFlagStore = useFeatureFlag();
   const viewportHeight = toValue(useWindowSize().height);
   // 默认已占位高度
   const hasAllocatedHeight = payload?.allocatedHeight ?? 186;
   // 默认分页器高度
   const paginationH = payload?.hasPagination || typeof payload?.hasPagination === 'undefined' ? 60 : 0;
+  // 通知栏高度
+  const noticeComH = featureFlagStore.isEnabledNotice ? 40 : 0;
   // 获取表格的最大可视化区域
-  const clientHeight = viewportHeight - hasAllocatedHeight;
-  const routeName = route.name;
-  const name = payload?.className ?? routeName;
+  const clientHeight = viewportHeight - hasAllocatedHeight - noticeComH;
+  const name = payload?.className ?? route.name;
   // topHead是指vxe-table根据不同表格大小动态设置了距离表头top
-  const { lineH, topHead } = getTableSizeLineHeight(name);
+  const { lineH, topHead } = getTableSizeLineHeight(name as string);
   // 优先获取自定义传入行高，默认设置不同大小表格的固定行高
   const rowHeight = payload?.customLineHeight ?? lineH;
   // 为了防止body区域出现滚动条，需要减去表头和分页器的高度

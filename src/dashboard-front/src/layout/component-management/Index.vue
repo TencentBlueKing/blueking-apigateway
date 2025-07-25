@@ -90,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { useGateway } from '@/stores';
+import { useFeatureFlag, useGateway } from '@/stores';
 import { useGatewaysList } from '@/hooks';
 import type { IMenu } from '@/types/common';
 
@@ -99,6 +99,7 @@ const route = useRoute();
 const router = useRouter();
 // 全局公共字段存储
 const gatewayStore = useGateway();
+const featureFlagStore = useFeatureFlag();
 
 const filterData = ref({ name: '' });
 const collapse = ref(true);
@@ -137,6 +138,7 @@ const componentsMenu = shallowRef<IMenu>([
 // 获取网关数据方法
 const { getGatewaysListData } = useGatewaysList(filterData);
 
+const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const openedKeys = computed(() => componentsMenu.value.map(item => item.name));
 // 表格需要兼容的页面模块
 const needBkuiTablePage = computed(() => {
@@ -152,11 +154,15 @@ const needBkuiTablePage = computed(() => {
   ];
 });
 const routerViewWrapperClass = computed(() => {
+  const initClass = 'default-header-view';
   const displayBkuiTable = needBkuiTablePage.value.includes(route.name) ? 'need-bkui-table-wrapper' : '';
   if (route.meta.customHeader) {
     return `custom-header-view ${displayBkuiTable}`;
   }
-  return `default-header-view ${displayBkuiTable}`;
+  if (isShowNoticeAlert.value) {
+    return `${initClass} show-notice ${displayBkuiTable}`;
+  }
+  return `${initClass} ${displayBkuiTable}`;
 });
 
 // 设置网关名
@@ -359,6 +365,10 @@ onMounted(async () => {
           margin-top: 52px;
           height: 100%;
           overflow: auto;
+        }
+
+        &.show-notice {
+          height: calc(100vh - 145px);
         }
 
         &.need-bkui-table-wrapper {

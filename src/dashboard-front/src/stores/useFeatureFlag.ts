@@ -21,8 +21,13 @@ import { getFeatureFlags } from '@/services/source/basic';
 
 type FlagType = Awaited<ReturnType<typeof getFeatureFlags>>;
 
+interface IState {
+  flags: FlagType
+  showNoticeAlert: boolean
+}
+
 export const useFeatureFlag = defineStore('useFeatureFlag', {
-  state: (): Record<string, FlagType> => ({
+  state: (): IState => ({
     flags: {
       ALLOW_CREATE_APPCHAT: false,
       ALLOW_UPLOAD_SDK_TO_REPOSITORY: false,
@@ -38,6 +43,7 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
       MENU_ITEM_ESB_API_DOC: false,
       SYNC_ESB_TO_APIGW_ENABLED: false,
     },
+    showNoticeAlert: false,
   }),
   getters: {
     apiBaseUrl: () => import.meta.env.VITE_BK_USER_WEB_API_URL || '',
@@ -45,6 +51,8 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
     isTenantMode: state => !!state.flags?.ENABLE_MULTI_TENANT_MODE,
     // 是否启用了 ai 问答功能
     isAIEnabled: state => state.flags?.ENABLE_AI_COMPLETION,
+    // 是否开启了通知组件展示
+    isEnabledNotice: state => state.showNoticeAlert,
   },
   actions: {
     async fetchFlags() {
@@ -52,6 +60,9 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
         limit: 10000,
         offset: 0,
       });
+    },
+    setNoticeAlert(isShow: boolean) {
+      this.showNoticeAlert = isShow;
     },
   },
 });
