@@ -74,14 +74,14 @@ mcp_server 申请记录列表
 
 #### data.record
 
-| 参数名称                 | 参数类型   | 描述               |
-|----------------------|--------|------------------|
-| applied_by           | string | 申请人              |
-| applied_time         | string | 申请时间             |
-| handled_by           | array  | 审批人              |
-| handled_time         | int    | 审批时间             |
-| apply_status         | string | 审批状态             |
-| apply_status_display | string | 审批状态描述           |
-| comment              | string | 审批内容             |
-| reason               | string | 申请理由             |
-| expire_days          | int    | 过期时间             |
+| 参数名称                 | 参数类型   | 描述                                        |
+|----------------------|--------|-------------------------------------------|
+| applied_by           | string | 申请人                                       |
+| applied_time         | string | 申请时间                                      |
+| handled_by           | array  | 审批人                                       |
+| handled_time         | int    | 审批时间                                      |
+| apply_status         | string | 审批状态（approved：通过，rejected：驳回，pending：待审批） |
+| apply_status_display | string | 审批状态描述                                    |
+| comment              | string | 审批内容                                      |
+| reason               | string | 申请理由                                      |
+| expire_days          | int    | 过期时间                                      |
