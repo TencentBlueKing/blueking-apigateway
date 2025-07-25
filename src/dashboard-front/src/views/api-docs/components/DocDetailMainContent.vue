@@ -227,6 +227,7 @@ const handleSdkInstructionClick = () => {
 </script>
 
 <style scoped lang="scss">
+@use "sass:color";
 $primary-color: #3a84ff;
 $code-bc: #1e1e1e;
 $code-color: #63656e;
@@ -325,7 +326,7 @@ $code-color: #63656e;
 
   &::-webkit-scrollbar {
     width: 4px;
-    background-color: lighten(#c4c6cc, 80%);
+    background-color: color.scale(#c4c6cc, $lightness: 80%);
   }
 
   &:hover::-webkit-scrollbar-thumb {

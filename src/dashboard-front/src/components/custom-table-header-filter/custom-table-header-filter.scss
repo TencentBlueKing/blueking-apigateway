@@ -1,3 +1,5 @@
+@use "sass:color";
+
 .custom-header-column-wrapper {
     display: flex;
     align-items: center;
@@ -27,7 +29,7 @@
         overflow-y: auto;
         &::-webkit-scrollbar {
             width: 4px;
-            background-color: lighten(transparent, 80%);
+            background-color: color.scale(transparent, $lightness: 80%);
         }
         &::-webkit-scrollbar-thumb {
             height: 5px;
