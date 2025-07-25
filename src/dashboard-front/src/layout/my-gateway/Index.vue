@@ -166,7 +166,12 @@
 </template>
 
 <script setup lang="ts">
-import { useFeatureFlag, useGateway, usePermission } from '@/stores';
+import {
+  useFeatureFlag,
+  useGateway,
+  usePermission,
+  useStage,
+} from '@/stores';
 import { getGatewayList } from '@/services/source/gateway.ts';
 import { getPermissionApplyList } from '@/services/source/permission';
 interface IMenu {
@@ -188,6 +193,7 @@ const router = useRouter();
 const gatewayStore = useGateway();
 const featureFlagStore = useFeatureFlag();
 const permissionStore = usePermission();
+const stageStore = useStage();
 
 const collapse = ref(true);
 // 选中的菜单
@@ -196,12 +202,12 @@ const gatewayList = ref<GatewayItemType[]>([]);
 const openedKeys = ref<string[]>([]);
 const needMenu = ref(true);
 const pageName = ref('');
-
 // 当前网关Id
 const gatewayId = ref(0);
-
 // 页面header名
 const headerTitle = ref('');
+
+const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 
 const menuList = computed<IMenu[]>(() => [
   {
@@ -350,11 +356,21 @@ const needBkuiTablePage = computed(() => {
 });
 
 const routerViewWrapperClass = computed(() => {
+  const initClass = 'default-header-view';
   const displayBkuiTable = needBkuiTablePage.value.includes(route.name) ? 'need-bkui-table-wrapper' : '';
   if (route.meta.customHeader) {
     return `custom-header-view ${displayBkuiTable}`;
   }
-  return `default-header-view ${displayBkuiTable}`;
+  if (stageStore.getNotUpdatedStages?.length > 0 && isShowNoticeAlert.value) {
+    return `${initClass} has-stage-bar-show-notice ${displayBkuiTable}`;
+  }
+  if (isShowNoticeAlert.value) {
+    return `${initClass} show-notice ${displayBkuiTable}`;
+  }
+  if (stageStore.getNotUpdatedStages?.length > 0 || isShowNoticeAlert.value) {
+    return `${initClass} has-stage-bar`;
+  }
+  return `${initClass} ${displayBkuiTable}`;
 });
 
 // 监听当前路由
@@ -370,7 +386,7 @@ watch(
     // 设置全局网关
     gatewayStore.fetchGatewayDetail(gatewayId.value);
 
-    if (route.meta.isMenu === false) {
+    if (!route.meta?.isMenu) {
       needMenu.value = false;
     }
   },
@@ -426,7 +442,6 @@ onMounted(() => {
   }
 
   :deep(.navigation-nav) {
-
     .nav-slider {
       background: #fff !important;
       border-right: 1px solid #dcdee5 !important;
@@ -441,7 +456,6 @@ onMounted(() => {
     }
 
     .footer-icon {
-
       &.is-left {
         color: #63656e;
 
@@ -453,22 +467,21 @@ onMounted(() => {
       }
     }
 
-    .bk-menu{
-      background: #fff !important;
+    .bk-menu {
+      background: #ffffff !important;
 
-      .bk-menu-item{
+      .bk-menu-item {
         margin: 0;
         color: rgb(99 101 110);
 
-        .item-icon{
-
-          .default-icon{
+        .item-icon {
+          .default-icon {
             background-color: rgb(197 199 205);
           }
         }
 
-        &:hover{
-          background: #F0F1F5;
+        &:hover {
+          background: #f0f1f5;
         }
       }
 
@@ -476,24 +489,23 @@ onMounted(() => {
         color: rgb(58 132 255);
         background: rgb(225 236 255);
 
-        .item-icon{
-
-          .default-icon{
+        .item-icon {
+          .default-icon {
             background-color: rgb(58 132 255);
           }
         }
       }
     }
 
-    .submenu-header{
+    .submenu-header {
       position: relative;
 
-      .bk-badge-main{
+      .bk-badge-main {
         position: absolute;
         top: 1px;
         left: 120px;
 
-        .bk-badge{
+        .bk-badge {
           width: 6px;
           height: 6px;
           min-width: 6px;
@@ -502,19 +514,17 @@ onMounted(() => {
       }
     }
 
-    .submenu-list{
-
-      .bk-menu-item{
-
-        .item-content{
+    .submenu-list {
+      .bk-menu-item {
+        .item-content {
           position: relative;
 
-          .bk-badge-main{
+          .bk-badge-main {
             position: absolute;
             top: 6px;
             left: 56px;
 
-            .bk-badge{
+            .bk-badge {
               height: 18px;
               min-width: 18px;
               padding: 0 2px;
@@ -527,11 +537,11 @@ onMounted(() => {
       }
     }
 
-    .submenu-header-icon{
+    .submenu-header-icon {
       color: rgb(99 101 110);
     }
 
-    .submenu-header-content{
+    .submenu-header-content {
       color: rgb(99 101 110);
     }
 
@@ -555,8 +565,7 @@ onMounted(() => {
   }
 
   :deep(.navigation-container) {
-
-    .container-header{
+    .container-header {
       height: 0 !important;
       flex-basis: 0 !important;
       border-bottom: 0;
@@ -600,12 +609,12 @@ onMounted(() => {
             width: 1px;
             height: 14px;
             margin-right: 8px;
-            background: #DCDEE5;
+            background: #dcdee5;
           }
 
           .name {
             font-size: 14px;
-            color: #979BA5;
+            color: #979ba5;
           }
         }
       }
@@ -620,8 +629,16 @@ onMounted(() => {
           overflow: auto;
         }
 
-        &.has-notice {
+        &.has-stage-bar {
           height: calc(100vh - 147px);
+        }
+
+        &.show-notice {
+          height: calc(100vh - 145px);
+        }
+
+        &.has-stage-bar-show-notice {
+          height: calc(100vh - 187px);
         }
       }
 
@@ -629,9 +646,7 @@ onMounted(() => {
         overflow-y: hidden;
 
         :deep(.bk-table-body) {
-
           &.bk-scrollbar {
-
             .bk__rail-x,
             .bk__rail-y {
               display: none !important;
@@ -646,15 +661,15 @@ onMounted(() => {
     width: 224px;
 
     .bk-input {
-      background: #F5F7FA;
+      background: #f5f7fa;
       border: none;
       border-radius: 2px;
       box-shadow: none;
 
-      .bk-input--text{
+      .bk-input--text {
         font-size: 14px;
-        color: #63656E;
-        background: #F5F7FA;
+        color: #63656e;
+        background: #f5f7fa;
       }
     }
 
@@ -678,7 +693,6 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
 }
-
 </style>
 
 <style lang="scss">

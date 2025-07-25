@@ -164,7 +164,7 @@ import AddSystemSlider from './components/AddSystemSlider.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 const { t } = useI18n();
-const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 240 });
+const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 252 });
 
 const getDefaultData = () => {
   return {

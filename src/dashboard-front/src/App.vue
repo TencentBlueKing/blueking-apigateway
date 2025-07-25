@@ -17,45 +17,55 @@
  */
 <template>
   <BkConfigProvider :locale="bkuiLocale">
-    <BkNavigation
-      class="navigation-content"
-      navigation-type="top-bottom"
-      :need-menu="false"
-      default-open
-      :side-title="t('蓝鲸 API 网关')"
+    <div
+      id="app"
+      :class="[systemCls]"
     >
-      <template #side-icon>
-        <img
-          :src="LogoWithoutTitle"
-          alt="API Gateway"
-          class="max-w-none h-28px cursor-pointer"
-        >
-      </template>
-      <template #header>
-        <div class="header">
-          <div class="header-nav">
-            <template v-for="(item, index) in menuList">
-              <div
-                v-if="item.enabled"
-                :key="item.id"
-                class="header-nav-item"
-                :class="{ 'item-active': index === activeIndex }"
-                @click="() => handleNavClick(item.url, index, item.link)"
-              >
-                <span class="text">{{ item.name }}</span>
-              </div>
-            </template>
+      <NoticeComponent
+        v-if="enableShowNotice && showNoticeAlert"
+        :api-url="noticeApi"
+        @show-alert-change="handleShowAlertChange"
+      />
+      <BkNavigation
+        class="navigation-content"
+        navigation-type="top-bottom"
+        :need-menu="false"
+        default-open
+        :side-title="t('蓝鲸 API 网关')"
+      >
+        <template #side-icon>
+          <img
+            :src="LogoWithoutTitle"
+            alt="API Gateway"
+            class="max-w-none h-28px cursor-pointer"
+          >
+        </template>
+        <template #header>
+          <div class="header">
+            <div class="header-nav">
+              <template v-for="(item, index) in menuList">
+                <div
+                  v-if="item.enabled"
+                  :key="item.id"
+                  class="header-nav-item"
+                  :class="{ 'item-active': index === activeIndex }"
+                  @click="() => handleNavClick(item.url, index, item.link)"
+                >
+                  <span class="text">{{ item.name }}</span>
+                </div>
+              </template>
+            </div>
+            <div class="header-aside-wrap">
+              <LanguageToggle />
+              <UserInfo v-if="userInfoStore.info.display_name || userInfoStore.info.username" />
+            </div>
           </div>
-          <div class="header-aside-wrap">
-            <LanguageToggle />
-            <UserInfo v-if="userInfoStore.info.display_name || userInfoStore.info.username" />
-          </div>
+        </template>
+        <div class="content">
+          <RouterView v-if="userLoaded" />
         </div>
-      </template>
-      <div class="content">
-        <RouterView v-if="userLoaded" />
-      </div>
-    </BkNavigation>
+      </BkNavigation>
+    </div>
   </BkConfigProvider>
 </template>
 
@@ -65,6 +75,8 @@ import UserInfo from '@/components/user-info/Index.vue';
 import LogoWithoutTitle from '@/images/APIgateway-logo.png';
 import En from '../node_modules/bkui-vue/dist/locale/en.esm.js';
 import ZhCn from '../node_modules/bkui-vue/dist/locale/zh-cn.esm.js';
+import NoticeComponent from '@blueking/notice-component';
+import '@blueking/notice-component/dist/style.css';
 import {
   useEnv,
   useFeatureFlag,
@@ -83,13 +95,13 @@ const envStore = useEnv();
 const { configure: configureDisplayName } = useBkUserDisplayName();
 const gateway = useGateway();
 
-userInfoStore.fetchUserInfo();
-featureFlagStore.fetchFlags();
-envStore.fetchEnv();
-
+const systemCls = ref('mac');
 const locale = ref('zh-cn');
 const activeIndex = ref(0);
 const userLoaded = ref(false);
+const showNoticeAlert = ref(true);
+const enableShowNotice = ref(false);
+const noticeApi = ref(`${window.BK_DASHBOARD_URL}/notice/announcements/`);
 const curLeavePageData = ref({});
 
 const menuList: IHeaderNav[] = [
@@ -140,7 +152,16 @@ const bkuiLocale = computed(() => {
 const apigwId = computed(() => {
   return route.params.id;
 });
+const isShowNoticeAlert = computed(() => showNoticeAlert.value && enableShowNotice.value);
 
+const init = async () => {
+  userInfoStore.fetchUserInfo();
+  envStore.fetchEnv();
+  await featureFlagStore.fetchFlags();
+  enableShowNotice.value = featureFlagStore.flags.ENABLE_BK_NOTICE;
+  featureFlagStore.setNoticeAlert(showNoticeAlert.value && enableShowNotice.value);
+};
+init();
 configureDisplayName();
 
 watch(
@@ -150,11 +171,16 @@ watch(
       return;
     }
     const { meta } = route;
+    const platform = window.navigator.platform.toLowerCase();
     activeIndex.value = menuList.findIndex(menu => menu.url === meta?.topMenu);
     if (activeIndex.value === -1) {
       activeIndex.value = 0;
     }
+    if (platform.indexOf('win') > -1) {
+      systemCls.value = 'win';
+    }
     gateway.setApigwId(apigwId.value);
+    featureFlagStore.setNoticeAlert(isShowNoticeAlert.value);
     userLoaded.value = true;
   },
   {
@@ -193,85 +219,88 @@ const handleNavClick = (url: string, index: number, link: string = '') => {
   }
   getRouteData(url, index, link);
 };
+
+const handleShowAlertChange = (showNotice: boolean) => {
+  showNoticeAlert.value = showNotice;
+  featureFlagStore.setNoticeAlert(showNotice && enableShowNotice.value);
+};
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 #app {
   width: 100%;
   height: 100vh;
   min-width: 1280px;
-  overflow: auto;
+  overflow: hidden;
   font-size: 14px;
   color: #63656e;
   text-align: left;
   background: #f5f7fb;
-}
-</style>
 
-<style lang="scss" scoped>
-.navigation-content {
+  .navigation-content {
 
-  :deep(.bk-navigation-wrapper) {
+    :deep(.bk-navigation-wrapper) {
 
-    .container-content {
-      // 最小宽度应为 1280px 减去左侧菜单栏展开时的宽度 260px，即为 1020px
-      min-width: 1020px;
-      padding: 0 !important;
-    }
-  }
-
-  .content {
-    height: 100%;
-    font-size: 14px;
-  }
-
-  :deep(.title-desc) {
-    color: #eaebf0;
-    cursor: pointer;
-  }
-
-  .header {
-    display: flex;
-    width: 100%;
-    font-size: 14px;
-    color: #96A2B9;
-    align-items: center;
-    justify-content: space-between;
-
-    .header-nav {
-      display: flex;
-      flex: 1;
-      padding: 0;
-      margin: 0;
-
-      .header-nav-item {
-        margin-right: 40px;
-        color: #96A2B9;
-        list-style: none;
-
-        &.item-active {
-          color: #FFF !important;
-        }
-
-        &:hover {
-          color: #D3D9E4;
-          cursor: pointer;
-        }
-
-        text {
-          color: #96A2B9;
-
-          &:hover {
-            color: #D3D9E4;
-          }
-        }
+      .container-content {
+        // 最小宽度应为 1280px 减去左侧菜单栏展开时的宽度 260px，即为 1020px
+        min-width: 1020px;
+        padding: 0 !important;
       }
     }
 
-    .header-aside-wrap {
+    .content {
+      height: 100%;
+      font-size: 14px;
+    }
+
+    :deep(.title-desc) {
+      color: #eaebf0;
+      cursor: pointer;
+    }
+
+    .header {
       display: flex;
+      width: 100%;
+      font-size: 14px;
+      color: #96A2B9;
       align-items: center;
-      gap: 14px;
+      justify-content: space-between;
+
+      .header-nav {
+        display: flex;
+        flex: 1;
+        padding: 0;
+        margin: 0;
+
+        .header-nav-item {
+          margin-right: 40px;
+          color: #96A2B9;
+          list-style: none;
+
+          &.item-active {
+            color: #FFF !important;
+          }
+
+          &:hover {
+            color: #D3D9E4;
+            cursor: pointer;
+          }
+
+          text {
+            color: #96A2B9;
+
+            &:hover {
+              color: #D3D9E4;
+            }
+          }
+        }
+      }
+
+      .header-aside-wrap {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
     }
   }
 }
