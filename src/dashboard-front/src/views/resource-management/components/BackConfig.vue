@@ -270,7 +270,7 @@ const popoverConfirmRef = ref();
 const timeOutValue = ref('');
 const isShowPopConfirm = ref(false);
 const isTimeEmpty = ref(false);
-const timeInputRef = ref(null);
+// const timeInputRef = ref(null);
 const addBackendServiceRef = ref(null);
 const isServiceInit = ref(false);
 
@@ -296,15 +296,15 @@ const isPathValid = ref(false);
 const invalidFormElementIds = ref<string[]>([]);
 
 // 提示默认超时时间
-const formatDefaultTime = computed(() => {
-  return (payload: any) => {
-    const curServices = servicesConfigsStorage.value.find(item => item?.stage?.id === payload?.stage?.id);
-    if (curServices) {
-      return curServices.timeout;
-    }
-    return '';
-  };
-});
+// const formatDefaultTime = computed(() => {
+//   return (payload: any) => {
+//     const curServices = servicesConfigsStorage.value.find(item => item?.stage?.id === payload?.stage?.id);
+//     if (curServices) {
+//       return curServices.timeout;
+//     }
+//     return '';
+//   };
+// });
 
 const isEditService = computed(() => {
   let flag = false;
@@ -407,9 +407,9 @@ const renderTimeOutLabel = () => {
                     onInput={(value: string) => {
                       handleTimeOutInput(value);
                     }}
-                    nativeOnKeypress={(value: string) => {
-                      value = value.replace(/\d/g, '');
-                    }}
+                    // nativeOnKeypress={(value: string) => {
+                    //   value = value.replace(/\d/g, '');
+                    // }}
                     autofocus={true}
                     suffix="s"
                     onEnter={() => handleConfirmTime()}
@@ -507,48 +507,48 @@ const handleCheckPath = async () => {
     servicesCheckData.value = await backendsPathCheck(gatewayId.value, params);
     isPathValid.value = true;
   }
-  catch (error) {
+  catch {
     servicesCheckData.value = [];
     isPathValid.value = false;
   }
 };
 
-const handleTableTimeOutInput = (value: string, row: Record<string, any>) => {
-  value = value.replace(/\D/g, '');
-  if (Number(value) > 300) {
-    value = '300';
-  }
-  row.timeout = Number(value);
-  // 判断数据是否有变动，如有更新需要显示自定义标签
-  const configData = servicesConfigsStorage.value.find((item: any) => item?.stage?.id === row?.stage?.id);
-  if (configData) {
-    row.isCustom = String(row.timeout) !== String(configData.timeout) ? true : false;
-  }
-};
+// const handleTableTimeOutInput = (value: string, row: Record<string, any>) => {
+//   value = value.replace(/\D/g, '');
+//   if (Number(value) > 300) {
+//     value = '300';
+//   }
+//   row.timeout = Number(value);
+//   // 判断数据是否有变动，如有更新需要显示自定义标签
+//   const configData = servicesConfigsStorage.value.find((item: any) => item?.stage?.id === row?.stage?.id);
+//   if (configData) {
+//     row.isCustom = String(row.timeout) !== String(configData.timeout) ? true : false;
+//   }
+// };
 
-const handleTableTimeOutBlur = () => {
-  handleTimeOutTotal(servicesConfigs.value);
-};
+// const handleTableTimeOutBlur = () => {
+//   handleTimeOutTotal(servicesConfigs.value);
+// };
 
-const handleClickTableOutSide = (e: Event, row: Record<string, number | string | boolean>) => {
-  if (timeInputRef.value && !unref(timeInputRef)
-    ?.contains(e.target)) {
-    if (!row.timeout) {
-      return;
-    }
-    row.isEditTime = false;
-  }
-};
+// const handleClickTableOutSide = (e: Event, row: Record<string, number | string | boolean>) => {
+//   if (timeInputRef.value && !unref(timeInputRef)
+//     ?.contains(e.target)) {
+//     if (!row.timeout) {
+//       return;
+//     }
+//     row.isEditTime = false;
+//   }
+// };
 
-const handleEditTime = (payload: Record<string, number | string | boolean>) => {
-  servicesConfigs.value.forEach((item) => {
-    item.isEditTime = false;
-  });
-  payload = Object.assign(payload, {
-    isCustom: false,
-    isEditTime: true,
-  });
-};
+// const handleEditTime = (payload: Record<string, number | string | boolean>) => {
+//   servicesConfigs.value.forEach((item) => {
+//     item.isEditTime = false;
+//   });
+//   payload = Object.assign(payload, {
+//     isCustom: false,
+//     isEditTime: true,
+//   });
+// };
 
 const handleMouseEnter = (e: Event, row: Record<string, number | string | boolean>) => {
   setTimeout(() => {

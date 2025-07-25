@@ -1153,12 +1153,8 @@ const handleImportResource = async () => {
     isImportResultVisible.value = true;
     const import_resources = tableData.value.filter(e => e._unchecked === false)
       .map((e) => {
-        const {
-          _unchecked,
-          _localId,
-          backend,
-          ...restOfResource
-        } = e; // 去掉_unchecked 和 _localId 属性，不要发到后端
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { _unchecked, _localId, backend, ...restOfResource } = e; // 去掉_unchecked 和 _localId 属性，不要发到后端
         return {
           ...restOfResource,
           backend_config: { ...backend.config },
@@ -1278,9 +1274,12 @@ const handleErrorMsgClick = (reason: ErrorReasonType, index: number) => {
 const activeVisibleErrorMsgIndex = ref(-1);
 
 const setEditorCursor = (pos: 'top' | 'bottom') => {
-  pos === 'top'
-    ? resourceEditorRef.value?.setCursorPos({ lineNumber: 1 })
-    : resourceEditorRef.value?.setCursorPos({ toBottom: true });
+  if (pos === 'top') {
+    resourceEditorRef.value?.setCursorPos({ lineNumber: 1 });
+  }
+  else {
+    resourceEditorRef.value?.setCursorPos({ toBottom: true });
+  }
 };
 
 // 从把 jsonpath 指向的对象转换成正则

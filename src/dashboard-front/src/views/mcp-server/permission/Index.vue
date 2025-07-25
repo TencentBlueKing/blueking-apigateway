@@ -227,7 +227,7 @@ import {
   updateMcpPermissions,
 } from '@/services/source/mcp-market.ts';
 import { getServers } from '@/services/source/mcp-server';
-import TableEmpty from '@/components/table-empty/index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 import RenderCustomColumn from '@/components/custom-table-header-filter';
 import { useGateway } from '@/stores';
 

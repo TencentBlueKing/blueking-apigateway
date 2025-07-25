@@ -150,7 +150,7 @@ export function useQueryList<T>({
   // 监听筛选条件的变化
   watch(
     () => filterData,
-    debounce (() => {
+    debounce(() => {
       if (!filterNoResetPage) {
         pagination.value = { ...initPagination };
       }

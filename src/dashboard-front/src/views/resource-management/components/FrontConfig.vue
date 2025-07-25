@@ -76,7 +76,7 @@ const { detail = {}, isClone = false } = defineProps<IProps>();
 
 const { t } = useI18n();
 
-const frontRef = ref(null);
+const frontRef = ref();
 const cloneTips = ref(t('请求方法+请求路径在网关下唯一，请至少调整其中一项'));
 const frontConfigData = ref({
   path: '',
@@ -154,7 +154,8 @@ watch(
 
 watch(
   () => frontConfigData.value,
-  (val: any) => {
+  // (val: any) => {
+  () => {
     // mitt.emit('front-config', val);
   },
   { deep: true },

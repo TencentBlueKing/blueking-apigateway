@@ -223,7 +223,7 @@ import { ResizeLayout } from 'bkui-vue';
 import DocDetailMainContent from '../components/DocDetailMainContent.vue';
 import DocDetailSideContent from '../components/DocDetailSideContent.vue';
 import SDKInstructionSlider from '../components/SDKInstructionSlider.vue';
-import TableEmpty from '@/components/table-empty/index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import hljs from 'highlight.js';
 

@@ -255,7 +255,7 @@ type VersionType = {
   isLatestVersion: boolean
 };
 
-const emit = defineEmits(['done']);
+const emit = defineEmits<{ done: [void] }>();
 
 const route = useRoute();
 const router = useRouter();
@@ -463,7 +463,7 @@ const handlePublish = async () => {
     releaseSidesliderRef.value.showReleaseSideslider();
     handleCancel();
   }
-  catch (e) {
+  catch {
     Message({
       theme: 'error',
       message: t('系统错误，请稍后重试'),
