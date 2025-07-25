@@ -139,7 +139,8 @@ def create_paas_app(
         "name": app_code,
         "source_config": {
             "source_init_template": source_init_template,
-            "source_control_type": "bare_git",
+            # 工蜂：tc_git
+            "source_control_type": "bare_git" if git_info else "tc_git",
             "source_repo_url": git_info.get("repository", "") if git_info else "",
             "source_origin": 1,
             "source_dir": "",
