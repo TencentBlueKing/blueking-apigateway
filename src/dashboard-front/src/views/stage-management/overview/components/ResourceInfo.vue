@@ -211,7 +211,7 @@ import { getGatewayLabels } from '@/services/source/gateway';
 import { getStageList } from '@/services/source/stage';
 import { getVersionDetail } from '@/services/source/resource';
 // import resourceDetails from './resource-details.vue';
-import TableEmpty from '@/components/table-empty/index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 import CreateStage from './CreateStage.vue';
 import { copy } from '@/utils';
 import { useRouteParams } from '@vueuse/router';

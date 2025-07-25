@@ -185,7 +185,7 @@ import {
 } from '@/types/resource';
 import { METHOD_THEMES } from '@/enums';
 import { useTextGetter } from '@/hooks';
-import TableEmpty from '@/components/table-empty/index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 import { type IDocConfig } from '../Index.vue';
 
 interface IProps {

@@ -22,7 +22,7 @@
       navigation-type="top-bottom"
       :need-menu="false"
       default-open
-      side-title="蓝鲸 API 网关"
+      :side-title="t('蓝鲸 API 网关')"
     >
       <template #side-icon>
         <img

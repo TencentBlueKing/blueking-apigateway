@@ -320,7 +320,6 @@
       {{ t('请求配置') }}
     </div>
     <BkForm
-      ref="formRef"
       :model="formData"
       class="form-cls flex"
     >
@@ -494,7 +493,6 @@
       {{ t('后端配置') }}
     </div>
     <BkForm
-      ref="formRef"
       :model="formData"
       class="form-cls flex"
     >
@@ -1047,9 +1045,9 @@ const renderTimeOutLabel = () => {
                     onInput={(value: string) => {
                       handleTimeOutInput(value);
                     }}
-                    nativeOnKeypress={(value: string) => {
-                      value = value.replace(/\d/g, '');
-                    }}
+                    // nativeOnKeypress={(value: string) => {
+                    //   value = value.replace(/\d/g, '');
+                    // }}
                     autofocus={true}
                     suffix="s"
                     onEnter={() => handleConfirmTime()}

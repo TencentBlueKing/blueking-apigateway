@@ -7,6 +7,7 @@
         "@blueking/bk-user-display-name": "^1.0.2",
         "@blueking/bk-user-selector": "^0.0.34",
         "@blueking/bkui-form": "1.0.0-beta.6",
+        "@blueking/date-picker": "^2.0.0-beta.48",
         "@blueking/login-modal": "^1.0.6",
         "@types/js-yaml": "^4.0.9",
         "@types/markdown-it": "13",
@@ -26,6 +27,7 @@
         "lodash-es": "^4.17.21",
         "markdown-it": "13",
         "mavon-editor": "3.0.2",
+        "moment": "^2.30.1",
         "monaco-editor": "^0.52.2",
         "pinia": "^3.0.3",
         "qs": "^6.14.0",
@@ -154,6 +156,8 @@
     "@blueking/bkui-form": ["@blueking/bkui-form@1.0.0-beta.6", "", { "dependencies": { "ajv": "^8.11.0", "ajv-formats": "^2.1.1", "ajv-i18n": "^4.2.0" } }, "sha512-Bxhz8KZgUO3/DkHYFGhRDIuSzjtISjf8nAS8bJHRRA7NdFpDQ7ILUIV5eyZW+7AsArCMk6QNXO5H2BQes2n8nA=="],
 
     "@blueking/bkui-library": ["@blueking/bkui-library@0.0.0-beta.6", "", { "dependencies": { "@vue/runtime-dom": "^3.4.27" } }, "sha512-1M6pNDIOQYWzOu3uVRxo0h67d+huTbBQYDjj8+QF4Ka3HSe/mLgSrIkaZhhUVlJJl5zP8HK+UwXpkWcjL8zIsw=="],
+
+    "@blueking/date-picker": ["@blueking/date-picker@2.0.0-beta.48", "", { "peerDependencies": { "@blueking/bkui-library": "^0.0.0-beta.4", "bkui-vue": "^1.0.3-beta.38", "dayjs": "^1.11.10", "vue": "^3" } }, "sha512-w7bKluSr1KOrq8ZvqAoscbgrzn69BDFkuBKu/VB2qJVTMV1yk76kys89jA/rf/gf6mZqG7YXUiv1f6uIuSNaOQ=="],
 
     "@blueking/login-modal": ["@blueking/login-modal@1.0.6", "", {}, "sha512-zjDHiCNY2Aydo9BcFiGiiw8uodPkCSK+SthXQZQQ/8Bq4nHnz+Hkuo8rnPrwuDIgB2E2C6X+T5+6jDXqTwrZyg=="],
 
@@ -1118,6 +1122,8 @@
     "mitt": ["mitt@3.0.1", "", {}, "sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw=="],
 
     "mlly": ["mlly@1.7.4", "", { "dependencies": { "acorn": "^8.14.0", "pathe": "^2.0.1", "pkg-types": "^1.3.0", "ufo": "^1.5.4" } }, "sha512-qmdSIPC4bDJXgZTCR7XosJiNKySV7O215tsPtDN9iEO/7q/76b/ijtgRu/+epFXSJhijtTCCGp3DWS549P3xKw=="],
+
+    "moment": ["moment@2.30.1", "", {}, "sha512-uEmtNhbDOrWPFS+hdjFCBfy9f2YoyzRpwcl+DqpC6taX21FzsTLQVbMV/W7PzNSX6x/bhC1zA3c2UQ5NzH6how=="],
 
     "monaco-editor": ["monaco-editor@0.52.2", "", {}, "sha512-GEQWEZmfkOGLdd3XK8ryrfWz3AIP8YymVXiPHEdewrUq7mh0qrKrfHLNCXcbB6sTnMLnOZ3ztSiKcciFUkIJwQ=="],
 

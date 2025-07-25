@@ -6,8 +6,7 @@
       </span>
       <template v-if="isDataLoading">
         <span>
-          <!--          TODO 补回 spinner -->
-          <!--          <Spinner fill="#3a84ff" /> -->
+          <Spinner fill="#3a84ff" />
           {{ t("正在努力对比中…") }}
         </span>
       </template>
@@ -67,7 +66,7 @@
       <BkCheckbox
         v-model="searchParams.onlyUpdated"
         class="float-left mt-6px"
-        :true-value="true"
+        true-value
         :false-value="false"
       >
         {{ t("仅显示有差异的资源属性") }}
@@ -459,8 +458,8 @@
 
 <script setup lang="ts">
 import ResourceDetail from '@/components/resource-detail/Index.vue';
-// import { Spinner } from 'bkui-vue/lib/icon';
-import TableEmpty from '@/components/table-empty/index.vue';
+import { Spinner } from 'bkui-vue/lib/icon';
+import TableEmpty from '@/components/table-empty/Index.vue';
 import { getGatewayLabels } from '@/services/source/gateway';
 import {
   type IDiffData,

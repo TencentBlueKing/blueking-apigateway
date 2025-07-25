@@ -668,7 +668,7 @@ import SelectCheckBox from './components/SelectCheckBox.vue';
 import AgDropdown from '@/components/ag-dropdown/Index.vue';
 import PluginManage from '@/components/plugin-manage/Index.vue';
 import ResourceDocViewer from './components/ResourceDocViewer.vue';
-import TableEmpty from '@/components/table-empty/index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 import ResourceSettingTopBar from './components/TopBar.vue';
 import PageNotFound from '@/views/404.vue';
 // import mitt from '@/common/event-bus';
@@ -1133,7 +1133,7 @@ const dragTwoColDiv = (contentId: string, leftBoxId: string, resizeId: string/* 
 };
 
 const handleSortChange = ({ column, type }: Record<string, any>) => {
-  const typeMap: Record<string, Function> = {
+  const typeMap: Record<string, any> = {
     asc: () => {
       filterData.value.order_by = column.field;
     },

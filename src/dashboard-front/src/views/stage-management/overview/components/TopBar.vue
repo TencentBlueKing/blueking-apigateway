@@ -33,12 +33,12 @@
           :class="{ active: stageId === stage.id }"
           @click="() => handleChangeStage(stage)"
         >
-          <!-- TODO 补回 spinner 图标 -->
-          <!--          <Spinner -->
-          <!--            v-if="getStageStatus(item) === 'doing'" -->
-          <!--            fill="#3A84FF" -->
-          <!--          /> -->
+          <Spinner
+            v-if="getStageStatus(stage) === 'doing'"
+            fill="#3A84FF"
+          />
           <span
+            v-else
             class="dot"
             :class="[getStageStatus(stage)]"
           />
@@ -77,7 +77,7 @@
 
 <script setup lang="ts">
 import { type IStageListItem, getStageList } from '@/services/source/stage';
-// import { Spinner } from 'bkui-vue/lib/icon';
+import { Spinner } from 'bkui-vue/lib/icon';
 import { getStageStatus } from '@/utils';
 import { useGateway } from '@/stores';
 import { useRouteParams } from '@vueuse/router';

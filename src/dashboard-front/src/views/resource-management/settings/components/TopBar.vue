@@ -65,30 +65,23 @@
 // import mitt from '@/common/event-bus';
 import { useStage } from '@/stores';
 
+interface IProps {
+  latest?: boolean
+  currentSource?: any
+  isDetail?: boolean
+  showNewTips?: boolean
+}
+
 // const route = useRoute();
 // const apigwId = computed(() => +route.params.id);
 
-defineProps({
-  latest: {
-    type: Boolean,
-    default: false,
-  },
+const {
+  // latest = false,
+  currentSource = {},
+  isDetail = false,
+  showNewTips = false,
+} = defineProps<IProps>();
 
-  currentSource: {
-    type: Object,
-    default: {},
-  },
-
-  isDetail: {
-    type: Boolean,
-    default: false,
-  },
-
-  showNewTips: {
-    type: Boolean,
-    default: false,
-  },
-});
 const { t } = useI18n();
 const stage = useStage();
 

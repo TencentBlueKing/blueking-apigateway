@@ -334,7 +334,7 @@ import {
 } from '@/services/source/docs-esb';
 import { getGatewaysDocs } from '@/services/source/docs';
 import { useMaxTableLimit } from '@/hooks/use-max-table-limit';
-import TableEmpty from '@/components/table-empty/index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 import SDKInstructionSlider from './components/SDKInstructionSlider.vue';
 import SDKDetailDialog from './components/SDKDetailDialog.vue';
 import ComponentSearcher from './components/ComponentSearcher.vue';

@@ -234,7 +234,7 @@ import {
   type IExportParams,
 } from '@/types/common';
 import ReleaseStage from '@/components/release-stage/Index.vue';
-import TableEmpty from '@/components/table-empty/index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 import ExportResourceDialog from '../../components/ExportResourceDialog.vue';
 import { orderBy } from 'lodash-es';
 

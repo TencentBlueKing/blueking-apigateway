@@ -71,7 +71,7 @@ import {
 } from '@/hooks';
 import { Spinner } from 'bkui-vue/lib/icon';
 import { getReleaseHistories } from '@/services/source/release';
-import TableEmpty from '@/components/table-empty/index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 import {
   type IEventResponse,
   getDeployHistories,

@@ -63,8 +63,7 @@
 import dayjs from 'dayjs';
 import { getReleaseEvents } from '@/services/source/release';
 import AgEditor from '@/components/ag-editor/Index.vue';
-// TODO 补回 spinner 图标
-// import { Spinner } from 'bkui-vue/lib/icon';
+import { Spinner } from 'bkui-vue/lib/icon';
 
 interface IStep {
   name?: string
@@ -75,8 +74,7 @@ interface IStep {
   filled?: boolean
   tag?: string
   content?: string
-  // icon?: typeof Spinner
-  icon?: any
+  icon?: typeof Spinner
   status?: 'doing' | 'success' | 'failure'
   duration?: number
 }
@@ -176,8 +174,7 @@ const getLogsList = async () => {
           const prevEvents = events.filter(event => event.step === eventTemplate.step - 1);
           if (prevEvents.find(event => event.status === 'success' || event.status === 'failure')) {
             step.color = 'blue';
-            // TODO 补回图标
-            // step.icon = Spinner;
+            step.icon = Spinner;
           }
         }
       }

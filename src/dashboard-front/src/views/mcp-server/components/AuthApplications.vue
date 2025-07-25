@@ -123,7 +123,7 @@
 import { Message } from 'bkui-vue';
 import { useQueryList } from '@/hooks';
 import { authMcpPermissions, deleteMcpPermissions, getMcpPermissions } from '@/services/source/mcp-market';
-import TableEmpty from '@/components/table-empty/index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 import RenderCustomColumn from '@/components/custom-table-header-filter/index.tsx';
 import { useGateway } from '@/stores';
 
