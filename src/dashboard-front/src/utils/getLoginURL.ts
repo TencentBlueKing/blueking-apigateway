@@ -15,23 +15,12 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
-export * from './calcTextWidth';
-export * from './dom';
-export * from './encode';
-export * from './getSearchSelectorParams';
-export * from './message';
-export * from './generateColorHue';
-export * from './random';
-export * from './url';
-export * from './isAfter24h';
-export * from './copy';
-export * from './sortByKey';
-export * from './downloadFile';
-export * from './getStatusText';
-export * from './getStageStatus';
-export * from './json2Yaml';
-export * from './yaml2Json';
-export * from './getMethodsTheme';
-export * from './blobDownload';
-export * from './getStrFromFile';
-export * from './getLoginURL';
+
+// 获取登录地址
+export const getLoginURL = (url: string, cUrl: string, size: string) => {
+  const loginUrl = new URL(url);
+  loginUrl.searchParams.append('size', size);
+  loginUrl.searchParams.append('is_from_logout', '1');
+  loginUrl.searchParams.append('c_url', cUrl);
+  return loginUrl.href;
+};
