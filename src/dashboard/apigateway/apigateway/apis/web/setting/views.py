@@ -19,11 +19,13 @@
 import copy
 
 from django.conf import settings
+from django.utils import translation
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.feature.models import UserFeatureFlag
+from apigateway.conf.utils import get_doc_links
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import UserAuthTypeOutputSLZ
@@ -54,6 +56,10 @@ class UserAuthTypeRetrieveApi(generics.RetrieveAPIView):
 class EnvVarListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         env_vars = copy.copy(settings.ENV_VARS_FOR_FRONTEND)
+
+        lang = "EN" if translation.get_language() == "en" else "ZH"
+        doc_links = get_doc_links(settings.BK_APIGATEWAY_VERSION, settings.BK_DOCS_URL_PREFIX, lang)
+        env_vars["DOC_LINKS"] = doc_links
 
         return OKJsonResponse(data=env_vars)
 

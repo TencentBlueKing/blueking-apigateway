@@ -44,9 +44,10 @@ class PatchFeatures:
         return (5, 7)
 
 
-def get_doc_links(env: Env, bk_apigw_version: str, bk_docs_url_prefix: str) -> dict:
+def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "ZH") -> dict:
+    env = Env()
     version = ".".join(bk_apigw_version.split(".")[:2])
-    doc_link_prefix = f"{bk_docs_url_prefix}/markdown/ZH/APIGateway/{version}"
+    doc_link_prefix = f"{bk_docs_url_prefix}/markdown/{lang}/APIGateway/{version}"
     return {
         # 使用指南
         "GUIDE": env.str("DOC_LINK_GUIDE", default=f"{doc_link_prefix}/UserGuide/README.md"),
