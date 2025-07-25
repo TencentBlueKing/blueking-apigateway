@@ -78,8 +78,8 @@ mcp_server 申请权限列表
 
 #### data.permission
 
-| 参数名称              | 参数类型   | 描述                |
-|-------------------|--------|-------------------|
-| expires_in        | int    | 有效期               |
-| permission_status | string | 权限状态              |
-| permission_action | string | 权限操作              |
+| 参数名称         | 参数类型     | 描述          |
+|--------------|----------|-------------|
+| expires_in   | int      | 有效期         |
+| status       | string   | 权限状态        |
+| action       | string   | 权限操作        |

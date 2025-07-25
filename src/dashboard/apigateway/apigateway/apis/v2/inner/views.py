@@ -455,7 +455,9 @@ class MCPServerPermissionListApi(generics.ListAPIView):
 
         mcp_server_permissions = []
         for obj in queryset:
-            permission_status = mcp_server_permission_status.get(obj.id, MCPServerPermissionStatusEnum.PENDING.value)
+            permission_status = mcp_server_permission_status.get(
+                obj.id, MCPServerPermissionStatusEnum.NEED_APPLY.value
+            )
 
             if permission_status in [
                 MCPServerPermissionStatusEnum.REJECTED.value,
