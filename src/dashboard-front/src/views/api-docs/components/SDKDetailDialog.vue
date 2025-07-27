@@ -27,10 +27,10 @@
 
 <script setup lang="ts">
 import LangSelector from './LangSelector.vue';
-import {
-  type ISdk,
-  type LanguageType,
-} from '../types';
+import type {
+  ISdk,
+  LanguageType,
+} from '../types.d.ts';
 import SdkDetail from './SDKDetail.vue';
 import { useI18n } from 'vue-i18n';
 

@@ -92,12 +92,12 @@
 
 <script setup lang="ts">
 import DocDetailSideNav from './DocDetailSideNav.vue';
-import {
-  type IComponent,
-  type INavItem,
-  type IResource,
-  type TabType,
-} from '../types';
+import type {
+  IComponent,
+  INavItem,
+  IResource,
+  TabType,
+} from '../types.d.ts';
 import { copy } from '@/utils';
 import {
   useElementBounding,
@@ -228,6 +228,7 @@ const handleSdkInstructionClick = () => {
 
 <style scoped lang="scss">
 @use "sass:color";
+
 $primary-color: #3a84ff;
 $code-bc: #1e1e1e;
 $code-color: #63656e;

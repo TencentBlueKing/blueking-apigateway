@@ -338,15 +338,15 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 import SDKInstructionSlider from './components/SDKInstructionSlider.vue';
 import SDKDetailDialog from './components/SDKDetailDialog.vue';
 import ComponentSearcher from './components/ComponentSearcher.vue';
-import {
-  type IApiGatewayBasics,
-  type IBoard,
-  type ICategory,
-  type IComponentSdk,
-  type ISdk,
-  type ISystem,
-  type TabType,
-} from './types';
+import type {
+  IApiGatewayBasics,
+  IBoard,
+  ICategory,
+  IComponentSdk,
+  ISdk,
+  ISystem,
+  TabType,
+} from './types.d.ts';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useTemplateRefsList } from '@vueuse/core';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
