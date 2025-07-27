@@ -56,6 +56,4 @@ export default defineConfig({
       'bkui-lib': 'bkui-vue/lib',
     },
   },
-  build: { rollupOptions: { external: ['json-schema'] } },
-
 });
