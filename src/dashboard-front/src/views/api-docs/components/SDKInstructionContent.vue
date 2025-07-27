@@ -43,10 +43,10 @@ import hljs from 'highlight.js';
 import { copy } from '@/utils';
 import { getESBSDKDoc } from '@/services/source/docs-esb';
 import { getGatewaySDKDoc } from '@/services/source/sdks';
-import {
-  type LanguageType,
-  type TabType,
-} from '../types';
+import type {
+  LanguageType,
+  TabType,
+} from '../types.d.ts';
 import LangSelector from './LangSelector.vue';
 
 const { t } = useI18n();

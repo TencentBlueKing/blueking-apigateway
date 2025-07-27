@@ -205,19 +205,19 @@ import {
   getSystemAPIList,
   getSystemComponentDoc,
 } from '@/services/source/docs-esb.ts';
-import {
-  type IApiGatewayBasics,
-  type IApiGatewaySdkDoc,
-  type IBoard,
-  type IComponent,
-  type IComponentSdk,
-  type INavItem,
-  type IResource,
-  type IStage,
-  type ISystem,
-  type ISystemBasics,
-  type TabType,
-} from '../types';
+import type {
+  IApiGatewayBasics,
+  IApiGatewaySdkDoc,
+  IBoard,
+  IComponent,
+  IComponentSdk,
+  INavItem,
+  IResource,
+  IStage,
+  ISystem,
+  ISystemBasics,
+  TabType,
+} from '../types.d.ts';
 import MarkdownIt from 'markdown-it';
 import { ResizeLayout } from 'bkui-vue';
 import DocDetailMainContent from '../components/DocDetailMainContent.vue';

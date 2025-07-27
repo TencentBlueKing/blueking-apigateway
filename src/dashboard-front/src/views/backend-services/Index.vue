@@ -393,7 +393,7 @@ onBeforeMount(() => {
 
   .new-btn {
     min-width: 80px;
-    marin-right: 5px;
+    margin-right: 5px;
   }
 
   .header {
