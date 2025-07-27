@@ -1,0 +1,9 @@
+#!/usr/bin/with-contenv sh
+
+# generate the runtime-env.js
+
+echo "globalThis.runtimeEnv = { BK_DASHBOARD_FE_URL: '$BK_DASHBOARD_FE_URL/backend' };" > /var/www/runtime-env.js
+
+
+
+
