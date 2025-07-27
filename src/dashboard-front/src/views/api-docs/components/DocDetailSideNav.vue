@@ -17,7 +17,7 @@
 </template>
 
 <script lang="ts" setup>
-import { type INavItem } from '../types';
+import type { INavItem } from '../types.d.ts';
 
 interface IProps { list?: INavItem[] }
 

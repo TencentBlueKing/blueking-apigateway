@@ -20,7 +20,7 @@
 
 <script setup lang="ts">
 import { useChangeCase } from '@vueuse/integrations/useChangeCase';
-import { type LanguageType } from '../types';
+import type { LanguageType } from '../types.d.ts';
 
 interface IProps {
   width: number

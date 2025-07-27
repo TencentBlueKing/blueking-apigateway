@@ -9,8 +9,7 @@ import './styles/index.scss';
 import bkui from 'bkui-vue';
 // 全量引入 bkui-vue 样式
 import '../node_modules/bkui-vue/dist/style.variable.css';
-// icon font
-import '@/lib/bk_icon_font/style.css';
+// UnoCSS
 import 'virtual:uno.css';
 import '@unocss/reset/tailwind-compat.css';
 

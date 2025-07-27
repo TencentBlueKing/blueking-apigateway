@@ -387,9 +387,9 @@ watch(
     // 设置全局网关
     gatewayStore.fetchGatewayDetail(gatewayId.value);
 
-    if (!route.meta?.isMenu) {
-      needMenu.value = false;
-    }
+    // if (!route.meta?.isMenu) {
+    //   needMenu.value = false;
+    // }
 
     // 设置一下默认展开的菜单项
     for (let i = 0; i < menuList.value.length; i++) {
@@ -452,6 +452,7 @@ onMounted(() => {
   }
 
   :deep(.navigation-nav) {
+
     .nav-slider {
       background: #fff !important;
       border-right: 1px solid #dcdee5 !important;
@@ -466,6 +467,7 @@ onMounted(() => {
     }
 
     .footer-icon {
+
       &.is-left {
         color: #63656e;
 
@@ -478,13 +480,14 @@ onMounted(() => {
     }
 
     .bk-menu {
-      background: #ffffff !important;
+      background: #fff !important;
 
       .bk-menu-item {
         margin: 0;
         color: rgb(99 101 110);
 
         .item-icon {
+
           .default-icon {
             background-color: rgb(197 199 205);
           }
@@ -500,6 +503,7 @@ onMounted(() => {
         background: rgb(225 236 255);
 
         .item-icon {
+
           .default-icon {
             background-color: rgb(58 132 255);
           }
@@ -525,7 +529,9 @@ onMounted(() => {
     }
 
     .submenu-list {
+
       .bk-menu-item {
+
         .item-content {
           position: relative;
 
@@ -575,6 +581,7 @@ onMounted(() => {
   }
 
   :deep(.navigation-container) {
+
     .container-header {
       height: 0 !important;
       flex-basis: 0 !important;
@@ -656,7 +663,9 @@ onMounted(() => {
         overflow-y: hidden;
 
         :deep(.bk-table-body) {
+
           &.bk-scrollbar {
+
             .bk__rail-x,
             .bk__rail-y {
               display: none !important;

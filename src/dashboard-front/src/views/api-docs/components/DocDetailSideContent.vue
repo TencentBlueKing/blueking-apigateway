@@ -172,14 +172,14 @@
 <script lang="ts" setup>
 import chat from '@/components/chat/Index.vue';
 import SdkDetail from './SDKDetail.vue';
-import {
-  type IApiGatewayBasics,
-  type IApiGatewaySdkDoc,
-  type IComponentSdk,
-  type ISystemBasics,
-  type LanguageType,
-  type TabType,
-} from '../types';
+import type {
+  IApiGatewayBasics,
+  IApiGatewaySdkDoc,
+  IComponentSdk,
+  ISystemBasics,
+  LanguageType,
+  TabType,
+} from '../types.d.ts';
 import LangSelector from './LangSelector.vue';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { useBkUserDisplayName } from '@/hooks';

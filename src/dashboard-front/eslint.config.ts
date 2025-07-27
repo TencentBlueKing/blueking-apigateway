@@ -21,6 +21,7 @@ export default defineConfigWithVueTs(
     '**/dist-ssr/**',
     '**/coverage/**',
     '**/lib/**',
+    '**/public/**',
   ]),
 
   pluginVue.configs['flat/essential'],

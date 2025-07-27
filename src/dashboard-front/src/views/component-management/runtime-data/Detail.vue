@@ -200,7 +200,7 @@
 </template>
 
 <script lang="tsx" setup>
-import ChartView from './Chart';
+import ChartView from './Chart.vue';
 import moment from 'moment';
 import {
   type ITimeChartResponse,
@@ -522,20 +522,20 @@ watch(
 
   .chart-box {
     width: 100%;
-    background-color: #ffffff;
+    padding: 10px;
+    margin-bottom: 20px;
+    background-color: #fff;
     border: 1px solid #dcdee5;
     border-radius: 2px;
-    margin-bottom: 20px;
-    padding: 10px;
   }
 
   .title {
-    color: #63656e;
     font-weight: normal;
+    color: #63656e;
   }
 
   .runtime-container {
-    background-color: #ffffff;
+    background-color: #fff;
     border: 1px solid #dcdee5;
     border-radius: 2px;
   }
@@ -545,12 +545,12 @@ watch(
   }
 
   .card-box {
-    background-color: #ffffff;
-    border: 1px solid #dcdee5;
-    border-radius: 2px;
-    margin-bottom: 20px;
     display: flex;
     padding: 20px 0;
+    margin-bottom: 20px;
+    background-color: #fff;
+    border: 1px solid #dcdee5;
+    border-radius: 2px;
 
     .card {
       text-align: center;

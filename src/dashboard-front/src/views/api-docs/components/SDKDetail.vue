@@ -150,10 +150,10 @@
 <script lang="ts" setup>
 import { copy } from '@/utils';
 import { HelpFill } from 'bkui-vue/lib/icon';
-import {
-  type IApiGatewaySdkDoc,
-  type ISdk,
-} from '../types';
+import type {
+  IApiGatewaySdkDoc,
+  ISdk,
+} from '../types.d.ts';
 
 const {
   isApigw = false,
