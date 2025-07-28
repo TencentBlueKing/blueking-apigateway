@@ -1,3 +1,14 @@
+<!-- 2025-07-28 -->
+# V1.16.3 Release Log
+
+### Bug Fixes
+
+- Fix: MCP Server protocol version verification
+- Fix: Programmable gateway creation call paas interface failure
+- Fix: MCP Server permission interface protocol
+
+---
+
 <!-- 2025-07-17 -->
 # V1.16.2 Release Log
 
