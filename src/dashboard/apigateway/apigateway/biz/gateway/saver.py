@@ -20,6 +20,7 @@ from typing import Dict, List, Optional
 from django.conf import settings
 from pydantic import BaseModel, Field, field_validator
 
+from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.core.constants import GatewayTypeEnum
 from apigateway.core.models import Gateway
 
@@ -55,12 +56,14 @@ class GatewaySaver:
         data: GatewayData,
         bk_app_code: str = "",
         username: str = "",
+        source: Optional[CallSourceTypeEnum] = None,
     ):
         self.bk_app_code = bk_app_code
         self.username = username
 
         self._gateway = self._get_gateway(id)
         self._gateway_data = data
+        self._source = source
 
     def _get_gateway(self, gateway_id: Optional[int]) -> Optional[Gateway]:
         if gateway_id:
@@ -106,6 +109,7 @@ class GatewaySaver:
             api_type=self._gateway_data.gateway_type,
             allow_auth_from_params=self._gateway_data.allow_auth_from_params,
             allow_delete_sensitive_params=self._gateway_data.allow_delete_sensitive_params,
+            source=self._source,
         )
 
     def _update_gateway(self):

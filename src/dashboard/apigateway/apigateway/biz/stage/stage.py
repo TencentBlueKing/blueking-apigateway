@@ -23,6 +23,7 @@ from django.db import transaction
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import (
@@ -129,7 +130,7 @@ class StageHandler:
             StageHandler.delete(stage)
 
     @staticmethod
-    def create_default(gateway, created_by):
+    def create_default(gateway, created_by, source: Optional[CallSourceTypeEnum] = None):
         """
         创建默认 stage，网关创建时，需要创建一个默认环境
         注意：
@@ -153,6 +154,8 @@ class StageHandler:
             name=DEFAULT_BACKEND_NAME,
         )
 
+        default_host = "api.example.com" if source == CallSourceTypeEnum.OpenAPI else ""
+
         backend_config = BackendConfig(
             gateway=gateway,
             backend=backend,
@@ -162,7 +165,7 @@ class StageHandler:
                 "timeout": 30,
                 "loadbalance": "roundrobin",
                 # 需要兜底host，避免资源没有绑定default backend从而导致发布时 service host 为空
-                "hosts": [{"scheme": "http", "host": "localhost", "weight": 100}],
+                "hosts": [{"scheme": "http", "host": default_host, "weight": 100}],
             },
         )
         backend_config.save()

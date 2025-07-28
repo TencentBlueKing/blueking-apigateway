@@ -27,7 +27,12 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.common.constants import STAGE_VAR_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
 from apigateway.core import constants as core_constants
-from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, BackendTypeEnum, GatewayStatusEnum
+from apigateway.core.constants import (
+    DEFAULT_BACKEND_NAME,
+    HOST_WITHOUT_SCHEME_PATTERN,
+    BackendTypeEnum,
+    GatewayStatusEnum,
+)
 from apigateway.core.models import BackendConfig, Gateway, Proxy, Resource, ResourceVersion, Stage
 
 from .constants import APP_CODE_PATTERN, STAGE_VAR_FOR_PATH_PATTERN
@@ -210,6 +215,13 @@ class PublishValidator:
                 Proxy.objects.filter(resource_id__in=resource_ids).values_list("backend_id", flat=True).distinct()
             )
             backend_configs = BackendConfig.objects.filter(stage=self.stage, backend_id__in=backend_ids)
+
+        # default backend config 校验
+        default_backend_config = BackendConfig.objects.filter(
+            stage=self.stage, backend__name=DEFAULT_BACKEND_NAME
+        ).first()
+
+        backend_configs = backend_configs.append(default_backend_config)
 
         for backend_config in backend_configs:
             for host in backend_config.config["hosts"]:
