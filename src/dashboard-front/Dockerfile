@@ -23,4 +23,4 @@ RUN cd /var/www && rm -r localhost
 # cp nginx files
 COPY custom-configs/default /etc/nginx/conf.d/default.conf
 COPY custom-configs/30-render /etc/cont-init.d/30-render
-COPY --from=0 /app/dist/ /var/www/
+COPY --from=builder /app/dist/ /var/www/
