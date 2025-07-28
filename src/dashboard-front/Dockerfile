@@ -5,7 +5,7 @@ WORKDIR /app
 COPY . /app
 
 RUN npm install -g npm@11.5.1
-RUN npm install --force --registry=https://mirrors.tencent.com/npm/
+RUN npm install --force
 RUN npm run build-only
 
 # nginx part
