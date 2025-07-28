@@ -224,7 +224,7 @@ class GatewaySyncApi(generics.CreateAPIView):
             data=TypeAdapter(GatewayData).validate_python(data),
             bk_app_code=request.app.app_code,
             username=username,
-            source=CallSourceTypeEnum.OPENAPI,
+            source=CallSourceTypeEnum.OpenAPI,
         )
         gateway = saver.save()
 

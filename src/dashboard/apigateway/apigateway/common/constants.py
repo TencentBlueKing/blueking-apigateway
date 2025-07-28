@@ -80,6 +80,7 @@ HEADER_KEY_PATTERN = re.compile(r"^[a-zA-Z0-9-]{1,100}$")
 STAGE_VAR_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,49}$")
 
 
+# 调用来源类型
 class CallSourceTypeEnum(StructuredEnum):
     OpenAPI = EnumField("openapi")
     Web = EnumField("web")
