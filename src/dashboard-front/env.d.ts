@@ -31,11 +31,12 @@ declare module '@blueking/release-note';
 
 declare interface Window {
   BKANALYSIS?: { init: (params: { siteName: string }) => void }
-  BK_DASHBOARD_FE_URL: string
+  BK_DASHBOARD_URL: string
 }
 
 declare global {
   var runtimeEnv: RuntimeEnv;
+  var BK_DASHBOARD_URL: string;
 }
 
-export type RuntimeEnv = { BK_DASHBOARD_FE_URL: string };
+export type RuntimeEnv = { BK_DASHBOARD_URL: string };
