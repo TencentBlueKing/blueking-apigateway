@@ -951,6 +951,8 @@ GLOBAL_GATEWAY_FEATURE_FLAG = {
 # 提供给前端的环境变量值
 # ==============================================================================
 # 后续前端环境变量尽量走这个接口，而不是通过 src/dashboard-front/index.html + src/constant/config.ts 传入
+BK_DOCS_URL_PREFIX = env.str("BK_DOCS_URL_PREFIX", default="https://bk.tencent.com/docs")
+BK_APIGATEWAY_VERSION = env.str("BK_APIGATEWAY_VERSION", default="1.17.0")
 ENV_VARS_FOR_FRONTEND = {
     "EDITION": EDITION,
     "BK_APP_CODE": BK_APP_CODE,
@@ -963,7 +965,21 @@ ENV_VARS_FOR_FRONTEND = {
     "BK_DASHBOARD_FE_URL": DASHBOARD_FE_URL,
     "BK_DASHBOARD_URL": DASHBOARD_URL,
     "BK_DASHBOARD_CSRF_COOKIE_NAME": CSRF_COOKIE_NAME,
+    "BK_APIGATEWAY_VERSION": BK_APIGATEWAY_VERSION,
+    "BK_DOCS_URL_PREFIX": BK_DOCS_URL_PREFIX,
+    "BK_USER_WEB_API_URL": BK_API_URL_TMPL.format(api_name="bk-user-web") + "/prod",
+    # 登录地址，带 /login/
+    "BK_LOGIN_URL": BK_LOGIN_URL,
+    # 访问统计
+    "BK_ANALYSIS_SCRIPT_SRC": env.str("BK_ANALYSIS_SCRIPT_SRC", default=""),
+    "CREATE_CHAT_API": env.str("CREATE_CHAT_API", default=""),
+    "SEND_CHAT_API": env.str("SEND_CHAT_API", default=""),
+    "HELPER": {
+        "name": env.str("HELPER_NAME", default=""),
+        "href": env.str("HELPER_HREF", default=""),
+    },
 }
+
 
 # ==============================================================================
 # 网关资源数量限制

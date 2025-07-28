@@ -207,23 +207,22 @@ class PublishValidator:
                     if resource["proxy"].get("backend_id", None)
                 }
             )
-            backend_configs = BackendConfig.objects.filter(stage=self.stage, backend_id__in=backend_ids)
+            backend_configs = list(BackendConfig.objects.filter(stage=self.stage, backend_id__in=backend_ids))
         else:
             # 校验编辑区的资源所绑定的后端服务
             resource_ids = Resource.objects.filter(gateway=self.gateway).values_list("id", flat=True)
             backend_ids = (
                 Proxy.objects.filter(resource_id__in=resource_ids).values_list("backend_id", flat=True).distinct()
             )
-            backend_configs = BackendConfig.objects.filter(stage=self.stage, backend_id__in=backend_ids)
+            backend_configs = list(BackendConfig.objects.filter(stage=self.stage, backend_id__in=backend_ids))
 
         # default backend config 校验
         default_backend_config = BackendConfig.objects.filter(
             stage=self.stage, backend__name=DEFAULT_BACKEND_NAME
         ).first()
 
-        backend_configs = backend_configs.append(default_backend_config)
-
-        for backend_config in backend_configs:
+        all_backend_configs = backend_configs + [default_backend_config]
+        for backend_config in all_backend_configs:
             for host in backend_config.config["hosts"]:
                 if not core_constants.HOST_WITHOUT_SCHEME_PATTERN.match(host["host"]):
                     raise ReleaseValidationError(

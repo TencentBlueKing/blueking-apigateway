@@ -62,8 +62,8 @@ mcp_server 已申请权限列表
 
 #### data.permission
 
-| 参数名称              | 参数类型   | 描述                |
-|-------------------|--------|-------------------|
-| expires_in        | int    | 有效期               |
-| permission_status | string | 权限状态              |
-| permission_action | string | 权限操作              |
+| 参数名称           | 参数类型     | 描述                                                                        |
+|----------------|----------|---------------------------------------------------------------------------|
+| expires_in     | int      | 有效期                                                                       |
+| status         | string   | 权限状态（approved：已审批，rejected：已拒绝，pending：申请中，need_apply：待申请，owned：已申请，且未过期） |
+| action         | string   | 权限操作                                                                      |

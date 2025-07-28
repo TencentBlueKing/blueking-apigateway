@@ -1,5 +1,9 @@
 #!/usr/bin/with-contenv sh
 
-# render index.html with envsubst
-mv /var/www/index.html /var/www/index.html.template
-cat /var/www/index.html.template | envsubst > /var/www/index.html
+# generate the runtime-env.js
+
+echo "globalThis.runtimeEnv = { BK_DASHBOARD_URL: '$BK_DASHBOARD_URL' };" > /var/www/runtime-env.js
+
+
+
+

@@ -1,59 +1,86 @@
+/*
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) 2025 Tencent. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://opensource.org/licenses/MIT
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
+ */
+
 <template>
   <div class="auth">
-    <bk-alert
+    <BkAlert
       theme="info"
-      class="mb16"
+      class="mb-16px"
       :title="t('授权应用将会拥有这个 mcp server 工具列表对应接口的调用权限')"
       closable
     />
 
-    <div class="flex-row align-items-center justify-content-between mb16">
-      <bk-button theme="primary" @click="showAuthorizeDia">
+    <div class="flex items-center justify-between mb-16px">
+      <BkButton
+        theme="primary"
+        @click="showAuthorizeDia"
+      >
         {{ t('主动授权') }}
-      </bk-button>
+      </BkButton>
 
-      <bk-input
+      <BkInput
         v-model="filterData.bk_app_code"
-        style="width: 400px"
+        class="w-400px"
         :placeholder="t('请输入应用 ID')"
-        :clearable="true"
+        clearable
         type="search"
       />
     </div>
 
-    <bk-loading :loading="isLoading">
-      <bk-table
+    <BkLoading :loading="isLoading">
+      <BkTable
         size="small"
-        ref="tableRef"
         class="audit-table"
         border="outer"
         :data="tableData"
         :pagination="pagination"
-        :remote-pagination="true"
-        :show-overflow-tooltip="true"
+        remote-pagination
+        show-overflow-tooltip
         @page-value-change="handlePageChange"
         @page-limit-change="handlePageSizeChange"
       >
-        <bk-table-column :label="t('蓝鲸应用ID')" prop="bk_app_code" />
-        <!-- <bk-table-column :label="t('过期时间')" prop="expires" /> -->
-        <bk-table-column :label="renderTypeLabel">
+        <BkTableColumn
+          :label="t('蓝鲸应用ID')"
+          prop="bk_app_code"
+        />
+        <!-- <BkTableColumn :label="t('过期时间')" prop="expires" /> -->
+        <BkTableColumn :label="renderTypeLabel">
           <template #default="{ row }">
-            {{ getOpTypeText(row.grant_type) || '--'}}
+            {{ getOpTypeText(row.grant_type) || '--' }}
           </template>
-        </bk-table-column>
-        <bk-table-column :label="t('操作')">
+        </BkTableColumn>
+        <BkTableColumn :label="t('操作')">
           <template #default="{ row }">
-            <bk-pop-confirm
+            <BkPopConfirm
               placement="top"
               trigger="click"
               :content="t('确认删除？')"
-              @confirm="handleDel(row?.id)">
-              <bk-button text theme="primary">
+              @confirm="() => handleDel(row?.id)"
+            >
+              <BkButton
+                text
+                theme="primary"
+              >
                 {{ t('删除') }}
-              </bk-button>
-            </bk-pop-confirm>
+              </BkButton>
+            </BkPopConfirm>
           </template>
-        </bk-table-column>
+        </BkTableColumn>
         <template #empty>
           <TableEmpty
             :keyword="tableEmptyConf.keyword"
@@ -62,81 +89,79 @@
             @clear-filter="handleClearFilterKey"
           />
         </template>
-      </bk-table>
-    </bk-loading>
+      </BkTable>
+    </BkLoading>
 
-    <bk-dialog
+    <BkDialog
       v-model:is-show="isShowAuth"
       :title="t('主动授权')"
-      @closed="cancelAuth"
       width="480px"
       quick-close
+      @closed="cancelAuth"
     >
       <div class="auth-dialog">
         <p>{{ t('你将对指定的蓝鲸应用添加访问资源的权限') }}</p>
-        <bk-form
+        <BkForm
           ref="formRef"
           form-type="vertical"
           class="form-main"
           :model="formData"
           :rules="rules"
         >
-          <bk-form-item
+          <BkFormItem
             :label="t('蓝鲸应用ID')"
             property="bk_app_code"
             required
           >
-            <bk-input v-model="formData.bk_app_code" :placeholder="t('请输入应用 ID')" :clearable="true" />
-          </bk-form-item>
-        </bk-form>
+            <BkInput
+              v-model="formData.bk_app_code"
+              :placeholder="t('请输入应用 ID')"
+              clearable
+            />
+          </BkFormItem>
+        </BkForm>
       </div>
       <template #footer>
-        <bk-button theme="primary" :loading="authLoading" @click="submitAuth">
+        <BkButton
+          theme="primary"
+          :loading="authLoading"
+          @click="submitAuth"
+        >
           {{ t('确定') }}
-        </bk-button>
-        <bk-button @click="cancelAuth">
+        </BkButton>
+        <BkButton @click="cancelAuth">
           {{ t('取消') }}
-        </bk-button>
+        </BkButton>
       </template>
-    </bk-dialog>
+    </BkDialog>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { h, ref, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
 import { Message } from 'bkui-vue';
-// @ts-ignore
 import { useQueryList } from '@/hooks';
-// @ts-ignore
-import { getMcpPermissions, authMcpPermissions, deleteMcpPermissions } from '@/http/mcp-market';
-// @ts-ignore
-import TableEmpty from '@/components/table-empty.vue';
-// @ts-ignore
-import { useCommon } from '@/store';
-// @ts-ignore
-import RenderCustomColumn from '@/components/custom-table-header-filter';
+import { authMcpPermissions, deleteMcpPermissions, getMcpPermissions } from '@/services/source/mcp-market';
+import TableEmpty from '@/components/table-empty/Index.vue';
+import RenderCustomColumn from '@/components/custom-table-header-filter/index.tsx';
+import { useGateway } from '@/stores';
 
-const props = defineProps({
-  mcpServerId: {
-    type: Number,
-    default: 0,
-    required: true,
-  },
-});
+interface IProps { mcpServerId?: number }
+
+const { mcpServerId = 0 } = defineProps<IProps>();
 
 const { t } = useI18n();
-const common = useCommon();
+const gatewayStore = useGateway();
 
-const isShowAuth = ref<boolean>(false);
-const authLoading = ref<boolean>(false);
+const isShowAuth = ref(false);
+const authLoading = ref(false);
 const formData = ref({ bk_app_code: '' });
 const formRef = ref();
-const filterData = ref<{[key: string]: any}>({
+const filterData = ref<{ [key: string]: any }>({
   bk_app_code: '',
   grant_type: '',
 });
 const tableKey = ref(-1);
+
 const {
   tableData,
   pagination,
@@ -144,9 +169,17 @@ const {
   handlePageChange,
   handlePageSizeChange,
   getList,
-} = useQueryList(getMcpPermissions, filterData, props.mcpServerId);
-const curSelectData = ref<{[key: string]: any}>({ grant_type: 'ALL' });
-const tableEmptyConf = ref<{keyword: string, isAbnormal: boolean}>({
+} = useQueryList({
+  apiMethod: getMcpPermissions,
+  filterData,
+  id: mcpServerId,
+});
+
+const curSelectData = ref<{ [key: string]: any }>({ grant_type: 'ALL' });
+const tableEmptyConf = ref<{
+  keyword: string
+  isAbnormal: boolean
+}>({
   keyword: '',
   isAbnormal: false,
 });
@@ -207,9 +240,7 @@ const showAuthorizeDia = () => {
 
 const cancelAuth = () => {
   isShowAuth.value = false;
-  formData.value = {
-    bk_app_code: '',
-  };
+  formData.value = { bk_app_code: '' };
 };
 
 const submitAuth = async () => {
@@ -217,7 +248,7 @@ const submitAuth = async () => {
     authLoading.value = true;
 
     await formRef.value.validate();
-    await authMcpPermissions(common.apigwId, props.mcpServerId, formData.value);
+    await authMcpPermissions(gatewayStore.currentGateway!.id!, mcpServerId, formData.value);
 
     Message({
       theme: 'success',
@@ -225,15 +256,14 @@ const submitAuth = async () => {
     });
     cancelAuth();
     refreshTableData();
-  } catch (e) {
-    console.log(e);
-  } finally {
+  }
+  finally {
     authLoading.value = false;
   }
 };
 
 const handleDel = async (id: number) => {
-  await deleteMcpPermissions(common.apigwId, props.mcpServerId, id);
+  await deleteMcpPermissions(gatewayStore.currentGateway!.id!, mcpServerId, id);
   Message({
     theme: 'success',
     message: t('删除成功'),
@@ -288,13 +318,16 @@ watch(
 <style lang="scss" scoped>
 .auth {
   padding: 16px 24px 24px;
-  background: #FFFFFF;
+  background: #FFF;
 }
+
 .auth-dialog {
+
   p {
     font-size: 14px;
     color: #4D4F56;
   }
+
   .form-main {
     margin-top: 8px;
   }
