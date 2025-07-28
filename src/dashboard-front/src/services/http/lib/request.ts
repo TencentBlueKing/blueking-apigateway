@@ -105,7 +105,7 @@ export default class Request {
     }
 
     const config: Record<string, any> = Object.assign({}, defaultConfig, {
-      baseURL: window.BK_DASHBOARD_FE_URL,
+      baseURL: window.BK_DASHBOARD_URL,
       url: this.config.url,
       method: this.config.method,
       payload: this.config.payload || {},
