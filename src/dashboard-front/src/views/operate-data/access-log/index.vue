@@ -64,8 +64,7 @@
           <funnel class="icon" />
           <span class="title">{{ t('检索项：') }}</span>
           <bk-tag closable v-for="item in searchConditions" :key="item" @close="handleTagClose(item)">
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <span v-html="generateTagContent(item)"></span>
+            <span v-dompurify-html="generateTagContent(item)"></span>
           </bk-tag>
           <bk-button theme="primary" text @click="handleClearSearch">
             {{ t('清除') }}
