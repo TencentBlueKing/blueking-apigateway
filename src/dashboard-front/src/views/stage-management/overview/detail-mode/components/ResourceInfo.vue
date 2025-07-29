@@ -33,7 +33,7 @@
         <BkTable
           :key="tableDataKey"
           class="table-layout"
-          :data="curPageData"
+          :data="tableData"
           :pagination="pagination"
           remote-pagination
           :empty-text="emptyText"
@@ -230,7 +230,7 @@ import { getStageList } from '@/services/source/stage';
 import { getVersionDetail } from '@/services/source/resource';
 // import resourceDetails from './resource-details.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
-import CreateStage from './CreateStage.vue';
+import CreateStage from '../../components/CreateStage.vue';
 import { copy } from '@/utils';
 import { useRouteParams } from '@vueuse/router';
 
@@ -242,12 +242,11 @@ interface IProps {
 
 const {
   stageAddress,
-  // stageId,
+  stageId,
   // versionId,
 } = defineProps<IProps>();
 
 const { t } = useI18n();
-const route = useRoute();
 const gatewayId = useRouteParams('id', 0, { transform: Number });
 
 const searchValue = ref('');
@@ -266,6 +265,7 @@ const isLoading = ref(true);
 
 // 资源信息
 const resourceVersionList = ref([]);
+const tableData = ref<any[]>([]);
 
 const pagination = ref({
   current: 1,
@@ -363,9 +363,8 @@ const labelsList = computed(() => {
   });
 });
 
-// 当前页数据
-const curPageData = computed(() => {
-  return getPageData();
+watch(resourceVersionList, () => {
+  getPageData();
 });
 
 watch(
@@ -374,6 +373,17 @@ watch(
     pagination.value.current = 1;
     pagination.value.limit = 10;
   },
+);
+
+watch(
+  () => stageId,
+  async () => {
+    if (stageId) {
+      await init();
+      getPageData();
+    }
+  },
+  { immediate: true },
 );
 
 const getLabels = async () => {
@@ -437,18 +447,13 @@ const isHighlight = (v: any) => {
 };
 
 const setHighlight = (name: string) => {
-  curPageData.value?.forEach((item: any) => {
-    if (item.name === name) {
-      item.highlight = true;
-    }
-    else {
-      item.highlight = false;
-    }
+  tableData.value?.forEach((item: any) => {
+    item.highlight = item.name === name;
   });
 };
 
 const clearHighlight = () => {
-  curPageData.value?.forEach((item: any) => {
+  tableData.value?.forEach((item: any) => {
     item.highlight = false;
   });
 };
@@ -463,7 +468,7 @@ const handleCheckStage = ({ resourceName, backendName }: {
   stageSidesliderRef.value?.handleShowSideslider('check', { backendName });
 };
 
-const getPageData = () => {
+function getPageData() {
   if (!resourceVersionList.value?.length) {
     pagination.value.count = 0;
     return [];
@@ -484,14 +489,11 @@ const getPageData = () => {
     });
 
     updateTableEmptyConfig();
-  };
+  }
 
   if (chooseMethod.value?.length) {
     curAllData = curAllData?.filter((row: any) => {
-      if (chooseMethod.value?.includes(row?.method)) {
-        return true;
-      }
-      return false;
+      return !!chooseMethod.value?.includes(row?.method);
     });
 
     updateTableEmptyConfig();
@@ -500,10 +502,7 @@ const getPageData = () => {
   if (chooseLabels.value?.length) {
     curAllData = curAllData?.filter((row: any) => {
       const flag = chooseLabels.value?.some((item: any) => row?.gateway_label_names?.includes(item));
-      if (flag) {
-        return true;
-      }
-      return false;
+      return !!flag;
     });
 
     updateTableEmptyConfig();
@@ -523,8 +522,8 @@ const getPageData = () => {
   pagination.value.count = curAllData.length;
 
   isLoading.value = false;
-  return curAllData?.slice(startIndex, endIndex);
-};
+  tableData.value = curAllData?.slice(startIndex, endIndex);
+}
 
 const handleMethodFilter = () => true;
 
@@ -543,7 +542,7 @@ const handlePageSizeChange = (limit: number) => {
 
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (searchValue.value || chooseMethod.value?.length || chooseLabels.value?.length || !curPageData.value.length) {
+  if (searchValue.value || chooseMethod.value?.length || chooseLabels.value?.length || !tableData.value.length) {
     tableEmptyConf.value.keyword = 'placeholder';
     return;
   }
@@ -567,22 +566,15 @@ const handleClearFilterKey = () => {
   getPageData();
 };
 
-const init = async () => {
+async function init() {
   const data = await getStageList(gatewayId.value);
-  const paramsStage = route.query.stage || 'prod';
-
-  const curStageData = data.find((item: { name: string }) => item.name === paramsStage);
+  const curStageData = data.find((item: { id: number }) => item.id === Number(stageId));
   if (curStageData) {
     await getLabels();
     // 依赖 getLabels() 获取的标签列表，需在这之后请求
     await getResourceVersionsData(curStageData);
   }
-};
-
-// 切换环境重新执行
-onMounted(() => {
-  init();
-});
+}
 </script>
 
 <style lang="scss" scoped>

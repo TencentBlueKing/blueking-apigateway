@@ -461,7 +461,7 @@ const handleCancel = () => {
 const handleSkip = () => {
   handleCancel();
   setTimeout(() => {
-    router.push({ name: 'apigwResourceVersion' });
+    router.push({ name: 'ResourceVersion' });
   }, 300);
 };
 

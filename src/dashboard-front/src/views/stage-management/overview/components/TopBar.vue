@@ -28,7 +28,7 @@
           :key="item.key"
           class="item"
           :class="[{ active: item.key === mode }]"
-          @click="() => switchModelType(item)"
+          @click="() => switchMode(item)"
         >
           {{ item?.text }}
         </div>
@@ -36,7 +36,7 @@
     </div>
     <!-- 详情模式环境 -->
     <div
-      v-if="mode === 'detail'"
+      v-if="mode === 'detail-mode'"
       class="stage-list-container"
     >
       <ul
@@ -101,11 +101,15 @@ import { useGateway } from '@/stores';
 import { useRouteParams } from '@vueuse/router';
 import CreateStage from '@/views/stage-management/overview/components/CreateStage.vue';
 
-const mode = defineModel<string>('mode', { default: 'overview' });
-const stageId = defineModel<number>('stageId', { default: 0 });
+interface IProps { stageId: number }
+
+const mode = defineModel<string>('mode', { default: 'card-mode' });
+
+const { stageId } = defineProps<IProps>();
+
+const emit = defineEmits<{ 'change-stage': [stageId: number] }>();
 
 const { t } = useI18n();
-const router = useRouter();
 const gatewayStore = useGateway();
 
 const gatewayId = useRouteParams('id', 0, { transform: Number });
@@ -145,14 +149,14 @@ let isNextClick = false;
 
 const modeList = [
   {
-    key: 'overview',
+    key: 'card-mode',
     text: t('缩略模式'),
-    routeName: 'StageOverview',
+    routeName: 'StageOverviewCardMode',
   },
   {
-    key: 'detail',
+    key: 'detail-mode',
     text: t('详情模式'),
-    routeName: 'apigwStageDetail',
+    routeName: 'StageOverviewDetailMode',
   },
 ];
 
@@ -172,21 +176,19 @@ watch(stageList, async () => {
 });
 
 // 切换模式
-const switchModelType = (item: typeof modeList[number]) => {
+const switchMode = (item: typeof modeList[number]) => {
   mode.value = item.key;
   const firstStage = stageList.value[0];
   if (firstStage) {
     curStage.value = firstStage;
-    stageId.value = firstStage.id;
+    // stageId.value = firstStage.id;
   }
 };
 
 // 切换环境
 const handleChangeStage = async (stage: IStageListItem) => {
-  if (stage.id === curStage.value?.id) return;
   curStage.value = stage;
-  stageId.value = stage.id;
-  router.push({ query: { stage: stage.name } });
+  emit('change-stage', stage.id);
 };
 
 const handleAddStage = () => {
@@ -250,6 +252,7 @@ const handleNext = () => {
 onMounted(() => {
   setTimeout(async () => {
     stageList.value = await getStageList(gatewayId.value);
+    emit('change-stage', stageList.value[0].id);
   });
 });
 </script>
