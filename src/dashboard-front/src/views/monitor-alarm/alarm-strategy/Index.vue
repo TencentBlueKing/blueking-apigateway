@@ -150,7 +150,9 @@ const tableColumns = ref([
     field: 'effective_stages',
     render: ({ row }: { row?: Partial<IAlarmStrategy> }) => {
       if (Array.isArray(row?.effective_stages)) {
-        <div>{ row.effective_stages.length > 0 ? row.effective_stages.join() : t('所有环境')}</div>;
+        return (
+          <span>{ row.effective_stages.length > 0 ? row.effective_stages.join() : t('所有环境')}</span>
+        );
       }
       return '--';
     },
@@ -332,7 +334,6 @@ const handleAdd = () => {
     form: formData.value,
     effectiveStage: 'all',
   });
-  console.log(formData.value, initData, 555);
 };
 
 // 是否启用

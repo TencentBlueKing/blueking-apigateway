@@ -114,8 +114,8 @@
               show-overflow-tooltip
               :cell-style="{ background: '#fafbfd' }"
               class="ag-expand-table"
-              @select-all="(e: SelectionType) => handleRowSelectionAllChange(row, e)"
-              @selection-change="(e: SelectionType) => handleRowSelectionChange(row, e)"
+              @select-all="(selection: SelectionType) => handleRowSelectionAllChange(row, selection)"
+              @selection-change="(selection: SelectionType) => handleRowSelectionChange(row, selection)"
             />
           </template>
           <template #empty>
@@ -583,9 +583,7 @@ const handleRowSelectionChange = (payload: Record<string, unknown>, rowSelection
     payload.selection.push(row);
   }
   else {
-    payload.selection = payload.selection.filter(
-      (item: Record<string, string | any[]>) => item.id !== row.id,
-    );
+    payload.selection = payload.selection.filter((item: Partial<IApprovalListItem>) => item.id !== row.id);
   }
   const isSelectAll = payload.resourceList.length === payload.selection.length;
   payload.isSelectAll = isSelectAll;
@@ -779,7 +777,7 @@ const updateTableEmptyConfig = () => {
 
 watch(
   () => tableData.value,
-  async (value: any[]) => {
+  async (value: IApprovalListItem[]) => {
     permissionApplyList.value = await initResourceList(value);
     updateTableEmptyConfig();
   },

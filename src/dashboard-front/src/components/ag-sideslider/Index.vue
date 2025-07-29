@@ -68,7 +68,7 @@ const isShow = defineModel<boolean>({
 });
 
 const {
-  title = '标题',
+  title = '',
   width = 960,
   quickClose = true,
   showMask = true,
