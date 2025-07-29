@@ -138,8 +138,6 @@ import {
   type IBatchUpdateParams,
   type IExportParams,
   type IFilterParams,
-  authApiPermission,
-  authResourcePermission,
   batchUpdatePermission,
   deleteApiPermission,
   deleteResourcePermission,
@@ -229,6 +227,7 @@ const curAuthData = ref<IAuthData>({
   resource_ids: [],
   dimension: 'api',
 });
+const curAuthDataBack = ref<IAuthData>(cloneDeep(curAuthData.value));
 const appTableRef = ref<InstanceType<typeof BkTable> & { clearSelection: () => void }>();
 const componentKey = ref(0);
 const expireDays = ref(0);
@@ -746,78 +745,15 @@ const handleAuthShow = () => {
   authSliderConf.isShow = true;
 };
 
-// 主动授权 不同选项，数据的更改
-const formatData = () => {
-  const params: IAuthData = JSON.parse(JSON.stringify(curAuthData.value));
-  if (params.expire_type === 'permanent') {
-    params.expire_days = null;
-  }
-  if (params.dimension === 'api') {
-    params.resource_ids = null;
-  }
-  return params;
-};
-
-// 核查授权数据
-const checkDate = (params: IAuthData) => {
-  const codeReg = /^[a-z][a-z0-9-_]+$/;
-  if (!params.bk_app_code) {
-    Message({
-      theme: 'warning',
-      message: t('请输入蓝鲸应用ID'),
-    });
-    return false;
-  }
-
-  if (!codeReg.test(params.bk_app_code)) {
-    Message({
-      theme: 'warning',
-      delay: 5000,
-      message: t(
-        '蓝鲸应用ID格式不正确，只能包含：小写字母、数字、连字符(-)、下划线(_)，首字母必须是字母',
-      ),
-    });
-    return false;
-  }
-
-  if (['custom'].includes(params.expire_type) && !params.expire_days) {
-    Message({
-      theme: 'warning',
-      message: t('请输入有效时间'),
-    });
-    return false;
-  }
-
-  if (['resource'].includes(params.dimension) && !params.resource_ids.length) {
-    Message({
-      theme: 'warning',
-      message: t('请选择要授权的资源'),
-    });
-    return false;
-  }
-  return true;
-};
-
-// 授权接口
-const authAppDimension = async (params: IAuthData) => {
-  const fetchMethod = ['resource'].includes(params.dimension) ? authResourcePermission : authApiPermission;
-  await fetchMethod(apigwId.value, params);
-  authSliderConf.isShow = false;
+// 主动授权保存
+const handleSave = () => {
   Message({
     theme: 'success',
     message: t('授权成功！'),
   });
+  curAuthData.value = cloneDeep(curAuthDataBack.value);
   clearSelection();
   getList();
-};
-
-// 主动授权保存
-const handleSave = () => {
-  const params = formatData();
-  const isLegal = checkDate(params);
-  if (isLegal) {
-    authAppDimension(params);
-  }
 };
 
 const handleClearFilterKey = () => {

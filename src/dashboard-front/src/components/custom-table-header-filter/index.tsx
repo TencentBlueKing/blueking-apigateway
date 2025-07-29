@@ -28,6 +28,11 @@ import { cloneDeep } from 'lodash-es'; // 引入 lodash 库中的 cloneDeep 方�
 import './custom-table-header-filter.scss'; // 引入自定义的样式文件
 import { t } from '@/locales'; // 引入国际化配置
 
+type IFilter = {
+  name: string
+  id: string | number
+};
+
 export default defineComponent({
   props: {
     // 表格列的标签
@@ -50,11 +55,8 @@ export default defineComponent({
 
     // 过滤列表数据
     list: {
-      type: Array,
-
-      default: () => {
-        return [] as any[];
-      },
+      type: Array as PropType<IFilter[]>,
+      default: () => [],
     },
   },
 
@@ -66,9 +68,9 @@ export default defineComponent({
     // 控制弹出框显示状态的变量
     const isShowFilterPopover = ref(false);
     // 当前选中的值
-    const curSelectValue = ref('') as any;
+    const curSelectValue = ref<string | number>('');
     // 过滤列表数据
-    const filterList = ref([]);
+    const filterList = ref<IFilter[]>([]);
 
     // 处理打开弹出框的逻辑
     const handleOpenPopover = (e: Event) => {
@@ -77,7 +79,7 @@ export default defineComponent({
     };
 
     // 处理选中项的逻辑
-    const handleSelected = (e: Event, payload: Record<string, string>) => {
+    const handleSelected = (e: Event, payload: Record<string, string | number>) => {
       e.stopPropagation();
       curSelectValue.value = cloneDeep(payload.id);
       ctx.emit('selected', payload);
@@ -112,13 +114,15 @@ export default defineComponent({
 
     // 监听 list 属性的变化
     watch(
-      () => props.list, (payload: any[]) => {
-        filterList.value = props.hasAll
-          ? cloneDeep([...[{
+      () => props.list as IFilter[], (payload: IFilter[]) => {
+        const AllOption = [
+          {
             id: 'ALL',
             name: t('全部'),
-          }],
-          ...payload])
+          },
+        ];
+        filterList.value = props.hasAll
+          ? cloneDeep([...AllOption, ...payload])
           : cloneDeep(payload);
       },
       {
@@ -143,13 +147,13 @@ export default defineComponent({
           content={(
             <div class="custom-radio-filter-wrapper">
               {
-                filterList.value.map((item: Record<string, string>) => {
+                filterList.value.map((item: Record<string, string | number>) => {
                   return (
                     <div
                       class={[
                         'custom-radio-filter-content',
                       ]}
-                      onClick={(e: Event) => handleSelected(e, item)}
+                      onClick={(e: MouseEvent) => handleSelected(e, item)}
                     >
                       <div
                         class={[
@@ -171,7 +175,7 @@ export default defineComponent({
               class={[
                 'custom-filter-icon',
                 { 'is-open': isShowFilterPopover.value },
-                { 'is-active': curSelectValue.value && !['ALL'].includes(curSelectValue.value) },
+                { 'is-active': curSelectValue.value && !['ALL'].includes(curSelectValue.value as string) },
               ]}
               onClick={(e: Event) => {
                 handleOpenPopover(e);
