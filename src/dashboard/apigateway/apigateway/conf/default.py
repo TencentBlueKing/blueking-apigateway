@@ -957,7 +957,7 @@ ENV_VARS_FOR_FRONTEND = {
     "EDITION": EDITION,
     "BK_APP_CODE": BK_APP_CODE,
     "BK_DEFAULT_TEST_APP_CODE": DEFAULT_TEST_APP["bk_app_code"],
-    "BK_API_RESOURCE_URL_TMPL": RESOURCE_DOC_URL_TMPL,
+    "BK_API_RESOURCE_URL_TMPL": BK_API_URL_TMPL + "/{stage_name}/{resource_path}",
     "BK_COMPONENT_API_URL": BK_COMPONENT_API_URL,
     "BK_PAAS_APP_REPO_URL_TMPL": env.str(
         "BK_PAAS_APP_REPO_URL_TMPL", "https://example.com/groups/blueking-plugins/apigw/{{gateway_name}}.git"
