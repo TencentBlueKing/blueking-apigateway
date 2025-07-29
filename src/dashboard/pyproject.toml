@@ -290,6 +290,7 @@ ignore_imports = [
     "apigateway.core.management.commands.update_jwt_key -> apigateway.service.gateway_jwt",
     "apigateway.apps.gateway.management.commands.revoke_gateways -> apigateway.biz.gateway",
     "apigateway.apps.gateway.management.commands.revoke_gateways -> apigateway.controller.publisher.publish",
+    "apigateway.apps.gateway.management.commands.revoke_stage -> apigateway.controller.publisher.publish",
     # -- celery task
     "apigateway.apps.permission.tasks -> apigateway.components.*",
     "apigateway.apps.permission.tasks -> apigateway.biz.permission",
@@ -343,6 +344,8 @@ ignore_imports = [
     "apigateway.apps.gateway.management.commands.revoke_gateways -> apigateway.biz.gateway",
     "apigateway.apps.gateway.management.commands.revoke_gateways -> apigateway.controller.publisher.publish",
     "apigateway.apps.gateway.management.commands.revoke_gateways -> apigateway.core.constants",
+    "apigateway.apps.gateway.management.commands.revoke_stage -> apigateway.controller.publisher.publish",
+    "apigateway.apps.gateway.management.commands.revoke_stage -> apigateway.core.constants",
     "apigateway.apps.gateway.management.commands.export_inactive_gateways_by_stage -> apigateway.core.constants",
     # -- esb legacy
     "apigateway.apps.esb.*.* -> apigateway.core.models",

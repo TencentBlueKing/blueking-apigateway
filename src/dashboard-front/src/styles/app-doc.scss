@@ -1,0 +1,329 @@
+/*
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) 2025 Tencent. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://opensource.org/licenses/MIT
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
+ */
+
+/* stylelint-disable */
+
+.ag-markdown-view {
+  font-size: 14px;
+  font-style: normal;
+  line-height: 19px;
+  color: #63656e;
+  text-align: left;
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    padding: 0;
+    margin: 10px 0;
+    font-weight: bold;
+    line-height: 21px;
+    color: #313238;
+    text-align: left;
+  }
+
+  h1 {
+    font-size: 18px;
+  }
+
+  h2 {
+    font-size: 17px;
+  }
+
+  h3 {
+    font-size: 16px;
+  }
+
+  h4 {
+    font-size: 13px;
+  }
+
+  h5 {
+    font-size: 12px;
+  }
+
+  h6 {
+    font-size: 12px;
+  }
+
+  p {
+    font-size: 14px;
+    line-height: 22px;
+    color: #63656e;
+    word-break: break-all;
+    white-space: normal;
+  }
+
+  ul {
+    padding-left: 17px;
+    line-height: 22px;
+
+    li {
+      margin-bottom: 8px;
+      list-style: disc;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  ol {
+    padding-left: 15px;
+    line-height: 22px;
+
+    li {
+      margin-bottom: 8px;
+      list-style: decimal;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  a {
+    color: #3a84ff;
+  }
+
+  tt {
+    padding: 0 5px;
+    margin: 0 2px;
+    font-size: 75%;
+    white-space: nowrap;
+    background-color: #f8f8f8;
+    border: 1px solid #eaeaea;
+    border-radius: 3px;
+  }
+
+  table {
+    width: 100%;
+    margin: 10px 0;
+    font-size: 14px;
+    font-style: normal;
+    color: #63656e;
+    text-align: left;
+    border: 1px solid #dcdee5;
+
+    &.field-list {
+
+      th {
+        width: 12%;
+      }
+    }
+
+    em {
+      font-style: normal;
+    }
+
+    th {
+      min-width: 70px;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #63656e;
+      background: #f0f1f5;
+      border-bottom: 1px solid #dcdee5;
+
+    }
+
+    th:nth-child(1) {
+      width: 20%;
+    }
+
+    td {
+      max-width: 250px;
+      padding: 10px;
+      font-size: 13px;
+      font-style: normal;
+      color: #63656e;
+      word-break: break-all;
+      border-bottom: 1px solid #dcdee5;
+    }
+  }
+
+  pre {
+    position: relative;
+    padding: 10px;
+    overflow: auto;
+    font-size: 14px;
+    line-height: 24px;
+    color: #fff;
+    text-align: left;
+    background: #1e1e1e;
+    border-radius: 2px;
+
+    code {
+      font-family: "Lucida Console", "Courier New", Monaco, monospace;
+      color: #dcdcdc;
+      text-wrap: wrap;
+    }
+
+    .hljs {
+      margin: -10px;
+    }
+  }
+
+  .hljs {
+    padding: 10px 15px;
+    overflow-x: auto;
+    border-radius: 3px;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: #ccc;
+      border-radius: 2px;
+    }
+  }
+}
+
+.ag-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 10;
+  font-size: 18px;
+  color: #979ba5;
+  cursor: pointer;
+  background: #1e1e1e;
+  border: none;
+
+  &:hover {
+    color: #fff;
+  }
+}
+
+.ag-tag {
+  display: inline-block;
+  height: 20px;
+  padding: 0 4px;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 20px;
+  color: #c3cdd7;
+  white-space: nowrap;
+  vertical-align: middle;
+  background-color: #fafafa;
+  border-radius: 2px;
+  box-sizing: border-box;
+
+  &.danger,
+  &.delete {
+    color: #ea3536;
+    background-color: #fedddc;
+  }
+
+  &.primary,
+  &.post {
+    color: #3a84ff;
+    background-color: #e1ecff;
+  }
+
+  &.success,
+  &.any {
+    color: #2dcb56;
+    background-color: #dcffe2;
+  }
+
+  &.warning,
+  &.put {
+    color: #fe9c00;
+    background-color: #ffe8c3;
+  }
+
+  &.get {
+    color: #25a9ad;
+    background-color: #d7feff;
+  }
+
+  &.patch {
+    color: #5949e1;
+    background-color: #dad6fd;
+  }
+}
+
+.ag-link,
+.ag-doc-icon.doc-qw {
+  color: #3a84ff !important;
+}
+
+.ag-keyword {
+  font-style: normal;
+  font-weight: bold;
+  color: #3a84ff;
+}
+
+.ag-chat {
+  position: absolute;
+  right: 0;
+  bottom: -5px;
+}
+
+.ag-kv-box {
+
+  .kv-row {
+    display: flex;
+    font-size: 14px;
+    line-height: 30px;
+
+    .k {
+      width: 175px;
+      color: #979ba5;
+      text-align: left;
+    }
+
+    .v {
+      color: #313238;
+    }
+  }
+}
+
+.icon-question-circle {
+  cursor: pointer;
+}
+
+.apigw-navigation-header .header-nav-item {
+  line-height: 50px;
+
+  > span,
+  > a {
+    line-height: 50px;
+  }
+}
+
+.pre-wrapper {
+  position: relative;
+}
+
+/* markdown 样式 */
+
+.v-note-wrapper .v-note-panel .v-note-edit.divarea-wrapper .content-input-wrapper,
+.auto-textarea-wrapper .auto-textarea-input {
+  color: #fff !important;
+  background: #313238 !important;
+}
+
+.v-note-wrapper .v-note-panel .v-note-edit.divarea-wrapper .content-input-wrapper {
+  min-height: 300px;
+  border-radius: 0 0 4px 4px;
+}

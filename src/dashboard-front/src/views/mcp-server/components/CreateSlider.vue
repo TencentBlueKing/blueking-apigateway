@@ -1,3 +1,21 @@
+/*
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) 2025 Tencent. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://opensource.org/licenses/MIT
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
+ */
+
 <template>
   <BkSideslider
     v-model:is-show="isShow"
@@ -10,85 +28,146 @@
     <template #default>
       <div class="slider-content">
         <div class="main">
-          <BkAlert v-if="noValidStage" style="margin-bottom: 24px;" theme="warning">{{ t('没有可用的环境') }}</BkAlert>
-          <bk-form ref="formRef" :model="formData" :rules="rules" form-type="vertical">
-            <bk-form-item :label="t('环境')" property="stage_id" required>
-              <bk-select
+          <BkAlert
+            v-if="noValidStage"
+            class="mb-24px"
+            theme="warning"
+          >
+            {{ t('没有可用的环境') }}
+          </BkAlert>
+          <BkForm
+            ref="formRef"
+            :model="formData"
+            :rules="rules"
+            form-type="vertical"
+          >
+            <BkFormItem
+              :label="t('环境')"
+              property="stage_id"
+              required
+            >
+              <BkSelect
                 v-model="formData.stage_id"
                 :clearable="false"
                 :disabled="isEditMode || noValidStage"
                 @change="handleStageSelectChange"
               >
-                <bk-option
+                <BkOption
                   v-for="_stage in stageList"
                   :id="_stage.id"
                   :key="_stage.id"
                   :disabled="!_stage.resource_version?.version"
                   :name="_stage.name"
                 />
-              </bk-select>
-            </bk-form-item>
-            <bk-form-item :label="t('服务名称')" property="name" required>
-              <bk-input
+              </BkSelect>
+            </BkFormItem>
+            <BkFormItem
+              :label="t('服务名称')"
+              property="name"
+              required
+            >
+              <BkInput
                 v-model="formData.name"
                 :disabled="isEditMode || noValidStage"
-                :prefix="(isEditMode || noValidStage )? undefined : serverNamePrefix"
+                :prefix="(isEditMode || noValidStage) ? undefined : serverNamePrefix"
               />
               <div class="name-help-text">
-                <div class="text-body">{{ t('唯一标识，以网关名称和环境名称为前缀，创建后不可更改') }}</div>
+                <div class="text-body">
+                  {{ t('唯一标识，以网关名称和环境名称为前缀，创建后不可更改') }}
+                </div>
                 <div class="url">
-                  <div class="label">{{ t('访问地址') }}：</div>
-                  <div class="content">{{ url || previewUrl }}</div>
+                  <div class="label">
+                    {{ t('访问地址') }}：
+                  </div>
+                  <div class="content">
+                    {{ url || previewUrl }}
+                  </div>
                   <div class="suffix">
-                    <AgIcon name="copy-info" @click.stop="handleCopyClick" />
+                    <AgIcon
+                      name="copy-info"
+                      @click.stop="handleCopyClick"
+                    />
                   </div>
                 </div>
               </div>
-            </bk-form-item>
-            <bk-form-item :label="t('描述')" property="description">
-              <bk-input v-model="formData.description" :disabled="noValidStage" clearable />
-            </bk-form-item>
-            <bk-form-item :label="t('标签')" property="labels">
-              <bk-tag-input
+            </BkFormItem>
+            <BkFormItem
+              :label="t('描述')"
+              property="description"
+            >
+              <BkInput
+                v-model="formData.description"
+                :disabled="noValidStage"
+                clearable
+              />
+            </BkFormItem>
+            <BkFormItem
+              :label="t('标签')"
+              property="labels"
+            >
+              <BkTag-input
                 v-model="formData.labels"
                 :disabled="noValidStage"
                 allow-create
                 collapse-tags
                 has-delete-icon
               />
-            </bk-form-item>
-            <bk-form-item :label="t('是否公开')" property="is_public" required>
-              <bk-switcher v-model="formData.is_public" :disabled="noValidStage" theme="primary" />
-              <span style="color:#979ba5;font-size: 12px;">{{
-                  t('不公开则不会展示到 MCP 市场，且蓝鲸应用无法申请主动申请权限，只能由网关管理员给应用主动授权')
-                }}</span>
-            </bk-form-item>
+            </BkFormItem>
+            <BkFormItem
+              :label="t('是否公开')"
+              property="is_public"
+              required
+            >
+              <BkSwitcher
+                v-model="formData.is_public"
+                :disabled="noValidStage"
+                theme="primary"
+                class="mr-4px"
+              />
+              <span class="text-12px color-#979ba5">{{
+                t('不公开则不会展示到 MCP 市场，且蓝鲸应用无法申请主动申请权限，只能由网关管理员给应用主动授权')
+              }}</span>
+            </BkFormItem>
             <!-- 资源选择表格 -->
-            <bk-form-item>
+            <BkFormItem>
               <template #label>
                 <div class="resource-form-item-label">
-                  <div class="label-text"><span>{{ t('工具') }}</span><span class="required-mark">*</span></div>
+                  <div class="label-text">
+                    <span>{{ t('工具') }}</span><span class="required-mark">*</span>
+                  </div>
                   <BkButton
-                    :disabled="noValidStage || !isCurrentStageValid" text theme="primary" @click="handleRefreshClick"
+                    :disabled="noValidStage || !isCurrentStageValid"
+                    text
+                    theme="primary"
+                    @click="handleRefreshClick"
                   >
-                    <AgIcon class="mr4" name="refresh-line" />
+                    <AgIcon
+                      class="mr-4px"
+                      name="refresh-line"
+                    />
                     {{ t('刷新') }}
                   </BkButton>
                 </div>
               </template>
-              <!--              <div class="resource-tips">-->
-              <!--                {{ resourceTips }}-->
-              <!--              </div>-->
+              <!--              <div class="resource-tips"> -->
+              <!--                {{ resourceTips }} -->
+              <!--              </div> -->
               <div class="resource-tips">
                 {{ t('请从已经发布到该环境的资源列表选取资源作为 MCP Server 的工具') }}
               </div>
               <div class="resource-selector-wrapper">
                 <div class="selector-main">
-                  <div class="selector-title">{{ t('资源列表') }}</div>
-                  <div class="resource-filter">
-                    <BkInput v-model="filterKeyword" :disabled="noValidStage" type="search" />
+                  <div class="selector-title">
+                    {{ t('资源列表') }}
                   </div>
-                  <bk-table
+                  <div class="resource-filter">
+                    <BkInput
+                      v-model="filterKeyword"
+                      :disabled="noValidStage"
+                      type="search"
+                    />
+                  </div>
+                  <BkTable
                     ref="tableRef"
                     :columns="columns"
                     :data="filteredResourceList"
@@ -97,14 +176,19 @@
                     show-overflow-tooltip
                   >
                     <template #empty>
-                      <TableEmpty :keyword="filterKeyword" @clear-filter="filterKeyword = ''" />
+                      <TableEmpty
+                        :keyword="filterKeyword"
+                        @clear-filter="filterKeyword = ''"
+                      />
                     </template>
-                  </bk-table>
+                  </BkTable>
                 </div>
                 <div class="result-preview">
                   <div class="result-preview-list">
                     <div class="header-title-wrapper">
-                      <div class="name">{{ t('结果预览') }}</div>
+                      <div class="name">
+                        {{ t('结果预览') }}
+                      </div>
                       <BkButton
                         text
                         theme="primary"
@@ -114,7 +198,11 @@
                       </BkButton>
                     </div>
                     <template v-if="selections.length">
-                      <div v-for="(name, index) in selections" :key="index" class="list-main">
+                      <div
+                        v-for="(name, index) in selections"
+                        :key="index"
+                        class="list-main"
+                      >
                         <div class="list-item">
                           <span class="name">
                             {{ name }}
@@ -132,77 +220,73 @@
                   </div>
                 </div>
               </div>
-            </bk-form-item>
-          </bk-form>
+            </BkFormItem>
+          </BkForm>
         </div>
       </div>
     </template>
     <template #footer>
-      <div style="margin-left: 16px;">
-        <bk-button :disabled="noValidStage" style="width: 100px" theme="primary" @click="handleSubmit">
+      <div class="ml-16px">
+        <BkButton
+          :disabled="noValidStage"
+          class="w-100px!"
+          theme="primary"
+          @click="handleSubmit"
+        >
           {{ t('确定') }}
-        </bk-button>
-        <bk-button style="margin-left: 4px; width: 100px" @click="handleCancel">
+        </BkButton>
+        <BkButton
+          class="w-100px! ml-4px"
+          @click="handleCancel"
+        >
           {{ t('取消') }}
-        </bk-button>
+        </BkButton>
       </div>
     </template>
   </BkSideslider>
 </template>
 
 <script lang="tsx" setup>
-import { useI18n } from 'vue-i18n';
-import {
-  computed,
-  ref,
-  watch,
-} from 'vue';
-import { useRouter } from 'vue-router';
-import {
-  getResourceVersionsInfo,
-  getStageList,
-} from '@/http';
-import { useCommon } from '@/store';
-import AgIcon from '@/components/ag-icon.vue';
-import { IPagination } from '@/types';
+import { getStageList } from '@/services/source/stage';
+import { getVersionDetail } from '@/services/source/resource';
+import { type IPagination } from '@/types/common';
 import { refDebounced } from '@vueuse/core';
 import {
   Form,
   Message,
   Table,
 } from 'bkui-vue';
-import TableEmpty from '@/components/table-empty.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 import {
   createServer,
   getServer,
   patchServer,
-} from '@/http/mcp-server';
+} from '@/services/source/mcp-server';
 import { useSidebar } from '@/hooks';
-import { copy } from '@/common/util';
+import { copy } from '@/utils';
+import {
+  useEnv,
+  useGateway,
+} from '@/stores';
 
-const { BK_API_RESOURCE_URL_TMPL } = window;
-
-interface IProps {
-  serverId?: number,
-}
+interface IProps { serverId?: number }
 
 interface FormData {
-  name: string,
-  description: string,
-  stage_id: number | undefined,
-  is_public: boolean,
-  labels: string[],
+  name: string
+  description: string
+  stage_id: number | undefined
+  is_public: boolean
+  labels: string[]
 }
 
 const { serverId } = defineProps<IProps>();
 
-const emit = defineEmits<{
-  updated: [],
-}>();
+const emit = defineEmits<{ updated: [] }>();
 
 const { t } = useI18n();
 const router = useRouter();
-const common = useCommon();
+const gatewayStore = useGateway();
+const envStore = useEnv();
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 
 const isShow = ref(false);
@@ -241,33 +325,37 @@ const rules = {
 };
 
 const methodTagThemeMap = {
-  'POST': 'info',
-  'GET': 'success',
-  'DELETE': 'danger',
-  'PUT': 'warning',
-  'PATCH': 'info',
-  'ANY': 'success',
+  POST: 'info',
+  GET: 'success',
+  DELETE: 'danger',
+  PUT: 'warning',
+  PATCH: 'info',
+  ANY: 'success',
 };
 
 const columns = [
   {
-    label: () => <bk-checkbox
-      indeterminate={!!selections.value.length && selections.value.length !== resourceList.value.length}
-      modelValue={selections.value.length && selections.value.length === resourceList.value.length}
-      onChange={(checked: boolean) => handleSelectAllResource(checked)}
-    />,
+    label: () => (
+      <bk-checkbox
+        indeterminate={!!selections.value.length && selections.value.length !== resourceList.value.length}
+        modelValue={selections.value.length && selections.value.length === resourceList.value.length}
+        onChange={(checked: boolean) => handleSelectAllResource(checked)}
+      />
+    ),
     width: 60,
     align: 'center',
-    render: ({ row }: any) => <bk-checkbox
-      modelValue={isRowSelected(row)}
-      disabled={!row.has_openapi_schema}
-      onChange={(checked: boolean) => handleSelectResource(row, checked)}
-    />,
+    render: ({ row }: any) => (
+      <bk-checkbox
+        modelValue={isRowSelected(row)}
+        disabled={!row.has_openapi_schema}
+        onChange={(checked: boolean) => handleSelectResource(row, checked)}
+      />
+    ),
   },
   {
     label: t('资源名称'),
-    render: ({ row }: any) =>
-      <bk-button
+    render: ({ row }: any) => (
+      <BkButton
         text
         theme="primary"
         v-bk-tooltips={{
@@ -275,7 +363,10 @@ const columns = [
           disabled: row.has_openapi_schema,
         }}
         onClick={() => handleToolNameClick(row)}
-      >{row.name}</bk-button>,
+      >
+        {row.name}
+      </BkButton>
+    ),
   },
   {
     label: t('是否配置请求参数声明'),
@@ -287,9 +378,13 @@ const columns = [
     label: t('请求方法'),
     width: 100,
     showOverflowTooltips: false,
-    render: ({ row }: any) => <bk-tag
-      theme={methodTagThemeMap[row.method as keyof typeof methodTagThemeMap]}
-    >{row.method}</bk-tag>,
+    render: ({ row }: any) => (
+      <BkTag
+        theme={methodTagThemeMap[row.method as keyof typeof methodTagThemeMap]}
+      >
+        {row.method}
+      </BkTag>
+    ),
   },
   {
     label: t('请求路径'),
@@ -304,10 +399,11 @@ const columns = [
 const isEditMode = computed(() => !!serverId);
 const stage = computed(() => stageList.value.find(stage => stage.id === formData.value.stage_id));
 const stageName = computed(() => stage.value?.name || '');
-const serverNamePrefix = computed(() => `${common.curApigwData.name}-${stageName.value}-`);
+const serverNamePrefix = computed(() => `${gatewayStore.currentGateway!.name}-${stageName.value}-`);
 const sliderTitle = computed(() => {
-  return isEditMode.value ? t('编辑 {n}', { n: `${serverNamePrefix.value}${formData.value.name}` })
-                          : t('创建 MCP Server');
+  return isEditMode.value
+    ? t('编辑 {n}', { n: `${serverNamePrefix.value}${formData.value.name}` })
+    : t('创建 MCP Server');
 });
 
 const filteredResourceList = computed(() => {
@@ -320,11 +416,11 @@ const filteredResourceList = computed(() => {
 });
 
 const previewUrl = computed(() => {
-  const prefix = BK_API_RESOURCE_URL_TMPL
+  const prefix = envStore.env.BK_API_RESOURCE_URL_TMPL
     .replace('{api_name}', 'bk-apigateway')
     .replace('{stage_name}', 'prod')
-    .replace('{resource_path}', 'api/v2/mcp-servers')
-  return `${prefix || ''}/${serverNamePrefix.value}${formData.value.name}/sse/`
+    .replace('{resource_path}', 'api/v2/mcp-servers');
+  return `${prefix || ''}/${serverNamePrefix.value}${formData.value.name}/sse/`;
 });
 
 // const resourceTips = computed(() => t('请从已经发布到 {s} 环境的资源列表选取资源作为 MCP Server 的工具', { s: stage.value.name || '--' }))
@@ -336,13 +432,14 @@ watch(isShow, async () => {
       await fetchServer();
     }
     initSidebarFormData(formData.value);
-  } else {
+  }
+  else {
     resetSliderData();
   }
 });
 
 const handleSubmit = async () => {
-  await formRef.value.validate();
+  await formRef.value!.validate();
   if (selections.value.length === 0) {
     Message({
       theme: 'error',
@@ -363,7 +460,7 @@ const handleSubmit = async () => {
       resource_names: [...selections.value],
     };
     await patchServer(
-      common.apigwId,
+      gatewayStore.currentGateway!.id!,
       serverId,
       params,
     );
@@ -371,13 +468,14 @@ const handleSubmit = async () => {
       theme: 'success',
       message: t('编辑成功'),
     });
-  } else {
+  }
+  else {
     const params = Object.assign({}, formData.value, {
       name: `${serverNamePrefix.value}${formData.value.name}`,
       resource_names: [...selections.value],
     });
     await createServer(
-      common.apigwId,
+      gatewayStore.currentGateway!.id!,
       params,
     );
     Message({
@@ -391,25 +489,27 @@ const handleSubmit = async () => {
 
 const noValidStage = computed(() => stageList.value.every(stage => stage.status === 0));
 
-const isCurrentStageValid = computed(() => stageList.value.find(stage => stage.id === formData.value.stage_id)?.status === 1);
+const isCurrentStageValid = computed(() =>
+  stageList.value.find(stage => stage.id === formData.value.stage_id)?.status === 1);
 
 const fetchStageList = async () => {
   try {
     isLoading.value = true;
-    const response = await getStageList(common.apigwId);
+    const response = await getStageList(gatewayStore.currentGateway!.id!);
     stageList.value = response || [];
     const validStage = stageList.value.find(stage => stage.status === 1);
     formData.value.stage_id = validStage?.id ?? undefined;
     if (formData.value.stage_id) {
       await fetchStageResources();
     }
-  } finally {
+  }
+  finally {
     isLoading.value = false;
   }
 };
 
 const fetchServer = async () => {
-  const response = await getServer(common.apigwId, serverId!);
+  const response = await getServer(gatewayStore.currentGateway!.id!, serverId!);
   formData.value.name = response.name || '';
   formData.value.description = response.description || '';
   formData.value.labels = response.labels || [];
@@ -417,48 +517,51 @@ const fetchServer = async () => {
   formData.value.stage_id = response.stage.id || 0;
   selections.value = response.resource_names;
   url.value = response.url;
-}
+};
 
 const fetchStageResources = async () => {
   if (stage.value && stage.value.resource_version?.id) {
-    const response = await getResourceVersionsInfo(
-      common.curApigwData.id,
+    const response = await getVersionDetail(
+      gatewayStore.currentGateway!.id!,
       stage.value.resource_version.id,
       {
         stage_id: stage.value.id,
         source: 'mcp_server',
       },
     );
-    resourceList.value = response?.resources || [];
+    resourceList.value = response.resources || [];
     pagination.value.offset = 0;
     pagination.value.count = resourceList.value.length;
-  } else {
+  }
+  else {
     resourceList.value = [];
   }
-}
+};
 
 const handleSelectResource = (row: any, checked: boolean) => {
   if (checked) {
     if (!selections.value.includes(row.name)) {
       selections.value.push(row.name);
     }
-  } else {
+  }
+  else {
     selections.value = selections.value.filter(item => item !== row.name);
   }
 };
 
 const handleSelectAllResource = (checked: boolean) => {
   if (checked) {
-    selections.value = resourceList.value.filter((resource) => resource.has_openapi_schema)
-                                   .map((resource) => resource.name);
-  } else {
+    selections.value = resourceList.value.filter(resource => resource.has_openapi_schema)
+      .map(resource => resource.name);
+  }
+  else {
     selections.value = [];
   }
 };
 
 const handleRemoveResource = (name: string) => {
   selections.value = selections.value.filter(item => item !== name);
-}
+};
 
 const handleClearSelections = () => {
   selections.value = [];
@@ -471,8 +574,8 @@ const handleRefreshClick = async () => {
     return;
   }
   filterKeyword.value = '';
-  const response = await getResourceVersionsInfo(
-    common.curApigwData.id,
+  const response = await getVersionDetail(
+    gatewayStore.currentGateway!.id!,
     stage.value.resource_version.id,
     {
       stage_id: stage.value.id,
@@ -497,8 +600,11 @@ const handleStageSelectChange = () => {
 
 const handleToolNameClick = (row: { id: number }) => {
   const routeData = router.resolve({
-    name: 'apigwResourceEdit',
-    params: { id: common.curApigwData.id, resourceId: row.id },
+    name: 'ResourceEdit',
+    params: {
+      id: gatewayStore.currentGateway!.id!,
+      resourceId: row.id,
+    },
   });
   window.open(routeData.href, '_blank');
 };
@@ -509,7 +615,7 @@ const handleCancel = () => {
 
 const handleCopyClick = () => {
   copy(url.value || previewUrl.value);
-}
+};
 
 const resetSliderData = () => {
   formData.value = {
@@ -539,6 +645,7 @@ defineExpose({
 
 <style lang="scss" scoped>
 .create-slider {
+
   :deep(.bk-modal-content) {
     overflow-y: auto;
   }
@@ -547,32 +654,33 @@ defineExpose({
     width: 100%;
 
     .main {
-      color: #4d4f56;
       padding: 28px 40px 0;
+      color: #4d4f56;
 
       .name-help-text {
+
         .text-body {
           font-size: 12px;
           color: #979ba5;
         }
 
         .url {
-          padding-left: 8px;
+          display: flex;
           width: 100%;
           height: 32px;
-          background: #f5f7fa;
+          padding-left: 8px;
           font-size: 12px;
-          display: flex;
+          background: #f5f7fa;
           align-items: center;
 
           .label {
-            color: #4d4f56;
             line-height: 20px;
+            color: #4d4f56;
           }
 
           .content {
-            color: #313238;
             line-height: 20px;
+            color: #313238;
           }
 
           .suffix {
@@ -601,22 +709,22 @@ defineExpose({
       position: absolute;
       top: 0;
       width: 14px;
+      font-size: 14px;
       color: #ea3636;
       text-align: center;
-      font-size: 14px;
     }
   }
 }
 
 .resource-tips {
+  margin-bottom: 8px;
   font-size: 12px;
   color: #979ba5;
-  margin-bottom: 8px;
 }
 
 .resource-selector-wrapper {
-  border: 1px solid #dcdee5;
   display: flex;
+  border: 1px solid #dcdee5;
 
   .selector-main {
     width: 908px;
@@ -624,10 +732,10 @@ defineExpose({
     flex-shrink: 0;
 
     .selector-title {
-      font-weight: 700;
-      font-size: 14px;
-      color: #4d4f56;
       margin-bottom: 16px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #4d4f56;
     }
 
     .resource-filter {
@@ -636,14 +744,14 @@ defineExpose({
   }
 
   .result-preview {
+    display: flex;
     width: 275px;
     max-height: 653px;
-    background: #f5f7fa;
     padding: 16px;
-    display: flex;
-    flex-direction: column;
-    border-left: 1px solid #dcdee5;
     overflow-y: auto;
+    background: #f5f7fa;
+    border-left: 1px solid #dcdee5;
+    flex-direction: column;
 
     .result-preview-list {
       flex: 1;
@@ -651,9 +759,9 @@ defineExpose({
 
     .header-title-wrapper {
       display: flex;
+      margin-bottom: 16px;
       font-size: 14px;
       justify-content: space-between;
-      margin-bottom: 16px;
 
       .name {
         font-weight: 700;
@@ -667,17 +775,18 @@ defineExpose({
 
       .list-item {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
         height: 32px;
         padding: 6px 10px;
+        margin-bottom: 4px;
         background: #fff;
         border-radius: 2px;
         box-shadow: 0 1px 2px 0 #0000001f;
-        margin-bottom: 4px;
+        justify-content: space-between;
+        align-items: center;
 
         .name {
           overflow: hidden;
+          font-size: 14px;
           text-overflow: ellipsis;
           white-space: nowrap;
         }

@@ -9,7 +9,7 @@ server {
     large_client_header_buffers 4 512k;
 
     # Add 1 week expires header for static assets
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ {
+    location ~* \.(js|css|png|svg|jpg|jpeg|gif|ico)$ {
         expires 1w;
     }
 

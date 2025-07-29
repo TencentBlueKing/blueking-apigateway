@@ -1,6 +1,24 @@
+/*
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) 2025 Tencent. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://opensource.org/licenses/MIT
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
+ */
+
 <template>
   <div class="page-content">
-    <bk-resize-layout
+    <BkResizeLayout
       :border="false"
       :max="400"
       :min="293"
@@ -12,9 +30,11 @@
         <div class="left-aside-wrap">
           <!--  筛选器  -->
           <header class="left-aside-header">
-            <header class="title">{{ t('可用工具') }}</header>
+            <header class="title">
+              {{ t('可用工具') }}
+            </header>
             <main class="nav-filters">
-              <bk-input
+              <BkInput
                 v-model="keyword"
                 :placeholder="t('请输入工具名称，描述搜索')"
                 clearable
@@ -25,15 +45,24 @@
           <!--  API 列表  -->
           <main class="tool-list custom-scroll-bar">
             <template v-if="filteredToolList.length">
-              <bk-collapse v-model="activeGroupPanelNames" class="tool-group-collapse">
-                <bk-collapse-panel v-for="group of toolGroupList" :key="group.id" :name="group.name">
+              <BkCollapse
+                v-model="activeGroupPanelNames"
+                class="tool-group-collapse"
+              >
+                <BkCollapsePanel
+                  v-for="group of toolGroupList"
+                  :key="group.id"
+                  :name="group.name"
+                >
                   <template #header>
                     <div class="tool-group-collapse-header">
                       <AngleUpFill
                         :class="{ fold: !activeGroupPanelNames.includes(group.name) }"
                         class="menu-header-icon"
                       />
-                      <div class="tool-group-collapse-title">{{ group.name }}</div>
+                      <div class="tool-group-collapse-title">
+                        {{ group.name }}
+                      </div>
                     </div>
                   </template>
                   <template #content>
@@ -47,12 +76,15 @@
                       <header
                         v-dompurify-html="getHighlightedHtml(tool.name)"
                         class="tool-item-name"
-                      ></header>
-                      <main v-dompurify-html="getHighlightedHtml(tool.description)" class="tool-item-desc"></main>
+                      />
+                      <main
+                        v-dompurify-html="getHighlightedHtml(tool.description)"
+                        class="tool-item-desc"
+                      />
                     </article>
                   </template>
-                </bk-collapse-panel>
-              </bk-collapse>
+                </BkCollapsePanel>
+              </BkCollapse>
             </template>
             <template v-else-if="keyword">
               <TableEmpty
@@ -81,7 +113,10 @@
               </section>
               <section class="basic-cell">
                 <span>
-                  <span v-bk-tooltips="t('应用访问该网关API时，是否需提供应用认证信息')" class="label">
+                  <span
+                    v-bk-tooltips="t('应用访问该网关API时，是否需提供应用认证信息')"
+                    class="label"
+                  >
                     {{ t('应用认证') }}
                   </span>：
                   {{ selectedTool?.verified_app_required ? t('是') : t('否') }}
@@ -90,7 +125,8 @@
               <section class="basic-cell">
                 <span>
                   <span
-                    v-bk-tooltips="t('应用访问该网关API前，是否需要在开发者中心申请该网关API权限')" class="label"
+                    v-bk-tooltips="t('应用访问该网关API前，是否需要在开发者中心申请该网关API权限')"
+                    class="label"
                   >
                     {{ t('权限申请') }}
                   </span>：
@@ -99,7 +135,10 @@
               </section>
               <section class="basic-cell">
                 <span>
-                  <span v-bk-tooltips="t('应用访问该网关API时，是否需要提供用户认证信息')" class="label">
+                  <span
+                    v-bk-tooltips="t('应用访问该网关API时，是否需要提供用户认证信息')"
+                    class="label"
+                  >
                     {{ t('用户认证') }}
                   </span>：
                   {{ selectedTool?.verified_user_required ? t('是') : t('否') }}
@@ -108,14 +147,26 @@
             </article>
           </template>
           <!--  API markdown 文档  -->
-          <article v-if="selectedToolMarkdownHtml" class="tool-detail-content">
-            <div id="toolDocMarkdown" v-dompurify-html="selectedToolMarkdownHtml" class="ag-markdown-view"></div>
-            <div v-if="Object.keys(selectedToolSchema || {}).length" class="schema-wrapper">
+          <article
+            v-if="selectedToolMarkdownHtml"
+            class="tool-detail-content"
+          >
+            <div
+              id="toolDocMarkdown"
+              v-dompurify-html="selectedToolMarkdownHtml"
+              class="ag-markdown-view"
+            />
+            <div
+              v-if="Object.keys(selectedToolSchema || {}).length"
+              class="schema-wrapper"
+            >
               <article
                 v-if="selectedToolSchema.parameters?.length || Object.keys(selectedToolSchema.requestBody || {}).length"
                 class="schema-group"
               >
-                <h3 class="title">{{ t('请求参数') }}</h3>
+                <h3 class="title">
+                  {{ t('请求参数') }}
+                </h3>
                 <RequestParams
                   :detail="{ schema: selectedToolSchema }"
                   readonly
@@ -125,7 +176,9 @@
                 v-if="Object.keys(selectedToolSchema.responses || {}).length"
                 class="schema-group"
               >
-                <h3 class="title">{{ t('响应参数') }}</h3>
+                <h3 class="title">
+                  {{ t('响应参数') }}
+                </h3>
                 <ResponseParams
                   v-if="Object.keys(selectedToolSchema || {}).length"
                   :detail="{ schema: selectedToolSchema }"
@@ -137,52 +190,42 @@
           <TableEmpty v-else />
         </div>
       </template>
-    </bk-resize-layout>
+    </BkResizeLayout>
   </div>
 </template>
+
 <script lang="ts" setup>
-import {
-  computed,
-  nextTick,
-  ref,
-  watch,
-} from 'vue';
-import { useI18n } from 'vue-i18n';
-import TableEmpty from '@/components/table-empty.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
-import { useRoute } from 'vue-router';
 import {
+  type IMCPServerTool,
   getServer,
   getServerToolDoc,
   getServerTools,
-  type IMCPServerTool,
-} from '@/http/mcp-server';
-import { getMcpServerToolDoc } from '@/http/mcp-market';
-import { useCommon } from '@/store';
-import { copy } from '@/common/util';
+} from '@/services/source/mcp-server';
+import { getMcpServerToolDoc } from '@/services/source/mcp-market';
+import { copy } from '@/utils';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
-import ResponseParams from '@/views/resource/setting/comps/response-params.vue';
-import RequestParams from '@/views/resource/setting/comps/request-params.vue';
-
+import ResponseParams from '@/views/resource-management/components/response-params/Index.vue';
+import RequestParams from '@/views/resource-management/components/request-params/Index.vue';
+import { useRouteParams } from '@vueuse/router';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 
 interface IProps {
-  server: MCPServerType,
-  page?: String,
+  server: MCPServerType
+  page?: string
 }
 
 const { server, page = 'server' } = defineProps<IProps>();
 
-const emit = defineEmits<{
-  'update-count': [count: number],
-}>();
+const emit = defineEmits<{ 'update-count': [count: number] }>();
 
 const { t } = useI18n();
 const route = useRoute();
-// const router = useRouter();
-const common = useCommon();
+// 网关id
+const gatewayId = useRouteParams('id', 0, { transform: Number });
 
 const md = new MarkdownIt({
   linkify: false,
@@ -191,9 +234,13 @@ const md = new MarkdownIt({
   highlight(str: string, lang: string) {
     try {
       if (lang && hljs.getLanguage(lang)) {
-        return hljs.highlight(str, { language: lang, ignoreIllegals: true }).value;
+        return hljs.highlight(str, {
+          language: lang,
+          ignoreIllegals: true,
+        }).value;
       }
-    } catch {
+    }
+    catch {
       return str;
     }
     return str;
@@ -201,8 +248,8 @@ const md = new MarkdownIt({
 });
 
 const toolList = ref<IMCPServerTool[]>([]);
-const keyword = ref('');  // 筛选器输入框的搜索关键字
-const activeGroupPanelNames = ref<string[]>([]);  // 分类 collapse 展开的 panel
+const keyword = ref(''); // 筛选器输入框的搜索关键字
+const activeGroupPanelNames = ref<string[]>([]); // 分类 collapse 展开的 panel
 const selectedTool = ref<IMCPServerTool | null>(null); // 当前选中的 tool
 const selectedToolName = ref('');
 const selectedToolMarkdownHtml = ref('');
@@ -224,18 +271,21 @@ const toolGroupList = computed(() => {
 
       if (group) {
         group.toolList.push(tool);
-      } else {
+      }
+      else {
         groupList.push({
           id,
           name,
           toolList: [tool],
         });
       }
-    } else {
+    }
+    else {
       const group = groupList.find(item => item.id === 0);
       if (group) {
         group.toolList.push(tool);
-      } else {
+      }
+      else {
         groupList.push({
           id: 0,
           name: t('默认分类'),
@@ -245,7 +295,11 @@ const toolGroupList = computed(() => {
     }
 
     return groupList;
-  }, [] as { id: number, name: string, toolList: typeof toolList.value }[]);
+  }, [] as {
+    id: number
+    name: string
+    toolList: typeof toolList.value
+  }[]);
 });
 
 // watch(() => route.query, async () => {
@@ -283,8 +337,9 @@ const fetchToolList = async () => {
   try {
     if (page === 'market') {
       toolList.value = server?.tools ?? [];
-    } else {
-      const res = await getServerTools(common.apigwId, server.id);
+    }
+    else {
+      const res = await getServerTools(gatewayId.value, server.id);
       toolList.value = res ?? [];
     }
 
@@ -293,13 +348,15 @@ const fetchToolList = async () => {
     }
     if (selectedToolName.value) {
       selectedTool.value = toolList.value.find(tool => tool.name === selectedToolName.value) ?? null;
-    } else {
+    }
+    else {
       selectedTool.value = toolList.value[0] ?? null;
     }
     if (selectedTool.value) {
       await getDoc();
     }
-  } catch {
+  }
+  catch {
     toolList.value = [];
   }
 };
@@ -315,7 +372,8 @@ const handleToolClick = async (resId: number, toolName: string) => {
     if (selectedTool.value) {
       await getDoc();
     }
-  } finally {
+  }
+  finally {
     isLoading.value = false;
   }
 
@@ -336,15 +394,17 @@ const getDoc = async () => {
     let res: any = {};
     if (page === 'market') {
       res = await getMcpServerToolDoc(server.id, selectedTool.value.name);
-    } else {
-      res = await getServerToolDoc(common.apigwId, server.id, selectedTool.value.name);
+    }
+    else {
+      res = await getServerToolDoc(gatewayId.value, server.id, selectedTool.value.name);
     }
 
     const { content, updated_time, schema } = res;
     selectedToolMarkdownHtml.value = md.render(content);
     updatedTime.value = updated_time;
     selectedToolSchema.value = schema || '';
-  } finally {
+  }
+  finally {
     isLoading.value = false;
   }
 };
@@ -397,6 +457,7 @@ const getHighlightedHtml = (value: string) => {
 </script>
 
 <style lang="scss" scoped>
+@use "sass:color";
 $primary-color: #3a84ff;
 $code-bc: #1e1e1e;
 $code-color: #63656e;
@@ -407,23 +468,23 @@ $code-color: #63656e;
   box-shadow: 0 2px 4px 0 #1919290d;
 
   .left-aside-wrap {
-    min-width: 290px;
     width: auto;
-    box-shadow: 0 2px 4px 0 #1919290d;
-    border-radius: 2px;
+    min-width: 290px;
     background-color: #fff;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px 0 #1919290d;
 
     .left-aside-header {
       padding: 24px 16px;
 
       .title {
-        margin-bottom: 12px;
         display: flex;
-        align-items: center;
-        line-height: 22px;
-        font-weight: 700;
+        margin-bottom: 12px;
         font-size: 14px;
+        font-weight: 700;
+        line-height: 22px;
         color: #4d4f56;
+        align-items: center;
       }
     }
 
@@ -445,27 +506,27 @@ $code-color: #63656e;
 
         &::-webkit-scrollbar {
           width: 4px;
-          background-color: lighten(#c4c6cc, 80%);
+          background-color: color.scale(#c4c6cc, $lightness: 80%);
         }
 
         &::-webkit-scrollbar-thumb {
           height: 5px;
-          border-radius: 2px;
           background-color: #c4c6cc;
+          border-radius: 2px;
         }
 
         .custom-icon {
+          display: inline-block;
           margin: -3px 6px 0 0;
           font-size: 13px;
           vertical-align: middle;
-          display: inline-block;
         }
 
         .tool-group-collapse-header {
-          padding: 4px 16px;
           display: flex;
-          align-items: center;
+          padding: 4px 16px;
           cursor: pointer;
+          align-items: center;
 
           .tool-group-collapse-title {
             margin-left: 8px;
@@ -474,9 +535,9 @@ $code-color: #63656e;
           }
 
           .menu-header-icon {
-            transition: all .2s;
-            color: #979ba5;
             font-size: 12px;
+            color: #979ba5;
+            transition: all .2s;
 
             &.fold {
               transform: rotate(-90deg);
@@ -490,35 +551,36 @@ $code-color: #63656e;
       }
 
       .tool-item {
-        padding-left: 52px;
-        height: 48px;
         display: flex;
+        height: 48px;
+        padding-left: 52px;
+        cursor: pointer;
+        background: #fff;
         flex-direction: column;
         justify-content: center;
-        background: #fff;
-        cursor: pointer;
 
         .tool-item-name,
         .tool-item-desc {
           display: -webkit-box;
-          -webkit-line-clamp: 1;
-          -webkit-box-orient: vertical;
           overflow: hidden;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 1;
         }
 
         .tool-item-name {
           font-size: 12px;
-          color: #4d4f56;
           line-height: 20px;
+          color: #4d4f56;
         }
 
         .tool-item-desc {
           font-size: 12px;
-          color: #979ba5;
           line-height: 20px;
+          color: #979ba5;
         }
 
-        &:hover, &.active {
+        &:hover,
+        &.active {
           background: #e1ecff;
 
           .tool-item-name,
@@ -528,6 +590,7 @@ $code-color: #63656e;
         }
 
         &.active {
+
           .tool-item-name {
             font-weight: 700;
           }
@@ -555,16 +618,16 @@ $code-color: #63656e;
       gap: 6px;
 
       .name {
-        font-weight: 700;
         font-size: 16px;
-        color: #313238;
+        font-weight: 700;
         line-height: 22px;
+        color: #313238;
       }
 
       .desc {
         font-size: 12px;
-        color: #979ba5;
         line-height: 20px;
+        color: #979ba5;
       }
     }
 
@@ -604,14 +667,17 @@ $code-color: #63656e;
   }
 
   // 去掉右侧伸缩栏的拉伸线
+
   :deep(.bk-resize-layout-right > .bk-resize-layout-aside) {
     border-left: none;
     transition: none !important;
   }
 
   // 隐藏的折叠按钮
+
   :deep(.bk-resize-layout > .bk-resize-layout-aside .bk-resize-collapse) {
     // 避免折叠按钮溢出制造横向滚动条
+
     svg {
       width: 16px !important;
       height: 16px !important;
@@ -620,15 +686,16 @@ $code-color: #63656e;
 }
 
 .custom-scroll-bar {
+
   &::-webkit-scrollbar {
     width: 4px;
-    background-color: lighten(#c4c6cc, 80%);
+    background-color: color.scale(#c4c6cc, $lightness: 80%);
   }
 
   &::-webkit-scrollbar-thumb {
     height: 5px;
-    border-radius: 2px;
     background-color: #c4c6cc;
+    border-radius: 2px;
   }
 
   &::-webkit-scrollbar-track {
@@ -638,10 +705,10 @@ $code-color: #63656e;
 
 :deep(.ag-markdown-view) {
   font-size: 14px;
-  text-align: left;
-  color: $code-color;
-  line-height: 19px;
   font-style: normal;
+  line-height: 19px;
+  color: $code-color;
+  text-align: left;
 
   h1,
   h2,
@@ -650,11 +717,11 @@ $code-color: #63656e;
   h5,
   h6 {
     padding: 0;
-    margin: 25px 0 10px 0 !important;
+    margin: 25px 0 10px !important;
     font-weight: bold;
-    text-align: left;
-    color: #313238;
     line-height: 22px;
+    color: #313238;
+    text-align: left;
   }
 
   h1 {
@@ -687,10 +754,10 @@ $code-color: #63656e;
 
   p {
     font-size: 14px;
-    color: $code-color;
     line-height: 22px;
-    white-space: normal;
+    color: $code-color;
     word-break: break-all;
+    white-space: normal;
   }
 
   ul {
@@ -698,8 +765,8 @@ $code-color: #63656e;
     line-height: 22px;
 
     li {
-      list-style: disc;
       margin-bottom: 8px;
+      list-style: disc;
 
       &:last-child {
         margin-bottom: 0;
@@ -709,12 +776,12 @@ $code-color: #63656e;
 
   ol {
     padding-left: 15px;
-    line-height: 22px;
     margin: 14px 0;
+    line-height: 22px;
 
     li {
-      list-style: decimal;
       margin-bottom: 8px;
+      list-style: decimal;
 
       &:last-child {
         margin-bottom: 0;
@@ -727,25 +794,26 @@ $code-color: #63656e;
   }
 
   tt {
-    margin: 0 2px;
     padding: 0 5px;
-    white-space: nowrap;
-    border: 1px solid #eaeaea;
-    background-color: #f8f8f8;
-    border-radius: 3px;
+    margin: 0 2px;
     font-size: 75%;
+    white-space: nowrap;
+    background-color: #f8f8f8;
+    border: 1px solid #eaeaea;
+    border-radius: 3px;
   }
 
   table {
-    font-size: 14px;
-    color: $code-color;
     width: 100%;
-    text-align: left;
     margin: 10px 0;
+    font-size: 14px;
     font-style: normal;
+    color: $code-color;
+    text-align: left;
     border: 1px solid #dcdee5;
 
     &.field-list {
+
       th {
         width: 12%;
       }
@@ -756,13 +824,13 @@ $code-color: #63656e;
     }
 
     th {
-      background: #f0f1f5;
+      min-width: 70px;
+      padding: 10px;
       font-size: 13px;
       font-weight: bold;
       color: $code-color;
+      background: #f0f1f5;
       border-bottom: 1px solid #dcdee5;
-      padding: 10px;
-      min-width: 70px;
 
     }
 
@@ -771,29 +839,29 @@ $code-color: #63656e;
     }
 
     td {
+      max-width: 250px;
       padding: 10px;
       font-size: 13px;
-      color: $code-color;
-      border-bottom: 1px solid #dcdee5;
-      max-width: 250px;
       font-style: normal;
+      color: $code-color;
       word-break: break-all;
+      border-bottom: 1px solid #dcdee5;
     }
   }
 
   pre {
-    border-radius: 2px;
-    background: $code-bc;
-    padding: 10px;
-    font-size: 14px;
-    text-align: left;
-    line-height: 24px;
     position: relative;
-    overflow: auto;
+    padding: 10px;
     margin: 14px 0;
+    overflow: auto;
+    font-size: 14px;
+    line-height: 24px;
+    text-align: left;
+    background: $code-bc;
+    border-radius: 2px;
 
     code {
-      font-family: "Lucida Console", "Courier New", "Monaco", monospace;
+      font-family: "Lucida Console", "Courier New", Monaco, monospace;
       color: #dcdcdc;
     }
 
@@ -804,15 +872,17 @@ $code-color: #63656e;
 }
 
 .schema-wrapper {
+
   .schema-group {
+
     .title {
-      font-size: 16px;
-      margin: 25px 0 10px 0;
       padding: 0;
+      margin: 25px 0 10px;
+      font-size: 16px;
       font-weight: bold;
-      text-align: left;
-      color: #313238;
       line-height: 22px;
+      color: #313238;
+      text-align: left;
     }
   }
 }
