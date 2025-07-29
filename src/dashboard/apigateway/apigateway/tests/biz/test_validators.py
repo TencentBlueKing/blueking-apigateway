@@ -344,7 +344,7 @@ class TestPublishValidator:
             Backend,
             gateway=fake_gateway,
             type="http",
-            name="test_name",
+            name="default",
             description="test",
         )
 
@@ -411,7 +411,8 @@ class TestPublishValidator:
         测试编辑区资源没有绑定default backend（host为空）的情况
         """
         publish_validator = PublishValidator(fake_gateway, fake_stage, None)
-        assert publish_validator._validate_stage_backends() is None
+        with pytest.raises(Exception):
+            publish_validator._validate_stage_backends()
 
 
 class TestSchemeInputValidator:
