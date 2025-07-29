@@ -17,7 +17,7 @@
  */
 import http from '../http';
 
-interface IBackendServicesEditParams {
+interface IBackendServicesConfig {
   name: string
   description: string
   configs: {
@@ -58,7 +58,7 @@ export function getBackendServiceDetail(apigwId: number, id: number) {
  * @param apigwId 网关id
  * @param params 新建参数
  */
-export function createBackendService(apigwId: number, params: IBackendServicesEditParams) {
+export function createBackendService(apigwId: number, params: IBackendServicesConfig) {
   return http.post(`/gateways/${apigwId}/backends/`, params);
 }
 
@@ -68,7 +68,7 @@ export function createBackendService(apigwId: number, params: IBackendServicesEd
  * @param params 更新参数
  * @param id 后端服务id
  */
-export function updateBackendService(apigwId: number, id: number, params: IBackendServicesEditParams) {
+export function updateBackendService(apigwId: number, id: number, params: IBackendServicesConfig) {
   return http.put(`/gateways/${apigwId}/backends/${id}/`, params);
 }
 
