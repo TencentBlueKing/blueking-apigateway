@@ -346,6 +346,7 @@ ignore_imports = [
     "apigateway.apps.gateway.management.commands.revoke_gateways -> apigateway.core.constants",
     "apigateway.apps.gateway.management.commands.revoke_stage -> apigateway.controller.publisher.publish",
     "apigateway.apps.gateway.management.commands.revoke_stage -> apigateway.core.constants",
+    "apigateway.apps.gateway.management.commands.export_inactive_gateways_by_stage -> apigateway.core.constants",
     # -- esb legacy
     "apigateway.apps.esb.*.* -> apigateway.core.models",
     "apigateway.apps.esb.*.* -> apigateway.core.constants",
