@@ -30,6 +30,7 @@ from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
+from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.tenant.query import gateway_filter_by_user_tenant_id
 from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
@@ -176,6 +177,8 @@ class GatewayHandler:
         allow_auth_from_params: Optional[bool] = None,
         allow_delete_sensitive_params: Optional[bool] = None,
         app_codes_to_binding: Optional[List[str]] = None,
+        # 用于标识创建网关的来源
+        source: Optional[CallSourceTypeEnum] = None,
     ):
         # 1. save gateway auth_config
         GatewayHandler.save_auth_config(
@@ -194,7 +197,7 @@ class GatewayHandler:
 
         # 3. create default stage
 
-        StageHandler().create_default(gateway, created_by=username)
+        StageHandler().create_default(gateway, created_by=username, source=source)
 
         # 4. create default alarm-strategy
 

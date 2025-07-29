@@ -20,7 +20,7 @@ from apigateway.core.models import BackendConfig, Stage
 
 
 class TestStageApi:
-    def test_list(self, request_view, fake_stage):
+    def test_list(self, request_view, fake_stage, fake_default_backend):
         fake_gateway = fake_stage.gateway
 
         response = request_view(
@@ -33,13 +33,13 @@ class TestStageApi:
         data = response.json()
         assert len(data["data"]) == 1
 
-    def test_create(self, request_view, fake_gateway, fake_backend):
+    def test_create(self, request_view, fake_gateway, fake_default_backend):
         data = {
             "name": "stage-test",
             "description": "test",
             "backends": [
                 {
-                    "id": fake_backend.id,
+                    "id": fake_default_backend.id,
                     "config": {
                         "type": "node",
                         "timeout": 1,
@@ -60,7 +60,9 @@ class TestStageApi:
         assert response.status_code == 201
         stage = Stage.objects.filter(gateway=fake_gateway, name="stage-test").first()
         assert stage
-        backend_config = BackendConfig.objects.filter(gateway=fake_gateway, backend=fake_backend, stage=stage).first()
+        backend_config = BackendConfig.objects.filter(
+            gateway=fake_gateway, backend=fake_default_backend, stage=stage
+        ).first()
         assert backend_config
         assert backend_config.config == {
             "type": "node",
@@ -69,7 +71,7 @@ class TestStageApi:
             "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
         }
 
-    def test_retrieve(self, request_view, fake_stage):
+    def test_retrieve(self, request_view, fake_stage, fake_default_backend):
         response = request_view(
             "GET",
             "stage.retrieve-update-destroy",
@@ -128,7 +130,7 @@ class TestStageApi:
         stage = Stage.objects.get(id=fake_stage.id)
         assert stage.description == "partial_update"
 
-    def test_destroy(self, request_view, fake_stage):
+    def test_destroy(self, request_view, fake_stage, fake_backend):
         response = request_view(
             "DELETE",
             "stage.retrieve-update-destroy",
@@ -149,7 +151,7 @@ class TestStageApi:
 
 
 class TestStageVarsApi:
-    def test_retrieve(self, request_view, fake_stage):
+    def test_retrieve(self, request_view, fake_stage, fake_default_backend):
         fake_stage.vars = {
             "key1": "value1",
         }

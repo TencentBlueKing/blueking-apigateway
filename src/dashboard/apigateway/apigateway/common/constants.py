@@ -23,7 +23,6 @@ from blue_krill.data_types.enum import EnumField, StructuredEnum
 CACHE_TIME_5_MINUTES = 5 * 60
 CACHE_TIME_24_HOURS = 24 * 3600
 
-
 CACHE_MAXSIZE = 2000
 
 
@@ -46,10 +45,8 @@ class LanguageCodeEnum(StructuredEnum):
 
 HEADER_BKAPI_AUTHORIZATION = "X-Bkapi-Authorization"
 
-
 # release gateway interval
 RELEASE_GATEWAY_INTERVAL_SECOND = 15
-
 
 # 网关名正则
 GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,29}$")
@@ -72,7 +69,6 @@ DOMAIN_WITH_HTTP_AND_IPV6_PATTERN = re.compile(
     r"^http(s)?:\/\/\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?\/?$"
 )
 
-
 DOMAIN_PATTERN = re.compile(
     r"^(?=^.{3,255}$)http(s)?:\/\/[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?\/?$"
     + "|"
@@ -81,5 +77,10 @@ DOMAIN_PATTERN = re.compile(
 
 HEADER_KEY_PATTERN = re.compile(r"^[a-zA-Z0-9-]{1,100}$")
 
-
 STAGE_VAR_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,49}$")
+
+
+# 调用来源类型
+class CallSourceTypeEnum(StructuredEnum):
+    OpenAPI = EnumField("openapi")
+    Web = EnumField("web")

@@ -42,6 +42,7 @@ from apigateway.biz.release import ReleaseHandler
 from apigateway.common.constants import (
     CACHE_MAXSIZE,
     CACHE_TIME_5_MINUTES,
+    CallSourceTypeEnum,
 )
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
@@ -223,6 +224,7 @@ class GatewaySyncApi(generics.CreateAPIView):
             data=TypeAdapter(GatewayData).validate_python(data),
             bk_app_code=request.app.app_code,
             username=username,
+            source=CallSourceTypeEnum.OpenAPI,
         )
         gateway = saver.save()
 
