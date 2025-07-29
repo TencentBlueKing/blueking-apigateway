@@ -154,7 +154,7 @@ class StageHandler:
             name=DEFAULT_BACKEND_NAME,
         )
 
-        default_host = "api.example.com" if source == CallSourceTypeEnum.OpenAPI else ""
+        default_host = "your-backend-host" if source == CallSourceTypeEnum.OpenAPI else ""
 
         backend_config = BackendConfig(
             gateway=gateway,
