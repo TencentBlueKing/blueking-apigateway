@@ -219,10 +219,14 @@ class PublishValidator:
         # default backend config 校验
         default_backend_config = BackendConfig.objects.filter(
             stage=self.stage, backend__name=DEFAULT_BACKEND_NAME
-        ).first()
+        ).get()
 
-        all_backend_configs = backend_configs + [default_backend_config]
+        all_backend_configs = (
+            [default_backend_config] if not backend_configs else backend_configs.append(default_backend_config)
+        )
         for backend_config in all_backend_configs:
+            if not backend_config:
+                continue
             for host in backend_config.config["hosts"]:
                 if not core_constants.HOST_WITHOUT_SCHEME_PATTERN.match(host["host"]):
                     raise ReleaseValidationError(

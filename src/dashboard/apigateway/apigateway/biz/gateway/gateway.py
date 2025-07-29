@@ -178,7 +178,7 @@ class GatewayHandler:
         allow_delete_sensitive_params: Optional[bool] = None,
         app_codes_to_binding: Optional[List[str]] = None,
         # 用于标识创建网关的来源
-        source: Optional[CallSourceTypeEnum.OpenAPI] = None,
+        source: Optional[CallSourceTypeEnum] = None,
     ):
         # 1. save gateway auth_config
         GatewayHandler.save_auth_config(
