@@ -25,7 +25,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from apigateway.apps.metrics.models import StatisticsGatewayRequestByDay
-from apigateway.core.constants import StageStatusEnum
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Release, ResourceVersion, Stage
 
 
@@ -61,6 +61,7 @@ class Command(BaseCommand):
         release_version_ids = set()
         gateway_stage_map = defaultdict(list)
         for obj in Release.objects.filter(
+            gateway__status=GatewayStatusEnum.ACTIVE.value,
             stage__status=StageStatusEnum.ACTIVE.value,
         ).select_related("gateway", "stage", "resource_version"):
             release_version_ids.add(obj.resource_version_id)
