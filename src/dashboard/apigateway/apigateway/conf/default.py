@@ -978,6 +978,7 @@ ENV_VARS_FOR_FRONTEND = {
         "name": env.str("HELPER_NAME", default=""),
         "href": env.str("HELPER_HREF", default=""),
     },
+    "BK_SHARED_RES_URL": env.str("BK_SHARED_RES_URL", default=""),
 }
 
 
