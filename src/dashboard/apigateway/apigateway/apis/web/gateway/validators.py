@@ -21,7 +21,7 @@ from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 
 from apigateway.components.paas import is_app_code_occupied
-from apigateway.core.constants import GatewayKindEnum
+from apigateway.core.constants import PROGRAMMABLE_GATEWAY_NAME_PATTERN, GatewayKindEnum
 
 
 class ReservedGatewayNameValidator:
@@ -52,3 +52,8 @@ class ProgrammableGatewayNameValidator:
             # check if the name is already occupied on PaaS
             if is_app_code_occupied(name):
                 raise serializers.ValidationError(self.message)
+
+            if not PROGRAMMABLE_GATEWAY_NAME_PATTERN.match(name):
+                raise serializers.ValidationError(
+                    _("可编程网关名称只能包含小写字母(a-z)、数字(0-9)和半角连接符(-)，长度在 3-16 之间")
+                )
