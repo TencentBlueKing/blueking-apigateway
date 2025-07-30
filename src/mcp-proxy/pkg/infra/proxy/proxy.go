@@ -284,15 +284,12 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 					}
 				}
 			}
-
 			if handlerRequest.BodyParam != nil {
+				err = req.SetBodyParam(handlerRequest.BodyParam)
 				if err != nil {
-					err = req.SetBodyParam(handlerRequest.BodyParam)
-					if err != nil {
-						auditLog.Error("set body param err",
-							zap.Any("body", handlerRequest.BodyParam), zap.Error(err))
-						return err
-					}
+					auditLog.Error("set body param err",
+						zap.Any("body", handlerRequest.BodyParam), zap.Error(err))
+					return err
 				}
 			}
 			return nil
