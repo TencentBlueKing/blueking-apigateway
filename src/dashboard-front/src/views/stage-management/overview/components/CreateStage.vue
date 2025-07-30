@@ -430,19 +430,20 @@ import {
   useEnv,
   useGateway,
 } from '@/stores';
-import { useRouteParams } from '@vueuse/router';
 
 interface IProps { stageId?: number }
 
 const { stageId = 0 } = defineProps<IProps>();
 
-const emit = defineEmits<{ hidden: [void] }>();
+const emit = defineEmits<{
+  hidden: [void]
+  done: [void]
+}>();
 
 const { t, locale } = useI18n();
 const route = useRoute();
 const envStore = useEnv();
 const gatewayStore = useGateway();
-const gatewayId = useRouteParams('id', 0, { transform: Number });
 
 const isShow = ref(false);
 const isAdsorb = ref(false);
@@ -564,7 +565,7 @@ const rules = {
 const backendConfigFormRefs: InstanceType<typeof Form>[] = [];
 
 // 网关id
-const apigwId = +route.params.id;
+const gatewayId = computed(() => Number(route.params.id));
 
 const title = computed(() => {
   return titleTextMap[actionType.value] ?? t('环境');
@@ -627,7 +628,7 @@ const setBackendConfigRef = (el: InstanceType<typeof Form>) => {
 const addInit = async () => {
   isDialogLoading.value = true;
   // 获取当前网关下的backends(获取后端服务列表)
-  const res = await getBackendServiceList(apigwId);
+  const res = await getBackendServiceList(gatewayId.value);
   // console.log('获取all后端服务列表', res);
   activeIndex.value = [];
   curStageData.value.backends = res.results.map((item: any, index: number) => {
@@ -647,7 +648,7 @@ const addInit = async () => {
 const checkInit = async () => {
   isDialogLoading.value = true;
   try {
-    const data = await getStageDetail(apigwId, stageId!);
+    const data = await getStageDetail(gatewayId.value, stageId!);
     curStageData.value.name = data.name;
     curStageData.value.backends = await getStageBackends(gatewayId.value, stageId!);
   }
@@ -658,7 +659,7 @@ const checkInit = async () => {
 
 // 获取环境详情（编辑）
 const getStageDetailFun = async () => {
-  const data = await getStageDetail(apigwId, stageId!);
+  const data = await getStageDetail(gatewayId.value, stageId!);
   curStageData.value.name = data.name;
   curStageData.value.description = data.description;
 };
@@ -728,10 +729,10 @@ const handleConfirm = async () => {
     item?.validate();
   }
   if (isAdd.value) {
-    handleConfirmCreate();
+    await handleConfirmCreate();
   }
   else {
-    handleConfirmEdit();
+    await handleConfirmEdit();
   }
 };
 
@@ -742,13 +743,12 @@ const handleConfirmCreate = async () => {
   params.backends.forEach((v: any) => {
     delete v.name;
   });
-  await createStage(apigwId, params);
+  await createStage(gatewayId.value, params);
   Message({
     message: t('创建成功'),
     theme: 'success',
   });
-  // 重新获取环境列表(全局事件总线实现)
-  // mitt.emit('rerun-init', true);
+  emit('done');
   // 数据重置
   handleCloseSideSlider();
   // 关闭dialog
@@ -762,13 +762,12 @@ const handleConfirmEdit = async () => {
   params.backends.forEach((v: any) => {
     delete v.name;
   });
-  await putStage(apigwId, stageId!, params);
+  await putStage(gatewayId.value, stageId!, params);
   Message({
     message: t('更新成功'),
     theme: 'success',
   });
-  // 重新获取环境列表(全局事件总线实现)
-  // mitt.emit('rerun-init', true);
+  emit('done');
   // 关闭dialog
   isShow.value = false;
 };

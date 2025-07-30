@@ -22,14 +22,23 @@
       navigation-type="top-bottom"
       :need-menu="false"
       default-open
-      :side-title="t('蓝鲸 API 网关')"
     >
-      <template #side-icon>
-        <img
-          :src="LogoWithoutTitle"
-          alt="API Gateway"
-          class="max-w-none h-28px cursor-pointer"
+      <template #side-header>
+        <div
+          class="flex items-center gap-16px"
+          @click="handleLogoClick"
         >
+          <div>
+            <img
+              :src="LogoWithoutTitle"
+              alt="API Gateway"
+              class="max-w-none h-28px cursor-pointer"
+            >
+          </div>
+          <div class="text-16px font-bold color-#eaebf0 cursor-pointer">
+            {{ t('蓝鲸 API 网关') }}
+          </div>
+        </div>
       </template>
       <template #header>
         <div class="header">
@@ -216,11 +225,16 @@ const getRouteData = (routeName: string, index: number, link: string) => {
 
 const handleNavClick = (url: string, index: number, link: string = '') => {
   // 禁止重复点击
-  if (index === activeIndex.value) {
+  if (index === activeIndex.value && url !== 'Home') {
     return;
   }
   getRouteData(url, index, link);
 };
+
+const handleLogoClick = () => {
+  router.replace({ name: 'Home' });
+};
+
 </script>
 
 <style lang="scss">

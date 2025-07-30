@@ -31,7 +31,8 @@ interface IMetricInstantParams {
   offset?: number // 偏移量，可选
 }
 
-export const getGatewayMetrics = (apigwId: number, params: any) => http.get(`${path}/${apigwId}/metrics/query-range/`, params);
+export const getGatewayMetrics = (apigwId: number, params: any) =>
+  http.get(`${path}/${apigwId}/metrics/query-range/`, params, { catchError: true });
 
 export const getGatewayMetricsInstant = (apigwId: number, params: IMetricInstantParams) =>
   http.get(`${path}/${apigwId}/metrics/query-instant/`, params);

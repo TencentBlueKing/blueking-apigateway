@@ -16,7 +16,12 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import { type RouteLocationNormalized, type RouteRecordRaw, createRouter, createWebHashHistory } from 'vue-router';
+import {
+  type RouteLocationNormalized,
+  type RouteRecordRaw,
+  createRouter,
+  createWebHistory,
+} from 'vue-router';
 // 环境概览
 import getStageManagementRoutes from '@/views/stage-management/route';
 // 资源管理
@@ -109,7 +114,7 @@ const routes: RouteRecordRaw[] = [
 ];
 
 const router = createRouter({
-  history: createWebHashHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 });
 

@@ -255,6 +255,12 @@ onMounted(() => {
     emit('change-stage', stageList.value[0].id);
   });
 });
+
+defineExpose({
+  reload: async () => {
+    stageList.value = await getStageList(gatewayId.value);
+  },
+});
 </script>
 
 <style lang="scss" scoped>

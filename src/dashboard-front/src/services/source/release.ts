@@ -43,7 +43,7 @@ export interface ILogResponse {
 }
 
 export const createRelease = (apigwId: number, params: any) =>
-  http.post(`${path}/${apigwId}/releases/`, params);
+  http.post(`${path}/${apigwId}/releases/`, params, { catchError: true });
 
 export const getReleaseEvents = (apigwId: number, historyId: number) =>
   http.get<ILogResponse>(`${path}/${apigwId}/releases/histories/${historyId}/events/`);

@@ -543,7 +543,7 @@
         </div>
         <div class="dialog-main">
           <header class="apigateway-name">
-            {{ t('网关：') }}<span class="text">{{ common.apigwName }}</span>
+            {{ t('网关：') }}<span class="text">{{ gatewayStore.currentGateway!.name }}</span>
           </header>
           <main class="import-tips">
             {{ t('将新增') }}
@@ -761,7 +761,10 @@ import {
 import TableResToAction from './components/TableResToAction.vue';
 import TableResToUncheck from './components/TableResToUncheck.vue';
 import { useParentElement } from '@vueuse/core';
-import { useEnv } from '@/stores';
+import {
+  useEnv,
+  useGateway,
+} from '@/stores';
 
 type CodeErrorResponse = {
   code: string
@@ -783,9 +786,10 @@ interface IProps { gatewayId?: number }
 const { gatewayId = 0 } = defineProps<IProps>();
 
 // const { useRouter, onBeforeRouteLeave } = useTsxRouter();
-const router = useRouter();
 const { t } = useI18n();
+const router = useRouter();
 const envStore = useEnv();
+const gatewayStore = useGateway();
 
 const editorText = ref<string>(RESOURCE_IMPORT_EXAMPLE.content);
 const resourceEditorRef = ref<InstanceType<typeof editorMonaco>>(); // 实例化
@@ -1036,7 +1040,7 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
       params.doc_language = docConfig.value.language;
     }
     // 配置是否显示错误 Message，只校验代码时不显示，改为展示在编辑器的错误消息栏中
-    const interceptorConfig = _changeView ? {} : { globalError: false };
+    const interceptorConfig = _changeView ? {} : { catchError: true };
     const res = await checkResourceImport(gatewayId, params, interceptorConfig) as IImportedResource[];
     tableData.value = res.map((data, index: number) => ({
       ...data,

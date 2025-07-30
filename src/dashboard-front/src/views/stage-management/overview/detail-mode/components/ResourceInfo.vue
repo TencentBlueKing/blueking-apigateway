@@ -220,13 +220,17 @@
   <!-- 环境编辑 -->
   <CreateStage
     ref="stageSidesliderRef"
+    :stage-id="stageId"
     @hidden="clearHighlight"
   />
 </template>
 
 <script setup lang="ts">
 import { getGatewayLabels } from '@/services/source/gateway';
-import { getStageList } from '@/services/source/stage';
+import {
+  type IStageListItem,
+  getStageList,
+} from '@/services/source/stage';
 import { getVersionDetail } from '@/services/source/resource';
 // import resourceDetails from './resource-details.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
@@ -266,6 +270,7 @@ const isLoading = ref(true);
 // 资源信息
 const resourceVersionList = ref([]);
 const tableData = ref<any[]>([]);
+const stageList = ref<IStageListItem[]>([]);
 
 const pagination = ref({
   current: 1,
@@ -387,7 +392,7 @@ watch(
 );
 
 const getLabels = async () => {
-  labels.value = await getGatewayLabels(gatewayId.value); ;
+  labels.value = await getGatewayLabels(gatewayId.value);
 };
 
 const showDetails = (row: any) => {
@@ -567,14 +572,16 @@ const handleClearFilterKey = () => {
 };
 
 async function init() {
-  const data = await getStageList(gatewayId.value);
-  const curStageData = data.find((item: { id: number }) => item.id === Number(stageId));
+  stageList.value = await getStageList(gatewayId.value);
+  const curStageData = stageList.value.find((item: { id: number }) => item.id === Number(stageId));
   if (curStageData) {
     await getLabels();
     // 依赖 getLabels() 获取的标签列表，需在这之后请求
     await getResourceVersionsData(curStageData);
   }
 }
+
+defineExpose({ reload: init });
 </script>
 
 <style lang="scss" scoped>

@@ -56,7 +56,7 @@ export const putStage = (apigwId: number, stageId: number, data: any) =>
   http.put(`${http}/${apigwId}/stages/${stageId}/`, data);
 
 export const toggleStatus = (apigwId: number, stageId: number, param: { status: number }) =>
-  http.put(`${path}/${apigwId}/stages/${stageId}status/`, param);
+  http.put(`${path}/${apigwId}/stages/${stageId}/status/`, param);
 
 export const getStageBackends = (apigwId: number, stageId: number) =>
   http.get(`${path}/${apigwId}/stages/${stageId}/backends/`);

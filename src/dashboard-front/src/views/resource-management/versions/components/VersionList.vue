@@ -48,7 +48,7 @@
       <div class="w-full">
         <BkLoading :loading="isLoading">
           <BkTable
-            ref="bkTableRef"
+            ref="tableRef"
             class="edition-table table-layout"
             :data="tableData"
             remote-pagination
@@ -60,7 +60,7 @@
             @page-limit-change="handlePageSizeChange"
             @page-value-change="handlePageChange"
             @selection-change="handleSelectionChange"
-            @select-all="handleSelecAllChange"
+            @select-all="handleSelectAllChange"
           >
             <BkTableColumn
               width="80"
@@ -268,6 +268,7 @@ const featureFlagStore = useFeatureFlag();
 
 const filterData = ref({ keyword: version });
 const diffDisabled = ref(true);
+
 // 导出配置
 const exportDialogConfig = reactive<IExportDialog>({
   isShow: false,
@@ -278,6 +279,7 @@ const exportDialogConfig = reactive<IExportDialog>({
   hiddenResourceTip: true,
   hiddenExportTypeLabel: true,
 });
+
 // 导出参数
 const exportParams = reactive<IExportParams & { id?: number }>({
   export_type: 'all',
@@ -301,9 +303,8 @@ const {
 // 列表多选
 const {
   selections,
-  bkTableRef,
   handleSelectionChange,
-  handleSelecAllChange,
+  handleSelectAllChange,
   resetSelections,
 } = useSelection();
 
@@ -317,7 +318,7 @@ const stageList = ref<any>([]);
 // 选择发布的环境
 const stageData = ref();
 const versionData = ref();
-const releaseSidesliderRef = ref(null);
+const releaseSidesliderRef = ref();
 const tableEmptyConf = ref<{
   keyword: string
   isAbnormal: boolean
@@ -332,6 +333,8 @@ const diffSidesliderConf = reactive({
   width: 1040,
   title: t('版本资源对比'),
 });
+
+const tableRef = ref();
 const diffSourceId = ref();
 const diffTargetId = ref();
 const resourceDetailShow = ref(false);
@@ -350,8 +353,8 @@ watch(
 
 watch(
   selections,
-  (sel) => {
-    if (sel?.length === 1 || sel?.length === 2) {
+  () => {
+    if (selections.value?.length === 1 || selections.value?.length === 2) {
       diffDisabled.value = false;
     }
     else {
@@ -379,7 +382,7 @@ const handleShowDiff = () => {
   diffTargetId.value = diffTarget?.id || '';
 
   diffSidesliderConf.isShow = true;
-  resetSelections();
+  resetSelections(tableRef.value);
 };
 
 // 版本导出
@@ -512,7 +515,7 @@ onMounted(() => {
     await getList(getVersionList, false);
     tableData.value.forEach((item: Record<string, any>) => {
       if (selections.value.find(sel => sel.id === item.id)) {
-        bkTableRef.value?.toggleRowSelection(item, true);
+        tableRef.value?.toggleRowSelection(item, true);
       }
     });
   }, 1000 * 30);

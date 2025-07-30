@@ -87,23 +87,31 @@ export interface IChartDataLoading {
 /**
  *  查询 metrics
  * @param apigwId 网关id
+ * @param params
  */
-export const getApigwMetrics = (apigwId: number, params: any) => http.get(`${path}/${apigwId}/metrics/query-range/`, params);
+export const getApigwMetrics = (apigwId: number, params: any) =>
+  http.get(`${path}/${apigwId}/metrics/query-range/`, params, { catchError: true });
 
 /**
  *  请求总数健康率
  * @param apigwId 网关id
+ * @param params
  */
-export const getApigwMetricsInstant = (apigwId: number, params: ISearchParamsType) => http.get(`${path}/${apigwId}/metrics/query-instant/`, params);
+export const getApigwMetricsInstant = (apigwId: number, params: ISearchParamsType) =>
+  http.get(`${path}/${apigwId}/metrics/query-instant/`, params);
 
 /**
  *  获取流程日志列表
  * @param apigwId 网关id
+ * @param params
  */
-export const getApigwResources = (apigwId: number, params: any) => http.get(`${path}/${apigwId}/resources/`, params);
+export const getApigwResources = (apigwId: number, params: any) =>
+  http.get(`${path}/${apigwId}/resources/`, params);
 
 /**
  *  获取流程日志列表
  * @param apigwId 网关id
+ * @param params
  */
-export const getApigwStages = (apigwId: number, params: any) => http.get(`${path}/${apigwId}/stages/`, params);
+export const getApigwStages = (apigwId: number, params: any) =>
+  http.get(`${path}/${apigwId}/stages/`, params);
