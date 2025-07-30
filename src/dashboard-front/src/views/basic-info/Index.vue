@@ -304,7 +304,7 @@
                 {{ `${t('联系人')}：` }}
               </div>
               <div class="value contact">
-                <span class="link">{{ basicInfoData.doc_maintainers?.contacts?.join(',') || '--' }}</span>
+                <span class="link">{{ basicInfoData.doc_maintainers?.contacts?.join(', ') || '--' }}</span>
                 <div class="sub-explain">
                   {{ t('文档页面上展示出来的文档咨询接口人') }}
                 </div>
@@ -543,6 +543,15 @@
       :init-data="basicInfoDetailData"
       @done="getBasicInfo"
     />
+    <AgSideslider
+      v-model="isShowMarkdown"
+      :title="t('查看开发指引')"
+      :width="960"
+    >
+      <section class="markdown-box">
+        <Guide :markdown-html="markdownHtml" />
+      </section>
+    </AgSideslider>
   </div>
 </template>
 
@@ -566,6 +575,8 @@ import hljs from 'highlight.js';
 import ProgramProcess from '@/images/program-process.png';
 import EditMember from './components/EditMember.vue';
 import CreateGateway from '@/components/create-gateway/Index.vue';
+import AgSideslider from '@/components/ag-sideslider/Index.vue';
+import Guide from '@/components/guide/Index.vue';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import {
   useEnv,
@@ -1023,7 +1034,7 @@ const handleMaintainerChange = async (payload: { maintainers?: string[] }) => {
             color: #63656E;
             text-align: right;
 
-            &.w0 {
+            &.w-0px {
               min-width: 0;
             }
           }
