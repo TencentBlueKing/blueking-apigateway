@@ -253,5 +253,8 @@ PATH_TO_NAME_PATTERN = re.compile(r"[a-zA-Z0-9]+")
 # Micro gateway
 MICRO_GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,19}$")
 
+# Programmable gateway
+PROGRAMMABLE_GATEWAY_NAME_PATTERN = re.compile(r"^[a-z0-9-]{3,16}$")
+
 # EventFailInterval(s)
 EVENT_FAIL_INTERVAL_TIME = 600
