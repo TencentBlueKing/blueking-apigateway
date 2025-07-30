@@ -453,7 +453,7 @@ import ResponseContent from '@/views/online-debugging/components/ResponseContent
 import Doc from '@/views/online-debugging/components/Doc.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
-import { useGateway } from '@/stores';
+import { useEnv, useGateway } from '@/stores';
 import {
   getApiDetail,
   getResourcesOnline,
@@ -466,6 +466,7 @@ const { t } = useI18n();
 const gatewayStore = useGateway();
 const router = useRouter();
 const route = useRoute();
+const envStore = useEnv();
 
 const isLoading = ref<boolean>(false);
 const keyword = ref<string>('');
@@ -474,7 +475,7 @@ const stage = ref<number>();
 const stageList = ref<any[]>([]);
 const resourceList = ref<any>([]);
 const activeName = ref<any>([]);
-const testAppCode = ref('apigw_api_test');
+const testAppCode = ref(envStore.env.BK_DEFAULT_TEST_APP_CODE);
 const curApigw = ref({
   name: '',
   description: '',
@@ -1376,8 +1377,7 @@ init();
       cursor: pointer;
       margin: 0;
       background: transparent;
-      width: 50%;
-      height: 14px;
+      width: 14px;
       color: #979BA5;
       &:hover {
         color: #3A84FF;
@@ -1387,7 +1387,7 @@ init();
       margin-right: 26px;
     }
     .opt-close {
-      font-size: 16px;
+      width: 16px;
     }
   }
 }

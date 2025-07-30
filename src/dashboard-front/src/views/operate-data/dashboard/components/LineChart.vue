@@ -485,8 +485,7 @@ defineExpose({ syncParams });
 .chart-wrapper {
   position: relative;
   .chart-title {
-    margin-top: 12px;
-    margin-left: 24px;
+    padding: 12px 24px 0;
     color: '#313238';
     font-size: 14px;
     font-weight: 'bold';
