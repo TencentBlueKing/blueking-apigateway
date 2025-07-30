@@ -42,7 +42,7 @@
     </header>
     <!--  正文  -->
     <main
-      :class="{ 'pt-24px': featureFlagStore.isTenantMode }"
+      :class="[{ 'pt-24px': featureFlagStore.isTenantMode}, routerViewWrapperClass]"
       class="docs-main-content"
     >
       <!--  当选中 网关API文档 时  -->
@@ -75,6 +75,7 @@
               :data="tableData"
               remote-pagination
               :pagination="pagination"
+              :max-height="clientHeight"
               show-overflow-tooltip
               :border="['outer']"
               @page-limit-change="handlePageSizeChange"
@@ -130,44 +131,21 @@
                 v-if="!featureFlagStore.isTenantMode"
                 :label="t('网关负责人')"
                 field="maintainers"
-                :show-overflow-tooltip="false"
                 placement="auto-start"
               >
                 <template #default="{ row }">
-                  <BkPopover
-                    :component-event-delay="300"
-                    :width="480"
-                  >
-                    <span v-if="!row.maintainers">
-                      --
-                    </span>
-                    <div
-                      v-else
-                      style="overflow: hidden;text-overflow: ellipsis;white-space: nowrap;"
+                  <span v-if="!row?.maintainers?.length">
+                    --
+                  </span>
+                  <template v-else>
+                    <span
+                      v-for="(maintainer, index) in row.maintainers"
+                      :key="maintainer.login_name"
                     >
-                      <template
-                        v-for="(maintainer, index) in row.maintainers"
-                        :key="maintainer.login_name"
-                      >
-                        <span>
-                          <bk-user-display-name :user-id="maintainer" /><span
-                            v-if="index !== (row.maintainers.length - 1)"
-                          >,</span>
-                        </span>
-                      </template>
-                    </div>
-                    <template #content>
-                      <div>
-                        <template
-                          v-for="(maintainer, index) in row.maintainers"
-                          :key="maintainer.login_name"
-                        >
-                          <bk-user-display-name :user-id="maintainer" />
-                          <span v-if="index !== (row.maintainers.length - 1)">,</span>
-                        </template>
-                      </div>
-                    </template>
-                  </BkPopover>
+                      <bk-user-display-name :user-id="maintainer" />
+                      <span v-if="index !== (row.maintainers.length - 1)">,</span>
+                    </span>
+                  </template>
                 </template>
               </BkTableColumn>
               <BkTableColumn
@@ -189,7 +167,8 @@
               </BkTableColumn>
               <template #empty>
                 <TableEmpty
-                  :keyword="tableEmptyConf.keyword"
+                  :is-loading="isLoading"
+                  :empty-type="tableEmptyConf.emptyType"
                   :abnormal="tableEmptyConf.isAbnormal"
                   @reacquire="getList"
                   @clear-filter="handleClearFilterKey"
@@ -378,7 +357,7 @@ const featureFlagStore = useFeatureFlag();
 const filterData = ref({ keyword: '' });
 
 // 当前视口高度能展示最多多少条表格数据
-const { maxTableLimit } = useMaxTableLimit({ hasAllocatedHeight: 271 });
+const { clientHeight, maxTableLimit } = useMaxTableLimit({ allocatedHeight: 186 });
 
 const {
   tableData,
@@ -406,12 +385,11 @@ const {
 
 // 组件分类模板引用列表
 const categoryRefs = useTemplateRefsList<HTMLElement>();
-
 const tableEmptyConf = ref<{
-  keyword: string
+  emptyType: string
   isAbnormal: boolean
 }>({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 
@@ -430,6 +408,17 @@ const curTargetMaintainers = ref<string[]>([]);
 // 提供当前 tab 的值
 // 注入时请使用：const curTab = inject<Ref<TabType>>('curTab');
 provide('curTab', curTab);
+
+const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
+
+const routerViewWrapperClass = computed(() => {
+  const initClass = 'default-header-view';
+  const displayBkuiTable = ['ApiDocs'].includes(route.name) ? 'need-bkui-table-wrapper' : '';
+  if (isShowNoticeAlert.value) {
+    return `${initClass} show-notice ${displayBkuiTable}`;
+  }
+  return `${initClass} ${displayBkuiTable}`;
+});
 
 watch(
   tableData,
@@ -450,7 +439,7 @@ const gotoDetails = (row: IApiGatewayBasics | ISystem, systemBoard?: string) => 
   }
 
   router.push({
-    name: 'apiDocDetail',
+    name: 'ApiDocDetail',
     params,
   });
 };
@@ -466,14 +455,14 @@ const updateTableEmptyConfig = () => {
   const list = Object.values(searchParams).filter(item => item !== '');
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   if (list.length && !tableData.value.length) {
-    tableEmptyConf.value.keyword = 'placeholder';
+    tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
   if (list.length) {
-    tableEmptyConf.value.keyword = '$CONSTANT';
+    tableEmptyConf.value.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.value.keyword = '';
+  tableEmptyConf.value.emptyType = '';
 };
 
 const fetchComponentSystemList = async () => {
@@ -650,6 +639,24 @@ $primary-color: #3a84ff;
           }
 
           .components-wrap {
+            padding-bottom: 16px;
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+
+            &::-webkit-scrollbar {
+              width: 6px;
+              height: 6px;
+            }
+
+            &::-webkit-scrollbar-thumb {
+              background-color: #dcdee5;
+              border-radius: 3px;
+            }
+
+            &::-webkit-scrollbar-track {
+              background-color: transparent;
+              border-radius: 3px;
+            }
 
             .component-group {
               margin-bottom: 16px;
@@ -800,6 +807,31 @@ $primary-color: #3a84ff;
       }
     }
 
+    &.default-header-view {
+      height: calc(100vh - 105px);
+      overflow: hidden;
+
+      &.show-notice {
+        height: calc(100vh - 145px);
+
+        .components-wrap {
+          max-height: calc(100vh - 200px);
+        }
+      }
+
+      &.need-bkui-table-wrapper {
+        overflow-y: hidden;
+
+        :deep(.bk-table-body) {
+          &.bk-scrollbar {
+            .bk__rail-x,
+            .bk__rail-y {
+              display: none !important;
+            }
+          }
+        }
+      }
+    }
   }
 }
 </style>

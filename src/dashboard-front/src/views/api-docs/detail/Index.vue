@@ -447,7 +447,7 @@ const handleApiClick = (resId: number, apiName: string) => {
   if (curApi.value.id === resId) return;
 
   router.replace({
-    name: 'apiDocDetail',
+    name: 'ApiDocDetail',
     params: { ...route.params },
     query: {
       ...route.query,
@@ -524,7 +524,7 @@ const getApigwResourceDoc = async () => {
 
 const handleStageChange = () => {
   router.replace({
-    name: 'apiDocDetail',
+    name: 'ApiDocDetail',
     params: { ...route.params },
     query: {
       ...route.query,
@@ -575,7 +575,7 @@ const init = async () => {
 
 const handleGoBack = () => {
   router.push({
-    name: 'apiDocs',
+    name: 'ApiDocs',
     params: { curTab: curTab.value },
   });
 };
