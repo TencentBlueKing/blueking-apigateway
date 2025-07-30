@@ -491,11 +491,11 @@ const showPublishConfirmInfoBox = () => {
     type: 'warning',
     title: isRollback.value
       ? t('确认回滚 {version} 版本至 {stage} 环境？', {
-        version: resourceVersion,
+        version: resourceVersion.value,
         stage: chooseAssets.value?.name ?? '--',
       })
       : t('确认发布 {version} 版本至 {stage} 环境？', {
-        version: resourceVersion,
+        version: resourceVersion.value,
         stage: chooseAssets.value?.name ?? '--',
       }),
     subTitle: t('发布后，将会覆盖原来的资源版本，请谨慎操作！'),

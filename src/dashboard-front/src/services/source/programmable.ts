@@ -200,7 +200,7 @@ export const deployReleases = (apigwId: number, data: {
   commit_id: string
   version: string
   comment: string
-}) => http.post(`${path}/${apigwId}/releases/programmable/deploy/`, data);
+}) => http.post(`${path}/${apigwId}/releases/programmable/deploy/`, data, { catchError: true });
 
 // 获取环境详情
 export const getProgrammableStageDetail = (apigwId: number, stageId: number) => http.get<{

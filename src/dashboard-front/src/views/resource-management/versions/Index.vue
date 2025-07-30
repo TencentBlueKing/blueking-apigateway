@@ -42,9 +42,9 @@ const resourceVersionStore = useResourceVersion();
 const curQueryVersion = ref('');
 
 watch(
-  () => route,
-  (payload: any) => {
-    curQueryVersion.value = payload.query.version || '';
+  () => route.query,
+  () => {
+    curQueryVersion.value = route.query?.version as string || '';
   },
   {
     immediate: true,
