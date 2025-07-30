@@ -66,6 +66,7 @@ class TestProgrammableGatewayNameValidator:
         [
             (GatewayKindEnum.PROGRAMMABLE.value, "testapp", True, True),
             (GatewayKindEnum.PROGRAMMABLE.value, "testapp", False, False),
+            (GatewayKindEnum.PROGRAMMABLE.value, "bk-apigw-plugin-go", False, True),
             (GatewayKindEnum.NORMAL.value, "testapp", True, False),
             (GatewayKindEnum.NORMAL.value, "testapp", False, False),
         ],
