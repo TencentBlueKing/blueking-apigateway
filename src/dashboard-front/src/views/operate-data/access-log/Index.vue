@@ -31,7 +31,7 @@
             :key="dateKey"
             ref="datePickerRef"
             v-model="dateTimeRange"
-            style="width: 312px;"
+            style="max-width: 310px;"
             :clearable="false"
             :placeholder="t('选择日期时间范围')"
             shortcut-close
@@ -66,7 +66,7 @@
             :list="resourceList"
             :need-prefix="false"
             :placeholder="t('请输入资源名称或资源URL链接')"
-            style="min-width: 296.5px;"
+            style="min-width: 250px;"
             @change="handleResourceChange"
           />
         </BkFormItem>
@@ -76,7 +76,7 @@
         >
           <SearchInput
             v-model:mode-value="keyword"
-            style="width: 466px;"
+            style="max-width: 466px; min-width: 340px;"
             @choose="handleChoose"
             @search="handleSearch"
           />
@@ -129,7 +129,7 @@
         </div>
         <BkCollapsePanel
           :name="2"
-          class="collapse-panel mb32"
+          class="collapse-panel mb24"
           @change="handlePanelChange"
         >
           <template #header>
@@ -1186,7 +1186,6 @@ onBeforeUnmount(() => {
   .collapse-panel {
     background-color: #fff;
     padding: 24px;
-    padding-bottom: 8px;
     .collapse-panel-header {
       display: flex;
       align-items: center;
@@ -1255,8 +1254,8 @@ onBeforeUnmount(() => {
     margin-bottom: 16px;
   }
 
-  .mb32 {
-    margin-bottom: 32px;
+  .mb24 {
+    margin-bottom: 24px;
   }
 
   .ag-top-header {

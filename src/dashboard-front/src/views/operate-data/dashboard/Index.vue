@@ -130,7 +130,7 @@
             <LineChart
               ref="appRequestsRef"
               :chart-data="chartData['app_requests']"
-              :title="t('top10 app_code 请求数趋势')"
+              :title="t('Top app_code 请求数趋势')"
               instance-id="app_requests"
               @clear-params="handleClearParams"
               @report-init="handleReportInit"
@@ -146,7 +146,7 @@
             <LineChart
               ref="resourceRequestsRef"
               :chart-data="chartData['resource_requests']"
-              :title="t('top10 资源请求数趋势')"
+              :title="t('Top 资源请求数趋势')"
               instance-id="resource_requests"
               @clear-params="handleClearParams"
               @report-init="handleReportInit"
@@ -164,7 +164,7 @@
             <LineChart
               ref="ingressRef"
               :chart-data="chartData['ingress']"
-              :title="t('top10 资源 ingress 带宽占用')"
+              :title="t('Top 资源 ingress 带宽占用')"
               instance-id="ingress"
               @clear-params="handleClearParams"
               @report-init="handleReportInit"
@@ -179,7 +179,7 @@
             <LineChart
               ref="egressRef"
               :chart-data="chartData['egress']"
-              :title="t('top10 资源 egress 带宽占用')"
+              :title="t('Top 资源 egress 带宽占用')"
               instance-id="egress"
               @clear-params="handleClearParams"
               @report-init="handleReportInit"
