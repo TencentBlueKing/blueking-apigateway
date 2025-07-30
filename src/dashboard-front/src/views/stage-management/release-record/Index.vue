@@ -343,7 +343,7 @@ const updateTableEmptyConfig = () => {
 
 const goVersionList = (data: any) => {
   router.push({
-    name: 'apigwResourceVersion',
+    name: 'ResourceVersion',
     query: { version: data?.resource_version_display },
   });
 };

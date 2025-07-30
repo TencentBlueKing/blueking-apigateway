@@ -1,20 +1,20 @@
 /*
- * TencentBlueKing is pleased to support the open source community by making
- * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2025 Tencent. All rights reserved.
- * Licensed under the MIT License (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- *     http://opensource.org/licenses/MIT
- *
- * Unless required by applicable law or agreed to in writing, software distributed under
- * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * We undertake not to change the open source license (MIT license) applicable
- * to the current version of the project delivered to anyone in the future.
- */
+* TencentBlueKing is pleased to support the open source community by making
+* 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+* Copyright (C) 2025 Tencent. All rights reserved.
+* Licensed under the MIT License (the "License"); you may not use this file except
+* in compliance with the License. You may obtain a copy of the License at
+*
+*     http://opensource.org/licenses/MIT
+*
+* Unless required by applicable law or agreed to in writing, software distributed under
+* the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+* either express or implied. See the License for the specific language governing permissions and
+* limitations under the License.
+*
+* We undertake not to change the open source license (MIT license) applicable
+* to the current version of the project delivered to anyone in the future.
+*/
 
 <template>
   <div class="detail-mode">
@@ -294,13 +294,13 @@ import {
   useGateway,
 } from '@/stores';
 import { useRouteParams } from '@vueuse/router';
-import CreateStage from './CreateStage.vue';
-import ReleaseProgrammable from './ReleaseProgrammable.vue';
+import ReleaseProgrammable from '../components/ReleaseProgrammable.vue';
+import CreateStage from '../components/CreateStage.vue';
 import ReleaseStage from '@/components/release-stage/Index.vue';
 import { usePopInfoBox } from '@/hooks';
-import ResourceInfo from './ResourceInfo.vue';
-import PluginManagement from './PluginManagement.vue';
-import VarManagement from './VarManagement.vue';
+import ResourceInfo from './components/ResourceInfo.vue';
+import PluginManagement from './components/PluginManagement.vue';
+import VarManagement from './components/VarManagement.vue';
 
 interface IProps { stageId: number }
 
@@ -329,9 +329,6 @@ const active = ref('resourceInfo');
 const isDeleteLoading = ref(false);
 const isStageLoading = ref(false);
 
-// 重新加载子组件
-const routeIndex = ref(0);
-
 // tab 选项卡
 const panels = [
   {
@@ -354,17 +351,24 @@ const componentMap = {
   varManagement: VarManagement,
 };
 
-watch(() => stageId, async () => {
-  if (stageId) {
-    currentStage.value = await getStageDetail(gatewayId.value, stageId);
-  }
-}, { immediate: true });
+watch(
+  () => stageId,
+  async () => {
+    if (stageId) {
+      currentStage.value = await getStageDetail(gatewayId.value, stageId);
+    }
+  },
+  { immediate: true },
+);
 
 watch(
   () => route.query,
   () => {
-    routeIndex.value += 1;
+    if (route.query.tab) {
+      active.value = route.query.tab as string;
+    }
   },
+  { immediate: true },
 );
 
 // 发布成功，重新请求环境详情
@@ -382,12 +386,7 @@ const handleClosedOnPublishing = () => {
 const handleTabChange = (name: string) => {
   active.value = name;
   // 更新query参数
-  router.push({
-    query: {
-      stage: currentStage.value?.name,
-      tab: name,
-    },
-  });
+  router.push({ query: { tab: name } });
 };
 
 // 发布资源

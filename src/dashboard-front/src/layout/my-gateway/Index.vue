@@ -88,7 +88,7 @@
                       v-if="['PermissionManage'].includes(menu.name) && permissionStore.count > 0"
                       dot
                       theme="danger"
-                      class="m-l-5px"
+                      class="ml-5px"
                     />
                   </template>
                   <template v-for="child in menu.children">
@@ -103,7 +103,7 @@
                         :count="permissionStore.count"
                         :max="99"
                         theme="danger"
-                        class="m-l-5px"
+                        class="ml-5px"
                       />
                     </BkMenuItem>
                   </template>
@@ -174,6 +174,7 @@ import {
 } from '@/stores';
 import { getGatewayList } from '@/services/source/gateway.ts';
 import { getPermissionApplyList } from '@/services/source/permission';
+
 interface IMenu {
   name: string
   title: string
@@ -381,7 +382,7 @@ watch(
     () => route.name,
   ],
   () => {
-    activeMenuKey.value = route.name as string;
+    activeMenuKey.value = (route.meta?.menuKey || route.name) as string;
     gatewayId.value = Number(route.params.id || 0);
     headerTitle.value = route.meta.title as string;
     // 设置全局网关

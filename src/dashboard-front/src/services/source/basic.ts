@@ -71,6 +71,38 @@ export function getEnv() {
     BK_DEFAULT_TEST_APP_CODE: string
     BK_PAAS_APP_REPO_URL_TMPL: string
     EDITION: string
+    BK_APIGATEWAY_VERSION: string
+    BK_DOCS_URL_PREFIX: string
+    BK_USER_WEB_API_URL: string
+    BK_LOGIN_URL: string
+    BK_ANALYSIS_SCRIPT_SRC: string
+    CREATE_CHAT_API: string
+    SEND_CHAT_API: string
+    HELPER: {
+      name: string
+      href: string
+    }
+    DOC_LINKS: {
+      GUIDE: string
+      QUERY_USE: string
+      USER_VERIFY: string
+      TEMPLATE_VARS: string
+      AUTH: string
+      SWAGGER: string
+      CORS: string
+      BREAKER: string
+      RATELIMIT: string
+      JWT: string
+      USER_TYPE: string
+      ERROR_CODE: string
+      COMPONENT_RATE_LIMIT: string
+      COMPONENT_CREATE_API: string
+      IMPORT_RESOURCE_DOCS: string
+      INSTANCE_TYPE: string
+      USER_API: string
+      UPGRADE_TO_113_TIP: string
+      MCP_SERVER_PERMISSION_APPLY: string
+    }
   }>(`${path}/settings/env-vars/`);
 }
 
