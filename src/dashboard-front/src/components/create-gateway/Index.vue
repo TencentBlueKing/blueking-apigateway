@@ -308,7 +308,7 @@
           :loading="submitLoading"
           @click="handleConfirmCreate"
         >
-          {{ t(isEdit ? '保存' : '提交') }}
+          {{ isEdit ? t('保存') : t('提交') }}
         </BkButton>
         <BkButton
           class="ml-12px"
@@ -568,6 +568,36 @@ const md = new MarkdownIt({
     return str;
   },
 });
+
+watch(
+  () => featureFlagStore.flags.ENABLE_MULTI_TENANT_MODE,
+  () => {
+    if (featureFlagStore.flags.ENABLE_MULTI_TENANT_MODE) {
+      formData.value.tenant_id = userStore.info.tenant_id || 'system';
+      if (userStore.info.tenant_id === 'system') {
+        formData.value.tenant_mode = 'global';
+      }
+      else {
+        formData.value.tenant_mode = 'single';
+      }
+    }
+    else {
+      formData.value.tenant_id = 'default';
+      formData.value.tenant_mode = 'single';
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  () => userStore.info.username,
+  () => {
+    if (userStore.info.username && !formData.value.maintainers?.length) {
+      formData.value.maintainers = [userStore.info.username];
+    }
+  },
+  { immediate: true },
+);
 
 watch(
   () => formData.value.name,

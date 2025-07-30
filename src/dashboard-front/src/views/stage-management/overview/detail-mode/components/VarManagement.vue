@@ -519,11 +519,12 @@ onMounted(() => {
     transform: translate(-50%, 4px);
   }
 
-  .bk-table-body-content {
+  .bk-table-body {
 
     .custom-table-cell {
 
       .cell {
+        height: 42px;
         padding: 0;
 
         &:hover {

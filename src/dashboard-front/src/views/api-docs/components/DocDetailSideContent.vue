@@ -33,7 +33,7 @@
         {{ t('组件详情') }}
       </article>
       <aside v-if="basics?.doc_maintainers?.type === 'user'">
-        <chat
+        <Chat
           v-if="featureFlagStore.flags.ALLOW_CREATE_APPCHAT"
           :default-user-list="userList"
           :owner="curUser.username"
@@ -127,7 +127,7 @@
               :margin-bottom="12"
             />
             <main class="content-main">
-              <SdkDetail
+              <SDKDetail
                 v-if="curSdk"
                 :sdk="curSdk"
                 is-apigw
@@ -151,7 +151,7 @@
       <div class="ag-markdown-view">
         <article>
           <header class="content-title">
-            {{ t('网关描述') }}
+            {{ t('组件描述') }}
           </header>
           <main class="content-main">
             {{ basics.comment }}
@@ -159,7 +159,7 @@
         </article>
         <article>
           <header class="content-title">
-            {{ t('网关负责人') }}
+            {{ t('组件负责人') }}
           </header>
           <main class="content-main">
             {{ basics.maintainers.join(', ') }}
@@ -169,14 +169,14 @@
           <header class="content-title">
             {{ t('组件 API SDK') }}
             <BkTag
-              class="ml-20px fw-normal"
+              class="ml-20px"
               theme="info"
             >
               Python
             </BkTag>
           </header>
           <main class="content-main">
-            <SdkDetail
+            <SDKDetail
               v-if="sdks[0]"
               :sdk="sdks[0]"
             />
@@ -188,8 +188,8 @@
 </template>
 
 <script lang="ts" setup>
-import chat from '@/components/chat/Index.vue';
-import SdkDetail from './SDKDetail.vue';
+import Chat from '@/components/chat/Index.vue';
+import SDKDetail from './SDKDetail.vue';
 import type {
   IApiGatewayBasics,
   IApiGatewaySdkDoc,

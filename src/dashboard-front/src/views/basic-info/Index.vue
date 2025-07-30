@@ -274,7 +274,7 @@
             {{ t('API文档') }}
             <div
               class="area-edit"
-              @click.stop="showApiDocEdit()"
+              @click.stop="showApiDocEdit"
             >
               <AgIcon name="edit-line" />
               <BkButton
@@ -533,6 +533,11 @@
         </BkButton>
       </template>
     </BkDialog>
+    <EditAPIDoc
+      v-model="isShowApiDoc"
+      :data="basicInfoData"
+      @done="getBasicInfo"
+    />
     <CreateGateway
       v-model="createGatewayShow"
       :init-data="basicInfoDetailData"
@@ -567,6 +572,7 @@ import {
   useFeatureFlag,
 } from '@/stores';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
+import EditAPIDoc from '@/views/basic-info/components/EditAPIDoc.vue';
 
 type BasicInfoType = Awaited<ReturnType<typeof getGatewayDetail>>;
 
