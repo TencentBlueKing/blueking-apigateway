@@ -247,6 +247,7 @@
         >
           <component
             :is="componentMap[item.name as keyof typeof componentMap]"
+            ref="tabComponentRefs"
             :stage-address="getStageAddress(currentStage?.name)"
             :version-id="currentStage?.resource_version?.id"
             :stage-id="stageId"
@@ -293,7 +294,6 @@ import {
   useEnv,
   useGateway,
 } from '@/stores';
-import { useRouteParams } from '@vueuse/router';
 import ReleaseProgrammable from '../components/ReleaseProgrammable.vue';
 import CreateStage from '../components/CreateStage.vue';
 import ReleaseStage from '@/components/release-stage/Index.vue';
@@ -306,19 +306,19 @@ interface IProps { stageId: number }
 
 const { stageId } = defineProps<IProps>();
 
+const emit = defineEmits<{ updated: [void] }>();
+
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const gatewayStore = useGateway();
 const envStore = useEnv();
-
-// 网关id
-const gatewayId = useRouteParams('id', 0, { transform: Number });
 // 当前环境信息
 const currentStage = ref<IStageListItem | null>(null);
 const releaseStageRef = ref();
 const releaseProgrammableRef = ref();
 const stageSidesliderRef = ref();
+const tabComponentRefs = ref();
 
 const showDropdown = ref(false);
 
@@ -351,6 +351,9 @@ const componentMap = {
   varManagement: VarManagement,
 };
 
+// 网关id
+const gatewayId = computed(() => Number(route.params.id));
+
 watch(
   () => stageId,
   async () => {
@@ -373,13 +376,19 @@ watch(
 
 // 发布成功，重新请求环境详情
 const handleReleaseSuccess = async () => {
-  // stageTopBarRef.value?.getStageDetailFun(stageData.value?.id);
+  currentStage.value = await getStageDetail(gatewayId.value, stageId);
   // await mitt.emit('rerun-init');
+  emit('updated');
+  tabComponentRefs.value?.forEach((component: InstanceType<typeof ResourceInfo>) => {
+    component.reload?.();
+  });
 };
 
 // 处理在版本还在发布时关闭抽屉的情况（刷新 stage 状态）
-const handleClosedOnPublishing = () => {
+const handleClosedOnPublishing = async () => {
   // mitt.emit('rerun-init');
+  emit('updated');
+  currentStage.value = await getStageDetail(gatewayId.value, stageId);
 };
 
 // 选项卡切换
@@ -427,6 +436,11 @@ const handleStageUnlist = async () => {
         });
         // 获取网关列表
         // await mitt.emit('rerun-init');
+        emit('updated');
+        currentStage.value = await getStageDetail(gatewayId.value, stageId);
+        tabComponentRefs.value?.forEach((component: InstanceType<typeof ResourceInfo>) => {
+          component.reload?.();
+        });
         // 开启loading
       }
       finally {
@@ -464,8 +478,10 @@ const handleStageDelete = async () => {
       //   isUpdate: false,
       //   isDelete: true,
       // });
+      emit('updated');
       // 切换前一个环境, 并且不需要获取当前环境详情
       // await mitt.emit('switch-stage', true);
+      router.replace({ name: 'StageOverviewCardMode' });
       // 开启loading
     },
   });

@@ -185,7 +185,7 @@ export const getVersionDetail = (apigwId: number, id: number, params?: any) =>
  * @param apigwId 网关id
  */
 export const checkNeedNewVersion = (apigwId: number) =>
-  http.get(`${path}/${apigwId}/resource-versions/need-new-version/`);
+  http.get(`${path}/${apigwId}/resource-versions/need-new-version/`, undefined, { catchError: true });
 
 export const getVersionDiff = (apigwId: number, data: {
   source_resource_version_id: number

@@ -20,11 +20,17 @@
   <div class="py-20px px-24px">
     <!-- 自定义头部 -->
     <TopBar
+      ref="topBarRef"
       v-model:mode="mode"
       :stage-id="stageId"
       @change-stage="handleStageIdChange"
     />
-    <RouterView />
+    <RouterView v-slot="{ Component }">
+      <component
+        :is="Component"
+        @updated="handleStageUpdated"
+      />
+    </RouterView>
   </div>
 </template>
 
@@ -36,6 +42,7 @@ const router = useRouter();
 
 const mode = ref('');
 const stageId = ref(0);
+const topBarRef = ref();
 
 watch(
   [
@@ -74,5 +81,9 @@ const handleStageIdChange = (id: number) => {
       params: { stageId: stageId.value },
     });
   }
+};
+
+const handleStageUpdated = () => {
+  topBarRef.value.reload();
 };
 </script>

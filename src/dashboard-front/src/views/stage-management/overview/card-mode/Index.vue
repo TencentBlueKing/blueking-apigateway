@@ -54,7 +54,10 @@
     </div>
 
     <!-- 新建/编辑环境 -->
-    <CreateStage ref="stageSidesliderRef" />
+    <CreateStage
+      ref="stageSidesliderRef"
+      @done="fetchStageList"
+    />
 
     <!-- 发布普通网关的资源至环境 -->
     <ReleaseStage
@@ -108,7 +111,6 @@ import {
 import { getGatewayDetail } from '@/services/source/gateway';
 import { getProgrammableStageDetail } from '@/services/source/programmable';
 import { useTimeoutPoll } from '@vueuse/core';
-import { useRouteParams } from '@vueuse/router';
 import ReleaseStage from '@/components/release-stage/Index.vue';
 import ReleaseProgrammable from '../components/ReleaseProgrammable.vue';
 import CreateStage from '../components/CreateStage.vue';
@@ -121,11 +123,12 @@ type IPaasInfo = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
 
 interface ILocalStageItem extends IStageListItem { paasInfo?: IPaasInfo }
 
+const emit = defineEmits<{ updated: [void] }>();
+
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const gatewayStore = useGateway();
-const gatewayId = useRouteParams('id', 0, { transform: Number });
 
 const historyId = ref<number>();
 const deployId = ref<string>();
@@ -162,7 +165,26 @@ const stageSidesliderRef = ref();
 const isLoading = ref(false);
 const loadingProgrammableStageIds = ref<number[]>([]);
 
-const fetchStageList = async () => {
+const {
+  pause: pausePollingStages,
+  resume: startPollingStages,
+} = useTimeoutPoll(fetchStageList, 10000, { immediate: false });
+
+// 网关id
+const gatewayId = computed(() => Number(route.params.id));
+
+watch(() => gatewayStore.currentGateway, () => {
+  pausePollingStages();
+  if (!gatewayStore.currentGateway?.id) {
+    return;
+  }
+  startPollingStages();
+}, {
+  immediate: true,
+  deep: true,
+});
+
+async function fetchStageList() {
   isLoading.value = true;
   const response = await getStageList(gatewayId.value);
   const _stageList = response as ILocalStageItem[] || [];
@@ -211,26 +233,7 @@ const fetchStageList = async () => {
   })) {
     pausePollingStages();
   }
-};
-
-const {
-  pause: pausePollingStages,
-  resume: startPollingStages,
-} = useTimeoutPoll(fetchStageList, 10000, { immediate: false });
-
-// 网关id
-const apigwId = computed(() => +route.params.id);
-
-watch(() => gatewayStore.currentGateway, () => {
-  pausePollingStages();
-  if (!gatewayStore.currentGateway?.id) {
-    return;
-  }
-  startPollingStages();
-}, {
-  immediate: true,
-  deep: true,
-});
+}
 
 // 环境详情
 const handleToDetail = (stage: IStageListItem) => {
@@ -263,6 +266,7 @@ const handleRelease = async (stage: IStageListItem) => {
 // 发布成功
 const handleReleaseSuccess = () => {
   // await mitt.emit('get-environment-list-data', loading);
+  emit('updated');
   fetchStageList();
 };
 
@@ -297,11 +301,12 @@ const handleStageUnlist = async (id: number) => {
     confirmText: t('确认下架'),
     onConfirm: async () => {
       const data = { status: 0 };
-      await toggleStatus(apigwId.value, id, data);
+      await toggleStatus(gatewayId.value, id, data);
       Message({
         message: t('下架成功'),
         theme: 'success',
       });
+      emit('updated');
       // 获取网关列表
       // await mitt.emit('get-environment-list-data', true);
       await fetchStageList();
@@ -315,8 +320,8 @@ const handleAddStage = () => {
 };
 
 // 获取网关基本信息
-const getBasicInfo = async (apigwId: number) => {
-  basicInfoData.value = await getGatewayDetail(apigwId);
+const getBasicInfo = async (id: number) => {
+  basicInfoData.value = await getGatewayDetail(id);
 };
 
 const handleRetry = async () => {
@@ -330,18 +335,12 @@ const handleSliderHideWhenPending = () => {
   startPollingStages();
 };
 
-onBeforeMount(async () => {
-  await getBasicInfo(gatewayId.value);
+onBeforeMount(() => {
+  getBasicInfo(gatewayId.value);
 });
 
 onMounted(() => {
-  // 等待 route 变化后再获取环境列表
-  setTimeout(() => {
-    fetchStageList();
-  });
-  // mitt.on('rerun-init', () => {
-  //   fetchStageList();
-  // });
+  fetchStageList();
 });
 
 onUnmounted(() => {
