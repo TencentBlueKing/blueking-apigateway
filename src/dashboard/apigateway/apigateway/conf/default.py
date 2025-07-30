@@ -574,6 +574,7 @@ AI_MODEL = env.str("AI_MODEL", "")
 AI_API_KEY = env.str("AI_API_KEY", "")
 AI_APP_CODE = env.str("AI_APP_CODE", BK_APP_CODE)
 AI_APP_SECRET = env.str("AI_APP_SECRET", BK_APP_SECRET)
+AI_BKAUTH_ENABLED = env.bool("AI_BKAUTH_ENABLED", True)
 
 # ==============================================================================
 # 网关全局配置
