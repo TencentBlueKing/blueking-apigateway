@@ -502,7 +502,7 @@ COMPONENT_DOC_URL_TMPL = env.str("COMPONENT_DOC_URL_TMPL", "")
 BK_COMPONENT_API_URL = env.str("BK_COMPONENT_API_URL", "")
 BK_COMPONENT_API_INNER_URL = env.str("BK_COMPONENT_API_INNER_URL", "") or BK_COMPONENT_API_URL
 BK_PAAS3_API_URL = BK_API_INNER_URL_TMPL.format(api_name="bkpaas3")
-BK_PAAS3_API_TIME_OUT = env.int("BK_PAAS3_API_TIME_OUT", 30)
+BK_PAAS3_API_TIMEOUT = env.int("BK_PAAS3_API_TIMEOUT", 30)
 BK_APIGATEWAY_API_URL = env.str("BK_APIGATEWAY_API_URL", "")
 
 # ==============================================================================

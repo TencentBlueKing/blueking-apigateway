@@ -18,7 +18,7 @@ from .utils import gen_gateway_headers
 
 logger = logging.getLogger(__name__)
 
-REQ_PAAS_API_TIMEOUT = settings.BK_PAAS3_API_TIME_OUT
+REQ_PAAS_API_TIMEOUT = settings.BK_PAAS3_API_TIMEOUT
 
 
 def url_join(host: str, path: str) -> str:
