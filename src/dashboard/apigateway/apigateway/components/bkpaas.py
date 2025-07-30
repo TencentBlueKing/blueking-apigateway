@@ -40,7 +40,7 @@ from .utils import gen_gateway_headers
 
 logger = logging.getLogger(__name__)
 
-REQ_PAAS_API_TIMEOUT = 10
+REQ_PAAS_API_TIMEOUT = settings.BK_PAAS3_API_TIME_OUT
 
 
 @lru_cache(maxsize=1)
