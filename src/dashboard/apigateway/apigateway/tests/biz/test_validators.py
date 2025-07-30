@@ -32,7 +32,7 @@ from apigateway.biz.validators import (
     ReleaseValidationError,
     ResourceIDValidator,
     ResourceVersionValidator,
-    SchemeInputValidator,
+    SchemeHostInputValidator,
     StageVarsValidator,
 )
 from apigateway.common.factories import SchemaFactory
@@ -415,7 +415,7 @@ class TestPublishValidator:
             publish_validator._validate_stage_backends()
 
 
-class TestSchemeInputValidator:
+class TestSchemeHostInputValidator:
     @pytest.mark.parametrize(
         "data, expected, will_error",
         [
@@ -506,13 +506,12 @@ class TestSchemeInputValidator:
         ],
     )
     def test_validate_scheme(self, fake_backend, fake_grpc_backend, data, expected, will_error):
-        backend_name = ""
         if data["backend_type"] == BackendTypeEnum.HTTP.value:
             backend_name = fake_backend.name
-            validator = SchemeInputValidator(fake_backend, data["hosts"])
+            validator = SchemeHostInputValidator(fake_backend, data["hosts"])
         else:
             backend_name = fake_grpc_backend.name
-            validator = SchemeInputValidator(fake_grpc_backend, data["hosts"])
+            validator = SchemeHostInputValidator(fake_grpc_backend, data["hosts"])
         # 捕获可能的异常
         # 假设这个方法在某些条件下会抛出异常
         if will_error:
@@ -521,6 +520,34 @@ class TestSchemeInputValidator:
                 validator.validate_scheme()
             expected_msg = expected["error_message"].replace("Test Backend", backend_name)
             assert str(exc_info.value) == expected_msg
+
+    def test_validate_scheme_host(self, fake_backend):
+        data = [
+            {
+                "hosts": [{"host": "http://example.com"}],
+                "will_error": False,
+            },
+            {
+                "hosts": [{"host": "http://localhost"}],
+                "will_error": True,
+            },
+            {
+                "hosts": [{"host": "http://127.0.0.1"}],
+                "will_error": True,
+            },
+            {
+                "hosts": [{"host": "http://0.0.0.0"}],
+                "will_error": True,
+            },
+        ]
+        for test in data:
+            validator = SchemeHostInputValidator(fake_backend, test["hosts"])
+
+            if test.get("will_error"):
+                with pytest.raises(Exception):
+                    validator.validate_scheme_host()
+            else:
+                validator.validate_scheme_host()
 
 
 class TestStageVarsValidator:

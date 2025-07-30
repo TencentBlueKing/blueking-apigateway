@@ -18,6 +18,7 @@
 #
 from typing import Optional
 
+from django.conf import settings
 from django.db.models import Count
 from django.utils.translation import gettext as _
 from rest_framework import serializers
@@ -332,13 +333,12 @@ class ResourceVersionValidator:
             raise serializers.ValidationError(_("版本 {version} 已存在。").format(version=version))
 
 
-class SchemeInputValidator:
+class SchemeHostInputValidator:
     def __init__(self, backend, hosts):
         self.hosts = hosts
         self.backend = backend
 
-    def validate_scheme(self):
-        schemes = {host.get("scheme") for host in self.hosts}
+    def _validate_scheme_consistency(self, schemes):
         if len(schemes) > 1 and self.backend.type == BackendTypeEnum.HTTP.value:
             raise serializers.ValidationError(
                 _("后端服务【{backend_name}】的配置 scheme 同时存在 http 和 https， 需要保持一致。").format(
@@ -351,6 +351,28 @@ class SchemeInputValidator:
                     backend_name=self.backend.name
                 )
             )
+
+    def validate_scheme_host(self):
+        # 适用于 open api 的校验
+        schemes = set()
+        for host in self.hosts:
+            scheme, _host = host["host"].rstrip("/").split("://")
+            schemes.add(scheme)
+
+            if _host in settings.FORBIDDEN_HOSTS:
+                raise serializers.ValidationError(
+                    _(
+                        "后端服务【{backend_name}】的配置，host: {host} 不能使用该端口。".format(
+                            backend_name=self.backend.name, host=_host
+                        )
+                    )
+                )
+        self._validate_scheme_consistency(schemes)
+
+    def validate_scheme(self):
+        # 适用于 web api 的校验
+        schemes = {host.get("scheme") for host in self.hosts}
+        self._validate_scheme_consistency(schemes)
 
 
 class StageVarsValidator(GetGatewayFromContextMixin):

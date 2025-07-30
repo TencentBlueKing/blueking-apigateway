@@ -30,6 +30,7 @@ class TestIsForbiddenHost:
         """Test hosts with ports that are in FORBIDDEN_PORTS"""
         # Mock FORBIDDEN_PORTS to contain common forbidden ports
         mock_settings.FORBIDDEN_PORTS = [22, 3306]
+        mock_settings.FORBIDDEN_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
 
         test_cases = [
             ("example.com", False),
@@ -37,6 +38,9 @@ class TestIsForbiddenHost:
             ("example.com:22", True),
             ("192.168.1.1:3306", True),
             ("app.example.com:8080", False),
+            ("localhost", True),
+            ("127.0.0.1", True),
+            ("0.0.0.0", True),
         ]
 
         for host, expected in test_cases:
