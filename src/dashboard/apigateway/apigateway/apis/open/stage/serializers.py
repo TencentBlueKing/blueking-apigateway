@@ -31,7 +31,7 @@ from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
 from apigateway.biz.validators import MaxCountPerGatewayValidator, SchemeHostInputValidator, StageVarsValidator
-from apigateway.common.constants import DOMAIN_PATTERN, HEADER_KEY_PATTERN
+from apigateway.common.constants import DOMAIN_PATTERN, HEADER_KEY_PATTERN, CallSourceTypeEnum
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
@@ -463,7 +463,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             return
         for backend in backends:
             validator = SchemeHostInputValidator(hosts=backend["config"]["hosts"], backend=backend)
-            validator.validate_scheme_host()
+            validator.validate_scheme(CallSourceTypeEnum.OpenAPI.value)
 
     def _sync_plugins(self, gateway_id: int, stage_id: int, plugin_configs: Optional[Dict[str, Any]] = None):
         # plugin_configs 为 None 则，plugin_config_datas 设置 [] 则清空对应配置

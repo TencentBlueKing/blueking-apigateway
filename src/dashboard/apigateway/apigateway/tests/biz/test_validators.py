@@ -35,6 +35,7 @@ from apigateway.biz.validators import (
     SchemeHostInputValidator,
     StageVarsValidator,
 )
+from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.factories import SchemaFactory
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import BackendTypeEnum, GatewayStatusEnum, ProxyTypeEnum
@@ -423,6 +424,7 @@ class TestSchemeHostInputValidator:
                 {
                     "backend_type": BackendTypeEnum.HTTP.value,
                     "hosts": [{"scheme": "http"}],
+                    "source": CallSourceTypeEnum.Web.value,
                 },
                 None,
                 False,
@@ -431,6 +433,7 @@ class TestSchemeHostInputValidator:
                 {
                     "backend_type": BackendTypeEnum.HTTP.value,
                     "hosts": [{"scheme": "https"}],
+                    "source": CallSourceTypeEnum.Web.value,
                 },
                 None,
                 False,
@@ -439,6 +442,7 @@ class TestSchemeHostInputValidator:
                 {
                     "backend_type": BackendTypeEnum.HTTP.value,
                     "hosts": [{"scheme": "http"}, {"scheme": "http"}],
+                    "source": CallSourceTypeEnum.Web.value,
                 },
                 None,
                 False,
@@ -447,6 +451,7 @@ class TestSchemeHostInputValidator:
                 {
                     "backend_type": BackendTypeEnum.HTTP.value,
                     "hosts": [{"scheme": "https"}, {"scheme": "https"}],
+                    "source": CallSourceTypeEnum.Web.value,
                 },
                 None,
                 False,
@@ -455,6 +460,7 @@ class TestSchemeHostInputValidator:
                 {
                     "backend_type": BackendTypeEnum.HTTP.value,
                     "hosts": [{"scheme": "http"}, {"scheme": "https"}],
+                    "source": CallSourceTypeEnum.Web.value,
                 },
                 {
                     "error_message": "[ErrorDetail(string='后端服务【Test Backend】的配置 scheme 同时存在 http 和 https， 需要保持一致。', code='invalid')]",
@@ -465,6 +471,7 @@ class TestSchemeHostInputValidator:
                 {
                     "backend_type": BackendTypeEnum.GRPC.value,
                     "hosts": [{"scheme": "grpc"}],
+                    "source": CallSourceTypeEnum.Web.value,
                 },
                 None,
                 False,
@@ -473,6 +480,7 @@ class TestSchemeHostInputValidator:
                 {
                     "backend_type": BackendTypeEnum.GRPC.value,
                     "hosts": [{"scheme": "grpcs"}],
+                    "source": CallSourceTypeEnum.Web.value,
                 },
                 None,
                 False,
@@ -481,6 +489,7 @@ class TestSchemeHostInputValidator:
                 {
                     "backend_type": BackendTypeEnum.GRPC.value,
                     "hosts": [{"scheme": "grpc"}, {"scheme": "grpc"}],
+                    "source": CallSourceTypeEnum.Web.value,
                 },
                 None,
                 False,
@@ -489,6 +498,7 @@ class TestSchemeHostInputValidator:
                 {
                     "backend_type": BackendTypeEnum.GRPC.value,
                     "hosts": [{"scheme": "grpcs"}, {"scheme": "grpcs"}],
+                    "source": CallSourceTypeEnum.Web.value,
                 },
                 None,
                 False,
@@ -497,9 +507,52 @@ class TestSchemeHostInputValidator:
                 {
                     "backend_type": BackendTypeEnum.GRPC.value,
                     "hosts": [{"scheme": "grpc"}, {"scheme": "grpcs"}],
+                    "source": CallSourceTypeEnum.Web.value,
                 },
                 {
                     "error_message": "[ErrorDetail(string='后端服务【Test Backend】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致。', code='invalid')]",
+                },
+                True,
+            ),
+            (
+                {
+                    "backend_type": BackendTypeEnum.HTTP.value,
+                    "hosts": [{"host": "http://example.com"}],
+                    "source": CallSourceTypeEnum.OpenAPI.value,
+                },
+                None,
+                False,
+            ),
+            (
+                {
+                    "backend_type": BackendTypeEnum.HTTP.value,
+                    "hosts": [{"host": "http://localhost"}],
+                    "source": CallSourceTypeEnum.OpenAPI.value,
+                },
+                {
+                    "error_message": "[ErrorDetail(string='后端服务【Test Backend】的配置，host: localhost 不能使用该地址。', code='invalid')]",
+                },
+                True,
+            ),
+            (
+                {
+                    "backend_type": BackendTypeEnum.HTTP.value,
+                    "hosts": [{"host": "http://127.0.0.1"}],
+                    "source": CallSourceTypeEnum.OpenAPI.value,
+                },
+                {
+                    "error_message": "[ErrorDetail(string='后端服务【Test Backend】的配置，host: 127.0.0.1 不能使用该地址。', code='invalid')]",
+                },
+                True,
+            ),
+            (
+                {
+                    "backend_type": BackendTypeEnum.HTTP.value,
+                    "hosts": [{"host": "http://0.0.0.0"}],
+                    "source": CallSourceTypeEnum.OpenAPI.value,
+                },
+                {
+                    "error_message": "[ErrorDetail(string='后端服务【Test Backend】的配置，host: 0.0.0.0 不能使用该地址。', code='invalid')]",
                 },
                 True,
             ),
@@ -517,37 +570,9 @@ class TestSchemeHostInputValidator:
         if will_error:
             # 验证异常消息是否符合预期
             with pytest.raises(Exception) as exc_info:
-                validator.validate_scheme()
+                validator.validate_scheme(data["source"])
             expected_msg = expected["error_message"].replace("Test Backend", backend_name)
             assert str(exc_info.value) == expected_msg
-
-    def test_validate_scheme_host(self, fake_backend):
-        data = [
-            {
-                "hosts": [{"host": "http://example.com"}],
-                "will_error": False,
-            },
-            {
-                "hosts": [{"host": "http://localhost"}],
-                "will_error": True,
-            },
-            {
-                "hosts": [{"host": "http://127.0.0.1"}],
-                "will_error": True,
-            },
-            {
-                "hosts": [{"host": "http://0.0.0.0"}],
-                "will_error": True,
-            },
-        ]
-        for test in data:
-            validator = SchemeHostInputValidator(fake_backend, test["hosts"])
-
-            if test.get("will_error"):
-                with pytest.raises(Exception):
-                    validator.validate_scheme_host()
-            else:
-                validator.validate_scheme_host()
 
 
 class TestStageVarsValidator:

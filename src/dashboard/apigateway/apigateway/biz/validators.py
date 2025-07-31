@@ -25,7 +25,7 @@ from rest_framework import serializers
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
-from apigateway.common.constants import STAGE_VAR_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum
+from apigateway.common.constants import STAGE_VAR_NAME_PATTERN, CallSourceTypeEnum, GatewayAPIDocMaintainerTypeEnum
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
 from apigateway.core import constants as core_constants
 from apigateway.core.constants import (
@@ -338,7 +338,24 @@ class SchemeHostInputValidator:
         self.hosts = hosts
         self.backend = backend
 
-    def _validate_scheme_consistency(self, schemes):
+    def validate_scheme(self, source: CallSourceTypeEnum):
+        if source == CallSourceTypeEnum.OpenAPI.value:
+            schemes = set()
+            for host in self.hosts:
+                scheme, _host = host["host"].rstrip("/").split("://")
+                schemes.add(scheme)
+
+                if _host in settings.FORBIDDEN_HOSTS:
+                    raise serializers.ValidationError(
+                        _(
+                            "后端服务【{backend_name}】的配置，host: {host} 不能使用该地址。".format(
+                                backend_name=self.backend.name, host=_host
+                            )
+                        )
+                    )
+        else:
+            schemes = {host.get("scheme") for host in self.hosts}
+
         if len(schemes) > 1 and self.backend.type == BackendTypeEnum.HTTP.value:
             raise serializers.ValidationError(
                 _("后端服务【{backend_name}】的配置 scheme 同时存在 http 和 https， 需要保持一致。").format(
@@ -351,28 +368,6 @@ class SchemeHostInputValidator:
                     backend_name=self.backend.name
                 )
             )
-
-    def validate_scheme_host(self):
-        # 适用于 open api 的校验
-        schemes = set()
-        for host in self.hosts:
-            scheme, _host = host["host"].rstrip("/").split("://")
-            schemes.add(scheme)
-
-            if _host in settings.FORBIDDEN_HOSTS:
-                raise serializers.ValidationError(
-                    _(
-                        "后端服务【{backend_name}】的配置，host: {host} 不能使用该端口。".format(
-                            backend_name=self.backend.name, host=_host
-                        )
-                    )
-                )
-        self._validate_scheme_consistency(schemes)
-
-    def validate_scheme(self):
-        # 适用于 web api 的校验
-        schemes = {host.get("scheme") for host in self.hosts}
-        self._validate_scheme_consistency(schemes)
 
 
 class StageVarsValidator(GetGatewayFromContextMixin):

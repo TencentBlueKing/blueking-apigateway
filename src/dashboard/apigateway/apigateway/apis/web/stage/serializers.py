@@ -31,6 +31,7 @@ from apigateway.biz.validators import (
     SchemeHostInputValidator,
     StageVarsValidator,
 )
+from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
@@ -217,7 +218,7 @@ class StageInputSLZ(serializers.Serializer):
             backend = backend_dict[input_backend["id"]]
             # 校验backend下的host下的类型的唯一性
             validator = SchemeHostInputValidator(hosts=input_backend["config"]["hosts"], backend=backend)
-            validator.validate_scheme()
+            validator.validate_scheme(CallSourceTypeEnum.Web.value)
             # 校验backend下类型选择的关联性
             for host in input_backend["config"]["hosts"]:
                 check_backend_host_scheme(backend, host)
