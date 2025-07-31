@@ -23,19 +23,13 @@ const route: RouteRecordRaw[] = [
     path: 'resource',
     name: 'ResourceManagement',
     redirect: { name: 'ResourceSetting' },
-    meta: {
-      title: t('资源管理'),
-      matchRoute: 'ResourceManagement',
-    },
+    meta: { title: t('资源管理') },
     children: [
       {
         path: 'setting',
         name: 'ResourceSetting',
         component: () => import('./settings/Index.vue'),
-        meta: {
-          title: t('资源配置'),
-          matchRoute: 'ResourceManagement',
-        },
+        meta: { title: t('资源配置') },
       },
       {
         path: 'edit/:resourceId',
@@ -43,7 +37,7 @@ const route: RouteRecordRaw[] = [
         component: () => import('./settings/edit/Index.vue'),
         meta: {
           title: t('编辑资源'),
-          matchRoute: 'ResourceManagement',
+          menuKey: 'ResourceSetting',
           showBackIcon: true,
           showPageName: true,
         },
@@ -54,7 +48,7 @@ const route: RouteRecordRaw[] = [
         component: () => import('./settings/edit/Index.vue'),
         meta: {
           title: t('新建资源'),
-          matchRoute: 'ResourceManagement',
+          menuKey: 'ResourceSetting',
           showBackIcon: true,
         },
       },
@@ -64,7 +58,7 @@ const route: RouteRecordRaw[] = [
         component: () => import('./settings/edit/Index.vue'),
         meta: {
           title: t('克隆资源'),
-          matchRoute: 'ResourceManagement',
+          menuKey: 'ResourceSetting',
           showBackIcon: true,
         },
       },
@@ -74,7 +68,7 @@ const route: RouteRecordRaw[] = [
         component: () => import('./settings/import/Index.vue'),
         meta: {
           title: t('导入资源配置'),
-          matchRoute: 'ResourceManagement',
+          menuKey: 'ResourceSetting',
           topMenu: 'home',
           showBackIcon: true,
         },
@@ -85,7 +79,7 @@ const route: RouteRecordRaw[] = [
         component: () => import('./settings/import-doc/Index.vue'),
         meta: {
           title: t('导入资源文档'),
-          matchRoute: 'ResourceManagement',
+          menuKey: 'ResourceSetting',
           topMenu: 'home',
           showBackIcon: true,
         },
@@ -96,7 +90,6 @@ const route: RouteRecordRaw[] = [
         component: () => import('./versions/Index.vue'),
         meta: {
           title: t('资源版本'),
-          matchRoute: 'ResourceManagement',
           hideHeaderBorder: true,
         },
       },

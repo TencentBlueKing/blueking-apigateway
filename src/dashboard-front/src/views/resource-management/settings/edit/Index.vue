@@ -57,6 +57,7 @@
             ref="frontConfigRef"
             :detail="resourceDetail"
             :is-clone="isClone"
+            @change="handleFrontConfigChange"
           />
         </template>
       </BkCollapsePanel>
@@ -97,6 +98,7 @@
           <BackConfig
             ref="backConfigRef"
             :detail="resourceDetail"
+            :front-config="frontConfig"
             @service-init="setupFormDataBack"
           />
         </template>
@@ -180,6 +182,13 @@ const resourceDetail = ref<any>({});
 // 获取初始化表单数据做对比
 const formDataBack = ref({});
 const hasNoRequestParams = ref(true);
+
+const frontConfig = ref({
+  path: '',
+  method: 'GET',
+  match_subpath: false,
+  enable_websocket: false,
+});
 
 const isClone = computed(() => {
   return route.name === 'ResourceClone';
@@ -289,9 +298,6 @@ const handleSubmit = async () => {
     });
     router.push({ name: 'ResourceSetting' });
   }
-  catch (error) {
-    console.log('error', error);
-  }
   finally {
     submitLoading.value = false;
   }
@@ -323,6 +329,10 @@ const setupFormDataBack = () => {
     // mitt.emit('on-leave-page-change', formDataBack.value);
     initSidebarFormData(formDataBack.value);
   });
+};
+
+const handleFrontConfigChange = (config: typeof frontConfig.value) => {
+  frontConfig.value = config;
 };
 
 onMounted(async () => {

@@ -73,7 +73,7 @@
           <p class="pb-15px">
             <span
               class="ag-tag"
-              :class="curResource.method.toLowerCase()"
+              :class="curResource?.method?.toLowerCase() || ''"
             >{{ curResource.method }}</span>
             {{ curResource.path }}
           </p>

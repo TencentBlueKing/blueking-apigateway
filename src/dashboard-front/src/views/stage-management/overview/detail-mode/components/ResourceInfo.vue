@@ -209,13 +209,12 @@
     </template>
   </BkLoading>
 
-  <!-- TODO 补回资源详情抽屉 -->
   <!-- 资源详情 -->
-  <!--  <resource-details -->
-  <!--    ref="resourceDetailsRef" -->
-  <!--    :info="info" -->
-  <!--    @hidden="clearHighlight" -->
-  <!--  /> -->
+  <ResourceDetails
+    ref="resourceDetailsRef"
+    :info="info"
+    @hidden="clearHighlight"
+  />
 
   <!-- 环境编辑 -->
   <CreateStage
@@ -232,7 +231,7 @@ import {
   getStageList,
 } from '@/services/source/stage';
 import { getVersionDetail } from '@/services/source/resource';
-// import resourceDetails from './resource-details.vue';
+import ResourceDetails from './ResourceDetails.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import CreateStage from '../../components/CreateStage.vue';
 import { copy } from '@/utils';
@@ -255,7 +254,7 @@ const gatewayId = useRouteParams('id', 0, { transform: Number });
 
 const searchValue = ref('');
 const info = ref<any>({});
-// const resourceDetailsRef = ref();
+const resourceDetailsRef = ref();
 const stageSidesliderRef = ref();
 const isReload = ref(false);
 const emptyText = ref('暂无数据');
@@ -398,7 +397,7 @@ const getLabels = async () => {
 const showDetails = (row: any) => {
   setHighlight(row.name);
   info.value = row;
-  // resourceDetailsRef.value?.showSideslider();
+  resourceDetailsRef.value?.showSideslider();
 };
 
 const copyPath = (row: any) => {
