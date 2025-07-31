@@ -341,11 +341,15 @@ class SchemeHostInputValidator:
 
     def validate_scheme(self, source: CallSourceTypeEnum):
         if source == CallSourceTypeEnum.OpenAPI.value:
+            # open api 传输的参数不包含 scheme，所以需要解析 host
+            # host 格式为：http://example.com 或 https://example.com
             schemes = set()
             for host in self.hosts:
                 parsed_url = urlparse(host["host"].rstrip("/"))
                 schemes.add(parsed_url.scheme)
 
+                # 检查 host 是否在禁止列表中
+                # 由于 web api 已经通过 is_forbidden_host 方法进行校验，所以 open api 需要单独增加校验
                 if parsed_url.netloc in settings.FORBIDDEN_HOSTS:
                     raise serializers.ValidationError(
                         _(
@@ -355,6 +359,8 @@ class SchemeHostInputValidator:
                         )
                     )
         else:
+            # web api 传输的参数包含 scheme 和 host
+            # scheme 可以是 http 或 https，host 格式为：example.com 或 app.example.com:8080
             schemes = {host.get("scheme") for host in self.hosts}
 
         if len(schemes) > 1 and self.backend.type == BackendTypeEnum.HTTP.value:
