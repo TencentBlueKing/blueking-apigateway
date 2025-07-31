@@ -1086,7 +1086,7 @@ const openTab = (name?: string) => {
     return;
   }
   const routeData = router.resolve({
-    name: 'apiDocDetail',
+    name: 'ApiDocDetail',
     params: {
       curTab: 'gateway',
       targetName: gatewayStore.currentGateway?.name,

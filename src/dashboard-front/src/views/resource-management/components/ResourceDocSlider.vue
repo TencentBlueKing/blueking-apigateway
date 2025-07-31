@@ -121,7 +121,7 @@
         <div>
           <template v-if="isEdited">
             <BkButton
-              class="mr-8px w-100px"
+              class="mr-8px min-w-88px"
               theme="primary"
               :loading="isSaving"
               @click="handleSaveMarkdown"
@@ -129,7 +129,7 @@
               {{ isUpdate ? t('更新') : t('提交') }}
             </BkButton>
             <BkButton
-              class="w-100px"
+              class="min-w-88px"
               @click="handleCancelMarkdown"
             >
               {{ t('取消') }}
@@ -137,7 +137,7 @@
           </template>
           <template v-else>
             <BkButton
-              class="mr-8px w-100px"
+              class="mr-8px min-w-88px"
               theme="primary"
               @click="() => handleEditMarkdown('edit')"
             >
@@ -150,7 +150,7 @@
               trigger="click"
               @confirm="handleDeleteMarkdown"
             >
-              <BkButton>
+              <BkButton class="min-w-88px">
                 {{ t('删除') }}
               </BkButton>
             </BkPopConfirm>

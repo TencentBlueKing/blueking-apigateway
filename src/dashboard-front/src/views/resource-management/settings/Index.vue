@@ -215,11 +215,11 @@
         >
           <BkLoading :loading="isLoading">
             <BkTable
-              :key="tableDataKey"
               :data="tableData"
               :pagination="pagination"
               :row-class="handleRowClass"
               :settings="settings"
+              :max-height="clientHeight"
               show-overflow-tooltip
               border="outer"
               class="table-layout"
@@ -232,6 +232,7 @@
               @row-mouse-enter="handleMouseEnter"
               @row-mouse-leave="handleMouseLeave"
               @column-sort="handleSortChange"
+              @setting-change="handleSettingChange"
             >
               <BkTableColumn
                 v-if="showBatch"
@@ -666,6 +667,7 @@ import { Message } from 'bkui-vue';
 import {
   useQueryList,
   useSelection,
+  useTableSetting,
 } from '@/hooks';
 import {
   exportDocs,
@@ -754,6 +756,7 @@ const exportDropData = ref<ApigwIDropList[]>([
 
 const route = useRoute();
 const router = useRouter();
+
 const tableDataKey = ref(uniqueId());
 const chooseMethod = ref<string[]>([]);
 const filterData = ref<any>({
@@ -983,7 +986,7 @@ const labelsList = computed(() => {
 });
 
 // 当前视口高度能展示最多多少条表格数据
-const { maxTableLimit } = useMaxTableLimit();
+const { clientHeight, maxTableLimit } = useMaxTableLimit({ allocatedHeight: 256 });
 
 // 列表hooks
 const {
@@ -1164,6 +1167,50 @@ const handleSortChange = ({ column, type }: Record<string, any>) => {
   };
   return typeMap[type]();
 };
+
+const handleSettingChange = (
+  {
+    checked,
+    size,
+    height,
+  }: {
+    checked: string[]
+    size: string
+    height: number
+  }) => {
+  settings.value = Object.assign(settings.value, {
+    checked,
+    size,
+    height,
+  });
+  const isExistDiff = isDiffSize({
+    checked,
+    size,
+    height,
+  });
+  changeTableSetting({
+    checked,
+    size,
+    height,
+  });
+  if (!isExistDiff) {
+    return;
+  }
+  delete route.query.pagesize;
+  current.value = 1;
+  getResizeTable();
+  console.log(settings.value, 55555);
+};
+
+function getResizeTable() {
+  curTableSettingConfig.value = useMaxTableLimit({ className: 'resource-setting' });
+  // 如果limit数量一致，不用刷新接口
+  if (pagination.value.limit === curTableSettingConfig.value.maxTableLimit) {
+    return;
+  }
+  pagination.value.limit = curTableSettingConfig.value.maxTableLimit;
+  pagination.value.limitList = [...initLimitList.value, limit.value];
+}
 
 // 展示右边内容
 const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
@@ -1526,7 +1573,7 @@ const tipsContent = (data: any[]) => {
   ]);
 };
 
-const settings = {
+const settings = shallowRef({
   trigger: 'click',
   fields: [
     {
@@ -1568,8 +1615,12 @@ const settings = {
       disabled: true,
     },
   ],
+  size: 'small',
+  height: 42,
   checked: ['name', 'backend_name', 'method', 'path', 'plugin_count', 'docs', 'labels', 'updated_time', 'act'],
-};
+});
+
+const { changeTableSetting, isDiffSize } = useTableSetting(settings, 'resource-setting');
 
 watch(
   isDetail,
@@ -2016,7 +2067,7 @@ onMounted(() => {
 
         .dot {
           display: inline-block;
-          width: 8px;
+          min-width: 8px;
           height: 8px;
           margin-left: 4px;
           vertical-align: middle;

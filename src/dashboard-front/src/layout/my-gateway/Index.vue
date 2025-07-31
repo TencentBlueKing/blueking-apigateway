@@ -346,6 +346,7 @@ const menuList = computed<IMenu[]>(() => [
 // 表格需要兼容的页面模块
 const needBkuiTablePage = computed(() => {
   return [
+    'ResourceSetting',
     'BackendService',
     'PermissionApply',
     'PermissionRecord',
@@ -639,7 +640,8 @@ onMounted(() => {
 
       .default-header-view {
         height: calc(100vh - 105px);
-        overflow: auto;
+        overflow-x: hidden;
+        overflow-y: auto;
 
         &.custom-header-view {
           height: 100%;

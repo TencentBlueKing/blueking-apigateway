@@ -36,3 +36,4 @@ export * from './use-selection-data';
 export * from './use-date-picker';
 export * from './use-stage-data';
 export * from './use-text-getter';
+export * from './use-table-setting';

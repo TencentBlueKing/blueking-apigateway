@@ -81,7 +81,7 @@ export function getStrategyList(apigwId: number, params: IStrategyListParams) {
  * @param id 告警策略id
  */
 export function getStrategyDetail(apigwId: number, id: number) {
-  return http.get(`/gateways/${apigwId}/monitors/alarm/strategies/${id}`);
+  return http.get(`/gateways/${apigwId}/monitors/alarm/strategies/${id}/`);
 }
 
 /**

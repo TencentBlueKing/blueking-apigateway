@@ -354,13 +354,14 @@ const columns = [
   },
   {
     label: t('资源名称'),
+    showOverflowTooltip: false,
     render: ({ row }: any) => (
       <BkButton
         text
         theme="primary"
         v-bk-tooltips={{
           content: (<div>{t('资源需要确认请求参数后才能添加到MCP Server')}</div>),
-          disabled: row.has_openapi_schema,
+          disabled: row.has_openapi_schema || isRowSelected(row),
         }}
         onClick={() => handleToolNameClick(row)}
       >

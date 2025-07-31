@@ -133,21 +133,21 @@
               <template v-else-if="stepsConfig.curStep === 2">
                 <BkButton
                   theme="primary"
-                  class="w-100px"
+                  class="min-w-88px"
                   :loading="loading"
                   @click="handleBuildVersion"
                 >
                   {{ t('确定') }}
                 </BkButton>
                 <BkButton
-                  class="ml-10px w-100px"
+                  class="ml-10px min-w-88px"
                   @click="handleBack"
                 >
                   {{ t('上一步') }}
                 </BkButton>
               </template>
               <BkButton
-                class="ml-10px w-100px"
+                class="ml-10px min-w-88px"
                 @click="handleCancel"
               >
                 {{ t('取消') }}

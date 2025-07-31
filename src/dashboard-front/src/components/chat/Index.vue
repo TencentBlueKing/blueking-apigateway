@@ -24,7 +24,7 @@
       @click="handleShowDialog"
     >
       <AgIcon
-        name="doc-icon"
+        name="qiye-weixin"
         size="16"
         class="doc-qw icon-ag-qw mr-3px"
       /> {{ t('一键拉群') }}
@@ -41,11 +41,12 @@
       @closed="handleCancel"
     >
       <div class="chat-dialog">
-        <div class="header">
+        <div class="flex items-center header">
           <div class="icon">
             <AgIcon
-              name="doc-icon"
-              class="doc-qw icon-ag-qw"
+              name="qiye-weixin"
+              size="50"
+              class="ag-doc-icon doc-qw apigateway-icon icon-ag-qw"
             />
           </div>
           <div class="desc">
@@ -194,14 +195,13 @@ watch(
 }
 
 .header {
-  display: flex;
   margin-bottom: 10px;
 
   .icon {
     width: 60px;
+    text-align: left;
     font-size: 50px;
     line-height: 1;
-    text-align: left;
   }
 
   .desc {

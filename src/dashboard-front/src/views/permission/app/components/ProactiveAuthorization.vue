@@ -135,7 +135,7 @@
               </div>
             </div>
           </BkFormItem>
-        </bkform>
+        </BkForm>
       </div>
     </template>
     <template #footer>

@@ -20,7 +20,7 @@ import type { RouteRecordRaw } from 'vue-router';
 const routes: RouteRecordRaw[] = [
   {
     path: 'api-docs/:curTab?',
-    name: 'apiDocs',
+    name: 'ApiDocs',
     component: () => import('./Index.vue'),
     meta: {
       matchRoute: 'Docs',
@@ -29,7 +29,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: 'api-docs/:curTab/:board?/:targetName/:componentName?',
-    name: 'apiDocDetail',
+    name: 'ApiDocDetail',
     component: () => import('./detail/Index.vue'),
     meta: {
       matchRoute: 'Docs',
