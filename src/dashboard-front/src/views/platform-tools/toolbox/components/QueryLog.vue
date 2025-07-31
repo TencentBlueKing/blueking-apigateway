@@ -133,7 +133,6 @@
 
 <script lang="ts" setup>
 import AgIcon from '@/components/ag-icon/Index.vue';
-import { Message } from 'bkui-vue';
 import { copy as copyToClipboard } from '@/utils';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import { getLogsInfo } from '@/services/source/access-log';
@@ -195,12 +194,8 @@ const getDetailData = async () => {
     details.value.result = res.results[0] || {};
     details.value.fields = res.fields;
   }
-  catch (e) {
-    const error = e as Error;
-    Message({
-      theme: 'error',
-      message: error.message,
-    });
+  catch (error) {
+    console.error(error);
     details.value = {
       fields: [],
       result: {},
