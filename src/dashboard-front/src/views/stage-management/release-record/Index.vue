@@ -97,10 +97,10 @@ import {
 import { useGateway } from '@/stores';
 import ReleaseStageEvent from '@/components/release-stage-event/Index.vue';
 import ReleaseProgrammableEvent from '../components/ReleaseProgrammableEvent.vue';
+import { t } from '@/locales';
 
 type Enums = typeof publishSourceEnum | typeof publishStatusEnum;
 
-const { t } = useI18n();
 const router = useRouter();
 const gatewayStore = useGateway();
 
@@ -145,16 +145,16 @@ const tableEmptyConf = ref({
 });
 
 const publishSourceEnum = {
-  gateway_enable: '网关启用',
-  gateway_disable: '网关停用',
-  version_publish: '版本发布',
-  plugin_bind: '插件绑定',
-  plugin_update: '插件更新',
-  plugin_unbind: '插件解绑',
-  stage_disable: '环境下架',
-  stage_delete: '环境删除',
-  stage_update: '环境更新',
-  backend_update: '服务更新',
+  gateway_enable: t('网关启用'),
+  gateway_disable: t('网关停用'),
+  version_publish: t('版本发布'),
+  plugin_bind: t('插件绑定'),
+  plugin_update: t('插件更新'),
+  plugin_unbind: t('插件解绑'),
+  stage_disable: t('环境下架'),
+  stage_delete: t('环境删除'),
+  stage_update: t('环境更新'),
+  backend_update: t('服务更新'),
 };
 const publishStatusEnum = {
   success: '执行成功',
@@ -351,7 +351,7 @@ const goVersionList = (data: any) => {
 // 从枚举对象中获取文本
 const getTextFromEnum = (e: Enums, key?: unknown) => {
   if (!key) return '--';
-  return t(e[key as keyof Enums]);
+  return e[key as keyof Enums];
 };
 
 const handlePickSuccess = () => {

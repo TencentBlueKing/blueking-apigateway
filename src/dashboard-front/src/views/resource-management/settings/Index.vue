@@ -236,13 +236,13 @@
               <BkTableColumn
                 v-if="showBatch"
                 align="center"
-                fixed
+                fixed="left"
                 type="selection"
                 width="80"
               />
               <BkTableColumn
                 :label="t('资源名称')"
-                fixed
+                fixed="left"
                 prop="name"
                 width="170"
               >
@@ -631,15 +631,16 @@
 
       <!-- 生成版本 -->
       <VersionSlider
-        ref="versionSidesliderRef"
+        ref="versionSliderRef"
+        @done="handleVersionCreated"
       />
 
       <!-- 版本对比 -->
       <BkSideslider
-        v-model:is-show="diffSidesliderConf.isShow"
+        v-model:is-show="diffSliderConf.isShow"
         quick-close
-        :title="diffSidesliderConf.title"
-        :width="diffSidesliderConf.width"
+        :title="diffSliderConf.title"
+        :width="diffSliderConf.width"
       >
         <template #default>
           <div class="p-20px pure-diff">
@@ -765,8 +766,7 @@ const tableEmptyConf = ref<TableEmptyConfType>({
   isAbnormal: false,
 });
 
-// ref
-const versionSidesliderRef = ref(null);
+const versionSliderRef = ref();
 const selectCheckBoxParentRef = ref(null);
 // 导出参数
 const exportParams: IExportParams = reactive({
@@ -849,7 +849,7 @@ const dialogData: IDialog = reactive({
 });
 
 // 导出dialog
-const exportDialogConfig: IExportDialog = reactive({
+const exportDialogConfig = reactive<IExportDialog>({
   isShow: false,
   title: t('请选择导出的格式'),
   loading: false,
@@ -870,7 +870,7 @@ const batchEditData = ref({
 });
 
 // 版本对比抽屉
-const diffSidesliderConf = reactive({
+const diffSliderConf = reactive({
   isShow: false,
   width: 1040,
   title: t('版本资源对比'),
@@ -1116,7 +1116,7 @@ const dragTwoColDiv = (contentId: string, leftBoxId: string, resizeId: string/* 
   // const rightBox = document.getElementById(rightBoxId);
   const box = document.getElementById(contentId);
 
-  resize.onmousedown = function (e: any) {
+  resize.onmousedown = function (e: MouseEvent) {
     const startX = e.clientX;
     resize.left = resize.offsetLeft;
     isDragging.value = true;
@@ -1251,8 +1251,8 @@ const handleShowDiff = async () => {
     else {
       diffSourceId.value = response.results[0]?.id || '';
     }
-    diffSidesliderConf.width = window.innerWidth <= 1280 ? 1040 : 1280;
-    diffSidesliderConf.isShow = true;
+    diffSliderConf.width = window.innerWidth <= 1280 ? 1040 : 1280;
+    diffSliderConf.isShow = true;
   }
   catch {
     Message({
@@ -1324,12 +1324,26 @@ const handleExportDownload = async () => {
     exportDialogConfig.isShow = false;
   }
   catch (e) {
-    const error = e as Error;
-    Message({
-      message: error?.message || t('导出失败'),
-      theme: 'error',
-      width: 'auto',
-    });
+    if (exportDialogConfig.exportFileDocType === 'docs') {
+      const fileReader = new FileReader();
+      fileReader.readAsText(e as Blob, 'utf-8');
+      fileReader.onload = function () {
+        const blobError = JSON.parse(fileReader.result as string);
+        Message({
+          message: blobError?.error?.message || t('导出失败'),
+          theme: 'error',
+          width: 'auto',
+        });
+      };
+    }
+    else {
+      const error = e as Error;
+      Message({
+        message: error?.message || t('导出失败'),
+        theme: 'error',
+        width: 'auto',
+      });
+    }
   }
 };
 // 批量编辑确认
@@ -1448,7 +1462,7 @@ const handleCreateResourceVersion = async () => {
   else {
     diffSourceId.value = response.results[0]?.id || '';
   }
-  versionSidesliderRef.value.showReleaseSideslider();
+  versionSliderRef.value.showReleaseSideslider();
 };
 
 // 获取标签数据
@@ -1710,9 +1724,10 @@ watch(
 );
 
 watch(
-  () => route, () => {
-    if (route?.query?.backend_id) {
-      const { backend_id } = route?.query;
+  () => route.query,
+  () => {
+    if (route.query?.backend_id) {
+      const { backend_id } = route.query;
       filterData.value.backend_id = backend_id;
     }
     if (resourceSettingStore.previousPagination) {
@@ -1721,10 +1736,12 @@ watch(
         pagination.value.offset = resourceSettingStore.previousPagination.offset;
       });
     }
-  }, {
+  },
+  {
     immediate: true,
     deep: true,
-  });
+  },
+);
 
 watch(
   () => [isDetail.value, isShowLeft.value],
@@ -1808,6 +1825,11 @@ const recoverPageStatus = () => {
   }
 };
 
+const handleVersionCreated = () => {
+  getList();
+  handleShowVersion();
+};
+
 onBeforeRouteLeave((to) => {
   if (to.name === 'ResourceEdit') {
     const { current, offset } = pagination.value;
@@ -1824,7 +1846,12 @@ onBeforeRouteLeave((to) => {
 onMounted(() => {
   // setTimeout(() => {
   init();
-  dragTwoColDiv('resourceId', 'resourceLf', 'resourceLine'/* , 'resourceRg' */);
+  dragTwoColDiv(
+    'resourceId',
+    'resourceLf',
+    'resourceLine',
+    // 'resourceRg',
+  );
   // 监听其他组件是否触发了资源更新，获取最新的列表数据
   // mitt.on('on-update-plugin', () => {
   //   pagination.value = Object.assign(pagination.value, {

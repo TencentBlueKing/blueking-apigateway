@@ -80,22 +80,24 @@
             />
           </main>
         </article>
-        <article>
-          <header class="content-title">
-            {{ t('租户模式') }}
-          </header>
-          <main class="content-main">
-            {{ TENANT_MODE_TEXT_MAP[basics.tenant_mode] || '--' }}
-          </main>
-        </article>
-        <article>
-          <header class="content-title">
-            {{ t('租户 ID') }}
-          </header>
-          <main class="content-main">
-            {{ basics.tenant_id || '--' }}
-          </main>
-        </article>
+        <template v-if="featureFlagStore.flags.ENABLE_MULTI_TENANT_MODE">
+          <article>
+            <header class="content-title">
+              {{ t('租户模式') }}
+            </header>
+            <main class="content-main">
+              {{ TENANT_MODE_TEXT_MAP[basics.tenant_mode] || '--' }}
+            </main>
+          </article>
+          <article>
+            <header class="content-title">
+              {{ t('租户 ID') }}
+            </header>
+            <main class="content-main">
+              {{ basics.tenant_id || '--' }}
+            </main>
+          </article>
+        </template>
         <article>
           <header class="content-title">
             {{ t('文档联系人') }}

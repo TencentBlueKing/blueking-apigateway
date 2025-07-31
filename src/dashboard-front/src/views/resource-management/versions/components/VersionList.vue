@@ -195,9 +195,9 @@
 
     <!-- 版本对比 -->
     <BkSideslider
-      v-model:is-show="diffSidesliderConf.isShow"
-      :title="diffSidesliderConf.title"
-      :width="diffSidesliderConf.width"
+      v-model:is-show="diffSliderConf.isShow"
+      :title="diffSliderConf.title"
+      :width="diffSliderConf.width"
       quick-close
     >
       <template #default>
@@ -328,7 +328,7 @@ const tableEmptyConf = ref<{
 });
 
 // 版本对比抽屉
-const diffSidesliderConf = reactive({
+const diffSliderConf = reactive({
   isShow: false,
   width: 1040,
   title: t('版本资源对比'),
@@ -372,7 +372,7 @@ const openCreateSdk = (id: number) => {
 
 // 版本对比
 const handleShowDiff = () => {
-  diffSidesliderConf.width = window.innerWidth <= 1280 ? 1040 : 1280;
+  diffSliderConf.width = window.innerWidth <= 1280 ? 1040 : 1280;
 
   // 调整展示顺序，旧的版本(id 较小的那个)放左边，新的版本放右边
   const selectedResources = orderBy(selections.value, 'id');
@@ -381,7 +381,7 @@ const handleShowDiff = () => {
   diffSourceId.value = diffSource?.id;
   diffTargetId.value = diffTarget?.id || '';
 
-  diffSidesliderConf.isShow = true;
+  diffSliderConf.isShow = true;
   resetSelections(tableRef.value);
 };
 

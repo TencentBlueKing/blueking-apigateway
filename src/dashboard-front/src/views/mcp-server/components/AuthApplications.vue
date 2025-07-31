@@ -22,7 +22,6 @@
       theme="info"
       class="mb-16px"
       :title="t('授权应用将会拥有这个 mcp server 工具列表对应接口的调用权限')"
-      closable
     />
 
     <div class="flex items-center justify-between mb-16px">

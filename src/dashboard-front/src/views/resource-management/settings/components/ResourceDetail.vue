@@ -499,7 +499,10 @@
       {{ t('请求参数') }}
     </div>
     <div class="pl-150px">
-      <span v-if="formData.schema?.none_schema">{{ t('该资源无请求参数') }}</span>
+      <span
+        v-if="formData.schema?.none_schema"
+        class="text-12px"
+      >{{ t('该资源无请求参数') }}</span>
       <RequestParams
         v-else
         :detail="formData"
@@ -786,7 +789,10 @@
         :detail="formData"
         readonly
       />
-      <div v-else>
+      <div
+        v-else
+        class="text-14px"
+      >
         {{ t('该资源无响应参数') }}
       </div>
     </div>

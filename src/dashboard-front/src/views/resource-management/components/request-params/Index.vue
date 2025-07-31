@@ -22,7 +22,10 @@
       v-if="!readonly"
       class="mb-24px"
     >
-      <BkCheckbox v-model="disabled">
+      <BkCheckbox
+        v-model="disabled"
+        class="text-14px"
+      >
         {{ t('该资源无请求参数') }}
       </BkCheckbox>
     </div>

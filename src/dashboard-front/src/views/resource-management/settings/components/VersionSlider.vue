@@ -75,7 +75,7 @@
                     property="version"
                     :label="t('版本号')"
                     :description="t('版本号须符合 Semver 规范，例如：1.1.1，1.1.1-alpha.1')"
-                    class="form-item-version mt-20 mb-15px"
+                    class="form-item-version mt-20px mb-15px"
                     required
                   >
                     <!-- <BkPopover

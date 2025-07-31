@@ -133,51 +133,35 @@
         type="card-tab"
       >
         <BkTabPanel
-          name="tools"
+          v-for="item in panels"
+          :key="item.name"
+          :name="item.name"
+          render-directive="if"
         >
           <template #label>
             <div class="flex items-center">
-              {{ t('工具') }}
+              {{ item.label }}
               <div
-                v-if="toolsCount > 0"
+                v-if="item.count > 0"
                 class="count"
-                :class="[active === 'tools' ? 'on' : 'off']"
+                :class="[active === item.name ? 'on' : 'off']"
               >
-                {{ toolsCount }}
+                {{ item.count }}
               </div>
             </div>
           </template>
           <div class="panel-content">
             <ServerTools
+              v-if="item.name === 'tools'"
               :server="server"
-              @update-count="(count) => updateCount(count)"
+              @update-count="(count) => updateCount(count, item.name)"
             />
-          </div>
-        </BkTabPanel>
-        <BkTabPanel
-          name="auth"
-        >
-          <template #label>
-            <div class="flex items-center">
-              {{ t('已授权应用') }}
-            </div>
-          </template>
-          <div class="panel-content">
             <AuthApplications
+              v-if="item.name === 'auth'"
               :mcp-server-id="serverId"
             />
-          </div>
-        </BkTabPanel>
-        <BkTabPanel
-          name="guide"
-        >
-          <template #label>
-            <div class="flex items-center">
-              {{ t('使用指引') }}
-            </div>
-          </template>
-          <div class="panel-content">
             <Guideline
+              v-if="active === 'guide'"
               :markdown-str="markdownStr"
             />
           </div>
@@ -241,7 +225,23 @@ const showDropdown = ref(false);
 const markdownStr = ref('');
 
 const active = ref('tools');
-const toolsCount = ref<number>(0);
+const panels = ref([
+  {
+    name: 'tools',
+    label: t('工具'),
+    count: 0,
+  },
+  {
+    name: 'auth',
+    label: t('已授权应用'),
+    count: 0,
+  },
+  {
+    name: 'guide',
+    label: t('使用指引'),
+    count: 0,
+  },
+]);
 const editingServerId = ref<number>();
 
 const fetchServer = async () => {
@@ -297,11 +297,11 @@ const handleSuspendToggle = async () => {
   });
 };
 
-const handleUpdated = () => {
-  router.replace({
-    name: route.name,
-    params: { ...route.params },
-  });
+const handleUpdated = async () => {
+  await Promise.all([
+    fetchServer(),
+    fetchGuide(),
+  ]);
 };
 
 const handleDelete = async () => {
@@ -320,8 +320,11 @@ const handleDelete = async () => {
   });
 };
 
-const updateCount = (count: number) => {
-  toolsCount.value = count;
+const updateCount = (count: number, panelName: string) => {
+  const panel = panels.value.find(panel => panel.name === panelName);
+  if (panel) {
+    panel.count = count;
+  }
 };
 </script>
 

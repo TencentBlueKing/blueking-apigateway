@@ -611,7 +611,7 @@ const localSourceTriggerLabel = computed(() => {
   if (match) {
     return match.resource_version_display;
   }
-  return '';
+  return t('当前最新资源列表');
 });
 
 const localTargetTriggerLabel = computed(() => {
@@ -619,7 +619,7 @@ const localTargetTriggerLabel = computed(() => {
   if (match) {
     return match.resource_version_display;
   }
-  return '';
+  return t('当前最新资源列表');
 });
 
 watch(

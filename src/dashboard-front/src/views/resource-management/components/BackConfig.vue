@@ -250,9 +250,20 @@ import AddBackendService from '@/views/backend-services/components/AddBackendSer
 import { HTTP_METHODS } from '@/constants';
 import { useRouteParams } from '@vueuse/router';
 
-interface IProps { detail?: any }
+interface IProps {
+  detail?: any
+  frontConfig: {
+    path: string
+    method: string
+    match_subpath: boolean
+    enable_websocket: boolean
+  }
+}
 
-const { detail = {} } = defineProps<IProps>();
+const {
+  detail = {},
+  frontConfig,
+} = defineProps<IProps>();
 
 // 获取到服务数据后抛出一个事件
 const emit = defineEmits(['service-init']);
@@ -336,6 +347,35 @@ const isEditService = computed(() => {
   return flag;
 });
 
+watch(
+  () => detail,
+  () => {
+    if (Object.keys(detail).length) {
+      const { backend } = detail;
+      backConfigData.value = {
+        ...backConfigData.value,
+        ...backend,
+      };
+      if (backend?.id) {
+        handleServiceChange(backend.id);
+      }
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  () => frontConfig,
+  () => {
+    frontPath.value = frontConfig.path;
+    backConfigData.value.config.match_subpath = frontConfig.match_subpath;
+  },
+  {
+    immediate: true,
+    deep: true,
+  },
+);
+
 const handleTimeOutTotal = (value: any[]) => {
   backConfigData.value.config.timeout = Number(value[0].timeout);
   // backConfigData.value.config.timeout = value.reduce((curr,next) => {
@@ -405,7 +445,7 @@ const renderTimeOutLabel = () => {
     <div>
       <div class="back-config-timeout">
         <span>{t('超时时间')}</span>
-        <BkPopConfirm
+        <bk-pop-confirm
           width="280"
           trigger="manual"
           ref={popoverConfirmRef}
@@ -416,7 +456,7 @@ const renderTimeOutLabel = () => {
             <div class="back-config-timeout-wrapper">
               <div class="back-config-timeout-content">
                 <div class="back-config-timeout-input">
-                  <BkInput
+                  <bk-input
                     v-model={timeOutValue.value}
                     maxlength={3}
                     overMaxLengthLimit={true}
@@ -462,7 +502,7 @@ const renderTimeOutLabel = () => {
             onClick={() => handleShowPopover()}
             v-clickOutSide={(e: any) => handleClickOutSide(e)}
           />
-        </BkPopConfirm>
+        </bk-pop-confirm>
         <i
           class="apigateway-icon icon-ag-undo-2 refresh-icon"
           v-bk-tooltips={{
@@ -478,7 +518,7 @@ const renderTimeOutLabel = () => {
 };
 
 // 选择服务获取服务详情数据
-const handleServiceChange = async (backendId: number) => {
+async function handleServiceChange(backendId: number) {
   const res = await getBackendServiceDetail(gatewayId.value, backendId);
   const resStorage: any = cloneDeep(res);
   const detailTimeout = detail?.backend?.config?.timeout;
@@ -500,7 +540,7 @@ const handleServiceChange = async (backendId: number) => {
     emit('service-init');
     isServiceInit.value = true;
   }
-};
+}
 
 const editService = () => {
   const service = servicesData.value?.filter((item: any) => item.id === backConfigData.value.id)[0];
@@ -629,23 +669,6 @@ const validate = async () => {
     return Promise.reject('请先配置后端服务地址');
   }
 };
-
-watch(
-  () => detail,
-  (val: any) => {
-    if (Object.keys(val).length) {
-      const { backend } = val;
-      backConfigData.value = {
-        ...backConfigData.value,
-        ...backend,
-      };
-      if (backend?.id) {
-        handleServiceChange(backend.id);
-      }
-    }
-  },
-  { immediate: true },
-);
 
 onMounted(() => {
   setTimeout(() => {
