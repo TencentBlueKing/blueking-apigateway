@@ -82,19 +82,18 @@ export default (interceptors: AxiosInterceptorManager<AxiosResponse>) => {
       }> & { __CANCEL__: any },
     ) => {
       // 超时取消
-
       if (error.__CANCEL__) {
         return Promise.reject(new RequestError('CANCEL', '请求已取消'));
       }
       // 处理 http 错误响应逻辑
       if (error.response) {
         // 登录状态失效
-        if (error.response.data.error.code === 'UNAUTHENTICATED') {
+        if (error.response.data.error?.code === 'UNAUTHENTICATED') {
           return Promise.reject(new RequestError(401, '登录状态失效', error.response));
         }
         // 默认使用 http 错误描述，如果有自定义错误描述优先使用
         let errorMessage = error.response.statusText;
-        if (error.response.data && error.response.data.error.code) {
+        if (error.response.data && error.response.data.error?.code) {
           errorMessage = error.response.data.error.message;
         }
         return Promise.reject(new RequestError(error.response.status || -1, errorMessage, error.response));
