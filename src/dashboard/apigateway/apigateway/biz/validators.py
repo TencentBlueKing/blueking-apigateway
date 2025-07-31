@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from typing import Optional
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.db.models import Count
@@ -342,14 +343,14 @@ class SchemeHostInputValidator:
         if source == CallSourceTypeEnum.OpenAPI.value:
             schemes = set()
             for host in self.hosts:
-                scheme, _host = host["host"].rstrip("/").split("://")
-                schemes.add(scheme)
+                parsed_url = urlparse(host["host"].rstrip("/"))
+                schemes.add(parsed_url.scheme)
 
-                if _host in settings.FORBIDDEN_HOSTS:
+                if parsed_url.netloc in settings.FORBIDDEN_HOSTS:
                     raise serializers.ValidationError(
                         _(
                             "后端服务【{backend_name}】的配置，host: {host} 不能使用该地址。".format(
-                                backend_name=self.backend.name, host=_host
+                                backend_name=self.backend.name, host=parsed_url.netloc
                             )
                         )
                     )
