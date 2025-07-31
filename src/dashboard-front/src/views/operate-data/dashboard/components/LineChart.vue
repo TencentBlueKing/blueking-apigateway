@@ -367,10 +367,10 @@ const getChartOption = () => {
 
 const getChartMoreOption = (seriesData: Array<Array<number>>) => {
   // 1. 根据data的最大值，动态计算出max合适值和interval配置
-  // const serieData = seriesData.map((item: Array<number>) => Math.round(item[0]))
-  // .filter((item: number) => !isNaN(item));
-  // const maxNumber = Math.max(...serieData);
-  // const yAxisIntervalOption = getChartIntervalOption(maxNumber, 'number', 'yAxis');
+  const serieData = seriesData.map((item: Array<number>) => Math.round(item[0]))
+    .filter((item: number) => !isNaN(item));
+  const maxNumber = Math.max(...serieData);
+  const yAxisIntervalOption = getChartIntervalOption(maxNumber, 'number', 'yAxis');
 
   // 2. 根据时间值计算xAxis显示年/月/日/时间部分
   const xAxisData = seriesData.map((item: Array<number>) => Math.round(item[1]));
@@ -379,8 +379,8 @@ const getChartMoreOption = (seriesData: Array<Array<number>>) => {
   const timeDuration = Math.round((xAxisData[xAxisData.length - 1] - xAxisData[0]) / 1000);
   const xAxisIntervalOption = getChartIntervalOption(timeDuration, 'time', 'xAxis');
 
-  // return merge(yAxisIntervalOption, xAxisIntervalOption);
-  return xAxisIntervalOption;
+  return merge(yAxisIntervalOption, xAxisIntervalOption);
+  // return xAxisIntervalOption;
 };
 
 const generateChartColor = (chartData: ISeriesItemType[]) => {

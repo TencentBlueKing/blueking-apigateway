@@ -170,6 +170,9 @@ export const getGatewayLabels = (apigwId: number) => http.get<{
  * @param data 导出参数
  */
 export const exportDocs = async (apigwId: number, data: any) => {
-  const res = await http.post(`${path}/${apigwId}/docs/export/`, data, { responseType: 'blob' });
+  const res = await http.post(`${path}/${apigwId}/docs/export/`, data, {
+    responseType: 'blob',
+    catchError: true,
+  });
   return blobDownLoad(res);
 };

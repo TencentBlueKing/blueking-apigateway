@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import * as monaco from 'monaco-editor';
+import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import { copy } from '@/utils';
 import { CopyShape, FilliscreenLine } from 'bkui-vue/lib/icon';
 
@@ -206,8 +206,8 @@ const editorMounted = () => {
 
   // 监听搜索工具状态变化，把可视状态传递出去
   editor.getContribution('editor.contrib.findController')
-    .getState()
-    .onFindReplaceStateChange(() => {
+    ?.getState()
+    ?.onFindReplaceStateChange(() => {
       const isVisible = editor.getContribution('editor.contrib.findController')
         .getState().isRevealed;
       emit('findStateChanged', isVisible);
