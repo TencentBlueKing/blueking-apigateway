@@ -22,7 +22,7 @@
     :class="[docRootClass]"
     :style="resourcesHeight"
   >
-    <section class="content p-20px">
+    <section class="content p-14px">
       <div
         class="ag-markdown-view"
         :class="isEdited ? '' : 'text-center'"
@@ -307,7 +307,7 @@ const fixedBtnLeft = computed(() => {
   if (source === 'side') {
     return 'padding-left: 20px';
   }
-  return 'padding-left: 30px';
+  return 'padding-left: 24px';
 });
 
 // 编辑markdown

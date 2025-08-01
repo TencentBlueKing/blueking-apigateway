@@ -778,6 +778,7 @@ const updateTableEmptyConfig = () => {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
+  tableEmptyConf.value.emptyType = '';
 };
 
 const getSearchDimensionText = (row: string | null) => {

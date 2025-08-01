@@ -17,807 +17,819 @@
  */
 
 <template>
-  <div
-    class="detail-container"
-    :class="{ 'has-notice': stageStore.getNotUpdatedStages?.length }"
-  >
-    <div class="title">
-      {{ t('基本信息') }}
-    </div>
-    <BkForm
-      ref="baseFormRef"
-      :model="formData"
-      :rules="rules"
-      class="form-cls flex"
+  <div class="detail-container">
+    <div
+      class="detail-container-content"
+      :class="[
+        { 'has-notice': stageStore.getNotUpdatedStages?.length },
+        { 'pb-52px': isStickyFixed }
+      ]"
     >
-      <BkFormItem
-        property="name"
-        class="form-item-cls"
+      <div class="title">
+        {{ t('基本信息') }}
+      </div>
+      <BkForm
+        ref="baseFormRef"
+        :model="formData"
+        :rules="rules"
+        class="form-cls flex"
       >
-        <template #label>
-          <span class="label-cls">{{ t('名称：') }}</span>
-        </template>
+        <BkFormItem
+          property="name"
+          class="form-item-cls"
+        >
+          <template #label>
+            <span class="label-cls">{{ t('名称：') }}</span>
+          </template>
 
-        <div
-          v-if="!nameEdit"
-          class="value-container"
-        >
-          <span class="value-cls">{{ formData.name }}</span>
-          <span class="operate-btn">
-            <AgIcon
-              name="edit-line"
-              @click="toggleEdit"
-            />
-            <AgIcon
-              name="copy-info"
-              @click="() => copy(formData.name)"
-            />
-          </span>
-        </div>
+          <div
+            v-if="!nameEdit"
+            class="value-container"
+          >
+            <span class="value-cls">{{ formData.name }}</span>
+            <span class="operate-btn">
+              <AgIcon
+                name="edit-line"
+                @click="toggleEdit"
+              />
+              <AgIcon
+                name="copy-info"
+                @click="() => copy(formData.name)"
+              />
+            </span>
+          </div>
 
-        <div
-          v-else
-          class="edit-name"
-        >
-          <BkInput
-            ref="nameInputRef"
-            v-model="formData.name"
-            size="small"
-            :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
-            @blur="handleEditSave"
-            @enter="handleEditEnter"
-          />
-        </div>
-      </BkFormItem>
-      <BkFormItem class="form-item-cls">
-        <template #label>
-          <span class="label-cls">{{ t('描述：') }}</span>
-        </template>
+          <div
+            v-else
+            class="edit-name"
+          >
+            <BkInput
+              ref="nameInputRef"
+              v-model="formData.name"
+              size="small"
+              :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
+              @blur="handleEditSave"
+              @enter="handleEditEnter"
+            />
+          </div>
+        </BkFormItem>
+        <BkFormItem class="form-item-cls">
+          <template #label>
+            <span class="label-cls">{{ t('描述：') }}</span>
+          </template>
 
-        <div
-          v-if="!descEdit"
-          class="value-container"
-        >
-          <span class="value-cls">{{ formData.description }}</span>
-          <span class="operate-btn">
-            <AgIcon
-              name="edit-line"
-              @click="descEdit = true"
-            />
-            <AgIcon
-              name="copy-info"
-              @click="() => copy(formData.description)"
-            />
-          </span>
-        </div>
+          <div
+            v-if="!descEdit"
+            class="value-container"
+          >
+            <span class="value-cls">{{ formData.description }}</span>
+            <span class="operate-btn">
+              <AgIcon
+                name="edit-line"
+                @click="descEdit = true"
+              />
+              <AgIcon
+                name="copy-info"
+                @click="() => copy(formData.description)"
+              />
+            </span>
+          </div>
 
-        <div
-          v-else
-          class="edit-name"
-        >
-          <BkInput
-            v-model="formData.description"
-            size="small"
-            :placeholder="t('请输入描述')"
-            @blur="handleEditSave"
-          />
-        </div>
-      </BkFormItem>
-      <BkFormItem class="form-item-cls">
-        <template #label>
-          <span class="label-cls">{{ t('标签：') }}</span>
-        </template>
+          <div
+            v-else
+            class="edit-name"
+          >
+            <BkInput
+              v-model="formData.description"
+              size="small"
+              :placeholder="t('请输入描述')"
+              @blur="handleEditSave"
+            />
+          </div>
+        </BkFormItem>
+        <BkFormItem class="form-item-cls">
+          <template #label>
+            <span class="label-cls">{{ t('标签：') }}</span>
+          </template>
 
-        <div
-          v-if="!labelsEdit"
-          class="value-container"
-        >
-          <span class="value-cls">
-            <BkTag
-              v-for="item in formData.labels"
-              :key="item.id"
-            >{{ item.name }}</BkTag>
-          </span>
-          <span class="operate-btn">
-            <AgIcon
-              name="edit-line"
-              @click="labelsEdit = true"
-            />
-            <AgIcon
-              name="copy-info"
-              @click="() => copy(formData?.labels?.map((item: any) => item.name)?.join(','))"
-            />
-          </span>
-        </div>
+          <div
+            v-if="!labelsEdit"
+            class="value-container"
+          >
+            <span class="value-cls">
+              <BkTag
+                v-for="item in formData.labels"
+                :key="item.id"
+              >{{ item.name }}</BkTag>
+            </span>
+            <span class="operate-btn">
+              <AgIcon
+                name="edit-line"
+                @click="labelsEdit = true"
+              />
+              <AgIcon
+                name="copy-info"
+                @click="() => copy(formData?.labels?.map((item: any) => item.name)?.join(','))"
+              />
+            </span>
+          </div>
 
-        <div
-          v-else
-          class="edit-name"
+          <div
+            v-else
+            class="edit-name"
+          >
+            <section class="w-full">
+              <SelectCheckBox
+                :width="700"
+                :cur-select-label-ids="formData.label_ids"
+                :resource-id="resourceId"
+                :labels-data="labelsData"
+                @close="labelsEdit = false"
+                @update-success="handleUpdateLabelSuccess"
+                @label-add-success="initLabels"
+              />
+            </section>
+          </div>
+        </BkFormItem>
+        <BkFormItem
+          class="form-item-cls"
+          :label="t('认证方式：')"
+          :description="t('请求方需提供蓝鲸身份信息')"
         >
-          <section class="w-full">
-            <SelectCheckBox
-              :width="700"
-              :cur-select-label-ids="formData.label_ids"
-              :resource-id="resourceId"
-              :labels-data="labelsData"
-              @close="labelsEdit = false"
-              @update-success="handleUpdateLabelSuccess"
-              @label-add-success="initLabels"
-            />
-          </section>
-        </div>
-      </BkFormItem>
-      <BkFormItem
-        class="form-item-cls"
-        :label="t('认证方式：')"
-        :description="t('请求方需提供蓝鲸身份信息')"
-      >
-        <div
-          v-if="!verifiedEdit"
-          class="value-container"
-        >
-          <span class="value-cls">
-            {{ t(verifiedRequired(formData.auth_config)) }}
-          </span>
-          <span class="operate-btn">
-            <AgIcon
-              name="edit-line"
-              @click="verifiedEdit = true"
-            />
-            <AgIcon
-              name="copy-info"
-              @click="() => copy(verifiedRequired(formData.auth_config))"
-            />
-          </span>
-        </div>
-
-        <div
-          v-else
-          class="edit-name"
-        >
-          <BkPopover
-            disable-outside-click
-            trigger="click"
-            :is-show="verifiedEdit"
-            :component-event-delay="300"
-            :offset="16"
-            placement="bottom"
-            theme="light"
-            width="490"
+          <div
+            v-if="!verifiedEdit"
+            class="value-container"
           >
             <span class="value-cls">
               {{ t(verifiedRequired(formData.auth_config)) }}
             </span>
-            <template #content>
-              <div class="p-4px">
-                <BkForm
-                  :model="formData"
-                  form-type="vertical"
-                >
-                  <BkFormItem :label="t('认证方式')">
-                    <BkCheckbox
-                      v-model="formData.auth_config.app_verified_required_copy"
-                      :disabled="!gatewayStore.currentGateway.allow_update_gateway_auth"
-                    >
-                      <span
-                        v-bk-tooltips="{ content: t('请求方需提供蓝鲸应用身份信息') }"
-                        class="bottom-line"
-                      >
-                        {{ t('蓝鲸应用认证') }}
-                      </span>
-                    </BkCheckbox>
-                    <BkCheckbox
-                      v-model="formData.auth_config.auth_verified_required_copy"
-                      class="ml-40px"
-                    >
-                      <span
-                        v-bk-tooltips="{ content: t('请求方需提供蓝鲸用户身份信息') }"
-                        class="bottom-line"
-                      >
-                        {{ t('用户认证') }}
-                      </span>
-                    </BkCheckbox>
-                  </BkFormItem>
-                  <BkFormItem
-                    v-if="formData.auth_config.app_verified_required_copy"
-                    :label="t('检验应用权限')"
-                  >
-                    <BkSwitcher
-                      v-model="formData.auth_config.resource_perm_required_copy"
-                      :disabled="!gatewayStore.currentGateway.allow_update_gateway_auth"
-                      theme="primary"
-                      size="small"
-                    />
-                  </BkFormItem>
-                  <BkFormItem class="mb-0 text-right">
-                    <BkButton
-                      theme="primary"
-                      native-type="button"
-                      @click="verifiedSubmit"
-                    >
-                      {{ t('确定') }}
-                    </BkButton>
-                    <BkButton
-                      class="ml-8px"
-                      @click="verifiedEdit = false"
-                    >
-                      {{ t('取消') }}
-                    </BkButton>
-                  </BkFormItem>
-                </BkForm>
-              </div>
-            </template>
-          </BkPopover>
-        </div>
-      </BkFormItem>
-      <BkFormItem class="form-item-cls">
-        <template #label>
-          <span class="label-cls">{{ t('校验应用权限：') }}</span>
-        </template>
+            <span class="operate-btn">
+              <AgIcon
+                name="edit-line"
+                @click="verifiedEdit = true"
+              />
+              <AgIcon
+                name="copy-info"
+                @click="() => copy(verifiedRequired(formData.auth_config))"
+              />
+            </span>
+          </div>
 
-        <div
-          v-if="!permEdit"
-          class="value-container"
-        >
-          <span class="value-cls color-#ff9c01!">
-            {{ formData.auth_config?.resource_perm_required ? t('开启') : t('关闭') }}
-          </span>
-          <span class="operate-btn">
-            <AgIcon
-              name="edit-line"
-              @click="permEdit = true"
-            />
-            <AgIcon
-              name="copy-info"
-              @click="() => copy(formData.auth_config?.resource_perm_required ? t('开启') : t('关闭'))"
-            />
-          </span>
-        </div>
-
-        <div
-          v-else
-          class="edit-name"
-        >
-          <BkSwitcher
-            v-model="formData.auth_config.resource_perm_required_copy"
-            :disabled="!gatewayStore.currentGateway.allow_update_gateway_auth"
-            theme="primary"
-            size="small"
-            class="mt-8px!"
-            @change="verifiedSubmit"
-          />
-        </div>
-      </BkFormItem>
-      <BkFormItem
-        class="form-item-cls"
-        :description="t('公开，则用户可查看资源文档、申请资源权限；不公开，则资源对用户隐藏')"
-        :label="t('是否公开：')"
-      >
-        <div
-          v-if="!publicEdit"
-          class="value-container"
-        >
-          <span class="color-#ff9c01!">{{ formData.is_public ? t('公开') : t('不公开') }}</span>
-          <span
-            v-if="formData.is_public"
-            class="value-cls"
-          >
-            {{ formData.allow_apply_permission ? t('（允许申请权限）') : t('（不允许申请权限）') }}
-          </span>
-          <span class="operate-btn">
-            <AgIcon
-              name="edit-line"
-              @click="publicEdit = true"
-            />
-          </span>
-        </div>
-
-        <div
-          v-else
-          class="edit-name"
-        >
-          <BkSwitcher
-            v-model="formData.is_public"
-            theme="primary"
-            size="small"
-            class="mt-8px!"
-            @change="handleEditSave"
-          />
-        </div>
-      </BkFormItem>
-      <BkFormItem class="form-item-cls">
-        <template #label>
-          <span class="label-cls">{{ t('已使用的环境：') }}</span>
-        </template>
-        <span v-if="!servicesData?.config?.length">--</span>
-        <span v-else>{{ servicesData?.config?.map((item: any) => item?.stage?.name)?.join(', ') }}</span>
-      </BkFormItem>
-    </BkForm>
-
-    <div class="title">
-      {{ t('请求配置') }}
-    </div>
-    <BkForm
-      :model="formData"
-      class="form-cls flex"
-    >
-      <BkFormItem class="form-item-cls">
-        <template #label>
-          <span class="label-cls">{{ t('请求方法：') }}</span>
-        </template>
-
-        <div
-          v-if="!frontMethodEdit"
-          class="value-container"
-        >
-          <BkTag :theme="METHOD_THEMES[formData?.method]">
-            {{ formData?.method }}
-          </BkTag>
-          <span class="operate-btn">
-            <AgIcon
-              name="edit-line"
-              @click="frontMethodEdit = true"
-            />
-          </span>
-        </div>
-
-        <div
-          v-else
-          class="edit-name"
-        >
-          <BkSelect
-            v-model="formData.method"
-            :input-search="false"
-            :clearable="false"
-            class="method"
-            @change="handleEditSave"
-          >
-            <BkOption
-              v-for="item in HTTP_METHODS"
-              :key="item.id"
-              :value="item.id"
-              :label="item.name"
-            />
-          </BkSelect>
-        </div>
-      </BkFormItem>
-      <BkFormItem class="form-item-cls">
-        <template #label>
-          <span class="label-cls">{{ t('请求路径：') }}</span>
-        </template>
-
-        <div
-          v-if="!frontPathEdit"
-          class="value-container"
-        >
-          <span class="value-cls">{{ formData.path }}</span>
-          <span class="operate-btn">
-            <AgIcon
-              name="edit-line"
-              @click="frontPathEdit = true"
-            />
-            <AgIcon
-              name="copy-info"
-              @click="() => copy(formData.path)"
-            />
-          </span>
-        </div>
-
-        <div
-          v-else
-          class="edit-name"
-        >
-          <BkPopover
-            disable-outside-click
-            trigger="click"
-            :is-show="frontPathEdit"
-            :component-event-delay="300"
-            :offset="16"
-            placement="bottom"
-            theme="light"
-            width="490"
-          >
-            <span class="value-cls">{{ formData.path }}</span>
-            <template #content>
-              <div class="p-4px">
-                <BkForm
-                  :model="formData"
-                  form-type="vertical"
-                >
-                  <BkFormItem
-                    :label="t('请求路径')"
-                    class="mt-8px!"
-                  >
-                    <BkInput
-                      v-model="formData.path_copy"
-                      :placeholder="t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名')"
-                      class="mb-12px"
-                    />
-                    <BkCheckbox
-                      v-model="formData.match_subpath_copy"
-                      class="lh-20px"
-                    >
-                      {{ t('匹配所有子路径') }}
-                    </BkCheckbox>
-                  </BkFormItem>
-                  <BkFormItem class="text-right mb-0">
-                    <BkButton
-                      theme="primary"
-                      native-type="button"
-                      @click="frontPathSubmit"
-                    >
-                      {{ t('确定') }}
-                    </BkButton>
-                    <BkButton
-                      class="ml-8px"
-                      @click="frontPathEdit = false"
-                    >
-                      {{ t('取消') }}
-                    </BkButton>
-                  </BkFormItem>
-                </BkForm>
-              </div>
-            </template>
-          </BkPopover>
-        </div>
-      </BkFormItem>
-      <!--  是否启用 websocket  -->
-      <BkFormItem class="form-item-cls">
-        <template #label>
-          <span class="label-cls">{{ t('启用 WebSocket：') }}</span>
-        </template>
-
-        <div
-          v-if="!frontWsEdit"
-          class="value-container"
-        >
-          <span>{{ formData?.enable_websocket ? t('是') : t('否') }}</span>
-          <span class="operate-btn">
-            <AgIcon
-              name="edit-line"
-              @click="frontWsEdit = true"
-            />
-          </span>
-        </div>
-
-        <div
-          v-else
-          class="edit-name mt-8px"
-        >
-          <BkSwitcher
-            v-model="formData.enable_websocket"
-            theme="primary"
-            size="small"
-            class="method"
-            @change="handleEditSave"
-          />
-        </div>
-      </BkFormItem>
-    </BkForm>
-
-    <div class="title">
-      {{ t('请求参数') }}
-    </div>
-    <div class="pl-150px">
-      <span
-        v-if="formData.schema?.none_schema"
-        class="text-12px"
-      >{{ t('该资源无请求参数') }}</span>
-      <RequestParams
-        v-else
-        :detail="formData"
-        readonly
-      />
-    </div>
-
-    <div class="title">
-      {{ t('后端配置') }}
-    </div>
-    <BkForm
-      :model="formData"
-      class="form-cls flex"
-    >
-      <BkFormItem>
-        <template #label>
-          <span class="label-cls">{{ t('服务：') }}</span>
-        </template>
-
-        <div
-          v-if="!backServicesEdit"
-          class="value-container"
-        >
-          <span class="value-cls">{{ servicesData.name }}</span>
-          <span class="operate-btn">
-            <AgIcon
-              name="edit-line"
-              @click="backServicesEdit = true"
-            />
-          </span>
-        </div>
-
-        <div
-          v-else
-          class="edit-name mb-12px"
-        >
-          <BkSelect
-            v-model="formData.backend.id"
-            :input-search="false"
-            :clearable="false"
-            class="service"
-            @change="() => getServiceData(true)"
-          >
-            <BkOption
-              v-for="item in backendsList"
-              :key="item.id"
-              :value="item.id"
-              :label="item.name"
-            />
-          </BkSelect>
-        </div>
-
-        <BkTable
-          v-if="formData.id"
-          class="table-layout"
-          :data="servicesData.config"
-          :border="['outer']"
-          @row-mouse-enter="backServicesEdit ? handleMouseEnter : ''"
-          @row-mouse-leave="backServicesEdit ? handleMouseLeave : ''"
-        >
-          <BkTableColumn
-            :label="t('环境名称')"
-            :resizable="false"
-          >
-            <template #default="{ data }">
-              {{ data?.stage?.name }}
-            </template>
-          </BkTableColumn>
-          <BkTableColumn
-            :label="t('后端服务地址')"
-            :resizable="false"
-          >
-            <template #default="{ data }">
-              <span v-if="data?.hosts[0].host">
-                {{ data?.hosts[0].scheme }}://{{ data?.hosts[0].host }}
-              </span>
-              <span v-else>--</span>
-            </template>
-          </BkTableColumn>
-          <BkTableColumn
-            v-if="!backServicesEdit"
-            :label="t('超时时间')"
-            prop="timeout"
-            :resizable="false"
-          >
-            <template #default="{ data }">
-              <span>{{ data?.timeout || '0' }}s</span>
-            </template>
-          </BkTableColumn>
-          <BkTableColumn
+          <div
             v-else
-            :label="renderTimeOutLabel"
-            prop="timeout"
-            :resizable="false"
+            class="edit-name"
           >
-            <template #default="{ data }">
-              <span>{{ data?.timeout || '0' }}s</span>
-              <BkTag
-                v-if="data?.isCustom"
-                theme="warning"
-              >
-                {{ t('自定义') }}
-              </BkTag>
-            </template>
-          </BkTableColumn>
-        </BkTable>
-      </BkFormItem>
-      <BkFormItem class="form-item-cls">
-        <template #label>
-          <span class="label-cls">{{ t('请求方法：') }}</span>
-        </template>
-
-        <div
-          v-if="!backMethodEdit"
-          class="value-container"
-        >
-          <BkTag :theme="METHOD_THEMES[formData.backend?.config?.method]">
-            {{ formData.backend?.config?.method }}
-          </BkTag>
-          <span class="operate-btn">
-            <AgIcon
-              name="edit-line"
-              @click="backMethodEdit = true"
-            />
-          </span>
-        </div>
-
-        <div
-          v-else
-          class="edit-name"
-        >
-          <BkSelect
-            v-model="formData.backend.config.method"
-            :input-search="false"
-            :clearable="false"
-            class="method"
-            @change="handleEditSave"
-          >
-            <BkOption
-              v-for="item in HTTP_METHODS"
-              :key="item.id"
-              :value="item.id"
-              :label="item.name"
-            />
-          </BkSelect>
-        </div>
-      </BkFormItem>
-      <BkFormItem class="form-item-cls">
-        <template #label>
-          <span class="label-cls">{{ t('请求路径：') }}</span>
-        </template>
-
-        <div
-          v-if="!backPathEdit"
-          class="value-container"
-        >
-          <span class="value-cls">{{ formData.backend?.config?.path }}</span>
-          <span class="operate-btn">
-            <AgIcon
-              name="edit-line"
-              @click="backPathEdit = true"
-            />
-            <AgIcon
-              name="copy-info"
-              @click="() => copy(formData.backend?.config?.path)"
-            />
-          </span>
-        </div>
-
-        <div
-          v-else
-          class="edit-name"
-        >
-          <BkPopover
-            disable-outside-click
-            trigger="click"
-            :is-show="backPathEdit"
-            :component-event-delay="300"
-            :offset="16"
-            placement="bottom"
-            theme="light"
-            width="740"
-          >
-            <span class="value-cls">{{ formData.backend?.config?.path_copy }}</span>
-            <template #content>
-              <div class="p-4px">
-                <BkForm
-                  :model="formData"
-                  form-type="vertical"
-                >
-                  <BkFormItem
-                    :label="t('请求路径')"
-                    class="mb-8px"
+            <BkPopover
+              disable-outside-click
+              trigger="click"
+              :is-show="verifiedEdit"
+              :component-event-delay="300"
+              :offset="16"
+              placement="bottom"
+              theme="light"
+              width="490"
+            >
+              <span class="value-cls">
+                {{ t(verifiedRequired(formData.auth_config)) }}
+              </span>
+              <template #content>
+                <div class="p-4px">
+                  <BkForm
+                    :model="formData"
+                    form-type="vertical"
                   >
-                    <div class="flex items-center">
-                      <BkInput
-                        v-model="formData.backend.config.path_copy"
-                        :placeholder="t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名')"
-                        clearable
+                    <BkFormItem :label="t('认证方式')">
+                      <BkCheckbox
+                        v-model="formData.auth_config.app_verified_required_copy"
+                        :disabled="!gatewayStore.currentGateway.allow_update_gateway_auth"
+                      >
+                        <span
+                          v-bk-tooltips="{ content: t('请求方需提供蓝鲸应用身份信息') }"
+                          class="bottom-line"
+                        >
+                          {{ t('蓝鲸应用认证') }}
+                        </span>
+                      </BkCheckbox>
+                      <BkCheckbox
+                        v-model="formData.auth_config.auth_verified_required_copy"
+                        class="ml-40px"
+                      >
+                        <span
+                          v-bk-tooltips="{ content: t('请求方需提供蓝鲸用户身份信息') }"
+                          class="bottom-line"
+                        >
+                          {{ t('用户认证') }}
+                        </span>
+                      </BkCheckbox>
+                    </BkFormItem>
+                    <BkFormItem
+                      v-if="formData.auth_config.app_verified_required_copy"
+                      :label="t('检验应用权限')"
+                    >
+                      <BkSwitcher
+                        v-model="formData.auth_config.resource_perm_required_copy"
+                        :disabled="!gatewayStore.currentGateway.allow_update_gateway_auth"
+                        theme="primary"
+                        size="small"
                       />
+                    </BkFormItem>
+                    <BkFormItem class="mb-0 text-right">
                       <BkButton
                         theme="primary"
-                        outline
-                        class="ml-10px"
-                        :disabled="!formData.backend.id || !formData.backend?.config?.path"
-                        @click="handleCheckPath"
+                        native-type="button"
+                        @click="verifiedSubmit"
                       >
-                        {{ t('校验并查看地址') }}
+                        {{ t('确定') }}
                       </BkButton>
-                    </div>
-                    <BkCheckbox
-                      v-model="formData.backend.config.match_subpath"
-                      disabled
-                    >
-                      {{ t('追加匹配的子路径') }}
-                    </BkCheckbox>
-                    <div class="text-12px! color-#979ba5!">
-                      {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在\{\}中") }}
-                    </div>
-                    <div v-if="servicesCheckData?.length">
-                      <BkAlert
-                        theme="success"
-                        class="w-70%! max-w-700px! mt-10px!"
-                        :title="t('路径校验通过，路径合法，请求将被转发到以下地址')"
-                      />
-                      <BkTable
-                        class="w-70%! max-w-700px! mt-10px"
-                        :data="servicesCheckData"
-                        :border="['outer']"
+                      <BkButton
+                        class="ml-8px"
+                        @click="verifiedEdit = false"
                       >
-                        <BkTableColumn
-                          :label="t('环境名称')"
-                        >
-                          <template #default="{ data }">
-                            {{ data?.stage?.name }}
-                          </template>
-                        </BkTableColumn>
-                        <BkTableColumn
-                          :label="t('请求类型')"
-                        >
-                          <template #default="{ data }">
-                            {{ formData.backend.config.method || data?.stage?.name }}
-                          </template>
-                        </BkTableColumn>
-                        <BkTableColumn
-                          :label="t('请求地址')"
-                        >
-                          <template #default="{ data }">
-                            {{ data?.backend_urls[0] }}
-                          </template>
-                        </BkTableColumn>
-                      </BkTable>
-                    </div>
-                  </BkFormItem>
-                  <BkFormItem class="mb-0 text-right">
-                    <BkButton
-                      theme="primary"
-                      native-type="button"
-                      @click="backPathSubmit"
-                    >
-                      {{ t('确定') }}
-                    </BkButton>
-                    <BkButton
-                      class="ml-8px"
-                      @click="backPathCancel"
-                    >
-                      {{ t('取消') }}
-                    </BkButton>
-                  </BkFormItem>
-                </BkForm>
-              </div>
-            </template>
-          </BkPopover>
-        </div>
-      </BkFormItem>
-    </BkForm>
+                        {{ t('取消') }}
+                      </BkButton>
+                    </BkFormItem>
+                  </BkForm>
+                </div>
+              </template>
+            </BkPopover>
+          </div>
+        </BkFormItem>
+        <BkFormItem class="form-item-cls">
+          <template #label>
+            <span class="label-cls">{{ t('校验应用权限：') }}</span>
+          </template>
 
-    <div class="title">
-      {{ t('响应参数') }}
-    </div>
-    <div class="pl-150px">
-      <ResponseParams
-        v-if="Object.keys(formData.schema?.responses || {}).length"
-        :detail="formData"
-        readonly
-      />
-      <div
-        v-else
-        class="text-14px"
+          <div
+            v-if="!permEdit"
+            class="value-container"
+          >
+            <span class="value-cls color-#ff9c01!">
+              {{ formData.auth_config?.resource_perm_required ? t('开启') : t('关闭') }}
+            </span>
+            <span class="operate-btn">
+              <AgIcon
+                name="edit-line"
+                @click="permEdit = true"
+              />
+              <AgIcon
+                name="copy-info"
+                @click="() => copy(formData.auth_config?.resource_perm_required ? t('开启') : t('关闭'))"
+              />
+            </span>
+          </div>
+
+          <div
+            v-else
+            class="edit-name"
+          >
+            <BkSwitcher
+              v-model="formData.auth_config.resource_perm_required_copy"
+              :disabled="!gatewayStore.currentGateway.allow_update_gateway_auth"
+              theme="primary"
+              size="small"
+              class="mt-8px!"
+              @change="verifiedSubmit"
+            />
+          </div>
+        </BkFormItem>
+        <BkFormItem
+          class="form-item-cls"
+          :description="t('公开，则用户可查看资源文档、申请资源权限；不公开，则资源对用户隐藏')"
+          :label="t('是否公开：')"
+        >
+          <div
+            v-if="!publicEdit"
+            class="value-container"
+          >
+            <span class="color-#ff9c01!">{{ formData.is_public ? t('公开') : t('不公开') }}</span>
+            <span
+              v-if="formData.is_public"
+              class="value-cls"
+            >
+              {{ formData.allow_apply_permission ? t('（允许申请权限）') : t('（不允许申请权限）') }}
+            </span>
+            <span class="operate-btn">
+              <AgIcon
+                name="edit-line"
+                @click="publicEdit = true"
+              />
+            </span>
+          </div>
+
+          <div
+            v-else
+            class="edit-name"
+          >
+            <BkSwitcher
+              v-model="formData.is_public"
+              theme="primary"
+              size="small"
+              class="mt-8px!"
+              @change="handleEditSave"
+            />
+          </div>
+        </BkFormItem>
+        <BkFormItem class="form-item-cls">
+          <template #label>
+            <span class="label-cls">{{ t('已使用的环境：') }}</span>
+          </template>
+          <span v-if="!servicesData?.config?.length">--</span>
+          <span v-else>{{ servicesData?.config?.map((item: any) => item?.stage?.name)?.join(', ') }}</span>
+        </BkFormItem>
+      </BkForm>
+
+      <div class="title">
+        {{ t('请求配置') }}
+      </div>
+      <BkForm
+        :model="formData"
+        class="form-cls flex"
       >
-        {{ t('该资源无响应参数') }}
+        <BkFormItem class="form-item-cls">
+          <template #label>
+            <span class="label-cls">{{ t('请求方法：') }}</span>
+          </template>
+
+          <div
+            v-if="!frontMethodEdit"
+            class="value-container"
+          >
+            <BkTag :theme="METHOD_THEMES[formData?.method]">
+              {{ formData?.method }}
+            </BkTag>
+            <span class="operate-btn">
+              <AgIcon
+                name="edit-line"
+                @click="frontMethodEdit = true"
+              />
+            </span>
+          </div>
+
+          <div
+            v-else
+            class="edit-name"
+          >
+            <BkSelect
+              v-model="formData.method"
+              :input-search="false"
+              :clearable="false"
+              class="method"
+              @change="handleEditSave"
+            >
+              <BkOption
+                v-for="item in HTTP_METHODS"
+                :key="item.id"
+                :value="item.id"
+                :label="item.name"
+              />
+            </BkSelect>
+          </div>
+        </BkFormItem>
+        <BkFormItem class="form-item-cls">
+          <template #label>
+            <span class="label-cls">{{ t('请求路径：') }}</span>
+          </template>
+
+          <div
+            v-if="!frontPathEdit"
+            class="value-container"
+          >
+            <span class="value-cls">{{ formData.path }}</span>
+            <span class="operate-btn">
+              <AgIcon
+                name="edit-line"
+                @click="frontPathEdit = true"
+              />
+              <AgIcon
+                name="copy-info"
+                @click="() => copy(formData.path)"
+              />
+            </span>
+          </div>
+
+          <div
+            v-else
+            class="edit-name"
+          >
+            <BkPopover
+              disable-outside-click
+              trigger="click"
+              :is-show="frontPathEdit"
+              :component-event-delay="300"
+              :offset="16"
+              placement="bottom"
+              theme="light"
+              width="490"
+            >
+              <span class="value-cls">{{ formData.path }}</span>
+              <template #content>
+                <div class="p-4px">
+                  <BkForm
+                    :model="formData"
+                    form-type="vertical"
+                  >
+                    <BkFormItem
+                      :label="t('请求路径')"
+                      class="mt-8px!"
+                    >
+                      <BkInput
+                        v-model="formData.path_copy"
+                        :placeholder="t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名')"
+                        class="mb-12px"
+                      />
+                      <BkCheckbox
+                        v-model="formData.match_subpath_copy"
+                        class="lh-20px"
+                      >
+                        {{ t('匹配所有子路径') }}
+                      </BkCheckbox>
+                    </BkFormItem>
+                    <BkFormItem class="text-right mb-0">
+                      <BkButton
+                        theme="primary"
+                        native-type="button"
+                        @click="frontPathSubmit"
+                      >
+                        {{ t('确定') }}
+                      </BkButton>
+                      <BkButton
+                        class="ml-8px"
+                        @click="frontPathEdit = false"
+                      >
+                        {{ t('取消') }}
+                      </BkButton>
+                    </BkFormItem>
+                  </BkForm>
+                </div>
+              </template>
+            </BkPopover>
+          </div>
+        </BkFormItem>
+        <!--  是否启用 websocket  -->
+        <BkFormItem class="form-item-cls">
+          <template #label>
+            <span class="label-cls">{{ t('启用 WebSocket：') }}</span>
+          </template>
+
+          <div
+            v-if="!frontWsEdit"
+            class="value-container"
+          >
+            <span>{{ formData?.enable_websocket ? t('是') : t('否') }}</span>
+            <span class="operate-btn">
+              <AgIcon
+                name="edit-line"
+                @click="frontWsEdit = true"
+              />
+            </span>
+          </div>
+
+          <div
+            v-else
+            class="edit-name mt-8px"
+          >
+            <BkSwitcher
+              v-model="formData.enable_websocket"
+              theme="primary"
+              size="small"
+              class="method"
+              @change="handleEditSave"
+            />
+          </div>
+        </BkFormItem>
+      </BkForm>
+
+      <div class="title">
+        {{ t('请求参数') }}
+      </div>
+      <div class="pl-150px">
+        <span
+          v-if="formData.schema?.none_schema"
+          class="text-12px"
+        >{{ t('该资源无请求参数') }}</span>
+        <RequestParams
+          v-else
+          :detail="formData"
+          readonly
+        />
+      </div>
+
+      <div class="title">
+        {{ t('后端配置') }}
+      </div>
+      <BkForm
+        :model="formData"
+        class="form-cls flex"
+      >
+        <BkFormItem>
+          <template #label>
+            <span class="label-cls">{{ t('服务：') }}</span>
+          </template>
+
+          <div
+            v-if="!backServicesEdit"
+            class="value-container"
+          >
+            <span class="value-cls">{{ servicesData.name }}</span>
+            <span class="operate-btn">
+              <AgIcon
+                name="edit-line"
+                @click="backServicesEdit = true"
+              />
+            </span>
+          </div>
+
+          <div
+            v-else
+            class="edit-name mb-12px"
+          >
+            <BkSelect
+              v-model="formData.backend.id"
+              :input-search="false"
+              :clearable="false"
+              class="service"
+              @change="() => getServiceData(true)"
+            >
+              <BkOption
+                v-for="item in backendsList"
+                :key="item.id"
+                :value="item.id"
+                :label="item.name"
+              />
+            </BkSelect>
+          </div>
+
+          <BkTable
+            v-if="formData.id"
+            class="table-layout"
+            :data="servicesData.config"
+            :border="['outer']"
+            @row-mouse-enter="backServicesEdit ? handleMouseEnter : ''"
+            @row-mouse-leave="backServicesEdit ? handleMouseLeave : ''"
+          >
+            <BkTableColumn
+              :label="t('环境名称')"
+              :resizable="false"
+            >
+              <template #default="{ data }">
+                {{ data?.stage?.name }}
+              </template>
+            </BkTableColumn>
+            <BkTableColumn
+              :label="t('后端服务地址')"
+              :resizable="false"
+            >
+              <template #default="{ data }">
+                <span v-if="data?.hosts[0].host">
+                  {{ data?.hosts[0].scheme }}://{{ data?.hosts[0].host }}
+                </span>
+                <span v-else>--</span>
+              </template>
+            </BkTableColumn>
+            <BkTableColumn
+              v-if="!backServicesEdit"
+              :label="t('超时时间')"
+              prop="timeout"
+              :resizable="false"
+            >
+              <template #default="{ data }">
+                <span>{{ data?.timeout || '0' }}s</span>
+              </template>
+            </BkTableColumn>
+            <BkTableColumn
+              v-else
+              :label="renderTimeOutLabel"
+              prop="timeout"
+              :resizable="false"
+            >
+              <template #default="{ data }">
+                <span>{{ data?.timeout || '0' }}s</span>
+                <BkTag
+                  v-if="data?.isCustom"
+                  theme="warning"
+                >
+                  {{ t('自定义') }}
+                </BkTag>
+              </template>
+            </BkTableColumn>
+          </BkTable>
+        </BkFormItem>
+        <BkFormItem class="form-item-cls">
+          <template #label>
+            <span class="label-cls">{{ t('请求方法：') }}</span>
+          </template>
+
+          <div
+            v-if="!backMethodEdit"
+            class="value-container"
+          >
+            <BkTag :theme="METHOD_THEMES[formData.backend?.config?.method]">
+              {{ formData.backend?.config?.method }}
+            </BkTag>
+            <span class="operate-btn">
+              <AgIcon
+                name="edit-line"
+                @click="backMethodEdit = true"
+              />
+            </span>
+          </div>
+
+          <div
+            v-else
+            class="edit-name"
+          >
+            <BkSelect
+              v-model="formData.backend.config.method"
+              :input-search="false"
+              :clearable="false"
+              class="method"
+              @change="handleEditSave"
+            >
+              <BkOption
+                v-for="item in HTTP_METHODS"
+                :key="item.id"
+                :value="item.id"
+                :label="item.name"
+              />
+            </BkSelect>
+          </div>
+        </BkFormItem>
+        <BkFormItem class="form-item-cls">
+          <template #label>
+            <span class="label-cls">{{ t('请求路径：') }}</span>
+          </template>
+
+          <div
+            v-if="!backPathEdit"
+            class="value-container"
+          >
+            <span class="value-cls">{{ formData.backend?.config?.path }}</span>
+            <span class="operate-btn">
+              <AgIcon
+                name="edit-line"
+                @click="backPathEdit = true"
+              />
+              <AgIcon
+                name="copy-info"
+                @click="() => copy(formData.backend?.config?.path)"
+              />
+            </span>
+          </div>
+
+          <div
+            v-else
+            class="edit-name"
+          >
+            <BkPopover
+              disable-outside-click
+              trigger="click"
+              :is-show="backPathEdit"
+              :component-event-delay="300"
+              :offset="16"
+              placement="bottom"
+              theme="light"
+              width="740"
+            >
+              <span class="value-cls">{{ formData.backend?.config?.path_copy }}</span>
+              <template #content>
+                <div class="p-4px">
+                  <BkForm
+                    :model="formData"
+                    form-type="vertical"
+                  >
+                    <BkFormItem
+                      :label="t('请求路径')"
+                      class="mb-8px"
+                    >
+                      <div class="flex items-center">
+                        <BkInput
+                          v-model="formData.backend.config.path_copy"
+                          :placeholder="t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名')"
+                          clearable
+                        />
+                        <BkButton
+                          theme="primary"
+                          outline
+                          class="ml-10px"
+                          :disabled="!formData.backend.id || !formData.backend?.config?.path"
+                          @click="handleCheckPath"
+                        >
+                          {{ t('校验并查看地址') }}
+                        </BkButton>
+                      </div>
+                      <BkCheckbox
+                        v-model="formData.backend.config.match_subpath"
+                        disabled
+                      >
+                        {{ t('追加匹配的子路径') }}
+                      </BkCheckbox>
+                      <div class="text-12px! color-#979ba5!">
+                        {{ t("后端接口地址的 Path，不包含域名或 IP，支持路径变量、环境变量，变量包含在\{\}中") }}
+                      </div>
+                      <div v-if="servicesCheckData?.length">
+                        <BkAlert
+                          theme="success"
+                          class="w-70%! max-w-700px! mt-10px!"
+                          :title="t('路径校验通过，路径合法，请求将被转发到以下地址')"
+                        />
+                        <BkTable
+                          class="w-70%! max-w-700px! mt-10px"
+                          :data="servicesCheckData"
+                          :border="['outer']"
+                        >
+                          <BkTableColumn
+                            :label="t('环境名称')"
+                          >
+                            <template #default="{ data }">
+                              {{ data?.stage?.name }}
+                            </template>
+                          </BkTableColumn>
+                          <BkTableColumn
+                            :label="t('请求类型')"
+                          >
+                            <template #default="{ data }">
+                              {{ formData.backend.config.method || data?.stage?.name }}
+                            </template>
+                          </BkTableColumn>
+                          <BkTableColumn
+                            :label="t('请求地址')"
+                          >
+                            <template #default="{ data }">
+                              {{ data?.backend_urls[0] }}
+                            </template>
+                          </BkTableColumn>
+                        </BkTable>
+                      </div>
+                    </BkFormItem>
+                    <BkFormItem class="mb-0 text-right">
+                      <BkButton
+                        theme="primary"
+                        native-type="button"
+                        @click="backPathSubmit"
+                      >
+                        {{ t('确定') }}
+                      </BkButton>
+                      <BkButton
+                        class="ml-8px"
+                        @click="backPathCancel"
+                      >
+                        {{ t('取消') }}
+                      </BkButton>
+                    </BkFormItem>
+                  </BkForm>
+                </div>
+              </template>
+            </BkPopover>
+          </div>
+        </BkFormItem>
+      </BkForm>
+
+      <div class="title">
+        {{ t('响应参数') }}
+      </div>
+      <div class="pl-150px">
+        <ResponseParams
+          v-if="Object.keys(formData.schema?.responses || {}).length"
+          :detail="formData"
+          readonly
+        />
+        <div
+          v-else
+          class="text-14px"
+        >
+          {{ t('该资源无响应参数') }}
+        </div>
       </div>
     </div>
 
-    <RouterLink :to="{name: 'ResourceEdit', params:{'resourceId': `${formData?.id}`}}">
-      <BkButton
-        theme="primary"
-        class="resource-btn-cls"
-      >
-        {{ t('编辑') }}
-      </BkButton>
-    </RouterLink>
-    <BkPopConfirm
-      :title="t('确认删除资源{resourceName}？', { resourceName: formData?.name || '' })"
-      :content="t('删除操作无法撤回，请谨慎操作')"
-      width="288"
-      trigger="click"
-      @confirm="handleDeleteResource(formData.id)"
+    <div
+      class="footer-btn-wrapper"
+      :class="{ 'fixed-footer-btn-wrapper': isStickyFixed }"
     >
-      <BkButton
-        class="resource-btn-cls ml-8px"
+      <RouterLink
+        :to="{name: 'ResourceEdit', params:{'resourceId': `${formData?.id}`}}"
       >
-        {{ t('删除') }}
-      </BkButton>
-    </BkPopConfirm>
+        <BkButton
+          theme="primary"
+          class="min-w-88px"
+        >
+          {{ t('编辑') }}
+        </BkButton>
+      </RouterLink>
+      <BkPopConfirm
+        :title="t('确认删除资源{resourceName}？', { resourceName: formData?.name || '' })"
+        :content="t('删除操作无法撤回，请谨慎操作')"
+        width="288"
+        trigger="click"
+        @confirm="handleDeleteResource(formData.id)"
+      >
+        <BkButton
+          class="min-w-88px ml-8px"
+        >
+          {{ t('删除') }}
+        </BkButton>
+      </BkPopConfirm>
+    </div>
   </div>
 </template>
 
@@ -832,13 +844,14 @@ import { getBackendServiceDetail, getBackendServiceList } from '@/services/sourc
 import { getGatewayLabels } from '@/services/source/gateway';
 import { Message } from 'bkui-vue';
 import { copy } from '@/utils';
-import SelectCheckBox from './SelectCheckBox.vue';
 import { METHOD_THEMES } from '@/enums';
 import { HTTP_METHODS } from '@/constants';
 import { cloneDeep } from 'lodash-es';
 import RequestParams from '../../components/request-params/Index.vue';
 import ResponseParams from '../../components/response-params/Index.vue';
 import { useGateway, useStage } from '@/stores';
+import { useStickyBottom } from '@/hooks';
+import SelectCheckBox from './SelectCheckBox.vue';
 
 interface IProps {
   resourceId?: number
@@ -856,12 +869,18 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-
 const gatewayStore = useGateway();
 const stageStore = useStage();
+const { controlStickyToggle, observerNodeScroll, destroyEvent } = useStickyBottom({
+  offsetBottom: 52,
+  footerNodeClass: '.footer-btn-wrapper',
+  scrollNodeClass: '.detail-container-content',
+  parentNodeClass: '.resource-container',
+});
 
 const labelsData = ref([]);
 const baseFormRef = ref();
+const isStickyFixed = ref(false);
 const nameEdit = ref(false);
 const descEdit = ref(false);
 const labelsEdit = ref(false);
@@ -943,6 +962,16 @@ const initLabels = async () => {
   labelsData.value = await getGatewayLabels(gatewayId);
 };
 initLabels();
+
+// 初始化判断按钮组是否吸附
+const getStickyBottom = () => {
+  const { isStickyBottom } = controlStickyToggle();
+  isStickyFixed.value = isStickyBottom;
+  nextTick(() => {
+    observerNodeScroll();
+  });
+};
+getStickyBottom();
 
 // 更新成功
 const handleUpdateLabelSuccess = () => {
@@ -1220,134 +1249,150 @@ const handleDeleteResource = async (id: number) => {
   emit('deleted-success');
 };
 
+onUnmounted(() => {
+  destroyEvent();
+});
 </script>
 
 <style lang="scss" scoped>
-
 .detail-container {
-  height: calc(100vh - 175px);
-  overflow: auto;
-  padding-inline: 10px;
+  .detail-container-content {
+    max-height: calc(100vh - 175px);
+    padding-inline: 14px;
+    overflow-y: auto;
 
-  &.has-notice {
-    height: calc(100vh - 217px);
-  }
+    &.has-notice {
+      max-height: calc(100vh - 217px);
+    }
 
-  .title {
-    margin-bottom: 12px;
-    font-size: 14px;
-    font-weight: 700;
-    color: #313238;
-  }
+    .title {
+      margin-bottom: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #313238;
+    }
 
-  .form-cls {
-    margin-bottom: 30px;
-    font-size: 12px;
-    flex-flow: wrap;
+    .form-cls {
+      margin-bottom: 30px;
+      font-size: 12px;
+      flex-flow: wrap;
 
-    :deep(.form-item-cls) {
-      flex: 0 0 50%;
-      margin-bottom: 6px;
+      :deep(.form-item-cls) {
+        flex: 0 0 50%;
+        margin-bottom: 6px;
 
-      .bk-form-label {
-        display: flex;
-        padding-right: 10px;
-        font-size: 12px;
-        justify-content: flex-end;
+        .bk-form-label {
+          display: flex;
+          padding-right: 10px;
+          font-size: 12px;
+          justify-content: flex-end;
 
-        .bk-form-label-description {
-          position: relative;
-          border-bottom: none;
+          .bk-form-label-description {
+            position: relative;
+            border-bottom: none;
 
-          &::after {
-            position: absolute;
-            bottom: 4px;
-            left: 0;
-            width: 82%;
-            height: 1px;
-            border-bottom: 1px dashed #979ba5;
-            content: ' ';
+            &::after {
+              position: absolute;
+              bottom: 4px;
+              left: 0;
+              width: 82%;
+              height: 1px;
+              border-bottom: 1px dashed #979ba5;
+              content: ' ';
+            }
           }
         }
       }
-    }
 
-    .label-cls {
-      font-size: 12px;
-      color: #63656e;
-    }
+      .label-cls {
+        font-size: 12px;
+        color: #63656e;
+      }
 
-    .value-cls {
-      color: #313238;
-      cursor: pointer;
+      .value-cls {
+        color: #313238;
+        cursor: pointer;
 
-      .bk-tag {
+        .bk-tag {
 
-        &:not(&:last-child) {
-          margin-right: 4px;
+          &:not(&:last-child) {
+            margin-right: 4px;
+          }
+        }
+      }
+
+      .value-container {
+
+        .operate-btn {
+          display: none;
+        }
+      }
+
+      .value-container:hover {
+
+        .value-cls {
+          color: #1768ef;
+        }
+
+        .operate-btn {
+          display: inline-block;
         }
       }
     }
 
-    .value-container {
-
-      .operate-btn {
-        display: none;
-      }
-    }
-
-    .value-container:hover {
-
-      .value-cls {
-        color: #1768ef;
-      }
-
-      .operate-btn {
-        display: inline-block;
-      }
-    }
-  }
-
-  .resource-btn-cls {
-    min-width: 88px;
-    margin-top: 20px;
-
-    &:last-child {
-      margin-left: 4px;
-    }
-  }
-
-  .apigateway-icon {
-    padding: 2px;
-    font-size: 14px;
-    color: #3a84ff;
-    cursor: pointer;
-  }
-
-  .edit-name {
-    display: flex;
-    align-items: center;
-
-    .edit-name-icon {
+    .apigateway-icon {
       padding: 2px;
-      margin-left: 4px;
-      font-size: 16px;
+      font-size: 14px;
       color: #3a84ff;
       cursor: pointer;
     }
+
+    .edit-name {
+      display: flex;
+      align-items: center;
+
+      .edit-name-icon {
+        padding: 2px;
+        margin-left: 4px;
+        font-size: 16px;
+        color: #3a84ff;
+        cursor: pointer;
+      }
+    }
+
+    :deep(.back-config-timeout) {
+      display: inline-block;
+
+      .edit-action,
+      .refresh-icon {
+        margin-left: 8px;
+        font-size: 16px;
+        color: #3A84FF;
+        vertical-align: middle;
+        cursor: pointer;
+      }
+    }
   }
 
-  :deep(.back-config-timeout) {
-    display: inline-block;
+  .footer-btn-wrapper {
+    bottom: 0;
+    height: 52px;
+    line-height: 52px;
+    padding-left: 170px
+  }
 
-    .edit-action,
-    .refresh-icon {
-      margin-left: 8px;
-      font-size: 16px;
-      color: #3A84FF;
-      vertical-align: middle;
-      cursor: pointer;
-    }
+  .fixed-footer-btn-wrapper {
+    width: 100%;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    // right: 20px;
+    z-index: 9;
+    padding-left: 24px;
+    background-color: #ffffff;
+    box-shadow: 0 -2px 4px 0 #0000000f;
+    transition: .3s;
   }
 }
 </style>

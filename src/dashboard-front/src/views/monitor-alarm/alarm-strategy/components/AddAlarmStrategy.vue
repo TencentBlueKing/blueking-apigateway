@@ -35,7 +35,7 @@
           <div class="form-content">
             <div class="content-panel single">
               <BkFormItem
-                class="m-b-0!"
+                class="mb-0!"
                 :label="t('告警策略名称')"
                 :property="'name'"
                 :rules="rules.name"
@@ -51,7 +51,7 @@
                 />
               </BkFormItem>
             </div>
-            <div class="content-panel">
+            <div class="content-panel mb-0!">
               <dt class="panel-title">
                 {{ t('触发条件') }}
               </dt>
@@ -186,9 +186,8 @@
                 <BkFormItem
                   :label="t('生效环境')"
                   :rules="rules.effective_stages"
-                  class="mb-16px effective-stages"
-                  property="'effective_stages"
-                  required
+                  class="mb-0 effective-stages"
+                  property="effective_stages"
                 >
                   <BkRadioGroup
                     v-model="effectiveStageType"
@@ -222,7 +221,7 @@
                     </BkSelect>
                   </div>
                   <div
-                    class="stage-select-tips"
+                    class="mb-16px stage-select-tips"
                     :class="['all'].includes(effectiveStageType) ? 'mt-4px' : 'mt-8px'"
                   >
                     {{
@@ -409,15 +408,10 @@ const rules = reactive({
   effective_stages: [
     {
       validator: (value: string[]) => {
-        console.log(666666);
-        if (['all'].includes(effectiveStageType.value)) {
-          return true;
-        }
-        return value.length > 0;
+        return ['all'].includes(effectiveStageType.value) || value.length > 0;
       },
       message: t('自定义环境不能为空'),
       trigger: 'change',
-      required: false,
     },
   ],
   notice_way: [
@@ -566,6 +560,7 @@ const handleCancel = () => {
 
         &.single {
           border: none;
+          margin-bottom: 24px;
 
           .bk-form-item {
             .bk-form-label {
@@ -585,6 +580,17 @@ const handleCancel = () => {
         }
 
         .effective-stages {
+          .bk-form-label {
+            &::after {
+              position: absolute;
+              top: 3px;
+              width: 14px;
+              color: #ea3636;
+              text-align: center;
+              content: "*";
+            }
+          }
+
           .effective-stages-radio {
             line-height: 22px;
             margin-top: 5px;
@@ -619,7 +625,6 @@ const handleCancel = () => {
         flex: none;
         font-size: 14px;
         color: #4d4f56;
-        // padding: 0 12px;
         padding-left: 7px;
         padding-right: 7px;
         padding-top: 4px;
