@@ -645,7 +645,9 @@ const renderChart = (data: Record<string, any>) => {
   };
   const timeDuration = timeline[timeline.length - 1] - timeline[0];
   const intervalOption = getChartIntervalOption(timeDuration, 'time', 'xAxis');
-  chartInstance.value.setOption(merge(options, intervalOption));
+  nextTick(() => {
+    chartInstance.value.setOption(merge(options, intervalOption));
+  });
   chartInstance.value?.dispatchAction({
     type: 'takeGlobalCursor',
     key: 'dataZoomSelect',

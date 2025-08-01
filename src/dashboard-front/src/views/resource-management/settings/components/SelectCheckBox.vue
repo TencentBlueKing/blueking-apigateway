@@ -208,7 +208,7 @@ watch(
 );
 
 watch(
-  () => curLabelIds, () => {
+  () => curLabelIds.value, () => {
     emit('update:modelValue', curLabelIds.value || []);
   });
 
