@@ -1100,4 +1100,5 @@ USER_AUTH_TYPE = {
 # ==============================================================================
 # 安全相关
 # ==============================================================================
+FORBIDDEN_HOSTS = env.list("FORBIDDEN_HOSTS", default=["localhost", "127.0.0.1", "0.0.0.0"])
 FORBIDDEN_PORTS = env.list("FORBIDDEN_PORTS", default=[])

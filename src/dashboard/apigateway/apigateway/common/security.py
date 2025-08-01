@@ -21,6 +21,9 @@ from django.conf import settings
 
 
 def is_forbidden_host(host: str) -> bool:
+    if host in settings.FORBIDDEN_HOSTS:
+        return True
+
     if ":" not in host:
         return False
 
