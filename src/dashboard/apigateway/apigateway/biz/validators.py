@@ -471,7 +471,6 @@ class MCPServerValidator(GetGatewayFromContextMixin):
         # 处理名称前缀 (web 来源需要保留原始名称)
         attrs["name"] = self._process_name_prefix(name, gateway, stage, source)
         # 多步骤校验
-        self._validate_stage(stage, source)
         self._validate_name(attrs["name"], gateway, stage, source)
         self._validate_resource_names(attrs, context, gateway, stage, source)
 
@@ -505,10 +504,6 @@ class MCPServerValidator(GetGatewayFromContextMixin):
         if source != CallSourceTypeEnum.Web:
             return f"{gateway.name}-{stage.name}-{name}"
         return name
-
-    def _validate_stage(self, stage: Stage, source: str):
-        """stage 基础校验 (可扩展其他规则)"""
-        # 预留扩展点
 
     def _validate_name(self, name: str, gateway: Gateway, stage: Stage, source: CallSourceTypeEnum):
         """名称多规则校验"""
