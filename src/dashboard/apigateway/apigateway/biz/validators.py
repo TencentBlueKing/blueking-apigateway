@@ -472,7 +472,7 @@ class MCPServerValidator(GetGatewayFromContextMixin):
         attrs["name"] = self._process_name_prefix(name, gateway, stage, source)
         # 多步骤校验
         self._validate_stage(stage, source)
-        self._validate_name(name, gateway, stage, source)
+        self._validate_name(attrs["name"], gateway, stage, source)
         self._validate_resource_names(attrs, context, gateway, stage, source)
 
     def _get_or_validate_stage(

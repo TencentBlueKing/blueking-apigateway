@@ -149,6 +149,7 @@ class TestSyncApi:
             path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
             data=data,
         )
+
         assert resp.status_code == 200
         result = resp.json()
         assert result["data"][0]["name"] == f"{fake_gateway.name}-{fake_stage.name}-server1"
