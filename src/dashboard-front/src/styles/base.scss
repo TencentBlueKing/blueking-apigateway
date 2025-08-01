@@ -17,7 +17,8 @@
  */
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  // font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  font-family: PingFang SC,Microsoft Yahei,Helvetica,Aria;
   line-height: 1.5;
 }
 
@@ -146,4 +147,12 @@ a {
     background: #e5f6ea;
     border: 1px solid #3fc06d;
   }
+}
+
+.mr8 {
+  margin-right: 8px !important;
+}
+
+.ml10 {
+  margin-left: 10px !important;
 }

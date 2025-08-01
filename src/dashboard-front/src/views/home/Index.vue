@@ -101,7 +101,7 @@
           >
             {{ t('环境列表') }}
           </div>
-          <div class="flex-grow-1 of1 text-center">
+          <div class="flex-grow-1 of1">
             {{ t('资源数量') }}
           </div>
           <div class="flex-grow-1 of2">
@@ -166,7 +166,7 @@
             </div>
             <div
               :class="featureFlagStore.isTenantMode ? 'of2' : 'of3'"
-              class="env"
+              class="env flex-grow-1"
             >
               <div class="flex">
                 <span
@@ -194,7 +194,7 @@
               </div>
             </div>
             <div
-              class="flex-grow-1 of1 text-center"
+              class="flex-grow-1 of1 pl-4"
               :class="[
                 { 'color-#3A84FF': item.hasOwnProperty('resource_count') }
               ]"
@@ -257,13 +257,19 @@
           <div class="flex-grow-1 of3">
             {{ t('环境列表') }}
           </div>
-          <div class="flex-grow-1 of1 text-center">
+          <div class="flex-grow-1 of1">
             {{ t('资源数量') }}
           </div>
           <div class="flex-grow-1 of2">
             {{ t('操作') }}
           </div>
         </div>
+        <TableEmpty
+          :empty-type="tableEmptyConf.emptyType"
+          :abnormal="tableEmptyConf.isAbnormal"
+          @refresh="getGatewaysListData"
+          @clear-filter="handleClearFilterKey"
+        />
       </div>
     </div>
     <div class="footer-container">
@@ -309,10 +315,13 @@ import {
   useEnv,
   useFeatureFlag,
 } from '@/stores';
+import { useGatewaysList } from '@/hooks';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { getGatewayList } from '@/services/source/gateway';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import CreateGateway from '@/components/create-gateway/Index.vue';
+import TableEmpty from '@/components/table-empty/Index.vue';
+import type { IApiGateway } from '@/types/gateway';
 
 type GatewayType = Awaited<ReturnType<typeof getGatewayList>>['results'][number];
 
@@ -350,6 +359,20 @@ const gatewayTypes = ref([
     value: '1',
   },
 ]);
+// 获取网关数据方法
+const {
+  getGatewaysListData,
+  dataList,
+  pagination,
+} = useGatewaysList(filterNameData);
+
+const tableEmptyConf = ref<{
+  emptyType: string
+  isAbnormal: boolean
+}>({
+  emptyType: '',
+  isAbnormal: false,
+});
 
 const isLoading = ref(true);
 // 网关列表数据
@@ -387,6 +410,11 @@ const contacts = [
 
 const copyright = computed(() => `Copyright © 2012-${new Date().getFullYear()} Tencent BlueKing. All Rights Reserved. V${envStore.env.BK_APIGATEWAY_VERSION}`);
 
+watch(() => dataList.value, (val: IApiGateway[]) => {
+  gatewaysList.value = convertGatewaysList(val);
+  updateTableEmptyConfig();
+});
+
 // 处理列表项
 const convertGatewaysList = (arr: GatewayType[]): ConvertedGatewayType[] => {
   if (!arr) {
@@ -416,6 +444,7 @@ const init = async () => {
   isLoading.value = true;
   const response = await getGatewayList({ limit: 10000 });
   gatewaysList.value = convertGatewaysList(response.results || []);
+  updateTableEmptyConfig();
   setTimeout(() => {
     isLoading.value = false;
   }, 100);
@@ -464,6 +493,32 @@ const tipsContent = (data: any[]) => {
   ]);
 };
 
+const handleClearFilterKey = () => {
+  filterNameData.value = {
+    keyword: '',
+    kind: 'all',
+  };
+  filterKey.value = 'updated_time';
+  getGatewaysListData();
+  updateTableEmptyConfig();
+};
+
+const updateTableEmptyConfig = () => {
+  const searchParams = { ...filterNameData.value };
+  const list = Object.values(searchParams).filter(item => item !== '');
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal as boolean;
+
+  if (list.length && !gatewaysList.value.length) {
+    tableEmptyConf.value.emptyType = 'searchEmpty';
+    return;
+  }
+  if (list.length) {
+    tableEmptyConf.value.emptyType = 'empty';
+    return;
+  }
+  tableEmptyConf.value.emptyType = '';
+};
+
 onMounted(() => {
   init();
 });
@@ -498,7 +553,7 @@ onMounted(() => {
     display: flex;
     justify-content: space-between;
     width: 100%;
-    padding: 28px 16px;
+    padding: 28px 0;
     background-color: #f5f7fa;
 
     .left {
@@ -617,7 +672,7 @@ onMounted(() => {
 
         .env {
           overflow: hidden;
-          flex-grow: 1;
+          // flex-grow: 1;
         }
 
         .environment-tag {
@@ -640,6 +695,10 @@ onMounted(() => {
 
     .of3 {
       flex: 0 0 30%;
+    }
+
+    .pl-4 {
+      padding-left: 4px;
     }
 
     .empty-table {

@@ -98,7 +98,7 @@
                 class="opt"
               >
                 <AgIcon
-                  name="doc-icon"
+                  name="qiye-weixin"
                   size="16"
                   class="doc-qw icon-ag-qw"
                 />

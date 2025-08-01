@@ -124,4 +124,4 @@ export function getTenantUsers(
 /**
  * 获取版本日志
  */
-export const getVersionLog = () => http.get('/version-log');
+export const getVersionLog = () => http.get('/version-log/');

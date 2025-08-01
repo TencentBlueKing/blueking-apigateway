@@ -41,6 +41,7 @@
           :ref="(el: HTMLElement | null) => setRefs(el, 'name-', index)"
           :model="row"
           label-width="0"
+          class="table-cell-form"
         >
           <BkFormItem
             property="name"
@@ -85,6 +86,7 @@
           :ref="(el: HTMLElement | null) => setRefs(el, `value-`, index)"
           :model="row"
           label-width="0"
+          class="table-cell-form"
         >
           <BkFormItem
             property="value"
@@ -127,6 +129,7 @@
           :ref="(el: HTMLElement | null) => setRefs(el, 'type-', index)"
           :model="row"
           label-width="0"
+          class="table-cell-form"
         >
           <BkFormItem
             property="type"
@@ -161,6 +164,7 @@
           :ref="(el: HTMLElement | null) => setRefs(el, 'instructions-', index)"
           :model="row"
           label-width="0"
+          class="table-cell-form"
         >
           <BkFormItem
             property="instructions"
@@ -507,9 +511,57 @@ defineExpose({
   .td-text {
     padding: 0 16px;
   }
+
   :deep(.bk-form-error-tips) {
     transform: translate(-50%, 4px);
   }
+
+  :deep(.bk-form.table-cell-form) {
+    line-height: 42px;
+    .bk-form-item.table-form-item {
+      margin-bottom: 0;
+      .bk-form-content {
+        line-height: 42px !important;
+        .bk-input {
+          height: 42px;
+          line-height: 42px;
+          border: 0;
+          .bk-input--text {
+            padding: 0 16px;
+          }
+        }
+        .edit-input.bk-input {
+          border-radius: 0px;
+          &:hover {
+            border: 1px solid #A3C5FD;
+          }
+          &.is-focused {
+            border: 1px solid #3A84FF;
+          }
+        }
+        .bk-select {
+          &:hover {
+            .bk-input {
+              border: 1px solid #A3C5FD;
+            }
+          }
+          &.is-focus {
+            .bk-input {
+              border: 1px solid #3A84FF;
+            }
+          }
+        }
+      }
+      &.is-error {
+        .bk-form-content {
+          .bk-input--text {
+            background: #FFEEEE;
+          }
+        }
+      }
+    }
+  }
+
   :deep(.bk-table-body-content) {
     .custom-table-cell {
       .cell {
@@ -517,54 +569,13 @@ defineExpose({
         &:hover {
           cursor: pointer;
         }
-        .bk-form {
-          line-height: 42px;
-          margin-bottom: -1px;
-          .table-form-item {
-            margin-bottom: 0;
-            .bk-form-content {
-              line-height: 42px;
-              .bk-input {
-                height: 42px;
-                line-height: 42px;
-                border: 0;
-                .bk-input--text {
-                  padding: 0 16px;
-                }
-              }
-              .edit-input.bk-input {
-                border-radius: 0px;
-                &:hover {
-                  border: 1px solid #A3C5FD;
-                }
-                &.is-focused {
-                  border: 1px solid #3A84FF;
-                }
-              }
-              .bk-select {
-                &:hover {
-                  .bk-input {
-                    border: 1px solid #A3C5FD;
-                  }
-                }
-                &.is-focus {
-                  .bk-input {
-                    border: 1px solid #3A84FF;
-                  }
-                }
-              }
-            }
-            &.is-error {
-              .bk-form-content {
-                .bk-input--text {
-                  background: #FFEEEE;
-                }
-              }
-            }
-          }
-        }
       }
     }
+  }
+
+  :deep(.bk-scrollbar .bk__rail-x) {
+    display: none;
+    opacity: 0
   }
 }
 </style>

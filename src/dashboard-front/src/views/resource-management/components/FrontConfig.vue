@@ -92,6 +92,8 @@ interface IProps {
 
 const { detail = {}, isClone = false } = defineProps<IProps>();
 
+const emit = defineEmits<{ change: [data: typeof frontConfigData.value] }>();
+
 const { t } = useI18n();
 
 const frontRef = ref();
@@ -171,10 +173,10 @@ watch(
 );
 
 watch(
-  () => frontConfigData.value,
-  // (val: any) => {
+  frontConfigData,
   () => {
     // mitt.emit('front-config', val);
+    emit('change', frontConfigData.value);
   },
   { deep: true },
 );

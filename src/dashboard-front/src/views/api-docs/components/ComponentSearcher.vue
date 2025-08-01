@@ -170,7 +170,7 @@ const triggerHandler = (version: any) => {
 // 跳转指定组件
 const handleShowDoc = (version: any, board: string) => {
   router.push({
-    name: 'apiDocDetail',
+    name: 'ApiDocDetail',
     params: {
       board,
       curTab: 'component',

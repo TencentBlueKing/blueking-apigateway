@@ -712,7 +712,7 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
             mcp_data["stage_id"] = stage.id
             name = mcp_data["name"]
             mcp_data["name"] = f"{request.gateway.name}-{stage.name}-{name}"
-            # 查询是否存
+            # 查询是否存在
             instance = MCPServer.objects.filter(
                 name=mcp_data["name"], stage__name=stage.name, gateway_id=request.gateway.id
             ).first()

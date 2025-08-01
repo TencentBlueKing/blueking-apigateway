@@ -586,5 +586,10 @@ onMounted(() => {
     scrollbar-color: transparent transparent;
     overflow: visible;
   }
+
+  :deep(.bk-scrollbar .bk__rail-x) {
+    display: none;
+    opacity: 0
+  }
 }
 </style>

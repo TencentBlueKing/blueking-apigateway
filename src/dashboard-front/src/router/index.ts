@@ -105,7 +105,7 @@ const routes: RouteRecordRaw[] = [
     path: '/docs',
     name: 'Docs',
     component: () => import('@/layout/docs/Index.vue'),
-    redirect: { name: 'apiDocs' },
+    redirect: { name: 'ApiDocs' },
     props,
     children: [
       ...getAPIDocsRoutes(),

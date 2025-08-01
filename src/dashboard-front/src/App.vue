@@ -17,55 +17,66 @@
  */
 <template>
   <BkConfigProvider :locale="bkuiLocale">
-    <BkNavigation
-      class="navigation-content"
-      navigation-type="top-bottom"
-      :need-menu="false"
-      default-open
+    <div
+      id="app"
+      :class="[systemCls]"
     >
-      <template #side-header>
-        <div
-          class="flex items-center gap-16px"
-          @click="handleLogoClick"
-        >
-          <div>
-            <img
-              :src="LogoWithoutTitle"
-              alt="API Gateway"
-              class="max-w-none h-28px cursor-pointer"
-            >
-          </div>
-          <div class="text-16px font-bold color-#eaebf0 cursor-pointer">
-            {{ t('蓝鲸 API 网关') }}
-          </div>
-        </div>
-      </template>
-      <template #header>
-        <div class="header">
-          <div class="header-nav">
-            <template v-for="(item, index) in menuList">
-              <div
-                v-if="item.enabled"
-                :key="item.id"
-                class="header-nav-item"
-                :class="{ 'item-active': index === activeIndex }"
-                @click="() => handleNavClick(item.url, index, item.link)"
+      <NoticeComponent
+        v-if="enableShowNotice && showNoticeAlert"
+        :api-url="noticeApi"
+        @show-alert-change="handleShowAlertChange"
+      />
+      <BkNavigation
+        class="navigation-content"
+        :class="[`${route.name}-navigation-content`]"
+        navigation-type="top-bottom"
+        :need-menu="false"
+        default-open
+      >
+        <template #side-header>
+          <div
+            class="flex items-center gap-16px"
+            @click="handleLogoClick"
+          >
+            <div>
+              <img
+                :src="LogoWithoutTitle"
+                alt="API Gateway"
+                class="max-w-none h-28px cursor-pointer"
               >
-                <span class="text">{{ item.name }}</span>
-              </div>
-            </template>
+            </div>
+            <div class="text-16px font-bold color-#eaebf0 cursor-pointer">
+              {{ t('蓝鲸 API 网关') }}
+            </div>
           </div>
-          <div class="header-aside-wrap">
-            <LanguageToggle />
-            <ProductInfo />
-            <UserInfo v-if="userInfoStore.info?.display_name || userInfoStore.info?.username" />
+        </template>
+        <template #header>
+          <div class="flex items-center justify-between header">
+            <div class="flex flex-1 header-nav">
+              <template v-for="(item, index) in menuList">
+                <div
+                  v-if="item.enabled"
+                  :key="item.id"
+                  class="mr-40px header-nav-item"
+                  :class="{ 'item-active': index === activeIndex }"
+                  @click="() => handleNavClick(item.url, index, item.link)"
+                >
+                  <span class="text">{{ item.name }}</span>
+                </div>
+              </template>
+            </div>
+            <div class="header-aside-wrap">
+              <LanguageToggle />
+              <ProductInfo />
+              <UserInfo v-if="userInfoStore.info?.display_name || userInfoStore.info?.username" />
+            </div>
           </div>
+        </template>
+        <div class="content">
+          <RouterView v-if="userLoaded" />
         </div>
-      </template>
-      <div class="content">
-        <RouterView v-if="userLoaded" />
-      </div>
-    </BkNavigation>
+      </BkNavigation>
+    </div>
   </BkConfigProvider>
 </template>
 
@@ -76,6 +87,8 @@ import UserInfo from '@/components/user-info/Index.vue';
 import LogoWithoutTitle from '@/images/APIgateway-logo.png';
 import En from '../node_modules/bkui-vue/dist/locale/en.esm.js';
 import ZhCn from '../node_modules/bkui-vue/dist/locale/zh-cn.esm.js';
+import NoticeComponent from '@blueking/notice-component';
+import '@blueking/notice-component/dist/style.css';
 import {
   useEnv,
   useFeatureFlag,
@@ -94,10 +107,6 @@ const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
 const { configure: configureDisplayName } = useBkUserDisplayName();
 const gateway = useGateway();
-
-envStore.fetchEnv();
-userInfoStore.fetchUserInfo();
-featureFlagStore.fetchFlags();
 
 // 接入访问统计逻辑，只在上云版执行
 if (envStore.env.BK_ANALYSIS_SCRIPT_SRC) {
@@ -125,8 +134,12 @@ if (envStore.env.BK_ANALYSIS_SCRIPT_SRC) {
 }
 
 const locale = ref('zh-cn');
+const systemCls = ref('mac');
 const activeIndex = ref(0);
 const userLoaded = ref(false);
+const showNoticeAlert = ref(true);
+const enableShowNotice = ref(false);
+const noticeApi = ref(`${window.BK_DASHBOARD_URL}/notice/announcements/`);
 const curLeavePageData = ref({});
 
 const menuList: IHeaderNav[] = [
@@ -178,6 +191,8 @@ const apigwId = computed(() => {
   return route.params.id;
 });
 
+const isShowNoticeAlert = computed(() => showNoticeAlert.value && enableShowNotice.value);
+
 configureDisplayName();
 
 watch(
@@ -191,7 +206,12 @@ watch(
     if (activeIndex.value === -1) {
       activeIndex.value = 0;
     }
+    const platform = window.navigator.platform.toLowerCase();
+    if (platform.indexOf('win') === 0) {
+      systemCls.value = 'win';
+    }
     gateway.setApigwId(apigwId.value);
+    featureFlagStore.setNoticeAlert(isShowNoticeAlert.value);
     userLoaded.value = true;
   },
   {
@@ -200,8 +220,17 @@ watch(
   },
 );
 
+const init = async () => {
+  userInfoStore.fetchUserInfo();
+  envStore.fetchEnv();
+  await featureFlagStore.fetchFlags();
+  enableShowNotice.value = featureFlagStore.flags.ENABLE_BK_NOTICE;
+  featureFlagStore.setNoticeAlert(showNoticeAlert.value && enableShowNotice.value);
+};
+init();
+
 const goPage = (routeName: string): void => {
-  const id = ['home', 'apigwDoc', 'apiDocs'].includes(routeName) ? '' : apigwId.value;
+  const id = ['Home', 'ApiDocs'].includes(routeName) ? '' : apigwId.value;
   router.push({
     name: routeName,
     params: { id },
@@ -237,83 +266,83 @@ const handleLogoClick = () => {
 
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 #app {
   width: 100%;
   height: 100vh;
   min-width: 1280px;
-  overflow: auto;
+  overflow: hidden;
   font-size: 14px;
   color: #63656e;
   text-align: left;
   background: #f5f7fb;
-}
-</style>
 
-<style lang="scss" scoped>
-.navigation-content {
+  .navigation-content {
 
-  :deep(.bk-navigation-wrapper) {
+    :deep(.bk-navigation-wrapper) {
 
-    .container-content {
-      // 最小宽度应为 1280px 减去左侧菜单栏展开时的宽度 260px，即为 1020px
-      min-width: 1020px;
-      padding: 0 !important;
-    }
-  }
-
-  .content {
-    height: 100%;
-    font-size: 14px;
-  }
-
-  :deep(.title-desc) {
-    color: #eaebf0;
-    cursor: pointer;
-  }
-
-  .header {
-    display: flex;
-    width: 100%;
-    font-size: 14px;
-    color: #96A2B9;
-    align-items: center;
-    justify-content: space-between;
-
-    .header-nav {
-      display: flex;
-      flex: 1;
-      padding: 0;
-      margin: 0;
-
-      .header-nav-item {
-        margin-right: 40px;
-        color: #96A2B9;
-        list-style: none;
-
-        &.item-active {
-          color: #FFF !important;
-        }
-
-        &:hover {
-          color: #D3D9E4;
-          cursor: pointer;
-        }
-
-        text {
-          color: #96A2B9;
-
-          &:hover {
-            color: #D3D9E4;
-          }
-        }
+      .container-content {
+        // 最小宽度应为 1280px 减去左侧菜单栏展开时的宽度 260px，即为 1020px
+        min-width: 1020px;
+        padding: 0 !important;
       }
     }
 
-    .header-aside-wrap {
-      display: flex;
-      align-items: center;
-      gap: 14px;
+    .content {
+      height: 100%;
+      font-size: 14px;
+    }
+
+    :deep(.title-desc) {
+      color: #eaebf0;
+      cursor: pointer;
+    }
+
+    .header {
+      width: 100%;
+      font-size: 14px;
+      color: #96A2B9;
+
+      .header-nav {
+        padding: 0;
+        margin: 0;
+
+        .header-nav-item {
+          color: #96A2B9;
+          list-style: none;
+
+          &.item-active {
+            color: #FFF !important;
+          }
+
+          &:hover {
+            color: #D3D9E4;
+            cursor: pointer;
+          }
+
+          text {
+            color: #96A2B9;
+
+            &:hover {
+              color: #D3D9E4;
+            }
+          }
+        }
+      }
+
+      .header-aside-wrap {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+    }
+
+    &.ApiDocs-navigation-content {
+      :deep(.bk-navigation-wrapper) {
+        .container-content {
+          overflow: hidden;
+        }
+      }
     }
   }
 }
