@@ -28,44 +28,58 @@
         {{ t("批量审批") }}
       </BkButton>
       <BkForm class="flex header-filter">
-        <BkFormItem
-          :label="t('授权维度')"
-          label-width="108"
-        >
-          <BkSelect
-            v-model="filterData.grant_dimension"
-            class="w-150px"
-          >
-            <BkOption
-              v-for="option of AUTHORIZATION_DIMENSION"
-              :id="option.id"
-              :key="option.id"
-              :name="option.name"
-            />
-          </BkSelect>
+        <BkFormItem label-width="108">
+          <div class="flex">
+            <div class="form-item-label">
+              {{ t('授权维度') }}
+            </div>
+            <div class="form-item-value flex-none">
+              <BkSelect
+                v-model="filterData.grant_dimension"
+                class="w-150px"
+              >
+                <BkOption
+                  v-for="option of AUTHORIZATION_DIMENSION"
+                  :id="option.id"
+                  :key="option.id"
+                  :name="option.name"
+                />
+              </BkSelect>
+            </div>
+          </div>
         </BkFormItem>
-        <BkFormItem
-          :label="t('蓝鲸应用ID')"
-          label-width="119"
-        >
-          <BkInput
-            v-model="filterData.bk_app_code"
-            class="w-150px"
-            clearable
-            :placeholder="t('请输入应用ID')"
-          />
+        <BkFormItem label-width="119">
+          <div class="flex">
+            <div class="form-item-label">
+              {{ t('蓝鲸应用ID') }}
+            </div>
+            <div class="form-item-value flex-none">
+              <BkInput
+                v-model="filterData.bk_app_code"
+                class="w-150px"
+                clearable
+                :placeholder="t('请输入应用ID')"
+              />
+            </div>
+          </div>
         </BkFormItem>
         <BkFormItem
           v-if="!userStore.isTenantMode"
-          :label="t('申请人')"
           label-width="90"
         >
-          <BkInput
-            v-model="filterData.applied_by"
-            class="w-150px"
-            clearable
-            :placeholder="t('请输入用户')"
-          />
+          <div class="flex">
+            <div class="form-item-label">
+              {{ t('申请人') }}
+            </div>
+            <div class="form-item-value flex-none">
+              <BkInput
+                v-model="filterData.applied_by"
+                class="w-150px"
+                clearable
+                :placeholder="t('请输入用户')"
+              />
+            </div>
+          </div>
         </BkFormItem>
         <BkFormItem
           v-else
@@ -773,6 +787,7 @@ const updateTableEmptyConfig = () => {
     tableEmptyConf.value.emptyType = 'empty';
     return;
   }
+  tableEmptyConf.value.emptyType = '';
 };
 
 watch(
@@ -800,6 +815,27 @@ onMounted(() => {
 .header-filter {
   .bk-form-item {
     margin-bottom: 16px;
+
+    :deep(.bk-form-content) {
+      line-height: 30px;
+
+      .form-item-label {
+        padding: 5px 7px;
+        color: #4d4f56;
+        background-color: #fafbfd;
+        border-radius: 2px 0 0 2px;
+        border: 1px solid #c4c6cc;
+        line-height: 20px;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .form-item-value {
+        margin-left: -1px;
+      }
+    }
   }
 }
 

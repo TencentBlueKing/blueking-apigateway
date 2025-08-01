@@ -26,7 +26,7 @@
     />
     <div
       id="resourceId"
-      class="resource-container page-wrapper-padding"
+      class="resource-container page-wrapper-padding pb-0!"
       :class="[
         isDragging ? 'dragging' : '',
         isDetail && !isShowLeft ? 'welt' : ''
@@ -211,7 +211,7 @@
 
         <div
           v-show="isShowLeft"
-          class="left-wraper"
+          class="left-wrapper"
         >
           <BkLoading :loading="isLoading">
             <BkTable
@@ -219,12 +219,14 @@
               :pagination="pagination"
               :row-class="handleRowClass"
               :settings="settings"
-              :max-height="clientHeight"
+              :max-height="tableConfig.clientHeight"
               show-overflow-tooltip
               border="outer"
               class="table-layout"
               remote-pagination
               row-key="id"
+              :size="settings.size"
+              :row-height="settings.height"
               @page-limit-change="handlePageSizeChange"
               @page-value-change="handlePageChange"
               @select-all="handleSelectAllChange"
@@ -665,6 +667,8 @@ import {
 } from 'lodash-es';
 import { Message } from 'bkui-vue';
 import {
+  type ITableSettings,
+  useMaxTableLimit,
   useQueryList,
   useSelection,
   useTableSetting,
@@ -707,7 +711,6 @@ import {
 } from '@/stores';
 import ResourceDocSlider from '../components/ResourceDocSlider.vue';
 import ExportResourceDialog from '../components/ExportResourceDialog.vue';
-import { useMaxTableLimit } from '@/hooks/use-max-table-limit';
 import { HTTP_METHODS } from '@/constants';
 import { METHOD_THEMES } from '@/enums';
 
@@ -759,7 +762,7 @@ const router = useRouter();
 
 const tableDataKey = ref(uniqueId());
 const chooseMethod = ref<string[]>([]);
-const filterData = ref<any>({
+const filterData = ref({
   keyword: '',
   order_by: '',
 });
@@ -885,6 +888,11 @@ const isDragging = ref(false);
 // const showEdit = ref(false);
 // const optionName = ref('');
 // const inputRef = ref(null);
+const initLimitList = ref([10, 20, 50, 100]);
+const tableConfig = ref({
+  clientHeight: 0,
+  maxTableLimit: 0,
+});
 
 // tab 选项卡
 const panels = [
@@ -986,7 +994,13 @@ const labelsList = computed(() => {
 });
 
 // 当前视口高度能展示最多多少条表格数据
-const { clientHeight, maxTableLimit } = useMaxTableLimit({ allocatedHeight: 256 });
+const getMaxTableLimit = () => {
+  tableConfig.value = useMaxTableLimit({
+    allocatedHeight: 256,
+    className: route.name,
+  });
+};
+getMaxTableLimit();
 
 // 列表hooks
 const {
@@ -1003,13 +1017,10 @@ const {
   filterNoResetPage: false,
   initialPagination: {
     limitList: [
-      maxTableLimit,
-      10,
-      20,
-      50,
-      100,
+      tableConfig.value.maxTableLimit,
+      ...initLimitList.value,
     ],
-    limit: maxTableLimit,
+    limit: tableConfig.value.maxTableLimit,
   },
 });
 
@@ -1168,49 +1179,34 @@ const handleSortChange = ({ column, type }: Record<string, any>) => {
   return typeMap[type]();
 };
 
-const handleSettingChange = (
-  {
+const handleSettingChange = (resourceSetting: ITableSettings) => {
+  const {
     checked,
     size,
     height,
-  }: {
-    checked: string[]
-    size: string
-    height: number
-  }) => {
+  } = resourceSetting;
+  const isExistDiff = isDiffSize(resourceSetting);
+  changeTableSetting(resourceSetting);
+  if (!isExistDiff) {
+    return;
+  }
   settings.value = Object.assign(settings.value, {
     checked,
     size,
     height,
   });
-  const isExistDiff = isDiffSize({
-    checked,
-    size,
-    height,
-  });
-  changeTableSetting({
-    checked,
-    size,
-    height,
-  });
-  if (!isExistDiff) {
-    return;
-  }
-  delete route.query.pagesize;
-  current.value = 1;
   getResizeTable();
-  console.log(settings.value, 55555);
 };
 
-function getResizeTable() {
-  curTableSettingConfig.value = useMaxTableLimit({ className: 'resource-setting' });
-  // 如果limit数量一致，不用刷新接口
-  if (pagination.value.limit === curTableSettingConfig.value.maxTableLimit) {
-    return;
-  }
-  pagination.value.limit = curTableSettingConfig.value.maxTableLimit;
-  pagination.value.limitList = [...initLimitList.value, limit.value];
-}
+const getResizeTable = async () => {
+  await getMaxTableLimit();
+  pagination.value = Object.assign(pagination.value, {
+    current: 1,
+    offset: 0,
+    limit: tableConfig.value.maxTableLimit,
+    limitList: [...initLimitList.value, tableConfig.value.maxTableLimit],
+  });
+};
 
 // 展示右边内容
 const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
@@ -1620,7 +1616,7 @@ const settings = shallowRef({
   checked: ['name', 'backend_name', 'method', 'path', 'plugin_count', 'docs', 'labels', 'updated_time', 'act'],
 });
 
-const { changeTableSetting, isDiffSize } = useTableSetting(settings, 'resource-setting');
+const { changeTableSetting, isDiffSize } = useTableSetting(settings, route.name);
 
 watch(
   isDetail,
@@ -1716,7 +1712,7 @@ watch(
     };
 
     if (route.query?.backend_id) {
-      const { backend_id } = route?.query;
+      const { backend_id } = route.query;
       filterData.value.backend_id = backend_id;
     }
     else {
@@ -2001,7 +1997,7 @@ onMounted(() => {
     }
   }
 
-  .left-wraper{
+  .left-wrapper {
     position: relative;
     background: #fff;
 
@@ -2108,7 +2104,7 @@ onMounted(() => {
     }
   }
 
-  .toggle-button{
+  .toggle-button {
     position: absolute;
     z-index: 99;
     display: flex;

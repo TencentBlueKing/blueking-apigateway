@@ -24,9 +24,11 @@
  * IN THE SOFTWARE.
  */
 import { locale } from '@/locales';
-import { isEqual } from 'lodash-es';
+import { cloneDeep, isEqual } from 'lodash-es';
 import type { ShallowRef } from 'vue';
-import { type Settings } from 'bkui-vue/lib/table/props.ts';
+import { type Settings } from 'bkui-vue/lib/table/props';
+
+export type ITableSettings = Settings;
 
 export function useTableSetting(setting: ShallowRef<Settings>, name: string) {
   let tempName: string;
@@ -37,23 +39,24 @@ export function useTableSetting(setting: ShallowRef<Settings>, name: string) {
   else {
     tempName = name;
   }
+
   const tableName = `table-setting-${locale.value}-${tempName}`;
+
   onMounted(() => {
     const cache = localStorage.getItem(tableName);
     if (cache) {
       try {
         setting.value = { ...JSON.parse(cache) };
       }
-      catch (e) {
-        console.log(e);
+      catch (err) {
+        console.error(err);
       }
     }
   });
 
   function changeTableSetting(value: Settings) {
-    const curSetting = { ...setting.value };
-    // 这里setting的回调事件没返回disabled字段，所以需要备份下
-    const latestSetting = { ...value };
+    const curSetting = cloneDeep(setting.value);
+    const latestSetting = cloneDeep(value);
     // 这里需要对比下数据是否一致，避免重复回调
     if (isEqual(curSetting, latestSetting)) {
       return;

@@ -145,6 +145,6 @@ defineExpose({
 
 <style lang="scss" scoped>
 .response-params-table-wrapper {
-  padding-bottom: 22px;
+  margin-bottom: 24px;
 }
 </style>
