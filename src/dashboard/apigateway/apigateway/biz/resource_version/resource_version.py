@@ -291,6 +291,25 @@ class ResourceVersionHandler:
         return {schema_info["resource_id"]: schema_info["schema"] for schema_info in resources_version_schema.schema}
 
     @staticmethod
+    def get_resource_name_to_schema_by_resource_version(resource_version_id: int) -> dict:
+        """
+        获取资源版本下的资源name 与 api schema 的映射关系
+        """
+        resources_version_schema = OpenAPIResourceSchemaVersion.objects.filter(
+            resource_version_id=resource_version_id
+        ).first()
+        if resources_version_schema is None:
+            return {}
+        resource_id_to_name = {
+            resource["id"]: resource["name"] for resource in resources_version_schema.resource_version.data
+        }
+
+        return {
+            resource_id_to_name[schema_info["resource_id"]]: schema_info["schema"]
+            for schema_info in resources_version_schema.schema
+        }
+
+    @staticmethod
     def get_resource_id(resource_version_id: int, resource_name: str) -> int:
         resource_version = ResourceVersion.objects.filter(id=resource_version_id).first()
         if not resource_version:

@@ -46,6 +46,11 @@ urlpatterns = [
                                 views.GatewayStageSyncViewSet.as_view(),
                                 name="openapi.v2.sync.gateway.stages.sync",
                             ),
+                            path(
+                                "<slug:stage_name>/mcp-servers/",
+                                views.GatewayMcpServerSyncViewSet.as_view(),
+                                name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+                            ),
                         ]
                     ),
                 ),

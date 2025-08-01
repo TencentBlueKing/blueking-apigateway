@@ -1103,7 +1103,7 @@ paths:
   /api/v2/sync/gateways/{gateway_name}/stages/:
     post:
       operationId: v2_sync_stages
-      description: 添加网关的关联应用
+      description: 同步网关stage
       tags:
         - v2_sync
       responses:
@@ -1129,6 +1129,37 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: false
         descriptionEn: None
+
+  /api/v2/sync/gateways/{gateway_name}/stages/{stage_name}/mcp-servers/:
+    post:
+      operationId: v2_sync_stage_mcp_servers
+      description: 同步网关 stage mcp_servers
+      tags:
+        - v2_sync
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: post
+          path: /backend/api/v2/sync/gateways/{gateway_name}/stages/{stage_name}/mcp-servers/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
+
   /api/v2/sync/gateways/{gateway_name}/:
     post:
       operationId: v2_sync_gateway
