@@ -16,15 +16,17 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import re
 from typing import Optional
 
 from django.db.models import Count
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
-from apigateway.common.constants import STAGE_VAR_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum
+from apigateway.common.constants import STAGE_VAR_NAME_PATTERN, CallSourceTypeEnum, GatewayAPIDocMaintainerTypeEnum
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
 from apigateway.core import constants as core_constants
 from apigateway.core.constants import (
@@ -36,7 +38,9 @@ from apigateway.core.constants import (
 from apigateway.core.models import BackendConfig, Gateway, Proxy, Resource, ResourceVersion, Stage
 
 from .constants import APP_CODE_PATTERN, STAGE_VAR_FOR_PATH_PATTERN
+from .mcp_server import MCPServerHandler
 from .released_resource import ReleasedResourceHandler
+from .resource import ResourceOpenAPISchemaHandler
 from .resource_version import ResourceVersionHandler
 
 
@@ -422,3 +426,131 @@ class GatewayAPIDocMaintainerValidator:
                 raise serializers.ValidationError(_("服务号链接不可为空。"))
             if not link.startswith("wxwork://"):
                 raise serializers.ValidationError(_("服务号链接格式不正确，必须以 wxwork:// 开头。"))
+
+
+class MCPServerValidator(GetGatewayFromContextMixin):
+    """
+    MCPServer Serializer 校验器
+    职责分解为 3 个主步骤: stage 校验 / name 校验 / resource_names 校验
+    """
+
+    requires_context = True
+
+    def __call__(self, attrs: dict, serializer):
+        context = getattr(serializer, "context", {})
+        gateway = self._get_gateway(serializer)
+        source = context.get("source", CallSourceTypeEnum.OpenAPI)
+        name = attrs.get("name", "")
+
+        # 获取或验证 stage
+        stage = self._get_or_validate_stage(attrs, context, source, gateway)
+        # 处理名称前缀 (web 来源需要保留原始名称)
+        attrs["name"] = self._process_name_prefix(name, gateway, stage, source)
+        # 多步骤校验
+        self._validate_stage(stage, source)
+        self._validate_name(name, gateway, stage, source)
+        self._validate_resource_names(attrs, context, gateway, stage, source)
+
+    def _get_or_validate_stage(
+        self, attrs: dict, context: dict, source: CallSourceTypeEnum, gateway: Gateway
+    ) -> Stage:
+        """获取或校验 stage 对象"""
+        if source == CallSourceTypeEnum.Web:
+            return self._get_stage_for_web(attrs, gateway)
+        return self._get_stage_from_context(context)
+
+    def _get_stage_for_web(self, attrs: dict, gateway: Gateway) -> Stage:
+        """Web 来源时的 stage 校验逻辑"""
+        stage_id = attrs.get("stage_id")
+        if not stage_id:
+            raise serializers.ValidationError(_("stage_id 不能为空/不能为 0"))
+        try:
+            return Stage.objects.get(id=stage_id, gateway=gateway)
+        except Stage.DoesNotExist:
+            raise serializers.ValidationError(_("stage_id 非法，当前网关下无该 stage_id"))
+
+    def _get_stage_from_context(self, context: dict) -> Stage:
+        """非 Web 来源时从上下文中获取 stage"""
+        stage = context.get("stage")
+        if not stage:
+            raise serializers.ValidationError(_("stage 非法"))
+        return stage
+
+    def _process_name_prefix(self, name: str, gateway: Gateway, stage: Stage, source: CallSourceTypeEnum) -> str:
+        """处理名称前缀逻辑"""
+        if source != CallSourceTypeEnum.Web:
+            return f"{gateway.name}-{stage.name}-{name}"
+        return name
+
+    def _validate_stage(self, stage: Stage, source: str):
+        """stage 基础校验 (可扩展其他规则)"""
+        # 预留扩展点
+
+    def _validate_name(self, name: str, gateway: Gateway, stage: Stage, source: CallSourceTypeEnum):
+        """名称多规则校验"""
+        self._validate_name_not_empty(name)
+        self._validate_name_prefix(name, gateway, stage, source)
+        self._validate_name_format(name)
+        self._validate_name_unique(name, source)
+
+    def _validate_name_not_empty(self, name: str):
+        """名称非空校验"""
+        if not name:
+            raise serializers.ValidationError(_("MCPServer 名称不能为空"))
+
+    def _validate_name_prefix(self, name: str, gateway: Gateway, stage: Stage, source: CallSourceTypeEnum):
+        """名称前缀校验"""
+        if source == CallSourceTypeEnum.Web:
+            return  # Web 来源不需要强制前缀
+
+        expected_prefix = f"{gateway.name}-{stage.name}-"
+        if not name.startswith(expected_prefix):
+            raise serializers.ValidationError(_("MCPServer 名称格式错误，前缀应该为 ") + expected_prefix)
+
+    def _validate_name_format(self, name: str):
+        """名称字符格式校验"""
+        if not re.match(r"^[a-z0-9-]+$", name):
+            raise serializers.ValidationError(_("MCPServer 名称只能包含小写字母、数字和短横线"))
+        if name.endswith("-"):
+            raise serializers.ValidationError(_("MCPServer 名称不能以短横线结尾"))
+
+    def _validate_name_unique(self, name: str, source: CallSourceTypeEnum):
+        """名称唯一性校验"""
+        if source == CallSourceTypeEnum.Web and MCPServer.objects.filter(name=name).exists():
+            raise serializers.ValidationError(_("MCPServer 名称已存在"))
+
+    def _validate_resource_names(
+        self, attrs: dict, context: dict, gateway: Gateway, stage: Stage, source: CallSourceTypeEnum
+    ):
+        """资源名称多规则校验"""
+        resource_names = attrs.get("resource_names", [])
+        self._validate_resource_names_not_empty(resource_names)
+        valid_names = self._get_valid_resource_names(gateway, stage)
+        self._check_all_resources_valid(resource_names, valid_names)
+        if source == CallSourceTypeEnum.OpenAPI:
+            self._check_resource_schemas_confirmed(context, resource_names)
+
+    def _validate_resource_names_not_empty(self, resource_names: list):
+        """资源名称非空校验"""
+        if not resource_names:
+            raise serializers.ValidationError(_("资源名称列表不能为空"))
+
+    def _get_valid_resource_names(self, gateway: Gateway, stage: Stage) -> set[str]:
+        """获取有效的资源名称列表"""
+        return MCPServerHandler().get_valid_resource_names(gateway_id=gateway.id, stage_id=stage.id)
+
+    def _check_all_resources_valid(self, resource_names: list, valid_names: set[str]):
+        """检查资源是否全部有效"""
+        for name in resource_names:
+            if name not in valid_names:
+                raise serializers.ValidationError(
+                    _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在") + f"resource_name={name}"
+                )
+
+    def _check_resource_schemas_confirmed(self, context: dict, resource_names: list):
+        """检查资源 Schema 是否确认 (仅 OpenAPI 来源需要)"""
+        schema_map = context.get("resource_name_to_schema", {})
+        for name in resource_names:
+            schema = schema_map.get(name)
+            if not ResourceOpenAPISchemaHandler.has_openapi_schem(schema):
+                raise serializers.ValidationError(_(f"请检查当前资源:{name}对应的资源请求参数是否已经确认"))

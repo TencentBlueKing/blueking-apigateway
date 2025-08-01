@@ -17,7 +17,7 @@
 #
 import datetime
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 from django.db import transaction
 from django.utils.translation import gettext as _
@@ -67,6 +67,19 @@ class MCPServerHandler:
         labels = ResourceLabelHandler.get_labels_by_ids(label_ids)
 
         return tool_resources, labels
+
+    @staticmethod
+    def get_valid_resource_names(gateway_id: int, stage_id: int) -> Set[str]:
+        release = Release.objects.filter(
+            gateway_id=gateway_id,
+            stage_id=stage_id,
+            stage__status=StageStatusEnum.ACTIVE.value,
+        ).first()
+        if not release:
+            raise error_codes.FAILED_PRECONDITION.format(
+                _("环境已下架或者未发布，请先发布资源到该环境，再更新 MCPServer。"), replace=True
+            )
+        return ResourceVersionHandler.get_resource_names_set(release.resource_version.id)
 
     @staticmethod
     def get_tool_doc(gateway_id: int, stage_name: str, tool_name: str) -> Dict:
