@@ -399,7 +399,6 @@ const fetchApigwStages = async () => {
 
 const fetchApiList = async () => {
   try {
-    console.log(curTargetName.value);
     let res: (IResource & IComponent)[] = [];
     navList.value = [];
     if (curTab.value === 'gateway') {
@@ -556,6 +555,10 @@ const handleSystemChange = async (system: ISystem) => {
   if (system.name === curTargetName.value) return;
   curTargetName.value = system.name;
   curComponentApiName.value = '';
+  router.replace({
+    path: curTargetName.value,
+    params: { ...route.params },
+  });
   await init();
 };
 

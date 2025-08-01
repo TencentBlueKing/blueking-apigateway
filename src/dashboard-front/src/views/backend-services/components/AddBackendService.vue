@@ -155,6 +155,7 @@
                         <BkFormItem
                           :label="t('负载均衡类型')"
                           property="configs.loadbalance"
+                          class="mt-20px"
                           required
                           :rules="configRules.loadbalance"
                         >
@@ -737,6 +738,7 @@ defineExpose({ show });
 
   :deep(.bk-modal-content) {
     overflow-y: auto;
+    scrollbar-gutter: stable;
   }
 
   :deep(.bk-sideslider-footer) {
@@ -744,29 +746,29 @@ defineExpose({ show });
   }
 
   .title {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     color: #323237;
+    margin-left: 8px;
 
     .icon {
-      margin-right: 10px;
       font-size: 18px;
-      color: #62666b;
-    }
-  }
-
-  .base-info {
-
-    .base-info-form {
-
-      .alert-text {
-        color: #a5a4a7;
-      }
+      color: #4d4f56;
     }
   }
 
   .slider-content {
-    padding: 20px 40px 30px;
+    padding: 20px 34px 32px 40px;
+
+    .bk-form-label {
+      line-height: 22px;
+    }
+
+    .alert-text {
+      font-size: 12px;
+      color: #979ba5;
+      line-height: 22px;
+    }
   }
 
   .service-tips {
@@ -774,11 +776,14 @@ defineExpose({ show });
   }
 
   .host-item {
-
     i {
       margin-left: 10px;
       font-size: 14px;
       color: #979ba5;
+
+      &.add-host-btn {
+        margin-left: 13px;
+      }
 
       &:hover {
         color: #63656e;
@@ -892,7 +897,7 @@ defineExpose({ show });
 .bk-collapse-service {
 
   .panel-header {
-    padding: 12px 0;
+    margin-bottom: 16px;
     cursor: pointer;
 
     .title {
@@ -902,14 +907,15 @@ defineExpose({ show });
       color: #313238;
     }
 
-    .panel-header-show {
+    .panel-header-show,
+    .panel-header-hide {
+      color: #4d4f56;
       transform: rotate(0deg);
       transition: 0.2s;
     }
 
     .panel-header-hide {
       transform: rotate(-90deg);
-      transition: 0.2s;
     }
   }
 
@@ -933,19 +939,17 @@ defineExpose({ show });
     }
 
     :deep(.bk-collapse-item) {
-      margin-bottom: 25px;
+      margin-bottom: 24px;
       background-color: #f5f7fb;
 
       .bk-collapse-header {
-        background-color: #f5f7fb;
-
-        &:hover {
-          background-color: #f0f1f5;
-        }
+        background-color: #f0f1f5;
+        height: 40px;
+        line-height: 40px;
       }
 
       .bk-collapse-content {
-        padding: 5px 32px;
+        padding: 0 32px;
       }
 
       &:last-child {
@@ -954,7 +958,6 @@ defineExpose({ show });
     }
 
     :deep(.bk-collapse-icon) {
-      top: 17px;
       left: 17px;
       color: #979aa2;
 

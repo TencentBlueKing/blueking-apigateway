@@ -33,7 +33,7 @@ type ITableLimit = {
  * @returns lineH行高  topHead 表头高度
  */
 function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string, number> {
-  const curSetting = localStorage.getItem(`table-setting-${locale}-${className}`);
+  const curSetting = localStorage.getItem(`table-setting-${locale.value}-${className}`);
   const tableSize = curSetting ? JSON.parse(curSetting)?.size : 'mini';
   // 后续其他表格也可以适配，默认先以bkui-vue表格为例
   const sizeMap: ReturnRecordType<string, Record<string, number>> = {
