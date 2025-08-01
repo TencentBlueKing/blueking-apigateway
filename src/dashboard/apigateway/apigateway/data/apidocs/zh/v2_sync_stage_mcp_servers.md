@@ -1,6 +1,6 @@
 ### 描述
 
-同步 stage 的 MCP Server，存在，存在则创建，不存在，则更新
+同步 stage 的 MCP Server，不存在则创建，存在则更新
 
 
 ### 输入参数
