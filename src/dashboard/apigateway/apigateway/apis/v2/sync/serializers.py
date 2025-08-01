@@ -37,13 +37,14 @@ from apigateway.biz.validators import (
     GatewayAPIDocMaintainerValidator,
     MaxCountPerGatewayValidator,
     ResourceVersionValidator,
-    SchemeInputValidator,
+    SchemeHostInputValidator,
     StageVarsValidator,
 )
 from apigateway.common.constants import (
     DOMAIN_PATTERN,
     GATEWAY_NAME_PATTERN,
     HEADER_KEY_PATTERN,
+    CallSourceTypeEnum,
     GatewayAPIDocMaintainerTypeEnum,
 )
 from apigateway.common.django.validators import NameValidator
@@ -332,7 +333,7 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
     def validate(self, data):
         self._validate_plugin_configs(data.get("plugin_configs"))
-        self._validate_scheme(data.get("backends"))
+        self._validate_scheme_host(data.get("backends"))
         # validate stage backend
         if data.get("proxy_http") is None and data.get("backends") is None:
             raise serializers.ValidationError(_("proxy_http or backends 必须要选择一种方式配置后端服务"))
@@ -552,12 +553,12 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                     )
                 )
 
-    def _validate_scheme(self, backends):
+    def _validate_scheme_host(self, backends):
         if backends is None:
             return
         for backend in backends:
-            validator = SchemeInputValidator(hosts=backend["config"]["hosts"], backend=backend)
-            validator.validate_scheme()
+            validator = SchemeHostInputValidator(hosts=backend["config"]["hosts"], backend=backend)
+            validator.validate_scheme(CallSourceTypeEnum.OpenAPI.value)
 
     def _sync_plugins(self, gateway_id: int, stage_id: int, plugin_configs: Optional[Dict[str, Any]] = None):
         # plugin_configs 为 None 则，plugin_config_datas 设置 [] 则清空对应配置
