@@ -42,6 +42,7 @@ from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
 from apigateway.biz.gateway import GatewayData, GatewayRelatedAppHandler, GatewaySaver, ReleaseError, release
+from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
@@ -711,7 +712,9 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
         for mcp_data in serializer.validated_data["mcp_servers"]:
             mcp_data["stage_id"] = stage.id
             name = mcp_data["name"]
-            mcp_data["name"] = f"{request.gateway.name}-{stage.name}-{name}"
+            mcp_data["name"] = MCPServerHandler().get_mcp_server_name(
+                gateway_name=request.gateway.name, stage_name=stage.name, name=name
+            )
             # 查询是否存在
             instance = MCPServer.objects.filter(
                 name=mcp_data["name"], stage__name=stage.name, gateway_id=request.gateway.id

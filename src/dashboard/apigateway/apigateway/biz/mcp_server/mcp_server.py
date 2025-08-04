@@ -126,6 +126,10 @@ class MCPServerHandler:
         return f"v_mcp_{mcp_server_id}_"
 
     @staticmethod
+    def get_mcp_server_name(gateway_name: str, stage_name: str, name: str) -> str:
+        return f"{gateway_name}-{stage_name}-{name}"
+
+    @staticmethod
     def _virtual_app_code(mcp_server_id: int, app_code: str) -> str:
         return f"v_mcp_{mcp_server_id}_{app_code}"
 
