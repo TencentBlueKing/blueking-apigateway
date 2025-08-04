@@ -68,7 +68,7 @@
               <BkInput
                 v-model.trim="formData.name"
                 :disabled="isEdit"
-                :maxlength="30"
+                :maxlength="formData.kind === 1 ? 16 : 30"
                 :placeholder="nameInputPlaceholder"
                 autofocus
                 clearable

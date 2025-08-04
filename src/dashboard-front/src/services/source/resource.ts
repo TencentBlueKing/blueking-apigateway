@@ -132,10 +132,8 @@ export const checkResourceImport = (apigwId: number, data: any, config: any = {}
  * @param apigwId 网关id
  * @param data 导出参数
  */
-export const exportResources = async (apigwId: number, data: any) => {
-  const res = await http.post(`${path}/${apigwId}/resources/export/`, data, { responseType: 'blob' });
-  return blobDownLoad(res);
-};
+export const exportResources = async (apigwId: number, data: any) =>
+  http.post(`${path}/${apigwId}/resources/export/`, data, { responseType: 'blob' });
 
 /**
  * 导入资源文档
