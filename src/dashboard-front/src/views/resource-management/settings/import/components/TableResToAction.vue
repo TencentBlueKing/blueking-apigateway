@@ -87,7 +87,7 @@
       prop="method"
     >
       <template #default="{ row }: { row: ILocalImportedResource }">
-        <BkTag :theme="METHOD_THEMES[row.method]">
+        <BkTag :theme="METHOD_THEMES[row.method ?? 'GET']">
           {{ row.method }}
         </BkTag>
       </template>
@@ -107,7 +107,7 @@
     >
       <template #default="{ row }: { row: ILocalImportedResource }">
         <BkTag
-          :theme="METHOD_THEMES[row.backend?.config.method ?? row.method]"
+          :theme="METHOD_THEMES[row.backend?.config.method ?? row?.method ?? 'GET']"
         >
           {{ row.backend?.config.method ?? row.method }}
         </BkTag>
@@ -207,10 +207,10 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 import { type IDocConfig } from '../Index.vue';
 
 interface IProps {
-  tableData: ILocalImportedResource[]
-  action: ActionType
-  keyword: string
-  docConfig: IDocConfig
+  tableData?: ILocalImportedResource[]
+  action?: ActionType
+  keyword?: string
+  docConfig?: IDocConfig
 }
 
 const tempAuthConfig = defineModel<IAuthConfig>('tempAuthConfig', { required: true });

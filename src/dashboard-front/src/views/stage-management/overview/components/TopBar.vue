@@ -95,7 +95,7 @@
 
 <script setup lang="ts">
 import { type IStageListItem, getStageList } from '@/services/source/stage';
-import { Spinner } from 'bkui-vue/lib/icon';
+import { Spinner } from 'bkui-lib/icon';
 import { getStageStatus } from '@/utils';
 import { useGateway } from '@/stores';
 import { useRouteParams } from '@vueuse/router';

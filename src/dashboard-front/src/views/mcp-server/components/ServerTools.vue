@@ -196,7 +196,7 @@
 
 <script lang="ts" setup>
 import TableEmpty from '@/components/table-empty/Index.vue';
-import { AngleUpFill } from 'bkui-vue/lib/icon';
+import { AngleUpFill } from 'bkui-lib/icon';
 import {
   type IMCPServerTool,
   getServer,

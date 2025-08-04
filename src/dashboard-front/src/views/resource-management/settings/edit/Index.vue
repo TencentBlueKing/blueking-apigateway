@@ -158,7 +158,7 @@ import {
   updateResources,
 } from '@/services/source/resource';
 import { Message } from 'bkui-vue';
-import { AngleUpFill } from 'bkui-vue/lib/icon';
+import { AngleUpFill } from 'bkui-lib/icon';
 import { useSidebar } from '@/hooks';
 import { useRouteParams } from '@vueuse/router';
 

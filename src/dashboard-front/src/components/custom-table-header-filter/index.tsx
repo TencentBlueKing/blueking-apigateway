@@ -15,18 +15,11 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
-
-import {
-  defineComponent,
-  ref,
-  unref,
-  watch,
-} from 'vue';
 import { Popover } from 'bkui-vue'; // 引入 bkui-vue 库中的 Popover 组件
 import { Funnel } from 'bkui-vue/lib/icon'; // 引入 bkui-vue 库中的 Funnel 图标组件
 import { cloneDeep } from 'lodash-es'; // 引入 lodash 库中的 cloneDeep 方法，用于深拷贝对象
-import './custom-table-header-filter.scss'; // 引入自定义的样式文件
 import { t } from '@/locales'; // 引入国际化配置
+import './custom-table-header-filter.scss'; // 引入自定义的样式文件
 
 type IFilter = {
   name: string
@@ -87,7 +80,7 @@ export default defineComponent({
     };
 
     // 处理点击弹出框外部的逻辑
-    const handleClickOutSide = (e: any) => {
+    const handleClickOutSide = (e: MouseEvent) => {
       if (
         isShowFilterPopover.value
         && !unref(popoverRef).content.el?.contains(e.target)
@@ -170,7 +163,7 @@ export default defineComponent({
             </div>
           )}
         >
-          <div v-clickOutSide={(e: any) => handleClickOutSide(e)}>
+          <div v-clickOutSide={(e: MouseEvent) => handleClickOutSide(e)}>
             <Funnel
               class={[
                 'custom-filter-icon',

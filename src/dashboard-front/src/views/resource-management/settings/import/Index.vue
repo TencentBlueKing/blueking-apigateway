@@ -580,7 +580,7 @@
     />
     <!--  查看插件侧边栏  -->
     <PluginPreviewSideSlider
-      :plugins="editingResource.plugin_configs"
+      :plugins="editingResource?.plugin_configs"
       :is-slider-show="isPluginsSliderShow"
       @on-hidden="isPluginsSliderShow = false"
     />
@@ -743,7 +743,7 @@ import {
   CollapseLeft,
   PlayShape,
   Share, Success,
-} from 'bkui-vue/lib/icon';
+} from 'bkui-lib/icon';
 import yaml from 'js-yaml';
 import { JSONPath } from 'jsonpath-plus';
 import { isObject } from 'lodash-es';
@@ -831,6 +831,7 @@ const editingResource = ref<ILocalImportedResource>({
   description: '',
   label_ids: [],
   labels: [],
+  plugin_configs: [],
   auth_config: {
     auth_verified_required: true,
     app_verified_required: true,

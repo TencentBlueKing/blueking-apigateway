@@ -118,7 +118,7 @@
 import BaseInfo from '@/views/resource-management/components/BaseInfo.vue';
 import FrontConfig from '@/views/resource-management/components/FrontConfig.vue';
 import BackConfig from '@/views/resource-management/components/BackConfig.vue';
-import { AngleUpFill } from 'bkui-vue/lib/icon';
+import { AngleUpFill } from 'bkui-lib/icon';
 import { type ILocalImportedResource } from '@/types/resource';
 
 interface IProps {

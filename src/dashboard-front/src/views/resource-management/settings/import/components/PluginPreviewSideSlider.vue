@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { AngleUpFill } from 'bkui-vue/lib/icon';
+import { AngleUpFill } from 'bkui-lib/icon';
 import yaml from 'js-yaml';
 
 type PluginType = {

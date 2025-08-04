@@ -167,7 +167,7 @@
 
 <script lang="ts" setup>
 import { copy } from '@/utils';
-import { HelpFill } from 'bkui-vue/lib/icon';
+import { HelpFill } from 'bkui-lib/icon';
 import type {
   IApiGatewaySdkDoc,
   ISdk,

@@ -210,7 +210,7 @@ import {
   type JSONSchema7TypeName,
 } from 'json-schema';
 import { Message } from 'bkui-vue';
-import { AngleUpFill } from 'bkui-vue/lib/icon';
+import { AngleUpFill } from 'bkui-lib/icon';
 import ResponseParamsSubTable from './ResponseParamsSubTable.vue';
 
 interface ITableRow {
@@ -218,7 +218,7 @@ interface ITableRow {
   name: string
   type: JSONSchema7TypeName
   description: string
-  properties?: ITableRow[]
+  properties?: ITableRow[] | null
 }
 
 interface IProps {
@@ -299,17 +299,18 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
     return null;
   }
   const body: ITableRow[] = [];
-  if (Object.keys(schema.properties || {}).length) {
+  const schemaProperties = schema?.properties ?? {};
+  if (Object.keys(schemaProperties).length) {
     for (const propertyName in schema.properties) {
       const property = schema.properties[propertyName];
       const row: ITableRow = {
         id: uniqueId(),
         name: propertyName,
-        type: convertPropertyType(property.type),
-        description: property.description ?? '',
+        type: convertPropertyType(property?.type ?? ''),
+        description: (property as JSONSchema7).description ?? '',
       };
-      if (Object.keys(property.properties || {}).length) {
-        row.properties = convertSchemaToBodyRow(property);
+      if (typeof property !== 'boolean' && 'properties' in property) {
+        row.properties = convertSchemaToBodyRow(property) as ITableRow[];
       }
       body.push(row);
     }
@@ -329,6 +330,7 @@ watch(() => response, () => {
       name: t('根节点'),
       type: 'object' as JSONSchema7TypeName,
       description: body.description ?? '',
+      properties: [],
     };
     // 响应没有响应体的情况（不会有 content 字段）
     if (body.content?.['application/json']?.schema) {

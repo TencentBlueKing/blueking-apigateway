@@ -356,7 +356,7 @@ import {
   Funnel,
   InfoLine,
   NarrowLine,
-} from 'bkui-vue/lib/icon';
+} from 'bkui-lib/icon';
 import { Message } from 'bkui-vue';
 import { useStorage } from '@vueuse/core';
 import AgIcon from '@/components/ag-icon/Index.vue';

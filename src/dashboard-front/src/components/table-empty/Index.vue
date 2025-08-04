@@ -64,7 +64,7 @@ import { t } from '@/locales';
 
 interface IProps {
   isLoading?: boolean
-  abnormal?: boolean
+  abnormal?: boolean | undefined
   emptyType?: string
   emptyTitle?: string
   refVal?: string

@@ -204,7 +204,7 @@
 
 <script lang="ts" setup>
 import { useUserInfo } from '@/stores';
-import { AngleUpFill } from 'bkui-vue/lib/icon';
+import { AngleUpFill } from 'bkui-lib/icon';
 import EditorMonaco from '@/components/ag-editor/Index.vue';
 import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
 import AiChatSlider from '@/components/ai-seek/AiChatSlider.vue';

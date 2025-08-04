@@ -201,7 +201,7 @@
                     <BkFormItem :label="t('认证方式')">
                       <BkCheckbox
                         v-model="formData.auth_config.app_verified_required_copy"
-                        :disabled="!gatewayStore.currentGateway.allow_update_gateway_auth"
+                        :disabled="!(gatewayStore.currentGateway?.allow_update_gateway_auth ?? false)"
                       >
                         <span
                           v-bk-tooltips="{ content: t('请求方需提供蓝鲸应用身份信息') }"
@@ -228,7 +228,7 @@
                     >
                       <BkSwitcher
                         v-model="formData.auth_config.resource_perm_required_copy"
-                        :disabled="!gatewayStore.currentGateway.allow_update_gateway_auth"
+                        :disabled="!(gatewayStore.currentGateway?.allow_update_gateway_auth ?? false)"
                         theme="primary"
                         size="small"
                       />
@@ -284,7 +284,7 @@
           >
             <BkSwitcher
               v-model="formData.auth_config.resource_perm_required_copy"
-              :disabled="!gatewayStore.currentGateway.allow_update_gateway_auth"
+              :disabled="!(gatewayStore.currentGateway?.allow_update_gateway_auth ?? false)"
               theme="primary"
               size="small"
               class="mt-8px!"
@@ -354,7 +354,7 @@
             v-if="!frontMethodEdit"
             class="value-container"
           >
-            <BkTag :theme="METHOD_THEMES[formData?.method]">
+            <BkTag :theme="METHOD_THEMES[formData.method ?? 'GET']">
               {{ formData?.method }}
             </BkTag>
             <span class="operate-btn">
@@ -623,7 +623,7 @@
             v-if="!backMethodEdit"
             class="value-container"
           >
-            <BkTag :theme="METHOD_THEMES[formData.backend?.config?.method]">
+            <BkTag :theme="METHOD_THEMES[formData.backend?.config?.method ?? 'GET']">
               {{ formData.backend?.config?.method }}
             </BkTag>
             <span class="operate-btn">
@@ -895,7 +895,10 @@ const backServicesEdit = ref(false);
 const backPathEdit = ref(false);
 const nameInputRef = ref();
 // 服务列表下拉框数据
-const backendsList = ref([]);
+const backendsList = ref<{
+  name: string
+  id: string
+}[]>([]);
 const popoverConfirmRef = ref();
 const isShowPopConfirm = ref(false);
 const isTimeEmpty = ref(false);

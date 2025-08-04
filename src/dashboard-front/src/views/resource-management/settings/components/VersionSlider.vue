@@ -251,7 +251,7 @@ import semver from 'semver';
 import {
   Spinner,
   Success,
-} from 'bkui-vue/lib/icon';
+} from 'bkui-lib/icon';
 import {
   InfoBox,
   Message,

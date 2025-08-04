@@ -314,7 +314,7 @@ const router = useRouter();
 const gatewayStore = useGateway();
 const envStore = useEnv();
 // 当前环境信息
-const currentStage = ref<IStageListItem | null>(null);
+const currentStage = ref<IStageListItem>({});
 const releaseStageRef = ref();
 const releaseProgrammableRef = ref();
 const stageSidesliderRef = ref();

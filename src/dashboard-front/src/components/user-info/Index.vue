@@ -17,7 +17,7 @@
  */
 
 <script setup lang="ts">
-import { AngleDownLine } from 'bkui-vue/lib/icon';
+import { AngleDownLine } from 'bkui-lib/icon';
 import { getLoginURL } from '@/utils';
 import { useEnv, useUserInfo } from '@/stores';
 

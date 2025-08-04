@@ -445,7 +445,7 @@ import {
   InfoLine,
   RightShape,
   Share,
-} from 'bkui-vue/lib/icon';
+} from 'bkui-lib/icon';
 import { Message } from 'bkui-vue';
 import Top from '@/views/online-debugging/components/Top.vue';
 import RequestPayload from '@/views/online-debugging/components/RequestPayload.vue';

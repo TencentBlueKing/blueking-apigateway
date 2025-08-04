@@ -63,7 +63,7 @@
 
 <script setup lang="ts">
 import { type IDropList } from '@/types/common';
-import { AngleRight } from 'bkui-vue/lib/icon';
+import { AngleRight } from 'bkui-lib/icon';
 import { t } from '@/locales';
 
 interface ApigwIDropList extends IDropList { tooltips?: string }

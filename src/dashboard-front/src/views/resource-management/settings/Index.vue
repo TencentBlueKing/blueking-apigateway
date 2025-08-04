@@ -762,9 +762,15 @@ const router = useRouter();
 
 const tableDataKey = ref(uniqueId());
 const chooseMethod = ref<string[]>([]);
-const filterData = ref({
+const filterData = ref<{
+  keyword?: string
+  order_by?: string
+  backend_id?: string
+  [key: string]: any
+}>({
   keyword: '',
   order_by: '',
+  backend_id: '',
 });
 const chooseLabels = ref<string[]>([]);
 const tableEmptyConf = ref<TableEmptyConfType>({
@@ -997,7 +1003,7 @@ const labelsList = computed(() => {
 const getMaxTableLimit = () => {
   tableConfig.value = useMaxTableLimit({
     allocatedHeight: 256,
-    className: route.name,
+    className: route.name as string,
   });
 };
 getMaxTableLimit();
@@ -1110,7 +1116,10 @@ const handleToggleLf = () => {
   }
   else {
     isDetail.value = true;
-    document.getElementById('resourceLf').style.width = leftWidth.value;
+    const resourceDom = document.getElementById('resourceLf');
+    if (resourceDom) {
+      resourceDom.style.width = leftWidth.value;
+    }
   }
 };
 
@@ -1137,16 +1146,16 @@ const dragTwoColDiv = (contentId: string, leftBoxId: string, resizeId: string/* 
     document.onmousemove = function (e) {
       const endX = e.clientX;
       let moveLen = resize.left + (endX - startX);
-      const maxT = box.clientWidth - resize.offsetWidth;
+      const maxT = (box?.clientWidth ?? 0) - resize.offsetWidth;
       if (moveLen < 215) {
         moveLen = 0;
         isShowLeft.value = false;
-        document.onmouseup(e);
+        document.onmouseup?.(e);
       }
       if (moveLen > maxT - 770) {
         moveLen = maxT;
         handleShowList();
-        document.onmouseup(e);
+        document.onmouseup?.(e);
       }
       resize.style.left = moveLen;
       leftBox.style.width = `${moveLen}px`;
@@ -1633,11 +1642,13 @@ watch(
   isShowLeft,
   (v) => {
     const el = document.getElementById('resourceLf');
-    if (!v) {
-      el.style.width = '0px';
-    }
-    else {
-      el.style.width = leftWidth.value;
+    if (el) {
+      if (!v) {
+        el.style.width = '0px';
+      }
+      else {
+        el.style.width = leftWidth.value;
+      }
     }
   },
 );
@@ -1779,8 +1790,8 @@ watch(
     }
     if (resourceSettingStore.previousPagination) {
       nextTick(() => {
-        pagination.value.current = resourceSettingStore.previousPagination.current;
-        pagination.value.offset = resourceSettingStore.previousPagination.offset;
+        pagination.value.current = resourceSettingStore.previousPagination?.current ?? 1;
+        pagination.value.offset = resourceSettingStore.previousPagination?.offset ?? 0;
       });
     }
   },

@@ -85,7 +85,7 @@ const responseParamsTableRefs = ref<InstanceType<typeof ResponseParamsTable>[]>(
 const responseList = ref<IResponse[]>([]);
 
 watch(() => detail, () => {
-  const resourceSchema = detail?.schema || detail.openapi_schema;
+  const resourceSchema = (detail?.schema || detail?.openapi_schema) ?? {};
   if (resourceSchema?.responses && Object.keys(resourceSchema.responses).length) {
     responseList.value = Object.entries(resourceSchema.responses).map(([code, body]) => ({
       id: uniqueId(),

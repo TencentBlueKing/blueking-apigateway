@@ -28,7 +28,10 @@ import { cloneDeep, isEqual } from 'lodash-es';
 import type { ShallowRef } from 'vue';
 import { type Settings } from 'bkui-vue/lib/table/props';
 
-export type ITableSettings = Settings;
+export type ITableSettings = Settings & {
+  height?: number
+  label?: string
+};
 
 export function useTableSetting(setting: ShallowRef<Settings>, name: string) {
   let tempName: string;

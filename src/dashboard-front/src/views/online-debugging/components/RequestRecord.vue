@@ -227,7 +227,7 @@ import {
   getTestHistories,
   getTestHistoriesDetails,
 } from '@/services/source/online-debugging';
-import { CopyShape } from 'bkui-vue/lib/icon';
+import { CopyShape } from 'bkui-lib/icon';
 import { copy } from '@/utils';
 
 const { t } = useI18n();

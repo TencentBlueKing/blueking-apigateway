@@ -179,7 +179,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Spinner } from 'bkui-vue/lib/icon';
+import { Spinner } from 'bkui-lib/icon';
 import StageCardLineChart from './StageCardLineChart.vue';
 import { getStatusText } from '@/utils';
 import { getGatewayMetrics, getGatewayMetricsInstant } from '@/services/source/metrics';

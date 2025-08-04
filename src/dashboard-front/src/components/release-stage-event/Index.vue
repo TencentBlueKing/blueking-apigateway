@@ -81,7 +81,7 @@
 import dayjs from 'dayjs';
 import { getReleaseEvents } from '@/services/source/release';
 import AgEditor from '@/components/ag-editor/Index.vue';
-import { Spinner } from 'bkui-vue/lib/icon';
+import { Spinner } from 'bkui-lib/icon';
 
 interface IStep {
   name?: string
@@ -113,7 +113,7 @@ const apigwId = computed(() => +route.params?.id);
 
 const isShow = ref(false);
 
-const logDetails = ref<any>();
+const logDetails = ref();
 const state = reactive({
   objectSteps: [] as IStep[],
   totalDuration: 0,

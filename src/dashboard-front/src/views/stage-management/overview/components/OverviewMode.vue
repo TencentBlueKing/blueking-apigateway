@@ -94,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import StageCardItem from './StageCardItem.vue';
+import StageCardItem from '@/views/stage-management/overview/card-mode/components/StageCardItem.vue';
 import { useGateway } from '@/stores';
 import {
   InfoBox,

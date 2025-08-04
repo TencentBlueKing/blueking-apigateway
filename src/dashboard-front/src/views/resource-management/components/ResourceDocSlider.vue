@@ -378,7 +378,7 @@ const handleDocDataWithLanguage = () => {
     docId.value = docDataItem.id;
     isEmpty.value = !docDataItem.id;
     markdownDoc.value = docDataItem.content;
-    markdownHtml.value = markdownRef.value.markdownIt.render(docDataItem.content);
+    markdownHtml.value = markdownRef.value?.markdownIt?.render(docDataItem.content) || '';
     nextTick(() => {
       const markdownDom = document.getElementById('resource-doc-markdown');
       if (markdownDom) {
@@ -393,7 +393,10 @@ const handleDocDataWithLanguage = () => {
           btn.innerHTML = '<span title="复制"><i class="apigateway-icon icon-ag-copy-info"></i></span>';
           btn.setAttribute('data-copy', code);
           parentDiv.appendChild(btn);
-          codeBox.appendChild(preEl.querySelector('code'));
+          if (codeBox && preEl) {
+            const codeElement = preEl.querySelector('code');
+            if (codeElement) codeBox.appendChild(codeElement);
+          }
           preEl.appendChild(codeBox);
           preEl.parentNode?.replaceChild(parentDiv, preEl);
           parentDiv.appendChild(preEl);
@@ -415,16 +418,16 @@ const handleDocDataWithLanguage = () => {
   }
   else {
     // 预览资源文档会走到这里
-    const doc = docData.value.find((d: any) => d.language === language.value);
+    const doc = docData.value.find(({ language: lang }: { language: string }) => lang === language.value);
     const content = doc?.content ?? '';
     markdownDoc.value = content;
-    markdownHtml.value = markdownRef.value?.markdownIt.render(content);
+    markdownHtml.value = markdownRef.value?.markdownIt?.render(content);
   }
 };
 
 const escHandler = (e: KeyboardEvent) => {
   if (e.code === 'Escape') {
-    if (markdownRef.value?.s_fullScreen) {
+    if (markdownRef?.value?.s_fullScreen) {
       markdownRef.value.s_fullScreen = false;
     }
   }

@@ -58,7 +58,7 @@
       >
         <template #empty>
           <TableEmpty
-            :keyword="tableEmptyConf.keyword"
+            :empty-type="tableEmptyConf.emptyType"
             :abnormal="tableEmptyConf.isAbnormal"
             @reacquire="getList"
             @clear-filter="handleClearFilterKey"
@@ -87,7 +87,7 @@ import {
   useDatePicker,
   useQueryList,
 } from '@/hooks';
-import { Spinner } from 'bkui-vue/lib/icon';
+import { Spinner } from 'bkui-lib/icon';
 import { getReleaseHistories } from '@/services/source/release';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import {
@@ -140,7 +140,7 @@ const shortcutSelectedIndex = ref(-1);
 const dateKey = ref('dateKey');
 
 const tableEmptyConf = ref({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 
@@ -328,17 +328,17 @@ const handleClearFilterKey = () => {
 };
 
 const updateTableEmptyConfig = () => {
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal ?? false;
   const isSearch = dateValue.value.length > 0 || filterData.value.keyword;
   if (isSearch || !tableData.value.length) {
-    tableEmptyConf.value.keyword = 'placeholder';
+    tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
   if (isSearch) {
-    tableEmptyConf.value.keyword = '$CONSTANT';
+    tableEmptyConf.value.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.value.keyword = '';
+  tableEmptyConf.value.emptyType = '';
 };
 
 const goVersionList = (data: any) => {

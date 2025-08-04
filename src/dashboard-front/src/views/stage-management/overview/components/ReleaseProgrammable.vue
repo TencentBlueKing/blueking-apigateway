@@ -231,9 +231,9 @@ interface ICommitInfo {
   type: string
 }
 
-interface IProps { currentStage: IStageListItem }
+interface IProps { currentStage?: IStageListItem }
 
-const { currentStage } = defineProps<IProps>();
+const { currentStage = {} } = defineProps<IProps>();
 
 const emit = defineEmits<{
   'release-success': [void]
@@ -370,7 +370,7 @@ const showPublishDia = () => {
     isShow: true,
     type: 'warning',
     title: t('确认发布 {version} 版本至 {stage} 环境？', {
-      version: formData.version,
+      version: formData.value.version,
       stage: currentStage?.name || '--',
     }),
     subTitle: t('发布后，将会覆盖原来的资源版本，请谨慎操作！'),
@@ -387,9 +387,9 @@ const showPublishDia = () => {
 const handlePublish = async () => {
   try {
     const params = {
-      stage_id: currentStage.id,
       ...formData.value,
-      version: `${formData.value.version}+${currentStage.name}`,
+      stage_id: currentStage?.id,
+      version: `${formData.value.version}+${currentStage?.name}`,
     };
     const res = await deployReleases(apigwId.value, params);
     deployId.value = res.deploy_id;
@@ -489,7 +489,7 @@ const getVersion = async (): Promise<{ version: string }> => {
   return await getStageNextVersion(
     apigwId.value,
     {
-      stage_name: currentStage.name,
+      stage_name: currentStage?.name,
       version_type: semVerType.value,
     },
   );

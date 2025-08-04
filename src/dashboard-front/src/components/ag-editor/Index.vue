@@ -58,7 +58,7 @@
 <script setup lang="ts">
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import { copy } from '@/utils';
-import { CopyShape, FilliscreenLine } from 'bkui-vue/lib/icon';
+import { CopyShape, FilliscreenLine } from 'bkui-lib/icon';
 
 interface IProps {
   modelValue?: string | object | Array<string | object>

@@ -242,7 +242,7 @@ import DocDetailMainContent from '../components/DocDetailMainContent.vue';
 import DocDetailSideContent from '../components/DocDetailSideContent.vue';
 import SDKInstructionSlider from '../components/SDKInstructionSlider.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
-import { AngleUpFill } from 'bkui-vue/lib/icon';
+import { AngleUpFill } from 'bkui-lib/icon';
 import hljs from 'highlight.js';
 
 const { t } = useI18n();

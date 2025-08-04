@@ -185,7 +185,7 @@ const isAddFieldVisible = (row: ITableRow) => {
 };
 
 const addField = (row: ITableRow) => {
-  const targetRow = tableData.value.find(data => data.id === row.id);
+  const targetRow = tableData.value?.find(data => data.id === row.id);
   if (targetRow) {
     if (targetRow.properties) {
       targetRow.properties.push(genRow());
@@ -197,14 +197,11 @@ const addField = (row: ITableRow) => {
 };
 
 const removeField = (row: ITableRow) => {
-  const index = tableData.value.findIndex(data => data.id === row.id);
-  if (index !== -1) {
-    tableData.value.splice(index, 1);
-  }
+  tableData.value = tableData.value?.filter(item => item.id !== row.id);
 };
 
 const handleTypeChange = (row: ITableRow) => {
-  const targetRow = tableData.value.find(data => data.id === row.id);
+  const targetRow = tableData.value?.find(data => data.id === row.id);
   if (targetRow) {
     if (row.type === 'object' || row.type === 'array') {
       targetRow.properties = [genRow()];
