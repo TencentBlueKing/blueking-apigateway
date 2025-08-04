@@ -1,3 +1,13 @@
+<!-- 2025-08-04 -->
+# V1.16.4 Release Log
+
+### Bug Fixes
+
+- Fix: MCP Server POST request parameter missing
+- Fix: Programmable gateway name length verification
+
+---
+
 <!-- 2025-07-28 -->
 # V1.16.3 Release Log
 
