@@ -15,21 +15,25 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
+
 /**
  * @description 配置 BkUserDisplayName 组件
  * @param {string} tenantId 要覆盖的租户 id
  */
 import BkUserDisplayName from '@blueking/bk-user-display-name';
-import { useFeatureFlag, useUserInfo } from '@/stores';
+import {
+  useEnv,
+  useUserInfo,
+} from '@/stores';
 
 export function useBkUserDisplayName() {
   const userStore = useUserInfo();
-  const featureFlagStore = useFeatureFlag();
+  const envStore = useEnv();
 
   return {
     configure: (tenantId?: string) => BkUserDisplayName.configure({
       tenantId: tenantId || userStore.info.tenant_id || '',
-      apiBaseUrl: featureFlagStore.apiBaseUrl,
+      apiBaseUrl: envStore.tenantUserDisplayAPI,
     }),
   };
 }

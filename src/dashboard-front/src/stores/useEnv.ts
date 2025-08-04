@@ -91,6 +91,7 @@ export const useEnv = defineStore('useEnv', {
       return `${state.env.BK_DOCS_URL_PREFIX}/markdown/${lang}/APIGateway/${docVersion}`;
     },
     userSelectorAPI: state => `${state.env.BK_COMPONENT_API_URL}/api/c/compapi/v2/usermanage/fs_list_users/`,
+    tenantUserDisplayAPI: state => state.env.BK_USER_WEB_API_URL,
   },
   actions: {
     /**
