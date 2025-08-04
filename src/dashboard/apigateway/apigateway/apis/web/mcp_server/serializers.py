@@ -16,7 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-import re
 from typing import Any, Dict
 
 from django.utils.translation import gettext_lazy as _
@@ -29,12 +28,9 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
-from apigateway.biz.validators import BKAppCodeValidator
+from apigateway.biz.validators import BKAppCodeValidator, MCPServerValidator
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
-from apigateway.core.models import Stage
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
-
-from .utils import get_valid_resource_names
 
 
 class MCPServerCreateInputSLZ(serializers.ModelSerializer):
@@ -50,54 +46,7 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         model = MCPServer
         fields = ("name", "description", "stage_id", "is_public", "labels", "resource_names")
         lookup_field = "id"
-
-    def validate(self, attrs):
-        # 1.First validate stage_id
-        stage_id = attrs.get("stage_id")
-        if not stage_id:
-            raise serializers.ValidationError(_("stage_id 不能为空/不能为 0"))
-
-        try:
-            stage = Stage.objects.get(id=stage_id, gateway=self.context["gateway"])
-        except Stage.DoesNotExist:
-            raise serializers.ValidationError(_("stage_id 非法，当前网关下无该 stage_id"))
-
-        # 2. Then validate name
-        # 2.1 not empty
-        name = attrs.get("name")
-        if not name:
-            raise serializers.ValidationError(_("MCPServer 名称不能为空"))
-
-        # 2.2 format: <gateway_name>-<stage_name>-<name>
-        gateway = self.context["gateway"]
-        prefix = f"{gateway.name}-{stage.name}-"
-        if not name.startswith(prefix):
-            raise serializers.ValidationError(_("MCPServer 名称格式错误，前缀应该为 ") + prefix)
-
-        # 2.3 only allow lowercase letters, numbers, and dash, not end with dash
-        if not re.match(r"^[a-z0-9-]+$", name):
-            raise serializers.ValidationError(_("MCPServer 名称只能包含小写字母、数字和短横线"))
-        if name.endswith("-"):
-            raise serializers.ValidationError(_("MCPServer 名称不能以短横线结尾"))
-
-        # 2.4 check if name exists
-        if MCPServer.objects.filter(name=name).exists():
-            raise serializers.ValidationError(_("MCPServer 名称已存在"))
-
-        # 3. validate the resource_names
-        resource_names = attrs.get("resource_names")
-        if not resource_names:
-            raise serializers.ValidationError(_("资源名称列表不能为空"))
-
-        valid_resource_names = get_valid_resource_names(gateway_id=self.context["gateway"].id, stage_id=stage_id)
-        for resource_name in resource_names:
-            if resource_name not in valid_resource_names:
-                raise serializers.ValidationError(
-                    _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
-                    + f"resource_name={resource_name}"
-                )
-
-        return attrs
+        validators = [MCPServerValidator()]
 
     def create(self, validated_data):
         validated_data["gateway_id"] = self.context["gateway"].id

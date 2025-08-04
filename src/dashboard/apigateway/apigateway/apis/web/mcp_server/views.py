@@ -36,6 +36,7 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission,
 from apigateway.biz.audit import Auditor
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import get_user_tenant_id
@@ -64,7 +65,6 @@ from .serializers import (
     MCPServerUpdateLabelsInputSLZ,
     MCPServerUpdateStatusInputSLZ,
 )
-from .utils import get_valid_resource_names
 
 
 @method_decorator(
@@ -111,6 +111,7 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
             "gateway": self.request.gateway,
             "created_by": request.user.username,
             "status": MCPServerStatusEnum.ACTIVE.value,
+            "source": CallSourceTypeEnum.OpenAPI,
         }
         slz = MCPServerCreateInputSLZ(data=request.data, context=ctx)
         slz.is_valid(raise_exception=True)
@@ -189,7 +190,9 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         instance = self.get_object()
         data_before = get_model_dict(instance)
 
-        valid_resource_names = get_valid_resource_names(gateway_id=self.request.gateway.id, stage_id=instance.stage.id)
+        valid_resource_names = MCPServerHandler().get_valid_resource_names(
+            gateway_id=self.request.gateway.id, stage_id=instance.stage.id
+        )
 
         slz = MCPServerUpdateInputSLZ(
             instance, data=request.data, partial=partial, context={"valid_resource_names": valid_resource_names}
