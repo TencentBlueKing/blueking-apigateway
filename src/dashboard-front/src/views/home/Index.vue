@@ -693,6 +693,10 @@ onMounted(() => {
       flex: 0 0 10%;
     }
 
+    .of2 {
+      flex: 0 0 20%;
+    }
+
     .of3 {
       flex: 0 0 30%;
     }
