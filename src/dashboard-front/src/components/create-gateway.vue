@@ -45,10 +45,10 @@
             >
               <bk-input
                 v-model.trim="formData.name"
-                :maxlength="30"
+                :maxlength="formData.kind === 1 ? 16 : 30"
                 :disabled="isEdit"
                 show-word-limit
-                :placeholder="t('请输入小写字母、数字、连字符(-)，以小写字母开头')"
+                :placeholder="nameInputPlaceholder"
                 clearable
                 autofocus
               />
@@ -356,10 +356,12 @@ const rules = {
     },
     {
       validator: (value: string) => {
-        const reg = /^[a-z][a-z0-9-]*$/;
+        const reg = formData.value.kind === 0 ? /^[a-z][a-z0-9-]*$/ : /^[a-z0-9-]{3,16}$/;
         return reg.test(value);
       },
-      message: t('由小写字母、数字、连接符（-）组成，首字符必须是小写字母，长度大于3小于30个字符'),
+      message: () => formData.value.kind === 0
+                     ? t('由小写字母、数字、连接符（-）组成，首字符必须是小写字母，长度大于3小于30个字符')
+                     : t('只能包含小写字母(a-z)、数字(0-9)和半角连接符(-)，长度在 3-16 之间'),
       trigger: 'change',
     },
   ],
@@ -397,6 +399,12 @@ const bareGitImg = computed(() => {
 const isEdit = computed(() => {
   return !!formData.value?.id;
 });
+
+const nameInputPlaceholder = computed(() =>
+  formData.value.kind === 0
+  ? t('请输入小写字母、数字、连字符(-)，以小写字母开头')
+  : t('只能包含小写字母(a-z)、数字(0-9)和半角连接符(-)，长度在 3-16 之间'),
+);
 
 const progressList = computed(() => {
   if (formData.value.kind === 0) {
