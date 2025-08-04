@@ -2830,7 +2830,6 @@
     version: '0'
     _schema: |-
       {
-        "$comment": "this is a mark for our injected plugin schema",
         "type": "object",
         "properties": {
             "source": {
@@ -2846,10 +2845,10 @@
 - model: plugin.plugintype
   fields:
     code: bk-access-token-source
-    name: 认证令牌的来源
+    name: access_token 来源
     name_en: AccessToken Source
     is_public: true
-    scope: stage_and_resource
+    scope: resource
     priority: 18735
     schema:
     - bk-access-token-source
@@ -2885,7 +2884,7 @@
     type:
     - bk-access-token-source
     notes: 'Get `Authorization: Bearer {access_token}` or `X-API-KEY: {access_token}` from the request header and convert it into `X-Bkapi-Authorization: {"access_token": "{access_token}"}`.'
-    example: "Purpose: When the source is bearer, get Authorization from the request header; When the source is api_key, get X-API-KEY from the request header \n\nsource: bearer."
+    example: "Purpose: When the source is bearer, get Authorization from the request header; When the source is api_key, get X-API-KEY from the request header \n\nsource: bearer"
     style: dynamic
     default_value: ''
     config: |-
