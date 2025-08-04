@@ -269,16 +269,18 @@
                         >
                           <CopyShape
                             v-bk-tooltips="t('复制')"
-                            class="opt-copy"
+                            class="opt-copy opt-icon"
                             @click="() => handleRowCopy(field, row)"
                           />
                           <template v-if="showOpts(field)">
                             <EnlargeLine
                               v-bk-tooltips="t('添加到本次检索')"
+                              class="opt-icon"
                               @click="() => handleInclude(field, row)"
                             />
                             <NarrowLine
                               v-bk-tooltips="t('从本次检索中排除')"
+                              class="opt-icon"
                               @click="() => handleExclude(field, row)"
                             />
                           </template>
@@ -1383,9 +1385,9 @@ onBeforeUnmount(() => {
             .opt-copy {
               font-size: 14px;
             }
-            span {
+            .opt-icon {
               cursor: pointer;
-              margin-right: -4px;
+              margin-right: 4px;
             }
           }
         }
@@ -1416,6 +1418,8 @@ onBeforeUnmount(() => {
   }
   td {
     background: #f9edec !important;
+    border: none !important;
+    border-bottom: 1px solid var(--table-border-color) !important;
     &:nth-child(5),
     &:last-child {
       .cell {
