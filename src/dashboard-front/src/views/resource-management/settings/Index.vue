@@ -1356,14 +1356,12 @@ const handleExportDownload = async () => {
   const params = exportParams;
   const fetchMethod = exportDialogConfig.exportFileDocType === 'resource' ? exportResources : exportDocs;
   try {
-    const res = await fetchMethod(gatewayId, params);
-    if (res.success) {
-      Message({
-        message: t('导出成功'),
-        theme: 'success',
-        width: 'auto',
-      });
-    }
+    await fetchMethod(gatewayId, params);
+    Message({
+      message: t('导出成功'),
+      theme: 'success',
+      width: 'auto',
+    });
     exportDialogConfig.isShow = false;
   }
   catch (e) {
@@ -2063,8 +2061,8 @@ onMounted(() => {
 
         .dot {
           display: inline-block;
-          min-width: 8px;
           height: 8px;
+          min-width: 8px;
           margin-left: 4px;
           vertical-align: middle;
           cursor: pointer;

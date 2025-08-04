@@ -49,7 +49,7 @@ const redirectLogin = (loginUrl: string) => {
   if (hasLoggedIn) {
     showLoginModal({
       loginUrl:
-        `${domain}?is_from_logout=1&c_url=${decodeURIComponent(`${window.location.origin}login-success.html`)}`,
+        `${domain}?is_from_logout=1&c_url=${decodeURIComponent(`${window.location.origin}/login-success.html`)}`,
     });
   }
   else {
