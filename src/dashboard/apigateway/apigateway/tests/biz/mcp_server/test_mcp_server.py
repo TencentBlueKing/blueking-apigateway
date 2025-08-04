@@ -26,7 +26,7 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.mcp_server import MCPServerHandler
-from apigateway.core.models import Resource
+from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.tests.utils.testing import create_gateway
 from apigateway.utils.time import NeverExpiresTime
 
@@ -278,3 +278,20 @@ class TestMCPServerHandler:
         # Verify permissions for both apps
         assert permissions.filter(bk_app_code=f"v_mcp_{mcp_server.id}_app1").count() == 2
         assert permissions.filter(bk_app_code=f"v_mcp_{mcp_server.id}_app2").count() == 2
+
+    def test_get_valid_resource_names(self, fake_gateway, fake_stage, fake_resource_version):
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+
+        expected_resource_names = {resource["name"] for resource in fake_resource_version.data}
+
+        resource_names = MCPServerHandler().get_valid_resource_names(fake_gateway.id, fake_stage.id)
+        assert resource_names == expected_resource_names
+
+    def test_get_valid_resource_names_no_release(
+        self,
+    ):
+        fake_gateway = G(Gateway, id=1)
+        fake_stage = G(Stage, id=1)
+
+        with pytest.raises(Exception):
+            MCPServerHandler().get_valid_resource_names(fake_gateway.id, fake_stage.id)

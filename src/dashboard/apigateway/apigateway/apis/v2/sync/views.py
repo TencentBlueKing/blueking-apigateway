@@ -31,6 +31,7 @@ from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayRelatedAppPermission
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
@@ -41,6 +42,7 @@ from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
 from apigateway.biz.gateway import GatewayData, GatewayRelatedAppHandler, GatewaySaver, ReleaseError, release
+from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
@@ -50,9 +52,10 @@ from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, OpenAPIP
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.biz.sdk import exceptions
 from apigateway.biz.sdk.helper import SDKHelper
+from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkauth import get_app_tenant_info
-from apigateway.core.models import Gateway, Resource, ResourceVersion, Stage
+from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
 from apigateway.utils.django import get_model_dict, get_object_or_None
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
@@ -63,6 +66,7 @@ from .serializers import (
     DocImportByArchiveInputSLZ,
     GatewayResourceVersionLatestRetrieveOutputSLZ,
     GatewaySyncOutputSLZ,
+    MCPServerSLZ,
     ReleaseInputSLZ,
     ReleaseOutputSLZ,
     ResourceImportInputSLZ,
@@ -72,6 +76,8 @@ from .serializers import (
     ResourceVersionListOutputSLZ,
     SDKGenerateInputSLZ,
     SDKGenerateOutputSLZ,
+    StageMcpServersSyncInputSLZ,
+    StageMcpServersSyncOutputSLZ,
     StageSyncInputSLZ,
     StageSyncOutputSLZ,
 )
@@ -146,8 +152,7 @@ class GatewaySyncApi(generics.CreateAPIView):
 class GatewayStageSyncViewSet(generics.CreateAPIView):
     permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
 
-    @swagger_auto_schema(request_body=StageSyncInputSLZ, tags=["OpenAPI.V1"])
-    def sync(self, request, gateway_name: str, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         instance = get_object_or_None(Stage, gateway=request.gateway, name=request.data.get("name", ""))
         data_before = get_model_dict(instance) if instance else {}
         slz = StageSyncInputSLZ(
@@ -655,3 +660,70 @@ class SDKGenerateApi(generics.CreateAPIView):
                     raise error_codes.INTERNAL.format(_("网关 SDK 创建失败，请联系管理员。"), replace=True)
 
         return OKJsonResponse(status=status.HTTP_201_CREATED, data={"results": results})
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="同步网关 MCP Server",
+        request_body=StageMcpServersSyncInputSLZ(),
+        responses={status.HTTP_200_OK: StageMcpServersSyncOutputSLZ()},
+        tags=["OpenAPI.V2.Sync"],
+    ),
+)
+class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
+    serializer_class = StageMcpServersSyncInputSLZ
+    permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
+
+    def post(self, request, *args, **kwargs):
+        # 验证输入数据
+        stage_name = kwargs.get("stage_name")
+        if not stage_name:
+            raise error_codes.INTERNAL.format(_("stage_name is required"), replace=True)
+        stage = get_object_or_None(Stage, name=stage_name)
+        if not stage:
+            raise error_codes.NOT_FOUND.format(
+                _("stage: {stage_name} not found").format(stage_name=stage_name), replace=True
+            )
+        # 查询stage发布的资源版本
+        resource_version_id = Release.objects.get_released_resource_version_id(
+            gateway_id=request.gateway.id, stage_name=stage_name
+        )
+        if not resource_version_id:
+            raise error_codes.NOT_FOUND.format(
+                _("该环境：{stage_name} 未发布资源版本").format(stage_name=stage_name), replace=True
+            )
+
+        # 查询资源 schema 数据
+        resource_name_to_schema = ResourceVersionHandler().get_resource_name_to_schema_by_resource_version(
+            resource_version_id
+        )
+
+        context = {
+            "gateway": request.gateway,
+            "stage": stage,
+            "source": CallSourceTypeEnum.OpenAPI,
+            "resource_name_to_schema": resource_name_to_schema,
+        }
+
+        serializer = self.get_serializer(data=request.data, context=context)
+        serializer.is_valid(raise_exception=True)
+        results = []
+        for mcp_data in serializer.validated_data["mcp_servers"]:
+            mcp_data["stage_id"] = stage.id
+            name = mcp_data["name"]
+            mcp_data["name"] = MCPServerHandler().get_mcp_server_name(
+                gateway_name=request.gateway.name, stage_name=stage.name, name=name
+            )
+            # 查询是否存在
+            instance = MCPServer.objects.filter(
+                name=mcp_data["name"], stage__name=stage.name, gateway_id=request.gateway.id
+            ).first()
+            action = "updated" if instance else "created"
+            mcp_slz = MCPServerSLZ(instance=instance, data=mcp_data, context=context)
+            mcp_slz.is_valid(raise_exception=True)
+            instance = mcp_slz.save()
+            results.append({"name": instance.name, "action": action, "id": instance.id})
+
+        output_slz = StageMcpServersSyncOutputSLZ(results, many=True)
+        return OKJsonResponse(data=output_slz.data)
