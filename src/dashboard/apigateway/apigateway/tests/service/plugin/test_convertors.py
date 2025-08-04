@@ -19,6 +19,7 @@ import pytest
 
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.service.plugin.convertor import (
+    BkAccessTokenSourceConvertor,
     BkCorsConvertor,
     BkMockConvertor,
     DefaultPluginConvertor,
@@ -302,6 +303,26 @@ class TestRedirectConvertor:
     )
     def test_convert(self, data, expected):
         convertor = RedirectConvertor()
+        result = convertor.convert(data)
+        assert result == expected
+
+
+class TestBkAccessTokenSourceConvertor:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {"source": "bearer"},
+                {"source": "bearer"},
+            ),
+            (
+                {"source": "api_key"},
+                {"source": "api_key"},
+            ),
+        ],
+    )
+    def test_convert(self, data, expected):
+        convertor = BkAccessTokenSourceConvertor()
         result = convertor.convert(data)
         assert result == expected
 
