@@ -29,6 +29,7 @@ from apigateway.apps.esb.validators import ComponentIDValidator
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
 )
+from apigateway.apps.mcp_server.utils import build_mcp_server_detail_url
 from apigateway.apps.permission.constants import (
     RENEWABLE_EXPIRE_DAYS,
     ApplyStatusEnum,
@@ -588,8 +589,7 @@ class MCPServerBaseSLZ(serializers.Serializer):
     )
 
     def get_doc_link(self, obj):
-        # todo 待确认前端文档地址
-        return ""
+        return build_mcp_server_detail_url(obj["id"])
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerBaseSLZ"
