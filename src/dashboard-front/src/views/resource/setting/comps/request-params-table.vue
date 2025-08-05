@@ -148,7 +148,7 @@ const handleTypeChange = (row: IBodyRow) => {
     if (_row.type !== 'object' && _row.type !== 'array') {
       delete _row.body;
     } else {
-      addField(row);
+      _row.body = [genBodyRow()];
     }
   }
 };
