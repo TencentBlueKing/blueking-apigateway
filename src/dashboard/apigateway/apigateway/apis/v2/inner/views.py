@@ -674,10 +674,12 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                 mcp_server_id__in=list(queryset.values_list("id", flat=True)),
             )
             .order_by("-applied_time")
-            .values("mcp_server_id", "status")
+            .values("mcp_server_id", "status", "handled_by")
         )
 
+        mcp_server_permission_handled_by: Dict[int, str] = {}
         for obj in mcp_server_permission_apply_status:
+            mcp_server_permission_handled_by[obj["mcp_server_id"]] = obj["handled_by"]
             if not mcp_server_permission_status.get(obj["mcp_server_id"]):
                 mcp_server_permission_status[obj["mcp_server_id"]] = obj["status"]
 
@@ -686,6 +688,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
             permission_status = mcp_server_permission_status.get(
                 obj.id, MCPServerPermissionStatusEnum.NEED_APPLY.value
             )
+            handled_by = mcp_server_permission_handled_by.get(obj.id)
 
             if permission_status in [
                 MCPServerPermissionStatusEnum.REJECTED.value,
@@ -708,6 +711,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                         "status": permission_status,
                         "action": action,
                         "expires_in": None,
+                        "handled_by": [handled_by] if handled_by else obj.gateway.maintainers,
                     },
                 }
             )
@@ -780,6 +784,7 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
                     "status": MCPServerPermissionStatusEnum.OWNED.value,
                     "action": "",
                     "expires_in": None,
+                    "handled_by": [obj.handled_by],
                 },
             }
             for obj in queryset
