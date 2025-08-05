@@ -21,13 +21,13 @@
       <BkForm class="audit-log-header">
         <BkFormItem
           :label="t('选择时间')"
-          class="ag-form-item-datepicker top-form-item-time"
+          class="ag-form-item-datepicker top-form-item-time h-32px! flex items-center"
         >
           <BkDatePicker
             :key="dateKey"
             v-model="dateTimeRange"
             type="datetimerange"
-            style="width: 320px"
+            class="w-320px!"
             :placeholder="t('选择日期时间范围')"
             :shortcuts="accessLogStore.datepickerShortcuts"
             shortcut-close
@@ -579,14 +579,14 @@ const {
   min-height: calc(100vh - 208px);
 
   .ag-top-header {
+    position: relative;
     min-height: 32px;
     margin-bottom: 20px;
-    position: relative;
 
     :deep(.audit-log-header) {
+      display: flex;
       width: 100% !important;
       max-width: 100% !important;
-      display: flex;
 
       .bk-form-item {
         display: inline-flex;
@@ -599,11 +599,11 @@ const {
         }
 
         .bk-form-label {
-          width: auto !important;
-          line-height: 32px;
           display: inline-block;
+          width: auto !important;
           min-width: 75px;
           padding: 0 15px 0 0;
+          line-height: 32px;
 
           span {
             display: inline-block;
@@ -617,8 +617,8 @@ const {
       }
 
       .ag-form-item-inline {
+        margin-top: 0 !important;
         margin-left: 8px !important;
-        margin-top: 0px !important;
 
         .bk-form-content {
           display: flex !important;
@@ -631,6 +631,7 @@ const {
       }
 
       .ag-form-item-datepicker {
+
         .bk-form-content {
           max-width: 320px;
         }
@@ -643,7 +644,7 @@ const {
           width: 100%;
 
           .audit-log-search {
-            background: #ffffff;
+            background: #fff;
           }
         }
       }
@@ -659,17 +660,17 @@ const {
     }
 
     .content {
-      flex: 1;
-      white-space: nowrap;
-      text-overflow: ellipsis;
       overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
     }
   }
 
   :deep(.ag-dot) {
+    display: inline-block;
     width: 8px;
     height: 8px;
-    display: inline-block;
     vertical-align: middle;
     background: #c4c6cc;
     border-radius: 50%;
@@ -705,18 +706,19 @@ const {
 
     &.skipped,
     &.unknown {
-      background: rgba(120, 67, 175, 0.16);
+      background: rgb(120 67 175 / 16%);
       border: 1px solid #7843af;
     }
 
     &.received {
-      background: rgba(58, 132, 255, 0.16);
+      background: rgb(58 132 255 / 16%);
       border: 1px solid #3a84ff;
     }
   }
 }
 
 @media (max-width: 1660px) {
+
   .audit-log-header {
     width: 870px;
 
