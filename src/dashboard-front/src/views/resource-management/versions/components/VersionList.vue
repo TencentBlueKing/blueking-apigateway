@@ -418,6 +418,7 @@ const handleExportDownload = async () => {
   }
   finally {
     exportDialogConfig.loading = false;
+    exportDialogConfig.isShow = false;
   }
 };
 
