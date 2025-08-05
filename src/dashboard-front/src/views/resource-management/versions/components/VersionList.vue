@@ -39,7 +39,6 @@
       <div class="flex grow-1 justify-end">
         <BkInput
           v-model="filterData.keyword"
-          class="mx-10px"
           :placeholder="t('请输入版本号')"
         />
       </div>

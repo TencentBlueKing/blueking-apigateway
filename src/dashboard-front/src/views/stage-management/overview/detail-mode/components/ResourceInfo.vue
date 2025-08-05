@@ -112,22 +112,12 @@
               filterFn: handleMethodFilter,
               btnSave: false,
             }"
+            :show-overflow-tooltip="false"
           >
             <template #default="{ row }">
-              <template v-if="row?.gateway_label_ids?.length">
-                <BkTag
-                  v-for="tag in labels?.filter((label) => {
-                    if (row.gateway_label_ids?.includes(label.id))
-                      return true;
-                  })"
-                  :key="tag.id"
-                >
-                  {{ tag.name }}
-                </BkTag>
-              </template>
-              <template v-else>
-                --
-              </template>
+              <RenderTagOverflow
+                :data="labels?.filter((label) => row.gateway_label_ids?.includes(label.id)).map((label) => label.name)"
+              />
             </template>
           </BkTableColumn>
           <BkTableColumn
@@ -236,6 +226,7 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 import CreateStage from '../../components/CreateStage.vue';
 import { copy } from '@/utils';
 import { useRouteParams } from '@vueuse/router';
+import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
 
 interface IProps {
   stageAddress: string
@@ -376,6 +367,7 @@ watch(
   () => {
     pagination.value.current = 1;
     pagination.value.limit = 10;
+    getPageData();
   },
 );
 
@@ -482,16 +474,10 @@ function getPageData() {
   let curAllData = resourceVersionList.value;
   if (searchValue.value) {
     curAllData = curAllData?.filter((row: any) => {
-      if (
-        row?.proxy?.backend?.name?.toLowerCase()?.includes(searchValue.value)
+      return !!(row?.proxy?.backend?.name?.toLowerCase()?.includes(searchValue.value)
         || row?.name?.toLowerCase()?.includes(searchValue.value)
-        || row?.path?.toLowerCase()?.includes(searchValue.value)
-      ) {
-        return true;
-      }
-      return false;
+        || row?.path?.toLowerCase()?.includes(searchValue.value));
     });
-
     updateTableEmptyConfig();
   }
 

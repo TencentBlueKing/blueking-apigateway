@@ -29,16 +29,18 @@
         <div class="w-full" />
       </BkLoading>
       <div class="card-list">
-        <StageCardItem
-          v-for="stage in stageList"
-          :key="stage.id"
-          :loading="loadingProgrammableStageIds.includes(stage.id)"
-          :stage="stage"
-          @click="() => handleToDetail(stage)"
-          @delist="() => handleStageUnlist(stage.id)"
-          @publish="() => handleRelease(stage)"
-          @check-log="() => showLogs(stage)"
-        />
+        <template v-if="stageList.length">
+          <StageCardItem
+            v-for="stage in stageList"
+            :key="stage.id"
+            :loading="loadingProgrammableStageIds.includes(stage.id)"
+            :stage="stage"
+            @click="() => handleToDetail(stage)"
+            @delist="() => handleStageUnlist(stage.id)"
+            @publish="() => handleRelease(stage)"
+            @check-log="() => showLogs(stage)"
+          />
+        </template>
 
         <div
           v-if="!gatewayStore.isProgrammableGateway && !isLoading"
@@ -173,16 +175,16 @@ const {
 // 网关id
 const gatewayId = computed(() => Number(route.params.id));
 
-watch(() => gatewayStore.currentGateway, () => {
-  pausePollingStages();
-  if (!gatewayStore.currentGateway?.id) {
-    return;
-  }
-  startPollingStages();
-}, {
-  immediate: true,
-  deep: true,
-});
+watch(gatewayId, () => {
+  setTimeout(() => {
+    pausePollingStages();
+    if (!gatewayId.value) {
+      return;
+    }
+    fetchStageList();
+    startPollingStages();
+  });
+}, { immediate: true });
 
 async function fetchStageList() {
   isLoading.value = true;
@@ -337,10 +339,6 @@ const handleSliderHideWhenPending = () => {
 
 onBeforeMount(() => {
   getBasicInfo(gatewayId.value);
-});
-
-onMounted(() => {
-  fetchStageList();
 });
 
 onUnmounted(() => {
