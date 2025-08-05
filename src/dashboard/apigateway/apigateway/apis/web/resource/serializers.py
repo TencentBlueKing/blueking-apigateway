@@ -20,6 +20,8 @@ from typing import List, Optional
 
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
+from openapi_schema_validator import OAS30Validator, OAS31Validator
+from openapi_spec_validator.versions import OPENAPIV30, OPENAPIV31
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
@@ -40,6 +42,7 @@ from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
+from apigateway.utils.openapi import extract_openapi_parameters_from_path
 
 from .constants import MAX_LABEL_COUNT_PER_RESOURCE, PATH_PATTERN, RESOURCE_NAME_PATTERN
 from .legacy_serializers import LegacyTransformHeadersSLZ, LegacyUpstreamsSLZ
@@ -202,6 +205,24 @@ class OpenapiSchemaSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.OpenapiSchemaSLZ"
+
+    def validate(self, value):
+        # 如果 none_schema 为 True，则不需要校验其他参数
+        if value.get("none_schema"):
+            return value
+        # 校验 request_body
+        version = value.get("version", str(OPENAPIV30))
+        validator = OAS31Validator if version == str(OPENAPIV31) else OAS30Validator()
+        # 暂时只校验 request_body
+        if value.get("request_body"):
+            if "content" not in value:
+                raise serializers.ValidationError(_("request_body 必须包含 content"))
+            # 校验 content
+            for content_type, schema in value["content"].items():
+                if content_type not in ["application/json"]:
+                    raise serializers.ValidationError(_("content_type 目前只支持： application/json"))
+                validator.check_schema(schema)
+        return value
 
 
 class ResourceInputSLZ(serializers.ModelSerializer):
@@ -453,8 +474,9 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
         resource_schema = self.context["resource_id_to_schema"].get(obj.id)
         if resource_schema:
             return resource_schema.schema
-
-        return {}
+        # 填充路径参数
+        parameters = extract_openapi_parameters_from_path(obj.path)
+        return {"parameters": parameters}
 
 
 class ResourceBatchUpdateInputSLZ(serializers.Serializer):
