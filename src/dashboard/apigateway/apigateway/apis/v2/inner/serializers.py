@@ -36,6 +36,7 @@ from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
+from apigateway.service.mcp.mcp_server import build_mcp_server_detail_url
 from apigateway.utils import time
 
 
@@ -343,8 +344,7 @@ class MCPServerBaseSLZ(serializers.Serializer):
     )
 
     def get_doc_link(self, obj):
-        # todo 待确认前端文档地址
-        return ""
+        return build_mcp_server_detail_url(obj["id"])
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerBaseSLZ"
