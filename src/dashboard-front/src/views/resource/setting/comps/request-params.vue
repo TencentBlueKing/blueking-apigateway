@@ -64,6 +64,7 @@
             :clearable="false"
             :filterable="false"
             class="edit-select"
+            @change="() => handleTypeChange(row)"
           >
             <bk-option
               v-for="item in typeList"
@@ -398,25 +399,36 @@ const getCellClass = (payload: { index: number; }) => {
 
 const handleInChange = (row: ITableRow) => {
   const _row = tableData.value.find(data => data.id === row.id);
-  if (row.in === 'body') {
-    _row.name = t('根节点');
-    _row.type = 'object';
-    delete _row.default;
+  if (_row) {
+    if (row.in === 'body') {
+      _row.name = t('根节点');
+      _row.type = 'object';
+      delete _row.default;
 
-    if (_row.body) {
-      _row.body.push(genBodyRow());
+      if (_row.body) {
+        _row.body.push(genBodyRow());
+      } else {
+        _row.body = [genBodyRow()];
+      }
     } else {
-      _row.body = [genBodyRow()];
+      if (row.type === 'object' || row.type === 'array') {
+        _row.type = 'string';
+      }
+      delete _row.body;
     }
-  } else {
-    if (row.type === 'object' || row.type === 'array') {
-      _row.type = 'string';
-    }
-    delete _row.body;
   }
   nextTick(() => {
     tableRef.value?.setAllRowExpand(true);
   });
+};
+
+const handleTypeChange = (row: ITableRow) => {
+  const _row = tableData.value.find(data => data.id === row.id);
+  if (_row) {
+    if (_row.type === 'object' || _row.type === 'array') {
+      _row.body = [genBodyRow()];
+    }
+  }
 };
 
 const addRow = () => {
@@ -519,15 +531,18 @@ const genSchemaFromBodyRow = (row: IBodyRow) => {
   }
 
   if (row.body?.length) {
-    if (row.body.some(item => item.required)) {
-      schema.required = row.body.filter(item => item.required).map(item => item.name);
-    }
-    schema.properties = {};
-    row.body.forEach((item) => {
-      Object.assign(schema.properties, {
-        [item.name]: genSchemaFromBodyRow(item),
+    // 处理 type 为 array 时，schema 需要 items 字段的情况
+    if (row.type === 'array' && row.body.length === 1) {
+      schema.items = genSchemaFromBodyRow(row.body[0]);
+    } else {
+      if (row.body.some(item => item.required)) {
+        schema.required = row.body.filter(item => item.required).map(item => item.name);
+      }
+      schema.properties = {};
+      row.body.forEach((item) => {
+        Object.assign(schema.properties, { [item.name]: genSchemaFromBodyRow(item) });
       });
-    });
+    }
   }
   return schema;
 };
