@@ -347,7 +347,6 @@ const menuList = computed<IMenu[]>(() => [
 // 表格需要兼容的页面模块
 const needBkuiTablePage = computed(() => {
   return [
-    'ResourceSetting',
     'BackendService',
     'PermissionApply',
     'PermissionRecord',

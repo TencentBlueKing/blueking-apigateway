@@ -43,6 +43,8 @@ import mavonEditor from 'mavon-editor';
 import 'mavon-editor/dist/css/index.css';
 // highlight.js 代码高亮风格
 import 'highlight.js/styles/vs2015.min.css';
+// tdesign 表格样式
+import '@blueking/tdesign-ui/vue3/index.css';
 
 const app = createApp(App);
 

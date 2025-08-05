@@ -22,11 +22,11 @@
       :current-source="curResource"
       :is-detail="isDetail"
       :latest="versionConfigs.needNewVersion"
-      :show-new-tips="!!tableData?.length"
+      :show-new-tips="!!tableData.length"
     />
     <div
       id="resourceId"
-      class="resource-container page-wrapper-padding pb-0!"
+      class="resource-container page-wrapper-padding"
       :class="[
         isDragging ? 'dragging' : '',
         isDetail && !isShowLeft ? 'welt' : ''
@@ -213,261 +213,18 @@
           v-show="isShowLeft"
           class="left-wrapper"
         >
-          <BkLoading :loading="isLoading">
-            <BkTable
-              :data="tableData"
-              :pagination="pagination"
-              :row-class="handleRowClass"
-              :settings="settings"
-              :max-height="tableConfig.clientHeight"
-              show-overflow-tooltip
-              border="outer"
-              class="table-layout"
-              remote-pagination
-              row-key="id"
-              :size="settings.size"
-              :row-height="settings.height"
-              @page-limit-change="handlePageSizeChange"
-              @page-value-change="handlePageChange"
-              @select-all="handleSelectAllChange"
-              @selection-change="handleSelectionChange"
-              @row-mouse-enter="handleMouseEnter"
-              @row-mouse-leave="handleMouseLeave"
-              @column-sort="handleSortChange"
-              @setting-change="handleSettingChange"
-            >
-              <BkTableColumn
-                v-if="showBatch"
-                align="center"
-                fixed="left"
-                type="selection"
-                width="80"
-              />
-              <BkTableColumn
-                :label="t('资源名称')"
-                fixed="left"
-                prop="name"
-                width="170"
-              >
-                <template #default="{ row }">
-                  <div class="resource-name">
-                    <div
-                      v-bk-tooltips="{ content: row?.name, placement: 'right', delay: 300, }"
-                      class="name"
-                      :class="[{ 'name-updated': row?.has_updated }]"
-                      @click="handleShowInfo(row.id)"
-                    >
-                      {{ row?.name }}
-                    </div>
-                    <div
-                      v-if="row?.has_updated"
-                      v-bk-tooltips="{ content: '资源已更新', placement: 'right', delay: 300, }"
-                      class="dot warning"
-                    />
-                  </div>
-                </template>
-              </BkTableColumn>
-              <BkTableColumn
-                :label="t('后端服务')"
-                prop="backend_name"
-                width="130"
-              >
-                <template #default="{ row }">
-                  {{ row?.backend?.name }}
-                </template>
-              </BkTableColumn>
-              <BkTableColumn
-                :filter="{
-                  list: customMethodsList,
-                  checked: chooseMethod,
-                  filterFn: handleMethodFilter,
-                  btnSave: false,
-                }"
-                :label="t('前端请求方法')"
-                :show-overflow-tooltip="false"
-                prop="method"
-                width="130"
-              >
-                <template #default="{ row }">
-                  <BkTag :theme="METHOD_THEMES[row?.method]">
-                    {{ row?.method }}
-                  </BkTag>
-                </template>
-              </BkTableColumn>
-              <BkTableColumn
-                :label="t('前端请求路径')"
-                prop="path"
-              />
-              <BkTableColumn
-                :label="t('插件数')"
-                prop="plugin_count"
-                width="40"
-              >
-                <template #default="{ row }">
-                  <div
-                    class="plugin-num"
-                    @click="() => handleShowInfo(row.id, 'pluginManage')"
-                  >
-                    {{ row?.plugin_count }}
-                  </div>
-                </template>
-              </BkTableColumn>
-              <BkTableColumn
-                :label="t('文档')"
-                prop="docs"
-                width="80"
-              >
-                <template #default="{ row }">
-                  <section
-                    v-if="row?.docs?.length"
-                    @click="() => handleShowDoc(row)"
-                  >
-                    <span class="document-info">
-                      <AgIcon
-                        name="document"
-                        class="bk-icon"
-                      />
-                      {{ t('详情') }}
-                    </span>
-                  </section>
-                  <section v-else>
-                    <span v-show="!row?.isDoc">--</span>
-                    <AgIcon
-                      v-show="row?.isDoc"
-                      v-bk-tooltips="t('添加文档')"
-                      name="plus"
-                      class="bk-icon plus-class"
-                      @click="() => handleShowDoc(row)"
-                    />
-                  </section>
-                </template>
-              </BkTableColumn>
-              <BkTableColumn
-                :filter="{
-                  list: labelsList,
-                  checked: chooseLabels,
-                  filterFn: handleMethodFilter,
-                  btnSave: false,
-                }"
-                :label="t('标签')"
-                :show-overflow-tooltip="false"
-                min-width="180"
-                prop="labels"
-              >
-                <template #default="{ row }">
-                  <span
-                    v-if="!row?.isEditLabel"
-                    class="text-warp"
-                    @click="() => handleEditLabel(row)"
-                  >
-                    <span
-                      v-if="row?.labels?.length"
-                      v-bk-tooltips="{ content: tipsContent(row?.labelText), theme: 'light', placement: 'left' }"
-                    >
-                      <template
-                        v-for="(item, index) in row?.labels"
-                        :key="item.id"
-                      >
-                        <span
-                          v-if="index < row.tagOrder"
-                          class="ml-4px"
-                        >
-                          <BkTag @click="() => handleEditLabel(row)">
-                            {{ item.name }}
-                          </BkTag>
-                        </span>
-                      </template>
-                      <BkTag
-                        v-if="row.labels.length > row.tagOrder"
-                        class="tag-cls"
-                        @click="() => handleEditLabel(row)"
-                      >
-                        +{{ row.labels.length - row.tagOrder }}
-                      </BkTag>
-                    </span>
-                    <span v-else>--</span>
-                    <AgIcon
-                      v-show="row?.isDoc"
-                      name="edit-small"
-                      class="icon edit-icon"
-                      size="24"
-                      @click="() => handleEditLabel(row)"
-                    />
-                  </span>
-                  <section
-                    v-else
-                    ref="selectCheckBoxParentRef"
-                  >
-                    <SelectCheckBox
-                      :cur-select-label-ids="curLabelIds"
-                      :labels-data="labelsData"
-                      :resource-id="resourceId"
-                      :width="selectCheckBoxParentRef?.offsetWidth"
-                      force-focus
-                      @close="(newLabelData) => {
-                        handleCloseSelect(row, newLabelData)
-                      }"
-                      @update-success="handleUpdateLabelSuccess"
-                      @label-add-success="getLabelsData"
-                    />
-                  </section>
-                </template>
-              </BkTableColumn>
-              <BkTableColumn
-                :label="t('更新时间')"
-                sort
-                prop="updated_time"
-              />
-              <BkTableColumn
-                :label="t('操作')"
-                fixed="right"
-                prop="act"
-                width="150"
-              >
-                <template #default="{ data }">
-                  <div class="flex gap-12px">
-                    <BkButton
-                      text
-                      theme="primary"
-                      @click="() => handleEditResource(data.id, 'edit')"
-                    >
-                      {{ t('编辑') }}
-                    </BkButton>
-                    <BkButton
-                      class="px-10px"
-                      text
-                      theme="primary"
-                      @click="() => handleEditResource(data.id, 'clone')"
-                    >
-                      {{ t('克隆') }}
-                    </BkButton>
-                    <BkPopConfirm
-                      :content="t('删除操作无法撤回，请谨慎操作')"
-                      :title="t('确认删除资源{resourceName}？', { resourceName: data?.name || '' })"
-                      trigger="click"
-                      width="288"
-                      @confirm="() => handleDeleteResource(data.id)"
-                    >
-                      <BkButton
-                        text
-                        theme="primary"
-                      >
-                        {{ t('删除') }}
-                      </BkButton>
-                    </BkPopConfirm>
-                  </div>
-                </template>
-              </BkTableColumn>
-              <template #empty>
-                <TableEmpty
-                  :abnormal="tableEmptyConf.isAbnormal"
-                  :keyword="tableEmptyConf.keyword"
-                  @reacquire="getSearchResourceList"
-                  @clear-filter="handleClearFilterKey"
-                />
-              </template>
-            </BkTable>
-          </BkLoading>
+          <AgTable
+            ref="tableRef"
+            v-model:selected-row-keys="selectedRowKeys"
+            :source="getTableData"
+            :columns="columns"
+            row-key="id"
+            :filter-row="null"
+            hover
+            @filter-change="handleFilterChange"
+            @select-change="handleSelectChange"
+            @sort-change="handleSortChange"
+          />
         </div>
 
         <div
@@ -563,8 +320,8 @@
           class="delete-content"
         >
           <BkTable
-            :columns="columns"
-            :data="selections"
+            :columns="deleteTableColumns"
+            :data="selectedRows"
             max-height="280"
             row-hover="auto"
             show-overflow-tooltip
@@ -618,7 +375,7 @@
       <ExportResourceDialog
         v-model:dialog-config="exportDialogConfig"
         v-model:dialog-params="exportParams"
-        :selections="selections"
+        :selections="selectedRows"
         :is-show-export-content="false"
         @confirm="handleExportDownload"
       />
@@ -659,20 +416,12 @@
   <PageNotFound v-if="gatewayStore.isProgrammableGateway" />
 </template>
 
-<script setup lang="ts">
+<script setup lang="tsx">
 import {
   cloneDeep,
   differenceBy,
-  uniqueId,
 } from 'lodash-es';
 import { Message } from 'bkui-vue';
-import {
-  type ITableSettings,
-  useMaxTableLimit,
-  useQueryList,
-  useSelection,
-  useTableSetting,
-} from '@/hooks';
 import {
   exportDocs,
   getGatewayLabels,
@@ -693,7 +442,7 @@ import SelectCheckBox from './components/SelectCheckBox.vue';
 import AgDropdown from '@/components/ag-dropdown/Index.vue';
 import PluginManage from '@/components/plugin-manage/Index.vue';
 import ResourceDocViewer from './components/ResourceDocViewer.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
 import ResourceSettingTopBar from './components/TopBar.vue';
 import PageNotFound from '@/views/404.vue';
 // import mitt from '@/common/event-bus';
@@ -713,26 +462,28 @@ import ResourceDocSlider from '../components/ResourceDocSlider.vue';
 import ExportResourceDialog from '../components/ExportResourceDialog.vue';
 import { HTTP_METHODS } from '@/constants';
 import { METHOD_THEMES } from '@/enums';
+import { type PrimaryTableProps } from '@blueking/tdesign-ui';
 
 interface ApigwIDropList extends IDropList { tooltips?: string }
-
-type TableEmptyConfType = {
-  keyword: string
-  isAbnormal: boolean
-};
 
 interface IProps { gatewayId?: number }
 
 const { gatewayId = 0 } = defineProps<IProps>();
 
 const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const gatewayStore = useGateway();
 const resourceVersionStore = useResourceVersion();
 const resourceSettingStore = useResourceSetting();
 
+const tableData = ref<any[]>([]);
+const tableRef = useTemplateRef('tableRef');
+const tableQueries = ref<Record<string, any>>({});
+const selectedRowKeys = ref<number[]>([]);
+const selectedRows = ref<any[]>([]);
+
 const leftWidth = ref('320px');
-// 批量下拉的item
-// const batchDropData = ref([{ value: 'edit', label: t('编辑资源') }, { value: 'delete', label: t('删除资源') }]);
 // 导入下拉
 const importDropData = ref([{
   value: 'config',
@@ -742,6 +493,7 @@ const importDropData = ref([{
   value: 'doc',
   label: t('资源文档'),
 }]);
+
 // 导出下拉
 const exportDropData = ref<ApigwIDropList[]>([
   {
@@ -757,23 +509,8 @@ const exportDropData = ref<ApigwIDropList[]>([
   // { value: 'selected', label: t('已选资源'), disabled: false, tooltips: t('请先勾选资源') },
 ]);
 
-const route = useRoute();
-const router = useRouter();
-
-const tableDataKey = ref(uniqueId());
-const chooseMethod = ref<string[]>([]);
-const filterData = ref({
-  keyword: '',
-  order_by: '',
-});
-const chooseLabels = ref<string[]>([]);
-const tableEmptyConf = ref<TableEmptyConfType>({
-  keyword: '',
-  isAbnormal: false,
-});
-
 const versionSliderRef = ref();
-const selectCheckBoxParentRef = ref(null);
+const selectCheckBoxParentRef = ref();
 // 导出参数
 const exportParams: IExportParams = reactive({
   export_type: '',
@@ -792,7 +529,7 @@ const isShowLeft = ref(true);
 const resourceId = ref(0);
 
 // 当前点击的资源
-const curResource: any = ref({});
+const curResource = ref<any>({});
 
 const active = ref('resourceInfo');
 
@@ -839,16 +576,17 @@ const curLabelIds = ref<number[]>([]);
 const curLabelIdsbackUp = ref<number[]>([]);
 
 // 文档侧边栏数据
-const docSliderConf: any = reactive({
+const docSliderConf = reactive({
   isShow: false,
   title: t('文档详情'),
   isLoading: false,
   isEdited: false,
   languages: 'zh',
+  isShowDocSide: false,
 });
 
 // 批量删除dialog
-const dialogData: IDialog = reactive({
+const dialogData = reactive<IDialog>({
   isShow: false,
   title: t(''),
   loading: false,
@@ -884,15 +622,7 @@ const diffSliderConf = reactive({
 const diffSourceId = ref();
 const diffTargetId = ref();
 const isDragging = ref(false);
-
-// const showEdit = ref(false);
-// const optionName = ref('');
-// const inputRef = ref(null);
-const initLimitList = ref([10, 20, 50, 100]);
-const tableConfig = ref({
-  clientHeight: 0,
-  maxTableLimit: 0,
-});
+const showBatch = ref(false);
 
 // tab 选项卡
 const panels = [
@@ -913,7 +643,7 @@ const panels = [
   },
 ];
 
-const columns = [
+const deleteTableColumns = [
   {
     label: t('请求路径'),
     field: 'path',
@@ -924,151 +654,454 @@ const columns = [
   },
 ];
 
-const customMethodsList = computed(() => HTTP_METHODS.map((item) => {
-  return {
-    text: item.name,
+const customMethodsList = computed(() => {
+  const methods = HTTP_METHODS.map(item => ({
+    label: item.name,
     value: item.id,
-  };
-}));
+  }));
 
-const handleMethodFilter = () => true;
-
-// const curSelectMethod = ref('ALL');
-
-// const renderMethodsLabel = () => {
-//   return h('div', { class: 'resource-setting-custom-label' }, [
-//     h(
-//       RenderCustomColumn,
-//       {
-//         key: tableKey.value,
-//         hasAll: true,
-//         columnLabel: t('前端请求方法'),
-//         selectValue: curSelectMethod.value,
-//         list: customMethodsList.value,
-//         onSelected: (value: Record<string, string>) => {
-//           handleSelectMethod(value);
-//         },
-//       },
-//     ),
-//   ]);
-// };
-
-// const handleSelectMethod = (payload: Record<string, string>) => {
-//   const { id, name } = payload;
-//   filterData.value.method = payload.id;
-//   const hasMethodData = searchValue.value.find((item: Record<string, any>) => ['method'].includes(item.id));
-//   if (hasMethodData) {
-//     hasMethodData.values = [{
-//       id,
-//       name,
-//     }];
-//   } else {
-//     searchValue.value.push({
-//       id: 'method',
-//       name: t('前端请求方法'),
-//       values: [{
-//         id,
-//         name,
-//       }],
-//     });
-//   }
-//   if (['ALL'].includes(payload.id)) {
-//     delete filterData.value.method;
-//     searchValue.value = searchValue.value.filter((item: Record<string, any>) => !['method'].includes(item.id));
-//   }
-// };
+  return [
+    {
+      label: 'All',
+      checkAll: true,
+    },
+    ...methods,
+  ];
+});
 
 const labelsList = computed(() => {
-  if (!labelsData?.value.length) {
+  if (!labelsData.value.length) {
     return [];
   }
 
-  tableDataKey.value = uniqueId();
-
-  return labelsData.value?.map((item: any) => {
-    return {
-      text: item.name,
-      value: item.name,
-    };
-  });
+  return labelsData.value?.map((item: any) => ({
+    label: item.name,
+    value: item.id,
+  }));
 });
 
-// 当前视口高度能展示最多多少条表格数据
-const getMaxTableLimit = () => {
-  tableConfig.value = useMaxTableLimit({
-    allocatedHeight: 256,
-    className: route.name,
-  });
-};
-getMaxTableLimit();
+const columns = computed<PrimaryTableProps['columns']>(() => {
+  const cols: PrimaryTableProps['columns'] = [
+    {
+      colKey: 'name',
+      title: t('资源名称'),
+      minWidth: 170,
+      fixed: 'left',
+      ellipsis: {
+        props: { placement: 'right' },
+        content: (h, { row }) => row.name,
+      },
+      cell: (h, { row }) => (
+        <div class="resource-name">
+          <div
+            class={
+              [
+                'name color-#3A84FF cursor-pointer overflow-hidden whitespace-nowrap text-ellipsis',
+                { 'name-updated': row.has_updated },
+              ]
+            }
+            onClick={() => handleShowInfo(row.id)}
+          >
+            <span
+              v-bk-tooltips={{
+                content: row.name,
+                placement: 'right',
+                delay: 300,
+              }}
+            >
+              {row.name}
+            </span>
+            {row.has_updated
+              ? (
+                <div
+                  v-bk-tooltips={{
+                    content: t('资源已更新'),
+                    placement: 'right',
+                    delay: 300,
+                  }}
+                  class="inline-block w-8px h-8px ml-4px cursor-pointer border-1px border-solid border-#ff9c01 rounded-1/2 bg-#fff3e1"
+                >
+                </div>
+              )
+              : ''}
+          </div>
+        </div>
+      ),
+    },
+    {
+      colKey: 'backend.name',
+      title: '后端服务',
+      width: 130,
+    },
+    {
+      colKey: 'method',
+      title: '前端请求方法',
+      width: 130,
+      cell: (h, { row }) => (
+        <bk-tag theme={METHOD_THEMES[row.method as keyof typeof METHOD_THEMES]}>
+          {row.method}
+        </bk-tag>
+      ),
+      filter: {
+        type: 'multiple',
+        showConfirmAndReset: true,
+        resetValue: [],
+        list: customMethodsList.value,
+      },
+    },
+    {
+      colKey: 'path',
+      title: '前端请求路径',
+      minWidth: 250,
+      ellipsis: true,
+    },
+    {
+      colKey: 'plugin_count',
+      title: '插件数',
+      width: 80,
+      cell: (h, { row }) => (
+        <bk-button
+          text
+          theme="primary"
+          class="plugin-num"
+          onClick={() => handleShowInfo(row.id, 'pluginManage')}
+        >
+          {row.plugin_count}
+        </bk-button>
+      ),
+    },
+    {
+      colKey: 'docs',
+      title: t('文档'),
+      width: 80,
+      cell: (h, { row }) => (
+        <div>
+          {row.docs?.length
+            ? (
+              <bk-button text theme="primary" onClick={() => handleShowDoc(row)}>
+                <ag-icon name="document" />
+                { t('详情') }
+              </bk-button>
+            )
+            : (
+              <section class="group">
+                <ag-icon
+                  v-bk-tooltips={t('添加文档')}
+                  name="plus"
+                  size="14"
+                  class="hidden group-hover:inline p-4px color-#979ba5 cursor-pointer bg-#eaebf0 hover:color-#3a84ff hover:bg-#e1ecff"
+                  onClick={() => handleShowDoc(row)}
+                />
+                <span class="inline group-hover:hidden">--</span>
+              </section>
+            )}
+        </div>
+      ),
+    },
+    {
+      colKey: 'label_ids',
+      title: t('标签'),
+      width: 300,
+      filter: {
+        type: 'multiple',
+        showConfirmAndReset: true,
+        resetValue: [],
+        list: labelsList.value,
+      },
+      cell: (h, { row }) => (
+        <>
+          {!row.isEditLabel
+            ? (
+              <div
+                class="flex items-center gap-4px group"
+                onClick={() => handleEditLabel(row)}
+              >
+                {
+                  row.labels?.length
+                    ? (
+                      <div class="flex items-center gap-4px">
+                        { row.labels.map(item => (
+                          <bk-tag key={item.id} onClick={() => handleEditLabel(row)}>
+                            { item.name }
+                          </bk-tag>
+                        ))}
+                        {
+                          row.labels.length > row.tagOrder
+                            ? (
+                              <bk-tag
+                                class="tag-cls"
+                                onClick={() => handleEditLabel(row)}
+                              >
+                                +
+                                { row.labels.length - row.tagOrder }
+                              </bk-tag>
+                            )
+                            : ''
+                        }
+                      </div>
+                    )
+                    : (<span>--</span>)
+                }
+                <ag-icon
+                  name="edit-small"
+                  class="hidden group-hover:inline hover:cursor-pointer hover:color-#3a84ff"
+                  size="22"
+                  onClick={() => handleEditLabel(row)}
+                />
+              </div>
+            )
+            : (
+              <section ref="selectCheckBoxParentRef">
+                <SelectCheckBox
+                  cur-select-label-ids={curLabelIds.value}
+                  labels-data={labelsData.value}
+                  resource-id={resourceId.value}
+                  width={selectCheckBoxParentRef?.offsetWidth}
+                  force-focus
+                  onClose={newLabelData => handleCloseSelect(row, newLabelData)}
+                  onUpdateSuccess={() => handleUpdateLabelSuccess()}
+                  onLabelAddSuccess={() => getLabelsData()}
+                />
+              </section>
+            )}
+        </>
+      ),
+    },
+    {
+      colKey: 'updated_time',
+      title: t('更新时间'),
+      minWidth: 220,
+      sorter: true,
+    },
+    {
+      colKey: 'act',
+      title: t('操作'),
+      fixed: 'right',
+      width: 150,
+      cell: (h, { row }) => (
+        <div class="flex gap-12px">
+          <bk-button
+            text
+            theme="primary"
+            onClick={() => handleEditResource(row.id, 'edit')}
+          >
+            { t('编辑') }
+          </bk-button>
+          <bk-button
+            class="px-10px"
+            text
+            theme="primary"
+            onClick={() => handleEditResource(row.id, 'clone')}
+          >
+            { t('克隆') }
+          </bk-button>
+          <bk-pop-confirm
+            content={t('删除操作无法撤回，请谨慎操作')}
+            title={t('确认删除资源{resourceName}？', { resourceName: row.name || '' })}
+            trigger="click"
+            width="288"
+            onConfirm={() => handleDeleteResource(row.id)}
+          >
+            <bk-button
+              text
+              theme="primary"
+            >
+              { t('删除') }
+            </bk-button>
+          </bk-pop-confirm>
+        </div>
+      ),
+    },
+  ];
+  if (showBatch.value) {
+    cols.unshift({
+      colKey: 'row-select',
+      type: 'multiple',
+      width: 80,
+      fixed: 'left',
+    });
+  }
+  return cols;
+});
 
-// 列表hooks
-const {
-  tableData,
-  pagination,
-  isLoading,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-} = useQueryList({
-  apiMethod: getResourceList,
-  filterData,
-  id: 0,
-  filterNoResetPage: false,
-  initialPagination: {
-    limitList: [
-      tableConfig.value.maxTableLimit,
-      ...initLimitList.value,
-    ],
-    limit: tableConfig.value.maxTableLimit,
+watch(
+  isDetail,
+  (v) => {
+    if (!v) {
+      tableData.value?.forEach((item: any) => {
+        item.highlight = false;
+      });
+    }
   },
-});
+);
 
-// checkbox hooks
-const {
-  selections,
-  handleSelectionChange,
-  handleSelectAllChange,
-  resetSelections,
-} = useSelection();
+watch(
+  isShowLeft,
+  (v) => {
+    const el = document.getElementById('resourceLf');
+    if (!v) {
+      el.style.width = '0px';
+    }
+    else {
+      el.style.width = leftWidth.value;
+    }
+  },
+);
+
+// 监听table数据 如果未点击某行 则设置第一行的id为资源id
+watch(
+  tableData,
+  (v: any) => {
+    if (v.length && resourceId.value === 0) {
+      // if (v.length) {
+      resourceId.value = v[0].id;
+    }
+    // 设置显示的tag值
+    tableData.value.forEach((item: any) => {
+      item.isAfter24h = isAfter24h(item.created_time);
+      item.tagOrder = 1;
+      item.labelText = item.labels?.map((label: any) => {
+        return label.name;
+      });
+      item.isEditLabel = false;
+    });
+
+    exportDropData.value.forEach((e: IDropList) => {
+      if (e.value === 'filtered') {
+        e.disabled = !v.length || !searchValue.value.length;
+      }
+    });
+  },
+  { immediate: true },
+);
+
+// 监听导出弹窗
+watch(
+  () => exportDialogConfig,
+  (v: IExportDialog) => {
+    if (v.exportFileDocType === 'docs') {
+      exportParams.file_type = 'zip';
+    }
+    else {
+      exportParams.file_type = 'yaml';
+    }
+  },
+  { deep: true },
+);
+
+// 选中的值
+watch(
+  selectedRowKeys,
+  () => {
+    exportDropData.value.forEach((e: IDropList) => {
+      // 已选资源
+      if (e.value === 'selected') {
+        e.disabled = !selectedRowKeys.value.length;
+      }
+    });
+  },
+  {
+    immediate: true,
+    deep: true,
+  },
+);
+
+// Search Select选中的值
+watch(
+  searchValue,
+  (v: any[]) => {
+    tableQueries.value = {
+      order_by: tableQueries.value.order_by,
+      keyword: '',
+    };
+
+    if (route.query?.backend_id) {
+      const { backend_id } = route.query;
+      tableQueries.value.backend_id = backend_id;
+    }
+    else {
+      delete tableQueries.value.backend_id;
+    }
+
+    if (!tableQueries.value.order_by) {
+      delete tableQueries.value.order_by;
+    }
+
+    if (v.length) {
+      v.forEach((e: any) => {
+        if (e.id === e.name) {
+          tableQueries.value.keyword = e.name;
+        }
+        else {
+          if (e.id === 'method') {
+            tableQueries.value[e.id] = e.values?.map((item: any) => item.id)?.join(',');
+          }
+          else {
+            tableQueries.value[e.id] = e.values[0].id;
+          }
+        }
+      });
+    }
+
+    exportDropData.value.forEach((e: IDropList) => {
+      // 已选资源
+      if (e.value === 'filtered') {
+        e.disabled = !v.length;
+      }
+    });
+  },
+  {
+    immediate: true,
+    deep: true,
+  },
+);
+
+watch(tableQueries, () => {
+  tableRef.value!.fetchData(tableQueries.value);
+}, { deep: true });
+
+watch(
+  () => route.query,
+  () => {
+    if (route.query?.backend_id) {
+      const { backend_id } = route.query;
+      tableQueries.value.backend_id = backend_id;
+    }
+    if (resourceSettingStore.previousPagination) {
+      nextTick(() => {
+        const { current, pageSize } = resourceSettingStore.previousPagination;
+        tableRef.value?.setPagination({
+          current,
+          pageSize,
+        });
+      });
+    }
+  },
+  {
+    immediate: true,
+    deep: true,
+  },
+);
+
+watch(
+  () => [isDetail.value, isShowLeft.value],
+  () => {
+    resourceVersionStore.setPageStatus({
+      isDetail: isDetail.value,
+      isShowLeft: isShowLeft.value,
+    });
+  },
+);
 
 const init = () => {
   handleShowVersion();
   getLabelsData();
 };
 
-const getSearchResourceList = async () => {
-  refreshTableData();
-};
-
-const refreshTableData = () => {
-  getList();
-  updateTableEmptyConfig();
-};
-
-const handleClearFilterKey = () => {
-  filterData.value = cloneDeep({
-    keyword: '',
-    order_by: '',
-  });
-  searchValue.value = [];
-  chooseMethod.value = [];
-  chooseLabels.value = [];
-};
-
-const updateTableEmptyConfig = () => {
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if ((searchValue.value.length || chooseMethod.value?.length || chooseLabels.value?.length)
-    && !tableData.value.length) {
-    tableEmptyConf.value.keyword = 'placeholder';
-    return;
-  }
-  if (searchValue.value.length || chooseMethod.value?.length || chooseLabels.value?.length) {
-    tableEmptyConf.value.keyword = '$CONSTANT';
-    return;
-  }
-  tableEmptyConf.value.keyword = '';
-};
+// const handleClearFilterKey = () => {
+//   tableQueries.value = {};
+//   searchValue.value = [];
+// };
 
 // isPublic为true allowApply才可选
 const handlePublicChange = () => {
@@ -1164,50 +1197,6 @@ const dragTwoColDiv = (contentId: string, leftBoxId: string, resizeId: string/* 
   };
 };
 
-const handleSortChange = ({ column, type }: Record<string, any>) => {
-  const typeMap: Record<string, any> = {
-    asc: () => {
-      filterData.value.order_by = column.field;
-    },
-    desc: () => {
-      filterData.value.order_by = `-${column.field}`;
-    },
-    null: () => {
-      delete filterData.value.order_by;
-    },
-  };
-  return typeMap[type]();
-};
-
-const handleSettingChange = (resourceSetting: ITableSettings) => {
-  const {
-    checked,
-    size,
-    height,
-  } = resourceSetting;
-  const isExistDiff = isDiffSize(resourceSetting);
-  changeTableSetting(resourceSetting);
-  if (!isExistDiff) {
-    return;
-  }
-  settings.value = Object.assign(settings.value, {
-    checked,
-    size,
-    height,
-  });
-  getResizeTable();
-};
-
-const getResizeTable = async () => {
-  await getMaxTableLimit();
-  pagination.value = Object.assign(pagination.value, {
-    current: 1,
-    offset: 0,
-    limit: tableConfig.value.maxTableLimit,
-    limitList: [...initLimitList.value, tableConfig.value.maxTableLimit],
-  });
-};
-
 // 展示右边内容
 const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
   resourceId.value = id;
@@ -1228,7 +1217,7 @@ const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
     active.value = curActive;
   }
   else {
-    pagination.value.small = true;
+    // pagination.value.small = true;
     isDetail.value = true;
     document.getElementById('resourceLf').style.width = leftWidth.value;
     active.value = curActive;
@@ -1239,10 +1228,9 @@ const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
 const handleShowList = () => {
   isDetail.value = false;
   isShowLeft.value = true;
-  pagination.value.small = false;
+  // pagination.value.small = false;
 };
 
-const showBatch = ref<boolean>(false);
 // 进入批量操作
 const handleShowBatch = () => {
   showBatch.value = true;
@@ -1255,7 +1243,7 @@ const handleShowBatch = () => {
     {
       value: 'selected',
       label: t('已选资源'),
-      disabled: !selections.value.length,
+      disabled: !selectedRowKeys.value.length,
       tooltips: t('请先勾选资源'),
     },
   ];
@@ -1264,7 +1252,8 @@ const handleShowBatch = () => {
 // 退出批量操作
 const handleOutBatch = () => {
   showBatch.value = false;
-  selections.value = [];
+  selectedRowKeys.value = [];
+  selectedRows.value = [];
   exportDropData.value = [
     {
       value: 'all',
@@ -1277,8 +1266,6 @@ const handleOutBatch = () => {
       tooltips: t('请先筛选资源'),
     },
   ];
-
-  tableDataKey.value = uniqueId();
 };
 
 // 版本对比
@@ -1308,7 +1295,7 @@ const handleShowDiff = async () => {
 
 // 处理批量编辑或删除
 const handleBatchOperate = async (type: string) => {
-  if (!selections.value?.length) {
+  if (!selectedRowKeys.value?.length) {
     Message({
       message: t('请先勾选资源'),
       theme: 'warning',
@@ -1321,12 +1308,12 @@ const handleBatchOperate = async (type: string) => {
   // 批量删除
   if (type === 'delete') {
     isBatchDelete.value = true;
-    dialogData.title = t('确定要删除以下{count}个资源', { count: selections.value.length });
+    dialogData.title = t('确定要删除以下{count}个资源', { count: selectedRowKeys.value.length });
   }
   else {
     // 批量编辑
     isBatchDelete.value = false;
-    dialogData.title = t('批量编辑资源（共{count}个）', { count: selections.value.length });
+    dialogData.title = t('批量编辑资源（共{count}个）', { count: selectedRowKeys.value.length });
   }
 };
 
@@ -1334,11 +1321,11 @@ const handleBatchOperate = async (type: string) => {
 const handleExport = async ({ value }: { value: string }) => {
   switch (value) {
     case 'selected':
-      exportParams.resource_ids = selections.value.map(e => e.id);
+      exportParams.resource_ids = [...selectedRowKeys.value];
       exportParams.resource_filter_condition = undefined;
       break;
     case 'filtered':
-      exportParams.resource_filter_condition = filterData.value;
+      exportParams.resource_filter_condition = tableQueries.value;
       exportParams.resource_ids = undefined;
       break;
     case 'all':
@@ -1387,9 +1374,10 @@ const handleExportDownload = async () => {
     }
   }
 };
+
 // 批量编辑确认
 const handleBatchConfirm = async () => {
-  const ids = selections.value.map(e => e.id);
+  const ids = [...selectedRowKeys.value];
   if (isBatchDelete.value) {
     // 批量删除
     await batchDeleteResources(gatewayId, { ids });
@@ -1413,8 +1401,9 @@ const handleBatchConfirm = async () => {
     theme: 'success',
     width: 'auto',
   });
-  getList();
-  resetSelections();
+  tableRef.value!.fetchData(tableQueries.value);
+  selectedRowKeys.value = [];
+  selectedRows.value = [];
 };
 
 const handleBatchCancel = () => {
@@ -1426,20 +1415,6 @@ const handleBatchCancel = () => {
 const handleImport = (v: IDropList) => {
   const routerName = v.value === 'doc' ? 'ResourceImportDoc' : 'ResourceImport';
   router.push({ name: routerName });
-};
-
-// 鼠标进入
-const handleMouseEnter = (e: any, row: any) => {
-  setTimeout(() => {
-    row.isDoc = true;
-  }, 100);
-};
-
-// 鼠标离开
-const handleMouseLeave = (e: any, row: any) => {
-  setTimeout(() => {
-    row.isDoc = false;
-  }, 100);
 };
 
 // 展示文档
@@ -1463,7 +1438,7 @@ const handleUpdateTitle = (type: string, isUpdate?: boolean) => {
 
 // 处理保存成功 删除成功 重新请求列表
 const handleSuccess = () => {
-  getList();
+  tableRef.value!.fetchData(tableQueries.value);
   handleShowVersion();
 };
 
@@ -1523,7 +1498,7 @@ const handleCloseSelect = (row: any, newLabelData: any = []) => {
   if (newLabelData.length > 0) {
     const diff = differenceBy(row.labels, newLabelData, 'name');
     if (diff.length > 0) {
-      getList();
+      tableRef.value!.fetchData(tableQueries.value);
       init();
     }
   }
@@ -1531,13 +1506,13 @@ const handleCloseSelect = (row: any, newLabelData: any = []) => {
 
 // 更新成功
 const handleUpdateLabelSuccess = () => {
-  getList();
+  tableRef.value!.fetchData(tableQueries.value);
   init();
 };
 
 // 删除成功
 const handleDeleteSuccess = () => {
-  getList();
+  tableRef.value!.fetchData(tableQueries.value);
   handleShowList();
 };
 
@@ -1546,315 +1521,6 @@ const handleUpdateLabelsChange = (v: boolean) => {
     batchEditData.value.labelIds = [];
   }
 };
-
-const handleRowClass = (v: any) => {
-  const ret = [];
-  if (!v.isAfter24h) {
-    ret.push('row-cls-in-24hours');
-  }
-  if (v.highlight) {
-    ret.push('row-cls-highlight');
-  }
-  return ret.join(' ');
-};
-
-const tipsContent = (data: any[]) => {
-  return h('div', {}, [
-    data.map((item: string) => h('div', {
-      style: 'display: flex; align-items: center; margin-top: 5px;',
-      class: 'tips-cls',
-    }, [item])),
-  ]);
-};
-
-const settings = shallowRef({
-  trigger: 'click',
-  fields: [
-    {
-      name: t('资源名称'),
-      field: 'name',
-      disabled: true,
-    },
-    {
-      name: t('后端服务'),
-      field: 'backend_name',
-    },
-    {
-      name: t('前端请求方法'),
-      field: 'method',
-    },
-    {
-      name: t('前端请求路径'),
-      field: 'path',
-    },
-    {
-      name: t('插件数'),
-      field: 'plugin_count',
-    },
-    {
-      name: t('文档'),
-      field: 'docs',
-    },
-    {
-      name: t('标签'),
-      field: 'labels',
-    },
-    {
-      name: t('更新时间'),
-      field: 'updated_time',
-    },
-    {
-      name: t('操作'),
-      field: 'act',
-      disabled: true,
-    },
-  ],
-  size: 'small',
-  height: 42,
-  checked: ['name', 'backend_name', 'method', 'path', 'plugin_count', 'docs', 'labels', 'updated_time', 'act'],
-});
-
-const { changeTableSetting, isDiffSize } = useTableSetting(settings, route.name);
-
-watch(
-  isDetail,
-  (v) => {
-    if (!v) {
-      tableData.value?.forEach((item: any) => {
-        item.highlight = false;
-      });
-    }
-  },
-);
-
-watch(
-  isShowLeft,
-  (v) => {
-    const el = document.getElementById('resourceLf');
-    if (!v) {
-      el.style.width = '0px';
-    }
-    else {
-      el.style.width = leftWidth.value;
-    }
-  },
-);
-
-// 监听table数据 如果未点击某行 则设置第一行的id为资源id
-watch(
-  tableData,
-  (v: any) => {
-    if (v.length && resourceId.value === 0) {
-      // if (v.length) {
-      resourceId.value = v[0].id;
-    }
-    // 设置显示的tag值
-    tableData.value.forEach((item: any) => {
-      item.isAfter24h = isAfter24h(item.created_time);
-      item.tagOrder = 1;
-      item.labelText = item.labels?.map((label: any) => {
-        return label.name;
-      });
-      item.isEditLabel = false;
-    });
-
-    exportDropData.value.forEach((e: IDropList) => {
-      if (e.value === 'filtered') {
-        e.disabled = !v.length || !searchValue.value.length;
-      }
-    });
-
-    updateTableEmptyConfig();
-  },
-  { immediate: true },
-);
-
-// 监听导出弹窗
-watch(
-  () => exportDialogConfig,
-  (v: IExportDialog) => {
-    if (v.exportFileDocType === 'docs') {
-      exportParams.file_type = 'zip';
-    }
-    else {
-      exportParams.file_type = 'yaml';
-    }
-  },
-  { deep: true },
-);
-
-// 选中的值
-watch(
-  selections,
-  (v: number[]) => {
-    exportDropData.value.forEach((e: IDropList) => {
-      // 已选资源
-      if (e.value === 'selected') {
-        e.disabled = !v.length;
-      }
-    });
-  },
-  {
-    immediate: true,
-    deep: true,
-  },
-);
-
-// Search Select选中的值
-watch(
-  searchValue,
-  (v: any[]) => {
-    filterData.value = {
-      order_by: filterData.value.order_by,
-      keyword: '',
-    };
-
-    if (route.query?.backend_id) {
-      const { backend_id } = route.query;
-      filterData.value.backend_id = backend_id;
-    }
-    else {
-      delete filterData.value.backend_id;
-    }
-
-    if (!filterData.value.order_by) {
-      delete filterData.value.order_by;
-    }
-    pagination.value.offset = 0;
-    pagination.value.current = 0;
-    if (v.length) {
-      v.forEach((e: any) => {
-        if (e.id === e.name) {
-          filterData.value.keyword = e.name;
-        }
-        else {
-          if (e.id === 'method') {
-            filterData.value[e.id] = e.values?.map((item: any) => item.id)?.join(',');
-          }
-          else {
-            filterData.value[e.id] = e.values[0].id;
-          }
-        }
-      });
-    }
-    exportDropData.value.forEach((e: IDropList) => {
-      // 已选资源
-      if (e.value === 'filtered') {
-        e.disabled = !v.length;
-      }
-    });
-    // curSelectMethod.value = filterData.value.method || 'ALL';
-    // tableKey.value = +new Date();
-    nextTick(() => {
-      const choose = chooseMethod.value?.sort((a: any, b: any) => (a - b));
-      const filter = filterData.value?.method?.split(',')?.sort((a: any, b: any) => (a - b));
-
-      if (filter?.length && (choose?.join(',') !== filter?.join(','))) { // 值有变化时，同步给表头筛选
-        chooseMethod.value = filterData.value?.method?.split(',');
-      }
-
-      if (!filter?.length && chooseMethod.value?.length) { // 清空筛选时，同步给表头筛选
-        chooseMethod.value = [];
-      }
-
-      tableDataKey.value = uniqueId();
-    });
-
-    updateTableEmptyConfig();
-  },
-  {
-    immediate: true,
-    deep: true,
-  },
-);
-
-watch(
-  () => route.query,
-  () => {
-    if (route.query?.backend_id) {
-      const { backend_id } = route.query;
-      filterData.value.backend_id = backend_id;
-    }
-    if (resourceSettingStore.previousPagination) {
-      nextTick(() => {
-        pagination.value.current = resourceSettingStore.previousPagination.current;
-        pagination.value.offset = resourceSettingStore.previousPagination.offset;
-      });
-    }
-  },
-  {
-    immediate: true,
-    deep: true,
-  },
-);
-
-watch(
-  () => [isDetail.value, isShowLeft.value],
-  () => {
-    resourceVersionStore.setPageStatus({
-      isDetail: isDetail.value,
-      isShowLeft: isShowLeft.value,
-    });
-  },
-);
-
-watch(
-  chooseLabels,
-  (v) => {
-    if (!v?.length) { // 重置
-      filterData.value.label_ids = undefined;
-    }
-    else { // 选择
-      const ids: string[] = [];
-      v?.forEach((name: string) => {
-        const tagLabel = labelsData.value?.find((label: any) => label.name === name);
-        if (tagLabel?.id) {
-          ids?.push(tagLabel.id);
-        }
-      });
-      filterData.value.label_ids = ids.join(',');
-    }
-  },
-  {
-    deep: true,
-    immediate: true,
-  },
-);
-
-watch(
-  () => chooseMethod.value,
-  (v) => {
-    if (!v?.length) { // 重置
-      filterData.value.method = undefined;
-      searchValue.value = searchValue.value.filter((item: Record<string, any>) => !['method'].includes(item.id));
-    }
-    else { // 选择
-      filterData.value.method = v?.join(',');
-      const hasMethodData = searchValue.value.find((item: Record<string, any>) => ['method'].includes(item.id));
-      const method = v?.map((m: string) => {
-        return {
-          id: m,
-          name: m,
-        };
-      });
-      if (hasMethodData) {
-        hasMethodData.values = method;
-      }
-      else {
-        searchValue.value.push({
-          id: 'method',
-          name: t('前端请求方法'),
-          values: method,
-        });
-      }
-    }
-    getList();
-  },
-  {
-    deep: true,
-    immediate: true,
-  },
-);
 
 const recoverPageStatus = () => {
   const { isDetail: d, isShowLeft: l } = resourceVersionStore.getPageStatus;
@@ -1871,22 +1537,81 @@ const recoverPageStatus = () => {
 };
 
 const handleVersionCreated = () => {
-  getList();
+  tableRef.value!.fetchData(tableQueries.value, { resetPage: true });
   handleShowVersion();
 };
 
 onBeforeRouteLeave((to) => {
   if (to.name === 'ResourceEdit') {
-    const { current, offset } = pagination.value;
+    const { current, pageSize } = tableRef.value!.getPagination();
     resourceSettingStore.setPagination({
       current,
-      offset,
+      pageSize,
     });
   }
   else {
     resourceSettingStore.setPagination(null);
   }
 });
+
+const getTableData = async (params: Record<string, any> = {}) => getResourceList(gatewayId, params);
+
+const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterValue) => {
+  Object.entries(filterValue).forEach(([colKey, checkValues]) => {
+    if (checkValues.length) {
+      if (colKey === 'method') {
+        Object.assign(tableQueries.value, { method: checkValues.join(',') });
+        const methodSearchItem = searchValue.value.find(searchItem => searchItem.id === 'method');
+        if (methodSearchItem) {
+          methodSearchItem.values = checkValues.map((item: string) => ({
+            id: item,
+            name: item,
+          }));
+        }
+        else {
+          searchValue.value.push({
+            id: 'method',
+            name: t('前端请求方法'),
+            values: checkValues.map((item: string) => ({
+              id: item,
+              name: item,
+            })),
+          });
+        }
+      }
+      else if (colKey === 'label_ids') {
+        Object.assign(tableQueries.value, { label_ids: checkValues.join(',') });
+      }
+      else {
+        Object.assign(tableQueries.value, { [colKey]: checkValues });
+      }
+    }
+    else {
+      if (colKey === 'method') {
+        const methodSearchItemIndex = searchValue.value.findIndex(searchItem => searchItem.id === 'method');
+        if (methodSearchItemIndex > -1) {
+          searchValue.value.splice(methodSearchItemIndex, 1);
+        }
+      }
+      delete tableQueries.value[colKey];
+    }
+  });
+};
+
+const handleSelectChange: PrimaryTableProps['onSelectChange'] = (selectedRowKeys, options) => {
+  selectedRows.value = options.selectedRowData;
+};
+
+const handleSortChange: PrimaryTableProps['onSortChange'] = (sort) => {
+  if (!sort) {
+    delete tableQueries.value.order_by;
+    return;
+  }
+  const { sortBy: colKey, descending } = sort;
+  if (colKey === 'updated_time') {
+    tableQueries.value.order_by = descending ? `-${colKey}` : colKey;
+  }
+};
 
 onMounted(() => {
   // setTimeout(() => {
@@ -1923,6 +1648,8 @@ onMounted(() => {
   display: flex;
   align-items: flex-start;
   height: calc(100% - 112px);
+
+  // overflow-y: auto;
 
   .resource-container-lf,
   .resource-container-rg{
