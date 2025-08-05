@@ -599,6 +599,7 @@ class MCPServerPermissionBaseSLZ(serializers.Serializer):
     status = serializers.CharField(help_text="MCPServer 权限状态")
     action = serializers.CharField(help_text="MCPServer 权限操作")
     expires_in = serializers.IntegerField(help_text="MCPServer 权限过期时间")
+    handled_by = serializers.ListField(child=serializers.CharField(), help_text="处理人")
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerPermissionBaseSLZ"
