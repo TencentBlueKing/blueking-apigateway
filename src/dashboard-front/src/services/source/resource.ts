@@ -198,7 +198,10 @@ export const exportVersion = async (apigwId: number, data: {
 }) => {
   const { id } = data;
   delete data.id;
-  const res = await http.post(`${path}/${apigwId}/resource-versions/${id}/export/`, data, { responseType: 'blob' });
+  const res = await http.post(`${path}/${apigwId}/resource-versions/${id}/export/`, data, {
+    responseType: 'blob',
+    catchError: true,
+  });
   return blobDownLoad(res);
 };
 
