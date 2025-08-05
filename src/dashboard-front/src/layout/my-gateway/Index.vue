@@ -28,46 +28,49 @@
     >
       <!-- 左上角的网关选择器 -->
       <template #side-header>
-        <BkSelect
-          v-model="gatewayId"
-          :clearable="false"
-          class="header-select"
-          filterable
-          @change="() => handleGoPage(activeMenuKey)"
-        >
-          <template #prefix>
-            <div class="gateway-selector-prefix">
-              <AgIcon
-                v-if="gatewayStore.isProgrammableGateway"
-                name="square-program"
-                size="20"
-              />
-            </div>
-          </template>
-          <BkOption
-            v-for="item in gatewayList"
-            :id="item.id"
-            :key="item.id"
-            :name="item.name"
+        <div class="h-34px">
+          <BkSelect
+            v-show="!isMenuCollapsed"
+            v-model="gatewayId"
+            :clearable="false"
+            class="header-select h-full"
+            filterable
+            @change="() => handleGoPage(activeMenuKey)"
           >
-            <div class="gateway-select-option">
-              <AgIcon
-                v-if="item.kind === 1"
-                name="square-program"
-                class="mr-6px color-#3a84ff"
-              />
-              <div
-                v-else
-                class="w-14px mr-6px"
-              />
-              <span>{{ item.name }}</span>
-            </div>
-          </BkOption>
-        </BkSelect>
+            <template #prefix>
+              <div class="gateway-selector-prefix">
+                <AgIcon
+                  v-if="gatewayStore.isProgrammableGateway"
+                  name="square-program"
+                  size="20"
+                />
+              </div>
+            </template>
+            <BkOption
+              v-for="item in gatewayList"
+              :id="item.id"
+              :key="item.id"
+              :name="item.name"
+            >
+              <div class="gateway-select-option">
+                <AgIcon
+                  v-if="item.kind === 1"
+                  name="square-program"
+                  class="mr-6px color-#3a84ff"
+                />
+                <div
+                  v-else
+                  class="w-14px mr-6px"
+                />
+                <span>{{ item.name }}</span>
+              </div>
+            </BkOption>
+          </BkSelect>
+        </div>
       </template>
       <template #menu>
         <BkMenu
-          :collapse="collapse"
+          :collapse="isMenuCollapsed"
           :opened-keys="openedKeys"
           :active-key="activeMenuKey"
           :unique-open="false"
@@ -196,7 +199,6 @@ const featureFlagStore = useFeatureFlag();
 const permissionStore = usePermission();
 const stageStore = useStage();
 
-const collapse = ref(true);
 // 选中的菜单
 const activeMenuKey = ref('StageOverview');
 const gatewayList = ref<GatewayItemType[]>([]);
@@ -207,6 +209,8 @@ const pageName = ref('');
 const gatewayId = ref(0);
 // 页面header名
 const headerTitle = ref('');
+
+const isMenuCollapsed = ref(false);
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 
@@ -423,8 +427,8 @@ const getPermissionData = async () => {
   permissionStore.setCount(res.count);
 };
 
-const handleCollapse = (v: boolean) => {
-  collapse.value = !v;
+const handleCollapse = (collapsed: boolean) => {
+  isMenuCollapsed.value = !collapsed;
 };
 
 const handleGoPage = (routeName: string) => {
@@ -640,8 +644,7 @@ onMounted(() => {
 
       .default-header-view {
         height: calc(100vh - 105px);
-        overflow-x: hidden;
-        overflow-y: auto;
+        overflow: hidden auto;
 
         &.custom-header-view {
           height: 100%;

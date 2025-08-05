@@ -190,7 +190,6 @@ import {
   useGateway,
 } from '@/stores';
 import { uniqueId } from 'lodash-es';
-import { useRouteParams } from '@vueuse/router';
 import CardContainer from '@/components/card-container/Index.vue';
 
 interface IRelease {
@@ -253,35 +252,12 @@ interface IStageItem {
 }
 
 interface IProps {
-  stage?: IStageItem
+  stage: IStageItem
   loading?: boolean
 }
 
 const {
-  stage = {
-    id: 0,
-    name: '',
-    description: '',
-    description_en: '',
-    status: 1,
-    created_time: '',
-    release: {
-    // status: 'success',
-    // status: 'failure',
-      status: '',
-      created_time: null,
-      created_by: '',
-    },
-    resource_version: {
-      version: '',
-      id: 0,
-      schema_version: '',
-    },
-    publish_id: 0,
-    publish_version: '',
-    publish_validate_msg: '',
-    new_resource_version: '',
-  },
+  stage,
   loading = false,
 } = defineProps<IProps>();
 
@@ -292,16 +268,17 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const route = useRoute();
 const router = useRouter();
 const gatewayStore = useGateway();
 const envStore = useEnv();
 const featureFlagStore = useFeatureFlag();
 
-const gatewayId = useRouteParams('id', 0, { transform: Number });
-
 const data = ref<number[]>([]);
 
 const requestCount = ref(0);
+
+const gatewayId = computed(() => Number(route.params.id));
 
 const status = computed(() => {
   if (!stage) {
@@ -347,7 +324,7 @@ const actionTooltipConfig = computed(() => {
       disabled: false,
     };
   }
-  if (!!stage.publish_validate_msg) {
+  if (stage.publish_validate_msg) {
     return {
       content: stage.publish_validate_msg,
       disabled: false,
@@ -355,6 +332,17 @@ const actionTooltipConfig = computed(() => {
   }
   return { disabled: true };
 });
+
+watch(
+  () => stage,
+  () => {
+    if (!stage) {
+      return;
+    }
+    fetchMetrics();
+  },
+  { deep: true },
+);
 
 const getRequestCount = async () => {
   const now = dayjs().unix();
@@ -382,11 +370,11 @@ const getRequestTrend = async () => {
     metrics: 'requests',
   });
 
-  const seriesDatapoints = series?.[0]?.datapoints as [number, number][] || [];
+  const seriesDataPoints = series?.[0]?.datapoints as [number, number][] || [];
   const results = [] as number[];
   let count = 0;
 
-  seriesDatapoints.forEach((dataPoint, index) => {
+  seriesDataPoints.forEach((dataPoint, index) => {
     count += (dataPoint[0] || 0);
     if (index % 12 === 11) {
       results.push(count);
@@ -408,7 +396,7 @@ const handleCheckLog = () => {
 // 访问地址
 const getStageUrl = (name: string) => {
   const keys: any = {
-    api_name: gatewayStore.currentGateway!.name,
+    api_name: gatewayStore.currentGateway?.name || '--',
     stage_name: name,
     resource_path: '',
   };
@@ -432,7 +420,7 @@ const handleDelistClick = () => {
 
 const handleChartClick = () => {
   router.push({
-    name: 'apigwDashboard',
+    name: 'Dashboard',
     query: {
       time_span: 'now-6h',
       stage_id: stage.id,
@@ -440,13 +428,17 @@ const handleChartClick = () => {
   });
 };
 
-onBeforeMount(async () => {
+const fetchMetrics = async () => {
   if (stage.status === 1) {
     await Promise.all([
       getRequestCount(),
       getRequestTrend(),
     ]);
   }
+};
+
+onBeforeMount(() => {
+  fetchMetrics();
 });
 
 </script>
