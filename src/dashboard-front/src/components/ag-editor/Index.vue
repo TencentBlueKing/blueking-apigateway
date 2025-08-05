@@ -56,22 +56,14 @@
 </template>
 
 <script setup lang="ts">
-import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import { copy } from '@/utils';
 import { CopyShape, FilliscreenLine } from 'bkui-vue/lib/icon';
-
-interface IProps {
-  modelValue?: string | object | Array<string | object>
-  language?: string
-  readOnly?: boolean
-  width?: string | number
-  height?: string | number
-  theme?: string
-  minimap?: boolean
-  showFormat?: boolean
-  showCopy?: boolean
-  showFullScreen?: boolean
-}
+import * as monaco from 'monaco-editor';
+import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
+import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
+import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
+import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
+import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
 const {
   modelValue = 'yaml',
@@ -91,6 +83,38 @@ const emit = defineEmits<{
   'update:modelValue': [data: any, data: Event]
   'findStateChanged': [data: boolean]
 }>();
+
+// 修复 Monaco Editor 的 Worker 加载问题
+self.MonacoEnvironment = {
+  getWorker(_, label) {
+    if (label === 'json') {
+      return new jsonWorker();
+    }
+    if (label === 'css' || label === 'scss' || label === 'less') {
+      return new cssWorker();
+    }
+    if (label === 'html' || label === 'handlebars' || label === 'razor') {
+      return new htmlWorker();
+    }
+    if (label === 'typescript' || label === 'javascript') {
+      return new tsWorker();
+    }
+    return new editorWorker();
+  },
+};
+
+interface IProps {
+  modelValue?: string | object | Array<string | object>
+  language?: string
+  readOnly?: boolean
+  width?: string | number
+  height?: string | number
+  theme?: string
+  minimap?: boolean
+  showFormat?: boolean
+  showCopy?: boolean
+  showFullScreen?: boolean
+}
 
 const { t } = useI18n();
 
