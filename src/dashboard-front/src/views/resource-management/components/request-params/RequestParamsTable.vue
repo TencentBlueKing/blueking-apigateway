@@ -132,7 +132,7 @@
           </td>
         </tr>
       </tbody>
-      <tfoot v-if="row?.body?.length">
+      <tfoot v-if="row.body?.length">
         <tr>
           <td
             :colspan="readonly ? 6 : 7"
@@ -207,13 +207,13 @@ const genBodyRow = (id?: string) => {
 };
 
 const handleTypeChange = (row: IBodyRow) => {
-  const _row = tableData.value.find(data => data.id === row.id);
+  const _row = tableData.value!.find(data => data.id === row.id);
   if (_row) {
     if (_row.type !== 'object' && _row.type !== 'array') {
       delete _row.body;
     }
     else {
-      addField(row);
+      _row.body = [genBodyRow()];
     }
   }
 };
@@ -229,7 +229,7 @@ const isAddFieldVisible = (row: IBodyRow) => {
 };
 
 const addField = (row: IBodyRow) => {
-  const bodyRow = tableData.value.find(data => data.id === row.id);
+  const bodyRow = tableData.value!.find(data => data.id === row.id);
   if (bodyRow) {
     if (bodyRow.body) {
       bodyRow.body.push(genBodyRow());
@@ -241,9 +241,9 @@ const addField = (row: IBodyRow) => {
 };
 
 const removeField = (row: IBodyRow) => {
-  const index = tableData.value.findIndex(data => data.id === row.id);
+  const index = tableData.value!.findIndex(data => data.id === row.id);
   if (index !== -1) {
-    tableData.value.splice(index, 1);
+    tableData.value!.splice(index, 1);
   }
 };
 </script>
