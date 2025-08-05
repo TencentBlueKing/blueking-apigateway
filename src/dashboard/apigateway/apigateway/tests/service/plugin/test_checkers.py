@@ -21,6 +21,7 @@ from contextlib import nullcontext as does_not_raise
 import pytest
 
 from apigateway.service.plugin.checker import (
+    BkAccessTokenSourceChecker,
     BkCorsChecker,
     BkIPRestrictionChecker,
     FaultInjectionChecker,
@@ -581,5 +582,29 @@ class TestRedirectChecker:
     )
     def test_check(self, data, ctx):
         checker = RedirectChecker()
+        with ctx:
+            checker.check(yaml_dumps(data))
+
+
+class TestBkAccessTokenSourceChecker:
+    @pytest.mark.parametrize(
+        "data, ctx",
+        [
+            (
+                {"source": "bearer"},
+                does_not_raise(),
+            ),
+            (
+                {"source": "api_key"},
+                does_not_raise(),
+            ),
+            (
+                {"source": "test"},
+                pytest.raises(ValueError),
+            ),
+        ],
+    )
+    def test_check(self, data, ctx):
+        checker = BkAccessTokenSourceChecker()
         with ctx:
             checker.check(yaml_dumps(data))

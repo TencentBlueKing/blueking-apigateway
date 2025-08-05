@@ -276,6 +276,17 @@ class RedirectChecker(BaseChecker):
             raise ValueError("ret_code must be greater than or equal to 200.")
 
 
+class BkAccessTokenSourceChecker(BaseChecker):
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
+        if not loaded_data:
+            raise ValueError("YAML cannot be empty")
+
+        source = loaded_data.get("source")
+        if source not in ["bearer", "api_key"]:
+            raise ValueError("source must be bearer or api_key.")
+
+
 def check_vars(vars, location):
     """check vars of lua-resty-expr
     vars = `[
@@ -326,6 +337,7 @@ class PluginConfigYamlChecker:
         PluginTypeCodeEnum.FAULT_INJECTION.value: FaultInjectionChecker(),
         PluginTypeCodeEnum.RESPONSE_REWRITE.value: ResponseRewriteChecker(),
         PluginTypeCodeEnum.REDIRECT.value: RedirectChecker(),
+        PluginTypeCodeEnum.BK_ACCESS_TOKEN_SOURCE.value: BkAccessTokenSourceChecker(),
     }
 
     def __init__(self, type_code: str):

@@ -192,6 +192,14 @@ class RedirectConvertor(PluginConvertor):
         return config
 
 
+class BkAccessTokenSourceConvertor(PluginConvertor):
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.BK_ACCESS_TOKEN_SOURCE
+
+    def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        config["source"] = config.get("source", "bearer")
+        return config
+
+
 class PluginConvertorFactory:
     plugin_convertors: ClassVar[Dict[PluginTypeCodeEnum, PluginConvertor]] = {
         c.plugin_type_code: c
@@ -204,6 +212,7 @@ class PluginConvertorFactory:
             FaultInjectionConvertor(),
             ResponseRewriteConvertor(),
             RedirectConvertor(),
+            BkAccessTokenSourceConvertor(),
         ]
     }
 
