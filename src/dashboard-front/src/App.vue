@@ -221,8 +221,8 @@ watch(
 );
 
 const init = async () => {
-  userInfoStore.fetchUserInfo();
-  envStore.fetchEnv();
+  await userInfoStore.fetchUserInfo();
+  await envStore.fetchEnv();
   await featureFlagStore.fetchFlags();
   enableShowNotice.value = featureFlagStore.flags.ENABLE_BK_NOTICE;
   featureFlagStore.setNoticeAlert(showNoticeAlert.value && enableShowNotice.value);
