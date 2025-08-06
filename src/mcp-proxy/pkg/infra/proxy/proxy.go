@@ -220,13 +220,12 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 		client := http.DefaultClient
-		// 设置timeout
 		timeout := util.GetBkApiTimeout(ctx)
-		client.Timeout = timeout
 		client.Transport = tr
-		cli.DefaultTimeout = timeout
 		headerInfo := map[string]string{constant.BkApiTimeoutHeaderKey: fmt.Sprintf("%v", timeout)}
 		requestParam := runtime.ClientRequestWriterFunc(func(req runtime.ClientRequest, _ strfmt.Registry) error {
+			// 设置timeout
+			_ = req.SetTimeout(timeout)
 			// 设置innerJwt
 			innerJwtConfig := map[string]string{
 				"inner_jwt": innerJwt,
