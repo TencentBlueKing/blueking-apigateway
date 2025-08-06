@@ -135,7 +135,7 @@ class BaseParser:
         """
         获取非body请求参数
         """
-        parameters = operation.get("parameters", [])
+        parameters = operation.get("parameters", extract_openapi_parameters_from_path(path))
 
         without_body_parameters = [
             parameter
@@ -143,9 +143,7 @@ class BaseParser:
             if parameter.get("in", "") != "body" and parameter.get("in", "") != "formData"
         ]
 
-        return extract_openapi_parameters_from_path(path) + convert_openapi2_parameters_to_openapi(
-            without_body_parameters
-        )
+        return convert_openapi2_parameters_to_openapi(without_body_parameters)
 
     def _get_request_body(self, operation: Dict[str, Any]):
         """
@@ -342,7 +340,7 @@ class OpenAPIV3Parser(BaseParser):
     def _get_openapi_schema(self, path, operation: Dict[str, Any]):
         openapi_schema: Dict[str, Any] = {"version": self._openapi_version}
         if "parameters" in operation:
-            openapi_schema["parameters"] = operation.get("parameters", []) + self._get_parameters(path, operation)
+            openapi_schema["parameters"] = operation.get("parameters", self._get_parameters(path, operation))
             openapi_schema["none_schema"] = False
 
         if "requestBody" in operation:

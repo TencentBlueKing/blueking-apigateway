@@ -127,7 +127,6 @@ def extract_openapi_parameters_from_path(path: str) -> List[Dict]:
             "name": name,
             "in": "path",
             "required": True,
-            "schema": {"type": "string"},  # 默认为字符串
         }
         for name in param_names
     ]
