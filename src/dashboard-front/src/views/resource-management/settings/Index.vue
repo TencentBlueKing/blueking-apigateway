@@ -633,8 +633,8 @@
       />
 
       <!-- 生成版本 -->
-      <VersionSlider
-        ref="versionSliderRef"
+      <CreateResourceVersion
+        ref="createResourceVersionRef"
         @done="handleVersionCreated"
       />
 
@@ -687,7 +687,7 @@ import {
   getVersionList,
 } from '@/services/source/resource';
 import ResourceDetail from './components/ResourceDetail.vue';
-import VersionSlider from './components/VersionSlider.vue';
+import CreateResourceVersion from '@/components/create-resource-version/Index.vue';
 import VersionDiff from '@/components/version-diff/Index.vue';
 import SelectCheckBox from './components/SelectCheckBox.vue';
 import AgDropdown from '@/components/ag-dropdown/Index.vue';
@@ -772,7 +772,7 @@ const tableEmptyConf = ref<TableEmptyConfType>({
   isAbnormal: false,
 });
 
-const versionSliderRef = ref();
+const createResourceVersionRef = ref();
 const selectCheckBoxParentRef = ref(null);
 // 导出参数
 const exportParams: IExportParams = reactive({
@@ -1503,7 +1503,7 @@ const handleCreateResourceVersion = async () => {
   else {
     diffSourceId.value = response.results[0]?.id || '';
   }
-  versionSliderRef.value.showReleaseSideslider();
+  createResourceVersionRef.value.showReleaseSideslider();
 };
 
 // 获取标签数据
