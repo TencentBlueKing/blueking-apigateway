@@ -253,7 +253,7 @@ const ApplyDialogConf = reactive({
 // 删除dialog
 const removeDialogConf = reactive({
   isShow: false,
-  title: t('确定要删除蓝鲸应用【{appCode}】的权限？', { appCode: curPermission.value.bk_app_code }),
+  title: '',
 });
 // 导出参数
 const exportParams = ref<IExportParams>({ export_type: 'all' });
@@ -723,6 +723,7 @@ const handleSingleApply = (data: IPermission) => {
 const handleRemove = (data: IPermission) => {
   curPermission.value = data;
   removeDialogConf.isShow = true;
+  removeDialogConf.title = t('确定要删除蓝鲸应用【{appCode}】的权限？', { appCode: curPermission.value.bk_app_code });
 };
 
 // 删除权限
@@ -796,28 +797,29 @@ init();
 
 <style lang="scss" scoped>
 .attention-dialog {
+
   :deep(.bk-dialog-header) {
     padding: 5px !important;
   }
 
   :deep(.bk-modal-footer) {
-    background-color: #ffffff;
+    background-color: #fff;
     border-top: none;
   }
 
   .title {
     font-size: 20px;
-    text-align: center;
     color: #313238;
+    text-align: center;
   }
 
   .sub-title {
-    font-size: 14px;
-    color: #63656e;
-    line-height: 1.5;
-    text-align: center;
-    margin-bottom: 20px;
     margin-top: 14px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #63656e;
+    text-align: center;
   }
 
   .btn {
