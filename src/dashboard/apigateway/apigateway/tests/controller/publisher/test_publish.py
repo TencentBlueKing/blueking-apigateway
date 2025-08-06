@@ -63,11 +63,13 @@ class TestTriggerGatewayPublish:
         assert ok is True
         assert msg == ""
 
-    def test__is_gateway_ok_for_releasing_with_resource_version_v1(self, fake_stage, fake_release):
+    def test__is_gateway_ok_for_releasing_with_resource_version_v1(self, fake_stage, fake_release_v1):
         source = PublishSourceEnum.BACKEND_UPDATE
-        ok, msg = _is_gateway_ok_for_releasing(fake_release, source)
+        ok, msg = _is_gateway_ok_for_releasing(fake_release_v1, source)
         assert ok is False
-        assert f"The data structure of version [{fake_release.resource_version.object_display}] is incompatible" in msg
+        assert (
+            f"The data structure of version [{fake_release_v1.resource_version.object_display}] is incompatible" in msg
+        )
 
     def test__is_gateway_ok_for_releasing_with_skip_stage_disable_check(self, fake_stage, fake_release):
         source = PublishSourceEnum.STAGE_DISABLE

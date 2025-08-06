@@ -483,14 +483,6 @@ def fake_shared_gateway(fake_micro_gateway, settings):
 
 
 @pytest.fixture
-def fake_resource_version(faker, fake_gateway, fake_resource1, fake_resource2):
-    resource_version = G(ResourceVersion, gateway=fake_gateway, version=faker.pystr())
-    resource_version.data = ResourceVersionHandler.make_version(fake_gateway)
-    resource_version.save()
-    return resource_version
-
-
-@pytest.fixture
 def fake_resource_schema(fake_gateway, fake_resource):
     return G(
         OpenAPIResourceSchema,
@@ -542,6 +534,17 @@ def fake_resource_schema_with_body(fake_gateway, fake_resource):
     )
 
 
+# FIXME: remove this, replaced with fake_resource_version_v2
+@pytest.fixture
+def fake_resource_version(faker, fake_gateway, fake_resource1, fake_resource2):
+    resource_version = G(
+        ResourceVersion, gateway=fake_gateway, version=faker.pystr(), schema_version=ResourceVersionSchemaEnum.V2.value
+    )
+    resource_version.data = ResourceVersionHandler.make_version(fake_gateway)
+    resource_version.save()
+    return resource_version
+
+
 @pytest.fixture
 def fake_resource_version_v2(faker, fake_gateway, fake_resource):
     resource_version = G(
@@ -571,6 +574,11 @@ def fake_resource_version_v1(faker, fake_gateway, fake_resource):
 @pytest.fixture
 def fake_release(fake_gateway, fake_stage, fake_resource_version):
     return G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+
+
+@pytest.fixture
+def fake_release_v1(fake_gateway, fake_stage, fake_resource_version_v1):
+    return G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version_v1)
 
 
 @pytest.fixture

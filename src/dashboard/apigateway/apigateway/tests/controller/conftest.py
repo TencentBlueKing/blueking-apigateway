@@ -33,7 +33,7 @@ from apigateway.controller.crds.v1beta1.convertors.plugin_metadata import Plugin
 from apigateway.controller.crds.v1beta1.convertors.resource import HttpResourceConvertor
 from apigateway.controller.crds.v1beta1.convertors.service import ServiceConvertor
 from apigateway.controller.crds.v1beta1.convertors.stage import StageConvertor
-from apigateway.core.constants import StageStatusEnum
+from apigateway.core.constants import ResourceVersionSchemaEnum, StageStatusEnum
 from apigateway.core.models import MicroGateway, Proxy, Release, ResourceVersion
 from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.utils.yaml import yaml_dumps
@@ -190,7 +190,6 @@ def edge_resource_inherit_stage_proxy(faker, edge_resource_inherit_stage):
 @fixture
 def edge_resources(
     faker,
-    edge_gateway_stage_context_proxy_http,
     edge_resource_overwrite_stage,
     edge_resource_overwrite_stage_proxy,
     edge_resource_inherit_stage,
@@ -204,11 +203,16 @@ def edge_resources(
 
 @fixture
 def edge_resource_version(faker, edge_gateway, edge_resources):
-    return G(
+    resource_version = G(
         ResourceVersion,
         gateway=edge_gateway,
-        _data=json.dumps(ResourceVersionHandler.make_version(edge_gateway)),
+        schema_version=ResourceVersionSchemaEnum.V2.value,
+        # _data=json.dumps(ResourceVersionHandler.make_version(edge_gateway)),
     )
+    resource_version.data = ResourceVersionHandler.make_version(edge_gateway)
+    resource_version.save()
+
+    return resource_version
 
 
 @fixture
