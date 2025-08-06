@@ -578,10 +578,10 @@ const handleEditePlugin = async (item: any) => {
   curType.value = 'edit';
   const { code, config_id } = item;
   const curEditItem = curBindingPlugins.value.find((pluginItem: { code: string }) => pluginItem.code === code);
-  curChoosePlugin.value = curEditItem;
   try {
     const res = await getPluginConfig(gatewayId.value, scopeType.value, scopeId.value, code, config_id);
     curEditPlugin.value = res;
+    curChoosePlugin.value = curEditItem;
     isEditVisible.value = true;
   }
   catch (error) {
