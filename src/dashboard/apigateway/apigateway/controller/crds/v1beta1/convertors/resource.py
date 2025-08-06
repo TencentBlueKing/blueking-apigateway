@@ -21,7 +21,6 @@ from typing import Any, Dict, List, Optional, Union
 from django.utils.functional import cached_property
 
 from apigateway.controller.crds.constants import (
-    ResourceRewriteHeadersStrategyEnum,
     UpstreamSchemeEnum,
     UpstreamTypeEnum,
 )
@@ -199,25 +198,17 @@ class HttpResourceConvertor(BaseConvertor):
 
     def _convert_http_resource_rewrite(self, resource_proxy: Dict[str, Any]) -> ResourceRewrite:
         if self._release_data.resource_version.is_schema_v2:
-            # stage_headers及headers相关处理在operator处理
+            # stage_headers 及 headers 相关处理在 operator 处理
             return ResourceRewrite(
                 enabled=True,
                 method=resource_proxy.get("method"),
                 path=resource_proxy.get("path"),
             )
 
-        # FIXME: check if the transform_headers is still used or not?
-        # https://github.com/TencentBlueKing/blueking-apigateway-operator/pull/80/files
-        # TODO: remove the transform_headers totally from codebase
-        headers = self._convert_http_rewrite_headers(self._release_data.stage_backend_config.get("transform_headers"))
-        headers.update(self._convert_http_rewrite_headers(resource_proxy.get("transform_headers")))
-
         return ResourceRewrite(
             enabled=True,
             method=resource_proxy.get("method"),
             path=resource_proxy.get("path"),
-            stage_headers=ResourceRewriteHeadersStrategyEnum.APPEND,
-            headers=headers,
         )
 
     def _convert_http_resource_plugins(self, resource: Dict[str, Any]) -> List[PluginConfig]:

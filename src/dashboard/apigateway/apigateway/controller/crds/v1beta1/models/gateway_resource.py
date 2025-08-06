@@ -38,16 +38,19 @@ class ResourceRewrite(KubernetesModel):
     enabled: bool = Field(default=False, description="是否启用")
     method: Optional[str] = Field(default=None, description="重写请求方法")
     path: Optional[str] = Field(default=None, description="重写请求路径")
-    headers: Dict[str, str] = Field(default_factory=dict, helm_value=True, description="重写请求头")
+
+    # the headers is deprecated, will be removed in the future
+    # currently use the plugin instead
+    headers: Dict[str, str] = Field(default_factory=dict, helm_value=True, description="[废弃] 重写请求头")
     stage_headers: ResourceRewriteHeadersStrategyEnum = Field(
         default_factory=lambda: ResourceRewriteHeadersStrategyEnum.APPEND,
         alias="stageHeaders",
-        description="环境重写请求头合并策略",
+        description="[废弃] 环境重写请求头合并策略",
     )
     service_headers: ResourceRewriteHeadersStrategyEnum = Field(
         default_factory=lambda: ResourceRewriteHeadersStrategyEnum.APPEND,
         alias="serviceHeaders",
-        description="服务重写请求头合并策略",
+        description="[废弃] 服务重写请求头合并策略",
     )
 
 
