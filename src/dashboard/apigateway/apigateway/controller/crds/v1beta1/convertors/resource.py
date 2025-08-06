@@ -96,7 +96,15 @@ class HttpResourceConvertor(BaseConvertor):
             rewrite=self._convert_http_resource_rewrite(resource_proxy),
             service=self._stage_backend_service_name(backend_id),
             plugins=self._convert_http_resource_plugins(resource),
+            # NOTE: should set to None here !!!!!!!
+            # NOTE: dangerous, keep this line here, otherwise would generate an empty upstream for route
+            # NOTE: will make all the routes wrong!
+            upstream=None,
         )
+
+        # NOTE: should check it's none here
+        assert spec.upstream is None
+
         # only set the timeout if the resource has timeout
         # NOTE: it's different with the previous version
         timeout = self._convert_http_resource_timeout(resource_proxy)

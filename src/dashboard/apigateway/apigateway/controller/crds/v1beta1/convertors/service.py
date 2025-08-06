@@ -45,7 +45,7 @@ class ServiceConvertor(BaseConvertor):
 
         services: List[BkGatewayService] = []
 
-        for backend_id, backend_config in backend_configs:
+        for backend_id, backend_config in backend_configs.items():
             timeout = backend_config.get("timeout", 60)
             upstream = Upstream(
                 type=UpstreamTypeEnum.ROUNDROBIN,
