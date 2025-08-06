@@ -2909,6 +2909,7 @@
     name: 强制要求调用方传递 X-Bk-Username header 头
     name_en: Forcing the caller to pass the X-Bk-Username header header
     is_public: true
+    scope: resource
     priority: 18725
     schema: null
 - model: plugin.pluginform
