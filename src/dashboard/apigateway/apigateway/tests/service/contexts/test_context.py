@@ -23,7 +23,6 @@ from apigateway.core.models import Context, Gateway
 from apigateway.service.contexts import (
     GatewayAuthContext,
     ResourceAuthContext,
-    StageProxyHTTPContext,
 )
 
 
@@ -93,32 +92,3 @@ class TestResourceAuthContext(TestCase):
     def test_property(self):
         self.assertEqual(self.context.scope_type, "resource")
         self.assertEqual(self.context.type, "resource_auth")
-
-
-class TestStageProxyHTTPContext:
-    @pytest.fixture
-    def context(self, meta_schemas):
-        return StageProxyHTTPContext()
-
-    def test_property(self, context):
-        assert context.scope_type == "stage"
-        assert context.type == "stage_proxy_http"
-
-    @pytest.mark.parametrize(
-        "hosts,expected",
-        [
-            ([], False),
-            ([{"host": ""}], False),
-            ([{"host": "https://example.com"}], True),
-        ],
-    )
-    def test_contain_hosts(self, hosts, expected, context: StageProxyHTTPContext, fake_stage):
-        context.save(
-            fake_stage.id,
-            config={
-                "upstreams": {"hosts": hosts, "loadbalance": "roundrobin"},
-                "timeout": 60,
-                "transform_headers": {},
-            },
-        )
-        assert context.contain_hosts(fake_stage.id) is expected

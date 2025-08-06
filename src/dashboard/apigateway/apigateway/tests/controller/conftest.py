@@ -35,7 +35,6 @@ from apigateway.controller.crds.v1beta1.convertors.service import ServiceConvert
 from apigateway.controller.crds.v1beta1.convertors.stage import StageConvertor
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import MicroGateway, Proxy, Release, ResourceVersion
-from apigateway.service.contexts import StageProxyHTTPContext
 from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.utils.yaml import yaml_dumps
 
@@ -133,27 +132,6 @@ def edge_gateway_stage(fake_stage, micro_gateway):
     fake_stage.save()
 
     return fake_stage
-
-
-@fixture
-def edge_gateway_stage_context_proxy_http(faker, edge_gateway_stage, backend_service_http_host):
-    context = StageProxyHTTPContext()
-    instance, _ = context.save(
-        edge_gateway_stage.id,
-        {
-            "timeout": faker.random_int(),
-            "upstreams": {"loadbalance": "roundrobin", "hosts": [{"host": backend_service_http_host, "weight": 100}]},
-            "transform_headers": {
-                "set": {
-                    "X-Set-By-Stage": edge_gateway_stage.name,
-                },
-                "delete": [
-                    "X-Del-By-Stage",
-                ],
-            },
-        },
-    )
-    return instance
 
 
 @fixture

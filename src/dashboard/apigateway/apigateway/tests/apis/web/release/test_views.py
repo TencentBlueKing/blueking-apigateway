@@ -29,7 +29,6 @@ from openapi_schema_to_json_schema import to_json_schema
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
 from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
-from apigateway.service.contexts import StageProxyHTTPContext
 from apigateway.tests.utils.testing import create_gateway, dummy_time
 
 pytestmark = pytest.mark.django_db
@@ -48,15 +47,16 @@ class TestReleaseCreateApi:
         mocker.patch("apigateway.apis.web.release.views.Lock", return_value=MagicMock())
 
         # Config a valid hosts config for each stages
-        for stage in [stage_1, stage_2]:
-            StageProxyHTTPContext().save(
-                stage.id,
-                config={
-                    "upstreams": {"hosts": [{"host": "https://example.com"}], "loadbalance": "roundrobin"},
-                    "timeout": 60,
-                    "transform_headers": {},
-                },
-            )
+        # FIXME: use backend_config
+        # for stage in [stage_1, stage_2]:
+        #     StageProxyHTTPContext().save(
+        #         stage.id,
+        #         config={
+        #             "upstreams": {"hosts": [{"host": "https://example.com"}], "loadbalance": "roundrobin"},
+        #             "timeout": 60,
+        #             "transform_headers": {},
+        #         },
+        #     )
 
         for stage in [stage_1, stage_2]:
             release_history = G(

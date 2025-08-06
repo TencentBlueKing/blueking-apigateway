@@ -25,50 +25,78 @@ from apigateway.controller.crds.v1beta1.models.gateway_service import BkGatewayS
 
 class ServiceConvertor(BaseConvertor):
     def convert(self) -> List[BkGatewayService]:
-        upstreams = self._release_data.stage_upstreams
-        if not upstreams:
+        # FIXME: should not generate service if the backend is not related to any resource
+        backend_configs = self._release_data.get_stage_backend_configs()
+        if not backend_configs:
             return []
 
-        timeout = self._release_data.stage_backend_config.get("timeout", 0)
+        # {
+        #   "type": "node",
+        #   "timeout": 60,
+        #   "loadbalance": "roundrobin",
+        #   "hosts": [
+        #     {
+        #       "scheme": "http",
+        #       "host": "exmple.com",
+        #       "weight": 100
+        #     }
+        #   ]
+        # }
 
-        upstream = Upstream(
-            type=UpstreamTypeEnum.ROUNDROBIN,
-            timeout=TimeoutConfig(
-                connect=timeout,
-                send=timeout,
-                read=timeout,
-            ),
-        )
+        services: List[BkGatewayService] = []
 
-        for node in upstreams.get("hosts", []):
-            host = node["host"]
-            # 如果default没有设置host，则默认使用 0.0.0.0来替代，避免apisix加载报错
-            if host == "":
-                host = "0.0.0.0"
-            if "scheme" in node:
-                host = node["scheme"] + "://" + host
-            url_info = UrlInfo(host)
-
-            try:
-                upstream.scheme = UpstreamSchemeEnum(url_info.scheme)
-            except ValueError:
-                raise ValueError(
-                    f"scheme {url_info.scheme!r} of host {node['host']!r} is not a valid UpstreamSchemeEnum"
-                )
-
-            upstream.nodes.append(UpstreamNode(host=url_info.domain, port=url_info.port, weight=node.get("weight", 1)))
-
-        return [
-            BkGatewayService(
-                metadata=self._common_metadata(
-                    f"stage-{self._release_data.stage.name}-{self._release_data.stage.pk}",
-                    labels={"service-type": "stage"},
-                ),
-                spec=BkGatewayServiceSpec(
-                    name=f"_stage_service_{self._release_data.stage.name}",
-                    id=f"stage-{self._release_data.stage.pk}",
-                    description=self._release_data.stage.description,
-                    upstream=upstream,
+        for backend_id, backend_config in backend_configs:
+            timeout = backend_config.get("timeout", 60)
+            upstream = Upstream(
+                type=UpstreamTypeEnum.ROUNDROBIN,
+                timeout=TimeoutConfig(
+                    connect=timeout,
+                    send=timeout,
+                    read=timeout,
                 ),
             )
-        ]
+            hosts = backend_config.get("hosts", [])
+            for node in hosts:
+                host = node["host"]
+                # 如果 default 没有设置 host，则默认使用 0.0.0.0 来替代，避免 apisix 加载报错
+                if host == "":
+                    host = "your-backend-host"
+                if "scheme" in node:
+                    host = node["scheme"] + "://" + host
+                url_info = UrlInfo(host)
+
+                try:
+                    upstream.scheme = UpstreamSchemeEnum(url_info.scheme)
+                except ValueError:
+                    raise ValueError(
+                        f"scheme {url_info.scheme!r} of host {node['host']!r} is not a valid UpstreamSchemeEnum"
+                    )
+
+                upstream.nodes.append(
+                    UpstreamNode(host=url_info.domain, port=url_info.port, weight=node.get("weight", 1))
+                )
+
+            stage_name = self._release_data.stage.name
+            stage_id = self._release_data.stage.pk
+
+            # stage_name max length is 20, stage_id 6, backend_id is 4, other 10
+            # total max length is 64, so the buffer is 24 ( stage_id length + backend_id length)
+            services.append(
+                BkGatewayService(
+                    metadata=self._common_metadata(
+                        f"stage-{stage_name}-{stage_id}-b-{backend_id}",
+                        labels={
+                            "service-type": "stage-backend",
+                            "backend-id": str(backend_id),
+                        },
+                    ),
+                    spec=BkGatewayServiceSpec(
+                        name=f"_stage_service_{stage_name}_{backend_id}",
+                        id=f"stage-{stage_id}-backend-{backend_id}",
+                        description=self._release_data.stage.description,
+                        upstream=upstream,
+                    ),
+                )
+            )
+
+        return services

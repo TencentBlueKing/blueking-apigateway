@@ -29,7 +29,7 @@ from apigateway.controller.crds.v1beta1.models.base import (
 
 class StageRewrite(KubernetesModel):
     enabled: bool = Field(default=False, helm_value=True, description="是否启用")
-    headers: Dict[str, str] = Field(default_factory=dict, helm_value=True, description="重写请求头")
+    headers: Dict[str, str] = Field(default_factory=dict, helm_value=True, description="[废弃] 重写请求头")
 
 
 class BkGatewayStageSpec(GatewayCustomResourceSpec):
