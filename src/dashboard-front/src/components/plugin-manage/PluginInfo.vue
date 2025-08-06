@@ -22,7 +22,6 @@
       class="plugin-form-content"
       :class="{ 'pr-20px': isExampleVisible }"
     >
-      {{ editPlugin.yaml }}
       <div
         v-if="!isAdd && isStage"
         class="info-alert mb-20px"
