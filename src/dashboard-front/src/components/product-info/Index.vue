@@ -78,8 +78,8 @@
 
 <script setup lang="ts">
 import semver from 'semver';
+// @ts-expect-error missing module type
 import ReleaseNote from '@blueking/release-note';
-import '@blueking/release-note/vue3/vue3.css';
 
 import { getVersionLog } from '@/services/source/basic';
 import { useEnv } from '@/stores';
