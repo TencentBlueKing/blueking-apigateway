@@ -2902,3 +2902,27 @@
           }
         }
       }
+
+- model: plugin.plugintype
+  fields:
+    code: bk-username-required
+    name: 强制要求调用方传递 X-Bk-Username header 头
+    name_en: Forcing the caller to pass the X-Bk-Username header header
+    is_public: true
+    priority: 18725
+    schema: null
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+      - bk-username-required
+    notes: Forcing the caller to pass the X-Bk-Username header header
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {},
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
