@@ -22,6 +22,7 @@
       class="plugin-form-content"
       :class="{ 'pr-20px': isExampleVisible }"
     >
+      {{ editPlugin.yaml }}
       <div
         v-if="!isAdd && isStage"
         class="info-alert mb-20px"
@@ -290,6 +291,17 @@ const isBound = computed(() => {
 const exampleHtml = computed(() => {
   return exampleContent.value.replace(/\\n/gm, '<br/>');
 });
+
+watch(
+  () => curPlugin,
+  (newVal) => {
+    if (newVal) {
+      curPluginInfo.value = newVal;
+      choosePlugin.value = newVal.code;
+      init();
+    }
+  },
+);
 
 // 上一页
 const handlePre = () => {

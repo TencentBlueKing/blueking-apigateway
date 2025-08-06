@@ -540,6 +540,7 @@
                   }"
                   @deleted-success="handleDeleteSuccess"
                   @on-jump="(id: number | any) => handleShowInfo(id)"
+                  @on-update-plugin="handleUpdatePlugin"
                 />
               </BkLoading>
             </BkTabPanel>
@@ -1235,6 +1236,15 @@ const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
   }
 };
 
+const handleUpdatePlugin = () => {
+  pagination.value = Object.assign(pagination.value, {
+    current: 0,
+    limit: tableConfig.value.maxTableLimit,
+  });
+  getList();
+  handleShowVersion();
+};
+
 // 显示列表
 const handleShowList = () => {
   isDetail.value = false;
@@ -1897,24 +1907,11 @@ onMounted(() => {
     'resourceLine',
     // 'resourceRg',
   );
-  // 监听其他组件是否触发了资源更新，获取最新的列表数据
-  // mitt.on('on-update-plugin', () => {
-  //   pagination.value = Object.assign(pagination.value, {
-  //     current: 0,
-  //     limit: maxTableLimit,
-  //   });
-  //   getList();
-  //   handleShowVersion();
-  // });
   if (route.meta.pageStatus) {
     recoverPageStatus();
   }
   // });
 });
-
-// onBeforeMount(() => {
-//   mitt.off('on-update-plugin');
-// });
 
 </script>
 

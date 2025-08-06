@@ -475,7 +475,7 @@ const stage = ref<number>();
 const stageList = ref<any[]>([]);
 const resourceList = ref<any>([]);
 const activeName = ref<any>([]);
-const testAppCode = ref(envStore.env.BK_DEFAULT_TEST_APP_CODE);
+const testAppCode = ref(envStore.env.BK_DEFAULT_TEST_APP_CODE || 'bk_apigw_test');
 const curApigw = ref({
   name: '',
   description: '',

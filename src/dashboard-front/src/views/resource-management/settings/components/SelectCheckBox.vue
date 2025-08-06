@@ -342,6 +342,7 @@ const handleDeleteOptionItem = () => {
 
 // 删除某个标签
 const handleDeleteOptionItemConfirm = async (e: any) => {
+  curLabelIds.value = curLabelIds.value.filter((item: number) => item !== e.id);
   await deleteLabels(gatewayId.value, e.id);
   Message({
     message: t('删除标签成功'),
