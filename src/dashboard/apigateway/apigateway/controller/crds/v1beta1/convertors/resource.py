@@ -103,7 +103,12 @@ class HttpResourceConvertor(BaseConvertor):
         )
 
         # NOTE: should check it's none here
-        assert spec.upstream is None
+        if spec.upstream is not None:
+            raise ValueError(
+                "spec.upstream must be None at this point. "
+                "This is dangerous: keeping this check is critical, otherwise an empty upstream would be generated for the route, "
+                "which will make all the routes wrong!"
+            )
 
         # only set the timeout if the resource has timeout
         # NOTE: it's different with the previous version
@@ -151,6 +156,7 @@ class HttpResourceConvertor(BaseConvertor):
         )
 
     def _convert_http_resource_timeout(self, resource_proxy: Dict[str, Any]) -> Optional[TimeoutConfig]:
+        # FIXME: it not works here, should check
         # 资源如果没有配置，则没有，默认使用关联 service 的 timeout
         timeout = resource_proxy.get("timeout")
         if not timeout:

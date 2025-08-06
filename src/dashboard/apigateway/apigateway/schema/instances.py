@@ -27,7 +27,6 @@ from apigateway.utils.singleton import Singleton
 
 SCHEMA_NAME_CONTEXT_GATEWAY_BKAUTH = "ContextAPIBKAuth"
 SCHEMA_NAME_CONTEXT_RESOURCE_BKAUTH = "ContextResourceBKAuth"
-SCHEMA_NAME_CONTEXT_STAGE_PROXY_HTTP = "ContextStageProxyHTTP"
 SCHEMA_NAME_CONTEXT_GATEWAY_FEATURE_FLAG = "ContextAPIFeatureFlag"
 SCHEMA_NAME_PROXY_HTTP = "ProxyHTTP"
 SCHEMA_NAME_MONITOR_ALARM_FILTER = "MonitorAlarmFilter"
@@ -214,105 +213,6 @@ class ContextResourceBKAuth(NewMetaSchemaMixin, metaclass=Singleton):
     name = SCHEMA_NAME_CONTEXT_RESOURCE_BKAUTH
     type = SchemaTypeEnum.CONTEXT.value
     description = "BKAuth Middleware"
-
-
-class ContextStageProxyHTTP(NewMetaSchemaMixin, metaclass=Singleton):
-    version = "1"
-    schema = """
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": [
-    "timeout",
-    "upstreams",
-    "transform_headers"
-  ],
-  "properties": {
-    "timeout": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "upstreams": {
-      "type": "object",
-      "required": [
-        "loadbalance",
-        "hosts"
-      ],
-      "properties": {
-        "loadbalance": {
-          "type": "string"
-        },
-        "hosts": {
-          "type": "array",
-          "items": {
-            "type": "object"
-          }
-        }
-      }
-    },
-    "transform_headers": {
-      "delete": {
-        "type": "array",
-        "items": {
-          "type": "string"
-        }
-      },
-      "add": {
-        "type": "object",
-        "additionalProperties": {
-          "type": "string"
-        }
-      },
-      "append": {
-        "type": "object",
-        "additionalProperties": {
-          "type": "string"
-        }
-      },
-      "replace": {
-        "type": "object",
-        "additionalProperties": {
-          "type": "string"
-        }
-      },
-      "set": {
-        "type": "object",
-        "additionalProperties": {
-          "type": "string"
-        }
-      }
-    }
-  }
-}
-    """
-    example = """
-{
-  "timeout": 10,
-  "upstreams": {
-    "loadbalance": "roundrobin",
-    "hosts": [
-      {
-        "host": "www.a.com",
-        "weight": 50,
-      },
-      {
-        "host": "www.b.com",
-        "weight": 50,
-      }
-    ]
-  },
-  "transform_headers": {
-      "add": {"k1": "v1", "k2": "v2"},
-      "append": {"k1": "v1", "k2": "v2"},
-      "replace": {"k1": "v1", "k2": "v2"},
-      "set": {"k1": "v1", "k2": "v2"},
-      "delete": ["k3", "k4"],
-  }
-}
-    """
-    name = SCHEMA_NAME_CONTEXT_STAGE_PROXY_HTTP
-    type = SchemaTypeEnum.CONTEXT.value
-    description = "HTTP proxy schema"
 
 
 class ContextGatewayFeatureFlag(NewMetaSchemaMixin, metaclass=Singleton):

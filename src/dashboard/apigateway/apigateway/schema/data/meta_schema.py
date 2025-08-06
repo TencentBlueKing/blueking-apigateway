@@ -22,7 +22,6 @@ from apigateway.schema.instances import (
     ContextGatewayBKAuth,
     ContextGatewayFeatureFlag,
     ContextResourceBKAuth,
-    ContextStageProxyHTTP,
     MicroGateway,
     MonitorAlarmFilter,
     MonitorAlarmStrategy,
@@ -34,7 +33,6 @@ def init_meta_schemas():
     meta_schema_instances = [
         ContextGatewayBKAuth(),
         ContextResourceBKAuth(),
-        ContextStageProxyHTTP(),
         ContextGatewayFeatureFlag(),
         ProxyHTTP(),
         MonitorAlarmFilter(),
