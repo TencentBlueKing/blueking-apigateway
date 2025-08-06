@@ -17,7 +17,7 @@
  */
 
 <template>
-  <div class="release-sideslider">
+  <div>
     <BkSideslider
       v-model:is-show="isShow"
       :width="960"
@@ -89,7 +89,7 @@
                     />
                   </BkFormItem>
                   <BkFormItem>
-                    <section class="text-12px">
+                    <section class="text-12px color-#63656e">
                       <span>
                         {{ t("新增") }}
                         <strong class="font-bold color-#2dcb56">{{ diffData.add.length }}</strong>
@@ -262,8 +262,8 @@ import {
   getNextVersion,
   getVersionDiff,
   getVersionList,
-} from '@/services/source/resource';
-import { getStageList } from '@/services/source/stage';
+} from '@/services/source/resource.ts';
+import { getStageList } from '@/services/source/stage.ts';
 import { useGetStageList } from '@/hooks';
 import VersionDiff from '@/components/version-diff/Index.vue';
 

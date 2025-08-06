@@ -1646,7 +1646,7 @@
   "生成版本并发布": "Build the version and publish it",
   "API 网关 1.13 版本现已发布，为避免插件、后端服务等信息在页面修改后但实际并未生效的问题，请尽快生成并发布新版本至所有环境。": "API Gateway version 1.13 has been released. In order to avoid the problem that plug-ins, back-end services and other information are modified on the page but do not take effect, please generate and release the new version to all environments as soon as possible.",
   "API 网关 1.13 版本发布说明": "API Gateway version 1.13 Release description",
-  "为保证网关数据一致性，你需要执行以下步骤：": "To ensure gateway data consistency, you need to perform the following steps:",
+  "为保证网关数据一致性，您需要执行以下步骤：": "To ensure gateway data consistency, you need to perform the following steps:",
   "1. 为当前网关生成新的版本": "1. Generate a new version for the current gateway",
   "2. 将新版本发布至所有环境": "2. Release the new version to all environments",
   "目前尚未更新的环境：": "Environments that have not yet been updated:",

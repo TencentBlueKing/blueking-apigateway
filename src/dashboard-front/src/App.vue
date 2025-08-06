@@ -24,7 +24,6 @@
       <NoticeComponent
         v-if="enableShowNotice && showNoticeAlert"
         :api-url="noticeApi"
-        @show-alert-change="handleShowAlertChange"
       />
       <BkNavigation
         class="navigation-content"
@@ -85,10 +84,12 @@ import LanguageToggle from '@/components/language-toggle/Index.vue';
 import ProductInfo from '@/components/product-info/Index.vue';
 import UserInfo from '@/components/user-info/Index.vue';
 import LogoWithoutTitle from '@/images/APIgateway-logo.png';
+// @ts-expect-error missing module type
 import En from '../node_modules/bkui-vue/dist/locale/en.esm.js';
+// @ts-expect-error missing module type
 import ZhCn from '../node_modules/bkui-vue/dist/locale/zh-cn.esm.js';
+// @ts-expect-error missing module type
 import NoticeComponent from '@blueking/notice-component';
-import '@blueking/notice-component/dist/style.css';
 import {
   useEnv,
   useFeatureFlag,
@@ -338,7 +339,9 @@ const handleLogoClick = () => {
     }
 
     &.ApiDocs-navigation-content {
+
       :deep(.bk-navigation-wrapper) {
+
         .container-content {
           overflow: hidden;
         }
@@ -350,6 +353,7 @@ const handleLogoClick = () => {
 
 <style>
 /* 兼容表格设置弹窗底部多余左右下边框不对齐问题 */
+
 .bk-table-settings .setting-content .setting-footer {
   border: none !important;
   border-top: 1px solid #dcdee5 !important;

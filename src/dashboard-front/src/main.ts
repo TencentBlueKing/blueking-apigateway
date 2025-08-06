@@ -27,6 +27,10 @@ import './styles/index.scss';
 import bkui from 'bkui-vue';
 // 全量引入 bkui-vue 样式
 import '../node_modules/bkui-vue/dist/style.variable.css';
+// 全局通知组件样式
+import '@blueking/notice-component/dist/style.css';
+// 版本发布通知组件样式
+import '@blueking/release-note/vue3/vue3.css';
 // UnoCSS
 import 'virtual:uno.css';
 import '@unocss/reset/tailwind-compat.css';
