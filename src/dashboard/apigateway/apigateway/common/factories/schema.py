@@ -33,8 +33,6 @@ class SchemaFactory:
     def get_proxy_schema(self, proxy_type):
         if proxy_type == ProxyTypeEnum.HTTP.value:
             return self._get_schema_instance(instances.ProxyHTTP())
-        if proxy_type == ProxyTypeEnum.MOCK.value:
-            return self._get_schema_instance(instances.ProxyMock())
 
         raise error_codes.INVALID_ARGUMENT.format(f"unsupported proxy_type: {proxy_type}")
 

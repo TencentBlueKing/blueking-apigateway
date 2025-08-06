@@ -27,7 +27,6 @@ from apigateway.schema.instances import (
     MonitorAlarmFilter,
     MonitorAlarmStrategy,
     ProxyHTTP,
-    ProxyMock,
 )
 
 
@@ -38,7 +37,6 @@ def init_meta_schemas():
         ContextStageProxyHTTP(),
         ContextGatewayFeatureFlag(),
         ProxyHTTP(),
-        ProxyMock(),
         MonitorAlarmFilter(),
         MonitorAlarmStrategy(),
         APISDK(),

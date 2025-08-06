@@ -195,7 +195,7 @@ class TestResourceVersionValidator:
         )
         G(
             Proxy,
-            type=ProxyTypeEnum.MOCK.value,
+            type=ProxyTypeEnum.HTTP.value,
             resource=fake_resource,
             backend=backend2,
             _config=json.dumps(

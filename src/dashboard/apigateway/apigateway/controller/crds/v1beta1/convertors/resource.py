@@ -75,7 +75,7 @@ class HttpResourceConvertor(BaseConvertor):
         return resources
 
     def _convert_http_resource(self, resource: Dict[str, Any]) -> Optional[BkGatewayResource]:
-        if resource["proxy"]["type"] not in [ProxyTypeEnum.HTTP.value, ProxyTypeEnum.MOCK.value]:
+        if resource["proxy"]["type"] not in [ProxyTypeEnum.HTTP.value]:
             return None
 
         if self._release_data.stage.name in resource["disabled_stages"]:
@@ -85,6 +85,9 @@ class HttpResourceConvertor(BaseConvertor):
 
         backend_id = resource["proxy"].get("backend_id", 0)
 
+        # FIXME:
+        # 1. remove upstream
+        # 2. reference service by backend_id
         service_name = ""
         upstream = self._convert_http_resource_upstream(resource_proxy, backend_id)
         # operator 会将环境级别的插件绑定到 service，如果资源没有定义上游，依然绑定服务
@@ -135,10 +138,6 @@ class HttpResourceConvertor(BaseConvertor):
             "enable_websocket": False,
             "is_public": False,
             "allow_apply_permission": False,
-            "proxy": {
-                "type": ProxyTypeEnum.MOCK.value,
-                "config": json.dumps(mock_config),
-            },
             "disabled_stages": [],
             "api_labels": [],
         }
@@ -168,6 +167,7 @@ class HttpResourceConvertor(BaseConvertor):
             ),
         )
 
+    # FIXME: remove this function totally
     def _convert_http_resource_upstream(self, resource_proxy: Dict[str, Any], backend_id: int) -> Optional[Upstream]:
         upstreams = self._release_data.get_resources_upstream(resource_proxy, backend_id)
 
@@ -206,6 +206,9 @@ class HttpResourceConvertor(BaseConvertor):
                 path=resource_proxy.get("path"),
             )
 
+        # FIXME: check if the transform_headers is still used or not?
+        # https://github.com/TencentBlueKing/blueking-apigateway-operator/pull/80/files
+        # TODO: remove the transform_headers totally from codebase
         headers = self._convert_http_rewrite_headers(self._release_data.stage_backend_config.get("transform_headers"))
         headers.update(self._convert_http_rewrite_headers(resource_proxy.get("transform_headers")))
 
@@ -235,21 +238,6 @@ class HttpResourceConvertor(BaseConvertor):
                 },
             ),
         ]
-
-        if resource["proxy"]["type"] == ProxyTypeEnum.MOCK.value:
-            proxy_config = json.loads(resource["proxy"]["config"])
-            plugins.extend(
-                [
-                    PluginConfig(
-                        name="bk-mock",
-                        config={
-                            "response_status": proxy_config["code"],
-                            "response_example": proxy_config["body"],
-                            "response_headers": proxy_config["headers"],
-                        },
-                    )
-                ]
-            )
 
         plugins.extend(
             [

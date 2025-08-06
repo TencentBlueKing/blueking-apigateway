@@ -52,7 +52,7 @@ class TestResourceSavers:
         G(
             Proxy,
             resource=fake_resource,
-            type=ProxyTypeEnum.MOCK.value,
+            type=ProxyTypeEnum.HTTP.value,
         )
 
         saver = ResourcesSaver(fake_resource.gateway, resource_data_list, "admin")

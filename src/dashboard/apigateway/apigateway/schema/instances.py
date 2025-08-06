@@ -30,7 +30,6 @@ SCHEMA_NAME_CONTEXT_RESOURCE_BKAUTH = "ContextResourceBKAuth"
 SCHEMA_NAME_CONTEXT_STAGE_PROXY_HTTP = "ContextStageProxyHTTP"
 SCHEMA_NAME_CONTEXT_GATEWAY_FEATURE_FLAG = "ContextAPIFeatureFlag"
 SCHEMA_NAME_PROXY_HTTP = "ProxyHTTP"
-SCHEMA_NAME_PROXY_MOCK = "ProxyMock"
 SCHEMA_NAME_MONITOR_ALARM_FILTER = "MonitorAlarmFilter"
 SCHEMA_NAME_MONITOR_ALARM_STRATEGY = "MonitorAlarmStrategy"
 SCHEMA_NAME_API_SDK = "APISDK"
@@ -409,45 +408,6 @@ class ProxyHTTP(NewMetaSchemaMixin, metaclass=Singleton):
     name = SCHEMA_NAME_PROXY_HTTP
     type = SchemaTypeEnum.PROXY.value
     description = "HTTP proxy schema"
-
-
-class ProxyMock(NewMetaSchemaMixin, metaclass=Singleton):
-    version = "1"
-    schema = """
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": [
-    "code",
-    "body",
-    "headers"
-  ],
-  "properties": {
-    "code": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "body": {
-      "type": "string"
-    },
-    "headers": {
-      "type": "object"
-    }
-  }
-}
-    """
-    example = """
-{
-    "code": 200,
-    "body": "test",
-    "headers": {
-        "X-API-HELLO": "world"
-    }
-}
-    """
-    name = SCHEMA_NAME_PROXY_MOCK
-    type = SchemaTypeEnum.PROXY.value
-    description = "Mock proxy schema"
 
 
 class MonitorAlarmFilter(NewMetaSchemaMixin, metaclass=Singleton):
