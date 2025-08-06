@@ -362,7 +362,6 @@
 <script setup lang="ts">
 import PluginInfo from './PluginInfo.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
-// import mitt from '@/common/event-bus';
 import {
   InfoBox,
   Message,
@@ -393,7 +392,10 @@ const {
   stageId,
 } = defineProps<IProps>();
 
-const emit = defineEmits<{ 'on-jump': [id: any] }>();
+const emit = defineEmits<{
+  'on-jump': [id: any]
+  'on-update-plugin': [void]
+}>();
 
 const { t } = useI18n();
 const route = useRoute();
@@ -491,12 +493,12 @@ const handleOperate = (operate: string) => {
     case 'addSuccess':
       resetData();
       isAddSuccess.value = true;
-      // mitt.emit('on-update-plugin');
+      emit('on-update-plugin');
       break;
     case 'editSuccess':
       getBindingDetails();
       isEditVisible.value = false;
-      // mitt.emit('on-update-plugin');
+      emit('on-update-plugin');
       break;
     default:
       break;
@@ -581,7 +583,6 @@ const handleEditePlugin = async (item: any) => {
     const res = await getPluginConfig(gatewayId.value, scopeType.value, scopeId.value, code, config_id);
     curEditPlugin.value = res;
     isEditVisible.value = true;
-    // mitt.emit('on-update-plugin');
   }
   catch (error) {
     console.log('error', error);
@@ -614,7 +615,7 @@ const handleDeletePlugin = (item: any) => {
           theme: 'success',
           width: 'auto',
         });
-        // mitt.emit('on-update-plugin');
+        emit('on-update-plugin');
         init();
       }
       finally {

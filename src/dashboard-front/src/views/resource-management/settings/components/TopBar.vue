@@ -38,49 +38,10 @@
         {{ currentSource?.name }}
       </div>
     </div>
-
-    <!-- <div class="operate-btn-wrapper">
-      <BkButton class="operate-btn" @click="handleShowDiff">
-      <i class="apigateway-icon icon-ag-chayiduibi-shixin"></i>
-      {{ t('与历史版本对比') }}
-      </BkButton>
-      <BkButton
-      class="operate-btn-primary"
-      theme="primary"
-      @click="handleCreateResourceVersion"
-      :disabled="!latest"
-      v-bk-tooltips="{ content: '资源无更新，无需生成版本', disabled: latest }"
-      >
-      <i class="apigateway-icon icon-ag-version"></i>
-      {{ t('生成版本') }}
-      </BkButton>
-      </div> -->
   </div>
-
-  <!-- 生成版本 -->
-  <!-- <version-sideslider ref="versionSidesliderRef" @done="mitt.emit('on-update-plugin');" /> -->
-
-  <!-- 版本对比 -->
-  <!-- <BkSideslider
-    v-model:isShow="diffSidesliderConf.isShow"
-    :title="diffSidesliderConf.title"
-    :width="diffSidesliderConf.width"
-    :quick-close="true"
-    >
-    <template #default>
-    <div class="p-20px pure-diff">
-    <version-diff ref="diffRef" :source-id="diffSourceId" :target-id="diffTargetId" />
-    </div>
-    </template>
-    </BkSideslider> -->
 </template>
 
 <script setup lang="ts">
-// import { Message } from 'bkui-vue';
-// import { getResourceVersionsList } from '@/http';
-// import versionDiff from '@/components/version-diff/index.vue';
-// import VersionSideslider from '@/views/resource/setting/comps/version-sideslider.vue';
-// import mitt from '@/common/event-bus';
 import { useStage } from '@/stores';
 
 interface IProps {
@@ -90,11 +51,7 @@ interface IProps {
   showNewTips?: boolean
 }
 
-// const route = useRoute();
-// const apigwId = computed(() => +route.params.id);
-
 const {
-  // latest = false,
   currentSource = {},
   isDetail = false,
   showNewTips = false,
@@ -103,59 +60,12 @@ const {
 const { t } = useI18n();
 const stage = useStage();
 
-// ref
-// const versionSidesliderRef = ref(null);
-// 版本对比抽屉
-// const diffSidesliderConf = reactive({
-//   isShow: false,
-//   width: 1040,
-//   title: t('版本资源对比'),
-// });
-// const diffSourceId = ref();
-// const diffTargetId = ref();
-
-// 版本对比
-// const handleShowDiff = async () => {
-//   try {
-//     const res = await getResourceVersionsList(apigwId.value, { offset: 0, limit: 999 });
-//     diffSourceId.value = res.results[0]?.id || '';
-//     diffSidesliderConf.width = window.innerWidth <= 1280 ? 1040 : 1280;
-//     diffSidesliderConf.isShow = true;
-//   } catch (e) {
-//     Message({
-//       message: t('操作失败，请稍后再试！'),
-//       theme: 'error',
-//       width: 'auto',
-//     });
-//     console.log(e);
-//   }
-// };
-
-// 生成版本功能
-// const handleCreateResourceVersion = async () => {
-//   if (!props.latest) {
-//     Message({
-//       message: t('资源及资源文档无变更, 不需要生成新版本'),
-//       theme: 'error',
-//       width: 'auto',
-//     });
-//     return;
-//   }
-
-//   versionSidesliderRef.value.showReleaseSideslider();
-// };
 </script>
 
 <style lang="scss" scoped>
 .resource-top-bar {
   position: absolute;
-
-  // border-bottom: 1px solid #dcdee5;
-  // box-shadow: 0 3px 4px 0 #0000000a;
   display: flex;
-
-  // top: 0;
-  // top: 42px;
   width: 100%;
   height: 52px;
   padding: 0 24px;
@@ -163,8 +73,6 @@ const stage = useStage();
   box-sizing: border-box;
   align-items: center;
   justify-content: space-between;
-
-  // min-width: 1280px;
 
   .top-title-wrapper {
     display: flex;
