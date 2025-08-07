@@ -34,7 +34,7 @@ from apigateway.controller.crds.v1beta1.convertors.resource import HttpResourceC
 from apigateway.controller.crds.v1beta1.convertors.service import ServiceConvertor
 from apigateway.controller.crds.v1beta1.convertors.stage import StageConvertor
 from apigateway.core.constants import ResourceVersionSchemaEnum, StageStatusEnum
-from apigateway.core.models import MicroGateway, Proxy, Release, ResourceVersion
+from apigateway.core.models import MicroGateway, Release, ResourceVersion
 from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.utils.yaml import yaml_dumps
 
@@ -135,100 +135,16 @@ def edge_gateway_stage(fake_stage, micro_gateway):
 
 
 @fixture
-def edge_resource_overwrite_stage(fake_resource1):
-    return fake_resource1
-
-
-@fixture
-def edge_resource_overwrite_stage_proxy(faker, edge_resource_overwrite_stage, backend_service_http_host):
-    proxy = Proxy.objects.get(resource=edge_resource_overwrite_stage)
-    proxy.config = {
-        "method": faker.http_method(),
-        "path": faker.uri_path(),
-        "match_subpath": False,
-        "timeout": faker.random_int(),
-        "upstreams": {
-            "loadbalance": "roundrobin",
-            "hosts": [{"host": backend_service_http_host, "weight": 100}],
-        },
-        "transform_headers": {
-            "set": {
-                "X-Set-By-Resource": edge_resource_overwrite_stage.name,
-            },
-            "delete": [
-                "X-Del-By-Resource",
-            ],
-        },
-    }
-    proxy.save()
-    return proxy
-
-
-@fixture
-def edge_resource_inherit_stage(fake_resource2):
-    return fake_resource2
-
-
-@fixture
-def edge_resource_inherit_stage_proxy(faker, edge_resource_inherit_stage):
-    proxy = Proxy.objects.get(resource=edge_resource_inherit_stage)
-    proxy.config = {
-        "method": faker.http_method(),
-        "path": faker.uri_path(),
-        "match_subpath": False,
-        "timeout": 0,
-        "upstreams": {},
-        "transform_headers": {
-            "set": {},
-            "delete": [],
-        },
-    }
-    proxy.save()
-    return proxy
-
-
-@fixture
-def edge_resources(
-    faker,
-    edge_resource_overwrite_stage,
-    edge_resource_overwrite_stage_proxy,
-    edge_resource_inherit_stage,
-    edge_resource_inherit_stage_proxy,
-):
-    return {
-        "overwrite_stage_hosts": edge_resource_overwrite_stage,
-        "use_stage_hosts": edge_resource_inherit_stage,
-    }
-
-
-@fixture
-def edge_resource_version(faker, edge_gateway, edge_resources):
+def edge_resource_version(faker, edge_gateway, fake_resource, fake_backend):
     resource_version = G(
         ResourceVersion,
         gateway=edge_gateway,
         schema_version=ResourceVersionSchemaEnum.V2.value,
-        # _data=json.dumps(ResourceVersionHandler.make_version(edge_gateway)),
     )
     resource_version.data = ResourceVersionHandler.make_version(edge_gateway)
     resource_version.save()
 
     return resource_version
-
-
-@fixture
-def edge_resource_overwrite_stage_snapshot(edge_resource_version, edge_resource_overwrite_stage):
-    for i in edge_resource_version.data:
-        if i["id"] == edge_resource_overwrite_stage.id:
-            return i
-    return None
-
-
-@fixture
-def edge_resource_inherit_stage_snapshot(edge_resource_version, edge_resource_inherit_stage):
-    for i in edge_resource_version.data:
-        if i["id"] == edge_resource_inherit_stage.id:
-            return i
-    return None
 
 
 @fixture

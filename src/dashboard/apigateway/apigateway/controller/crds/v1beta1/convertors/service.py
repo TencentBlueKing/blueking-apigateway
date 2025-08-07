@@ -58,6 +58,9 @@ class ServiceConvertor(BaseConvertor):
                 ),
             )
             hosts = backend_config.get("hosts", [])
+            if not hosts:
+                raise ValueError(f"backend {backend_id} has no hosts")
+
             for node in hosts:
                 host = node["host"]
                 # 如果 default 没有设置 host，则默认使用 your-backend-host 来替代，避免 apisix 加载报错
@@ -85,7 +88,10 @@ class ServiceConvertor(BaseConvertor):
             backend_name = backend.name
             backend_description = backend.description
 
-            description = self._release_data.stage.description + f"({backend_name}: {backend_description[:32]})"
+            description = self._release_data.stage.description + f" (backend={backend_name}"
+            if backend_description:
+                description += f": {backend_description[:32]}"
+            description += ")"
 
             # stage_name max length is 20, stage_id 6, backend_id is 4, other 10
             # total max length is 64, so the buffer is 24 ( stage_id length + backend_id length)
