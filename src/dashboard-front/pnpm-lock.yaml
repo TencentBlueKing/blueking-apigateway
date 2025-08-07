@@ -29,6 +29,9 @@ importers:
       '@blueking/release-note':
         specifier: 0.0.1-beta.17
         version: 0.0.1-beta.17(bkui-vue@2.0.2-beta.44(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3)))(markdown-it@13.0.2)(vue@3.5.18(typescript@5.8.3))
+      '@blueking/tdesign-ui':
+        specifier: 0.0.1-beta.92
+        version: 0.0.1-beta.92(vue@3.5.18(typescript@5.8.3))
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9
@@ -113,6 +116,9 @@ importers:
       vue-i18n:
         specifier: ^11.1.11
         version: 11.1.11(vue@3.5.18(typescript@5.8.3))
+      vue-request:
+        specifier: ^2.0.4
+        version: 2.0.4(vue@3.5.18(typescript@5.8.3))
       vue-router:
         specifier: ^4.5.1
         version: 4.5.1(vue@3.5.18(typescript@5.8.3))
@@ -433,6 +439,11 @@ packages:
       bkui-vue: '*'
       markdown-it: ^13.0.1
       vue: ^3.2.0
+
+  '@blueking/tdesign-ui@0.0.1-beta.92':
+    resolution: {integrity: sha512-evXwYHRRgwQpL6txiQk9CE5g6j2DcNeC93/zfCBSDMu9eLKkKFtCFSXLn6nO2eXVT1DYKqeCMH55N1e6q41P8A==}
+    peerDependencies:
+      vue: ^3
 
   '@bufbuild/protobuf@2.6.2':
     resolution: {integrity: sha512-vLu7SRY84CV/Dd+NUdgtidn2hS5hSMUC1vDBY0VcviTdgRYkU43vIz3vIFbmx14cX1r+mM7WjzE5Fl1fGEM0RQ==}
@@ -1135,8 +1146,17 @@ packages:
   '@types/semver@7.7.0':
     resolution: {integrity: sha512-k107IF4+Xr7UHjwDc7Cfd6PRQfbdkiRabXGRjo07b4WyPahFBZCZ1sE+BNxYIJPPg73UkfOsVOLwqVc/6ETrIA==}
 
+  '@types/sortablejs@1.15.8':
+    resolution: {integrity: sha512-b79830lW+RZfwaztgs1aVPgbasJ8e7AXtZYHTELNXZPsERt4ymJdjV4OccDbHQAvHrCcFpbF78jkm0R6h/pZVg==}
+
+  '@types/tinycolor2@1.4.6':
+    resolution: {integrity: sha512-iEN8J0BoMnsWBqjVbWH/c0G0Hh7O21lpR2/+PrvAVgWdzL7eexIFm4JN/Wn10PTcmNdtS6U67r499mlWMXOxNw==}
+
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
+
+  '@types/validator@13.15.2':
+    resolution: {integrity: sha512-y7pa/oEJJ4iGYBxOpfAKn5b9+xuihvzDVnC/OSvlVnGxVg0pOqmjiMafiJ1KVNQEaPZf9HsEp5icEwGg8uIe5Q==}
 
   '@types/web-bluetooth@0.0.21':
     resolution: {integrity: sha512-oIQLCGWtcFZy2JW77j9k8nHzAOpqMHLQejDA48XXMWH6tjCQHz5RCFz1bzsmROyL6PUm+LLnUiI4BCn221inxA==}
@@ -1788,6 +1808,9 @@ packages:
   date-fns@2.30.0:
     resolution: {integrity: sha512-fnULvOpxnC5/Vg3NCiWelDsLiUc9bRwAPs/+LfTLNvetFCtCTN+yQz15C/fs4AwX1R9K5GLtLfn8QW+dWisaAw==}
     engines: {node: '>=0.11'}
+
+  dayjs@1.11.10:
+    resolution: {integrity: sha512-vjAczensTgRcqDERK0SR2XMwsF/tSvnvlv6VcF2GIhg6Sx4yOIt/irsr1RDJsKiIyBzJDpCoXiWWq28MqH2cnQ==}
 
   dayjs@1.11.13:
     resolution: {integrity: sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==}
@@ -3259,6 +3282,17 @@ packages:
     resolution: {integrity: sha512-9kY+CygyYM6j02t5YFHbNz2FN5QmYGv9zAjVp4lCDjlCw7amdckXlEt/bjMhUIfj4ThGRE4gCUH5+yGnNuPo5A==}
     engines: {node: '>=10.0.0'}
 
+  tdesign-icons-vue-next@0.3.7:
+    resolution: {integrity: sha512-Q5ebVty/TCqhBa0l/17kkhjC0pBAOGvn7C35MAt1xS+johKVM9QEDOy9R6XEl332AiwQ37MwqioczqjYC30ckw==}
+    peerDependencies:
+      vue: ^3.0.0
+
+  tdesign-vue-next@1.15.2:
+    resolution: {integrity: sha512-EGuI3zJZD5JA6BB+s/+PeFZ08lqcTJtFCdI4O+1QJ/ru4Rie6fTgkrCL+IR9R3NQNyG4Di5T2SziAbSH1v9j7Q==}
+    engines: {node: '>= 18'}
+    peerDependencies:
+      vue: '>=3.1.0'
+
   text-extensions@2.4.0:
     resolution: {integrity: sha512-te/NtwBwfiNRLf9Ijqx3T0nlqZiQ2XrrtBvu+cLL8ZRrGkO0NHTug8MYFKyoSrv/sHTaSKfilUkizV6XhxMJ3g==}
     engines: {node: '>=8'}
@@ -3416,6 +3450,10 @@ packages:
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
+  validator@13.15.15:
+    resolution: {integrity: sha512-BgWVbCI72aIQy937xbawcs+hrVaN/CZ2UwutgaJ36hGqRrLNM+f5LUT/YPRbo8IV/ASeFzXszezV+y2+rq3l8A==}
+    engines: {node: '>= 0.10'}
+
   varint@6.0.0:
     resolution: {integrity: sha512-cXEIW6cfr15lFv563k4GuVuW/fiwjknytD37jIOLSdSWuOI6WnO/oKwmP2FQTU2l01LP8/M5TSAJpzUaGe3uWg==}
 
@@ -3493,6 +3531,17 @@ packages:
   vscode-uri@3.1.0:
     resolution: {integrity: sha512-/BpdSx+yCQGnCvecbyXdxHDkuk55/G3xwnC0GqY4gmQ3j+A+g8kzzgB4Nk/SINjqn6+waqw3EgbVF2QKExkRxQ==}
 
+  vue-demi@0.14.10:
+    resolution: {integrity: sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==}
+    engines: {node: '>=12'}
+    hasBin: true
+    peerDependencies:
+      '@vue/composition-api': ^1.0.0-rc.1
+      vue: ^3.0.0-0 || ^2.6.0
+    peerDependenciesMeta:
+      '@vue/composition-api':
+        optional: true
+
   vue-dompurify-html@5.3.0:
     resolution: {integrity: sha512-HJQGBHbfSPcb6Mu97McdKbX7TqRHZa6Ji8OCpCNyuHca5QvQZ8IiuwghFPSO8OkSQfqXPNPKFMZdCOrnGGmOSQ==}
     peerDependencies:
@@ -3514,6 +3563,16 @@ packages:
     engines: {node: '>= 16'}
     peerDependencies:
       vue: ^3.0.0
+
+  vue-request@2.0.4:
+    resolution: {integrity: sha512-+Tu5rDy6ItF9UdD21Mmbjiq5Pq6NZSN9juH72hNQTMn1whHh4KZPTKWVLK2YS4nzbuEnPs+82G91AA2Fgd93mg==}
+    engines: {node: '>=14'}
+    peerDependencies:
+      '@vue/composition-api': ^1.0.0-rc.1
+      vue: ^2.0.0 || >=3.0.0
+    peerDependenciesMeta:
+      '@vue/composition-api':
+        optional: true
 
   vue-router@4.5.1:
     resolution: {integrity: sha512-ogAF3P97NPm8fJsE4by9dwSYtDwXIY1nFY9T6DyQnGHd1E2Da94w9JIolpe42LJGIl0DwOHBi8TcRPlPGwbTtw==}
@@ -3869,6 +3928,24 @@ snapshots:
     dependencies:
       bkui-vue: 2.0.2-beta.44(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3))
       markdown-it: 13.0.2
+      vue: 3.5.18(typescript@5.8.3)
+
+  '@blueking/tdesign-ui@0.0.1-beta.92(vue@3.5.18(typescript@5.8.3))':
+    dependencies:
+      '@babel/runtime': 7.28.2
+      '@popperjs/core': 2.11.8
+      '@types/lodash-es': 4.17.12
+      '@types/sortablejs': 1.15.8
+      '@types/tinycolor2': 1.4.6
+      '@types/validator': 13.15.2
+      dayjs: 1.11.10
+      lodash-es: 4.17.21
+      mitt: 3.0.1
+      sortablejs: 1.15.6
+      tdesign-icons-vue-next: 0.3.7(vue@3.5.18(typescript@5.8.3))
+      tdesign-vue-next: 1.15.2(vue@3.5.18(typescript@5.8.3))
+      tinycolor2: 1.6.0
+      validator: 13.15.15
       vue: 3.5.18(typescript@5.8.3)
 
   '@bufbuild/protobuf@2.6.2': {}
@@ -4443,8 +4520,14 @@ snapshots:
 
   '@types/semver@7.7.0': {}
 
+  '@types/sortablejs@1.15.8': {}
+
+  '@types/tinycolor2@1.4.6': {}
+
   '@types/trusted-types@2.0.7':
     optional: true
+
+  '@types/validator@13.15.2': {}
 
   '@types/web-bluetooth@0.0.21': {}
 
@@ -5215,6 +5298,8 @@ snapshots:
   date-fns@2.30.0:
     dependencies:
       '@babel/runtime': 7.28.2
+
+  dayjs@1.11.10: {}
 
   dayjs@1.11.13: {}
 
@@ -6674,6 +6759,28 @@ snapshots:
       string-width: 4.2.3
       strip-ansi: 6.0.1
 
+  tdesign-icons-vue-next@0.3.7(vue@3.5.18(typescript@5.8.3)):
+    dependencies:
+      '@babel/runtime': 7.28.2
+      vue: 3.5.18(typescript@5.8.3)
+
+  tdesign-vue-next@1.15.2(vue@3.5.18(typescript@5.8.3)):
+    dependencies:
+      '@babel/runtime': 7.28.2
+      '@popperjs/core': 2.11.8
+      '@types/lodash-es': 4.17.12
+      '@types/sortablejs': 1.15.8
+      '@types/tinycolor2': 1.4.6
+      '@types/validator': 13.15.2
+      dayjs: 1.11.13
+      lodash-es: 4.17.21
+      mitt: 3.0.1
+      sortablejs: 1.15.6
+      tdesign-icons-vue-next: 0.3.7(vue@3.5.18(typescript@5.8.3))
+      tinycolor2: 1.6.0
+      validator: 13.15.15
+      vue: 3.5.18(typescript@5.8.3)
+
   text-extensions@2.4.0: {}
 
   through@2.3.8: {}
@@ -6834,6 +6941,8 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
+  validator@13.15.15: {}
+
   varint@6.0.0: {}
 
   vite-dev-rpc@1.1.0(vite@7.0.6(@types/node@22.16.5)(jiti@2.5.1)(less@4.4.0)(sass-embedded@1.89.2)(yaml@2.8.0)):
@@ -6909,6 +7018,10 @@ snapshots:
 
   vscode-uri@3.1.0: {}
 
+  vue-demi@0.14.10(vue@3.5.18(typescript@5.8.3)):
+    dependencies:
+      vue: 3.5.18(typescript@5.8.3)
+
   vue-dompurify-html@5.3.0(vue@3.5.18(typescript@5.8.3)):
     dependencies:
       dompurify: 3.2.6
@@ -6936,6 +7049,11 @@ snapshots:
       '@intlify/shared': 11.1.11
       '@vue/devtools-api': 6.6.4
       vue: 3.5.18(typescript@5.8.3)
+
+  vue-request@2.0.4(vue@3.5.18(typescript@5.8.3)):
+    dependencies:
+      vue: 3.5.18(typescript@5.8.3)
+      vue-demi: 0.14.10(vue@3.5.18(typescript@5.8.3))
 
   vue-router@4.5.1(vue@3.5.18(typescript@5.8.3)):
     dependencies:
