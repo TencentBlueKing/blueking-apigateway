@@ -79,6 +79,9 @@ class HttpResourceConvertor(BaseConvertor):
         resource_proxy = json.loads(resource["proxy"]["config"])
         backend_id = resource["proxy"].get("backend_id", 0)
 
+        if backend_id == 0:
+            raise ValueError(f"backend_id is 0 or not set, which is not allowed. resource: {resource}")
+
         # operator 会将环境级别的插件绑定到 service，如果资源没有定义上游，依然绑定服务
         methods = []
         if resource["method"] != "ANY":
