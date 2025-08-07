@@ -258,19 +258,21 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 
 			if handlerRequest.HeaderParam != nil {
 				for k, v := range handlerRequest.HeaderParam {
-					err = req.SetHeaderParam(k, v)
+					err = req.SetHeaderParam(k, fmt.Sprintf("%v", v))
 					if err != nil {
-						auditLog.Error("set header param err", zap.String(k, v), zap.Error(err))
+						auditLog.Error("set header param err", zap.String(k,
+							fmt.Sprintf("%v", v)), zap.Error(err))
 						return err
 					}
-					headerInfo[k] = v
+					headerInfo[k] = fmt.Sprintf("%v", v)
 				}
 			}
 			if handlerRequest.QueryParam != nil {
 				for k, v := range handlerRequest.QueryParam {
-					err = req.SetQueryParam(k, v) // 使用 SetQueryParam 方法设置查询参数
+					err = req.SetQueryParam(k, fmt.Sprintf("%v", v)) // 使用 SetQueryParam 方法设置查询参数
 					if err != nil {
-						auditLog.Error("set query param err", zap.String(k, v), zap.Error(err))
+						auditLog.Error("set query param err", zap.String(k, fmt.Sprintf("%v", v)),
+							zap.Error(err))
 						return err
 					}
 				}
