@@ -30,10 +30,14 @@ export function useBkUserDisplayName() {
   const userStore = useUserInfo();
   const envStore = useEnv();
 
-  return {
-    configure: (tenantId?: string) => BkUserDisplayName.configure({
-      tenantId: tenantId || userStore.info.tenant_id || '',
-      apiBaseUrl: envStore.tenantUserDisplayAPI,
-    }),
-  };
+  const configure = (tenantId?: string) => BkUserDisplayName.configure({
+    tenantId: tenantId || userStore.info.tenant_id || '',
+    apiBaseUrl: envStore.tenantUserDisplayAPI,
+  });
+
+  watch(() => envStore.tenantUserDisplayAPI, () => {
+    configure();
+  });
+
+  return { configure };
 }

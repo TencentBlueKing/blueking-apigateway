@@ -297,6 +297,7 @@
                   }"
                   @deleted-success="handleDeleteSuccess"
                   @on-jump="(id: number | any) => handleShowInfo(id)"
+                  @on-update-plugin="handleUpdatePlugin"
                 />
               </BkLoading>
             </BkTabPanel>
@@ -390,8 +391,8 @@
       />
 
       <!-- 生成版本 -->
-      <VersionSlider
-        ref="versionSliderRef"
+      <CreateResourceVersion
+        ref="createResourceVersionRef"
         @done="handleVersionCreated"
       />
 
@@ -436,7 +437,7 @@ import {
   getVersionList,
 } from '@/services/source/resource';
 import ResourceDetail from './components/ResourceDetail.vue';
-import VersionSlider from './components/VersionSlider.vue';
+import CreateResourceVersion from '@/components/create-resource-version/Index.vue';
 import VersionDiff from '@/components/version-diff/Index.vue';
 import SelectCheckBox from './components/SelectCheckBox.vue';
 import AgDropdown from '@/components/ag-dropdown/Index.vue';
@@ -509,7 +510,7 @@ const exportDropData = ref<ApigwIDropList[]>([
   // { value: 'selected', label: t('已选资源'), disabled: false, tooltips: t('请先勾选资源') },
 ]);
 
-const versionSliderRef = ref();
+const createResourceVersionRef = ref();
 const selectCheckBoxParentRef = ref();
 // 导出参数
 const exportParams: IExportParams = reactive({
@@ -1224,6 +1225,11 @@ const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
   }
 };
 
+const handleUpdatePlugin = () => {
+  tableRef.value!.fetchData(tableQueries.value);
+  handleShowVersion();
+};
+
 // 显示列表
 const handleShowList = () => {
   isDetail.value = false;
@@ -1478,7 +1484,7 @@ const handleCreateResourceVersion = async () => {
   else {
     diffSourceId.value = response.results[0]?.id || '';
   }
-  versionSliderRef.value.showReleaseSideslider();
+  createResourceVersionRef.value.showReleaseSideslider();
 };
 
 // 获取标签数据
@@ -1622,24 +1628,11 @@ onMounted(() => {
     'resourceLine',
     // 'resourceRg',
   );
-  // 监听其他组件是否触发了资源更新，获取最新的列表数据
-  // mitt.on('on-update-plugin', () => {
-  //   pagination.value = Object.assign(pagination.value, {
-  //     current: 0,
-  //     limit: maxTableLimit,
-  //   });
-  //   getList();
-  //   handleShowVersion();
-  // });
   if (route.meta.pageStatus) {
     recoverPageStatus();
   }
   // });
 });
-
-// onBeforeMount(() => {
-//   mitt.off('on-update-plugin');
-// });
 
 </script>
 

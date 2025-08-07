@@ -36,6 +36,8 @@ class PluginTypeCodeEnum(StructuredEnum):
     FAULT_INJECTION = EnumField("fault-injection", label=_("故障注入"))
     RESPONSE_REWRITE = EnumField("response-rewrite", label=_("Response 转换"))
     REDIRECT = EnumField("redirect", label=_("重定向"))
+    BK_ACCESS_TOKEN_SOURCE = EnumField("bk-access-token-source", label=_("AccessToken 来源"))
+    BK_USERNAME_REQUIRED = EnumField("bk-username-required", label=_("UsernameRequired 插件"))
 
 
 class PluginTypeScopeEnum(StructuredEnum):

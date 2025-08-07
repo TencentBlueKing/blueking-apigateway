@@ -396,26 +396,29 @@ const handleExportDownload = async () => {
   delete params.export_type;
   exportDialogConfig.loading = true;
   try {
-    const res = await exportVersion(apigwId.value, params);
-    if (res.success) {
-      Message({
-        message: t('导出成功'),
-        theme: 'success',
-        width: 'auto',
-      });
-    }
+    await exportVersion(apigwId.value, params);
+    Message({
+      message: t('导出成功'),
+      theme: 'success',
+      width: 'auto',
+    });
     exportDialogConfig.isShow = false;
   }
   catch (e) {
-    const error = e as Error;
-    Message({
-      message: error?.message || t('导出失败'),
-      theme: 'error',
-      width: 'auto',
-    });
+    const fileReader = new FileReader();
+    fileReader.readAsText(e as Blob, 'utf-8');
+    fileReader.onload = function () {
+      const blobError = JSON.parse(fileReader.result as string);
+      Message({
+        message: blobError?.error?.message || t('导出失败'),
+        theme: 'error',
+        width: 'auto',
+      });
+    };
   }
   finally {
     exportDialogConfig.loading = false;
+    exportDialogConfig.isShow = false;
   }
 };
 

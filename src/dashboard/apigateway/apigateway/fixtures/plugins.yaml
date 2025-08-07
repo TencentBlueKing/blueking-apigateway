@@ -2819,3 +2819,111 @@
           }
         }
       }
+      
+
+- model: schema.schema
+  fields:
+    created_time: 2025-08-04 10:00:21.010753+00:00
+    updated_time: 2025-08-04 10:00:21.010788+00:00
+    name: bk-access-token-source
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "type": "object",
+        "properties": {
+            "source": {
+              "type": "string",
+              "enum": ["bearer", "api_key"],
+              "default": "bearer",
+              "description": "The source of the authentication token, default is bearer"
+            }
+        }
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: bk-access-token-source
+    name: access_token 来源
+    name_en: AccessToken Source
+    is_public: true
+    scope: resource
+    priority: 18735
+    schema:
+    - bk-access-token-source
+    - plugin
+    - '0'
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+    - bk-access-token-source
+    notes: '从请求 header 中获取 `Authorization: Bearer {access_token}` 或 `X-API-KEY: {access_token}` 转成 `X-Bkapi-Authorization: {"access_token": "{access_token}"}`。'
+    example: '作用：来源为 bearer 时，从请求 header 中获取 Authorization，来源为 api_key 时，从请求 header 中获取 X-API-KEY \n\n source: bearer'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "properties": {
+              "source": {
+                "title": "来源",
+                "type": "string",
+                "enum": ["bearer", "api_key"],
+                "default": "bearer",
+                "description": "认证令牌的来源，默认是 bearer"
+              }
+          }
+        }
+      }
+- model: plugin.pluginform
+  fields:
+    language: en
+    type:
+    - bk-access-token-source
+    notes: 'Get `Authorization: Bearer {access_token}` or `X-API-KEY: {access_token}` from the request header and convert it into `X-Bkapi-Authorization: {"access_token": "{access_token}"}`.'
+    example: "Purpose: When the source is bearer, get Authorization from the request header; When the source is api_key, get X-API-KEY from the request header \n\nsource: bearer"
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "properties": {
+              "source": {
+                "title": "source",
+                "type": "string",
+                "enum": ["bearer", "api_key"],
+                "default": "bearer",
+                "description": "The source of the authentication token, default is bearer"
+              }
+          }
+        }
+      }
+
+- model: plugin.plugintype
+  fields:
+    code: bk-username-required
+    name: 强制要求调用方传递 X-Bk-Username header 头
+    name_en: Forcing the caller to pass the X-Bk-Username header header
+    is_public: true
+    scope: resource
+    priority: 18725
+    schema: null
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+      - bk-username-required
+    notes: Forcing the caller to pass the X-Bk-Username header header
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {},
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }

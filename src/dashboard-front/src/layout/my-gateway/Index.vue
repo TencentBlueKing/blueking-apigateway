@@ -165,6 +165,8 @@
         </div>
       </div>
     </BkNavigation>
+    <!-- 1.13 版本升级提示 -->
+    <Version113UpdateNotice ref="version113UpdateNoticeRef" />
   </div>
 </template>
 
@@ -175,8 +177,10 @@ import {
   usePermission,
   useStage,
 } from '@/stores';
-import { getGatewayList } from '@/services/source/gateway.ts';
+import { getGatewayList } from '@/services/source/gateway';
+import { getStageList } from '@/services/source/stage';
 import { getPermissionApplyList } from '@/services/source/permission';
+import Version113UpdateNotice from '@/components/version-113-update-notice/Index.vue';
 
 interface IMenu {
   name: string
@@ -211,6 +215,7 @@ const gatewayId = ref(0);
 const headerTitle = ref('');
 
 const isMenuCollapsed = ref(false);
+const version113UpdateNoticeRef = ref();
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 
@@ -401,6 +406,10 @@ watch(
         openedKeys.value.push(item.name);
       }
     }
+
+    if (gatewayId.value) {
+      checkStageVersion();
+    }
   },
   {
     immediate: true,
@@ -422,6 +431,14 @@ const getPermissionData = async () => {
     });
   permissionStore.setCount(res.count);
 };
+
+// 检查网关下的环境 schema 版本
+async function checkStageVersion() {
+  const stageList = await getStageList(gatewayId.value);
+  if (stageList.some(item => item.status === 1 && item.resource_version?.schema_version === '1.0')) {
+    version113UpdateNoticeRef.value?.show();
+  }
+}
 
 const handleCollapse = (collapsed: boolean) => {
   isMenuCollapsed.value = !collapsed;
