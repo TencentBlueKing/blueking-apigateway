@@ -220,10 +220,12 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 		client := http.DefaultClient
-		client.Timeout = util.GetBkApiTimeout(ctx)
+		timeout := util.GetBkApiTimeout(ctx)
 		client.Transport = tr
-		headerInfo := make(map[string]string)
+		headerInfo := map[string]string{constant.BkApiTimeoutHeaderKey: fmt.Sprintf("%v", timeout)}
 		requestParam := runtime.ClientRequestWriterFunc(func(req runtime.ClientRequest, _ strfmt.Registry) error {
+			// 设置timeout
+			_ = req.SetTimeout(timeout)
 			// 设置innerJwt
 			innerJwtConfig := map[string]string{
 				"inner_jwt": innerJwt,
@@ -256,19 +258,21 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 
 			if handlerRequest.HeaderParam != nil {
 				for k, v := range handlerRequest.HeaderParam {
-					err = req.SetHeaderParam(k, v)
+					err = req.SetHeaderParam(k, fmt.Sprintf("%v", v))
 					if err != nil {
-						auditLog.Error("set header param err", zap.String(k, v), zap.Error(err))
+						auditLog.Error("set header param err", zap.String(k,
+							fmt.Sprintf("%v", v)), zap.Error(err))
 						return err
 					}
-					headerInfo[k] = v
+					headerInfo[k] = fmt.Sprintf("%v", v)
 				}
 			}
 			if handlerRequest.QueryParam != nil {
 				for k, v := range handlerRequest.QueryParam {
-					err = req.SetQueryParam(k, v) // 使用 SetQueryParam 方法设置查询参数
+					err = req.SetQueryParam(k, fmt.Sprintf("%v", v)) // 使用 SetQueryParam 方法设置查询参数
 					if err != nil {
-						auditLog.Error("set query param err", zap.String(k, v), zap.Error(err))
+						auditLog.Error("set query param err", zap.String(k, fmt.Sprintf("%v", v)),
+							zap.Error(err))
 						return err
 					}
 				}
