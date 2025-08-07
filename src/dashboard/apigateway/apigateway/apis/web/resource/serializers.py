@@ -212,13 +212,13 @@ class OpenapiSchemaSLZ(serializers.Serializer):
             return value
         # 校验 request_body
         version = value.get("version", str(OPENAPIV30))
-        validator = OAS31Validator if version == str(OPENAPIV31) else OAS30Validator()
+        validator = OAS31Validator() if version == str(OPENAPIV31) else OAS30Validator()
         # 暂时只校验 request_body
         if value.get("request_body"):
             if "content" not in value:
                 raise serializers.ValidationError(_("request_body 必须包含 content"))
             # 校验 content
-            for content_type, schema in value["content"].items():
+            for content_type, schema in value["request_body"]["content"].items():
                 if content_type not in ["application/json"]:
                     raise serializers.ValidationError(_("content_type 目前只支持： application/json"))
                 validator.check_schema(schema)
