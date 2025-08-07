@@ -23,7 +23,7 @@ from django.db import transaction
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.common.constants import CallSourceTypeEnum
+from apigateway.common.constants import DEFAULT_BACKEND_HOST_FOR_MISSING, CallSourceTypeEnum
 from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import (
@@ -154,7 +154,7 @@ class StageHandler:
             name=DEFAULT_BACKEND_NAME,
         )
 
-        default_host = "your-backend-host" if source == CallSourceTypeEnum.OpenAPI else ""
+        default_host = DEFAULT_BACKEND_HOST_FOR_MISSING if source == CallSourceTypeEnum.OpenAPI else ""
 
         backend_config = BackendConfig(
             gateway=gateway,

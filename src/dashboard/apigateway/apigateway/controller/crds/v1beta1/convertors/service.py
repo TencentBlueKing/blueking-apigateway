@@ -17,10 +17,12 @@
 #
 from typing import List
 
+from apigateway.common.constants import DEFAULT_BACKEND_HOST_FOR_MISSING
 from apigateway.controller.crds.constants import UpstreamSchemeEnum, UpstreamTypeEnum
 from apigateway.controller.crds.v1beta1.convertors.base import BaseConvertor, UrlInfo
 from apigateway.controller.crds.v1beta1.models.base import TimeoutConfig, Upstream, UpstreamNode
 from apigateway.controller.crds.v1beta1.models.gateway_service import BkGatewayService, BkGatewayServiceSpec
+from apigateway.core.models import Backend
 
 
 class ServiceConvertor(BaseConvertor):
@@ -58,9 +60,9 @@ class ServiceConvertor(BaseConvertor):
             hosts = backend_config.get("hosts", [])
             for node in hosts:
                 host = node["host"]
-                # 如果 default 没有设置 host，则默认使用 0.0.0.0 来替代，避免 apisix 加载报错
+                # 如果 default 没有设置 host，则默认使用 your-backend-host 来替代，避免 apisix 加载报错
                 if host == "":
-                    host = "your-backend-host"
+                    host = DEFAULT_BACKEND_HOST_FOR_MISSING
                 if "scheme" in node:
                     host = node["scheme"] + "://" + host
                 url_info = UrlInfo(host)
@@ -79,12 +81,18 @@ class ServiceConvertor(BaseConvertor):
             stage_name = self._release_data.stage.name
             stage_id = self._release_data.stage.pk
 
+            backend = Backend.objects.get(id=backend_id)
+            backend_name = backend.name
+            backend_description = backend.description
+
+            description = self._release_data.stage.description + f"({backend_name}: {backend_description[:32]})"
+
             # stage_name max length is 20, stage_id 6, backend_id is 4, other 10
             # total max length is 64, so the buffer is 24 ( stage_id length + backend_id length)
             services.append(
                 BkGatewayService(
                     metadata=self._common_metadata(
-                        f"stage-{stage_name}-{stage_id}-b-{backend_id}",
+                        f"s-{stage_id}-b-{backend_id}",
                         labels={
                             "service-type": "stage-backend",
                             "backend-id": str(backend_id),
@@ -93,7 +101,7 @@ class ServiceConvertor(BaseConvertor):
                     spec=BkGatewayServiceSpec(
                         name=f"_stage_service_{stage_name}_{backend_id}",
                         id=f"stage-{stage_id}-backend-{backend_id}",
-                        description=self._release_data.stage.description,
+                        description=description,
                         upstream=upstream,
                     ),
                 )
