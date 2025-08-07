@@ -494,7 +494,7 @@ defineExpose({
     .panel-header {
       display: flex;
       align-items: center;
-      padding: 24px 24px 8px;
+      padding: 0 24px 8px 0;
       cursor: pointer;
 
       .title {
