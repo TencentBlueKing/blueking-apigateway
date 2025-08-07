@@ -216,6 +216,7 @@
           <AgTable
             ref="tableRef"
             v-model:selected-row-keys="selectedRowKeys"
+            v-model:table-data="tableData"
             :source="getTableData"
             :columns="columns"
             row-key="id"
@@ -292,9 +293,7 @@
                   :resource-id="resourceId"
                   doc-root-class="doc-tab"
                   height="calc(100vh - 348px)"
-                  @done="(v: boolean | any) => {
-                    isComponentLoading = !!v
-                  }"
+                  @done="isComponentLoading = false"
                   @deleted-success="handleDeleteSuccess"
                   @on-jump="(id: number | any) => handleShowInfo(id)"
                   @on-update-plugin="handleUpdatePlugin"
@@ -534,7 +533,7 @@ const curResource = ref<any>({});
 
 const active = ref('resourceInfo');
 
-const isComponentLoading = ref(true);
+const isComponentLoading = ref(false);
 
 const searchValue = ref([]);
 const searchData = shallowRef([
@@ -1202,7 +1201,6 @@ const dragTwoColDiv = (contentId: string, leftBoxId: string, resizeId: string/* 
 const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
   resourceId.value = id;
   handleOutBatch();
-  // curResource.value = tableData.value.find((e: any) => e.id === id);
   tableData.value?.forEach((item: any) => {
     if (item.id === id) {
       curResource.value = item;
@@ -1228,6 +1226,7 @@ const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
 const handleUpdatePlugin = () => {
   tableRef.value!.fetchData(tableQueries.value);
   handleShowVersion();
+  isComponentLoading.value = false;
 };
 
 // 显示列表
