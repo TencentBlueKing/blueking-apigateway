@@ -94,6 +94,22 @@ def _get_apigw_schema_content(spec_version: SpecVersion) -> Mapping[Hashable, An
     return content
 
 
+def has_openapi_schema(openapi_schema: Dict[str, Any]) -> bool:
+    """
+    判断schema是否已经确认
+    """
+    if "none_schema" in openapi_schema and openapi_schema["none_schema"] is True:
+        # 对于确认过没有 schema 的资源，直接返回 True
+        return True
+
+        # currently, the schema.responses is initialized during import openapi file
+        # so, we can't judge whether the schema has configured the schema or not
+    if "requestBody" in openapi_schema or "parameters" in openapi_schema:
+        return True
+
+    return False
+
+
 def init_validator_schema():
     """
     初始化为schema_validator使用自定义schema
