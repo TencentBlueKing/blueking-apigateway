@@ -123,23 +123,54 @@
           <BkTableColumn
             prop="plugins"
             :label="t('生效的插件')"
+            :show-overflow-tooltip="false"
           >
             <template #default="{ row }">
               <template v-if="row?.plugins?.length">
-                <span
-                  v-for="p in row.plugins"
-                  :key="p?.id"
+                <BkPopover
+                  placement="top"
+                  theme="dark"
+                  :popover-delay="0"
                 >
                   <span
-                    v-if="p?.binding_type === 'stage'"
-                    class="plugin-tag success"
-                  >环</span>
-                  <span
-                    v-if="p?.binding_type === 'resource'"
-                    class="plugin-tag info"
-                  >资</span>
-                  <span class="v-middle">{{ p?.name }}</span>
-                </span>
+                    v-for="p in row.plugins"
+                    :key="p?.id"
+                  >
+                    <span
+                      v-if="p?.binding_type === 'stage'"
+                      class="plugin-tag success"
+                    >
+                      {{ t('环') }}
+                    </span>
+                    <span
+                      v-if="p?.binding_type === 'resource'"
+                      class="plugin-tag info"
+                    >
+                      {{ t('资') }}
+                    </span>
+                    <span class="v-middle ml-4px mr-4px">{{ p?.name }}</span>
+                  </span>
+                  <template #content>
+                    <span
+                      v-for="p in row.plugins"
+                      :key="p?.id"
+                    >
+                      <span
+                        v-if="p?.binding_type === 'stage'"
+                        class="plugin-tag success"
+                      >
+                        {{ t('环') }}
+                      </span>
+                      <span
+                        v-if="p?.binding_type === 'resource'"
+                        class="plugin-tag info"
+                      >
+                        {{ t('资') }}
+                      </span>
+                      <span class="v-middle ml-4px mr-4px">{{ p?.name }}</span>
+                    </span>
+                  </template>
+                </BkPopover>
               </template>
               <span v-else>--</span>
             </template>
@@ -603,13 +634,14 @@ defineExpose({ reload: init });
 
 .plugin-tag {
   display: inline-block;
-  width: 18px;
+  min-width: 18px;
   height: 16px;
   font-size: 10px;
   line-height: 16px;
   text-align: center;
   vertical-align: middle;
   border-radius: 2px;
+  padding: 0 4px;
 
   &.success {
     color: #14A568;

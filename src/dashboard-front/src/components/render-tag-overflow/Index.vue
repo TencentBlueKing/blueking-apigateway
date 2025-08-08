@@ -17,68 +17,78 @@
 */
 
 <template>
-  <div
-    ref="rowRef"
-    class="render-row-wrapper"
-  >
-    <p
-      ref="textRef"
-      class="render-row"
+  <div>
+    <span v-show="!data.length">--</span>
+    <div
+      ref="rowRef"
+      class="render-row-wrapper"
     >
-      <BkTag
-        v-for="(item, index) in data"
-        :key="index"
-        class="render-row-item"
-        @click="emits('click')"
+      <p
+        ref="textRef"
+        class="render-row"
       >
-        {{ item }}
-      </BkTag>
-      <BkTag
-        class="overflow-tag"
-        @click="emits('click')"
-      >
-        +{{ overflowData.length }}
-      </BkTag>
-    </p>
-    <p class="visible-content">
-      <BkTag
-        v-for="(item, index) in visibleData"
-        :key="index"
-        class="render-row-item"
-        @click="emits('click')"
-      >
-        {{ item }}
-      </BkTag>
-      <BkPopover
-        v-if="overflowData.length > 0"
-        ext-cls="render-row-overflow-popover-main"
-        :max-height="500"
-        placement="top"
-        theme="light"
-        width="430"
-      >
+        <BkTag
+          v-for="(item, index) in data"
+          :key="index"
+          class="render-row-item"
+          @click="emits('click')"
+        >
+          {{ item }}
+        </BkTag>
         <BkTag
           class="overflow-tag"
           @click="emits('click')"
         >
           +{{ overflowData.length }}
         </BkTag>
-        <template #content>
-          <slot name="popoverContent">
-            <div class="flex gap-4px">
-              <BkTag
-                v-for="(item, index) in overflowData"
-                :key="index"
-                v-bk-tooltips="item"
-                class="render-row-item mb-4px max-w-400px"
-              >
-                {{ item }}
-              </BkTag>
-            </div>
-          </slot>
-        </template>
-      </BkPopover>
-    </p>
+      </p>
+      <p class="visible-content">
+        <BkTag
+          v-for="(item, index) in visibleData"
+          :key="index"
+          class="render-row-item"
+          @click="emits('click')"
+        >
+          {{ item }}
+        </BkTag>
+        <BkPopover
+          v-if="overflowData.length > 0"
+          ext-cls="render-row-overflow-popover-main"
+          :max-height="500"
+          placement="left"
+          theme="light"
+        >
+          <span class="overflow-tag">
+            <BkTag
+              @click="emits('click')"
+            >
+              {{ overflowData?.[0] }}
+            </BkTag>
+            <BkTag
+              v-if="overflowData.length > 1"
+              class="ml-4px"
+              @click="emits('click')"
+            >
+              +{{ overflowData.length - 1 }}
+            </BkTag>
+          </span>
+          <template #content>
+            <slot name="popoverContent">
+              <div class="flex flex-column">
+                <BkTag
+                  v-for="(item, index) in overflowData"
+                  :key="index"
+                  v-bk-tooltips="item"
+                  class="render-row-item mb-4px"
+                >
+                  {{ item }}
+                </BkTag>
+              </div>
+            </slot>
+          </template>
+        </BkPopover>
+      </p>
+    </div>
   </div>
 </template>
 
@@ -142,7 +152,6 @@ const visibleData = computed(() => {
   if (overflowIndex.value === null) {
     return data;
   }
-
   return data.slice(0, overflowIndex.value);
 });
 
@@ -169,14 +178,20 @@ watch(() => data, findOverflowIndex, { immediate: true });
     gap: 4px;
   }
 
-  .render-row-item {
-    padding: 0 10px;
-  }
+}
+
+.render-row-item {
+  padding: 0 10px;
+  max-width: max-content;
 }
 </style>
 
 <style lang="scss">
 .render-row-overflow-popover-main {
   overflow-y: auto;
+
+  .bk-pop2-arrow {
+    display: none;
+  }
 }
 </style>
