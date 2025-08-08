@@ -123,10 +123,6 @@ def extract_openapi_parameters_from_path(path: str) -> List[Dict]:
             seen.add(param_name)
             param_names.append(param_name)
     return [
-        {
-            "name": name,
-            "in": "path",
-            "required": True,
-        }
+        {"name": name, "in": "path", "required": True, "description": "", "schema": {"type": "string"}}
         for name in param_names
     ]
