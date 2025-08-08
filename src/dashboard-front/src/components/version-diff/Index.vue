@@ -451,6 +451,7 @@
             <!-- 无数据 -->
             <TableEmpty
               v-if="hasFilter"
+              :empty-type="tableEmptyConf.emptyType"
               :abnormal="tableEmptyConf.isAbnormal"
               @refresh="getDiffData"
               @clear-filter="handleClearFilterKey"
@@ -522,10 +523,10 @@ const gatewayStore = useGateway();
 // 网关id
 const apigwId = computed(() => +route.params.id);
 const tableEmptyConf = ref<{
-  keyword: string
+  emptyType: string
   isAbnormal: boolean
 }>({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 
@@ -714,14 +715,14 @@ const renderTitle = (item: any) => {
 const updateTableEmptyConfig = () => {
   const isSearch = !!searchParams.keyword || !!searchParams.diffType;
   if (isSearch && !hasResult.value) {
-    tableEmptyConf.value.keyword = 'placeholder';
+    tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
   if (isSearch) {
-    tableEmptyConf.value.keyword = '$CONSTANT';
+    tableEmptyConf.value.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.value.keyword = '';
+  tableEmptyConf.value.emptyType = '';
 };
 
 const handleClearFilterKey = async () => {
