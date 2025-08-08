@@ -32,10 +32,29 @@
           property="contacts"
           required
         >
-          <MemberSelector
-            v-model="docForm.contacts"
-            :placeholder="t('请选择')"
-            has-delete-icon
+          <EditMember
+            v-if="!featureFlagStore.isTenantMode"
+            mode="edit"
+            width="600px"
+            field="contacts"
+            is-required
+            :placeholder="t('请选择联系人')"
+            :content="docForm.contacts"
+            :is-error-class="'maintainers-error-tip'"
+            :error-value="t('联系人不能为空')"
+            @on-change="(e:Record<string, any>) => handleContactsChange(e)"
+          />
+          <TenantUserSelector
+            v-else
+            :content="docForm.contacts"
+            :error-value="t('联系人不能为空')"
+            :is-error-class="'maintainers-error-tip'"
+            is-required
+            :placeholder="t('请选择联系人')"
+            field="contacts"
+            mode="edit"
+            width="600px"
+            @on-change="(e:Record<string, any>) => handleContactsChange(e)"
           />
           <div class="form-item-tip">
             <span>{{ t('文档页面上展示出来的文档咨询接口人') }}</span>
@@ -152,10 +171,12 @@
 </template>
 
 <script lang="ts" setup>
+import { useFeatureFlag } from '@/stores';
 import { cloneDeep } from 'lodash-es';
 import { Message } from 'bkui-vue';
-import MemberSelector from '@/components/member-selector';
 import { patchGateway } from '@/services/source/gateway';
+import EditMember from '@/views/basic-info/components/EditMember.vue';
+import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 
 interface IForm {
   type: string
@@ -182,6 +203,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const featureFlagStore = useFeatureFlag();
 
 const InitForm = (): IForm => {
   return {
@@ -277,6 +299,10 @@ const handleCommit = async () => {
 
 const handleUpdateIsShow = (value: boolean) => {
   emit('update:modelValue', value);
+};
+
+const handleContactsChange = ({ contacts }: { contacts: string[] }) => {
+  docForm.value.contacts = contacts;
 };
 
 </script>

@@ -94,15 +94,18 @@ import {
   type IEventResponse,
   getDeployHistories,
 } from '@/services/source/programmable';
-import { useGateway } from '@/stores';
+import { useFeatureFlag, useGateway } from '@/stores';
 import ReleaseStageEvent from '@/components/release-stage-event/Index.vue';
 import ReleaseProgrammableEvent from '../components/ReleaseProgrammableEvent.vue';
+import EditMember from '@/views/basic-info/components/EditMember.vue';
+import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import { t } from '@/locales';
 
 type Enums = typeof publishSourceEnum | typeof publishStatusEnum;
 
 const router = useRouter();
 const gatewayStore = useGateway();
+const featureFlagStore = useFeatureFlag();
 
 const filterData = ref({
   keyword: '',
@@ -214,7 +217,29 @@ const columns = computed(() =>
       },
       {
         label: t('操作人'),
-        field: 'created_by',
+        render: ({ row }: any) => (
+          <div>
+            {
+              !featureFlagStore.isTenantMode
+                ? (
+                  <EditMember
+                    mode="detail"
+                    width="600px"
+                    field="created_by"
+                    content={[row?.created_by]}
+                  />
+                )
+                : (
+                  <TenantUserSelector
+                    mode="detail"
+                    width="600px"
+                    field="created_by"
+                    content={[row?.created_by]}
+                  />
+                )
+            }
+          </div>
+        ),
       },
       {
         label: t('操作'),
@@ -265,7 +290,29 @@ const columns = computed(() =>
       },
       {
         label: t('操作人'),
-        field: 'created_by',
+        render: ({ row }: any) => (
+          <div>
+            {
+              !featureFlagStore.isTenantMode
+                ? (
+                  <EditMember
+                    mode="detail"
+                    width="600px"
+                    field="created_by"
+                    content={[row?.created_by]}
+                  />
+                )
+                : (
+                  <TenantUserSelector
+                    mode="detail"
+                    width="600px"
+                    field="created_by"
+                    content={[row?.created_by]}
+                  />
+                )
+            }
+          </div>
+        ),
       },
       {
         label: t('耗时'),
