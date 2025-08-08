@@ -123,6 +123,7 @@
       quick-close
       ext-cls="plugin-add-slider"
       :width="pluginSliderWidth"
+      @closed="isExampleVisible = false"
     >
       <template #default>
         <BkSteps
@@ -302,6 +303,7 @@
             class="px-40px py-20px"
           >
             <PluginInfo
+              v-model:show-example="isExampleVisible"
               :cur-plugin="curChoosePlugin"
               :scope-info="curScopeInfo"
               :type="curType"
@@ -309,7 +311,6 @@
               :binding-plugins="curBindingPlugins"
               @choose-plugin="handleChoosePlugin"
               @on-change="handleOperate"
-              @show-example="handlePluginExampleToggle"
             />
           </div>
         </div>
@@ -342,16 +343,17 @@
       quick-close
       ext-cls="plugin-add-slider"
       :width="pluginSliderWidth"
+      @closed="isExampleVisible = false"
     >
       <template #default>
         <div class="px-40px py-20px">
           <PluginInfo
+            v-model:show-example="isExampleVisible"
             :cur-plugin="curChoosePlugin"
             :scope-info="curScopeInfo"
             :edit-plugin="curEditPlugin"
             :type="curType"
             @on-change="handleOperate"
-            @show-example="handlePluginExampleToggle"
           />
         </div>
       </template>
@@ -443,8 +445,11 @@ const tableEmptyConf = ref({
   keyword: '',
   isAbnormal: false,
 });
+// PluginInfo 中的插件示例是否可见
+const isExampleVisible = ref(false);
+
 // 控制插件 slider 宽度，会在展示插件使用示例时变宽
-const pluginSliderWidth = ref(960);
+const pluginSliderWidth = computed(() => isExampleVisible.value ? 1360 : 960);
 
 // 当前环境信息
 const stageData: any = computed(() => {
@@ -503,11 +508,6 @@ const handleOperate = (operate: string) => {
     default:
       break;
   }
-};
-
-// 处理插件使用示例内容是否可见的逻辑
-const handlePluginExampleToggle = ({ isVisible }: { isVisible: boolean }) => {
-  pluginSliderWidth.value = isVisible ? 1360 : 960;
 };
 
 const activeIndex = computed(() => Object.keys(curBindingPlugins.value)?.map((item: string) => Number(item)));
@@ -578,15 +578,15 @@ const handleEditePlugin = async (item: any) => {
   curType.value = 'edit';
   const { code, config_id } = item;
   const curEditItem = curBindingPlugins.value.find((pluginItem: { code: string }) => pluginItem.code === code);
-  try {
-    const res = await getPluginConfig(gatewayId.value, scopeType.value, scopeId.value, code, config_id);
-    curEditPlugin.value = res;
-    curChoosePlugin.value = curEditItem;
-    isEditVisible.value = true;
-  }
-  catch (error) {
-    console.log('error', error);
-  }
+  curEditPlugin.value = await getPluginConfig(
+    gatewayId.value,
+    scopeType.value,
+    scopeId.value,
+    code,
+    config_id,
+  );
+  curChoosePlugin.value = curEditItem;
+  isEditVisible.value = true;
 };
 
 const pluginDeleting = ref(false);
