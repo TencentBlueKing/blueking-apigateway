@@ -795,7 +795,7 @@
         />
         <div
           v-else
-          class="text-14px"
+          class="text-12px"
         >
           {{ t('该资源无响应参数') }}
         </div>
