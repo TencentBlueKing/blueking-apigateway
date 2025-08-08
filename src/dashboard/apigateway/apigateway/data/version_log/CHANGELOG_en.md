@@ -1,4 +1,14 @@
-<!-- 2025-06-06 -->
+<!-- 2025-08-08 -->
+# V1.17.10 Release Log
+
+### Bug Fixes
+
+- Fix: Frontend experience issues
+- Fix: MCP Server related issues
+
+---
+
+<!-- 2025-07-06 -->
 # V1.17.0 Release Log
 
 ### Features
