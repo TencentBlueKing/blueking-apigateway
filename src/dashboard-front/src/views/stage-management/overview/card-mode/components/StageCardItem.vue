@@ -169,7 +169,7 @@
             <StageCardLineChart
               v-if="stage.status === 1"
               :data="data"
-              :mount-id="uniqueId()"
+              :mount-id="uniqueId('stage-chart')"
             />
           </div>
         </div>
