@@ -192,9 +192,9 @@
         </BkTableColumn>
         <template #empty>
           <TableEmpty
-            :keyword="tableEmptyConf.keyword"
+            :empty-type="tableEmptyConf.emptyType"
             :abnormal="tableEmptyConf.isAbnormal"
-            @reacquire="getTableData"
+            @refresh="getTableData"
             @clear-filter="handleClearFilterKey"
           />
         </template>
@@ -407,10 +407,10 @@ const rules = reactive<any>({
   ],
 });
 const tableEmptyConf = ref<{
-  keyword: string
+  emptyType: string
   isAbnormal: boolean
 }>({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 const sourceEl = ref<any>(null);
@@ -505,14 +505,14 @@ const handleResourceScroll = async () => {
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.abnormal;
   if (searchFilters.value?.length || !pagingList.value.length) {
-    tableEmptyConf.value.keyword = 'placeholder';
+    tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
   if (searchFilters.value?.length) {
-    tableEmptyConf.value.keyword = '$CONSTANT';
+    tableEmptyConf.value.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.value.keyword = '';
+  tableEmptyConf.value.emptyType = '';
 };
 
 const handleClearFilterKey = () => {

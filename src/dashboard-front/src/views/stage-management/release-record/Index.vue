@@ -58,9 +58,9 @@
       >
         <template #empty>
           <TableEmpty
-            :keyword="tableEmptyConf.keyword"
+            :empty-type="tableEmptyConf.emptyType"
             :abnormal="tableEmptyConf.isAbnormal"
-            @reacquire="getList"
+            @refresh="getList"
             @clear-filter="handleClearFilterKey"
           />
         </template>
@@ -143,7 +143,7 @@ const shortcutSelectedIndex = ref(-1);
 const dateKey = ref('dateKey');
 
 const tableEmptyConf = ref({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 
@@ -378,14 +378,14 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   const isSearch = dateValue.value.length > 0 || filterData.value.keyword;
   if (isSearch || !tableData.value.length) {
-    tableEmptyConf.value.keyword = 'placeholder';
+    tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
   if (isSearch) {
-    tableEmptyConf.value.keyword = '$CONSTANT';
+    tableEmptyConf.value.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.value.keyword = '';
+  tableEmptyConf.value.emptyType = '';
 };
 
 const goVersionList = (data: any) => {

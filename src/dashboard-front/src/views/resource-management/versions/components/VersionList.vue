@@ -166,9 +166,9 @@
             </BkTableColumn>
             <template #empty>
               <TableEmpty
-                :keyword="tableEmptyConf.keyword"
+                :empty-type="tableEmptyConf.emptyType"
                 :abnormal="tableEmptyConf.isAbnormal"
-                @reacquire="getList"
+                @refresh="getList"
                 @clear-filter="handleClearFilterKey"
               />
             </template>
@@ -320,10 +320,10 @@ const stageData = ref();
 const versionData = ref();
 const releaseSidesliderRef = ref();
 const tableEmptyConf = ref<{
-  keyword: string
+  emptyType: string
   isAbnormal: boolean
 }>({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 
@@ -491,15 +491,15 @@ const handleClearFilterKey = () => {
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   if (filterData.value.keyword && !tableData.value.length) {
-    tableEmptyConf.value.keyword = 'placeholder';
+    tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
   if (filterData.value.keyword) {
-    // tableEmptyConf.value.keyword = '$CONSTANT';
-    tableEmptyConf.value.keyword = filterData.value.keyword;
+    // tableEmptyConf.value.emptyType = '$CONSTANT';
+    tableEmptyConf.value.emptyType = filterData.value.keyword;
     return;
   }
-  tableEmptyConf.value.keyword = '';
+  tableEmptyConf.value.emptyType = '';
 };
 
 const getCellClass = (_column: any, _index: number, row: any) => {

@@ -207,9 +207,9 @@
             </BkTableColumn>
             <template #empty>
               <TableEmpty
-                :keyword="tableEmptyConf.keyword"
+                :empty-type="tableEmptyConf.emptyType"
                 :abnormal="tableEmptyConf.isAbnormal"
-                @reacquire="refreshTableData"
+                @refresh="refreshTableData"
                 @clear-filter="handleClearFilterKey"
               />
             </template>
@@ -326,10 +326,10 @@ const curAction = ref({
   comment: '',
 });
 const tableEmptyConf = ref<{
-  keyword: string
+  emptyType: string
   isAbnormal: boolean
 }>({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 
@@ -367,10 +367,10 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   const { bk_app_code, applied_by, mcp_server_id } = filterData.value;
   if (bk_app_code || applied_by || mcp_server_id !== defaultMcpId.value) {
-    tableEmptyConf.value.keyword = 'placeholder';
+    tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
-  tableEmptyConf.value.keyword = '';
+  tableEmptyConf.value.emptyType = '';
 };
 
 const resetSearch = () => {

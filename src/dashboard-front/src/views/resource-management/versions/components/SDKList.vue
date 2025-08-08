@@ -119,9 +119,9 @@
             </BkTableColumn>
             <template #empty>
               <TableEmpty
-                :keyword="tableEmptyConf.keyword"
+                :empty-type="tableEmptyConf.emptyType"
                 :abnormal="tableEmptyConf.isAbnormal"
-                @reacquire="getList"
+                @refresh="getList"
                 @clear-filter="handleClearFilterKey"
               />
             </template>
@@ -162,10 +162,10 @@ const filterData = ref({
   resource_version_id: '',
 });
 const tableEmptyConf = ref<{
-  keyword: string
+  emptyType: string
   isAbnormal: boolean
 }>({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 
@@ -226,14 +226,14 @@ const handleClearFilterKey = () => {
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   if (filterData.value.keyword && !tableData.value.length) {
-    tableEmptyConf.value.keyword = 'placeholder';
+    tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
   if (keyword.value) {
-    tableEmptyConf.value.keyword = keyword.value;
+    tableEmptyConf.value.emptyType = keyword.value;
     return;
   }
-  tableEmptyConf.value.keyword = '';
+  tableEmptyConf.value.emptyType = '';
 };
 
 const goVersionList = (data: any) => {

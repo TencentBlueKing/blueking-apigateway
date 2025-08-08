@@ -179,7 +179,7 @@
           </BkTableColumn>
           <template #empty>
             <TableEmpty
-              :keyword="tableEmptyConf.keyword"
+              :empty-type="tableEmptyConf.emptyType"
               :abnormal="tableEmptyConf.isAbnormal"
               @clear-filter="handleClearFilterKey"
             />
@@ -270,7 +270,7 @@ const pagination = ref({
 });
 
 const tableEmptyConf = ref({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 
@@ -533,14 +533,14 @@ const handlePageSizeChange = (limit: number) => {
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   if (searchValue.value || chooseMethod.value?.length || chooseLabels.value?.length || !tableData.value.length) {
-    tableEmptyConf.value.keyword = 'placeholder';
+    tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
   if (searchValue.value || chooseMethod.value?.length || chooseLabels.value?.length) {
-    tableEmptyConf.value.keyword = '$CONSTANT';
+    tableEmptyConf.value.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.value.keyword = '';
+  tableEmptyConf.value.emptyType = '';
 };
 
 const handleClearFilterKey = () => {
