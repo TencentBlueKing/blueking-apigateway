@@ -74,10 +74,13 @@
             {{ t('网关负责人') }}
           </header>
           <main class="content-main">
-            <bk-user-display-name
-              :user-id="basics.maintainers.join(', ')"
-              style="word-break: break-all;"
-            />
+            <span v-if="!featureFlagStore.isTenantMode">{{ basics.maintainers.join(', ') }}</span>
+            <span v-else>
+              <bk-user-display-name
+                :user-id="basics.maintainers.join(', ')"
+                style="word-break: break-all;"
+              />
+            </span>
           </main>
         </article>
         <template v-if="featureFlagStore.flags.ENABLE_MULTI_TENANT_MODE">

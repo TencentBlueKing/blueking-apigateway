@@ -138,13 +138,16 @@
                     --
                   </span>
                   <template v-else>
-                    <span
-                      v-for="(maintainer, index) in row.maintainers"
-                      :key="maintainer.login_name"
-                    >
-                      <bk-user-display-name :user-id="maintainer" />
-                      <span v-if="index !== (row.maintainers.length - 1)">,</span>
-                    </span>
+                    <span v-if="!featureFlagStore.isTenantMode">{{ row.maintainers.join(', ') }}</span>
+                    <template v-else>
+                      <span
+                        v-for="(maintainer, index) in row.maintainers"
+                        :key="maintainer.login_name"
+                      >
+                        <bk-user-display-name :user-id="maintainer" />
+                        <span v-if="index !== (row.maintainers.length - 1)">,</span>
+                      </span>
+                    </template>
                   </template>
                 </template>
               </BkTableColumn>
@@ -639,8 +642,8 @@ $primary-color: #3a84ff;
           }
 
           .components-wrap {
-            padding-bottom: 16px;
             max-height: calc(100vh - 160px);
+            padding-bottom: 16px;
             overflow-y: auto;
 
             &::-webkit-scrollbar {
@@ -823,7 +826,9 @@ $primary-color: #3a84ff;
         overflow-y: hidden;
 
         :deep(.bk-table-body) {
+
           &.bk-scrollbar {
+
             .bk__rail-x,
             .bk__rail-y {
               display: none !important;
