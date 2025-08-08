@@ -20,398 +20,354 @@
   <div v-show="!gatewayStore.isProgrammableGateway">
     <ResourceSettingTopBar
       :current-source="curResource"
-      :is-detail="isDetail"
+      :is-detail="!isCollapsed"
       :latest="versionConfigs.needNewVersion"
       :show-new-tips="!!tableData.length"
     />
-    <div
-      id="resourceId"
-      class="resource-container page-wrapper-padding"
-      :class="[
-        isDragging ? 'dragging' : '',
-        isDetail && !isShowLeft ? 'welt' : ''
-      ]"
+    <BkAlert
+      v-show="versionConfigs.needNewVersion && isCollapsed"
+      class="mx-24px mt-20px"
+      theme="warning"
     >
-      <div
-        id="resourceLf"
-        :style="{ minWidth: isDetail ? isShowLeft ? '320px' : '0' : '100%' }"
-        class="resource-container-lf"
-      >
-        <BkAlert
-          v-show="versionConfigs.needNewVersion && !isDetail"
-          class="mb-20px"
-          theme="warning"
+      <template #title>
+        {{ versionConfigs.versionMessage }}
+        <BkButton
+          v-if="versionConfigs.needNewVersion"
+          text
+          theme="primary"
+          @click="handleCreateResourceVersion"
         >
-          <template #title>
-            {{ versionConfigs.versionMessage }}
-            <BkButton
-              v-if="versionConfigs.needNewVersion"
-              text
-              theme="primary"
-              @click="handleCreateResourceVersion"
-            >
-              {{ t('立即生成版本') }}
-            </BkButton>
-          </template>
-        </BkAlert>
-        <div class="operate">
-          <div class="flex-grow-1 flex items-center">
-            <div class="mr-8px">
-              <BkButton
-                v-show="isShowLeft && !showBatch"
-                class="w-142px"
-                :class="{ 'super-big-button': isDetail }"
-                theme="primary"
-                @click="handleCreateResource"
-              >
-                {{ t('新建') }}
-              </BkButton>
-            </div>
-            <BkButton
-              v-show="!showBatch"
-              class="mr-8px"
-              @click="handleShowBatch"
-            >
-              {{ t('批量操作') }}
-            </BkButton>
+          {{ t('立即生成版本') }}
+        </BkButton>
+      </template>
+    </BkAlert>
+    <div>
+      <BkResizeLayout
+        placement="right"
+        :border="false"
+        collapsible
+        :is-collapsed="isCollapsed"
+        :min="1000"
+        :max="1286"
+        :initial-divide="1286"
+        @collapse-change="handleCollapseChange"
+      >
+        <template #main>
+          <div class="px-24px py-20px">
             <div
-              v-show="showBatch"
-              class="batch-status"
+              class="operate flex justify-between mb-16px"
+              :class="{'flex-col gap-y-16px': !isCollapsed}"
             >
-              <BkButton
-                class="mr-8px"
-                @click="() => handleBatchOperate('edit')"
-              >
-                {{ t('编辑资源') }}
-              </BkButton>
-              <BkButton
-                class="mr-8px"
-                @click="() => handleBatchOperate('delete')"
-              >
-                {{ t('删除资源') }}
-              </BkButton>
-            </div>
-            <AgDropdown
-              v-show="isDetail && isShowLeft"
-              :text="t('更多')"
-            >
-              <div class="nest-dropdown">
-                <AgDropdown
-                  :dropdown-list="importDropData"
-                  is-text
-                  :text="t('导入')"
-                  placement="right-start"
-                  @on-change="handleImport"
-                />
-                <AgDropdown
-                  :dropdown-list="exportDropData"
-                  is-text
-                  :text="t('导出')"
-                  placement="right-start"
-                  @on-change="handleExport"
-                />
-              </div>
-            </AgDropdown>
-            <section
-              v-show="!isDetail"
-              class="flex items-center"
-            >
-              <AgDropdown
-                v-show="!showBatch"
-                :dropdown-list="importDropData"
-                :text="t('导入')"
-                @on-change="handleImport"
-              />
-              <AgDropdown
-                :dropdown-list="exportDropData"
-                :text="t('导出')"
-                @on-change="handleExport"
-              />
-            </section>
-
-            <span
-              v-show="!isDetail"
-              class="split-line"
-              :class="[showBatch ? 'batch' : '']"
-            />
-
-            <div
-              v-show="!showBatch && !isDetail"
-              class="operate-btn-wrapper"
-            >
-              <BkButton
-                class="operate-btn mr-8px"
-                @click="handleShowDiff"
-              >
-                <AgIcon name="chayiduibi-shixin" />
-                {{ t('与历史版本对比') }}
-              </BkButton>
-
-              <BkBadge
-                v-if="versionConfigs.needNewVersion"
-                dot
-                position="top-right"
-                theme="danger"
-              >
+              <div class="flex-grow-1 flex items-center">
+                <div class="mr-8px">
+                  <BkButton
+                    v-show="!showBatch"
+                    class="w-142px"
+                    :class="{ 'super-big-button': !isCollapsed }"
+                    theme="primary"
+                    @click="handleCreateResource"
+                  >
+                    {{ t('新建') }}
+                  </BkButton>
+                </div>
                 <BkButton
-                  v-bk-tooltips="{
-                    content: t('资源有更新，可生成新版本'),
-                  }"
-                  class="operate-btn"
-                  @click="handleCreateResourceVersion"
+                  v-show="!showBatch"
+                  class="mr-8px"
+                  @click="handleShowBatch"
                 >
-                  <AgIcon name="version" />
-                  {{ t('生成版本') }}
+                  {{ t('批量操作') }}
                 </BkButton>
-              </BkBadge>
-              <BkButton
-                v-else
-                v-bk-tooltips="{
-                  content: t('资源无更新，无需生成版本'),
-                }"
-                disabled
-                class="operate-btn"
-              >
-                <AgIcon name="version" />
-                {{ t('生成版本') }}
-              </BkButton>
-            </div>
-            <BkButton
-              v-show="showBatch"
-              class="operate-btn"
-              outline
-              theme="primary"
-              @click="handleOutBatch"
-            >
-              <AgIcon name="chahao" />
-              {{ t('退出批量编辑') }}
-            </BkButton>
-          </div>
-          <div class="search-select-wrap">
-            <BkSearchSelect
-              v-show="!isDetail"
-              v-model="searchValue"
-              :data="searchData"
-              :placeholder="t('请输入资源名称或选择条件搜索, 按Enter确认')"
-              :value-split-code="'+'"
-              class="w-full! bg-#fff!"
-              unique-select
-            />
-          </div>
-        </div>
-        <BkSearchSelect
-          v-show="isDetail && isShowLeft"
-          v-model="searchValue"
-          :data="searchData"
-          :placeholder="t('请输入资源名称或选择条件搜索, 按Enter确认')"
-          :value-split-code="'+'"
-          class="mb-15px bg-#fff"
-          unique-select
-        />
+                <div
+                  v-show="showBatch"
+                  class="batch-status"
+                >
+                  <BkButton
+                    class="mr-8px"
+                    @click="() => handleBatchOperate('edit')"
+                  >
+                    {{ t('编辑资源') }}
+                  </BkButton>
+                  <BkButton
+                    class="mr-8px"
+                    @click="() => handleBatchOperate('delete')"
+                  >
+                    {{ t('删除资源') }}
+                  </BkButton>
+                </div>
+                <AgDropdown
+                  v-show="!isCollapsed"
+                  :text="t('更多')"
+                >
+                  <div class="nest-dropdown">
+                    <AgDropdown
+                      :dropdown-list="importDropData"
+                      is-text
+                      :text="t('导入')"
+                      placement="right-start"
+                      @on-change="handleImport"
+                    />
+                    <AgDropdown
+                      :dropdown-list="exportDropData"
+                      is-text
+                      :text="t('导出')"
+                      placement="right-start"
+                      @on-change="handleExport"
+                    />
+                  </div>
+                </AgDropdown>
+                <section
+                  v-show="isCollapsed"
+                  class="flex items-center"
+                >
+                  <AgDropdown
+                    v-show="!showBatch"
+                    :dropdown-list="importDropData"
+                    :text="t('导入')"
+                    @on-change="handleImport"
+                  />
+                  <AgDropdown
+                    :dropdown-list="exportDropData"
+                    :text="t('导出')"
+                    @on-change="handleExport"
+                  />
+                </section>
 
-        <div
-          v-show="isShowLeft"
-          class="left-wrapper"
-        >
-          <AgTable
-            ref="tableRef"
-            v-model:selected-row-keys="selectedRowKeys"
-            v-model:table-data="tableData"
-            :source="getTableData"
-            :columns="columns"
-            row-key="id"
-            :filter-row="null"
-            hover
-            @filter-change="handleFilterChange"
-            @select-change="handleSelectChange"
-            @sort-change="handleSortChange"
-          />
-        </div>
-
-        <div
-          v-show="isShowLeft"
-          class="toggle-button toggle-button-lf"
-          :class="[!isDetail ? 'active' : '']"
-          :style="{ right: !isDetail ? '-24px' : '-22px' }"
-          @click="handleToggleLf"
-        >
-          <AgIcon
-            class="icon"
-            name="ag-arrow-left"
-          />
-        </div>
-      </div>
-
-      <div
-        v-show="isDetail && isShowLeft"
-        id="resourceLine"
-        class="demarcation-button"
-        draggable="true"
-      >
-        <span>......</span>
-      </div>
-
-      <div
-        v-show="isDetail"
-        id="resourceRg"
-        class="resource-container-rg flex-grow-1"
-        :class="[isDragging ? 'dragging' : '']"
-      >
-        <div
-          class="toggle-button toggle-button-rg"
-          :class="[!isShowLeft ? 'active' : '']"
-          @click="handleToggleRg"
-        >
-          <AgIcon
-            name="ag-arrow-left"
-            class="icon"
-          />
-        </div>
-        <div class="right-wraper">
-          <BkTab
-            v-model:active="active"
-            class="resource-tab-panel"
-            type="card-tab"
-          >
-            <BkTabPanel
-              v-for="item in panels"
-              :key="item.name"
-              :label="item.label"
-              :name="item.name"
-              render-directive="if"
-            >
-              <BkLoading
-                :loading="isComponentLoading"
-                :opacity="1"
-              >
-                <!-- deleted-success 删除成功需要请求一次列表数据 更新详情 -->
-                <component
-                  :is="item.component"
-                  v-if="item.name === active && resourceId"
-                  :gateway-id="gatewayId"
-                  :cur-resource="curResource"
-                  :resource-id="resourceId"
-                  doc-root-class="doc-tab"
-                  height="calc(100vh - 348px)"
-                  @done="isComponentLoading = false"
-                  @deleted-success="handleDeleteSuccess"
-                  @on-jump="(id: number | any) => handleShowInfo(id)"
-                  @on-update-plugin="handleUpdatePlugin"
+                <span
+                  v-show="isCollapsed"
+                  class="split-line"
+                  :class="[showBatch ? 'batch' : '']"
                 />
-              </BkLoading>
-            </BkTabPanel>
-          </BkTab>
-        </div>
-      </div>
 
-      <!-- 批量删除dialog -->
-      <BkDialog
-        :is-loading="dialogData.loading"
-        :is-show="dialogData.isShow"
-        :title="dialogData.title"
-        quick-close
-        theme="primary"
-        width="600"
-        @closed="handleBatchCancel"
-        @confirm="handleBatchConfirm"
-      >
-        <div
-          v-if="isBatchDelete"
-          class="delete-content"
-        >
-          <BkTable
-            :columns="deleteTableColumns"
-            :data="selectedRows"
-            max-height="280"
-            row-hover="auto"
-            show-overflow-tooltip
-          />
-          <BkAlert
-            :title="t('删除资源后，需要生成新的版本，并发布到目标环境才能生效')"
-            class="my-10px"
-            theme="warning"
-          />
-        </div>
-        <div v-else>
-          <BkForm>
-            <BkFormItem :label="t('基本信息')">
-              <BkCheckbox
-                v-model="batchEditData.isPublic"
-                @change="handlePublicChange"
-              >
-                {{ t('是否公开') }}
-              </BkCheckbox>
-              <BkCheckbox
-                v-model="batchEditData.allowApply"
-                :disabled="!batchEditData.isPublic"
-              >
-                {{ t('允许申请权限') }}
-              </BkCheckbox>
-            </BkFormItem>
-            <BkFormItem :label="t('是否修改标签')">
-              <div class="edit-labels-container">
-                <BkSwitcher
-                  v-model="batchEditData.isUpdateLabels"
+                <div
+                  v-show="!showBatch && isCollapsed"
+                  class="operate-btn-wrapper"
+                >
+                  <BkButton
+                    class="operate-btn mr-8px"
+                    @click="handleShowDiff"
+                  >
+                    <AgIcon name="chayiduibi-shixin" />
+                    {{ t('与历史版本对比') }}
+                  </BkButton>
+
+                  <BkBadge
+                    v-if="versionConfigs.needNewVersion"
+                    dot
+                    position="top-right"
+                    theme="danger"
+                  >
+                    <BkButton
+                      v-bk-tooltips="{
+                        content: t('资源有更新，可生成新版本'),
+                      }"
+                      class="operate-btn"
+                      @click="handleCreateResourceVersion"
+                    >
+                      <AgIcon name="version" />
+                      {{ t('生成版本') }}
+                    </BkButton>
+                  </BkBadge>
+                  <BkButton
+                    v-else
+                    v-bk-tooltips="{
+                      content: t('资源无更新，无需生成版本'),
+                    }"
+                    disabled
+                    class="operate-btn"
+                  >
+                    <AgIcon name="version" />
+                    {{ t('生成版本') }}
+                  </BkButton>
+                </div>
+                <BkButton
+                  v-show="showBatch"
+                  class="operate-btn"
+                  outline
                   theme="primary"
-                  @change="handleUpdateLabelsChange"
-                />
-                <SelectCheckBox
-                  v-if="batchEditData.isUpdateLabels"
-                  v-model="batchEditData.labelIds"
-                  bath-edit
-                  :cur-select-label-ids="[]"
-                  :labels-data="labelsData"
-                  class="select-labels"
-                  @update-success="getLabelsData"
-                  @label-add-success="getLabelsData"
+                  @click="handleOutBatch"
+                >
+                  <AgIcon name="chahao" />
+                  {{ t('退出批量编辑') }}
+                </BkButton>
+              </div>
+              <div
+                class="flex-grow-1"
+                :class="{'max-w-450px': isCollapsed}"
+              >
+                <BkSearchSelect
+                  v-model="searchValue"
+                  :data="searchData"
+                  :placeholder="t('请输入资源名称或选择条件搜索, 按Enter确认')"
+                  :value-split-code="'+'"
+                  class="w-full! bg-#fff!"
+                  unique-select
                 />
               </div>
-            </BkFormItem>
-          </BkForm>
-        </div>
-      </BkDialog>
-
-      <!-- 资源配置导出 -->
-      <ExportResourceDialog
-        v-model:dialog-config="exportDialogConfig"
-        v-model:dialog-params="exportParams"
-        :selections="selectedRows"
-        :is-show-export-content="false"
-        @confirm="handleExportDownload"
-      />
-
-      <!-- 文档侧边栏 -->
-      <ResourceDocSlider
-        v-model="docSliderConf.isShowDocSide"
-        :resource="curResource"
-        :title="docSliderConf.title"
-        @fetch="handleSuccess"
-        @on-update="handleUpdateTitle"
-      />
-
-      <!-- 生成版本 -->
-      <CreateResourceVersion
-        ref="createResourceVersionRef"
-        @done="handleVersionCreated"
-      />
-
-      <!-- 版本对比 -->
-      <BkSideslider
-        v-model:is-show="diffSliderConf.isShow"
-        quick-close
-        :title="diffSliderConf.title"
-        :width="diffSliderConf.width"
-      >
-        <template #default>
-          <div class="p-20px pure-diff">
-            <VersionDiff
-              :source-id="diffSourceId"
-              :target-id="diffTargetId"
+            </div>
+            <AgTable
+              ref="tableRef"
+              v-model:selected-row-keys="selectedRowKeys"
+              v-model:table-data="tableData"
+              :source="getTableData"
+              :columns="columns"
+              row-key="id"
+              :filter-row="null"
+              hover
+              @filter-change="handleFilterChange"
+              @select-change="handleSelectChange"
+              @sort-change="handleSortChange"
+              @clear-queries="handleClearQueries"
             />
           </div>
         </template>
-      </BkSideslider>
+        <template #aside>
+          <aside v-if="!isCollapsed">
+            <BkTab
+              v-model:active="active"
+              class="resource-tab-panel"
+              type="card-tab"
+            >
+              <BkTabPanel
+                v-for="item in panels"
+                :key="item.name"
+                :label="item.label"
+                :name="item.name"
+                render-directive="if"
+              >
+                <BkLoading
+                  :loading="isComponentLoading"
+                  :opacity="1"
+                >
+                  <div>
+                    <!-- deleted-success 删除成功需要请求一次列表数据 更新详情 -->
+                    <component
+                      :is="item.component"
+                      v-if="item.name === active && resourceId"
+                      :gateway-id="gatewayId"
+                      :cur-resource="curResource"
+                      :resource-id="resourceId"
+                      doc-root-class="doc-tab"
+                      height="calc(100vh - 348px)"
+                      @done="isComponentLoading = false"
+                      @deleted-success="handleDeleteSuccess"
+                      @on-jump="(id: number | any) => handleShowInfo(id)"
+                      @on-update-plugin="handleUpdatePlugin"
+                    />
+                  </div>
+                </BkLoading>
+              </BkTabPanel>
+            </BkTab>
+          </aside>
+        </template>
+      </BkResizeLayout>
     </div>
+    <!-- 批量删除dialog -->
+    <BkDialog
+      :is-loading="dialogData.loading"
+      :is-show="dialogData.isShow"
+      :title="dialogData.title"
+      quick-close
+      theme="primary"
+      width="600"
+      @closed="handleBatchCancel"
+      @confirm="handleBatchConfirm"
+    >
+      <div
+        v-if="isBatchDelete"
+        class="delete-content"
+      >
+        <BkTable
+          :columns="deleteTableColumns"
+          :data="selectedRows"
+          max-height="280"
+          row-hover="auto"
+          show-overflow-tooltip
+        />
+        <BkAlert
+          :title="t('删除资源后，需要生成新的版本，并发布到目标环境才能生效')"
+          class="my-10px"
+          theme="warning"
+        />
+      </div>
+      <div v-else>
+        <BkForm>
+          <BkFormItem :label="t('基本信息')">
+            <BkCheckbox
+              v-model="batchEditData.isPublic"
+              @change="handlePublicChange"
+            >
+              {{ t('是否公开') }}
+            </BkCheckbox>
+            <BkCheckbox
+              v-model="batchEditData.allowApply"
+              :disabled="!batchEditData.isPublic"
+            >
+              {{ t('允许申请权限') }}
+            </BkCheckbox>
+          </BkFormItem>
+          <BkFormItem :label="t('是否修改标签')">
+            <div class="edit-labels-container">
+              <BkSwitcher
+                v-model="batchEditData.isUpdateLabels"
+                theme="primary"
+                @change="handleUpdateLabelsChange"
+              />
+              <SelectCheckBox
+                v-if="batchEditData.isUpdateLabels"
+                v-model="batchEditData.labelIds"
+                bath-edit
+                :cur-select-label-ids="[]"
+                :labels-data="labelsData"
+                class="select-labels"
+                @update-success="getLabelsData"
+                @label-add-success="getLabelsData"
+              />
+            </div>
+          </BkFormItem>
+        </BkForm>
+      </div>
+    </BkDialog>
+
+    <!-- 资源配置导出 -->
+    <ExportResourceDialog
+      v-model:dialog-config="exportDialogConfig"
+      v-model:dialog-params="exportParams"
+      :selections="selectedRows"
+      :is-show-export-content="false"
+      @confirm="handleExportDownload"
+    />
+
+    <!-- 文档侧边栏 -->
+    <ResourceDocSlider
+      v-model="docSliderConf.isShowDocSide"
+      :resource="curResource"
+      :title="docSliderConf.title"
+      @fetch="handleSuccess"
+      @on-update="handleUpdateTitle"
+    />
+
+    <!-- 生成版本 -->
+    <CreateResourceVersion
+      ref="createResourceVersionRef"
+      @done="handleVersionCreated"
+    />
+
+    <!-- 版本对比 -->
+    <BkSideslider
+      v-model:is-show="diffSliderConf.isShow"
+      quick-close
+      :title="diffSliderConf.title"
+      :width="diffSliderConf.width"
+    >
+      <template #default>
+        <div class="p-20px pure-diff">
+          <VersionDiff
+            :source-id="diffSourceId"
+            :target-id="diffTargetId"
+          />
+        </div>
+      </template>
+    </BkSideslider>
   </div>
   <PageNotFound v-if="gatewayStore.isProgrammableGateway" />
 </template>
@@ -436,8 +392,6 @@ import {
   getVersionList,
 } from '@/services/source/resource';
 import ResourceDetail from './components/ResourceDetail.vue';
-import CreateResourceVersion from '@/components/create-resource-version/Index.vue';
-import VersionDiff from '@/components/version-diff/Index.vue';
 import SelectCheckBox from './components/SelectCheckBox.vue';
 import AgDropdown from '@/components/ag-dropdown/Index.vue';
 import PluginManage from '@/components/plugin-manage/Index.vue';
@@ -458,11 +412,13 @@ import {
   useResourceSetting,
   useResourceVersion,
 } from '@/stores';
-import ResourceDocSlider from '../components/ResourceDocSlider.vue';
-import ExportResourceDialog from '../components/ExportResourceDialog.vue';
 import { HTTP_METHODS } from '@/constants';
 import { METHOD_THEMES } from '@/enums';
 import { type PrimaryTableProps } from '@blueking/tdesign-ui';
+import ExportResourceDialog from '../components/ExportResourceDialog.vue';
+import CreateResourceVersion from '@/components/create-resource-version/Index.vue';
+import VersionDiff from '@/components/version-diff/Index.vue';
+import ResourceDocSlider from '../components/ResourceDocSlider.vue';
 
 interface ApigwIDropList extends IDropList { tooltips?: string }
 
@@ -483,7 +439,6 @@ const tableQueries = ref<Record<string, any>>({});
 const selectedRowKeys = ref<number[]>([]);
 const selectedRows = ref<any[]>([]);
 
-const leftWidth = ref('320px');
 // 导入下拉
 const importDropData = ref([{
   value: 'config',
@@ -521,9 +476,7 @@ const exportParams: IExportParams = reactive({
 const isBatchDelete = ref(false);
 
 // 是否展示详情
-const isDetail = ref(false);
-// 是否展示左边列表
-const isShowLeft = ref(true);
+const isCollapsed = ref(true);
 
 // 当前点击资源ID
 const resourceId = ref(0);
@@ -621,7 +574,6 @@ const diffSliderConf = reactive({
 });
 const diffSourceId = ref();
 const diffTargetId = ref();
-const isDragging = ref(false);
 const showBatch = ref(false);
 
 // tab 选项卡
@@ -686,7 +638,6 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
       colKey: 'name',
       title: t('资源名称'),
       minWidth: 170,
-      fixed: 'left',
       ellipsis: {
         props: { placement: 'right' },
         content: (h, { row }) => row.name,
@@ -763,7 +714,6 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
         <bk-button
           text
           theme="primary"
-          class="plugin-num"
           onClick={() => handleShowInfo(row.id, 'pluginManage')}
         >
           {row.plugin_count}
@@ -925,26 +875,19 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
 });
 
 watch(
-  isDetail,
-  (v) => {
-    if (!v) {
-      tableData.value?.forEach((item: any) => {
-        item.highlight = false;
-      });
-    }
-  },
-);
-
-watch(
-  isShowLeft,
-  (v) => {
-    const el = document.getElementById('resourceLf');
-    if (!v) {
-      el.style.width = '0px';
+  isCollapsed,
+  () => {
+    if (isCollapsed.value) {
+      tableRef.value!.resetPaginationTheme();
     }
     else {
-      el.style.width = leftWidth.value;
+      tableRef.value!.setPaginationTheme({
+        theme: 'simple',
+        showPageSize: false,
+      });
+      showBatch.value = false;
     }
+    resourceVersionStore.setPageStatus({ isCollapsed: isCollapsed.value });
   },
 );
 
@@ -953,8 +896,8 @@ watch(
   tableData,
   (v: any) => {
     if (v.length && resourceId.value === 0) {
-      // if (v.length) {
       resourceId.value = v[0].id;
+      curResource.value = tableData.value.find(resource => resource.id === resourceId.value);
     }
     // 设置显示的tag值
     tableData.value.forEach((item: any) => {
@@ -1010,10 +953,7 @@ watch(
 watch(
   searchValue,
   (v: any[]) => {
-    tableQueries.value = {
-      order_by: tableQueries.value.order_by,
-      keyword: '',
-    };
+    tableQueries.value = {};
 
     if (route.query?.backend_id) {
       const { backend_id } = route.query;
@@ -1083,25 +1023,10 @@ watch(
   },
 );
 
-watch(
-  () => [isDetail.value, isShowLeft.value],
-  () => {
-    resourceVersionStore.setPageStatus({
-      isDetail: isDetail.value,
-      isShowLeft: isShowLeft.value,
-    });
-  },
-);
-
 const init = () => {
   handleShowVersion();
   getLabelsData();
 };
-
-// const handleClearFilterKey = () => {
-//   tableQueries.value = {};
-//   searchValue.value = [];
-// };
 
 // isPublic为true allowApply才可选
 const handlePublicChange = () => {
@@ -1116,10 +1041,7 @@ const handleCreateResource = () => {
 // 编辑资源
 const handleEditResource = (id: number, type: string) => {
   const name = type === 'edit' ? 'ResourceEdit' : 'ResourceClone';
-  resourceVersionStore.setPageStatus({
-    isDetail: false,
-    isShowLeft: true,
-  });
+  resourceVersionStore.setPageStatus({ isCollapsed: isCollapsed.value });
   router.push({
     name,
     params: { resourceId: id },
@@ -1137,66 +1059,6 @@ const handleDeleteResource = async (id: number) => {
   handleSuccess();
 };
 
-const handleToggleLf = () => {
-  if (isDetail.value) {
-    isShowLeft.value = false;
-  }
-  else {
-    isDetail.value = true;
-    document.getElementById('resourceLf').style.width = leftWidth.value;
-  }
-};
-
-const handleToggleRg = () => {
-  if (isShowLeft.value) {
-    isDetail.value = false;
-    handleShowList();
-  }
-  else {
-    isShowLeft.value = true;
-  }
-};
-
-const dragTwoColDiv = (contentId: string, leftBoxId: string, resizeId: string/* , rightBoxId: string */) => {
-  const resize: any = document.getElementById(resizeId);
-  const leftBox = document.getElementById(leftBoxId);
-  // const rightBox = document.getElementById(rightBoxId);
-  const box = document.getElementById(contentId);
-
-  resize.onmousedown = function (e: MouseEvent) {
-    const startX = e.clientX;
-    resize.left = resize.offsetLeft;
-    isDragging.value = true;
-    document.onmousemove = function (e) {
-      const endX = e.clientX;
-      let moveLen = resize.left + (endX - startX);
-      const maxT = box.clientWidth - resize.offsetWidth;
-      if (moveLen < 215) {
-        moveLen = 0;
-        isShowLeft.value = false;
-        document.onmouseup(e);
-      }
-      if (moveLen > maxT - 770) {
-        moveLen = maxT;
-        handleShowList();
-        document.onmouseup(e);
-      }
-      resize.style.left = moveLen;
-      leftBox.style.width = `${moveLen}px`;
-      // rightBox.style.width = `${box.clientWidth - moveLen - 5}px`;
-      // rightBox.style.width = `calc(100% - ${moveLen + 21})px`;
-    };
-    document.onmouseup = function () {
-      document.onmousemove = null;
-      document.onmouseup = null;
-      isDragging.value = false;
-      resize.releaseCapture?.();
-    };
-    resize.setCapture?.();
-    return false;
-  };
-};
-
 // 展示右边内容
 const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
   resourceId.value = id;
@@ -1211,16 +1073,12 @@ const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
     }
   });
 
-  if (isDetail.value) {
-    isComponentLoading.value = true;
-    active.value = curActive;
-  }
-  else {
-    // pagination.value.small = true;
-    isDetail.value = true;
-    document.getElementById('resourceLf').style.width = leftWidth.value;
-    active.value = curActive;
-  }
+  isCollapsed.value = false;
+  tableRef.value!.setPaginationTheme({
+    theme: 'simple',
+    showPageSize: false,
+  });
+  active.value = curActive;
 };
 
 const handleUpdatePlugin = () => {
@@ -1229,17 +1087,10 @@ const handleUpdatePlugin = () => {
   isComponentLoading.value = false;
 };
 
-// 显示列表
-const handleShowList = () => {
-  isDetail.value = false;
-  isShowLeft.value = true;
-  // pagination.value.small = false;
-};
-
 // 进入批量操作
 const handleShowBatch = () => {
   showBatch.value = true;
-  handleShowList();
+  isCollapsed.value = true;
   exportDropData.value = [
     {
       value: 'all',
@@ -1518,7 +1369,7 @@ const handleUpdateLabelSuccess = () => {
 // 删除成功
 const handleDeleteSuccess = () => {
   tableRef.value!.fetchData(tableQueries.value);
-  handleShowList();
+  isCollapsed.value = true;
 };
 
 const handleUpdateLabelsChange = (v: boolean) => {
@@ -1528,17 +1379,7 @@ const handleUpdateLabelsChange = (v: boolean) => {
 };
 
 const recoverPageStatus = () => {
-  const { isDetail: d, isShowLeft: l } = resourceVersionStore.getPageStatus;
-  isDetail.value = d;
-  isShowLeft.value = l;
-
-  const el = document.getElementById('resourceLf');
-  if (!l) {
-    el.style.width = '0px';
-  }
-  else {
-    el.style.width = leftWidth.value;
-  }
+  isCollapsed.value = resourceVersionStore.getPageStatus.isCollapsed;
 };
 
 const handleVersionCreated = () => {
@@ -1560,6 +1401,12 @@ onBeforeRouteLeave((to) => {
 });
 
 const getTableData = async (params: Record<string, any> = {}) => getResourceList(gatewayId, params);
+
+const handleClearQueries = () => {
+  tableQueries.value = {};
+  searchValue.value = [];
+  tableRef.value!.fetchData(tableQueries.value, { resetPage: true });
+};
 
 const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterValue) => {
   Object.entries(filterValue).forEach(([colKey, checkValues]) => {
@@ -1618,15 +1465,13 @@ const handleSortChange: PrimaryTableProps['onSortChange'] = (sort) => {
   }
 };
 
+const handleCollapseChange = (collapsed: boolean) => {
+  isCollapsed.value = collapsed;
+};
+
 onMounted(() => {
   // setTimeout(() => {
   init();
-  dragTwoColDiv(
-    'resourceId',
-    'resourceLf',
-    'resourceLine',
-    // 'resourceRg',
-  );
   if (route.meta.pageStatus) {
     recoverPageStatus();
   }
@@ -1636,235 +1481,6 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.resource-container {
-  display: flex;
-  align-items: flex-start;
-  height: calc(100% - 112px);
-
-  // overflow-y: auto;
-
-  .resource-container-lf,
-  .resource-container-rg{
-    position: relative;
-  }
-
-  .resource-container-rg {
-    min-height: calc(100% + 40px);
-    margin-top: -20px;
-    margin-right: -24px;
-    margin-bottom: -20px;
-    background: #fff;
-
-    &.dragging {
-
-      &::before {
-        position: absolute;
-        top: 0;
-        left: -1px;
-        z-index: 999;
-        width: 2px;
-        height: 100%;
-        background-color: #3a84ff;
-        content: ' ';
-      }
-    }
-  }
-
-  .demarcation-button:hover + .resource-container-rg {
-
-    &::before {
-      position: absolute;
-      top: 0;
-      left: -1px;
-      z-index: 999;
-      width: 2px;
-      height: 100%;
-      background-color: #3a84ff;
-      content: ' ';
-    }
-  }
-
-  .demarcation-button {
-    display: flex;
-    height: 100%;
-    cursor: col-resize;
-    justify-content: center;
-    align-items: center;
-
-    span {
-      padding-bottom: 6px;
-      color: #63656E;
-      transform: rotate(90deg);
-    }
-  }
-
-  .operate {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 15px;
-    gap: 8px;
-
-    .operate-input{
-      width: 450px;
-    }
-
-    .search-select-wrap {
-      flex-grow: 1;
-      max-width: 450px;
-    }
-  }
-
-  .left-wrapper {
-    position: relative;
-    background: #fff;
-
-    .document-info{
-      font-size: 12px;
-      color: #3a84ff;
-      cursor: pointer;
-    }
-
-    .plus-class{
-      padding: 4px;
-      font-size: 14px;
-      font-weight: bold;
-      color: #979BA5;
-      cursor: pointer;
-      background: #EAEBF0;
-
-      &:hover {
-        color: #3A84FF;
-        background: #E1ECFF;
-      }
-    }
-
-    .table-layout{
-
-      :deep(.row-cls-in-24hours) {
-
-        td {
-          background: #f2fff4 !important;
-        }
-      }
-
-      :deep(.row-cls-highlight) {
-
-        td {
-          background: #e1ecff !important;
-        }
-      }
-
-      :deep(.bk-table-head) {
-        scrollbar-color: transparent transparent;
-      }
-
-      :deep(.bk-table-body) {
-        scrollbar-color: transparent transparent;
-      }
-
-      :deep(.resource-name) {
-        display: flex;
-        align-items: center;
-
-        .name {
-          overflow: hidden;
-          color: #3a84ff;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          cursor: pointer;
-
-          .name-updated {
-            max-width: 112px;
-          }
-        }
-
-        .dot {
-          display: inline-block;
-          height: 8px;
-          min-width: 8px;
-          margin-left: 4px;
-          vertical-align: middle;
-          cursor: pointer;
-          border: 1px solid #C4C6CC;
-          border-radius: 50%;
-
-          &.warning {
-            background: #fff3e1;
-            border: 1px solid #ff9c01;
-          }
-        }
-      }
-    }
-
-    .text-warp {
-      position: relative;
-      cursor: pointer;
-
-      .edit-icon {
-        position: absolute;
-        top: -2px;
-        font-size: 24px;
-        color: #3A84FF;
-        cursor: pointer;
-
-        // top: 8px;
-        // right: -20px;
-      }
-
-      :deep(.bk-tag-text) {
-        max-width: 80px;
-      }
-    }
-
-    .tag-cls{
-      cursor: pointer;
-    }
-  }
-
-  .toggle-button {
-    position: absolute;
-    z-index: 99;
-    display: flex;
-    width: 16px;
-    height: 28px;
-    font-size: 12px;
-    color: #3A84FF;
-    cursor: pointer;
-    background: #FAFBFD;
-    border: 1px solid #3A84FF;
-    border-radius: 4px 0 0 4px;
-    transform: translateY(-50%);
-    box-shadow: 0 2px 4px 0 #0000001a;
-    align-items: center;
-    justify-content: center;
-
-    .icon {
-      transition: transform .15s !important;
-    }
-
-    &:hover {
-      color: #fff;
-      background-color: #3a84ff;
-    }
-
-    &.active {
-      color: #fff;
-      background-color: #3a84ff;
-    }
-  }
-
-  .toggle-button-lf {
-    // right: -19px;
-    top: -6px;
-  }
-
-  .toggle-button-rg {
-    top: 0;
-    left: -1px;
-    border-radius: 4px 0 0 4px;
-    transform: rotate(180deg) !important;
-  }
-}
 
 :deep(.bk-popover) {
 
@@ -1894,24 +1510,9 @@ onMounted(() => {
   :deep(.bk-tab-header-item) {
     padding: 0 24px !important;
   }
-}
 
-.resource-container.dragging {
-  cursor: col-resize;
-}
-
-.welt {
-  padding-left: 0;
-}
-
-.tips-cls {
-  padding: 3px 8px;
-  cursor: default;
-  background: #f0f1f5;
-  border-radius: 2px;
-
-  &:hover {
-    background: #d7d9e1 !important;
+  :deep(.bk-tab-content) {
+    background: #fff;
   }
 }
 
@@ -1921,11 +1522,6 @@ onMounted(() => {
     max-height: calc(100vh - 52px);
     overflow: hidden;
   }
-}
-
-.plugin-num {
-  color: #3a84ff;
-  cursor: pointer;
 }
 
 .edit-labels-container {

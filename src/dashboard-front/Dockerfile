@@ -4,6 +4,8 @@ FROM node:20.19.4-bookworm AS builder
 WORKDIR /app
 COPY . /app
 
+ENV NODE_OPTIONS=--max_old_space_size=8192
+
 RUN npm install -g npm@11.5.1
 RUN npm install --force
 RUN npm run build-only

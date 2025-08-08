@@ -23,7 +23,29 @@
       <BkLoading />
     </template>
     <template #empty>
-      <BkException type="empty" />
+      <BkException
+        v-bind="exceptionAttrs"
+        class="ag-table-exception"
+      >
+        <BkButton
+          v-if="exceptionAttrs.type === 500"
+          text
+          theme="primary"
+          @click="handleRefresh"
+        >
+          {{ t("刷新") }}
+        </BkButton>
+        <div v-if="exceptionAttrs.type === 'search-empty'">
+          {{ t("可以尝试 调整关键词 或") }}
+          <BkButton
+            text
+            theme="primary"
+            @click="emit('clear-queries')"
+          >
+            {{ t("清空搜索条件") }}
+          </BkButton>
+        </div>
+      </BkException>
     </template>
   </PrimaryTable>
 </template>
@@ -31,6 +53,7 @@
 <script setup lang="ts">
 import { PrimaryTable, type PrimaryTableProps } from '@blueking/tdesign-ui';
 import { useRequest } from 'vue-request';
+import { cloneDeep } from 'lodash-es';
 
 interface IProps {
   source: (params?: Record<string, any>) => Promise<unknown>
@@ -43,7 +66,11 @@ const tableData = defineModel<any[]>('tableData', { default: () => [] });
 
 const { source, columns = [] } = defineProps<IProps>();
 
+const emit = defineEmits<{ 'clear-queries': [void] }>();
+
 const slots = defineSlots();
+
+const { t } = useI18n();
 
 const pagination = ref<PrimaryTableProps['pagination']>({
   current: 1,
@@ -51,6 +78,8 @@ const pagination = ref<PrimaryTableProps['pagination']>({
   defaultCurrent: 1,
   defaultPageSize: 10,
   total: 0,
+  theme: 'default',
+  showPageSize: true,
 });
 
 let paramsMemo: Record<string, any> = {};
@@ -62,7 +91,7 @@ const offsetAndLimit = computed(() => {
   };
 });
 
-const { params, run: fetchData, loading } = useRequest(source, {
+const { params, loading, error, refresh, run: fetchData } = useRequest(source, {
   manual: true,
   defaultParams: [offsetAndLimit.value],
   onSuccess: (response: {
@@ -78,6 +107,31 @@ const { params, run: fetchData, loading } = useRequest(source, {
   },
 });
 
+const exceptionAttrs = computed(() => {
+  if (error.value) {
+    return {
+      type: 500,
+      title: t('数据获取异常'),
+    };
+  }
+
+  const queries = cloneDeep(params.value?.[0] || {});
+  delete queries.limit;
+  delete queries.offset;
+
+  if (Object.keys(queries).length) {
+    return {
+      type: 'search-empty',
+      title: t('搜索结果为空'),
+    };
+  }
+
+  return {
+    type: 'empty',
+    title: t('暂无数据'),
+  };
+});
+
 const handlePageChange = ({ current, pageSize }: {
   current: number
   pageSize: number
@@ -88,6 +142,10 @@ const handlePageChange = ({ current, pageSize }: {
     ...paramsMemo,
     ...offsetAndLimit.value,
   });
+};
+
+const handleRefresh = () => {
+  refresh();
 };
 
 onMounted(() => {
@@ -114,6 +172,20 @@ defineExpose({
       pageSize,
     });
   },
+  setPaginationTheme: ({ theme, showPageSize }: {
+    theme: 'default' | 'simple'
+    showPageSize?: boolean
+  }) => {
+    Object.assign(pagination.value!, {
+      theme,
+      showPageSize: showPageSize ?? true,
+    });
+  },
+  resetPaginationTheme: () => {
+    pagination.value!.theme = 'default';
+    pagination.value!.showPageSize = true;
+  },
+  refresh,
 });
 
 </script>
@@ -130,6 +202,25 @@ defineExpose({
 
   .t-loading svg.t-icon-loading {
     display: none !important;
+  }
+}
+
+.ag-table-exception {
+
+  .bk-exception-img {
+    width: 200px;
+    height: 100px;
+  }
+
+  .bk-exception-title {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #979ba5;
+  }
+
+  .bk-exception-footer {
+    margin-top: 8px;
+    font-size: 12px;
   }
 }
 </style>
