@@ -33,10 +33,12 @@ from apigateway.biz.resource.importer.schema import (
     convert_openapi2_formdata_to_openapi,
     convert_openapi2_parameters_to_openapi,
     convert_openapi2_response_headers_to_openapi,
+    has_openapi_schema,
 )
 from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY, ProxyTypeEnum
 from apigateway.core.models import Backend, Gateway, Resource
+from apigateway.utils.openapi import extract_openapi_parameters_from_path
 from apigateway.utils.yaml import yaml_export_dumps
 
 
@@ -80,8 +82,11 @@ class BaseParser:
                     # pluginConfigs 不存在或为 None，表示不处理此资源的插件配置的导入
                     "plugin_configs": extension_resource.get("pluginConfigs"),
                     # schema
-                    "openapi_schema": self._get_openapi_schema(operation),
+                    "openapi_schema": self._get_openapi_schema(path, operation),
                 }
+                none_schema = extension_resource.get("noneSchema", None)
+                if none_schema:
+                    resource["openapi_schema"]["none_schema"] = none_schema
 
                 resources.append(resource)
 
@@ -95,7 +100,7 @@ class BaseParser:
     def _get_base_path(self):
         return self._openapi_data.get("basePath", "/")
 
-    def _get_openapi_schema(self, operation: Dict[str, Any]):
+    def _get_openapi_schema(self, path: str, operation: Dict[str, Any]):
         """
         获取api的schema
         eg:
@@ -115,7 +120,7 @@ class BaseParser:
         if len(request_body) > 0:
             openapi_schema["requestBody"] = request_body
 
-        parameters = self._get_parameters(operation)
+        parameters = self._get_parameters(path, operation)
         if len(parameters) > 0:
             openapi_schema["parameters"] = parameters
 
@@ -126,11 +131,11 @@ class BaseParser:
 
         return openapi_schema
 
-    def _get_parameters(self, operation: Dict[str, Any]):
+    def _get_parameters(self, path: str, operation: Dict[str, Any]):
         """
         获取非body请求参数
         """
-        parameters = operation.get("parameters", [])
+        parameters = operation.get("parameters", extract_openapi_parameters_from_path(path))
 
         without_body_parameters = [
             parameter
@@ -332,10 +337,10 @@ class OpenAPIV3Parser(BaseParser):
         parsed_url = urlparse(servers[0].get("url", "/"))
         return parsed_url.path
 
-    def _get_openapi_schema(self, operation: Dict[str, Any]):
+    def _get_openapi_schema(self, path, operation: Dict[str, Any]):
         openapi_schema: Dict[str, Any] = {"version": self._openapi_version}
         if "parameters" in operation:
-            openapi_schema["parameters"] = operation.get("parameters", [])
+            openapi_schema["parameters"] = operation.get("parameters", self._get_parameters(path, operation))
             openapi_schema["none_schema"] = False
 
         if "requestBody" in operation:
@@ -538,9 +543,11 @@ class BaseExporter:
             if "version" in schema:
                 del schema["version"]
             # remove none_schema flag, 这个字段属于非openapi标准字段，不移除会导致生成文档有一次以及导出的yaml不合法
-            # todo：后续可以将这个字段添加到网关扩展字段里面才行
             if "none_schema" in schema:
+                resource["none_schema"] = schema["none_schema"]
                 del schema["none_schema"]
+            elif has_openapi_schema(schema):
+                resource["none_schema"] = False
 
             operation.update(schema)
 
@@ -614,6 +621,8 @@ class BaseExporter:
             "authConfig": self._adapt_auth_config(resource["auth_config"]),
             "descriptionEn": resource.get("description_en"),
         }
+        if resource.get("none_schema"):
+            operation[OpenAPIExtensionEnum.RESOURCE.value]["noneSchema"] = resource.get("none_schema")
 
     def _adapt_method(self, method: str) -> str:
         if method == HTTP_METHOD_ANY:

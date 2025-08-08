@@ -310,6 +310,9 @@
             "isPublic": {
               "type": "boolean"
             },
+            "noneSchema": {
+              "type": "boolean"
+            },
             "allowApplyPermission": {
               "type": "boolean"
             },

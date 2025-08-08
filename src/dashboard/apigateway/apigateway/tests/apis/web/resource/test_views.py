@@ -636,6 +636,86 @@ class TestResourceImportCheckApi:
                         "labels": ["pet"],
                         "openapi_schema": {
                             "version": "OpenAPIV2.0",
+                            "parameters": [
+                                {
+                                    "name": "userId",
+                                    "in": "path",
+                                    "required": True,
+                                    "description": "",
+                                    "schema": {},
+                                }
+                            ],
+                        },
+                        "plugin_configs": None,
+                    }
+                ],
+            ),
+            (
+                {
+                    "doc_language": "zh",
+                    "content": json.dumps(
+                        {
+                            "swagger": "2.0",
+                            "basePath": "/",
+                            "info": {
+                                "version": "0.1",
+                                "title": "API Gateway Swagger",
+                            },
+                            "schemes": ["http"],
+                            "paths": {
+                                "/http/get/mapping/list": {
+                                    "get": {
+                                        "operationId": "http_get_mapping_list",
+                                        "description": "test",
+                                        "tags": ["pet"],
+                                        "schemes": ["http"],
+                                        "x-bk-apigateway-resource": {
+                                            "isPublic": True,
+                                            "allowApplyPermission": True,
+                                            "matchSubpath": False,
+                                            "noneSchema": True,
+                                            "backend": {
+                                                "name": "default",
+                                                "type": "HTTP",
+                                                "method": "get",
+                                                "path": "/hello/",
+                                                "matchSubpath": False,
+                                                "timeout": 30,
+                                            },
+                                        },
+                                    },
+                                }
+                            },
+                        }
+                    ),
+                },
+                [
+                    {
+                        "id": None,
+                        "name": "http_get_mapping_list",
+                        "description": "test",
+                        "description_en": None,
+                        "method": "GET",
+                        "path": "/http/get/mapping/list",
+                        "path_display": "/http/get/mapping/list",
+                        "match_subpath": False,
+                        "is_public": True,
+                        "allow_apply_permission": True,
+                        "doc": [],
+                        "enable_websocket": False,
+                        "auth_config": {
+                            "auth_verified_required": True,
+                            "app_verified_required": True,
+                            "resource_perm_required": True,
+                        },
+                        "backend": {
+                            "name": "default",
+                            "config": {"method": "GET", "path": "/hello/", "match_subpath": False, "timeout": 30},
+                        },
+                        "labels": ["pet"],
+                        "openapi_schema": {
+                            "version": "OpenAPIV2.0",
+                            "none_schema": True,
                         },
                         "plugin_configs": None,
                     }
