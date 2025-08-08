@@ -82,9 +82,9 @@
         </BkTableColumn>
         <template #empty>
           <TableEmpty
-            :keyword="tableEmptyConf.keyword"
+            :empty-type="tableEmptyConf.emptyType"
             :abnormal="tableEmptyConf.isAbnormal"
-            @reacquire="refreshTableData"
+            @refresh="refreshTableData"
             @clear-filter="handleClearFilterKey"
           />
         </template>
@@ -176,10 +176,10 @@ const {
 
 const curSelectData = ref<{ [key: string]: any }>({ grant_type: 'ALL' });
 const tableEmptyConf = ref<{
-  keyword: string
+  emptyType: string
   isAbnormal: boolean
 }>({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 
@@ -273,10 +273,10 @@ const handleDel = async (id: number) => {
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   if (filterData.value.bk_app_code || filterData.value.grant_type) {
-    tableEmptyConf.value.keyword = 'placeholder';
+    tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
-  tableEmptyConf.value.keyword = '';
+  tableEmptyConf.value.emptyType = '';
 };
 
 const refreshTableData = async () => {

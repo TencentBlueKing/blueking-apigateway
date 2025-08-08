@@ -289,9 +289,9 @@
               </div>
               <TableEmpty
                 v-if="!pluginListDate.length"
-                :keyword="tableEmptyConf.keyword"
+                :empty-type="tableEmptyConf.emptyType"
                 :abnormal="tableEmptyConf.isAbnormal"
-                @reacquire="handleSearch"
+                @refresh="handleSearch"
                 @clear-filter="handleClearFilterKey"
               />
             </BkLoading>
@@ -440,7 +440,7 @@ const state = reactive({
   curStep: 1,
 });
 const tableEmptyConf = ref({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 // 控制插件 slider 宽度，会在展示插件使用示例时变宽
@@ -763,14 +763,14 @@ const handleCancel = () => {
 
 const updateTableEmptyConfig = () => {
   if (searchValue.value || !pluginListDate.value.length) {
-    tableEmptyConf.value.keyword = 'placeholder';
+    tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
   if (searchValue.value) {
-    tableEmptyConf.value.keyword = '$CONSTANT';
+    tableEmptyConf.value.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.value.keyword = '';
+  tableEmptyConf.value.emptyType = '';
 };
 
 watch(
