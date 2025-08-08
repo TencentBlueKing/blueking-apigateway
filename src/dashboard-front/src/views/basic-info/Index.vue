@@ -304,7 +304,22 @@
                 {{ `${t('联系人')}：` }}
               </div>
               <div class="value contact">
-                <span class="link">{{ basicInfoData.doc_maintainers?.contacts?.join(', ') || '--' }}</span>
+                <span>
+                  <EditMember
+                    v-if="!featureFlagStore.isTenantMode"
+                    mode="detail"
+                    width="600px"
+                    field="contacts"
+                    :content="basicInfoData.doc_maintainers?.contacts"
+                  />
+                  <TenantUserSelector
+                    v-else
+                    :content="basicInfoData.doc_maintainers?.contacts"
+                    field="contacts"
+                    mode="detail"
+                    width="600px"
+                  />
+                </span>
                 <div class="sub-explain">
                   {{ t('文档页面上展示出来的文档咨询接口人') }}
                 </div>

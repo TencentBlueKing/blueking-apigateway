@@ -81,6 +81,7 @@
               </BkSelect>
             </BkFormItem>
             <BkFormItem
+              v-if="!featureFlagStore.isTenantMode"
               :label="t('申请人')"
               class="mb-20px flex-grow-1"
               label-width="100"
@@ -127,7 +128,24 @@
             <BkTableColumn
               :label="t('申请人')"
               prop="applied_by"
-            />
+            >
+              <template #default="{ row }">
+                <EditMember
+                  v-if="!featureFlagStore.isTenantMode"
+                  mode="detail"
+                  width="600px"
+                  field="applied_by"
+                  :content="row?.applied_by"
+                />
+                <TenantUserSelector
+                  v-else
+                  :content="row?.applied_by"
+                  field="applied_by"
+                  mode="detail"
+                  width="600px"
+                />
+              </template>
+            </BkTableColumn>
             <BkTableColumn
               :label="t('申请时间')"
               prop="applied_time"
@@ -247,10 +265,13 @@ import {
 import { getServers } from '@/services/source/mcp-server';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import RenderCustomColumn from '@/components/custom-table-header-filter';
-import { useGateway } from '@/stores';
+import EditMember from '@/views/basic-info/components/EditMember.vue';
+import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
+import { useFeatureFlag, useGateway } from '@/stores';
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
+const featureFlagStore = useFeatureFlag();
 const route = useRoute();
 
 const columnKey = ref(-1);
@@ -476,7 +497,7 @@ watch(
 watch(
   () => filterData.value.mcp_server_id,
   (val) => {
-    if (val) {
+    if (val && !featureFlagStore.isTenantMode) {
       getApplicant();
     }
   },
