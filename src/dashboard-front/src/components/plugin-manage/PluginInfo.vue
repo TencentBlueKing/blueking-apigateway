@@ -20,7 +20,7 @@
   <div class="plugin-info">
     <main
       class="plugin-form-content"
-      :class="{ 'pr-20px': isExampleVisible }"
+      :class="{ 'pr-20px': showExample }"
     >
       <div
         v-if="!isAdd && isStage"
@@ -189,7 +189,7 @@
     </main>
     <!--  右侧插件使用示例  -->
     <aside
-      v-if="isExampleVisible"
+      v-if="showExample"
       class="plugin-example-content"
     >
       <header class="example-content-header">
@@ -214,6 +214,7 @@
 <script setup lang="ts">
 import { creatPlugin, getPluginForm, updatePluginConfig } from '@/services/source/plugin-manage';
 import { Message } from 'bkui-vue';
+// @ts-expect-error missing module type
 import createForm from '@blueking/bkui-form';
 import { json2Yaml, yaml2Json } from '@/utils';
 import WhitelistTable from './WhitelistTable.vue';
@@ -230,6 +231,9 @@ interface IProps {
   bindingPlugins?: any[]
 }
 
+// 右侧插件使用示例是否可见
+const showExample = defineModel<boolean>('showExample', { default: false });
+
 const {
   curPlugin,
   scopeInfo,
@@ -242,7 +246,6 @@ const {
 const emit = defineEmits<{
   'on-change': [type: string]
   'choose-plugin': [plugin: any]
-  'show-example': [data: any]
 }>();
 
 const stageStore = useStage();
@@ -273,8 +276,6 @@ const pluginCodeFirst = computed(() => {
 });
 const typeId = ref<number>();
 const formStyle = ref<string>();
-// 右侧插件使用示例是否可见
-const isExampleVisible = ref(false);
 // 右侧插件使用示例内容
 const exampleContent = ref('');
 // 插件切换 select
@@ -628,8 +629,7 @@ const toggleShowExample = async () => {
   if (!exampleContent.value) {
     await getSchemaFormData(choosePlugin.value);
   }
-  isExampleVisible.value = !isExampleVisible.value;
-  emit('show-example', { isVisible: isExampleVisible.value });
+  showExample.value = !showExample.value;
 };
 
 const init = async () => {
@@ -648,10 +648,6 @@ onClickOutside(pluginSelectRef, () => {
   }
 });
 
-// 离开时重置使用示例可见状态恢复父组件的宽度
-onBeforeUnmount(() => {
-  emit('show-example', { isVisible: false });
-});
 </script>
 
 <style lang="scss" scoped>
