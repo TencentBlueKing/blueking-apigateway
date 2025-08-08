@@ -100,7 +100,8 @@
                 {{ `${t('发布人')}：` }}
               </div>
               <div class="value">
-                <bk-user-display-name :user-id="currentStage?.release.created_by" />
+                <span v-if="!featureFlagStore.isTenantMode">{{ currentStage?.release.created_by || '--' }}</span>
+                <span v-else><bk-user-display-name :user-id="currentStage?.release.created_by" /></span>
               </div>
             </div>
             <div class="apigw-form-item">
@@ -292,6 +293,7 @@ import {
 } from '@/services/source/stage';
 import {
   useEnv,
+  useFeatureFlag,
   useGateway,
 } from '@/stores';
 import ReleaseProgrammable from '../components/ReleaseProgrammable.vue';
@@ -313,6 +315,7 @@ const route = useRoute();
 const router = useRouter();
 const gatewayStore = useGateway();
 const envStore = useEnv();
+const featureFlagStore = useFeatureFlag();
 // 当前环境信息
 const currentStage = ref<IStageListItem | null>(null);
 const releaseStageRef = ref();

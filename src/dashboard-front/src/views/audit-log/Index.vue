@@ -107,6 +107,7 @@ import { useMaxTableLimit, useQueryList } from '@/hooks';
 import {
   useAccessLog,
   useAuditLog,
+  useFeatureFlag,
   useUserInfo,
 } from '@/stores';
 import { getTenantUsers } from '@/services/source/basic';
@@ -120,6 +121,7 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 const accessLogStore = useAccessLog();
 const auditLogStore = useAuditLog();
 const userInfoStore = useUserInfo();
+const featureFlagStore = useFeatureFlag();
 
 const shortcutSelectedIndex = shallowRef(-1);
 const tableKey = ref(-1);
@@ -412,13 +414,10 @@ const getTableColumns = () => {
     {
       label: t('操作人'),
       field: 'username',
-      render: ({ row }: { row?: IAuditLog }) => {
-        return (
-          <span>
-            <bk-user-display-name user-id={row.username} />
-          </span>
-        );
-      },
+      render: ({ row }: { row: IAuditLog }) =>
+        !featureFlagStore.isTenantMode
+          ? <span>{row.username}</span>
+          : <span><bk-user-display-name user-id={row.username} /></span>,
     },
     {
       label: t('操作时间'),

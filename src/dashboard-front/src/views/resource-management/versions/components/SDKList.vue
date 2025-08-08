@@ -83,7 +83,8 @@
               prop="created_by"
             >
               <template #default="{ row }">
-                <span><bk-user-display-name :user-id="row.created_by" /></span>
+                <span v-if="!featureFlagStore.isTenantMode">{{ row.created_by }}</span>
+                <span v-else><bk-user-display-name :user-id="row.created_by" /></span>
               </template>
             </BkTableColumn>
             <BkTableColumn
@@ -102,7 +103,7 @@
                   </BkButton>
                   <BkButton
                     v-bk-tooltips="{
-                      content: !row.download_url ? $t('暂无下载地址') : '',
+                      content: !row.download_url ? t('暂无下载地址') : '',
                       disabled: row.download_url,
                     }"
                     text
@@ -141,13 +142,17 @@
 import { useQueryList } from '@/hooks';
 import { getSDKList } from '@/services/source/sdks';
 import { copy } from '@/utils';
-import { useResourceVersion } from '@/stores';
+import {
+  useFeatureFlag,
+  useResourceVersion,
+} from '@/stores';
 import CreateSDK from './CreateSDK.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 const emits = defineEmits<{ 'on-show-version': [version: string] }>();
 
 const { t } = useI18n();
+const featureFlagStore = useFeatureFlag();
 const resourceVersionStore = useResourceVersion();
 
 const keyword = ref('');

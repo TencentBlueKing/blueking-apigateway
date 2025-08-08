@@ -109,7 +109,8 @@
               prop="created_by"
             >
               <template #default="{ row }">
-                <span><bk-user-display-name :user-id="row.created_by" /></span>
+                <span v-if="!featureFlagStore.isTenantMode">{{ row.created_by }}</span>
+                <span v-else><bk-user-display-name :user-id="row.created_by" /></span>
               </template>
             </BkTableColumn>
             <BkTableColumn

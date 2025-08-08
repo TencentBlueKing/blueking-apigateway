@@ -138,7 +138,8 @@
                 {{ t("申请人：") }}
               </div>
               <div class="value">
-                <bk-user-display-name :user-id="curRecord.applied_by" />
+                <span v-if="!featureFlagStore.isTenantMode">{{ curRecord.applied_by }}</span>
+                <span v-else><bk-user-display-name :user-id="curRecord.applied_by" /></span>
               </div>
             </div>
             <div class="item">
@@ -178,7 +179,8 @@
                 {{ t("审批人：") }}
               </div>
               <div class="value">
-                <bk-user-display-name :user-id="curRecord.handled_by" />
+                <span v-if="!featureFlagStore.isTenantMode">{{ curRecord.handled_by }}</span>
+                <span v-else><bk-user-display-name :user-id="curRecord.handled_by" /></span>
               </div>
             </div>
             <div class="item">
@@ -230,7 +232,10 @@
 
 <script setup lang="tsx">
 import { getPermissionRecordList } from '@/services/source/permission';
-import { useAccessLog } from '@/stores';
+import {
+  useAccessLog,
+  useFeatureFlag,
+} from '@/stores';
 import { useMaxTableLimit, useQueryList } from '@/hooks';
 import type { IApprovalListItem } from '@/types/permission';
 import { sortByKey } from '@/utils';
@@ -242,6 +247,7 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 const { t } = useI18n();
 const { maxTableLimit, clientHeight } = useMaxTableLimit();
 const accessLogStore = useAccessLog();
+const featureFlagStore = useFeatureFlag();
 
 const historyExpandColumn = shallowRef([
   {
@@ -418,9 +424,10 @@ const setTableHeader = () => {
     {
       field: 'applied_by',
       label: t('申请人'),
-      render: ({ row }: { row?: Partial<IApprovalListItem> }) => (
-        <span><bk-user-display-name user-id={row.applied_by} /></span>
-      ),
+      render: ({ row }: { row: Partial<IApprovalListItem> }) =>
+        !featureFlagStore.isTenantMode
+          ? <span>{row.applied_by}</span>
+          : <span><bk-user-display-name user-id={row.applied_by} /></span>,
     },
     {
       field: 'handled_time',
@@ -429,9 +436,10 @@ const setTableHeader = () => {
     {
       field: 'handled_by',
       label: t('审批人'),
-      render: ({ row }: { row?: Partial<IApprovalListItem> }) => (
-        <span><bk-user-display-name user-id={row.handled_by} /></span>
-      ),
+      render: ({ row }: { row: Partial<IApprovalListItem> }) =>
+        !featureFlagStore.isTenantMode
+          ? <span>{row.handled_by}</span>
+          : <span><bk-user-display-name user-id={row.handled_by} /></span>,
     },
     {
       field: 'status',
@@ -579,6 +587,7 @@ onMounted(() => {
   }
 
   .header {
+
     .bk-form-item {
       margin-bottom: 16px;
     }
@@ -586,16 +595,16 @@ onMounted(() => {
 }
 
 .ag-kv-list {
+  padding: 10px 20px;
+  background: #fafbfd;
   border: 1px solid #f0f1f5;
   border-radius: 2px;
-  background: #fafbfd;
-  padding: 10px 20px;
 
   .item {
     display: flex;
     font-size: 14px;
-    border-bottom: 1px dashed #dcdee5;
     line-height: 40px;
+    border-bottom: 1px dashed #dcdee5;
 
     &:last-child {
       border-bottom: none;
@@ -609,21 +618,23 @@ onMounted(() => {
     }
 
     .value {
-      color: #313238;
-      flex: 1;
       padding-top: 10px;
       line-height: 22px;
+      color: #313238;
+      flex: 1;
     }
   }
 }
 
 :deep(.perm-record-table),
 :deep(.ag-expand-table) {
+
   tr {
     background-color: #fafbfd;
   }
 
   th {
+
     .head-text {
       font-weight: bold !important;
       color: #63656e !important;
@@ -632,8 +643,8 @@ onMounted(() => {
 
   td,
   th {
-    padding: 0 !important;
     height: 42px !important;
+    padding: 0 !important;
   }
 }
 
@@ -647,6 +658,7 @@ onMounted(() => {
 }
 
 :deep(.ag-expand-table) {
+
   .bk-fixed-bottom-border {
     display: none;
   }

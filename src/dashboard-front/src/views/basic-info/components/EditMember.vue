@@ -29,9 +29,11 @@
             <template v-if="membersText">
               <span class="member-item">
                 <BkPopover>
-                  <bk-user-display-name :user-id="membersText" />
+                  <!--                  <bk-user-display-name :user-id="membersText" /> -->
+                  <span>{{ membersText }}</span>
                   <template #content>
-                    <span><bk-user-display-name :user-id="membersText" /></span>
+                    <!--                    <span><bk-user-display-name :user-id="membersText" /></span> -->
+                    <span>{{ membersText }}</span>
                   </template>
                 </BkPopover>
               </span>
