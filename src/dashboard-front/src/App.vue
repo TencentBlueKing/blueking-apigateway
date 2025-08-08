@@ -98,9 +98,9 @@ import {
 } from '@/stores';
 import { useBkUserDisplayName } from '@/hooks';
 import type { IHeaderNav } from '@/types/common';
-import { useScriptTag } from '@vueuse/core';
+import { useScriptTag, useTitle } from '@vueuse/core';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const userInfoStore = useUserInfo();
@@ -134,7 +134,6 @@ if (envStore.env.BK_ANALYSIS_SCRIPT_SRC) {
   }
 }
 
-const locale = ref('zh-cn');
 const systemCls = ref('mac');
 const activeIndex = ref(0);
 const userLoaded = ref(false);
@@ -220,6 +219,11 @@ watch(
     deep: true,
   },
 );
+
+watch(locale, () => {
+  const docTitle = useTitle();
+  docTitle.value = t('API Gateway | 腾讯蓝鲸智云');
+}, { immediate: true });
 
 const init = async () => {
   await userInfoStore.fetchUserInfo();
