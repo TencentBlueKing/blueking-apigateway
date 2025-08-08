@@ -66,6 +66,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: t('发布记录'),
           matchRoute: 'StageManagement',
+          menuKey: 'StageReleaseRecord',
         },
       },
     ],
