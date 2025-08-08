@@ -262,6 +262,7 @@
     <CreateStage
       ref="stageSidesliderRef"
       :stage-id="stageId"
+      @done="handleCreateStageDone"
     />
 
     <!-- 发布普通网关的资源至环境 -->
@@ -493,6 +494,10 @@ const handleStageDelete = async () => {
 // 编辑环境
 const handleEditStage = () => {
   stageSidesliderRef.value.handleShowSideslider('edit');
+};
+
+const handleCreateStageDone = async () => {
+  currentStage.value = await getStageDetail(gatewayId.value, stageId);
 };
 
 // 访问地址

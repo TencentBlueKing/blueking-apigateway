@@ -53,7 +53,7 @@ export const deleteStage = (apigwId: number, stageId: number) =>
   http.delete(`${path}/${apigwId}/stages/${stageId}/`);
 
 export const putStage = (apigwId: number, stageId: number, data: any) =>
-  http.put(`${http}/${apigwId}/stages/${stageId}/`, data);
+  http.put(`${path}/${apigwId}/stages/${stageId}/`, data);
 
 export const toggleStatus = (apigwId: number, stageId: number, param: { status: number }) =>
   http.put(`${path}/${apigwId}/stages/${stageId}/status/`, param);
