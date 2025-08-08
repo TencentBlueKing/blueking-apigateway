@@ -185,7 +185,7 @@ def convert_openapi2_parameters_to_openapi(parameters):
             "in": param.get("in"),
             "required": param.get("required", False),
             "description": param.get("description", ""),
-            "schema": {},
+            "schema": param.get("schema", {}),
         }
 
         # Swagger 2.0 'type' is moved to 'schema' in OpenAPI 3.0

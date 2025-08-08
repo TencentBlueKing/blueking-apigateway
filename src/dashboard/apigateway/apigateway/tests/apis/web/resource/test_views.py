@@ -642,7 +642,7 @@ class TestResourceImportCheckApi:
                                     "in": "path",
                                     "required": True,
                                     "description": "",
-                                    "schema": {},
+                                    "schema": {"type": "string"},
                                 }
                             ],
                         },
