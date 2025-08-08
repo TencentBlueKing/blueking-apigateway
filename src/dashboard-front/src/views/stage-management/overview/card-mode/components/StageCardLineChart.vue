@@ -26,12 +26,6 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  nextTick,
-  onMounted,
-  onUnmounted,
-  watch,
-} from 'vue';
 import * as echarts from 'echarts';
 
 interface IProp {
@@ -45,7 +39,7 @@ const {
 } = defineProps<IProp>();
 
 let chartInstance: echarts.ECharts | null = null;
-const option: echarts.EChartOption = {
+const option = {
   xAxis: {
     type: 'category',
     data: [
@@ -141,8 +135,10 @@ const renderChart = () => {
 
 onMounted(() => {
   const chartDom = document.getElementById(mountId);
-  chartInstance = echarts.init(chartDom as HTMLDivElement);
-  renderChart();
+  if (chartDom) {
+    chartInstance = echarts.init(chartDom as HTMLDivElement);
+    renderChart();
+  }
 });
 
 onUnmounted(() => {
