@@ -131,23 +131,53 @@ class TestOpenAPI:
             # 无参数的场景
             ("/api/resource", []),
             # 单个参数
-            ("/api/{param}/resource", [{"name": "param", "in": "path", "required": True}]),
+            (
+                "/api/{param}/resource",
+                [{"name": "param", "in": "path", "description": "", "required": True, "schema": {"type": "string"}}],
+            ),
             # 多个参数且保持顺序
             (
                 "/api/{param1}/resource/{param2}",
                 [
-                    {"name": "param1", "in": "path", "required": True},
-                    {"name": "param2", "in": "path", "required": True},
+                    {
+                        "name": "param1",
+                        "in": "path",
+                        "description": "",
+                        "required": True,
+                        "schema": {"type": "string"},
+                    },
+                    {
+                        "name": "param2",
+                        "in": "path",
+                        "description": "",
+                        "required": True,
+                        "schema": {"type": "string"},
+                    },
                 ],
             ),
             # 重复参数的去重验证
-            ("/api/{param}/resource/{param}/detail", [{"name": "param", "in": "path", "required": True}]),
+            (
+                "/api/{param}/resource/{param}/detail",
+                [{"name": "param", "in": "path", "required": True, "description": "", "schema": {"type": "string"}}],
+            ),
             # 特殊字符参数名 (测试名称合法性)
             (
                 "/api/{param_123}/resource/{param-456}",
                 [
-                    {"name": "param_123", "in": "path", "required": True},
-                    {"name": "param-456", "in": "path", "required": True},
+                    {
+                        "name": "param_123",
+                        "in": "path",
+                        "description": "",
+                        "required": True,
+                        "schema": {"type": "string"},
+                    },
+                    {
+                        "name": "param-456",
+                        "in": "path",
+                        "description": "",
+                        "required": True,
+                        "schema": {"type": "string"},
+                    },
                 ],
             ),
         ],
