@@ -24,10 +24,8 @@ export const useResourceVersion = defineStore('useResourceVersion', {
   state: () => ({
     tabActive: 'edition', // 当前激活的标签页
     resourceFilter: {}, // 资源过滤器
-    pageStatus: {
-      isDetail: false, // 是否显示详情
-      isShowLeft: true, // 是否显示左侧栏
-    },
+    // 是否折叠右栏资源详情
+    pageStatus: { isCollapsed: true },
   }),
   // getters定义了获取state的方法
   getters: {
