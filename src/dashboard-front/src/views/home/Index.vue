@@ -32,7 +32,7 @@
       <div class="flex flex-grow-1">
         <BkSelect
           v-model="filterNameData.kind"
-          class="gateway-kind-sel"
+          class="min-w-150px"
           :clearable="false"
           :filterable="false"
         >
