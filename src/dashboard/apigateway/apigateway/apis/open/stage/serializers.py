@@ -91,11 +91,10 @@ class UpstreamsSLZ(serializers.Serializer):
         """
         如果负载均衡类型为 RoundRobin 时，将权重设置为默认值
         """
-        if data.get("loadbalance") != LoadBalanceTypeEnum.RR.value:
-            return data
+        if data.get("loadbalance") == LoadBalanceTypeEnum.RR.value:
+            for host in data["hosts"]:
+                host["weight"] = DEFAULT_LB_HOST_WEIGHT
 
-        for host in data["hosts"]:
-            host["weight"] = DEFAULT_LB_HOST_WEIGHT
         return data
 
     def to_internal_value(self, data):
@@ -114,6 +113,9 @@ class UpstreamsSLZ(serializers.Serializer):
             host_without_weight = [host for host in data["hosts"] if host.get("weight") is None]
             if host_without_weight:
                 raise serializers.ValidationError(_("负载均衡类型为 Weighted-RR 时，Host 权重必填。"))
+
+        # TODO: add validation for chash
+
         return data
 
 
