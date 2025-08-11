@@ -953,7 +953,7 @@ watch(
 watch(
   searchValue,
   (v: any[]) => {
-    tableQueries.value = {};
+    // tableQueries.value = {};
 
     if (route.query?.backend_id) {
       const { backend_id } = route.query;
