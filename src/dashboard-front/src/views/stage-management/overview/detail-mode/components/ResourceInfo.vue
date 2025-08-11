@@ -17,235 +17,52 @@
  */
 
 <template>
-  <BkLoading
-    :loading="isLoading"
-    :opacity="1"
-  >
-    <template v-if="resourceVersionList?.length">
-      <div class="resource-info">
-        <BkInput
-          v-model="searchValue"
-          class="w-520px"
-          clearable
-          type="search"
-          :placeholder="t('请输入后端服务、资源名称、前端请求路径搜索')"
-        />
-        <BkTable
-          :key="tableDataKey"
-          class="table-layout"
-          :data="tableData"
-          :pagination="pagination"
-          remote-pagination
-          :empty-text="emptyText"
-          show-overflow-tooltip
-          row-hover="auto"
-          border="outer"
-          :settings="settings"
-          :row-class="isHighlight"
-          @page-limit-change="handlePageSizeChange"
-          @page-value-change="handlePageChange"
-        >
-          <BkTableColumn
-            prop="backend"
-            :label="t('后端服务')"
-          >
-            <template #default="{ row }">
-              <div
-                class="backend-td"
-                @click="() => handleCheckStage({
-                  resourceName: row.name,
-                  backendName: row.proxy?.backend?.name,
-                })"
-              >
-                <BkButton
-                  theme="primary"
-                  text
-                >
-                  {{ row.proxy?.backend?.name ?? '--' }}
-                </BkButton>
-              </div>
-            </template>
-          </BkTableColumn>
-          <BkTableColumn
-            :label="t('资源名称')"
-            prop="name"
-            sort
-          >
-            <template #default="{ row }">
-              <BkButton
-                theme="primary"
-                text
-                @click="() => showDetails(row)"
-              >
-                {{ row?.name }}
-              </BkButton>
-            </template>
-          </BkTableColumn>
-          <BkTableColumn
-            prop="method"
-            :label="t('前端请求方法')"
-            :filter="{
-              list: methodsList || [{ text: '', value: '' }],
-              checked: chooseMethod,
-              filterFn: handleMethodFilter,
-              btnSave: false,
-            }"
-          >
-            <template #default="{ row }">
-              <span
-                class="ag-tag"
-                :class="row.method?.toLowerCase()"
-              >{{ row.method }}</span>
-            </template>
-          </BkTableColumn>
-          <BkTableColumn
-            :label="t('前端请求路径')"
-            prop="path"
-            sort
-          />
-          <BkTableColumn
-            prop="gateway_label_ids"
-            :label="t('标签')"
-            :filter="{
-              list: labelsList || [{ text: '', value: '' }],
-              checked: chooseLabels,
-              filterFn: handleMethodFilter,
-              btnSave: false,
-            }"
-            :show-overflow-tooltip="false"
-          >
-            <template #default="{ row }">
-              <RenderTagOverflow
-                :data="labels?.filter((label) => row.gateway_label_ids?.includes(label.id)).map((label) => label.name)"
-              />
-            </template>
-          </BkTableColumn>
-          <BkTableColumn
-            prop="plugins"
-            :label="t('生效的插件')"
-            :show-overflow-tooltip="false"
-          >
-            <template #default="{ row }">
-              <template v-if="row?.plugins?.length">
-                <BkPopover
-                  placement="top"
-                  theme="dark"
-                  :popover-delay="0"
-                >
-                  <span
-                    v-for="p in row.plugins"
-                    :key="p?.id"
-                  >
-                    <span
-                      v-if="p?.binding_type === 'stage'"
-                      class="plugin-tag success"
-                    >
-                      {{ t('环') }}
-                    </span>
-                    <span
-                      v-if="p?.binding_type === 'resource'"
-                      class="plugin-tag info"
-                    >
-                      {{ t('资') }}
-                    </span>
-                    <span class="v-middle ml-4px mr-4px">{{ p?.name }}</span>
-                  </span>
-                  <template #content>
-                    <span
-                      v-for="p in row.plugins"
-                      :key="p?.id"
-                    >
-                      <span
-                        v-if="p?.binding_type === 'stage'"
-                        class="plugin-tag success"
-                      >
-                        {{ t('环') }}
-                      </span>
-                      <span
-                        v-if="p?.binding_type === 'resource'"
-                        class="plugin-tag info"
-                      >
-                        {{ t('资') }}
-                      </span>
-                      <span class="v-middle ml-4px mr-4px">{{ p?.name }}</span>
-                    </span>
-                  </template>
-                </BkPopover>
-              </template>
-              <span v-else>--</span>
-            </template>
-          </BkTableColumn>
-          <BkTableColumn
-            :label="t('是否公开')"
-            prop="is_public"
-          >
-            <template #default="{ row }">
-              <span :style="{ color: row.is_public ? '#FE9C00' : '#63656e' }">
-                {{ row.is_public ? t('是') : t('否') }}
-              </span>
-            </template>
-          </BkTableColumn>
-          <BkTableColumn
-            :label="t('操作')"
-            prop="act"
-            width="200"
-          >
-            <template #default="{ row }">
-              <BkButton
-                text
-                theme="primary"
-                class="mr-10px"
-                @click="() => showDetails(row)"
-              >
-                {{ t('查看资源详情') }}
-              </BkButton>
-              <BkButton
-                text
-                theme="primary"
-                @click="() => copyPath(row)"
-              >
-                {{ t('复制资源地址') }}
-              </BkButton>
-            </template>
-          </BkTableColumn>
-          <template #empty>
-            <TableEmpty
-              :empty-type="tableEmptyConf.emptyType"
-              :abnormal="tableEmptyConf.isAbnormal"
-              @clear-filter="handleClearFilterKey"
-            />
-          </template>
-        </BkTable>
-      </div>
-    </template>
+  <template v-if="currentStageVersionId === 0">
+    <div class="exception-empty">
+      <BkException
+        type="empty"
+        scene="part"
+        :description="t('当前环境尚未发布，暂无资源信息')"
+      />
+    </div>
+  </template>
 
-    <template v-else>
-      <div class="exception-empty">
-        <BkException
-          type="empty"
-          scene="part"
-          :description="t('当前环境尚未发布，暂无资源信息')"
-        />
-      </div>
-    </template>
-  </BkLoading>
+  <template v-else>
+    <div class="resource-info">
+      <BkInput
+        v-model="filterValue.keyword"
+        class="w-520px mb-16px"
+        clearable
+        type="search"
+        :placeholder="t('请输入后端服务、资源名称、前端请求路径搜索')"
+      />
+      <AgTable
+        v-model:table-data="tableData"
+        :columns="columns"
+        row-key="id"
+        :filter-row="null"
+        hover
+        local
+        @filter-change="handleFilterChange"
+        @clear-queries="handleClearQueries"
+      />
+    </div>
+  </template>
 
   <!-- 资源详情 -->
   <ResourceDetails
     ref="resourceDetailsRef"
-    :info="info"
-    @hidden="clearHighlight"
+    :info="currentResource"
   />
 
   <!-- 环境编辑 -->
   <CreateStage
     ref="stageSidesliderRef"
     :stage-id="stageId"
-    @hidden="clearHighlight"
   />
 </template>
 
-<script setup lang="ts">
+<script setup lang="tsx">
 import { getGatewayLabels } from '@/services/source/gateway';
 import {
   type IStageListItem,
@@ -253,11 +70,15 @@ import {
 } from '@/services/source/stage';
 import { getVersionDetail } from '@/services/source/resource';
 import ResourceDetails from './ResourceDetails.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
 import CreateStage from '../../components/CreateStage.vue';
 import { copy } from '@/utils';
 import { useRouteParams } from '@vueuse/router';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
+import type { PrimaryTableProps } from '@blueking/tdesign-ui';
+import { METHOD_THEMES } from '@/enums';
+import { HTTP_METHODS } from '@/constants';
+import { cloneDeep } from 'lodash-es';
 
 interface IProps {
   stageAddress: string
@@ -274,347 +95,294 @@ const {
 const { t } = useI18n();
 const gatewayId = useRouteParams('id', 0, { transform: Number });
 
-const searchValue = ref('');
-const info = ref<any>({});
+const filterValue = ref<Record<string, any>>({ keyword: '' });
+const currentStage = ref<any>(null);
+const currentResource = ref<any>({});
 const resourceDetailsRef = ref();
 const stageSidesliderRef = ref();
-const isReload = ref(false);
-const emptyText = ref('暂无数据');
-const chooseMethod = ref<string[]>([]);
-const tableDataKey = ref(-1);
 
 // 网关标签
 const labels = ref<any[]>([]);
-const chooseLabels = ref<string[]>([]);
-const isLoading = ref(true);
 
 // 资源信息
-const resourceVersionList = ref([]);
 const tableData = ref<any[]>([]);
+const initTableData = ref<any[]>([]);
 const stageList = ref<IStageListItem[]>([]);
 
-const pagination = ref({
-  current: 1,
-  limit: 10,
-  count: 0,
-  abnormal: false,
+const customMethodsList = computed(() => {
+  const methods = HTTP_METHODS.map(item => ({
+    label: item.name,
+    value: item.id,
+  }));
+
+  return [
+    {
+      label: 'All',
+      checkAll: true,
+    },
+    ...methods,
+  ];
 });
 
-const tableEmptyConf = ref({
-  emptyType: '',
-  isAbnormal: false,
-});
-
-const methodsList = [
+const columns = computed<PrimaryTableProps['columns']>(() => [
   {
-    text: 'GET',
-    value: 'GET',
+    colKey: 'backend',
+    title: t('后端服务'),
+    cell: (h, { row }) => (
+      <bk-button
+        theme="primary"
+        text
+        onClick={() => handleCheckStage({
+          resourceName: row.name,
+          backendName: row.proxy?.backend?.name,
+        })}
+      >
+        { row.proxy?.backend?.name ?? '--' }
+      </bk-button>
+    ),
   },
   {
-    text: 'POST',
-    value: 'POST',
+    colKey: 'name',
+    title: t('资源名称'),
+    cell: (h, { row }) => (
+      <bk-button
+        theme="primary"
+        text
+        onClick={() => showDetails(row)}
+      >
+        { row.name }
+      </bk-button>
+    ),
   },
   {
-    text: 'PUT',
-    value: 'PUT',
-  },
-  {
-    text: 'PATCH',
-    value: 'PATCH',
-  },
-  {
-    text: 'DELETE',
-    value: 'DELETE',
-  },
-  {
-    text: 'HEAD',
-    value: 'HEAD',
-  },
-  {
-    text: 'OPTIONS',
-    value: 'OPTIONS',
-  },
-  {
-    text: 'ANY',
-    value: 'ANY',
-  },
-];
-
-const settings = {
-  trigger: 'click',
-  fields: [
-    {
-      name: t('后端服务'),
-      field: 'backend',
-      disabled: true,
+    colKey: 'method',
+    title: '前端请求方法',
+    cell: (h, { row }) => (
+      <bk-tag theme={METHOD_THEMES[row.method as keyof typeof METHOD_THEMES]}>
+        {row.method}
+      </bk-tag>
+    ),
+    filter: {
+      type: 'multiple',
+      showConfirmAndReset: true,
+      resetValue: [],
+      list: customMethodsList.value,
     },
-    {
-      name: t('资源名称'),
-      field: 'name',
+  },
+  {
+    colKey: 'path',
+    title: t('前端请求路径'),
+    ellipsis: true,
+  },
+  {
+    colKey: 'label_ids',
+    title: t('标签'),
+    filter: {
+      type: 'multiple',
+      showConfirmAndReset: true,
+      resetValue: [],
+      list: labelsList.value,
     },
-    {
-      name: t('前端请求方法'),
-      field: 'method',
-    },
-    {
-      name: t('前端请求路径'),
-      field: 'path',
-    },
-    {
-      name: t('标签'),
-      field: 'gateway_label_ids',
-    },
-    {
-      name: t('生效的插件'),
-      field: 'plugins',
-    },
-    {
-      name: t('是否公开'),
-      field: 'is_public',
-    },
-  ],
-  checked: ['backend', 'name', 'method', 'path', 'gateway_label_ids', 'plugins', 'is_public'],
-};
+    cell: (h, { row }) => (
+      <RenderTagOverflow
+        data={labels.value?.filter(label => row.gateway_label_ids?.includes(label.id)).map(label => label.name)}
+      />
+    ),
+  },
+  {
+    colKey: 'plugins',
+    title: t('生效的插件'),
+    cell: (h, { row }) => (
+      row.plugins?.length
+        ? (
+          <bk-popover
+            placement="top"
+            theme="dark"
+            popover-delay={0}
+          >
+            {{
+              default: () => (
+                <div class="flex items-center">
+                  {row.plugins.map(plugin => (
+                    <div class="flex items-center" key={plugin.id}>
+                      {plugin.binding_type === 'stage' ? <span class="inline-block bg-#e4faf0 color-#14a568 rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('环') }</span> : ''}
+                      {plugin.binding_type === 'resource' ? <span class="inline-block bg-#EDF4FF color-#3A84FF rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('资') }</span> : ''}
+                      <span class="v-middle ml-4px mr-4px">{ plugin.name }</span>
+                    </div>
+                  ))}
+                </div>
+              ),
+              content: () => row.plugins.map(plugin => (
+                <div class="flex items-center" key={plugin.id}>
+                  {plugin.binding_type === 'stage' ? <span class="inline-block bg-#e4faf0 color-#14a568 rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('环') }</span> : ''}
+                  {plugin.binding_type === 'resource' ? <span class="inline-block bg-#EDF4FF color-#3A84FF rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('资') }</span> : ''}
+                  <span class="v-middle ml-4px mr-4px">{ plugin.name }</span>
+                </div>
+              )),
+            }}
+          </bk-popover>
+        )
+        : <span>--</span>
+    ),
+  },
+  {
+    colKey: 'is_public',
+    title: t('是否公开'),
+    cell: (h, { row }) => (
+      <span class={{
+        'color-#FE9C00': row.is_public,
+        'color-#63656e': !row.is_public,
+      }}
+      >
+        { row.is_public ? t('是') : t('否')}
+      </span>
+    ),
+  },
+  {
+    colKey: 'act',
+    title: t('操作'),
+    width: 200,
+    cell: (h, { row }) => (
+      <>
+        <bk-button
+          text
+          theme="primary"
+          class="mr-10px"
+          onClick={() => showDetails(row)}
+        >
+          { t('查看资源详情') }
+        </bk-button>
+        <bk-button
+          text
+          theme="primary"
+          onClick={() => copyPath(row)}
+        >
+          { t('复制资源地址') }
+        </bk-button>
+      </>
+    ),
+  },
+]);
 
 const labelsList = computed(() => {
   if (!labels.value?.length) {
     return [];
   }
-  tableDataKey.value = +new Date();
+
   return labels.value?.map((item: any) => {
     return {
-      text: item.name,
-      value: item.name,
+      label: item.name,
+      value: item.id,
     };
   });
 });
 
-watch(resourceVersionList, () => {
-  getPageData();
+const currentStageVersionId = computed(() => {
+  return currentStage.value?.resource_version?.id;
 });
 
-watch(
-  searchValue,
-  () => {
-    pagination.value.current = 1;
-    pagination.value.limit = 10;
-    getPageData();
-  },
-);
+watch(filterValue, () => {
+  tableData.value = initTableData.value.filter((row) => {
+    let result = true;
+    if (filterValue.value.keyword) {
+      result = !!(row.proxy?.backend?.name?.toLowerCase()?.includes(filterValue.value.keyword)
+        || row.name.toLowerCase()?.includes(filterValue.value.keyword)
+        || row.path.toLowerCase()?.includes(filterValue.value.keyword));
+    }
+    if (result && filterValue.value.method && filterValue.value.method.length) {
+      result = filterValue.value.method.includes(row.method);
+    }
+    if (result && filterValue.value.label_ids && filterValue.value.label_ids.length) {
+      result = filterValue.value.label_ids.some(
+        (checkedLabelId: number) => row.gateway_label_ids.some(id => id === checkedLabelId),
+      );
+    }
+    return result;
+  });
+}, { deep: true });
 
 watch(
   () => stageId,
   async () => {
     if (stageId) {
       await init();
-      getPageData();
     }
   },
   { immediate: true },
 );
+
+const getTableData = async () => {
+  if (!currentStage.value || !currentStageVersionId.value) {
+    return;
+  }
+  const response = await getVersionDetail(
+    gatewayId.value,
+    currentStageVersionId.value,
+    { stage_id: currentStage.value.id },
+  );
+
+  response.resources?.forEach((item: any) => {
+    item.gateway_label_names = [];
+    item?.gateway_label_ids?.forEach((id: string) => {
+      const tagLabel = labels.value?.find((label: any) => label.id === id);
+      if (tagLabel) {
+        item.gateway_label_names?.push(tagLabel.name);
+      }
+    });
+  });
+  tableData.value = response.resources || [];
+  initTableData.value = cloneDeep(response.resources) || [];
+};
+
+async function init() {
+  stageList.value = await getStageList(gatewayId.value);
+  currentStage.value = stageList.value.find((item: { id: number }) => item.id === Number(stageId));
+  if (currentStage.value) {
+    await getLabels();
+    // 依赖 getLabels() 获取的标签列表，需在这之后请求
+    await getTableData();
+  }
+}
 
 const getLabels = async () => {
   labels.value = await getGatewayLabels(gatewayId.value);
 };
 
 const showDetails = (row: any) => {
-  setHighlight(row.name);
-  info.value = row;
+  currentResource.value = row;
   resourceDetailsRef.value?.showSideslider();
 };
 
 const copyPath = (row: any) => {
-  copy(stageAddress.replace(/\/$/, '') + row?.path);
-};
-
-// 获取资源信息数据
-const getResourceVersionsData = async (curStageData: any) => {
-  isLoading.value = true;
-  const curVersionId = curStageData?.resource_version?.id;
-  resourceVersionList.value = [];
-  if (curVersionId === undefined) {
-    isReload.value = true;
-    isLoading.value = false;
-    return;
-  }
-  // 没有版本无需请求
-  if (curVersionId === 0) {
-    isLoading.value = false;
-    emptyText.value = '环境没有发布，数据为空';
-    return;
-  }
-  try {
-    const res = await getVersionDetail(gatewayId.value, curVersionId, { stage_id: curStageData?.id });
-    res.resources?.forEach((item: any) => {
-      item.gateway_label_names = [];
-      item?.gateway_label_ids?.forEach((id: string) => {
-        const tagLabel = labels.value?.find((label: any) => label.id === id);
-        if (tagLabel) {
-          item.gateway_label_names?.push(tagLabel.name);
-        }
-      });
-    });
-    pagination.value.count = res.resources.length;
-    resourceVersionList.value = res.resources || [];
-  }
-  catch (e) {
-    // 接口404处理
-    resourceVersionList.value = [];
-    console.error(e);
-  }
-  finally {
-    isLoading.value = false;
-    isReload.value = false;
-    emptyText.value = '暂无数据';
-  }
-};
-
-const isHighlight = (v: any) => {
-  return v.highlight ? 'row-cls' : '';
-};
-
-const setHighlight = (name: string) => {
-  tableData.value?.forEach((item: any) => {
-    item.highlight = item.name === name;
-  });
-};
-
-const clearHighlight = () => {
-  tableData.value?.forEach((item: any) => {
-    item.highlight = false;
-  });
+  copy(stageAddress.replace(/\/$/, '') + row.path);
 };
 
 // 查看环境
-const handleCheckStage = ({ resourceName, backendName }: {
+const handleCheckStage = ({ backendName }: {
   resourceName: string
   backendName: string
 }) => {
-  setHighlight(resourceName);
   // 可传入 add | edit | check
   stageSidesliderRef.value?.handleShowSideslider('check', { backendName });
 };
 
-function getPageData() {
-  if (!resourceVersionList.value?.length) {
-    pagination.value.count = 0;
-    return [];
-  }
-
-  isLoading.value = true;
-  let curAllData = resourceVersionList.value;
-  if (searchValue.value) {
-    curAllData = curAllData?.filter((row: any) => {
-      return !!(row?.proxy?.backend?.name?.toLowerCase()?.includes(searchValue.value)
-        || row?.name?.toLowerCase()?.includes(searchValue.value)
-        || row?.path?.toLowerCase()?.includes(searchValue.value));
-    });
-    updateTableEmptyConfig();
-  }
-
-  if (chooseMethod.value?.length) {
-    curAllData = curAllData?.filter((row: any) => {
-      return !!chooseMethod.value?.includes(row?.method);
-    });
-
-    updateTableEmptyConfig();
-  }
-
-  if (chooseLabels.value?.length) {
-    curAllData = curAllData?.filter((row: any) => {
-      const flag = chooseLabels.value?.some((item: any) => row?.gateway_label_names?.includes(item));
-      return !!flag;
-    });
-
-    updateTableEmptyConfig();
-  }
-
-  // 当前页数
-  const page = pagination.value.current;
-  // limit 页容量
-  let startIndex = (page - 1) * pagination.value.limit;
-  let endIndex = page * pagination.value.limit;
-  if (startIndex < 0) {
-    startIndex = 0;
-  }
-  if (endIndex > curAllData.length) {
-    endIndex = curAllData.length;
-  }
-  pagination.value.count = curAllData.length;
-
-  isLoading.value = false;
-  tableData.value = curAllData?.slice(startIndex, endIndex);
-}
-
-const handleMethodFilter = () => true;
-
-// 页码变化发生的事件
-const handlePageChange = (current: number) => {
-  pagination.value.current = current;
-  getPageData();
+const handleClearQueries = () => {
+  filterValue.value = {};
 };
 
-// 条数变化发生的事件
-const handlePageSizeChange = (limit: number) => {
-  pagination.value.limit = limit;
-  pagination.value.current = 1;
-  getPageData();
+const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filters) => {
+  Object.assign(filterValue.value, filters);
 };
 
-const updateTableEmptyConfig = () => {
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (searchValue.value || chooseMethod.value?.length || chooseLabels.value?.length || !tableData.value.length) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
-  }
-  if (searchValue.value || chooseMethod.value?.length || chooseLabels.value?.length) {
-    tableEmptyConf.value.emptyType = 'empty';
-    return;
-  }
-  tableEmptyConf.value.emptyType = '';
-};
-
-const handleClearFilterKey = () => {
-  searchValue.value = '';
-  chooseMethod.value = [];
-  chooseLabels.value = [];
-  tableDataKey.value = +new Date();
-  pagination.value = Object.assign(pagination.value, {
-    current: 1,
-    limit: 10,
-    count: resourceVersionList.value.length,
-  });
-  getPageData();
-};
-
-async function init() {
-  stageList.value = await getStageList(gatewayId.value);
-  const curStageData = stageList.value.find((item: { id: number }) => item.id === Number(stageId));
-  if (curStageData) {
-    await getLabels();
-    // 依赖 getLabels() 获取的标签列表，需在这之后请求
-    await getResourceVersionsData(curStageData);
-  }
-}
+onMounted(() => {
+  init();
+});
 
 defineExpose({ reload: init });
+
 </script>
 
 <style lang="scss" scoped>
-.table-layout {
-  margin-top: 15px;
-
-  :deep(.row-cls){
-
-    td {
-      background: #e1ecff !important;
-    }
-  }
-
-  :deep(.bk-table-head) {
-    scrollbar-gutter: auto;
-  }
-}
 
 .exception-empty {
   display: flex;
@@ -629,47 +397,6 @@ defineExpose({ reload: init });
   :deep(.bk-exception-img) {
     width: 220px;
     height: 130px;
-  }
-}
-
-.plugin-tag {
-  display: inline-block;
-  min-width: 18px;
-  height: 16px;
-  font-size: 10px;
-  line-height: 16px;
-  text-align: center;
-  vertical-align: middle;
-  border-radius: 2px;
-  padding: 0 4px;
-
-  &.success {
-    color: #14A568;
-    background: #E4FAF0;
-  }
-
-  &.info {
-    color: #3A84FF;
-    background: #EDF4FF;
-  }
-}
-
-.backend-td {
-  display: flex;
-  align-items: center;
-  height: 100%;
-
-  .backend-edit {
-    margin-left: 4px;
-    cursor: pointer;
-    opacity: 0%;
-  }
-
-  &:hover {
-
-    .backend-edit {
-      opacity: 100%;
-    }
   }
 }
 </style>
