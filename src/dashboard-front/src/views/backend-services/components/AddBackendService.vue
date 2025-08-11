@@ -553,7 +553,14 @@ const handleConfirm = async () => {
   // 基础信息校验
   try {
     await baseInfoEl.value?.validate();
-    // 逐个stage服务配置的校验
+  }
+  catch {
+    nameRef.value?.focus();
+    handleScrollView(nameRef?.value?.$el);
+    return;
+  }
+  // 逐个stage服务配置的校验
+  try {
     for (const item of stageConfigRef.value) {
       if (!item) break;
       const { hosts, timeout } = item.model.configs;
@@ -565,11 +572,6 @@ const handleConfirm = async () => {
     }
   }
   catch {
-    if (!baseInfo.value.name) {
-      nameRef.value?.focus();
-      handleScrollView(nameRef?.value?.$el);
-      return;
-    }
     if (emptyHostIndex > -1) {
       handleScrollView(stageConfigRef.value[emptyHostIndex]?.$el);
       return;
