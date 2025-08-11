@@ -314,9 +314,6 @@ const toolGroupList = computed(() => {
 // }, { deep: true });
 
 watch(() => server, () => {
-  if (!server.id) {
-    return;
-  }
   fetchToolList();
 }, { deep: true });
 
@@ -334,6 +331,9 @@ watch(toolList, () => {
 });
 
 const fetchToolList = async () => {
+  if (!server.id) {
+    return;
+  }
   try {
     if (page === 'market') {
       toolList.value = server?.tools ?? [];
@@ -454,10 +454,15 @@ const getHighlightedHtml = (value: string) => {
   return value;
 };
 
+onMounted(() => {
+  fetchToolList();
+});
+
 </script>
 
 <style lang="scss" scoped>
 @use "sass:color";
+
 $primary-color: #3a84ff;
 $code-bc: #1e1e1e;
 $code-color: #63656e;

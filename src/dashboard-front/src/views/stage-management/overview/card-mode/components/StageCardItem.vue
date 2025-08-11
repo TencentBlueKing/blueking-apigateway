@@ -580,6 +580,7 @@ onBeforeMount(() => {
       flex-direction: column;
       align-items: center;
       gap: 16px;
+      flex-shrink: 0;
 
       .label {
         line-height: 16px;
