@@ -1,7 +1,7 @@
 <template>
   <PrimaryTable
     v-model:selected-row-keys="selectedRowKeys"
-    :data="tableData"
+    :data="localTableData"
     :columns="columns"
     :loading="loading"
     :pagination="pagination"
@@ -56,21 +56,25 @@ import { useRequest } from 'vue-request';
 import { cloneDeep } from 'lodash-es';
 
 interface IProps {
-  source: (params?: Record<string, any>) => Promise<unknown>
+  source?: (params?: Record<string, any>) => Promise<unknown>
   columns?: PrimaryTableProps['columns']
+  immediate?: boolean
+  local?: boolean
 }
 
 const selectedRowKeys = defineModel<any[]>('selectedRowKeys', { default: () => [] });
 
 const tableData = defineModel<any[]>('tableData', { default: () => [] });
 
-const { source, columns = [] } = defineProps<IProps>();
+const { source = undefined, columns = [], immediate = true, local = false } = defineProps<IProps>();
 
 const emit = defineEmits<{ 'clear-queries': [void] }>();
 
 const slots = defineSlots();
 
 const { t } = useI18n();
+
+const localTableData = ref<any[]>([]);
 
 const pagination = ref<PrimaryTableProps['pagination']>({
   current: 1,
@@ -132,16 +136,29 @@ const exceptionAttrs = computed(() => {
   };
 });
 
+watch(tableData, () => {
+  localTableData.value = cloneDeep(tableData.value || []);
+  if (local) {
+    pagination.value!.current = 1;
+    pagination.value!.total = localTableData.value.length;
+  }
+}, {
+  immediate: true,
+  deep: true,
+});
+
 const handlePageChange = ({ current, pageSize }: {
   current: number
   pageSize: number
 }) => {
   pagination.value!.current = current;
   pagination.value!.pageSize = pageSize;
-  fetchData({
-    ...paramsMemo,
-    ...offsetAndLimit.value,
-  });
+  if (!local) {
+    fetchData({
+      ...paramsMemo,
+      ...offsetAndLimit.value,
+    });
+  }
 };
 
 const handleRefresh = () => {
@@ -149,7 +166,9 @@ const handleRefresh = () => {
 };
 
 onMounted(() => {
-  fetchData({ ...offsetAndLimit.value });
+  if (immediate && !local) {
+    fetchData({ ...offsetAndLimit.value });
+  }
 });
 
 defineExpose({
