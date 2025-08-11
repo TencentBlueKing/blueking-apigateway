@@ -41,15 +41,15 @@
         </BkButton>
       </template>
     </BkAlert>
-    <div>
+    <div ref="resizeLayoutParentRef">
       <BkResizeLayout
         placement="right"
         :border="false"
         collapsible
         :is-collapsed="isCollapsed"
-        :min="1000"
-        :max="1286"
-        :initial-divide="1286"
+        :min="resizeLayoutConfig.min"
+        :max="resizeLayoutConfig.max"
+        :initial-divide="resizeLayoutConfig.max"
         @collapse-change="handleCollapseChange"
       >
         <template #main>
@@ -213,6 +213,7 @@
               row-key="id"
               :filter-row="null"
               hover
+              resizable
               @filter-change="handleFilterChange"
               @select-change="handleSelectChange"
               @sort-change="handleSortChange"
@@ -575,6 +576,11 @@ const diffSliderConf = reactive({
 const diffSourceId = ref();
 const diffTargetId = ref();
 const showBatch = ref(false);
+const resizeLayoutParentRef = useTemplateRef('resizeLayoutParentRef');
+const resizeLayoutConfig = ref({
+  min: 1000,
+  max: 1286,
+});
 
 // tab 选项卡
 const panels = [
@@ -1470,12 +1476,18 @@ const handleCollapseChange = (collapsed: boolean) => {
 };
 
 onMounted(() => {
-  // setTimeout(() => {
+  // 计算 resize layout 右区宽度
+  const resizeParentWidth = resizeLayoutParentRef.value?.getBoundingClientRect()?.width;
+  if (resizeParentWidth) {
+    // 368 = 320(资源名称列+操作列宽度) + 48(左右padding)
+    resizeLayoutConfig.value.max = resizeParentWidth - 368;
+    resizeLayoutConfig.value.min = resizeLayoutConfig.value.max - 268;
+  }
+
   init();
   if (route.meta.pageStatus) {
     recoverPageStatus();
   }
-  // });
 });
 
 </script>
