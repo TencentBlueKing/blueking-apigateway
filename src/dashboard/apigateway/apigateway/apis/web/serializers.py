@@ -19,8 +19,9 @@
 from rest_framework import serializers
 
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
+from apigateway.biz.validators import validate_upstream
 from apigateway.common.security import is_forbidden_host
-from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, LoadBalanceTypeEnum
+from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, HashOnTypeEnum, LoadBalanceTypeEnum
 
 from .constants import BackendConfigSchemeEnum, BackendConfigTypeEnum
 
@@ -40,19 +41,32 @@ class BaseBackendConfigSLZ(serializers.Serializer):
     )
     timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1, help_text="超时时间")
     loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices(), help_text="负载均衡")
+    # if loadbalance is chash, hash_on is required
+    hash_on = serializers.ChoiceField(choices=HashOnTypeEnum.get_choices(), help_text="hash 类型", required=False)
+    # if hash_on is not empty, key is required
+    key = serializers.CharField(help_text="hash 键", required=False)
     hosts = serializers.ListField(
         child=HostSLZ(),
         allow_empty=False,
         help_text="主机列表",
     )
 
+    def validate(self, data):
+        validate_upstream(
+            loadbalance=data.get("loadbalance"),
+            hash_on=data.get("hash_on"),
+            key=data.get("key"),
+            hosts=data.get("hosts"),
+        )
+        return data
+
     def validate_hosts(self, value):
         unique_combinations = set()
         for host_data in value:
-            # 假设HostSLZ有scheme和host字段
+            # 假设 HostSLZ 有 scheme 和 host 字段
             scheme_host_combination = (host_data["scheme"], host_data["host"])
             if scheme_host_combination in unique_combinations:
-                raise serializers.ValidationError("hosts中的scheme和host组合必须唯一。")
+                raise serializers.ValidationError("hosts 中的 scheme 和 host 组合必须唯一。")
             unique_combinations.add(scheme_host_combination)
 
             if is_forbidden_host(host_data["host"]):

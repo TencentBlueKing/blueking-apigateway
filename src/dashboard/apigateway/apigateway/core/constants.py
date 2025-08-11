@@ -211,6 +211,14 @@ class LoadBalanceTypeEnum(StructuredEnum):
     LEAST_CONN = EnumField("least_conn", "Least-Conn")
 
 
+class HashOnTypeEnum(StructuredEnum):
+    VARS = EnumField("vars", "Vars")
+    HEADER = EnumField("header", "Header")
+    COOKIE = EnumField("cookie", "Cookie")
+    # NOTE: not support CONSUMER
+    VARS_COMBINATIONS = EnumField("vars_combinations", "Vars-Combinations")
+
+
 HTTP_METHOD_ANY = "ANY"
 
 HTTP_METHOD_CHOICES = [

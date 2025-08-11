@@ -36,6 +36,8 @@ from apigateway.core.constants import (
     HOST_WITHOUT_SCHEME_PATTERN,
     BackendTypeEnum,
     GatewayStatusEnum,
+    HashOnTypeEnum,
+    LoadBalanceTypeEnum,
 )
 from apigateway.core.models import BackendConfig, Gateway, Proxy, Resource, ResourceVersion, Stage
 
@@ -573,3 +575,25 @@ class MCPServerValidator(GetGatewayFromContextMixin):
             schema = schema_map.get(name)
             if not ResourceOpenAPISchemaHandler.has_openapi_schem(schema):
                 raise serializers.ValidationError(_(f"请检查当前资源:{name}对应的资源请求参数是否已经确认"))
+
+
+def validate_upstream(loadbalance: str, hash_on: str | None, key: str | None, hosts: list[dict]):
+    if loadbalance == LoadBalanceTypeEnum.WRR.value:
+        host_without_weight = [host for host in hosts if host.get("weight") is None]
+        if host_without_weight:
+            raise serializers.ValidationError(_("负载均衡类型为 Weighted-RR 时，Host 权重必填。"))
+
+    elif loadbalance == LoadBalanceTypeEnum.CHASH.value:
+        if not hash_on:
+            raise serializers.ValidationError("hash_on is required when loadbalance is chash")
+        if not key:
+            raise serializers.ValidationError("key is required when loadbalance is chash")
+
+        if (hash_on in [HashOnTypeEnum.VARS.value, HashOnTypeEnum.VARS_COMBINATIONS.value]) and not key.startswith(
+            "$"
+        ):
+            raise serializers.ValidationError("key must start with $ when hash_on is vars")
+        if hash_on == HashOnTypeEnum.HEADER.value and not key.startswith("http_"):
+            raise serializers.ValidationError("key must start with http_ when hash_on is header")
+        if hash_on == HashOnTypeEnum.COOKIE.value and not key.startswith("cookie_"):
+            raise serializers.ValidationError("key must start with cookie_ when hash_on is cookie")

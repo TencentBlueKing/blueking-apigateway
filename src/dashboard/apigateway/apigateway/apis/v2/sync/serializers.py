@@ -43,6 +43,7 @@ from apigateway.biz.validators import (
     ResourceVersionValidator,
     SchemeHostInputValidator,
     StageVarsValidator,
+    validate_upstream,
 )
 from apigateway.common.constants import (
     DOMAIN_PATTERN,
@@ -60,6 +61,7 @@ from apigateway.core.constants import (
     STAGE_NAME_PATTERN,
     GatewayStatusEnum,
     GatewayTypeEnum,
+    HashOnTypeEnum,
     LoadBalanceTypeEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, Gateway, ResourceVersion, Stage
@@ -181,6 +183,9 @@ class HostSLZ(serializers.Serializer):
 
 class UpstreamsSLZ(serializers.Serializer):
     loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices())
+    hash_on = serializers.ChoiceField(choices=HashOnTypeEnum.get_choices(), required=False)
+    key = serializers.CharField(required=False)
+
     hosts = serializers.ListField(child=HostSLZ(), allow_empty=False)
 
     class Meta:
@@ -212,12 +217,12 @@ class UpstreamsSLZ(serializers.Serializer):
         return super().to_representation(instance)
 
     def validate(self, data):
-        if data.get("loadbalance") == LoadBalanceTypeEnum.WRR.value:
-            host_without_weight = [host for host in data["hosts"] if host.get("weight") is None]
-            if host_without_weight:
-                raise serializers.ValidationError(_("负载均衡类型为 Weighted-RR 时，Host 权重必填。"))
-
-        # TODO: add validation for chash
+        validate_upstream(
+            loadbalance=data.get("loadbalance"),
+            hash_on=data.get("hash_on"),
+            key=data.get("key"),
+            hosts=data.get("hosts"),
+        )
         return data
 
 
