@@ -680,7 +680,7 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
         stage_name = kwargs.get("stage_name")
         if not stage_name:
             raise error_codes.INTERNAL.format(_("stage_name is required"), replace=True)
-        stage = get_object_or_None(Stage, name=stage_name)
+        stage = get_object_or_None(Stage, gateway=request.gateway, name=stage_name)
         if not stage:
             raise error_codes.NOT_FOUND.format(
                 _("stage: {stage_name} not found").format(stage_name=stage_name), replace=True
