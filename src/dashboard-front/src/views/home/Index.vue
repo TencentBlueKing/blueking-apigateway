@@ -163,6 +163,8 @@
             </template>
             <div class="flex-grow-1 of1">
               <span>{{ item.created_by }}</span>
+              <span v-if="!featureFlagStore.isTenantMode">{{ item.created_by }}</span>
+              <span v-else><bk-user-display-name :user-id="item.created_by" /></span>
             </div>
             <div
               :class="featureFlagStore.isTenantMode ? 'of2' : 'of3'"
@@ -672,7 +674,6 @@ onMounted(() => {
 
         .env {
           overflow: hidden;
-          // flex-grow: 1;
         }
 
         .environment-tag {

@@ -355,7 +355,7 @@ onUnmounted(() => {
   gap: 18px;
 }
 
-@media screen and (max-width: 1680px) {
+ @media screen and (max-width: 1919px) {
 
   .card-list {
     grid-template-columns: repeat(2, 1fr);
