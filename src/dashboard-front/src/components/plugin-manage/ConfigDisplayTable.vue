@@ -74,12 +74,13 @@ const {
   },
 } = defineProps<IProps>();
 
-// Header转换插件、频率控制插件、IP访问限制插件、网关错误使用HTTP状态码200插件配置展示表格
+// Header转换插件、频率控制插件、IP访问限制插件、网关错误使用HTTP状态码200插件、强制要求调用方传递X-Bk-Username header 头插件配置展示表格
 const tableComponentMap: { [key: string]: Component } = {
   'bk-header-rewrite': ConfigDisplayTableHeaderRewrite,
   'bk-rate-limit': ConfigDisplayTableRateLimit,
   'bk-ip-restriction': ConfigDisplayTableIpRestriction,
   'bk-status-rewrite': ConfigDisplayTableStatusRewrite,
+  'bk-username-required': ConfigDisplayTableStatusRewrite,
 };
 
 // 根据 code 或 type 动态获取表格组件

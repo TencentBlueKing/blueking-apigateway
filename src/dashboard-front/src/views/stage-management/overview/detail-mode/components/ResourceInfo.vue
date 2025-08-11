@@ -192,35 +192,19 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'plugins',
     title: t('生效的插件'),
+    ellipsis: true,
     cell: (h, { row }) => (
       row.plugins?.length
         ? (
-          <bk-popover
-            placement="top"
-            theme="dark"
-            popover-delay={0}
-          >
-            {{
-              default: () => (
-                <div class="flex items-center">
-                  {row.plugins.map(plugin => (
-                    <div class="flex items-center" key={plugin.id}>
-                      {plugin.binding_type === 'stage' ? <span class="inline-block bg-#e4faf0 color-#14a568 rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('环') }</span> : ''}
-                      {plugin.binding_type === 'resource' ? <span class="inline-block bg-#EDF4FF color-#3A84FF rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('资') }</span> : ''}
-                      <span class="v-middle ml-4px mr-4px">{ plugin.name }</span>
-                    </div>
-                  ))}
-                </div>
-              ),
-              content: () => row.plugins.map(plugin => (
-                <div class="flex items-center" key={plugin.id}>
-                  {plugin.binding_type === 'stage' ? <span class="inline-block bg-#e4faf0 color-#14a568 rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('环') }</span> : ''}
-                  {plugin.binding_type === 'resource' ? <span class="inline-block bg-#EDF4FF color-#3A84FF rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('资') }</span> : ''}
-                  <span class="v-middle ml-4px mr-4px">{ plugin.name }</span>
-                </div>
-              )),
-            }}
-          </bk-popover>
+          <div class="flex items-center">
+            {row.plugins.map(plugin => (
+              <div class="flex items-center" key={plugin.id}>
+                {plugin.binding_type === 'stage' ? <span class="inline-block bg-#e4faf0 color-#14a568 rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('环') }</span> : ''}
+                {plugin.binding_type === 'resource' ? <span class="inline-block bg-#EDF4FF color-#3A84FF rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('资') }</span> : ''}
+                <span class="v-middle ml-4px mr-4px">{ plugin.name }</span>
+              </div>
+            ))}
+          </div>
         )
         : <span>--</span>
     ),
