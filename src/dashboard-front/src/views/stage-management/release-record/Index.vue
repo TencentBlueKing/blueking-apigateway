@@ -136,7 +136,7 @@ const {
   dateValue,
   handleChange,
   handleClear,
-  handleComfirm,
+  handleConfirm,
 } = useDatePicker(filterData);
 
 const shortcutSelectedIndex = ref(-1);
@@ -329,7 +329,7 @@ const columns = computed(() =>
     ],
 );
 
-watch(() => filterData.value, () => {
+watch(tableData, () => {
   updateTableEmptyConfig();
 }, { deep: true });
 
@@ -377,7 +377,7 @@ const handleClearFilterKey = () => {
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   const isSearch = dateValue.value.length > 0 || filterData.value.keyword;
-  if (isSearch || !tableData.value.length) {
+  if (isSearch && !tableData.value.length) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
@@ -402,7 +402,7 @@ const getTextFromEnum = (e: Enums, key?: unknown) => {
 };
 
 const handlePickSuccess = () => {
-  handleComfirm();
+  handleConfirm();
 };
 
 onUnmounted(() => {

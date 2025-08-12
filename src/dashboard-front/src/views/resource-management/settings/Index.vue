@@ -17,31 +17,42 @@
  */
 
 <template>
-  <div v-show="!gatewayStore.isProgrammableGateway">
+  <div
+    v-show="!gatewayStore.isProgrammableGateway"
+    class="h-full"
+  >
     <ResourceSettingTopBar
       :current-source="curResource"
       :is-detail="!isCollapsed"
       :latest="versionConfigs.needNewVersion"
       :show-new-tips="!!tableData.length"
     />
-    <BkAlert
+    <div
       v-show="versionConfigs.needNewVersion && isCollapsed"
-      class="mx-24px mt-20px"
-      theme="warning"
+      class="pt-20px"
     >
-      <template #title>
-        {{ versionConfigs.versionMessage }}
-        <BkButton
-          v-if="versionConfigs.needNewVersion"
-          text
-          theme="primary"
-          @click="handleCreateResourceVersion"
-        >
-          {{ t('立即生成版本') }}
-        </BkButton>
-      </template>
-    </BkAlert>
-    <div ref="resizeLayoutParentRef">
+      <BkAlert
+        class="mx-24px"
+        theme="warning"
+      >
+        <template #title>
+          {{ versionConfigs.versionMessage }}
+          <BkButton
+            v-if="versionConfigs.needNewVersion"
+            text
+            theme="primary"
+            @click="handleCreateResourceVersion"
+          >
+            {{ t('立即生成版本') }}
+          </BkButton>
+        </template>
+      </BkAlert>
+    </div>
+    <div
+      ref="resizeLayoutParentRef"
+      class="resize-layout-wrapper"
+      :class="{ 'new-version-alert-visible': versionConfigs.needNewVersion && isCollapsed }"
+    >
       <BkResizeLayout
         placement="right"
         :border="false"
@@ -191,8 +202,8 @@
                 </BkButton>
               </div>
               <div
-                class="flex-grow-1"
-                :class="{'max-w-450px': isCollapsed}"
+                class="flex-grow-1 z-50"
+                :class="{'max-w-450px ml-8px': isCollapsed}"
               >
                 <BkSearchSelect
                   v-model="searchValue"
@@ -420,6 +431,7 @@ import ExportResourceDialog from '../components/ExportResourceDialog.vue';
 import CreateResourceVersion from '@/components/create-resource-version/Index.vue';
 import VersionDiff from '@/components/version-diff/Index.vue';
 import ResourceDocSlider from '../components/ResourceDocSlider.vue';
+import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
 
 interface ApigwIDropList extends IDropList { tooltips?: string }
 
@@ -644,10 +656,11 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
       colKey: 'name',
       title: t('资源名称'),
       minWidth: 170,
-      ellipsis: {
-        props: { placement: 'right' },
-        content: (h, { row }) => row.name,
-      },
+      // ellipsis: {
+      //   props: { placement: 'right' },
+      //   content: (h, { row }) => row.name,
+      // },
+      // ellipsis: true,
       cell: (h, { row }) => (
         <div class="resource-name">
           <div
@@ -657,15 +670,14 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
                 { 'name-updated': row.has_updated },
               ]
             }
+            v-bk-tooltips={{
+              content: row.name,
+              placement: 'right',
+              delay: 300,
+            }}
             onClick={() => handleShowInfo(row.id)}
           >
-            <span
-              v-bk-tooltips={{
-                content: row.name,
-                placement: 'right',
-                delay: 300,
-              }}
-            >
+            <span>
               {row.name}
             </span>
             {row.has_updated
@@ -765,7 +777,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
         list: labelsList.value,
       },
       cell: (h, { row }) => (
-        <>
+        <div>
           {!row.isEditLabel
             ? (
               <div
@@ -775,28 +787,13 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
                 {
                   row.labels?.length
                     ? (
-                      <div class="flex items-center gap-4px">
-                        { row.labels.map(item => (
-                          <bk-tag key={item.id} onClick={() => handleEditLabel(row)}>
-                            { item.name }
-                          </bk-tag>
-                        ))}
-                        {
-                          row.labels.length > row.tagOrder
-                            ? (
-                              <bk-tag
-                                class="tag-cls"
-                                onClick={() => handleEditLabel(row)}
-                              >
-                                +
-                                { row.labels.length - row.tagOrder }
-                              </bk-tag>
-                            )
-                            : ''
-                        }
+                      <div class="w-260px">
+                        <RenderTagOverflow
+                          data={row.labels.map(label => label.name)}
+                        />
                       </div>
                     )
-                    : (<span>--</span>)
+                    : <span>--</span>
                 }
                 <ag-icon
                   name="edit-small"
@@ -820,7 +817,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
                 />
               </section>
             )}
-        </>
+        </div>
       ),
     },
     {
@@ -958,9 +955,7 @@ watch(
 // Search Select选中的值
 watch(
   searchValue,
-  (v: any[]) => {
-    // tableQueries.value = {};
-
+  () => {
     if (route.query?.backend_id) {
       const { backend_id } = route.query;
       tableQueries.value.backend_id = backend_id;
@@ -973,8 +968,8 @@ watch(
       delete tableQueries.value.order_by;
     }
 
-    if (v.length) {
-      v.forEach((e: any) => {
+    if (searchValue.value.length) {
+      searchValue.value.forEach((e: any) => {
         if (e.id === e.name) {
           tableQueries.value.keyword = e.name;
         }
@@ -988,11 +983,14 @@ watch(
         }
       });
     }
+    else {
+      tableQueries.value = {};
+    }
 
     exportDropData.value.forEach((e: IDropList) => {
       // 已选资源
       if (e.value === 'filtered') {
-        e.disabled = !v.length;
+        e.disabled = !searchValue.value.length;
       }
     });
   },
@@ -1507,6 +1505,20 @@ onMounted(() => {
   }
 }
 
+.resize-layout-wrapper {
+  height: 100%;
+
+  // 新资源版本 alert 提示可见时，应减少高度
+
+  &.new-version-alert-visible {
+    height: calc(100% - 54px);
+  }
+
+  .bk-resize-layout {
+    height: 100%;
+  }
+}
+
 .nest-dropdown {
   display: flex;
   flex-direction: column;
@@ -1582,5 +1594,9 @@ onMounted(() => {
   .btn-filter-save.disabled {
     display: none !important;
   }
+}
+
+.bk-pop-confirm-title {
+  overflow-wrap: break-word;
 }
 </style>

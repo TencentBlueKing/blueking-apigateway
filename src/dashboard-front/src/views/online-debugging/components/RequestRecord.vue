@@ -205,7 +205,7 @@
             </template>
             <template #empty>
               <TableEmpty
-                :keyword="tableEmptyConf.keyword"
+                :empty-type="tableEmptyConf.emptyType"
                 :abnormal="tableEmptyConf.isAbnormal"
                 @reacquire="setSearchTimeRange"
                 @clear-filter="handleClearFilterKey"
@@ -248,7 +248,7 @@ const tableRef = ref();
 const resourceEditorRef: any = ref<InstanceType<typeof EditorMonaco>>();
 const tableList = ref<any>([]);
 const tableEmptyConf = reactive<any>({
-  keyword: '',
+  emptyType: '',
   isAbnormal: false,
 });
 let expandIds: number[] = [];
@@ -340,10 +340,10 @@ const getRequestHeader = (row: Record<string, any>) => {
 
 const updateTableEmptyConfig = () => {
   if (filterData.value.resource_name || filterData.value.time_end) {
-    tableEmptyConf.keyword = 'placeholder';
+    tableEmptyConf.emptyType = 'searchEmpty';
     return;
   }
-  tableEmptyConf.keyword = '';
+  tableEmptyConf.emptyType = '';
 };
 
 const handleShortcutChange = (value: Record<string, any>, index: number) => {
@@ -479,26 +479,32 @@ defineExpose({ show });
 
 <style lang="scss" scoped>
 .history-container {
-  padding: 20px 24px;
   height: calc(100vh - 52px);
+  padding: 20px 24px;
   box-sizing: border-box;
+
   .history-search {
     display: flex;
     align-items: center;
     margin-bottom: 18px;
+
     .search-input {
       width: 420px;
       margin-right: 8px;
     }
+
     .search-date {
       flex: 1;
     }
   }
 }
+
 .sutra-scrollbar {
+
   :deep(.bk-modal-content) {
     scrollbar-gutter: auto;
   }
+
   :deep(.bk-table-body) {
     scrollbar-gutter: auto;
   }
@@ -507,83 +513,98 @@ defineExpose({ show });
 .details-tab {
   max-height: 600px;
   background: #f5f7fa;
+
   .tab-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+
     .header-title {
       display: flex;
       align-items: center;
     }
+
     .header-copy {
-      color: #4D4F56;
       margin-right: 18px;
+      color: #4D4F56;
       cursor: pointer;
     }
+
     .title {
-      font-size: 12px;
-      color: #313238;
-      font-family: PingFangSC-Regular;
-      font-weight: Regular;
-      padding: 8px 24px;
-      cursor: pointer;
       position: relative;
+      padding: 8px 24px;
+      font-family: PingFangSC-Regular;
+      font-size: 12px;
+      font-weight: regular;
+      color: #313238;
+      cursor: pointer;
+
       &:not(:nth-last-child(1)) {
+
         &::after {
-          content: ' ';
           position: absolute;
-          right: 0;
           top: 50%;
-          transform: translateY(-50%);
+          right: 0;
           width: 1px;
           height: 10px;
           background: #DCDEE5;
+          content: ' ';
+          transform: translateY(-50%);
         }
       }
+
       &.active {
         font-family: PingFangSC-Semibold;
         font-weight: bold;
         color: #313238;
+
         &::before {
-          content: ' ';
           position: absolute;
           top: 0;
           left: 50%;
-          transform: translateX(-50%);
           width: 96px;
           height: 2px;
           background: #313238;
+          content: ' ';
+          transform: translateX(-50%);
         }
       }
     }
   }
+
   .tab-content {
+
     .code,
     .request-body,
     .response-body {
       width: 100%;
-      transition: all, .1s;
-      min-height: 100px;
       max-height: 400px;
+      min-height: 100px;
+      transition: all, .1s;
     }
+
     .response-body {
       min-height: 250px;
     }
+
     .request-url {
       padding: 12px 24px 24px;
+
       .tag {
+        padding: 1px 4px;
         font-size: 10px;
         color: #299E56;
         background: #DAF6E5;
         border-radius: 8px;
-        padding: 1px 4px;
       }
+
       .url {
+        margin-left: 4px;
         font-size: 12px;
         color: #313238;
-        margin-left: 4px;
       }
     }
+
     .request-header {
       padding: 12px 24px 24px;
       border: 1px solid #F0F1F5;
@@ -602,15 +623,19 @@ defineExpose({ show });
 }
 
 .content-item {
+
   .monaco-editor, .monaco-editor-background, .monaco-editor .inputarea.ime-input {
     background-color: #f5f7fa !important;
   }
+
   .monaco-editor .margin {
     background-color: #f5f7fa !important;
   }
+
   .monaco-editor .line-numbers {
     color: #979BA5 !important;
   }
+
   .monaco-editor .current-line ~ .line-numbers {
     color: #979BA5 !important;
   }

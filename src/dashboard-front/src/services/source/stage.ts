@@ -45,7 +45,7 @@ export interface IStageListItem {
 export const getStageList = (apigwId: number) => http.get<IStageListItem[]>(`${path}/${apigwId}/stages/`);
 
 export const getStageDetail = (apigwId: number, stageId: number) =>
-  http.get<IStageListItem>(`${path}/${apigwId}/stages/${stageId}`);
+  http.get<IStageListItem>(`${path}/${apigwId}/stages/${stageId}/`);
 
 export const createStage = (apigwId: number, data: any) => http.post(`${path}/${apigwId}/stages/`, data);
 
