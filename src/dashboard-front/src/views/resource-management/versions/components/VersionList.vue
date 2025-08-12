@@ -344,7 +344,7 @@ let timeId: any = null;
 const apigwId = computed(() => +route.params.id);
 
 watch(
-  filterData,
+  tableData,
   () => {
     updateTableEmptyConfig();
   },
@@ -459,12 +459,11 @@ const showRelease = async (row: any) => {
       });
     }
   }
-  catch (e) {
+  catch {
     Message({
       theme: 'warning',
       message: t('获取环境列表失败，请稍后再试！'),
     });
-    console.log(e);
   }
 };
 

@@ -194,6 +194,7 @@ import CreateSlider from '@/views/mcp-server/components/CreateSlider.vue';
 import AuthApplications from '@/views/mcp-server/components/AuthApplications.vue';
 import CustomTop from '@/views/mcp-server/components/CustomTop.vue';
 import Guideline from '@/views/mcp-market/components/GuideLine.vue';
+import { useGateway } from '@/stores';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 
@@ -203,6 +204,7 @@ const { gatewayId = 0 } = defineProps<IProps>();
 
 const { t } = useI18n();
 const route = useRoute();
+const gatewayStore = useGateway();
 
 const createSliderRef = ref();
 const serverId = ref(0);
@@ -265,6 +267,17 @@ watch(() => route.params, async () => {
 }, {
   immediate: true,
   deep: true,
+});
+
+watch(() => gatewayStore.currentGateway, (newGateway, oldGateway) => {
+  // 切换了网关，需要返回列表页
+  if (!oldGateway || (newGateway?.id === oldGateway.id)) {
+    return;
+  }
+  router.replace({
+    name: 'MCPServer',
+    params: { id: newGateway!.id },
+  });
 });
 
 const handleEdit = () => {

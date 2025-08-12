@@ -35,14 +35,17 @@
         >
           {{ t("刷新") }}
         </BkButton>
-        <div v-if="exceptionAttrs.type === 'search-empty'">
-          {{ t("可以尝试 调整关键词 或") }}
+        <div
+          v-if="exceptionAttrs.type === 'search-empty'"
+          class="flex items-center gap-4px"
+        >
+          <span class="color-#979ba5">{{ t("可以尝试 调整关键词 或") }}</span>
           <BkButton
             text
             theme="primary"
             @click="emit('clear-queries')"
           >
-            {{ t("清空搜索条件") }}
+            <span class="line-height-22px">{{ t("清空搜索条件") }}</span>
           </BkButton>
         </div>
       </BkException>
