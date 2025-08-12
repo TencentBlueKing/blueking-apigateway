@@ -611,7 +611,7 @@ class UpstreamValidator:
             if (hash_on in [HashOnTypeEnum.VARS.value, HashOnTypeEnum.VARS_COMBINATIONS.value]) and not key.startswith(
                 "$"
             ):
-                raise serializers.ValidationError("key must start with $ when hash_on is vars")
+                raise serializers.ValidationError("key must start with $ when hash_on is vars or vars_combinations")
             if hash_on == HashOnTypeEnum.HEADER.value and not key.startswith("http_"):
                 raise serializers.ValidationError("key must start with http_ when hash_on is header")
             if hash_on == HashOnTypeEnum.COOKIE.value and not key.startswith("cookie_"):
