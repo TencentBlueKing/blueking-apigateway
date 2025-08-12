@@ -19,7 +19,7 @@
 from rest_framework import serializers
 
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
-from apigateway.biz.validators import validate_upstream
+from apigateway.biz.validators import UpstreamValidator
 from apigateway.common.security import is_forbidden_host
 from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, HashOnTypeEnum, LoadBalanceTypeEnum
 
@@ -51,14 +51,9 @@ class BaseBackendConfigSLZ(serializers.Serializer):
         help_text="主机列表",
     )
 
-    def validate(self, data):
-        validate_upstream(
-            loadbalance=data.get("loadbalance"),
-            hash_on=data.get("hash_on"),
-            key=data.get("key"),
-            hosts=data.get("hosts"),
-        )
-        return data
+    class Meta:
+        ref_name = "apigateway.apis.web.serializers.BaseBackendConfigSLZ"
+        validators = [UpstreamValidator()]
 
     def validate_hosts(self, value):
         unique_combinations = set()
@@ -73,6 +68,3 @@ class BaseBackendConfigSLZ(serializers.Serializer):
                 raise serializers.ValidationError(f"host: {host_data['host']} 不能使用该端口。")
 
         return value
-
-    class Meta:
-        ref_name = "apigateway.apis.web.serializers.BaseBackendConfigSLZ"

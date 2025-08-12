@@ -34,7 +34,7 @@ from apigateway.biz.validators import (
     MaxCountPerGatewayValidator,
     SchemeHostInputValidator,
     StageVarsValidator,
-    validate_upstream,
+    UpstreamValidator,
 )
 from apigateway.common.constants import DOMAIN_PATTERN, HEADER_KEY_PATTERN, CallSourceTypeEnum
 from apigateway.common.django.validators import NameValidator
@@ -92,6 +92,9 @@ class UpstreamsSLZ(serializers.Serializer):
 
     hosts = serializers.ListField(child=HostSLZ(), allow_empty=False)
 
+    class Meta:
+        validators = [UpstreamValidator()]
+
     def __init__(self, *args, **kwargs):
         self.allow_empty = kwargs.pop("allow_empty", False)
         super().__init__(*args, **kwargs)
@@ -116,15 +119,6 @@ class UpstreamsSLZ(serializers.Serializer):
         if self.allow_empty and not instance:
             return {}
         return super().to_representation(instance)
-
-    def validate(self, data):
-        validate_upstream(
-            loadbalance=data.get("loadbalance"),
-            hash_on=data.get("hash_on"),
-            key=data.get("key"),
-            hosts=data.get("hosts"),
-        )
-        return data
 
 
 class TransformHeadersSLZ(serializers.Serializer):
