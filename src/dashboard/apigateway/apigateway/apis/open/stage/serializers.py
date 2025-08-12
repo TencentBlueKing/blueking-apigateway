@@ -92,9 +92,6 @@ class UpstreamsSLZ(serializers.Serializer):
 
     hosts = serializers.ListField(child=HostSLZ(), allow_empty=False)
 
-    class Meta:
-        validators = [UpstreamValidator()]
-
     def __init__(self, *args, **kwargs):
         self.allow_empty = kwargs.pop("allow_empty", False)
         super().__init__(*args, **kwargs)
@@ -153,7 +150,7 @@ class BackendConfigSLZ(UpstreamsSLZ):
 
 class BackendSLZ(serializers.Serializer):
     name = serializers.CharField(help_text="后端服务名称", required=True)
-    config = BackendConfigSLZ(allow_empty=False)
+    config = BackendConfigSLZ(validators=[UpstreamValidator()], required=True, allow_empty=False)
 
     class Meta:
         ref_name = "apis.open.stage.BackendSLZ"
@@ -230,7 +227,9 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     def validate(self, data):
         self._validate_micro_gateway_stage_unique(data.get("micro_gateway_id"))
         self._validate_plugin_configs(data.get("plugin_configs"))
-        self._validate_scheme_host(data.get("backends"))
+        if data.get("backends"):
+            self._validate_scheme_host(data.get("backends"))
+
         # validate stage backend
         if data.get("proxy_http") is None and data.get("backends") is None:
             raise serializers.ValidationError(_("proxy_http or backends 必须要选择一种方式配置后端服务"))
@@ -330,13 +329,18 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         for host in backend["config"]["hosts"]:
             scheme, _host = host["host"].rstrip("/").split("://")
             hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
-
-        return {
+        loadbalance = backend["config"]["loadbalance"]
+        config = {
             "type": "node",
             "timeout": backend["config"]["timeout"],
-            "loadbalance": backend["config"]["loadbalance"],
+            "loadbalance": loadbalance,
             "hosts": hosts,
         }
+        if loadbalance == LoadBalanceTypeEnum.CHASH.value:
+            config["hash_on"] = backend["config"]["hash_on"]
+            config["key"] = backend["config"]["key"]
+
+        return config
 
     def update(self, instance, validated_data):
         validated_data.pop("name", None)

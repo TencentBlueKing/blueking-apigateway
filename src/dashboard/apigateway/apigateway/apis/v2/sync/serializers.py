@@ -190,7 +190,6 @@ class UpstreamsSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.UpstreamsSLZ"
-        validators = [UpstreamValidator()]
 
     def __init__(self, *args, **kwargs):
         self.allow_empty = kwargs.pop("allow_empty", False)
@@ -227,7 +226,7 @@ class BackendConfigSLZ(UpstreamsSLZ):
 
 class BackendSLZ(serializers.Serializer):
     name = serializers.CharField(help_text="后端服务名称", required=True)
-    config = BackendConfigSLZ(allow_empty=False)
+    config = BackendConfigSLZ(validators=[UpstreamValidator()], required=True, allow_empty=False)
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.BackendSLZ"
@@ -367,13 +366,18 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         for host in backend["config"]["hosts"]:
             scheme, _host = host["host"].rstrip("/").split("://")
             hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
-
-        return {
+        loadbalance = backend["config"]["loadbalance"]
+        config = {
             "type": "node",
             "timeout": backend["config"]["timeout"],
-            "loadbalance": backend["config"]["loadbalance"],
+            "loadbalance": loadbalance,
             "hosts": hosts,
         }
+        if loadbalance == LoadBalanceTypeEnum.CHASH.value:
+            config["hash_on"] = backend["config"]["hash_on"]
+            config["key"] = backend["config"]["key"]
+
+        return config
 
     def update(self, instance, validated_data):
         validated_data.pop("name", None)
