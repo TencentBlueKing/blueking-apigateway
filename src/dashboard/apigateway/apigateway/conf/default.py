@@ -315,48 +315,6 @@ if BK_APIGW_DATABASE_TLS_ENABLED:
 
     DATABASES["default"]["OPTIONS"]["ssl"] = default_ssl_options
 
-BK_ESB_DATABASE_TLS_ENABLED = env.bool("BK_ESB_DATABASE_TLS_ENABLED", False)
-if BK_ESB_DATABASE_TLS_ENABLED:
-    bkcore_ssl_options = {
-        "ca": env.str("BK_ESB_DATABASE_TLS_CERT_CA_FILE", ""),
-    }
-    # mTLS
-    bkcore_cert_file = env.str("BK_ESB_DATABASE_TLS_CERT_FILE", "")
-    bkcore_key_file = env.str("BK_ESB_DATABASE_TLS_CERT_KEY_FILE", "")
-    if bkcore_cert_file and bkcore_key_file:
-        bkcore_ssl_options["cert"] = bkcore_cert_file
-        bkcore_ssl_options["key"] = bkcore_key_file
-
-    # 跳过主机名/IP 验证，会降低安全性，正式环境需要设置为 True
-    check_hostname = env.bool("BK_ESB_DATABASE_TLS_CHECK_HOSTNAME", True)
-    bkcore_ssl_options["check_hostname"] = check_hostname
-
-    if "OPTIONS" not in DATABASES["bkcore"]:
-        DATABASES["bkcore"]["OPTIONS"] = {}
-
-    DATABASES["bkcore"]["OPTIONS"]["ssl"] = bkcore_ssl_options
-
-# database ssl
-BK_APIGW_DATABASE_TLS_ENABLED = env.bool("BK_APIGW_DATABASE_TLS_ENABLED", False)
-if BK_APIGW_DATABASE_TLS_ENABLED:
-    default_ssl_options = {
-        "ca": env.str("BK_APIGW_DATABASE_TLS_CERT_CA_FILE", ""),
-    }
-    # mTLS
-    default_cert_file = env.str("BK_APIGW_DATABASE_TLS_CERT_FILE", "")
-    default_key_file = env.str("BK_APIGW_DATABASE_TLS_CERT_KEY_FILE", "")
-    if default_cert_file and default_key_file:
-        default_ssl_options["cert"] = default_cert_file
-        default_ssl_options["key"] = default_key_file
-
-    # 跳过主机名/IP 验证，会降低安全性，正式环境需要设置为 True
-    check_hostname = env.bool("BK_APIGW_DATABASE_TLS_CHECK_HOSTNAME", True)
-    default_ssl_options["check_hostname"] = check_hostname
-
-    if "OPTIONS" not in DATABASES["default"]:
-        DATABASES["default"]["OPTIONS"] = {}
-
-    DATABASES["default"]["OPTIONS"]["ssl"] = default_ssl_options
 
 BK_ESB_DATABASE_TLS_ENABLED = env.bool("BK_ESB_DATABASE_TLS_ENABLED", False)
 if not ENABLE_MULTI_TENANT_MODE and BK_ESB_DATABASE_TLS_ENABLED:
