@@ -359,7 +359,7 @@ if BK_APIGW_DATABASE_TLS_ENABLED:
     DATABASES["default"]["OPTIONS"]["ssl"] = default_ssl_options
 
 BK_ESB_DATABASE_TLS_ENABLED = env.bool("BK_ESB_DATABASE_TLS_ENABLED", False)
-if BK_ESB_DATABASE_TLS_ENABLED:
+if not ENABLE_MULTI_TENANT_MODE and BK_ESB_DATABASE_TLS_ENABLED:
     bkcore_ssl_options = {
         "ca": env.str("BK_ESB_DATABASE_TLS_CERT_CA_FILE", ""),
     }
