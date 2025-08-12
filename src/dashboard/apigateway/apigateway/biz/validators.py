@@ -580,19 +580,24 @@ class MCPServerValidator(GetGatewayFromContextMixin):
 class UpstreamValidator:
     """上游配置校验器"""
 
+    requires_context = True
+
     def __init__(self, loadbalance_field="loadbalance", hash_on_field="hash_on", key_field="key", hosts_field="hosts"):
         self.loadbalance_field = loadbalance_field
         self.hash_on_field = hash_on_field
         self.key_field = key_field
         self.hosts_field = hosts_field
 
-    def __call__(self, attrs, serializer):
+    def __call__(self, attrs: dict, serializer):
         loadbalance = attrs.get(self.loadbalance_field)
         hash_on = attrs.get(self.hash_on_field)
         key = attrs.get(self.key_field)
         hosts = attrs.get(self.hosts_field)
 
         if loadbalance == LoadBalanceTypeEnum.WRR.value:
+            if not hosts:
+                raise serializers.ValidationError(_("负载均衡类型为 Weighted-RR 时，Host 列表不能为空。"))
+
             host_without_weight = [host for host in hosts if host.get("weight") is None]
             if host_without_weight:
                 raise serializers.ValidationError(_("负载均衡类型为 Weighted-RR 时，Host 权重必填。"))

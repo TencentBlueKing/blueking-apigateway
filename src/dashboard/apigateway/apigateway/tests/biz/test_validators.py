@@ -34,6 +34,7 @@ from apigateway.biz.validators import (
     ResourceVersionValidator,
     SchemeHostInputValidator,
     StageVarsValidator,
+    UpstreamValidator,
 )
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.factories import SchemaFactory
@@ -782,3 +783,199 @@ class TestStageVarsValidator:
                 assert slz.errors
             else:
                 assert not slz.errors
+
+
+class TestUpstreamValidator:
+    """测试上游配置校验器"""
+
+    def test_validate_wrr_loadbalance_with_weight(self):
+        """测试 WRR 负载均衡类型，所有 host 都有权重"""
+        validator = UpstreamValidator()
+        attrs = {
+            "loadbalance": "weighted-roundrobin",
+            "hosts": [
+                {"host": "example1.com", "weight": 100},
+                {"host": "example2.com", "weight": 200},
+            ],
+        }
+        serializer = None
+
+        # 应该通过验证
+        result = validator(attrs, serializer)
+        assert result is None
+
+    def test_validate_wrr_loadbalance_without_weight(self):
+        """测试 WRR 负载均衡类型，有 host 没有权重"""
+        validator = UpstreamValidator()
+        attrs = {
+            "loadbalance": "weighted-roundrobin",
+            "hosts": [
+                {"host": "example1.com", "weight": 100},
+                {"host": "example2.com"},  # 没有权重
+            ],
+        }
+        serializer = None
+
+        # 应该抛出验证错误
+        with pytest.raises(serializers.ValidationError) as exc_info:
+            validator(attrs, serializer)
+        assert "负载均衡类型为 Weighted-RR 时，Host 权重必填" in str(exc_info.value)
+
+    def test_validate_chash_loadbalance_without_hash_on(self):
+        """测试 CHash 负载均衡类型，缺少 hash_on 参数"""
+        validator = UpstreamValidator()
+        attrs = {"loadbalance": "chash", "key": "some_key", "hosts": [{"host": "example.com"}]}
+        serializer = None
+
+        # 应该抛出验证错误
+        with pytest.raises(serializers.ValidationError) as exc_info:
+            validator(attrs, serializer)
+        assert "hash_on is required when loadbalance is chash" in str(exc_info.value)
+
+    def test_validate_chash_loadbalance_without_key(self):
+        """测试 CHash 负载均衡类型，缺少 key 参数"""
+        validator = UpstreamValidator()
+        attrs = {"loadbalance": "chash", "hash_on": "vars", "hosts": [{"host": "example.com"}]}
+        serializer = None
+
+        # 应该抛出验证错误
+        with pytest.raises(serializers.ValidationError) as exc_info:
+            validator(attrs, serializer)
+        assert "key is required when loadbalance is chash" in str(exc_info.value)
+
+    def test_validate_chash_vars_hash_on_without_dollar_prefix(self):
+        """测试 CHash 负载均衡类型，vars hash_on 但 key 不以 $ 开头"""
+        validator = UpstreamValidator()
+        attrs = {
+            "loadbalance": "chash",
+            "hash_on": "vars",
+            "key": "invalid_key",  # 不以 $ 开头
+            "hosts": [{"host": "example.com"}],
+        }
+        serializer = None
+
+        # 应该抛出验证错误
+        with pytest.raises(serializers.ValidationError) as exc_info:
+            validator(attrs, serializer)
+        assert "key must start with $ when hash_on is vars" in str(exc_info.value)
+
+    def test_validate_chash_vars_hash_on_with_dollar_prefix(self):
+        """测试 CHash 负载均衡类型，vars hash_on 且 key 以 $ 开头"""
+        validator = UpstreamValidator()
+        attrs = {
+            "loadbalance": "chash",
+            "hash_on": "vars",
+            "key": "$valid_key",  # 以 $ 开头
+            "hosts": [{"host": "example.com"}],
+        }
+        serializer = None
+
+        # 应该通过验证
+        result = validator(attrs, serializer)
+        assert result is None
+
+    def test_validate_chash_vars_combinations_hash_on_without_dollar_prefix(self):
+        """测试 CHash 负载均衡类型，vars_combinations hash_on 但 key 不以 $ 开头"""
+        validator = UpstreamValidator()
+        attrs = {
+            "loadbalance": "chash",
+            "hash_on": "vars_combinations",
+            "key": "invalid_key",  # 不以 $ 开头
+            "hosts": [{"host": "example.com"}],
+        }
+        serializer = None
+
+        # 应该抛出验证错误
+        with pytest.raises(serializers.ValidationError) as exc_info:
+            validator(attrs, serializer)
+        assert "key must start with $ when hash_on is vars" in str(exc_info.value)
+
+    def test_validate_chash_vars_combinations_hash_on_with_dollar_prefix(self):
+        """测试 CHash 负载均衡类型，vars_combinations hash_on 且 key 以 $ 开头"""
+        validator = UpstreamValidator()
+        attrs = {
+            "loadbalance": "chash",
+            "hash_on": "vars_combinations",
+            "key": "$valid_key",  # 以 $ 开头
+            "hosts": [{"host": "example.com"}],
+        }
+        serializer = None
+
+        # 应该通过验证
+        result = validator(attrs, serializer)
+        assert result is None
+
+    def test_validate_chash_header_hash_on_without_http_prefix(self):
+        """测试 CHash 负载均衡类型，header hash_on 但 key 不以 http_ 开头"""
+        validator = UpstreamValidator()
+        attrs = {
+            "loadbalance": "chash",
+            "hash_on": "header",
+            "key": "invalid_key",  # 不以 http_ 开头
+            "hosts": [{"host": "example.com"}],
+        }
+        serializer = None
+
+        # 应该抛出验证错误
+        with pytest.raises(serializers.ValidationError) as exc_info:
+            validator(attrs, serializer)
+        assert "key must start with http_ when hash_on is header" in str(exc_info.value)
+
+    def test_validate_chash_header_hash_on_with_http_prefix(self):
+        """测试 CHash 负载均衡类型，header hash_on 且 key 以 http_ 开头"""
+        validator = UpstreamValidator()
+        attrs = {
+            "loadbalance": "chash",
+            "hash_on": "header",
+            "key": "http_user_agent",  # 以 http_ 开头
+            "hosts": [{"host": "example.com"}],
+        }
+        serializer = None
+
+        # 应该通过验证
+        result = validator(attrs, serializer)
+        assert result is None
+
+    def test_validate_chash_cookie_hash_on_without_cookie_prefix(self):
+        """测试 CHash 负载均衡类型，cookie hash_on 但 key 不以 cookie_ 开头"""
+        validator = UpstreamValidator()
+        attrs = {
+            "loadbalance": "chash",
+            "hash_on": "cookie",
+            "key": "invalid_key",  # 不以 cookie_ 开头
+            "hosts": [{"host": "example.com"}],
+        }
+        serializer = None
+
+        # 应该抛出验证错误
+        with pytest.raises(serializers.ValidationError) as exc_info:
+            validator(attrs, serializer)
+        assert "key must start with cookie_ when hash_on is cookie" in str(exc_info.value)
+
+    def test_validate_chash_cookie_hash_on_with_cookie_prefix(self):
+        """测试 CHash 负载均衡类型，cookie hash_on 且 key 以 cookie_ 开头"""
+        validator = UpstreamValidator()
+        attrs = {
+            "loadbalance": "chash",
+            "hash_on": "cookie",
+            "key": "cookie_session_id",  # 以 cookie_ 开头
+            "hosts": [{"host": "example.com"}],
+        }
+        serializer = None
+
+        # 应该通过验证
+        result = validator(attrs, serializer)
+        assert result is None
+
+    def test_validate_other_loadbalance_types(self):
+        """测试其他负载均衡类型（RR, EWMA, LEAST_CONN）"""
+        validator = UpstreamValidator()
+        other_loadbalance_types = ["roundrobin", "ewma", "least_conn"]
+
+        for loadbalance_type in other_loadbalance_types:
+            attrs = {"loadbalance": loadbalance_type, "hosts": [{"host": "example.com"}]}
+            serializer = None
+
+            # 应该通过验证
+            result = validator(attrs, serializer)
+            assert result is None
