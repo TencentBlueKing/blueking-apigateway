@@ -253,7 +253,7 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         default=dict,
     )
 
-    backends = serializers.ListSerializer(help_text="后端配置", child=BackendSLZ(), allow_null=True, required=False)
+    backends = serializers.ListSerializer(help_text="后端配置", child=BackendSLZ(), allow_null=False, required=True)
 
     plugin_configs = serializers.ListSerializer(
         help_text="插件配置", child=PluginConfigSLZ(), allow_null=True, required=False
