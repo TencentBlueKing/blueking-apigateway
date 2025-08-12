@@ -106,9 +106,16 @@
             {{ t('文档联系人') }}
           </header>
           <main class="content-main">
-            {{ basics.doc_maintainers?.type === 'user' ?
-              basics.doc_maintainers?.contacts.join(', ') :
-              basics.doc_maintainers?.service_account?.name }}
+            <span v-if="!featureFlagStore.isTenantMode">
+              {{ basics.doc_maintainers?.type === 'user' ?
+                basics.doc_maintainers?.contacts.join(', ') :
+                basics.doc_maintainers?.service_account?.name }}
+            </span>
+            <span v-else><bk-user-display-name
+              :user-id="basics.doc_maintainers?.type === 'user' ?
+                basics.doc_maintainers?.contacts.join(', ') :
+                basics.doc_maintainers?.service_account?.name"
+            /></span>
           </main>
         </article>
         <article>

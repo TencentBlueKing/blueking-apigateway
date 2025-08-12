@@ -339,7 +339,7 @@
         <div class="dialog-footer">
           <BkButton
             theme="primary"
-            @click="toPublishLogs"
+            @click="toStageReleaseRecord"
           >
             {{ t("去查看发布记录") }}
           </BkButton>
@@ -651,8 +651,8 @@ const handleConfirm = async () => {
   }
 };
 
-const toPublishLogs = () => {
-  router.push({ name: 'ReleaseHistory' });
+const toStageReleaseRecord = () => {
+  router.push({ name: 'StageReleaseRecord' });
 };
 
 const setInit = () => {
@@ -748,10 +748,10 @@ defineExpose({ show });
   }
 
   .title {
+    margin-left: 8px;
     font-size: 14px;
     font-weight: 700;
     color: #323237;
-    margin-left: 8px;
 
     .icon {
       font-size: 18px;
@@ -768,8 +768,8 @@ defineExpose({ show });
 
     .alert-text {
       font-size: 12px;
-      color: #979ba5;
       line-height: 22px;
+      color: #979ba5;
     }
   }
 
@@ -778,6 +778,7 @@ defineExpose({ show });
   }
 
   .host-item {
+
     i {
       margin-left: 10px;
       font-size: 14px;
@@ -945,9 +946,9 @@ defineExpose({ show });
       background-color: #f5f7fb;
 
       .bk-collapse-header {
-        background-color: #f0f1f5;
         height: 40px;
         line-height: 40px;
+        background-color: #f0f1f5;
       }
 
       .bk-collapse-content {

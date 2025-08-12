@@ -184,9 +184,13 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
       list: labelsList.value,
     },
     cell: (h, { row }) => (
-      <RenderTagOverflow
-        data={labels.value?.filter(label => row.gateway_label_ids?.includes(label.id)).map(label => label.name)}
-      />
+      labels.value?.filter(label => row.gateway_label_ids?.includes(label.id)).map(label => label.name).length
+        ? (
+          <RenderTagOverflow
+            data={labels.value?.filter(label => row.gateway_label_ids?.includes(label.id)).map(label => label.name)}
+          />
+        )
+        : <span>--</span>
     ),
   },
   {

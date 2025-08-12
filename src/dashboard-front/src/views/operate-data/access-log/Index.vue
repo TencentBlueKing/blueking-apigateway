@@ -1188,43 +1188,52 @@ onBeforeUnmount(() => {
   padding: 20px 24px;
 
   .collapse-panel {
-    background-color: #fff;
     padding: 24px;
+    background-color: #fff;
+
     .collapse-panel-header {
       display: flex;
-      align-items: center;
-      cursor: pointer;
       margin-bottom: 24px;
+      cursor: pointer;
+      align-items: center;
+
       .panel-title {
         margin-left: 10px;
-        font-weight: 700;
         font-size: 14px;
+        font-weight: 700;
         color: #313238;
       }
+
       .panel-total {
-        color: #63656e;
-        font-size: 12px;
         margin: 0 10px;
+        font-size: 12px;
+        color: #63656e;
+
         span {
           font-weight: bold;
         }
       }
+
       .download-logs {
         margin-right: 14px;
-        color: #3A84FF;
         font-size: 12px;
+        color: #3A84FF;
+
         .icon-ag-download {
-          font-size: 16px;
           margin-right: -4px;
+          font-size: 16px;
         }
+
         &.disabled-logs {
           color: #c4c6cc;
           cursor: not-allowed;
         }
       }
+
       .panel-title-icon {
         transition: .2s;
       }
+
       .packUp {
         transform: rotate(-90deg);
       }
@@ -1232,22 +1241,26 @@ onBeforeUnmount(() => {
   }
 
   .search-term {
-    margin-bottom: 24px;
     display: flex;
+    margin-bottom: 24px;
     align-items: center;
+
     .icon {
       padding-top: 2px;
       margin-right: 4px;
-      color: #979BA5;
       font-size: 16px;
+      color: #979BA5;
     }
+
     .title {
       font-size: 12px;
       color: #63656E;
     }
+
     :deep(.bk-tag) {
       background-color: #EAEBF0;
       border-radius: 2px;
+
       &:not(:nth-last-child(1)) {
         margin-right: 8px;
       }
@@ -1271,6 +1284,7 @@ onBeforeUnmount(() => {
       gap: 0 16px;
 
       .bk-form-item {
+
         &:first-child {
           margin-left: 0;
         }
@@ -1314,24 +1328,28 @@ onBeforeUnmount(() => {
       padding: 16px 0;
       padding-left: 55px;
       font-size: 12px;
-      background-color: #ffffff;
+      background-color: #fff;
+
       .item {
         display: flex;
         align-items: center;
         margin-bottom: 8px;
 
         .label {
-          font-size: 12px;
           position: relative;
-          flex: none;
           width: 212px;
-          color: #63656E;
           margin-right: 12px;
+          font-size: 12px;
+          color: #63656E;
           text-align: right;
+          flex: none;
+
           .fields {
             color: #979BA5;
+
             .fields-main {
               cursor: pointer;
+
               &:hover {
                 background-color: #f0f1f5;
               }
@@ -1339,11 +1357,11 @@ onBeforeUnmount(() => {
           }
 
           .copy-btn {
-            color: #c4c6cc;
-            font-size: 12px;
             position: absolute;
-            right: -18px;
             top: 4px;
+            right: -18px;
+            font-size: 12px;
+            color: #c4c6cc;
             cursor: pointer;
 
             &:hover {
@@ -1353,41 +1371,45 @@ onBeforeUnmount(() => {
         }
 
         .value {
-          font-family: "Courier New", Courier, monospace;
-          flex: none;
-          width: calc(100% - 400px);
-          white-space: pre-wrap;
-          word-break: break-word;
-          color: #313238;
-          line-height: 20px;
           display: flex;
+          width: calc(100% - 400px);
+          font-family: "Courier New", Courier, monospace;
+          line-height: 20px;
+          color: #313238;
+          word-break: break-word;
+          white-space: pre-wrap;
+          flex: none;
           align-items: center;
 
           .respond {
+            display: flex;
             font-size: 12px;
             color: #FF9C01;
-            display: flex;
             align-items: center;
+
             .respond-icon {
-              margin-right: 4px;
               margin-top: -2px;
+              margin-right: 4px;
             }
           }
 
           .opt-btns {
-            color: #979BA5;
-            font-size: 16px;
             padding-top: 3px;
             margin-left: 10px;
+            font-size: 16px;
+            color: #979BA5;
+
             &:hover {
               color: #1768EF;
             }
+
             .opt-copy {
               font-size: 14px;
             }
+
             .opt-icon {
-              cursor: pointer;
               margin-right: 4px;
+              cursor: pointer;
             }
           }
         }
@@ -1395,8 +1417,8 @@ onBeforeUnmount(() => {
 
       .share-btn {
         position: absolute;
-        right: 28px;
         top: 32px;
+        right: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1411,17 +1433,22 @@ onBeforeUnmount(() => {
 
 :deep(.exception) {
   background: #f9edec;
+
   &:hover {
+
     td {
       background: #f9edec;
     }
   }
+
   td {
     background: #f9edec !important;
     border: none !important;
     border-bottom: 1px solid var(--table-border-color) !important;
+
     &:nth-child(5),
     &:last-child {
+
       .cell {
         color: #ff5656;
       }
@@ -1432,15 +1459,16 @@ onBeforeUnmount(() => {
 .chart {
   padding-left: 24px;
 }
+
 .chart-container {
   width: 100%;
   background: #fff;
   border: 1px solid #dcdee5;
 
   .chart-title {
-    color: #262625;
-    font-size: 14px;
     padding: 10px 0 0 10px;
+    font-size: 14px;
+    color: #262625;
   }
 
   .chart-el {
@@ -1450,17 +1478,18 @@ onBeforeUnmount(() => {
 }
 
 .search-usage {
+  margin-left: 16px;
   font-size: 12px;
   color: #3a84ff;
-  margin-left: 16px;
 }
 
 .access-log-search-usage-content {
+  padding: 4px;
   font-size: 12px;
   line-height: 26px;
-  padding: 4px;
 
   .sample {
+
     .mode {
       color: #63656e;
     }
@@ -1472,10 +1501,10 @@ onBeforeUnmount(() => {
   }
 
   .more {
+    padding-top: 8px;
+    margin-top: 10px;
     color: #63656e;
     border-top: 1px dashed #c4c6cc;
-    margin-top: 10px;
-    padding-top: 8px;
 
     .link {
       color: #3a84ff;
@@ -1488,17 +1517,20 @@ onBeforeUnmount(() => {
 }
 
 :deep(.bk-picker-confirm-action) {
+
   a:first-child {
     display: none;
   }
 }
 
 :deep(.access-log-table) {
+
   .head-text {
     font-weight: 700!important;
     color: #63656e!important;
   }
 }
+
 .flex1 {
   flex: 1;
 }
@@ -1508,18 +1540,22 @@ onBeforeUnmount(() => {
 .hide-table-setting-line-height .setting-body-line-height {
   display: none !important;
 }
+
 .access-log-popover {
   top: 10px !important;
 }
+
 .include-equal,
 .exclude-equal {
-  font-weight: bold;
   font-size: 16px;
+  font-weight: bold;
   vertical-align: bottom;
 }
+
 .exclude-equal {
   color: #EA3636;
 }
+
 .include-equal {
   color: #2DCB56;
 }

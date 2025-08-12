@@ -29,6 +29,7 @@ const routes: RouteRecordRaw[] = [
         path: 'server',
         name: 'MCPServer',
         component: () => import('@/views/mcp-server/Index.vue'),
+        props: true,
         meta: {
           title: 'MCP Server',
           matchRoute: 'MCP',

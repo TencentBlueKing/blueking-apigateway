@@ -84,9 +84,9 @@ export const useDatePicker = (filterData?: any) => {
   };
 
   /**
-   * handleComfirm - 确认日期
+   * handleConfirm - 确认日期
    */
-  const handleComfirm = () => {
+  const handleConfirm = () => {
     setFilterDate(dateValue.value);
   };
 
@@ -112,6 +112,6 @@ export const useDatePicker = (filterData?: any) => {
     dateValue,
     handleChange,
     handleClear,
-    handleComfirm,
+    handleConfirm,
   };
 };

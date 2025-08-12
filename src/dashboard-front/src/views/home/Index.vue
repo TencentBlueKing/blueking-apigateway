@@ -162,7 +162,6 @@
               </div>
             </template>
             <div class="flex-grow-1 of1">
-              <span>{{ item.created_by }}</span>
               <span v-if="!featureFlagStore.isTenantMode">{{ item.created_by }}</span>
               <span v-else><bk-user-display-name :user-id="item.created_by" /></span>
             </div>
