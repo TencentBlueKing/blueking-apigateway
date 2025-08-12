@@ -111,7 +111,7 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
             "gateway": self.request.gateway,
             "created_by": request.user.username,
             "status": MCPServerStatusEnum.ACTIVE.value,
-            "source": CallSourceTypeEnum.OpenAPI,
+            "source": CallSourceTypeEnum.Web,
         }
         slz = MCPServerCreateInputSLZ(data=request.data, context=ctx)
         slz.is_valid(raise_exception=True)
