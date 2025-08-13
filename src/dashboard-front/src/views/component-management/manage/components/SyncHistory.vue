@@ -39,6 +39,7 @@
             @shortcut-change="handleShortcutChange"
             @clear="handleTimeClear"
             @pick-success="handleTimeChange"
+            @change="handleTimeChange"
           />
         </BkFormItem>
       </BkForm>
@@ -79,6 +80,7 @@ import { useMaxTableLimit, useQueryList } from '@/hooks';
 import { OPERATE_STATUS_MAP } from '@/enums';
 import { type ISyncHistoryItem, getSyncHistory } from '@/services/source/componentManagement';
 import TableEmpty from '@/components/table-empty/Index.vue';
+import dayjs from 'dayjs';
 
 const router = useRouter();
 const { t, locale } = useI18n();
@@ -213,6 +215,10 @@ const formatDatetime = (timeRange: number[]) => {
 };
 
 const setSearchTimeRange = () => {
+  // 选择了同一天，则需要把开始时间的时分秒设置为 00:00:00
+  if (dayjs(dateTimeRange.value[0]).isSame(dateTimeRange.value[1])) {
+    dateTimeRange.value[0].setHours(0, 0, 0);
+  }
   let timeRange = dateTimeRange.value;
   // 选择的是时间快捷项，需要实时计算时间值
   if (shortcutSelectedIndex.value !== -1) {

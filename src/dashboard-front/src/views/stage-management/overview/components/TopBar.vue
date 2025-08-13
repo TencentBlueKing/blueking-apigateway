@@ -89,7 +89,10 @@
     </div>
 
     <!-- 新建/编辑环境 -->
-    <CreateStage ref="stageSidesliderRef" />
+    <CreateStage
+      ref="stageSidesliderRef"
+      @done="handleCreateDone"
+    />
   </div>
 </template>
 
@@ -246,6 +249,14 @@ const handleNext = () => {
     isNextClick = true;
     nextDisabled.value = false;
     prevDisabled.value = true;
+  }
+};
+
+const handleCreateDone = async () => {
+  stageList.value = await getStageList(gatewayId.value);
+  const lastStage = stageList.value[stageList.value.length - 1];
+  if (lastStage) {
+    handleChangeStage(lastStage);
   }
 };
 

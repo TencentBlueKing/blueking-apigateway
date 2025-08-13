@@ -36,6 +36,7 @@
             :shortcut-selected-index="shortcutSelectedIndex"
             @clear="handleTimeClear"
             @shortcut-change="handleShortcutChange"
+            @change="handleTimeChange"
             @pick-success="handleTimeChange"
           />
         </BkFormItem>
@@ -243,6 +244,7 @@ import { AUTHORIZATION_DIMENSION } from '@/constants';
 import { APPROVAL_HISTORY_STATUS_MAP } from '@/enums';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
+import dayjs from 'dayjs';
 
 const { t } = useI18n();
 const { maxTableLimit, clientHeight } = useMaxTableLimit();
@@ -342,7 +344,7 @@ const filterData = ref({
 });
 const initDateTimeRange = ref([]);
 const resourceList = ref([]);
-const shortcutSelectedIndex = ref<number>(-1);
+const shortcutSelectedIndex = ref(-1);
 const dateKey = ref('dateKey');
 const curRecord = ref<IApprovalListItem>({
   bk_app_code: '',
@@ -471,7 +473,7 @@ const setTableHeader = () => {
         return (
           <div>
             <BkButton
-              class="m-r-8px"
+              class="mr-8px"
               theme="primary"
               text
               onClick={(e: Event) => {
@@ -511,6 +513,10 @@ const handleShortcutChange = (value, index: number) => {
 
 // 日期快捷方式改变触发
 const handleTimeChange = () => {
+  // 选择了同一天，则需要把开始时间的时分秒设置为 00:00:00
+  if (dayjs(initDateTimeRange.value[0]).isSame(initDateTimeRange.value[1])) {
+    initDateTimeRange.value[0].setHours(0, 0, 0);
+  }
   nextTick(() => {
     const startStr = (+new Date(`${initDateTimeRange.value[0]}`)) / 1000;
     const endStr = (+new Date(`${initDateTimeRange.value[1]}`)) / 1000;

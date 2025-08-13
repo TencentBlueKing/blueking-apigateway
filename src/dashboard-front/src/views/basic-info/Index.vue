@@ -540,6 +540,7 @@
         <BkButton
           theme="primary"
           :disabled="!formRemoveApigw"
+          class="mr-8px"
           @click="handleDeleteApigw"
         >
           {{ t('确定') }}
@@ -597,6 +598,7 @@ import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import {
   useEnv,
   useFeatureFlag,
+  useGateway,
 } from '@/stores';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import EditAPIDoc from '@/views/basic-info/components/EditAPIDoc.vue';
@@ -608,6 +610,7 @@ const route = useRoute();
 const router = useRouter();
 const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
+const gatewayStore = useGateway();
 
 // 网关id
 const apigwId = ref(0);
@@ -706,32 +709,25 @@ const md = new MarkdownIt({
 });
 
 const showGuide = async () => {
-  try {
-    const data = await getGuideDocs(apigwId.value);
-    markdownHtml.value = md.render(data.content);
-    isShowMarkdown.value = true;
-  }
-  catch (e) {
-    console.error(e);
-  }
+  const data = await getGuideDocs(apigwId.value);
+  markdownHtml.value = md.render(data.content);
+  isShowMarkdown.value = true;
 };
 
 const handleDeleteApigw = async () => {
-  try {
-    await deleteGateway(apigwId.value);
-    Message({
-      theme: 'success',
-      message: t('删除成功'),
-      width: 'auto',
-    });
-    delApigwDialog.value.isShow = false;
-    setTimeout(() => {
-      router.push({ name: 'home' });
-    }, 200);
-  }
-  catch (e) {
-    console.error(e);
-  }
+  await deleteGateway(apigwId.value);
+  Message({
+    theme: 'success',
+    message: t('删除成功'),
+    width: 'auto',
+  });
+  delApigwDialog.value.isShow = false;
+  setTimeout(() => {
+    router.push({ name: 'Home' });
+    gatewayStore.clearCurrentGateway();
+    gatewayStore.setApigwId(0);
+    gatewayStore.setApigwName('');
+  }, 200);
 };
 
 const handleChangePublic = async (value: boolean) => {
