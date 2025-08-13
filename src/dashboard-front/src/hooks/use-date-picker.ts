@@ -20,6 +20,8 @@
  * datepicker 时间选择器 hooks 适用于列表筛选
  */
 
+import dayjs from 'dayjs';
+
 /**
  * useDatePicker - 时间选择器的自定义钩子函数
  * @param {any} filterData - 可选参数，用于筛选数据
@@ -73,6 +75,19 @@ export const useDatePicker = (filterData?: any) => {
    */
   const handleChange = (date: any) => {
     dateValue.value = date;
+    // 选择了同一天，则需要把开始时间的时分秒设置为 00:00:00
+    if (dayjs(dateValue.value[0]).isSame(dateValue.value[1])) {
+      if (dateValue.value[0]?.setHours) {
+        dateValue.value[0]?.setHours(0, 0, 0);
+      }
+      else {
+        dateValue.value[0] = dayjs(dateValue.value[0])
+          .set('hour', 0)
+          .set('minute', 0)
+          .set('second', 0)
+          .format('YYYY-MM-DD HH:mm:ss');
+      }
+    }
   };
 
   /**

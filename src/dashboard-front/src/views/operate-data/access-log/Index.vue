@@ -1030,6 +1030,10 @@ const handleShortcutChange = (value: Record<string, any>, index: number) => {
 };
 
 const handlePickerChange = () => {
+  // 选择了同一天，则需要把开始时间的时分秒设置为 00:00:00
+  if (dayjs(dateTimeRange.value[0]).isSame(dateTimeRange.value[1])) {
+    dateTimeRange.value[0]?.setHours(0, 0, 0);
+  }
   nextTick(() => {
     pagination.value.current = 1;
     getSearchData();

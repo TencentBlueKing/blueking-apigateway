@@ -19,22 +19,25 @@
 <template>
   <div class="component-doc">
     <div class="component-content">
-      <div class="component-mate mb10">
+      <div class="component-mate mb-10px">
         <strong
           v-bk-tooltips.top="curComponent.name"
-          class="name mr5"
+          class="name mr-5px"
         >{{ curComponent.name || '--' }}</strong>
         <span
-          v-bk-tooltips.top="{ content: curComponent.description, allowHTML: false }"
+          v-bk-tooltips.top="{
+            content: curComponent.description,
+            disabled: !curComponent.description,
+            allowHTML: false,
+          }"
           class="label"
         >
           ({{ curComponent.description || t('暂无描述') }})
         </span>
       </div>
-      <div style="position: relative;">
-        <chat
-          v-if="userStore.featureFlags?.ALLOW_CREATE_APPCHAT"
-          class="ag-chat"
+      <div class="h-24px position-relative">
+        <Chat
+          v-if="featureFlagStore.flags.ALLOW_CREATE_APPCHAT"
           :default-user-list="userList"
           :owner="curUser.username"
           :name="chatName"
@@ -136,7 +139,11 @@
 </template>
 
 <script setup lang="ts">
-import { useGateway, useUserInfo } from '@/stores';
+import {
+  useFeatureFlag,
+  useGateway,
+  useUserInfo,
+} from '@/stores';
 import { copy } from '@/utils';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
@@ -147,6 +154,7 @@ import {
   getApigwSDKDocs,
   getGatewaysDetailsDocs,
 } from '@/services/source/docs';
+import Chat from '@/components/chat/Index.vue';
 
 interface IProps {
   stageName?: string
@@ -161,9 +169,10 @@ const {
 const { t } = useI18n();
 const userStore = useUserInfo();
 const gatewayStore = useGateway();
+const featureFlagStore = useFeatureFlag();
 
 const curSdk = ref({});
-const active = ref<string>('doc');
+const active = ref('doc');
 const curComponent = ref({
   id: '',
   name: '',
@@ -177,12 +186,12 @@ const curApigw = ref({
   label: '',
   maintainers: [],
 });
-const curDocUpdated = ref<string>('');
-const sdkMarkdownHtml = ref<string>('');
-const renderHtmlIndex = ref<number>(0);
+const curDocUpdated = ref('');
+const sdkMarkdownHtml = ref('');
+const renderHtmlIndex = ref(0);
 const sdks = ref([]);
 
-const curUser = computed(() => userStore?.user);
+const curUser = computed(() => userStore.info);
 const userList = computed(() => {
   // 去重
   const set = new Set([curUser.value?.username, ...curApigw.value?.maintainers]);
@@ -280,91 +289,63 @@ const initMarkdownHtml = (box: string) => {
 };
 
 const getApigwAPIDetail = async () => {
-  try {
-    const res = await getGatewaysDetailsDocs(gatewayStore.currentGateway?.name);
-    curApigw.value = res;
-  }
-  catch (e) {
-    console.log(e);
-  }
+  curApigw.value = await getGatewaysDetailsDocs(gatewayStore.currentGateway?.name);
 };
 
 const getApigwResourceDetail = async () => {
-  try {
-    const query = {
-      limit: 10000,
-      offset: 0,
-      stage_name: stageName,
-    };
-    const res = await getApigwResourcesDocs(gatewayStore.currentGateway?.name, query);
+  const query = {
+    limit: 10000,
+    offset: 0,
+    stage_name: stageName,
+  };
+  const res = await getApigwResourcesDocs(gatewayStore.currentGateway?.name, query);
 
-    const match = res?.find((item) => {
-      return item.name === resourceName;
-    });
-    if (match) {
-      curComponent.value = {
-        ...curComponent.value,
-        ...match,
-      };
-    }
-  }
-  catch (e) {
-    console.log(e);
+  const match = res?.find((item) => {
+    return item.name === resourceName;
+  });
+  if (match) {
+    curComponent.value = {
+      ...curComponent.value,
+      ...match,
+    };
   }
 };
 
 const getApigwResourceDoc = async () => {
-  try {
-    const query = { stage_name: stageName };
-    const res = await getApigwResourceDocDocs(gatewayStore.currentGateway?.name, resourceName, query);
-    const { content } = res;
-    curComponent.value.content = content;
-    curComponent.value.markdownHtml = md.render(content);
-    renderHtmlIndex.value += 1;
-    curDocUpdated.value = res.updated_time;
+  const query = { stage_name: stageName };
+  const res = await getApigwResourceDocDocs(gatewayStore.currentGateway?.name, resourceName, query);
+  const { content } = res;
+  curComponent.value.content = content;
+  curComponent.value.markdownHtml = md.render(content);
+  renderHtmlIndex.value += 1;
+  curDocUpdated.value = res.updated_time;
 
-    initMarkdownHtml('markdown');
-  }
-  catch (e) {
-    console.log(e);
-  }
-  finally {
-  }
+  initMarkdownHtml('markdown');
 };
 
 const getApigwResourceSDK = async () => {
-  try {
-    const query = {
-      language: 'python',
-      stage_name: stageName,
-      resource_name: resourceName,
-    };
-    const res = await getApigwResourceSDKDocs(gatewayStore.currentGateway?.name, query);
-    const { content } = res;
-    sdkMarkdownHtml.value = md.render(content);
-    initMarkdownHtml('sdk-markdown');
-  }
-  catch (e) {
-    console.log(e);
-  }
+  const query = {
+    language: 'python',
+    stage_name: stageName,
+    resource_name: resourceName,
+  };
+  const res = await getApigwResourceSDKDocs(gatewayStore.currentGateway?.name, query);
+  const { content } = res;
+  sdkMarkdownHtml.value = md.render(content);
+  initMarkdownHtml('sdk-markdown');
 };
 
 const getApigwSDK = async (language: string) => {
-  try {
-    const query = {
-      limit: 10000,
-      offset: 0,
-      language,
-    };
-    const res = await getApigwSDKDocs(gatewayStore.currentGateway?.name, query);
-    sdks.value = res;
-    const match = sdks.value?.find(item => item?.stage?.name === stageName);
-    curSdk.value = match || {};
-    getApigwResourceSDK();
-  }
-  catch (e) {
-    console.log(e);
-  }
+  const query = {
+    limit: 10000,
+    offset: 0,
+    language,
+  };
+  const res = await getApigwSDKDocs(gatewayStore.currentGateway?.name, query);
+  sdks.value = res;
+  const match = sdks.value?.find(item => item?.stage?.name === stageName);
+  curSdk.value = match || {};
+  getApigwResourceSDK();
 };
 
 const init = () => {
@@ -373,7 +354,9 @@ const init = () => {
   getApigwResourceDoc();
   getApigwSDK('python');
 };
-init();
+
+defineExpose({ init });
+
 </script>
 
 <style lang="scss" scoped>

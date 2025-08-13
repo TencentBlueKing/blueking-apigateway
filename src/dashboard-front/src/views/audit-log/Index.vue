@@ -34,6 +34,7 @@
             use-shortcut-text
             :shortcut-selected-index="shortcutSelectedIndex"
             @shortcut-change="handleShortcutChange"
+            @change="handleTimeChange"
             @pick-success="handleTimeChange"
             @clear="handleTimeClear"
           />
@@ -117,6 +118,7 @@ import {
 } from '@/services/source/auditLog';
 import TableHeaderFilter from '@/components/table-header-filter';
 import TableEmpty from '@/components/table-empty/Index.vue';
+import dayjs from 'dayjs';
 
 const accessLogStore = useAccessLog();
 const auditLogStore = useAuditLog();
@@ -339,6 +341,10 @@ const formatDatetime = (timeRange: number[]) => {
 };
 
 const setSearchTimeRange = () => {
+  // 选择了同一天，则需要把开始时间的时分秒设置为 00:00:00
+  if (dayjs(dateTimeRange.value[0]).isSame(dateTimeRange.value[1])) {
+    dateTimeRange.value[0].setHours(0, 0, 0);
+  }
   let timeRange = dateTimeRange.value;
   // 选择的是时间快捷项，需要实时计算时间值
   if (shortcutSelectedIndex.value !== -1) {

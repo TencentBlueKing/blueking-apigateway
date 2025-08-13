@@ -83,13 +83,11 @@
                       :class="{ 'active': curComponentName === component.name }"
                       @click="() => handleShowDoc(component)"
                     >
-                      <!-- eslint-disable-next-line vue/no-v-html -->
                       <p
                         v-dompurify-html="hightlight(component.name)"
                         v-bk-overflow-tips
                         class="name"
                       />
-                      <!-- eslint-disable-next-line vue/no-v-html -->
                       <p
                         v-dompurify-html="hightlight(component.description) || t('暂无描述')"
                         v-bk-overflow-tips
@@ -399,9 +397,7 @@
   </BkResizeLayout>
 
   <!-- 查看文档侧栏 -->
-  <AgSideslider
-    v-model="isShowDoc"
-  >
+  <AgSideslider v-model="isShowDoc">
     <template #header>
       <div class="custom-side-header">
         <div class="title">
@@ -428,6 +424,7 @@
     <template #default>
       <div>
         <Doc
+          ref="docContentRef"
           :stage-name="getStageName"
           :resource-name="curResource?.name"
         />
@@ -467,8 +464,8 @@ const router = useRouter();
 const route = useRoute();
 const envStore = useEnv();
 
-const isLoading = ref<boolean>(false);
-const keyword = ref<string>('');
+const isLoading = ref(false);
+const keyword = ref('');
 const activeIndex = ref<number[]>([1]);
 const stage = ref<number>();
 const stageList = ref<any[]>([]);
@@ -531,10 +528,10 @@ const defaultValue = {
   },
 };
 const formData = ref<any>({ ...defaultValue.formData });
-const isShowDoc = ref<boolean>(false);
+const isShowDoc = ref(false);
 const requestPayloadRef = ref();
 const responseContentRef = ref();
-const showPath = ref<boolean>(false);
+const showPath = ref(false);
 const payloadType = reactive<any>({
   rawPayload: {},
   queryPayload: [],
@@ -543,7 +540,8 @@ const payloadType = reactive<any>({
   headersPayload: [],
   fromDataPayload: [],
 });
-const tab = ref<string>('Params');
+const tab = ref('Params');
+const docContentRef = ref();
 
 // 编辑应用认证
 const appAuthorization = reactive<any>({
@@ -688,6 +686,14 @@ watch(() => route, () => {
 watch(() => gatewayStore.currentGateway, () => {
   router.replace({ query: null });
 }, { deep: true });
+
+watch(isShowDoc, () => {
+  if (isShowDoc.value) {
+    nextTick(() => {
+      docContentRef.value?.init();
+    });
+  }
+});
 
 const getApigwReleaseResources = async () => {
   if (!stage.value) return;

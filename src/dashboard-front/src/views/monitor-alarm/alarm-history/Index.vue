@@ -40,6 +40,7 @@
             @clear="handleTimeClear"
             @shortcut-change="handleShortcutChange"
             @pick-success="handleTimeChange"
+            @change="handleTimeChange"
           />
         </BkFormItem>
         <BkFormItem
@@ -188,6 +189,7 @@ import { useAccessLog, useGateway } from '@/stores';
 import { useMaxTableLimit, useQueryList } from '@/hooks';
 import { type IAlarmRecord, getRecordList, getStrategyList } from '@/services/source/monitor';
 import TableEmpty from '@/components/table-empty/Index.vue';
+import dayjs from 'dayjs';
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
@@ -360,6 +362,10 @@ const handleShortcutChange = (
 
 // 日期快捷方式改变触发
 const handleTimeChange = () => {
+  // 选择了同一天，则需要把开始时间的时分秒设置为 00:00:00
+  if (dayjs(initDateTimeRange.value[0]).isSame(initDateTimeRange.value[1])) {
+    initDateTimeRange.value[0].setHours(0, 0, 0);
+  }
   const startStr = +new Date(`${initDateTimeRange.value[0]}`) / 1000;
   const endStr = +new Date(`${initDateTimeRange.value[1]}`) / 1000;
   const start = parseInt(startStr);
@@ -468,13 +474,18 @@ watch(
 }
 
 :deep(.alarm-history-table) {
+
   .bk-table-body {
+
     table {
+
       tbody {
+
         tr {
           cursor: pointer;
 
           td {
+
             .cell {
               height: auto !important;
               line-height: normal;
@@ -487,17 +498,17 @@ watch(
 }
 
 .ag-kv-list {
+  padding: 10px 20px;
+  background-color: #fafbfd;
   border: 1px solid #f0f1f5;
   border-radius: 2px;
-  background-color: #fafbfd;
-  padding: 10px 20px;
 
   .item {
     display: flex;
-    font-size: 14px;
-    border-bottom: 1px dashed #dcdee5;
     min-height: 40px;
+    font-size: 14px;
     line-height: 40px;
+    border-bottom: 1px dashed #dcdee5;
 
     &:last-child {
       border-bottom: none;
@@ -517,13 +528,14 @@ watch(
       pre {
         margin: 0;
         font-family: monospace;
-        white-space: pre-wrap;
         word-break: break-all;
+        white-space: pre-wrap;
       }
     }
+
     .message {
-      line-height: 22px;
       padding: 10px 0;
+      line-height: 22px;
     }
   }
 }
@@ -535,7 +547,7 @@ watch(
   margin: 6px 0;
 
   .name-item {
-    margin: 0 0 4px 0;
+    margin: 0 0 4px;
     line-height: 0;
 
     .ag-label {
@@ -546,30 +558,31 @@ watch(
 
 .strategy-name-list,
 :deep(.strategy-names) {
+
   .ag-label {
-    height: 24px;
-    line-height: 22px;
-    border: 1px solid #dcdee5;
-    text-align: center;
-    padding: 0 10px;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: normal;
     display: inline-block;
+    height: 24px;
+    padding: 0 10px;
     margin-right: 4px;
-    border-radius: 2px;
+    overflow: hidden;
+    line-height: 22px;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: normal;
     white-space: nowrap;
+    border: 1px solid #dcdee5;
+    border-radius: 2px;
   }
 }
 
 :deep(.ag-outline-dot) {
+  display: inline-block;
   width: 10px;
   height: 10px;
-  border: 2px solid #c4c6cc;
-  display: inline-block;
-  border-radius: 50%;
-  vertical-align: middle;
   line-height: 1;
+  vertical-align: middle;
+  border: 2px solid #c4c6cc;
+  border-radius: 50%;
 
   &.success {
     border-color: #34d97b;
@@ -594,7 +607,7 @@ watch(
 <style lang="scss">
 .bk-popper.monitor-tooltips {
   width: 520px;
-  white-space: pre-wrap;
   word-break: break-all;
+  white-space: pre-wrap;
 }
 </style>

@@ -129,7 +129,7 @@
               <div class="title">
                 {{ t('网关描述') }}
               </div>
-              <div class="value">
+              <div class="value break-all">
                 {{ data?.description || '--' }}
               </div>
             </div>

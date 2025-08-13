@@ -46,6 +46,7 @@
             :shortcut-selected-index="shortcutSelectedIndex"
             @shortcut-change="handleShortcutChange"
             @pick-success="handleTimeChange"
+            @change="handleTimeChange"
             @clear="handleTimeClear"
           />
         </div>
@@ -229,6 +230,7 @@ import {
 } from '@/services/source/online-debugging';
 import { CopyShape } from 'bkui-vue/lib/icon';
 import { copy } from '@/utils';
+import dayjs from 'dayjs';
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
@@ -356,6 +358,10 @@ const formatDatetime = (timeRange: number[]) => {
 };
 
 const setSearchTimeRange = () => {
+  // 选择了同一天，则需要把开始时间的时分秒设置为 00:00:00
+  if (dayjs(dateTimeRange.value[0]).isSame(dateTimeRange.value[1])) {
+    dateTimeRange.value[0].setHours(0, 0, 0);
+  }
   let timeRange = dateTimeRange.value;
   // 选择的是时间快捷项，需要实时计算时间值
   if (shortcutSelectedIndex.value !== -1) {
@@ -609,6 +615,30 @@ defineExpose({ show });
       padding: 12px 24px 24px;
       border: 1px solid #F0F1F5;
     }
+  }
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 2px;
+  vertical-align: middle;
+  border-radius: 50%;
+
+  &.warning {
+    background: #FFF3E1;
+    border: 1px solid #FF9C01;
+  }
+
+  &.success {
+    background: #E5F6EA;
+    border: 1px solid #3FC06D;
+  }
+
+  &.failure {
+    background: #FFE6E6;
+    border: 1px solid #EA3636;
   }
 }
 </style>

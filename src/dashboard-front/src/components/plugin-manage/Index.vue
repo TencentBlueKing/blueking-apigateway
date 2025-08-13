@@ -448,11 +448,15 @@ const tableEmptyConf = ref({
 // PluginInfo 中的插件示例是否可见
 const isExampleVisible = ref(false);
 
+const activeIndex = ref<number[]>([]);
+
+const pluginDeleting = ref(false);
+
 // 控制插件 slider 宽度，会在展示插件使用示例时变宽
 const pluginSliderWidth = computed(() => isExampleVisible.value ? 1360 : 960);
 
 // 当前环境信息
-const stageData: any = computed(() => {
+const stageData = computed(() => {
   if (stageStore.curStageData.id !== null) {
     return stageStore.curStageData;
   }
@@ -473,6 +477,46 @@ const stageData: any = computed(() => {
   };
 });
 
+const pluginCodeFirst = computed(() => {
+  return function (code: string) {
+    if (code.startsWith('bk-')) {
+      return code.charAt(3).toUpperCase();
+    }
+    return code.charAt(0).toUpperCase();
+  };
+});
+
+const isBound = computed(() => {
+  return function (obj: any) {
+    return curBindingPlugins.value.some((item: { code: string }) => item.code === obj.code);
+  };
+});
+
+watch(curBindingPlugins, () => {
+  activeIndex.value = Object.keys(curBindingPlugins.value)?.map((item: string) => Number(item)) || [];
+});
+
+watch(
+  [
+    () => stageId,
+    () => resourceId,
+  ],
+  () => {
+    init();
+  },
+);
+
+watch(searchValue, async (v) => {
+  // 清空搜索框
+  if (!v) {
+    const params = {
+      scope_type: scopeType.value,
+      scope_id: scopeId.value,
+    };
+    await getPluginListDetails(params);
+  }
+});
+
 // 监听是否成功添加
 watch(
   () => isAddSuccess.value,
@@ -483,6 +527,23 @@ watch(
   },
   { immediate: true },
 );
+
+const stepChanged = (index: number) => {
+  if (index === 1) {
+    state.curStep = index;
+  }
+  if (index === 2) {
+    if (curChoosePlugin.value) {
+      state.curStep = index;
+    }
+    else {
+      Message({
+        theme: 'warning',
+        message: '请先勾选插件',
+      });
+    }
+  }
+};
 
 const handleOperate = (operate: string) => {
   switch (operate) {
@@ -510,40 +571,6 @@ const handleOperate = (operate: string) => {
   }
 };
 
-const activeIndex = computed(() => Object.keys(curBindingPlugins.value)?.map((item: string) => Number(item)));
-
-const pluginCodeFirst = computed(() => {
-  return function (code: string) {
-    if (code.startsWith('bk-')) {
-      return code.charAt(3).toUpperCase();
-    }
-    return code.charAt(0).toUpperCase();
-  };
-});
-
-const stepChanged = (index: number) => {
-  if (index === 1) {
-    state.curStep = index;
-  }
-  if (index === 2) {
-    if (curChoosePlugin.value) {
-      state.curStep = index;
-    }
-    else {
-      Message({
-        theme: 'warning',
-        message: '请先勾选插件',
-      });
-    }
-  }
-};
-
-const isBound = computed(() => {
-  return function (obj: any) {
-    const flag = curBindingPlugins.value.some((item: { code: string }) => item.code === obj.code);
-    return flag;
-  };
-});
 // hover插件获取其对应绑定的stage和resource数量
 const handlePluginHover = async (itemCode: string) => {
   const flag = curBindingPlugins.value.some((item: { code: string }) => item.code === itemCode);
@@ -588,8 +615,6 @@ const handleEditePlugin = async (item: any) => {
   curChoosePlugin.value = curEditItem;
   isEditVisible.value = true;
 };
-
-const pluginDeleting = ref(false);
 
 // 删除插件
 const handleDeletePlugin = (item: any) => {
@@ -656,7 +681,7 @@ const handeleJumpResource = (item: any) => {
   emit('on-jump', id);
 };
 
-const init = () => {
+function init() {
   const isStage = route.path.includes('stage');
   scopeType.value = isStage ? 'stage' : 'resource';
   scopeId.value = isStage ? stageId : resourceId;
@@ -671,7 +696,8 @@ const init = () => {
   if (!scopeId.value) return;
   getBindingDetails();
   getPluginListDetails(params);
-};
+}
+
 const resetData = () => {
   curChoosePlugin.value = null;
   isVisible.value = false;
@@ -681,24 +707,23 @@ const resetData = () => {
 };
 
 // 获取已绑定插件列表
-const getBindingDetails = async () => {
+async function getBindingDetails() {
   try {
     isBindingListLoading.value = true;
     // 当前环境或资源绑定的插件
-    const res = await getScopeBindingPluginList(gatewayId.value, scopeType.value, scopeId.value);
-    curBindingPlugins.value = res;
+    curBindingPlugins.value = await getScopeBindingPluginList(gatewayId.value, scopeType.value, scopeId.value);
   }
   finally {
     isBindingListLoading.value = false;
   }
-};
+}
 
 // 获取可配置的插件列表
-const getPluginListDetails = async (params: {
+async function getPluginListDetails(params: {
   scope_type: string
   scope_id: number
   keyword?: string
-}) => {
+}) {
   try {
     isPluginListLoading.value = true;
     const res = await getPluginListData(gatewayId.value, params);
@@ -712,7 +737,7 @@ const getPluginListDetails = async (params: {
   finally {
     isPluginListLoading.value = false;
   }
-};
+}
 
 // 立即添加
 const handlePluginAdd = () => {
@@ -773,29 +798,8 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.emptyType = '';
 };
 
-watch(
-  [
-    () => stageId,
-    () => resourceId,
-  ],
-  () => {
-    init();
-  },
-);
-
-watch(
-  searchValue,
-  async (v) => {
-  // 清空搜索框
-    if (!v) {
-      const params = {
-        scope_type: scopeType.value,
-        scope_id: scopeId.value,
-      };
-      await getPluginListDetails(params);
-    }
-  });
 init();
+
 </script>
 
 <style lang="scss" scoped>
