@@ -19,10 +19,9 @@
 <template>
   <!--  插件配置展示态组件  -->
   <!--  通用的展示表格  -->
-  <BkTable
-    :data="tableData"
+  <CustomTable
     :columns="tableCols"
-    v-bind="$attrs"
+    :data="tableData"
   />
 </template>
 
@@ -33,6 +32,7 @@ import type {
   IPlugin,
   ValueRenderType,
 } from '@/components/plugin-manage/types';
+import CustomTable from './CustomTable.vue';
 
 interface IGenericConfig { [key: string]: unknown }
 

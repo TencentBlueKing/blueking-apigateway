@@ -19,10 +19,9 @@
 <template>
   <!--  插件配置展示态组件  -->
   <!--  header 转换插件  -->
-  <BkTable
-    :data="tableData"
+  <CustomTable
     :columns="tableCols"
-    v-bind="$attrs"
+    :data="tableData"
   />
 </template>
 
@@ -32,6 +31,7 @@ import type {
   IColumn,
   IPlugin,
 } from '@/components/plugin-manage/types';
+import CustomTable from './CustomTable.vue';
 
 interface IHeaderRewriteConfig {
   set?: {

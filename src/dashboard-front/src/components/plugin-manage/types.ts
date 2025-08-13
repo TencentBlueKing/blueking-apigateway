@@ -36,10 +36,11 @@ interface IColumn<T = IBaseTableRow> {
   label: string // 列标签
   field?: string // 列字段，可选
   prop?: string // 列属性，可选
-  width?: string // 列宽度，可选
+  width?: string | number // 列宽度，可选
   align?: string // 列对齐方式，可选
   rowspan?: ({ row }: { row: T }) => number // 行跨度函数，可选
   index?: number // 列索引，可选
+  fixed?: string // 列固定位置，可选
   render?: ValueRenderType // 渲染函数，可选
 }
 
