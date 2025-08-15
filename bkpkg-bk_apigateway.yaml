@@ -15,5 +15,5 @@ relations:
   - bkpaas^2.14.0 OR bk-user^1.4.14
 - rationale: "可编程网关"
   suggests:
-  - bkpaas^1.6.0-beta.18
+  - bkpaas^1.6.0-beta.23
 bkimports:
