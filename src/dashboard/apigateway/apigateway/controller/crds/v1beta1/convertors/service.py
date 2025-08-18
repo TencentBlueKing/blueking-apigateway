@@ -20,7 +20,7 @@ from typing import List
 from apigateway.common.constants import DEFAULT_BACKEND_HOST_FOR_MISSING
 from apigateway.controller.crds.constants import UpstreamSchemeEnum, UpstreamTypeEnum
 from apigateway.controller.crds.v1beta1.convertors.base import BaseConvertor, UrlInfo
-from apigateway.controller.crds.v1beta1.models.base import TimeoutConfig, Upstream, UpstreamNode
+from apigateway.controller.crds.v1beta1.models.base import PluginConfig, TimeoutConfig, Upstream, UpstreamNode
 from apigateway.controller.crds.v1beta1.models.gateway_service import BkGatewayService, BkGatewayServiceSpec
 from apigateway.core.models import Backend
 
@@ -93,6 +93,18 @@ class ServiceConvertor(BaseConvertor):
                 description += f": {backend_description[:32]}"
             description += ")"
 
+            # currently, only add one plugin for service of per backend
+            # other plugins are shared by stage, they will be merged on operator
+            plugins = [
+                PluginConfig(
+                    name="bk-backend-context",
+                    config={
+                        "bk_backend_id": backend_id,
+                        "bk_backend_name": backend_name,
+                    },
+                ),
+            ]
+
             # stage_name max length is 20, stage_id 6, backend_id is 4, other 10
             # total max length is 64, so the buffer is 24 ( stage_id length + backend_id length)
             services.append(
@@ -109,6 +121,7 @@ class ServiceConvertor(BaseConvertor):
                         id=f"stage-{stage_id}-backend-{backend_id}",
                         description=description,
                         upstream=upstream,
+                        plugins=plugins,
                     ),
                 )
             )

@@ -842,6 +842,7 @@ PLUGIN_METADATA_CONFIG = {
             "resource_id": "$bk_resource_id",
             "resource_name": "$bk_resource_name",
             "stage": "$bk_stage_name",
+            "backend": "$bk_backend_name",
             # 后端服务
             "backend_scheme": "$upstream_scheme",
             "backend_method": "$method",
@@ -865,6 +866,8 @@ PLUGIN_METADATA_CONFIG = {
             "timestamp": "$bk_log_request_timestamp",
             # 临时字段，用于记录请求时，认证参数的位置，便于推动认证参数优化
             "auth_location": "$auth_params_location",
+            # opentelemetry traceparent
+            "traceparent": "$http_traceparent",
         }
     },
     "bk-concurrency-limit": {
