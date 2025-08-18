@@ -105,27 +105,34 @@ export const PLUGIN_ICONS = [
 export const RESOURCE_IMPORT_EXAMPLE = {
   content: `\
 # Swagger yaml format template example
-swagger: '2.0'
-basePath: /
+openapi: 3.0.1
+servers:
+- url: /
 info:
   version: '2.0'
   title: API Gateway Resources
   description: ''
-schemes:
-- http
 paths:
   /users/:
     get:
       operationId: get_users
       description: get users
+      tags: []
       x-bk-apigateway-resource:
         isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
         backend:
-          type: HTTP
           method: get
           path: /users/
+          matchSubpath: false
           timeout: 30
+        pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
       `,
 };

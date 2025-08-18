@@ -167,7 +167,8 @@
                       type="search"
                     />
                   </div>
-                  <BkTable
+                  <BkLoading :loading="loadingResource">
+                    <BkTable
                     ref="tableRef"
                     :columns="columns"
                     :data="filteredResourceList"
@@ -180,8 +181,9 @@
                         :empty-type="!!filterKeyword ? 'searchEmpty' : 'empty'"
                         @clear-filter="filterKeyword = ''"
                       />
-                    </template>
-                  </BkTable>
+                     </template>
+                   </BkTable>
+                  </BkLoading>
                 </div>
                 <div class="result-preview">
                   <div class="result-preview-list">
@@ -303,6 +305,7 @@ const url = ref('');
 const stageList = ref<any[]>([]);
 const resourceList = ref<any[]>([]);
 const isLoading = ref(false);
+const loadingResource = ref(false);
 const filterKeyword = ref('');
 const filterKeywordDebounced = refDebounced(filterKeyword, 300);
 const pagination = ref<IPagination>({
@@ -575,6 +578,7 @@ const handleRefreshClick = async () => {
     return;
   }
   filterKeyword.value = '';
+  loadingResource.value = true;
   const response = await getVersionDetail(
     gatewayStore.currentGateway!.id!,
     stage.value.resource_version.id,
@@ -593,6 +597,7 @@ const handleRefreshClick = async () => {
     count: resourceList.value.length,
     current: 1,
   };
+  loadingResource.value = false;
 };
 
 const handleStageSelectChange = () => {
