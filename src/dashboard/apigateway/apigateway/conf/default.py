@@ -842,8 +842,8 @@ PLUGIN_METADATA_CONFIG = {
             "resource_id": "$bk_resource_id",
             "resource_name": "$bk_resource_name",
             "stage": "$bk_stage_name",
-            "backend": "$bk_backend_name",
             # 后端服务
+            "backend_name": "$bk_backend_name",
             "backend_scheme": "$upstream_scheme",
             "backend_method": "$method",
             # 后端服务 Host，即后端服务配置中的域名或 IP+Port
