@@ -153,7 +153,6 @@ const apigwId = computed(() => {
 });
 
 const isShowNoticeAlert = computed(() => showNoticeAlert.value && enableShowNotice.value);
-const isEnableComManagement = computed(() => featureFlagStore.showComManagement);
 
 const menuList: IHeaderNav[] = [
   {
@@ -167,7 +166,7 @@ const menuList: IHeaderNav[] = [
     name: t('组件管理'),
     id: 2,
     url: 'ComponentsMain',
-    enabled: isEnableComManagement.value,
+    enabled: false,
     link: '',
   },
   {
@@ -230,10 +229,14 @@ const init = async () => {
   await envStore.fetchEnv();
   await featureFlagStore.fetchFlags();
   enableShowNotice.value = featureFlagStore.flags.ENABLE_BK_NOTICE;
+  const isEnabledComManagement = featureFlagStore.flags?.MENU_ITEM_ESB_API
+    && !featureFlagStore.flags?.ENABLE_MULTI_TENANT_MODE;
   featureFlagStore.setNoticeAlert(showNoticeAlert.value && enableShowNotice.value);
-  featureFlagStore.setDisplayComManagement(
-    featureFlagStore.flags?.MENU_ITEM_ESB_API && !featureFlagStore.flags?.ENABLE_MULTI_TENANT_MODE,
-  );
+  featureFlagStore.setDisplayComManagement(isEnabledComManagement);
+  const comNav = menuList.find(item => ['ComponentsMain'].includes(item.url));
+  if (comNav) {
+    comNav.enabled = isEnabledComManagement;
+  }
 };
 init();
 

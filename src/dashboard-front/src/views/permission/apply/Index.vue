@@ -639,37 +639,28 @@ const updateStatus = async () => {
   let params = cloneDeep({ ...curAction.value });
   const { isSelectAll, selection } = curPermission.value;
   await approveForm.value?.validate();
-  try {
-    // 部分通过
-    const id = params?.ids?.[0] || '';
-    if (
-      ['approved'].includes(params.status)
-      && expandRows.value.includes(id)
-      && selection.length > 0
-      && !isSelectAll
-    ) {
-      params.part_resource_ids = {};
-      params = Object.assign(params, {
-        status: 'partial_approved',
-        [part_resource_ids[id]]: selection.map(item => item.id),
-      });
-    }
-    await updatePermissionStatus(apigwId.value, params);
-    batchApplyDialogConf.isShow = false;
-    applyActionDialogConf.isShow = false;
-    getList();
-    Message({
-      message: t('操作成功！'),
-      theme: 'success',
-    });
-    resetSelections(permissionTableRef.value);
-  }
-  catch (e) {
-    Message({
-      message: e?.message || e?.error?.message,
-      theme: 'error',
+  // 部分通过
+  const id = params?.ids?.[0] || '';
+  if (
+    ['approved'].includes(params.status)
+    && expandRows.value.includes(id)
+    && selection.length > 0
+    && !isSelectAll
+  ) {
+    params = Object.assign(params, {
+      status: 'partial_approved',
+      part_resource_ids: { [id]: selection.map(item => item.id) },
     });
   }
+  await updatePermissionStatus(apigwId.value, params);
+  batchApplyDialogConf.isShow = false;
+  applyActionDialogConf.isShow = false;
+  getList();
+  Message({
+    message: t('操作成功！'),
+    theme: 'success',
+  });
+  resetSelections(permissionTableRef.value);
 };
 
 // 全部通过
