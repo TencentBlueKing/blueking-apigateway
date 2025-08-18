@@ -252,9 +252,8 @@ class ResourceRequestsMetrics(BaseMetrics):
         )
 
 
-class ResponseTime90thMetrics(BaseMetrics):
-    metrics = MetricsRangeEnum.RESPONSE_TIME_90TH
-    quantile = 0.9
+class ResponseTimeBaseMetrics(BaseMetrics):
+    quantile: ClassVar[float]
 
     def _get_query_promql(
         self,
@@ -279,6 +278,26 @@ class ResponseTime90thMetrics(BaseMetrics):
             f"{labels}"
             f"}}[{step}])) by (le, resource_name))"
         )
+
+
+class ResponseTime90thMetrics(ResponseTimeBaseMetrics):
+    metrics = MetricsRangeEnum.RESPONSE_TIME_90TH
+    quantile = 0.9
+
+
+class ResponseTime50thMetrics(ResponseTimeBaseMetrics):
+    metrics = MetricsRangeEnum.RESPONSE_TIME_50TH
+    quantile = 0.5
+
+
+class ResponseTime95thMetrics(ResponseTimeBaseMetrics):
+    metrics = MetricsRangeEnum.RESPONSE_TIME_95TH
+    quantile = 0.95
+
+
+class ResponseTime99thMetrics(ResponseTimeBaseMetrics):
+    metrics = MetricsRangeEnum.RESPONSE_TIME_99TH
+    quantile = 0.99
 
 
 class IngressMetrics(BaseMetrics):
@@ -538,6 +557,9 @@ MetricsRangeFactory.register(Non20XStatusMetrics)
 MetricsRangeFactory.register(AppRequestsMetrics)
 MetricsRangeFactory.register(ResourceRequestsMetrics)
 MetricsRangeFactory.register(ResponseTime90thMetrics)
+MetricsRangeFactory.register(ResponseTime50thMetrics)
+MetricsRangeFactory.register(ResponseTime95thMetrics)
+MetricsRangeFactory.register(ResponseTime99thMetrics)
 MetricsRangeFactory.register(IngressMetrics)
 MetricsRangeFactory.register(EgressMetrics)
 

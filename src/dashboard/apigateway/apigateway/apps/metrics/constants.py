@@ -25,6 +25,9 @@ class MetricsRangeEnum(StructuredEnum):
     APP_REQUESTS = EnumField("app_requests")
     RESOURCE_REQUESTS = EnumField("resource_requests")
     RESPONSE_TIME_90TH = EnumField("response_time_90th")
+    RESPONSE_TIME_50TH = EnumField("response_time_50th")
+    RESPONSE_TIME_95TH = EnumField("response_time_95th")
+    RESPONSE_TIME_99TH = EnumField("response_time_99th")
     INGRESS = EnumField("ingress")
     EGRESS = EnumField("egress")
 
