@@ -179,7 +179,7 @@
             >
               <BkRow class="mb-0!">
                 <BkCol :span="4">
-                  <label class="ag-key hidden">
+                  <label class="ag-key invisible">
                     {{ t("请求方法") }}
                   </label>
                 </BkCol>
@@ -273,7 +273,7 @@
             >
               <BkRow class="mb-0!">
                 <BkCol :span="4">
-                  <label class="ag-key hidden">
+                  <label class="ag-key invisible">
                     {{ t("响应参数") }}
                   </label>
                 </BkCol>
@@ -454,10 +454,6 @@ defineExpose({ showSideslider });
       font-size: 14px;
       color: #63656e;
       text-align: right;
-
-      &.hidden {
-        visibility: hidden;
-      }
     }
 
     .ag-value {

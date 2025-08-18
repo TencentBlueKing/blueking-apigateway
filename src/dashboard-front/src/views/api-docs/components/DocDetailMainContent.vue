@@ -124,10 +124,10 @@ import {
 import { minBy } from 'lodash-es';
 
 interface IProps {
-  api: IResource & IComponent | null
-  navList: INavItem[]
-  markdownHtml: string
-  updatedTime: string
+  api?: IResource & IComponent | null
+  navList?: INavItem[]
+  markdownHtml?: string
+  updatedTime?: string | null
 }
 
 const {

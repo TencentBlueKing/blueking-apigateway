@@ -20,7 +20,6 @@
  * 表格复选框相关状态和事件
  */
 import { cloneDeep } from 'lodash-es';
-import { Table } from 'bkui-vue';
 
 export type SelectionType = {
   checked: boolean
@@ -57,7 +56,7 @@ export const useSelection = (
     }
   };
 
-  const resetSelections = (tableRef: InstanceType<typeof Table>) => {
+  const resetSelections = (tableRef: { clearSelection: () => void }) => {
     selections.value = [];
     tableRef?.clearSelection();
   };
