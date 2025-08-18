@@ -147,9 +147,10 @@ import AgIcon from '@/components/ag-icon/Index.vue';
 import { type IMarketplaceItem, getMcpMarketplace } from '@/services/source/mcp-market';
 import { copy } from '@/utils';
 import mcpBanner from '@/images/mcp-banner.jpg';
+import mcpBannerEn from '@/images/mcp-banner-en.jpg';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const router = useRouter();
 
 const search = ref<string>('');
@@ -164,7 +165,10 @@ const tableEmptyConf = ref<{
 });
 
 const bannerImg = computed(() => {
-  return mcpBanner;
+  if (locale.value === 'zh-cn') {
+    return mcpBanner;
+  }
+  return mcpBannerEn;
 });
 
 const mcpList = computed(() => {

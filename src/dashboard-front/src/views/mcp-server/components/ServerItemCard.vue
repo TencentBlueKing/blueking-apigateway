@@ -204,7 +204,7 @@ const preventDefault = (e: Event) => {
 
 <style lang="scss" scoped>
 .card-wrapper {
-  width: 533px;
+  width: 520px;
   height: 228px;
   padding: 20px 40px;
   cursor: pointer;

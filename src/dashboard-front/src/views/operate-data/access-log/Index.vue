@@ -1034,14 +1034,14 @@ const handlePickerChange = () => {
   if (dayjs(dateTimeRange.value[0]).isSame(dateTimeRange.value[1])) {
     dateTimeRange.value[0]?.setHours(0, 0, 0);
   }
-  nextTick(() => {
-    pagination.value.current = 1;
-    getSearchData();
-  });
 };
 
 const handlePickerConfirm = () => {
   handlePickerChange();
+  nextTick(() => {
+    pagination.value.current = 1;
+    getSearchData();
+  });
 };
 
 const handleStageChange = (value: number) => {
@@ -1158,7 +1158,7 @@ const initChart = async () => {
     }
 
     dateKey.value = String(+new Date());
-    handlePickerChange();
+    handlePickerConfirm();
   });
 };
 

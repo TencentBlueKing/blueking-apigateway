@@ -91,7 +91,7 @@
                       v-if="['PermissionManage'].includes(menu.name) && permissionStore.count > 0"
                       dot
                       theme="danger"
-                      class="ml-5px"
+                      :class="{'en': locale !== 'zh-cn'}"
                     />
                   </template>
                   <template v-for="child in menu.children">
@@ -106,7 +106,7 @@
                         :count="permissionStore.count"
                         :max="99"
                         theme="danger"
-                        class="ml-5px"
+                        :class="{'en': locale !== 'zh-cn'}"
                       />
                     </BkMenuItem>
                   </template>
@@ -194,7 +194,7 @@ interface IMenu {
 
 type GatewayItemType = Awaited<ReturnType<typeof getGatewayList>>['results'][number];
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
@@ -536,6 +536,9 @@ onMounted(() => {
         position: absolute;
         top: 1px;
         left: 120px;
+        &.en {
+          left: 142px;
+        }
 
         .bk-badge {
           width: 6px;
@@ -556,7 +559,10 @@ onMounted(() => {
           .bk-badge-main {
             position: absolute;
             top: 6px;
-            left: 56px;
+            left: 58px;
+             &.en {
+              left: 130px;
+            }
 
             .bk-badge {
               height: 18px;

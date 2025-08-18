@@ -88,7 +88,7 @@
             </template>
             <template v-else-if="keyword">
               <TableEmpty
-                :keyword="keyword"
+                empty-type="searchEmpty"
                 @clear-filter="keyword = ''"
               />
             </template>
