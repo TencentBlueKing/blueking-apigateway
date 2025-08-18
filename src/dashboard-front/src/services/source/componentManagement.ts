@@ -110,7 +110,7 @@ export function checkSyncComponent() {
 }
 
 export function getSyncReleaseData() {
-  return http.post(`${path}/sync/release/`);
+  return http.post(`${path}sync/release/`);
 }
 
 /**

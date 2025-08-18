@@ -167,7 +167,7 @@
                     </template>
                     <template v-else-if="keyword">
                       <TableEmpty
-                        :keyword="keyword"
+                        :empty-type="!!keyword ? 'searchEmpty' : 'empty'"
                         @clear-filter="keyword = ''"
                       />
                     </template>

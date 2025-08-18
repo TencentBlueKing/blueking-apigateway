@@ -554,7 +554,7 @@ const docSliderConf = reactive({
 // 批量删除dialog
 const dialogData = reactive<IDialog>({
   isShow: false,
-  title: t(''),
+  title: '',
   loading: false,
 });
 
@@ -1350,9 +1350,7 @@ const getLabelsData = async () => {
 
 // 未做变更关闭select下拉
 const handleCloseSelect = (row: any, newLabelData: any = []) => {
-  tableData.value.forEach((item: Record<string, any>) => {
-    item.isEditLabel = false;
-  });
+  row.isEditLabel = false;
   // 接收新的标签数据，检查标签的 name 是否有变化，有则重新获取列表数据
   // 用于修复标签更改名称后，SelectCheckBox 组件的 update-success 不能触发，列表中的标签名没有相应更新的 bug
   if (newLabelData.length > 0) {

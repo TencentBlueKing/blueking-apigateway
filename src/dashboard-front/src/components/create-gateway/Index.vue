@@ -17,11 +17,13 @@
  */
 
 <template>
-  <BkSideslider
-    v-model:is-show="isShow"
+  <AgSideslider
+    v-model="isShow"
     :title="isEdit ? t('编辑网关') : t('新建网关')"
-    width="1020"
+    :width="1020"
     class="gateway-operate-slider"
+    :init-data="defaultFormData"
+    @compare="handleCompare"
     @closed="handleCancel"
   >
     <template #default>
@@ -285,7 +287,7 @@
       </div>
     </template>
     <template #footer>
-      <div class="operate-btn">
+      <div class="p-l-24px">
         <BkPopConfirm
           v-if="!formData.maintainers?.includes(userStore.info.username) && isEdit"
           width="288"
@@ -297,6 +299,7 @@
         >
           <BkButton
             theme="primary"
+            class="min-w-88px"
             :loading="submitLoading"
           >
             {{ t('保存') }}
@@ -305,25 +308,26 @@
         <BkButton
           v-else
           theme="primary"
+          class="min-w-88px"
           :loading="submitLoading"
           @click="handleConfirmCreate"
         >
           {{ isEdit ? t('保存') : t('提交') }}
         </BkButton>
         <BkButton
-          class="ml-12px"
+          class="m-l-8px min-w-88px"
           @click="handleCancel"
         >
           {{ t('取消') }}
         </BkButton>
       </div>
     </template>
-  </BkSideslider>
+  </AgSideslider>
 
   <BkSideslider
     v-model:is-show="isShowMarkdown"
     :title="t('新建网关')"
-    width="1020"
+    :width="1020"
   >
     <section class="guide-wrapper">
       <section class="header">
@@ -376,8 +380,14 @@ import {
   useUserInfo,
 } from '@/stores';
 import AgIcon from '@/components/ag-icon/Index.vue';
+import AgSideslider from '@/components/ag-sideslider/Index.vue';
 
 type ParamType = Parameters<typeof patchGateway>[1];
+
+type FormMethod = {
+  validate: () => void
+  clearValidate: () => void
+};
 
 interface IProps { initData?: ParamType }
 
@@ -401,7 +411,7 @@ const userStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
 
-const formRef = ref();
+const formRef = ref<InstanceType<typeof BkForm> & FormMethod>();
 const formData = ref<ParamType>({
   name: '',
   description: '',
@@ -427,7 +437,7 @@ const newGateway = ref({
 });
 const repositoryUrl = ref('');
 
-const defaultFormData = {
+const defaultFormData = ref({
   name: '',
   description: '',
   is_public: true,
@@ -442,24 +452,24 @@ const defaultFormData = {
     account: '',
     password: '',
   },
-};
+});
 
 const rules = {
   'name': [
     {
       required: true,
       message: t('请填写名称'),
-      trigger: 'change',
+      trigger: 'blur',
     },
     {
       validator: (value: string) => value.length >= 3,
       message: t('不能小于3个字符'),
-      trigger: 'change',
+      trigger: 'blur',
     },
     {
       validator: (value: string) => value.length <= 30,
       message: t('不能多于30个字符'),
-      trigger: 'change',
+      trigger: 'blur',
     },
     {
       validator: (value: string) => {
@@ -469,7 +479,7 @@ const rules = {
       message: () => formData.value.kind === 0
         ? t('由小写字母、数字、连接符（-）组成，首字符必须是小写字母，长度大于3小于30个字符')
         : t('只能包含小写字母(a-z)、数字(0-9)和半角连接符(-)，长度在 3-16 之间'),
-      trigger: 'change',
+      trigger: 'blur',
     },
   ],
   'programmable_gateway_git_info.repository': [
@@ -501,7 +511,7 @@ const languageList = [
 ];
 
 const isEdit = computed(() => {
-  return !!formData.value.id;
+  return !!formData.value?.id;
 });
 
 const nameInputPlaceholder = computed(() =>
@@ -577,21 +587,32 @@ const md = new MarkdownIt({
   },
 });
 
+const handleCompare = (callback) => {
+  callback(cloneDeep(formData.value));
+};
+
 watch(
   () => featureFlagStore.flags.ENABLE_MULTI_TENANT_MODE,
   () => {
     if (featureFlagStore.flags.ENABLE_MULTI_TENANT_MODE) {
-      formData.value.tenant_id = userStore.info.tenant_id || 'system';
-      if (userStore.info.tenant_id === 'system') {
-        formData.value.tenant_mode = 'global';
-      }
-      else {
-        formData.value.tenant_mode = 'single';
-      }
+      formData.value = Object.assign(formData.value, {
+        tenant_id: userStore.info.tenant_id || 'system',
+        tenant_mode: ['system'].includes(userStore.info.tenant_id) ? 'global' : 'single',
+      });
+      defaultFormData.value = Object.assign(defaultFormData.value, {
+        tenant_id: userStore.info.tenant_id || 'system',
+        tenant_mode: ['system'].includes(userStore.info.tenant_id) ? 'global' : 'single',
+      });
     }
     else {
-      formData.value.tenant_id = 'default';
-      formData.value.tenant_mode = 'single';
+      formData.value = Object.assign(formData.value, {
+        tenant_id: 'default',
+        tenant_mode: 'single',
+      });
+      defaultFormData.value = Object.assign(defaultFormData.value, {
+        tenant_id: 'default',
+        tenant_mode: 'single',
+      });
     }
   },
   { immediate: true },
@@ -608,7 +629,7 @@ watch(
 );
 
 watch(
-  () => formData.value.name,
+  () => formData.value?.name,
   () => {
     if (envStore.env.EDITION === 'te' && formData.value.kind === 1) {
       formData.value.extra_info!.repository
@@ -622,6 +643,7 @@ watch(
   () => {
     if (initData) {
       formData.value = cloneDeep(initData);
+      defaultFormData.value = cloneDeep(initData);
     }
   },
 );
@@ -698,9 +720,7 @@ const handleConfirmCreate = async () => {
         });
       }
     }
-
-    isShow.value = false;
-    formData.value = cloneDeep(defaultFormData);
+    handleCancel();
     emit('done');
   }
   finally {
@@ -709,8 +729,9 @@ const handleConfirmCreate = async () => {
 };
 
 const handleCancel = () => {
+  formRef?.value?.clearValidate();
+  formData.value = cloneDeep(defaultFormData.value);
   isShow.value = false;
-  formData.value = cloneDeep(defaultFormData);
 };
 
 </script>
@@ -719,7 +740,7 @@ const handleCancel = () => {
 .gateway-operate-slider {
 
   :deep(.bk-modal-content) {
-    overflow: hidden !important;
+    overflow-y: hidden;
   }
 
   .create-gateway {
@@ -747,7 +768,7 @@ const handleCancel = () => {
 
     .progress {
       width: 400px;
-      height: calc(100vh - 90px);
+      max-height: calc(100vh - 92px);
       padding: 24px;
       margin-top: -16px;
       margin-right: -14px;

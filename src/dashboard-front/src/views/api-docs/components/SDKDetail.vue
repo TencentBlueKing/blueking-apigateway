@@ -137,7 +137,7 @@
         </div>
         <div class="value">
           <span
-            v-bk-tooltips.top="{ content: doc.resource_version ?? '--', allowHTML: false }"
+            v-bk-tooltips="{ content: doc.resource_version ?? '--', placement: 'top', allowHTML: false }"
             class="column-value"
           >
             {{ doc.resource_version ?? '--' }}
@@ -156,7 +156,7 @@
         </div>
         <div class="value">
           <span
-            v-bk-tooltips.top="doc.stage?.name"
+            v-bk-tooltips="{ content: doc.stage?.name, placement: 'top' }"
             class="column-value"
           >{{ doc.stage?.name || '--' }}</span>
         </div>
@@ -182,9 +182,9 @@ const {
 const { t } = useI18n();
 
 interface IProps {
-  isApigw: boolean
-  sdk: ISdk | null
-  doc: IApiGatewaySdkDoc | null
+  isApigw?: boolean
+  sdk?: ISdk | null
+  doc?: IApiGatewaySdkDoc | null
 }
 
 const handleDownload = () => {

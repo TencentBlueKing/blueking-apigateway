@@ -1932,5 +1932,13 @@
   "唯一标识，以网关名称和环境名称为前缀，创建后不可更改": "Unique ID, prefixed by gateway name and environment name, cannot be changed after creation",
   "时间选择器": "Time Selector",
   "环": "Environment",
-  "资": "Resource"
+  "资": "Resource",
+  "编辑服务": "Edit server",
+  "系统错误": "System error",
+  "资源已更新": "Resources have been updated",
+  "组件负责人": "Component Manager",
+  "参数错误。": "Parameter error.",
+  "请检查提交的内容是否正确。": "Please check if the submitted content is correct.",
+  "没有权限。": "No permission.",
+  "您没有执行该操作的权限。": "You do not have permission to perform this operation."
 }

@@ -177,7 +177,7 @@
                   >
                     <template #empty>
                       <TableEmpty
-                        :keyword="filterKeyword"
+                        :empty-type="!!filterKeyword ? 'searchEmpty' : 'empty'"
                         @clear-filter="filterKeyword = ''"
                       />
                     </template>
@@ -279,7 +279,7 @@ interface FormData {
   labels: string[]
 }
 
-const { serverId } = defineProps<IProps>();
+const { serverId = 0 } = defineProps<IProps>();
 
 const emit = defineEmits<{ updated: [] }>();
 

@@ -240,6 +240,7 @@
 <script setup lang="tsx">
 import { cloneDeep } from 'lodash-es';
 import { Message } from 'bkui-vue';
+import { useGateway } from '@/stores';
 import {
   getBackendServiceDetail,
   getBackendServiceList,
@@ -248,7 +249,6 @@ import { backendsPathCheck } from '@/services/source/resource.ts';
 // import mitt from '@/common/event-bus';
 import AddBackendService from '@/views/backend-services/components/AddBackendService.vue';
 import { HTTP_METHODS } from '@/constants';
-import { useRouteParams } from '@vueuse/router';
 
 interface IProps {
   detail?: any
@@ -269,7 +269,7 @@ const {
 const emit = defineEmits(['service-init']);
 
 const { t } = useI18n();
-const gatewayId = useRouteParams('id', 0, { transform: Number });
+const gatewayStore = useGateway();
 
 const backRef = ref();
 const frontPath = ref('');
@@ -324,16 +324,7 @@ const isPathValid = ref(false);
 // 错误表单项的 #id
 const invalidFormElementIds = ref<string[]>([]);
 
-// 提示默认超时时间
-// const formatDefaultTime = computed(() => {
-//   return (payload: any) => {
-//     const curServices = servicesConfigsStorage.value.find(item => item?.stage?.id === payload?.stage?.id);
-//     if (curServices) {
-//       return curServices.timeout;
-//     }
-//     return '';
-//   };
-// });
+const gatewayId = computed(() => gatewayStore.apigwId);
 
 const isEditService = computed(() => {
   let flag = false;

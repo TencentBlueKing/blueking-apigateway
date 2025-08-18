@@ -63,6 +63,7 @@
 </template>
 
 <script setup lang="tsx">
+import { useGateway } from '@/stores';
 import { getGatewayLabels } from '@/services/source/gateway';
 import {
   type IStageListItem,
@@ -72,7 +73,6 @@ import { getVersionDetail } from '@/services/source/resource';
 import ResourceDetails from './ResourceDetails.vue';
 import CreateStage from '../../components/CreateStage.vue';
 import { copy } from '@/utils';
-import { useRouteParams } from '@vueuse/router';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
 import AgTable from '@/components/ag-table/Index.vue';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
@@ -93,7 +93,8 @@ const {
 } = defineProps<IProps>();
 
 const { t } = useI18n();
-const gatewayId = useRouteParams('id', 0, { transform: Number });
+// 优先从store里取值，因为这里的值是同步更新的，不会存在vue内置钩子依赖执行顺序问题
+const gatewayStore = useGateway();
 
 const filterValue = ref<Record<string, any>>({ keyword: '' });
 const currentStage = ref<any>(null);
@@ -108,6 +109,8 @@ const labels = ref<any[]>([]);
 const tableData = ref<any[]>([]);
 const initTableData = ref<any[]>([]);
 const stageList = ref<IStageListItem[]>([]);
+
+const gatewayId = computed<number>(() => gatewayStore.apigwId);
 
 const customMethodsList = computed(() => {
   const methods = HTTP_METHODS.map(item => ({
@@ -361,10 +364,6 @@ const handleClearQueries = () => {
 const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filters) => {
   Object.assign(filterValue.value, filters);
 };
-
-onMounted(() => {
-  init();
-});
 
 defineExpose({ reload: init });
 

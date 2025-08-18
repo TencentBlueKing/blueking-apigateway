@@ -393,7 +393,6 @@ watch(
     headerTitle.value = route.meta.title as string;
     // 设置全局网关
     gatewayStore.fetchGatewayDetail(gatewayId.value);
-
     // if (!route.meta?.isMenu) {
     //   needMenu.value = false;
     // }
