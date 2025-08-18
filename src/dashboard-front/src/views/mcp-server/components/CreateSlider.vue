@@ -169,20 +169,20 @@
                   </div>
                   <BkLoading :loading="loadingResource">
                     <BkTable
-                      ref="tableRef"
-                      :columns="columns"
-                      :data="filteredResourceList"
-                      :pagination="pagination"
-                      border="outer"
-                      show-overflow-tooltip
-                    >
-                      <template #empty>
-                        <TableEmpty
-                          :keyword="filterKeyword"
-                          @clear-filter="filterKeyword = ''"
-                        />
-                      </template>
-                    </BkTable>
+                    ref="tableRef"
+                    :columns="columns"
+                    :data="filteredResourceList"
+                    :pagination="pagination"
+                    border="outer"
+                    show-overflow-tooltip
+                  >
+                    <template #empty>
+                      <TableEmpty
+                        :empty-type="!!filterKeyword ? 'searchEmpty' : 'empty'"
+                        @clear-filter="filterKeyword = ''"
+                      />
+                     </template>
+                   </BkTable>
                   </BkLoading>
                 </div>
                 <div class="result-preview">
@@ -281,7 +281,7 @@ interface FormData {
   labels: string[]
 }
 
-const { serverId } = defineProps<IProps>();
+const { serverId = 0 } = defineProps<IProps>();
 
 const emit = defineEmits<{ updated: [] }>();
 

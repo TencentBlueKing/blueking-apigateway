@@ -24,6 +24,7 @@ type FlagType = Awaited<ReturnType<typeof getFeatureFlags>>;
 interface IState {
   flags: FlagType
   showNoticeAlert: boolean
+  showComManagement: boolean
 }
 
 export const useFeatureFlag = defineStore('useFeatureFlag', {
@@ -44,15 +45,18 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
       SYNC_ESB_TO_APIGW_ENABLED: false,
     },
     showNoticeAlert: false,
+    showComManagement: false,
   }),
   getters: {
     apiBaseUrl: () => import.meta.env.VITE_BK_USER_WEB_API_URL || '',
-    // 是否开启了多租户模式
+    // 是否开启了多租户模
     isTenantMode: state => !!state.flags?.ENABLE_MULTI_TENANT_MODE,
     // 是否启用了 ai 问答功能
     isAIEnabled: state => state.flags?.ENABLE_AI_COMPLETION,
     // 是否开启了通知组件展示
     isEnabledNotice: state => state.showNoticeAlert,
+    // 是否显示组件管理
+    isEnableComManagement: state => state.showComManagement,
   },
   actions: {
     async fetchFlags() {
@@ -63,6 +67,9 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
     },
     setNoticeAlert(isShow: boolean) {
       this.showNoticeAlert = isShow;
+    },
+    setDisplayComManagement(isShow: boolean) {
+      this.showComManagement = isShow;
     },
   },
 });
