@@ -119,7 +119,6 @@ if (envStore.env.BK_ANALYSIS_SCRIPT_SRC) {
         // script loaded 后的回调
         () => {
           window.BKANALYSIS?.init({ siteName: 'custom:bk-apigateway:default:default' });
-          console.log('BKANALYSIS init success');
         },
         // script 标签的 attrs
         { attrs: { charset: 'utf-8' } },
@@ -142,6 +141,20 @@ const enableShowNotice = ref(false);
 const noticeApi = ref(`${window.BK_DASHBOARD_URL}/notice/announcements/`);
 const curLeavePageData = ref({});
 
+const bkuiLocale = computed(() => {
+  if (locale.value === 'zh-cn') {
+    return ZhCn;
+  }
+  return En;
+});
+
+const apigwId = computed(() => {
+  return route.params.id;
+});
+
+const isShowNoticeAlert = computed(() => showNoticeAlert.value && enableShowNotice.value);
+const isEnableComManagement = computed(() => featureFlagStore.showComManagement);
+
 const menuList: IHeaderNav[] = [
   {
     name: t('我的网关'),
@@ -154,7 +167,7 @@ const menuList: IHeaderNav[] = [
     name: t('组件管理'),
     id: 2,
     url: 'ComponentsMain',
-    enabled: true,
+    enabled: isEnableComManagement.value,
     link: '',
   },
   {
@@ -179,19 +192,6 @@ const menuList: IHeaderNav[] = [
     link: '',
   },
 ];
-
-const bkuiLocale = computed(() => {
-  if (locale.value === 'zh-cn') {
-    return ZhCn;
-  }
-  return En;
-});
-
-const apigwId = computed(() => {
-  return route.params.id;
-});
-
-const isShowNoticeAlert = computed(() => showNoticeAlert.value && enableShowNotice.value);
 
 configureDisplayName();
 
@@ -231,6 +231,9 @@ const init = async () => {
   await featureFlagStore.fetchFlags();
   enableShowNotice.value = featureFlagStore.flags.ENABLE_BK_NOTICE;
   featureFlagStore.setNoticeAlert(showNoticeAlert.value && enableShowNotice.value);
+  featureFlagStore.setDisplayComManagement(
+    featureFlagStore.flags?.MENU_ITEM_ESB_API && !featureFlagStore.flags?.ENABLE_MULTI_TENANT_MODE,
+  );
 };
 init();
 

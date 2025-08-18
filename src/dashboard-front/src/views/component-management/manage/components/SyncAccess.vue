@@ -345,10 +345,10 @@ const getEsbGatewayData = async () => {
 
 const handleEditResource = (data: ISyncApigwItem, resourceId: number) => {
   if (!resourceId) {
-    return false;
+    return;
   }
   const routeData = router.resolve({
-    path: `/${esb.value?.gateway_id}/resource/setting/${data.resource_id}/edit`,
+    name: 'ResourceEdit',
     params: {
       id: esb.value?.gateway_id,
       resourceId: data?.resource_id,

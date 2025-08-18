@@ -64,7 +64,9 @@ export function useStickyBottom({
     resizeObserver = new ResizeObserver(() => {
       controlStickyToggle();
     });
-    resizeObserver?.observe(parentDom);
+    if (parentDom) {
+      resizeObserver?.observe(parentDom);
+    }
   };
 
   function destroyEvent() {
