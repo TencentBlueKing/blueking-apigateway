@@ -103,7 +103,7 @@
           ref="comTableRef"
           border="outer"
           :data="tableData"
-          :size="setting.size"
+          :size="'small'"
           :is-row-select-enable="setDefaultSelect"
           :pagination="pagination"
           :columns="getTableColumns"
@@ -144,7 +144,7 @@
 
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
-import { Message, OverflowTitle } from 'bkui-vue';
+import { Message, OverflowTitle, Table } from 'bkui-vue';
 import type { ISearchValue } from 'bkui-lib/search-select/utils';
 import {
   useMaxTableLimit,
@@ -152,7 +152,6 @@ import {
   useQueryList,
   useSelection,
 } from '@/hooks';
-import { copy } from '@/utils';
 import {
   type IComponentItem,
   checkEsbNeedNewVersion,
@@ -173,7 +172,7 @@ type ISystemFilterMethod = {
 };
 
 const router = useRouter();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 256 });
 const {
   selections,
@@ -199,38 +198,6 @@ const getDefaultData = () => {
     verified_user_required: true,
   };
 };
-const fields = [
-  {
-    id: 'systemName',
-    label: t('系统名称'),
-    disabled: true,
-  },
-  {
-    id: 'componentName',
-    label: t('组件名称'),
-  },
-  {
-    id: 'type',
-    label: t('请求方法'),
-    disabled: true,
-  },
-  {
-    id: 'url',
-    label: t('请求路径'),
-  },
-  {
-    id: 'updated_time',
-    label: t('更新时间'),
-  },
-  {
-    id: 'api_url',
-    label: t('API地址'),
-  },
-  {
-    id: 'documnet_url',
-    label: t('文档地址'),
-  },
-];
 
 const searchData = shallowRef([
   {
@@ -244,7 +211,7 @@ const searchData = shallowRef([
     placeholder: t('请输入请求路径'),
   },
 ]);
-const comTableRef = ref<InstanceType<typeof BkTable> & { clearSelection: () => void }>();
+const comTableRef = ref<InstanceType<typeof Table> & { clearSelection: () => void }>();
 const searchValue = ref([]);
 const searchParams = ref({
   name: '',
@@ -259,6 +226,7 @@ const needNewVersion = ref(false);
 const syncEsbToApigwEnabled = ref(false);
 const isReleasing = ref(false);
 const isCursor = ref(false);
+const isOverflow = ref(false);
 const isExpand = ref(true);
 const cursorId = ref('');
 const curSelectSystemId = ref('*');
@@ -267,12 +235,6 @@ const requestQueue = reactive(['system', 'component']);
 const deleteDialogConf = reactive({
   loading: false,
   ids: [],
-});
-const setting = reactive({
-  max: 9,
-  fields,
-  selectedFields: fields.slice(0, 5),
-  size: 'small',
 });
 const tableEmptyConfig = reactive({
   emptyType: '',
@@ -304,28 +266,11 @@ const {
   needApigwId: false,
 });
 
-const flagComponentName = computed(() =>
-  setting.selectedFields?.filter(field => field.label === t('组件名称')),
-);
-const flagUrl = computed(() =>
-  setting.selectedFields?.filter(field => field.label === t('请求路径')),
-);
-const flagApiUrl = computed(() =>
-  setting.selectedFields?.filter(field => field.label === t('API地址')),
-);
-const flagDocumentUrl = computed(() =>
-  setting.selectedFields?.filter(field => field.label === t('文档地址')),
-);
-const flagUpdatedTime = computed(() =>
-  setting.selectedFields?.filter(field => field.label === t('更新时间')),
-);
-
 const getTableColumns = computed(() => {
   const tableColumn = [
     {
       type: 'selection',
       width: 60,
-      minWidth: 60,
       align: 'center',
     },
     {
@@ -342,27 +287,32 @@ const getTableColumns = computed(() => {
     {
       label: t('组件名称'),
       field: 'name',
-      width: 200,
+      showOverflowTooltip: true,
       render: ({ row }: { row?: Partial<IComponentItem> }) => {
         return (
           <div class="flex items-center">
-            <OverflowTitle type="tips">
+            <div
+              v-bk-tooltips={{
+                placement: 'top',
+                content: row?.name,
+                disabled: !row?.name || !isOverflow.value,
+              }}
+              class="truncate"
+            >
               { row?.name || '--' }
-            </OverflowTitle>
+            </div>
             {
               syncEsbToApigwEnabled.value && row.is_created && (
-                <span
-                  class="ag-tag primary m-l-5px"
-                >
+                <div class={`ag-tag primary m-l-5px ${locale.value === 'en' ? 'min-w-56px' : 'min-w-44px'}`}>
                   { t('新创建') }
-                </span>
+                </div>
               )
             }
             {
               syncEsbToApigwEnabled.value && row.has_updated && (
-                <span class="ag-tag success m-l-5px">
+                <div class={`ag-tag success m-l-5px ${locale.value === 'en' ? 'min-w-56px' : 'min-w-44px'}`}>
                   { t('有更新') }
-                </span>
+                </div>
               )
             }
           </div>
@@ -385,48 +335,6 @@ const getTableColumns = computed(() => {
       render: ({ row }: { row?: Partial<IComponentItem> }) => {
         return (
           <OverflowTitle type="tips">{ row.path || '--' }</OverflowTitle>
-        );
-      },
-    },
-    {
-      label: t('API地址'),
-      field: 'api_url',
-      render: ({ row }: { row?: Partial<IComponentItem> }) => {
-        return (
-          <div class="path-wrapper">
-            <OverflowTitle type="tips" class="path-text m-r-10px">
-              { row.api_url }
-            </OverflowTitle>
-            {cursorId === row.id && (
-              <span class="path-icon">
-                <i
-                  class="apigateway-icon icon-ag-clipboard copy-btn"
-                  onClick={() => handleClickCopyField(row.api_url)}
-                />
-              </span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      label: t('文档地址'),
-      field: 'doc_link',
-      render: ({ row }: { row?: Partial<IComponentItem> }) => {
-        return (
-          <div class="path-wrapper">
-            <OverflowTitle type="tips" class="path-text m-r-10px">
-              { row.doc_link }
-            </OverflowTitle>
-            {cursorId === row.id && (
-              <span class="path-icon">
-                <i
-                  class="apigateway-icon icon-ag-clipboard copy-btn"
-                  onClick={() => handleClickCopyField(row.doc_link)}
-                />
-              </span>
-            )}
-          </div>
         );
       },
     },
@@ -460,7 +368,7 @@ const getTableColumns = computed(() => {
               {
                 row.is_official
                   ? (
-                    <span v-bk-tooltips="t('官方组件，不可删除')">
+                    <span v-bk-tooltips={t('官方组件，不可删除')}>
                       { t('删除') }
                     </span>
                   )
@@ -472,23 +380,7 @@ const getTableColumns = computed(() => {
       },
     },
   ];
-  let results = [...tableColumn];
-  if (!flagComponentName.value.length) {
-    results = tableColumn.filter(item => !['name'].includes(item.name));
-  }
-  if (!flagUrl.value.length) {
-    results = tableColumn.filter(item => !['path'].includes(item.path));
-  }
-  if (!flagApiUrl.value.length) {
-    results = tableColumn.filter(item => !['api_url'].includes(item.api_url));
-  }
-  if (!flagDocumentUrl.value.length) {
-    results = tableColumn.filter(item => !['doc_link'].includes(item.doc_link));
-  }
-  if (!flagUpdatedTime.value.length) {
-    results = tableColumn.filter(item => !['updated_time'].includes(item.updated_time));
-  }
-  return results;
+  return tableColumn;
 });
 
 const handleSelect = ({ id }: { id: number }) => {
@@ -652,18 +544,19 @@ const handleNavRoute = (name: string) => {
   router.push({ name });
 };
 
-const handleClickCopyField = (field: string) => {
-  copy(field);
-};
-
-const handleRowEnter = (col, event, rowData) => {
-  cursorId.value = rowData?.id;
+const handleRowEnter = (e, row) => {
+  const truncateNode = e.target?.querySelector('.truncate');
+  if (truncateNode) {
+    isOverflow.value = truncateNode?.scrollWidth > truncateNode.clientWidth;
+  }
+  cursorId.value = row?.id;
   isCursor.value = true;
 };
 
 const handleRowLeave = () => {
   cursorId.value = '';
   isCursor.value = false;
+  isOverflow.value = false;
 };
 
 const getFeature = async () => {
@@ -854,10 +747,6 @@ watch(
       }
     }
   }
-}
-
-.ag-tag.success {
-  width: 44px;
 }
 
 :deep(.path-wrapper) {

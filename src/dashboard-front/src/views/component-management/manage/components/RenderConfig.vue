@@ -92,7 +92,11 @@ const { t } = useI18n();
 const configList = ref([]);
 
 const handleSelected = (value: string) => {
-  configList.value?.forEach((item: any) => {
+  configList.value?.forEach((item: {
+    type?: string
+    show_if?: boolean
+    isShow?: boolean
+  }) => {
     if (item?.type !== 'enum' && item?.show_if) {
       const tempArr = item.show_if?.split('=');
       item.isShow = value === tempArr[1];
@@ -102,7 +106,7 @@ const handleSelected = (value: string) => {
 
 const getData = () => {
   const data = {};
-  configList.value?.forEach((item: any) => {
+  configList.value?.forEach((item) => {
     data[item.variable] = item.default;
   });
   return data;
@@ -110,7 +114,7 @@ const getData = () => {
 
 const setComponentConfig = () => {
   if (document.querySelectorAll('.value .bk-form-control')) {
-    document.querySelectorAll('.value .bk-form-control')?.forEach((item: any) => {
+    document.querySelectorAll('.value .bk-form-control')?.forEach((item: HTMLElement) => {
       item.classList.add('inline-blocks');
     });
   }
@@ -125,10 +129,10 @@ watch(
   (value) => {
     if (value?.length > 0) {
       const temps = cloneDeep(value);
-      temps?.forEach((item: any) => {
+      temps?.forEach((item: Record<string, any>) => {
         if (item?.type === 'enum') {
-          const arrays: any = [];
-          (item?.options || []).forEach((sub: any) => {
+          const arrays = [];
+          (item?.options || []).forEach((sub: string[]) => {
             arrays.push({
               id: sub[0],
               name: sub[1],
@@ -139,7 +143,7 @@ watch(
         }
         if (item?.show_if) {
           const tempArr = item.show_if.split('=');
-          const data: any = temps.find((sub: any) => sub.variable === tempArr[0]);
+          const data = temps.find((sub: { variable: string }) => sub.variable === tempArr[0]);
           item.isShow = data?.default === tempArr[1];
         }
         else {

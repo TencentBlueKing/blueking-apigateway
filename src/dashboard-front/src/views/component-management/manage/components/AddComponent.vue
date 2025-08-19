@@ -429,12 +429,19 @@ const handleSysSelect = (
 
 const handleSave = async () => {
   await componentFormRef?.value?.validate();
+  const configData = configRef.value?.getData() ?? {};
+  const initConfigFields = {};
+  // 默认组件配置转换成标准格式
+  initData?.config_fields?.forEach((item) => {
+    initConfigFields[item.variable] = item.default;
+  });
+  // 是否存在组件配置，存在则作对比是否存在数据更新
+  const isExistConfig = Object.keys(configData)?.length > 0 ? isEqual(initConfigFields, configData) : true;
   // 如果内容一致无需调用编辑接口
-  if (isEdit.value && isEqual(initData, formData.value)) {
+  if (isEdit.value && (isEqual(initData, formData.value) && isExistConfig)) {
     handleCancel();
     return;
   }
-  submitLoading.value = true;
   const tempData = Object.assign({}, formData.value);
   if (!tempData.timeout) {
     tempData.timeout = null;
@@ -443,12 +450,13 @@ const handleSave = async () => {
     tempData.method = '';
   }
   if (tempData.config_fields?.length > 0) {
-    tempData.config = configRef.value?.getData();
+    tempData.config = configData;
     delete tempData.config_fields;
   }
   if (!isEdit.value) {
     delete tempData.config_fields;
   }
+  submitLoading.value = true;
   try {
     let msg = '';
     if (!isEdit.value) {
