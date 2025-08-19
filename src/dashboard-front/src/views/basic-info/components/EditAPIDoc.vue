@@ -38,6 +38,7 @@
             width="600px"
             field="contacts"
             is-required
+            :exclude-self-tips="false"
             :placeholder="t('请选择联系人')"
             :content="docForm.contacts"
             :is-error-class="'maintainers-error-tip'"
