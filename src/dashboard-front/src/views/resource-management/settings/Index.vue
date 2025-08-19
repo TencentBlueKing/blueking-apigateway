@@ -64,7 +64,7 @@
         @collapse-change="handleCollapseChange"
       >
         <template #main>
-          <div class="px-24px py-20px">
+          <div class="px-24px py-20px flex-column h-100px">
             <div
               class="operate flex justify-between mb-16px"
               :class="{'flex-col gap-y-16px': !isCollapsed}"
@@ -215,21 +215,23 @@
                 />
               </div>
             </div>
-            <AgTable
-              ref="tableRef"
-              v-model:selected-row-keys="selectedRowKeys"
-              v-model:table-data="tableData"
-              :source="getTableData"
-              :columns="columns"
-              row-key="id"
-              :filter-row="null"
-              hover
-              resizable
-              @filter-change="handleFilterChange"
-              @select-change="handleSelectChange"
-              @sort-change="handleSortChange"
-              @clear-queries="handleClearQueries"
-            />
+            <div class="flex-1 table-wrapper">
+              <AgTable
+                ref="tableRef"
+                v-model:selected-row-keys="selectedRowKeys"
+                v-model:table-data="tableData"
+                :source="getTableData"
+                :columns="columns"
+                row-key="id"
+                :filter-row="null"
+                hover
+                resizable
+                @filter-change="handleFilterChange"
+                @select-change="handleSelectChange"
+                @sort-change="handleSortChange"
+                @clear-queries="handleClearQueries"
+              />
+            </div>
           </div>
         </template>
         <template #aside>
@@ -1582,6 +1584,13 @@ onMounted(() => {
       font-size: 14px;
     }
   }
+}
+
+.h-100px {
+  height: 100%;
+}
+.table-wrapper {
+  overflow-y: auto;
 }
 </style>
 
