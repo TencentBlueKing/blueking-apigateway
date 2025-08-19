@@ -64,7 +64,7 @@
           </div>
         </BkFormItem>
         <BkFormItem
-          v-if="!userStore.isTenantMode"
+          v-if="!featureFlagStore.isTenantMode"
           label-width="90"
         >
           <div class="flex">
@@ -88,10 +88,10 @@
         >
           <BkUserSelector
             v-model="filterData.applied_by"
-            :api-base-url="userStore.apiBaseUrl"
-            :tenant-id="userStore.tenant_id"
+            :api-base-url="envStore.tenantUserDisplayAPI"
+            :tenant-id="userStore.info.tenant_id"
             :placeholder="t('请输入用户')"
-            style="min-width: 200px"
+            class="min-w-200px"
           />
         </BkFormItem>
       </BkForm>
@@ -207,6 +207,7 @@ import {
   updatePermissionStatus,
 } from '@/services/source/permission';
 import {
+  useEnv,
   useFeatureFlag,
   useGateway,
   usePermission,
@@ -228,11 +229,12 @@ import CustomHeader from '@/views/permission/apply/components/CustomHeader.vue';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
-const { t } = useI18n();
+const envStore = useEnv();
 const gatewayStore = useGateway();
 const userStore = useUserInfo();
 const permissionStore = usePermission();
 const featureFlagStore = useFeatureFlag();
+const { t } = useI18n();
 const {
   selections,
   handleSelectionChange,
