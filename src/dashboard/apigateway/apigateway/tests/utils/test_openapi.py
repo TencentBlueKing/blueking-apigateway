@@ -100,6 +100,7 @@ class TestOpenAPI:
                                     "properties": {
                                         "id": {"type": "integer", "example": 1},
                                         "name": {"type": "string", "example": "test"},
+                                        "info": {"type": "object"},
                                     },
                                 }
                             }
@@ -112,7 +113,7 @@ class TestOpenAPI:
                     ],
                 },
                 {
-                    "body_example": {"id": 1, "name": "test"},
+                    "body_example": {"id": 1, "name": "test", "info": {}},
                     "path_params": {"userId": "123"},
                     "query_params": {"search": "test"},
                     "headers": {"Authorization": "Bearer token"},
