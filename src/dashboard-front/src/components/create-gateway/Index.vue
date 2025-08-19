@@ -111,9 +111,9 @@
               <BkUserSelector
                 v-else
                 v-model="formData.maintainers"
-                :api-base-url="featureFlagStore.apiBaseUrl"
+                :api-base-url="envStore.tenantUserDisplayAPI"
                 multiple
-                :tenant-id="userStore.info.tenant_id || ''"
+                :tenant-id="userStore.info.tenant_id"
               />
             </BkFormItem>
             <BkFormItem
