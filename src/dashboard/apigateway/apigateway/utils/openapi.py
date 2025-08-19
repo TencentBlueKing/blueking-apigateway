@@ -48,6 +48,8 @@ def generate_example(schema):
 
 
 def handle_object(schema):
+    if "properties" not in schema:
+        return {}
     example = {}
     for key, value in schema["properties"].items():
         example[key] = generate_example(value)
