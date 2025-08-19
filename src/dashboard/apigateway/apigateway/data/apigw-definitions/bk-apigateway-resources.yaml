@@ -859,7 +859,7 @@ paths:
         backend:
           name: default
           method: post
-          path: /api/v2/open/gateways/{gateway_name}/permissions/apply/
+          path: /backend/api/v2/open/gateways/{gateway_name}/permissions/apply/
           matchSubpath: false
           timeout: 0
         pluginConfigs: [ ]
