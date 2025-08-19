@@ -73,7 +73,7 @@
         />
         <aside class="edit-member-actions">
           <BkPopConfirm
-            v-if="!displayValue?.includes(userInfoStore.info.username)"
+            v-if="!displayValue?.includes(userInfoStore.info.username) && excludeSelfTips"
             width="288"
             :content="t('您已将自己从维护人员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！')"
             trigger="click"
@@ -135,6 +135,7 @@ interface IProps {
   isRequired?: boolean
   isErrorClass?: string
   errorValue?: string
+  excludeSelfTips?: boolean
 }
 
 const {
@@ -146,6 +147,7 @@ const {
   isRequired = true,
   isErrorClass = '',
   errorValue = '',
+  excludeSelfTips = true,
 } = defineProps<IProps>();
 
 const emit = defineEmits<{ 'on-change': [data: { [key: string]: string[] }] }>();
@@ -221,14 +223,13 @@ const handleChange = () => {
 
 const handleEnter = (event: any) => {
   if (!isEditable.value) return;
-  if (!displayValue.value?.includes(userInfoStore.info.username)) {
+  if (event.key !== 'Enter' || event.keyCode !== 13) return;
+  if (!displayValue.value?.includes(userInfoStore.info.username) && excludeSelfTips) {
     isShowError.value = true;
     errorTips.value = t('您已将自己从维护人员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！');
     return;
   }
-  if (event.key === 'Enter' && event.keyCode === 13) {
-    triggerChange();
-  }
+  triggerChange();
 };
 
 const triggerChange = () => {
