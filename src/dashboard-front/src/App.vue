@@ -232,7 +232,7 @@ async function getFlagList() {
     await featureFlagStore.fetchFlags();
     enableShowNotice.value = featureFlagStore.flags.ENABLE_BK_NOTICE;
     const isEnabledComManagement = featureFlagStore.flags?.MENU_ITEM_ESB_API
-      && !featureFlagStore.flags?.ENABLE_MULTI_TENANT_MODE;
+      && !featureFlagStore.flags?.ENABLE_DISPLAY_NAME_RENDER;
 
     featureFlagStore.setNoticeAlert(enableShowNotice.value && showNoticeAlert.value);
     featureFlagStore.setDisplayComManagement(isEnabledComManagement);

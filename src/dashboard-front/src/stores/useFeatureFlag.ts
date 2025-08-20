@@ -39,6 +39,7 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
       ENABLE_RUN_DATA: false,
       ENABLE_RUN_DATA_METRICS: false,
       ENABLE_SDK: false,
+      ENABLE_DISPLAY_NAME_RENDER: false,
       GATEWAY_APP_BINDING_ENABLED: false,
       MENU_ITEM_ESB_API: false,
       MENU_ITEM_ESB_API_DOC: false,
@@ -49,8 +50,8 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
   }),
   getters: {
     apiBaseUrl: () => import.meta.env.VITE_BK_USER_WEB_API_URL || '',
-    // 是否开启了多租户模
-    isTenantMode: state => !!state.flags?.ENABLE_MULTI_TENANT_MODE,
+    // 是否开启了多租户模式
+    isTenantMode: state => !!state.flags?.ENABLE_DISPLAY_NAME_RENDER,
     // 是否启用了 ai 问答功能
     isAIEnabled: state => state.flags?.ENABLE_AI_COMPLETION,
     // 是否开启了通知组件展示

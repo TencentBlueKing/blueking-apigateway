@@ -83,7 +83,7 @@
             </span>
           </main>
         </article>
-        <template v-if="featureFlagStore.flags.ENABLE_MULTI_TENANT_MODE">
+        <template v-if="featureFlagStore.isTenantMode">
           <article>
             <header class="content-title">
               {{ t('租户模式') }}
