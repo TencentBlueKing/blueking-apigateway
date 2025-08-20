@@ -57,6 +57,8 @@ def handle_object(schema):
 
 
 def handle_array(schema):
+    if "items" not in schema:
+        return []
     return [generate_example(schema["items"])]
 
 

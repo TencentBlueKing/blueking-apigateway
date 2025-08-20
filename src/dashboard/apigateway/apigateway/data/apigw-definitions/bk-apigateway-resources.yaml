@@ -1393,7 +1393,7 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: false
         descriptionEn: None
-  /api/v2/sync/gateways/{gateway_name}/resource_versions/latest:
+  /api/v2/sync/gateways/{gateway_name}/resource_versions/latest/:
     get:
       operationId: v2_sync_get_latest_resource_version
       description: 获取网关资源版本最新版本
@@ -1413,7 +1413,7 @@ paths:
         backend:
           name: default
           method: get
-          path: /backend/api/v2/sync/gateways/{gateway_name}/resource_versions/latest
+          path: /backend/api/v2/sync/gateways/{gateway_name}/resource_versions/latest/
           matchSubpath: false
           timeout: 0
         pluginConfigs: [ ]
