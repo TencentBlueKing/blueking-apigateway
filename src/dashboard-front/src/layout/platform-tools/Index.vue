@@ -60,7 +60,8 @@
           />
           {{ headerTitle }}
         </div>
-        <div :class="route.meta.customHeader ? 'custom-header-view' : 'default-header-view'">
+        <!-- <div  :class="route.meta.customHeader ? 'custom-header-view' : 'default-header-view'"> -->
+        <div :class="routerViewWrapperClass">
           <RouterView />
         </div>
       </div>
@@ -69,6 +70,7 @@
 </template>
 
 <script setup lang="ts">
+import { useFeatureFlag } from '@/stores';
 import AgIcon from '@/components/ag-icon/Index.vue';
 
 interface IMenu {
@@ -81,9 +83,10 @@ interface IMenu {
   hideInProgrammable?: boolean
 }
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const { t } = useI18n();
+const featureFlagStore = useFeatureFlag();
 
 const collapse = ref(true);
 const activeMenuKey = ref('');
@@ -107,6 +110,19 @@ const platformToolsMenu: IMenu[] = [
 const openedKeys = platformToolsMenu.map(e => e.name);
 // 页面header名
 const headerTitle = ref('');
+
+const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
+
+const routerViewWrapperClass = computed(() => {
+  const initClass = 'default-header-view';
+  if (route.meta.customHeader) {
+    return 'custom-header-view';
+  }
+  if (isShowNoticeAlert.value) {
+    return `${initClass} show-notice`;
+  }
+  return `${initClass}`;
+});
 
 // 监听当前路由
 watch(
@@ -284,12 +300,16 @@ const handleBack = () => {
       .default-header-view {
         height: calc(100vh - 105px);
         overflow: auto;
-      }
 
-      .custom-header-view {
-        height: 100%;
-        margin-top: 52px;
-        overflow: auto;
+        &.custom-header-view {
+          margin-top: 52px;
+          height: 100%;
+          overflow: auto;
+        }
+
+        &.show-notice {
+          height: calc(100vh - 145px);
+        }
       }
     }
   }
