@@ -188,16 +188,23 @@ const highlightJson = (value) => {
 
   .decode-section-wrapper {
     flex-grow: 1;
+    height: 100%;
+
+    .section-main {
+      max-height: calc(100% - 61px);
+      overflow-y: auto;
+    }
 
     .decode-error-message {
       color: #ff5656;
     }
   }
 }
-.w-330px {
-  width: 330px;
-}
-.w-160px {
-  width: 160px;
+
+.show-notice-wrapper {
+
+  .encoded-section-wrapper {
+    padding-bottom: 66px;
+  }
 }
 </style>

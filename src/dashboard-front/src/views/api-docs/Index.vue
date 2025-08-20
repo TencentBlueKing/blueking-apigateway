@@ -642,7 +642,7 @@ $primary-color: #3a84ff;
           }
 
           .components-wrap {
-            max-height: calc(100vh - 160px);
+            max-height: calc(100vh - 200px);
             padding-bottom: 16px;
             overflow-y: auto;
 

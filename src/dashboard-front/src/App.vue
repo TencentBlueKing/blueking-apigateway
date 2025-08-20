@@ -19,11 +19,15 @@
   <BkConfigProvider :locale="bkuiLocale">
     <div
       id="app"
-      :class="[systemCls]"
+      :class="[
+        systemCls,
+        { 'show-notice-wrapper': enableShowNotice && showNoticeAlert}
+      ]"
     >
       <NoticeComponent
-        v-if="enableShowNotice && showNoticeAlert"
+        v-if="enableShowNotice"
         :api-url="noticeApi"
+        @show-alert-change="handleShowAlertChange"
       />
       <BkNavigation
         class="navigation-content"
@@ -90,6 +94,7 @@ import En from '../node_modules/bkui-vue/dist/locale/en.esm.js';
 import ZhCn from '../node_modules/bkui-vue/dist/locale/zh-cn.esm.js';
 // @ts-expect-error missing module type
 import NoticeComponent from '@blueking/notice-component';
+
 import {
   useEnv,
   useFeatureFlag,
@@ -136,9 +141,9 @@ if (envStore.env.BK_ANALYSIS_SCRIPT_SRC) {
 const systemCls = ref('mac');
 const activeIndex = ref(0);
 const userLoaded = ref(false);
-const showNoticeAlert = ref(true);
+const showNoticeAlert = ref(false);
 const enableShowNotice = ref(false);
-const noticeApi = ref(`${window.BK_DASHBOARD_URL}/notice/announcements/`);
+const noticeApi = ref(`${envStore.env.BK_DASHBOARD_URL}/notice/announcements/`);
 const curLeavePageData = ref({});
 
 const bkuiLocale = computed(() => {
@@ -151,8 +156,6 @@ const bkuiLocale = computed(() => {
 const apigwId = computed(() => {
   return route.params.id;
 });
-
-const isShowNoticeAlert = computed(() => showNoticeAlert.value && enableShowNotice.value);
 
 const menuList: IHeaderNav[] = [
   {
@@ -210,8 +213,7 @@ watch(
       systemCls.value = 'win';
     }
     gateway.setApigwId(apigwId.value);
-    featureFlagStore.setNoticeAlert(isShowNoticeAlert.value);
-    userLoaded.value = true;
+    getFlagList();
   },
   {
     immediate: true,
@@ -224,19 +226,30 @@ watch(locale, () => {
   docTitle.value = t('API Gateway | 腾讯蓝鲸智云');
 }, { immediate: true });
 
+// flag需要是实时的，确保不同页面组件执行顺序需要监听下
+async function getFlagList() {
+  try {
+    await featureFlagStore.fetchFlags();
+    enableShowNotice.value = featureFlagStore.flags.ENABLE_BK_NOTICE;
+    const isEnabledComManagement = featureFlagStore.flags?.MENU_ITEM_ESB_API
+      && !featureFlagStore.flags?.ENABLE_MULTI_TENANT_MODE;
+
+    featureFlagStore.setNoticeAlert(enableShowNotice.value && showNoticeAlert.value);
+    featureFlagStore.setDisplayComManagement(isEnabledComManagement);
+
+    const comNav = menuList.find(item => ['ComponentsMain'].includes(item.url));
+    if (comNav) {
+      comNav.enabled = isEnabledComManagement;
+    }
+  }
+  finally {
+    userLoaded.value = true;
+  }
+}
+
 const init = async () => {
   await userInfoStore.fetchUserInfo();
   await envStore.fetchEnv();
-  await featureFlagStore.fetchFlags();
-  enableShowNotice.value = featureFlagStore.flags.ENABLE_BK_NOTICE;
-  const isEnabledComManagement = featureFlagStore.flags?.MENU_ITEM_ESB_API
-    && !featureFlagStore.flags?.ENABLE_MULTI_TENANT_MODE;
-  featureFlagStore.setNoticeAlert(showNoticeAlert.value && enableShowNotice.value);
-  featureFlagStore.setDisplayComManagement(isEnabledComManagement);
-  const comNav = menuList.find(item => ['ComponentsMain'].includes(item.url));
-  if (comNav) {
-    comNav.enabled = isEnabledComManagement;
-  }
 };
 init();
 
@@ -273,6 +286,11 @@ const handleNavClick = (url: string, index: number, link: string = '') => {
 
 const handleLogoClick = () => {
   router.replace({ name: 'Home' });
+};
+
+const handleShowAlertChange = (isShowNotice: boolean) => {
+  showNoticeAlert.value = isShowNotice;
+  featureFlagStore.setNoticeAlert(enableShowNotice.value && showNoticeAlert.value);
 };
 
 </script>
@@ -354,6 +372,29 @@ const handleLogoClick = () => {
 
         .container-content {
           overflow: hidden;
+        }
+      }
+    }
+
+    &.PlatformToolsToolbox-navigation-content {
+      :deep(.bk-navigation-wrapper) {
+
+        .container-content,
+        .default-header-view {
+          overflow: hidden;
+        }
+      }
+    }
+  }
+
+  &.show-notice-wrapper {
+
+    .Home-navigation-content {
+
+      :deep(.bk-navigation-wrapper) {
+
+        .container-content {
+          max-height: calc(100vh - 92px) !important;
         }
       }
     }

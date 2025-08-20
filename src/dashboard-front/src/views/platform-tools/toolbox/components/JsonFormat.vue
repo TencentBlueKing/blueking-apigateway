@@ -210,6 +210,7 @@ const highlightJson = (value: string) => {
     display: flex;
     flex-direction: column;
     padding-bottom: 58px;
+    overflow-y: auto;
 
     .decode-section-header {
       display: flex;
@@ -238,10 +239,15 @@ const highlightJson = (value: string) => {
     }
   }
 }
-.w-330px {
-  width: 330px;
-}
-.w-160px {
-  width: 160px;
+
+.show-notice-wrapper {
+
+  .encoded-section-wrapper {
+    padding-bottom: 66px;
+  }
+
+  .decode-section-wrapper {
+    padding-bottom: 98px;
+  }
 }
 </style>

@@ -118,6 +118,8 @@ const handleToolNavClick = (tool: ITool) => {
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
 
   .tool-nav-item {
     width: 288px;
