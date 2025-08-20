@@ -23,12 +23,14 @@
         <div
           v-if="!loading"
           class="status-indicator"
+          :style="{ top: !['doing'].includes(status) ? '9px' : '4px' }"
         >
           <Spinner
             v-if="status === 'doing'"
             style="font-size: 16px;color:#3a84f6;"
           />
           <div
+            v-else
             v-bk-tooltips="{
               content: getStatusText(status),
               disabled: !getStatusText(status),

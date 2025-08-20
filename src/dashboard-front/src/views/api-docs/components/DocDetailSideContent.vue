@@ -74,7 +74,7 @@
             {{ t('网关负责人') }}
           </header>
           <main class="content-main">
-            <span v-if="!featureFlagStore.isTenantMode">{{ basics.maintainers.join(', ') }}</span>
+            <span v-if="!featureFlagStore.isEnableDisplayName">{{ basics.maintainers.join(', ') }}</span>
             <span v-else>
               <bk-user-display-name
                 :user-id="basics.maintainers.join(', ')"
@@ -106,7 +106,7 @@
             {{ t('文档联系人') }}
           </header>
           <main class="content-main">
-            <span v-if="!featureFlagStore.isTenantMode">
+            <span v-if="!featureFlagStore.isEnableDisplayName">
               {{ basics.doc_maintainers?.type === 'user' ?
                 basics.doc_maintainers?.contacts.join(', ') :
                 basics.doc_maintainers?.service_account?.name }}

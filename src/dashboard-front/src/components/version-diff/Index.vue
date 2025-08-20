@@ -491,8 +491,8 @@ import { useGateway } from '@/stores';
 
 interface IProps {
   versionList?: IVersionItem[]
-  sourceId?: string
-  targetId?: string
+  sourceId?: number | string
+  targetId?: number | string
   sourceSwitch?: boolean
   targetSwitch?: boolean
   curDiffEnabled?: boolean
