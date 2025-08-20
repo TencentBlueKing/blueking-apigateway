@@ -180,7 +180,7 @@ const tableEmptyConfig = reactive({
 });
 
 const searchData = computed(() => {
-  const isTenantMode = userInfoStore.featureFlags?.ENABLE_MULTI_TENANT_MODE || false;
+  const isTenantMode = featureFlagStore.flags?.ENABLE_DISPLAY_NAME_RENDER || false;
   return [
     {
       name: t('模糊查询'),

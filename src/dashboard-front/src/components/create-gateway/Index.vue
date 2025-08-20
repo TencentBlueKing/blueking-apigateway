@@ -592,9 +592,9 @@ const handleCompare = (callback) => {
 };
 
 watch(
-  () => featureFlagStore.flags.ENABLE_MULTI_TENANT_MODE,
+  () => featureFlagStore.flags.ENABLE_DISPLAY_NAME_RENDER,
   () => {
-    if (featureFlagStore.flags.ENABLE_MULTI_TENANT_MODE) {
+    if (featureFlagStore.flags.ENABLE_DISPLAY_NAME_RENDER) {
       formData.value = Object.assign(formData.value, {
         tenant_id: userStore.info.tenant_id || 'system',
         tenant_mode: ['system'].includes(userStore.info.tenant_id) ? 'global' : 'single',
