@@ -18,7 +18,20 @@
 | -------- | -------- | ---- | ------------------------------------------------------------------- |
 | file     | object   | 是   | 资源文档的归档文件对象，请使用 multipart/form-data 类型传递文件内容 |
 
+### 请求参数示例
 
+`multipart/form-data` 类型，使用 python requests 示例：:
+
+```python
+import requests
+
+url = ""
+
+files = {
+    "file": open("resource_doc.tar.gz", "rb")
+}
+response = requests.post(url, files=files)
+```
 
 ### 响应示例
 
