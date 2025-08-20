@@ -63,13 +63,20 @@ interface IProps {
   columns?: PrimaryTableProps['columns']
   immediate?: boolean
   local?: boolean
+  frontendSearch?: boolean
 }
 
 const selectedRowKeys = defineModel<any[]>('selectedRowKeys', { default: () => [] });
 
 const tableData = defineModel<any[]>('tableData', { default: () => [] });
 
-const { source = undefined, columns = [], immediate = true, local = false } = defineProps<IProps>();
+const {
+  source = undefined,
+  columns = [],
+  immediate = true,
+  local = false,
+  frontendSearch = false,
+} = defineProps<IProps>();
 
 const emit = defineEmits<{ 'clear-queries': [void] }>();
 
@@ -126,7 +133,7 @@ const exceptionAttrs = computed(() => {
   delete queries.limit;
   delete queries.offset;
 
-  if (Object.keys(queries).length) {
+  if (Object.keys(queries).length || frontendSearch) {
     return {
       type: 'search-empty',
       title: t('搜索结果为空'),
