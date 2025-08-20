@@ -30,10 +30,20 @@
               <span class="member-item">
                 <BkPopover>
                   <div class="overflow-hidden text-ellipsis whitespace-nowrap">
-                    <bk-user-display-name :user-id="membersText" />
+                    <bk-user-display-name
+                      v-if="featureFlagStore.isEnableDisplayName"
+                      :user-id="membersText"
+                    />
+                    <template v-else>{{ membersText }}</template>
                   </div>
                   <template #content>
-                    <div><bk-user-display-name :user-id="membersText" /></div>
+                    <div>
+                      <bk-user-display-name
+                        v-if="featureFlagStore.isEnableDisplayName"
+                        :user-id="membersText"
+                      />
+                      <template v-else>{{ membersText }}</template>
+                    </div>
                   </template>
                 </BkPopover>
               </span>

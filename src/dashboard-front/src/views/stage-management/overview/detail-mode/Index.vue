@@ -100,7 +100,7 @@
                 {{ `${t('发布人')}：` }}
               </div>
               <div class="value">
-                <span v-if="!featureFlagStore.isTenantMode">{{ currentStage?.release.created_by || '--' }}</span>
+                <span v-if="!featureFlagStore.isEnableDisplayName">{{ currentStage?.release.created_by || '--' }}</span>
                 <span v-else><bk-user-display-name :user-id="currentStage?.release.created_by" /></span>
               </div>
             </div>
@@ -136,10 +136,10 @@
           <BkButton
             v-else
             v-bk-tooltips="{
-              content: getStageStatus(currentStage) === 'doing'
+              content: isPublishDisabled
                 ? t('当前有版本正在发布，请稍后再操作')
                 : (currentStage?.publish_validate_msg || '--'),
-              disabled: getStageStatus(currentStage) !== 'doing' && !currentStage?.publish_validate_msg
+              disabled: !isPublishDisabled
             }"
             theme="primary"
             class="mr-10px"
@@ -279,6 +279,7 @@
       :current-stage="currentStage"
       @hidden="handleReleaseSuccess"
       @release-success="handleReleaseSuccess"
+      @closed-on-publishing="handleClosedOnPublishing"
     />
   </div>
 </template>
@@ -286,26 +287,34 @@
 <script setup lang="ts">
 import { Message } from 'bkui-vue';
 import { getStageStatus } from '@/utils';
+import { getProgrammableStageDetail } from '@/services/source/programmable';
 import {
   type IStageListItem,
   deleteStage,
   getStageDetail,
+  getStageList,
   toggleStatus,
 } from '@/services/source/stage';
 import {
   useEnv,
   useFeatureFlag,
   useGateway,
+  useStage,
 } from '@/stores';
+import { usePopInfoBox } from '@/hooks';
+import { useTimeoutPoll } from '@vueuse/core';
 import ReleaseProgrammable from '../components/ReleaseProgrammable.vue';
 import CreateStage from '../components/CreateStage.vue';
 import ReleaseStage from '@/components/release-stage/Index.vue';
-import { usePopInfoBox } from '@/hooks';
 import ResourceInfo from './components/ResourceInfo.vue';
 import PluginManagement from './components/PluginManagement.vue';
 import VarManagement from './components/VarManagement.vue';
 
 interface IProps { stageId: number }
+
+interface ILocalStageItem extends IStageListItem { paasInfo?: IPaasInfo }
+
+type IPaasInfo = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
 
 const { stageId } = defineProps<IProps>();
 
@@ -317,6 +326,14 @@ const router = useRouter();
 const gatewayStore = useGateway();
 const envStore = useEnv();
 const featureFlagStore = useFeatureFlag();
+const stageStore = useStage();
+const {
+  pause: pausePollingStages,
+  resume: startPollingStages,
+} = useTimeoutPoll(fetchStageList, 3000, { immediate: false });
+
+const stageList = ref([]);
+const loadingProgrammableStageIds = ref<number[]>([]);
 // 当前环境信息
 const currentStage = ref<IStageListItem | null>(null);
 const releaseStageRef = ref();
@@ -358,6 +375,36 @@ const componentMap = {
 // 网关id
 const gatewayId = computed(() => Number(route.params.id));
 
+const publishStatus = computed(() => {
+  if (!currentStage.value) {
+    return '';
+  }
+  if (currentStage.value?.isProgrammableGateway) {
+    if (['doing', 'pending'].includes(currentStage.value?.paasInfo?.status)
+      || ['doing', 'pending'].includes(currentStage.value?.paasInfo?.latest_deployment?.status)) {
+      return 'doing';
+    }
+    // 未发布
+    if (currentStage.value?.status === 0 || currentStage.value?.release?.status === 'unreleased') {
+      return 'unreleased';
+    }
+    return currentStage.value?.paasInfo?.status
+      || currentStage.value?.paasInfo?.latest_deployment?.status
+      || currentStage.value?.release?.status
+      || '';
+  }
+  // 未发布
+  if (currentStage.value?.status === 0 || currentStage.value?.release?.status === 'unreleased') {
+    return 'unreleased';
+  }
+  return currentStage.value?.release?.status;
+});
+
+// 发布资源是否禁用
+const isPublishDisabled = computed(() => {
+  return ['doing', 'pending'].includes(publishStatus.value);
+});
+
 watch(
   () => stageId,
   async () => {
@@ -378,11 +425,86 @@ watch(
   { immediate: true },
 );
 
+// 监听轮询列表后，获取最新的列表数据
+watch(() => stageStore.stageList, (list: IStageListItem[]) => {
+  const curData = list.find(stage => stage.id === Number(stageId));
+  if (curData) {
+    currentStage.value = {
+      ...currentStage.value,
+      ...curData,
+    };
+    console.log('轮询列表', stageStore.stageList);
+  }
+}, { deep: true });
+
+watch(() => gatewayStore.currentGateway, () => {
+  pausePollingStages();
+  if (gatewayStore.currentGateway?.id) {
+    startPollingStages();
+  }
+}, {
+  immediate: true,
+  deep: true,
+});
+
+async function fetchStageList() {
+  const response = await getStageList(gatewayId.value);
+  stageList.value = response as ILocalStageItem[] || [];
+  if (stageList.value.length) {
+    // 获取可编程网关的 stage 详情
+    if (gatewayStore.isProgrammableGateway) {
+      const tasks: (ReturnType<typeof getProgrammableStageDetail> | Promise<undefined>)[] = [];
+      for (const stage of stageList.value) {
+        if (stage.publish_version) {
+          tasks.push(getProgrammableStageDetail(gatewayId.value, stage.id));
+          loadingProgrammableStageIds.value.push(stage.id);
+        }
+        else {
+          tasks.push(Promise.resolve(undefined));
+          const index = loadingProgrammableStageIds.value.findIndex(id => id === stage.id);
+          if (index !== -1) {
+            loadingProgrammableStageIds.value.splice(index, 1);
+          }
+        }
+      }
+
+      const taskList = await Promise.all(tasks);
+
+      for (let i = 0; i < stageList.value.length; i++) {
+        stageList.value[i].paasInfo = taskList[i];
+      }
+      loadingProgrammableStageIds.value = [];
+    }
+    // 所有环境都不是 doing 或 pending 状态时，暂停轮询
+    const isComplete = stageList.value.every((stage) => {
+      const publishStatus = stage?.paasInfo?.latest_deployment?.status
+        || stage?.paasInfo?.status || stage?.release?.status;
+      return !['doing', 'pending'].includes(publishStatus);
+    });
+    if (isComplete) {
+      pausePollingStages();
+      // 轮询结束后重新调用列表
+      stageList.value = await getStageList(gatewayId.value);
+      stageStore.setStageList(stageList.value);
+      // 列表轮询任务队列完成后抛出事件变更信息
+      emit('updated');
+    }
+  }
+};
+
+// 轮询stage列表发布状态
+const setPollingStatus = async () => {
+  // 首先先抛出事件发通知，进行第一次doing状态变更
+  emit('updated');
+  stageList.value = await getStageList(gatewayId.value);
+  startPollingStages();
+};
+
 // 发布成功，重新请求环境详情
 const handleReleaseSuccess = async () => {
+  pausePollingStages();
   currentStage.value = await getStageDetail(gatewayId.value, stageId);
-  // await mitt.emit('rerun-init');
-  emit('updated');
+  setPollingStatus();
   tabComponentRefs.value?.forEach((component: InstanceType<typeof ResourceInfo>) => {
     component.reload?.();
   });
@@ -391,8 +513,12 @@ const handleReleaseSuccess = async () => {
 // 处理在版本还在发布时关闭抽屉的情况（刷新 stage 状态）
 const handleClosedOnPublishing = async () => {
   // mitt.emit('rerun-init');
-  emit('updated');
+  pausePollingStages();
   currentStage.value = await getStageDetail(gatewayId.value, stageId);
+  setPollingStatus();
+  tabComponentRefs.value?.forEach((component: InstanceType<typeof ResourceInfo>) => {
+    component.reload?.();
+  });
 };
 
 // 选项卡切换
@@ -498,6 +624,7 @@ const handleEditStage = () => {
 
 const handleCreateStageDone = async () => {
   currentStage.value = await getStageDetail(gatewayId.value, stageId);
+  setPollingStatus();
 };
 
 // 访问地址

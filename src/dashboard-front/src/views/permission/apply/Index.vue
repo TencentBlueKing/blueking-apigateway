@@ -451,7 +451,7 @@ const setTableHeader = () => {
       field: 'applied_by',
       label: t('申请人'),
       render: ({ row }: { row?: Partial<IApprovalListItem> }) =>
-        !featureFlagStore.isTenantMode
+        !featureFlagStore.isEnableDisplayName
           ? <span>{row.applied_by}</span>
           : <span><bk-user-display-name user-id={row.applied_by} /></span>,
     },

@@ -92,7 +92,7 @@
                   class="mx-5px"
                   name="edit-line"
                   size="15"
-                  @click.stop="() => handleEditePlugin(slotProps)"
+                  @click.stop="() => handleEditPlugin(slotProps)"
                 />
                 <AgIcon
                   v-bk-tooltips="{
@@ -598,7 +598,7 @@ const handleClearFilterKey = () => {
 };
 
 // 编辑插件
-const handleEditePlugin = async (item: any) => {
+const handleEditPlugin = async (item: any) => {
   if (getStageStatus(stageData.value) === 'doing') {
     return;
   }

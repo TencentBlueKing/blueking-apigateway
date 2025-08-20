@@ -106,19 +106,19 @@
               {{ t('负责人') }}：
             </div>
             <div class="value">
-              <EditMember
-                v-if="!featureFlagStore.isTenantMode"
-                mode="detail"
-                width="600px"
-                field="maintainers"
-                :content="mcpDetails?.maintainers"
-              />
               <TenantUserSelector
-                v-else
+                v-if="featureFlagStore.isEnableDisplayName"
                 :content="mcpDetails?.maintainers"
                 field="maintainers"
                 mode="detail"
                 width="600px"
+              />
+              <EditMember
+                v-else
+                mode="detail"
+                width="600px"
+                field="maintainers"
+                :content="mcpDetails?.maintainers"
               />
             </div>
           </div>

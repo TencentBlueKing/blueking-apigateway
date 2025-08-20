@@ -41,7 +41,7 @@
         </BkFormItem>
         <BkFormItem class="ag-form-item-search">
           <BkSearchSelect
-            v-if="!userInfoStore.isTenantMode"
+            v-if="!featureFlagStore.isTenantMode"
             v-model="searchValue"
             style="width: 100%"
             unique-select
@@ -180,7 +180,7 @@ const tableEmptyConfig = reactive({
 });
 
 const searchData = computed(() => {
-  const isTenantMode = featureFlagStore.flags?.ENABLE_DISPLAY_NAME_RENDER || false;
+  const isTenantMode = featureFlagStore.flags?.ENABLE_MULTI_TENANT_MODE || false;
   return [
     {
       name: t('模糊查询'),
@@ -342,7 +342,7 @@ const formatDatetime = (timeRange: number[]) => {
 
 const setSearchTimeRange = () => {
   // 选择了同一天，则需要把开始时间的时分秒设置为 00:00:00
-  if (dayjs(dateTimeRange.value[0]).isSame(dateTimeRange.value[1])) {
+  if (dateTimeRange.value.length > 0 && dayjs(dateTimeRange.value[0]).isSame(dateTimeRange.value[1])) {
     dateTimeRange.value[0].setHours(0, 0, 0);
   }
   let timeRange = dateTimeRange.value;
@@ -421,7 +421,7 @@ const getTableColumns = () => {
       label: t('操作人'),
       field: 'username',
       render: ({ row }: { row: IAuditLog }) =>
-        !featureFlagStore.isTenantMode
+        !featureFlagStore.isEnableDisplayName
           ? <span>{row.username}</span>
           : <span><bk-user-display-name user-id={row.username} /></span>,
     },
@@ -479,12 +479,12 @@ const refreshTableData = async () => {
 };
 
 const getMenuList = async (item: { id: string }, keyword: string) => {
-  if (!userInfoStore.isTenantMode) {
+  if (!featureFlagStore.isTenantMode) {
     return undefined;
   }
 
-  if (item.id === 'username' && keyword) {
-    const list = await getTenantUsers({ keyword }, userInfoStore.userInfoStore.tenant_id) as {
+  if (item.id === 'username' && keyword && featureFlagStore.isEnableDisplayName) {
+    const list = await getTenantUsers({ keyword }, userInfoStore.info.tenant_id) as {
       bk_username: string
       display_name: string
     }[];

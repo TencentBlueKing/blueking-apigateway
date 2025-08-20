@@ -143,7 +143,7 @@ const activeIndex = ref(0);
 const userLoaded = ref(false);
 const showNoticeAlert = ref(false);
 const enableShowNotice = ref(false);
-const noticeApi = ref(`${envStore.env.BK_DASHBOARD_URL}/notice/announcements/`);
+const noticeApi = ref(`${envStore.env.BK_DASHBOARD_URL}/backend/notice/announcements/`);
 const curLeavePageData = ref({});
 
 const bkuiLocale = computed(() => {
@@ -232,7 +232,7 @@ async function getFlagList() {
     await featureFlagStore.fetchFlags();
     enableShowNotice.value = featureFlagStore.flags.ENABLE_BK_NOTICE;
     const isEnabledComManagement = featureFlagStore.flags?.MENU_ITEM_ESB_API
-      && !featureFlagStore.flags?.ENABLE_DISPLAY_NAME_RENDER;
+      && !featureFlagStore.flags?.ENABLE_MULTI_TENANT_MODE;
 
     featureFlagStore.setNoticeAlert(enableShowNotice.value && showNoticeAlert.value);
     featureFlagStore.setDisplayComManagement(isEnabledComManagement);

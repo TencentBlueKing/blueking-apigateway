@@ -100,24 +100,21 @@
 import { type IStageListItem, getStageList } from '@/services/source/stage';
 import { Spinner } from 'bkui-vue/lib/icon';
 import { getStageStatus } from '@/utils';
-import { useGateway } from '@/stores';
-import { useRouteParams } from '@vueuse/router';
+import { useGateway, useStage } from '@/stores';
 import CreateStage from '@/views/stage-management/overview/components/CreateStage.vue';
 
-interface IProps { stageId: number }
+interface IProps { stageId: number | string }
 
 const mode = defineModel<string>('mode', { default: 'card-mode' });
-
 const { stageId } = defineProps<IProps>();
 
 const emit = defineEmits<{ 'change-stage': [stageId: number] }>();
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
+const stageStore = useStage();
 
-const gatewayId = useRouteParams('id', 0, { transform: Number });
 const stageList = ref<IStageListItem[]>([]);
-
 const prevDisabled = ref(false);
 const nextDisabled = ref(true);
 
@@ -163,6 +160,8 @@ const modeList = [
   },
 ];
 
+const gatewayId = computed(() => gatewayStore.apigwId);
+
 // 监听环境列表是否变化，更新对应DOM数据
 watch(stageList, async () => {
   await nextTick(() => {
@@ -190,7 +189,7 @@ const switchMode = (item: typeof modeList[number]) => {
 
 // 切换环境
 const handleChangeStage = async (stage: IStageListItem) => {
-  curStage.value = stage;
+  setStageInfo(stage);
   emit('change-stage', stage.id);
 };
 
@@ -260,10 +259,20 @@ const handleCreateDone = async () => {
   }
 };
 
+const setStageInfo = (stage) => {
+  curStage.value = stage;
+  stageStore.curStageData = curStage.value;
+  stageStore.curStageId = curStage.value.id;
+  stageStore.setStageList(stageList.value);
+};
+
 onMounted(() => {
   setTimeout(async () => {
     stageList.value = await getStageList(gatewayId.value);
-    emit('change-stage', stageList.value[0].id);
+    if (stageList.value?.length) {
+      setStageInfo(stageList.value[0]);
+      emit('change-stage', curStage.value.id);
+    }
   });
 });
 

@@ -255,7 +255,7 @@
                 {{ `${t('创建人')}：` }}
               </div>
               <div class="value">
-                <span v-if="!featureFlagStore.isTenantMode">{{ basicInfoData.created_by }}</span>
+                <span v-if="!featureFlagStore.isEnableDisplayName">{{ basicInfoData.created_by }}</span>
                 <span v-else><bk-user-display-name :user-id="basicInfoData.created_by" /></span>
               </div>
             </div>
@@ -307,7 +307,7 @@
               <div class="value contact">
                 <span>
                   <EditMember
-                    v-if="!featureFlagStore.isTenantMode"
+                    v-if="!featureFlagStore.isEnableDisplayName"
                     mode="detail"
                     width="600px"
                     field="contacts"
