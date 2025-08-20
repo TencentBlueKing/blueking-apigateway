@@ -28,10 +28,7 @@
           <slot>
             <template v-if="membersText">
               <span class="member-item">
-                <BkPopover
-                  :component-event-delay="300"
-                  :width="480"
-                >
+                <BkPopover>
                   <div class="overflow-hidden text-ellipsis whitespace-nowrap">
                     <bk-user-display-name :user-id="membersText" />
                   </div>
