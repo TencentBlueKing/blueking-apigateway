@@ -499,7 +499,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
         )
         page = self.paginate_queryset(versions)
         slz = ResourceVersionListOutputSLZ(page, many=True)
-        return OKJsonResponse(data=self.paginator.get_paginated_data(slz.data))
+        return OKJsonResponse(data=slz.data)
 
     @transaction.atomic
     def create(self, request, gateway_name: str, *args, **kwargs):
@@ -563,7 +563,6 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
     permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
     serializer_class = ReleaseInputSLZ
 
-    @swagger_auto_schema(tags=["OpenAPI.V1"])
     @transaction.atomic
     def post(self, request, gateway_name: str, *args, **kwargs):
         slz = self.get_serializer(data=request.data, context={"request": request})
