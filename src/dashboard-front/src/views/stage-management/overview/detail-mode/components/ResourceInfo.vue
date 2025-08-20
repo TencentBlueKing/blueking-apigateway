@@ -41,6 +41,7 @@
         :columns="columns"
         row-key="id"
         :filter-row="null"
+        :frontend-search="isSearching"
         hover
         local
         @filter-change="handleFilterChange"
@@ -111,6 +112,8 @@ const initTableData = ref<any[]>([]);
 const stageList = ref<IStageListItem[]>([]);
 
 const gatewayId = computed<number>(() => gatewayStore.apigwId);
+
+const isSearching = computed(() => !!filterValue.value.keyword);
 
 const customMethodsList = computed(() => {
   const methods = HTTP_METHODS.map(item => ({

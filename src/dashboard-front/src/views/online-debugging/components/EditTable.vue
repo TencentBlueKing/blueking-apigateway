@@ -62,6 +62,7 @@
               v-model="row.name"
               class="edit-select"
               allow-create
+              filterable
               @change="() => handleNameChange(index, row.name)"
               @blur="() => handleHeaderKeySelectBlur(row, `name-input-`, index, column?.index)"
               @select="(value: string) => handleHeaderKeySelect(row, value)"
