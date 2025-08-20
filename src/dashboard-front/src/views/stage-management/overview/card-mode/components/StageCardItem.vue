@@ -76,7 +76,9 @@
             >
               <BkBadge
                 v-if="!gatewayStore.isProgrammableGateway && stage.new_resource_version"
-                v-bk-tooltips="{ content: `有新版本 ${stage.new_resource_version || '--'} 可以发布` }"
+                v-bk-tooltips="{
+                  content: t('有新版本 {version} 可以发布', { version: stage.new_resource_version || '--'}),
+                }"
                 :count="999"
                 dot
                 position="top-right"
@@ -90,9 +92,9 @@
                 v-if="status === 'failure'"
                 class="suffix"
                 :class="[status]"
-              >（{{
-                stage.paasInfo?.latest_deployment?.version || stage.paasInfo?.version || '--'
-              }} 版本发布失败，<span><BkButton
+              >{{ t('（{version} 版本发布失败，', {
+                version: stage.paasInfo?.latest_deployment?.version || stage.paasInfo?.version || '--'
+              }) }}<span><BkButton
                 text
                 theme="primary"
                 @click.stop="handleCheckLog"
@@ -107,7 +109,7 @@
                 class="font-bold"
               >{{
                 stage.paasInfo?.latest_deployment?.version || stage.publish_version || '--'
-              }}</span> 版本正在发布中，<span><BkButton
+              }}</span>{{ t('版本正在发布中，') }}<span><BkButton
                 text
                 theme="primary"
                 @click.stop="handleCheckLog"
@@ -119,9 +121,9 @@
                 v-else
                 v-bk-tooltips="`于 ${stage.release.created_time || '--'} 发布成功`"
                 class="suffix"
-              >（于 {{
-                stage.release.created_time || '--'
-              }} 发布成功）</span>
+              >{{ t('（于 {time} 发布成功）', {
+                time: stage.release.created_time || '--'
+              }) }}</span>
             </div>
           </div>
         </div>

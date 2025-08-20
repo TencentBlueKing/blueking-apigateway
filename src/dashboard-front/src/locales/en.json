@@ -1940,5 +1940,13 @@
   "参数错误。": "Parameter error.",
   "请检查提交的内容是否正确。": "Please check if the submitted content is correct.",
   "没有权限。": "No permission.",
-  "您没有执行该操作的权限。": "You do not have permission to perform this operation."
+  "您没有执行该操作的权限。": "You do not have permission to perform this operation.",
+  "有新版本 {version} 可以发布": "Has version {version} to publish",
+  "（{version} 版本发布失败，": "(version {version} publish failed, )",
+  "版本正在发布中，": "version is being published, ",
+  "（于 {time} 发布成功）": "(successfully published at {time})",
+  "下架成功": "Pulled down successfully",
+  "prod 环境不可删除": "prod stage cannot be deleted",
+  "尚未发布，不可下架": "Cannot be pulled down before release",
+  "新建 {0} 条，更新 {1} 条，删除 {2} 条": "Created {0}, Updated {1}, Deleted {2} records"
 }
