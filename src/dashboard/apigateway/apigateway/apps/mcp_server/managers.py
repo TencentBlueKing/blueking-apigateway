@@ -25,14 +25,18 @@ from apigateway.apps.permission.utils import calculate_renew_time
 
 class MCPServerAppPermissionManager(models.Manager):
     def save_permission(self, mcp_server_id: int, bk_app_code: str, grant_type: str, expire_days=None):
-        self.update_or_create(
+        instance, created = self.get_or_create(
             mcp_server_id=mcp_server_id,
             bk_app_code=bk_app_code,
-            grant_type=grant_type,
             defaults={
+                "grant_type": grant_type,
                 "expires": calculate_renew_time(expire_days),
             },
         )
+
+        if not created:
+            instance.expires = calculate_renew_time(expire_days)
+            instance.save(update_fields=["expires"])
 
 
 class MCPServerAppPermissionApplyManager(models.Manager):
