@@ -565,11 +565,12 @@ $primary-color: #3a84ff;
 
       .page-tab {
         display: flex;
-        width: 135px;
         height: 52px;
+        min-width: 135px;
         cursor: pointer;
         justify-content: center;
         align-items: center;
+        padding-inline: 6px;
 
         &:hover {
           color: #3a84ff;

@@ -21,12 +21,14 @@
       <div class="m-b-16px flex items-center justify-between ag-table-header">
         <p class="ag-table-change">
           {{ t('请确认以下组件对应网关资源的变更：') }}
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <span v-dompurify-html="addInfo" />
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <span v-dompurify-html="updateInfo" />
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <span v-dompurify-html="deleteInfo" />
+          <i18n-t
+            keypath="新建 {0} 条，更新 {1} 条，删除 {2} 条"
+            tag="span"
+          >
+            <strong style="color: #2DCB56;">{{ createNum }}</strong>
+            <strong style="color: #ffb400;">{{ updateNum }}</strong>
+            <strong style="color: #EA3536;">{{ deleteNum }}</strong>
+          </i18n-t>
         </p>
         <BkInput
           v-model="pathUrl"
@@ -263,9 +265,7 @@ const deleteNum = computed(() => {
   const results = allData.value?.filter(item => item?.resource_id && !item?.component_path);
   return results?.length;
 });
-const addInfo = computed(() => t('新建 <strong style="color: #2DCB56;"> {createNum} </strong> 条，', { createNum: createNum.value }));
-const updateInfo = computed(() => t('更新 <strong style="color: #ffb400;"> {updateNum} </strong> 条，', { updateNum: updateNum.value }));
-const deleteInfo = computed(() => t('删除 <strong style="color: #EA3536;"> {deleteNum} </strong> 条', { deleteNum: deleteNum.value }));
+
 const confirmIsLoading = computed(() => isLoading.value);
 
 const getDataByPage = (page?: number) => {
@@ -391,6 +391,7 @@ watch(
 
 <style lang="scss" scoped>
 .apigw-access-manager-wrapper {
+
   .ag-table-header {
     font-size: 14px;
 
@@ -415,7 +416,9 @@ watch(
 
 <style lang="scss">
 .import-resource-popconfirm-wrapper.bk-popover {
+
   .bk-pop-confirm {
+
     .bk-pop-confirm-footer {
       margin-right: 48px;
     }

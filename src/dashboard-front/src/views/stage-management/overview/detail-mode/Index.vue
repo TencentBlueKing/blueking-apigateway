@@ -459,7 +459,7 @@ const handleStageDelete = async () => {
   showDropdown.value = false;
   if (currentStage.value!.name === 'prod') {
     return Message({
-      message: t('prod环境不可删除'),
+      message: t('prod 环境不可删除'),
       theme: 'warning',
     });
   }

@@ -701,12 +701,12 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     },
     {
       colKey: 'backend.name',
-      title: '后端服务',
+      title: t('后端服务'),
       width: 130,
     },
     {
       colKey: 'method',
-      title: '前端请求方法',
+      title: t('前端请求方法'),
       width: 130,
       cell: (h, { row }) => (
         <bk-tag theme={METHOD_THEMES[row.method as keyof typeof METHOD_THEMES]}>
@@ -722,13 +722,13 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     },
     {
       colKey: 'path',
-      title: '前端请求路径',
+      title: t('前端请求路径'),
       minWidth: 250,
       ellipsis: true,
     },
     {
       colKey: 'plugin_count',
-      title: '插件数',
+      title: t('插件数'),
       width: 80,
       cell: (h, { row }) => (
         <bk-button
@@ -1589,6 +1589,7 @@ onMounted(() => {
 .h-100px {
   height: 100%;
 }
+
 .table-wrapper {
   overflow-y: auto;
 }

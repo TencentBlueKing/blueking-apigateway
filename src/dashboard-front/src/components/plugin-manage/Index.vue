@@ -197,7 +197,7 @@
                   <div class="binding">
                     <ul class="binding-list">
                       <li>
-                        {{ t('版本：') }}<span>{{ t('V1.0.0') }}</span>
+                        {{ t('版本：') }}<span>V1.0.0</span>
                       </li>
                       <li>
                         {{ t('已绑环境：') }}

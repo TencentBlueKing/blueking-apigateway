@@ -658,7 +658,7 @@ const handleExport = async () => {
   try {
     await exportPermissionList(apigwId.value, exportParams.value);
     Message({
-      message: t('导出成功！'),
+      message: t('导出成功'),
       theme: 'success',
     });
   }

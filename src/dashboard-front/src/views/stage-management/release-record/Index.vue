@@ -160,9 +160,9 @@ const publishSourceEnum = {
   backend_update: t('服务更新'),
 };
 const publishStatusEnum = {
-  success: '执行成功',
-  failure: '执行失败',
-  doing: '执行中',
+  success: t('执行成功'),
+  failure: t('执行失败'),
+  doing: t('执行中'),
 };
 
 const historyId = ref<number>();
