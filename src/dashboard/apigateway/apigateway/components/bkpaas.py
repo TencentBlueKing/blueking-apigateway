@@ -483,12 +483,12 @@ def get_paas_repo_branch_info(app_code: str, module: str, user_credentials: Opti
     }
 
 
-def update_app_maintainers(app_code: str, maintainers: List[str]):
+def update_app_maintainers(app_code: str, maintainers: List[str], user_credentials: Optional[UserCredentials] = None):
     """
     更新 paas 的 app 成员
     """
     url = url_join(get_paas3_url_prefix(), f"/sys/shim/plugins_center/bk_plugins/{app_code}/members/")
-    headers = gen_gateway_headers()
+    headers = gen_gateway_headers(user_credentials=user_credentials)
 
     data = [
         {
