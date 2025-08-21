@@ -242,13 +242,17 @@ defineExpose({
   }
 
   .bk-exception-title {
-    margin-top: 8px;
-    font-size: 12px;
-    color: #979ba5;
+    margin-top: 0;
+    font-size: 14px;
+    color: #63656e;
+    margin-bottom: 5px;
+    line-height: 22px;
   }
 
   .bk-exception-footer {
-    margin-top: 8px;
+    line-height: 18px;
+    color: #979ba5;
+    margin-top: 5px;
     font-size: 12px;
   }
 }
