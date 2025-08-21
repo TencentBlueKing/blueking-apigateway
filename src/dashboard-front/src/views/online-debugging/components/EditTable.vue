@@ -64,6 +64,7 @@
               allow-create
               filterable
               @change="() => handleNameChange(index, row.name)"
+              @input="() => handleHeaderKeySelectBlur(row, `name-input-`, index, column?.index)"
               @blur="() => handleHeaderKeySelectBlur(row, `name-input-`, index, column?.index)"
               @select="(value: string) => handleHeaderKeySelect(row, value)"
             >
@@ -430,15 +431,20 @@ watch(
 
 // Headers 选择器失焦后，去获取用户手动输入的值
 const handleHeaderKeySelectBlur = (row: IRowType, inputRefNamePrefix: string, index: number, columnIndex: number) => {
-  if (inputRefNamePrefix && index !== undefined && columnIndex !== undefined) {
-    const selectRef = formInputRef.value.get(`${inputRefNamePrefix}${index}-${columnIndex}`);
-    if (!selectRef?.curSearchValue) {
-      selectRef?.handleClear();
-      row.name = '';
+  try {
+    if (inputRefNamePrefix && index !== undefined && columnIndex !== undefined) {
+      const selectRef = formInputRef.value.get(`${inputRefNamePrefix}${index}-${columnIndex}`);
+      if (!selectRef?.curSearchValue) {
+        row.name = '';
+        selectRef?.handleClear();
+      }
+      else {
+        row.name = selectRef?.curSearchValue || '';
+      }
     }
-    else {
-      row.name = selectRef?.curSearchValue || '';
-    }
+  }
+  catch (error) {
+    console.log(error);
   }
 };
 

@@ -61,6 +61,7 @@
         :min="resizeLayoutConfig.min"
         :max="resizeLayoutConfig.max"
         :initial-divide="resizeLayoutConfig.max"
+        class="resource-setting-layout"
         @collapse-change="handleCollapseChange"
       >
         <template #main>
@@ -261,7 +262,7 @@
                       :cur-resource="curResource"
                       :resource-id="resourceId"
                       doc-root-class="doc-tab"
-                      height="calc(100vh - 348px)"
+                      class="resource-detail"
                       @done="isComponentLoading = false"
                       @deleted-success="handleDeleteSuccess"
                       @on-jump="(id: number | any) => handleShowInfo(id)"
@@ -1591,6 +1592,17 @@ onMounted(() => {
 }
 
 .table-wrapper {
+  overflow-y: auto;
+}
+
+.resource-setting-layout {
+  :deep(.bk-resize-layout-aside-content) {
+    background-color: #fff;
+  }
+}
+
+.resource-detail {
+  max-height: calc(100vh - 165px);
   overflow-y: auto;
 }
 </style>
