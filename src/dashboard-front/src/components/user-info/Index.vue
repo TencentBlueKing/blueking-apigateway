@@ -19,11 +19,12 @@
 <script setup lang="ts">
 import { AngleDownLine } from 'bkui-vue/lib/icon';
 import { getLoginURL } from '@/utils';
-import { useEnv, useUserInfo } from '@/stores';
+import { useEnv, useFeatureFlag, useUserInfo } from '@/stores';
 
 const { t } = useI18n();
 const userInfoStore = useUserInfo();
 const envStore = useEnv();
+const featureFlagStore = useFeatureFlag();
 
 const handleLogout = () => {
   location.href = getLoginURL(envStore.env.BK_LOGIN_URL, location.origin, 'small');
@@ -39,7 +40,12 @@ const handleLogout = () => {
     disable-outside-click
   >
     <div class="user-name">
-      {{ userInfoStore.info.display_name || userInfoStore.info.username }}
+      <template v-if="!featureFlagStore.isEnableDisplayName">
+        {{ userInfoStore?.info?.username }}
+      </template>
+      <template v-else>
+        <bk-user-display-name :user-id="userInfoStore?.info?.display_name" />
+      </template>
       <AngleDownLine class="pl-5px" />
     </div>
     <template #content>

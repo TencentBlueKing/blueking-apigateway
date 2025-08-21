@@ -138,7 +138,7 @@
                     --
                   </span>
                   <template v-else>
-                    <span v-if="!featureFlagStore.isTenantMode">{{ row.maintainers.join(', ') }}</span>
+                    <span v-if="!featureFlagStore.isEnableDisplayName">{{ row.maintainers.join(', ') }}</span>
                     <template v-else>
                       <span
                         v-for="(maintainer, index) in row.maintainers"

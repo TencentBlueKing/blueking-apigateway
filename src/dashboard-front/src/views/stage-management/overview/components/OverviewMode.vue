@@ -258,6 +258,7 @@ const handleRelease = async (stage: IStageListItem) => {
 // 发布成功
 const handleReleaseSuccess = () => {
   // await mitt.emit('get-environment-list-data', loading);
+  emit('updated');
   fetchStageList();
 };
 

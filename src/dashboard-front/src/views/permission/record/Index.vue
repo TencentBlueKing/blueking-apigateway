@@ -139,7 +139,7 @@
                 {{ t("申请人：") }}
               </div>
               <div class="value">
-                <span v-if="!featureFlagStore.isTenantMode">{{ curRecord.applied_by }}</span>
+                <span v-if="!featureFlagStore.isEnableDisplayName">{{ curRecord.applied_by }}</span>
                 <span v-else><bk-user-display-name :user-id="curRecord.applied_by" /></span>
               </div>
             </div>
@@ -180,7 +180,7 @@
                 {{ t("审批人：") }}
               </div>
               <div class="value">
-                <span v-if="!featureFlagStore.isTenantMode">{{ curRecord.handled_by }}</span>
+                <span v-if="!featureFlagStore.isEnableDisplayName">{{ curRecord.handled_by }}</span>
                 <span v-else><bk-user-display-name :user-id="curRecord.handled_by" /></span>
               </div>
             </div>
@@ -427,7 +427,7 @@ const setTableHeader = () => {
       field: 'applied_by',
       label: t('申请人'),
       render: ({ row }: { row: Partial<IApprovalListItem> }) =>
-        !featureFlagStore.isTenantMode
+        !featureFlagStore.isEnableDisplayName
           ? <span>{row.applied_by}</span>
           : <span><bk-user-display-name user-id={row.applied_by} /></span>,
     },
@@ -439,7 +439,7 @@ const setTableHeader = () => {
       field: 'handled_by',
       label: t('审批人'),
       render: ({ row }: { row: Partial<IApprovalListItem> }) =>
-        !featureFlagStore.isTenantMode
+        !featureFlagStore.isEnableDisplayName
           ? <span>{row.handled_by}</span>
           : <span><bk-user-display-name user-id={row.handled_by} /></span>,
     },

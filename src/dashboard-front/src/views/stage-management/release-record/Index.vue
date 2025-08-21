@@ -29,6 +29,7 @@
           clearable
           class="w-500px!"
           type="datetimerange"
+          :placeholder="t('选择日期时间范围')"
           :shortcut-selected-index="shortcutSelectedIndex"
           @change="handleChange"
           @clear="handleClear"
@@ -220,7 +221,7 @@ const columns = computed(() =>
         render: ({ row }: any) => (
           <div>
             {
-              !featureFlagStore.isTenantMode
+              !featureFlagStore.isEnableDisplayName
                 ? (
                   <EditMember
                     mode="detail"
@@ -293,7 +294,7 @@ const columns = computed(() =>
         render: ({ row }: any) => (
           <div>
             {
-              !featureFlagStore.isTenantMode
+              !featureFlagStore.isEnableDisplayName
                 ? (
                   <EditMember
                     mode="detail"

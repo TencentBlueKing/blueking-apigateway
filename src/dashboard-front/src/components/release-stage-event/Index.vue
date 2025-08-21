@@ -82,6 +82,7 @@ import dayjs from 'dayjs';
 import { getReleaseEvents } from '@/services/source/release';
 import AgEditor from '@/components/ag-editor/Index.vue';
 import { Spinner } from 'bkui-vue/lib/icon';
+import { useStage } from '@/stores';
 
 interface IStep {
   name?: string
@@ -107,8 +108,9 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-
 const route = useRoute();
+const stageStore = useStage();
+
 const apigwId = computed(() => +route.params?.id);
 
 const isShow = ref(false);
@@ -127,9 +129,11 @@ watch(
   () => {
     if (!isShow.value && logDetails.value?.status === 'success') {
       emit('release-success');
+      stageStore.setDoing(false);
     }
     if (!isShow.value && logDetails.value?.status !== 'success') {
       emit('release-doing');
+      stageStore.setDoing(true);
     }
     if (!isShow.value) {
       clearInterval(timeId);

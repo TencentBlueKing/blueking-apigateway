@@ -130,19 +130,19 @@
               prop="applied_by"
             >
               <template #default="{ row }">
-                <EditMember
-                  v-if="!featureFlagStore.isTenantMode"
-                  mode="detail"
-                  width="600px"
-                  field="applied_by"
-                  :content="row?.applied_by"
-                />
                 <TenantUserSelector
-                  v-else
+                  v-if="featureFlagStore.isEnableDisplayName"
                   :content="row?.applied_by"
                   field="applied_by"
                   mode="detail"
                   width="600px"
+                />
+                <EditMember
+                  v-else
+                  mode="detail"
+                  width="600px"
+                  field="applied_by"
+                  :content="row?.applied_by"
                 />
               </template>
             </BkTableColumn>
