@@ -197,6 +197,7 @@ const handleEdit = () => {
   nextTick(() => {
     memberSelectorRef.value?.tagInputRef?.focusInputTrigger();
   });
+  console.log(displayValue.value);
 };
 
 const handleSubmit = () => {
@@ -210,22 +211,24 @@ const handleCancel = () => {
 };
 
 const handleChange = () => {
+  isShowError.value = !displayValue.value.length;
   if (isRequired && !displayValue.value.length) {
-    isShowError.value = true;
     errorTips.value = errorValue;
+    emit('on-change', { [field]: displayValue.value });
     return;
   }
   isEditable.value = true;
   nextTick(() => {
     memberSelectorRef.value?.tagInputRef?.focusInputTrigger();
   });
+  emit('on-change', { [field]: displayValue.value });
 };
 
-const handleEnter = (event: any) => {
+const handleEnter = (event: MouseEvent) => {
+  isShowError.value = !displayValue.value.length;
   if (!isEditable.value) return;
   if (event.key !== 'Enter' || event.keyCode !== 13) return;
   if (!displayValue.value?.includes(userInfoStore.info.username) && excludeSelfTips) {
-    isShowError.value = true;
     errorTips.value = t('您已将自己从维护人员列表中移除，移除后您将失去查看和编辑网关的权限。请确认！');
     return;
   }
@@ -233,8 +236,8 @@ const handleEnter = (event: any) => {
 };
 
 const triggerChange = () => {
+  isShowError.value = !displayValue.value.length;
   if (isRequired && !displayValue.value.length) {
-    isShowError.value = true;
     errorTips.value = errorValue;
     return;
   }
@@ -244,6 +247,8 @@ const triggerChange = () => {
   }
   emit('on-change', { [field]: displayValue.value });
 };
+
+defineExpose({ isEditable });
 
 </script>
 

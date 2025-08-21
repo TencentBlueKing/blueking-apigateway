@@ -185,6 +185,7 @@
       :stage="localStage"
       :deploy-id="deployId"
       :version="stageDetail.version"
+      @release-doing="handleReleaseDoing"
       @release-success="handleReleaseSuccess"
       @hide-when-pending="handleReleaseDoing"
       @retry="handleRetry"
@@ -395,11 +396,12 @@ const handlePublish = async () => {
     deployId.value = res.deploy_id;
     isShow.value = false;
     logDetailsRef.value.showSideslider();
+    emit('closed-on-publishing');
   }
   catch (e: any) {
     // 自定义错误处理
     const regex = /`([^`]+?)`/;
-    const msg = e?.message || '';
+    const msg = e?.error?.message ?? e?.message ?? '';
     const match = msg.match(regex);
     if (match?.[1]?.includes('后端服务')) {
       // 后端服务地址为空需要单独处理
@@ -412,15 +414,15 @@ const handlePublish = async () => {
             onClick: () => {
               isShow.value = false;
               router.push({
-                name: 'apigwBackendService',
+                name: 'BackendService',
                 params: { id: apigwId.value },
               });
             },
           },
         ],
         message: {
-          code: e.code,
-          overview: e.message || '',
+          code: e?.error?.code ?? e?.code,
+          overview: msg || '',
           suggestion: '',
         },
         extCls: 'customize-error-message-cls',
@@ -429,7 +431,7 @@ const handlePublish = async () => {
     else {
       Message({
         theme: 'error',
-        message: e.message,
+        message: msg,
       });
     }
   }

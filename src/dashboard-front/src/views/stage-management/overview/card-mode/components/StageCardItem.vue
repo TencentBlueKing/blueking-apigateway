@@ -345,10 +345,13 @@ watch(
     }
     fetchMetrics();
   },
-  { deep: true },
+  {
+    immediate: true,
+    deep: true,
+  },
 );
 
-const getRequestCount = async () => {
+async function getRequestCount() {
   const now = dayjs().unix();
   const sixHoursAgo = now - 6 * 60 * 60;
   const { instant } = await getGatewayMetricsInstant(gatewayId.value, {
@@ -360,7 +363,7 @@ const getRequestCount = async () => {
   requestCount.value = instant;
 };
 
-const getRequestTrend = async () => {
+async function getRequestTrend() {
   if (!featureFlagStore.flags.ENABLE_RUN_DATA_METRICS) {
     return;
   }
@@ -391,6 +394,15 @@ const getRequestTrend = async () => {
   }
 
   data.value = results;
+};
+
+function fetchMetrics() {
+  if (stage.status === 1 && ['StageOverviewCardMode'].includes(route.name)) {
+    Promise.all([
+      getRequestCount(),
+      getRequestTrend(),
+    ]);
+  }
 };
 
 const handleCheckLog = () => {
@@ -431,19 +443,6 @@ const handleChartClick = () => {
     },
   });
 };
-
-const fetchMetrics = async () => {
-  if (stage.status === 1) {
-    await Promise.all([
-      getRequestCount(),
-      getRequestTrend(),
-    ]);
-  }
-};
-
-onBeforeMount(() => {
-  fetchMetrics();
-});
 
 </script>
 

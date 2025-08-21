@@ -29,18 +29,17 @@
         >
           <BkDatePicker
             :key="dateKey"
-            v-model="initDateTimeRange"
+            v-model="dateValue"
             class="w-320px"
             :placeholder="t('选择日期时间范围')"
             type="datetimerange"
-            :shortcuts="datepickerShortcuts"
-            shortcut-close
+            :shortcuts="shortcutsRange"
             use-shortcut-text
             :shortcut-selected-index="shortcutSelectedIndex"
-            @clear="handleTimeClear"
             @shortcut-change="handleShortcutChange"
-            @pick-success="handleTimeChange"
-            @change="handleTimeChange"
+            @change="handleChange"
+            @clear="handlePickClear"
+            @pick-success="handlePickSuccess"
           />
         </BkFormItem>
         <BkFormItem
@@ -186,22 +185,20 @@
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
 import { useAccessLog, useGateway } from '@/stores';
-import { useMaxTableLimit, useQueryList } from '@/hooks';
+import { useDatePicker, useMaxTableLimit, useQueryList } from '@/hooks';
 import { type IAlarmRecord, getRecordList, getStrategyList } from '@/services/source/monitor';
 import TableEmpty from '@/components/table-empty/Index.vue';
-import dayjs from 'dayjs';
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
 const accessLogStore = useAccessLog();
 const { maxTableLimit, clientHeight } = useMaxTableLimit();
 
-const { datepickerShortcuts, alarmStatus } = accessLogStore;
+const { alarmStatus } = accessLogStore;
 const dateKey = ref('dateKey');
 const curStrategyCount = ref(0);
 const shortcutSelectedIndex = ref(-1);
 const scrollLoading = ref(false);
-const initDateTimeRange = ref([]);
 const alarmStrategyOption = ref([]);
 const tableColumns = ref([
   {
@@ -337,6 +334,13 @@ const {
     limit: maxTableLimit,
   },
 });
+const {
+  dateValue,
+  shortcutsRange,
+  handleChange,
+  handleClear,
+  handleConfirm,
+} = useDatePicker(filterData);
 
 const apigwId = computed(() => gatewayStore.apigwId);
 
@@ -349,6 +353,15 @@ const handleTimeClear = () => {
   });
 };
 
+const handlePickClear = () => {
+  handleClear();
+  handleTimeClear();
+};
+
+const handlePickSuccess = () => {
+  handleConfirm();
+};
+
 // 日期快捷方式改变触发
 const handleShortcutChange = (
   item: {
@@ -358,22 +371,6 @@ const handleShortcutChange = (
   index: number,
 ) => {
   shortcutSelectedIndex.value = index;
-};
-
-// 日期快捷方式改变触发
-const handleTimeChange = () => {
-  // 选择了同一天，则需要把开始时间的时分秒设置为 00:00:00
-  if (dayjs(initDateTimeRange.value[0]).isSame(initDateTimeRange.value[1])) {
-    initDateTimeRange.value[0].setHours(0, 0, 0);
-  }
-  const startStr = +new Date(`${initDateTimeRange.value[0]}`) / 1000;
-  const endStr = +new Date(`${initDateTimeRange.value[1]}`) / 1000;
-  const start = parseInt(startStr);
-  const end = parseInt(endStr);
-  filterData.value = Object.assign(filterData.value, {
-    time_start: start,
-    time_end: end,
-  });
 };
 
 // 获取状态name
@@ -408,12 +405,6 @@ const handleScrollEnd = async () => {
   }
 };
 
-// 刷新表格
-const fetchRefreshTable = async () => {
-  await getList();
-  updateTableEmptyConfig();
-};
-
 // 切换告警策略选项下拉折叠状态
 const handleToggle = (value: boolean) => {
   if (value) {
@@ -431,11 +422,12 @@ const handleRowClick = (e: MouseEvent, row: IAlarmRecord) => {
 };
 
 const handleClearFilterKey = async () => {
-  initDateTimeRange.value = [];
+  dateValue.value = [];
   shortcutSelectedIndex.value = -1;
   dateKey.value = String(+new Date());
   filterData.value = cloneDeep(initFilterData);
-  await fetchRefreshTable();
+  await getList();
+  updateTableEmptyConfig();
 };
 
 const updateTableEmptyConfig = () => {

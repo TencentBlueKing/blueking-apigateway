@@ -195,8 +195,6 @@ const menuList: IHeaderNav[] = [
   },
 ];
 
-configureDisplayName();
-
 watch(
   () => route.path,
   (newVal, oldVal) => {
@@ -213,7 +211,8 @@ watch(
       systemCls.value = 'win';
     }
     gateway.setApigwId(apigwId.value);
-    getFlagList();
+    // 需要在不同页面实时查询以下接口最新状态
+    Promise.all([getUserInfo(), getFlagList()]);
   },
   {
     immediate: true,
@@ -247,11 +246,15 @@ async function getFlagList() {
   }
 }
 
-const init = async () => {
+// 这里需要取user和env的接口数据处理多租户配置信息
+async function getUserInfo() {
   await userInfoStore.fetchUserInfo();
   await envStore.fetchEnv();
+  configureDisplayName({
+    tenantId: userInfoStore.info.tenant_id || '',
+    apiBaseUrl: envStore.tenantUserDisplayAPI,
+  });
 };
-init();
 
 const goPage = (routeName: string): void => {
   const id = ['Home', 'ApiDocs'].includes(routeName) ? '' : apigwId.value;
