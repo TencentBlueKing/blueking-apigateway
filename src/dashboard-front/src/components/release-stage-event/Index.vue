@@ -129,11 +129,9 @@ watch(
   () => {
     if (!isShow.value && logDetails.value?.status === 'success') {
       emit('release-success');
-      stageStore.setDoing(false);
     }
     if (!isShow.value && logDetails.value?.status !== 'success') {
       emit('release-doing');
-      stageStore.setDoing(true);
     }
     if (!isShow.value) {
       clearInterval(timeId);
@@ -157,9 +155,15 @@ watch(
 const getLogsList = async () => {
   try {
     const response = await getReleaseEvents(apigwId.value, historyId);
+    stageStore.setDoing(true);
     if (response.status !== 'doing') {
+      stageStore.setDoing(false);
+      if (['success'].includes(response.status)) {
+        emit('release-success');
+      }
       clearInterval(timeId);
     }
+
     logDetails.value = response;
 
     // 整理步骤

@@ -152,6 +152,7 @@ import { useTimeoutPoll } from '@vueuse/core';
 import { Spinner } from 'bkui-vue/lib/icon';
 import dayjs from 'dayjs';
 import { sumBy } from 'lodash-es';
+import { useStage } from '@/stores';
 
 interface ITimelineItem {
   description?: string
@@ -296,6 +297,8 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+const stageStore = useStage();
+const { pause: pausePoll, resume: startPoll } = useTimeoutPoll(getEvents, 2000, { immediate: false });
 
 const isShow = ref(false);
 const paasEventTextLines = ref('');
@@ -390,6 +393,7 @@ const gatewayPublishTimeline = computed(() => {
     }
     else {
       step.status = 'doing';
+      stageStore.setDoing(true);
       // 整个发布任务在进行中时才处理图标样式
       if (deployStatus.value === 'pending' || deployStatus.value === 'doing') {
         // 给已结束步骤的下一个在 doing 状态的步骤显示加载图标
@@ -575,7 +579,7 @@ watch(
 );
 
 // 获取日志列表
-const getEvents = async () => {
+async function getEvents() {
   const requestFunc = deployId ? getDeployEvents : getFinishedDeployEvents;
 
   const {
@@ -669,11 +673,13 @@ const getEvents = async () => {
 
   editorRef.value?.setCursorPos({ toBottom: true });
   if (isFinished.value) {
+    stageStore.setDoing(false);
+    if (['success'].includes(step.status)) {
+      emit('release-success');
+    }
     pausePoll();
   }
 };
-
-const { pause: pausePoll, resume: startPoll } = useTimeoutPoll(getEvents, 2000, { immediate: false });
 
 const showSideslider = () => {
   isShow.value = true;

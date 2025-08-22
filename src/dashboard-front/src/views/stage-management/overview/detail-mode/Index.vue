@@ -77,7 +77,7 @@
                 </span>
                 <span v-else>{{ currentStage?.resource_version.version || '--' }}</span>
                 <BkTag
-                  v-if="getStageStatus(currentStage) === 'doing'"
+                  v-if="[getStageStatus(currentStage), currentStage?.release?.status].includes('doing')"
                   class="ml-8px h-16px text-10px"
                   theme="info"
                 >
@@ -330,7 +330,7 @@ const stageStore = useStage();
 const {
   pause: pausePollingStages,
   resume: startPollingStages,
-} = useTimeoutPoll(fetchStageList, 3000, { immediate: false });
+} = useTimeoutPoll(fetchStageList, 1000 * 3, { immediate: false });
 
 const stageList = ref([]);
 const loadingProgrammableStageIds = ref<number[]>([]);
@@ -425,15 +425,13 @@ watch(
   { immediate: true },
 );
 
-// 监听轮询列表后，获取最新的列表数据
-watch(() => stageStore.stageList, (list: IStageListItem[]) => {
-  const curData = list.find(stage => stage.id === Number(stageId));
-  if (curData) {
-    currentStage.value = {
-      ...currentStage.value,
-      ...curData,
-    };
-    console.log('轮询列表', stageStore.stageList);
+watch(() => stageStore.isDoing, (isPending: boolean) => {
+  if (isPending) {
+    setPollingStatus();
+  }
+  else {
+    pausePollingStages();
+    emit('updated');
   }
 }, { deep: true });
 
@@ -481,13 +479,21 @@ async function fetchStageList() {
         || stage?.paasInfo?.status || stage?.release?.status;
       return !['doing', 'pending'].includes(publishStatus);
     });
+    const curData = stageList.value.find(stage => stage.id === Number(stageId));
+    if (curData) {
+      currentStage.value = {
+        ...currentStage.value,
+        ...curData,
+      };
+    }
+    stageStore.setStageList(stageList.value);
+    emit('updated');
     if (isComplete) {
-      pausePollingStages();
-      // 轮询结束后重新调用列表
-      stageList.value = await getStageList(gatewayId.value);
-      stageStore.setStageList(stageList.value);
       // 列表轮询任务队列完成后抛出事件变更信息
-      emit('updated');
+      tabComponentRefs.value?.forEach((component: InstanceType<typeof ResourceInfo>) => {
+        component.reload?.();
+      });
+      pausePollingStages();
     }
   }
 };
@@ -501,24 +507,15 @@ const setPollingStatus = async () => {
 };
 
 // 发布成功，重新请求环境详情
-const handleReleaseSuccess = async () => {
-  pausePollingStages();
-  currentStage.value = await getStageDetail(gatewayId.value, stageId);
-  setPollingStatus();
-  tabComponentRefs.value?.forEach((component: InstanceType<typeof ResourceInfo>) => {
-    component.reload?.();
-  });
+const handleReleaseSuccess = () => {
+  handleClosedOnPublishing();
 };
 
 // 处理在版本还在发布时关闭抽屉的情况（刷新 stage 状态）
 const handleClosedOnPublishing = async () => {
-  // mitt.emit('rerun-init');
-  pausePollingStages();
+  emit('updated');
   currentStage.value = await getStageDetail(gatewayId.value, stageId);
   setPollingStatus();
-  tabComponentRefs.value?.forEach((component: InstanceType<typeof ResourceInfo>) => {
-    component.reload?.();
-  });
 };
 
 // 选项卡切换

@@ -25,18 +25,17 @@
         >
           <BkDatePicker
             :key="dateKey"
-            v-model="dateTimeRange"
+            v-model="dateValue"
             type="datetimerange"
             class="w-320px!"
+            format="yyyy-MM-dd HH:mm:ss"
             :placeholder="t('选择日期时间范围')"
-            :shortcuts="accessLogStore.datepickerShortcuts"
-            shortcut-close
+            :shortcuts="shortcutsRange"
             use-shortcut-text
             :shortcut-selected-index="shortcutSelectedIndex"
-            @shortcut-change="handleShortcutChange"
-            @change="handleTimeChange"
-            @pick-success="handleTimeChange"
-            @clear="handleTimeClear"
+            @change="handleChange"
+            @clear="handlePickClear"
+            @pick-success="handlePickSuccess"
           />
         </BkFormItem>
         <BkFormItem class="ag-form-item-search">
@@ -104,7 +103,7 @@
 import { cloneDeep } from 'lodash-es';
 import { t } from '@/locales';
 import type { ISearchSelect, ReturnRecordType } from '@/types/common';
-import { useMaxTableLimit, useQueryList } from '@/hooks';
+import { useDatePicker, useMaxTableLimit, useQueryList } from '@/hooks';
 import {
   useAccessLog,
   useAuditLog,
@@ -118,7 +117,6 @@ import {
 } from '@/services/source/auditLog';
 import TableHeaderFilter from '@/components/table-header-filter';
 import TableEmpty from '@/components/table-empty/Index.vue';
-import dayjs from 'dayjs';
 
 const accessLogStore = useAccessLog();
 const auditLogStore = useAuditLog();
@@ -131,7 +129,6 @@ const orderBy = ref('');
 const dateKey = ref('dateKey');
 const members = ref([]);
 const searchValue = ref([]);
-const dateTimeRange = ref([]);
 const defaultSearchData = ref<IAuditLog>({
   keyword: '',
   op_type: '',
@@ -226,6 +223,13 @@ const searchData = computed(() => {
 });
 
 const { maxTableLimit, clientHeight } = useMaxTableLimit();
+const {
+  shortcutsRange,
+  dateValue,
+  handleChange,
+  handleClear,
+  handleConfirm,
+} = useDatePicker(filterData);
 
 const getFilterData = (payload: Record<string, string>, curData: Record<string, string>) => {
   const { id, name } = payload;
@@ -336,27 +340,6 @@ const handleSortChange = ({ column, type }: Record<string, any>) => {
   refreshTableData();
 };
 
-const formatDatetime = (timeRange: number[]) => {
-  return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
-};
-
-const setSearchTimeRange = () => {
-  // 选择了同一天，则需要把开始时间的时分秒设置为 00:00:00
-  if (dateTimeRange.value.length > 0 && dayjs(dateTimeRange.value[0]).isSame(dateTimeRange.value[1])) {
-    dateTimeRange.value[0].setHours(0, 0, 0);
-  }
-  let timeRange = dateTimeRange.value;
-  // 选择的是时间快捷项，需要实时计算时间值
-  if (shortcutSelectedIndex.value !== -1) {
-    timeRange = accessLogStore.datepickerShortcuts[shortcutSelectedIndex.value].value();
-  }
-  const formatTimeRange = formatDatetime(timeRange);
-  filterData.value = Object.assign(filterData.value, {
-    time_start: formatTimeRange[0] || '',
-    time_end: formatTimeRange[1] || '',
-  });
-};
-
 const getStatusText = (type: string) => {
   const name = auditLogStore.operateStatus.find((item: Record<string, string>) => item.value === type)?.name;
   return name ?? '--';
@@ -436,22 +419,18 @@ const getTableColumns = () => {
   ];
 };
 
-const handleTimeChange = () => {
-  setSearchTimeRange();
+const handlePickSuccess = () => {
+  handleConfirm();
+  refreshTableData();
+};
+
+const handlePickClear = () => {
+  handleClear();
 };
 
 const handleTimeClear = () => {
   shortcutSelectedIndex.value = -1;
-  dateTimeRange.value = [];
-  setSearchTimeRange();
-};
-
-const handleShortcutChange = (shortcut: {
-  text: string
-  value?: () => void
-}, index: number) => {
-  shortcutSelectedIndex.value = index;
-  updateTableEmptyConfig();
+  dateValue.value = [];
 };
 
 const handleClearFilterKey = () => {

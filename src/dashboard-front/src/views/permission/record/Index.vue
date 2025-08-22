@@ -26,18 +26,17 @@
         >
           <BkDatePicker
             :key="dateKey"
-            v-model="initDateTimeRange"
+            v-model="dateValue"
             style="width: 320px"
             :placeholder="t('选择日期时间范围')"
             :type="'datetimerange'"
-            :shortcuts="datepickerShortcuts"
-            shortcut-close
+            :shortcuts="shortcutsRange"
             use-shortcut-text
             :shortcut-selected-index="shortcutSelectedIndex"
-            @clear="handleTimeClear"
             @shortcut-change="handleShortcutChange"
-            @change="handleTimeChange"
-            @pick-success="handleTimeChange"
+            @change="handleChange"
+            @clear="handlePickClear"
+            @pick-success="handlePickSuccess"
           />
         </BkFormItem>
         <BkFormItem
@@ -233,22 +232,17 @@
 
 <script setup lang="tsx">
 import { getPermissionRecordList } from '@/services/source/permission';
-import {
-  useAccessLog,
-  useFeatureFlag,
-} from '@/stores';
-import { useMaxTableLimit, useQueryList } from '@/hooks';
+import { useFeatureFlag } from '@/stores';
+import { useDatePicker, useMaxTableLimit, useQueryList } from '@/hooks';
 import type { IApprovalListItem } from '@/types/permission';
 import { sortByKey } from '@/utils';
 import { AUTHORIZATION_DIMENSION } from '@/constants';
 import { APPROVAL_HISTORY_STATUS_MAP } from '@/enums';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
-import dayjs from 'dayjs';
 
 const { t } = useI18n();
 const { maxTableLimit, clientHeight } = useMaxTableLimit();
-const accessLogStore = useAccessLog();
 const featureFlagStore = useFeatureFlag();
 
 const historyExpandColumn = shallowRef([
@@ -342,7 +336,6 @@ const filterData = ref({
   time_start: '',
   time_end: '',
 });
-const initDateTimeRange = ref([]);
 const resourceList = ref([]);
 const shortcutSelectedIndex = ref(-1);
 const dateKey = ref('dateKey');
@@ -365,8 +358,6 @@ const detailSliderConf = reactive({
   title: '',
   isShow: false,
 });
-// 日期 快捷方式设置
-const datepickerShortcuts = reactive(accessLogStore.datepickerShortcuts);
 
 // 列表hooks
 const {
@@ -390,6 +381,13 @@ const {
     limit: maxTableLimit,
   },
 });
+const {
+  dateValue,
+  shortcutsRange,
+  handleChange,
+  handleClear,
+  handleConfirm,
+} = useDatePicker(filterData);
 
 const setTableHeader = () => {
   table.value.headers = [
@@ -499,6 +497,15 @@ const handleRowClick = (e: MouseEvent, row: Partial<IApprovalListItem>) => {
   });
 };
 
+const handlePickSuccess = () => {
+  handleConfirm();
+};
+
+const handlePickClear = () => {
+  handleClear();
+  handleTimeClear();
+};
+
 // 日期清除
 const handleTimeClear = () => {
   shortcutSelectedIndex.value = -1;
@@ -509,24 +516,6 @@ const handleTimeClear = () => {
 // 日期快捷方式改变触发
 const handleShortcutChange = (value, index: number) => {
   shortcutSelectedIndex.value = index;
-};
-
-// 日期快捷方式改变触发
-const handleTimeChange = () => {
-  // 选择了同一天，则需要把开始时间的时分秒设置为 00:00:00
-  if (dayjs(initDateTimeRange.value[0]).isSame(initDateTimeRange.value[1])) {
-    initDateTimeRange.value[0].setHours(0, 0, 0);
-  }
-  nextTick(() => {
-    const startStr = (+new Date(`${initDateTimeRange.value[0]}`)) / 1000;
-    const endStr = (+new Date(`${initDateTimeRange.value[1]}`)) / 1000;
-    const start = parseInt(startStr);
-    const end = parseInt(endStr);
-    filterData.value = Object.assign(filterData.value, {
-      time_start: start,
-      time_end: end,
-    });
-  });
 };
 
 // 展示详情
@@ -558,7 +547,7 @@ const handleClearFilterKey = async () => {
     time_end: '',
   });
   shortcutSelectedIndex.value = -1;
-  initDateTimeRange.value = [];
+  dateValue.value = [];
   dateKey.value = String(+new Date());
   await getList();
   updateTableEmptyConfig();

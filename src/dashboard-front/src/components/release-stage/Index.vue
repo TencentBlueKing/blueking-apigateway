@@ -521,11 +521,12 @@ const handlePublish = async () => {
     isShow.value = false;
     isConfirmDialogVisible.value = false;
     logDetailsRef.value.showSideslider();
+    emit('closed-on-publishing');
   }
   catch (e: any) {
     // 自定义错误处理
     const regex = /`([^`]+?)`/;
-    const msg = e?.message || '';
+    const msg = e?.error?.message ?? e?.message ?? '';
     const match = msg.match(regex);
     if (match?.[1]?.includes('后端服务')) {
       // 后端服务地址为空需要单独处理
@@ -538,15 +539,15 @@ const handlePublish = async () => {
             onClick: () => {
               isShow.value = false;
               router.push({
-                name: 'apigwBackendService',
+                name: 'BackendService',
                 params: { id: apigwId.value },
               });
             },
           },
         ],
         message: {
-          code: e.code,
-          overview: e.message || '',
+          code: e?.error?.code ?? e.code,
+          overview: msg,
           suggestion: '',
         },
         extCls: 'customize-error-message-cls',
@@ -555,7 +556,7 @@ const handlePublish = async () => {
     else {
       Message({
         theme: 'error',
-        message: e.message,
+        message: msg,
       });
     }
   }
@@ -567,9 +568,7 @@ const handleReleaseSuccess = () => {
 };
 
 const handleReleaseDoing = () => {
-  nextTick(() => {
-    emit('closed-on-publishing');
-  });
+  emit('closed-on-publishing');
   // setTimeout(() => {
   //   getStagesStatus();
   // }, 3000);

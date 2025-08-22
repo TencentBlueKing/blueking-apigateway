@@ -256,7 +256,8 @@
               </div>
               <div class="value">
                 <span v-if="!featureFlagStore.isEnableDisplayName">{{ basicInfoData.created_by }}</span>
-                <span v-else><bk-user-display-name :user-id="basicInfoData.created_by" /></span>
+                <span v-else><bk-user-display-name :user-id="basicInfoData.created_by" />
+                </span>
               </div>
             </div>
             <div class="detail-item-content-item">

@@ -74,7 +74,7 @@
         <BkUserSelector
           ref="memberSelectorRef"
           v-model="displayValue"
-          :api-base-url="featureFlagStore.apiBaseUrl"
+          :api-base-url="envStore.tenantUserDisplayAPI"
           class="edit-selector"
           :class="[{ [isErrorClass]: isShowError }]"
           multiple
@@ -118,6 +118,7 @@
 <script lang="tsx" setup>
 import BkUserSelector from '@blueking/bk-user-selector';
 import {
+  useEnv,
   useFeatureFlag,
   useUserInfo,
 } from '@/stores';
@@ -146,6 +147,7 @@ const {
 
 const emit = defineEmits<{ 'on-change': [data: { [key: string]: string[] }] }>();
 
+const envStore = useEnv();
 const userStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
 
@@ -202,8 +204,8 @@ const handleCancel = () => {
 };
 
 const handleChange = () => {
+  isShowError.value = !displayValue.value.length;
   if (isRequired && !displayValue.value.length) {
-    isShowError.value = true;
     errorTips.value = errorValue;
     return;
   }
@@ -211,11 +213,12 @@ const handleChange = () => {
   nextTick(() => {
     memberSelectorRef.value?.tagInputRef?.focusInputTrigger();
   });
+  emit('on-change', { [field]: displayValue.value });
 };
 
 const triggerChange = () => {
+  isShowError.value = !displayValue.value.length;
   if (isRequired && !displayValue.value.length) {
-    isShowError.value = true;
     errorTips.value = errorValue;
     return;
   }
@@ -225,6 +228,9 @@ const triggerChange = () => {
   }
   emit('on-change', { [field]: displayValue.value });
 };
+
+defineExpose({ isEditable });
+
 </script>
 
 <style lang="scss" scoped>
