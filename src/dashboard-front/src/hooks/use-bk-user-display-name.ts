@@ -29,14 +29,21 @@ import {
 export function useBkUserDisplayName() {
   const userStore = useUserInfo();
   const envStore = useEnv();
-
-  const configure = (tenantId?: string) => BkUserDisplayName.configure({
-    tenantId: tenantId || userStore.info.tenant_id || '',
-    apiBaseUrl: envStore.tenantUserDisplayAPI,
-  });
+  const configure = (info?: {
+    tenantId?: string
+    apiBaseUrl?: string
+  }) => {
+    return BkUserDisplayName.configure({
+      tenantId: info?.tenantId || userStore.info.tenant_id || '',
+      apiBaseUrl: info?.apiBaseUrl || envStore.tenantUserDisplayAPI,
+    });
+  };
 
   watch(() => envStore.tenantUserDisplayAPI, () => {
     configure();
+  }, {
+    immediate: true,
+    deep: true,
   });
 
   return { configure };

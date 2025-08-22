@@ -255,7 +255,7 @@ watch(
   () => basics,
   () => {
     if (basics) {
-      configureDisplayName(basics.tenant_mode === 'global' ? 'system' : userStore.info.tenant_id);
+      configureDisplayName({ tenantId: basics.tenant_mode === 'global' ? 'system' : userStore.info.tenant_id });
     }
   }, {
     deep: true,
@@ -265,11 +265,6 @@ watch(
 watchEffect(() => {
   language.value = sdks[0]?.language || 'python';
 });
-
-onBeforeUnmount(() => {
-  configureDisplayName();
-});
-
 </script>
 
 <style lang="scss" scoped>

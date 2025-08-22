@@ -87,6 +87,7 @@ export const useStage = defineStore('useStage', {
     setExist2(data: boolean) {
       this.exist2 = data;
     },
+    // 设置发布资源doing态
     setDoing(data: boolean) {
       this.isDoing = data;
     },
