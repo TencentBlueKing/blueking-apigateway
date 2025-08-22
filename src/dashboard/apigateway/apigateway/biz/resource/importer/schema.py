@@ -272,6 +272,8 @@ def convert_request_body_to_openapi2(request_body):
     """
     parameters = []
     for content_type, content_value in request_body["content"].items():
+        if "schema" not in content_value:
+            continue
         param = {
             "in": "body",
             "name": "body",
@@ -293,6 +295,8 @@ def convert_responses_to_openapi2(responses):
         response2 = {"description": response3.get("description", ""), "schema": {}}
         # OpenAPI 2.0 不支持每个响应状态码的多媒体类型，因此我们合并所有媒体类型
         for content_value in response3.get("content", {}).values():
+            if "schema" in content_value:
+                continue
             response2["schema"] = content_value["schema"]  # 直接取 schema，不区分媒体类型
         responses_openapi2[status_code] = response2
     return responses_openapi2
@@ -366,6 +370,8 @@ def convert_request_body(v3_request_body):
     v2_parameters = []
     consumes = []
     for content_type, content_value in v3_request_body["content"].items():
+        if "schema" not in content_value:
+            continue
         param2 = {
             "in": "body",
             "name": "body",  # OpenAPI 2.0 中请求体的名称通常是 'body'
@@ -389,9 +395,12 @@ def convert_responses(v3_responses):
         response2 = {"description": response3.get("description", "")}
         # OpenAPI 2.0 不支持每个响应状态码的多媒体类型，因此我们合并所有媒体类型
         for content_type, content_value in response3.get("content", {}).items():
+            if "schema" not in content_value:
+                continue
             response2["schema"] = content_value["schema"]
             produces.append(content_type)
         v2_responses[status_code] = response2
+
     return v2_responses, list(set(produces))  # 使用 set 去重
 
 
