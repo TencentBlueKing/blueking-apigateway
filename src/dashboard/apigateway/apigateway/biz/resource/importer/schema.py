@@ -295,7 +295,7 @@ def convert_responses_to_openapi2(responses):
         response2 = {"description": response3.get("description", ""), "schema": {}}
         # OpenAPI 2.0 不支持每个响应状态码的多媒体类型，因此我们合并所有媒体类型
         for content_value in response3.get("content", {}).values():
-            if "schema" in content_value:
+            if "schema" not in content_value:
                 continue
             response2["schema"] = content_value["schema"]  # 直接取 schema，不区分媒体类型
         responses_openapi2[status_code] = response2
@@ -352,6 +352,8 @@ def convert_parameters(v3_parameters, consumes):
         if "content" in param:
             # 对于参数的 'content'，我们只能选择一个媒体类型
             content_type, content_value = next(iter(param["content"].items()))
+            if "schema" not in content_value:
+                continue
             v2_param["type"] = content_value["schema"]["type"]
             # 如果参数的媒体类型在 consumes 中，添加到 'consumes' 字段
             if content_type in consumes:
