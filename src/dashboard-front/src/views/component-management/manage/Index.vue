@@ -472,7 +472,7 @@ const handleEdit = async (payload: IComponentItem) => {
       method: res.method || '*',
       config_fields: res?.config_fields ?? [],
     });
-    const keysToRemove = ['doc_link', 'is_official', 'system_name'];
+    const keysToRemove = ['doc_link', 'system_name'];
     formData.value = Object.entries(configData).reduce((acc, [key, value]) => {
       if (!keysToRemove.includes(key)) acc[key] = value;
       return acc;

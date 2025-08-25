@@ -195,7 +195,7 @@ import {
   useFeatureFlag,
   useGateway,
 } from '@/stores';
-import { uniqueId } from 'lodash-es';
+import { debounce, uniqueId } from 'lodash-es';
 import CardContainer from '@/components/card-container/Index.vue';
 
 interface IRelease {
@@ -339,6 +339,15 @@ const actionTooltipConfig = computed(() => {
   return { disabled: true };
 });
 
+const fetchMetrics = debounce(() => {
+  if (stage.status === 1 && ['StageOverviewCardMode'].includes(route.name)) {
+    Promise.all([
+      getRequestCount(),
+      getRequestTrend(),
+    ]);
+  }
+}, 300);
+
 watch(
   () => stage,
   () => {
@@ -396,15 +405,6 @@ async function getRequestTrend() {
   }
 
   data.value = results;
-};
-
-function fetchMetrics() {
-  if (stage.status === 1 && ['StageOverviewCardMode'].includes(route.name)) {
-    Promise.all([
-      getRequestCount(),
-      getRequestTrend(),
-    ]);
-  }
 };
 
 const handleCheckLog = () => {
