@@ -121,7 +121,9 @@
               <!-- 发布成功 -->
               <span
                 v-else
-                v-bk-tooltips="`于 ${stage.release.created_time || '--'} 发布成功`"
+                v-bk-tooltips="{
+                  content: t('于 {time} 发布成功', { time: stage.release.created_time || '--' }),
+                }"
                 class="suffix"
               >{{ t('（于 {time} 发布成功）', {
                 time: stage.release.created_time || '--'

@@ -19,10 +19,12 @@
   <div class="page-wrapper-padding audit-log-content">
     <div class="ag-top-header">
       <BkForm class="audit-log-header">
-        <BkFormItem
-          :label="t('选择时间')"
-          class="ag-form-item-datepicker top-form-item-time h-32px! flex items-center"
-        >
+        <BkFormItem class="ag-form-item-datepicker top-form-item-time h-32px! flex items-center">
+          <template #label>
+            <div :class="{'w-80px': locale === 'en'}">
+              {{ t('选择时间') }}
+            </div>
+          </template>
           <BkDatePicker
             :key="dateKey"
             v-model="dateValue"
@@ -101,7 +103,6 @@
 
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
-import { t } from '@/locales';
 import type { ISearchSelect, ReturnRecordType } from '@/types/common';
 import { useDatePicker, useMaxTableLimit, useQueryList } from '@/hooks';
 import {
@@ -118,6 +119,7 @@ import {
 import TableHeaderFilter from '@/components/table-header-filter';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
+const { t, locale } = useI18n();
 const accessLogStore = useAccessLog();
 const auditLogStore = useAuditLog();
 const userInfoStore = useUserInfo();

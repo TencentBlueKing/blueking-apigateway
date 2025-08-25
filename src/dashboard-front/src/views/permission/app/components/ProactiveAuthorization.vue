@@ -70,7 +70,8 @@
                   v-model="curAuthData.expire_days"
                   type="number"
                   :min="0"
-                  class="w-85px m-r-5px"
+                  :placeholder="t('请输入正整数')"
+                  class="w-117px m-r-5px"
                   @focus="curAuthData.expire_type = 'custom'"
                 />
                 {{ t("天") }}
@@ -359,6 +360,7 @@ const handleCancel = () => {
 
 <style lang="scss" scoped>
 .app-auth-slider {
+
   .app-auth-slider-content {
     padding: 30px;
     padding-bottom: 0;
@@ -368,11 +370,11 @@ const handleCancel = () => {
     }
 
     .ag-span-title {
+      margin-bottom: 20px;
       font-size: 14px;
       font-weight: bold;
-      color: #63656e;
       line-height: 1;
-      margin-bottom: 20px;
+      color: #63656e;
     }
 
     .ag-resource-radio {
@@ -397,9 +399,9 @@ const handleCancel = () => {
         }
 
         .transfer-source-item {
-          white-space: nowrap;
-          text-overflow: ellipsis;
           overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
       }
     }

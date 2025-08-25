@@ -776,6 +776,7 @@ const handleOperate = async (type: string) => {
     InfoBox({
       title,
       subTitle,
+      confirmText: t('确认'),
       onConfirm: () => {
         if (statusChanging.value) {
           return;
