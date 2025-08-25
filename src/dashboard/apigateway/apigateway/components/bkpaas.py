@@ -488,7 +488,9 @@ def update_app_maintainers(app_code: str, maintainers: List[str], user_credentia
     更新 paas 的 app 成员
     """
     url = url_join(get_paas3_url_prefix(), f"/sys/shim/plugins_center/bk_plugins/{app_code}/members/")
-    headers = gen_gateway_headers(user_credentials=user_credentials)
+    # NOTE: this api should not pass user_credentials!!!
+    # and the paasv3 not care about the x-bk-tenant-id, so just pass one
+    headers = gen_gateway_headers(with_operation_tenant_headers=True)
 
     data = [
         {
