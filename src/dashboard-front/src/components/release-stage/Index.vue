@@ -689,7 +689,7 @@ defineExpose({ showReleaseSideslider });
 
     .top-steps {
       width: 100%;
-      padding: 16px 300px;
+      padding: 16px 280px;
       border-bottom: 1px solid #dcdee5;
     }
 
