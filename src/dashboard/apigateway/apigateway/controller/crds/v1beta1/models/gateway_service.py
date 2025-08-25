@@ -30,14 +30,15 @@ from apigateway.controller.crds.v1beta1.models.base import (
 
 class ServiceRewrite(KubernetesModel):
     enabled: bool = Field(default=False, description="是否启用")
-    headers: Dict[str, str] = Field(default_factory=dict, description="重写请求头")
+    headers: Dict[str, str] = Field(default_factory=dict, description="[废弃] 重写请求头")
 
 
 class BkGatewayServiceSpec(GatewayCustomResourceSpec):
     id: Optional[str] = Field(default=None, description="服务 UUID")
     upstream: Upstream = Field(default_factory=Upstream, description="上游配置")
-    rewrite: ServiceRewrite = Field(default_factory=ServiceRewrite, description="服务通用请求重写")
     plugins: List[PluginConfig] = Field(default_factory=list, description="插件配置")
+
+    rewrite: ServiceRewrite = Field(default_factory=ServiceRewrite, description="[废弃] 服务通用请求重写")
 
 
 class BkGatewayService(GatewayCustomResource):
