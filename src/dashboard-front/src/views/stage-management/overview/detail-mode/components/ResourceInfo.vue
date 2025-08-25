@@ -162,7 +162,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   },
   {
     colKey: 'method',
-    title: '前端请求方法',
+    title: t('前端请求方法'),
     cell: (h, { row }) => (
       <bk-tag theme={METHOD_THEMES[row.method as keyof typeof METHOD_THEMES]}>
         {row.method}
