@@ -330,7 +330,7 @@ const stageStore = useStage();
 const {
   pause: pausePollingStages,
   resume: startPollingStages,
-} = useTimeoutPoll(fetchStageList, 1000 * 3, { immediate: false });
+} = useTimeoutPoll(fetchStageList, 3 * 1000, { immediate: false });
 
 const stageList = ref([]);
 const loadingProgrammableStageIds = ref<number[]>([]);
@@ -438,12 +438,22 @@ watch(() => stageStore.isDoing, (isPending: boolean) => {
 watch(() => gatewayStore.currentGateway, () => {
   pausePollingStages();
   if (gatewayStore.currentGateway?.id) {
-    startPollingStages();
+    // 刷新页面后如果没找到doing项，不需要开启轮询
+    if (!stageList.value?.length) {
+      getStageList(gatewayId.value).then((res) => {
+        if (res?.length) {
+          const isDoing = res.some(st => ['doing'].includes(st?.release?.status));
+          if (isDoing) {
+            startPollingStages();
+          }
+          else {
+            emit('updated');
+          }
+        }
+      });
+    }
   }
-}, {
-  immediate: true,
-  deep: true,
-});
+}, { immediate: true });
 
 async function fetchStageList() {
   const response = await getStageList(gatewayId.value);
@@ -487,8 +497,8 @@ async function fetchStageList() {
       };
     }
     stageStore.setStageList(stageList.value);
-    emit('updated');
     if (isComplete) {
+      emit('updated');
       // 列表轮询任务队列完成后抛出事件变更信息
       tabComponentRefs.value?.forEach((component: InstanceType<typeof ResourceInfo>) => {
         component.reload?.();
@@ -502,7 +512,6 @@ async function fetchStageList() {
 const setPollingStatus = async () => {
   // 首先先抛出事件发通知，进行第一次doing状态变更
   emit('updated');
-  stageList.value = await getStageList(gatewayId.value);
   startPollingStages();
 };
 
@@ -513,7 +522,6 @@ const handleReleaseSuccess = () => {
 
 // 处理在版本还在发布时关闭抽屉的情况（刷新 stage 状态）
 const handleClosedOnPublishing = async () => {
-  emit('updated');
   currentStage.value = await getStageDetail(gatewayId.value, stageId);
   setPollingStatus();
 };

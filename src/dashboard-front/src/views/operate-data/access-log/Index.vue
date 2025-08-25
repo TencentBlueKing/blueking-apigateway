@@ -34,7 +34,6 @@
             style="max-width: 310px;"
             :clearable="false"
             :placeholder="t('选择日期时间范围')"
-            shortcut-close
             :shortcut-selected-index="shortcutSelectedIndex"
             :shortcuts="accessLogStore.datepickerShortcuts"
             use-shortcut-text
