@@ -297,16 +297,18 @@ const {
 });
 
 const lastCount = ref(0);
+
 const panels = ref([
   {
     name: 'unprocessed',
-    label: '待审批',
+    label: t('待审批'),
   },
   {
     name: 'processed',
-    label: '已审批',
+    label: t('已审批'),
   },
 ]);
+
 const statusMap = reactive({
   approved: t('通过'),
   rejected: t('驳回'),

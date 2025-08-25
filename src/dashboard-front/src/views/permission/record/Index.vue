@@ -19,11 +19,12 @@
   <div class="permission-record-container page-wrapper-padding">
     <div class="header">
       <BkForm class="flex">
-        <BkFormItem
-          :label="t('选择时间')"
-          class="ag-form-item-datepicker m-b-15px"
-          label-width="85"
-        >
+        <BkFormItem class="ag-form-item-datepicker m-b-15px">
+          <template #label>
+            <div :class="locale === 'en' ? 'w-80px' : 'w-85px'">
+              {{ t('选择时间') }}
+            </div>
+          </template>
           <BkDatePicker
             :key="dateKey"
             v-model="dateValue"
@@ -241,7 +242,7 @@ import { APPROVAL_HISTORY_STATUS_MAP } from '@/enums';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const { maxTableLimit, clientHeight } = useMaxTableLimit();
 const featureFlagStore = useFeatureFlag();
 
