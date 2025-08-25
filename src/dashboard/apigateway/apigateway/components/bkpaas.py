@@ -488,7 +488,10 @@ def update_app_maintainers(app_code: str, maintainers: List[str], user_credentia
     更新 paas 的 app 成员
     """
     url = url_join(get_paas3_url_prefix(), f"/sys/shim/plugins_center/bk_plugins/{app_code}/members/")
-    headers = gen_gateway_headers(user_credentials=user_credentials)
+    headers = gen_gateway_headers()
+
+    if settings.BK_APP_TENANT_ID != "":
+        headers["X-Bk-Tenant-Id"] = settings.BK_APP_TENANT_ID
 
     data = [
         {
