@@ -25,15 +25,17 @@
           v-model="dateValue"
           use-shortcut-text
           format="yyyy-MM-dd HH:mm:ss"
-          :shortcuts="shortcutsRange"
           clearable
           class="w-500px!"
           type="datetimerange"
           :placeholder="t('选择日期时间范围')"
+          :shortcuts="shortcutsRange"
           :shortcut-selected-index="shortcutSelectedIndex"
           @change="handleChange"
+          @shortcut-change="handleShortcutChange"
           @clear="handleClear"
           @pick-success="handlePickSuccess"
+          @selection-mode-change="handleSelectionModeChange"
         />
       </div>
       <div class="flex justify-end">
@@ -133,14 +135,16 @@ const {
 
 // datepicker 时间选择器 hooks 适用于列表筛选
 const {
-  shortcutsRange,
   dateValue,
+  shortcutsRange,
+  shortcutSelectedIndex,
   handleChange,
   handleClear,
   handleConfirm,
+  handleShortcutChange,
+  handleSelectionModeChange,
 } = useDatePicker(filterData);
 
-const shortcutSelectedIndex = ref(-1);
 const dateKey = ref('dateKey');
 
 const tableEmptyConf = ref({

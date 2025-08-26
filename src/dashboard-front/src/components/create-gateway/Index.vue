@@ -497,6 +497,13 @@ const rules = {
       trigger: 'change',
     },
   ],
+  'maintainers': [
+    {
+      required: true,
+      message: t('维护人员不能为空'),
+      trigger: 'blur',
+    },
+  ],
 };
 
 const languageList = [

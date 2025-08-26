@@ -64,7 +64,7 @@
 </template>
 
 <script setup lang="tsx">
-import { useGateway } from '@/stores';
+import { useGateway, useStage } from '@/stores';
 import { getGatewayLabels } from '@/services/source/gateway';
 import {
   type IStageListItem,
@@ -96,6 +96,7 @@ const {
 const { t } = useI18n();
 // 优先从store里取值，因为这里的值是同步更新的，不会存在vue内置钩子依赖执行顺序问题
 const gatewayStore = useGateway();
+const stageStore = useStage();
 
 const filterValue = ref<Record<string, any>>({ keyword: '' });
 const currentStage = ref<any>(null);
@@ -329,7 +330,10 @@ const getTableData = async () => {
 };
 
 async function init() {
-  stageList.value = await getStageList(gatewayId.value);
+  stageList.value = stageStore.stageList;
+  if (!stageStore.stageList.length) {
+    stageList.value = await getStageList(gatewayId.value);
+  }
   currentStage.value = stageList.value.find((item: { id: number }) => item.id === Number(stageId));
   if (currentStage.value) {
     await getLabels();
@@ -338,7 +342,7 @@ async function init() {
   }
 }
 
-const getLabels = async () => {
+async function getLabels() {
   labels.value = await getGatewayLabels(gatewayId.value);
 };
 

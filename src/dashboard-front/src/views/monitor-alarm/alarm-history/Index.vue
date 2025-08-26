@@ -33,13 +33,14 @@
             class="w-320px"
             :placeholder="t('选择日期时间范围')"
             type="datetimerange"
-            :shortcuts="shortcutsRange"
             use-shortcut-text
+            :shortcuts="shortcutsRange"
             :shortcut-selected-index="shortcutSelectedIndex"
             @shortcut-change="handleShortcutChange"
             @change="handleChange"
             @clear="handlePickClear"
             @pick-success="handlePickSuccess"
+            @selection-mode-change="handleSelectionModeChange"
           />
         </BkFormItem>
         <BkFormItem
@@ -197,7 +198,6 @@ const { maxTableLimit, clientHeight } = useMaxTableLimit();
 const { alarmStatus } = accessLogStore;
 const dateKey = ref('dateKey');
 const curStrategyCount = ref(0);
-const shortcutSelectedIndex = ref(-1);
 const scrollLoading = ref(false);
 const alarmStrategyOption = ref([]);
 const tableColumns = ref([
@@ -337,16 +337,18 @@ const {
 const {
   dateValue,
   shortcutsRange,
+  shortcutSelectedIndex,
   handleChange,
   handleClear,
   handleConfirm,
+  handleShortcutChange,
+  handleSelectionModeChange,
 } = useDatePicker(filterData);
 
 const apigwId = computed(() => gatewayStore.apigwId);
 
 // 日期清除
 const handleTimeClear = () => {
-  shortcutSelectedIndex.value = -1;
   filterData.value = Object.assign(filterData.value, {
     time_start: '',
     time_end: '',
@@ -362,22 +364,12 @@ const handlePickSuccess = () => {
   handleConfirm();
 };
 
-// 日期快捷方式改变触发
-const handleShortcutChange = (
-  item: {
-    text: string
-    value: () => void
-  },
-  index: number,
-) => {
-  shortcutSelectedIndex.value = index;
-};
-
 // 获取状态name
 const getAlarmStatusText = (status: string) => {
   const curStatus = alarmStatus.find(item => item.value === status) ?? {};
   return curStatus.name ?? '--';
 };
+
 // 获取告警策略list
 const getStrategyOption = async () => {
   const { results, count } = await getStrategyList(apigwId.value, initParams);
