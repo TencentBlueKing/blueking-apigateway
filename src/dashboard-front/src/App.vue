@@ -71,7 +71,7 @@
             <div class="header-aside-wrap">
               <LanguageToggle />
               <ProductInfo />
-              <UserInfo v-if="userInfoStore.info?.display_name || userInfoStore.info?.username" />
+              <UserInfo />
             </div>
           </div>
         </template>
@@ -195,6 +195,11 @@ const menuList: IHeaderNav[] = [
   },
 ];
 
+const fetchInitData = async () => {
+  await getUserInfo();
+  await getFlagList();
+};
+
 watch(
   () => route.path,
   (newVal, oldVal) => {
@@ -212,7 +217,7 @@ watch(
     }
     gateway.setApigwId(apigwId.value);
     // 需要在不同页面实时查询以下接口最新状态
-    Promise.all([getUserInfo(), getFlagList()]);
+    fetchInitData();
   },
   {
     immediate: true,
@@ -248,12 +253,20 @@ async function getFlagList() {
 
 // 这里需要取user和env的接口数据处理多租户配置信息
 async function getUserInfo() {
-  await userInfoStore.fetchUserInfo();
-  await envStore.fetchEnv();
-  configureDisplayName({
-    tenantId: userInfoStore.info.tenant_id || '',
-    apiBaseUrl: envStore.tenantUserDisplayAPI,
-  });
+  try {
+    const userData = await userInfoStore.fetchUserInfo();
+    const envData = await envStore.fetchEnv();
+    const tenantId = userData?.tenant_id ?? '';
+    const apiBaseUrl = envData?.env?.BK_USER_WEB_API_URL ?? '';
+
+    configureDisplayName({
+      tenantId,
+      apiBaseUrl,
+    });
+  }
+  catch (error) {
+    console.error('getUserInfo 执行失败：', error);
+  }
 };
 
 const goPage = (routeName: string): void => {

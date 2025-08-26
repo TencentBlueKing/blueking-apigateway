@@ -435,25 +435,17 @@ watch(() => stageStore.isDoing, (isPending: boolean) => {
   }
 }, { deep: true });
 
-watch(() => gatewayStore.currentGateway, () => {
+watch(() => gatewayStore.currentGateway?.id, () => {
   pausePollingStages();
   if (gatewayStore.currentGateway?.id) {
-    // 刷新页面后如果没找到doing项，不需要开启轮询
-    if (!stageList.value?.length) {
-      getStageList(gatewayId.value).then((res) => {
-        if (res?.length) {
-          const isDoing = res.some(st => ['doing'].includes(st?.release?.status));
-          if (isDoing) {
-            startPollingStages();
-          }
-          else {
-            emit('updated');
-          }
-        }
-      });
-    }
+    setRefreshPolling();
   }
 }, { immediate: true });
+
+// 监听刷新页面，切换stage后是否存在doing
+watch(() => active.value, () => {
+  setRefreshPolling();
+}, { deep: true });
 
 async function fetchStageList() {
   const response = await getStageList(gatewayId.value);
@@ -507,6 +499,23 @@ async function fetchStageList() {
     }
   }
 };
+
+function setRefreshPolling() {
+  // 刷新页面后如果没找到doing项，不需要开启轮询
+  if (!stageList.value?.length) {
+    getStageList(gatewayId.value).then((res) => {
+      if (res?.length) {
+        const isDoing = res.some(st => ['doing'].includes(st?.release?.status));
+        if (isDoing) {
+          startPollingStages();
+        }
+        else {
+          emit('updated');
+        }
+      }
+    });
+  }
+}
 
 // 轮询stage列表发布状态
 const setPollingStatus = async () => {

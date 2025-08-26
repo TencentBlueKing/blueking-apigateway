@@ -21,6 +21,8 @@
  */
 
 import dayjs from 'dayjs';
+import { useAccessLog } from '@/stores';
+import { cloneDeep } from 'lodash-es';
 
 /**
  * useDatePicker - 时间选择器的自定义钩子函数
@@ -29,54 +31,65 @@ import dayjs from 'dayjs';
  */
 export const useDatePicker = (filterData?: any) => {
   const { t } = useI18n(); // 获取国际化函数
-  const shortcutsRange = reactive([
-    {
-      text: t('今天'), // 今天的快捷选项
-      value() {
-        const end = new Date();
-        const start = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-        return [start, end];
+  const route = useRoute();
+  const accessLogStore = useAccessLog();
+
+  const initShortcutSelectedIndex = shallowRef(['AccessLog'].includes(route.name as string) ? 1 : -1);
+  const shortcutSelectedIndex = shallowRef(cloneDeep(initShortcutSelectedIndex.value));
+  const isAccessLog = ref(!['StageReleaseRecord'].includes(route.name as string));
+  // 不同页面存在多种日期快捷选项
+  const shortcutsRange = reactive(isAccessLog.value
+    ? accessLogStore.datepickerShortcuts
+    : [
+      {
+        text: t('今天'), // 今天的快捷选项
+        value() {
+          const end = new Date();
+          const start = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+          return [start, end];
+        },
       },
-    },
-    {
-      text: t('近7天'), // 近7天的快捷选项
-      value() {
-        const end = new Date();
-        const start = new Date();
-        start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
-        return [start, end];
+      {
+        text: t('近7天'), // 近7天的快捷选项
+        value() {
+          const end = new Date();
+          const start = new Date();
+          start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+          return [start, end];
+        },
       },
-    },
-    {
-      text: t('近15天'), // 近15天的快捷选项
-      value() {
-        const end = new Date();
-        const start = new Date();
-        start.setTime(start.getTime() - 3600 * 1000 * 24 * 15);
-        return [start, end];
+      {
+        text: t('近15天'), // 近15天的快捷选项
+        value() {
+          const end = new Date();
+          const start = new Date();
+          start.setTime(start.getTime() - 3600 * 1000 * 24 * 15);
+          return [start, end];
+        },
       },
-    },
-    {
-      text: t('近30天'), // 近30天的快捷选项
-      value() {
-        const end = new Date();
-        const start = new Date();
-        start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
-        return [start, end];
+      {
+        text: t('近30天'), // 近30天的快捷选项
+        value() {
+          const end = new Date();
+          const start = new Date();
+          start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+          return [start, end];
+        },
       },
-    },
-  ]);
+    ]);
 
   const dateValue = ref<string[]>([]); // 日期值
+  // 面板默认切换值
+  const selectionMode = ref('date');
 
   /**
    * handleChange - 处理日期变化
    * @param {any} date - 选中的日期
    */
-  const handleChange = (date: any) => {
+  const handleChange = (date: string[], type: string) => {
     dateValue.value = date;
     // 选择了同一天，则需要把开始时间的时分秒设置为 00:00:00
-    if (dayjs(dateValue.value[0]).isSame(dateValue.value[1])) {
+    if (dateValue.value?.length > 0 && dayjs(dateValue.value[0]).isSame(dateValue.value[1])) {
       if (dateValue.value[0]?.setHours) {
         dateValue.value[0]?.setHours(0, 0, 0);
       }
@@ -88,13 +101,26 @@ export const useDatePicker = (filterData?: any) => {
           .format('YYYY-MM-DD HH:mm:ss');
       }
     }
+    // 如果不是在时间面板或者快捷选项选值，开始时间重置为00:00:00
+    if (dateValue.value?.length > 0
+      && ['date'].includes(type)
+      && ['date', 'datetimerange'].includes(selectionMode.value)
+      && shortcutSelectedIndex.value === -1) {
+      dateValue.value[0] = dayjs(dateValue.value[0])
+        .set('hour', 0)
+        .set('minute', 0)
+        .set('second', 0)
+        .format('YYYY-MM-DD HH:mm:ss');
+    }
   };
 
   /**
    * handleClear - 清除日期
    */
   const handleClear = () => {
-    dateValue.value = ['', ''];
+    dateValue.value = [];
+    shortcutSelectedIndex.value = cloneDeep(initShortcutSelectedIndex.value);
+    selectionMode.value = 'date';
     setFilterDate(dateValue.value);
   };
 
@@ -102,7 +128,24 @@ export const useDatePicker = (filterData?: any) => {
    * handleConfirm - 确认日期
    */
   const handleConfirm = () => {
+    selectionMode.value = 'date';
     setFilterDate(dateValue.value);
+  };
+
+  // 切换面板事件
+  const handleSelectionModeChange = (value: string) => {
+    selectionMode.value = value;
+  };
+
+  // 快捷想改变事件
+  const handleShortcutChange = (
+    _value: {
+      text: string
+      value: () => void
+    },
+    index: number,
+  ) => {
+    shortcutSelectedIndex.value = index;
   };
 
   /**
@@ -123,10 +166,13 @@ export const useDatePicker = (filterData?: any) => {
   };
 
   return {
-    shortcutsRange,
     dateValue,
+    shortcutsRange,
+    shortcutSelectedIndex,
     handleChange,
     handleClear,
     handleConfirm,
+    handleSelectionModeChange,
+    handleShortcutChange,
   };
 };

@@ -30,17 +30,18 @@
           <BkDatePicker
             :key="dateKey"
             ref="datePickerRef"
-            v-model="dateTimeRange"
+            v-model="dateValue"
+            type="datetimerange"
             style="max-width: 310px;"
             :clearable="false"
             :placeholder="t('选择日期时间范围')"
-            :shortcut-selected-index="shortcutSelectedIndex"
-            :shortcuts="accessLogStore.datepickerShortcuts"
             use-shortcut-text
-            type="datetimerange"
-            @change="handlePickerChange"
+            :shortcuts="shortcutsRange"
+            :shortcut-selected-index="shortcutSelectedIndex"
+            @change="handleChange"
             @shortcut-change="handleShortcutChange"
             @pick-success="handlePickerConfirm"
+            @selection-mode-change="handleSelectionModeChange"
           />
         </BkFormItem>
         <BkFormItem :label="t('环境')">
@@ -338,7 +339,7 @@ import {
 } from 'lodash-es';
 
 import { copy } from '@/utils';
-import { useChartIntervalOption } from '@/hooks';
+import { useChartIntervalOption, useDatePicker } from '@/hooks';
 import SearchInput from './components/SearchInput.vue';
 import { useAccessLog, useFeatureFlag, useGateway } from '@/stores';
 import {
@@ -384,9 +385,7 @@ const datePickerRef = ref(null);
 const isPageLoading = ref(false);
 const isDataLoading = ref(false);
 const isShareLoading = ref(false);
-const shortcutSelectedIndex = ref(1);
 const dateKey = ref('dateKey');
-const dateTimeRange = ref([]);
 const resourceList = ref<any>([]);
 const pagination = ref({
   current: 1,
@@ -525,6 +524,16 @@ const stageList = ref([]);
 const isAISliderShow = ref(false);
 const aiRequestMessage = ref('');
 
+const {
+  dateValue,
+  shortcutsRange,
+  shortcutSelectedIndex,
+  handleChange,
+  handleConfirm,
+  handleShortcutChange,
+  handleSelectionModeChange,
+} = useDatePicker(searchParams);
+
 const apigwId = computed(() => gatewayStore.apigwId);
 
 const searchConditions = computed(() => {
@@ -564,7 +573,7 @@ const formatDatetime = (timeRange: number[]) => {
 };
 
 const setSearchTimeRange = () => {
-  let timeRange = dateTimeRange.value;
+  let timeRange = dateValue.value;
   // 选择的是时间快捷项，需要实时计算时间值
   if (shortcutSelectedIndex.value !== -1) {
     timeRange = accessLogStore.datepickerShortcuts[shortcutSelectedIndex.value].value();
@@ -1023,20 +1032,8 @@ const handleClickCopyLink = async ({ request_id }: any) => {
   }
 };
 
-const handleShortcutChange = (value: Record<string, any>, index: number) => {
-  shortcutSelectedIndex.value = index;
-  updateTableEmptyConfig();
-};
-
-const handlePickerChange = () => {
-  // 选择了同一天，则需要把开始时间的时分秒设置为 00:00:00
-  if (dayjs(dateTimeRange.value[0]).isSame(dateTimeRange.value[1])) {
-    dateTimeRange.value[0]?.setHours(0, 0, 0);
-  }
-};
-
 const handlePickerConfirm = () => {
-  handlePickerChange();
+  handleConfirm();
   nextTick(() => {
     pagination.value.current = 1;
     getSearchData();
@@ -1093,15 +1090,14 @@ const handleClearFilterKey = () => {
   }
   searchParams.value.resource_id = '';
   [datePickerRef.value.shortcut] = [accessLogStore.datepickerShortcuts[1]];
-  dateTimeRange.value = [];
+  dateValue.value = [];
   shortcutSelectedIndex.value = 1;
   dateKey.value = String(+new Date());
-  setSearchTimeRange();
   handleSearch('');
 };
 
 const updateTableEmptyConfig = () => {
-  const time = dateTimeRange.value.some(Boolean);
+  const time = dateValue.value.some(Boolean);
   if (keyword.value || !table.value.list.length) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
@@ -1147,13 +1143,13 @@ const initChart = async () => {
     const endTime = zoomedXAxisData[zoomedXAxisData.length - 1];
 
     if (startTime === endTime) {
-      dateTimeRange.value = [];
+      dateValue.value = [];
       shortcutSelectedIndex.value = 1;
       [datePickerRef.value.shortcut] = [accessLogStore.datepickerShortcuts[1]];
     }
     else {
       shortcutSelectedIndex.value = -1;
-      dateTimeRange.value = [new Date(startTime), new Date(endTime)];
+      dateValue.value = [new Date(startTime), new Date(endTime)];
     }
 
     dateKey.value = String(+new Date());

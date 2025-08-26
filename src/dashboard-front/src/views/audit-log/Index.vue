@@ -31,13 +31,15 @@
             type="datetimerange"
             class="w-320px!"
             format="yyyy-MM-dd HH:mm:ss"
+            use-shortcut-text
             :placeholder="t('选择日期时间范围')"
             :shortcuts="shortcutsRange"
-            use-shortcut-text
             :shortcut-selected-index="shortcutSelectedIndex"
             @change="handleChange"
+            @shortcut-change="handleShortcutChange"
             @clear="handlePickClear"
             @pick-success="handlePickSuccess"
+            @selection-mode-change="handleSelectionModeChange"
           />
         </BkFormItem>
         <BkFormItem class="ag-form-item-search">
@@ -125,7 +127,6 @@ const auditLogStore = useAuditLog();
 const userInfoStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
 
-const shortcutSelectedIndex = shallowRef(-1);
 const tableKey = ref(-1);
 const orderBy = ref('');
 const dateKey = ref('dateKey');
@@ -226,11 +227,14 @@ const searchData = computed(() => {
 
 const { maxTableLimit, clientHeight } = useMaxTableLimit();
 const {
-  shortcutsRange,
   dateValue,
+  shortcutsRange,
+  shortcutSelectedIndex,
   handleChange,
   handleClear,
   handleConfirm,
+  handleShortcutChange,
+  handleSelectionModeChange,
 } = useDatePicker(filterData);
 
 const getFilterData = (payload: Record<string, string>, curData: Record<string, string>) => {
@@ -428,11 +432,15 @@ const handlePickSuccess = () => {
 
 const handlePickClear = () => {
   handleClear();
+  handleTimeClear();
 };
 
 const handleTimeClear = () => {
-  shortcutSelectedIndex.value = -1;
-  dateValue.value = [];
+  filterData.value = Object.assign(filterData.value, {
+    time_start: '',
+    time_end: '',
+  });
+  pagination.value.current = 1;
 };
 
 const handleClearFilterKey = () => {

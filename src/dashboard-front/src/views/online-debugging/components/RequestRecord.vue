@@ -36,18 +36,18 @@
           <BkDatePicker
             ref="topDatePicker"
             :key="dateKey"
-            v-model="dateTimeRange"
+            v-model="dateValue"
             class="search-date"
             :placeholder="t('选择日期时间范围')"
             :type="'datetimerange'"
-            :shortcuts="accessLogStore.datepickerShortcuts"
-            shortcut-close
+            :shortcuts="shortcutsRange"
             use-shortcut-text
             :shortcut-selected-index="shortcutSelectedIndex"
             @shortcut-change="handleShortcutChange"
-            @pick-success="handleTimeChange"
-            @change="handleTimeChange"
-            @clear="handleTimeClear"
+            @change="handleChange"
+            @clear="handlePickClear"
+            @pick-success="handlePickSuccess"
+            @selection-mode-change="handleSelectionModeChange"
           />
         </div>
 
@@ -208,7 +208,7 @@
               <TableEmpty
                 :empty-type="tableEmptyConf.emptyType"
                 :abnormal="tableEmptyConf.isAbnormal"
-                @reacquire="setSearchTimeRange"
+                @refresh="getList"
                 @clear-filter="handleClearFilterKey"
               />
             </template>
@@ -220,7 +220,8 @@
 </template>
 
 <script lang="ts" setup>
-import { useAccessLog, useGateway } from '@/stores';
+import { useGateway } from '@/stores';
+import { useDatePicker } from '@/hooks';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import EditorMonaco from '@/components/ag-editor/Index.vue';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
@@ -230,11 +231,9 @@ import {
 } from '@/services/source/online-debugging';
 import { CopyShape } from 'bkui-vue/lib/icon';
 import { copy } from '@/utils';
-import dayjs from 'dayjs';
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
-const accessLogStore = useAccessLog();
 
 const isShow = ref<boolean>(false);
 const filterData = ref<any>({
@@ -242,10 +241,20 @@ const filterData = ref<any>({
   time_start: '',
   time_end: '',
 });
-const dateTimeRange = ref([]);
+
+const {
+  dateValue,
+  shortcutsRange,
+  shortcutSelectedIndex,
+  handleChange,
+  handleClear,
+  handleConfirm,
+  handleShortcutChange,
+  handleSelectionModeChange,
+} = useDatePicker(filterData);
+
 const dateKey = ref<string>('dateKey');
 const topDatePicker = ref();
-const shortcutSelectedIndex = shallowRef(-1);
 const tableRef = ref();
 const resourceEditorRef: any = ref<InstanceType<typeof EditorMonaco>>();
 const tableList = ref<any>([]);
@@ -348,42 +357,15 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.emptyType = '';
 };
 
-const handleShortcutChange = (value: Record<string, any>, index: number) => {
-  shortcutSelectedIndex.value = index;
+const handlePickClear = () => {
+  handleClear();
+  getList();
   updateTableEmptyConfig();
 };
 
-const formatDatetime = (timeRange: number[]) => {
-  return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
-};
-
-const setSearchTimeRange = () => {
-  // 选择了同一天，则需要把开始时间的时分秒设置为 00:00:00
-  if (dayjs(dateTimeRange.value[0]).isSame(dateTimeRange.value[1])) {
-    dateTimeRange.value[0].setHours(0, 0, 0);
-  }
-  let timeRange = dateTimeRange.value;
-  // 选择的是时间快捷项，需要实时计算时间值
-  if (shortcutSelectedIndex.value !== -1) {
-    timeRange = accessLogStore.datepickerShortcuts[shortcutSelectedIndex.value].value();
-  }
-  const formatTimeRange = formatDatetime(timeRange);
-  filterData.value = Object.assign(filterData.value, {
-    time_start: formatTimeRange[0] || '',
-    time_end: formatTimeRange[1] || '',
-  });
-
+const handlePickSuccess = () => {
+  handleConfirm();
   getList();
-};
-
-const handleTimeChange = () => {
-  setSearchTimeRange();
-};
-
-const handleTimeClear = () => {
-  shortcutSelectedIndex.value = -1;
-  dateTimeRange.value = [];
-  setSearchTimeRange();
 };
 
 const handleShowDetails = async (event: Event, row: Record<string, any>) => {
@@ -405,7 +387,7 @@ const clear = () => {
   filterData.value.time_start = '';
   filterData.value.time_end = '';
   shortcutSelectedIndex.value = -1;
-  dateTimeRange.value = [];
+  dateValue.value = [];
 };
 
 const show = () => {
@@ -435,6 +417,7 @@ const getList = async () => {
 const handleClearFilterKey = () => {
   clear();
   getList();
+  updateTableEmptyConfig();
   dateKey.value = String(+new Date());
 };
 

@@ -34,6 +34,7 @@ export const useUserInfo = defineStore('useUserInfo', {
   actions: {
     async fetchUserInfo() {
       this.info = await getUserInfo();
+      return this.info;
     },
   },
 });

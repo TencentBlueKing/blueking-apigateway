@@ -97,10 +97,10 @@ export const useEnv = defineStore('useEnv', {
     /**
      * 查询环境变量信息
      */
-    fetchEnv() {
-      getEnv().then((result) => {
-        Object.assign(this.env, result);
-      });
+    async fetchEnv() {
+      const result = await getEnv();
+      this.env = Object.assign(this.env, result ?? {});
+      return this.env;
     },
   },
 });
