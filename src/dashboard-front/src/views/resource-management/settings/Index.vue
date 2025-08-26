@@ -263,6 +263,7 @@
                       :resource-id="resourceId"
                       doc-root-class="doc-tab"
                       class="resource-detail"
+                      :class="{'show-notice': isShowNoticeAlert}"
                       @done="isComponentLoading = false"
                       @deleted-success="handleDeleteSuccess"
                       @on-jump="(id: number | any) => handleShowInfo(id)"
@@ -423,6 +424,7 @@ import {
 } from '@/types/common';
 import { isAfter24h } from '@/utils';
 import {
+  useFeatureFlag,
   useGateway,
   useResourceSetting,
   useResourceVersion,
@@ -448,6 +450,7 @@ const router = useRouter();
 const gatewayStore = useGateway();
 const resourceVersionStore = useResourceVersion();
 const resourceSettingStore = useResourceSetting();
+const featureFlagStore = useFeatureFlag();
 
 const tableData = ref<any[]>([]);
 const tableRef = useTemplateRef('tableRef');
@@ -626,6 +629,8 @@ const deleteTableColumns = [
     field: 'method',
   },
 ];
+
+const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 
 const customMethodsList = computed(() => {
   const methods = HTTP_METHODS.map(item => ({
@@ -1604,6 +1609,9 @@ onMounted(() => {
 .resource-detail {
   max-height: calc(100vh - 165px);
   overflow-y: auto;
+  &.show-notice {
+    max-height: calc(100vh - 205px);
+  }
 }
 </style>
 
