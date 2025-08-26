@@ -32,7 +32,7 @@ const handleLogout = () => {
 </script>
 
 <template>
-  <bk-popover
+  <BkPopover
     ext-cls="user-home"
     placement="bottom"
     theme="light"
@@ -41,10 +41,13 @@ const handleLogout = () => {
   >
     <div class="user-name">
       <template v-if="!featureFlagStore.isEnableDisplayName">
-        {{ userInfoStore?.info?.username }}
+        {{ userInfoStore?.info?.display_name || userInfoStore?.info?.username }}
       </template>
       <template v-else>
-        <bk-user-display-name :user-id="userInfoStore?.info?.display_name" />
+        <bk-user-display-name
+          :user-id="userInfoStore?.info?.username || userInfoStore?.info?.display_name"
+          :api-base-url="envStore?.tenantUserDisplayAPI"
+        />
       </template>
       <AngleDownLine class="pl-5px" />
     </div>
@@ -56,7 +59,7 @@ const handleLogout = () => {
         {{ t('退出登录') }}
       </div>
     </template>
-  </bk-popover>
+  </BkPopover>
 </template>
 
 <style lang="scss" scoped>

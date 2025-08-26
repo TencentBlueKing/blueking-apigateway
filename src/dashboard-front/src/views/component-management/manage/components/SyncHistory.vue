@@ -32,13 +32,14 @@
             style="width: 320px;"
             :placeholder="t('选择日期时间范围')"
             type="datetimerange"
-            :shortcuts="shortcutsRange"
             use-shortcut-text
+            :shortcuts="shortcutsRange"
             :shortcut-selected-index="shortcutSelectedIndex"
             @change="handleChange"
             @shortcut-change="handleShortcutChange"
             @clear="handlePickClear"
             @pick-success="handlePickSuccess"
+            @selection-mode-change="handleSelectionModeChange"
           />
         </BkFormItem>
       </BkForm>
@@ -84,7 +85,6 @@ const { t, locale } = useI18n();
 const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 195 });
 
 const dateKey = ref('dateKey');
-const shortcutSelectedIndex = ref(-1);
 const tableColumns = ref([
   {
     label: 'ID',
@@ -200,9 +200,12 @@ const {
 const {
   dateValue,
   shortcutsRange,
+  shortcutSelectedIndex,
   handleChange,
   handleClear,
   handleConfirm,
+  handleShortcutChange,
+  handleSelectionModeChange,
 } = useDatePicker(searchParams);
 
 const updateTableEmptyConfig = () => {
@@ -227,7 +230,6 @@ const handlePickSuccess = () => {
 const handleClearFilterKey = () => {
   handlePickClear();
   dateKey.value = String(+new Date());
-  filterData.value = cloneDeep(initFilterData);
   pagination.value = Object.assign(pagination.value, {
     current: 1,
     limit: 10,
@@ -241,14 +243,8 @@ const handleVersion = (id: string) => {
   });
 };
 
-const handleShortcutChange = (value: string, index: number) => {
-  shortcutSelectedIndex.value = index;
-};
-
 const handleTimeClear = () => {
   pagination.value.current = 1;
-  shortcutSelectedIndex.value = -1;
-  dateValue.value = [];
   updateTableEmptyConfig();
 };
 </script>

@@ -58,7 +58,7 @@
             :value-split-code="'+'"
             clearable
             unique-select
-            style="width: 450px; background: #fffff"
+            class="w-450px bg-white"
           />
         </BkFormItem>
       </BkForm>

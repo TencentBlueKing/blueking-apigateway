@@ -19,25 +19,25 @@
   <div class="permission-record-container page-wrapper-padding">
     <div class="header">
       <BkForm class="flex">
-        <BkFormItem class="ag-form-item-datepicker m-b-15px">
-          <template #label>
-            <div :class="locale === 'en' ? 'w-80px' : 'w-85px'">
-              {{ t('选择时间') }}
-            </div>
-          </template>
+        <BkFormItem
+          :label="t('选择时间')"
+          :label-width="locale === 'en' ? 108 : 80"
+          class="ag-form-item-datepicker m-b-15px"
+        >
           <BkDatePicker
             :key="dateKey"
             v-model="dateValue"
             style="width: 320px"
             :placeholder="t('选择日期时间范围')"
             :type="'datetimerange'"
-            :shortcuts="shortcutsRange"
             use-shortcut-text
+            :shortcuts="shortcutsRange"
             :shortcut-selected-index="shortcutSelectedIndex"
             @shortcut-change="handleShortcutChange"
             @change="handleChange"
             @clear="handlePickClear"
             @pick-success="handlePickSuccess"
+            @selection-mode-change="handleSelectionModeChange"
           />
         </BkFormItem>
         <BkFormItem
@@ -338,7 +338,6 @@ const filterData = ref({
   time_end: '',
 });
 const resourceList = ref([]);
-const shortcutSelectedIndex = ref(-1);
 const dateKey = ref('dateKey');
 const curRecord = ref<IApprovalListItem>({
   bk_app_code: '',
@@ -385,9 +384,12 @@ const {
 const {
   dateValue,
   shortcutsRange,
+  shortcutSelectedIndex,
   handleChange,
   handleClear,
   handleConfirm,
+  handleShortcutChange,
+  handleSelectionModeChange,
 } = useDatePicker(filterData);
 
 const setTableHeader = () => {
@@ -504,19 +506,6 @@ const handlePickSuccess = () => {
 
 const handlePickClear = () => {
   handleClear();
-  handleTimeClear();
-};
-
-// 日期清除
-const handleTimeClear = () => {
-  shortcutSelectedIndex.value = -1;
-  filterData.value.time_start = '';
-  filterData.value.time_end = '';
-};
-
-// 日期快捷方式改变触发
-const handleShortcutChange = (value, index: number) => {
-  shortcutSelectedIndex.value = index;
 };
 
 // 展示详情
