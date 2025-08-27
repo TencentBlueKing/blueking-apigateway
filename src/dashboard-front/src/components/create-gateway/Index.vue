@@ -102,11 +102,14 @@
             <BkFormItem
               :label="t('维护人员')"
               property="maintainers"
-              required
+              :required="false"
+              class="member-selector-form"
+              :class="[{ 'is-error': isShowMemberError}]"
             >
               <MemberSelector
                 v-if="!featureFlagStore.isTenantMode"
                 v-model="formData.maintainers"
+                @change="handleMemberChange"
               />
               <BkUserSelector
                 v-else
@@ -114,7 +117,14 @@
                 :api-base-url="envStore.tenantUserDisplayAPI"
                 multiple
                 :tenant-id="userStore.info.tenant_id"
+                @change="handleMemberChange"
               />
+              <div
+                v-if="isShowMemberError"
+                class="color-#ea3636 text-12px p-t-4px leading-[1]"
+              >
+                {{ t('维护人员不能为空') }}
+              </div>
             </BkFormItem>
             <BkFormItem
               :label="t('描述')"
@@ -430,6 +440,7 @@ const formData = ref<ParamType>({
 });
 const submitLoading = ref(false);
 const isShowMarkdown = ref(false);
+const isShowMemberError = ref(false);
 const markdownHtml = ref('');
 const newGateway = ref({
   name: '',
@@ -495,13 +506,6 @@ const rules = {
       },
       message: t('请输入正确的代码仓库地址，http(s)://xxx.git'),
       trigger: 'change',
-    },
-  ],
-  'maintainers': [
-    {
-      required: true,
-      message: t('维护人员不能为空'),
-      trigger: 'blur',
     },
   ],
 };
@@ -655,6 +659,11 @@ watch(
   },
 );
 
+const handleMemberChange = (member: string[]) => {
+  formData.value.maintainers = member;
+  isShowMemberError.value = !member.length;
+};
+
 const showGuide = async () => {
   const data = await getGuideDocs(newGateway.value?.id);
   markdownHtml.value = md.render(data.content);
@@ -690,6 +699,9 @@ const handleConfirmCreate = async () => {
   try {
     await formRef.value?.validate();
 
+    if (!formData.value.maintainers.length) {
+      return;
+    }
     submitLoading.value = true;
     const payload = cloneDeep(formData.value);
     if (payload.kind === 0) {
@@ -738,6 +750,7 @@ const handleConfirmCreate = async () => {
 const handleCancel = () => {
   formRef?.value?.clearValidate();
   formData.value = cloneDeep(defaultFormData.value);
+  isShowMemberError.value = false;
   isShow.value = false;
 };
 
@@ -897,5 +910,25 @@ const handleCancel = () => {
 :deep(.ag-markdown-view .ag-copy-btn) {
   color: #3A84FF;
   background: #F5F7FA;
+}
+
+.member-selector-form {
+  :deep(.bk-form-label) {
+    &::after {
+      position: absolute;
+      top: 0;
+      width: 14px;
+      color: #ea3636;
+      text-align: center;
+      content: "*";
+    }
+  }
+
+  &.is-error {
+    :deep(.bk-tag-input-trigger),
+    :deep(.tags-container) {
+      border-color: #ea3636;
+    }
+  }
 }
 </style>

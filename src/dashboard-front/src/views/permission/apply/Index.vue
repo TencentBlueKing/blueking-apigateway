@@ -91,7 +91,7 @@
             :api-base-url="envStore.tenantUserDisplayAPI"
             :tenant-id="userStore.info.tenant_id"
             :placeholder="t('请输入用户')"
-            class="min-w-200px"
+            class="w-200px"
           />
         </BkFormItem>
       </BkForm>
