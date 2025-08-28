@@ -28,6 +28,7 @@ from apigateway.apps.mcp_server.constants import (
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.common.error_codes import error_codes
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.utils.time import now_datetime
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,8 @@ class MCPServerPermissionHandler:
         queryset = MCPServer.objects.filter(
             id__in=mcp_server_ids,
             status=MCPServerStatusEnum.ACTIVE.value,
+            gateway__status=GatewayStatusEnum.ACTIVE.value,
+            stage__status=StageStatusEnum.ACTIVE.value,
         )
 
         selected_mcp_server_ids = list(queryset.values_list("id", flat=True))
