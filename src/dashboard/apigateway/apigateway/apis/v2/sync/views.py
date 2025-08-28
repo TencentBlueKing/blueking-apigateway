@@ -533,13 +533,12 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
     decorator=swagger_auto_schema(
         operation_description="获取网关最新资源版本",
         responses={status.HTTP_200_OK: serializers.GatewayResourceVersionLatestRetrieveOutputSLZ()},
-        tags=["OpenAPI.V2.Open"],
+        tags=["OpenAPI.V2.Sync"],
     ),
 )
 class ResourceVersionLatestRetrieveApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
 
-    @swagger_auto_schema(tags=["OpenAPI.V1"])
     def get(self, request, *args, **kwargs):
         resource_version = ResourceVersion.objects.get_latest_version(request.gateway.id)
 
