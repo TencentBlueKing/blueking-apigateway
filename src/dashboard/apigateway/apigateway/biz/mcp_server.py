@@ -236,7 +236,6 @@ class MCPServerPermissionHandler:
     def create_apply(bk_app_code: str, mcp_server_ids: List[int], reason: str, applied_by: str):
         queryset = MCPServer.objects.filter(
             id__in=mcp_server_ids,
-            is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
             gateway__status=GatewayStatusEnum.ACTIVE.value,
             stage__status=StageStatusEnum.ACTIVE.value,
