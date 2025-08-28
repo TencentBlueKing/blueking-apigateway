@@ -1267,7 +1267,7 @@ paths:
         backend:
           name: default
           method: post
-          path: /backend/api/v2/sync/gateways/{gateway_name}/skds/
+          path: /backend/api/v2/sync/gateways/{gateway_name}/sdks/
           matchSubpath: false
           timeout: 0
         pluginConfigs: [ ]
