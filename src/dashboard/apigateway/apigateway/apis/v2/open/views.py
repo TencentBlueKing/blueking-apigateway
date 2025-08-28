@@ -347,6 +347,12 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
             data["applied_by"],
         )
 
+        if len(queryset) == 0:
+            raise error_codes.NOT_FOUND.format(
+                "请检查对应 mcp server /环境/网关是否都已启用。",
+                replace=True,
+            )
+
         output_slz = serializers.MCPServerAppPermissionApplyCreateOutputSLZ(queryset, many=True)
         return OKJsonResponse(data=output_slz.data)
 
