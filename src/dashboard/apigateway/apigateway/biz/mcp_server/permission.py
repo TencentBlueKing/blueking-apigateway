@@ -73,7 +73,12 @@ class MCPServerPermissionHandler:
             for obj in queryset
         ]
 
-        return MCPServerAppPermissionApply.objects.bulk_create(add_app_permissions_apply_list)
+        before_ids = list(
+            MCPServerAppPermissionApply.objects.filter(bk_app_code=bk_app_code).values_list("id", flat=True)
+        )
+        MCPServerAppPermissionApply.objects.bulk_create(add_app_permissions_apply_list)
+        # 对于自增 ID，bulk_create 检索不到 Mysql 的主键，所以需要手动查询数据
+        return MCPServerAppPermissionApply.objects.filter(bk_app_code=bk_app_code).exclude(id__in=before_ids)
 
     @staticmethod
     def filter_records(
