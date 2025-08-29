@@ -151,6 +151,8 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
 
     @property
     def extra_info(self) -> Dict:
+        if not isinstance(self._extra_info, dict):
+            return {}
         return self._extra_info
 
     @extra_info.setter
