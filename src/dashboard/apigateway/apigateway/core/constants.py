@@ -181,7 +181,6 @@ class ResourceVersionTypeEnum(StructuredEnum):
 
 class ProxyTypeEnum(StructuredEnum):
     HTTP = EnumField("http", "http")
-    MOCK = EnumField("mock", "mock")
 
 
 class ScopeTypeEnum(StructuredEnum):
