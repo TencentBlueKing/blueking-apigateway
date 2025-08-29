@@ -36,6 +36,8 @@ from apigateway.core.constants import (
     HOST_WITHOUT_SCHEME_PATTERN,
     BackendTypeEnum,
     GatewayStatusEnum,
+    HashOnTypeEnum,
+    LoadBalanceTypeEnum,
 )
 from apigateway.core.models import BackendConfig, Gateway, Proxy, Resource, ResourceVersion, Stage
 
@@ -573,3 +575,47 @@ class MCPServerValidator(GetGatewayFromContextMixin):
             schema = schema_map.get(name)
             if not ResourceOpenAPISchemaHandler.has_openapi_schem(schema):
                 raise serializers.ValidationError(_(f"请检查当前资源:{name}对应的资源请求参数是否已经确认"))
+
+
+class UpstreamValidator:
+    """上游配置校验器"""
+
+    requires_context = True
+
+    def __init__(self, loadbalance_field="loadbalance", hash_on_field="hash_on", key_field="key", hosts_field="hosts"):
+        self.loadbalance_field = loadbalance_field
+        self.hash_on_field = hash_on_field
+        self.key_field = key_field
+        self.hosts_field = hosts_field
+
+    def __call__(self, attrs: dict, serializer):
+        loadbalance = attrs.get(self.loadbalance_field)
+        hash_on = attrs.get(self.hash_on_field)
+        key = attrs.get(self.key_field)
+        hosts = attrs.get(self.hosts_field)
+
+        if loadbalance == LoadBalanceTypeEnum.WRR.value:
+            if not hosts:
+                raise serializers.ValidationError(_("负载均衡类型为 Weighted-RR 时，Host 列表不能为空。"))
+
+            host_without_weight = [host for host in hosts if host.get("weight") is None]
+            if host_without_weight:
+                raise serializers.ValidationError(_("负载均衡类型为 Weighted-RR 时，Host 权重必填。"))
+
+        elif loadbalance == LoadBalanceTypeEnum.CHASH.value:
+            if not hash_on:
+                raise serializers.ValidationError("hash_on is required when loadbalance is chash")
+            if not key:
+                raise serializers.ValidationError("key is required when loadbalance is chash")
+
+            if (hash_on in [HashOnTypeEnum.VARS.value, HashOnTypeEnum.VARS_COMBINATIONS.value]) and not key.startswith(
+                "$"
+            ):
+                raise serializers.ValidationError("key must start with $ when hash_on is vars or vars_combinations")
+            if hash_on == HashOnTypeEnum.HEADER.value and not key.startswith("http_"):
+                raise serializers.ValidationError("key must start with http_ when hash_on is header")
+            if hash_on == HashOnTypeEnum.COOKIE.value and not key.startswith("cookie_"):
+                raise serializers.ValidationError("key must start with cookie_ when hash_on is cookie")
+        # NOTE: currently, the logic of hosts open api v1/v2 and web api is different, so we don't validate hosts here, but should validate it in the serializer. (maybe in the future, we can merge the logic of hosts open api v2 and web api, after remove open api v1)
+        # the host is {host(domain), weight} in open api v1/v2
+        # the host is {scheme, host(not domain), weight} in web api
