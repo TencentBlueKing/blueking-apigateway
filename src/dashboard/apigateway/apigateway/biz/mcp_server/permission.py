@@ -28,6 +28,7 @@ from apigateway.apps.mcp_server.constants import (
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.common.error_codes import error_codes
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.utils.time import now_datetime
 
 logger = logging.getLogger(__name__)
@@ -38,8 +39,9 @@ class MCPServerPermissionHandler:
     def create_apply(bk_app_code: str, mcp_server_ids: List[int], reason: str, applied_by: str):
         queryset = MCPServer.objects.filter(
             id__in=mcp_server_ids,
-            is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
+            gateway__status=GatewayStatusEnum.ACTIVE.value,
+            stage__status=StageStatusEnum.ACTIVE.value,
         )
 
         selected_mcp_server_ids = list(queryset.values_list("id", flat=True))
@@ -71,7 +73,12 @@ class MCPServerPermissionHandler:
             for obj in queryset
         ]
 
-        return MCPServerAppPermissionApply.objects.bulk_create(add_app_permissions_apply_list)
+        before_ids = list(
+            MCPServerAppPermissionApply.objects.filter(bk_app_code=bk_app_code).values_list("id", flat=True)
+        )
+        MCPServerAppPermissionApply.objects.bulk_create(add_app_permissions_apply_list)
+        # 对于自增 ID，bulk_create 检索不到 Mysql 的主键，所以需要手动查询数据
+        return MCPServerAppPermissionApply.objects.filter(bk_app_code=bk_app_code).exclude(id__in=before_ids)
 
     @staticmethod
     def filter_records(
