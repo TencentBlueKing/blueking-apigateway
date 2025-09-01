@@ -37,6 +37,7 @@ from apigateway.biz.mcp_server import MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
 from apigateway.common.contexts import GatewayAuthContext
+from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Stage
 from apigateway.utils.responses import OKJsonResponse
@@ -320,6 +321,12 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
             data["reason"],
             data["applied_by"],
         )
+
+        if queryset.count() == 0:
+            raise error_codes.NOT_FOUND.format(
+                "请检查对应 mcp server /环境/网关是否都已启用。",
+                replace=True,
+            )
 
         output_slz = serializers.MCPServerAppPermissionApplyCreateOutputSLZ(queryset, many=True)
         return OKJsonResponse(data=output_slz.data)
