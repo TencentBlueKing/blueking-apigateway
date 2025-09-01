@@ -56,6 +56,10 @@ class TestGateway:
         gateway = G(models.Gateway, _extra_info={"key": "value"})
         assert gateway.extra_info == {"key": "value"}
 
+        # Test with non-empty extra_info
+        gateway = G(models.Gateway, _extra_info="null")
+        assert gateway.extra_info == {}
+
     def test_extra_info_setter_normal_gateway(self):
         gateway = G(models.Gateway)
 
