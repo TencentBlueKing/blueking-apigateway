@@ -45,6 +45,7 @@
                 v-model="formData.kind"
                 type="card"
                 :disabled="isEdit"
+                @change="handleKindChange"
               >
                 <BkRadioButton :label="0">
                   {{ t('普通网关') }}
@@ -642,10 +643,7 @@ watch(
 watch(
   () => formData.value?.name,
   () => {
-    if (envStore.env.EDITION === 'te' && formData.value.kind === 1) {
-      formData.value.extra_info!.repository
-        = `${repositoryUrl.value.replace('{{gateway_name}}', formData.value.name || '')}`;
-    }
+    setRepositoryAddress();
   },
 );
 
@@ -658,6 +656,17 @@ watch(
     }
   },
 );
+
+const setRepositoryAddress = () => {
+  if (envStore.env.EDITION === 'te' && formData.value.kind === 1) {
+    formData.value.extra_info!.repository
+        = `${repositoryUrl.value.replace('{{gateway_name}}', formData.value.name || '')}`;
+  }
+};
+
+const handleKindChange = () => {
+  setRepositoryAddress();
+};
 
 const handleMemberChange = (member: string[]) => {
   formData.value.maintainers = member;
