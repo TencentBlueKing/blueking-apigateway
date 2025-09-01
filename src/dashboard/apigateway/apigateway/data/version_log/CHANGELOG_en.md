@@ -1,3 +1,12 @@
+<!-- 2025-09-01 -->
+# V1.17.11 Release Log
+
+### Bug Fixes
+
+- Fix: Frontend experience issues
+
+---
+
 <!-- 2025-08-08 -->
 # V1.17.10 Release Log
 
