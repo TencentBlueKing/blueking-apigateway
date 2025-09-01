@@ -15,6 +15,7 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
+import { toValue } from 'vue';
 import { useWindowSize } from '@vueuse/core';
 import { locale } from '@/locales';
 import { useFeatureFlag } from '@/stores';
