@@ -260,7 +260,7 @@ const getChartOption = () => {
     grid: {},
   };
 
-  let moreOption = {};
+  let moreOption: any = {};
 
   if (instanceId !== 'response_time') {
     chartData?.series?.forEach((item: ISeriesItemType) => {
@@ -282,6 +282,26 @@ const getChartOption = () => {
         }),
       }));
       moreOption = getChartMoreOption(datapoints);
+
+      // 由于 总请求数 容器宽度小，所以 x 轴 label 间隔加大
+      if (instanceId === 'requests') {
+        const dataLength = datapoints?.length || 0;
+        if (dataLength > 25) {
+          moreOption.xAxis.axisLabel = {
+            interval: Math.floor(dataLength / 10),
+            rotate: 45,
+            margin: 10,
+            fontSize: 10,
+          };
+        }
+        else {
+          moreOption.xAxis.axisLabel = {
+            interval: 0,
+            rotate: 0,
+            fontSize: 12,
+          };
+        }
+      }
     });
     // 设置图表颜色
     chartOption.color = generateChartColor(chartData.series ?? []);
@@ -367,10 +387,10 @@ const getChartOption = () => {
 
 const getChartMoreOption = (seriesData: Array<Array<number>>) => {
   // 1. 根据data的最大值，动态计算出max合适值和interval配置
-  const serieData = seriesData.map((item: Array<number>) => Math.round(item[0]))
-    .filter((item: number) => !isNaN(item));
-  const maxNumber = Math.max(...serieData);
-  const yAxisIntervalOption = getChartIntervalOption(maxNumber, 'number', 'yAxis');
+  // const serieData = seriesData.map((item: Array<number>) => Math.round(item[0]))
+  //   .filter((item: number) => !isNaN(item));
+  // const maxNumber = Math.max(...serieData);
+  // const yAxisIntervalOption = getChartIntervalOption(maxNumber, 'number', 'yAxis');
 
   // 2. 根据时间值计算xAxis显示年/月/日/时间部分
   const xAxisData = seriesData.map((item: Array<number>) => Math.round(item[1]));
@@ -379,8 +399,8 @@ const getChartMoreOption = (seriesData: Array<Array<number>>) => {
   const timeDuration = Math.round((xAxisData[xAxisData.length - 1] - xAxisData[0]) / 1000);
   const xAxisIntervalOption = getChartIntervalOption(timeDuration, 'time', 'xAxis');
 
-  return merge(yAxisIntervalOption, xAxisIntervalOption);
-  // return xAxisIntervalOption;
+  // return merge(yAxisIntervalOption, xAxisIntervalOption);
+  return xAxisIntervalOption;
 };
 
 const generateChartColor = (chartData: ISeriesItemType[]) => {
