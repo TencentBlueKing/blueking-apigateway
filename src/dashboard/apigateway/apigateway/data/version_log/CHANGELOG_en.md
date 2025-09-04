@@ -1,3 +1,13 @@
+<!-- 2025-09-04 -->
+# V1.16.6 Release Log
+
+### Bug Fixes
+
+- Fix: mcp server authorization application problem
+- Fix: mcp server permission application interface returns ID problem
+
+---
+
 <!-- 2025-08-04 -->
 # V1.16.4 Release Log
 
