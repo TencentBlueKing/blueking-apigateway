@@ -15,11 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
 import pytest
 
 from apigateway.controller.crds.constants import UpstreamTypeEnum
-from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
-from apigateway.core.models import Context
+from apigateway.core.models import BackendConfig
 
 
 class TestServiceConvertor:
@@ -27,56 +27,73 @@ class TestServiceConvertor:
         self,
         edge_gateway,
         edge_gateway_stage,
-        edge_gateway_stage_context_proxy_http,
+        fake_backend,
         fake_service_convertor,
         backend_service_http_scheme,
-        backend_service_http_domain,
     ):
         services = fake_service_convertor.convert()
         assert len(services) == 1
 
         service = services[0]
-        assert service.spec.name.startswith("_")
 
+        stage_id = edge_gateway_stage.id
+        stage_name = edge_gateway_stage.name
+        backend_id = fake_backend.id
+
+        # assert metadata
         metadata = service.metadata
         assert 0 < len(metadata.name) <= 64
 
         assert metadata.get_label("gateway") == edge_gateway.name
         assert metadata.get_label("stage") == edge_gateway_stage.name
+        assert metadata.get_label("service-type") == "stage-backend"
+        assert metadata.get_label("backend-id") == str(backend_id)
 
+        # assert spec
         spec = service.spec
-        assert spec.description == edge_gateway_stage.description
+        assert spec.name == f"_stage_service_{stage_name}_{backend_id}"
+        assert spec.id == f"stage-{stage_id}-backend-{backend_id}"
+        assert spec.description.startswith(edge_gateway_stage.description)
+
         assert spec.upstream.type == UpstreamTypeEnum.ROUNDROBIN
         assert spec.upstream.scheme.value == backend_service_http_scheme
-
-        config = edge_gateway_stage_context_proxy_http.config
-        assert spec.upstream.timeout.connect == config["timeout"]
-        assert spec.upstream.timeout.read == config["timeout"]
-        assert spec.upstream.timeout.send == config["timeout"]
-
         assert len(spec.upstream.nodes) == 1
-        node = spec.upstream.nodes[0]
-        host = config["upstreams"]["hosts"][0]
 
-        assert node.host == backend_service_http_domain
-        assert node.weight == host["weight"]
-
-    def test_convert__error(self, mocker, fake_service_convertor):
-        fake_stage = fake_service_convertor._release_data.stage
-        context = Context.objects.get(
-            scope_id=fake_stage.pk,
-            scope_type=ContextScopeTypeEnum.STAGE.value,
-            type=ContextTypeEnum.STAGE_PROXY_HTTP.value,
+        backend_config_obj = BackendConfig.objects.get(
+            gateway=edge_gateway,
+            backend=fake_backend,
+            stage=edge_gateway_stage,
         )
-        context.config = {
-            "upstreams": {
-                "hosts": [{"host": "example.com"}],
-                "loadbalance": "roundrobin",
-            },
-            "transform_headers": {},
-            "timeout": 30,
-        }
-        context.save()
+        backend_config = backend_config_obj.config
+
+        assert spec.upstream.timeout.connect == backend_config["timeout"]
+        assert spec.upstream.timeout.read == backend_config["timeout"]
+        assert spec.upstream.timeout.send == backend_config["timeout"]
+
+        node = spec.upstream.nodes[0]
+        assert node.host == backend_config["hosts"][0]["host"]
+        assert node.weight == backend_config["hosts"][0]["weight"]
+
+    def test_convert_no_backend_config(self, edge_gateway, edge_gateway_stage, fake_backend, fake_service_convertor):
+        # drop the backend config
+        BackendConfig.objects.get(
+            gateway=edge_gateway,
+            backend=fake_backend,
+            stage=edge_gateway_stage,
+        ).delete()
+
+        services = fake_service_convertor.convert()
+        assert len(services) == 0
+
+    def test_convert_no_hosts(self, edge_gateway, edge_gateway_stage, fake_backend, fake_service_convertor):
+        # drop the hosts
+        bc = BackendConfig.objects.get(
+            gateway=edge_gateway,
+            backend=fake_backend,
+            stage=edge_gateway_stage,
+        )
+        bc.config["hosts"] = []
+        bc.save()
 
         with pytest.raises(ValueError):
             fake_service_convertor.convert()

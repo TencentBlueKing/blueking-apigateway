@@ -87,6 +87,11 @@ ES_LOG_FIELDS = [
         "is_filter": True,
     },
     {
+        "label": _("后端服务"),
+        "field": "backend",
+        "is_filter": True,
+    },
+    {
         "label": _("后端请求方法"),
         "field": "backend_method",
         "is_filter": True,
@@ -135,6 +140,11 @@ ES_LOG_FIELDS = [
         "label": _("请求后端耗时"),
         "field": "backend_duration",
         "is_filter": True,
+    },
+    {
+        "label": "Traceparent",
+        "field": "traceparent",
+        "is_filter": False,
     },
     {
         "label": _("错误编码名称"),
