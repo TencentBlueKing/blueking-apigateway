@@ -179,12 +179,17 @@
             <template #main>
               <div class="main-content-wrap">
                 <DocDetailMainContent
+                  v-if="apiList.length"
                   v-bkloading="{ loading: isLoading }"
                   :api="curApi"
                   :nav-list="navList"
                   :markdown-html="curApiMarkdownHtml"
                   :updated-time="updatedTime"
                   @show-sdk-instruction="isSdkInstructionSliderShow = true"
+                />
+                <TableEmpty
+                  v-else
+                  empty-type="empty"
                 />
               </div>
             </template>
@@ -314,9 +319,11 @@ const apiGroupList = computed(() => {
 });
 
 const allSystemList = computed(() => {
-  const curBoard = boardList.value[0];
+  const curBoard = boardList.value.find(item => item.board === board.value);
   const systems: ISystem[] = [];
-  curBoard.categories.forEach(cat => cat.systems.forEach(system => systems.push(system)));
+  if (curBoard) {
+    curBoard.categories.forEach(cat => cat.systems.forEach(system => systems.push(system)));
+  }
   return systems;
 });
 
