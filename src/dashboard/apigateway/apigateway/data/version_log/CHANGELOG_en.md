@@ -1,3 +1,15 @@
+<!-- 2025-09-05 -->
+# V1.17.13 Release Log
+
+### Bug Fixes
+
+- Fix: Programmable gateway creation issues
+- Fix: Dashboard cannot be displayed correctly
+- Fix: Component API documentation issues
+- Fix: MCP Server applicant display issues
+
+---
+
 <!-- 2025-09-01 -->
 # V1.17.12 Release Log
 
