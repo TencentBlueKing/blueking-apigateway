@@ -117,6 +117,7 @@ class MCPServerAppPermissionApply(TimestampedModelMixin, OperatorModelMixin):
     handled_time = models.DateTimeField(blank=True, null=True)
     comment = models.CharField(max_length=512, blank=True, default="")
     status = models.CharField(max_length=16, choices=MCPServerAppPermissionApplyStatusEnum.get_choices())
+    is_deleted = models.BooleanField(default=False)
     objects: ClassVar[managers.MCPServerAppPermissionApplyManager] = managers.MCPServerAppPermissionApplyManager()
 
     def __str__(self):
