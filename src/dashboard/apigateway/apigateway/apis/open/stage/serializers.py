@@ -30,7 +30,12 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
-from apigateway.biz.validators import MaxCountPerGatewayValidator, SchemeHostInputValidator, StageVarsValidator
+from apigateway.biz.validators import (
+    MaxCountPerGatewayValidator,
+    SchemeHostInputValidator,
+    StageVarsValidator,
+    UpstreamValidator,
+)
 from apigateway.common.constants import DOMAIN_PATTERN, HEADER_KEY_PATTERN, CallSourceTypeEnum
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
@@ -40,6 +45,7 @@ from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
     STAGE_NAME_PATTERN,
+    HashOnTypeEnum,
     LoadBalanceTypeEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, Stage
@@ -81,6 +87,9 @@ class HostSLZ(serializers.Serializer):
 
 class UpstreamsSLZ(serializers.Serializer):
     loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices())
+    hash_on = serializers.ChoiceField(choices=HashOnTypeEnum.get_choices(), required=False)
+    key = serializers.CharField(required=False)
+
     hosts = serializers.ListField(child=HostSLZ(), allow_empty=False)
 
     def __init__(self, *args, **kwargs):
@@ -91,11 +100,10 @@ class UpstreamsSLZ(serializers.Serializer):
         """
         如果负载均衡类型为 RoundRobin 时，将权重设置为默认值
         """
-        if data.get("loadbalance") != LoadBalanceTypeEnum.RR.value:
-            return data
+        if data.get("loadbalance") == LoadBalanceTypeEnum.RR.value:
+            for host in data["hosts"]:
+                host["weight"] = DEFAULT_LB_HOST_WEIGHT
 
-        for host in data["hosts"]:
-            host["weight"] = DEFAULT_LB_HOST_WEIGHT
         return data
 
     def to_internal_value(self, data):
@@ -108,13 +116,6 @@ class UpstreamsSLZ(serializers.Serializer):
         if self.allow_empty and not instance:
             return {}
         return super().to_representation(instance)
-
-    def validate(self, data):
-        if data.get("loadbalance") == LoadBalanceTypeEnum.WRR.value:
-            host_without_weight = [host for host in data["hosts"] if host.get("weight") is None]
-            if host_without_weight:
-                raise serializers.ValidationError(_("负载均衡类型为 Weighted-RR 时，Host 权重必填。"))
-        return data
 
 
 class TransformHeadersSLZ(serializers.Serializer):
@@ -149,7 +150,7 @@ class BackendConfigSLZ(UpstreamsSLZ):
 
 class BackendSLZ(serializers.Serializer):
     name = serializers.CharField(help_text="后端服务名称", required=True)
-    config = BackendConfigSLZ(allow_empty=False)
+    config = BackendConfigSLZ(validators=[UpstreamValidator()], required=True, allow_empty=False)
 
     class Meta:
         ref_name = "apis.open.stage.BackendSLZ"
@@ -226,7 +227,9 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     def validate(self, data):
         self._validate_micro_gateway_stage_unique(data.get("micro_gateway_id"))
         self._validate_plugin_configs(data.get("plugin_configs"))
-        self._validate_scheme_host(data.get("backends"))
+        if data.get("backends"):
+            self._validate_scheme_host(data.get("backends"))
+
         # validate stage backend
         if data.get("proxy_http") is None and data.get("backends") is None:
             raise serializers.ValidationError(_("proxy_http or backends 必须要选择一种方式配置后端服务"))
@@ -326,13 +329,18 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         for host in backend["config"]["hosts"]:
             scheme, _host = host["host"].rstrip("/").split("://")
             hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
-
-        return {
+        loadbalance = backend["config"]["loadbalance"]
+        config = {
             "type": "node",
             "timeout": backend["config"]["timeout"],
-            "loadbalance": backend["config"]["loadbalance"],
+            "loadbalance": loadbalance,
             "hosts": hosts,
         }
+        if loadbalance == LoadBalanceTypeEnum.CHASH.value:
+            config["hash_on"] = backend["config"]["hash_on"]
+            config["key"] = backend["config"]["key"]
+
+        return config
 
     def update(self, instance, validated_data):
         validated_data.pop("name", None)

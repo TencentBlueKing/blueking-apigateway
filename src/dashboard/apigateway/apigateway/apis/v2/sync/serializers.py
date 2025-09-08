@@ -43,11 +43,11 @@ from apigateway.biz.validators import (
     ResourceVersionValidator,
     SchemeHostInputValidator,
     StageVarsValidator,
+    UpstreamValidator,
 )
 from apigateway.common.constants import (
     DOMAIN_PATTERN,
     GATEWAY_NAME_PATTERN,
-    HEADER_KEY_PATTERN,
     CallSourceTypeEnum,
     GatewayAPIDocMaintainerTypeEnum,
 )
@@ -61,10 +61,10 @@ from apigateway.core.constants import (
     STAGE_NAME_PATTERN,
     GatewayStatusEnum,
     GatewayTypeEnum,
+    HashOnTypeEnum,
     LoadBalanceTypeEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, Gateway, ResourceVersion, Stage
-from apigateway.service.plugin.header_rewrite import HeaderRewriteConvertor
 from apigateway.service.plugin.validator import PluginConfigYamlValidator
 from apigateway.utils.time import NeverExpiresTime
 
@@ -183,6 +183,9 @@ class HostSLZ(serializers.Serializer):
 
 class UpstreamsSLZ(serializers.Serializer):
     loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices())
+    hash_on = serializers.ChoiceField(choices=HashOnTypeEnum.get_choices(), required=False)
+    key = serializers.CharField(required=False)
+
     hosts = serializers.ListField(child=HostSLZ(), allow_empty=False)
 
     class Meta:
@@ -196,11 +199,10 @@ class UpstreamsSLZ(serializers.Serializer):
         """
         如果负载均衡类型为 RoundRobin 时，将权重设置为默认值
         """
-        if data.get("loadbalance") != LoadBalanceTypeEnum.RR.value:
-            return data
+        if data.get("loadbalance") == LoadBalanceTypeEnum.RR.value:
+            for host in data["hosts"]:
+                host["weight"] = DEFAULT_LB_HOST_WEIGHT
 
-        for host in data["hosts"]:
-            host["weight"] = DEFAULT_LB_HOST_WEIGHT
         return data
 
     def to_internal_value(self, data):
@@ -214,42 +216,6 @@ class UpstreamsSLZ(serializers.Serializer):
             return {}
         return super().to_representation(instance)
 
-    def validate(self, data):
-        if data.get("loadbalance") == LoadBalanceTypeEnum.WRR.value:
-            host_without_weight = [host for host in data["hosts"] if host.get("weight") is None]
-            if host_without_weight:
-                raise serializers.ValidationError(_("负载均衡类型为 Weighted-RR 时，Host 权重必填。"))
-        return data
-
-
-class TransformHeadersSLZ(serializers.Serializer):
-    set = serializers.DictField(label="设置", child=serializers.CharField(), required=False, allow_empty=True)
-    delete = serializers.ListField(label="删除", child=serializers.CharField(), required=False, allow_empty=True)
-
-    class Meta:
-        ref_name = "apigateway.apis.v2.sync.serializers.TransformHeadersSLZ"
-
-    def _validate_headers_key(self, value):
-        for key in value:
-            if not HEADER_KEY_PATTERN.match(key):
-                raise serializers.ValidationError(_("Header 键由字母、数字、连接符（-）组成，长度小于100个字符。"))
-        return value
-
-    def validate_set(self, value):
-        return self._validate_headers_key(value)
-
-    def validate_delete(self, value):
-        return self._validate_headers_key(value)
-
-
-class StageProxyHTTPConfigSLZ(serializers.Serializer):
-    timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1)
-    upstreams = UpstreamsSLZ(allow_empty=False)
-    transform_headers = TransformHeadersSLZ(required=False, default=dict)
-
-    class Meta:
-        ref_name = "apigateway.apis.v2.sync.serializers.StageProxyHTTPConfigSLZ"
-
 
 class BackendConfigSLZ(UpstreamsSLZ):
     timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1)
@@ -260,7 +226,7 @@ class BackendConfigSLZ(UpstreamsSLZ):
 
 class BackendSLZ(serializers.Serializer):
     name = serializers.CharField(help_text="后端服务名称", required=True)
-    config = BackendConfigSLZ(allow_empty=False)
+    config = BackendConfigSLZ(validators=[UpstreamValidator()], required=True, allow_empty=False)
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.BackendSLZ"
@@ -285,9 +251,8 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         child=serializers.CharField(allow_blank=True, required=True),
         default=dict,
     )
-    proxy_http = StageProxyHTTPConfigSLZ(required=False)
 
-    backends = serializers.ListSerializer(help_text="后端配置", child=BackendSLZ(), allow_null=True, required=False)
+    backends = serializers.ListSerializer(help_text="后端配置", child=BackendSLZ(), allow_null=False, required=True)
 
     plugin_configs = serializers.ListSerializer(
         help_text="插件配置", child=PluginConfigSLZ(), allow_null=True, required=False
@@ -308,7 +273,6 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "description_en",
             "vars",
             "status",
-            "proxy_http",
             "backends",
             "plugin_configs",
         )
@@ -318,7 +282,7 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             }
         }
         read_only_fields = ("id", "status")
-        non_model_fields = ["proxy_http", "backends", "plugin_configs", "rate_limit"]
+        non_model_fields = ["backends", "plugin_configs", "rate_limit"]
         lookup_field = "id"
 
         validators = [
@@ -339,8 +303,8 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         self._validate_plugin_configs(data.get("plugin_configs"))
         self._validate_scheme_host(data.get("backends"))
         # validate stage backend
-        if data.get("proxy_http") is None and data.get("backends") is None:
-            raise serializers.ValidationError(_("proxy_http or backends 必须要选择一种方式配置后端服务"))
+        if data.get("backends") is None:
+            raise serializers.ValidationError(_("backends 必须配置"))
         return data
 
     def create(self, validated_data):
@@ -352,28 +316,6 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             gateway=instance.gateway,
             name=DEFAULT_BACKEND_NAME,
         )
-
-        proxy_http_config = validated_data.get("proxy_http")
-        # 兼容老的配置
-        if proxy_http_config is not None and len(proxy_http_config) != 0:
-            config = self._get_stage_backend_config(proxy_http_config)
-            backend_config = BackendConfig(
-                gateway=instance.gateway,
-                backend=backend,
-                stage=instance,
-                config=config,
-            )
-            backend_config.save()
-
-            # create or update header rewrite plugin config
-            stage_transform_headers = proxy_http_config.get("transform_headers") or {}
-            stage_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(stage_transform_headers)
-            HeaderRewriteConvertor.sync_plugins(
-                instance.gateway_id,
-                PluginBindingScopeEnum.STAGE.value,
-                {instance.id: stage_config},
-                self.context["request"].user.username,
-            )
 
         # 3.create config backend
         backend_configs = []
@@ -419,31 +361,23 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
         return instance
 
-    def _get_stage_backend_config(self, proxy_http_config):
-        hosts = []
-        for host in proxy_http_config["upstreams"]["hosts"]:
-            scheme, _host = host["host"].rstrip("/").split("://")
-            hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
-
-        return {
-            "type": "node",
-            "timeout": proxy_http_config["timeout"],
-            "loadbalance": proxy_http_config["upstreams"]["loadbalance"],
-            "hosts": hosts,
-        }
-
     def _get_stage_backend_config_v2(self, backend: dict):
         hosts = []
         for host in backend["config"]["hosts"]:
             scheme, _host = host["host"].rstrip("/").split("://")
             hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
-
-        return {
+        loadbalance = backend["config"]["loadbalance"]
+        config = {
             "type": "node",
             "timeout": backend["config"]["timeout"],
-            "loadbalance": backend["config"]["loadbalance"],
+            "loadbalance": loadbalance,
             "hosts": hosts,
         }
+        if loadbalance == LoadBalanceTypeEnum.CHASH.value:
+            config["hash_on"] = backend["config"]["hash_on"]
+            config["key"] = backend["config"]["key"]
+
+        return config
 
     def update(self, instance, validated_data):
         validated_data.pop("name", None)
@@ -455,37 +389,6 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
 
         # 2. create default backend
-        proxy_http_config = validated_data.get("proxy_http")
-        if proxy_http_config is not None and len(proxy_http_config) != 0:
-            backend, _ = Backend.objects.get_or_create(
-                gateway=instance.gateway,
-                name=DEFAULT_BACKEND_NAME,
-            )
-            backend_config = BackendConfig.objects.filter(
-                gateway=instance.gateway,
-                backend=backend,
-                stage=instance,
-            ).first()
-            if not backend_config:
-                backend_config = BackendConfig(
-                    gateway=instance.gateway,
-                    backend=backend,
-                    stage=instance,
-                )
-
-            backend_config.config = self._get_stage_backend_config(proxy_http_config)
-            backend_config.save()
-
-            # create or update header rewrite plugin config
-            stage_transform_headers = proxy_http_config.get("transform_headers") or {}
-            stage_config = HeaderRewriteConvertor.transform_headers_to_plugin_config(stage_transform_headers)
-            HeaderRewriteConvertor.sync_plugins(
-                instance.gateway_id,
-                PluginBindingScopeEnum.STAGE.value,
-                {instance.id: stage_config},
-                self.context["request"].user.username,
-            )
-
         # 3. update backend
         for backend_info in validated_data.get("backends", []):
             backend, _ = Backend.objects.get_or_create(
