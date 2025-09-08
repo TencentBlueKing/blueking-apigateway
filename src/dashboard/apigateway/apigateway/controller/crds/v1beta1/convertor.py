@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from typing import Iterable, List, Optional
 
 from apigateway.controller.crds.base import KubernetesResource
-from apigateway.controller.crds.release_data.release_data import ReleaseData, ReleaseDataV2
+from apigateway.controller.crds.release_data.release_data import ReleaseData
 from apigateway.controller.crds.v1beta1.convertors.gateway_config import GatewayConfigConvertor
 from apigateway.controller.crds.v1beta1.convertors.plugin_metadata import PluginMetadataConvertor
 from apigateway.controller.crds.v1beta1.convertors.resource import HttpResourceConvertor
@@ -61,6 +61,7 @@ class CustomResourceConvertor:
     include_http_resource: bool = field(default=True)
     include_service: bool = field(default=True)
     include_plugin_metadata: bool = field(default=True)
+
     # 转换后的资源
     _gateway_config: Optional[BkGatewayConfig] = field(init=False, default=None)
     _stage: Optional[BkGatewayStage] = field(init=False, default=None)
@@ -70,9 +71,9 @@ class CustomResourceConvertor:
 
     def __post_init__(self):
         if self.release.resource_version.is_schema_v2:
-            self._release_data = ReleaseDataV2(self.release)
-        else:
             self._release_data = ReleaseData(self.release)
+        else:
+            raise ValueError("Only support resource_version schema v2, v1 is deprecated")
 
     def convert(self):
         self._iter_convert()

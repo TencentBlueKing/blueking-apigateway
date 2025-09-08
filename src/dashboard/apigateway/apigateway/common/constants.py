@@ -84,3 +84,6 @@ STAGE_VAR_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,49}$")
 class CallSourceTypeEnum(StructuredEnum):
     OpenAPI = EnumField("openapi")
     Web = EnumField("web")
+
+
+DEFAULT_BACKEND_HOST_FOR_MISSING = "your-backend-host"

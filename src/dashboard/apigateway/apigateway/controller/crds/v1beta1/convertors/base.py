@@ -18,7 +18,7 @@
 import hashlib
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, Dict, Optional
+from typing import ClassVar, Dict, Optional
 from urllib.parse import urlparse
 
 from blue_krill.cubing_case import shortcuts
@@ -88,13 +88,3 @@ class BaseConvertor(ABC):
         metadata.name = key
 
         return metadata
-
-    def _convert_http_rewrite_headers(self, transform_headers: Optional[Dict[str, Any]]) -> Dict[str, str]:
-        headers: Dict[str, str] = {}
-
-        if transform_headers:
-            headers.update(transform_headers.get("set") or {})
-            # 为空表示删除
-            headers.update(dict.fromkeys(transform_headers.get("delete") or [], ""))
-
-        return headers

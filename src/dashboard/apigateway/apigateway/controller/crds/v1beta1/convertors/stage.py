@@ -63,12 +63,6 @@ class StageConvertor(BaseConvertor):
             ),
         )
 
-    def _get_extra_stage_plugins(self) -> List[PluginConfig]:
-        gateway_name = self._release_data.gateway.name
-        if gateway_name in settings.LEGACY_INVALID_PARAMS_GATEWAY_NAMES:
-            return [PluginConfig(name="bk-legacy-invalid-params")]
-        return []
-
     def _get_default_stage_plugins(self) -> List[PluginConfig]:
         """Get the default plugins for stage, which is shared by all resources in the stage"""
         default_stage_plugins = [
@@ -101,7 +95,7 @@ class StageConvertor(BaseConvertor):
                     "bk_gateway_id": self._release_data.gateway.pk,
                     "bk_stage_name": self._release_data.stage.name,
                     "jwt_private_key": force_str(base64.b64encode(force_bytes(self._release_data.jwt_private_key))),
-                    "bk_api_auth": self._release_data.api_auth_config,
+                    "bk_api_auth": self._release_data.gateway_auth_config,
                 },
             ),
         ]
@@ -133,3 +127,9 @@ class StageConvertor(BaseConvertor):
             PluginConfig(name=plugin_data.name, config=plugin_data.config)
             for plugin_data in self._release_data.get_stage_plugins()
         ]
+
+    def _get_extra_stage_plugins(self) -> List[PluginConfig]:
+        gateway_name = self._release_data.gateway.name
+        if gateway_name in settings.LEGACY_INVALID_PARAMS_GATEWAY_NAMES:
+            return [PluginConfig(name="bk-legacy-invalid-params")]
+        return []
