@@ -6,12 +6,13 @@
 
 #### 请求参数
 
-| 参数名称            | 参数类型   | 必选 | 描述                    |
-|-----------------|--------|----|-----------------------|
-| bk_app_code     | string | 是  | 蓝鲸应用编码                |
-| mcp_server_id   | int    | 否  | mcp_server ID         |
-| limit           | int    | 否  | 最大返回条目数量，默认为 10       |
-| offset          | int    | 否  | 相对于完整未分页数据的起始位置，默认为 0 |
+| 参数名称          | 参数类型   | 必选 | 描述                    |
+|---------------|--------|----|-----------------------|
+| bk_app_code   | string | 是  | 蓝鲸应用编码                |
+| mcp_server_id | int    | 否  | mcp_server ID         |
+| record_id     | int    | 否  | 申请记录 ID               |
+| limit         | int    | 否  | 最大返回条目数量，默认为 10       |
+| offset        | int    | 否  | 相对于完整未分页数据的起始位置，默认为 0 |
 
 
 ### 响应示例
@@ -29,7 +30,7 @@
       "bk_app_code": "bk-001",
       "applied_by": "admin",
       "applied_time": "2025-06-09 11:13:26 +0800",
-      "handled_by": [],
+      "handled_by": "admin",
       "handled_time": "2025-07-02 14:29:04 +0800",
       "status": "approved",
       "status_display": "通过",
@@ -56,7 +57,7 @@
 | bk_app_code    | string | 蓝鲸应用编码        |
 | applied_by     | string | 申请人           |
 | applied_time   | string | 申请时间          |
-| handled_by     | array  | 审批人           |
+| handled_by     | string | 审批人           |
 | handled_time   | string | 审批时间          |
 | status         | string | 审批状态          |
 | status_display | string | 审批状态描述        |

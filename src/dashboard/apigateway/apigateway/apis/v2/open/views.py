@@ -382,6 +382,9 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
         if data.get("mcp_server_id"):
             queryset = queryset.filter(mcp_server_id=data["mcp_server_id"])
 
+        if data.get("record_id"):
+            queryset = queryset.filter(id=data["record_id"])
+
         output_data = {}
         for obj in queryset.order_by("-applied_time"):
             if obj.mcp_server.id not in output_data:

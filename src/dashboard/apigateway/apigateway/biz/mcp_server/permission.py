@@ -48,6 +48,7 @@ class MCPServerPermissionHandler:
         existing_permissions = MCPServerAppPermissionApply.objects.filter(
             bk_app_code=bk_app_code,
             mcp_server_id__in=selected_mcp_server_ids,
+            is_deleted=False,
             status__in=[
                 MCPServerAppPermissionApplyStatusEnum.PENDING.value,
                 MCPServerAppPermissionApplyStatusEnum.APPROVED.value,

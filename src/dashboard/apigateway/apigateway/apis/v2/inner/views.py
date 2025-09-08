@@ -444,6 +444,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
             MCPServerAppPermissionApply.objects.filter(
                 bk_app_code=data["target_app_code"],
                 mcp_server_id__in=list(queryset.values_list("id", flat=True)),
+                is_deleted=False,
             )
             .order_by("-applied_time")
             .values("mcp_server_id", "status", "handled_by")
