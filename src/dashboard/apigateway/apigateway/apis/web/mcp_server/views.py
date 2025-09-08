@@ -547,12 +547,14 @@ class MCPServerAppPermissionDestroyApi(MCPServerAppPermissionQuerySetMixin, gene
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        bk_app_code = instance.bk_app_code
+        mcp_server = instance.mcp_server
         instance.delete()
 
         # 将 bk_app_code 对应已通过审批的 mcp server 记录设置为已删除状态
         MCPServerAppPermissionApply.objects.filter(
-            bk_app_code=instance.bk_app_code,
-            mcp_server=instance.mcp_server,
+            bk_app_code=bk_app_code,
+            mcp_server=mcp_server,
             status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
             is_deleted=False,
         ).update(is_deleted=True)

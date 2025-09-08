@@ -30,7 +30,7 @@
       "bk_app_code": "bk-001",
       "applied_by": "admin",
       "applied_time": "2025-06-09 11:13:26 +0800",
-      "handled_by": "test",
+      "handled_by": "admin",
       "handled_time": "2025-07-02 14:29:04 +0800",
       "status": "approved",
       "status_display": "通过",
