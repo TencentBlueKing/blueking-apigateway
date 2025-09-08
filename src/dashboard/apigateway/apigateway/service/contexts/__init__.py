@@ -17,4 +17,3 @@
 #
 from .gateway_auth import GatewayAuthConfig, GatewayAuthContext  # noqa
 from .resource_auth import ResourceAuthContext  # noqa
-from .stage_proxy_http import StageProxyHTTPContext  # noqa
