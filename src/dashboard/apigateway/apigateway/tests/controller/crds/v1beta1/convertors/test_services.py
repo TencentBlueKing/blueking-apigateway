@@ -53,7 +53,7 @@ class TestServiceConvertor:
         spec = service.spec
         assert spec.name == f"_stage_service_{stage_name}_{backend_id}"
         assert spec.id == f"stage-{stage_id}-backend-{backend_id}"
-        assert spec.description.startswith(edge_gateway_stage.description)
+        assert spec.description.startswith(f"{stage_name}/{stage_id}" + ": " + edge_gateway_stage.description[:32])
 
         assert spec.upstream.type == UpstreamTypeEnum.ROUNDROBIN
         assert spec.upstream.scheme.value == backend_service_http_scheme
