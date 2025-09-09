@@ -83,12 +83,16 @@ class ServiceConvertor(BaseConvertor):
 
             stage_name = self._release_data.stage.name
             stage_id = self._release_data.stage.pk
+            stage_description = self._release_data.stage.description
 
             backend = Backend.objects.get(id=backend_id)
             backend_name = backend.name
             backend_description = backend.description
 
-            description = self._release_data.stage.description + f" (backend={backend_name}"
+            description = f"{stage_name}/{stage_id}"
+            if stage_description:
+                description += f": {stage_description[:32]}"
+            description += f" (backend={backend_name}"
             if backend_description:
                 description += f": {backend_description[:32]}"
             description += ")"
