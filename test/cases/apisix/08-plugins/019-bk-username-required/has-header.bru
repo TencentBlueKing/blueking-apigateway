@@ -1,0 +1,20 @@
+meta {
+  name: has-header
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/bk-username-required
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bk-Username: tom
+}
+
+assert {
+  res.status: eq 200
+  res.body["headers"]["X-Bk-Username"]: eq tom
+}
