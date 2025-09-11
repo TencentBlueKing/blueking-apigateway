@@ -446,3 +446,87 @@ paths:
           appVerifiedRequired: false
           resourcePermissionRequired: false
         descriptionEn:
+  /bk-mock:
+    get:
+      operationId: bk-mock
+      description: ''
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          name: default
+          method: get
+          path: /get
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs:
+        - type: bk-mock
+          yaml: |-
+            response_example: "{\"hello\": \"world\"}"
+            response_headers:
+              - key: foo
+                value: bar
+            response_status: 200
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: false
+          resourcePermissionRequired: false
+        descriptionEn:
+  /bk-username-required:
+    get:
+      operationId: bk-username-required
+      description: ''
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          name: default
+          method: get
+          path: /get
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs:
+        - type: bk-username-required
+          yaml: '{}'
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: false
+          resourcePermissionRequired: false
+        descriptionEn:
+  /bk-access-token-source:
+    get:
+      operationId: bk-access-token-source
+      description: ''
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          name: default
+          method: get
+          path: /get
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs:
+        - type: bk-access-token-source
+          yaml: |-
+            source: bearer
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: false
+          resourcePermissionRequired: false
+        descriptionEn:
