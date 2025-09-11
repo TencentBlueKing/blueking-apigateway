@@ -1,3 +1,13 @@
+<!-- 2025-09-11 -->
+# V1.18.0 Release Log
+
+### Features
+
+- Upgrade data plane apisix version to 3.13.0
+- Optimize underlying model mapping relationships
+
+---
+
 <!-- 2025-09-05 -->
 # V1.17.13 Release Log
 
