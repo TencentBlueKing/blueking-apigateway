@@ -43,7 +43,11 @@
         },
         "tools_count": 0,
         "url": "",
-        "detail_url": ""
+        "detail_url": "",
+        "updated_by": "admin",
+        "created_by": "admin",
+        "updated_time": "2025-09-01 00:00:00 +0800",
+        "created_time": "2025-09-01 00:00:00 +0800"
       }
     ]
   }
@@ -71,6 +75,10 @@
 | tools_count    | int     | mcp_server 工具数量            |
 | url            | string  | mcp_server 访问地址            |
 | detail_url     | string  | mcp_server 网关站点详情地址        |
+| updated_by     | string  | 更新人                        |
+| created_by     | string  | 创建人                        |
+| updated_time   | string  | 更新时间                       |
+| created_time   | string  | 创建时间                       |
 | gateway        | object  | mcp_server 网关信息            |
 | stage          | object  | mcp_server 环境信息            |
 
