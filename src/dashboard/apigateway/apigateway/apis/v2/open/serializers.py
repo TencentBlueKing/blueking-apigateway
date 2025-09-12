@@ -182,6 +182,11 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
     detail_url = serializers.SerializerMethodField(help_text="MCPServer 网关站点详情 URL")
 
+    updated_by = serializers.CharField(read_only=True, help_text="更新人")
+    created_by = serializers.CharField(read_only=True, help_text="创建人")
+    updated_time = serializers.DateTimeField(read_only=True, help_text="更新时间")
+    created_time = serializers.DateTimeField(read_only=True, help_text="创建时间")
+
     def get_stage(self, obj) -> Dict[str, Any]:
         return self.context["stages"][obj.stage.id]
 
