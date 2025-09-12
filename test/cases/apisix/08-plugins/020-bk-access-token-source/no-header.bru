@@ -1,0 +1,18 @@
+meta {
+  name: no-header
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/bk-access-token-source
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 400
+  res.body["code"]: eq 1640001
+  res.body["code_name"]: eq INVALID_ARGS
+  res.body["message"]: contains "No `Authorization` header found in the request"
+}

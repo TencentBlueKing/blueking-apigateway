@@ -1,0 +1,20 @@
+meta {
+  name: has-header
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/bk-access-token-source
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: bearer {{access_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body["headers"]["Authorization"]: isUndefined
+}

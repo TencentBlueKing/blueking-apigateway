@@ -1,0 +1,17 @@
+meta {
+  name: bk-mock-ok
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/bk-mock
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body["hello"]: eq world
+  res.headers["foo"]: eq bar
+}
