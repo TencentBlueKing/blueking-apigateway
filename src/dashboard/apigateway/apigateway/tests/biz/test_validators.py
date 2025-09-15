@@ -574,6 +574,58 @@ class TestSchemeHostInputValidator:
             expected_msg = expected["error_message"].replace("Test Backend", backend_name)
             assert str(exc_info.value) == expected_msg
 
+    @pytest.mark.parametrize(
+        "data, expected, will_error",
+        [
+            (
+                {
+                    "backend": {
+                        "name": "backend-1",
+                        "config": {
+                            "timeout": 60,
+                            "loadbalance": "roundrobin",
+                            "hosts": [
+                                {"host": "http://test.com", "weight": 100},
+                                {"host": "https://example.com", "weight": 100},
+                            ],
+                        },
+                    },
+                    "source": CallSourceTypeEnum.OpenAPI.value,
+                },
+                None,
+                False,
+            ),
+            (
+                {
+                    "backend": {
+                        "name": "backend-2",
+                        "config": {
+                            "timeout": 60,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"host": "http://127.0.0.1", "weight": 100}],
+                        },
+                    },
+                    "source": CallSourceTypeEnum.OpenAPI.value,
+                },
+                {
+                    "error_message": "[ErrorDetail(string='后端服务【Test Backend】的配置，host: 127.0.0.1 不能使用该地址。', code='invalid')]",
+                },
+                True,
+            ),
+        ],
+    )
+    def test_validate_scheme_openapi_backend(self, data, expected, will_error):
+        fake_backend_dict = data["backend"]
+        backend_name = fake_backend_dict["name"]
+        validator = SchemeHostInputValidator(fake_backend_dict, fake_backend_dict["config"]["hosts"])
+        if will_error:
+            with pytest.raises(Exception) as exc_info:
+                validator.validate_scheme(data["source"])
+            expected_msg = expected["error_message"].replace("Test Backend", backend_name)
+            assert str(exc_info.value) == expected_msg
+        else:
+            validator.validate_scheme(data["source"])
+
 
 class TestStageVarsValidator:
     class StageSLZ(serializers.ModelSerializer):
