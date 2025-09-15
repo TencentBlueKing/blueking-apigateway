@@ -204,12 +204,7 @@ class OpenAPIExportManager:
             labels = resource_labels.get(resource["id"], [])
             resource["labels"] = [label["name"] for label in labels]
             resource["openapi_schema"] = resource_id_to_schema.get(resource["id"], {})
-            resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
-            resource["auth_config"] = {
-                "userVerifiedRequired": resource_auth_config["user_verified_required"],
-                "appVerifiedRequired": resource_auth_config["app_verified_required"],
-                "resourcePermissionRequired": resource_auth_config["resource_perm_required"],
-            }
+            resource["auth_config"] = json.loads(resource["contexts"]["resource_auth"]["config"])
             resource["backend"] = {
                 "name": backend_id_to_config[resource["proxy"]["backend_id"]].name,
                 "config": json.loads(resource["proxy"]["config"]),
