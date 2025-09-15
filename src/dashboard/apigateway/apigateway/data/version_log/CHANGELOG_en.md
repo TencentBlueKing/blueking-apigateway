@@ -1,3 +1,14 @@
+<!-- 2025-09-15 -->
+# V1.17.14 Release Log
+
+### Bug Fixes
+
+- Fix: Backend verification error information concatenation issue
+- Fix: MCP Server list interface supplement response fields
+- Fix: MCP Server permission deletion cannot be applied
+
+---
+
 <!-- 2025-09-05 -->
 # V1.17.13 Release Log
 
