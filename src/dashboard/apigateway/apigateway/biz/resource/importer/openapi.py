@@ -206,7 +206,7 @@ class OpenAPIExportManager:
             resource["openapi_schema"] = resource_id_to_schema.get(resource["id"], {})
             resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
             resource["auth_config"] = {
-                "userVerifiedRequired": resource_auth_config.get("user_verified_required", False),
+                "userVerifiedRequired": resource_auth_config.get("auth_verified_required", False),
                 "appVerifiedRequired": resource_auth_config.get("app_verified_required", False),
                 "resourcePermissionRequired": resource_auth_config.get("resource_perm_required", False),
             }
