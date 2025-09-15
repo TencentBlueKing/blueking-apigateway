@@ -208,7 +208,7 @@ class OpenAPIExportManager:
             resource["auth_config"] = {
                 "userVerifiedRequired": resource_auth_config.get("user_verified_required", False),
                 "appVerifiedRequired": resource_auth_config.get("app_verified_required", False),
-                "resourcePermissionRequired": resource_auth_config.get("resource_permission_required", False),
+                "resourcePermissionRequired": resource_auth_config.get("resource_perm_required", False),
             }
             resource["backend"] = {
                 "name": backend_id_to_config[resource["proxy"]["backend_id"]].name,
