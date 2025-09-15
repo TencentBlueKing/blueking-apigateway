@@ -344,6 +344,13 @@ class SchemeHostInputValidator:
         self.backend = backend
 
     def validate_scheme(self, source: CallSourceTypeEnum):
+        if isinstance(self.backend, dict):
+            backend_name = self.backend.get("name")
+            backend_type = self.backend.get("type")
+        else:
+            backend_name = self.backend.name
+            backend_type = self.backend.type
+
         if source == CallSourceTypeEnum.OpenAPI.value:
             # open api 传输的参数不包含 scheme，所以需要解析 host
             # host 格式为：http://example.com 或 https://example.com
@@ -358,7 +365,7 @@ class SchemeHostInputValidator:
                     raise serializers.ValidationError(
                         _(
                             "后端服务【{backend_name}】的配置，host: {host} 不能使用该地址。".format(
-                                backend_name=self.backend.name, host=parsed_url.netloc
+                                backend_name=backend_name, host=parsed_url.netloc
                             )
                         )
                     )
@@ -367,16 +374,16 @@ class SchemeHostInputValidator:
             # scheme 可以是 http 或 https，host 格式为：example.com 或 app.example.com:8080
             schemes = {host.get("scheme") for host in self.hosts}
 
-        if len(schemes) > 1 and self.backend.type == BackendTypeEnum.HTTP.value:
+        if len(schemes) > 1 and backend_type == BackendTypeEnum.HTTP.value:
             raise serializers.ValidationError(
                 _("后端服务【{backend_name}】的配置 scheme 同时存在 http 和 https， 需要保持一致。").format(
-                    backend_name=self.backend.name
+                    backend_name=backend_name
                 )
             )
-        if len(schemes) > 1 and self.backend.type == BackendTypeEnum.GRPC.value:
+        if len(schemes) > 1 and backend_type == BackendTypeEnum.GRPC.value:
             raise serializers.ValidationError(
                 _("后端服务【{backend_name}】的配置 scheme 同时存在 grpc 和 grpcs， 需要保持一致。").format(
-                    backend_name=self.backend.name
+                    backend_name=backend_name
                 )
             )
 
