@@ -1,3 +1,12 @@
+<!-- 2025-09-16 -->
+# V1.17.15 Release Log
+
+### Bug Fixes
+
+- Fix: Resource version export user authentication value error
+
+---
+
 <!-- 2025-09-15 -->
 # V1.17.14 Release Log
 
