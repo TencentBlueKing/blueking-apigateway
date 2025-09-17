@@ -56,7 +56,16 @@ session.mount("http://", adapter)
 
 
 def _http_request(
-    method, url, headers=None, data=None, timeout=None, verify=False, cert=None, cookies=None, request_session=None
+    method,
+    url,
+    headers=None,
+    data=None,
+    timeout=None,
+    verify=False,
+    cert=None,
+    cookies=None,
+    request_session=None,
+    **kwargs,
 ):
     if request_session is None:
         request_session = session
@@ -84,25 +93,60 @@ def _http_request(
     try:
         if method == "GET":
             resp = request_session.get(
-                url=url, headers=headers, params=data, timeout=timeout, verify=verify, cert=cert, cookies=cookies
+                url=url,
+                headers=headers,
+                params=data,
+                timeout=timeout,
+                verify=verify,
+                cert=cert,
+                cookies=cookies,
+                **kwargs,
             )
         elif method == "HEAD":
-            resp = request_session.head(url=url, headers=headers, verify=verify, cert=cert, cookies=cookies)
+            resp = request_session.head(url=url, headers=headers, verify=verify, cert=cert, cookies=cookies, **kwargs)
         elif method == "POST":
             resp = request_session.post(
-                url=url, headers=headers, json=data, timeout=timeout, verify=verify, cert=cert, cookies=cookies
+                url=url,
+                headers=headers,
+                json=data,
+                timeout=timeout,
+                verify=verify,
+                cert=cert,
+                cookies=cookies,
+                **kwargs,
             )
         elif method == "DELETE":
             resp = request_session.delete(
-                url=url, headers=headers, json=data, timeout=timeout, verify=verify, cert=cert, cookies=cookies
+                url=url,
+                headers=headers,
+                json=data,
+                timeout=timeout,
+                verify=verify,
+                cert=cert,
+                cookies=cookies,
+                **kwargs,
             )
         elif method == "PUT":
             resp = request_session.put(
-                url=url, headers=headers, json=data, timeout=timeout, verify=verify, cert=cert, cookies=cookies
+                url=url,
+                headers=headers,
+                json=data,
+                timeout=timeout,
+                verify=verify,
+                cert=cert,
+                cookies=cookies,
+                **kwargs,
             )
         elif method == "PATCH":
             resp = request_session.patch(
-                url=url, headers=headers, json=data, timeout=timeout, verify=verify, cert=cert, cookies=cookies
+                url=url,
+                headers=headers,
+                json=data,
+                timeout=timeout,
+                verify=verify,
+                cert=cert,
+                cookies=cookies,
+                **kwargs,
             )
         else:
             return False, {"error": "method not supported"}
@@ -154,7 +198,9 @@ def _http_request(
         return True, resp.json() if resp.content else {}
 
 
-def http_get(url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None):
+def http_get(
+    url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None, **kwargs
+):
     return _http_request(
         method="GET",
         url=url,
@@ -165,10 +211,13 @@ def http_get(url, data, headers=None, verify=False, cert=None, timeout=None, coo
         timeout=timeout,
         cookies=cookies,
         request_session=request_session,
+        **kwargs,
     )
 
 
-def http_post(url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None):
+def http_post(
+    url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None, **kwargs
+):
     return _http_request(
         method="POST",
         url=url,
@@ -179,10 +228,13 @@ def http_post(url, data, headers=None, verify=False, cert=None, timeout=None, co
         cert=cert,
         cookies=cookies,
         request_session=request_session,
+        **kwargs,
     )
 
 
-def http_put(url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None):
+def http_put(
+    url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None, **kwargs
+):
     return _http_request(
         method="PUT",
         url=url,
@@ -193,10 +245,13 @@ def http_put(url, data, headers=None, verify=False, cert=None, timeout=None, coo
         cert=cert,
         cookies=cookies,
         request_session=request_session,
+        **kwargs,
     )
 
 
-def http_patch(url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None):
+def http_patch(
+    url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None, **kwargs
+):
     return _http_request(
         method="PATCH",
         url=url,
@@ -207,10 +262,13 @@ def http_patch(url, data, headers=None, verify=False, cert=None, timeout=None, c
         cert=cert,
         cookies=cookies,
         request_session=request_session,
+        **kwargs,
     )
 
 
-def http_delete(url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None):
+def http_delete(
+    url, data, headers=None, verify=False, cert=None, timeout=None, cookies=None, request_session=None, **kwargs
+):
     return _http_request(
         method="DELETE",
         url=url,
@@ -221,4 +279,5 @@ def http_delete(url, data, headers=None, verify=False, cert=None, timeout=None, 
         cert=cert,
         cookies=cookies,
         request_session=request_session,
+        **kwargs,
     )
