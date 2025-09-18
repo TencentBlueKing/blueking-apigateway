@@ -18,7 +18,7 @@ deb-src https://mirrors.cloud.tencent.com/debian-security/ bookworm-security mai
 
 # RUN apt-get update && apt-get install -y --no-install-recommends libssl-dev libffi-dev \
     # build-essential libc6-dev libjpeg-dev zlib1g-dev vim procps default-mysql-client curl zip unzip
-RUN apt-get update && apt-get install -y --no-install-recommends vim default-mysql-client curl zip unzip
+RUN apt-get update && apt-get install -y --no-install-recommends vim default-mysql-client curl zip unzip git
 
 # install kona-jdk maven
 RUN curl -s "https://get.sdkman.io?ci=true" | bash
@@ -47,7 +47,6 @@ WORKDIR /app
 ADD build/uv.lock  /app/uv.lock
 ADD build/pyproject.toml /app/pyproject.toml
 # for etcd3 lib installed from git
-RUN apt-get install -y git
 RUN export UV_PROJECT_ENVIRONMENT=/usr/local/ && uv sync --locked && uv clean
 
 
