@@ -16,11 +16,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from typing import Any
 
 from packaging.version import InvalidVersion
 from packaging.version import parse as parse_version
 from pypi_simple import PyPISimple
+from pypi_simple.errors import NoSuchProjectError
+
+logger = logging.getLogger(__name__)
 
 
 class SimplePypiRegistry:
@@ -33,8 +37,12 @@ class SimplePypiRegistry:
         return PyPISimple(self.index_url, self.auth)
 
     def _iter_packages(self, name: str, include_yanked: bool):
-        with self._simple_client as client:
-            page = client.get_project_page(name)
+        try:
+            with self._simple_client as client:
+                page = client.get_project_page(name)
+        except NoSuchProjectError:
+            logger.exception("repository responds with a 404 for project [%s]", name)
+            return
 
         if page is None:
             return
