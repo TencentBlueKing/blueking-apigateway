@@ -55,7 +55,8 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
     logger.info("rolling_update_release[gateway_id=%d] begin", gateway_id)
 
     shared_gateway = MicroGateway.objects.get_default_shared_gateway()
-    distributor = EtcdDistributor(include_gateway_global_config=False)
+    include_gateway_global_config = release.gateway_id == shared_gateway.gateway_id
+    distributor = EtcdDistributor(include_gateway_global_config=include_gateway_global_config)
 
     release_task_id = str(uuid.uuid4())
     procedure_logger = ReleaseProcedureLogger(
