@@ -32,38 +32,26 @@
       <div class="header-search">
         <BkInput
           v-model="filterData.keyword"
-          class="search-input w-300px"
+          class="w-300px search-input"
           :placeholder="t('请输入告警策略名称，按Enter搜索')"
         />
       </div>
     </div>
 
     <div class="alarm-strategy-content">
-      <BkLoading :loading="isLoading">
-        <BkTable
-          :border="['outer']"
-          :data="tableData"
-          :pagination="pagination"
-          :max-height="clientHeight"
-          :columns="tableColumns"
-          class="alarm-strategy-table"
-          remote-pagination
-          row-hover="auto"
-          show-overflow-tooltip
-          @page-limit-change="handlePageSizeChange"
-          @page-value-change="handlePageChange"
-        >
-          <template #empty>
-            <TableEmpty
-              :is-loading="isLoading"
-              :empty-type="tableEmptyConf.emptyType"
-              :abnormal="tableEmptyConf.isAbnormal"
-              @refresh="getList"
-              @clear-filter="handleClearFilterKey"
-            />
-          </template>
-        </BkTable>
-      </BkLoading>
+      <AgTable
+        ref="tableRef"
+        v-model:table-data="tableData"
+        v-model:settings="settings"
+        row-key="id"
+        disable-data-page
+        show-settings
+        :filter-value="filterData"
+        :sort="sortData"
+        :api-method="getTableData"
+        :columns="tableColumns"
+        @clear-filter="handleClearFilter"
+      />
     </div>
 
     <!-- 新建/编辑 -->
@@ -81,9 +69,15 @@
 
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
-import { Message } from 'bkui-vue';
+import { Message, Switcher } from 'bkui-vue';
+import type {
+  FilterValue,
+  PrimaryTableProps,
+  SortInfo,
+} from '@blueking/tdesign-ui';
+import { ITableMethod } from '@/types/common';
 import { useGateway } from '@/stores';
-import { useMaxTableLimit, usePopInfoBox, useQueryList } from '@/hooks';
+import { usePopInfoBox } from '@/hooks';
 import { getGatewayLabels } from '@/services/source/gateway';
 import {
   type IAlarmStrategy,
@@ -93,26 +87,29 @@ import {
   updateStrategyStatus,
 } from '@/services/source/monitor';
 import { getStageList } from '@/services/source/stage';
+import AgTable from '@/components/ag-table/Index.vue';
 import AddAlarmStrategy from '@/views/monitor-alarm/alarm-strategy/components/AddAlarmStrategy.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
-const { maxTableLimit, clientHeight } = useMaxTableLimit();
+// const { maxTableLimit, clientHeight } = useMaxTableLimit();
 
-const tableColumns = ref([
+const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+
+const tableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
-    label: t('告警策略名称'),
-    field: 'name',
+    title: t('告警策略名称'),
+    colKey: 'name',
+    ellipsis: true,
+    fixed: 'left',
   },
   {
-    label: t('标签'),
-    field: 'gateway_labels',
-    showOverflowTooltip: false,
-    render: ({ row }: { row?: Partial<IAlarmStrategy> }) => {
+    title: t('标签'),
+    colKey: 'gateway_labels',
+    cell: (h, { row }: { row?: Partial<IAlarmStrategy> }) => {
       if (row?.gateway_labels?.length) {
         return (
-          <div class="lh-1">
+          <div class="lh-1 single-hide">
             <span
               v-bk-tooltips={{
                 content: labelTooltip(row?.gateway_labels),
@@ -146,9 +143,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('生效环境'),
-    field: 'effective_stages',
-    render: ({ row }: { row?: Partial<IAlarmStrategy> }) => {
+    title: t('生效环境'),
+    colKey: 'effective_stages',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<IAlarmStrategy> }) => {
       if (Array.isArray(row?.effective_stages)) {
         return (
           <span>{ row.effective_stages.length > 0 ? row.effective_stages.join() : t('所有环境')}</span>
@@ -158,15 +156,14 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('更新时间'),
-    field: 'updated_time',
+    title: t('更新时间'),
+    colKey: 'updated_time',
   },
   {
-    label: t('是否启用'),
-    field: 'enabled',
-    width: 150,
-    render: ({ row }: { row?: Partial<IAlarmStrategy> }) => {
-      if (row.statusUpdating) {
+    title: t('是否启用'),
+    colKey: 'enabled',
+    cell: (h, { row }: { row?: Partial<IAlarmStrategy> }) => {
+      if (row?.statusUpdating) {
         return (
           <BkLoading
             style="width: 48px;"
@@ -180,7 +177,7 @@ const tableColumns = ref([
         );
       }
       return (
-        <BkSwitcher
+        <Switcher
           v-model={row.enabled}
           theme="primary"
           true-value
@@ -192,11 +189,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('操作'),
-    field: 'operate',
+    title: t('操作'),
+    colKey: 'operate',
     fixed: 'right',
-    width: 150,
-    render: ({ row }: { row?: Partial<IAlarmStrategy> }) => {
+    cell: (h, { row }: { row?: Partial<IAlarmStrategy> }) => {
       return (
         <div>
           <BkButton
@@ -219,15 +215,16 @@ const tableColumns = ref([
     },
   },
 ]);
-const tableEmptyConf = ref<{
-  emptyType: string
-  isAbnormal: boolean
-}>({
-  emptyType: '',
-  isAbnormal: false,
+const settings = shallowRef({
+  size: 'small',
+  checked: [],
+  disabled: [],
 });
-const filterData = ref({ keyword: '' });
+
+const filterData = ref<FilterValue>({});
+const sortData = ref<SortInfo>({});
 const statusSwitcherDisabled = ref(false);
+const tableData = ref([]);
 const labelList = ref([]);
 const effectiveStage = ref('');
 // 新建初始数据
@@ -261,37 +258,24 @@ const sliderConfig = ref({
 });
 let initData = reactive({});
 
-// 列表hooks
-const {
-  tableData,
-  pagination,
-  isLoading,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-} = useQueryList({
-  apiMethod: getStrategyList,
-  filterData,
-  initialPagination: {
-    limitList: [
-      maxTableLimit,
-      10,
-      20,
-      50,
-      100,
-    ],
-    limit: maxTableLimit,
-  },
-});
-
 const apigwId = computed(() => gatewayStore.apigwId);
 
-watch(
-  () => tableData.value, () => {
-    updateTableEmptyConfig();
-  },
-  { deep: true },
-);
+const getTableData = async (params: Record<string, any> = {}) => {
+  const results = await getStrategyList(apigwId.value, params);
+  return results ?? [];
+};
+
+const getList = () => {
+  tableRef.value!.fetchData(filterData.value, { resetPage: true });
+};
+
+const handleSearch = () => {
+  getList();
+};
+
+watch(filterData, () => {
+  handleSearch();
+}, { deep: true });
 
 const labelTooltip = (labels: {
   id: number
@@ -404,21 +388,9 @@ const handleDelete = (
   });
 };
 
-const handleClearFilterKey = () => {
-  filterData.value = { keyword: '' };
+const handleClearFilter = () => {
+  filterData.value.keyword = '';
   getList();
-  updateTableEmptyConfig();
-};
-
-const updateTableEmptyConfig = () => {
-  const searchParams = { ...filterData.value };
-  const list = Object.values(searchParams).filter(item => item !== '');
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (!tableData.value.length) {
-    tableEmptyConf.value.emptyType = !list.length ? 'empty' : 'searchEmpty';
-    return;
-  }
-  tableEmptyConf.value.emptyType = '';
 };
 
 const getStages = async () => {
