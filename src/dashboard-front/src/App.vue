@@ -417,12 +417,3 @@ const handleShowAlertChange = (isShowNotice: boolean) => {
   }
 }
 </style>
-
-<style>
-/* 兼容表格设置弹窗底部多余左右下边框不对齐问题 */
-
-.bk-table-settings .setting-content .setting-footer {
-  border: none !important;
-  border-top: 1px solid #dcdee5 !important;
-}
-</style>

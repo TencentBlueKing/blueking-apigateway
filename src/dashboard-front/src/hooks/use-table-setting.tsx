@@ -16,14 +16,14 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import { locale } from '@/locales';
-import { cloneDeep, isEqual } from 'lodash-es';
+// TDesign表格设置隐藏列
 import type { ShallowRef } from 'vue';
-import { type Settings } from 'bkui-vue/lib/table/props';
+import type { ITableSettings } from '@/types/common';
+import { isEqual } from 'lodash-es';
+import i18n from '@/locales';
 
-export type ITableSettings = Settings;
-
-export function useTableSetting(setting: ShallowRef<Settings>, name: string) {
+export function useTableSetting(setting: ShallowRef<ITableSettings>, name: string) {
+  const lang = i18n.global.locale;
   let tempName: string;
   if (!name) {
     const route = useRoute();
@@ -32,8 +32,7 @@ export function useTableSetting(setting: ShallowRef<Settings>, name: string) {
   else {
     tempName = name;
   }
-
-  const tableName = `table-setting-${locale.value}-${tempName}`;
+  const tableName = `table-setting-${lang.value}-${tempName}`;
 
   onMounted(() => {
     const cache = localStorage.getItem(tableName);
@@ -41,17 +40,16 @@ export function useTableSetting(setting: ShallowRef<Settings>, name: string) {
       try {
         setting.value = { ...JSON.parse(cache) };
       }
-      catch (err) {
-        console.error(err);
+      catch (e) {
+        console.error(e);
       }
     }
   });
 
-  function changeTableSetting(value: Settings) {
-    const curSetting = cloneDeep(setting.value);
-    const latestSetting = cloneDeep(value);
+  function changeTableSetting(value: ITableSettings) {
+    const curSetting = { ...setting.value };
     // 这里需要对比下数据是否一致，避免重复回调
-    if (isEqual(curSetting, latestSetting)) {
+    if (isEqual(curSetting, value)) {
       return;
     }
     setting.value = {
@@ -61,8 +59,8 @@ export function useTableSetting(setting: ShallowRef<Settings>, name: string) {
     localStorage.setItem(tableName, JSON.stringify(setting.value));
   }
 
-  function isDiffSize(value: Settings) {
-    return setting.value?.size !== value.size;
+  function isDiffSize(value: ITableSettings) {
+    return setting.value?.rowSize !== value.rowSize;
   }
 
   return {

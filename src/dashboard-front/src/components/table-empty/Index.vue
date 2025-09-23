@@ -16,143 +16,107 @@
  * to the current version of the project delivered to anyone in the future.
  */
 <template>
-  <div class="flex items-center gateways-empty-table-search">
+  <div
+    class="flex items-center api-gateways-exception"
+    :style="{ 'backgroundColor': background }"
+  >
     <BkException
-      class="exception-wrap-item exception-part"
-      :type="exceptionType"
       scene="part"
+      v-bind="exceptionAttrs"
     >
-      <template v-if="!isLoading">
-        <div class="exception-part-title">
-          {{ exceptionTitle }}
-        </div>
-        <template v-if="!['empty'].includes(exceptionType)">
-          <div
-            v-if="abnormal"
-            class="refresh-tips"
-            @click="handleRefresh"
+      <template v-if="[exceptionAttrs.type, emptyType].includes('search-empty')">
+        <div class="mt-8px text-12px color-#979ba5 search-empty-tips">
+          {{ t('可以尝试 调整关键词 或') }}
+          <span
+            class="color-#3a84ff cursor-pointer"
+            @click="handlerClearFilter"
           >
-            {{ t("刷新") }}
-          </div>
-          <template v-else>
-            <div
-              v-if="['search-empty'].includes(exceptionType)"
-              class="search-empty-tips"
-            >
-              {{ t("可以尝试 调整关键词 或") }}
-              <span
-                class="clear-search"
-                @click="handlerClearFilter"
-              >
-                {{ t("清空搜索条件") }}
-              </span>
-            </div>
-          </template>
-        </template>
+            {{ t('清空搜索条件') }}
+          </span>
+        </div>
       </template>
-      <!-- loading给个占位符 -->
-      <div
-        v-else
-        style="height: 100%"
-      />
+      <BkButton
+        v-if="[500].includes(exceptionAttrs.type)"
+        text
+        theme="primary"
+        @click="handleRefresh"
+      >
+        {{ t("刷新") }}
+      </BkButton>
     </BkException>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { t } from '@/locales';
+import { useI18n } from 'vue-i18n';
+import { cloneDeep } from 'lodash-es';
 
 interface IProps {
-  isLoading?: boolean
-  abnormal?: boolean
-  emptyType?: string
-  emptyTitle?: string
-  refVal?: string
-}
-
-interface Emits {
-  (e: 'clear-filter', value?: string): void
-  (e: 'refresh'): void
+  emptyType?: 'empty' | 'search-empty' | 'refresh'
+  error?: Record<string, any> | null
+  queryListParams?: any[]
+  background?: string
 }
 
 const {
-  isLoading = false,
-  abnormal = false,
-  emptyType = '',
-  emptyTitle = t('暂无数据'),
-  refVal = '',
+  emptyType = 'empty',
+  background = '#ffffff',
+  error = null,
+  queryListParams = [],
 } = defineProps<IProps>();
-const emits = defineEmits<Emits>();
 
-const exceptionType = computed(() => {
-  if (abnormal) {
-    return 500;
-  }
-  if (['searchEmpty'].includes(emptyType)) {
-    return 'search-empty';
-  }
-  return 'empty';
-});
+const emit = defineEmits<{
+  'clear-filter': void
+  'refresh': void
+}>();
 
-const exceptionTitle = computed(() => {
-  if (abnormal) {
-    return t('数据获取异常');
+const { t } = useI18n();
+
+const exceptionAttrs = computed(() => {
+  if (error) {
+    return {
+      type: 500,
+      title: t('数据获取异常'),
+    };
   }
-  if (['searchEmpty'].includes(emptyType)) {
-    return t('搜索结果为空');
+
+  const queryParams = cloneDeep(queryListParams?.[0] ?? {});
+  delete queryParams.limit;
+  delete queryParams.offset;
+
+  if (Object.keys(queryParams).length > 0 || ['search-empty'].includes(emptyType)) {
+    return {
+      type: 'search-empty',
+      title: t('搜索结果为空'),
+    };
   }
-  return emptyTitle;
+
+  return {
+    type: 'empty',
+    title: t('暂无数据'),
+  };
 });
 
 const handlerClearFilter = () => {
-  emits('clear-filter', refVal);
+  emit('clear-filter');
 };
 
 const handleRefresh = () => {
-  emits('clear-filter');
-  emits('refresh');
+  emit('refresh');
 };
+
 </script>
 
 <style lang="scss" scoped>
-.gateways-empty-table-search {
+.api-gateways-exception {
   width: auto !important;
   margin: 0 auto;
 
-  .search-empty-tips {
-    font-size: 12px;
-    margin-top: 8px;
-    color: #979ba5;
-
-    .clear-search {
-      cursor: pointer;
-      color: #3a84ff;
-    }
-  }
-
-  .empty-tips {
-    color: #63656e;
-  }
-
-  .exception-part-title {
-    color: #63656e;
-    font-size: 14px;
-    margin-bottom: 5px;
-  }
-
-  .refresh-tips {
-    color: #3a84ff;
-    cursor: pointer;
-  }
-
-  .bk-table-empty-text {
-    padding: 0 !important;
-  }
-
   :deep(.bk-exception) {
-    height: 280px;
-    max-height: 280px;
-    justify-content: center;
+    .bk-exception-title {
+      font-size: 14px;
+      color: #63656e;
+    }
 
     .bk-exception-img {
       width: 100%;

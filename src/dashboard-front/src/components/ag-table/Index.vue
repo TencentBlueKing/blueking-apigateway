@@ -1,88 +1,189 @@
+/*
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) 2025 Tencent. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://opensource.org/licenses/MIT
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
+ */
 <template>
   <PrimaryTable
+    ref="primaryTableRef"
     v-model:selected-row-keys="selectedRowKeys"
+    class="primary-table-wrapper"
+    :class="[
+      {
+        'primary-table-no-data': !localTableData.length
+      }
+    ]"
     :data="localTableData"
-    :columns="columns"
-    :loading="loading"
+    :columns="tableColumns"
     :pagination="pagination"
-    v-bind="$attrs"
-    cell-empty-content="--"
+    :loading="loading"
+    :filter-row="null"
+    :bk-ui-settings="tableSetting"
+    :table-layout="tableLayout"
+    v-bind="tableProps"
+    @bk-ui-settings-change="handleSettingChange"
+    @row-mouseenter="handleRowEnter"
+    @row-mouseleave="handleRowLeave"
     @page-change="handlePageChange"
+    @select-change="handleSelectionChange"
   >
-    <slot />
+    <template
+      #firstFullRow
+    >
+      <template v-if="showFirstFullRow && selections.length > 0">
+        <slot
+          v-if="slots.firstFullRow"
+          name="firstFullRow"
+          v-bind="{
+            selections,
+            isAllSelection,
+            handleSelectionChange
+          }"
+        />
+        <div
+          v-if="!slots.firstFullRow"
+          class="table-first-full-row"
+        >
+          <span class="normal-text">
+            <span>{{ t('已选') }}</span>
+            <span class="count">{{ selections.length }}</span>
+            <span>{{ t('条') }}</span>
+            <span class="m-r4px">,</span>
+          </span>
+          <span
+            class="hight-light-text"
+            @click="handleResetSelection"
+          >
+            {{ t('清除选择') }}
+          </span>
+        </div>
+      </template>
+    </template>
     <template
       v-if="slots.expandedRow"
-      #expandedRow="props"
+      #expandedRow="slotProps"
     >
       <slot
         name="expandedRow"
-        v-bind="props"
+        v-bind="slotProps"
       />
     </template>
     <template #loading>
-      <BkLoading />
+      <BkLoading :loading="loading" />
     </template>
     <template #empty>
-      <BkException
-        v-bind="exceptionAttrs"
-        class="ag-table-exception"
-      >
-        <BkButton
-          v-if="exceptionAttrs.type === 500"
-          text
-          theme="primary"
-          @click="handleRefresh"
-        >
-          {{ t("刷新") }}
-        </BkButton>
-        <div
-          v-if="exceptionAttrs.type === 'search-empty'"
-          class="flex items-center gap-4px"
-        >
-          <span class="color-#979ba5">{{ t("可以尝试 调整关键词 或") }}</span>
-          <BkButton
-            text
-            theme="primary"
-            @click="emit('clear-queries')"
-          >
-            <span class="line-height-22px">{{ t("清空搜索条件") }}</span>
-          </BkButton>
-        </div>
-      </BkException>
+      <TableEmpty
+        :error="error"
+        :empty-type="tableEmptyType"
+        :query-list-params="params"
+        @clear-filter="handlerClearFilter"
+        @refresh="handleRefresh"
+      />
     </template>
   </PrimaryTable>
 </template>
 
-<script setup lang="ts">
-import { PrimaryTable, type PrimaryTableProps } from '@blueking/tdesign-ui';
+<script setup lang="tsx">
+import {
+  PrimaryTable,
+  type PrimaryTableInstance,
+  type PrimaryTableProps,
+  type TableRowData,
+} from '@blueking/tdesign-ui';
+import { Checkbox } from 'bkui-vue';
 import { useRequest } from 'vue-request';
 import { cloneDeep } from 'lodash-es';
+import { ITableSettings } from '@/types/common';
+import { useTDesignSelection, useTableSetting } from '@/hooks';
+import TableEmpty from '@/components/table-empty/Index.vue';
 
 interface IProps {
-  source?: (params?: Record<string, any>) => Promise<unknown>
+  apiMethod?: (params?: Record<string, any>) => Promise<unknown>
   columns?: PrimaryTableProps['columns']
+  tableProps?: Partial<PrimaryTableProps>
   immediate?: boolean
-  local?: boolean
-  frontendSearch?: boolean
+  localPage?: boolean
+  showFirstFullRow?: boolean
+  showSelection?: boolean
+  showSettings?: boolean
+  tableLayout?: string
+  tableEmptyType?: 'empty' | 'search-empty'
 }
 
 const selectedRowKeys = defineModel<any[]>('selectedRowKeys', { default: () => [] });
 
 const tableData = defineModel<any[]>('tableData', { default: () => [] });
 
+const tableSetting = defineModel<null | ShallowRef<ITableSettings>>('settings', { default: () => null });
+
 const {
-  source = undefined,
+  apiMethod = undefined,
   columns = [],
+  tableProps = {},
+  // 是否首次加载
   immediate = true,
-  local = false,
-  frontendSearch = false,
+  // 是否需要本地分页
+  localPage = false,
+  // 是否显示自定义首行内容
+  showFirstFullRow = false,
+  // 本地筛选查询状态
+  tableEmptyType = 'empty',
+  // 是否展示自定义表格复选框
+  showSelection = false,
+  // 表格布局方式
+  tableLayout = 'fixed',
+  // 禁止勾选复选框的条件
+  isDisabledCheckSelection = (value: TableRowData) => {
+    return !value;
+  },
 } = defineProps<IProps>();
 
-const emit = defineEmits<{ 'clear-queries': [void] }>();
+const emit = defineEmits<{
+  'row-mouseenter': {
+    e?: MouseEvent
+    row?: TableRowData
+  }
+  'row-mouseleave': {
+    e?: MouseEvent
+    row?: TableRowData
+  }
+  'request-done': void
+  'clear-filter': void
+  'refresh': void
+}>();
 
-const slots = defineSlots();
+const slots = useSlots();
 
 const { t } = useI18n();
+
+const {
+  isAllSelection,
+  selections,
+  selectionsRowKeys,
+  resetSelections,
+  handleSelectionChange,
+  handleCustomSelectChange,
+  handleCustomSelectAllChange,
+} = useTDesignSelection();
+
+const TDesignTableRef = useTemplateRef<PrimaryTableInstance & ITableMethod>('primaryTableRef');
+
+let radioClickHandler: ((e: Event) => void) | null = null;
+const paramsData: Record<string, any> = ref({});
+
+const radioEl = ref<HTMLElement | null>(null);
 
 const localTableData = ref<any[]>([]);
 
@@ -96,7 +197,78 @@ const pagination = ref<PrimaryTableProps['pagination']>({
   showPageSize: true,
 });
 
-let paramsMemo: Record<string, any> = {};
+const { changeTableSetting, isDiffSize } = useTableSetting(tableSetting.value);
+
+// 设置表格半选效果
+const setIndeterminate = computed(() => {
+  const isExistCheck = tableData.value.some(item => item.isCustomCheck);
+  return isExistCheck && selections.value.length > 0 && !isAllSelection.value;
+});
+
+// 这里采用自定义checkbox是为了后续功能扩展，用自带的无法自定义渲染函数(暂时支持跨页选择，不支持跨页全选)
+const selectionColumns = shallowRef([{
+  colKey: 'row-select',
+  type: 'custom-checkbox',
+  align: 'center',
+  fixed: 'left',
+  width: 60,
+  title: () => {
+    return (
+      <Checkbox
+        v-model={isAllSelection.value}
+        disabled={disabledSelected.value}
+        indeterminate={setIndeterminate.value}
+        onChange={() => {
+          tableData.value.forEach((item) => {
+            if (!isDisabledCheckSelection?.(item)) {
+              item.isCustomCheck = isAllSelection.value;
+            }
+          });
+          const tables = tableData.value.filter(item => !isDisabledCheckSelection?.(item));
+          handleCustomSelectAllChange({
+            isCheck: isAllSelection.value,
+            tableRowKey,
+            tables,
+          });
+        }}
+      />
+    );
+  },
+  cell: (h, { row }) => {
+    return (
+      <Checkbox
+        v-model={row.isCustomCheck}
+        disabled={disabledSelected.value}
+        onChange={(isCheck: boolean) => {
+          // 这里可以增加disabled逻辑
+          handleCustomSelectChange({
+            isCheck,
+            tableRowKey,
+            row,
+          });
+          const selectionTable = tableData.value.filter(item => !isDisabledCheckSelection?.(item));
+          const checkedIds = tableData.value
+            .filter(item => selectionsRowKeys.value.includes(item[tableRowKey]))
+            .map(check => check[tableRowKey]);
+          isAllSelection.value = checkedIds.length > 0 && checkedIds.length === selectionTable.length;
+          tableData.value.forEach((item) => {
+            if (!isDisabledCheckSelection?.(item) && row[tableRowKey] === item[tableRowKey]) {
+              item.isCustomCheck = row.isCustomCheck;
+            }
+          });
+        }}
+      />
+    );
+  },
+}]);
+
+const tableColumns = shallowRef<PrimaryTableProps['columns']>(showSelection
+  ? [
+    ...selectionColumns.value,
+    ...columns,
+  ]
+  : columns,
+);
 
 const offsetAndLimit = computed(() => {
   return {
@@ -105,57 +277,87 @@ const offsetAndLimit = computed(() => {
   };
 });
 
-const { params, loading, error, refresh, run: fetchData } = useRequest(source, {
+/**
+ * 请求表格数据
+ * @param {Object} params 请求数据
+ * @param {Boolean} loading 加载状态
+ * @param {Object | Null} error 错误信息
+ * @param run 手动触发请求的函数
+ */
+const { params, loading, error, refresh, run } = useRequest(apiMethod, {
   manual: true,
+  // 是否立即执行请求
+  immediate,
   defaultParams: [offsetAndLimit.value],
   onSuccess: (response: {
     results: any[]
     count: number
   }) => {
-    // console.log('ag table params:', JSON.stringify(params.value));
-    paramsMemo = { ...params.value[0] };
-    if (response.results) {
-      tableData.value = response.results;
-    }
-    pagination.value!.total = response.count || 0;
+    const results = response?.results ?? [];
+    paramsData.value = { ...params.value?.[0] };
+    pagination.value!.total = response?.count ?? 0;
+    tableData.value = [...results];
+    // 处理接口调用成功后抛出事件，为每个页面提供单独业务处理
+    emit('request-done');
   },
-});
-
-const exceptionAttrs = computed(() => {
-  if (error.value) {
-    return {
-      type: 500,
-      title: t('数据获取异常'),
-    };
-  }
-
-  const queries = cloneDeep(params.value?.[0] || {});
-  delete queries.limit;
-  delete queries.offset;
-
-  if (Object.keys(queries).length || frontendSearch) {
-    return {
-      type: 'search-empty',
-      title: t('搜索结果为空'),
-    };
-  }
-
-  return {
-    type: 'empty',
-    title: t('暂无数据'),
-  };
+  onError: (error) => {
+    tableData.value = [];
+    pagination.value!.total = 0;
+    isAllSelection.value = false;
+    console.error(error);
+  },
 });
 
 watch(tableData, () => {
   localTableData.value = cloneDeep(tableData.value || []);
-  if (local) {
-    pagination.value!.current = 1;
-    pagination.value!.total = localTableData.value.length;
+  if (localPage) {
+    pagination.value = Object.assign(pagination.value, {
+      current: 1,
+      total: localTableData.value.length,
+    });
   }
 }, {
   immediate: true,
   deep: true,
 });
+
+const fetchData = (
+  params: Record<string, any> = {},
+  options: { resetPage?: boolean } = { resetPage: false },
+) => {
+  if (options.resetPage) {
+    pagination.value!.current = 1;
+  }
+  run({
+    ...params,
+    ...offsetAndLimit.value,
+  });
+};
+
+const handleRowEnter = ({ e, row }: {
+  e: MouseEvent
+  row: TableRowData
+}) => {
+  const truncateNode = e.target?.querySelector('.cell-single-ellipse');
+  if (truncateNode) {
+    row.isOverflow = truncateNode?.scrollWidth > truncateNode.clientWidth;
+  }
+  emit('row-mouseenter', {
+    e,
+    row,
+  });
+};
+
+const handleRowLeave = ({ e, row }: {
+  e: MouseEvent
+  row: TableRowData
+}) => {
+  delete row.isOverflow;
+  emit('row-mouseleave', {
+    e,
+    row,
+  });
+};
 
 const handlePageChange = ({ current, pageSize }: {
   current: number
@@ -163,97 +365,222 @@ const handlePageChange = ({ current, pageSize }: {
 }) => {
   pagination.value!.current = current;
   pagination.value!.pageSize = pageSize;
-  if (!local) {
+  if (!localPage) {
     fetchData({
-      ...paramsMemo,
+      ...paramsData.value,
       ...offsetAndLimit.value,
     });
   }
 };
 
+const handleSettingChange = (setting: ITableSettings) => {
+  console.log(setting, 4444);
+  tableSetting.value = { ...setting };
+  const isExistDiff = isDiffSize(setting);
+  changeTableSetting(setting);
+  if (!isExistDiff) {
+    // 这里处理高级设置事件回调后需要处理的业务
+    return;
+  }
+};
+
+// 处理自定义重置功能和点击单选直接关闭弹框
+const handleRadioFilterClick = () => {
+  setTimeout(() => {
+    const filterPopup = document.querySelector('.t-table__filter-pop-content');
+    radioEl.value = filterPopup?.querySelector('.t-radio-group');
+    if (radioEl.value) {
+      const confirmBtn = document.querySelector('.t-table__filter--bottom-buttons > .t-button--theme-primary');
+      radioClickHandler = (event: MouseEvent) => {
+        const radioLabel = event.target.closest('label.t-radio');
+        const radioInput = radioLabel.querySelector('input.t-radio__former');
+        if (radioInput.checked) {
+          confirmBtn.click();
+        }
+      };
+      radioEl.value.addEventListener('click', radioClickHandler);
+    }
+  }, 0);
+};
+
+const handleListenerRadio = () => {
+  const table = unref(TDesignTableRef);
+  if (!table) return;
+
+  // 获取表头filter筛选框容器元素
+  const filterEl = table.$el.querySelector('.t-table__filter-icon-wrap');
+  if (!filterEl) {
+    return;
+  }
+  document.addEventListener('click', handleRadioFilterClick);
+};
+
+const getPagination = () => {
+  return pagination.value;
+};
+
+const setPagination = ({ current, pageSize }: {
+  current: number
+  pageSize: number
+}) => {
+  handlePageChange({
+    current,
+    pageSize,
+  });
+};
+
+const setPaginationTheme = ({ theme, showPageSize }: {
+  theme: 'default' | 'simple'
+  showPageSize?: boolean
+}) => {
+  Object.assign(pagination.value!, {
+    theme,
+    showPageSize: showPageSize ?? true,
+  });
+};
+
+const resetPaginationTheme = () => {
+  pagination.value!.theme = 'default';
+  pagination.value!.showPageSize = true;
+};
+
+const handleResetSelection = () => {
+  isAllSelection.value = false;
+  localTableData.value.forEach((item) => {
+    item.isCustomCheck = false;
+  });
+  resetSelections();
+};
+
+// 清空过滤条件
+const handlerClearFilter = () => {
+  emit('clear-filter');
+};
+
+// 异常刷新
 const handleRefresh = () => {
   refresh();
+  emit('refresh');
 };
 
 onMounted(() => {
-  if (immediate && !local) {
+  if (immediate && !localPage) {
     fetchData({ ...offsetAndLimit.value });
   }
+  handleListenerRadio();
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleRadioFilterClick);
+  radioEl.value?.removeEventListener('click', radioClickHandler);
+  radioEl.value = null;
+  radioClickHandler = null;
 });
 
 defineExpose({
-  fetchData: (params: Record<string, any> = {}, options: { resetPage?: boolean } = { resetPage: false }) => {
-    if (options.resetPage) {
-      pagination.value!.current = 1;
-    }
-    fetchData({
-      ...params,
-      ...offsetAndLimit.value,
-    });
-  },
-  getPagination: () => pagination.value,
-  setPagination: ({ current, pageSize }: {
-    current: number
-    pageSize: number
-  }) => {
-    handlePageChange({
-      current,
-      pageSize,
-    });
-  },
-  setPaginationTheme: ({ theme, showPageSize }: {
-    theme: 'default' | 'simple'
-    showPageSize?: boolean
-  }) => {
-    Object.assign(pagination.value!, {
-      theme,
-      showPageSize: showPageSize ?? true,
-    });
-  },
-  resetPaginationTheme: () => {
-    pagination.value!.theme = 'default';
-    pagination.value!.showPageSize = true;
-  },
+  TDesignTableRef,
+  loading,
+  fetchData,
+  getPagination,
+  setPagination,
+  setPaginationTheme,
+  resetPaginationTheme,
   refresh,
 });
 
 </script>
 
 <style lang="scss">
-.t-table {
-  font-size: 12px;
+.primary-table-wrapper {
+  .cell-single-ellipse {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &.is-color-active {
+      color: #3a84ff;
+      cursor: pointer;
+    }
+  }
+
+  .table-first-full-row {
+    width: 100%;
+    height: 32px;
+    line-height: 32px;
+    background-color: #f0f1f5;
+    text-align: center;
+    font-size: 12px;
+
+    .normal-text {
+      color: #4d4f56;
+
+      .count {
+        font-weight: 700;
+      }
+    }
+
+    .hight-light-text {
+      color: #3a84ff;
+      cursor: pointer;
+    }
+  }
 
   .t-table__body {
     color: #63656e;
   }
 
-  // 默认的 loading 图标
+  .t-table__pagination {
+    font-size: 12px;
 
+    .t-pagination {
+      color: #63656e;
+
+      .t-input--focused {
+        box-shadow: none;
+      }
+
+      .t-pagination__total {
+        font-size: 12px;
+      }
+    }
+
+    .t-pagination__number.t-is-current {
+      background-color: #e1ecff;
+      color: #3a84ff;
+      border: none;
+      font-size: 12px;
+    }
+  }
+
+  // 默认的 loading 图标
   .t-loading svg.t-icon-loading {
     display: none !important;
   }
+
+  .t-table__row--full.t-table__first-full-row {
+    background-color: #f0f1f5;
+
+    td {
+      border: none;
+    }
+
+    .t-table__row-full-element {
+      padding: 0;
+    }
+  }
+
+  &.primary-table-no-data {
+    .t-table__row--full.t-table__first-full-row {
+      height: 0;
+    }
+  }
 }
 
-.ag-table-exception {
-
-  .bk-exception-img {
-    width: 200px;
-    height: 100px;
-  }
-
-  .bk-exception-title {
-    margin-top: 0;
-    font-size: 14px;
-    color: #63656e;
-    margin-bottom: 5px;
-    line-height: 22px;
-  }
-
-  .bk-exception-footer {
-    line-height: 18px;
-    color: #979ba5;
-    margin-top: 5px;
-    font-size: 12px;
+.custom-radio-filter-wrapper {
+  .t-table__filter--bottom-buttons {
+    .t-button:nth-child(2) {
+      display: none !important;
+    }
   }
 }
 </style>

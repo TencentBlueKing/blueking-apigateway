@@ -221,7 +221,7 @@
                 ref="tableRef"
                 v-model:selected-row-keys="selectedRowKeys"
                 v-model:table-data="tableData"
-                :source="getTableData"
+                :api-method="getTableData"
                 :columns="columns"
                 row-key="id"
                 :filter-row="null"

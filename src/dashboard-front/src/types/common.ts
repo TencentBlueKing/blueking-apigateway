@@ -112,3 +112,22 @@ export type ErrorReasonType = {
   position?: IPosition | null // 位置，可能为空
   regex?: RegExp | null // 正则表达式，可能为空
 };
+
+// 表格组件导出内容
+export type ITableMethod = {
+  loading: boolean
+  TDesignTableRef: Ref
+  setPagination: () => void
+  getPagination: () => void
+  resetPaginationTheme: () => void
+  setPaginationTheme: () => void
+  fetchData: () => void
+  refresh: () => void
+};
+
+// tdesign-table设置
+export type ITableSettings = {
+  columns: string[]
+  fontSize: string
+  rowSize: string
+};
