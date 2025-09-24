@@ -186,6 +186,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 # CSRF Config
 CSRF_COOKIE_DOMAIN = env.str("DASHBOARD_CSRF_COOKIE_DOMAIN")
+if not CSRF_COOKIE_DOMAIN:
+    raise ImproperlyConfigured("DASHBOARD_CSRF_COOKIE_DOMAIN must be set and non-empty.")
 _DOMAIN_MD5_16BIT = hashlib.md5(CSRF_COOKIE_DOMAIN.encode("utf-8")).hexdigest()[8:-8]
 
 CSRF_TRUSTED_ORIGINS = env.list("DASHBOARD_CSRF_TRUSTED_ORIGINS", default=[])
