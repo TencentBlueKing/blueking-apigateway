@@ -42,10 +42,9 @@
         row-key="id"
         :filter-row="null"
         :frontend-search="isSearching"
-        hover
-        local
+        local-page
         @filter-change="handleFilterChange"
-        @clear-queries="handleClearQueries"
+        @clear-filter="handleClearQueries"
       />
     </div>
   </template>

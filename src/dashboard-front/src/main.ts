@@ -26,7 +26,7 @@ import './styles/index.scss';
 // 全量引入 bkui-vue
 import bkui from 'bkui-vue';
 // 全量引入 bkui-vue 样式
-import '../node_modules/bkui-vue/dist/style.variable.css';
+import 'bkui-vue/dist/cli.css';
 // 全局通知组件样式
 import '@blueking/notice-component/dist/style.css';
 // 版本发布通知组件样式
@@ -47,10 +47,10 @@ import mavonEditor from 'mavon-editor';
 import 'mavon-editor/dist/css/index.css';
 // highlight.js 代码高亮风格
 import 'highlight.js/styles/vs2015.min.css';
-// tdesign 表格样式
-import '@blueking/tdesign-ui/vue3/index.css';
 // 多租户组件样式
 import '@blueking/bk-user-selector/vue3/vue3.css';
+// tdesign 表格样式
+import '@blueking/tdesign-ui/vue3/index.css';
 
 const app = createApp(App);
 
