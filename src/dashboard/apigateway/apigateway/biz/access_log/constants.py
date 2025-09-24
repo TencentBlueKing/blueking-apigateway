@@ -88,7 +88,7 @@ ES_LOG_FIELDS = [
     },
     {
         "label": _("后端服务"),
-        "field": "backend",
+        "field": "backend_name",
         "is_filter": True,
     },
     {
