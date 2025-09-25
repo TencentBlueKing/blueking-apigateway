@@ -158,7 +158,10 @@ const {
   excludeSelfTips = true,
 } = defineProps<IProps>();
 
-const emit = defineEmits<{ 'on-change': [data: { [key: string]: string[] }] }>();
+const emit = defineEmits<{
+  'on-change': [data: { [key: string]: string[] }]
+  'on-submit': [data: { [key: string]: string[] }]
+}>();
 
 const { t } = useI18n();
 
@@ -212,6 +215,7 @@ const handleEdit = () => {
 const handleSubmit = () => {
   if (!isEditable.value) return;
   triggerChange();
+  emit('on-submit', { [field]: displayValue.value });
 };
 
 const handleCancel = () => {
