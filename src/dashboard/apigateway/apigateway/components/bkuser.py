@@ -35,7 +35,7 @@ def _call_bkuser_api(http_func, path, data, more_headers=None, timeout=10) -> Di
     if more_headers:
         headers.update(more_headers)
 
-    host = settings.BK_API_URL_TMPL.format(api_name="bkuser")
+    host = settings.BK_API_URL_TMPL.format(api_name="bk-user")
 
     url = url_join(host, path)
 
@@ -93,7 +93,7 @@ def query_display_names_cached(
     tenant_id: str,
     bk_usernames: str,
 ):
-    url_path = "/prod/api/v3/open/tenant/users/-/display_name/"
+    url_path = "/prod/api/v3/open/tenant/users/-/display_info/"
 
     data = {
         "bk_usernames": bk_usernames,
