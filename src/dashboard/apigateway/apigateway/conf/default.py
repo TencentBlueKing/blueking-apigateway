@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import hashlib
 import os
 from pathlib import Path
 from typing import List
@@ -184,13 +185,17 @@ DATABASE_ROUTERS = [
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 # CSRF Config
-CSRF_TRUSTED_ORIGINS = env.list("DASHBOARD_CSRF_TRUSTED_ORIGINS", default=[])
 CSRF_COOKIE_DOMAIN = env.str("DASHBOARD_CSRF_COOKIE_DOMAIN")
-CSRF_COOKIE_NAME = env.str("DASHBOARD_CSRF_COOKIE_NAME", f"{BK_APP_CODE}_csrftoken")
+if not CSRF_COOKIE_DOMAIN:
+    raise ImproperlyConfigured("DASHBOARD_CSRF_COOKIE_DOMAIN must be set and non-empty.")
+_DOMAIN_MD5_16BIT = hashlib.md5(CSRF_COOKIE_DOMAIN.encode("utf-8")).hexdigest()[8:-8]
+
+CSRF_TRUSTED_ORIGINS = env.list("DASHBOARD_CSRF_TRUSTED_ORIGINS", default=[])
+CSRF_COOKIE_NAME = f"bkapigw_csrftoken_{_DOMAIN_MD5_16BIT}"
 
 # Session Config
 SESSION_COOKIE_AGE = 60 * 60 * 24
-SESSION_COOKIE_NAME = env.str("DASHBOARD_SESSION_COOKIE_NAME", f"{BK_APP_CODE}_sessionid")
+SESSION_COOKIE_NAME = f"bkapigw_sessionid_{_DOMAIN_MD5_16BIT}"
 SESSION_COOKIE_DOMAIN = CSRF_COOKIE_DOMAIN or env.str("DASHBOARD_SESSION_COOKIE_DOMAIN")
 
 # CORS Config
