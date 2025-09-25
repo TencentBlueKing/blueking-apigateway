@@ -69,8 +69,8 @@ requests.get(
 | 字段  | 类型 | 必选 |  描述 |
 |-----------|------------|--------|------------|
 {%- if verified_app_required %}
-| bk_app_code   | string  |  否 | 应用 ID，可以通过`蓝鲸开发者中心 -> 应用基本设置 -> 基本信息 -> 鉴权信息`获取；*网关 SDK 默认已添加* |
-| bk_app_secret | string  |  否 | 安全秘钥，可以通过`蓝鲸开发者中心 -> 应用基本设置 -> 基本信息 -> 鉴权信息`获取；*网关 SDK 默认已添加* |
+| bk_app_code   | string  |  是 | 应用 ID，可以通过`蓝鲸开发者中心 -> 应用设置 -> 基本信息 -> 密钥信息`获取；*网关 SDK 默认已添加* |
+| bk_app_secret | string  |  是 | 安全秘钥，可以通过`蓝鲸开发者中心 -> 应用设置 -> 基本信息 -> 密钥信息`获取；*网关 SDK 默认已添加* |
 {%- endif %}
 {%- if verified_user_required %}
 | {{ settings.BK_LOGIN_TICKET_KEY }}      | string  |  否 | 用户登录态，用于认证用户；登录蓝鲸，对应 Cookies 中 {{ settings.BK_LOGIN_TICKET_KEY }} 字段的值 |
@@ -130,8 +130,8 @@ requests.get(
 | 字段  | 类型 | 必选 |  描述 |
 |-----------|------------|--------|------------|
 {%- if verified_app_required %}
-| bk_app_code   | string  |  否 | 应用 ID，可以通过`蓝鲸开发者中心 -> 应用基本设置 -> 基本信息 -> 鉴权信息`获取；*网关 SDK 默认已添加* |
-| bk_app_secret | string  |  否 | 安全秘钥，可以通过`蓝鲸开发者中心 -> 应用基本设置 -> 基本信息 -> 鉴权信息`获取；*网关 SDK 默认已添加* |
+| bk_app_code   | string  |  是 | 应用 ID，可以通过`蓝鲸开发者中心 -> 应用设置 -> 基本信息 -> 密钥信息`获取；*网关 SDK 默认已添加* |
+| bk_app_secret | string  |  是 | 安全秘钥，可以通过`蓝鲸开发者中心 -> 应用设置 -> 基本信息 -> 密钥信息`获取；*网关 SDK 默认已添加* |
 {%- endif %}
 {%- if verified_user_required %}
 | {{ settings.BK_LOGIN_TICKET_KEY }}      | string  |  否 | 用户登录态，用于认证用户；登录蓝鲸，对应 Cookies 中 {{ settings.BK_LOGIN_TICKET_KEY }} 字段的值 |
@@ -185,8 +185,8 @@ The supported fields of the header `X-Bkapi-Authorization` are shown in the foll
 | Field  | Type | Required |  Description |
 |-----------|------------|--------|------------|
 {%- if verified_app_required %}
-| bk_app_code   | string  |  No | App ID, can get from `Developer Center -> App Settings -> Basic Information -> Authentication Information`; *Gateway SDK added by default* |
-| bk_app_secret | string  |  No | App Secret, can get from `Developer Center -> App Settings -> Basic Information -> Authentication Information`; *Gateway SDK added by default* |
+| bk_app_code   | string  |  Yes | App ID, can get from `Developer Center -> App Settings -> Basic Information -> Secret Information`; *Gateway SDK added by default* |
+| bk_app_secret | string  |  Yes | App Secret, can get from `Developer Center -> App Settings -> Basic Information -> Secret Information`; *Gateway SDK added by default* |
 {%- endif %}
 {%- if verified_user_required %}
 | {{ settings.BK_LOGIN_TICKET_KEY }}      | string  |  No | User login token, used to authenticate user; login to BlueKing, corresponding to the value of the {{ settings.BK_LOGIN_TICKET_KEY }} field in Cookies |
@@ -246,8 +246,8 @@ The supported fields of the header `X-Bkapi-Authorization` are shown in the foll
 | Field  | Type | Required |  Description |
 |-----------|------------|--------|------------|
 {%- if verified_app_required %}
-| bk_app_code   | string  |  No | App ID, can get from `Developer Center -> App Settings -> Basic Information -> Authentication Information`; *Gateway SDK added by default* |
-| bk_app_secret | string  |  No | App Secret, can get from `Developer Center -> App Settings -> Basic Information -> Authentication Information`; *Gateway SDK added by default* |
+| bk_app_code   | string  |  Yes | App ID, can get from `Developer Center -> App Settings -> Basic Information -> Secret Information`; *Gateway SDK added by default* |
+| bk_app_secret | string  |  Yes | App Secret, can get from `Developer Center -> App Settings -> Basic Information -> Secret Information`; *Gateway SDK added by default* |
 {%- endif %}
 {%- if verified_user_required %}
 | {{ settings.BK_LOGIN_TICKET_KEY }}      | string  |  No | User login token, used to authenticate user; login to BlueKing, corresponding to the value of the {{ settings.BK_LOGIN_TICKET_KEY }} field in Cookies |
