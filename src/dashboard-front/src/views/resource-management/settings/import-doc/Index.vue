@@ -372,7 +372,10 @@ const editorText = ref<string>(RESOURCE_IMPORT_EXAMPLE.content);
 const zipFile = ref<any>('');
 const resourceEditorRef = ref<InstanceType<typeof editorMonaco>>(); // 实例化
 
-const CSRFToken = Cookie.get('bk_apigw_dashboard_csrftoken');
+const CSRFToken = computed(() => {
+  const CSRF_TOKEN_KEY = envStore.env?.BK_DASHBOARD_CSRF_COOKIE_NAME || 'bk_apigw_dashboard_csrftoken';
+  return Cookie.get(CSRF_TOKEN_KEY);
+});
 
 // 资源新建条数
 const createNum = computed(() => {

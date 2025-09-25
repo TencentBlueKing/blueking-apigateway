@@ -26,6 +26,7 @@ import responseMiddleware from '../middleware/response';
 
 import Cache, { type CacheExpire, type CacheValue } from './cache';
 import { paramsSerializer } from './utils';
+import { useEnv } from '@/stores';
 
 const cacheHandler = new Cache();
 
@@ -50,7 +51,6 @@ if (axios.interceptors.response.handlers.length < 1) {
 }
 
 const { CancelToken } = axios;
-const CSRF_TOKEN_KEY = 'bk_apigw_dashboard_csrftoken';
 
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 // if (CSRFToken !== undefined) {
@@ -63,8 +63,6 @@ const defaultConfig: Record<string, any> = {
   headers: {},
   withCredentials: true,
   paramsSerializer,
-  xsrfCookieName: CSRF_TOKEN_KEY,
-  xsrfHeaderName: 'X-CSRFToken',
 };
 
 export default class Request {
@@ -95,6 +93,8 @@ export default class Request {
   }
 
   get axiosConfig() {
+    const envStore = useEnv();
+    const CSRF_TOKEN_KEY = envStore.env?.BK_DASHBOARD_CSRF_COOKIE_NAME || 'bk_apigw_dashboard_csrftoken';
     const CSRFToken = Cookie.get(CSRF_TOKEN_KEY);
 
     if (!CSRFToken) {
