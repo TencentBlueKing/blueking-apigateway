@@ -37,7 +37,7 @@ export * from './use-date-picker';
 // 设置tdesgin表格复选框通用函数
 export * from './use-tdesign-selection';
 // 设置tdesgin表格筛选通用函数
-export * from './user-table-filter-change';
+export * from './use-table-filter-change';
 // 设置tdesgin表格排序通用函数
 export * from './use-table-sort-change';
 export * from './use-stage-data';
