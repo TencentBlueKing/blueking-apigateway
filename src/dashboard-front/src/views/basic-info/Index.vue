@@ -234,7 +234,7 @@
                   :content="basicInfoData.maintainers"
                   :is-error-class="'maintainers-error-tip'"
                   :error-value="t('维护人员不能为空')"
-                  @on-change="(e:Record<string, any>) => handleMaintainerChange(e)"
+                  @on-submit="(e:Record<string, any>) => handleMaintainerChange(e)"
                 />
                 <TenantUserSelector
                   v-else
@@ -246,7 +246,7 @@
                   field="maintainers"
                   mode="edit"
                   width="600px"
-                  @on-change="(e:Record<string, any>) => handleMaintainerChange(e)"
+                  @on-submit="(e:Record<string, any>) => handleMaintainerChange(e)"
                 />
               </div>
             </div>

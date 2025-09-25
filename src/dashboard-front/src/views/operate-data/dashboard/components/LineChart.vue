@@ -523,8 +523,8 @@ defineExpose({ syncParams });
     display: flex;
     flex-wrap: wrap;
     margin: 0 40px;
-    height: 70px;
-    max-height: 110px;
+    height: 90px;
+    // max-height: 110px;
     overflow-y: auto;
 
     .legend-item {
