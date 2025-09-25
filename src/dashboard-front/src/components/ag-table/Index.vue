@@ -39,9 +39,7 @@
     @page-change="handlePageChange"
     @select-change="handleSelectionChange"
   >
-    <template
-      #firstFullRow
-    >
+    <template #firstFullRow>
       <template v-if="showFirstFullRow && selections.length > 0">
         <slot
           v-if="slots.firstFullRow"
@@ -105,7 +103,7 @@ import {
 import { Checkbox } from 'bkui-vue';
 import { useRequest } from 'vue-request';
 import { cloneDeep } from 'lodash-es';
-import { ITableSettings } from '@/types/common';
+import type { BkUiSettings } from '@blueking/tdesign-ui/typings/packages/table/types/table';
 import { useTDesignSelection, useTableSetting } from '@/hooks';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
@@ -126,7 +124,7 @@ const selectedRowKeys = defineModel<any[]>('selectedRowKeys', { default: () => [
 
 const tableData = defineModel<any[]>('tableData', { default: () => [] });
 
-const tableSetting = defineModel<null | ShallowRef<ITableSettings>>('settings', { default: () => null });
+const tableSetting = defineModel<null | ShallowRef<BkUiSettings>>('settings', { default: () => null });
 
 const {
   apiMethod = undefined,
@@ -373,8 +371,7 @@ const handlePageChange = ({ current, pageSize }: {
   }
 };
 
-const handleSettingChange = (setting: ITableSettings) => {
-  console.log(setting, 4444);
+const handleSettingChange = (setting: BkUiSettings) => {
   tableSetting.value = { ...setting };
   const isExistDiff = isDiffSize(setting);
   changeTableSetting(setting);
