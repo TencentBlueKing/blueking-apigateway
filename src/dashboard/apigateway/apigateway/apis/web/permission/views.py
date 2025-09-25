@@ -505,7 +505,11 @@ class AppPermissionApplyListApi(AppPermissionApplyQuerySetMixin, generics.ListAP
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
 
-        serializer = AppPermissionApplyOutputSLZ(page, many=True)
+        context = {
+            "gateway_tenant_id": request.gateway.tenant_id,
+            "gateway_tenant_mode": request.gateway.tenant_mode,
+        }
+        serializer = AppPermissionApplyOutputSLZ(page, many=True, context=context)
         return self.get_paginated_response(serializer.data)
 
 
@@ -522,7 +526,11 @@ class AppPermissionApplyRetrieveApi(AppPermissionApplyQuerySetMixin, generics.Re
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        slz = AppPermissionApplyOutputSLZ(instance)
+        context = {
+            "gateway_tenant_id": request.gateway.tenant_id,
+            "gateway_tenant_mode": request.gateway.tenant_mode,
+        }
+        slz = AppPermissionApplyOutputSLZ(instance, context=context)
         return OKJsonResponse(data=slz.data)
 
 
