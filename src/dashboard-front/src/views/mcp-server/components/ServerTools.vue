@@ -464,7 +464,8 @@ onMounted(() => {
 @use "sass:color";
 
 $primary-color: #3a84ff;
-$code-bc: #1e1e1e;
+// $code-bc: #1e1e1e;
+$code-bc: #f6f8fa;
 $code-color: #63656e;
 
 .page-content {
@@ -862,12 +863,13 @@ $code-color: #63656e;
     font-size: 14px;
     line-height: 24px;
     text-align: left;
-    background: $code-bc;
+    background-color: $code-bc;
     border-radius: 2px;
 
     code {
       font-family: "Lucida Console", "Courier New", Monaco, monospace;
-      color: #dcdcdc;
+      color: #1f2328;
+      text-wrap: wrap;
     }
 
     .hljs {

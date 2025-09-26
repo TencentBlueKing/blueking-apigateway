@@ -1907,7 +1907,7 @@
   "停用后，{n} 下所有工具不可访问，请确认！": "Tools under {n} can not be used after suspension, be cautious!",
   "请输入工具名称，描述搜索": "Search tools name and description",
   "可用工具": "Available Tools",
-  "资源需要确认请求参数后才能添加到MCP Server": "Need request params to be added to MCP server",
+  "该资源数据有变更，请确认一下请求参数是否正确配置。": "The resource data has changed. Please confirm if the request parameters are configured correctly.",
   "非必填，可用于生成文档、在线调试、生成 MCP Server 等": "Not required. Can be used for document generation, online debugging, and generating MCP Server.",
   "位置": "in",
   "必填": "Required",

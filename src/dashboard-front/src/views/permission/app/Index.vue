@@ -131,7 +131,7 @@
 
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
-import { Message } from 'bkui-vue';
+import { Button, Checkbox, Message } from 'bkui-vue';
 import { type ISearchItem } from 'bkui-lib/search-select/utils';
 import {
   type IAuthData,
@@ -491,7 +491,7 @@ const setTableColumns = () => {
     {
       label: () => {
         return (
-          <BkCheckbox
+          <Checkbox
             v-model={isAllChecked.value}
             onChange={(checked: boolean) => handleCheckAllClick(checked)}
           />
@@ -501,7 +501,7 @@ const setTableColumns = () => {
       align: 'center',
       render: ({ row }: { row: IPermission }) => {
         return (
-          <BkCheckbox
+          <Checkbox
             v-bk-tooltips={{
               content: t('权限有效期大于 360 天时，暂无法续期'),
               disabled: row.renewable,
@@ -576,7 +576,7 @@ const setTableColumns = () => {
       render: ({ row }: { row: IPermission }) => {
         return (
           <div>
-            <BkButton
+            <Button
               class="m-r-10px"
               theme="primary"
               text
@@ -589,14 +589,14 @@ const setTableColumns = () => {
               onClick={() => handleSingleApply(row)}
             >
               { t('续期') }
-            </BkButton>
-            <BkButton
+            </Button>
+            <Button
               theme="primary"
               text
               onClick={() => handleRemove(row)}
             >
               { t('删除') }
-            </BkButton>
+            </Button>
           </div>
         );
       },
@@ -660,13 +660,6 @@ const handleExport = async () => {
     Message({
       message: t('导出成功'),
       theme: 'success',
-    });
-  }
-  catch (error: unknown) {
-    const e = error as { message: string };
-    Message({
-      message: e?.message || t('导出失败'),
-      theme: 'error',
     });
   }
   finally {

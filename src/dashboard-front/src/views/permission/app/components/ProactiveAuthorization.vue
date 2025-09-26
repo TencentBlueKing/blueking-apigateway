@@ -82,7 +82,7 @@
             :rules="rules.dimension"
             :label-width="0"
             property="dimension"
-            class="m-b-0!"
+            class="auth-resource m-b-0!"
             required
           >
             <div class="ag-span-title mb-16px!">
@@ -312,7 +312,18 @@ const handleResourceChange = (
   targetList: IResource[],
   targetValueList: number[],
 ) => {
-  curAuthData.value.resource_ids = targetValueList;
+  // 如果数据一致，表示是全选
+  if (targetValueList.length === resourceTransferList.value.length) {
+    const searchList = resourceTransferList.value.filter(item =>
+      item.name.indexOf(dimensionRef.value.selectSearchQuery) > -1,
+    );
+    const resourceIds = targetValueList.filter(item => searchList.map(searchItem => searchItem.id).includes(item));
+    curAuthData.value.resource_ids = resourceIds;
+    dimensionRef.value.selectedList = searchList;
+  }
+  else {
+    curAuthData.value.resource_ids = targetValueList;
+  }
 };
 
 const handleSave = async () => {
@@ -403,6 +414,13 @@ const handleCancel = () => {
           text-overflow: ellipsis;
           white-space: nowrap;
         }
+      }
+    }
+
+    .auth-resource {
+      :deep(.bk-form-error) {
+        margin-top: 4px;
+        margin-left: 20px;
       }
     }
   }

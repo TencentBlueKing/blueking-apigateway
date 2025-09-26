@@ -659,8 +659,7 @@ watch(
 
 const setRepositoryAddress = () => {
   if (envStore.env.EDITION === 'te' && formData.value.kind === 1) {
-    formData.value.extra_info!.repository
-        = `${repositoryUrl.value.replace('{{gateway_name}}', formData.value.name || '')}`;
+    formData.value.extra_info!.repository = `${repositoryUrl.value.replace('{{gateway_name}}', formData.value.name || '')}`;
   }
 };
 

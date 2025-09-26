@@ -54,18 +54,16 @@ import '@blueking/tdesign-ui/vue3/index.css';
 
 const app = createApp(App);
 
-app.use(createPinia());
-app.use(router);
-app.use(bkui);
-app.use(i18n);
-app.use(mavonEditor);
-app.use(VueDOMPurifyHTML);
-app.use(directive);
-
-// 全局组件
-app.component('AgIcon', AgIcon)
+app.use(createPinia())
+  .use(router)
+  .use(bkui)
+  .use(i18n)
+  .use(mavonEditor)
+  .use(VueDOMPurifyHTML)
+  .use(directive)
+  // 全局组件
+  .component('AgIcon', AgIcon)
   .component('IconButton', IconButton)
   .component('CopyButton', CopyButton)
-  .component('CardContainer', CardContainer);
-
-app.mount('#app');
+  .component('CardContainer', CardContainer)
+  .mount('#app');

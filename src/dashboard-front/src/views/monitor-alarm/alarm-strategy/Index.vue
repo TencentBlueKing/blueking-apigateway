@@ -43,9 +43,9 @@
         ref="tableRef"
         v-model:table-data="tableData"
         v-model:settings="settings"
-        row-key="id"
-        disable-data-page
         show-settings
+        :hover="false"
+        resizable
         :filter-value="filterData"
         :sort="sortData"
         :api-method="getTableData"
@@ -215,6 +215,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     },
   },
 ]);
+
 const settings = shallowRef({
   size: 'small',
   checked: [],
