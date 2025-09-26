@@ -366,12 +366,14 @@ $code-color: #63656e;
     font-size: 14px;
     line-height: 24px;
     text-align: left;
-    background: #1e1e1e;
+    background-color: #f6f8fa;
     border-radius: 2px;
 
     code {
       font-family: "Lucida Console", "Courier New", Monaco, monospace;
-      color: #dcdcdc;
+      // color: #dcdcdc;
+      color: #1f2328;
+      text-wrap: wrap;
     }
 
     .hljs {

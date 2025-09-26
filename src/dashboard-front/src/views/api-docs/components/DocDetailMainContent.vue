@@ -248,7 +248,8 @@ const handleSdkInstructionClick = () => {
 @use "sass:color";
 
 $primary-color: #3a84ff;
-$code-bc: #1e1e1e;
+// $code-bc: #1e1e1e;
+$code-bc: #f6f8fa;
 $code-color: #63656e;
 
 .content-wrap {
@@ -522,7 +523,8 @@ $code-color: #63656e;
 
     code {
       font-family: "Lucida Console", "Courier New", Monaco, monospace;
-      color: #dcdcdc;
+      // color: #dcdcdc;
+      color: #1f2328;
     }
 
     .hljs {

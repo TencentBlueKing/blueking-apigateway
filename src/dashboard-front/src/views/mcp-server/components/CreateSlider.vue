@@ -169,20 +169,20 @@
                   </div>
                   <BkLoading :loading="loadingResource">
                     <BkTable
-                    ref="tableRef"
-                    :columns="columns"
-                    :data="filteredResourceList"
-                    :pagination="pagination"
-                    border="outer"
-                    show-overflow-tooltip
-                  >
-                    <template #empty>
-                      <TableEmpty
-                        :empty-type="!!filterKeyword ? 'searchEmpty' : 'empty'"
-                        @clear-filter="filterKeyword = ''"
-                      />
-                     </template>
-                   </BkTable>
+                      ref="tableRef"
+                      :columns="columns"
+                      :data="filteredResourceList"
+                      :pagination="pagination"
+                      border="outer"
+                      show-overflow-tooltip
+                    >
+                      <template #empty>
+                        <TableEmpty
+                          :empty-type="!!filterKeyword ? 'searchEmpty' : 'empty'"
+                          @clear-filter="filterKeyword = ''"
+                        />
+                      </template>
+                    </BkTable>
                   </BkLoading>
                 </div>
                 <div class="result-preview">
@@ -363,7 +363,7 @@ const columns = [
         text
         theme="primary"
         v-bk-tooltips={{
-          content: (<div>{t('资源需要确认请求参数后才能添加到MCP Server')}</div>),
+          content: (<div>{t('该资源数据有变更，请确认一下请求参数是否正确配置。')}</div>),
           disabled: row.has_openapi_schema || isRowSelected(row),
         }}
         onClick={() => handleToolNameClick(row)}

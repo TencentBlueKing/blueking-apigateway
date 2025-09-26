@@ -165,14 +165,17 @@
     overflow: auto;
     font-size: 14px;
     line-height: 24px;
-    color: #fff;
+    // color: #fff;
     text-align: left;
-    background: #1e1e1e;
+    // background: #1e1e1e;
+    background-color: #f6f8fa;
+    color: #1f2328;
     border-radius: 2px;
 
     code {
       font-family: "Lucida Console", "Courier New", Monaco, monospace;
-      color: #dcdcdc;
+      // color: #dcdcdc;
+      color: #1f2328;
       text-wrap: wrap;
     }
 
@@ -205,11 +208,12 @@
   font-size: 18px;
   color: #979ba5;
   cursor: pointer;
-  background: #1e1e1e;
+  // background: #1e1e1e;
   border: none;
 
   &:hover {
-    color: #fff;
+    // color: #fff;
+    color: #3a84ff;
   }
 }
 
@@ -312,7 +316,7 @@
 }
 
 .pre-wrapper {
-  position: relative;
+   position: relative;
 }
 
 /* markdown 样式 */

@@ -32,7 +32,7 @@ interface IProps { markdownStr?: string }
 const { markdownStr = '' } = defineProps<IProps>();
 
 const md = new MarkdownIt({
-  linkify: false,
+  linkify: true,
   html: true,
   breaks: true,
   highlight(str: string, lang: string) {
@@ -47,7 +47,7 @@ const md = new MarkdownIt({
     catch {
       return str;
     }
-    return str;
+    return hljs.highlightAuto(str).value;
   },
 });
 
@@ -72,5 +72,21 @@ watch(
 .content {
   padding: 24px 40px 48px;
   background: #fff;
+}
+:deep(.ag-markdown-view) {
+  .pre-wrapper {
+    .ag-copy-btn {
+      background-color: transparent;
+    }
+  }
+
+  pre {
+    background-color: #f6f8fa;
+    color: #1f2328;
+
+    code {
+      color: #1f2328;
+    }
+  }
 }
 </style>

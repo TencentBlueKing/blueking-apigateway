@@ -445,8 +445,10 @@ const handleCollapse = (collapsed: boolean) => {
 
 const handleGoPage = (routeName: string) => {
   gatewayStore.setApigwId(gatewayId.value);
+  // 如果是可编辑网关不存在资源配置，需要跳转到环境概览
+  const isEditGateway = gatewayList.value.find(item => item.id === gatewayId.value)?.kind === 1;
   router.push({
-    name: routeName,
+    name: ['ResourceSetting'].includes(routeName) && isEditGateway ? 'StageOverview' : routeName,
     params: { id: gatewayId.value },
   });
   getPermissionData();
