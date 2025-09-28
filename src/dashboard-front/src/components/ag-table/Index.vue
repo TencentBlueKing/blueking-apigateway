@@ -32,7 +32,8 @@
     :filter-row="null"
     :bk-ui-settings="tableSetting"
     :table-layout="tableLayout"
-    v-bind="tableProps"
+    :row-key="rowKey"
+    v-bind="$attrs"
     @bk-ui-settings-change="handleSettingChange"
     @row-mouseenter="handleRowEnter"
     @row-mouseleave="handleRowLeave"
@@ -110,7 +111,7 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 interface IProps {
   apiMethod?: (params?: Record<string, any>) => Promise<unknown>
   columns?: PrimaryTableProps['columns']
-  tableProps?: Partial<PrimaryTableProps>
+  rowKey?: string
   immediate?: boolean
   localPage?: boolean
   showFirstFullRow?: boolean
@@ -129,7 +130,7 @@ const tableSetting = defineModel<null | ShallowRef<BkUiSettings>>('settings', { 
 const {
   apiMethod = undefined,
   columns = [],
-  tableProps = {},
+  rowKey = 'id',
   // 是否首次加载
   immediate = true,
   // 是否需要本地分页
@@ -164,7 +165,9 @@ const emit = defineEmits<{
 
 const slots = useSlots();
 
-const { t } = useI18n();
+const route = useRoute();
+
+const { t, locale } = useI18n();
 
 const {
   isAllSelection,
@@ -463,6 +466,12 @@ const handleRefresh = () => {
 onMounted(() => {
   if (immediate && !localPage) {
     fetchData({ ...offsetAndLimit.value });
+  }
+  const tableSet = localStorage.getItem(`table-setting-${locale.value}-${route.name}`);
+  if (tableSet && tableSetting.value) {
+    const storageCache = JSON.parse(tableSet);
+    tableSetting.value = Object.assign(tableSetting.value, storageCache);
+    delete tableSetting.value.value;
   }
   handleListenerRadio();
 });
