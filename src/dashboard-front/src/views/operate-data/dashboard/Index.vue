@@ -190,6 +190,22 @@
 
       <div class="full-line">
         <BkLoading
+          :loading="chartLoading.response_time_50th"
+          class="full-box"
+        >
+          <LineChart
+            ref="responseTime50Ref"
+            :chart-data="chartData['response_time_50th']"
+            :title="t('资源 50th 响应耗时分布')"
+            instance-id="response_time_50th"
+            @clear-params="handleClearParams"
+            @report-init="handleReportInit"
+          />
+        </BkLoading>
+      </div>
+
+      <div class="full-line">
+        <BkLoading
           :loading="chartLoading.response_time_90th"
           class="full-box"
         >
@@ -198,6 +214,38 @@
             :chart-data="chartData['response_time_90th']"
             :title="t('资源 90th 响应耗时分布')"
             instance-id="response_time_90th"
+            @clear-params="handleClearParams"
+            @report-init="handleReportInit"
+          />
+        </BkLoading>
+      </div>
+
+      <div class="full-line">
+        <BkLoading
+          :loading="chartLoading.response_time_95th"
+          class="full-box"
+        >
+          <LineChart
+            ref="responseTime95Ref"
+            :chart-data="chartData['response_time_95th']"
+            :title="t('资源 95th 响应耗时分布')"
+            instance-id="response_time_95th"
+            @clear-params="handleClearParams"
+            @report-init="handleReportInit"
+          />
+        </BkLoading>
+      </div>
+
+      <div class="full-line">
+        <BkLoading
+          :loading="chartLoading.response_time_99th"
+          class="full-box"
+        >
+          <LineChart
+            ref="responseTime99Ref"
+            :chart-data="chartData['response_time_99th']"
+            :title="t('资源 99th 响应耗时分布')"
+            instance-id="response_time_99th"
             @clear-params="handleClearParams"
             @report-init="handleReportInit"
           />
@@ -257,6 +305,9 @@ const metricsList = ref<string[]>([
   'egress', // 每个资源的 egress 带宽占用
   // 'response_time', // 每个资源的响应耗时分布50th 80th 90th取top10资源(response_time_50th response_time_80th response_time_90th)
   'response_time_90th',
+  'response_time_50th',
+  'response_time_95th',
+  'response_time_99th',
 ]);
 const statisticsTypes = ref<string[]>([
   'requests_total', // 请求总数
@@ -272,6 +323,9 @@ const resourceRequestsRef = ref<InstanceType<typeof LineChart>>();
 const ingressRef = ref<InstanceType<typeof LineChart>>();
 const egressRef = ref<InstanceType<typeof LineChart>>();
 const responseTimeRef = ref<InstanceType<typeof LineChart>>();
+const responseTime50Ref = ref<InstanceType<typeof LineChart>>();
+const responseTime95Ref = ref<InstanceType<typeof LineChart>>();
+const responseTime99Ref = ref<InstanceType<typeof LineChart>>();
 const chartLoading = ref<IChartDataLoading>({});
 const searchParams = ref<ISearchParamsType>({
   stage_id: 0,
@@ -415,6 +469,9 @@ const syncParamsToCharts = () => {
   ingressRef.value!.syncParams(params);
   egressRef.value!.syncParams(params);
   responseTimeRef.value!.syncParams(params);
+  responseTime50Ref.value!.syncParams(params);
+  responseTime95Ref.value!.syncParams(params);
+  responseTime99Ref.value!.syncParams(params);
 };
 
 const handleRefreshChange = (interval: string) => {
@@ -552,6 +609,7 @@ onMounted(() => {
     box-shadow: 0 2px 4px 0 #1919290d;
     border-radius: 2px;
     padding-bottom: 12px;
+    margin-bottom: 16px;
   }
 }
 .full-box {
