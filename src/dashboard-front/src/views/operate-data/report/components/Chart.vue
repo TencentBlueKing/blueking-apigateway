@@ -182,6 +182,22 @@ const getChartOption = () => {
         color: '#666666',
         fontSize: 12,
         padding: [0, 5, 0, 0],
+        formatter: function (value: any) {
+          const num = Number.parseInt(value);
+          if (isNaN(num)) {
+            return value;
+          }
+
+          if (num < 10000) {
+            return num.toString();
+          }
+          else if (num < 100000000) {
+            return (num / 10000).toFixed(1) + t('万');
+          }
+          else {
+            return (num / 100000000).toFixed(1) + t('亿');
+          }
+        },
       },
       splitLine: { // 坐标轴在 grid 区域中的分隔线
         lineStyle: {

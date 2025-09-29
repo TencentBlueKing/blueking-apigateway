@@ -283,23 +283,44 @@ const getChartOption = () => {
       }));
       moreOption = getChartMoreOption(datapoints);
 
-      // 由于 总请求数 容器宽度小，所以 x 轴 label 间隔加大
-      if (instanceId === 'requests') {
+      const miniList = ['requests', 'non_20x_status'];
+      const fullLineList = ['response_time_99th', 'response_time_95th', 'response_time_90th', 'response_time_50th'];
+
+      if (!fullLineList.includes(instanceId)) {
         const dataLength = datapoints?.length || 0;
-        if (dataLength > 25) {
-          moreOption.xAxis.axisLabel = {
-            interval: Math.floor(dataLength / 10),
-            rotate: 45,
-            margin: 10,
-            fontSize: 10,
-          };
+        if (miniList.includes(instanceId)) {
+          if (dataLength <= 20) {
+            moreOption.xAxis.axisLabel = {
+              interval: 0,
+              rotate: 0,
+              fontSize: 12,
+            };
+          }
+          else {
+            moreOption.xAxis.axisLabel = {
+              interval: Math.floor(dataLength / 10),
+              rotate: 45,
+              margin: 10,
+              fontSize: 10,
+            };
+          }
         }
         else {
-          moreOption.xAxis.axisLabel = {
-            interval: 0,
-            rotate: 0,
-            fontSize: 12,
-          };
+          if (dataLength <= 30) {
+            moreOption.xAxis.axisLabel = {
+              interval: 0,
+              rotate: 0,
+              fontSize: 12,
+            };
+          }
+          else {
+            moreOption.xAxis.axisLabel = {
+              interval: Math.floor(dataLength / 10),
+              rotate: 25,
+              margin: 10,
+              fontSize: 10,
+            };
+          }
         }
       }
     });

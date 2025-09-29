@@ -17,7 +17,10 @@
  */
 
 <template>
-  <div class="home-container">
+  <div
+    v-if="!isGuide"
+    class="home-container"
+  >
     <div class="title-container">
       <div class="left">
         <BkButton
@@ -273,41 +276,97 @@
         />
       </div>
     </div>
-    <div class="footer-container">
-      <p class="contact">
-        <BkLink
-          class="text-12px color-#3a84ff!"
-          :href="contacts[0].link"
-          target="_blank"
-        >
-          {{ contacts[0].text }}
-        </BkLink>
-        |
-        <BkLink
-          class="text-12px color-#3a84ff!"
-          :href="contacts[1].link"
-          target="_blank"
-        >
-          {{ contacts[1].text }}
-        </BkLink>
-        |
-        <BkLink
-          class="text-12px color-#3a84ff!"
-          :href="contacts[2].link"
-          target="_blank"
-        >
-          {{ contacts[2].text }}
-        </BkLink>
-      </p>
-      <p class="copyright">
-        {{ copyright }}
-      </p>
-    </div>
-    <CreateGateway
-      v-model="createGatewayShow"
-      @done="init"
-    />
   </div>
+
+  <div
+    v-else
+    class="gateway-empty"
+  >
+    <div class="create-guide">
+      <div class="guide-title">
+        {{ t('当前暂无网关，请先创建') }}
+      </div>
+      <div class="guide-describe">
+        {{
+          t('蓝鲸 API 网关（ APIGateway ），是一种高性能、高可用的 API 托管服务，可以帮助开发者创建、发布、维护、监控和保护 API ，以快速、低成本、低风险地对外开放蓝鲸应用或其他系统的数据或服务。')
+        }}
+      </div>
+      <div class="guide-opt">
+        <BkButton
+          theme="primary"
+          class="mr8"
+          @click="showAddDialog"
+        >
+          {{ t('新建网关') }}
+        </BkButton>
+        <bk-button @click="handleViewDoc">
+          {{ t('查看 API 文档') }}
+        </bk-button>
+      </div>
+    </div>
+
+    <div class="work-progress">
+      <div class="progress-img">
+        <img
+          :src="progressImg"
+          :alt="t('网关工作流')"
+        >
+      </div>
+      <div class="steps">
+        <div
+          v-for="item in envStore.env.EDITION === 'te' ? steps : steps?.filter(item => item.name !== t('可观测：'))"
+          :key="item.name"
+          class="step"
+        >
+          <div class="name">
+            {{ item.name }}
+          </div>
+          <div class="describe">
+            {{ item.describe }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="footer-container "
+    :class="{'empty': isGuide}"
+  >
+    <p class="contact">
+      <BkLink
+        class="text-12px color-#3a84ff!"
+        :href="contacts[0].link"
+        target="_blank"
+      >
+        {{ contacts[0].text }}
+      </BkLink>
+      |
+      <BkLink
+        class="text-12px color-#3a84ff!"
+        :href="contacts[1].link"
+        target="_blank"
+      >
+        {{ contacts[1].text }}
+      </BkLink>
+      |
+      <BkLink
+        class="text-12px color-#3a84ff!"
+        :href="contacts[2].link"
+        target="_blank"
+      >
+        {{ contacts[2].text }}
+      </BkLink>
+    </p>
+    <p class="copyright">
+      {{ copyright }}
+    </p>
+  </div>
+
+  <CreateGateway
+    v-model="createGatewayShow"
+    @done="init"
+  />
 </template>
 
 <script setup lang="ts">
@@ -323,6 +382,8 @@ import AgIcon from '@/components/ag-icon/Index.vue';
 import CreateGateway from '@/components/create-gateway/Index.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import type { IApiGateway } from '@/types/gateway';
+import GatewayEmpty from '@/images/gateway-empty.png';
+import GatewayEmpty2 from '@/images/gateway-empty2.png';
 
 type GatewayType = Awaited<ReturnType<typeof getGatewayList>>['results'][number];
 
@@ -409,7 +470,53 @@ const contacts = [
   },
 ];
 
+const steps = [
+  {
+    name: t('API 全生命周期管理：'),
+    describe: t('涵盖 API 的配置、发布、测试、监控、下线等各个生命周期的管理，并且支持版本控制'),
+  },
+  {
+    name: t('对接业界规范：'),
+    describe: t('Swagger 2.0 / OpenAPI 3.0 / 3.1 协议进行导入导出，自动生成档、SDK 以及在线调试参数'),
+  },
+  {
+    name: t('安全：'),
+    describe: t('支持身份认证，频率控制，接口权限控制，支持操作审计以及调用审计'),
+  },
+  {
+    name: t('可观测：'),
+    describe: t('提供流水日志、统计图表，并支持配置告警策略'),
+  },
+  {
+    name: t('灵活：'),
+    describe: t('支持多环境（一个网关存在多个环境），支持多后端服务（多个服务接入同一个网关）'),
+  },
+  {
+    name: t('统一：'),
+    describe: t('统一的 API 资源门户，一站式检索各系统 API ，获取在线文档及 SDK'),
+  },
+  {
+    name: t('更多详情见：'),
+    describe: t('产品文档（链接）'),
+  },
+];
+
 const copyright = computed(() => `Copyright © 2012-${new Date().getFullYear()} Tencent BlueKing. All Rights Reserved. V${envStore.env.BK_APIGATEWAY_VERSION}`);
+
+const progressImg = computed(() => {
+  if (envStore.env.EDITION === 'te') {
+    return GatewayEmpty;
+  }
+  return GatewayEmpty2;
+});
+
+const isGuide = computed(() => {
+  const list = Object.values(filterNameData.value).filter(item => item !== '');
+  if (!list?.length && !gatewaysList.value?.length) {
+    return true;
+  }
+  return false;
+});
 
 watch(() => dataList.value, (val: IApiGateway[]) => {
   gatewaysList.value = convertGatewaysList(val);
@@ -453,6 +560,10 @@ const init = async () => {
 
 const showAddDialog = () => {
   createGatewayShow.value = true;
+};
+
+const handleViewDoc = () => {
+  router.push({ name: 'Docs' });
 };
 
 const handleGoPage = (routeName: string, gateway: GatewayType) => {
@@ -725,17 +836,6 @@ onMounted(() => {
     }
   }
 
-  .footer-container {
-    position: relative;
-    left: 0;
-    display: flex;
-    height: 50px;
-    font-size: 12px;
-    line-height: 20px;
-    flex-flow: column;
-    align-items: center;
-  }
-
   .deact {
     color: #fff !important;
     background: #EAEBF0 !important;
@@ -777,6 +877,89 @@ onMounted(() => {
 
   &:hover {
     background: #d7d9e1 !important;
+  }
+}
+
+.footer-container {
+  position: relative;
+  left: 0;
+  display: flex;
+  height: 50px;
+  font-size: 12px;
+  line-height: 20px;
+  flex-flow: column;
+  align-items: center;
+  &.empty {
+    background: #FFFFFF;
+    padding-top: 8px;
+    height: 58px;
+  }
+}
+
+.gateway-empty {
+  height: calc(100% - 58px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  &::after {
+    content: " ";
+    width: calc(100% - 48px);
+    height: 1px;
+    background: #DCDEE5;
+  }
+  .create-guide {
+    padding: 82px 0;
+    background: #F5F7FA;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    .guide-title {
+      font-size: 20px;
+      color: #313238;
+    }
+    .guide-describe {
+      font-size: 14px;
+      color: #4d4f56e6;
+      margin: 12px 0 20px;
+    }
+  }
+  .work-progress {
+    background: #FFFFFF;
+    width: 100%;
+    padding-top: 86px;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    .progress-img {
+      width: 589px;
+      margin-right: 52px;
+    }
+    .step {
+      display: flex;
+      position: relative;
+      margin-bottom: 12px;
+      padding-left: 12px;
+      &::before {
+        content: " ";
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        left: 0;
+        width: 4px;
+        height: 4px;
+        border-radius: 2px;
+        background: #4D4F56;
+      }
+      .name {
+        font-size: 14px;
+        font-weight: Bold;
+        color: #313238;
+      }
+      .describe {
+        font-size: 12px;
+        color: #4D4F56;
+      }
+    }
   }
 }
 </style>
