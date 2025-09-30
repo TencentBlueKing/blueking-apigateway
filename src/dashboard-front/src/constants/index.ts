@@ -99,6 +99,15 @@ export const PLUGIN_ICONS = [
   'response-rewrite', // 响应重写插件
   'serverless', // 无服务器插件
   'user-restriction', // 用户限制插件
+  'bk-access-token-source',
+  'bk-login-required',
+  'bk-opentelemetry',
+  'bk-query-string-rewrite',
+  'proxy-cache',
+  'traffic-label',
+  'bk-request-body-limit',
+  'bk-user-restriction',
+  'bk-username-required',
 ];
 
 // 资源导入示例

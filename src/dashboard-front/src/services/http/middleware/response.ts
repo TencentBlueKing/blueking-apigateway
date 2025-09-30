@@ -27,9 +27,6 @@ import RequestError from '../lib/request-error';
 
 import { t } from '@/locales';
 
-// 标记已经登录过状态
-// 第一次登录跳转登录页面，之后弹框登录
-let hasLoggedIn = false;
 // 错误代码映射
 const errorMessageMap = {
   INVALID_ARGUMENT: {
@@ -46,15 +43,10 @@ const redirectLogin = (loginUrl: string) => {
   const { protocol, host, pathname } = parseURL(loginUrl);
   const domain = `${protocol}://${host}${pathname}`;
 
-  if (hasLoggedIn) {
-    showLoginModal({
-      loginUrl:
+  showLoginModal({
+    loginUrl:
         `${domain}?is_from_logout=1&c_url=${decodeURIComponent(`${window.location.origin}/login-success.html`)}`,
-    });
-  }
-  else {
-    window.location.href = `${domain}?is_from_logout=1&c_url=${decodeURIComponent(window.location.href)}`;
-  }
+  });
 };
 
 export default (interceptors: AxiosInterceptorManager<AxiosResponse>) => {
@@ -65,7 +57,6 @@ export default (interceptors: AxiosInterceptorManager<AxiosResponse>) => {
         return response.data;
       }
       if (response.data.data !== undefined || response.status < 400) {
-        hasLoggedIn = true;
         return response.data;
       }
       // 后端逻辑处理报错
