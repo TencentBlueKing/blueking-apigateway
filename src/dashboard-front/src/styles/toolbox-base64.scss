@@ -1,0 +1,83 @@
+/*
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) 2025 Tencent. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://opensource.org/licenses/MIT
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
+ */
+.base64-decoder-wrapper,
+.url-decoder-wrapper {
+  gap: 16px;
+
+  .encoded-section-wrapper,
+  .decode-section-wrapper {
+
+    .section-header {
+
+      .header-title {
+        font-weight: 700;
+        font-size: 14px;
+        color: #313238;
+      }
+
+      .header-subtitle {
+        font-size: 12px;
+        color: #979ba5;
+        line-height: 20px;
+      }
+    }
+
+    .section-main {
+
+      .encoded-input-comp {
+
+        :deep(textarea) {
+          padding: 10px 16px;
+        }
+
+        :deep(.show-clear-only-hover.bk-textarea--clear-icon) {
+          display: block !important;
+          position: absolute;
+          right: -2px;
+          top: 8px;
+        }
+      }
+    }
+  }
+
+  .decode-section-wrapper {
+    overflow-y: auto;
+
+    .decode-result {
+      height: 100%;
+      background-color: #fafbfd;
+      padding: 12px 28px;
+
+      pre {
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+    }
+  }
+}
+
+.show-notice-wrapper {
+
+  .encoded-section-wrapper {
+    padding-bottom: 66px;
+  }
+
+  .decode-section-wrapper {
+    padding-bottom: 98px;
+  }
+}
