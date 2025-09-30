@@ -61,6 +61,8 @@
 import QueryLog from './components/QueryLog.vue';
 import JwtDecoder from './components/JwtDecoder.vue';
 import JsonFormat from './components/JsonFormat.vue';
+import UrlDecoder from './components/UrlDecoder.vue';
+import Base64Decoder from './components/Base64Decoder.vue';
 
 interface ITool {
   id: number
@@ -75,6 +77,8 @@ const toolCompMap: Record<string, any> = {
   queryLog: QueryLog,
   jwtDecoder: JwtDecoder,
   jsonFormat: JsonFormat,
+  urlDecoder: UrlDecoder,
+  base64Decoder: Base64Decoder,
 };
 
 const toolList = ref([
@@ -95,6 +99,18 @@ const toolList = ref([
     name: t('JSON 格式化'),
     desc: t('对 json 进行格式化及高亮'),
     comp: 'jsonFormat',
+  },
+  {
+    id: 4,
+    name: t('URL 解析'),
+    desc: t('解析出完整的url'),
+    comp: 'urlDecoder',
+  },
+  {
+    id: 5,
+    name: t('Base64 解析'),
+    desc: t('解析出完整的base64'),
+    comp: 'base64Decoder',
   },
 ]);
 const curTool = ref<ITool>(toolList.value[0]);
