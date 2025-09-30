@@ -162,21 +162,21 @@
                   @click="() => handleChoosePlugin(item)"
                   @mouseenter="() => handlePluginHover((item.code))"
                 >
-                  <div class="plungin-head">
-                    <span
+                  <div class="plugin-head">
+                    <div
                       v-if="PLUGIN_ICONS.includes(item.code || item.type)"
                       class="plugin-icon"
                     >
                       <svg class="icon svg-icon">
                         <use :xlink:href="`#icon-ag-plugin-${item.code || item.type}`" />
                       </svg>
-                    </span>
-                    <span
+                    </div>
+                    <div
                       v-else
                       class="plugin-icon"
                     >
                       {{ pluginCodeFirst(item.code || item.type) }}
-                    </span>
+                    </div>
                     <span
                       v-show="isBound(item)"
                       class="bindding-text"
@@ -862,16 +862,17 @@ init();
         box-shadow: 0 2px 4px 0 rgb(25 25 41 / 25.1%);
       }
 
-      .plungin-head {
+      .plugin-head {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 12px;
 
         .plugin-icon {
-          display: inline-block;
+          position: relative;
           width: 48px;
           height: 48px;
+          overflow: hidden;
           font-size: 24px;
           font-weight: 700;
           line-height: 48px;
@@ -881,6 +882,9 @@ init();
           border-radius: 50%;
 
           .svg-icon {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 48px;
             height: 48px;
           }

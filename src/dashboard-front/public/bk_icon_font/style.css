@@ -467,9 +467,6 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-plugin-fault-injection:before {
 	content: "\e190";
 }
-.icon-ag-plugin-proxy-cache:before {
-	content: "\e194";
-}
 .icon-ag-plugin-proxy-mirror:before {
 	content: "\e191";
 }
@@ -529,4 +526,49 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-program:before {
 	content: "\e1b8";
+}
+.icon-ag-luyou-2:before {
+	content: "\e1ba";
+}
+.icon-ag-stream-result:before {
+	content: "\e1bb";
+}
+.icon-ag-jiangxu:before {
+	content: "\e1bc";
+}
+.icon-ag-upload-cloud:before {
+	content: "\e1bd";
+}
+.icon-ag-import-export:before {
+	content: "\e1bf";
+}
+.icon-ag-file-preview:before {
+	content: "\e1be";
+}
+.icon-ag-plugin-bk-access-token-source:before {
+	content: "\e1c2";
+}
+.icon-ag-plugin-bk-login-required:before {
+	content: "\e1c4";
+}
+.icon-ag-plugin-bk-opentelemetry:before {
+	content: "\e1c0";
+}
+.icon-ag-plugin-bk-query-string-rewrite:before {
+	content: "\e1c1";
+}
+.icon-ag-plugin-proxy-cache:before {
+	content: "\e1c5";
+}
+.icon-ag-plugin-traffic-label:before {
+	content: "\e1c3";
+}
+.icon-ag-plugin-bk-request-body-limit:before {
+	content: "\e1c6";
+}
+.icon-ag-plugin-bk-user-restriction:before {
+	content: "\e1c7";
+}
+.icon-ag-plugin-bk-username-required:before {
+	content: "\e1c8";
 }

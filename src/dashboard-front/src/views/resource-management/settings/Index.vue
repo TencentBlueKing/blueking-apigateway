@@ -1009,7 +1009,9 @@ watch(
 );
 
 watch(tableQueries, () => {
-  tableRef.value!.fetchData(tableQueries.value);
+  nextTick(() => {
+    tableRef.value!.fetchData(tableQueries.value);
+  });
 }, { deep: true });
 
 watch(
@@ -1601,6 +1603,7 @@ onMounted(() => {
 }
 
 .resource-setting-layout {
+
   :deep(.bk-resize-layout-aside-content) {
     background-color: #fff;
   }
@@ -1609,6 +1612,7 @@ onMounted(() => {
 .resource-detail {
   max-height: calc(100vh - 165px);
   overflow-y: auto;
+
   &.show-notice {
     max-height: calc(100vh - 205px);
   }
