@@ -39,7 +39,7 @@ class SourcePackager(Packager):
                 [
                     "mvn",
                     "-s",
-                    str(Path(original_dir) / "apigateway/apps/support/api_sdk/maven/settings.xml"),
+                    str(Path(original_dir) / "apigateway/biz/sdk/maven/settings.xml"),
                     "clean",
                     "package",
                 ],
