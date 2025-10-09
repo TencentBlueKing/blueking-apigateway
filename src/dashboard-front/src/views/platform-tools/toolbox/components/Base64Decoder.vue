@@ -193,7 +193,7 @@ const highlightString = (value: string) => {
     return '';
   }
 
-  return highlightJs.highlight(value, { language: 'no-highlight' }).value;
+  return highlightJs.highlight(value, { language: 'json' }).value;
 };
 
 </script>
