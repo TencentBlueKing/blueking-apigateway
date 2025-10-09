@@ -155,6 +155,7 @@ import {
   getGatewaysDetailsDocs,
 } from '@/services/source/docs';
 import Chat from '@/components/chat/Index.vue';
+import 'highlight.js/styles/github.css';
 
 interface IProps {
   stageName?: string
