@@ -254,6 +254,7 @@ import { getVersionDetail } from '@/services/source/resource';
 import { type IPagination } from '@/types/common';
 import { refDebounced } from '@vueuse/core';
 import {
+  Button,
   Form,
   Message,
   Table,
@@ -359,17 +360,17 @@ const columns = [
     label: t('资源名称'),
     showOverflowTooltip: false,
     render: ({ row }: any) => (
-      <BkButton
+      <Button
         text
         theme="primary"
         v-bk-tooltips={{
-          content: (<div>{t('该资源数据有变更，请确认一下请求参数是否正确配置。')}</div>),
-          disabled: row.has_openapi_schema || isRowSelected(row),
+          content: t(isRowSelected(row) && !row.has_openapi_schema ? '该资源数据有变更，请确认一下请求参数是否正确配置。' : '资源需要确认请求参数后才能添加到MCP Server'),
+          disabled: row.has_openapi_schema,
         }}
         onClick={() => handleToolNameClick(row)}
       >
         {row.name}
-      </BkButton>
+      </Button>
     ),
   },
   {
@@ -571,7 +572,9 @@ const handleClearSelections = () => {
   selections.value = [];
 };
 
-const isRowSelected = (row: any) => selections.value.includes(row.name);
+const isRowSelected = (row: any) => {
+  return selections.value.includes(row.name);
+};
 
 const handleRefreshClick = async () => {
   if (!isCurrentStageValid.value) {

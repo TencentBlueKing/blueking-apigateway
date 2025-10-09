@@ -197,6 +197,7 @@
 <script lang="ts" setup>
 import TableEmpty from '@/components/table-empty/Index.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
+import { useRouteParams } from '@vueuse/router';
 import {
   type IMCPServerTool,
   getServer,
@@ -209,7 +210,7 @@ import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import ResponseParams from '@/views/resource-management/components/response-params/Index.vue';
 import RequestParams from '@/views/resource-management/components/request-params/Index.vue';
-import { useRouteParams } from '@vueuse/router';
+import 'highlight.js/styles/github.css';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 
@@ -863,12 +864,10 @@ $code-color: #63656e;
     font-size: 14px;
     line-height: 24px;
     text-align: left;
-    background-color: $code-bc;
     border-radius: 2px;
 
     code {
       font-family: "Lucida Console", "Courier New", Monaco, monospace;
-      color: #1f2328;
       text-wrap: wrap;
     }
 
