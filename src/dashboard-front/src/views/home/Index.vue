@@ -511,7 +511,7 @@ const progressImg = computed(() => {
 });
 
 const isGuide = computed(() => {
-  const list = Object.values(filterNameData.value).filter(item => item !== '');
+  const list = Object.values(filterNameData.value).filter(item => (item !== '' && item !== 'all'));
   if (!list?.length && !gatewaysList.value?.length) {
     return true;
   }

@@ -204,21 +204,21 @@
         </BkLoading>
       </div>
 
-      <div class="full-line">
+      <!-- <div class="full-line">
         <BkLoading
-          :loading="chartLoading.response_time_90th"
-          class="full-box"
+        :loading="chartLoading.response_time_90th"
+        class="full-box"
         >
-          <LineChart
-            ref="responseTimeRef"
-            :chart-data="chartData['response_time_90th']"
-            :title="t('资源 90th 响应耗时分布')"
-            instance-id="response_time_90th"
-            @clear-params="handleClearParams"
-            @report-init="handleReportInit"
-          />
+        <LineChart
+        ref="responseTimeRef"
+        :chart-data="chartData['response_time_90th']"
+        :title="t('资源 90th 响应耗时分布')"
+        instance-id="response_time_90th"
+        @clear-params="handleClearParams"
+        @report-init="handleReportInit"
+        />
         </BkLoading>
-      </div>
+        </div> -->
 
       <div class="full-line">
         <BkLoading
@@ -304,7 +304,7 @@ const metricsList = ref<string[]>([
   'ingress', // 每个资源的 ingress  带宽占用
   'egress', // 每个资源的 egress 带宽占用
   // 'response_time', // 每个资源的响应耗时分布50th 80th 90th取top10资源(response_time_50th response_time_80th response_time_90th)
-  'response_time_90th',
+  // 'response_time_90th',
   'response_time_50th',
   'response_time_95th',
   'response_time_99th',
@@ -322,7 +322,7 @@ const appRequestsRef = ref<InstanceType<typeof LineChart>>();
 const resourceRequestsRef = ref<InstanceType<typeof LineChart>>();
 const ingressRef = ref<InstanceType<typeof LineChart>>();
 const egressRef = ref<InstanceType<typeof LineChart>>();
-const responseTimeRef = ref<InstanceType<typeof LineChart>>();
+// const responseTimeRef = ref<InstanceType<typeof LineChart>>();
 const responseTime50Ref = ref<InstanceType<typeof LineChart>>();
 const responseTime95Ref = ref<InstanceType<typeof LineChart>>();
 const responseTime99Ref = ref<InstanceType<typeof LineChart>>();
@@ -468,7 +468,7 @@ const syncParamsToCharts = () => {
   resourceRequestsRef.value!.syncParams(params);
   ingressRef.value!.syncParams(params);
   egressRef.value!.syncParams(params);
-  responseTimeRef.value!.syncParams(params);
+  // responseTimeRef.value!.syncParams(params);
   responseTime50Ref.value!.syncParams(params);
   responseTime95Ref.value!.syncParams(params);
   responseTime99Ref.value!.syncParams(params);
