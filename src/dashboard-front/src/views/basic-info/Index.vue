@@ -603,6 +603,7 @@ import {
 } from '@/stores';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import EditAPIDoc from '@/views/basic-info/components/EditAPIDoc.vue';
+import 'highlight.js/styles/github.css';
 
 type BasicInfoType = Awaited<ReturnType<typeof getGatewayDetail>>;
 
