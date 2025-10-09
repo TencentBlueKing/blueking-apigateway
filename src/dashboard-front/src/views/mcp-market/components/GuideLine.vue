@@ -26,13 +26,14 @@
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import Guide from '@/components/guide/Index.vue';
+import 'highlight.js/styles/github.css';
 
 interface IProps { markdownStr?: string }
 
 const { markdownStr = '' } = defineProps<IProps>();
 
 const md = new MarkdownIt({
-  linkify: true,
+  linkify: false,
   html: true,
   breaks: true,
   highlight(str: string, lang: string) {
@@ -77,15 +78,6 @@ watch(
   .pre-wrapper {
     .ag-copy-btn {
       background-color: transparent;
-    }
-  }
-
-  pre {
-    background-color: #f6f8fa;
-    color: #1f2328;
-
-    code {
-      color: #1f2328;
     }
   }
 }

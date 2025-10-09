@@ -1914,6 +1914,7 @@
   "请输入工具名称，描述搜索": "Search tools name and description",
   "可用工具": "Available Tools",
   "该资源数据有变更，请确认一下请求参数是否正确配置。": "The resource data has changed. Please confirm if the request parameters are configured correctly.",
+  "资源需要确认请求参数后才能添加到MCP Server": "The resource needs to confirm the request parameters before it can be added to MCP Server",
   "非必填，可用于生成文档、在线调试、生成 MCP Server 等": "Not required. Can be used for document generation, online debugging, and generating MCP Server.",
   "位置": "in",
   "必填": "Required",
