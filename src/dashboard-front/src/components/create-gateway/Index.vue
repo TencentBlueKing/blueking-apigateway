@@ -385,6 +385,7 @@ import BkUserSelector from '@blueking/bk-user-selector';
 import bareGit from '@/images/bare_git.png';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
+import 'highlight.js/styles/github.css';
 import {
   useEnv,
   useFeatureFlag,
