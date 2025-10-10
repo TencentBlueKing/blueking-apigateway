@@ -117,7 +117,6 @@
               v-for="item in gatewaysList"
               :key="item.id"
               class="table-item"
-              :class="item.isAfter24h ? '' : 'newly-item'"
             >
               <div
                 class="flex-grow-1 flex items-center"
@@ -321,7 +320,18 @@
             <div class="name">
               {{ item.name }}
             </div>
-            <div class="describe">
+            <BkLink
+              v-if="item.link"
+              :href="item.link"
+              target="_blank"
+              class="describe"
+            >
+              {{ item.describe }}
+            </BkLink>
+            <div
+              v-else
+              class="describe"
+            >
               {{ item.describe }}
             </div>
           </div>
@@ -371,7 +381,7 @@
 </template>
 
 <script setup lang="ts">
-import { isAfter24h } from '@/utils';
+// import { isAfter24h } from '@/utils';
 import {
   useEnv,
   useFeatureFlag,
@@ -389,7 +399,7 @@ import GatewayEmpty2 from '@/images/gateway-empty2.png';
 type GatewayType = Awaited<ReturnType<typeof getGatewayList>>['results'][number];
 
 type ConvertedGatewayType = GatewayType & {
-  isAfter24h: boolean
+  // isAfter24h: boolean
   tagOrder: string
   labelTextData: {
     name: string
@@ -498,7 +508,8 @@ const steps = [
   },
   {
     name: t('更多详情见：'),
-    describe: t('产品文档（链接）'),
+    describe: t('产品文档'),
+    link: envStore.env.DOC_LINKS.GUIDE,
   },
 ];
 
@@ -532,7 +543,7 @@ const convertGatewaysList = (arr: GatewayType[]): ConvertedGatewayType[] => {
 
   return arr.map((gateway) => {
     const item: any = { ...gateway };
-    item.isAfter24h = isAfter24h(item.created_time);
+    // item.isAfter24h = isAfter24h(item.created_time);
     item.tagOrder = '3';
     item.stages?.sort((a: any, b: any) => (b.released - a.released));
     item.labelTextData = item.stages.reduce((prev: any, label: any, index: number) => {
@@ -800,9 +811,9 @@ onMounted(() => {
         margin-top: 0
       };
 
-      .newly-item {
-        background: #F2FFF4;
-      }
+      // .newly-item {
+      //   background: #F2FFF4;
+      // }
     }
 
     .of1 {
