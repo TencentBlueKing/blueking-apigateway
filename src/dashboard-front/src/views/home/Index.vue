@@ -18,193 +18,194 @@
 
 <template>
   <div
-    v-if="!isGuide"
-    class="home-container"
+    v-bkloading="{ loading: isLoading, opacity: 1, color: '#f5f7fb' }"
+    class="home-loading"
   >
-    <div class="title-container">
-      <div class="left">
-        <BkButton
-          theme="primary"
-          class="mr-4px"
-          @click="showAddDialog"
-        >
-          {{ t('新建网关') }}
-        </BkButton>
-      </div>
-
-      <div class="flex flex-grow-1">
-        <BkSelect
-          v-model="filterNameData.kind"
-          class="min-w-150px"
-          :clearable="false"
-          :filterable="false"
-        >
-          <BkOption
-            v-for="item in gatewayTypes"
-            :id="item.value"
-            :key="item.value"
-            :name="item.label"
-          />
-        </BkSelect>
-        <BkInput
-          v-model="filterNameData.keyword"
-          class="mx-8px flex-grow-1"
-          :placeholder="t('请输入网关名称')"
-        />
-        <BkSelect
-          v-model="filterKey"
-          :clearable="false"
-          class="select-cls"
-          @change="handleChange"
-        >
-          <template #prefix>
-            <div class="prefix-cls">
-              <AgIcon
-                name="exchange-line"
-                class="pb-5px"
-              />
-            </div>
-          </template>
-          <BkOption
-            v-for="(item, index) in filterData"
-            :key="index"
-            :value="item.value"
-            :label="item.label"
-          />
-        </BkSelect>
-      </div>
-    </div>
-
     <div
-      v-bkloading="{ loading: isLoading, opacity: 1, color: '#f5f7fb' }"
-      class="table-container"
+      v-if="!isGuide"
+      class="home-container"
     >
-      <section v-if="gatewaysList.length">
-        <div class="table-header">
-          <div
-            :class="featureFlagStore.isTenantMode ? 'of2' : 'of3'"
-            class="flex-grow-1"
+      <div class="title-container">
+        <div class="left">
+          <BkButton
+            theme="primary"
+            class="mr-4px"
+            @click="showAddDialog"
           >
-            {{ t('网关名') }}
-          </div>
-          <template v-if="featureFlagStore.isTenantMode">
-            <div class="flex-grow-1 of1">
-              {{ t('租户模式') }}
-            </div>
-            <div class="flex-grow-1 of1">
-              {{ t('租户 ID') }}
-            </div>
-          </template>
-          <div class="flex-grow-1 of1">
-            {{ t('创建者') }}
-          </div>
-          <div
-            :class="featureFlagStore.isTenantMode ? 'of2' : 'of3'"
-            class="flex-grow-1"
-          >
-            {{ t('环境列表') }}
-          </div>
-          <div class="flex-grow-1 of1">
-            {{ t('资源数量') }}
-          </div>
-          <div class="flex-grow-1 of2">
-            {{ t('操作') }}
-          </div>
+            {{ t('新建网关') }}
+          </BkButton>
         </div>
-        <div class="table-list">
-          <div
-            v-for="item in gatewaysList"
-            :key="item.id"
-            class="table-item"
-            :class="item.isAfter24h ? '' : 'newly-item'"
+
+        <div class="flex flex-grow-1">
+          <BkSelect
+            v-model="filterNameData.kind"
+            class="min-w-150px"
+            :clearable="false"
+            :filterable="false"
           >
-            <div
-              class="flex-grow-1 flex items-center"
-              :class="featureFlagStore.isTenantMode ? 'of2' : 'of3'"
-            >
-              <div
-                :class="item.status ? '' : 'deact'"
-                class="name-logo"
-                @click="() => handleGoPage('StageManagement', item)"
-              >
-                <span
-                  v-if="item.kind === 1"
-                  v-bk-tooltips="{ content: t('可编程网关') }"
-                  class="kind-program"
-                >
-                  <AgIcon
-                    name="program"
-                    size="12"
-                  />
-                </span>
-                {{ item.name[0].toUpperCase() }}
+            <BkOption
+              v-for="item in gatewayTypes"
+              :id="item.value"
+              :key="item.value"
+              :name="item.label"
+            />
+          </BkSelect>
+          <BkInput
+            v-model="filterNameData.keyword"
+            class="mx-8px flex-grow-1"
+            :placeholder="t('请输入网关名称')"
+          />
+          <BkSelect
+            v-model="filterKey"
+            :clearable="false"
+            class="select-cls"
+            @change="handleChange"
+          >
+            <template #prefix>
+              <div class="prefix-cls">
+                <AgIcon
+                  name="exchange-line"
+                  class="pb-5px"
+                />
               </div>
-              <span
-                :class="item.status ? '' : 'deact-name'"
-                class="name"
-                @click="() => handleGoPage('StageManagement', item)"
-              >
-                {{ item.name }}
-              </span>
-              <BkTag
-                v-if="item.is_official"
-                theme="info"
-              >
-                {{ t('官方') }}
-              </BkTag>
-              <BkTag v-if="item.status === 0">
-                {{ t('已停用') }}
-              </BkTag>
+            </template>
+            <BkOption
+              v-for="(item, index) in filterData"
+              :key="index"
+              :value="item.value"
+              :label="item.label"
+            />
+          </BkSelect>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <section v-if="gatewaysList.length">
+          <div class="table-header">
+            <div
+              :class="featureFlagStore.isTenantMode ? 'of2' : 'of3'"
+              class="flex-grow-1"
+            >
+              {{ t('网关名') }}
             </div>
             <template v-if="featureFlagStore.isTenantMode">
               <div class="flex-grow-1 of1">
-                {{ TENANT_MODE_TEXT_MAP[item.tenant_mode as string] || '--' }}
+                {{ t('租户模式') }}
               </div>
               <div class="flex-grow-1 of1">
-                {{ item.tenant_id || '--' }}
+                {{ t('租户 ID') }}
               </div>
             </template>
             <div class="flex-grow-1 of1">
-              <span v-if="!featureFlagStore.isEnableDisplayName">{{ item.created_by }}</span>
-              <span v-else><bk-user-display-name :user-id="item.created_by" /></span>
+              {{ t('创建者') }}
             </div>
             <div
-              :class="featureFlagStore.isEnableDisplayName ? 'of2' : 'of3'"
-              class="env flex-grow-1"
+              :class="featureFlagStore.isTenantMode ? 'of2' : 'of3'"
+              class="flex-grow-1"
             >
-              <div class="flex">
-                <span
-                  v-for="(envItem, index) in item.stages"
-                  :key="envItem.id"
+              {{ t('环境列表') }}
+            </div>
+            <div class="flex-grow-1 of1">
+              {{ t('资源数量') }}
+            </div>
+            <div class="flex-grow-1 of2">
+              {{ t('操作') }}
+            </div>
+          </div>
+          <div class="table-list">
+            <div
+              v-for="item in gatewaysList"
+              :key="item.id"
+              class="table-item"
+              :class="item.isAfter24h ? '' : 'newly-item'"
+            >
+              <div
+                class="flex-grow-1 flex items-center"
+                :class="featureFlagStore.isTenantMode ? 'of2' : 'of3'"
+              >
+                <div
+                  :class="item.status ? '' : 'deact'"
+                  class="name-logo"
+                  @click="() => handleGoPage('StageManagement', item)"
                 >
-                  <BkTag
-                    v-if="index < 3"
-                    class="environment-tag"
+                  <span
+                    v-if="item.kind === 1"
+                    v-bk-tooltips="{ content: t('可编程网关') }"
+                    class="kind-program"
                   >
-                    <i
-                      class="ag-dot"
-                      :class="[{ 'success': envItem.released }]"
+                    <AgIcon
+                      name="program"
+                      size="12"
                     />
-                    {{ envItem.name }}
-                  </BkTag>
+                  </span>
+                  {{ item.name[0].toUpperCase() }}
+                </div>
+                <span
+                  :class="item.status ? '' : 'deact-name'"
+                  class="name"
+                  @click="() => handleGoPage('StageManagement', item)"
+                >
+                  {{ item.name }}
                 </span>
                 <BkTag
-                  v-if="item.stages.length > Number(item.tagOrder)"
-                  v-bk-tooltips="{ content: tipsContent(item?.labelTextData), theme: 'light', placement: 'bottom' }"
-                  class="tag-cls"
+                  v-if="item.is_official"
+                  theme="info"
                 >
-                  +{{ item.stages.length - Number(item.tagOrder) }}
+                  {{ t('官方') }}
+                </BkTag>
+                <BkTag v-if="item.status === 0">
+                  {{ t('已停用') }}
                 </BkTag>
               </div>
-            </div>
-            <div
-              class="flex-grow-1 of1 pl-4"
-              :class="[
-                { 'color-#3A84FF': item.hasOwnProperty('resource_count') }
-              ]"
-            >
-              <template v-if="item.kind === 0">
-                {{ item.resource_count }}
+              <template v-if="featureFlagStore.isTenantMode">
+                <div class="flex-grow-1 of1">
+                  {{ TENANT_MODE_TEXT_MAP[item.tenant_mode as string] || '--' }}
+                </div>
+                <div class="flex-grow-1 of1">
+                  {{ item.tenant_id || '--' }}
+                </div>
+              </template>
+              <div class="flex-grow-1 of1">
+                <span v-if="!featureFlagStore.isEnableDisplayName">{{ item.created_by }}</span>
+                <span v-else><bk-user-display-name :user-id="item.created_by" /></span>
+              </div>
+              <div
+                :class="featureFlagStore.isEnableDisplayName ? 'of2' : 'of3'"
+                class="env flex-grow-1"
+              >
+                <div class="flex">
+                  <span
+                    v-for="(envItem, index) in item.stages"
+                    :key="envItem.id"
+                  >
+                    <BkTag
+                      v-if="index < 3"
+                      class="environment-tag"
+                    >
+                      <i
+                        class="ag-dot"
+                        :class="[{ 'success': envItem.released }]"
+                      />
+                      {{ envItem.name }}
+                    </BkTag>
+                  </span>
+                  <BkTag
+                    v-if="item.stages.length > Number(item.tagOrder)"
+                    v-bk-tooltips="{ content: tipsContent(item?.labelTextData), theme: 'light', placement: 'bottom' }"
+                    class="tag-cls"
+                  >
+                    +{{ item.stages.length - Number(item.tagOrder) }}
+                  </BkTag>
+                </div>
+              </div>
+              <div
+                class="flex-grow-1 of1 pl-4"
+                :class="[
+                  { 'color-#3A84FF': item.hasOwnProperty('resource_count') }
+                ]"
+              >
+                <template v-if="item.kind === 0">
+                  {{ item.resource_count }}
                 <!--                <RouterLink -->
                 <!--                  :to="{ name: 'ResourceSetting', params: { id: item.id } }" -->
                 <!--                  target="_blank" -->
@@ -213,116 +214,116 @@
                 <!--                    {{ item.resource_count }} -->
                 <!--                  </span> -->
                 <!--                </RouterLink> -->
-              </template>
-              <template v-else>
-                <span class="none">{{ item.resource_count }}</span>
-              </template>
+                </template>
+                <template v-else>
+                  <span class="none">{{ item.resource_count }}</span>
+                </template>
+              </div>
+              <div class="flex-grow-1 of2">
+                <BkButton
+                  text
+                  theme="primary"
+                  @click="() => handleGoPage('StageOverview', item)"
+                >
+                  {{ t('环境概览') }}
+                </BkButton>
+                <BkButton
+                  text
+                  theme="primary"
+                  class="ml-20px"
+                  :disabled="item?.kind === 1"
+                  @click="() => handleGoPage('ResourceSetting', item)"
+                >
+                  {{ t('资源配置') }}
+                </BkButton>
+                <BkButton
+                  text
+                  theme="primary"
+                  class="ml-20px"
+                  @click="() => handleGoPage('AccessLogDetail', item)"
+                >
+                  {{ t('流水日志') }}
+                </BkButton>
+              </div>
+            </div>
+          </div>
+        </section>
+        <div
+          v-else
+          class="empty-container"
+        >
+          <div class="table-header">
+            <div class="flex-grow-1 of3">
+              {{ t('网关名') }}
+            </div>
+            <div class="flex-grow-1 of1">
+              {{ t('创建者') }}
+            </div>
+            <div class="flex-grow-1 of3">
+              {{ t('环境列表') }}
+            </div>
+            <div class="flex-grow-1 of1">
+              {{ t('资源数量') }}
             </div>
             <div class="flex-grow-1 of2">
-              <BkButton
-                text
-                theme="primary"
-                @click="() => handleGoPage('StageOverview', item)"
-              >
-                {{ t('环境概览') }}
-              </BkButton>
-              <BkButton
-                text
-                theme="primary"
-                class="ml-20px"
-                :disabled="item?.kind === 1"
-                @click="() => handleGoPage('ResourceSetting', item)"
-              >
-                {{ t('资源配置') }}
-              </BkButton>
-              <BkButton
-                text
-                theme="primary"
-                class="ml-20px"
-                @click="() => handleGoPage('AccessLogDetail', item)"
-              >
-                {{ t('流水日志') }}
-              </BkButton>
+              {{ t('操作') }}
             </div>
           </div>
+          <TableEmpty
+            :empty-type="tableEmptyConf.emptyType"
+            :abnormal="tableEmptyConf.isAbnormal"
+            @refresh="getGatewaysListData"
+            @clear-filter="handleClearFilterKey"
+          />
         </div>
-      </section>
-      <div
-        v-else
-        class="empty-container"
-      >
-        <div class="table-header">
-          <div class="flex-grow-1 of3">
-            {{ t('网关名') }}
-          </div>
-          <div class="flex-grow-1 of1">
-            {{ t('创建者') }}
-          </div>
-          <div class="flex-grow-1 of3">
-            {{ t('环境列表') }}
-          </div>
-          <div class="flex-grow-1 of1">
-            {{ t('资源数量') }}
-          </div>
-          <div class="flex-grow-1 of2">
-            {{ t('操作') }}
-          </div>
-        </div>
-        <TableEmpty
-          :empty-type="tableEmptyConf.emptyType"
-          :abnormal="tableEmptyConf.isAbnormal"
-          @refresh="getGatewaysListData"
-          @clear-filter="handleClearFilterKey"
-        />
-      </div>
-    </div>
-  </div>
-
-  <div
-    v-else
-    class="gateway-empty"
-  >
-    <div class="create-guide">
-      <div class="guide-title">
-        {{ t('当前暂无网关，请先创建') }}
-      </div>
-      <div class="guide-describe">
-        {{
-          t('蓝鲸 API 网关（ APIGateway ），是一种高性能、高可用的 API 托管服务，可以帮助开发者创建、发布、维护、监控和保护 API ，以快速、低成本、低风险地对外开放蓝鲸应用或其他系统的数据或服务。')
-        }}
-      </div>
-      <div class="guide-opt">
-        <BkButton
-          theme="primary"
-          class="mr8"
-          @click="showAddDialog"
-        >
-          {{ t('新建网关') }}
-        </BkButton>
-        <bk-button @click="handleViewDoc">
-          {{ t('查看 API 文档') }}
-        </bk-button>
       </div>
     </div>
 
-    <div class="work-progress">
-      <div class="progress-img">
-        <img
-          :src="progressImg"
-          :alt="t('网关工作流')"
-        >
+    <div
+      v-else
+      class="gateway-empty"
+    >
+      <div class="create-guide">
+        <div class="guide-title">
+          {{ t('当前暂无网关，请先创建') }}
+        </div>
+        <div class="guide-describe">
+          {{ t('蓝鲸 API 网关（ APIGateway ），是一种高性能、高可用的 API 托管服务，可以帮助开发者创建、发布、维护、监控和保护 API ，') }}
+          {{ t('以快速、低成本、低风险地对外开放蓝鲸应用或其他系统的数据或服务。') }}
+        </div>
+        <div class="guide-opt">
+          <BkButton
+            theme="primary"
+            class="mr8"
+            @click="showAddDialog"
+          >
+            {{ t('新建网关') }}
+          </BkButton>
+          <bk-button @click="handleViewDoc">
+            {{ t('查看 API 文档') }}
+          </bk-button>
+        </div>
       </div>
-      <div class="steps">
-        <div
-          v-for="item in envStore.env.EDITION === 'te' ? steps : steps?.filter(item => item.name !== t('可观测：'))"
-          :key="item.name"
-          class="step"
-        >
-          <div class="name">
-            {{ item.name }}
-          </div>
-          <div class="describe">
-            {{ item.describe }}
+
+      <div class="work-progress">
+        <div class="progress-img">
+          <img
+            :src="progressImg"
+            :alt="t('网关工作流')"
+          >
+        </div>
+        <div class="steps">
+          <div
+            v-for="item in envStore.env.EDITION === 'te' ? steps : steps?.filter(item => item.name !== t('可观测：'))"
+            :key="item.name"
+            class="step"
+          >
+            <div class="name">
+              {{ item.name }}
+            </div>
+            <div class="describe">
+              {{ item.describe }}
+            </div>
           </div>
         </div>
       </div>
@@ -652,6 +653,10 @@ onMounted(() => {
   }
 }
 
+.home-loading {
+  min-height: calc(100vh - 110px);
+}
+
 .home-container {
   width: 80%;
   min-width: 1200px;
@@ -897,7 +902,7 @@ onMounted(() => {
 }
 
 .gateway-empty {
-  height: calc(100% - 58px);
+  height: calc(100vh - 110px);
   display: flex;
   flex-direction: column;
   align-items: center;
