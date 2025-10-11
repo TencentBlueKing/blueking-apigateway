@@ -38,11 +38,17 @@
             @change="() => handleGoPage(activeMenuKey)"
           >
             <template #prefix>
-              <div class="gateway-selector-prefix">
+              <div
+                v-bk-tooltips="{
+                  content: t('可编程网关'),
+                  placement: 'right'
+                }"
+                class="gateway-selector-prefix"
+              >
                 <AgIcon
                   v-if="gatewayStore.isProgrammableGateway"
                   name="square-program"
-                  size="20"
+                  size="16"
                 />
               </div>
             </template>
@@ -53,16 +59,24 @@
               :name="item.name"
             >
               <div class="gateway-select-option">
-                <AgIcon
+                <span
+                  class="text-ov"
+                  :style="{ maxWidth: item.kind === 1 ? `180px` : `200px`}"
+                >
+                  {{ item.name }}
+                </span>
+                <BkPopover
                   v-if="item.kind === 1"
-                  name="square-program"
-                  class="mr-6px color-#3a84ff"
-                />
-                <div
-                  v-else
-                  class="w-14px mr-6px"
-                />
-                <span>{{ item.name }}</span>
+                  placement="right"
+                  :content="t('可编程网关')"
+                  :popover-delay="0"
+                >
+                  <AgIcon
+                    name="square-program"
+                    size="16"
+                    class="ml-4px color-#3a84ff"
+                  />
+                </BkPopover>
               </div>
             </BkOption>
           </BkSelect>
