@@ -324,7 +324,7 @@
               v-if="item.link"
               :href="item.link"
               target="_blank"
-              class="describe"
+              class="describe link"
             >
               {{ item.describe }}
             </BkLink>
@@ -952,6 +952,7 @@ onMounted(() => {
     }
     .step {
       display: flex;
+      align-items: center;
       position: relative;
       margin-bottom: 12px;
       padding-left: 12px;
@@ -974,6 +975,9 @@ onMounted(() => {
       .describe {
         font-size: 12px;
         color: #4D4F56;
+        &.link {
+          color: #3A84FF;
+        }
       }
     }
   }

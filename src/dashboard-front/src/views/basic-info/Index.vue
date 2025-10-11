@@ -384,6 +384,31 @@
             {{ t('API公钥（指纹）') }}
           </div>
           <div class="detail-item-content">
+            <bk-alert
+              theme="warning"
+              class="mb-24px"
+            >
+              <template #title>
+                <div class="warning-header">
+                  {{ t('为确保后端服务接入网关的安全性，必须使用 API 公钥解析 X-Bkapi-JWT 头：') }}
+                </div>
+                <div class="warning-main">
+                  <div>- {{ t('验证请求来源：必须确保请求来自合法网关，非网关请求应直接拒绝，以防止非法访问。') }}</div>
+                  <div>- {{ t('获取认证信息：提取应用（如 app_code）和用户（如 username）的认证状态，用于业务鉴权逻辑') }}</div>
+                </div>
+                <div class="warning-more">
+                  {{ t('注意事项：请勿直接暴露后端服务接口，所有请求必须通过网关进行转发和认证。') }}
+                  <a
+                    :href="envStore.env.DOC_LINKS.JWT"
+                    target="_blank"
+                    class="more-detail"
+                  >
+                    <AgIcon name="link" />
+                    {{ t(' 更多详情') }}
+                  </a>
+                </div>
+              </template>
+            </bk-alert>
             <div class="detail-item-content-item">
               <div class="label w-0px" />
               <div class="value public-key-content">
@@ -405,18 +430,18 @@
                 </div>
               </div>
             </div>
-            <div class="detail-item-content-item">
+            <!-- <div class="detail-item-content-item">
               <div class="label w-0px" />
               <div class="value more-tip">
-                <AgIcon name="info" />
-                <span>{{ t('可用于解密传入后端接口的请求头 X-Bkapi-JWT') }}，</span>
-                <a
-                  :href="envStore.env.DOC_LINKS.JWT"
-                  target="_blank"
-                  class="more-detail"
-                >{{ t(' 更多详情') }}</a>
+              <AgIcon name="info" />
+              <span>{{ t('可用于解密传入后端接口的请求头 X-Bkapi-JWT') }}，</span>
+              <a
+              :href="envStore.env.DOC_LINKS.JWT"
+              target="_blank"
+              class="more-detail"
+              >{{ t(' 更多详情') }}</a>
               </div>
-            </div>
+              </div> -->
           </div>
         </div>
         <div
@@ -1205,6 +1230,19 @@ const handleMaintainerChange = async (payload: { maintainers?: string[] }) => {
 .gateways-name-tip {
   font-size: 14px;
   color: #979BA5;
+}
+
+.warning-header,
+.warning-main,
+.warning-more {
+  font-size: 12px;
+  color: #4D4F56;
+}
+.warning-main {
+  margin: 24px 0px;
+}
+.warning-more .more-detail {
+  color: #3A84FF;
 }
 
 :deep(.ag-markdown-view pre) {
