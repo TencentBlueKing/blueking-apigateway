@@ -21,6 +21,7 @@
     <Top
       ref="topRef"
       @refresh-change="handleRefreshChange"
+      @step-change="handleStepChange"
     />
 
     <div class="ag-top-header">
@@ -408,9 +409,12 @@ const getData = async (searchParams: ISearchParamsType, type: string) => {
   }
 };
 
-const getPageData = () => {
+const getPageData = (step?: string) => {
   metricsList.value.forEach((type: string) => {
-    getData(searchParams.value, type);
+    getData({
+      ...searchParams.value,
+      step,
+    }, type);
   });
 };
 
@@ -478,6 +482,10 @@ const handleRefreshChange = (interval: string) => {
   clearInterval(timeId);
   timeId = null;
   setIntervalFn(interval);
+};
+
+const handleStepChange = (step: string) => {
+  getPageData(step);
 };
 
 const handleClearParams = () => {
