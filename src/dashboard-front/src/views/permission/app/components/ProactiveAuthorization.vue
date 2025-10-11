@@ -115,13 +115,34 @@
               >
                 <BkTransfer
                   ref="dimensionRef"
-                  :source-list="resourceTransferList"
+                  class="proactive-auth-transfer"
                   :display-key="'name'"
                   :setting-key="'id'"
+                  :source-list="resourceTransferList"
                   :title="[t('未选资源'), t('已选资源')]"
                   searchable
                   @change="handleResourceChange"
+                  @update:target-list="handleUpdateTarget"
                 >
+                  <template #left-header>
+                    <div class="flex items-center justify-between h-40px left-header">
+                      <div>
+                        <span>{{ t('未选资源') }}</span>
+                        <span class="ml-8px">{{ `(${sourceListLen})` }}</span>
+                      </div>
+                      <div class="add-all">
+                        <BkButton
+                          text
+                          theme="primary"
+                          class="text-12px!"
+                          :disabled="sourceListLen === 0"
+                          @click.stop="handleAddAllResource"
+                        >
+                          {{ t('选择全部') }}
+                        </BkButton>
+                      </div>
+                    </div>
+                  </template>
                   <template #source-option="data">
                     <div class="transfer-source-item">
                       {{ data.name }}
@@ -160,6 +181,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Form, Input, Transfer } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import { t } from '@/locales';
 import { type IResource } from '@/types/permission';
@@ -211,10 +233,18 @@ const emits = defineEmits<Emits>();
 
 const route = useRoute();
 
-const authFormRef = ref<InstanceType<typeof BkForm> & FormMethod>();
-const appCodeRef = ref<InstanceType<typeof BkInput>>(null);
-const expireTypeRef = ref<InstanceType<typeof BkInput>>(null);
-const dimensionRef = ref<InstanceType<typeof BkTransfer>>(null);
+const authFormRef = ref<InstanceType<typeof Form> & FormMethod>();
+const appCodeRef = ref<InstanceType<typeof Input>>(null);
+const expireTypeRef = ref<InstanceType<typeof Input>>(null);
+const dimensionRef = ref<InstanceType<typeof Transfer>>(null);
+const transferInputEl = ref(null);
+const clearIconEl = ref(null);
+const sourceListLen = ref(0);
+// 这里设置isSelectAll判断是否选择全部，是因为先选择几个资源，然后再点击选择全部后返回的资源总数不是所有的
+const isSelectAll = ref(false);
+const resourceTransferList = ref([]);
+const resourceTransferListBack = ref([]);
+const targetTransferList = ref([]);
 const initData = ref({
   bk_app_code: '',
   expire_type: 'permanent',
@@ -281,7 +311,24 @@ const curAuthData = computed({
   },
 });
 
-const resourceTransferList = computed(() => resourceList);
+watch(authSliderConfig.value, ({ isShow }: { isShow: boolean }) => {
+  if (isShow) {
+    sourceListLen.value = resourceList.length;
+    resourceTransferList.value = cloneDeep(resourceList);
+    resourceTransferListBack.value = cloneDeep(resourceList);
+  }
+}, { immediate: true });
+
+watch(curAuthData.value, (payload) => {
+  if (['resource'].includes(payload.dimension)) {
+    nextTick(() => {
+      // 输入框实例
+      transferInputEl.value = document.querySelector('.proactive-auth-transfer .source-list input');
+      transferInputEl.value?.addEventListener('input', getTransferSearch, { capture: true });
+      transferInputEl.value?.addEventListener('paste', getTransferSearch, { capture: true });
+    });
+  }
+});
 
 // 主动授权 不同选项，数据的更改
 const formatData = () => {
@@ -306,23 +353,100 @@ const handleCompare = (callback) => {
   callback(cloneDeep(curAuthData.value));
 };
 
+// 设置动态添加空文本节点
+const handleSetEmptyContent = (isAll: boolean) => {
+  const sourceEl = document.querySelector('.proactive-auth-transfer .source-list');
+  const sourceUl = sourceEl.querySelector('ul.is-search');
+  const emptyEl = sourceEl.querySelector('.empty');
+  // 是否选择全部
+  const isSelectAllResource = isAll && !sourceListLen.value;
+  // 组件内部无数据会去掉ul标签
+  if (sourceUl) {
+    sourceUl.style.display = isSelectAllResource ? 'none' : 'block';
+    // 如果是选择全部，移除掉所有li节点
+    if (isAll && !dimensionRef.value.selectSearchQuery) {
+      const customItems = sourceUl.querySelectorAll('li.custom-item');
+      if (customItems) {
+        customItems.forEach(li => li.remove());
+      }
+    }
+  }
+  emptyEl?.parentNode?.removeChild(emptyEl);
+  if (isSelectAllResource && !emptyEl) {
+    // 选择全部后，创建空数据文本
+    const emptyDiv = document.createElement('div');
+    emptyDiv.className = 'empty';
+    emptyDiv.textContent = t('无数据');
+    sourceEl.appendChild(emptyDiv);
+  }
+};
+
 // 选择授权的资源数量发生改变触发
 const handleResourceChange = (
   sourceList: IResource[],
   targetList: IResource[],
   targetValueList: number[],
 ) => {
-  // 如果数据一致，表示是全选
-  if (targetValueList.length === resourceTransferList.value.length) {
-    const searchList = resourceTransferList.value.filter(item =>
-      item.name.indexOf(dimensionRef.value.selectSearchQuery) > -1,
-    );
-    const resourceIds = targetValueList.filter(item => searchList.map(searchItem => searchItem.id).includes(item));
-    curAuthData.value.resource_ids = resourceIds;
-    dimensionRef.value.selectedList = searchList;
+  const listBack = cloneDeep(resourceTransferListBack.value);
+  const searchKeyword = dimensionRef.value.selectSearchQuery;
+  const allResourceId = listBack.map(item => item.id);
+  sourceListLen.value = allResourceId.filter(id => !targetTransferList.value.includes(id))?.length;
+  if (targetValueList.length >= listBack.length) {
+    sourceListLen.value = 0;
+  }
+  // 如果sourceListLen大于零代表是一个个选，否则是选择全部
+  if (sourceListLen.value) {
+    // 是否是搜索后选择全部
+    const isSearch = !!searchKeyword;
+    if (isSearch) {
+      resetSourceData();
+    }
+    handleSetEmptyContent(isSearch);
+    curAuthData.value.resource_ids = targetValueList;
+    dimensionRef.value.targetValueList = curAuthData.value.resource_ids;
   }
   else {
-    curAuthData.value.resource_ids = targetValueList;
+    handleSetEmptyContent(true);
+    if (!searchKeyword) {
+      curAuthData.value.resource_ids = allResourceId;
+    }
+  }
+  isSelectAll.value = !sourceListLen.value;
+  removeDuplicateEmpty();
+};
+
+const handleUpdateTarget = (list: IResource[]) => {
+  targetTransferList.value = list;
+};
+
+// 自定义选择全部
+const handleAddAllResource = () => {
+  isSelectAll.value = true;
+  const searchValue = dimensionRef.value.selectSearchQuery;
+  const searchList = resourceTransferListBack.value.filter(item =>
+    item.name.indexOf(searchValue) > -1,
+  );
+  // 过滤掉已选的资源
+  const noSelectList = resourceTransferListBack.value.filter(item =>
+    !curAuthData.value.resource_ids.includes(item.id)
+    && searchList.map(searchItem => searchItem.id).includes(item.id),
+  );
+  const noSelectIds = noSelectList.map(item => item.id);
+  // 如果有搜索条件
+  if (searchValue) {
+    const hasSelectedResource
+      = resourceTransferListBack.value.filter(item => curAuthData.value.resource_ids.includes(item.id));
+    dimensionRef.value.selectedList = [...hasSelectedResource, ...noSelectList];
+    dimensionRef.value.targetValueList = dimensionRef.value.selectedList.map(item => item.id);
+  }
+  else {
+    if (noSelectList?.length) {
+      curAuthData.value.resource_ids = [
+        ...new Set([...curAuthData.value.resource_ids, ...noSelectIds]),
+      ];
+    }
+    dimensionRef.value.selectedList = searchList;
+    dimensionRef.value.targetValueList = curAuthData.value.resource_ids;
   }
 };
 
@@ -366,7 +490,46 @@ const handleCancel = () => {
   authFormRef?.value?.clearValidate();
   curAuthData.value = cloneDeep(initData.value);
   authSliderConfig.value.isShow = false;
+  transferInputEl.value?.removeEventListener('input', getTransferSearch, { capture: true });
+  transferInputEl.value?.removeEventListener('paste', getTransferSearch, { capture: true });
+  clearIconEl.value?.removeEventListener('click', handleClearTransferSearch, { capture: true });
 };
+
+const resetSourceData = () => {
+  sourceListLen.value = resourceTransferListBack.value.filter(item =>
+    item.name.indexOf(dimensionRef.value.selectSearchQuery) > -1 && !targetTransferList.value.includes(item.id),
+  )?.length;
+  handleSetEmptyContent(false);
+};
+
+function handleClearTransferSearch() {
+  dimensionRef.value.selectSearchQuery = '';
+  resetSourceData();
+}
+
+// 获取transfer实时输入值
+function getTransferSearch(e: InputEvent) {
+  dimensionRef.value.selectSearchQuery = e.target.value;
+  resetSourceData();
+  nextTick(() => {
+    clearIconEl.value = document.querySelector('.proactive-auth-transfer .source-list .bk-input--clear-icon');
+    // 清空按钮实例
+    clearIconEl.value?.addEventListener('click', handleClearTransferSearch, { capture: true });
+  });
+};
+
+// 移除重复的empty节点
+function removeDuplicateEmpty() {
+  setTimeout(() => {
+    const empties = document.querySelectorAll('.proactive-auth-transfer .source-list .empty');
+    if (empties.length > 1) {
+      // 从第二个开始移除
+      for (let i = 1; i < empties.length; i++) {
+        empties[i].remove();
+      }
+    }
+  }, 0);
+}
 </script>
 
 <style lang="scss" scoped>
