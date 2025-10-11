@@ -24,6 +24,7 @@ from rest_framework import serializers
 from apigateway.apps.metrics.constants import (
     MetricsInstantEnum,
     MetricsRangeEnum,
+    MetricsStepEnum,
     MetricsSummaryEnum,
     MetricsSummaryTimeDimensionEnum,
 )
@@ -36,6 +37,7 @@ class MetricsQueryRangeInputSLZ(serializers.Serializer):
     time_range = serializers.IntegerField(required=False, min_value=0, help_text="时间范围")
     time_start = serializers.IntegerField(required=False, min_value=0, help_text="开始时间")
     time_end = serializers.IntegerField(required=False, min_value=0, help_text="结束时间")
+    step = serializers.ChoiceField(choices=MetricsStepEnum.get_choices(), required=False, help_text="精度")
 
     class Meta:
         ref_name = "apigateway.apis.web.metrics.serializers.MetricsQueryRangeInputSLZ"

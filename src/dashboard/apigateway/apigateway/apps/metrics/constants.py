@@ -32,6 +32,17 @@ class MetricsRangeEnum(StructuredEnum):
     EGRESS = EnumField("egress")
 
 
+class MetricsStepEnum(StructuredEnum):
+    AUTO = EnumField("auto")
+    ONE_MINUTE = EnumField("1m")
+    FIVE_MINUTES = EnumField("5m")
+    TEN_MINUTES = EnumField("10m")
+    THIRTY_MINUTES = EnumField("30m")
+    ONE_HOUR = EnumField("1h")
+    THREE_HOURS = EnumField("3h")
+    TWELVE_HOURS = EnumField("12h")
+
+
 class MetricsInstantEnum(StructuredEnum):
     REQUESTS_TOTAL = EnumField("requests_total")
     HEALTH_RATE = EnumField("health_rate")
