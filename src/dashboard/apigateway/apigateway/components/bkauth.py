@@ -80,6 +80,10 @@ def get_app_tenant_info(app_code: str) -> Tuple[str, str]:
     return tenant_mode, tenant_id
 
 
+def get_app_tenant_info_cached(app_code: str) -> Tuple[str, str]:
+    return get_app_tenant_info(app_code)
+
+
 def list_apps_of_tenant(
     tenant_mode: str, tenant_id: str, page: int = 1, page_size: int = 100
 ) -> Tuple[int, List[Dict]]:
