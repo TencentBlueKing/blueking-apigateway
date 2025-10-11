@@ -119,6 +119,7 @@
                   :display-key="'name'"
                   :setting-key="'id'"
                   :title="[t('未选资源'), t('已选资源')]"
+                  class="proactive-auth-transfer"
                   searchable
                   @change="handleResourceChange"
                 >
@@ -215,6 +216,14 @@ const authFormRef = ref<InstanceType<typeof BkForm> & FormMethod>();
 const appCodeRef = ref<InstanceType<typeof BkInput>>(null);
 const expireTypeRef = ref<InstanceType<typeof BkInput>>(null);
 const dimensionRef = ref<InstanceType<typeof BkTransfer>>(null);
+const transferIsAllEl = ref(null);
+const transferInputEl = ref(null);
+const clearIconEl = ref(null);
+const transferSourceList = ref([]);
+const transferTargetList = ref([]);
+const searchTargetList = ref([]);
+const resourceTransferList = ref([]);
+const resourceTransferListBack = ref([]);
 const initData = ref({
   bk_app_code: '',
   expire_type: 'permanent',
@@ -281,7 +290,24 @@ const curAuthData = computed({
   },
 });
 
-const resourceTransferList = computed(() => resourceList);
+watch(authSliderConfig.value, ({ isShow }: { isShow: boolean }) => {
+  if (isShow) {
+    resourceTransferList.value = cloneDeep(resourceList);
+    resourceTransferListBack.value = cloneDeep(resourceList);
+  }
+}, { immediate: true });
+
+watch(curAuthData.value, (authData) => {
+  if (['resource'].includes(authData.dimension)) {
+    nextTick(() => {
+      const transferSourceEl = document.querySelector('.proactive-auth-transfer .source-list');
+      transferIsAllEl.value = transferSourceEl.querySelector('.select-all');
+      transferInputEl.value = transferSourceEl.querySelector('input');
+      transferIsAllEl.value?.addEventListener('click', handleSetSearchAll, { capture: true });
+      transferInputEl.value?.addEventListener('input', getTransferSearch, { capture: true });
+    });
+  }
+});
 
 // 主动授权 不同选项，数据的更改
 const formatData = () => {
@@ -312,18 +338,81 @@ const handleResourceChange = (
   targetList: IResource[],
   targetValueList: number[],
 ) => {
-  // 如果数据一致，表示是全选
-  if (targetValueList.length === resourceTransferList.value.length) {
-    const searchList = resourceTransferList.value.filter(item =>
-      item.name.indexOf(dimensionRef.value.selectSearchQuery) > -1,
-    );
-    const resourceIds = targetValueList.filter(item => searchList.map(searchItem => searchItem.id).includes(item));
-    curAuthData.value.resource_ids = resourceIds;
-    dimensionRef.value.selectedList = searchList;
+  // 这里change会触发两次
+  setTimeout(() => {
+    transferSourceList.value = [...sourceList];
+    transferTargetList.value = [...targetList];
+    const isTargetEmpty = document.querySelector('.proactive-auth-transfer .target-list .empty');
+    if (isTargetEmpty && dimensionRef.value.selectListSearch.length < resourceTransferListBack.value.length) {
+      searchTargetList.value = [];
+      curAuthData.value.resource_ids = [];
+      resourceTransferList.value = cloneDeep(resourceTransferListBack.value);
+    }
+    if (searchTargetList.value.length) {
+      curAuthData.value.resource_ids = searchTargetList.value.map(item => item.id);
+    }
+    else {
+      curAuthData.value.resource_ids = targetValueList;
+    }
+  }, 100);
+};
+
+// 设置transfer组件搜索状态选择全部交互
+function handleSetSearchAll() {
+  searchTargetList.value = [];
+  const searchKeyword = dimensionRef.value.selectSearchQuery;
+  // 获取搜索列表的数据
+  if (searchKeyword) {
+    const transferEl = document.querySelector('.proactive-auth-transfer');
+    const sourceEl = transferEl.querySelector('.source-list > ul');
+    // 获取所有li下transfer-source-item元素
+    const sourceItems = sourceEl?.querySelectorAll('.transfer-source-item');
+    if (sourceItems) {
+      const itemTexts = Array.from(sourceItems).map((item) => {
+        return item.textContent.trim();
+      });
+      searchTargetList.value = resourceTransferListBack.value.filter(item =>
+        itemTexts.includes(item.name) || transferTargetList.value.map(target => target.id).includes(item.id),
+      );
+    }
+    // 重置已选资源
+    setTimeout(() => {
+      dimensionRef.value.selectedList = searchTargetList.value;
+    }, 0);
   }
-  else {
-    curAuthData.value.resource_ids = targetValueList;
+};
+
+const handleResetTransferData = () => {
+  if (!curAuthData.value.resource_ids.length) {
+    searchTargetList.value.map(item => item.id);
   }
+  const hasSelected = resourceTransferListBack.value.filter(item =>
+    curAuthData.value.resource_ids.includes(item.id),
+  );
+  resourceTransferList.value = resourceTransferListBack.value.filter(item =>
+    item.name.indexOf(dimensionRef.value.selectSearchQuery) > -1
+    && !hasSelected.map(target => target.id).includes(item.id),
+  );
+  setTimeout(() => {
+    dimensionRef.value.selectedList = hasSelected;
+  }, 0);
+};
+
+function handleClearTransferSearch() {
+  dimensionRef.value.selectSearchQuery = '';
+  handleResetTransferData();
+}
+
+// 获取transfer实时输入值
+function getTransferSearch(e: InputEvent) {
+  const target = e.target as HTMLInputElement;
+  dimensionRef.value.selectSearchQuery = target.value;
+  // 清空按钮实例
+  nextTick(() => {
+    clearIconEl.value = document.querySelector('.proactive-auth-transfer .source-list .bk-input--clear-icon');
+    clearIconEl.value?.addEventListener('click', handleClearTransferSearch, { capture: true });
+  });
+  handleResetTransferData();
 };
 
 const handleSave = async () => {
@@ -365,6 +454,15 @@ const handleSave = async () => {
 const handleCancel = () => {
   authFormRef?.value?.clearValidate();
   curAuthData.value = cloneDeep(initData.value);
+  clearIconEl.value?.removeEventListener('click', handleClearTransferSearch, { capture: true });
+  transferIsAllEl.value?.removeEventListener('click', handleSetSearchAll, { capture: true });
+  transferInputEl.value?.removeEventListener('input', getTransferSearch, { capture: true });
+  transferIsAllEl.value = null;
+  transferInputEl.value = null;
+  clearIconEl.value = null;
+  transferSourceList.value = [];
+  transferTargetList.value = [];
+  searchTargetList.value = [];
   authSliderConfig.value.isShow = false;
 };
 </script>
