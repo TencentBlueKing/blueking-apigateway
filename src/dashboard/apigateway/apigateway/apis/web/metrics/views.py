@@ -29,6 +29,7 @@ from rest_framework import generics, status
 from apigateway.apps.metrics.constants import (
     MetricsInstantEnum,
     MetricsRangeEnum,
+    MetricsStepEnum,
 )
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay
 from apigateway.core.models import Resource, Stage
@@ -91,7 +92,10 @@ class QueryRangeApi(generics.ListAPIView):
             data.get("time_range"),
         )
         time_start, time_end = smart_time_range.get_head_and_tail()
-        step = smart_time_range.get_interval()
+        if data.get("step", MetricsStepEnum.AUTO.value) == MetricsStepEnum.AUTO.value:
+            step = smart_time_range.get_interval()
+        else:
+            step = data.get("step")
 
         metrics_name = data["metrics"]
         metrics = MetricsRangeFactory.create_metrics(MetricsRangeEnum(metrics_name))
