@@ -28,7 +28,6 @@
       display-key="name"
       filterable
       id-key="id"
-      input-search
       scroll-height="262"
       v-bind="$attrs"
     >
