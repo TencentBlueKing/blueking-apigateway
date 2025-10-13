@@ -168,7 +168,21 @@
                       class="plugin-icon"
                     >
                       <svg class="icon svg-icon">
-                        <use :xlink:href="`#icon-ag-plugin-${item.code || item.type}`" />
+                        <use
+                          :xlink:href="`#icon-ag-plugin-${item.code || item.type}`"
+                          fill="#3a84f6"
+                        />
+                      </svg>
+                    </div>
+                    <div
+                      v-else-if="PLUGIN_ICONS_MIN.includes(item.code || item.type)"
+                      class="plugin-icon"
+                    >
+                      <svg class="icon svg-icon small">
+                        <use
+                          :xlink:href="`#icon-ag-plugin-${item.code || item.type}`"
+                          fill="#3a84f6"
+                        />
                       </svg>
                     </div>
                     <div
@@ -382,7 +396,10 @@ import {
 import ConfigDisplayTable from './ConfigDisplayTable.vue';
 import { getStageStatus } from '@/utils';
 import { useRouteParams } from '@vueuse/router';
-import { PLUGIN_ICONS } from '@/constants';
+import {
+  PLUGIN_ICONS,
+  PLUGIN_ICONS_MIN,
+} from '@/constants';
 
 interface IProps {
   resourceId?: number
@@ -869,7 +886,7 @@ init();
         margin-bottom: 12px;
 
         .plugin-icon {
-          position: relative;
+          display: flex;
           width: 48px;
           height: 48px;
           overflow: hidden;
@@ -877,16 +894,19 @@ init();
           font-weight: 700;
           line-height: 48px;
           color: #3a84f6;
-          text-align: center;
           background-color: #e2edfd;
           border-radius: 50%;
+          align-items: center;
+          justify-content: center;
 
           .svg-icon {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 48px;
             height: 48px;
+
+            &.small {
+              width: 24px;
+              height: 24px;
+            }
           }
         }
 

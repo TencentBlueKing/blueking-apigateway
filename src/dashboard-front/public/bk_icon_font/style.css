@@ -545,30 +545,30 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-file-preview:before {
 	content: "\e1be";
 }
-.icon-ag-plugin-bk-access-token-source:before {
-	content: "\e1c2";
-}
 .icon-ag-plugin-bk-login-required:before {
-	content: "\e1c4";
-}
-.icon-ag-plugin-bk-opentelemetry:before {
-	content: "\e1c0";
+	content: "\e1cb";
 }
 .icon-ag-plugin-bk-query-string-rewrite:before {
-	content: "\e1c1";
+	content: "\e1cd";
 }
-.icon-ag-plugin-proxy-cache:before {
-	content: "\e1c5";
-}
-.icon-ag-plugin-traffic-label:before {
-	content: "\e1c3";
+.icon-ag-plugin-bk-opentelemetry:before {
+	content: "\e1c9";
 }
 .icon-ag-plugin-bk-request-body-limit:before {
-	content: "\e1c6";
-}
-.icon-ag-plugin-bk-user-restriction:before {
-	content: "\e1c7";
+	content: "\e1d1";
 }
 .icon-ag-plugin-bk-username-required:before {
-	content: "\e1c8";
+	content: "\e1cf";
+}
+.icon-ag-plugin-proxy-cache:before {
+	content: "\e1cc";
+}
+.icon-ag-plugin-bk-user-restriction:before {
+	content: "\e1ce";
+}
+.icon-ag-plugin-traffic-label:before {
+	content: "\e1ca";
+}
+.icon-ag-plugin-bk-access-token-source:before {
+	content: "\e1d2";
 }
