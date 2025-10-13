@@ -98,8 +98,10 @@ import AddBackendService from '@/views/backend-services/components/AddBackendSer
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 const { t } = useI18n();
-const gatewayStore = useGateway();
+const route = useRoute();
 const router = useRouter();
+const gatewayStore = useGateway();
+
 // 当前视口高度能展示最多多少条表格数据
 const { maxTableLimit, clientHeight } = useMaxTableLimit();
 
@@ -270,6 +272,15 @@ const {
     ],
     limit: maxTableLimit,
   },
+});
+
+watch(() => route.query, () => {
+  if (route.query?.name) {
+    filterData.value.name = route.query.name as string;
+  }
+}, {
+  deep: true,
+  immediate: true,
 });
 
 watch(

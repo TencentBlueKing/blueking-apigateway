@@ -530,7 +530,13 @@
             v-if="!backServicesEdit"
             class="value-container"
           >
-            <span class="value-cls">{{ servicesData.name }}</span>
+            <BkButton
+              text
+              class="color-#1768ef!"
+              @click="() => handleServiceNameClick(servicesData)"
+            >
+              {{ servicesData.name }}
+            </BkButton>
             <span class="operate-btn">
               <AgIcon
                 name="edit-line"
@@ -580,9 +586,15 @@
               :resizable="false"
             >
               <template #default="{ data }">
-                <span v-if="data?.hosts[0].host">
-                  {{ data?.hosts[0].scheme }}://{{ data?.hosts[0].host }}
-                </span>
+                <div v-if="data.hosts.length">
+                  <div
+                    v-for="host in data.hosts"
+                    :key="host.host"
+                    class="lh-22px"
+                  >
+                    {{ host.scheme }}://{{ host.host }}
+                  </div>
+                </div>
                 <span v-else>--</span>
               </template>
             </BkTableColumn>
@@ -869,6 +881,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
 const gatewayStore = useGateway();
 const stageStore = useStage();
 const { controlStickyToggle, observerNodeScroll, destroyEvent } = useStickyBottom({
@@ -1249,6 +1262,16 @@ const handleDeleteResource = async (id: number) => {
   emit('deleted-success');
 };
 
+const handleServiceNameClick = (service: { name: string }) => {
+  if (!service?.name) {
+    return;
+  }
+  router.push({
+    name: 'BackendService',
+    query: { name: service.name },
+  });
+};
+
 onUnmounted(() => {
   destroyEvent();
 });
@@ -1256,6 +1279,7 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .detail-container {
+
   .detail-container-content {
     max-height: calc(100vh - 175px);
     padding-inline: 14px;
@@ -1377,20 +1401,21 @@ onUnmounted(() => {
   .footer-btn-wrapper {
     bottom: 0;
     height: 52px;
-    line-height: 52px;
-    padding-left: 170px
+    padding-left: 170px;
+    line-height: 52px
   }
 
   .fixed-footer-btn-wrapper {
-    width: 100%;
     position: absolute;
-    left: 0;
     right: 0;
     bottom: 0;
+    left: 0;
+
     // right: 20px;
     z-index: 9;
+    width: 100%;
     padding-left: 24px;
-    background-color: #ffffff;
+    background-color: #fff;
     box-shadow: 0 -2px 4px 0 #0000000f;
     transition: .3s;
   }
