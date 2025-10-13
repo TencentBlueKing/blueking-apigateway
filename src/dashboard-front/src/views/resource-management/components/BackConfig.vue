@@ -89,9 +89,15 @@
         :resizable="false"
       >
         <template #default="{ data }">
-          <span v-if="data?.hosts[0].host">
-            {{ data?.hosts[0].scheme }}://{{ data?.hosts[0].host }}
-          </span>
+          <div v-if="data.hosts.length">
+            <div
+              v-for="host in data.hosts"
+              :key="host.host"
+              class="lh-22px"
+            >
+              {{ host.scheme }}://{{ host.host }}
+            </div>
+          </div>
           <span v-else>--</span>
         </template>
       </BkTableColumn>
@@ -200,17 +206,19 @@
         <BkTable
           class="w-70% max-w-700px mt-10px"
           :data="servicesCheckData"
-          :border="['outer']"
+          :border="['outer', 'col']"
         >
           <BkTableColumn
             :label="t('环境名称')"
+            :rowspan="({ row }) => row.rowSpan"
           >
             <template #default="{ data }">
-              {{ data?.stage?.name }}
+              {{ data.stage?.name }}
             </template>
           </BkTableColumn>
           <BkTableColumn
             :label="t('请求类型')"
+            width="100"
           >
             <template #default="{ data }">
               {{ backConfigData?.config?.method || data?.stage?.name }}
@@ -218,8 +226,8 @@
           </BkTableColumn>
           <BkTableColumn :label="t('请求地址')">
             <template #default="{ data }">
-              <span v-bk-tooltips="{ content: data?.backend_urls[0], disabled: !data?.backend_urls[0] }">
-                {{ data?.backend_urls[0] }}
+              <span v-bk-tooltips="{ content: data.backend_url, disabled: !data.backend_url }">
+                {{ data.backend_url }}
               </span>
             </template>
           </BkTableColumn>
@@ -294,7 +302,14 @@ const servicesConfigs = ref([]);
 // 服务详情缓存数据
 const servicesConfigsStorage = ref([]);
 // 校验列表
-const servicesCheckData = ref([]);
+const servicesCheckData = ref<{
+  stage: {
+    id: number
+    name: string
+  }
+  backend_url: string
+  rowSpan: number
+}[]>([]);
 const popoverConfirmRef = ref();
 const timeOutValue = ref('');
 const isShowPopConfirm = ref(false);
@@ -553,7 +568,28 @@ const handleCheckPath = async () => {
       backend_id: backConfigData.value.id,
       backend_path: backConfigData.value.config.path,
     };
-    servicesCheckData.value = await backendsPathCheck(gatewayId.value, params);
+    const response = await backendsPathCheck(gatewayId.value, params);
+    servicesCheckData.value = response.reduce<{
+      stage: {
+        id: number
+        name: string
+      }
+      backend_url: string
+      rowSpan: number
+    }[]>((acc, item) => {
+      acc = [
+        ...acc,
+        ...item.backend_urls.map((url, index) => {
+          const rowSpan = index === 0 ? item.backend_urls.length : 0;
+          return {
+            stage: item.stage,
+            backend_url: url || '',
+            rowSpan,
+          };
+        }),
+      ];
+      return acc;
+    }, []);
     isPathValid.value = true;
   }
   catch {

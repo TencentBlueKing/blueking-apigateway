@@ -55,7 +55,7 @@ export function getFeatureFlags(params: {
     MENU_ITEM_ESB_API: boolean
     MENU_ITEM_ESB_API_DOC: boolean
     SYNC_ESB_TO_APIGW_ENABLED: boolean
-  }>(`${path}/settings/feature_flags/`, params);
+  }>(`${path}/settings/feature-flags/`, params);
 }
 
 /**

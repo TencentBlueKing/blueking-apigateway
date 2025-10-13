@@ -147,5 +147,5 @@ export function getFeatures(params?: {
   limit: number
   offset: number
 }) {
-  return http.get('/settings/feature_flags/', params);
+  return http.get('/settings/feature-flags/', params);
 }

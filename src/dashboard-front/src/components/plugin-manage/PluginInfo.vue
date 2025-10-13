@@ -739,15 +739,17 @@ onClickOutside(pluginSelectRef, () => {
     cursor: pointer;
 
     .cur-icon {
+      display: flex;
       width: 56px;
       height: 56px;
       font-size: 28px;
       font-weight: 700;
       line-height: 56px;
       color: #3a84f6;
-      text-align: center;
       background: #EAEBF0;
       border-radius: 50%;
+      justify-content: center;
+      align-items: center;
 
       .svg-icon {
         width: 56px;
