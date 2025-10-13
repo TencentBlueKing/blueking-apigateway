@@ -218,7 +218,13 @@ export const getVerifiedUserRequiredResources = (apigwId: number, params?: {
 
 // 校验资源后端地址
 export const backendsPathCheck = (apigwId: number, data: any) =>
-  http.get(`${path}/${apigwId}/resources/backend-path/check/`, data);
+  http.get<Array<{
+    backend_urls: string[]
+    stage: {
+      id: number
+      name: string
+    }
+  }>>(`${path}/${apigwId}/resources/backend-path/check/`, data);
 
 /**
  * 设置标签
