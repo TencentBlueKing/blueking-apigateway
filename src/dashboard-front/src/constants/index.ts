@@ -81,7 +81,7 @@ export const EXPIRE_DAYS_CONSTANTS = [
   },
 ];
 
-// 插件列表
+// 插件图表列表
 export const PLUGIN_ICONS = [
   'bk-cors', // 跨域资源共享插件
   'bk-header-rewrite', // 请求头重写插件
@@ -99,6 +99,10 @@ export const PLUGIN_ICONS = [
   'response-rewrite', // 响应重写插件
   'serverless', // 无服务器插件
   'user-restriction', // 用户限制插件
+];
+
+// 插件图表列表 - 小号图表
+export const PLUGIN_ICONS_MIN = [
   'bk-access-token-source',
   'bk-login-required',
   'bk-opentelemetry',
