@@ -325,7 +325,7 @@ class IngressMetrics(BaseMetrics):
         labels = self._get_labels_expression(label_list)
         return (
             # 指标：bkmonitor:bk_apigateway_bandwidth
-            f"topk(10, sum(increase({self.metric_name_prefix}bandwidth{{{labels}}}[{step}])) by (route))"
+            f"topk(10, sum(rate({self.metric_name_prefix}bandwidth{{{labels}}}[{step}])) by (route))"
         )
 
 
@@ -355,7 +355,7 @@ class EgressMetrics(BaseMetrics):
 
         return (
             # 指标：bkmonitor:bk_apigateway_bandwidth
-            f"topk(10, sum(increase({self.metric_name_prefix}bandwidth{{{labels}}}[{step}])) by (route))"
+            f"topk(10, sum(rate({self.metric_name_prefix}bandwidth{{{labels}}}[{step}])) by (route))"
         )
 
 

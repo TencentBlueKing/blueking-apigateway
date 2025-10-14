@@ -223,17 +223,17 @@ class MetricsSmartTimeRange(SmartTimeRange):
         gap_minutes = math.ceil((time_end - time_start) / 60)
         if gap_minutes <= 60:
             index = 0
-        elif gap_minutes <= 360: # 6h
+        elif gap_minutes <= 360:  # 6h
             index = 1
-        elif gap_minutes <= 720: # 12h
+        elif gap_minutes <= 720:  # 12h
             index = 2
-        elif gap_minutes <= 1440: # 24h
+        elif gap_minutes <= 1440:  # 24h
             index = 3
-        elif gap_minutes <= 4320: # 72h
+        elif gap_minutes <= 4320:  # 72h
             index = 4
-        elif gap_minutes <= 10080: # 7d
+        elif gap_minutes <= 10080:  # 7d
             index = 5
-        else: # >7d (max is 14d)
+        else:  # >7d (max is 14d)
             index = 6
 
         return step_options[index]
