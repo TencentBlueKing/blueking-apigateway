@@ -360,7 +360,7 @@ class TestIngressMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(increase(bk_apigateway_bandwidth{type="ingress", service="foo.prod.stage-1", '
+                    'topk(10, sum(rate(bk_apigateway_bandwidth{type="ingress", service="foo.prod.stage-1", '
                     'route="foo.prod.2"}[1m])) by (route))'
                 ),
             },
@@ -374,7 +374,7 @@ class TestIngressMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(increase(bk_apigateway_bandwidth{type="ingress", service="foo.prod.stage-1"'
+                    'topk(10, sum(rate(bk_apigateway_bandwidth{type="ingress", service="foo.prod.stage-1"'
                     "}[1m])) by (route))"
                 ),
             },
@@ -400,7 +400,7 @@ class TestEgressMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(increase(bk_apigateway_bandwidth{type="egress", service="foo.prod.stage-1", '
+                    'topk(10, sum(rate(bk_apigateway_bandwidth{type="egress", service="foo.prod.stage-1", '
                     'route="foo.prod.2"}[1m])) by (route))'
                 ),
             },
@@ -414,7 +414,7 @@ class TestEgressMetrics:
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(increase(bk_apigateway_bandwidth{type="egress", service="foo.prod.stage-1"'
+                    'topk(10, sum(rate(bk_apigateway_bandwidth{type="egress", service="foo.prod.stage-1"'
                     "}[1m])) by (route))"
                 ),
             },
