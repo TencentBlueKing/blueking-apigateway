@@ -1996,5 +1996,9 @@
   "联系人不能为空": "Contact cannot be empty",
   "请输入正整数": "Integer",
   "待审批": "Pending",
-  "已审批": "Finished"
+  "已审批": "Finished",
+  "该资源未配置认证方式，存在安全风险。": "This resource has not configured any verification method.",
+  "请点击\"编辑\"按钮为资源配置适当的认证方式。": "Click 'Edit' to configure.",
+  "启用 Websocket": "Enable Websocket",
+  "已开启": "Enabled"
 }
