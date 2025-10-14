@@ -61,6 +61,9 @@ class TestResourceListCreateApi:
     def test_list(self, request_view, fake_gateway, fake_backend, data, expected):
         resource_1 = G(Resource, gateway=fake_gateway, path="/echo/", method="GET", name="echo")
         resource_2 = G(Resource, gateway=fake_gateway, path="/test/", method="GET", name="test")
+        auth_config = ResourceHandler.get_default_auth_config()
+        ResourceAuthContext().save(resource_1.id, dict(auth_config, auth_verified_required=True))
+        ResourceAuthContext().save(resource_2.id, dict(auth_config, auth_verified_required=False))
         G(Proxy, resource=resource_1, backend=fake_backend)
         G(Proxy, resource=resource_2, backend=fake_backend)
 
