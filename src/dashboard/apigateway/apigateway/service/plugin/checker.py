@@ -287,6 +287,63 @@ class BkAccessTokenSourceChecker(BaseChecker):
             raise ValueError("source must be bearer or api_key.")
 
 
+class BKRequestBodyLimitChecker(BaseChecker):
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
+        if not loaded_data:
+            raise ValueError("YAML cannot be empty")
+
+        max_body_size = loaded_data.get("max_body_size")
+        if not (1 <= int(max_body_size) <= 32 * 1024 * 1024):
+            raise ValueError("max_body_size must be between 1 bytes and 33554432 bytes.")
+
+
+class BKUserRestrictionChecker(BaseChecker):
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
+        if not loaded_data:
+            raise ValueError("YAML cannot be empty")
+
+        whitelist = loaded_data.get("whitelist", [])
+        blacklist = loaded_data.get("blacklist", [])
+
+        if whitelist:
+            whitelist_keys = [item["key"] for item in whitelist]
+            whitelist_duplicate_keys = [key for key, count in Counter(whitelist_keys).items() if count >= 2]
+            if whitelist_duplicate_keys:
+                raise ValueError(_("whitelist has duplicate elements：{}").format(", ".join(whitelist_duplicate_keys)))
+
+        if blacklist:
+            blacklist_keys = [item["key"] for item in blacklist]
+            blacklist_duplicate_keys = [key for key, count in Counter(blacklist_keys).items() if count >= 2]
+            if blacklist_duplicate_keys:
+                raise ValueError(_("blacklist has duplicate elements：{}").format(", ".join(blacklist_duplicate_keys)))
+
+        if not (whitelist or blacklist):
+            raise ValueError("whitelist and blacklist can not be empty at the same time")
+
+
+class ProxyCacheChecker(BaseChecker):
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
+        if not loaded_data:
+            raise ValueError("YAML cannot be empty")
+
+        cache_methods = [item["key"] for item in loaded_data["cache_method"]]
+        if not cache_methods:
+            raise ValueError("cache_method can not be empty")
+        cache_method_keys = [key for key, count in Counter(cache_methods).items() if count >= 2]
+        if cache_method_keys:
+            raise ValueError(_("cache_method has duplicate elements：{}。").format(", ".join(cache_method_keys)))
+        for method in cache_methods:
+            if method not in ["GET", "HEAD"]:
+                raise ValueError("cache_method only supports GET and HEAD")
+
+        cache_ttl = loaded_data.get("cache_ttl")
+        if not (1 <= int(cache_ttl) <= 3600):
+            raise ValueError("cache_ttl must be between 1 and 3600 seconds")
+
+
 def check_vars(vars, location):
     """check vars of lua-resty-expr
     vars = `[
@@ -338,6 +395,9 @@ class PluginConfigYamlChecker:
         PluginTypeCodeEnum.RESPONSE_REWRITE.value: ResponseRewriteChecker(),
         PluginTypeCodeEnum.REDIRECT.value: RedirectChecker(),
         PluginTypeCodeEnum.BK_ACCESS_TOKEN_SOURCE.value: BkAccessTokenSourceChecker(),
+        PluginTypeCodeEnum.BK_REQUEST_BODY_LIMIT.value: BKRequestBodyLimitChecker(),
+        PluginTypeCodeEnum.BK_USER_RESTRICTION.value: BKUserRestrictionChecker(),
+        PluginTypeCodeEnum.PROXY_CACHE.value: ProxyCacheChecker(),
     }
 
     def __init__(self, type_code: str):

@@ -200,6 +200,36 @@ class BkAccessTokenSourceConvertor(PluginConvertor):
         return config
 
 
+class BKUserRestrictionConvertor(PluginConvertor):
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.BK_USER_RESTRICTION
+
+    def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        whitelist = config.get("whitelist")
+        if whitelist:
+            return {"whitelist": [item["key"] for item in whitelist]}
+
+        blacklist = config.get("blacklist")
+        if blacklist:
+            return {"blacklist": [item["key"] for item in blacklist]}
+
+        raise ValueError("either one of whitelist or blacklist attribute must be specified for bk-user-restriction")
+
+
+class ProxyCacheConvertor(PluginConvertor):
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.PROXY_CACHE
+
+    def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        cache_method = config.get("cache_method")
+        if cache_method:
+            config["cache_method"] = [item["key"] for item in cache_method]
+        config["cache_ttl"] = config.get("cache_ttl", 300)
+
+        # 填充不允许配置参数的默认值
+        config["cache_http_status"] = [200]
+        config["no_cache "] = ["$arg_no_cache", "$http_no_cache"]
+        return config
+
+
 class PluginConvertorFactory:
     plugin_convertors: ClassVar[Dict[PluginTypeCodeEnum, PluginConvertor]] = {
         c.plugin_type_code: c
@@ -213,6 +243,8 @@ class PluginConvertorFactory:
             ResponseRewriteConvertor(),
             RedirectConvertor(),
             BkAccessTokenSourceConvertor(),
+            BKUserRestrictionConvertor(),
+            ProxyCacheConvertor(),
         ]
     }
 

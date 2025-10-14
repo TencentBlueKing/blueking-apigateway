@@ -38,6 +38,10 @@ class PluginTypeCodeEnum(StructuredEnum):
     REDIRECT = EnumField("redirect", label=_("重定向"))
     BK_ACCESS_TOKEN_SOURCE = EnumField("bk-access-token-source", label=_("AccessToken 来源"))
     BK_USERNAME_REQUIRED = EnumField("bk-username-required", label=_("UsernameRequired 插件"))
+    BK_REQUEST_BODY_LIMIT = EnumField("bk-request-body-limit", label=_("限制请求大小"))
+    BK_USER_RESTRICTION = EnumField("bk-user-restriction", label=_("用户访问限制"))
+    BK_LEGACY_INVALID_PARAMS = EnumField("bk-legacy-invalid-params", label=_("旧的无效参数"))
+    PROXY_CACHE = EnumField("proxy-cache", label=_("代理缓存"))
 
 
 class PluginTypeScopeEnum(StructuredEnum):
