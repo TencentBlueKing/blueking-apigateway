@@ -53,27 +53,31 @@ api_log_err_code_file_name = {
 
 # 文档翻译提示词模板
 DOC_TRANSLATE_ZH_TEMPLATE = """
-请将以下API接口文档从中文翻译成英文，保持markdown格式不变，只翻译文本内容：
+请将以下API接口文档翻译成中文或者英文，保持markdown格式不变，只翻译文本内容：
 
 {doc_content}
 
 翻译要求：
-1. 保持原有的markdown格式和结构
-2. 专业术语翻译要准确
-3. 代码示例和参数名保持不变
-4. 确保翻译后的文档专业、清晰、易懂
+1. 智能识别输入文档的语言（中文或英文）
+2. 如果输入是英文，翻译成中文；如果输入是中文，翻译成英文
+3. 保持原有的markdown格式和结构
+4. 专业术语翻译要准确
+5. 代码示例和参数名保持不变
+6. 确保翻译后的文档专业、清晰、易懂
 """
 
 DOC_TRANSLATE_EN_TEMPLATE = """
-Please translate the following API documentation from English to Chinese, maintaining the markdown format and only translating the text content:
+Please translate the following API documentation to English or Chinese, maintaining the markdown format and only translating the text content:
 
 {doc_content}
 
 Translation requirements:
-1. Maintain the original markdown format and structure
-2. Technical terms should be translated accurately
-3. Code examples and parameter names should remain unchanged
-4. Ensure the translated documentation is professional, clear, and easy to understand
+1. Intelligently identify the input document language (Chinese or English)
+2. If the input is Chinese, translate to English; if the input is English, translate to Chinese
+3. Maintain the original markdown format and structure
+4. Technical terms should be translated accurately
+5. Code examples and parameter names should remain unchanged
+6. Ensure the translated documentation is professional, clear, and easy to understand
 """
 
 doc_translate_language_prompt_template = {"zh-cn": DOC_TRANSLATE_ZH_TEMPLATE, "en": DOC_TRANSLATE_EN_TEMPLATE}
