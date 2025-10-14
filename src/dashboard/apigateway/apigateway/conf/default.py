@@ -947,6 +947,8 @@ ENV_VARS_FOR_FRONTEND = {
     "BK_USER_WEB_API_URL": BK_API_URL_TMPL.format(api_name="bk-user-web") + "/prod",
     # 登录地址，带 /login/
     "BK_LOGIN_URL": BK_LOGIN_URL,
+    # 微网关主站地址
+    "BK_APISIX_URL": env.str("BK_APISIX_URL", default=""),
     # 访问统计
     "BK_ANALYSIS_SCRIPT_SRC": env.str("BK_ANALYSIS_SCRIPT_SRC", default=""),
     "CREATE_CHAT_API": env.str("CREATE_CHAT_API", default=""),
