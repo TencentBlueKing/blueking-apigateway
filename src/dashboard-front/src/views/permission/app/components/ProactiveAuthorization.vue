@@ -161,6 +161,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Form, Input, Transfer } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import { t } from '@/locales';
 import { type IResource } from '@/types/permission';
@@ -212,10 +213,10 @@ const emits = defineEmits<Emits>();
 
 const route = useRoute();
 
-const authFormRef = ref<InstanceType<typeof BkForm> & FormMethod>();
-const appCodeRef = ref<InstanceType<typeof BkInput>>(null);
-const expireTypeRef = ref<InstanceType<typeof BkInput>>(null);
-const dimensionRef = ref<InstanceType<typeof BkTransfer>>(null);
+const authFormRef = ref<InstanceType<typeof Form> & FormMethod>();
+const appCodeRef = ref<InstanceType<typeof Input>>(null);
+const expireTypeRef = ref<InstanceType<typeof Input>>(null);
+const dimensionRef = ref<InstanceType<typeof Transfer>>(null);
 const transferIsAllEl = ref(null);
 const transferInputEl = ref(null);
 const clearIconEl = ref(null);

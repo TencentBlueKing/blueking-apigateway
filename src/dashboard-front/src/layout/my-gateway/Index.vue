@@ -41,7 +41,8 @@
               <div
                 v-bk-tooltips="{
                   content: t('可编程网关'),
-                  placement: 'right'
+                  placement: 'right',
+                  disabled: !gatewayStore.isProgrammableGateway
                 }"
                 class="gateway-selector-prefix"
               >
@@ -58,25 +59,38 @@
               :key="item.id"
               :name="item.name"
             >
-              <div class="gateway-select-option">
-                <span
-                  class="text-ov"
-                  :style="{ maxWidth: item.kind === 1 ? `180px` : `200px`}"
+              <div class="w-full flex items-center justify-between">
+                <div class="gateway-select-option">
+                  <span
+                    class="text-ov"
+                    :style="{ maxWidth: getOptionTextWidth(item) }"
+                  >
+                    {{ item.name }}
+                  </span>
+                  <BkPopover
+                    v-if="item.kind === 1"
+                    placement="right"
+                    :content="t('可编程网关')"
+                    :popover-delay="0"
+                  >
+                    <AgIcon
+                      name="square-program"
+                      size="16"
+                      class="ml-4px color-#3a84ff"
+                      :class="[
+                        {
+                          'mr-4px': !item.status
+                        }
+                      ]"
+                    />
+                  </BkPopover>
+                </div>
+                <BkTag
+                  v-if="!item.status
+                    || gatewayStore?.currentGateway?.status === 0 && gatewayId === item.id"
                 >
-                  {{ item.name }}
-                </span>
-                <BkPopover
-                  v-if="item.kind === 1"
-                  placement="right"
-                  :content="t('可编程网关')"
-                  :popover-delay="0"
-                >
-                  <AgIcon
-                    name="square-program"
-                    size="16"
-                    class="ml-4px color-#3a84ff"
-                  />
-                </BkPopover>
+                  {{ t('已停用') }}
+                </BkTag>
               </div>
             </BkOption>
           </BkSelect>
@@ -452,6 +466,23 @@ async function checkStageVersion() {
     version113UpdateNoticeRef.value?.show();
   }
 }
+// 根据网关不同状态展示文案最大宽度
+const getOptionTextWidth = (gateway) => {
+  // 如果当前网关既是编辑网关且已停用
+  if (gateway.kind === 1) {
+    if (!gateway.status) {
+      return '100px';
+    }
+    return '180px';
+  }
+
+  // 如果当前网关既已停用
+  if (!gateway.status) {
+    return '120px';
+  }
+
+  return '200px';
+};
 
 const handleCollapse = (collapsed: boolean) => {
   isMenuCollapsed.value = !collapsed;
