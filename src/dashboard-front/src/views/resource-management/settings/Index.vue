@@ -685,9 +685,6 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
             }}
             onClick={() => handleShowInfo(row.id)}
           >
-            <span>
-              {row.name}
-            </span>
             {row.has_updated
               ? (
                 <div
@@ -696,11 +693,25 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
                     placement: 'right',
                     delay: 300,
                   }}
-                  class="inline-block w-8px h-8px ml-4px cursor-pointer border-1px border-solid border-#ff9c01 rounded-1/2 bg-#fff3e1"
+                  class="inline-block w-8px h-8px mr-4px cursor-pointer border-1px border-solid border-#ff9c01 rounded-1/2 bg-#fff3e1"
                 >
                 </div>
               )
               : ''}
+            <span>
+              {row.name}
+            </span>
+            {
+              row.auth_config?.auth_verified_required === false && row.auth_config.app_verified_required === false
+                ? (
+                  <ag-icon
+                    v-bk-tooltips={{ content: t('该资源未配置认证方式，存在安全风险。') + t('请点击"编辑"按钮为资源配置适当的认证方式。') }}
+                    name="exclamation-circle-fill"
+                    class="ml-6px color-#F59500"
+                  />
+                )
+                : ''
+            }
           </div>
         </div>
       ),
@@ -734,15 +745,17 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     },
     {
       colKey: 'plugin_count',
-      title: t('插件数'),
-      width: 80,
+      title: () => <div class="w-full pr-14px text-align-left!">{t('插件数')}</div>,
+      width: 96,
+      align: 'right',
       cell: (h, { row }) => (
         <bk-button
           text
           theme="primary"
           onClick={() => handleShowInfo(row.id, 'pluginManage')}
         >
-          {row.plugin_count}
+          <span class="mr-8px">{row.plugin_count}</span>
+          <ag-icon name="cog" />
         </bk-button>
       ),
     },
