@@ -1,9 +1,10 @@
-ARG IMAGE=python
-ARG TAG=3.6.15-slim-buster
+ARG IMAGE=hub.bktencent.com/blueking/python
+ARG TAG=3.6.8-ts4
 FROM ${IMAGE}:${TAG}
 
-RUN apt-get update && apt-get install -y libssl-dev libffi-dev \
-    libc6-dev build-essential vim procps
+# already installed:  openssl-devel / libffi-devel / glibc-devel
+
+RUN dnf -y install vim procps-ng
 
 ADD build /app
 WORKDIR /app
