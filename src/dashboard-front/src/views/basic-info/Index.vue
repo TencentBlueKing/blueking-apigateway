@@ -781,6 +781,7 @@ const handleChangeApigwStatus = async () => {
       });
     }
     await getBasicInfo();
+    gatewayStore.setCurrentGateway(basicInfoData.value);
   }
   catch (e) {
     console.error(e);
