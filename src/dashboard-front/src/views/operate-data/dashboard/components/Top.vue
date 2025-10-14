@@ -39,7 +39,7 @@
           <template #trigger="{ selected }">
             <div class="refresh-time-trigger">
               <div class="label">
-                <AgIcon name="miniapi" />
+                <AgIcon name="xuanzejingdu" />
               </div>
               <div class="value">
                 <span

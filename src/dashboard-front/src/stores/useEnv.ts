@@ -31,6 +31,7 @@ export const useEnv = defineStore('useEnv', {
       BK_DEFAULT_TEST_APP_CODE: '',
       BK_PAAS_APP_REPO_URL_TMPL: '',
       EDITION: '',
+      BK_APISIX_URL: '',
       BK_APIGATEWAY_VERSION: '',
       BK_DOCS_URL_PREFIX: '',
       BK_USER_WEB_API_URL: '',

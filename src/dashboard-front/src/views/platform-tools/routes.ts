@@ -50,6 +50,16 @@ const routes: RouteRecordRaw[] = [
       topMenu: 'PlatformTools',
     },
   },
+  {
+    path: 'micro-gateway',
+    name: 'PlatformToolsMicroGateway',
+    component: () => import('@/views/platform-tools/micro-gateway/Index.vue'),
+    meta: {
+      title: t('蓝鲸微网关'),
+      matchRoute: 'PlatformToolsMicroGateway',
+      topMenu: 'PlatformTools',
+    },
+  },
 ];
 
 export default function getPlatformToolsRoutes() {
