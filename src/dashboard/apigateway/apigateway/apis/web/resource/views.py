@@ -124,6 +124,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
                     gateway_id=request.gateway.id, resource_ids=resource_ids
                 ),
                 "latest_version_created_time": ResourceVersionHandler.get_latest_created_time(request.gateway.id),
+                "auth_configs": ResourceAuthContext().get_resource_id_to_auth_config(resource_ids),
             },
         )
         return self.get_paginated_response(slz.data)

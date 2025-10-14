@@ -85,6 +85,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
     backend = serializers.SerializerMethodField(help_text="后端服务")
     has_updated = serializers.SerializerMethodField(help_text="相对上次发布，是否有更新，true：有更新，false：无更新")
     plugin_count = serializers.SerializerMethodField(help_text="插件数量")
+    auth_config = serializers.SerializerMethodField(help_text="认证配置")
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.ResourceListOutputSLZ"
@@ -102,6 +103,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
             "docs",
             "has_updated",
             "plugin_count",
+            "auth_config",
         ]
         read_only_fields = fields
 
@@ -150,6 +152,9 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
 
     def get_plugin_count(self, obj):
         return self.context["plugin_counts"].get(obj.id, 0)
+
+    def get_auth_config(self, obj):
+        return self.context["auth_configs"][obj.id]
 
 
 class ResourceAuthConfigSLZ(serializers.Serializer):
