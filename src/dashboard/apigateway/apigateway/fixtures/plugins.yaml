@@ -2967,7 +2967,7 @@
     language: ''
     type:
     - bk-request-body-limit
-    notes: 限制请求体大小（以字节为单位）。
+    notes: 限制请求体大小，最大值 33554432（32 M）。
     example: '作用：限制请求体大小为 100 B\n\n max_body_size: 100'
     style: dynamic
     default_value: ''
@@ -2994,7 +2994,7 @@
     language: en
     type:
     - bk-request-body-limit
-    notes: Limit the request body size in bytes.
+    notes: Limit the size of the request body, with a maximum of 33554432 (32 M).
     example: 'Purpose: Limit the request body size to 100 B.\n\n max_body_size: 100'
     style: dynamic
     default_value: ''
@@ -3077,7 +3077,7 @@
     language: ''
     type:
     - bk-user-restriction
-    notes: 通过将用户列入白名单或黑名单来限制对资源的访问。
+    notes: 通过将用户列入白名单或黑名单来限制对资源的访问，注意：对应资源认证方式需要配置开启用户认证。
     example: '作用：仅允许用户 admin 请求当前接口\n\n类型：白名单\n白名单： ["admin"]'
     style: dynamic
     default_value: ''
@@ -3172,7 +3172,8 @@
     language: en
     type:
     - bk-user-restriction
-    notes: This plugin allows you to restrict access to a Resource by either whitelisting or blacklisting users.
+    notes: |-
+      Restrict access to resources by whitelisting or blacklisting users. Note: The corresponding resource authentication method needs to be configured to enable user authentication.
     example: 'Purpose: Only User admin are allowed to request the current interface\n\nType: whitelist\nwhitelist: ["admin"]'
     style: dynamic
     default_value: ''
@@ -3266,7 +3267,7 @@
 - model: plugin.plugintype
   fields:
     code: bk-legacy-invalid-params
-    name: 旧的无效参数
+    name: 旧的无效参数兼容
     name_en: Legacy invalid params
     is_public: false
     scope: stage
@@ -3372,7 +3373,7 @@
             },
             "cache_ttl": {
               "type": "integer",
-              "description": "缓存时间，单位：秒。",
+              "description": "缓存时间，最大值 3600 秒。",
               "default": 300,
               "minimum": 1,
               "maximum": 3600

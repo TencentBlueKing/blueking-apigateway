@@ -297,7 +297,7 @@ class BKRequestBodyLimitChecker(BaseChecker):
 
         max_body_size = loaded_data.get("max_body_size")
         if not (1 <= int(max_body_size) <= self.MAX_BODY_SIZE):
-            raise ValueError("max_body_size must be between 1 byte and 32MB.")
+            raise ValueError("max_body_size must be between 1 byte and 33554432 bytes.")
 
 
 class BKUserRestrictionChecker(BaseChecker):
@@ -308,6 +308,8 @@ class BKUserRestrictionChecker(BaseChecker):
 
         whitelist = loaded_data.get("whitelist", [])
         blacklist = loaded_data.get("blacklist", [])
+        if not (whitelist or blacklist):
+            raise ValueError("whitelist and blacklist can not be empty at the same time")
 
         if whitelist:
             whitelist_keys = [item["key"] for item in whitelist]
@@ -320,9 +322,6 @@ class BKUserRestrictionChecker(BaseChecker):
             blacklist_duplicate_keys = [key for key, count in Counter(blacklist_keys).items() if count >= 2]
             if blacklist_duplicate_keys:
                 raise ValueError(_("blacklist has duplicate elements：{}").format(", ".join(blacklist_duplicate_keys)))
-
-        if not (whitelist or blacklist):
-            raise ValueError("whitelist and blacklist can not be empty at the same time")
 
 
 class ProxyCacheChecker(BaseChecker):
