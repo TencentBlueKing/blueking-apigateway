@@ -705,7 +705,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
               row.auth_config?.auth_verified_required === false && row.auth_config.app_verified_required === false
                 ? (
                   <ag-icon
-                    v-bk-tooltips={{ content: t('该资源未配置认证方式，存在安全风险。') + t('请点击"编辑"按钮为资源配置适当的认证方式。') }}
+                    v-bk-tooltips={{ content: t('该资源未配置认证方式，存在安全风险。') + t('请点击"编辑"按钮为资源配置适当的认证方式。') + t('如当前配置符合预期，可忽略该提示。') }}
                     name="exclamation-circle-fill"
                     class="ml-6px color-#F59500"
                   />
@@ -745,16 +745,14 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     },
     {
       colKey: 'plugin_count',
-      title: () => <div class="w-full pr-14px text-align-left!">{t('插件数')}</div>,
-      width: 96,
-      align: 'right',
+      title: t('插件数'),
       cell: (h, { row }) => (
         <bk-button
           text
           theme="primary"
           onClick={() => handleShowInfo(row.id, 'pluginManage')}
         >
-          <span class="mr-8px">{row.plugin_count}</span>
+          <span class="mr-4px">{row.plugin_count}</span>
           <ag-icon name="cog" />
         </bk-button>
       ),
