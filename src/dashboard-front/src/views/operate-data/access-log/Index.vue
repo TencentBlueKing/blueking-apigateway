@@ -1000,13 +1000,12 @@ const handleDownload = async (event: Event) => {
     params.offset = (pagination.value.current - 1) * pagination.value.limit;
     params.limit = 10000;
 
-    const res = await exportLogs(apigwId.value, params, path);
-    if (res.success) {
-      Message({
-        message: t('导出成功'),
-        theme: 'success',
-      });
-    }
+    await exportLogs(apigwId.value, params, path);
+
+    Message({
+      message: t('导出成功'),
+      theme: 'success',
+    });
   }
   catch (err) {
     const error = err as Error;
