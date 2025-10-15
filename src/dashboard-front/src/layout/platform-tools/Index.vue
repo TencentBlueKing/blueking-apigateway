@@ -116,7 +116,7 @@ const platformToolsMenu: IMenu[] = [
   {
     name: 'PlatformToolsMicroGateway',
     title: t('蓝鲸微网关'),
-    icon: 'square-program',
+    icon: 'apigateway-logo',
     enabled: envStore.env.EDITION === 'te',
   },
 ];
