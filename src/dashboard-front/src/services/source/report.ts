@@ -17,7 +17,6 @@
  */
 
 import http from '../http';
-import { blobDownLoad } from '@/utils';
 
 const path = '/gateways';
 
@@ -55,10 +54,7 @@ export interface IChartDataLoading {
  * @param apigwId 网关id
  * @param data 导出参数
  */
-export const exportLogs = async (apigwId: number, data: any, extraStr?: string) => {
-  const res = await http.get(`${path}/${apigwId}/logs/export/?${extraStr}`, data, { responseType: 'blob' });
-  return blobDownLoad(res);
-};
+export const exportLogs = (apigwId: number, data: any, extraStr?: string) => http.get(`${path}/${apigwId}/logs/export/?${extraStr}`, data, { responseType: 'blob' });
 
 /**
  *  查询请求总量/失败总量接口
@@ -71,10 +67,7 @@ export const getReportSummary = (apigwId: number, params: any) => http.get(`${pa
  * @param apigwId 网关id
  * @param data 导出参数
  */
-export const exportReportSummary = async (apigwId: number, data: any) => {
-  const res = await http.get(`${path}/${apigwId}/metrics/query-summary/export/`, data, { responseType: 'blob' });
-  return blobDownLoad(res);
-};
+export const exportReportSummary = (apigwId: number, data: any) => http.get(`${path}/${apigwId}/metrics/query-summary/export/`, data, { responseType: 'blob' });
 
 /**
  *  查询调用方接口
