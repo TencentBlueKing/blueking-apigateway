@@ -22,7 +22,7 @@
       <div class="header-icon-wrapper">
         <AgIcon
           class="icon"
-          name="square-program"
+          name="apigateway-logo"
           size="64"
         />
       </div>

@@ -572,3 +572,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-plugin-bk-access-token-source:before {
 	content: "\e1d2";
 }
+.icon-ag-xuanzejingdu:before {
+	content: "\e1d3";
+}
+.icon-ag-apigateway-logo:before {
+	content: "\e1d5";
+}
