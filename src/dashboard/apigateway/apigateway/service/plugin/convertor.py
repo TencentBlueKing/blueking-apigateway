@@ -226,7 +226,7 @@ class ProxyCacheConvertor(PluginConvertor):
 
         # 填充不允许配置参数的默认值
         config["cache_http_status"] = [200]
-        config["no_cache "] = ["$arg_no_cache", "$http_no_cache"]
+        config["no_cache"] = ["$arg_no_cache", "$http_no_cache"]
         return config
 
 
