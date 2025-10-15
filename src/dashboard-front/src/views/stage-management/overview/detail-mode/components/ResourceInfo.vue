@@ -172,7 +172,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
           hasNoVerification(row)
             ? (
               <ag-icon
-                v-bk-tooltips={{ content: t('该资源未配置认证方式，存在安全风险。') }}
+                v-bk-tooltips={{ content: t('该资源未配置认证方式，存在安全风险。') + t('如当前配置符合预期，可忽略该提示。') }}
                 name="exclamation-circle-fill"
                 class="ml-6px color-#F59500"
               />

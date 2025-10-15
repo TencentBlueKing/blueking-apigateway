@@ -1999,6 +1999,7 @@
   "已审批": "Finished",
   "该资源未配置认证方式，存在安全风险。": "This resource has not configured any verification method.",
   "请点击\"编辑\"按钮为资源配置适当的认证方式。": "Click 'Edit' to configure.",
+  "如当前配置符合预期，可忽略该提示。": "Ignore when this is expected",
   "启用 Websocket": "Enable Websocket",
   "已开启": "Enabled"
 }
