@@ -288,14 +288,16 @@ class BkAccessTokenSourceChecker(BaseChecker):
 
 
 class BKRequestBodyLimitChecker(BaseChecker):
+    MAX_BODY_SIZE = 32 * 1024 * 1024  # 32MB
+
     def check(self, payload: str):
         loaded_data = yaml_loads(payload)
         if not loaded_data:
             raise ValueError("YAML cannot be empty")
 
         max_body_size = loaded_data.get("max_body_size")
-        if not (1 <= int(max_body_size) <= 32 * 1024 * 1024):
-            raise ValueError("max_body_size must be between 1 bytes and 33554432 bytes.")
+        if not (1 <= int(max_body_size) <= self.MAX_BODY_SIZE):
+            raise ValueError("max_body_size must be between 1 byte and 32MB.")
 
 
 class BKUserRestrictionChecker(BaseChecker):

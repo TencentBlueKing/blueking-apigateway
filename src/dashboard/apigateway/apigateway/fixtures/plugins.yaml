@@ -3374,8 +3374,8 @@
               "type": "integer",
               "description": "缓存时间，单位：秒。",
               "default": 300,
-              "minimum": 200,
-              "maximum": 599
+              "minimum": 1,
+              "maximum": 3600
             }
           }
         },
@@ -3388,8 +3388,8 @@
     language: en
     type:
     - proxy-cache
-    notes:
-      -| Provides the ability to cache back-end response data. Only get and head requests are supported, and resources with status code of 200 take effect.
+    notes: |-
+      Provides the ability to cache back-end response data. Only get and head requests are supported, and resources with status code of 200 take effect.
     example: 'Purpose: The response data of GET request can be cached for 300 seconds.\n\n cache_method: ["GET"] \n cache_ttl: 300'
     style: dynamic
     default_value: ''
@@ -3429,8 +3429,8 @@
               "type": "integer",
               "description": "Cache time, in seconds.",
               "default": 300,
-              "minimum": 200,
-              "maximum": 599
+              "minimum": 1,
+              "maximum": 3600
             }
           }
         },
