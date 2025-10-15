@@ -72,3 +72,9 @@ class UpstreamSchemeEnum(StrEnum):
     HTTPS = "https"
     GRPC = "grpc"
     GRPCS = "grpcs"
+
+
+class SSLTypeEnum(StrEnum):
+    CLIENT = "client"
+    # NOTE: NOT SUPPORT SERVER HERE
+    # SERVER = "server"

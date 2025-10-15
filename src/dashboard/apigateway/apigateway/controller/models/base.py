@@ -24,6 +24,7 @@ from .constants import (
     CheckActiveTypeEnum,
     CheckPassiveTypeEnum,
     HttpMethodEnum,
+    SSLTypeEnum,
     UpstreamHashOnEnum,
     UpstreamPassHostEnum,
     UpstreamSchemeEnum,
@@ -130,6 +131,14 @@ class Check(ApisixModel):
             raise ValueError("either active or passive must be set")
 
 
+class Tls(ApisixModel):
+    cert: Optional[str] = Field(description="cert")
+    key: Optional[str] = Field(description="key")
+    client_cert_id: Optional[str] = Field(description="client cert id")
+
+    # TODO: cert+key or client_cert_id only one is allowed
+
+
 # ------------------------------------------------------------
 # base models
 
@@ -154,6 +163,11 @@ class Upstream(ApisixModel):
 
     # NOTE: here we set to `node`; should always be `node`
     pass_host: UpstreamPassHostEnum = Field(default=UpstreamPassHostEnum.NODE.value, description="pass host")
+    # NOTE: no upstream_host, This is only valid if the pass_host is set to rewrite
+
+    # for proxy to https/grpcs upstream
+    # TODO:
+    tls: Optional[Tls] = Field(description="tls")
 
 
 class Service(ApisixModel):
@@ -194,8 +208,23 @@ class Route(ApisixModel):
     # NOTE: NO status here
 
 
+class SSLClient(ApisixModel):
+    ca: Optional[str] = Field(description="ca")
+    depth: Optional[int] = Field(description="depth")
+    skip_mtls_uri_regex: Optional[List[str]] = Field(description="skip mtls uri regex")
+
+
 class SSL(ApisixModel):
-    pass
+    id: str = Field(description="id")
+    desc: Optional[str] = Field(description="desc")
+    labels: Labels = Field(description="labels")
+    type: str = Field(default=SSLTypeEnum.CLIENT.value, description="type")
+
+    # TODO: support client.ca
+
+    cert: str = Field(description="cert")
+    key: str = Field(description="key")
+    client: Optional[SSLClient] = Field(description="client")
 
 
 class Proto(ApisixModel):
