@@ -301,6 +301,12 @@ class BKRequestBodyLimitChecker(BaseChecker):
 
 
 class BKUserRestrictionChecker(BaseChecker):
+    def _check_user_list(self, user_list: list, name: str):
+        user_keys = [item["key"] for item in user_list]
+        user_duplicate_keys = [key for key, count in Counter(user_keys).items() if count >= 2]
+        if user_duplicate_keys:
+            raise ValueError(_("{} has duplicate elements：{}").format(name, ", ".join(user_duplicate_keys)))
+
     def check(self, payload: str):
         loaded_data = yaml_loads(payload)
         if not loaded_data:
@@ -312,16 +318,10 @@ class BKUserRestrictionChecker(BaseChecker):
             raise ValueError("whitelist and blacklist can not be empty at the same time")
 
         if whitelist:
-            whitelist_keys = [item["key"] for item in whitelist]
-            whitelist_duplicate_keys = [key for key, count in Counter(whitelist_keys).items() if count >= 2]
-            if whitelist_duplicate_keys:
-                raise ValueError(_("whitelist has duplicate elements：{}").format(", ".join(whitelist_duplicate_keys)))
+            self._check_user_list(whitelist, "whitelist")
 
         if blacklist:
-            blacklist_keys = [item["key"] for item in blacklist]
-            blacklist_duplicate_keys = [key for key, count in Counter(blacklist_keys).items() if count >= 2]
-            if blacklist_duplicate_keys:
-                raise ValueError(_("blacklist has duplicate elements：{}").format(", ".join(blacklist_duplicate_keys)))
+            self._check_user_list(blacklist, "blacklist")
 
 
 class ProxyCacheChecker(BaseChecker):
