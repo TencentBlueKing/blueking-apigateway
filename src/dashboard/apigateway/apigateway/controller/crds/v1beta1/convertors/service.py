@@ -114,7 +114,7 @@ class ServiceConvertor(BaseConvertor):
             services.append(
                 BkGatewayService(
                     metadata=self._common_metadata(
-                        f"s-{stage_id}-b-{backend_id}",
+                        f"{stage_id}-{backend_id}",
                         labels={
                             "service-type": "stage-backend",
                             "backend-id": str(backend_id),
@@ -122,7 +122,7 @@ class ServiceConvertor(BaseConvertor):
                     ),
                     spec=BkGatewayServiceSpec(
                         name=f"_stage_service_{stage_name}_{backend_id}",
-                        id=f"stage-{stage_id}-backend-{backend_id}",
+                        id=f"{stage_id}-{backend_id}",
                         description=description,
                         upstream=upstream,
                         plugins=plugins,
