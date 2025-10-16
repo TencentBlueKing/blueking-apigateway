@@ -15,12 +15,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.controller.crds.v1beta1.convertor import CustomResourceConvertor
+from apigateway.controller.transformer import GatewayApisixResourceConvertor
 
 
 class TestCustomResourceConvertor:
     def test_fixture(self, edge_custom_release_convertor):
-        assert isinstance(edge_custom_release_convertor, CustomResourceConvertor)
+        assert isinstance(edge_custom_release_convertor, GatewayApisixResourceConvertor)
 
     def test_convert(self, edge_custom_release_convertor):
         edge_custom_release_convertor.convert()

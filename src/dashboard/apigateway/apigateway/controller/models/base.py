@@ -38,32 +38,12 @@ from .constants import (
 # 2. for route, don't set the desc field, save memory
 
 
-class BaseApisixModel(BaseModel):
-    kind: ClassVar[str]
-
-    model_config = ConfigDict(strict=True, validate_by_name=True, validate_by_alias=True)
-
-
-class ApisixModel(BaseApisixModel):
-    # labels: Dict[str, str] = Field(default_factory=dict, description="标签")
-    # def add_labels(self, labels: Dict[str, str]):
-    #     """添加标签"""
-    #     self.labels.update({f"{self.label_prefix}{l}": v for l, v in labels.items()})
-
-    # def set_label(self, label: str, value: str):
-    #     """设置标签"""
-    #     self.labels[f"{self.label_prefix}{label}"] = value
-
-    # def get_label(self, label: str, default=""):
-    #     """获取标签"""
-
-    #     return self.labels.get(f"{self.label_prefix}{label}", default)
-
-    kind: ClassVar[str]
-
-
 # ------------------------------------------------------------
 # been referenced models, use BaseApisixModel
+
+
+class BaseApisixModel(BaseModel):
+    model_config = ConfigDict(strict=True, validate_by_name=True, validate_by_alias=True)
 
 
 class Labels(BaseApisixModel):
@@ -207,29 +187,53 @@ class SSLClient(BaseApisixModel):
 # base models, use ApisixModel
 
 
-class Service(ApisixModel):
+class ApisixModel(BaseModel):
+    model_config = ConfigDict(strict=True, validate_by_name=True, validate_by_alias=True)
+    # labels: Dict[str, str] = Field(default_factory=dict, description="标签")
+    # def add_labels(self, labels: Dict[str, str]):
+    #     """添加标签"""
+    #     self.labels.update({f"{self.label_prefix}{l}": v for l, v in labels.items()})
+
+    # def set_label(self, label: str, value: str):
+    #     """设置标签"""
+    #     self.labels[f"{self.label_prefix}{label}"] = value
+
+    # def get_label(self, label: str, default=""):
+    #     """获取标签"""
+
+    #     return self.labels.get(f"{self.label_prefix}{label}", default)
+
+    kind: ClassVar[str]
+
+    # NOTE: it has a id, which is string
+    id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="id")
+
+
+# ------------------------------------------------------------
+## global models, not belong to a gateway/stage
+
+
+class GatewayApisixModel(ApisixModel):
+    desc: Optional[str] = Field(default=None, max_length=256, description="desc")
+
+    # NOTE: we required the labels here, bind to the gateway/stage
+    labels: Labels = Field(description="labels")
+
+
+class Service(GatewayApisixModel):
     kind = "service"
 
-    id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="id")
     name: str = Field(min_length=1, max_length=100, description="name")
-    desc: Optional[str] = Field(default=None, max_length=256, description="desc")
-    # NOTE: we required the labels here
-    labels: Labels = Field(description="labels")
 
     plugins: List[Plugin] = Field(default_factory=list, description="plugins")
     upstream: BaseUpstream = Field(description="upstream")
 
 
-class Route(ApisixModel):
+class Route(GatewayApisixModel):
     kind = "route"
     # NOTE: not all fields are defined here, only the fields we need
 
-    id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="id")
     name: str = Field(min_length=1, max_length=100, description="name")
-    # NOTE: not desc for route, save memory
-    desc: Optional[str] = Field(default=None, description="desc")
-    # NOTE: we required the labels here
-    labels: Labels = Field(description="labels")
 
     # NOTE: use uris, not uri here, for compatibility
     uris: List[str] = Field(default_factory=list, description="uris")
@@ -246,12 +250,9 @@ class Route(ApisixModel):
     # NOTE: NO status here
 
 
-class SSL(ApisixModel):
+class SSL(GatewayApisixModel):
     kind = "ssl"
 
-    id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="id")
-    desc: Optional[str] = Field(default=None, max_length=256, description="desc")
-    labels: Labels = Field(description="labels")
     type: str = Field(default=SSLTypeEnum.CLIENT.value, description="type")
 
     cert: str = Field(min_length=128, max_length=64 * 1024, description="cert")
@@ -259,18 +260,20 @@ class SSL(ApisixModel):
     client: Optional[SSLClient] = Field(default=None, description="client")
 
 
-class Proto(ApisixModel):
+class Proto(GatewayApisixModel):
     kind = "proto"
 
-    id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="id")
     proto: str = Field(description="proto")
     name: Optional[str] = Field(default=None, min_length=1, max_length=100, description="name")
-    desc: Optional[str] = Field(default=None, max_length=256, description="desc")
-    labels: Optional[Labels] = Field(default=None, description="labels")
 
 
-class PluginMetadata(ApisixModel):
+# ------------------------------------------------------------
+## global models, not belong to any gateway/stage
+class GlobalApisixModel(ApisixModel):
+    pass
+
+
+class PluginMetadata(GlobalApisixModel):
     kind = "plugin_metadata"
 
-    id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="id")
     config: Dict[str, Any] = Field(default_factory=dict, description="config")

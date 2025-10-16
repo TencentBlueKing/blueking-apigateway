@@ -19,11 +19,11 @@ import logging
 from typing import Optional, Tuple
 
 from apigateway.controller.constants import DELETE_PUBLISH_ID
-from apigateway.controller.crds.v1beta1.convertor import CustomResourceConvertor
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.key_prefix import KeyPrefixHandler
 from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
 from apigateway.controller.registry.etcd import EtcdRegistry
+from apigateway.controller.transformer import GatewayApisixResourceConvertor
 from apigateway.core.models import Gateway, MicroGateway, Release, Stage
 
 logger = logging.getLogger(__name__)
@@ -55,12 +55,9 @@ class EtcdDistributor(BaseDistributor):
         publish_id: Optional[int] = None,
     ) -> Tuple[bool, str]:
         """将 release 发布到 micro-gateway 对应的 registry 中"""
-        convertor = CustomResourceConvertor(
+        convertor = GatewayApisixResourceConvertor(
             release=release,
             publish_id=publish_id,
-            micro_gateway=micro_gateway,
-            include_config=self.include_gateway_global_config,
-            include_plugin_metadata=self.include_gateway_global_config,
         )
         registry = self._get_registry(release.gateway, release.stage, micro_gateway)
         procedure_logger = ReleaseProcedureLogger(
@@ -78,7 +75,7 @@ class EtcdDistributor(BaseDistributor):
             with procedure_logger.step("convert to kubernetes resources"):
                 convertor.convert()
 
-            resources = list(convertor.get_kubernetes_resources())
+            resources = list(convertor.get_apisix_resources())
 
             # step 2: 将 kubernetes 资源同步到 etcd
             with procedure_logger.step(f"sync resources(count={len(resources)}) to etcd"):
@@ -122,10 +119,9 @@ class EtcdDistributor(BaseDistributor):
             publish_id=publish_id,
         )
 
-        convertor = CustomResourceConvertor(
+        convertor = GatewayApisixResourceConvertor(
             release=release,
             publish_id=publish_id,
-            micro_gateway=micro_gateway,
             revoke_flag=True,
         )
 
@@ -135,7 +131,7 @@ class EtcdDistributor(BaseDistributor):
 
                 # 删除资源后需要同步虚拟路由到 etcd
                 convertor.convert()
-                resources = list(convertor.get_kubernetes_resources())
+                resources = list(convertor.get_apisix_resources())
                 with procedure_logger.step(f"sync version resources(count={len(resources)}) to etcd"):
                     fail_resources = registry.sync_resources_by_key_prefix(resources)
                     if fail_resources:

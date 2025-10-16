@@ -24,8 +24,6 @@ from pytest import fixture
 
 from apigateway.apps.plugin.models import PluginConfig, PluginType
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.controller.crds.base import KubernetesResource
-from apigateway.controller.crds.v1beta1.convertor import CustomResourceConvertor
 from apigateway.controller.crds.v1beta1.convertors.base import BaseConvertor
 from apigateway.controller.crds.v1beta1.convertors.gateway_config import GatewayConfigConvertor
 from apigateway.controller.crds.v1beta1.convertors.plugin_metadata import PluginMetadataConvertor
@@ -33,6 +31,7 @@ from apigateway.controller.crds.v1beta1.convertors.resource import HttpResourceC
 from apigateway.controller.crds.v1beta1.convertors.service import ServiceConvertor
 from apigateway.controller.crds.v1beta1.convertors.stage import StageConvertor
 from apigateway.controller.release_data import ReleaseData
+from apigateway.controller.transformer import GatewayApisixResourceConvertor
 from apigateway.core.constants import ResourceVersionSchemaEnum, StageStatusEnum
 from apigateway.core.models import MicroGateway, Release, ResourceVersion
 from apigateway.service.gateway_jwt import GatewayJWTHandler
@@ -195,7 +194,7 @@ def fake_plugin_metadata_convertor(fake_release_data, micro_gateway):
 
 @fixture
 def edge_custom_release_convertor(edge_release, micro_gateway):
-    return CustomResourceConvertor(release=edge_release, micro_gateway=micro_gateway)
+    return GatewayApisixResourceConvertor(release=edge_release, micro_gateway=micro_gateway)
 
 
 @fixture
@@ -203,7 +202,7 @@ def fake_http_resource_convertor(fake_release_data, micro_gateway, fake_service_
     return HttpResourceConvertor(fake_release_data, micro_gateway, fake_service_convertor.convert())
 
 
-class TestingCustomResource(KubernetesResource):
+class TestingCustomResource(ApisixModel):
     kind: ClassVar[str] = "TestingCustomResource"
     value: str
 

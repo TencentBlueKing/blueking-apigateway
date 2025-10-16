@@ -21,7 +21,7 @@ from typing import ClassVar, Dict, Iterable, List, Optional, Type
 import etcd3
 from django.utils.encoding import force_str
 
-from apigateway.controller.crds.base import KubernetesResource
+from apigateway.controller.models.base import ApisixModel
 from apigateway.controller.registry.base import Registry
 from apigateway.utils.etcd import get_etcd_client
 from apigateway.utils.yaml import yaml_dumps, yaml_loads
@@ -42,18 +42,18 @@ class EtcdRegistry(Registry):
         self.safe_mode = safe_mode
         self._etcd_client = etcd_client or get_etcd_client()
 
-    def apply_resource(self, resource: KubernetesResource) -> bool:
+    def apply_resource(self, resource: ApisixModel) -> bool:
         payload = yaml_dumps(resource.dict(by_alias=True))
-        self._etcd_client.put(self._get_key(resource.kind, resource.metadata.name), payload)
+        self._etcd_client.put(self._get_key(resource.kind, resource.id), payload)
         return True
 
-    def sync_resources_by_key_prefix(self, resources: List[KubernetesResource]) -> List[KubernetesResource]:
+    def sync_resources_by_key_prefix(self, resources: List[ApisixModel]) -> List[ApisixModel]:
         """按 key_prefix 同步资源，若 key_prefix 下的资源不在待同步资源列表中，将被删除；返回同步失败的资源列表"""
         sync_fail_resources = []
         remaining_keys = self._get_exist_keys_by_key_prefix()
 
         for resource in resources:
-            key = self._get_key(resource.kind, resource.metadata.name)
+            key = self._get_key(resource.kind, resource.id)
             remaining_keys.pop(key, None)
             if not self.apply_resource(resource):
                 sync_fail_resources.append(resource)
@@ -80,13 +80,13 @@ class EtcdRegistry(Registry):
         """删除 key_prefix 下的所有资源"""
         self._etcd_client.delete_prefix(self.key_prefix)
 
-    def iter_by_type(self, resource_type: Type[KubernetesResource]) -> Iterable[KubernetesResource]:
+    def iter_by_type(self, resource_type: Type[ApisixModel]) -> Iterable[ApisixModel]:
         for payload, _ in self._etcd_client.get_prefix(self._get_kind_key_prefix(resource_type.kind)):
             cr = self._deserialize_cr(resource_type, payload)
             if cr:
                 yield cr
 
-    def _deserialize_cr(self, resource_type: Type[KubernetesResource], payload: str) -> Optional[KubernetesResource]:
+    def _deserialize_cr(self, resource_type: Type[ApisixModel], payload: str) -> Optional[ApisixModel]:
         try:
             value = yaml_loads(payload)
             return resource_type(**value)
