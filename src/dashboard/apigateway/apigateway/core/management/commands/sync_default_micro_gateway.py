@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
+import re
 import uuid
 from typing import Optional
 
@@ -34,9 +35,12 @@ from apigateway.utils.string import generate_unique_id
 logger = logging.getLogger(__name__)
 
 
+MICRO_GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,19}$")
+
+
 class ArgumentSLZ(serializers.Serializer):
     stage_name = serializers.RegexField(constants.STAGE_NAME_PATTERN, required=True)
-    micro_gateway_name = serializers.RegexField(constants.MICRO_GATEWAY_NAME_PATTERN, required=True)
+    micro_gateway_name = serializers.RegexField(MICRO_GATEWAY_NAME_PATTERN, required=True)
     micro_gateway_id = serializers.UUIDField(required=False)
 
 
@@ -73,6 +77,7 @@ class Command(BaseCommand):
                 "is_managed": False,  # 默认共享实例是整体一起部署的，所以肯定不是 dashboard 管理的
                 "name": micro_gateway_name,
                 "status": constants.MicroGatewayStatusEnum.UPDATED.value,
+                # FIXME: remove get_micro_gateway_schema and micro_gateway schema
                 "schema": SchemaFactory().get_micro_gateway_schema(),
                 "gateway": gateway,
             },

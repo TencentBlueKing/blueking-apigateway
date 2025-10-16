@@ -31,7 +31,7 @@ from apigateway.core.constants import (
     ReleaseHistoryStatusEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import MicroGateway, PublishEvent, Release, ReleaseHistory
+from apigateway.core.models import PublishEvent, Release, ReleaseHistory
 from apigateway.service.event.event import PublishEventReporter
 from apigateway.utils.time import now_datetime
 
@@ -54,8 +54,6 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
     PublishEventReporter.report_create_publish_task_success(release_history)
     logger.info("rolling_update_release[gateway_id=%d] begin", gateway_id)
 
-    shared_gateway = MicroGateway.objects.get_default_shared_gateway()
-    # include_gateway_global_config = release.gateway_id == shared_gateway.gateway_id
     distributor = EtcdDistributor()
 
     release_task_id = str(uuid.uuid4())
@@ -104,8 +102,6 @@ def revoke_release(release_id: int, publish_id: int):
     """删除环境的已发布的资源"""
 
     release = Release.objects.get(id=release_id)
-
-    shared_gateway = MicroGateway.objects.get_default_shared_gateway()
 
     distributor = EtcdDistributor()
     if publish_id == DELETE_PUBLISH_ID:

@@ -27,6 +27,7 @@ class ResourceURLHandler:
         gateway = Gateway.objects.get(name=gateway_name)
         # 微网关
         stage = Stage.objects.get(gateway=gateway, name=stage_name)
+        # FIXME: remove micro_gateway
         micro_gateway: MicroGateway = stage.micro_gateway
         if micro_gateway:
             http_info = MicroGatewayHTTPInfo.from_micro_gateway_config(micro_gateway.config)
