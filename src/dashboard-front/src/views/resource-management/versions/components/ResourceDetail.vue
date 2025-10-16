@@ -450,7 +450,7 @@ import ResponseParams from '../../components/response-params/Index.vue';
 import { locale } from '@/locales';
 
 interface IProps {
-  id: number
+  id: number | undefined
   isShow: boolean
 }
 

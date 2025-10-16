@@ -219,18 +219,18 @@
             <div class="flex-1 table-wrapper">
               <AgTable
                 ref="tableRef"
-                v-model:selected-row-keys="selectedRowKeys"
                 v-model:table-data="tableData"
                 :api-method="getTableData"
                 :columns="columns"
-                row-key="id"
-                :filter-row="null"
-                hover
+                :show-selection="isShowSelection"
+                :table-row-key="'id'"
+                show-settings
                 resizable
                 @filter-change="handleFilterChange"
-                @select-change="handleSelectChange"
                 @sort-change="handleSortChange"
-                @clear-queries="handleClearQueries"
+                @selection-change="handleSelectionChange"
+                @clear-filter="handleClearQueries"
+                @clear-selection="handleClearSelection"
               />
             </div>
           </div>
@@ -457,7 +457,6 @@ const tableRef = useTemplateRef('tableRef');
 const tableQueries = ref<Record<string, any>>({});
 const selectedRowKeys = ref<number[]>([]);
 const selectedRows = ref<any[]>([]);
-
 // 导入下拉
 const importDropData = ref([{
   value: 'config',
@@ -632,6 +631,10 @@ const deleteTableColumns = [
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 
+const isShowSelection = computed(() => {
+  return showBatch.value;
+});
+
 const customMethodsList = computed(() => {
   const methods = HTTP_METHODS.map(item => ({
     label: item.name,
@@ -664,6 +667,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
       colKey: 'name',
       title: t('资源名称'),
       minWidth: 170,
+      fixed: 'left',
       // ellipsis: {
       //   props: { placement: 'right' },
       //   content: (h, { row }) => row.name,
@@ -885,14 +889,6 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
       ),
     },
   ];
-  if (showBatch.value) {
-    cols.unshift({
-      colKey: 'row-select',
-      type: 'multiple',
-      width: 80,
-      fixed: 'left',
-    });
-  }
   return cols;
 });
 
@@ -1425,6 +1421,11 @@ onBeforeRouteLeave((to) => {
 
 const getTableData = async (params: Record<string, any> = {}) => getResourceList(gatewayId, params);
 
+const handleClearSelection = () => {
+  selectedRows.value = [];
+  selectedRowKeys.value = [];
+};
+
 const handleClearQueries = () => {
   tableQueries.value = {};
   searchValue.value = [];
@@ -1473,8 +1474,9 @@ const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterValue) =>
   });
 };
 
-const handleSelectChange: PrimaryTableProps['onSelectChange'] = (selectedRowKeys, options) => {
-  selectedRows.value = options.selectedRowData;
+const handleSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections, selectionsRowKeys }) => {
+  selectedRows.value = selections;
+  selectedRowKeys.value = selectionsRowKeys;
 };
 
 const handleSortChange: PrimaryTableProps['onSortChange'] = (sort) => {

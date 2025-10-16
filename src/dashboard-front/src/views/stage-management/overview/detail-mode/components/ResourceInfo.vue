@@ -38,9 +38,8 @@
       />
       <AgTable
         v-model:table-data="tableData"
-        v-model:settings="settings"
         :columns="columns"
-        row-key="id"
+        table-row-key="id"
         show-settings
         :filter-row="null"
         :frontend-search="isSearching"
@@ -112,12 +111,6 @@ const labels = ref<any[]>([]);
 const tableData = ref<any[]>([]);
 const initTableData = ref<any[]>([]);
 const stageList = ref<IStageListItem[]>([]);
-
-const settings = ref({
-  size: 'small',
-  checked: [],
-  disabled: [],
-});
 
 const gatewayId = computed<number>(() => gatewayStore.apigwId);
 
