@@ -22,10 +22,10 @@
         <BkButton
           v-bk-tooltips="{
             content: t('请选择待续期的权限'),
-            disabled: selections.length,
+            disabled: curSelections.length,
           }"
           theme="primary"
-          :disabled="!selections.length"
+          :disabled="!curSelections.length"
           @click="handleBatchApplyPermission"
         >
           {{ t("批量续期") }}
@@ -58,39 +58,31 @@
             :value-split-code="'+'"
             clearable
             unique-select
+            value-behavior="need-key"
             class="w-450px bg-white"
           />
         </BkFormItem>
       </BkForm>
     </div>
-    <div class="app-content">
-      <BkLoading :loading="isLoading">
-        <BkTable
-          ref="appTableRef"
-          row-key="id"
-          show-overflow-tooltip
-          size="small"
-          class="m-t-16px perm-app-table"
-          :data="tableData"
-          :pagination="pagination"
-          :max-height="clientHeight"
-          :columns="setTableColumns()"
-          border="outer"
-          remote-pagination
-          @page-limit-change="handlePageSizeChange"
-          @page-value-change="handlePageChange"
-        >
-          <template #empty>
-            <TableEmpty
-              :is-loading="isLoading"
-              :empty-type="tableEmptyConf.emptyType"
-              :abnormal="tableEmptyConf.isAbnormal"
-              @refresh="getList"
-              @clear-filter="handleClearFilterKey"
-            />
-          </template>
-        </BkTable>
-      </BkLoading>
+
+    <div class="mt-16px app-content">
+      <AgTable
+        ref="tableRef"
+        v-model:table-data="tableData"
+        v-model:settings="settings"
+        show-settings
+        resizable
+        show-selection
+        :show-first-full-row="curSelections.length > 0"
+        :disabled-check-selection="disabledSelection"
+        :filter-value="filterData"
+        :api-method="getTableData"
+        :columns="tableColumns"
+        @clear-filter="handleClearFilter"
+        @filter-change="handleFilterChange"
+        @selection-change="handleSelectionChange"
+        @clear-selection="handleClearSelection"
+      />
     </div>
 
     <!-- 主动授权 -->
@@ -131,8 +123,10 @@
 
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
-import { Button, Checkbox, Message } from 'bkui-vue';
+import { Button, Message } from 'bkui-vue';
 import { type ISearchItem } from 'bkui-lib/search-select/utils';
+import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';
+import { useTableFilterChange } from '@/hooks/use-table-filter-change';
 import {
   type IAuthData,
   type IBatchUpdateParams,
@@ -147,46 +141,138 @@ import {
   getResourcePermissionAppList,
 } from '@/services/source/permission';
 import { useGateway, usePermission } from '@/stores';
-import { useMaxTableLimit, useQueryList } from '@/hooks';
-import { IDropList } from '@/types/common';
+// import { useMaxTableLimit } from '@/hooks';
+import { IDropList, ITableMethod } from '@/types/common';
 import { IFilterValues, IPermission, IResource } from '@/types/permission';
 import { sortByKey } from '@/utils';
 import ProactiveAuthorization from '@/views/permission/app/components/ProactiveAuthorization.vue';
 import RenewalDialog from '@/views/permission/app/components/Renewal.vue';
 import BatchRenewal from '@/views/permission/app/components/BatchRenewal.vue';
 import DeletePermission from '@/views/permission/app/components/DeletePermission.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
-import TableHeaderFilter from '@/components/table-header-filter';
+import AgTable from '@/components/ag-table/Index.vue';
+// import TableHeaderFilter from '@/components/table-header-filter';
 
 const { t } = useI18n();
-const { maxTableLimit, clientHeight } = useMaxTableLimit();
+const { handleTableFilterChange } = useTableFilterChange();
+// const { maxTableLimit, clientHeight } = useMaxTableLimit();
 const gatewayStore = useGateway();
 const permissionStore = usePermission();
 
+const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const tableColumns = shallowRef<PrimaryTableProps['columns']>([
+  {
+    title: t('蓝鲸应用ID'),
+    colKey: 'bk_app_code',
+    ellipsis: true,
+  },
+  {
+    title: t('授权维度'),
+    colKey: 'grant_dimension',
+    ellipsis: true,
+    cell: (h, { row }: { row: IPermission }) => {
+      return (
+        <span class="ag-auto-text">
+          { getSearchDimensionText(row.grant_dimension) }
+        </span>
+      );
+    },
+    filter: {
+      type: 'single',
+      showConfirmAndReset: true,
+      popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+      list: [
+        {
+          label: t('按网关'),
+          value: 'api',
+        },
+        {
+          label: t('按资源'),
+          value: 'resource',
+        },
+      ],
+    },
+  },
+  {
+    title: t('资源名称'),
+    colKey: 'resource_name',
+    ellipsis: true,
+    cell: (h, { row }: { row: IPermission }) => {
+      return (
+        <span>{ row.resource_name || '--' }</span>
+      );
+    },
+  },
+  {
+    title: t('请求路径'),
+    colKey: 'resource_path',
+    ellipsis: true,
+    cell: (h, { row }: { row: IPermission }) => {
+      return (
+        <span>{ row.resource_path || '--' }</span>
+      );
+    },
+  },
+  {
+    title: t('有效期'),
+    colKey: 'expires',
+    ellipsis: true,
+    cell: (h, { row }: { row: IPermission }) => {
+      return (
+        <span style={{ color: permissionStore.getDurationTextColor(row.expires) }}>
+          { permissionStore.getDurationText(row.expires) }
+        </span>
+      );
+    },
+  },
+  {
+    title: t('授权类型'),
+    colKey: 'grant_type',
+    ellipsis: true,
+    cell: (h, { row }: { row: IPermission }) => {
+      return (
+        <span>
+          { t(['initialize'].includes(row.grant_type) ? '主动授权' : '申请审批') }
+        </span>
+      );
+    },
+  },
+  {
+    title: t('操作'),
+    colKey: 'operate',
+    fixed: 'right',
+    width: 150,
+    cell: (h, { row }: { row: IPermission }) => {
+      return (
+        <div>
+          <Button
+            class="m-r-10px"
+            theme="primary"
+            text
+            v-bk-tooltips={{
+              content: t('权限有效期大于 360 天时，暂无法续期'),
+              placement: 'left',
+              disabled: row.renewable,
+            }}
+            disabled={!row.renewable}
+            onClick={() => handleSingleApply(row)}
+          >
+            { t('续期') }
+          </Button>
+          <Button
+            theme="primary"
+            text
+            onClick={() => handleRemove(row)}
+          >
+            { t('删除') }
+          </Button>
+        </div>
+      );
+    },
+  },
+]);
 const defaultFilterData = ref<DefaultSearchParamsInterface>({ grant_dimension: 'ALL' });
 const singleSelectData = ref<{ [key: string]: string }>(cloneDeep(defaultFilterData));
 const checkedGrantDimensionFilterOptions = ref<string[]>([]);
-// 授权维度表头过滤
-const grantDimensionFilterOptions = ref({
-  list: [
-    {
-      name: t('按网关'),
-      id: 'api',
-    },
-    {
-      name: t('按资源'),
-      id: 'resource',
-    },
-  ],
-  checked: checkedGrantDimensionFilterOptions.value,
-  filterFn: (checked: string[], row: IPermission) => {
-    if (!checked.length) {
-      return true;
-    }
-    return grantDimensionList.value.includes(row.grant_dimension);
-  },
-});
-const isAllChecked = ref(false);
 const checkedGrantTypeFilterOptions = ref<string[]>([]);
 const filterData = ref<IFilterParams>({});
 const resourceList = ref<IResource[]>([]);
@@ -195,8 +281,7 @@ const curPermission = ref<Partial<IPermission>>({
   detail: [],
   id: -1,
 });
-const selections = ref<IPermission[]>([]);
-const curSelections = ref([]);
+const curSelections = ref<IPermission[]>([]);
 // 导出下拉
 const exportDropData = ref<IDropList[]>([
   {
@@ -228,16 +313,8 @@ const curAuthData = ref<IAuthData>({
   dimension: 'api',
 });
 const curAuthDataBack = ref<IAuthData>(cloneDeep(curAuthData.value));
-const appTableRef = ref<InstanceType<typeof BkTable> & { clearSelection: () => void }>();
 const componentKey = ref(0);
 const expireDays = ref(0);
-const tableEmptyConf = ref<{
-  emptyType: string
-  isAbnormal: boolean
-}>({
-  emptyType: '',
-  isAbnormal: false,
-});
 // 批量续期dialog
 const batchApplySliderConf = reactive({
   isShow: false,
@@ -291,44 +368,13 @@ const filterConditions = ref<ISearchItem[]>([
     id: 'keyword',
   },
 ]);
-
-// 列表hooks
-const {
-  tableData,
-  pagination,
-  isLoading,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-} = useQueryList<IPermission>({
-  apiMethod: getPermissionList,
-  filterData,
-  initialPagination: {
-    limitList: [
-      maxTableLimit,
-      10,
-      20,
-      50,
-      100,
-    ],
-    limit: maxTableLimit,
-  },
+const tableData = ref([]);
+const settings = shallowRef({
+  size: 'small',
+  checked: [],
 });
 
 const apigwId = computed(() => gatewayStore.apigwId);
-// 授权维度筛选值转换
-const grantDimensionList = computed(() => {
-  const results = checkedGrantDimensionFilterOptions.value.map((dimension) => {
-    if ([t('按网关'), 'By Gateway'].includes(dimension)) {
-      return 'api';
-    }
-    if ([t('按资源'), 'By Resource'].includes(dimension)) {
-      return 'resource';
-    }
-    return dimension;
-  });
-  return results;
-});
 // 可续期的数量
 const applyCount = computed(() => {
   return curSelections.value.filter((item: { renewable: boolean }) => item.renewable)
@@ -347,50 +393,7 @@ const selectedApiPermList = computed(() =>
 watch(
   filterValues,
   () => {
-    let isEmpty = false;
-    filterData.value = {};
-    // 当前有资源名称过滤，且过滤值不在资源列表中，则删除该过滤条件
-    const resourceIdFilterIndex = filterValues.value.findIndex(
-      filter => filter.id === 'resource_id',
-    );
-    // 找到授权维度联动表头筛选
-    const rantDimensionIndex = filterValues.value.findIndex(filter => ['grant_dimension'].includes(filter.id));
-    singleSelectData.value.grant_dimension = rantDimensionIndex > -1 ? filterValues.value[rantDimensionIndex].values?.[0]?.id : 'ALL';
-    if (resourceIdFilterIndex > -1) {
-      const resourceId = filterValues.value[resourceIdFilterIndex].values[0].id as string;
-      const validResourceIds = filterConditions.value.find(condition => condition.id === 'resource_id')?.children.map(option => option.id);
-      if (!validResourceIds.includes(resourceId)) {
-        filterValues.value.splice(resourceIdFilterIndex, 1);
-        Message({
-          theme: 'warning',
-          message: t('请选择有效的资源名称'),
-        });
-      }
-    }
-    if (filterValues.value) {
-      // 把纯文本搜索项转换成查询参数
-      const textItem = filterValues.value.find(val => val.type === 'text');
-      if (textItem) {
-        filterData.value.keyword = textItem.name || '';
-      }
-      filterValues.value.forEach((item) => {
-        if (item.values) {
-          filterData.value[item.id] = item.values[0].id;
-        }
-      });
-      isEmpty = filterValues.value.length === 0;
-    }
-    exportDropData.value.forEach((e: IDropList) => {
-      // 已选资源
-      if (e.value === 'filtered') {
-        e.disabled = isEmpty;
-      }
-    });
-    clearSelection();
-  },
-  {
-    immediate: true,
-    deep: true,
+    handleSearch();
   },
 );
 // 监听授权有效时间的类型
@@ -402,7 +405,7 @@ watch(
 );
 // 处理表格复选框数据
 watch(
-  selections,
+  curSelections,
   (selection) => {
     exportDropData.value.forEach((drop: IDropList) => {
       // 已选资源
@@ -413,204 +416,81 @@ watch(
   },
   { deep: true },
 );
-// 侦听返回的数据和表头 filter 变化，更新空数据展示状态
-watch(
-  [tableData, checkedGrantDimensionFilterOptions, checkedGrantTypeFilterOptions],
-  () => {
-    clearSelection();
-    updateTableEmptyConfig();
-  },
-  { deep: true },
-);
 
-function clearSelection() {
-  isAllChecked.value = false;
-  selections.value = [];
-  appTableRef.value?.clearSelection();
+const getTableData = async (params: Record<string, any> = {}) => {
+  const results = await getPermissionList(apigwId.value, params);
+  return results ?? [];
 };
 
-const handleCheckAllClick = (checked: boolean) => {
-  isAllChecked.value = checked;
-  if (checked) {
-    selections.value = tableData.value.filter(row => row.renewable);
-  }
-  else {
-    clearSelection();
-  }
+function disabledSelection(row) {
+  row.selectionTip = row.renewable ? '' : t('权限有效期大于 360 天时，暂无法续期');
+  return !row.renewable;
+}
+
+function getList() {
+  tableRef.value?.fetchData(filterData.value, { resetPage: true });
 };
 
-const getFilterData = (payload: Record<string, string>, curData: Record<string, string>) => {
-  const { id, name } = payload;
-  filterData.value[curData.id] = payload.id;
-  const hasData = filterValues.value.find((item: Record<string, any>) => [curData.id].includes(item.id));
-  if (hasData) {
-    hasData.values = [{
-      id,
-      name,
-    }];
+function handleSearch() {
+  let isEmpty = false;
+  filterData.value = {};
+  // 当前有资源名称过滤，且过滤值不在资源列表中，则删除该过滤条件
+  const resourceIdFilterIndex = filterValues.value.findIndex(
+    filter => filter.id === 'resource_id',
+  );
+    // 找到授权维度联动表头筛选
+  const rantDimensionIndex = filterValues.value.findIndex(filter => ['grant_dimension'].includes(filter.id));
+  singleSelectData.value.grant_dimension = rantDimensionIndex > -1 ? filterValues.value[rantDimensionIndex].values?.[0]?.id : 'ALL';
+  if (resourceIdFilterIndex > -1) {
+    const resourceId = filterValues.value[resourceIdFilterIndex].values[0].id as string;
+    const validResourceIds = filterConditions.value.find(condition => condition.id === 'resource_id')?.children.map(option => option.id);
+    if (!validResourceIds.includes(resourceId)) {
+      filterValues.value.splice(resourceIdFilterIndex, 1);
+      Message({
+        theme: 'warning',
+        message: t('请选择有效的资源名称'),
+      });
+    }
   }
-  else {
-    filterValues.value.push({
-      id: curData.id,
-      name: curData.name,
-      values: [{
-        id,
-        name,
-      }],
+  if (filterValues.value) {
+    // 把纯文本搜索项转换成查询参数
+    const textItem = filterValues.value.find(val => val.type === 'text');
+    if (textItem) {
+      filterData.value.keyword = textItem.name || '';
+    }
+    filterValues.value.forEach((item) => {
+      if (item.values) {
+        filterData.value[item.id] = item.values[0].id;
+      }
     });
+    isEmpty = filterValues.value.length === 0;
   }
-  if (['ALL'].includes(payload.id)) {
-    delete filterData.value[curData.id];
-    filterValues.value = filterValues.value.filter((item: Record<string, any>) => ![curData.id].includes(item.id));
-  }
+  exportDropData.value.forEach((e: IDropList) => {
+    // 已选资源
+    if (e.value === 'filtered') {
+      e.disabled = isEmpty;
+    }
+  });
+  getList();
+}
+
+const handleSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }) => {
+  curSelections.value = selections;
 };
 
-const renderGrantDimensionLabel = () => {
-  return h('div', { class: 'application-permission-custom-label' }, [
-    h(
-      TableHeaderFilter,
-      {
-        hasAll: true,
-        columnLabel: t('授权维度'),
-        selectValue: singleSelectData.value.grant_dimension,
-        list: grantDimensionFilterOptions.value.list,
-        onSelected: (select: Record<string, string>) => {
-          const curData = {
-            name: t('授权维度'),
-            id: 'grant_dimension',
-          };
-          getFilterData(select, curData);
-        },
-      },
-    ),
-  ]);
+// 处理表头筛选联动搜索框
+const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
+  handleTableFilterChange({
+    filterItem,
+    filterData,
+    searchOptions: filterConditions,
+    searchParams: filterValues,
+  });
+  getList();
 };
 
-const setTableColumns = () => {
-  return [
-    {
-      label: () => {
-        return (
-          <Checkbox
-            v-model={isAllChecked.value}
-            onChange={(checked: boolean) => handleCheckAllClick(checked)}
-          />
-        );
-      },
-      minWidth: 60,
-      align: 'center',
-      render: ({ row }: { row: IPermission }) => {
-        return (
-          <Checkbox
-            v-bk-tooltips={{
-              content: t('权限有效期大于 360 天时，暂无法续期'),
-              disabled: row.renewable,
-            }}
-            disabled={!row.renewable}
-            modelValue={!!selections.value.find(item => item.id === row.id)}
-            onChange={(checked: boolean) => handleCheckboxChange(checked, row)}
-          />
-        );
-      },
-    },
-    {
-      label: t('蓝鲸应用ID'),
-      field: 'bk_app_code',
-    },
-    {
-      label: renderGrantDimensionLabel,
-      field: 'grant_dimension',
-      render: ({ row }: { row: IPermission }) => {
-        return (
-          <span class="ag-auto-text">
-            { getSearchDimensionText(row.grant_dimension) }
-          </span>
-        );
-      },
-    },
-    {
-      label: t('资源名称'),
-      field: 'resource_name',
-      render: ({ row }: { row: IPermission }) => {
-        return (
-          <span>{ row.resource_name || '--' }</span>
-        );
-      },
-    },
-    {
-      label: t('请求路径'),
-      field: 'resource_path',
-      render: ({ row }: { row: IPermission }) => {
-        return (
-          <span>{ row.resource_path || '--' }</span>
-        );
-      },
-    },
-    {
-      label: t('有效期'),
-      field: 'expires',
-      render: ({ row }: { row: IPermission }) => {
-        return (
-          <span style={{ color: permissionStore.getDurationTextColor(row.expires) }}>
-            { permissionStore.getDurationText(row.expires) }
-          </span>
-        );
-      },
-    },
-    {
-      label: t('授权类型'),
-      field: 'grant_type',
-      render: ({ row }: { row: IPermission }) => {
-        return (
-          <span>
-            { t(['initialize'].includes(row.grant_type) ? '主动授权' : '申请审批') }
-          </span>
-        );
-      },
-    },
-    {
-      label: t('操作'),
-      field: 'operate',
-      fixed: 'right',
-      width: 150,
-      render: ({ row }: { row: IPermission }) => {
-        return (
-          <div>
-            <Button
-              class="m-r-10px"
-              theme="primary"
-              text
-              v-bk-tooltips={{
-                content: t('权限有效期大于 360 天时，暂无法续期'),
-                placement: 'left',
-                disabled: row.renewable,
-              }}
-              disabled={!row.renewable}
-              onClick={() => handleSingleApply(row)}
-            >
-              { t('续期') }
-            </Button>
-            <Button
-              theme="primary"
-              text
-              onClick={() => handleRemove(row)}
-            >
-              { t('删除') }
-            </Button>
-          </div>
-        );
-      },
-    },
-  ];
-};
-
-const handleCheckboxChange = (checked: boolean, row: IPermission) => {
-  if (checked) {
-    selections.value.push(row);
-  }
-  else {
-    selections.value = selections.value.filter(item => item.id !== row.id);
-  }
+function handleClearSelection() {
+  curSelections.value = [];
 };
 
 const getBkAppCodes = async () => {
@@ -703,7 +583,6 @@ const handleBatchConfirm = async () => {
 
 // 批量续期
 const handleBatchApplyPermission = () => {
-  curSelections.value = [...selections.value];
   batchApplySliderConf.isShow = true;
 };
 
@@ -730,7 +609,7 @@ const handleRemovePermission = async () => {
     theme: 'success',
     message: t('删除成功！'),
   });
-  clearSelection();
+  handleClearSelection();
   getList();
 };
 
@@ -746,33 +625,15 @@ const handleSave = () => {
     message: t('授权成功！'),
   });
   curAuthData.value = cloneDeep(curAuthDataBack.value);
-  clearSelection();
+  handleClearSelection();
   getList();
 };
 
-const handleClearFilterKey = () => {
+const handleClearFilter = () => {
   filterData.value = {};
   filterValues.value = [];
   checkedGrantDimensionFilterOptions.value = [];
   checkedGrantTypeFilterOptions.value = [];
-};
-
-const updateTableEmptyConfig = () => {
-  const searchParams = { ...filterData.value };
-  filterValues.value?.forEach((item) => {
-    searchParams[item.id] = Array.isArray(item.values) ? item.values?.[0]?.id : '';
-  });
-  const list = Object.values(searchParams).filter(item => item !== '');
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (
-    list.length
-    || checkedGrantDimensionFilterOptions.value.length
-    || checkedGrantTypeFilterOptions.value.length
-  ) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
-  }
-  tableEmptyConf.value.emptyType = '';
 };
 
 const getSearchDimensionText = (row: string | null) => {
