@@ -21,6 +21,9 @@ from urllib.parse import urlparse
 
 from django.utils.functional import cached_property
 
+# FIXME: 废弃
+# just init the default micro gateway config directly!
+
 
 class MicroGatewayConfigStructureMixin:
     _micro_gateway_config_key: str

@@ -15,26 +15,3 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.controller.tasks.clean_task import (
-    delete_old_debug_history,
-    delete_old_publish_events,
-    delete_old_resource_doc_version_records,
-)
-from apigateway.controller.tasks.release import (
-    release_gateway_by_registry,
-    update_release_data_after_success,
-)
-from apigateway.controller.tasks.syncing import (
-    revoke_release,
-    rolling_update_release,
-)
-
-__all__ = [
-    "release_gateway_by_registry",
-    "rolling_update_release",
-    "revoke_release",
-    "update_release_data_after_success",
-    "delete_old_resource_doc_version_records",
-    "delete_old_publish_events",
-    "delete_old_debug_history",
-]

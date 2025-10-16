@@ -20,7 +20,6 @@ from dataclasses import dataclass
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 from django.conf import settings
-from django.utils.functional import cached_property
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.audit.constants import OpTypeEnum
@@ -34,7 +33,6 @@ from apigateway.controller.tasks import (
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import (
     Gateway,
-    MicroGateway,
     Release,
     ReleaseHistory,
     ResourceVersion,
@@ -174,22 +172,8 @@ class GatewayReleaser:
         # 使用 celery 的编排能力，task 执行成功才会执行 release_success_callback
         delay_on_commit(task | release_success_callback)
 
-    @cached_property
-    def _shared_micro_gateway(self):
-        try:
-            return MicroGateway.objects.get_default_shared_gateway()
-        except MicroGateway.DoesNotExist:
-            raise ValueError("共享微网关实例不存在。")
-
     def _create_release_task_for_shared_gateway(self, release_history: ReleaseHistory):
-        shared_gateway = self._shared_micro_gateway
-        if not shared_gateway:
-            return None
-
-        return release_gateway_by_registry.si(
-            micro_gateway_id=shared_gateway.pk,
-            publish_id=release_history.pk,
-        )  # type: ignore
+        return release_gateway_by_registry.si(publish_id=release_history.pk)  # type: ignore
 
 
 def release(

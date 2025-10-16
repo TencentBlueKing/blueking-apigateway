@@ -19,7 +19,7 @@ import uuid
 from logging import Logger
 from typing import Optional
 
-from apigateway.core.models import Gateway, MicroGateway, Stage
+from apigateway.core.models import Gateway, Stage
 from apigateway.utils.procedure_logger import ProcedureLogger
 
 
@@ -32,7 +32,6 @@ class ReleaseProcedureLogger(ProcedureLogger):
         logger: Logger,
         gateway: Gateway,
         stage: Optional[Stage] = None,
-        micro_gateway: Optional[MicroGateway] = None,
         release_task_id: Optional[str] = None,
         publish_id: Optional[int] = None,
     ):
@@ -42,7 +41,6 @@ class ReleaseProcedureLogger(ProcedureLogger):
         super().__init__(name, logger)
         self._gateway = gateway
         self._stage = stage
-        self._micro_gateway = micro_gateway
         self.release_task_id = release_task_id or str(uuid.uuid4())
         self._publish_id = publish_id
 
@@ -53,10 +51,7 @@ class ReleaseProcedureLogger(ProcedureLogger):
         parts.append(f"gateway={self._gateway.name}({self._gateway.id})")
 
         if self._stage:
-            parts.append(f"stage={self._stage.name}")
-
-        if self._micro_gateway:
-            parts.append(f"micro_gateway={self._micro_gateway.pk}")
+            parts.append(f"stage={self._stage.name}({self._stage.id})")
 
         if self._publish_id:
             parts.append(f"publish_id={self._publish_id}")

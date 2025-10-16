@@ -19,7 +19,8 @@
 import json
 from typing import Any, Dict, List, Optional, Union
 
-from apigateway.controller.models.base import Plugin, Route, Timeout
+from apigateway.controller.models.base import Labels, Plugin, Route, Timeout
+from apigateway.controller.models.constants import HttpMethodEnum
 from apigateway.controller.release_data import ReleaseData
 from apigateway.controller.uri_render import UpstreamURIRender, URIRender
 from apigateway.core.constants import ProxyTypeEnum
@@ -104,7 +105,12 @@ class RouteConvertor(BaseConvertor):
             service_id=self._get_service_id(backend_id),
             enable_websocket=resource.get("enable_websocket", False),
             # NOTE: should not set upstream here!
+            labels=Labels(
+                gateway=self._release_data.gateway.name,
+                stage=self._release_data.stage.name,
+            ),
         )
+        # FIXME: calculate the priority here?
 
         # only set the timeout if the resource has timeout
         # 此处会覆盖 upstream 定义的超时，最终以这里为准
@@ -232,8 +238,13 @@ class RouteConvertor(BaseConvertor):
             desc="route for detect release version",
             # example:/api/bk-apigateway/prod/__apigw_version
             uris=[f"/api/{gateway_name}/{stage_name}/__apigw_version"],
-            methods=["GET"],
+            methods=[HttpMethodEnum.GET],
             enable_websocket=False,
             timeout=Timeout(connect=60, send=60, read=60),
             plugins=plugins,
+            service_id=None,
+            labels=Labels(
+                gateway=gateway_name,
+                stage=stage_name,
+            ),
         )
