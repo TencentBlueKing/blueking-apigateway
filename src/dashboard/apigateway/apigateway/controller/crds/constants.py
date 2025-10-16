@@ -18,46 +18,6 @@
 from apigateway.utils.yaml import YamlRepresenterEnum
 
 
-class UpstreamHashOnEnum(str, YamlRepresenterEnum):
-    VARS = "vars"
-    HEADER = "header"
-    COOKIE = "cookie"
-    CONSUMER = "consumer"
-
-
-class UpstreamTypeEnum(str, YamlRepresenterEnum):
-    # Round robin balancing with weights
-    ROUNDROBIN = "roundrobin"
-    # Consistent hash
-    CHASH = "chash"
-    # Pick the node with minimum latency
-    EWMA = "ewma"
-    # Picks the node with the lowest value of (active_conn + 1) / weight
-    LEAST_CONN = "least_conn"
-
-
-class UpstreamSchemeEnum(str, YamlRepresenterEnum):
-    HTTP = "http"
-    HTTPS = "https"
-    GRPC = "grpc"
-    GRPCS = "grpcs"
-    TCP = "tcp"
-    UDP = "udp"
-    TLS = "tls"
-
-
-class UpstreamPassHostEnum(str, YamlRepresenterEnum):
-    PASS = "pass"
-    NODE = "node"
-    REWRITE = "rewrite"
-
-
-class UpstreamCheckActiveTypeEnum(str, YamlRepresenterEnum):
-    HTTP = "http"
-    HTTPS = "https"
-    TCP = "tcp"
-
-
 class ResourceRewriteHeadersStrategyEnum(str, YamlRepresenterEnum):
     """deprecated, will be removed in the future
     append: 追加
@@ -74,15 +34,3 @@ class ResourceProtocolEnum(str, YamlRepresenterEnum):
     HTTP = "http"
     TCP = "tcp"
     GRPC = "grpc"
-
-
-class HttpResourceMethodEnum(str, YamlRepresenterEnum):
-    GET = "GET"
-    POST = "POST"
-    PUT = "PUT"
-    DELETE = "DELETE"
-    HEAD = "HEAD"
-    PATCH = "PATCH"
-    OPTIONS = "OPTIONS"
-    TRACE = "TRACE"
-    CONNECT = "CONNECT"

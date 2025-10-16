@@ -16,9 +16,22 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from typing import List
+
+from django.conf import settings
+
+from apigateway.controller.models.base import PluginMetadata
+
 from .base import BaseConvertor
 
 
 class PluginMetadataConvertor(BaseConvertor):
-    def convert(self):
-        return NotImplementedError()
+    def convert(self) -> List[PluginMetadata]:
+        # it's global, so no need to get data from release_data
+        return [
+            PluginMetadata(
+                name=name,
+                config=config,
+            )
+            for name, config in settings.PLUGIN_METADATA_CONFIG.items()
+        ]

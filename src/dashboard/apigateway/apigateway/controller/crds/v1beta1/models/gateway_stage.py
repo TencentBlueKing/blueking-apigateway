@@ -22,14 +22,12 @@ from pydantic import Field
 from apigateway.controller.crds.v1beta1.models.base import (
     GatewayCustomResource,
     GatewayCustomResourceSpec,
-    KubernetesModel,
     PluginConfig,
 )
 
-
-class StageRewrite(KubernetesModel):
-    enabled: bool = Field(default=False, helm_value=True, description="是否启用")
-    headers: Dict[str, str] = Field(default_factory=dict, helm_value=True, description="[废弃] 重写请求头")
+# class StageRewrite(KubernetesModel):
+#     enabled: bool = Field(default=False, helm_value=True, description="是否启用")
+#     headers: Dict[str, str] = Field(default_factory=dict, helm_value=True, description="[废弃] 重写请求头")
 
 
 class BkGatewayStageSpec(GatewayCustomResourceSpec):
@@ -40,7 +38,7 @@ class BkGatewayStageSpec(GatewayCustomResourceSpec):
     vars: Dict[str, str] = Field(default_factory=dict, description="环境变量", helm_value=True)
     plugins: List[PluginConfig] = Field(default_factory=list, description="插件配置", helm_value=True)
 
-    rewrite: StageRewrite = Field(default_factory=StageRewrite, description="[废弃] 环境通用请求重写")
+    # rewrite: StageRewrite = Field(default_factory=StageRewrite, description="[废弃] 环境通用请求重写")
 
 
 class BkGatewayStage(GatewayCustomResource):

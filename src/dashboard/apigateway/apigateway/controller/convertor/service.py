@@ -17,20 +17,159 @@
 #
 
 import base64
-from typing import List
+from typing import List, Union
 
 from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
 
-from apigateway.controller.crds.v1beta1.models.base import PluginConfig
+from apigateway.common.constants import DEFAULT_BACKEND_HOST_FOR_MISSING
+from apigateway.controller.crds.constants import UpstreamSchemeEnum, UpstreamTypeEnum
+from apigateway.controller.crds.release_data.release_data import ReleaseData
+from apigateway.controller.crds.v1beta1.convertors.base import UrlInfo
+from apigateway.controller.models.base import Node, PluginConfig, Service, Timeout, Upstream
+from apigateway.controller.models.constants import UpstreamSchemeEnum, UpstreamTypeEnum
+from apigateway.core.models import Backend
 
 from .base import BaseConvertor
 
 
 class ServiceConvertor(BaseConvertor):
-    def convert(self):
+    # TODO: publish_id into labels of k8s => 需要确认
+    #       确认新的 operator labels 怎么处理的？
+    # labels["publish_id"] = str(self._publish_id)
+    def __init__(self, release_data: ReleaseData, publish_id: Union[int, None] = None):
+        super().__init__(release_data)
+        self._publish_id = publish_id
+
+    def convert(self) -> List[Service]:
         # FIXME: merge the stage + service here
-        pass
+        # FIXME: should not generate service if the backend is not related to any resource
+        backend_configs = self._release_data.get_stage_backend_configs()
+        if not backend_configs:
+            return []
+
+        # {
+        #   "type": "node",
+        #   "timeout": 60,
+        #   "loadbalance": "roundrobin",
+        #   "hosts": [
+        #     {
+        #       "scheme": "http",
+        #       "host": "exmple.com",
+        #       "weight": 100
+        #     }
+        #   ]
+        # }
+
+        services: List[Service] = []
+        # FIXME: 这里有没有环境变量渲染？
+
+        for backend_id, backend_config in backend_configs.items():
+            timeout = backend_config.get("timeout", 60)
+            upstream = Upstream(
+                type=UpstreamTypeEnum.ROUNDROBIN.value,
+                timeout=Timeout(
+                    connect=timeout,
+                    send=timeout,
+                    read=timeout,
+                ),
+            )
+            hosts = backend_config.get("hosts", [])
+            if not hosts:
+                raise ValueError(f"backend {backend_id} has no hosts")
+
+            for node in hosts:
+                host = node["host"]
+                # 如果 default 没有设置 host，则默认使用 your-backend-host 来替代，避免 apisix 加载报错
+                if host == "":
+                    host = DEFAULT_BACKEND_HOST_FOR_MISSING
+                if "scheme" in node:
+                    host = node["scheme"] + "://" + host
+                url_info = UrlInfo(host)
+
+                try:
+                    upstream.scheme = UpstreamSchemeEnum(url_info.scheme).value
+                except ValueError:
+                    raise ValueError(
+                        f"scheme {url_info.scheme!r} of host {node['host']!r} is not a valid UpstreamSchemeEnum"
+                    )
+
+                upstream.nodes.append(Node(host=url_info.domain, port=url_info.port, weight=node.get("weight", 1)))
+
+            stage_name = self._release_data.stage.name
+            stage_id = self._release_data.stage.pk
+            stage_description = self._release_data.stage.description
+
+            backend = Backend.objects.get(id=backend_id)
+            backend_name = backend.name
+            backend_description = backend.description
+
+            description = f"{stage_name}/{stage_id}"
+            if stage_description:
+                description += f": {stage_description[:32]}"
+            description += f" (backend={backend_name}"
+            if backend_description:
+                description += f": {backend_description[:32]}"
+            description += ")"
+
+            # currently, only add one plugin for service of per backend
+            # other plugins are shared by stage, they will be merged on operator
+            plugins = [
+                PluginConfig(
+                    name="bk-backend-context",
+                    config={
+                        "bk_backend_id": backend_id,
+                        "bk_backend_name": backend_name,
+                    },
+                ),
+            ]
+            stage_plugins = self._build_stage_plugins()
+            plugins.extend(stage_plugins)
+
+            # stage_name max length is 20, stage_id 6, backend_id is 4, other 10
+            # total max length is 64, so the buffer is 24 ( stage_id length + backend_id length)
+            services.append(
+                Service(
+                    id=f"s-{stage_id}-b-{backend_id}",
+                    name=f"_stage_service_{stage_name}_{backend_id}",
+                    desc=description,
+                    upstream=upstream,
+                    plugins=plugins,
+                    # metadata=self._common_metadata(
+                    #     f"s-{stage_id}-b-{backend_id}",
+                    #     labels={
+                    #         "service-type": "stage-backend",
+                    #         "backend-id": str(backend_id),
+                    #     },
+                    # ),
+                    # spec=BkGatewayServiceSpec(
+                    #     name=f"_stage_service_{stage_name}_{backend_id}",
+                    #     id=f"stage-{stage_id}-backend-{backend_id}",
+                    #     description=description,
+                    #     upstream=upstream,
+                    #     plugins=plugins,
+                    # ),
+                )
+            )
+
+        return services
+
+    # def stage_convert(self) -> BkGatewayStage:
+    #     # FIXME: 如何处理 http/https 协议
+    #     http_info = MicroGatewayHTTPInfo.from_micro_gateway_config(self._micro_gateway.config)
+    #     url_info = UrlInfo(http_info.http_url)
+    #     path_prefix = url_info.path
+
+    #     return BkGatewayStage(
+    #         metadata=self._common_metadata(self._release_data.stage.name),
+    #         spec=BkGatewayStageSpec(
+    #             name=self._release_data.stage.name,
+    #             description=self._release_data.stage.description,
+    #             vars=self._release_data.stage.vars,
+    #             path_prefix=path_prefix,
+    #             plugins=plugins,
+    #         ),
+    #     )
 
     def _build_service_plugins(self) -> List[PluginConfig]:
         plugins = self._get_stage_default_plugins()

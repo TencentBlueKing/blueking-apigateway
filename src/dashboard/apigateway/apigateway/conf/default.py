@@ -877,7 +877,7 @@ DEFAULT_FEATURE_FLAG = {
     "ENABLE_MONITOR": env.bool("FEATURE_FLAG_ENABLE_MONITOR", False),
     # 是否展示”运行数据“子菜单
     "ENABLE_RUN_DATA": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA", True),
-    # 是否展示 "运行数据" => 统计报表 子菜单
+    # 是否展示 "运行数据" => 仪表盘 子菜单
     "ENABLE_RUN_DATA_METRICS": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True),
     # 是否展示”组件管理“菜单项，企业版展示，上云版不展示
     "MENU_ITEM_ESB_API": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API", True),
