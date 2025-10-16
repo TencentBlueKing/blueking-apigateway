@@ -23,8 +23,8 @@ from ddf import G
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
-from apigateway.controller.crds.release_data.base import PluginData
 from apigateway.controller.crds.v1beta1.models.gateway_resource import BkGatewayResource
+from apigateway.controller.release_data.base import PluginData
 
 
 class TestHttpResourceConvertor:

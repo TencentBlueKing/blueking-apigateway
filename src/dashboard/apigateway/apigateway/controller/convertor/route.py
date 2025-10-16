@@ -19,8 +19,8 @@
 import json
 from typing import Any, Dict, List, Optional, Union
 
-from apigateway.controller.crds.release_data.release_data import ReleaseData
 from apigateway.controller.models.base import Plugin, Route, Timeout
+from apigateway.controller.release_data.release_data import ReleaseData
 from apigateway.controller.uri_render import UpstreamURIRender, URIRender
 from apigateway.core.constants import ProxyTypeEnum
 from apigateway.utils.time import now_str

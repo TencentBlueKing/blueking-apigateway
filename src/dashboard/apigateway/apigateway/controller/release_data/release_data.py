@@ -24,7 +24,7 @@ from django.utils.functional import cached_property
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
-from apigateway.controller.crds.release_data.base import PluginData
+from apigateway.controller.release_data.base import PluginData
 from apigateway.core.models import BackendConfig, Gateway, Release, ResourceVersion, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.service.gateway_jwt import GatewayJWTHandler

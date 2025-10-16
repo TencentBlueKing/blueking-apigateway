@@ -23,43 +23,15 @@ from apigateway.controller.crds.constants import (
     ResourceProtocolEnum,
 )
 from apigateway.controller.crds.v1beta1.models.base import (
-    GatewayCustomResource,
     GatewayCustomResourceSpec,
     Upstream,
 )
-
-# class ResourceRewrite(KubernetesModel):
-#     enabled: bool = Field(default=False, description="是否启用")
-#     method: Optional[str] = Field(default=None, description="重写请求方法")
-#     path: Optional[str] = Field(default=None, description="重写请求路径")
-
-#     # the headers is deprecated, will be removed in the future
-#     # currently use the plugin instead
-#     headers: Dict[str, str] = Field(default_factory=dict, helm_value=True, description="[废弃] 重写请求头")
-#     stage_headers: ResourceRewriteHeadersStrategyEnum = Field(
-#         default_factory=lambda: ResourceRewriteHeadersStrategyEnum.APPEND,
-#         alias="stageHeaders",
-#         description="[废弃] 环境重写请求头合并策略",
-#     )
-#     service_headers: ResourceRewriteHeadersStrategyEnum = Field(
-#         default_factory=lambda: ResourceRewriteHeadersStrategyEnum.APPEND,
-#         alias="serviceHeaders",
-#         description="[废弃] 服务重写请求头合并策略",
-#     )
 
 
 class BkGatewayResourceSpec(GatewayCustomResourceSpec):
     kind: ClassVar[str] = "BkGatewayResource"
 
-    # id: Optional[int] = Field(default=None, description="资源 ID")
-    # plugins: List[PluginConfig] = Field(default_factory=list, description="插件配置", helm_value=True)
-    # service: str = Field(default="", description="服务名称")
     protocol: ResourceProtocolEnum = Field(default=ResourceProtocolEnum.HTTP, description="协议")
-    # methods: List[HttpResourceMethodEnum] = Field(default_factory=list, description="请求方法")
-    # timeout: Optional[TimeoutConfig] = Field(default=None, description="超时配置")
-    # uri: str = Field(default="/", description="请求路径")
-    match_subpath: bool = Field(default=False, alias="matchSubPath", description="是否匹配子路径")
-    # enable_websocket: bool = Field(default=False, alias="enableWebsocket", description="是否启用 WebSocket")
     # is_public: bool = Field(default=False, alias="isPublic", description="是否公开")
     # allow_apply_permission: bool = Field(default=False, alias="allowApplyPermission", description="是否允许申请权限")
 
@@ -67,12 +39,3 @@ class BkGatewayResourceSpec(GatewayCustomResourceSpec):
     # upstream: Optional[Upstream] = Field(default_factory=Upstream, description="上游配置")
     upstream: Optional[Upstream] = Field(default=None, description="上游配置")
     # rewrite: ResourceRewrite = Field(default_factory=ResourceRewrite, description="请求重写")
-
-
-class BkGatewayResource(GatewayCustomResource):
-    kind: ClassVar[str] = "BkGatewayResource"
-    spec: BkGatewayResourceSpec
-
-    @property
-    def resource(self) -> str:
-        return self.get_label("resource", default="")

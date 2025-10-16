@@ -17,45 +17,13 @@
 #
 import hashlib
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import ClassVar, Dict, Optional
-from urllib.parse import urlparse
+from typing import Dict, Optional
 
 from blue_krill.cubing_case import shortcuts
 
 from apigateway.controller.crds.base import KubernetesResourceMetadata
-from apigateway.controller.crds.release_data.release_data import ReleaseData
+from apigateway.controller.release_data.release_data import ReleaseData
 from apigateway.core.models import MicroGateway
-
-
-@dataclass
-class UrlInfo:
-    url: str
-    scheme: str = field(init=False)
-    domain: str = field(init=False)
-    netloc: str = field(init=False)
-    port: Optional[int] = field(init=False)
-    path: str = field(init=False)
-    query: str = field(init=False)
-    # FIXME: grpc/gprcs ? how to
-    _default_ports: ClassVar[Dict[str, int]] = {"http": 80, "https": 443}
-
-    def __post_init__(self):
-        url_info = urlparse(self.url)
-        self.scheme = url_info.scheme
-        self.netloc = url_info.netloc
-        self.path = url_info.path
-        self.query = url_info.query
-
-        host, _, port = url_info.netloc.partition(":")
-        self.port = self._choose_port_by_scheme(port)
-        self.domain = host
-
-    def _choose_port_by_scheme(self, port: str) -> Optional[int]:
-        if port.isdigit():
-            return int(port)
-
-        return self._default_ports.get(self.scheme, None)
 
 
 class BaseConvertor(ABC):

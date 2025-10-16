@@ -15,14 +15,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import ClassVar, Dict, List
+from typing import ClassVar, Dict
 
 from pydantic import Field
 
 from apigateway.controller.crds.v1beta1.models.base import (
     GatewayCustomResource,
     GatewayCustomResourceSpec,
-    PluginConfig,
 )
 
 # class StageRewrite(KubernetesModel):
@@ -36,7 +35,7 @@ class BkGatewayStageSpec(GatewayCustomResourceSpec):
         default="", description="访问路径前缀", helm_value=True, helm_value_default="/", alias="pathPrefix"
     )
     vars: Dict[str, str] = Field(default_factory=dict, description="环境变量", helm_value=True)
-    plugins: List[PluginConfig] = Field(default_factory=list, description="插件配置", helm_value=True)
+    # plugins: List[PluginConfig] = Field(default_factory=list, description="插件配置", helm_value=True)
 
     # rewrite: StageRewrite = Field(default_factory=StageRewrite, description="[废弃] 环境通用请求重写")
 

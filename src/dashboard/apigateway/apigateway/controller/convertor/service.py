@@ -23,13 +23,13 @@ from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
 
 from apigateway.common.constants import DEFAULT_BACKEND_HOST_FOR_MISSING
-from apigateway.controller.crds.release_data.release_data import ReleaseData
-from apigateway.controller.crds.v1beta1.convertors.base import UrlInfo
-from apigateway.controller.models.base import Labels, Node, PluginConfig, Service, Timeout, Upstream
+from apigateway.controller.models.base import Labels, Node, Plugin, Service, Timeout, Upstream
 from apigateway.controller.models.constants import UpstreamSchemeEnum, UpstreamTypeEnum
+from apigateway.controller.release_data.release_data import ReleaseData
 from apigateway.core.models import Backend
 
 from .base import BaseConvertor
+from .utils import UrlInfo
 
 
 class ServiceConvertor(BaseConvertor):
@@ -115,7 +115,7 @@ class ServiceConvertor(BaseConvertor):
             # currently, only add one plugin for service of per backend
             # other plugins are shared by stage, they will be merged on operator
             plugins = [
-                PluginConfig(
+                Plugin(
                     name="bk-backend-context",
                     config={
                         "bk_backend_id": backend_id,
@@ -181,39 +181,39 @@ class ServiceConvertor(BaseConvertor):
     #         ),
     #     )
 
-    def _build_service_plugins(self) -> List[PluginConfig]:
+    def _build_service_plugins(self) -> List[Plugin]:
         plugins = self._get_stage_default_plugins()
         plugins.extend(self._get_stage_binding_plugins())
         plugins.extend(self._get_stage_extra_plugins())
 
         return plugins
 
-    def _get_stage_default_plugins(self) -> List[PluginConfig]:
+    def _get_stage_default_plugins(self) -> List[Plugin]:
         """Get the default plugins for stage, which is shared by all resources in the stage"""
         default_plugins = [
             # 2024-08-19 disable the bk-opentelemetry plugin, we should let each gateway set their own opentelemetry
-            # PluginConfig(name="bk-opentelemetry"),
-            PluginConfig(name="prometheus"),
-            PluginConfig(name="bk-real-ip"),
-            PluginConfig(name="bk-auth-validate"),
-            PluginConfig(name="bk-auth-verify"),
-            PluginConfig(name="bk-break-recursive-call"),
-            PluginConfig(name="bk-delete-sensitive"),
-            PluginConfig(name="bk-log-context"),
-            PluginConfig(name="bk-delete-cookie"),
-            PluginConfig(name="bk-error-wrapper"),
-            PluginConfig(name="bk-jwt"),
-            PluginConfig(name="bk-request-id"),
-            PluginConfig(name="bk-response-check"),
-            PluginConfig(name="bk-permission"),
-            PluginConfig(name="bk-debug"),
-            PluginConfig(
+            # Plugin(name="bk-opentelemetry"),
+            Plugin(name="prometheus"),
+            Plugin(name="bk-real-ip"),
+            Plugin(name="bk-auth-validate"),
+            Plugin(name="bk-auth-verify"),
+            Plugin(name="bk-break-recursive-call"),
+            Plugin(name="bk-delete-sensitive"),
+            Plugin(name="bk-log-context"),
+            Plugin(name="bk-delete-cookie"),
+            Plugin(name="bk-error-wrapper"),
+            Plugin(name="bk-jwt"),
+            Plugin(name="bk-request-id"),
+            Plugin(name="bk-response-check"),
+            Plugin(name="bk-permission"),
+            Plugin(name="bk-debug"),
+            Plugin(
                 name="file-logger",
                 config={
                     "path": "logs/access.log",
                 },
             ),
-            PluginConfig(
+            Plugin(
                 name="bk-stage-context",
                 config={
                     "bk_gateway_name": self._release_data.gateway.name,
@@ -226,14 +226,14 @@ class ServiceConvertor(BaseConvertor):
         ]
 
         if settings.GATEWAY_CONCURRENCY_LIMIT_ENABLED:
-            default_plugins.append(PluginConfig(name="bk-concurrency-limit"))
+            default_plugins.append(Plugin(name="bk-concurrency-limit"))
 
         # 多租户模式
         if settings.ENABLE_MULTI_TENANT_MODE:
             default_plugins.extend(
                 [
-                    PluginConfig(name="bk-tenant-verify"),
-                    PluginConfig(
+                    Plugin(name="bk-tenant-verify"),
+                    Plugin(
                         name="bk-tenant-validate",
                         config={
                             "tenant_mode": self._release_data.gateway.tenant_mode,
@@ -243,18 +243,18 @@ class ServiceConvertor(BaseConvertor):
                 ]
             )
         else:
-            default_plugins.append(PluginConfig(name="bk-default-tenant"))
+            default_plugins.append(Plugin(name="bk-default-tenant"))
 
         return default_plugins
 
-    def _get_stage_binding_plugins(self) -> List[PluginConfig]:
+    def _get_stage_binding_plugins(self) -> List[Plugin]:
         return [
-            PluginConfig(name=plugin_data.name, config=plugin_data.config)
+            Plugin(name=plugin_data.name, config=plugin_data.config)
             for plugin_data in self._release_data.get_stage_plugins()
         ]
 
-    def _get_stage_extra_plugins(self) -> List[PluginConfig]:
+    def _get_stage_extra_plugins(self) -> List[Plugin]:
         gateway_name = self._release_data.gateway.name
         if gateway_name in settings.LEGACY_INVALID_PARAMS_GATEWAY_NAMES:
-            return [PluginConfig(name="bk-legacy-invalid-params")]
+            return [Plugin(name="bk-legacy-invalid-params")]
         return []

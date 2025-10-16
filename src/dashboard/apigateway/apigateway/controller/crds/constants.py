@@ -18,18 +18,6 @@
 from apigateway.utils.yaml import YamlRepresenterEnum
 
 
-class ResourceRewriteHeadersStrategyEnum(str, YamlRepresenterEnum):
-    """deprecated, will be removed in the future
-    append: 追加
-    inherit: 继承
-    override: 重写
-    """
-
-    APPEND = "append"  # 追加
-    INHERIT = "inherit"  # 继承
-    OVERRIDE = "override"  # 重写
-
-
 class ResourceProtocolEnum(str, YamlRepresenterEnum):
     HTTP = "http"
     TCP = "tcp"

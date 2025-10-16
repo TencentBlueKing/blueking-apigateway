@@ -20,7 +20,7 @@ from abc import ABC, abstractmethod
 
 from blue_krill.cubing_case import shortcuts
 
-from apigateway.controller.crds.release_data.release_data import ReleaseData
+from apigateway.controller.release_data.release_data import ReleaseData
 
 
 class BaseConvertor(ABC):
