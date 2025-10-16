@@ -44,6 +44,7 @@
 #     # 1. registry 抽象可以让 Convertor 不耦合任何具体类型
 #     # 2. 转换过程中可以通过 registry 来查询确保引用正确（如 BkgatewayResource.service 字段）
 
+
 #     # 那为何使用中间 registry 而不是最终目标的 registry？
 #     # 1. 转换过程会持续写入到 registry 中，中途如果遇到数据异常会中断，不保证原子性
 #     # 2. 转换过程也会从 registry 查询，如果使用目标 registry，会有历史数据的干扰

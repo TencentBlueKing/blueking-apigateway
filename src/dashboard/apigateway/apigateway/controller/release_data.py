@@ -18,19 +18,39 @@
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, ClassVar, Dict, List
 
 from django.utils.functional import cached_property
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
-from apigateway.controller.release_data.base import PluginData
 from apigateway.core.models import BackendConfig, Gateway, Release, ResourceVersion, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.service.plugin.convertor import PluginConvertorFactory
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class PluginData:
+    type_code: str
+    config: Dict[str, Any]
+    binding_scope_type: str
+    _type_code_to_name: ClassVar[Dict[str, str]] = {
+        "bk-rate-limit:stage": "bk-stage-rate-limit",
+        "bk-rate-limit:resource": "bk-resource-rate-limit",
+        "bk-header-rewrite:stage": "bk-stage-header-rewrite",
+        "bk-header-rewrite:resource": "bk-resource-header-rewrite",
+    }
+
+    @property
+    def name(self) -> str:
+        """
+        插件信息中，type_code 为插件类型，一般情况下，此即为插件名；
+        但是，频率控制插件绑定到环境、资源时，使用了不同的插件，所以要做一下转换
+        """
+        return self._type_code_to_name.get(f"{self.type_code}:{self.binding_scope_type}", self.type_code)
 
 
 @dataclass

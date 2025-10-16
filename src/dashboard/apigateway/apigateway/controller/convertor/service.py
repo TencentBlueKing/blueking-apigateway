@@ -23,9 +23,9 @@ from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
 
 from apigateway.common.constants import DEFAULT_BACKEND_HOST_FOR_MISSING
-from apigateway.controller.models.base import Labels, Node, Plugin, Service, Timeout, Upstream
+from apigateway.controller.models.base import BaseUpstream, Labels, Node, Plugin, Service, Timeout
 from apigateway.controller.models.constants import UpstreamSchemeEnum, UpstreamTypeEnum
-from apigateway.controller.release_data.release_data import ReleaseData
+from apigateway.controller.release_data import ReleaseData
 from apigateway.core.models import Backend
 
 from .base import BaseConvertor
@@ -65,7 +65,7 @@ class ServiceConvertor(BaseConvertor):
 
         for backend_id, backend_config in backend_configs.items():
             timeout = backend_config.get("timeout", 60)
-            upstream = Upstream(
+            upstream = BaseUpstream(
                 type=UpstreamTypeEnum.ROUNDROBIN.value,
                 timeout=Timeout(
                     connect=timeout,
@@ -123,8 +123,8 @@ class ServiceConvertor(BaseConvertor):
                     },
                 ),
             ]
-            stage_plugins = self._build_stage_plugins()
-            plugins.extend(stage_plugins)
+            service_plugins = self._build_service_plugins()
+            plugins.extend(service_plugins)
 
             # stage_name max length is 20, stage_id 6, backend_id is 4, other 10
             # total max length is 64, so the buffer is 24 ( stage_id length + backend_id length)

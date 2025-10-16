@@ -17,7 +17,7 @@
 #
 import pytest
 
-from apigateway.controller.release_data.base import PluginData
+from apigateway.controller.release_data import PluginData
 
 
 class TestPluginData:

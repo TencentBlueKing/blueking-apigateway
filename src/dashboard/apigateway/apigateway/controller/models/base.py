@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -38,22 +38,42 @@ from .constants import (
 # 2. for route, don't set the desc field, save memory
 
 
-class ApisixModel(BaseModel):
+class BaseApisixModel(BaseModel):
+    kind: ClassVar[str]
+
     model_config = ConfigDict(strict=True, validate_by_name=True, validate_by_alias=True)
 
 
+class ApisixModel(BaseApisixModel):
+    # labels: Dict[str, str] = Field(default_factory=dict, description="标签")
+    # def add_labels(self, labels: Dict[str, str]):
+    #     """添加标签"""
+    #     self.labels.update({f"{self.label_prefix}{l}": v for l, v in labels.items()})
+
+    # def set_label(self, label: str, value: str):
+    #     """设置标签"""
+    #     self.labels[f"{self.label_prefix}{label}"] = value
+
+    # def get_label(self, label: str, default=""):
+    #     """获取标签"""
+
+    #     return self.labels.get(f"{self.label_prefix}{label}", default)
+
+    kind: ClassVar[str]
+
+
 # ------------------------------------------------------------
-# been referenced models
+# been referenced models, use BaseApisixModel
 
 
-class Labels(ApisixModel):
+class Labels(BaseApisixModel):
     # This is a dict type, so we not set the default value here
     gateway: str = Field(description="gateway")
     stage: str = Field(description="stage")
-    publish_id: Optional[int] = Field(description="publish_id")
+    publish_id: Optional[int] = Field(default=None, description="publish_id")
 
 
-class Node(ApisixModel):
+class Node(BaseApisixModel):
     """node for upstream"""
 
     host: str = Field(default="", description="host")
@@ -64,7 +84,7 @@ class Node(ApisixModel):
     # TODO: convert to dict({"host:port": weight})
 
 
-class Timeout(ApisixModel):
+class Timeout(BaseApisixModel):
     """timeout for route/upstream
     example: {"connect": 3, "send": 3, "read": 3}
 
@@ -76,14 +96,14 @@ class Timeout(ApisixModel):
     read: int = Field(default=60, gt=0, description="read timeout")
 
 
-class Plugin(ApisixModel):
+class Plugin(BaseApisixModel):
     name: str = Field(description="name")
     config: Dict[str, Any] = Field(default_factory=dict, description="config")
 
 
-class BaseHealthy(ApisixModel):
-    http_statuses: Optional[List[int]] = Field(description="http statuses")
-    successes: Optional[int] = Field(ge=1, le=254, description="success count")
+class BaseHealthy(BaseApisixModel):
+    http_statuses: Optional[List[int]] = Field(default=None, description="http statuses")
+    successes: Optional[int] = Field(default=None, ge=1, le=254, description="success count")
 
 
 class PassiveHealthy(BaseHealthy):
@@ -91,14 +111,14 @@ class PassiveHealthy(BaseHealthy):
 
 
 class ActiveHealthy(BaseHealthy):
-    interval: Optional[int] = Field(description="interval")
+    interval: Optional[int] = Field(default=None, description="interval")
 
 
-class BaseUnhealthy(ApisixModel):
-    http_statuses: Optional[List[int]] = Field(description="http statuses")
-    http_failures: Optional[int] = Field(ge=1, le=254, description="http failures")
-    tcp_failures: Optional[int] = Field(ge=1, le=254, description="tcp failures")
-    timeouts: Optional[int] = Field(description="timeouts")
+class BaseUnhealthy(BaseApisixModel):
+    http_statuses: Optional[List[int]] = Field(default=None, description="http statuses")
+    http_failures: Optional[int] = Field(default=None, ge=1, le=254, description="http failures")
+    tcp_failures: Optional[int] = Field(default=None, ge=1, le=254, description="tcp failures")
+    timeouts: Optional[int] = Field(default=None, description="timeouts")
 
 
 class PassiveUnhealthy(BaseUnhealthy):
@@ -106,30 +126,30 @@ class PassiveUnhealthy(BaseUnhealthy):
 
 
 class ActiveUnhealthy(BaseUnhealthy):
-    interval: Optional[int] = Field(description="interval")
+    interval: Optional[int] = Field(default=None, description="interval")
 
 
-class ActiveCheck(ApisixModel):
-    type: CheckActiveTypeEnum = Field(default=CheckActiveTypeEnum.HTTP.value, description="type")
-    timeout: Optional[int] = Field(description="timeout")
-    concurrency: Optional[int] = Field(description="concurrency")
-    http_path: Optional[str] = Field(description="http path")
-    host: Optional[str] = Field(description="host")
-    port: Optional[int] = Field(ge=1, le=65535, description="port")
-    https_verify_certificate: Optional[bool] = Field(description="https verify certificate")
-    req_headers: Optional[List[str]] = Field(description="request headers")
-    healthy: Optional[ActiveHealthy] = Field(description="healthy")
-    unhealthy: Optional[ActiveUnhealthy] = Field(description="unhealthy")
+class ActiveCheck(BaseApisixModel):
+    type: CheckActiveTypeEnum = Field(default=CheckActiveTypeEnum.HTTP, description="type")
+    timeout: Optional[int] = Field(default=None, description="timeout")
+    concurrency: Optional[int] = Field(default=None, description="concurrency")
+    http_path: Optional[str] = Field(default=None, description="http path")
+    host: Optional[str] = Field(default=None, description="host")
+    port: Optional[int] = Field(default=None, ge=1, le=65535, description="port")
+    https_verify_certificate: Optional[bool] = Field(default=None, description="https verify certificate")
+    req_headers: Optional[List[str]] = Field(default=None, description="request headers")
+    healthy: Optional[ActiveHealthy] = Field(default=None, description="healthy")
+    unhealthy: Optional[ActiveUnhealthy] = Field(default=None, description="unhealthy")
     # FIXME: should be one of healthy or unhealthy
 
 
-class PassiveCheck(ApisixModel):
-    type: CheckPassiveTypeEnum = Field(default=CheckPassiveTypeEnum.HTTP.value, description="type")
-    healthy: Optional[PassiveHealthy] = Field(description="healthy")
-    unhealthy: Optional[PassiveUnhealthy] = Field(description="unhealthy")
+class PassiveCheck(BaseApisixModel):
+    type: CheckPassiveTypeEnum = Field(default=CheckPassiveTypeEnum.HTTP, description="type")
+    healthy: Optional[PassiveHealthy] = Field(default=None, description="healthy")
+    unhealthy: Optional[PassiveUnhealthy] = Field(default=None, description="unhealthy")
 
 
-class Check(ApisixModel):
+class Check(BaseApisixModel):
     active: Optional[ActiveCheck] = Field(default=None, description="active check")
     passive: Optional[PassiveCheck] = Field(default=None, description="passive check")
 
@@ -139,66 +159,75 @@ class Check(ApisixModel):
             raise ValueError("either active or passive must be set")
 
 
-class Tls(ApisixModel):
-    cert: Optional[str] = Field(description="cert")
-    key: Optional[str] = Field(description="key")
+class Tls(BaseApisixModel):
+    cert: Optional[str] = Field(default=None, description="cert")
+    key: Optional[str] = Field(default=None, description="key")
     client_cert_id: Optional[str] = Field(
-        min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="client cert id"
+        default=None, min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="client cert id"
     )
 
     # TODO: cert+key or client_cert_id only one is allowed
 
 
-# ------------------------------------------------------------
-# base models
-
-
-class Upstream(ApisixModel):
+class BaseUpstream(BaseApisixModel):
     # NOTE: now we put upstream directly in service, so no name/desc; this is a struct nested in service
 
     # load balance
-    type: UpstreamTypeEnum = Field(default=UpstreamTypeEnum.ROUNDROBIN.value, description="type")
+    type: UpstreamTypeEnum = Field(default=UpstreamTypeEnum.ROUNDROBIN, description="type")
     nodes: List[Node] = Field(default_factory=list, description="nodes")
-    hash_on: Optional[UpstreamHashOnEnum] = Field(description="hash on")
-    key: Optional[str] = Field(description="key")
-    scheme: Optional[UpstreamSchemeEnum] = Field(default=UpstreamSchemeEnum.HTTP.value, description="scheme")
+    hash_on: Optional[UpstreamHashOnEnum] = Field(default=None, description="hash on")
+    key: Optional[str] = Field(default=None, description="key")
+    scheme: Optional[UpstreamSchemeEnum] = Field(default=UpstreamSchemeEnum.HTTP, description="scheme")
 
     # health check
-    checks: Optional[Check] = Field(description="checks")
+    checks: Optional[Check] = Field(default=None, description="checks")
 
     # NOTE: not support retry
 
     # NOTE: not support discovery_type/service_name here, we use other sd solutions
 
-    timeout: Optional[Timeout] = Field(description="timeout")
+    timeout: Optional[Timeout] = Field(default=None, description="timeout")
 
     # NOTE: here we set to `node`; should always be `node`
-    pass_host: UpstreamPassHostEnum = Field(default=UpstreamPassHostEnum.NODE.value, description="pass host")
+    pass_host: UpstreamPassHostEnum = Field(default=UpstreamPassHostEnum.NODE, description="pass host")
     # NOTE: no upstream_host, This is only valid if the pass_host is set to rewrite
 
     # for proxy to https/grpcs upstream
     # TODO:
-    tls: Optional[Tls] = Field(description="tls")
+    tls: Optional[Tls] = Field(default=None, description="tls")
+
+
+class SSLClient(BaseApisixModel):
+    ca: Optional[str] = Field(default=None, min_length=128, max_length=64 * 1024, description="ca")
+    depth: Optional[int] = Field(default=None, ge=0, description="depth")
+    skip_mtls_uri_regex: Optional[List[str]] = Field(default=None, min_length=1, description="skip mtls uri regex")
+
+
+# ------------------------------------------------------------
+# base models, use ApisixModel
 
 
 class Service(ApisixModel):
+    kind = "service"
+
     id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="id")
     name: str = Field(min_length=1, max_length=100, description="name")
-    desc: Optional[str] = Field(max_length=256, description="desc")
+    desc: Optional[str] = Field(default=None, max_length=256, description="desc")
     # NOTE: we required the labels here
     labels: Labels = Field(description="labels")
 
     plugins: List[Plugin] = Field(default_factory=list, description="plugins")
-    upstream: Upstream = Field(description="upstream")
+    upstream: BaseUpstream = Field(description="upstream")
 
 
 class Route(ApisixModel):
+    kind = "route"
     # NOTE: not all fields are defined here, only the fields we need
 
     id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="id")
     name: str = Field(min_length=1, max_length=100, description="name")
     # NOTE: not desc for route, save memory
-    desc: Optional[str] = Field(description="desc")
+    desc: Optional[str] = Field(default=None, description="desc")
     # NOTE: we required the labels here
     labels: Labels = Field(description="labels")
 
@@ -206,41 +235,42 @@ class Route(ApisixModel):
     uris: List[str] = Field(default_factory=list, description="uris")
 
     methods: List[HttpMethodEnum] = Field(default_factory=list, description="methods")
-    priority: Optional[int] = Field(description="priority")
+    priority: Optional[int] = Field(default=None, description="priority")
     plugins: List[Plugin] = Field(default_factory=list, description="plugins")
     # NOTE: we need the
     service_id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="service id")
-    timeout: Optional[Timeout] = Field(description="timeout")
-    enable_websocket: Optional[bool] = Field(description="enable websocket")
+    timeout: Optional[Timeout] = Field(default=None, description="timeout")
+    enable_websocket: Optional[bool] = Field(default=None, description="enable websocket")
 
     # NOTE: NO upstream here, currently we use service_id to bind the service with
     # NOTE: NO status here
 
 
-class SSLClient(ApisixModel):
-    ca: Optional[str] = Field(min_length=128, max_length=64 * 1024, description="ca")
-    depth: Optional[int] = Field(ge=0, default=1, description="depth")
-    skip_mtls_uri_regex: Optional[List[str]] = Field(min_length=1, description="skip mtls uri regex")
-
-
 class SSL(ApisixModel):
+    kind = "ssl"
+
     id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="id")
-    desc: Optional[str] = Field(max_length=256, description="desc")
+    desc: Optional[str] = Field(default=None, max_length=256, description="desc")
     labels: Labels = Field(description="labels")
     type: str = Field(default=SSLTypeEnum.CLIENT.value, description="type")
 
     cert: str = Field(min_length=128, max_length=64 * 1024, description="cert")
     key: str = Field(min_length=128, max_length=64 * 1024, description="key")
-    client: Optional[SSLClient] = Field(description="client")
+    client: Optional[SSLClient] = Field(default=None, description="client")
 
 
 class Proto(ApisixModel):
+    kind = "proto"
+
+    id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="id")
     proto: str = Field(description="proto")
-    name: Optional[str] = Field(min_length=1, max_length=100, description="name")
-    desc: Optional[str] = Field(max_length=256, description="desc")
-    labels: Optional[Labels] = Field(description="labels")
+    name: Optional[str] = Field(default=None, min_length=1, max_length=100, description="name")
+    desc: Optional[str] = Field(default=None, max_length=256, description="desc")
+    labels: Optional[Labels] = Field(default=None, description="labels")
 
 
 class PluginMetadata(ApisixModel):
-    name: str = Field(min_length=1, max_length=100, description="name")
+    kind = "plugin_metadata"
+
+    id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="id")
     config: Dict[str, Any] = Field(default_factory=dict, description="config")

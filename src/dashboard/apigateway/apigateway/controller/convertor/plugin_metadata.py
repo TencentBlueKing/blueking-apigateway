@@ -31,7 +31,7 @@ class PluginMetadataConvertor(BaseConvertor):
         # how to convert to a {id -> config } key-and-value fields for the stage?
         return [
             PluginMetadata(
-                name=name,
+                id=name,
                 config=config,
             )
             for name, config in settings.PLUGIN_METADATA_CONFIG.items()

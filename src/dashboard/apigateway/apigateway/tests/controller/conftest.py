@@ -32,7 +32,7 @@ from apigateway.controller.crds.v1beta1.convertors.plugin_metadata import Plugin
 from apigateway.controller.crds.v1beta1.convertors.resource import HttpResourceConvertor
 from apigateway.controller.crds.v1beta1.convertors.service import ServiceConvertor
 from apigateway.controller.crds.v1beta1.convertors.stage import StageConvertor
-from apigateway.controller.release_data.release_data import ReleaseData
+from apigateway.controller.release_data import ReleaseData
 from apigateway.core.constants import ResourceVersionSchemaEnum, StageStatusEnum
 from apigateway.core.models import MicroGateway, Release, ResourceVersion
 from apigateway.service.gateway_jwt import GatewayJWTHandler
