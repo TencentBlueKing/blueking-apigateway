@@ -32,6 +32,15 @@ from apigateway.core.models import Release
 logger = logging.getLogger(__name__)
 
 
+class GlobalApisixResourceConvertor:
+    """全局资源转换器"""
+
+    # FIXME: convert plugin_metadata
+
+    def convert(self):
+        return NotImplementedError()
+
+
 @dataclass
 class GatewayApisixResourceConvertor:
     """网关资源转换器"""
