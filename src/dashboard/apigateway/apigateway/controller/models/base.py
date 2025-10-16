@@ -171,7 +171,7 @@ class Upstream(ApisixModel):
 
 
 class Service(ApisixModel):
-    id: str = Field(description="id")
+    id: str = Field(description="id", min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$")
     name: str = Field(description="name")
     desc: Optional[str] = Field(description="desc")
     # NOTE: we required the labels here
@@ -184,7 +184,7 @@ class Service(ApisixModel):
 class Route(ApisixModel):
     # NOTE: not all fields are defined here, only the fields we need
 
-    id: str = Field(description="id")
+    id: str = Field(description="id", min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$")
     name: Optional[str] = Field(description="name")
     # NOTE: not desc for route, save memory
     # desc: Optional[str] = Field(description="desc")
@@ -215,7 +215,7 @@ class SSLClient(ApisixModel):
 
 
 class SSL(ApisixModel):
-    id: str = Field(description="id")
+    id: str = Field(description="id", min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$")
     desc: Optional[str] = Field(description="desc")
     labels: Labels = Field(description="labels")
     type: str = Field(default=SSLTypeEnum.CLIENT.value, description="type")
