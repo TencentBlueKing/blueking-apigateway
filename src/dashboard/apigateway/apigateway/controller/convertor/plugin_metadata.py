@@ -28,6 +28,7 @@ from .base import BaseConvertor
 class PluginMetadataConvertor(BaseConvertor):
     def convert(self) -> List[PluginMetadata]:
         # it's global, so no need to get data from release_data
+        # how to convert to a {id -> config } key-and-value fields for the stage?
         return [
             PluginMetadata(
                 name=name,

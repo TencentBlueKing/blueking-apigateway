@@ -37,6 +37,7 @@ class UrlInfo:
     port: Optional[int] = field(init=False)
     path: str = field(init=False)
     query: str = field(init=False)
+    # FIXME: grpc/gprcs ? how to
     _default_ports: ClassVar[Dict[str, int]] = {"http": 80, "https": 443}
 
     def __post_init__(self):

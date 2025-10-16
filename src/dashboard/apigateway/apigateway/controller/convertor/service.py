@@ -23,10 +23,9 @@ from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
 
 from apigateway.common.constants import DEFAULT_BACKEND_HOST_FOR_MISSING
-from apigateway.controller.crds.constants import UpstreamSchemeEnum, UpstreamTypeEnum
 from apigateway.controller.crds.release_data.release_data import ReleaseData
 from apigateway.controller.crds.v1beta1.convertors.base import UrlInfo
-from apigateway.controller.models.base import Node, PluginConfig, Service, Timeout, Upstream
+from apigateway.controller.models.base import Labels, Node, PluginConfig, Service, Timeout, Upstream
 from apigateway.controller.models.constants import UpstreamSchemeEnum, UpstreamTypeEnum
 from apigateway.core.models import Backend
 
@@ -96,6 +95,7 @@ class ServiceConvertor(BaseConvertor):
 
                 upstream.nodes.append(Node(host=url_info.domain, port=url_info.port, weight=node.get("weight", 1)))
 
+            # FIXME: move gateway/stage basic info into baseConvertor?
             stage_name = self._release_data.stage.name
             stage_id = self._release_data.stage.pk
             stage_description = self._release_data.stage.description
@@ -128,13 +128,26 @@ class ServiceConvertor(BaseConvertor):
 
             # stage_name max length is 20, stage_id 6, backend_id is 4, other 10
             # total max length is 64, so the buffer is 24 ( stage_id length + backend_id length)
+            # TODO: build the labels for every resource
+            labels = Labels(
+                gateway=self._release_data.gateway.name,
+                stage=stage_name,
+                publish_id=self._publish_id,
+                # FIXME: add backend_id here?
+            )
             services.append(
                 Service(
+                    # the previous id is: {gateway_name}.{stage_name}.{stage_id}-{backend_id}
+                    # 30+1+20+1+ x + 1 + y = 53 + x + y, so x + y <= 11 (almost no buffer)
+                    # so we should make a new id here?
+                    # example: bk-apigateway-inner.prod.stage-6-backend-7
                     id=f"s-{stage_id}-b-{backend_id}",
+                    # example: bk-apigateway-inner-prod-s-6-b-7
                     name=f"_stage_service_{stage_name}_{backend_id}",
                     desc=description,
-                    upstream=upstream,
+                    labels=labels,
                     plugins=plugins,
+                    upstream=upstream,
                     # metadata=self._common_metadata(
                     #     f"s-{stage_id}-b-{backend_id}",
                     #     labels={
@@ -145,9 +158,6 @@ class ServiceConvertor(BaseConvertor):
                     # spec=BkGatewayServiceSpec(
                     #     name=f"_stage_service_{stage_name}_{backend_id}",
                     #     id=f"stage-{stage_id}-backend-{backend_id}",
-                    #     description=description,
-                    #     upstream=upstream,
-                    #     plugins=plugins,
                     # ),
                 )
             )
@@ -156,6 +166,7 @@ class ServiceConvertor(BaseConvertor):
 
     # def stage_convert(self) -> BkGatewayStage:
     #     # FIXME: 如何处理 http/https 协议
+    #     # FIXME: 环境变量渲染是不是 service 也有？
     #     http_info = MicroGatewayHTTPInfo.from_micro_gateway_config(self._micro_gateway.config)
     #     url_info = UrlInfo(http_info.http_url)
     #     path_prefix = url_info.path
@@ -167,7 +178,6 @@ class ServiceConvertor(BaseConvertor):
     #             description=self._release_data.stage.description,
     #             vars=self._release_data.stage.vars,
     #             path_prefix=path_prefix,
-    #             plugins=plugins,
     #         ),
     #     )
 

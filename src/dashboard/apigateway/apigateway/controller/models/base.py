@@ -31,6 +31,12 @@ from .constants import (
     UpstreamTypeEnum,
 )
 
+# reference to: https://github.com/apache/apisix/blob/release/3.13/apisix/schema_def.lua
+
+# IMPORTANT RULES:
+# 1. all id are string(1-64), not int, so use readable string instead of increment id
+# 2. for route, don't set the desc field, save memory
+
 
 class ApisixModel(BaseModel):
     model_config = ConfigDict(strict=True, validate_by_name=True, validate_by_alias=True)
@@ -44,13 +50,15 @@ class Labels(ApisixModel):
     # This is a dict type, so we not set the default value here
     gateway: str = Field(description="gateway")
     stage: str = Field(description="stage")
+    publish_id: Optional[int] = Field(description="publish_id")
 
 
 class Node(ApisixModel):
     """node for upstream"""
 
     host: str = Field(default="", description="host")
-    port: int = Field(default=0, gt=0, description="port")
+    port: int = Field(default=0, ge=1, le=65535, description="port")
+    # the frontend make it gte 1, it's different from apisix
     weight: int = Field(default=1, gt=0, description="weight")
 
     # TODO: convert to dict({"host:port": weight})
@@ -75,7 +83,7 @@ class Plugin(ApisixModel):
 
 class BaseHealthy(ApisixModel):
     http_statuses: Optional[List[int]] = Field(description="http statuses")
-    successes: Optional[int] = Field(description="success count")
+    successes: Optional[int] = Field(ge=1, le=254, description="success count")
 
 
 class PassiveHealthy(BaseHealthy):
@@ -88,8 +96,8 @@ class ActiveHealthy(BaseHealthy):
 
 class BaseUnhealthy(ApisixModel):
     http_statuses: Optional[List[int]] = Field(description="http statuses")
-    http_failures: Optional[int] = Field(description="http failures")
-    tcp_failures: Optional[int] = Field(description="tcp failures")
+    http_failures: Optional[int] = Field(ge=1, le=254, description="http failures")
+    tcp_failures: Optional[int] = Field(ge=1, le=254, description="tcp failures")
     timeouts: Optional[int] = Field(description="timeouts")
 
 
@@ -107,7 +115,7 @@ class ActiveCheck(ApisixModel):
     concurrency: Optional[int] = Field(description="concurrency")
     http_path: Optional[str] = Field(description="http path")
     host: Optional[str] = Field(description="host")
-    port: Optional[int] = Field(description="port")
+    port: Optional[int] = Field(ge=1, le=65535, description="port")
     https_verify_certificate: Optional[bool] = Field(description="https verify certificate")
     req_headers: Optional[List[str]] = Field(description="request headers")
     healthy: Optional[ActiveHealthy] = Field(description="healthy")
@@ -134,7 +142,9 @@ class Check(ApisixModel):
 class Tls(ApisixModel):
     cert: Optional[str] = Field(description="cert")
     key: Optional[str] = Field(description="key")
-    client_cert_id: Optional[str] = Field(description="client cert id")
+    client_cert_id: Optional[str] = Field(
+        min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="client cert id"
+    )
 
     # TODO: cert+key or client_cert_id only one is allowed
 
@@ -151,6 +161,7 @@ class Upstream(ApisixModel):
     nodes: List[Node] = Field(default_factory=list, description="nodes")
     hash_on: Optional[UpstreamHashOnEnum] = Field(description="hash on")
     key: Optional[str] = Field(description="key")
+    scheme: Optional[UpstreamSchemeEnum] = Field(default=UpstreamSchemeEnum.HTTP.value, description="scheme")
 
     # health check
     checks: Optional[Check] = Field(description="checks")
@@ -171,9 +182,9 @@ class Upstream(ApisixModel):
 
 
 class Service(ApisixModel):
-    id: str = Field(description="id", min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$")
-    name: str = Field(description="name")
-    desc: Optional[str] = Field(description="desc")
+    id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="id")
+    name: str = Field(min_length=1, max_length=100, description="name")
+    desc: Optional[str] = Field(max_length=256, description="desc")
     # NOTE: we required the labels here
     labels: Labels = Field(description="labels")
 
@@ -184,14 +195,12 @@ class Service(ApisixModel):
 class Route(ApisixModel):
     # NOTE: not all fields are defined here, only the fields we need
 
-    id: str = Field(description="id", min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$")
-    name: Optional[str] = Field(description="name")
+    id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="id")
+    name: str = Field(min_length=1, max_length=100, description="name")
     # NOTE: not desc for route, save memory
-    # desc: Optional[str] = Field(description="desc")
+    desc: Optional[str] = Field(description="desc")
     # NOTE: we required the labels here
     labels: Labels = Field(description="labels")
-
-    scheme: UpstreamSchemeEnum = Field(default=UpstreamSchemeEnum.HTTP.value, description="scheme")
 
     # NOTE: use uris, not uri here, for compatibility
     uris: List[str] = Field(default_factory=list, description="uris")
@@ -200,40 +209,38 @@ class Route(ApisixModel):
     priority: Optional[int] = Field(description="priority")
     plugins: List[Plugin] = Field(default_factory=list, description="plugins")
     # NOTE: we need the
-    service_id: str = Field(description="service id")
+    service_id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="service id")
     timeout: Optional[Timeout] = Field(description="timeout")
     enable_websocket: Optional[bool] = Field(description="enable websocket")
 
-    # NOTE: NO upstream here
+    # NOTE: NO upstream here, currently we use service_id to bind the service with
     # NOTE: NO status here
 
 
 class SSLClient(ApisixModel):
-    ca: Optional[str] = Field(description="ca")
-    depth: Optional[int] = Field(description="depth")
-    skip_mtls_uri_regex: Optional[List[str]] = Field(description="skip mtls uri regex")
+    ca: Optional[str] = Field(min_length=128, max_length=64 * 1024, description="ca")
+    depth: Optional[int] = Field(ge=0, default=1, description="depth")
+    skip_mtls_uri_regex: Optional[List[str]] = Field(min_length=1, description="skip mtls uri regex")
 
 
 class SSL(ApisixModel):
-    id: str = Field(description="id", min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$")
-    desc: Optional[str] = Field(description="desc")
+    id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="id")
+    desc: Optional[str] = Field(max_length=256, description="desc")
     labels: Labels = Field(description="labels")
     type: str = Field(default=SSLTypeEnum.CLIENT.value, description="type")
 
-    # TODO: support client.ca
-
-    cert: str = Field(description="cert")
-    key: str = Field(description="key")
+    cert: str = Field(min_length=128, max_length=64 * 1024, description="cert")
+    key: str = Field(min_length=128, max_length=64 * 1024, description="key")
     client: Optional[SSLClient] = Field(description="client")
 
 
 class Proto(ApisixModel):
     proto: str = Field(description="proto")
-    name: Optional[str] = Field(description="name")
-    desc: Optional[str] = Field(description="desc")
+    name: Optional[str] = Field(min_length=1, max_length=100, description="name")
+    desc: Optional[str] = Field(max_length=256, description="desc")
     labels: Optional[Labels] = Field(description="labels")
 
 
 class PluginMetadata(ApisixModel):
-    name: str = Field(description="name")
+    name: str = Field(min_length=1, max_length=100, description="name")
     config: Dict[str, Any] = Field(default_factory=dict, description="config")
