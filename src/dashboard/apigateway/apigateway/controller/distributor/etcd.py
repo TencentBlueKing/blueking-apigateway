@@ -41,6 +41,7 @@ class SyncFail(Exception):
 
 
 # FIXME: split into Global and Gateway Distributor
+# global distributor is full sync
 
 
 class EtcdDistributor(BaseDistributor):

@@ -41,6 +41,24 @@ from .constants import (
 # ------------------------------------------------------------
 # been referenced models, use BaseApisixModel
 
+# BaseApisixModel
+#   |- Labels
+#   |- Node
+#   |- Timeout
+#   |- Plugin
+#   |- BaseHealthy
+#       |- PassiveHealthy
+#       |- ActiveHealthy
+#   |- BaseUnhealthy
+#       |- PassiveUnhealthy
+#       |- ActiveUnhealthy
+#   |- ActiveCheck
+#   |- PassiveCheck
+#   |- Check
+#   |- Tls
+#   |- BaseUpstream
+#   |- SSLClient
+
 
 class BaseApisixModel(BaseModel):
     model_config = ConfigDict(strict=True, validate_by_name=True, validate_by_alias=True)
@@ -62,16 +80,6 @@ class Labels(BaseApisixModel):
     def get_label(self, key: str, default: Optional[str] = None) -> Optional[str]:
         """Get a dynamic label"""
         return getattr(self, key, default)
-
-    # gateway: str = Field(description="gateway")
-    # stage: str = Field(description="stage")
-    # publish_id: Optional[int] = Field(default=None, description="publish_id")
-
-    # Allow dynamic labels as additional fields
-
-    # def to_dict(self) -> Dict[str, Any]:
-    #     """Convert to dictionary including all dynamic labels"""
-    #     return self.model_dump()
 
 
 class Node(BaseApisixModel):
@@ -103,17 +111,6 @@ class Plugin(BaseApisixModel):
 
     def __init__(self, **data):
         super().__init__(**data)
-
-    # name: str = Field(description="name")
-    # config: Dict[str, Any] = Field(default_factory=dict, description="config")
-
-    # def add_field(self, key: str, value: Any) -> None:
-    #     """Add a dynamic field"""
-    #     setattr(self, key, value)
-
-    # def get_field(self, key: str, default: Any = None) -> Any:
-    #     """Get a dynamic field"""
-    #     return getattr(self, key, default)
 
 
 class BaseHealthy(BaseApisixModel):
@@ -221,22 +218,18 @@ class SSLClient(BaseApisixModel):
 # ------------------------------------------------------------
 # base models, use ApisixModel
 
+# ApisixModel
+#   |- GatewayApisixModel
+#          |- Service
+#          |- Route
+#          |- SSL
+#          |- Proto
+#   |- GlobalApisixModel
+#          |- PluginMetadata
+
 
 class ApisixModel(BaseModel):
     model_config = ConfigDict(strict=True, validate_by_name=True, validate_by_alias=True)
-    # labels: Dict[str, str] = Field(default_factory=dict, description="标签")
-    # def add_labels(self, labels: Dict[str, str]):
-    #     """添加标签"""
-    #     self.labels.update({f"{self.label_prefix}{l}": v for l, v in labels.items()})
-
-    # def set_label(self, label: str, value: str):
-    #     """设置标签"""
-    #     self.labels[f"{self.label_prefix}{label}"] = value
-
-    # def get_label(self, label: str, default=""):
-    #     """获取标签"""
-
-    #     return self.labels.get(f"{self.label_prefix}{label}", default)
 
     kind: ClassVar[str]
 

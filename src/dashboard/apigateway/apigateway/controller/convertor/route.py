@@ -28,13 +28,10 @@ from apigateway.core.constants import ProxyTypeEnum
 from apigateway.utils.time import now_str
 
 from .base import GatewayResourceConvertor
+from .constants import MATCH_SUB_PATH_PRIORITY, SUBPATH_PARAM_NAME
 from .utils import truncate_string
 
 logger = logging.getLogger(__name__)
-
-SUBPATH_PARAM_NAME = "bk_api_subpath_match_param_name"
-
-MATCH_SUB_PATH_PRIORITY = -1000
 
 
 class RouteConvertor(GatewayResourceConvertor):

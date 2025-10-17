@@ -17,7 +17,6 @@
 #
 from django.conf import settings
 
-from apigateway.controller.micro_gateway_config import MicroGatewayHTTPInfo
 from apigateway.core.models import Gateway, MicroGateway, Stage
 
 
@@ -30,7 +29,8 @@ class ResourceURLHandler:
         # FIXME: remove micro_gateway
         micro_gateway: MicroGateway = stage.micro_gateway
         if micro_gateway:
-            http_info = MicroGatewayHTTPInfo.from_micro_gateway_config(micro_gateway.config)
-            return f"{http_info.http_url.rstrip('/')}/{{resource_path}}"
+            http_info = micro_gateway.config.get("http") or {}
+            http_url = http_info["http_url"]
+            return f"{http_url.rstrip('/')}/{{resource_path}}"
 
         return settings.API_RESOURCE_URL_TMPL

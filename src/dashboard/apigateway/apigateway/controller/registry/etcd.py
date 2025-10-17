@@ -35,9 +35,6 @@ class EtcdRegistry(Registry):
     registry_type: ClassVar[str] = "etcd"
 
     def __init__(self, key_prefix: str, etcd_client: etcd3.Etcd3Client = None):
-        """
-        :param safe_mode: 是否安全模式，如果为 True，从 etcd 读取的数据，反序列化失败时将抛出异常；否则，忽略这些数据
-        """
         super().__init__(key_prefix)
         self._etcd_client = etcd_client or get_etcd_client()
 
@@ -45,9 +42,6 @@ class EtcdRegistry(Registry):
         return self._etcd_client.delete(key)
 
     def apply_resource(self, resource: ApisixModel) -> bool:
-        # Convert to JSON-serializable dict to handle enum objects properly
-        # data = json.loads(resource.model_dump_json(by_alias=True))
-        # payload = yaml_dumps(data)
         payload = resource.model_dump_json(exclude_none=True)
         self._etcd_client.put(self._get_key(resource.kind, resource.id), payload)
         return True
@@ -89,9 +83,6 @@ class EtcdRegistry(Registry):
 
     def iter_by_type(self, resource_type: Type[ApisixModel]) -> Iterable[ApisixModel]:
         for payload, _ in self._etcd_client.get_prefix(self._get_kind_key_prefix(resource_type.kind)):
-            # cr = self._deserialize_cr(resource_type, payload)
-            # if cr:
-            #     yield cr
             try:
                 value = json.loads(payload)
                 yield resource_type(**value)

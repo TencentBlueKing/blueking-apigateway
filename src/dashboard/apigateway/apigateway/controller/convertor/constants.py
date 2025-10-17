@@ -24,3 +24,7 @@ LABEL_KEY_APISIX_VERSION = "apisix-version"
 
 LABEL_KEY_PUBLISH_ID = "publish-id"
 LABEL_KEY_BACKEND_ID = "backend-id"
+
+SUBPATH_PARAM_NAME = "bk_api_subpath_match_param_name"
+
+MATCH_SUB_PATH_PRIORITY = -1000
