@@ -20,11 +20,12 @@ from typing import Optional, Tuple
 
 from apigateway.controller.constants import DELETE_PUBLISH_ID
 from apigateway.controller.distributor.base import BaseDistributor
-from apigateway.controller.distributor.key_prefix import KeyPrefixHandler
 from apigateway.controller.registry.etcd import EtcdRegistry
 from apigateway.controller.release_logger import ReleaseProcedureLogger
 from apigateway.controller.transformer import GatewayApisixResourceConvertor
 from apigateway.core.models import Gateway, Release, Stage
+
+from .key_prefix import GatewayKeyPrefixHandler
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,9 @@ class SyncFail(Exception):
         return f"sync resources failed: {self.resources}"
 
 
+# FIXME: split into Global and Gateway Distributor
+
+
 class EtcdDistributor(BaseDistributor):
     # def __init__(self, include_gateway_global_config: bool = False):
     #     """
@@ -49,7 +53,7 @@ class EtcdDistributor(BaseDistributor):
     #     # self.include_gateway_global_config = include_gateway_global_config
 
     def _get_registry(self, gateway: Gateway, stage: Stage) -> EtcdRegistry:
-        key_prefix = KeyPrefixHandler().get_release_key_prefix(gateway.name, stage.name)
+        key_prefix = GatewayKeyPrefixHandler().get_release_key_prefix(gateway.name, stage.name)
         return EtcdRegistry(key_prefix=key_prefix)
 
     def distribute(

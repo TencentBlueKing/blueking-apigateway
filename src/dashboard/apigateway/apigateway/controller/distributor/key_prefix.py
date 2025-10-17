@@ -21,10 +21,19 @@ from django.conf import settings
 
 
 @dataclass
-class KeyPrefixHandler:
+class GatewayKeyPrefixHandler:
     api_version: str = "v2"
     prefix: str = settings.BK_GATEWAY_ETCD_NAMESPACE_PREFIX
 
     def get_release_key_prefix(self, gateway_name: str, stage_name: str) -> str:
         """利用网关名称、环境名称，构造发布的键前缀；在 etcd 中，一次发布的所有数据，都会在此前缀下"""
-        return f"{self.prefix}/{gateway_name}/{stage_name}/{self.api_version}/"
+        return f"{self.prefix}/gateway/{gateway_name}/{stage_name}/{self.api_version}/"
+
+
+@dataclass
+class GlobalKeyPrefixHandler:
+    api_version: str = "v2"
+    prefix: str = settings.BK_GATEWAY_ETCD_NAMESPACE_PREFIX
+
+    def get_release_key_prefix(self) -> str:
+        return f"{self.prefix}/global/{self.api_version}/"
