@@ -351,7 +351,7 @@ const fetchMetrics = debounce(() => {
 watch(
   () => stage,
   () => {
-    if (!stage) {
+    if (!stage || !featureFlagStore.flags.ENABLE_RUN_DATA_METRICS) {
       return;
     }
     fetchMetrics();
@@ -372,7 +372,7 @@ async function getRequestCount() {
     metrics: 'requests_total',
   });
   requestCount.value = instant;
-};
+}
 
 async function getRequestTrend() {
   if (!featureFlagStore.flags.ENABLE_RUN_DATA_METRICS) {
@@ -405,7 +405,7 @@ async function getRequestTrend() {
   }
 
   data.value = results;
-};
+}
 
 const handleCheckLog = () => {
   emit('check-log');
