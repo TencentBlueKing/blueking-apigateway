@@ -47,7 +47,7 @@ export function useTableSetting(setting: ShallowRef<ITableSettings>, name: strin
   });
 
   function changeTableSetting(value: ITableSettings) {
-    const curSetting = { ...setting.value };
+    const curSetting = { ...value };
     // 这里需要对比下数据是否一致，避免重复回调
     if (isEqual(curSetting, value)) {
       return;
@@ -60,7 +60,7 @@ export function useTableSetting(setting: ShallowRef<ITableSettings>, name: strin
   }
 
   function isDiffSize(value: ITableSettings) {
-    return setting.value?.rowSize !== value.rowSize;
+    return setting?.value?.rowSize !== value.rowSize;
   }
 
   return {
