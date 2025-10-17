@@ -20,7 +20,7 @@ import json
 import logging
 from typing import Any, Dict, List, Optional, Union
 
-from apigateway.controller.models import GatewayApisixModel, GatewayResourceLabels, Plugin, Route, Timeout
+from apigateway.controller.models import GatewayApisixModel, Plugin, Route, Timeout
 from apigateway.controller.models.constants import HttpMethodEnum
 from apigateway.controller.release_data import ReleaseData
 from apigateway.controller.uri_render import UpstreamURIRender, URIRender
@@ -33,6 +33,8 @@ from .utils import truncate_string
 logger = logging.getLogger(__name__)
 
 SUBPATH_PARAM_NAME = "bk_api_subpath_match_param_name"
+
+MATCH_SUB_PATH_PRIORITY = -1000
 
 
 class RouteConvertor(GatewayResourceConvertor):
@@ -93,31 +95,30 @@ class RouteConvertor(GatewayResourceConvertor):
         match_subpath = resource_proxy.get("match_subpath", False)
 
         plugins = self._convert_http_resource_plugins(resource, resource_proxy)
+        uris, priority = self._convert_uris(
+            path=resource["path"],
+            match_subpath=match_subpath,
+        )
 
         route = Route(
-            # example: bk-esb.prod.996
+            # example: bk-esb.prod.996, 30+20+2+N < 64, so N <= 12
             id=f"{self.gateway_name}.{self.stage_name}.{resource['id']}",
-            # example: bk-esb-prod-data-v3-aiops-get-aiops-sampleset-list
+            # example: bk-esb-prod-helloworld
             # the resource_name max length is 256, while the apisix name max length is 100
-            name=truncate_string(f"{self.gateway_name}-{self.stage_name}-{resource['name']}", 100),
+            name=truncate_string(f"{self.gateway_name}.{self.stage_name}.{resource['name']}", 100),
             # NOTE: no desc for route, save memory
             # desc=resource["description"],
-            uris=self._convert_uris(
-                path=resource["path"],
-                match_subpath=match_subpath,
-            ),
+            uris=uris,
             methods=methods,
             plugins=plugins,
             service_id=service_id,
-            enable_websocket=resource.get("enable_websocket", False),
             # NOTE: should not set upstream here!
-            # FIXME: add labels
-            labels=GatewayResourceLabels(
-                gateway=self.gateway_name,
-                stage=self.stage_name,
-            ),
+            labels=self.get_gateway_resource_labels(),
         )
-        # FIXME: calculate the priority here?
+        if priority:
+            route.priority = priority
+        if resource.get("enable_websocket", False):
+            resource.enable_websocket = True
 
         # only set the timeout if the resource has timeout
         # 此处会覆盖 upstream 定义的超时，最终以这里为准
@@ -127,25 +128,26 @@ class RouteConvertor(GatewayResourceConvertor):
 
         return route
 
-    def _convert_uris(self, path: str, match_subpath: bool) -> List[str]:
+    def _convert_uris(self, path: str, match_subpath: bool) -> (List[str], int):
         uri = f"/api/{self.gateway_name}/{self.stage_name}/" + path.lstrip("/")
         uri_without_suffix_slash = uri.rstrip("/")
 
         rendered_uri_without_suffix_slash = URIRender().render(uri_without_suffix_slash, self.stage.vars)
         if match_subpath:
+            priority = self._calculate_match_subpath_route_priority(rendered_uri_without_suffix_slash)
             return [
                 rendered_uri_without_suffix_slash,
                 rendered_uri_without_suffix_slash + "/*" + SUBPATH_PARAM_NAME,
-            ]
+            ], priority
 
         # no match_subpath
         if "/:" in rendered_uri_without_suffix_slash:
-            return [
-                rendered_uri_without_suffix_slash,
-                rendered_uri_without_suffix_slash + "/",
-            ]
+            return [rendered_uri_without_suffix_slash + "/?"], 0
 
-        return [rendered_uri_without_suffix_slash + "/?"]
+        return [
+            rendered_uri_without_suffix_slash,
+            rendered_uri_without_suffix_slash + "/",
+        ], 0
 
     def _convert_route_timeout(self, resource_proxy: Dict[str, Any]) -> Optional[Timeout]:
         # 资源如果没有配置，则没有，默认使用关联 service 的 timeout
@@ -227,18 +229,25 @@ class RouteConvertor(GatewayResourceConvertor):
         return Route(
             id=f"{self.gateway_name}.{self.stage_name}.-1",
             # example: bk-apigateway-prod-apigw-builtin-mock-release-version
-            name=truncate_string(f"{self.gateway_name}-{self.stage_name}-builtin-mock-release-version", 100),
+            name=truncate_string(f"{self.gateway_name}.{self.stage_name}.builtin-mock-release-version", 100),
             desc="route for detect release version",
             # example:/api/bk-apigateway/prod/__apigw_version
             uris=[f"/api/{self.gateway_name}/{self.stage_name}/__apigw_version"],
             methods=[HttpMethodEnum.GET],
-            enable_websocket=False,
             timeout=Timeout(connect=60, send=60, read=60),
             plugins=plugins,
             service_id=None,
-            # FIXME: add labels
-            labels=GatewayResourceLabels(
-                gateway=self.gateway_name,
-                stage=self.stage_name,
-            ),
+            labels=self.get_gateway_resource_labels(),
         )
+
+    def _calculate_match_subpath_route_priority(self, path: str) -> int:
+        # 使用 / 对路径进行切分
+        parts = path.split("/")
+        # 遍历切分后的路径，替换冒号开头的变量
+        for i, part in enumerate(parts):
+            if part.startswith(":"):
+                parts[i] = "a"
+        # 使用 / 将替换后的路径拼接起来
+        replaced_path = "/".join(parts)
+        # the priority of subpath = -1000 + len(replaced_path)
+        return len(replaced_path) + MATCH_SUB_PATH_PRIORITY

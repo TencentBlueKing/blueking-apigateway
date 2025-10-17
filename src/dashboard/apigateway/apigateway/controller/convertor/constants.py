@@ -15,35 +15,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+DEFAULT_APISIX_VERSION = "3.13"
 
-from .base import (
-    SSL,
-    ApisixModel,
-    BaseUpstream,
-    GatewayApisixModel,
-    GlobalApisixModel,
-    Labels,
-    Node,
-    Plugin,
-    PluginMetadata,
-    Proto,
-    Route,
-    Service,
-    Timeout,
-)
 
-__all__ = [
-    "ApisixModel",
-    "Service",
-    "Route",
-    "SSL",
-    "Proto",
-    "PluginMetadata",
-    "Labels",
-    "Plugin",
-    "Timeout",
-    "BaseUpstream",
-    "Node",
-    "GatewayApisixModel",
-    "GlobalApisixModel",
-]
+LABEL_KEY_GATEWAY = "gateway"
+LABEL_KEY_STAGE = "stage"
+LABEL_KEY_APISIX_VERSION = "apisix-version"
+
+LABEL_KEY_PUBLISH_ID = "publish-id"
+LABEL_KEY_BACKEND_ID = "backend-id"

@@ -21,8 +21,10 @@ from typing import List
 
 from blue_krill.cubing_case import shortcuts
 
-from apigateway.controller.models import ApisixModel
+from apigateway.controller.models import ApisixModel, Labels
 from apigateway.controller.release_data import ReleaseData
+
+from .constants import DEFAULT_APISIX_VERSION, LABEL_KEY_APISIX_VERSION, LABEL_KEY_GATEWAY, LABEL_KEY_STAGE
 
 
 class BaseResourceConvertor(ABC):
@@ -39,8 +41,10 @@ class GatewayResourceConvertor(BaseResourceConvertor):
     def __init__(
         self,
         release_data: ReleaseData,
+        apisix_version: str = DEFAULT_APISIX_VERSION,
     ):
         self._release_data = release_data
+        self._apisix_version = apisix_version
 
     @property
     def gateway(self):
@@ -70,11 +74,14 @@ class GatewayResourceConvertor(BaseResourceConvertor):
     def convert(self) -> List[ApisixModel]:
         raise NotImplementedError()
 
-    def common_labels(self):
-        return {
-            "gateway.bk.tencent.com/gateway": self.gateway_name,
-            "gateway.bk.tencent.com/stage": self.stage_name,
-        }
+    def get_gateway_resource_labels(self) -> Labels:
+        return Labels(
+            **{
+                LABEL_KEY_GATEWAY: self.gateway_name,
+                LABEL_KEY_STAGE: self.stage_name,
+                LABEL_KEY_APISIX_VERSION: self._apisix_version,
+            }
+        )
 
     # FIXME: is this necessary?
     # metadata.name 是在 operator 中有什么作用吗？

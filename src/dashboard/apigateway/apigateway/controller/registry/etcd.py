@@ -54,6 +54,8 @@ class EtcdRegistry(Registry):
 
     def sync_resources_by_key_prefix(self, resources: List[ApisixModel]) -> List[ApisixModel]:
         """按 key_prefix 同步资源，若 key_prefix 下的资源不在待同步资源列表中，将被删除；返回同步失败的资源列表"""
+        # FIXME: delete the previous v1beta1 resources from apigw etcd
+
         sync_fail_resources = []
         remaining_keys = self._get_exist_keys_by_key_prefix()
 

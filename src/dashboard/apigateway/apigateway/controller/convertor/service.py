@@ -26,7 +26,6 @@ from apigateway.common.constants import DEFAULT_BACKEND_HOST_FOR_MISSING
 from apigateway.controller.models import (
     BaseUpstream,
     GatewayApisixModel,
-    GatewayResourceLabels,
     Node,
     Plugin,
     Service,
@@ -37,19 +36,16 @@ from apigateway.controller.release_data import ReleaseData
 from apigateway.core.models import Backend
 
 from .base import GatewayResourceConvertor
-from .utils import UrlInfo
+from .constants import LABEL_KEY_BACKEND_ID, LABEL_KEY_PUBLISH_ID
+from .utils import UrlInfo, truncate_string
 
 
 class ServiceConvertor(GatewayResourceConvertor):
-    # TODO: publish_id into labels of k8s => 需要确认
-    #       确认新的 operator labels 怎么处理的？
-    # labels["publish_id"] = str(self._publish_id)
     def __init__(self, release_data: ReleaseData, publish_id: Union[int, None] = None):
         super().__init__(release_data)
         self._publish_id = publish_id
 
     def convert(self) -> List[GatewayApisixModel]:
-        # FIXME: merge the stage + service here
         # FIXME: should not generate service if the backend is not related to any resource
         backend_configs = self._release_data.get_stage_backend_configs()
         if not backend_configs:
@@ -103,7 +99,9 @@ class ServiceConvertor(GatewayResourceConvertor):
 
                 upstream.nodes.append(Node(host=url_info.domain, port=url_info.port, weight=node.get("weight", 1)))
 
-            # FIXME: move gateway/stage basic info into baseConvertor?
+            # FIXME: 如何处理 http/https 协议
+            # FIXME: 环境变量渲染是不是 service 也有？
+
             stage_description = self.stage.description
 
             backend = Backend.objects.get(id=backend_id)
@@ -128,60 +126,27 @@ class ServiceConvertor(GatewayResourceConvertor):
 
             # stage_name max length is 20, stage_id 6, backend_id is 4, other 10
             # total max length is 64, so the buffer is 24 ( stage_id length + backend_id length)
-            # TODO: build the labels for every resource
-            labels = GatewayResourceLabels(
-                gateway=self.gateway_name,
-                stage=self.stage_name,
-                publish_id=self._publish_id,
-                # FIXME: add backend_id here?
-            )
-            labels.add_label("backend-id", str(backend_id))
+            labels = self.get_gateway_resource_labels()
+            labels.add_label(LABEL_KEY_PUBLISH_ID, self._publish_id)
+            labels.add_label(LABEL_KEY_BACKEND_ID, backend_id)
 
             services.append(
                 Service(
+                    # FIXME:
                     # the previous id is: {gateway_name}.{stage_name}.{stage_id}-{backend_id}
                     # 30+1+20+1+ x + 1 + y = 53 + x + y, so x + y <= 11 (almost no buffer)
                     # so we should make a new id here?
                     # example: bk-apigateway-inner.prod.stage-6-backend-7
                     id=f"s-{self.stage_id}-b-{backend_id}",
-                    # example: bk-apigateway-inner-prod-s-6-b-7
-                    name=f"_stage_service_{self.stage_name}_{backend_id}",
+                    name=truncate_string(f"{self.gateway_name}.{self.stage_name}.{backend_name}", 100),
                     desc=description,
                     labels=labels,
                     plugins=plugins,
                     upstream=upstream,
-                    # metadata=self._common_metadata(
-                    #     f"s-{stage_id}-b-{backend_id}",
-                    #     labels={
-                    #         "service-type": "stage-backend",
-                    #         "backend-id": str(backend_id),
-                    #     },
-                    # ),
-                    # spec=BkGatewayServiceSpec(
-                    #     name=f"_stage_service_{stage_name}_{backend_id}",
-                    #     id=f"stage-{stage_id}-backend-{backend_id}",
-                    # ),
                 )
             )
 
         return services
-
-    # def stage_convert(self) -> BkGatewayStage:
-    #     # FIXME: 如何处理 http/https 协议
-    #     # FIXME: 环境变量渲染是不是 service 也有？
-    #     http_info = MicroGatewayHTTPInfo.from_micro_gateway_config(self._micro_gateway.config)
-    #     url_info = UrlInfo(http_info.http_url)
-    #     path_prefix = url_info.path
-
-    #     return BkGatewayStage(
-    #         metadata=self._common_metadata(self._release_data.stage.name),
-    #         spec=BkGatewayStageSpec(
-    #             name=self._release_data.stage.name,
-    #             description=self._release_data.stage.description,
-    #             vars=self._release_data.stage.vars,
-    #             path_prefix=path_prefix,
-    #         ),
-    #     )
 
     def _build_service_plugins(self) -> Dict[str, Plugin]:
         plugins: Dict[str, Plugin] = self._get_stage_default_plugins()

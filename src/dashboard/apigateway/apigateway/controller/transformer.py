@@ -23,6 +23,7 @@ from apigateway.controller.convertor import (
     RouteConvertor,
     ServiceConvertor,
 )
+from apigateway.controller.convertor.constants import LABEL_KEY_BACKEND_ID
 from apigateway.controller.models import ApisixModel, GatewayApisixModel
 from apigateway.controller.release_data import ReleaseData
 from apigateway.core.models import Release
@@ -80,8 +81,9 @@ class GatewayApisixResourceConvertor:
         # FIXME: build the mapping
         backend_service_mapping: Dict[int, str] = {}
         for svc in self._converted_services:
-            backend_id = svc.labels.get_label("backend-id")
+            backend_id = svc.labels.get_label(LABEL_KEY_BACKEND_ID)
             if backend_id:
+                # the label value type is string, so we need to convert it to int
                 backend_service_mapping[int(backend_id)] = svc.id
 
         logger.error("the mapping: %s", backend_service_mapping)

@@ -21,8 +21,6 @@ from django.core.serializers.pyyaml import DjangoSafeDumper
 from django.test import TestCase
 
 from apigateway.utils.yaml import (
-    YamlRepresenterEnum,
-    YamlRepresenterHookMixin,
     multiline_str_presenter,
     yaml_dumps,
     yaml_loads,
@@ -97,39 +95,6 @@ websites:
         for test in data:
             result = yaml_dumps(test["data"])
             self.assertEqual(result, test["expected"])
-
-
-class TestYamlRepresenterHookMixin:
-    class T(int, YamlRepresenterHookMixin):
-        @classmethod
-        def yaml_representer(cls, dumper, data):
-            return dumper.represent_str(str(data))
-
-    def test_yaml_representer(self, faker):
-        value = self.T(faker.random_number())
-        result = yaml_dumps([value])
-        data = yaml_loads(result)
-        assert data == [str(value)]
-
-
-class TestYamlRepresenterEnum:
-    class IntEnum(int, YamlRepresenterEnum):
-        A = 1
-        B = 2
-
-    class StrEnum(str, YamlRepresenterEnum):
-        A = "1"
-        B = "2"
-
-    def test_int_enum(self):
-        result = yaml_dumps([self.IntEnum.A, self.IntEnum.B])
-        data = yaml_loads(result)
-        assert data == [1, 2]
-
-    def test_str_enum(self):
-        result = yaml_dumps([self.StrEnum.A, self.StrEnum.B])
-        data = yaml_loads(result)
-        assert data == ["1", "2"]
 
 
 def test_multiline_str_presenter():

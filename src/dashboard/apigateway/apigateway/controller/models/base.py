@@ -46,26 +46,26 @@ class BaseApisixModel(BaseModel):
     model_config = ConfigDict(strict=True, validate_by_name=True, validate_by_alias=True)
 
 
-class BaseLabels(BaseApisixModel):
+class Labels(BaseApisixModel):
     class Config:
         extra = "allow"
 
     def __init__(self, **data):
-        super().__init__(**data)
+        # Convert all values to strings
+        converted_data = {key: str(value) for key, value in data.items()}
+        super().__init__(**converted_data)
 
     def add_label(self, key: str, value: str) -> None:
         """Add a dynamic label"""
-        setattr(self, key, value)
+        setattr(self, key, str(value))
 
     def get_label(self, key: str, default: Optional[str] = None) -> Optional[str]:
         """Get a dynamic label"""
         return getattr(self, key, default)
 
-
-class GatewayResourceLabels(BaseLabels):
-    gateway: str = Field(description="gateway")
-    stage: str = Field(description="stage")
-    publish_id: Optional[int] = Field(default=None, description="publish_id")
+    # gateway: str = Field(description="gateway")
+    # stage: str = Field(description="stage")
+    # publish_id: Optional[int] = Field(default=None, description="publish_id")
 
     # Allow dynamic labels as additional fields
 
@@ -252,7 +252,7 @@ class GatewayApisixModel(ApisixModel):
     desc: Optional[str] = Field(default=None, max_length=256, description="desc")
 
     # NOTE: we required the labels here, bind to the gateway/stage
-    labels: GatewayResourceLabels = Field(description="labels")
+    labels: Labels = Field(description="labels")
 
 
 class Service(GatewayApisixModel):
