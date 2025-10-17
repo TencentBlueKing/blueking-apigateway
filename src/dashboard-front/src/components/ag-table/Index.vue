@@ -30,9 +30,10 @@
     :pagination="pagination"
     :loading="loading"
     :filter-row="null"
-    :bk-ui-settings="tableSetting"
+    :hover="false"
     :table-layout="tableLayout"
-    :row-key="rowKey"
+    :row-key="tableRowKey"
+    :bk-ui-settings="tableSetting"
     v-bind="$attrs"
     @bk-ui-settings-change="handleSettingChange"
     @row-mouseenter="handleRowEnter"
@@ -110,8 +111,9 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 
 interface IProps {
   apiMethod?: (params?: Record<string, any>) => Promise<unknown>
+  disabledCheckSelection?: (params?: Record<string, any>) => any
   columns?: PrimaryTableProps['columns']
-  rowKey?: string
+  tableRowKey?: string
   immediate?: boolean
   localPage?: boolean
   showFirstFullRow?: boolean
@@ -130,7 +132,7 @@ const tableSetting = defineModel<null | ShallowRef<BkUiSettings>>('settings', { 
 const {
   apiMethod = undefined,
   columns = [],
-  rowKey = 'id',
+  tableRowKey = 'id',
   // 是否首次加载
   immediate = true,
   // 是否需要本地分页
@@ -141,12 +143,12 @@ const {
   tableEmptyType = 'empty',
   // 是否展示自定义表格复选框
   showSelection = false,
+  // 是否展示高级设置
+  showSettings = false,
   // 表格布局方式
   tableLayout = 'fixed',
   // 禁止勾选复选框的条件
-  isDisabledCheckSelection = (value: TableRowData) => {
-    return !value;
-  },
+  disabledCheckSelection = undefined,
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -158,6 +160,11 @@ const emit = defineEmits<{
     e?: MouseEvent
     row?: TableRowData
   }
+  'selection-change': {
+    selections: TableRowData
+    selectionsRowKeys: string[] | number[]
+  }
+  'clear-selection': void
   'request-done': void
   'clear-filter': void
   'refresh': void
@@ -178,6 +185,10 @@ const {
   handleCustomSelectChange,
   handleCustomSelectAllChange,
 } = useTDesignSelection();
+
+const disabledSelected = computed(() => {
+  return !tableData.value?.length;
+});
 
 const TDesignTableRef = useTemplateRef<PrimaryTableInstance & ITableMethod>('primaryTableRef');
 
@@ -202,12 +213,14 @@ const { changeTableSetting, isDiffSize } = useTableSetting(tableSetting.value);
 
 // 设置表格半选效果
 const setIndeterminate = computed(() => {
-  const isExistCheck = tableData.value.some(item => item.isCustomCheck);
+  const isExistCheck = tableData.value.some(item =>
+    item.isCustomCheck || selections.value.map(check => check[tableRowKey]).includes(item[tableRowKey]),
+  );
   return isExistCheck && selections.value.length > 0 && !isAllSelection.value;
 });
 
 // 这里采用自定义checkbox是为了后续功能扩展，用自带的无法自定义渲染函数(暂时支持跨页选择，不支持跨页全选)
-const selectionColumns = shallowRef([{
+const selectionColumns = computed(() => [{
   colKey: 'row-select',
   type: 'custom-checkbox',
   align: 'center',
@@ -217,29 +230,38 @@ const selectionColumns = shallowRef([{
     return (
       <Checkbox
         v-model={isAllSelection.value}
-        disabled={disabledSelected.value}
+        disabled={disabledSelected.value || tableData.value.every(item => disabledCheckSelection?.(item))}
         indeterminate={setIndeterminate.value}
         onChange={() => {
           tableData.value.forEach((item) => {
-            if (!isDisabledCheckSelection?.(item)) {
+            if (!disabledCheckSelection?.(item)) {
               item.isCustomCheck = isAllSelection.value;
             }
           });
-          const tables = tableData.value.filter(item => !isDisabledCheckSelection?.(item));
+          const tables = tableData.value.filter(item => !disabledCheckSelection?.(item));
           handleCustomSelectAllChange({
             isCheck: isAllSelection.value,
             tableRowKey,
             tables,
+          });
+          emit('selection-change', {
+            selectionsRowKeys: selections.value.map(item => item[tableRowKey]),
+            selections: selections.value,
           });
         }}
       />
     );
   },
   cell: (h, { row }) => {
+    row.isCustomCheck = selections.value.map(item => item[tableRowKey]).includes(row.id);
     return (
       <Checkbox
         v-model={row.isCustomCheck}
-        disabled={disabledSelected.value}
+        v-bk-tooltips={{
+          content: row.selectionTip ?? '',
+          disabled: typeof disabledCheckSelection === 'undefined' ? true : !disabledCheckSelection?.(row),
+        }}
+        disabled={disabledSelected.value || disabledCheckSelection?.(row)}
         onChange={(isCheck: boolean) => {
           // 这里可以增加disabled逻辑
           handleCustomSelectChange({
@@ -247,15 +269,19 @@ const selectionColumns = shallowRef([{
             tableRowKey,
             row,
           });
-          const selectionTable = tableData.value.filter(item => !isDisabledCheckSelection?.(item));
+          const selectionTable = tableData.value.filter(item => !disabledCheckSelection?.(item));
           const checkedIds = tableData.value
             .filter(item => selectionsRowKeys.value.includes(item[tableRowKey]))
             .map(check => check[tableRowKey]);
           isAllSelection.value = checkedIds.length > 0 && checkedIds.length === selectionTable.length;
           tableData.value.forEach((item) => {
-            if (!isDisabledCheckSelection?.(item) && row[tableRowKey] === item[tableRowKey]) {
+            if (!disabledCheckSelection?.(item) && row[tableRowKey] === item[tableRowKey]) {
               item.isCustomCheck = row.isCustomCheck;
             }
+          });
+          emit('selection-change', {
+            selectionsRowKeys: checkedIds,
+            selections: selections.value,
           });
         }}
       />
@@ -263,13 +289,15 @@ const selectionColumns = shallowRef([{
   },
 }]);
 
-const tableColumns = shallowRef<PrimaryTableProps['columns']>(showSelection
-  ? [
-    ...selectionColumns.value,
-    ...columns,
-  ]
-  : columns,
-);
+const tableColumns = computed<PrimaryTableProps['columns']>(() => {
+  if (showSelection) {
+    return [
+      ...selectionColumns.value,
+      ...columns,
+    ];
+  }
+  return columns;
+});
 
 const offsetAndLimit = computed(() => {
   return {
@@ -297,7 +325,8 @@ const { params, loading, error, refresh, run } = useRequest(apiMethod, {
     const results = response?.results ?? [];
     paramsData.value = { ...params.value?.[0] };
     pagination.value!.total = response?.count ?? 0;
-    tableData.value = [...results];
+    tableData.value = cloneDeep(results);
+    getSelectionData();
     // 处理接口调用成功后抛出事件，为每个页面提供单独业务处理
     emit('request-done');
   },
@@ -305,9 +334,19 @@ const { params, loading, error, refresh, run } = useRequest(apiMethod, {
     tableData.value = [];
     pagination.value!.total = 0;
     isAllSelection.value = false;
+    getSelectionData();
     console.error(error);
   },
 });
+
+watch(tableSetting, () => {
+  if (!tableSetting.value && showSettings) {
+    tableSetting.value = {
+      size: 'small',
+      checked: [],
+    };
+  }
+}, { immediate: true });
 
 watch(tableData, () => {
   localTableData.value = cloneDeep(tableData.value || []);
@@ -333,6 +372,25 @@ const fetchData = (
     ...params,
     ...offsetAndLimit.value,
   });
+};
+
+// 获取回显勾选项数据
+const getSelectionData = () => {
+  if (selectionsRowKeys.value?.length > 0 && tableData.value?.length > 0) {
+    const selectionTable = tableData.value.filter(item => !disabledCheckSelection?.(item));
+    const checkedIds = tableData.value
+      .filter(item => selectionsRowKeys.value.includes(item[tableRowKey]))
+      .map(check => check[tableRowKey]);
+    isAllSelection.value = checkedIds.length > 0 && checkedIds.length === selectionTable.length;
+    tableData.value.forEach((item) => {
+      if (!disabledCheckSelection?.(item)) {
+        item.isCustomCheck = checkedIds.includes(item[tableRowKey]);
+      }
+    });
+  }
+  else {
+    isAllSelection.value = false;
+  }
 };
 
 const handleRowEnter = ({ e, row }: {
@@ -450,6 +508,7 @@ const handleResetSelection = () => {
     item.isCustomCheck = false;
   });
   resetSelections();
+  emit('clear-selection');
 };
 
 // 清空过滤条件
@@ -487,6 +546,7 @@ defineExpose({
   TDesignTableRef,
   loading,
   fetchData,
+  getSelectionData,
   getPagination,
   setPagination,
   setPaginationTheme,

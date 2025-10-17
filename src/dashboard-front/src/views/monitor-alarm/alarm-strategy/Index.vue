@@ -69,7 +69,7 @@
 
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
-import { Message, Switcher } from 'bkui-vue';
+import { Button, Loading, Message, Switcher } from 'bkui-vue';
 import type {
   FilterValue,
   PrimaryTableProps,
@@ -158,6 +158,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: t('更新时间'),
     colKey: 'updated_time',
+    ellipsis: true,
   },
   {
     title: t('是否启用'),
@@ -165,7 +166,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     cell: (h, { row }: { row?: Partial<IAlarmStrategy> }) => {
       if (row?.statusUpdating) {
         return (
-          <BkLoading
+          <Loading
             style="width: 48px;"
             loading
             theme="default"
@@ -173,7 +174,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
             opacity={1}
           >
             <div style="height: 20px;" />
-          </BkLoading>
+          </Loading>
         );
       }
       return (
@@ -195,21 +196,21 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     cell: (h, { row }: { row?: Partial<IAlarmStrategy> }) => {
       return (
         <div>
-          <BkButton
+          <Button
             class="m-r-25px"
             theme="primary"
             text
             onClick={() => handleEdit(row)}
           >
             { t('编辑') }
-          </BkButton>
-          <BkButton
+          </Button>
+          <Button
             theme="primary"
             text
             onClick={() => handleDelete(row)}
           >
             { t('删除') }
-          </BkButton>
+          </Button>
         </div>
       );
     },
