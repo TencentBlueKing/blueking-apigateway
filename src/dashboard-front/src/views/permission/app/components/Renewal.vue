@@ -22,6 +22,7 @@
     :width="860"
     theme="primary"
     quick-close
+    @closed="handleApplyDialogClose"
   >
     <div>
       <ExpireDaySelector v-model:expire-days="expireDays" />
@@ -30,17 +31,17 @@
         label-width="100"
       >
         <BkFormItem :label="t('蓝鲸应用ID')">
-          <div>{{ curSelections?.[0].bk_app_code || "--" }}</div>
+          <div>{{ curSelections?.[0]?.bk_app_code || "--" }}</div>
         </BkFormItem>
         <BkFormItem :label="t('资源名称')">
-          <div>{{ curSelections?.[0].resource_name || "--" }}</div>
+          <div>{{ curSelections?.[0]?.resource_name || "--" }}</div>
         </BkFormItem>
         <BkFormItem :label="t('有效期')">
           <div>
             <span
-              :style="{ color: permissionStore.getDurationTextColor(curSelections?.[0].expires)}"
+              :style="{ color: permissionStore.getDurationTextColor(curSelections?.[0]?.expires)}"
             >
-              {{ permissionStore.getDurationText(curSelections?.[0].expires) }}</span>
+              {{ permissionStore.getDurationText(curSelections?.[0]?.expires) }}</span>
             <span class="m-l-4px m-r-4px">
               <AgIcon
                 name="arrows--right--line"
@@ -49,7 +50,7 @@
             </span>
             <span>
               <span
-                v-if="!curSelections?.[0].renewable"
+                v-if="!curSelections?.[0]?.renewable"
                 class="font-bold color-#ea3636"
               >
                 {{ t("不可续期") }}
@@ -58,7 +59,7 @@
                 v-else
                 class="ag-normal primary"
               >
-                {{ permissionStore.getDurationAfterRenew(curSelections?.[0].expires, expireDays) }}
+                {{ permissionStore.getDurationAfterRenew(curSelections?.[0]?.expires, expireDays) }}
               </span>
             </span>
           </div>

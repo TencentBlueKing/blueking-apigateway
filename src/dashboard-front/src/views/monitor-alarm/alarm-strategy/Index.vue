@@ -75,7 +75,7 @@ import type {
   PrimaryTableProps,
   SortInfo,
 } from '@blueking/tdesign-ui';
-import { ITableMethod } from '@/types/common';
+import type { ITableMethod } from '@/types/common';
 import { useGateway } from '@/stores';
 import { usePopInfoBox } from '@/hooks';
 import { getGatewayLabels } from '@/services/source/gateway';
@@ -197,7 +197,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
       return (
         <div>
           <Button
-            class="m-r-25px"
+            class="mr-24px"
             theme="primary"
             text
             onClick={() => handleEdit(row)}

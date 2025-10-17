@@ -77,4 +77,28 @@
 }
 
 
+.t-radio {
+  .t-radio__input {
+    border: 1px solid #dcdee5;
 
+    &::after {
+      background-color: #3a84ff !important;
+    }
+  }
+
+  &.t-is-checked .t-radio__input {
+    border-color: #3a84ff !important;
+  }
+}
+
+.t-table__filter-icon {
+
+  &:hover,
+  &.t-is-focus {
+    color: #3a84ff !important;
+  }
+}
+
+.t-table .t-table__header th {
+  background-color: #fafbfd !important;
+}

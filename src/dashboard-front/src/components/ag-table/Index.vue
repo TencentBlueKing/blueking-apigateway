@@ -31,6 +31,7 @@
     :loading="loading"
     :filter-row="null"
     :hover="false"
+    :max-height="clientHeight"
     :table-layout="tableLayout"
     :row-key="tableRowKey"
     :bk-ui-settings="tableSetting"
@@ -106,7 +107,7 @@ import { Checkbox } from 'bkui-vue';
 import { useRequest } from 'vue-request';
 import { cloneDeep } from 'lodash-es';
 import type { BkUiSettings } from '@blueking/tdesign-ui/typings/packages/table/types/table';
-import { useTDesignSelection, useTableSetting } from '@/hooks';
+import { useMaxTableLimit, useTDesignSelection, useTableSetting } from '@/hooks';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 interface IProps {
@@ -121,6 +122,7 @@ interface IProps {
   showSettings?: boolean
   tableLayout?: string
   tableEmptyType?: 'empty' | 'search-empty'
+  maxLimitConfig?: Record<string, any> | null
 }
 
 const selectedRowKeys = defineModel<any[]>('selectedRowKeys', { default: () => [] });
@@ -149,6 +151,8 @@ const {
   tableLayout = 'fixed',
   // 禁止勾选复选框的条件
   disabledCheckSelection = undefined,
+  // 表格最大可分页数量配置项
+  maxLimitConfig = {},
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -175,6 +179,8 @@ const slots = useSlots();
 const route = useRoute();
 
 const { t, locale } = useI18n();
+
+const { maxTableLimit, clientHeight } = useMaxTableLimit(maxLimitConfig);
 
 const {
   isAllSelection,
@@ -366,7 +372,10 @@ const fetchData = (
   options: { resetPage?: boolean } = { resetPage: false },
 ) => {
   if (options.resetPage) {
-    pagination.value!.current = 1;
+    pagination.value.current = 1;
+  }
+  if (Object.keys(maxLimitConfig)?.length) {
+    pagination.value.current = maxTableLimit;
   }
   run({
     ...params,
@@ -433,7 +442,7 @@ const handlePageChange = ({ current, pageSize }: {
 };
 
 const handleSettingChange = (setting: BkUiSettings) => {
-  tableSetting.value = { ...setting };
+  tableSetting.value = setting ?? {};
   const isExistDiff = isDiffSize(setting);
   changeTableSetting(setting);
   if (!isExistDiff) {

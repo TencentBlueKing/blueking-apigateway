@@ -34,15 +34,15 @@ export function useTableFilterChange() {
   }: {
     filterItem: Record<string, string | string[]>
     filterData: Ref<Record<string, string | string[]>>
-    searchOptions: Ref<ISearchItem[]>
-    searchParams: Ref<ISearchValue[]>
+    searchOptions?: Ref<ISearchItem[]>
+    searchParams?: Ref<ISearchValue[]>
   }) {
     Object.entries(filterItem).forEach(([colKey, checkValues]) => {
       const isMultiple = Array.isArray(checkValues);
       if (checkValues?.length) {
         Object.assign(filterData.value, { [colKey]: checkValues });
-        const searchOption = searchOptions.value.find(option => option.id === colKey);
-        const filterOption = searchParams.value.find(searchItem => searchItem.id === colKey);
+        const searchOption = searchOptions?.value?.find(option => option.id === colKey);
+        const filterOption = searchParams?.value?.find(searchItem => searchItem.id === colKey);
         if (searchOption) {
           const filterChildren = searchOption?.children?.filter(item => (isMultiple
             ? checkValues.includes(item.id)
@@ -51,7 +51,7 @@ export function useTableFilterChange() {
             filterOption.values = filterChildren ?? [];
           }
           else {
-            searchParams.value.push({
+            searchParams?.value?.push({
               id: colKey,
               name: searchOption.name,
               values: filterChildren,
@@ -60,7 +60,9 @@ export function useTableFilterChange() {
         }
       }
       else {
-        searchParams.value = searchParams.value.filter(searchItem => searchItem.id !== colKey);
+        if (searchParams?.value) {
+          searchParams.value = searchParams.value.filter(searchItem => searchItem.id !== colKey);
+        }
         delete filterData.value[colKey];
       }
     });
