@@ -48,12 +48,26 @@
           <BkSelect
             v-model="searchParams.stage_id"
             :clearable="false"
-            searchable
             style="width: 150px;"
             @change="handleStageChange"
           >
             <BkOption
               v-for="option in stageList"
+              :id="option.id"
+              :key="option.id"
+              :name="option.name"
+            />
+          </BkSelect>
+        </BkFormItem>
+        <BkFormItem :label="t('后端服务')">
+          <BkSelect
+            v-model="backend_id"
+            clearable
+            style="width: 150px;"
+            @change="handleBackendChange"
+          >
+            <BkOption
+              v-for="option in backendList"
               :id="option.id"
               :key="option.id"
               :name="option.name"
@@ -351,6 +365,7 @@ import {
 } from '@/services/source/access-log';
 import { exportLogs } from '@/services/source/report';
 import { getApigwResources } from '@/services/source/dashboard';
+import { getBackendServiceList } from '@/services/source/backendServices';
 import {
   AngleUpFill,
   CopyShape,
@@ -393,6 +408,7 @@ const pagination = ref({
   limit: 10,
   showTotalCount: true,
 });
+const backend_id = ref('');
 const searchParams = ref<ISearchParamsInterface>({
   stage_id: 0,
   resource_id: '',
@@ -521,6 +537,7 @@ const excludeObj = ref<string[]>([]);
 // });
 const chartData: Record<string, any> = ref({});
 const stageList = ref([]);
+const backendList = ref([]);
 const isAISliderShow = ref(false);
 const aiRequestMessage = ref('');
 
@@ -672,6 +689,7 @@ const getResources = async () => {
     order_by: 'path',
     offset: 0,
     limit: 10000,
+    backend_id: backend_id.value,
   };
 
   try {
@@ -838,6 +856,15 @@ const getApigwStages = async () => {
   if (stageList.value.length) {
     searchParams.value.stage_id = stageList.value[0].id;
   }
+};
+
+const getBackendServices = async () => {
+  const pageParams = {
+    offset: 0,
+    limit: 10000,
+  };
+  const res = await getBackendServiceList(apigwId.value, pageParams);
+  backendList.value = res?.results || [];
 };
 
 const getPayload = () => {
@@ -1045,6 +1072,11 @@ const handleStageChange = (value: number) => {
   getSearchData();
 };
 
+const handleBackendChange = async () => {
+  searchParams.value.resource_id = '';
+  await getResources();
+};
+
 const handleSearch = (value: string) => {
   keyword.value = value;
   searchParams.value.query = keyword.value;
@@ -1087,6 +1119,7 @@ const handleClearFilterKey = () => {
   if (stageList.value.length) {
     searchParams.value.stage_id = stageList.value[0].id;
   }
+  backend_id.value = '';
   searchParams.value.resource_id = '';
   [datePickerRef.value.shortcut] = [accessLogStore.datepickerShortcuts[1]];
   dateValue.value = [];
@@ -1120,6 +1153,7 @@ const chartResize = () => {
 
 const initData = async () => {
   await getApigwStages();
+  await getBackendServices();
   await getResources();
   await getSearchData();
 };

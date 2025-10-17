@@ -32,7 +32,7 @@
         <BkFormItem :label="t('时间选择器')">
           <DatePicker
             v-model="dateTime"
-            :valid-date-range="['now-2d', 'now/d']"
+            :valid-date-range="['now-7d/d', 'now/d']"
             class="date-choose"
             format="YYYY-MM-DD HH:mm:ss"
             style="min-width: 154px;background: #fff;"
@@ -43,12 +43,25 @@
           <BkSelect
             v-model="searchParams.stage_id"
             :clearable="false"
-            :input-search="false"
-            filterable
             style="width: 150px;"
           >
             <BkOption
               v-for="option in stageList"
+              :id="option.id"
+              :key="option.id"
+              :name="option.name"
+            />
+          </BkSelect>
+        </BkFormItem>
+        <BkFormItem :label="t('后端服务')">
+          <BkSelect
+            v-model="backend_id"
+            clearable
+            style="width: 150px;"
+            @change="handleBackendChange"
+          >
+            <BkOption
+              v-for="option in backendList"
               :id="option.id"
               :key="option.id"
               :name="option.name"
@@ -271,6 +284,7 @@ import {
 } from '@/services/source/dashboard';
 import Top from './components/Top.vue';
 import LineChart from './components/LineChart.vue';
+import { getBackendServiceList } from '@/services/source/backendServices';
 import ResourceSearcher from '@/views/operate-data/dashboard/components/ResourceSearcher.vue';
 import DatePicker from '@blueking/date-picker';
 import '@blueking/date-picker/vue3/vue3.css';
@@ -288,6 +302,8 @@ const route = useRoute();
 
 const stageList = ref([]);
 const resourceList = ref([]);
+const backend_id = ref('');
+const backendList = ref([]);
 const dateTime = ref([
   'now-10m',
   'now',
@@ -387,9 +403,24 @@ const getResources = async () => {
     order_by: 'path',
     offset: 0,
     limit: 10000,
+    backend_id: backend_id.value,
   };
   const response = await getApigwResources(apigwId.value, pageParams);
   resourceList.value = response.results;
+};
+
+const getBackendServices = async () => {
+  const pageParams = {
+    offset: 0,
+    limit: 10000,
+  };
+  const res = await getBackendServiceList(apigwId.value, pageParams);
+  backendList.value = res?.results || [];
+};
+
+const handleBackendChange = async () => {
+  searchParams.value.resource_id = '';
+  await getResources();
 };
 
 // 请求数据
@@ -496,6 +527,7 @@ const handleClearParams = () => {
     time_end: dayjs(formatTime.value[1]).unix(),
     metrics: '',
   };
+  backend_id.value = '';
   topRef.value?.reset();
 };
 
@@ -520,6 +552,7 @@ const init = async () => {
   await Promise.all([
     getStages(),
     getResources(),
+    getBackendServices(),
   ]);
   const [time_start, time_end] = formatTime.value;
   if (time_start && time_end) {
