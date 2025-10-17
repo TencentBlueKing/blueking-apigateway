@@ -46,11 +46,32 @@ class BaseApisixModel(BaseModel):
     model_config = ConfigDict(strict=True, validate_by_name=True, validate_by_alias=True)
 
 
-class Labels(BaseApisixModel):
-    # This is a dict type, so we not set the default value here
+class BaseLabels(BaseApisixModel):
+    class Config:
+        extra = "allow"
+
+    def __init__(self, **data):
+        super().__init__(**data)
+
+    def add_label(self, key: str, value: str) -> None:
+        """Add a dynamic label"""
+        setattr(self, key, value)
+
+    def get_label(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        """Get a dynamic label"""
+        return getattr(self, key, default)
+
+
+class GatewayResourceLabels(BaseLabels):
     gateway: str = Field(description="gateway")
     stage: str = Field(description="stage")
     publish_id: Optional[int] = Field(default=None, description="publish_id")
+
+    # Allow dynamic labels as additional fields
+
+    # def to_dict(self) -> Dict[str, Any]:
+    #     """Convert to dictionary including all dynamic labels"""
+    #     return self.model_dump()
 
 
 class Node(BaseApisixModel):
@@ -77,8 +98,22 @@ class Timeout(BaseApisixModel):
 
 
 class Plugin(BaseApisixModel):
-    name: str = Field(description="name")
-    config: Dict[str, Any] = Field(default_factory=dict, description="config")
+    class Config:
+        extra = "allow"
+
+    def __init__(self, **data):
+        super().__init__(**data)
+
+    # name: str = Field(description="name")
+    # config: Dict[str, Any] = Field(default_factory=dict, description="config")
+
+    # def add_field(self, key: str, value: Any) -> None:
+    #     """Add a dynamic field"""
+    #     setattr(self, key, value)
+
+    # def get_field(self, key: str, default: Any = None) -> Any:
+    #     """Get a dynamic field"""
+    #     return getattr(self, key, default)
 
 
 class BaseHealthy(BaseApisixModel):
@@ -217,7 +252,7 @@ class GatewayApisixModel(ApisixModel):
     desc: Optional[str] = Field(default=None, max_length=256, description="desc")
 
     # NOTE: we required the labels here, bind to the gateway/stage
-    labels: Labels = Field(description="labels")
+    labels: GatewayResourceLabels = Field(description="labels")
 
 
 class Service(GatewayApisixModel):
@@ -225,7 +260,7 @@ class Service(GatewayApisixModel):
 
     name: str = Field(min_length=1, max_length=100, description="name")
 
-    plugins: List[Plugin] = Field(default_factory=list, description="plugins")
+    plugins: Dict[str, Plugin] = Field(default_factory=dict, description="plugins")
     upstream: BaseUpstream = Field(description="upstream")
 
 
@@ -240,9 +275,11 @@ class Route(GatewayApisixModel):
 
     methods: List[HttpMethodEnum] = Field(default_factory=list, description="methods")
     priority: Optional[int] = Field(default=None, description="priority")
-    plugins: List[Plugin] = Field(default_factory=list, description="plugins")
+    plugins: Dict[str, Plugin] = Field(default_factory=dict, description="plugins")
     # NOTE: we need the
-    service_id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="service id")
+    service_id: Optional[str] = Field(
+        default=None, min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9-_.]+$", description="service id"
+    )
     timeout: Optional[Timeout] = Field(default=None, description="timeout")
     enable_websocket: Optional[bool] = Field(default=None, description="enable websocket")
 

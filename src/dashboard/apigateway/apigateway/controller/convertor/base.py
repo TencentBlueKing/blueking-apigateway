@@ -17,13 +17,25 @@
 #
 import hashlib
 from abc import ABC, abstractmethod
+from typing import List
 
 from blue_krill.cubing_case import shortcuts
 
+from apigateway.controller.models import ApisixModel
 from apigateway.controller.release_data import ReleaseData
 
 
-class BaseConvertor(ABC):
+class BaseResourceConvertor(ABC):
+    @abstractmethod
+    def convert(self):
+        return NotImplementedError()
+
+
+class GlobalResourceConvertor(BaseResourceConvertor):
+    pass
+
+
+class GatewayResourceConvertor(BaseResourceConvertor):
     def __init__(
         self,
         release_data: ReleaseData,
@@ -55,8 +67,8 @@ class BaseConvertor(ABC):
         return self._release_data.stage.pk
 
     @abstractmethod
-    def convert(self):
-        return NotImplementedError()
+    def convert(self) -> List[ApisixModel]:
+        raise NotImplementedError()
 
     def common_labels(self):
         return {

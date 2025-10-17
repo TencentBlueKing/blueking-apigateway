@@ -17,15 +17,13 @@
 #
 import logging
 from dataclasses import dataclass, field
-from typing import Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional
 
 from apigateway.controller.convertor import (
-    ProtoConvertor,
     RouteConvertor,
     ServiceConvertor,
-    SSLConvertor,
 )
-from apigateway.controller.models import ApisixModel
+from apigateway.controller.models import ApisixModel, GatewayApisixModel
 from apigateway.controller.release_data import ReleaseData
 from apigateway.core.models import Release
 
@@ -42,7 +40,7 @@ class GlobalApisixResourceConvertor:
     # FIXME: convert plugin_metadata
 
     def convert(self):
-        return NotImplementedError()
+        raise NotImplementedError()
 
 
 @dataclass
@@ -64,10 +62,10 @@ class GatewayApisixResourceConvertor:
     revoke_flag: Optional[bool] = field(default=False)
 
     # 转换后的资源
-    _converted_services: List[ApisixModel] = field(init=False, default_factory=list)
-    _converted_routes: List[ApisixModel] = field(init=False, default_factory=list)
-    _converted_ssls: List[ApisixModel] = field(init=False, default_factory=list)
-    _converted_protos: List[ApisixModel] = field(init=False, default_factory=list)
+    _converted_services: List[GatewayApisixModel] = field(init=False, default_factory=list)
+    _converted_routes: List[GatewayApisixModel] = field(init=False, default_factory=list)
+    _converted_ssls: List[GatewayApisixModel] = field(init=False, default_factory=list)
+    _converted_protos: List[GatewayApisixModel] = field(init=False, default_factory=list)
 
     def __post_init__(self):
         if self.release.resource_version.is_schema_v2:
@@ -80,7 +78,13 @@ class GatewayApisixResourceConvertor:
         self._converted_services = service_convertor.convert()
 
         # FIXME: build the mapping
-        backend_service_mapping = {}
+        backend_service_mapping: Dict[int, str] = {}
+        for svc in self._converted_services:
+            backend_id = svc.labels.get_label("backend-id")
+            if backend_id:
+                backend_service_mapping[int(backend_id)] = svc.id
+
+        logger.error("the mapping: %s", backend_service_mapping)
 
         # 协议类型为 http 的资源，与 grpc 等协议区分，而不是后端 proxy 类型为 http 的资源
         route_convertor = RouteConvertor(
@@ -91,11 +95,13 @@ class GatewayApisixResourceConvertor:
         )
         self._converted_routes = route_convertor.convert()
 
-        ssl_convertor = SSLConvertor(self._release_data)
-        self._converted_ssls = ssl_convertor.convert()
+        # FIXME: impl it
+        # ssl_convertor = SSLConvertor(self._release_data)
+        # self._converted_ssls = ssl_convertor.convert()
 
-        proto_convertor = ProtoConvertor(self._release_data)
-        self._converted_protos = proto_convertor.convert()
+        # FIXME: impl it
+        # proto_convertor = ProtoConvertor(self._release_data)
+        # self._converted_protos = proto_convertor.convert()
 
     def get_apisix_resources(self) -> Iterable[ApisixModel]:
         yield from self._converted_ssls

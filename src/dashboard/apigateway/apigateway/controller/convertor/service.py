@@ -17,22 +17,30 @@
 #
 
 import base64
-from typing import List, Union
+from typing import Dict, List, Union
 
 from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
 
 from apigateway.common.constants import DEFAULT_BACKEND_HOST_FOR_MISSING
-from apigateway.controller.models import BaseUpstream, Labels, Node, Plugin, Service, Timeout
+from apigateway.controller.models import (
+    BaseUpstream,
+    GatewayApisixModel,
+    GatewayResourceLabels,
+    Node,
+    Plugin,
+    Service,
+    Timeout,
+)
 from apigateway.controller.models.constants import UpstreamSchemeEnum, UpstreamTypeEnum
 from apigateway.controller.release_data import ReleaseData
 from apigateway.core.models import Backend
 
-from .base import BaseConvertor
+from .base import GatewayResourceConvertor
 from .utils import UrlInfo
 
 
-class ServiceConvertor(BaseConvertor):
+class ServiceConvertor(GatewayResourceConvertor):
     # TODO: publish_id into labels of k8s => 需要确认
     #       确认新的 operator labels 怎么处理的？
     # labels["publish_id"] = str(self._publish_id)
@@ -40,7 +48,7 @@ class ServiceConvertor(BaseConvertor):
         super().__init__(release_data)
         self._publish_id = publish_id
 
-    def convert(self) -> List[Service]:
+    def convert(self) -> List[GatewayApisixModel]:
         # FIXME: merge the stage + service here
         # FIXME: should not generate service if the backend is not related to any resource
         backend_configs = self._release_data.get_stage_backend_configs()
@@ -60,7 +68,7 @@ class ServiceConvertor(BaseConvertor):
         #   ]
         # }
 
-        services: List[Service] = []
+        services: List[GatewayApisixModel] = []
         # FIXME: 这里有没有环境变量渲染？
 
         for backend_id, backend_config in backend_configs.items():
@@ -112,27 +120,23 @@ class ServiceConvertor(BaseConvertor):
 
             # currently, only add one plugin for service of per backend
             # other plugins are shared by stage, they will be merged on operator
-            plugins = [
-                Plugin(
-                    name="bk-backend-context",
-                    config={
-                        "bk_backend_id": backend_id,
-                        "bk_backend_name": backend_name,
-                    },
-                ),
-            ]
+            plugins: Dict[str, Plugin] = {
+                "bk-backend-context": Plugin(bk_backend_id=backend_id, bk_backend_name=backend_name),
+            }
             service_plugins = self._build_service_plugins()
-            plugins.extend(service_plugins)
+            plugins.update(service_plugins)
 
             # stage_name max length is 20, stage_id 6, backend_id is 4, other 10
             # total max length is 64, so the buffer is 24 ( stage_id length + backend_id length)
             # TODO: build the labels for every resource
-            labels = Labels(
+            labels = GatewayResourceLabels(
                 gateway=self.gateway_name,
                 stage=self.stage_name,
                 publish_id=self._publish_id,
                 # FIXME: add backend_id here?
             )
+            labels.add_label("backend-id", str(backend_id))
+
             services.append(
                 Service(
                     # the previous id is: {gateway_name}.{stage_name}.{stage_id}-{backend_id}
@@ -179,79 +183,67 @@ class ServiceConvertor(BaseConvertor):
     #         ),
     #     )
 
-    def _build_service_plugins(self) -> List[Plugin]:
-        plugins = self._get_stage_default_plugins()
-        plugins.extend(self._get_stage_binding_plugins())
-        plugins.extend(self._get_stage_extra_plugins())
+    def _build_service_plugins(self) -> Dict[str, Plugin]:
+        plugins: Dict[str, Plugin] = self._get_stage_default_plugins()
+
+        plugins.update(self._get_stage_binding_plugins())
+        plugins.update(self._get_stage_extra_plugins())
 
         return plugins
 
-    def _get_stage_default_plugins(self) -> List[Plugin]:
+    def _get_stage_default_plugins(self) -> Dict[str, Plugin]:
         """Get the default plugins for stage, which is shared by all resources in the stage"""
-        default_plugins = [
+        default_plugins: Dict[str, Plugin] = {
             # 2024-08-19 disable the bk-opentelemetry plugin, we should let each gateway set their own opentelemetry
             # Plugin(name="bk-opentelemetry"),
-            Plugin(name="prometheus"),
-            Plugin(name="bk-real-ip"),
-            Plugin(name="bk-auth-validate"),
-            Plugin(name="bk-auth-verify"),
-            Plugin(name="bk-break-recursive-call"),
-            Plugin(name="bk-delete-sensitive"),
-            Plugin(name="bk-log-context"),
-            Plugin(name="bk-delete-cookie"),
-            Plugin(name="bk-error-wrapper"),
-            Plugin(name="bk-jwt"),
-            Plugin(name="bk-request-id"),
-            Plugin(name="bk-response-check"),
-            Plugin(name="bk-permission"),
-            Plugin(name="bk-debug"),
-            Plugin(
-                name="file-logger",
-                config={
-                    "path": "logs/access.log",
-                },
+            "prometheus": Plugin(),
+            "bk-real-ip": Plugin(),
+            "bk-auth-validate": Plugin(),
+            "bk-auth-verify": Plugin(),
+            "bk-break-recursive-call": Plugin(),
+            "bk-delete-sensitive": Plugin(),
+            "bk-log-context": Plugin(),
+            "bk-delete-cookie": Plugin(),
+            "bk-error-wrapper": Plugin(),
+            "bk-jwt": Plugin(),
+            "bk-request-id": Plugin(),
+            "bk-response-check": Plugin(),
+            "bk-permission": Plugin(),
+            "bk-debug": Plugin(),
+            "file-logger": Plugin(path="logs/access.log"),
+            "bk-stage-context": Plugin(
+                bk_gateway_name=self.gateway_name,
+                bk_gateway_id=self.gateway_id,
+                bk_stage_name=self.stage_name,
+                jwt_private_key=force_str(base64.b64encode(force_bytes(self._release_data.jwt_private_key))),
+                bk_api_auth=self._release_data.gateway_auth_config,
             ),
-            Plugin(
-                name="bk-stage-context",
-                config={
-                    "bk_gateway_name": self.gateway_name,
-                    "bk_gateway_id": self.gateway_id,
-                    "bk_stage_name": self.stage_name,
-                    "jwt_private_key": force_str(base64.b64encode(force_bytes(self._release_data.jwt_private_key))),
-                    "bk_api_auth": self._release_data.gateway_auth_config,
-                },
-            ),
-        ]
+        }
 
         if settings.GATEWAY_CONCURRENCY_LIMIT_ENABLED:
-            default_plugins.append(Plugin(name="bk-concurrency-limit"))
+            default_plugins["bk-concurrency-limit"] = Plugin()
 
         # 多租户模式
         if settings.ENABLE_MULTI_TENANT_MODE:
-            default_plugins.extend(
-                [
-                    Plugin(name="bk-tenant-verify"),
-                    Plugin(
-                        name="bk-tenant-validate",
-                        config={
-                            "tenant_mode": self.gateway.tenant_mode,
-                            "tenant_id": self.gateway.tenant_id,
-                        },
+            default_plugins.update(
+                {
+                    "bk-tenant-verify": Plugin(),
+                    "bk-tenant-validate": Plugin(
+                        tenant_mode=self.gateway.tenant_mode, tenant_id=self.gateway.tenant_id
                     ),
-                ]
+                }
             )
         else:
-            default_plugins.append(Plugin(name="bk-default-tenant"))
+            default_plugins["bk-default-tenant"] = Plugin()
 
         return default_plugins
 
-    def _get_stage_binding_plugins(self) -> List[Plugin]:
-        return [
-            Plugin(name=plugin_data.name, config=plugin_data.config)
-            for plugin_data in self._release_data.get_stage_plugins()
-        ]
+    def _get_stage_binding_plugins(self) -> Dict[str, Plugin]:
+        return {
+            plugin_data.name: Plugin(**plugin_data.config) for plugin_data in self._release_data.get_stage_plugins()
+        }
 
-    def _get_stage_extra_plugins(self) -> List[Plugin]:
+    def _get_stage_extra_plugins(self) -> Dict[str, Plugin]:
         if self.gateway_name in settings.LEGACY_INVALID_PARAMS_GATEWAY_NAMES:
-            return [Plugin(name="bk-legacy-invalid-params")]
-        return []
+            return {"bk-legacy-invalid-params": Plugin()}
+        return {}

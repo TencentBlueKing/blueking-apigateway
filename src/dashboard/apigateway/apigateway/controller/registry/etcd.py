@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
 import logging
 from typing import ClassVar, Dict, Iterable, List, Type
 
@@ -24,7 +25,6 @@ from django.utils.encoding import force_str
 from apigateway.controller.models import ApisixModel
 from apigateway.controller.registry.base import Registry
 from apigateway.utils.etcd import get_etcd_client
-from apigateway.utils.yaml import yaml_dumps, yaml_loads
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +45,10 @@ class EtcdRegistry(Registry):
         return self._etcd_client.delete(key)
 
     def apply_resource(self, resource: ApisixModel) -> bool:
-        # FIXME: serialize to json
-        payload = yaml_dumps(resource.dict(by_alias=True))
+        # Convert to JSON-serializable dict to handle enum objects properly
+        # data = json.loads(resource.model_dump_json(by_alias=True))
+        # payload = yaml_dumps(data)
+        payload = resource.model_dump_json(exclude_none=True)
         self._etcd_client.put(self._get_key(resource.kind, resource.id), payload)
         return True
 
@@ -89,7 +91,7 @@ class EtcdRegistry(Registry):
             # if cr:
             #     yield cr
             try:
-                value = yaml_loads(payload)
+                value = json.loads(payload)
                 yield resource_type(**value)
             except Exception as err:  # pylint: disable=broad-except
                 logger.warning("deserialize resource %s failed: %s", resource_type, err)

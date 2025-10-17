@@ -17,22 +17,25 @@
 #
 
 import json
+import logging
 from typing import Any, Dict, List, Optional, Union
 
-from apigateway.controller.models import Labels, Plugin, Route, Timeout
+from apigateway.controller.models import GatewayApisixModel, GatewayResourceLabels, Plugin, Route, Timeout
 from apigateway.controller.models.constants import HttpMethodEnum
 from apigateway.controller.release_data import ReleaseData
 from apigateway.controller.uri_render import UpstreamURIRender, URIRender
 from apigateway.core.constants import ProxyTypeEnum
 from apigateway.utils.time import now_str
 
-from .base import BaseConvertor
+from .base import GatewayResourceConvertor
 from .utils import truncate_string
+
+logger = logging.getLogger(__name__)
 
 SUBPATH_PARAM_NAME = "bk_api_subpath_match_param_name"
 
 
-class RouteConvertor(BaseConvertor):
+class RouteConvertor(GatewayResourceConvertor):
     def __init__(
         self,
         release_data: ReleaseData,
@@ -51,8 +54,8 @@ class RouteConvertor(BaseConvertor):
             raise NameError("stage service not found in registry")
         return service_id
 
-    def convert(self) -> List[Route]:
-        routes: List[Route] = []
+    def convert(self) -> List[GatewayApisixModel]:
+        routes: List[GatewayApisixModel] = []
 
         if not self._revoke_flag:
             for resource in self._release_data.resource_version.data:
@@ -79,10 +82,13 @@ class RouteConvertor(BaseConvertor):
         if backend_id == 0:
             raise ValueError(f"backend_id is 0 or not set, which is not allowed. resource: {resource}")
 
+        service_id = self._get_service_id(backend_id)
+        # logger.error("the service_id: %s, and it's type %s", service_id, type(service_id))
+
         # operator 会将环境级别的插件绑定到 service，如果资源没有定义上游，依然绑定服务
         methods = []
         if resource["method"] != "ANY":
-            methods = [resource["method"]]
+            methods = [HttpMethodEnum(resource["method"])]
 
         match_subpath = resource_proxy.get("match_subpath", False)
 
@@ -90,7 +96,7 @@ class RouteConvertor(BaseConvertor):
 
         route = Route(
             # example: bk-esb.prod.996
-            id=resource["id"],
+            id=f"{self.gateway_name}.{self.stage_name}.{resource['id']}",
             # example: bk-esb-prod-data-v3-aiops-get-aiops-sampleset-list
             # the resource_name max length is 256, while the apisix name max length is 100
             name=truncate_string(f"{self.gateway_name}-{self.stage_name}-{resource['name']}", 100),
@@ -102,11 +108,11 @@ class RouteConvertor(BaseConvertor):
             ),
             methods=methods,
             plugins=plugins,
-            service_id=self._get_service_id(backend_id),
+            service_id=service_id,
             enable_websocket=resource.get("enable_websocket", False),
             # NOTE: should not set upstream here!
             # FIXME: add labels
-            labels=Labels(
+            labels=GatewayResourceLabels(
                 gateway=self.gateway_name,
                 stage=self.stage_name,
             ),
@@ -153,35 +159,31 @@ class RouteConvertor(BaseConvertor):
             read=timeout,
         )
 
-    def _convert_http_resource_plugins(self, resource: Dict[str, Any], resource_proxy: Dict[str, Any]) -> List[Plugin]:
+    def _convert_http_resource_plugins(
+        self, resource: Dict[str, Any], resource_proxy: Dict[str, Any]
+    ) -> Dict[str, Plugin]:
         resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
 
-        plugins = [
-            Plugin(
-                name="bk-resource-context",
-                config={
-                    "bk_resource_id": resource["id"],
-                    "bk_resource_name": resource["name"],
-                    "bk_resource_auth": {
-                        "verified_app_required": resource_auth_config.get("app_verified_required", True),
-                        "verified_user_required": resource_auth_config.get("auth_verified_required", True),
-                        "resource_perm_required": resource_auth_config.get("resource_perm_required", True),
-                        "skip_user_verification": resource_auth_config.get("skip_auth_verification", False),
-                    },
+        plugins: Dict[str, Plugin] = {
+            "bk-resource-context": Plugin(
+                bk_resource_id=resource["id"],
+                bk_resource_name=resource["name"],
+                bk_resource_auth={
+                    "verified_app_required": resource_auth_config.get("app_verified_required", True),
+                    "verified_user_required": resource_auth_config.get("auth_verified_required", True),
+                    "resource_perm_required": resource_auth_config.get("resource_perm_required", True),
+                    "skip_user_verification": resource_auth_config.get("skip_auth_verification", False),
                 },
             ),
             # TODO: check the bk-proxy-rewrite plugin gen in operator
-            Plugin(
-                name="bk-proxy-rewrite",
-                config=self._build_bk_proxy_rewrite_config(resource_proxy),
-            ),
-        ]
+            "bk-proxy-rewrite": Plugin(**self._build_bk_proxy_rewrite_config(resource_proxy)),
+        }
 
-        plugins.extend(
-            [
-                Plugin(name=plugin_data.name, config=plugin_data.config)
+        plugins.update(
+            {
+                plugin_data.name: Plugin(**plugin_data.config)
                 for plugin_data in self._release_data.get_resource_plugins(resource["id"])
-            ]
+            }
         )
 
         return plugins
@@ -209,21 +211,18 @@ class RouteConvertor(BaseConvertor):
         return config
 
     def _get_release_version_detect_route(self) -> Route:
-        plugins = [
-            Plugin(
-                name="bk-mock",
-                config={
-                    "response_status": 200,
-                    "response_example": json.dumps(
-                        {
-                            "publish_id": self._publish_id,
-                            "start_time": now_str(),
-                        }
-                    ),
-                    "response_headers": {"Content-Type": "application/json"},
-                },
-            )
-        ]
+        plugins: Dict[str, Plugin] = {
+            "bk-mock": Plugin(
+                response_status=200,
+                response_example=json.dumps(
+                    {
+                        "publish_id": self._publish_id,
+                        "start_time": now_str(),
+                    }
+                ),
+                response_headers={"Content-Type": "application/json"},
+            ),
+        }
 
         return Route(
             id=f"{self.gateway_name}.{self.stage_name}.-1",
@@ -238,7 +237,7 @@ class RouteConvertor(BaseConvertor):
             plugins=plugins,
             service_id=None,
             # FIXME: add labels
-            labels=Labels(
+            labels=GatewayResourceLabels(
                 gateway=self.gateway_name,
                 stage=self.stage_name,
             ),

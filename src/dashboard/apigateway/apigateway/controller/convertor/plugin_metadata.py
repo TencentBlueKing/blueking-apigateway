@@ -20,13 +20,13 @@ from typing import List
 
 from django.conf import settings
 
-from apigateway.controller.models import PluginMetadata
+from apigateway.controller.models import GlobalApisixModel, PluginMetadata
 
-from .base import BaseConvertor
+from .base import GlobalResourceConvertor
 
 
-class PluginMetadataConvertor(BaseConvertor):
-    def convert(self) -> List[PluginMetadata]:
+class PluginMetadataConvertor(GlobalResourceConvertor):
+    def convert(self) -> List[GlobalApisixModel]:
         # it's global, so no need to get data from release_data
         # how to convert to a {id -> config } key-and-value fields for the stage?
         return [

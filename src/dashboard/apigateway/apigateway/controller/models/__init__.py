@@ -16,7 +16,21 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from .base import SSL, ApisixModel, BaseUpstream, Labels, Node, Plugin, PluginMetadata, Proto, Route, Service, Timeout
+from .base import (
+    SSL,
+    ApisixModel,
+    BaseUpstream,
+    GatewayApisixModel,
+    GatewayResourceLabels,
+    GlobalApisixModel,
+    Node,
+    Plugin,
+    PluginMetadata,
+    Proto,
+    Route,
+    Service,
+    Timeout,
+)
 
 __all__ = [
     "ApisixModel",
@@ -25,9 +39,11 @@ __all__ = [
     "SSL",
     "Proto",
     "PluginMetadata",
-    "Labels",
+    "GatewayResourceLabels",
     "Plugin",
     "Timeout",
     "BaseUpstream",
     "Node",
+    "GatewayApisixModel",
+    "GlobalApisixModel",
 ]

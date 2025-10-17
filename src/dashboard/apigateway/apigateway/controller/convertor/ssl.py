@@ -16,9 +16,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from .base import BaseConvertor
+from typing import List
+
+from apigateway.controller.models import GatewayApisixModel
+
+from .base import GatewayResourceConvertor
 
 
-class SSLConvertor(BaseConvertor):
-    def convert(self):
-        return NotImplementedError()
+class SSLConvertor(GatewayResourceConvertor):
+    def convert(self) -> List[GatewayApisixModel]:
+        raise NotImplementedError()
