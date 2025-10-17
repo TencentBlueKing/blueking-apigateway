@@ -3311,8 +3311,8 @@
             "cache_ttl": {
               "type": "integer",
               "default": 300,
-              "minimum": 200,
-              "maximum": 599
+              "minimum": 1,
+              "maximum": 3600
             }
         }
       }
