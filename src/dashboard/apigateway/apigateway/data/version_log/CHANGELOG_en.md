@@ -1,3 +1,12 @@
+<!-- 2025-10-17 -->
+# V1.18.1 Release Log
+
+### Bug Fixes
+
+- Fix: Resource ID too long causing release failure
+
+---
+
 <!-- 2025-09-11 -->
 # V1.18.0 Release Log
 
