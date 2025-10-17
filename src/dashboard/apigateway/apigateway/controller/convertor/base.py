@@ -30,23 +30,44 @@ class BaseConvertor(ABC):
     ):
         self._release_data = release_data
 
+    @property
+    def gateway(self):
+        return self._release_data.gateway
+
+    @property
+    def gateway_id(self) -> int:
+        return self._release_data.gateway.pk
+
+    @property
+    def gateway_name(self) -> str:
+        return self._release_data.gateway.name
+
+    @property
+    def stage(self):
+        return self._release_data.stage
+
+    @property
+    def stage_name(self) -> str:
+        return self._release_data.stage.name
+
+    @property
+    def stage_id(self) -> int:
+        return self._release_data.stage.pk
+
     @abstractmethod
     def convert(self):
         return NotImplementedError()
 
     def common_labels(self):
         return {
-            "gateway.bk.tencent.com/gateway": self._release_data.gateway.name,
-            "gateway.bk.tencent.com/stage": self._release_data.stage.name,
+            "gateway.bk.tencent.com/gateway": self.gateway_name,
+            "gateway.bk.tencent.com/stage": self.stage_name,
         }
 
     # FIXME: is this necessary?
     # metadata.name 是在 operator 中有什么作用吗？
     def gen_unique_name(self, name: str) -> str:
-        gateway = self._release_data.gateway.name
-        stage = self._release_data.stage.name
-
-        key = shortcuts.to_lower_dash_case(f"{gateway}-{stage}-{name}")
+        key = shortcuts.to_lower_dash_case(f"{self.gateway_name}-{self.stage_name}-{name}")
         if len(key) > 64:
             md5 = hashlib.md5(key[55:].encode())
             key = f"{key[:55]}.{md5.hexdigest()[:8]}"  # 55 + 1 + 8

@@ -25,7 +25,7 @@ from apigateway.controller.convertor import (
     ServiceConvertor,
     SSLConvertor,
 )
-from apigateway.controller.models.base import ApisixModel
+from apigateway.controller.models import ApisixModel
 from apigateway.controller.release_data import ReleaseData
 from apigateway.core.models import Release
 

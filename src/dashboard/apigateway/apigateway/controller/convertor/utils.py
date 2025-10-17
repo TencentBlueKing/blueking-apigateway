@@ -20,6 +20,12 @@ from typing import ClassVar, Dict, Optional
 from urllib.parse import urlparse
 
 
+def truncate_string(value: str, max_length: int) -> str:
+    if len(value) <= max_length:
+        return value
+    return value[: max_length - 3] + "..."
+
+
 @dataclass
 class UrlInfo:
     url: str

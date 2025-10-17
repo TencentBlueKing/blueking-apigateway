@@ -15,3 +15,19 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
+from .base import SSL, ApisixModel, BaseUpstream, Labels, Node, Plugin, PluginMetadata, Proto, Route, Service, Timeout
+
+__all__ = [
+    "ApisixModel",
+    "Service",
+    "Route",
+    "SSL",
+    "Proto",
+    "PluginMetadata",
+    "Labels",
+    "Plugin",
+    "Timeout",
+    "BaseUpstream",
+    "Node",
+]

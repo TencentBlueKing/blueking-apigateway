@@ -22,3 +22,11 @@ from .proto import ProtoConvertor
 from .route import RouteConvertor
 from .service import ServiceConvertor
 from .ssl import SSLConvertor
+
+__all__ = [
+    "PluginMetadataConvertor",
+    "ProtoConvertor",
+    "RouteConvertor",
+    "ServiceConvertor",
+    "SSLConvertor",
+]

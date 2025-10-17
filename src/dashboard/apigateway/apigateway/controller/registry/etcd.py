@@ -21,7 +21,7 @@ from typing import ClassVar, Dict, Iterable, List, Type
 import etcd3
 from django.utils.encoding import force_str
 
-from apigateway.controller.models.base import ApisixModel
+from apigateway.controller.models import ApisixModel
 from apigateway.controller.registry.base import Registry
 from apigateway.utils.etcd import get_etcd_client
 from apigateway.utils.yaml import yaml_dumps, yaml_loads

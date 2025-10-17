@@ -780,7 +780,7 @@ class MicroGateway(ConfigModelMixin):
     status_updated_time = models.DateTimeField(null=True, blank=True)
     comment = models.CharField(max_length=512, blank=True, default="")
 
-    schema = models.ForeignKey(Schema, on_delete=models.PROTECT, null=True, default=None, blank=True)
+    schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
 
     class Meta:
         db_table = "core_micro_gateway"

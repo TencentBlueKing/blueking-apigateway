@@ -20,7 +20,7 @@ from typing import List
 
 from django.conf import settings
 
-from apigateway.controller.models.base import PluginMetadata
+from apigateway.controller.models import PluginMetadata
 
 from .base import BaseConvertor
 

@@ -23,7 +23,7 @@ from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
 
 from apigateway.common.constants import DEFAULT_BACKEND_HOST_FOR_MISSING
-from apigateway.controller.models.base import BaseUpstream, Labels, Node, Plugin, Service, Timeout
+from apigateway.controller.models import BaseUpstream, Labels, Node, Plugin, Service, Timeout
 from apigateway.controller.models.constants import UpstreamSchemeEnum, UpstreamTypeEnum
 from apigateway.controller.release_data import ReleaseData
 from apigateway.core.models import Backend
@@ -66,7 +66,7 @@ class ServiceConvertor(BaseConvertor):
         for backend_id, backend_config in backend_configs.items():
             timeout = backend_config.get("timeout", 60)
             upstream = BaseUpstream(
-                type=UpstreamTypeEnum.ROUNDROBIN.value,
+                type=UpstreamTypeEnum.ROUNDROBIN,
                 timeout=Timeout(
                     connect=timeout,
                     send=timeout,
@@ -87,7 +87,7 @@ class ServiceConvertor(BaseConvertor):
                 url_info = UrlInfo(host)
 
                 try:
-                    upstream.scheme = UpstreamSchemeEnum(url_info.scheme).value
+                    upstream.scheme = UpstreamSchemeEnum(url_info.scheme)
                 except ValueError:
                     raise ValueError(
                         f"scheme {url_info.scheme!r} of host {node['host']!r} is not a valid UpstreamSchemeEnum"
@@ -96,15 +96,13 @@ class ServiceConvertor(BaseConvertor):
                 upstream.nodes.append(Node(host=url_info.domain, port=url_info.port, weight=node.get("weight", 1)))
 
             # FIXME: move gateway/stage basic info into baseConvertor?
-            stage_name = self._release_data.stage.name
-            stage_id = self._release_data.stage.pk
-            stage_description = self._release_data.stage.description
+            stage_description = self.stage.description
 
             backend = Backend.objects.get(id=backend_id)
             backend_name = backend.name
             backend_description = backend.description
 
-            description = f"{stage_name}/{stage_id}"
+            description = f"{self.stage_name}/{self.stage_id}"
             if stage_description:
                 description += f": {stage_description[:32]}"
             description += f" (backend={backend_name}"
@@ -130,8 +128,8 @@ class ServiceConvertor(BaseConvertor):
             # total max length is 64, so the buffer is 24 ( stage_id length + backend_id length)
             # TODO: build the labels for every resource
             labels = Labels(
-                gateway=self._release_data.gateway.name,
-                stage=stage_name,
+                gateway=self.gateway_name,
+                stage=self.stage_name,
                 publish_id=self._publish_id,
                 # FIXME: add backend_id here?
             )
@@ -141,9 +139,9 @@ class ServiceConvertor(BaseConvertor):
                     # 30+1+20+1+ x + 1 + y = 53 + x + y, so x + y <= 11 (almost no buffer)
                     # so we should make a new id here?
                     # example: bk-apigateway-inner.prod.stage-6-backend-7
-                    id=f"s-{stage_id}-b-{backend_id}",
+                    id=f"s-{self.stage_id}-b-{backend_id}",
                     # example: bk-apigateway-inner-prod-s-6-b-7
-                    name=f"_stage_service_{stage_name}_{backend_id}",
+                    name=f"_stage_service_{self.stage_name}_{backend_id}",
                     desc=description,
                     labels=labels,
                     plugins=plugins,
@@ -216,9 +214,9 @@ class ServiceConvertor(BaseConvertor):
             Plugin(
                 name="bk-stage-context",
                 config={
-                    "bk_gateway_name": self._release_data.gateway.name,
-                    "bk_gateway_id": self._release_data.gateway.pk,
-                    "bk_stage_name": self._release_data.stage.name,
+                    "bk_gateway_name": self.gateway_name,
+                    "bk_gateway_id": self.gateway_id,
+                    "bk_stage_name": self.stage_name,
                     "jwt_private_key": force_str(base64.b64encode(force_bytes(self._release_data.jwt_private_key))),
                     "bk_api_auth": self._release_data.gateway_auth_config,
                 },
@@ -236,8 +234,8 @@ class ServiceConvertor(BaseConvertor):
                     Plugin(
                         name="bk-tenant-validate",
                         config={
-                            "tenant_mode": self._release_data.gateway.tenant_mode,
-                            "tenant_id": self._release_data.gateway.tenant_id,
+                            "tenant_mode": self.gateway.tenant_mode,
+                            "tenant_id": self.gateway.tenant_id,
                         },
                     ),
                 ]
@@ -254,7 +252,6 @@ class ServiceConvertor(BaseConvertor):
         ]
 
     def _get_stage_extra_plugins(self) -> List[Plugin]:
-        gateway_name = self._release_data.gateway.name
-        if gateway_name in settings.LEGACY_INVALID_PARAMS_GATEWAY_NAMES:
+        if self.gateway_name in settings.LEGACY_INVALID_PARAMS_GATEWAY_NAMES:
             return [Plugin(name="bk-legacy-invalid-params")]
         return []

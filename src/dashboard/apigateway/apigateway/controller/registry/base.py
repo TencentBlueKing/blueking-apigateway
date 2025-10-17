@@ -19,7 +19,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import ClassVar, Iterable, List, Type
 
-from apigateway.controller.models.base import ApisixModel
+from apigateway.controller.models import ApisixModel
 
 logger = logging.getLogger(__name__)
 

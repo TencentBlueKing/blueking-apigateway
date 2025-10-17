@@ -19,7 +19,7 @@ import logging
 from copy import deepcopy
 from typing import ClassVar, Dict, Iterable, List, Type
 
-from apigateway.controller.models.base import ApisixModel
+from apigateway.controller.models import ApisixModel
 from apigateway.controller.registry.base import Registry
 
 logger = logging.getLogger(__name__)

@@ -19,7 +19,7 @@
 import json
 from typing import Any, Dict, List, Optional, Union
 
-from apigateway.controller.models.base import Labels, Plugin, Route, Timeout
+from apigateway.controller.models import Labels, Plugin, Route, Timeout
 from apigateway.controller.models.constants import HttpMethodEnum
 from apigateway.controller.release_data import ReleaseData
 from apigateway.controller.uri_render import UpstreamURIRender, URIRender
@@ -27,6 +27,7 @@ from apigateway.core.constants import ProxyTypeEnum
 from apigateway.utils.time import now_str
 
 from .base import BaseConvertor
+from .utils import truncate_string
 
 SUBPATH_PARAM_NAME = "bk_api_subpath_match_param_name"
 
@@ -69,7 +70,7 @@ class RouteConvertor(BaseConvertor):
             return None
 
         # TODO: should remove disabled_stages in the future
-        if self._release_data.stage.name in resource["disabled_stages"]:
+        if self.stage_name in resource["disabled_stages"]:
             return None
 
         resource_proxy = json.loads(resource["proxy"]["config"])
@@ -88,12 +89,11 @@ class RouteConvertor(BaseConvertor):
         plugins = self._convert_http_resource_plugins(resource, resource_proxy)
 
         route = Route(
-            # FIXME: add labels
             # example: bk-esb.prod.996
             id=resource["id"],
             # example: bk-esb-prod-data-v3-aiops-get-aiops-sampleset-list
-            # FIXME: the resource_name max length is 256, while the apisix name max length is 100
-            name=resource["name"],
+            # the resource_name max length is 256, while the apisix name max length is 100
+            name=truncate_string(f"{self.gateway_name}-{self.stage_name}-{resource['name']}", 100),
             # NOTE: no desc for route, save memory
             # desc=resource["description"],
             uris=self._convert_uris(
@@ -105,9 +105,10 @@ class RouteConvertor(BaseConvertor):
             service_id=self._get_service_id(backend_id),
             enable_websocket=resource.get("enable_websocket", False),
             # NOTE: should not set upstream here!
+            # FIXME: add labels
             labels=Labels(
-                gateway=self._release_data.gateway.name,
-                stage=self._release_data.stage.name,
+                gateway=self.gateway_name,
+                stage=self.stage_name,
             ),
         )
         # FIXME: calculate the priority here?
@@ -121,13 +122,10 @@ class RouteConvertor(BaseConvertor):
         return route
 
     def _convert_uris(self, path: str, match_subpath: bool) -> List[str]:
-        gateway_name = self._release_data.gateway.name
-        stage_name = self._release_data.stage.name
-
-        uri = f"/api/{gateway_name}/{stage_name}/" + path.lstrip("/")
+        uri = f"/api/{self.gateway_name}/{self.stage_name}/" + path.lstrip("/")
         uri_without_suffix_slash = uri.rstrip("/")
 
-        rendered_uri_without_suffix_slash = URIRender().render(uri_without_suffix_slash, self._release_data.stage.vars)
+        rendered_uri_without_suffix_slash = URIRender().render(uri_without_suffix_slash, self.stage.vars)
         if match_subpath:
             return [
                 rendered_uri_without_suffix_slash,
@@ -196,10 +194,9 @@ class RouteConvertor(BaseConvertor):
 
         config: Dict[str, Any] = {}
         if path:
-            upstream_uri = UpstreamURIRender().render(path, self._release_data.stage.vars)
+            upstream_uri = UpstreamURIRender().render(path, self.stage.vars)
             if match_subpath:
                 config["match_subpath"] = True
-                # FIXME: make it const
                 config["subpath_param_name"] = SUBPATH_PARAM_NAME
                 # "%s/${%s}"
                 config["uri"] = upstream_uri.rstrip("/") + "/${" + SUBPATH_PARAM_NAME + "}"
@@ -228,23 +225,21 @@ class RouteConvertor(BaseConvertor):
             )
         ]
 
-        stage_name = self._release_data.stage.name
-        gateway_name = self._release_data.gateway.name
         return Route(
-            # FIXME: add labels
-            id=f"{gateway_name}.{stage_name}.-1",
+            id=f"{self.gateway_name}.{self.stage_name}.-1",
             # example: bk-apigateway-prod-apigw-builtin-mock-release-version
-            name=f"{gateway_name}-{stage_name}-builtin-mock-release-version",
+            name=truncate_string(f"{self.gateway_name}-{self.stage_name}-builtin-mock-release-version", 100),
             desc="route for detect release version",
             # example:/api/bk-apigateway/prod/__apigw_version
-            uris=[f"/api/{gateway_name}/{stage_name}/__apigw_version"],
+            uris=[f"/api/{self.gateway_name}/{self.stage_name}/__apigw_version"],
             methods=[HttpMethodEnum.GET],
             enable_websocket=False,
             timeout=Timeout(connect=60, send=60, read=60),
             plugins=plugins,
             service_id=None,
+            # FIXME: add labels
             labels=Labels(
-                gateway=gateway_name,
-                stage=stage_name,
+                gateway=self.gateway_name,
+                stage=self.stage_name,
             ),
         )
