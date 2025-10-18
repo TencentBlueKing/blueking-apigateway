@@ -19,12 +19,13 @@ import logging
 from typing import Optional, Tuple
 
 from apigateway.controller.constants import DELETE_PUBLISH_ID
-from apigateway.controller.crds.v1beta1.convertor import CustomResourceConvertor
 from apigateway.controller.distributor.base import BaseDistributor
-from apigateway.controller.distributor.key_prefix import KeyPrefixHandler
-from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
 from apigateway.controller.registry.etcd import EtcdRegistry
-from apigateway.core.models import Gateway, MicroGateway, Release, Stage
+from apigateway.controller.release_logger import ReleaseProcedureLogger
+from apigateway.controller.transformer import GatewayApisixResourceConvertor
+from apigateway.core.models import Gateway, Release, Stage
+
+from .key_prefix import GatewayKeyPrefixHandler
 
 logger = logging.getLogger(__name__)
 
@@ -39,36 +40,40 @@ class SyncFail(Exception):
         return f"sync resources failed: {self.resources}"
 
 
+# FIXME: split into Global and Gateway Distributor
+# global distributor is full sync
+
+
 class EtcdDistributor(BaseDistributor):
-    def __init__(self, include_gateway_global_config: bool = False):
-        """
-        :param include_gateway_global_config: 是否应包含网关全局配置资源，如：BkGatewayConfig, BkGatewayPluginMetadata；
-            共享网关，专享网关，当同步对应网关的数据到共享网关集群时，应包含这些网关的全局配置资源
-        """
-        self.include_gateway_global_config = include_gateway_global_config
+    # def __init__(self, include_gateway_global_config: bool = False):
+    #     """
+    #     :param include_gateway_global_config: 是否应包含网关全局配置资源，如：BkGatewayConfig, BkGatewayPluginMetadata；
+    #         共享网关，专享网关，当同步对应网关的数据到共享网关集群时，应包含这些网关的全局配置资源
+    #     """
+    #     # FIXME: how to distribute global resources?
+    #     # self.include_gateway_global_config = include_gateway_global_config
+
+    def _get_registry(self, gateway: Gateway, stage: Stage) -> EtcdRegistry:
+        key_prefix = GatewayKeyPrefixHandler().get_release_key_prefix(gateway.name, stage.name)
+        return EtcdRegistry(key_prefix=key_prefix)
 
     def distribute(
         self,
         release: Release,
-        micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
         publish_id: Optional[int] = None,
     ) -> Tuple[bool, str]:
         """将 release 发布到 micro-gateway 对应的 registry 中"""
-        convertor = CustomResourceConvertor(
+        convertor = GatewayApisixResourceConvertor(
             release=release,
             publish_id=publish_id,
-            micro_gateway=micro_gateway,
-            include_config=self.include_gateway_global_config,
-            include_plugin_metadata=self.include_gateway_global_config,
         )
-        registry = self._get_registry(release.gateway, release.stage, micro_gateway)
+        registry = self._get_registry(release.gateway, release.stage)
         procedure_logger = ReleaseProcedureLogger(
             "gateway-distributing",
             logger=logger,
             gateway=release.gateway,
             stage=release.stage,
-            micro_gateway=micro_gateway,
             release_task_id=release_task_id,
             publish_id=publish_id,
         )
@@ -78,7 +83,7 @@ class EtcdDistributor(BaseDistributor):
             with procedure_logger.step("convert to kubernetes resources"):
                 convertor.convert()
 
-            resources = list(convertor.get_kubernetes_resources())
+            resources = list(convertor.get_apisix_resources())
 
             # step 2: 将 kubernetes 资源同步到 etcd
             with procedure_logger.step(f"sync resources(count={len(resources)}) to etcd"):
@@ -95,12 +100,11 @@ class EtcdDistributor(BaseDistributor):
     def revoke(
         self,
         release: Release,
-        micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
         publish_id: Optional[int] = None,
     ) -> Tuple[bool, str]:
         """撤销已发布到 micro-gateway 对应的 registry 中的配置"""
-        registry = self._get_registry(release.gateway, release.stage, micro_gateway)
+        registry = self._get_registry(release.gateway, release.stage)
 
         # 删除所有相关数据
         if publish_id == DELETE_PUBLISH_ID:
@@ -117,15 +121,13 @@ class EtcdDistributor(BaseDistributor):
             logger=logger,
             gateway=release.gateway,
             stage=release.stage,
-            micro_gateway=micro_gateway,
             release_task_id=release_task_id,
             publish_id=publish_id,
         )
 
-        convertor = CustomResourceConvertor(
+        convertor = GatewayApisixResourceConvertor(
             release=release,
             publish_id=publish_id,
-            micro_gateway=micro_gateway,
             revoke_flag=True,
         )
 
@@ -135,7 +137,7 @@ class EtcdDistributor(BaseDistributor):
 
                 # 删除资源后需要同步虚拟路由到 etcd
                 convertor.convert()
-                resources = list(convertor.get_kubernetes_resources())
+                resources = list(convertor.get_apisix_resources())
                 with procedure_logger.step(f"sync version resources(count={len(resources)}) to etcd"):
                     fail_resources = registry.sync_resources_by_key_prefix(resources)
                     if fail_resources:
@@ -147,7 +149,3 @@ class EtcdDistributor(BaseDistributor):
 
         procedure_logger.info("revoke resources from etcd succeeded")
         return True, ""
-
-    def _get_registry(self, gateway: Gateway, stage: Stage, micro_gateway: MicroGateway) -> EtcdRegistry:
-        key_prefix = KeyPrefixHandler().get_release_key_prefix(micro_gateway.name, gateway.name, stage.name)
-        return EtcdRegistry(key_prefix=key_prefix)

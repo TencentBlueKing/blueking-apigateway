@@ -18,7 +18,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Tuple
 
-from apigateway.core.models import MicroGateway, Release
+from apigateway.core.models import Release
 
 
 class BaseDistributor(ABC):
@@ -26,7 +26,6 @@ class BaseDistributor(ABC):
     def distribute(
         self,
         release: Release,
-        micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
         publish_id: Optional[int] = None,
     ) -> Tuple[bool, str]:
@@ -37,7 +36,6 @@ class BaseDistributor(ABC):
     def revoke(
         self,
         release: Release,
-        micro_gateway: MicroGateway,
         release_task_id: Optional[str] = None,
         publish_id: Optional[int] = None,
     ) -> Tuple[bool, str]:

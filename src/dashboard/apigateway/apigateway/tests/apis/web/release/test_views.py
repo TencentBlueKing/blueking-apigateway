@@ -35,9 +35,7 @@ pytestmark = pytest.mark.django_db
 
 
 class TestReleaseCreateApi:
-    def test_release_with_hosts(
-        self, request_view, fake_admin_user, mocker, fake_gateway, fake_resource_version, fake_shared_gateway
-    ):
+    def test_release_with_hosts(self, request_view, fake_admin_user, mocker, fake_gateway, fake_resource_version):
         """Test release API with different hosts config of stage objects."""
         stage_1 = G(Stage, gateway=fake_gateway, name="prod", status=0)
         stage_2 = G(Stage, gateway=fake_gateway, name="test", status=0)

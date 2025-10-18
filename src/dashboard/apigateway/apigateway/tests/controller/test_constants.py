@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,8 +15,26 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from blue_krill.data_types.enum import StructuredEnum
+
+from apigateway.controller import constants
 
 
-class UserFeatureFlagEnum(StructuredEnum):
-    """用户功能特性集"""
+class TestConstants:
+    """Test constants values"""
+
+    def test_no_need_report_event_publish_id(self):
+        """Test NO_NEED_REPORT_EVENT_PUBLISH_ID constant"""
+        assert constants.NO_NEED_REPORT_EVENT_PUBLISH_ID == -1
+
+    def test_delete_publish_id(self):
+        """Test DELETE_PUBLISH_ID constant"""
+        assert constants.DELETE_PUBLISH_ID == -2
+
+    def test_publish_id_constants_are_negative(self):
+        """Test that all special publish IDs are negative to avoid conflicts with real IDs"""
+        assert constants.NO_NEED_REPORT_EVENT_PUBLISH_ID < 0
+        assert constants.DELETE_PUBLISH_ID < 0
+
+    def test_publish_id_constants_are_unique(self):
+        """Test that all special publish IDs are unique"""
+        assert constants.NO_NEED_REPORT_EVENT_PUBLISH_ID != constants.DELETE_PUBLISH_ID

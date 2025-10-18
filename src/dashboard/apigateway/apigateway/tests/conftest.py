@@ -468,21 +468,6 @@ def fake_edge_gateway(fake_micro_gateway, fake_stage):
 
 
 @pytest.fixture
-def fake_shared_gateway(fake_micro_gateway, settings):
-    """共享网关"""
-    gateway = G(
-        MicroGateway,
-        gateway=fake_micro_gateway.gateway,
-        name=fake_micro_gateway.name,
-        is_shared=True,
-        _config=fake_micro_gateway._config,
-    )
-
-    settings.DEFAULT_MICRO_GATEWAY_ID = str(gateway.id)
-    return gateway
-
-
-@pytest.fixture
 def fake_resource_schema(fake_gateway, fake_resource):
     return G(
         OpenAPIResourceSchema,

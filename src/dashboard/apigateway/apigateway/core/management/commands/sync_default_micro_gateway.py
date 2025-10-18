@@ -17,16 +17,19 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
+import re
 import uuid
-from typing import Optional
+from dataclasses import asdict, dataclass
+from typing import Any, Dict, Optional, Type, TypeVar
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils.functional import cached_property
 from rest_framework import serializers
 
 from apigateway.common.factories import SchemaFactory
-from apigateway.controller.micro_gateway_config import MicroGatewayHTTPInfo, MicroGatewayJWTAuth
 from apigateway.core import constants
 from apigateway.core.models import Gateway, MicroGateway, Stage
 from apigateway.utils.string import generate_unique_id
@@ -34,9 +37,49 @@ from apigateway.utils.string import generate_unique_id
 logger = logging.getLogger(__name__)
 
 
+MICRO_GATEWAY_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]{2,19}$")
+
+
+class MicroGatewayConfigStructureMixin:
+    _micro_gateway_config_key: str
+
+    @classmethod
+    def from_micro_gateway_config(cls: Type["T"], config: Dict[str, Any]) -> "T":
+        data = config.get(cls._micro_gateway_config_key) or {}
+        return cls(**data)
+
+    def to_micro_gateway_config(self) -> Dict[str, Any]:
+        return {self._micro_gateway_config_key: asdict(self)}  # type: ignore
+
+
+T = TypeVar("T", bound=MicroGatewayConfigStructureMixin)
+
+
+@dataclass
+class MicroGatewayJWTAuth(MicroGatewayConfigStructureMixin):
+    """微网关实例配置中的 jwt 认证配置"""
+
+    _micro_gateway_config_key = "jwt_auth"
+
+    secret_key: str = ""
+
+
+@dataclass
+class MicroGatewayHTTPInfo(MicroGatewayConfigStructureMixin):
+    """微网关实例配置中的 http 配置"""
+
+    _micro_gateway_config_key = "http"
+
+    http_url: str = ""
+
+    @cached_property
+    def http_url_info(self):
+        return urlparse(self.http_url)
+
+
 class ArgumentSLZ(serializers.Serializer):
     stage_name = serializers.RegexField(constants.STAGE_NAME_PATTERN, required=True)
-    micro_gateway_name = serializers.RegexField(constants.MICRO_GATEWAY_NAME_PATTERN, required=True)
+    micro_gateway_name = serializers.RegexField(MICRO_GATEWAY_NAME_PATTERN, required=True)
     micro_gateway_id = serializers.UUIDField(required=False)
 
 
@@ -73,6 +116,7 @@ class Command(BaseCommand):
                 "is_managed": False,  # 默认共享实例是整体一起部署的，所以肯定不是 dashboard 管理的
                 "name": micro_gateway_name,
                 "status": constants.MicroGatewayStatusEnum.UPDATED.value,
+                # FIXME: remove get_micro_gateway_schema and micro_gateway schema
                 "schema": SchemaFactory().get_micro_gateway_schema(),
                 "gateway": gateway,
             },

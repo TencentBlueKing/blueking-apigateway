@@ -15,22 +15,16 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.conf import settings
-
-from apigateway.core.models import Gateway, MicroGateway, Stage
+DEFAULT_APISIX_VERSION = "3.13"
 
 
-class ResourceURLHandler:
-    @staticmethod
-    def get_resource_url_tmpl(gateway_name: str, stage_name: str) -> str:
-        gateway = Gateway.objects.get(name=gateway_name)
-        # 微网关
-        stage = Stage.objects.get(gateway=gateway, name=stage_name)
-        # FIXME: remove micro_gateway
-        micro_gateway: MicroGateway = stage.micro_gateway
-        if micro_gateway:
-            http_info = micro_gateway.config.get("http") or {}
-            http_url = http_info["http_url"]
-            return f"{http_url.rstrip('/')}/{{resource_path}}"
+LABEL_KEY_GATEWAY = "gateway"
+LABEL_KEY_STAGE = "stage"
+LABEL_KEY_APISIX_VERSION = "apisix-version"
 
-        return settings.API_RESOURCE_URL_TMPL
+LABEL_KEY_PUBLISH_ID = "publish-id"
+LABEL_KEY_BACKEND_ID = "backend-id"
+
+SUBPATH_PARAM_NAME = "bk_api_subpath_match_param_name"
+
+MATCH_SUB_PATH_PRIORITY = -1000
