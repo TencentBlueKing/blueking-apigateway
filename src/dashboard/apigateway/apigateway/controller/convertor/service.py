@@ -127,8 +127,10 @@ class ServiceConvertor(GatewayResourceConvertor):
             # stage_name max length is 20, stage_id 6, backend_id is 4, other 10
             # total max length is 64, so the buffer is 24 ( stage_id length + backend_id length)
             labels = self.get_gateway_resource_labels()
-            labels.add_label(LABEL_KEY_PUBLISH_ID, self._publish_id)
-            labels.add_label(LABEL_KEY_BACKEND_ID, backend_id)
+            if self._publish_id:
+                labels.add_label(LABEL_KEY_PUBLISH_ID, str(self._publish_id))
+
+            labels.add_label(LABEL_KEY_BACKEND_ID, str(backend_id))
 
             services.append(
                 Service(

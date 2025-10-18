@@ -36,7 +36,7 @@ class GlobalApisixResourceConvertor:
 
     def __init__(self, release: Release):
         self.release = release
-        _plugin_metadata: List[ApisixModel] = field(init=False, default_factory=list)
+        self._plugin_metadata: List[ApisixModel] = []
 
     # FIXME: convert plugin_metadata
 
@@ -86,7 +86,7 @@ class GatewayApisixResourceConvertor:
                 # the label value type is string, so we need to convert it to int
                 backend_service_mapping[int(backend_id)] = svc.id
 
-        logger.error("the mapping: %s", backend_service_mapping)
+        logger.debug("the mapping: %s", backend_service_mapping)
 
         # 协议类型为 http 的资源，与 grpc 等协议区分，而不是后端 proxy 类型为 http 的资源
         route_convertor = RouteConvertor(

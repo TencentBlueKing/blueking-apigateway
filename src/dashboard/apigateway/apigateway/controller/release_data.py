@@ -120,7 +120,7 @@ class ReleaseData:
         name_to_plugins = {plugin.name: plugin for plugin in plugins}
         return list(name_to_plugins.values())
 
-    @property
+    @cached_property
     def _resources_plugins(self) -> Dict[int, List[PluginData]]:
         resource_id_to_plugins: Dict[int, List[PluginData]] = defaultdict(list)
 

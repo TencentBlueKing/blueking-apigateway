@@ -88,4 +88,4 @@ class EtcdRegistry(Registry):
                 yield resource_type(**value)
             except Exception as err:  # pylint: disable=broad-except
                 logger.warning("deserialize resource %s failed: %s", resource_type, err)
-                return None
+                continue

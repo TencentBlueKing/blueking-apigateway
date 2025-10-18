@@ -30,7 +30,7 @@ from .constants import DEFAULT_APISIX_VERSION, LABEL_KEY_APISIX_VERSION, LABEL_K
 class BaseResourceConvertor(ABC):
     @abstractmethod
     def convert(self):
-        return NotImplementedError()
+        raise NotImplementedError()
 
 
 class GlobalResourceConvertor(BaseResourceConvertor):

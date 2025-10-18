@@ -16,25 +16,3 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import List
-
-from django.conf import settings
-
-from apigateway.controller.models import GlobalApisixModel, PluginMetadata
-
-from .base import GlobalResourceConvertor
-
-
-class PluginMetadataConvertor(GlobalResourceConvertor):
-    def convert(self) -> List[GlobalApisixModel]:
-        # FIXME: impls the global flow
-        # FIXME: use plugin_metadata to apisix config
-        # it's global, so no need to get data from release_data
-        # how to convert to a {id -> config } key-and-value fields for the stage?
-        return [
-            PluginMetadata(
-                id=name,
-                config=config,
-            )
-            for name, config in settings.PLUGIN_METADATA_CONFIG.items()
-        ]

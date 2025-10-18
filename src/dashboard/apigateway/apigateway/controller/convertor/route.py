@@ -18,7 +18,7 @@
 
 import json
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from apigateway.controller.models import GatewayApisixModel, Plugin, Route, Timeout
 from apigateway.controller.models.constants import HttpMethodEnum
@@ -115,7 +115,7 @@ class RouteConvertor(GatewayResourceConvertor):
         if priority:
             route.priority = priority
         if resource.get("enable_websocket", False):
-            resource.enable_websocket = True
+            route.enable_websocket = True
 
         # only set the timeout if the resource has timeout
         # 此处会覆盖 upstream 定义的超时，最终以这里为准
@@ -125,7 +125,7 @@ class RouteConvertor(GatewayResourceConvertor):
 
         return route
 
-    def _convert_uris(self, path: str, match_subpath: bool) -> (List[str], int):
+    def _convert_uris(self, path: str, match_subpath: bool) -> Tuple[List[str], int]:
         uri = f"/api/{self.gateway_name}/{self.stage_name}/" + path.lstrip("/")
         uri_without_suffix_slash = uri.rstrip("/")
 

@@ -16,9 +16,12 @@ We undertake not to change the open source license (MIT license) applicable
 to the current version of the project delivered to anyone in the future.
 """
 
+import logging
 import re
 from abc import ABC, abstractmethod
 from typing import Dict
+
+logger = logging.getLogger(__name__)
 
 # Global compiled regex patterns
 env_regexp = re.compile(r"\{env\.(\w+)\}")
@@ -64,10 +67,16 @@ def env_render(source: str, vars: Dict[str, str]) -> str:
         return source
 
     result = source
+    missing_vars = []
     for var_name in all_matches:
         if var_name in vars:
             pattern = f"{{env.{var_name}}}"
             result = result.replace(pattern, vars[var_name])
+        else:
+            missing_vars.append(var_name)
+
+    if missing_vars:
+        logger.warning("Missing environment variables: %s in source: %s", missing_vars, source)
 
     return result
 

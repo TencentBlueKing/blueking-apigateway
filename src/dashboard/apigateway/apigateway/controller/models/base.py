@@ -65,8 +65,7 @@ class BaseApisixModel(BaseModel):
 
 
 class Labels(BaseApisixModel):
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
     def __init__(self, **data):
         # Convert all values to strings
@@ -85,7 +84,7 @@ class Labels(BaseApisixModel):
 class Node(BaseApisixModel):
     """node for upstream"""
 
-    host: str = Field(default="", description="host")
+    host: str = Field(min_length=1, description="host")
     port: int = Field(default=0, ge=1, le=65535, description="port")
     # the frontend make it gte 1, it's different from apisix
     weight: int = Field(default=1, gt=0, description="weight")
@@ -106,8 +105,7 @@ class Timeout(BaseApisixModel):
 
 
 class Plugin(BaseApisixModel):
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -293,14 +291,17 @@ class SSL(GatewayApisixModel):
 class Proto(GatewayApisixModel):
     kind = "proto"
 
-    proto: str = Field(description="proto")
     name: Optional[str] = Field(default=None, min_length=1, max_length=100, description="name")
+
+    proto: str = Field(description="proto")
 
 
 # ------------------------------------------------------------
 ## global models, not belong to any gateway/stage
 class GlobalApisixModel(ApisixModel):
-    pass
+    """
+    Base class for global models that do not belong to gateway.
+    """
 
 
 class PluginMetadata(GlobalApisixModel):
