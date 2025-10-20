@@ -17,20 +17,8 @@
 #
 from django.conf import settings
 
-from apigateway.core.models import Gateway, MicroGateway, Stage
-
 
 class ResourceURLHandler:
     @staticmethod
-    def get_resource_url_tmpl(gateway_name: str, stage_name: str) -> str:
-        gateway = Gateway.objects.get(name=gateway_name)
-        # 微网关
-        stage = Stage.objects.get(gateway=gateway, name=stage_name)
-        # FIXME: remove micro_gateway
-        micro_gateway: MicroGateway = stage.micro_gateway
-        if micro_gateway:
-            http_info = micro_gateway.config.get("http") or {}
-            http_url = http_info["http_url"]
-            return f"{http_url.rstrip('/')}/{{resource_path}}"
-
+    def get_resource_url_tmpl() -> str:
         return settings.API_RESOURCE_URL_TMPL

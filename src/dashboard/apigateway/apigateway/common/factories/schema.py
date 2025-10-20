@@ -50,6 +50,3 @@ class SchemaFactory:
 
     def get_api_sdk_schema(self):
         return self._get_schema_instance(instances.APISDK())
-
-    def get_micro_gateway_schema(self):
-        return self._get_schema_instance(instances.MicroGateway())

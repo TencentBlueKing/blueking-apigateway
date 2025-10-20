@@ -27,7 +27,6 @@ from apigateway.core.models import (
     Context,
     Gateway,
     GatewayRelatedApp,
-    MicroGateway,
     Proxy,
     PublishEvent,
     Release,
@@ -166,12 +165,6 @@ class GatewayRelatedAppAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_filter = ["gateway"]
 
 
-class MicroGatewayAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
-    djangoql_completion_enabled_by_default = False
-    list_display = ["id", "gateway", "name", "is_shared", "status", "updated_time"]
-    search_fields = ["gateway__id", "gateway__name", "name", "description"]
-
-
 class BackendAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "type", "name", "description"]
@@ -199,6 +192,5 @@ admin.site.register(PublishEvent, PublishEventAdmin)
 admin.site.register(Context, ContextAdmin)
 admin.site.register(JWT, JWTAdmin)
 admin.site.register(GatewayRelatedApp, GatewayRelatedAppAdmin)
-admin.site.register(MicroGateway, MicroGatewayAdmin)
 admin.site.register(Backend, BackendAdmin)
 admin.site.register(BackendConfig, BackendConfigAdmin)

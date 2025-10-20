@@ -30,16 +30,6 @@ python manage.py loaddata -i apigateway/fixtures/*.yaml
 python manage.py sync_schema
 python manage.py sync_managers_to_user
 
-# 微网关初始化
-python manage.py sync_gateway --name "${DEFAULT_MICRO_GATEWAY_API_NAME}"
-python manage.py add_stage --gateway "${DEFAULT_MICRO_GATEWAY_API_NAME}" --name "${DEFAULT_MICRO_GATEWAY_STAGE_NAME}"
-python manage.py add_related_app --gateway-name "${DEFAULT_MICRO_GATEWAY_API_NAME}" --app-code "${BK_APP_CODE}"
-python manage.py sync_default_micro_gateway \
---gateway "${DEFAULT_MICRO_GATEWAY_API_NAME}" \
---stage "${DEFAULT_MICRO_GATEWAY_STAGE_NAME}" \
---name "${DEFAULT_MICRO_GATEWAY_NAME}" \
---secret "${DEFAULT_MICRO_GATEWAY_SECRET}" \
---http-url "${DEFAULT_MICRO_GATEWAY_HTTP_URL}"
 
 # only init esb when ENABLE_MULTI_TENANT_MODE != true/True
 if [ "${ENABLE_MULTI_TENANT_MODE}" != "true" ] && [ "${ENABLE_MULTI_TENANT_MODE}" != "True" ]; then

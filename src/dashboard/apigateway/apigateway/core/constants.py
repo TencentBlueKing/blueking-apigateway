@@ -38,19 +38,6 @@ class GatewayStatusEnum(StructuredEnum):
     ACTIVE = EnumField(1, "启用中")
 
 
-# FIXME: should be removed
-class MicroGatewayStatusEnum(StructuredEnum):
-    """微网关实例状态"""
-
-    PENDING = EnumField("pending", _("待安装"))
-    INSTALLING = EnumField("installing", _("安装中"))
-    INSTALLED = EnumField("installed", _("已安装"))
-    UPDATED = EnumField("updated", _("已更新"))
-    # 可能会因为 helm install 超时导致失败，此时资源可能更新了，但 release 状态未更新
-    # 所以不能简单标识安装或者未安装
-    ABNORMAL = EnumField("abnormal", _("安装异常"))
-
-
 class GatewayTypeEnum(StructuredEnum):
     SUPER_OFFICIAL_API = EnumField(0, "超级官方API")
     OFFICIAL_API = EnumField(1, "官方云API")
