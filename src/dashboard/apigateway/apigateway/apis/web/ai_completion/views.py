@@ -22,6 +22,7 @@ import logging
 from blue_krill.async_utils.django_utils import delay_on_commit
 from django.http import StreamingHttpResponse
 from django.utils.decorators import method_decorator
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
@@ -29,7 +30,7 @@ from apigateway.apps.support.models import ResourceDoc
 from apigateway.apps.support.task import batch_translate_docs
 from apigateway.biz.ai.ai import AIHandler
 from apigateway.biz.ai.constant import AIContentTypeEnum
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 
 from .serializers import AICompletionInputSLZ, BatchTranslateInputSLZ, BatchTranslateOutputSLZ
 
@@ -110,23 +111,30 @@ class BatchTranslateApi(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        gateway_name = request.gateway.name
+
         doc_ids = serializer.validated_data["doc_ids"]
         target_language = serializer.validated_data.get("target_language")
 
-        # 如果没有网关上下文，直接验证文档是否存在
         docs = ResourceDoc.objects.filter(id__in=doc_ids)
         if not docs.exists():
-            return OKJsonResponse(data={"error": "未找到指定的文档"}, status=status.HTTP_400_BAD_REQUEST)
+            return FailJsonResponse(
+                status=status.HTTP_400_BAD_REQUEST,
+                code="NOT_FOUND",
+                message=_("未找到指定的文档"),
+            )
         try:
             # 启动异步翻译任务，使用delay_on_commit确保在事务提交后执行
             delay_on_commit(batch_translate_docs, doc_ids=doc_ids, target_language=target_language)
 
-            logger.info("启动批量翻译任务，文档ID列表: %s", doc_ids)
+            logger.info("[gateway:%s]启动批量翻译任务，文档ID列表: %s", gateway_name, doc_ids)
 
             return OKJsonResponse(data={"message": "批量翻译任务已启动", "doc_count": len(doc_ids)})
 
         except Exception as e:
-            logger.exception("启动批量翻译任务失败")
-            return OKJsonResponse(
-                data={"error": f"启动批量翻译任务失败: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            logger.exception("[gateway:%s]启动批量翻译任务失败", gateway_name)
+            return FailJsonResponse(
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                code="INTERNAL_ERROR",
+                message=_("启动批量翻译任务失败"),
             )
