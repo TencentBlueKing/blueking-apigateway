@@ -415,6 +415,7 @@ const searchParams = ref<ISearchParamsInterface>({
   time_start: '',
   time_end: '',
   query: '',
+  backend_name: '',
 });
 const tableEmptyConf = ref({
   emptyType: '',
@@ -690,6 +691,7 @@ const getResources = async () => {
     offset: 0,
     limit: 10000,
     backend_id: backend_id.value,
+    backend_name: searchParams.value.backend_name,
   };
 
   try {
@@ -1073,8 +1075,10 @@ const handleStageChange = (value: number) => {
 };
 
 const handleBackendChange = async () => {
+  searchParams.value.backend_name = backendList.value.find((item: any) => item.id === backend_id.value)?.name || '';
   searchParams.value.resource_id = '';
   await getResources();
+  await getSearchData();
 };
 
 const handleSearch = (value: string) => {
@@ -1120,6 +1124,7 @@ const handleClearFilterKey = () => {
     searchParams.value.stage_id = stageList.value[0].id;
   }
   backend_id.value = '';
+  searchParams.value.backend_name = '';
   searchParams.value.resource_id = '';
   [datePickerRef.value.shortcut] = [accessLogStore.datepickerShortcuts[1]];
   dateValue.value = [];
