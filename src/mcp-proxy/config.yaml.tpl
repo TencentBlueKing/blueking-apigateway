@@ -25,6 +25,17 @@ databases:
     maxIdleConns: 50
     connMaxLifetimeSecond: 600
     timeout: 2
+    # TLS配置（可选）
+    tls:
+      enabled: false
+      # CA证书文件路径
+      certCaFile: ""
+      # 客户端证书文件路径
+      certFile: ""
+      # 客户端私钥文件路径
+      certKeyFile: ""
+      # 是否跳过主机名验证（仅用于测试，生产环境请设置为false）
+      insecureSkipVerify: false
 
 logger:
   default:
