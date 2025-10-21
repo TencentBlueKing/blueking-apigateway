@@ -31,6 +31,7 @@ class TestRequestsMetrics:
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": "default",
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
@@ -38,7 +39,7 @@ class TestRequestsMetrics:
                 },
                 "expected": (
                     'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"}[1m]))'
+                    'stage_name="prod", backend_name="default", resource_name="get_foo"}[1m]))'
                 ),
             },
             {
@@ -48,6 +49,7 @@ class TestRequestsMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
+                    "backend_name": None,
                     "step": "1m",
                 },
                 "expected": (
@@ -70,6 +72,7 @@ class TestNon20XStatusMetrics:
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": "default",
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
@@ -77,13 +80,15 @@ class TestNon20XStatusMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo", status=~"3..|4..|5.."}[1m])) by (status))'
+                    'stage_name="prod", backend_name="default", resource_name="get_foo", '
+                    'status=~"3..|4..|5.."}[1m])) by (status))'
                 ),
             },
             {
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": None,
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
@@ -110,6 +115,7 @@ class TestAppRequestsMetrics:
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": "default",
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
@@ -117,13 +123,14 @@ class TestAppRequestsMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_app_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"}[1m])) by (app_code))'
+                    'stage_name="prod", backend_name="default", resource_name="get_foo"}[1m])) by (app_code))'
                 ),
             },
             {
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": None,
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
@@ -150,6 +157,7 @@ class TestResourceRequestsMetrics:
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": "default",
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
@@ -157,13 +165,14 @@ class TestResourceRequestsMetrics:
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"}[1m])) by (resource_name))'
+                    'stage_name="prod", backend_name="default", resource_name="get_foo"}[1m])) by (resource_name))'
                 ),
             },
             {
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": None,
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
@@ -190,6 +199,7 @@ class TestResponseTime90thMetrics:
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": "default",
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
@@ -197,13 +207,15 @@ class TestResponseTime90thMetrics:
                 },
                 "expected": (
                     "histogram_quantile(0.9, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, resource_name))'
+                    'api_name="foo", stage_name="prod", backend_name="default", '
+                    'resource_name="get_foo"}[1m])) by (le, resource_name))'
                 ),
             },
             {
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": None,
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
@@ -231,6 +243,7 @@ class TestResponseTime50thMetrics:
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": "default",
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
@@ -238,13 +251,15 @@ class TestResponseTime50thMetrics:
                 },
                 "expected": (
                     "histogram_quantile(0.5, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, resource_name))'
+                    'api_name="foo", stage_name="prod", backend_name="default", resource_name="get_foo"'
+                    "}[1m])) by (le, resource_name))"
                 ),
             },
             {
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": None,
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
@@ -272,6 +287,7 @@ class TestResponseTime95thMetrics:
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": "default",
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
@@ -279,13 +295,15 @@ class TestResponseTime95thMetrics:
                 },
                 "expected": (
                     "histogram_quantile(0.95, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, resource_name))'
+                    'api_name="foo", stage_name="prod", backend_name="default", resource_name="get_foo"'
+                    "}[1m])) by (le, resource_name))"
                 ),
             },
             {
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": None,
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
@@ -313,6 +331,7 @@ class TestResponseTime99thMetrics:
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": "default",
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
@@ -320,13 +339,15 @@ class TestResponseTime99thMetrics:
                 },
                 "expected": (
                     "histogram_quantile(0.99, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, resource_name))'
+                    'api_name="foo", stage_name="prod", backend_name="default", resource_name="get_foo"'
+                    "}[1m])) by (le, resource_name))"
                 ),
             },
             {
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": None,
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
@@ -354,6 +375,7 @@ class TestIngressMetrics:
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": "default",
                     "stage_id": 1,
                     "resource_id": 2,
                     "resource_name": "get_foo",
@@ -368,6 +390,7 @@ class TestIngressMetrics:
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": None,
                     "stage_id": 1,
                     "resource_id": 0,
                     "resource_name": None,
@@ -394,6 +417,7 @@ class TestEgressMetrics:
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": "default",
                     "stage_id": 1,
                     "resource_id": 2,
                     "resource_name": "get_foo",
@@ -408,6 +432,7 @@ class TestEgressMetrics:
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": None,
                     "stage_id": 1,
                     "resource_id": 0,
                     "resource_name": None,
@@ -435,19 +460,21 @@ class TestRequestTotalMetrics:
                     "gateway_name": "foo",
                     "stage_id": 1,
                     "stage_name": "prod",
+                    "backend_name": "default",
                     "resource_id": 1,
                     "resource_name": "get_foo",
                     "step": "1m",
                 },
                 "expected": (
                     'sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"})'
+                    'stage_name="prod", backend_name="default", resource_name="get_foo"})'
                 ),
             },
             {
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": None,
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
@@ -471,6 +498,7 @@ class TestHealthRateMetrics:
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": "default",
                     "stage_id": 1,
                     "resource_id": 0,
                     "resource_name": "get_foo",
@@ -478,13 +506,14 @@ class TestHealthRateMetrics:
                 },
                 "expected": (
                     'sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo", status=~"5.."})'
+                    'stage_name="prod", backend_name="default", resource_name="get_foo", status=~"5.."})'
                 ),
             },
             {
                 "params": {
                     "gateway_name": "foo",
                     "stage_name": "prod",
+                    "backend_name": None,
                     "stage_id": 1,
                     "resource_id": 0,
                     "resource_name": None,
