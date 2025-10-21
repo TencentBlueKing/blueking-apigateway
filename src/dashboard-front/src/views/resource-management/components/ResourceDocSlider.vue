@@ -42,19 +42,34 @@
                   {{ language === 'zh' ? t('中文文档') : t('英文文档') }}
                 </p>
               </template>
-              <BkButtonGroup v-else>
-                <BkButton
-                  v-for="item in languagesData"
-                  :key="item.value"
-                  :selected="language === item.value"
-                  :disabled="isEdited && language !== item.value"
-                  @click="() => handleSelectLanguage(item.value as 'zh' | 'en')"
+              <div
+                v-else
+                class="relative"
+              >
+                <BkButtonGroup>
+                  <BkButton
+                    v-for="item in languagesData"
+                    :key="item.value"
+                    :selected="language === item.value"
+                    :disabled="isEdited && language !== item.value"
+                    @click="() => handleSelectLanguage(item.value as 'zh' | 'en')"
+                  >
+                    <div>
+                      {{ item.label }}
+                    </div>
+                  </BkButton>
+                </BkButtonGroup>
+                <div
+                  v-if="hasDoc && isDocEmptyByLanguage(language === 'zh' ? 'en' : 'zh')"
+                  class="absolute right-0 top-7px flex items-center cursor-pointer"
+                  @click="handleTranslateClick"
                 >
-                  <div>
-                    {{ item.label }}
+                  <AiBluekingButton :tooltip-options="{ disabled: true }" />
+                  <div class="text-12px gradient-text-color">
+                    {{ language === 'zh' ? t('一键翻译英文') : t('一键翻译中文') }}
                   </div>
-                </BkButton>
-              </BkButtonGroup>
+                </div>
+              </div>
             </div>
             <div v-show="isEmpty">
               <div class="text-center mt-50px">
@@ -174,6 +189,8 @@ import { Message } from 'bkui-vue';
 // import mitt from '@/common/event-bus';
 import { copy } from '@/utils';
 import { useRouteParams } from '@vueuse/router';
+import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
+import { getAICompletion } from '@/services/source/ai.ts';
 
 interface IProps {
   resource?: object
@@ -259,6 +276,12 @@ const toolbars = ref<any>({
   preview: true,
 });
 
+const hasDoc = computed(() => {
+  const cnDoc = docData.value.find((e: any) => e.language === 'zh')?.id;
+  const enDoc = docData.value.find((e: any) => e.language === 'en')?.id;
+  return cnDoc || enDoc;
+});
+
 // 编辑markdown
 const handleEditMarkdown = (type: string) => {
   isEmpty.value = false;
@@ -307,6 +330,31 @@ const initData = async () => {
   // 根据语言找到是否有文档内容
   handleDocDataWithLanguage();
   isLoading.value = false;
+};
+
+const isDocEmptyByLanguage = (lang: string) => !docData.value.find((item: any) => item.language === lang)?.id;
+
+const handleTranslateClick = async () => {
+  const input = docData.value.find((item: any) => item.language === language.value)?.content;
+  if (input) {
+    const response = await getAICompletion(gatewayId.value, {
+      inputs: {
+        input,
+        type: 'doc_translate',
+        enable_streaming: false,
+      },
+    });
+    await saveResourceDocs(gatewayId.value, resource.id, {
+      language: language.value === 'zh' ? 'en' : 'zh',
+      content: response.content,
+    });
+    Message({
+      theme: 'success',
+      message: t(`${language.value === 'zh' ? t('英文') : t('中文')}文档创建成功`),
+    });
+    initData();
+    emit('fetch');
+  }
 };
 
 // 保存markdown

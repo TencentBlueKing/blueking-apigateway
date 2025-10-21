@@ -2003,5 +2003,10 @@
   "请点击\"编辑\"按钮为资源配置适当的认证方式。": "Click 'Edit' to configure.",
   "如当前配置符合预期，可忽略该提示。": "Ignore when this is expected",
   "启用 Websocket": "Enable Websocket",
-  "已开启": "Enabled"
+  "已开启": "Enabled",
+  "资源文档一键翻译": "Auto resource doc translation",
+  "一键生成全部英文文档": "Auto generate all English docs",
+  "有": "Yes",
+  "一键翻译英文": "Translate to EN",
+  "一键翻译中文": "Translate to CN"
 }

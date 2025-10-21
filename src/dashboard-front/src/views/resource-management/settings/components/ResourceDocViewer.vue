@@ -23,10 +23,7 @@
     :style="resourcesHeight"
   >
     <section class="content p-14px">
-      <div
-        class="ag-markdown-view"
-        :class="isEdited ? '' : 'text-center'"
-      >
+      <div :class="isEdited ? '' : 'text-center'">
         <h3 v-if="isEdited">
           {{ t('文档类型') }}
         </h3>
@@ -35,19 +32,34 @@
             {{ language === 'zh' ? t('中文文档') : t('英文文档') }}
           </p>
         </template>
-        <BkButtonGroup v-else>
-          <BkButton
-            v-for="item in languagesData"
-            :key="item.value"
-            :selected="language === item.value"
-            :disabled="isEdited && language !== item.value"
-            @click="handleSelectLanguage(item.value)"
+        <div
+          v-else
+          class="relative"
+        >
+          <BkButtonGroup>
+            <BkButton
+              v-for="item in languagesData"
+              :key="item.value"
+              :selected="language === item.value"
+              :disabled="isEdited && language !== item.value"
+              @click="() => handleSelectLanguage(item.value)"
+            >
+              <div>
+                {{ item.label }}
+              </div>
+            </BkButton>
+          </BkButtonGroup>
+          <div
+            v-if="hasDoc && isDocEmptyByLanguage(language === 'zh' ? 'en' : 'zh')"
+            class="absolute right-0 top-7px flex items-center cursor-pointer"
+            @click="handleTranslateClick"
           >
-            <div>
-              {{ item.label }}
+            <AiBluekingButton :tooltip-options="{ disabled: true }" />
+            <div class="text-12px gradient-text-color">
+              {{ language === 'zh' ? t('一键翻译英文') : t('一键翻译中文') }}
             </div>
-          </BkButton>
-        </BkButtonGroup>
+          </div>
+        </div>
       </div>
       <div v-show="isEmpty">
         <div class="text-center mt-50px">
@@ -204,6 +216,8 @@ import { useStage } from '@/stores';
 import { cloneDeep } from 'lodash-es';
 import { Message } from 'bkui-vue';
 import { useRouteParams } from '@vueuse/router';
+import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
+import { getAICompletion } from '@/services/source/ai.ts';
 // import mitt from '@/common/event-bus';
 
 interface IProps {
@@ -308,6 +322,12 @@ const fixedBtnLeft = computed(() => {
     return 'padding-left: 20px';
   }
   return 'padding-left: 24px';
+});
+
+const hasDoc = computed(() => {
+  const cnDoc = docData.value.find((e: any) => e.language === 'zh')?.id;
+  const enDoc = docData.value.find((e: any) => e.language === 'en')?.id;
+  return cnDoc || enDoc;
 });
 
 // 编辑markdown
@@ -434,6 +454,32 @@ const handleDocDataWithLanguage = () => {
     const content = docData.value[0]?.content ?? '';
     markdownDoc.value = content;
     markdownHtml.value = markdownRef.value?.markdownIt.render(content);
+  }
+};
+
+// 是否为生成该语言的文档
+const isDocEmptyByLanguage = (lang: string) => !docData.value.find((item: any) => item.language === lang)?.id;
+
+const handleTranslateClick = async () => {
+  const input = docData.value.find((item: any) => item.language === language.value)?.content;
+  if (input) {
+    const response = await getAICompletion(gatewayId.value, {
+      inputs: {
+        input,
+        type: 'doc_translate',
+        enable_streaming: false,
+      },
+    });
+    await saveResourceDocs(gatewayId.value, curResource.id, {
+      language: language.value === 'zh' ? 'en' : 'zh',
+      content: response.content,
+    });
+    Message({
+      theme: 'success',
+      message: t(`${language.value === 'zh' ? t('英文') : t('中文')}文档创建成功`),
+    });
+    initData();
+    emit('fetch');
   }
 };
 
