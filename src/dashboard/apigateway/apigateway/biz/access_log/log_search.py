@@ -42,6 +42,7 @@ class LogSearchClient:
         resource_id: Optional[int] = None,
         request_id: Optional[str] = None,
         query: Optional[str] = None,
+        backend_name: Optional[str] = None,
         include_conditions: Optional[List[Tuple[str, str]]] = None,
         exclude_conditions: Optional[List[Tuple[str, str]]] = None,
         time_start: Optional[int] = None,
@@ -50,6 +51,7 @@ class LogSearchClient:
     ):
         self._gateway_id = gateway_id
         self._stage_name = stage_name
+        self._backend_name = backend_name
         self._resource_id = resource_id
         self._request_id = request_id
         self._query_string = query
@@ -93,7 +95,7 @@ class LogSearchClient:
         data = self._es_client.execute_search(s.to_dict())
         return self._convert_histogram_buckets(data.get("aggregations", {}))
 
-    def _build_base_search(self, order: Optional[bool] = None) -> Search:
+    def _build_base_search(self, order: Optional[bool] = None) -> Search:  # noqa
         s = Search()
 
         if self._gateway_id:
@@ -101,6 +103,9 @@ class LogSearchClient:
 
         if self._stage_name:
             s = s.filter("term", stage=self._stage_name)
+
+        if self._backend_name:
+            s = s.filter("term", backend=self._backend_name)
 
         if self._resource_id:
             s = s.filter("term", resource_id=self._resource_id)

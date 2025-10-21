@@ -69,6 +69,7 @@ class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
         client = LogSearchClient(
             gateway_id=request.gateway.id,
             stage_name=stage_name,
+            backend_name=data.get("backend_name"),
             resource_id=data.get("resource_id"),
             query=data.get("query"),
             include_conditions=data.get("include_conditions"),
@@ -115,6 +116,7 @@ class SearchLogListApi(generics.ListAPIView):
         client = LogSearchClient(
             gateway_id=request.gateway.id,
             stage_name=stage_name,
+            backend_name=data.get("backend_name"),
             resource_id=data.get("resource_id"),
             query=data.get("query"),
             include_conditions=data.get("include_conditions"),
@@ -164,6 +166,7 @@ class LogExportApi(generics.RetrieveAPIView):
         client = LogSearchClient(
             gateway_id=request.gateway.id,
             stage_name=stage_name,
+            backend_name=data.get("backend_name"),
             resource_id=data.get("resource_id"),
             query=data.get("query"),
             include_conditions=data.get("include_conditions"),
