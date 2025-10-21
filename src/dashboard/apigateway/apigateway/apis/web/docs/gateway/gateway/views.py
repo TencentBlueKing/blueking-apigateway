@@ -26,7 +26,7 @@ from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.common.tenant.request import get_user_tenant_id
-from apigateway.core.constants import GatewayStatusEnum
+from apigateway.core.constants import PLUGIN_GATEWAY_PREFIX, GatewayStatusEnum
 from apigateway.core.models import Gateway, Release
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.responses import OKJsonResponse
@@ -63,6 +63,12 @@ class GatewayListApi(generics.ListAPIView):
         keyword = slz.validated_data.get("keyword")
         if keyword:
             queryset = queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
+
+        show_plugin_gateway = slz.validated_data["show_plugin_gateway"]
+        if not show_plugin_gateway:
+            queryset = queryset.exclude(name__startswith=PLUGIN_GATEWAY_PREFIX)
+        else:
+            queryset = queryset.filter(name__startswith=PLUGIN_GATEWAY_PREFIX)
 
         # 网关存在已发布的版本
         released_gateway_ids = Release.objects.all().values_list("gateway_id", flat=True).distinct()

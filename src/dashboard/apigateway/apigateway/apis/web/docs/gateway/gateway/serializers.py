@@ -20,11 +20,17 @@ from rest_framework import serializers
 
 from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
 from apigateway.common.i18n.field import SerializerTranslatedField
+from apigateway.core.constants import PLUGIN_GATEWAY_PREFIX
 
 
 class GatewayQueryInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(
         allow_blank=True, required=False, help_text="网关筛选条件，支持模糊匹配网关名称、描述"
+    )
+    show_plugin_gateway = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="是否展示插件网关，true：展示插件网关，false：过滤掉 `bp-` 开头的所有网关，默认为 false",
     )
 
     class Meta:
@@ -40,6 +46,7 @@ class GatewayOutputSLZ(serializers.Serializer):
     maintainers = serializers.ListField(help_text="网关负责人")
     doc_maintainers = serializers.JSONField(help_text="网关文档维护人员")
     is_official = serializers.SerializerMethodField(help_text="是否为官方网关, true: 是, false: 否")
+    is_plugin_gateway = serializers.SerializerMethodField(help_text="是否为插件网关, true: 是, false: 否")
     api_url = serializers.SerializerMethodField(help_text="网关访问地址")
     sdks = serializers.SerializerMethodField(help_text="SDK")
 
@@ -51,6 +58,9 @@ class GatewayOutputSLZ(serializers.Serializer):
 
     def get_is_official(self, obj):
         return GatewayTypeHandler.is_official(self.context["gateway_auth_configs"][obj.id].gateway_type)
+
+    def get_is_plugin_gateway(self, obj):
+        return obj.name.startswith(PLUGIN_GATEWAY_PREFIX)
 
     def get_sdks(self, obj):
         return self.context["gateway_sdks"].get(obj.id, [])

@@ -268,3 +268,6 @@ PROGRAMMABLE_GATEWAY_NAME_PATTERN = re.compile(r"^[a-z0-9-]{3,16}$")
 
 # EventFailInterval(s)
 EVENT_FAIL_INTERVAL_TIME = 600
+
+# 插件网关前缀
+PLUGIN_GATEWAY_PREFIX = "bp-"
