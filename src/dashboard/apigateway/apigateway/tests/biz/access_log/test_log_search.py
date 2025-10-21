@@ -138,6 +138,7 @@ class TestLogSearchClient:
                 {
                     "gateway_id": 2,
                     "stage_name": "prod",
+                    "backend_name": "default",
                     "time_start": 1578904866,
                     "time_end": 1578905166,
                     "query": "api_id: 2",
@@ -151,6 +152,7 @@ class TestLogSearchClient:
                             "filter": [
                                 {"term": {"api_id": 2}},
                                 {"term": {"stage": "prod"}},
+                                {"term": {"backend_name": "default"}},
                                 {"range": {"@timestamp": {"gte": 1578904866000, "lte": 1578905166000}}},
                             ],
                             "must": [{"query_string": {"query": "api_id: 2"}}],
@@ -168,6 +170,7 @@ class TestLogSearchClient:
         client = LogSearchClient(
             gateway_id=params["gateway_id"],
             stage_name=params["stage_name"],
+            backend_name=params["backend_name"],
             time_start=params["time_start"],
             time_end=params["time_end"],
             query=params["query"],
@@ -182,6 +185,7 @@ class TestLogSearchClient:
                 {
                     "gateway_id": 2,
                     "stage_name": "prod",
+                    "backend_name": "default",
                     "time_start": 1578904866,
                     "time_end": 1578905166,
                     "query": "api_id: 2",
@@ -192,6 +196,7 @@ class TestLogSearchClient:
                             "filter": [
                                 {"term": {"api_id": 2}},
                                 {"term": {"stage": "prod"}},
+                                {"term": {"backend_name": "default"}},
                                 {"range": {"@timestamp": {"gte": 1578904866000, "lte": 1578905166000}}},
                             ],
                             "must": [{"query_string": {"query": "api_id: 2"}}],
@@ -220,6 +225,7 @@ class TestLogSearchClient:
         client = LogSearchClient(
             gateway_id=params["gateway_id"],
             stage_name=params["stage_name"],
+            backend_name=params["backend_name"],
             time_start=params["time_start"],
             time_end=params["time_end"],
             query=params["query"],

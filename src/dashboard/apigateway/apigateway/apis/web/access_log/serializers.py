@@ -25,6 +25,7 @@ from rest_framework import serializers
 class RequestLogQueryInputSLZ(serializers.Serializer):
     stage_id = serializers.IntegerField(required=True, help_text="环境 ID")
     resource_id = serializers.IntegerField(allow_null=True, required=False, help_text="资源 ID")
+    backend_name = serializers.CharField(allow_blank=True, required=False, help_text="后端服务名称")
     query = serializers.CharField(label="查询条件", required=False, allow_blank=True, help_text="查询条件")
     # ?include=xxx:yyy&include=aaa:bbb
     include = serializers.ListField(child=serializers.CharField(), required=False, help_text="包含条件")
