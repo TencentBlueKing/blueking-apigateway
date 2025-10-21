@@ -25,8 +25,8 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apps.docs.ai_batch_translate import batch_translate_docs
 from apigateway.apps.support.models import ResourceDoc
+from apigateway.apps.support.task import batch_translate_docs
 from apigateway.biz.ai.ai import AIHandler
 from apigateway.biz.ai.constant import AIContentTypeEnum
 from apigateway.utils.responses import OKJsonResponse
