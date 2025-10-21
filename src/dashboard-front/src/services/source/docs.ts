@@ -20,7 +20,7 @@ import http from '../http';
 const path = '/docs/gateways';
 
 // 网关api文档列表
-export const getGatewaysDocs = (apigwId: any, data: any) => http.get(`${path}/`, data);
+export const getGatewaysDocs = (data: any) => http.get(`${path}/`, data);
 
 // 获取网关文档详情
 export const getGatewaysDetailsDocs = (gatewayName: string) => http.get(`${path}/${gatewayName}/`);
