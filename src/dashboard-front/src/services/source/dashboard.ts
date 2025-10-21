@@ -30,6 +30,7 @@ export interface ISearchParamsType {
   time_range?: string // 时间范围，可选
   limit?: number // 限制数量，可选
   offset?: number // 偏移量，可选
+  backend_name?: string // 后端服务名称，可选
 }
 
 // 定义瞬时类型
