@@ -105,7 +105,7 @@ class LogSearchClient:
             s = s.filter("term", stage=self._stage_name)
 
         if self._backend_name:
-            s = s.filter("term", backend=self._backend_name)
+            s = s.filter("term", backend_name=self._backend_name)
 
         if self._resource_id:
             s = s.filter("term", resource_id=self._resource_id)

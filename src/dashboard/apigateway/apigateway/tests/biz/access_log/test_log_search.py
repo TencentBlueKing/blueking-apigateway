@@ -152,7 +152,7 @@ class TestLogSearchClient:
                             "filter": [
                                 {"term": {"api_id": 2}},
                                 {"term": {"stage": "prod"}},
-                                {"term": {"backend": "default"}},
+                                {"term": {"backend_name": "default"}},
                                 {"range": {"@timestamp": {"gte": 1578904866000, "lte": 1578905166000}}},
                             ],
                             "must": [{"query_string": {"query": "api_id: 2"}}],
@@ -196,7 +196,7 @@ class TestLogSearchClient:
                             "filter": [
                                 {"term": {"api_id": 2}},
                                 {"term": {"stage": "prod"}},
-                                {"term": {"backend": "default"}},
+                                {"term": {"backend_name": "default"}},
                                 {"range": {"@timestamp": {"gte": 1578904866000, "lte": 1578905166000}}},
                             ],
                             "must": [{"query_string": {"query": "api_id: 2"}}],
