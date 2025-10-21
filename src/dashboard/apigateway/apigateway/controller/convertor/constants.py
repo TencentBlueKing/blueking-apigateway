@@ -18,12 +18,14 @@
 DEFAULT_APISIX_VERSION = "3.13"
 
 
-LABEL_KEY_GATEWAY = "gateway"
-LABEL_KEY_STAGE = "stage"
-LABEL_KEY_APISIX_VERSION = "apisix-version"
+LABEL_KEY_PREFIX = "gateway.bk.tencent.com"
 
-LABEL_KEY_PUBLISH_ID = "publish-id"
-LABEL_KEY_BACKEND_ID = "backend-id"
+LABEL_KEY_GATEWAY = f"{LABEL_KEY_PREFIX}/gateway"
+LABEL_KEY_STAGE = f"{LABEL_KEY_PREFIX}/stage"
+LABEL_KEY_APISIX_VERSION = f"{LABEL_KEY_PREFIX}/apisix-version"
+
+LABEL_KEY_PUBLISH_ID = f"{LABEL_KEY_PREFIX}/publish-id"
+LABEL_KEY_BACKEND_ID = f"{LABEL_KEY_PREFIX}/backend-id"
 
 SUBPATH_PARAM_NAME = "bk_api_subpath_match_param_name"
 

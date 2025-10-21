@@ -40,6 +40,7 @@ class SyncFail(Exception):
         return f"sync resources failed: {self.resources}"
 
 
+# FIXME: how to distribute global resources?
 # FIXME: split into Global and Gateway Distributor
 # global distributor is full sync
 
@@ -50,7 +51,6 @@ class EtcdDistributor(BaseDistributor):
     #     :param include_gateway_global_config: 是否应包含网关全局配置资源，如：BkGatewayConfig, BkGatewayPluginMetadata；
     #         共享网关，专享网关，当同步对应网关的数据到共享网关集群时，应包含这些网关的全局配置资源
     #     """
-    #     # FIXME: how to distribute global resources?
     #     # self.include_gateway_global_config = include_gateway_global_config
 
     def _get_registry(self, gateway: Gateway, stage: Stage) -> EtcdRegistry:
@@ -94,6 +94,21 @@ class EtcdDistributor(BaseDistributor):
             fail_msg = f"distribute to etcd failed: {type(e).__name__}: {str(e)}"
             procedure_logger.exception(fail_msg)
             return False, fail_msg
+
+        # FIXME: enable this part after v1.20, in v1.21 or v1.22
+        # try:
+        #     # {self.prefix}/{micro_gateway_name}/{gateway_name}/{stage_name}/{self.api_version}/
+        #     # settings.BK_GATEWAY_ETCD_NAMESPACE_PREFIX, default, release.gateway.name, release.stage.name, v1beta1
+        #     from django.conf import settings
+
+        #     legacy_key_prefix = f"{settings.BK_GATEWAY_ETCD_NAMESPACE_PREFIX}/default/{release.gateway.name}/{release.stage.name}/v1beta1/"
+        #     r = EtcdRegistry(key_prefix=legacy_key_prefix)
+        #     r.delete_resources_by_key_prefix()
+        # except Exception as e:  # pylint: disable=broad-except
+        #     logger.exception(
+        #         "delete previous v1beta1 resources from apigw etcd failed: %s: %s", type(e).__name__, str(e)
+        #     )
+        #     # do nothing
 
         return True, ""
 

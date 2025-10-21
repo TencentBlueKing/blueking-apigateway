@@ -33,6 +33,7 @@ from apigateway.controller.models import (
 )
 from apigateway.controller.models.constants import UpstreamSchemeEnum, UpstreamTypeEnum
 from apigateway.controller.release_data import ReleaseData
+from apigateway.controller.uri_render import URIRender
 from apigateway.core.models import Backend
 
 from .base import GatewayResourceConvertor
@@ -65,7 +66,6 @@ class ServiceConvertor(GatewayResourceConvertor):
         # }
 
         services: List[GatewayApisixModel] = []
-        # FIXME: 这里有没有环境变量渲染？
 
         for backend_id, backend_config in backend_configs.items():
             timeout = backend_config.get("timeout", 60)
@@ -86,6 +86,9 @@ class ServiceConvertor(GatewayResourceConvertor):
                 # 如果 default 没有设置 host，则默认使用 your-backend-host 来替代，避免 apisix 加载报错
                 if host == "":
                     host = DEFAULT_BACKEND_HOST_FOR_MISSING
+                # render the host with stage variables
+                host = URIRender().render(host, self.stage.vars)
+
                 if "scheme" in node:
                     host = node["scheme"] + "://" + host
                 url_info = UrlInfo(host)
@@ -100,7 +103,6 @@ class ServiceConvertor(GatewayResourceConvertor):
                 upstream.nodes.append(Node(host=url_info.domain, port=url_info.port, weight=node.get("weight", 1)))
 
             # FIXME: 如何处理 http/https 协议
-            # FIXME: 环境变量渲染是不是 service 也有？
 
             stage_description = self.stage.description
 
@@ -134,12 +136,15 @@ class ServiceConvertor(GatewayResourceConvertor):
 
             services.append(
                 Service(
-                    # FIXME:
                     # the previous id is: {gateway_name}.{stage_name}.{stage_id}-{backend_id}
-                    # 30+1+20+1+ x + 1 + y = 53 + x + y, so x + y <= 11 (almost no buffer)
-                    # so we should make a new id here?
+                    # the stage_id + backend_id is unique, so we can make the prefix smaller enough to keep the id length < 64
+                    # example: bk-apigateway-inner.prod.6-7
+                    # 30 + 1 + 20 + 1 + x + 1 + y = 53 + x + y, so x + y <= 11 (almost no buffer)
+                    # so we truncate the stage_name to 10
+                    # 30 + 1 + 10 + 1 + x + 1 + y = 43 + x + y, so x + y <= 21 (enough buffer)
+                    id=f"{self.gateway_name}.{self.stage_name[:10]}.{self.stage_id}-{backend_id}",
                     # example: bk-apigateway-inner.prod.stage-6-backend-7
-                    id=f"s-{self.stage_id}-b-{backend_id}",
+                    # length is: 30 + 1 + 20 + 1 + 20 = 72
                     name=truncate_string(f"{self.gateway_name}.{self.stage_name}.{backend_name}", 100),
                     desc=description,
                     labels=labels,

@@ -15,11 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import hashlib
 from abc import ABC, abstractmethod
 from typing import List
-
-from blue_krill.cubing_case import shortcuts
 
 from apigateway.controller.models import ApisixModel, Labels
 from apigateway.controller.release_data import ReleaseData
@@ -82,13 +79,3 @@ class GatewayResourceConvertor(BaseResourceConvertor):
                 LABEL_KEY_APISIX_VERSION: self._apisix_version,
             }
         )
-
-    # FIXME: is this necessary?
-    # metadata.name 是在 operator 中有什么作用吗？
-    def gen_unique_name(self, name: str) -> str:
-        key = shortcuts.to_lower_dash_case(f"{self.gateway_name}-{self.stage_name}-{name}")
-        if len(key) > 64:
-            md5 = hashlib.md5(key[55:].encode())
-            key = f"{key[:55]}.{md5.hexdigest()[:8]}"  # 55 + 1 + 8
-
-        return key

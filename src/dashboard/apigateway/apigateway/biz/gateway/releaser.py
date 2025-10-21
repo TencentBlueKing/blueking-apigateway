@@ -153,7 +153,7 @@ class GatewayReleaser:
         publish_validator = PublishValidator(self.gateway, self.stage, self.resource_version)
         publish_validator()
 
-    def _do_release(self, release: Release, release_history: ReleaseHistory):  # ruff: noqa: B027
+    def _do_release(self, release: Release, release_history: ReleaseHistory):  # noqa: B027
         """发布资源版本"""
         release_success_callback = update_release_data_after_success.si(
             publish_id=release_history.id,
