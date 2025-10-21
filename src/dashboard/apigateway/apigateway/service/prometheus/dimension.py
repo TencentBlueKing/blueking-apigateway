@@ -49,6 +49,7 @@ class BaseMetrics(BasePrometheusMetrics):
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
+        backend_name: Optional[str],
     ) -> str:
         pass
 
@@ -62,9 +63,12 @@ class BaseMetrics(BasePrometheusMetrics):
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
+        backend_name: Optional[str],
     ):
         # generate query expression
-        promql = self._get_query_promql(gateway_name, stage_name, step, stage_id, resource_id, resource_name)
+        promql = self._get_query_promql(
+            gateway_name, stage_name, step, stage_id, resource_id, resource_name, backend_name
+        )
 
         # request prometheus http api to get metrics data
         return query_range(
@@ -85,9 +89,12 @@ class BaseMetrics(BasePrometheusMetrics):
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
+        backend_name: Optional[str],
     ):
         # generate query expression
-        promql = self._get_query_promql(gateway_name, stage_name, step, stage_id, resource_id, resource_name)
+        promql = self._get_query_promql(
+            gateway_name, stage_name, step, stage_id, resource_id, resource_name, backend_name
+        )
         result: Dict[str, Any] = {}
         data = query_range(
             bk_biz_id=getattr(settings, "BCS_CLUSTER_BK_BIZ_ID", ""),
@@ -158,6 +165,7 @@ class RequestsMetrics(BaseMetrics):
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
+        backend_name: Optional[str],
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -165,6 +173,7 @@ class RequestsMetrics(BaseMetrics):
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
                 ("resource_name", "=", resource_name),
+                ("backend_name", "=", backend_name),
             ]
         )
         return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}}[{step}]))"
@@ -181,6 +190,7 @@ class Non20XStatusMetrics(BaseMetrics):
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
+        backend_name: Optional[str],
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -188,6 +198,7 @@ class Non20XStatusMetrics(BaseMetrics):
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
                 ("resource_name", "=", resource_name),
+                ("backend_name", "=", backend_name),
                 ("status", "=~", "3..|4..|5.."),
             ]
         )
@@ -209,6 +220,7 @@ class AppRequestsMetrics(BaseMetrics):
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
+        backend_name: Optional[str],
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -216,6 +228,7 @@ class AppRequestsMetrics(BaseMetrics):
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
                 ("resource_name", "=", resource_name),
+                ("backend_name", "=", backend_name),
             ]
         )
         return (
@@ -236,6 +249,7 @@ class ResourceRequestsMetrics(BaseMetrics):
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
+        backend_name: Optional[str],
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -243,6 +257,7 @@ class ResourceRequestsMetrics(BaseMetrics):
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
                 ("resource_name", "=", resource_name),
+                ("backend_name", "=", backend_name),
             ]
         )
         return (
@@ -263,6 +278,7 @@ class ResponseTimeBaseMetrics(BaseMetrics):
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
+        backend_name: Optional[str],
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -270,6 +286,7 @@ class ResponseTimeBaseMetrics(BaseMetrics):
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
                 ("resource_name", "=", resource_name),
+                ("backend_name", "=", backend_name),
             ]
         )
         return (
@@ -311,6 +328,7 @@ class IngressMetrics(BaseMetrics):
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
+        backend_name: Optional[str],
     ) -> str:
         # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
         label_list = [
@@ -340,6 +358,7 @@ class EgressMetrics(BaseMetrics):
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
+        backend_name: Optional[str],
     ) -> str:
         # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
         label_list = [
@@ -370,6 +389,7 @@ class RequestsTotalMetrics(BaseMetrics):
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
+        backend_name: Optional[str],
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -377,6 +397,7 @@ class RequestsTotalMetrics(BaseMetrics):
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
                 ("resource_name", "=", resource_name),
+                ("backend_name", "=", backend_name),
             ]
         )
         return f"sum({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}})"
@@ -394,6 +415,7 @@ class HealthRateMetrics(BaseMetrics):
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
+        backend_name: Optional[str],
     ) -> str:
         labels = self._get_labels_expression(
             [
@@ -401,6 +423,7 @@ class HealthRateMetrics(BaseMetrics):
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
                 ("resource_name", "=", resource_name),
+                ("backend_name", "=", backend_name),
                 ("status", "=~", "5.."),
                 # ("proxy_error", "=", "1"),
             ]

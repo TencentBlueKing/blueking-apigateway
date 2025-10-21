@@ -34,11 +34,12 @@ class TestRequestsMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
+                    "backend_name": "default",
                     "step": "1m",
                 },
                 "expected": (
                     'sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"}[1m]))'
+                    'stage_name="prod", resource_name="get_foo", backend_name="default"}[1m]))'
                 ),
             },
             {
@@ -48,6 +49,7 @@ class TestRequestsMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
+                    "backend_name": None,
                     "step": "1m",
                 },
                 "expected": (
@@ -73,11 +75,13 @@ class TestNon20XStatusMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
+                    "backend_name": "default",
                     "step": "1m",
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo", status=~"3..|4..|5.."}[1m])) by (status))'
+                    'stage_name="prod", resource_name="get_foo", backend_name="default", '
+                    'status=~"3..|4..|5.."}[1m])) by (status))'
                 ),
             },
             {
@@ -87,6 +91,7 @@ class TestNon20XStatusMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
+                    "backend_name": None,
                     "step": "1m",
                 },
                 "expected": (
@@ -113,11 +118,12 @@ class TestAppRequestsMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
+                    "backend_name": "default",
                     "step": "1m",
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_app_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"}[1m])) by (app_code))'
+                    'stage_name="prod", resource_name="get_foo", backend_name="default"}[1m])) by (app_code))'
                 ),
             },
             {
@@ -127,6 +133,7 @@ class TestAppRequestsMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
+                    "backend_name": None,
                     "step": "1m",
                 },
                 "expected": (
@@ -153,11 +160,12 @@ class TestResourceRequestsMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
+                    "backend_name": "default",
                     "step": "1m",
                 },
                 "expected": (
                     'topk(10, sum(increase(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"}[1m])) by (resource_name))'
+                    'stage_name="prod", resource_name="get_foo", backend_name="default"}[1m])) by (resource_name))'
                 ),
             },
             {
@@ -167,6 +175,7 @@ class TestResourceRequestsMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
+                    "backend_name": None,
                     "step": "1m",
                 },
                 "expected": (
@@ -193,11 +202,13 @@ class TestResponseTime90thMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
+                    "backend_name": "default",
                     "step": "1m",
                 },
                 "expected": (
                     "histogram_quantile(0.9, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, resource_name))'
+                    'api_name="foo", stage_name="prod", resource_name="get_foo", '
+                    'backend_name="default"}[1m])) by (le, resource_name))'
                 ),
             },
             {
@@ -207,6 +218,7 @@ class TestResponseTime90thMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
+                    "backend_name": None,
                     "step": "1m",
                 },
                 "expected": (
@@ -234,11 +246,13 @@ class TestResponseTime50thMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
+                    "backend_name": "default",
                     "step": "1m",
                 },
                 "expected": (
                     "histogram_quantile(0.5, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, resource_name))'
+                    'api_name="foo", stage_name="prod", resource_name="get_foo", '
+                    'backend_name="default"}[1m])) by (le, resource_name))'
                 ),
             },
             {
@@ -248,6 +262,7 @@ class TestResponseTime50thMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
+                    "backend_name": None,
                     "step": "1m",
                 },
                 "expected": (
@@ -275,11 +290,13 @@ class TestResponseTime95thMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
+                    "backend_name": "default",
                     "step": "1m",
                 },
                 "expected": (
                     "histogram_quantile(0.95, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, resource_name))'
+                    'api_name="foo", stage_name="prod", resource_name="get_foo", '
+                    'backend_name="default"}[1m])) by (le, resource_name))'
                 ),
             },
             {
@@ -289,6 +306,7 @@ class TestResponseTime95thMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
+                    "backend_name": None,
                     "step": "1m",
                 },
                 "expected": (
@@ -316,11 +334,13 @@ class TestResponseTime99thMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": "get_foo",
+                    "backend_name": "default",
                     "step": "1m",
                 },
                 "expected": (
                     "histogram_quantile(0.99, sum(rate(bk_apigateway_apigateway_api_request_duration_milliseconds_bucket{"
-                    'api_name="foo", stage_name="prod", resource_name="get_foo"}[1m])) by (le, resource_name))'
+                    'api_name="foo", stage_name="prod", resource_name="get_foo", '
+                    'backend_name="default"}[1m])) by (le, resource_name))'
                 ),
             },
             {
@@ -330,6 +350,7 @@ class TestResponseTime99thMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
+                    "backend_name": None,
                     "step": "1m",
                 },
                 "expected": (
@@ -357,6 +378,7 @@ class TestIngressMetrics:
                     "stage_id": 1,
                     "resource_id": 2,
                     "resource_name": "get_foo",
+                    "backend_name": "default",
                     "step": "1m",
                 },
                 "expected": (
@@ -371,6 +393,7 @@ class TestIngressMetrics:
                     "stage_id": 1,
                     "resource_id": 0,
                     "resource_name": None,
+                    "backend_name": None,
                     "step": "1m",
                 },
                 "expected": (
@@ -397,6 +420,7 @@ class TestEgressMetrics:
                     "stage_id": 1,
                     "resource_id": 2,
                     "resource_name": "get_foo",
+                    "backend_name": "default",
                     "step": "1m",
                 },
                 "expected": (
@@ -411,6 +435,7 @@ class TestEgressMetrics:
                     "stage_id": 1,
                     "resource_id": 0,
                     "resource_name": None,
+                    "backend_name": None,
                     "step": "1m",
                 },
                 "expected": (
@@ -437,11 +462,12 @@ class TestRequestTotalMetrics:
                     "stage_name": "prod",
                     "resource_id": 1,
                     "resource_name": "get_foo",
+                    "backend_name": "default",
                     "step": "1m",
                 },
                 "expected": (
                     'sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo"})'
+                    'stage_name="prod", resource_name="get_foo", backend_name="default"})'
                 ),
             },
             {
@@ -451,6 +477,7 @@ class TestRequestTotalMetrics:
                     "stage_id": 1,
                     "resource_id": 1,
                     "resource_name": None,
+                    "backend_name": None,
                     "step": "1m",
                 },
                 "expected": ('sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", stage_name="prod"})'),
@@ -474,11 +501,12 @@ class TestHealthRateMetrics:
                     "stage_id": 1,
                     "resource_id": 0,
                     "resource_name": "get_foo",
+                    "backend_name": "default",
                     "step": "1m",
                 },
                 "expected": (
                     'sum(bk_apigateway_apigateway_api_requests_total{api_name="foo", '
-                    'stage_name="prod", resource_name="get_foo", status=~"5.."})'
+                    'stage_name="prod", resource_name="get_foo", backend_name="default", status=~"5.."})'
                 ),
             },
             {
@@ -488,6 +516,7 @@ class TestHealthRateMetrics:
                     "stage_id": 1,
                     "resource_id": 0,
                     "resource_name": None,
+                    "backend_name": None,
                     "step": "1m",
                 },
                 "expected": (
