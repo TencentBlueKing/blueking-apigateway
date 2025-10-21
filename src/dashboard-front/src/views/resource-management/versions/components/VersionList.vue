@@ -45,135 +45,17 @@
     </div>
     <div class="flex resource-content">
       <div class="w-full">
-        <BkLoading :loading="isLoading">
-          <BkTable
-            ref="tableRef"
-            class="edition-table table-layout"
-            :data="tableData"
-            remote-pagination
-            :pagination="pagination"
-            show-overflow-tooltip
-            :cell-class="getCellClass"
-            row-hover="auto"
-            border="outer"
-            @page-limit-change="handlePageSizeChange"
-            @page-value-change="handlePageChange"
-            @selection-change="handleSelectionChange"
-            @select-all="handleSelectAllChange"
-          >
-            <BkTableColumn
-              width="80"
-              type="selection"
-              align="center"
-            />
-            <BkTableColumn :label="t('版本号')">
-              <template #default="{ data }">
-                <BkButton
-                  text
-                  theme="primary"
-                  @click="() => handleShowInfo(data.id)"
-                >
-                  {{ data?.version }}
-                </BkButton>
-              </template>
-            </BkTableColumn>
-            <BkTableColumn
-              :label="t('生效环境')"
-              prop="released_stages"
-            >
-              <template #default="{ data }">
-                {{ data?.released_stages?.map((item: any) => item.name).join(", ") || '--' }}
-              </template>
-            </BkTableColumn>
-            <BkTableColumn
-              :label="t('生成时间')"
-              prop="created_time"
-            />
-            <BkTableColumn :label="t('SDK')">
-              <template #default="{ data }">
-                <BkButton
-                  v-if="data?.sdk_count > 0"
-                  text
-                  theme="primary"
-                  @click="() => jumpSdk(data)"
-                >
-                  {{ data?.sdk_count }}
-                </BkButton>
-                <span v-else>
-                  {{ data?.sdk_count }}
-                </span>
-              </template>
-            </BkTableColumn>
-            <BkTableColumn
-              :label="t('创建者')"
-              prop="created_by"
-            >
-              <template #default="{ row }">
-                <span v-if="!featureFlagStore.isEnableDisplayName">{{ row.created_by }}</span>
-                <span v-else><bk-user-display-name :user-id="row.created_by" /></span>
-              </template>
-            </BkTableColumn>
-            <BkTableColumn
-              :label="t('操作')"
-              width="200"
-            >
-              <template #default="{ data }">
-                <div class="flex gap-10px">
-                  <BkButton
-                    v-if="featureFlagStore.flags.ALLOW_UPLOAD_SDK_TO_REPOSITORY"
-                    text
-                    theme="primary"
-                    @click="() => openCreateSdk(data.id)"
-                  >
-                    {{ t('生成 SDK') }}
-                  </BkButton>
-                  <BkDropdown
-                    v-if="!gatewayStore.isProgrammableGateway"
-                    :is-show="!!data?.isReleaseMenuShow"
-                    trigger="click"
-                  >
-                    <BkButton
-                      text
-                      theme="primary"
-                      class="px-10px"
-                      @click="() => showRelease(data)"
-                    >
-                      {{ t('发布至环境') }}
-                    </BkButton>
-                    <template #content>
-                      <BkDropdownMenu>
-                        <BkDropdownItem
-                          v-for="item in stageList"
-                          :key="item.id"
-                          v-bk-tooltips="{ content: item.publish_validate_msg, disabled: !item.publish_validate_msg }"
-                          :class="{ 'menu-item-disabled': !!item.publish_validate_msg }"
-                          @click="!item.publish_validate_msg ? handleClickStage(item, data) : ''"
-                        >
-                          {{ item.name }}
-                        </BkDropdownItem>
-                      </BkDropdownMenu>
-                    </template>
-                  </BkDropdown>
-                  <BkButton
-                    text
-                    theme="primary"
-                    @click.stop="() => handleShowExport(data)"
-                  >
-                    {{ t('导出') }}
-                  </BkButton>
-                </div>
-              </template>
-            </BkTableColumn>
-            <template #empty>
-              <TableEmpty
-                :empty-type="tableEmptyConf.emptyType"
-                :abnormal="tableEmptyConf.isAbnormal"
-                @refresh="getList"
-                @clear-filter="handleClearFilterKey"
-              />
-            </template>
-          </BkTable>
-        </BkLoading>
+        <AgTable
+          ref="tableRef"
+          v-model:table-data="tableData"
+          show-settings
+          resizable
+          show-selection
+          :api-method="getTableData"
+          :columns="columns"
+          @clear-filter="handleClearFilterKey"
+          @selection-change="handleSelectionChange"
+        />
       </div>
     </div>
 
@@ -215,8 +97,8 @@
       ref="releaseSidesliderRef"
       :current-assets="stageData"
       :version="versionData"
-      @hidden="getList"
-      @release-success="getList"
+      @hidden="refresh"
+      @release-success="refresh"
     />
 
     <!-- 资源版本导出 -->
@@ -229,16 +111,11 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="tsx">
 import { Message } from 'bkui-vue';
-import dayjs from 'dayjs';
 import { getStageStatus } from '@/utils';
 import { exportVersion, getVersionList } from '@/services/source/resource.ts';
 import { getStageList } from '@/services/source/stage';
-import {
-  useQueryList,
-  useSelection,
-} from '@/hooks';
 import CreateSDK from './CreateSDK.vue';
 import ResourceDetail from './ResourceDetail.vue';
 import VersionDiff from '@/components/version-diff/Index.vue';
@@ -252,9 +129,10 @@ import {
   type IExportParams,
 } from '@/types/common';
 import ReleaseStage from '@/components/release-stage/Index.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
 import ExportResourceDialog from '../../components/ExportResourceDialog.vue';
 import { orderBy } from 'lodash-es';
+import type { PrimaryTableProps } from '@blueking/tdesign-ui';
+import AgTable from '@/components/ag-table/Index.vue';
 
 interface IProps { version?: string }
 
@@ -268,6 +146,8 @@ const featureFlagStore = useFeatureFlag();
 
 const filterData = ref({ keyword: version });
 const diffDisabled = ref(true);
+const tableData = ref<any[]>([]);
+const selections = ref<any[]>([]);
 
 // 导出配置
 const exportDialogConfig = reactive<IExportDialog>({
@@ -287,27 +167,6 @@ const exportParams = reactive<IExportParams & { id?: number }>({
   id: 0,
 });
 
-// 列表hooks
-const {
-  tableData,
-  pagination,
-  isLoading,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-} = useQueryList({
-  apiMethod: getVersionList,
-  filterData,
-});
-
-// 列表多选
-const {
-  selections,
-  handleSelectionChange,
-  handleSelectAllChange,
-  resetSelections,
-} = useSelection();
-
 // 当前操作的行
 const resourceVersionId = ref();
 const createSdkRef = ref();
@@ -319,13 +178,6 @@ const stageList = ref<any>([]);
 const stageData = ref();
 const versionData = ref();
 const releaseSidesliderRef = ref();
-const tableEmptyConf = ref<{
-  emptyType: string
-  isAbnormal: boolean
-}>({
-  emptyType: '',
-  isAbnormal: false,
-});
 
 // 版本对比抽屉
 const diffSliderConf = reactive({
@@ -339,22 +191,143 @@ const diffSourceId = ref();
 const diffTargetId = ref();
 const resourceDetailShow = ref(false);
 
-let timeId: any = null;
-
 const apigwId = computed(() => +route.params.id);
 
-watch(
-  tableData,
-  () => {
-    updateTableEmptyConfig();
+const columns = computed<PrimaryTableProps['columns']>(() => [
+  {
+    colKey: 'version',
+    title: t('版本号'),
+    cell: (h, { row }) => (
+      <bk-button
+        text
+        theme="primary"
+        onClick={() => handleShowInfo(row.id)}
+      >
+        { row.version }
+      </bk-button>
+    ),
   },
-  { deep: true },
-);
+  {
+    colKey: 'released_stages',
+    title: t('生效环境'),
+    cell: (h, { row }) =>
+      <span>{ row.released_stages?.map((item: any) => item.name).join(', ') || '--' }</span>,
+  },
+  {
+    colKey: 'created_time',
+    title: t('生成时间'),
+  },
+  {
+    colKey: 'sdk',
+    title: 'SDK',
+    cell: (h, { row }) => (
+      <div>
+        {
+          row.sdk_count > 0
+            ? (
+              <bk-button
+                text
+                theme="primary"
+                onClick={() => jumpSdk(row)}
+              >
+                { row.sdk_count }
+              </bk-button>
+            )
+            : <span>{ row.sdk_count }</span>
+        }
+      </div>
+    ),
+  },
+  {
+    colKey: 'created_by',
+    title: t('创建者'),
+    cell: (h, { row }) => (
+      <div>
+        {
+          featureFlagStore.isEnableDisplayName
+            ? <span><bk-user-display-name userId={row.created_by} /></span>
+            : <span>{ row.created_by }</span>
+        }
+      </div>
+    ),
+  },
+  {
+    colKey: 'actions',
+    title: t('操作'),
+    width: 200,
+    cell: (h, { row }) => (
+      <div class="flex gap-10px">
+        {
+          featureFlagStore.flags.ALLOW_UPLOAD_SDK_TO_REPOSITORY
+            ? (
+              <bk-button
+                text
+                theme="primary"
+                onClick={() => openCreateSdk(row.id)}
+              >
+                { t('生成 SDK') }
+              </bk-button>
+            )
+            : ''
+        }
+        {
+          !gatewayStore.isProgrammableGateway
+            ? (
+              <bk-dropdown
+                isShow={!!row.isReleaseMenuShow}
+                trigger="click"
+              >
+                {{
+                  default: () => (
+                    <bk-button
+                      text
+                      theme="primary"
+                      class="px-10px"
+                      onClick={() => showRelease(row)}
+                    >
+                      {t('发布至环境')}
+                    </bk-button>
+                  ),
+                  content: () => (
+                    <bk-dropdown-menu>
+                      {
+                        stageList.value.map((item: any) => (
+                          <bk-dropdown-item
+                            key={item.id}
+                            v-bk-tooltips={{
+                              content: item.publish_validate_msg,
+                              disabled: !item.publish_validate_msg,
+                            }}
+                            class={{ 'menu-item-disabled': !!item.publish_validate_msg }}
+                            onClick={() => !item.publish_validate_msg ? handleClickStage(item, row) : ''}
+                          >
+                            {item.name}
+                          </bk-dropdown-item>
+                        ))
+                      }
+                    </bk-dropdown-menu>
+                  ),
+                }}
+              </bk-dropdown>
+            )
+            : ''
+        }
+        <bk-button
+          text
+          theme="primary"
+          onClick={() => handleShowExport(row)}
+        >
+          {t('导出')}
+        </bk-button>
+      </div>
+    ),
+  },
+]);
 
 watch(
   selections,
   () => {
-    if (selections.value?.length === 1 || selections.value?.length === 2) {
+    if (selections.value.length === 1 || selections.value.length === 2) {
       diffDisabled.value = false;
     }
     else {
@@ -363,6 +336,16 @@ watch(
   },
   { deep: true },
 );
+
+watch(filterData, () => {
+  tableRef.value!.fetchData(filterData.value);
+}, { deep: true });
+
+const getTableData = async (params: Record<string, any> = {}) => getVersionList(apigwId.value, params);
+
+const handleSelectionChange = (payload: any) => {
+  selections.value = payload.selections;
+};
 
 // 生成sdk
 const openCreateSdk = (id: number) => {
@@ -382,7 +365,7 @@ const handleShowDiff = () => {
   diffTargetId.value = diffTarget?.id || '';
 
   diffSliderConf.isShow = true;
-  resetSelections(tableRef.value);
+  selections.value = [];
 };
 
 // 版本导出
@@ -483,67 +466,14 @@ const handleClickStage = (stage: any, row: any) => {
 
 const handleClearFilterKey = () => {
   filterData.value.keyword = '';
-  getList();
-  updateTableEmptyConfig();
 };
 
-const updateTableEmptyConfig = () => {
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (filterData.value.keyword && !tableData.value.length) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
-  }
-  if (filterData.value.keyword) {
-    // tableEmptyConf.value.emptyType = '$CONSTANT';
-    tableEmptyConf.value.emptyType = filterData.value.keyword;
-    return;
-  }
-  tableEmptyConf.value.emptyType = '';
+const refresh = () => {
+  tableRef.value!.refresh();
 };
-
-const getCellClass = (_column: any, _index: number, row: any) => {
-  const targetTime = dayjs(row.created_time); // 目标时间
-  const curTime = dayjs();
-  let isWithin24Hours = false;
-  if (targetTime.isBefore(curTime) || targetTime.isSame(curTime)) {
-    const addOneDay = targetTime.add(1, 'day');
-    isWithin24Hours = curTime.isBefore(addOneDay) || curTime.isSame(addOneDay);
-  }
-  return isWithin24Hours ? 'last24hours' : '';
-};
-
-onMounted(() => {
-  timeId = setInterval(async () => {
-    await getList(getVersionList, false);
-    tableData.value.forEach((item: Record<string, any>) => {
-      if (selections.value.find(sel => sel.id === item.id)) {
-        tableRef.value?.toggleRowSelection(item, true);
-      }
-    });
-  }, 1000 * 30);
-});
-
-onUnmounted(() => {
-  clearInterval(timeId);
-});
 </script>
 
 <style lang="scss" scoped>
-.edition-table {
-
-  :deep(.bk-table-body) {
-    scrollbar-color: transparent transparent;
-
-    table tbody tr td.last24hours {
-      background-color: #f2fcf5;
-    }
-  }
-
-  :deep(.bk-table-head) {
-    scrollbar-color: transparent transparent;
-  }
-}
-
 :deep(.menu-item-disabled) {
   color: #fff;
   cursor: not-allowed;

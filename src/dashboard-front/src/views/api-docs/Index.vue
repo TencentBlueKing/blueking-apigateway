@@ -70,115 +70,14 @@
         </header>
         <!--  网关列表  -->
         <main class="docs-list">
-          <BkLoading :loading="isLoading">
-            <BkTable
-              :data="tableData"
-              remote-pagination
-              :pagination="pagination"
-              :max-height="clientHeight"
-              show-overflow-tooltip
-              :border="['outer']"
-              @page-limit-change="handlePageSizeChange"
-              @page-value-change="handlePageChange"
-            >
-              <BkTableColumn
-                :label="t('网关名称')"
-                field="name"
-              >
-                <template #default="{ row }: { row: IApiGatewayBasics }">
-                  <span
-                    class="link-name"
-                    @click="gotoDetails(row)"
-                  >{{ row.name || '--' }}</span>
-                  <BkTag
-                    v-if="row.is_official"
-                    theme="success"
-                  >
-                    {{ t('官方') }}
-                  </BkTag>
-                </template>
-              </BkTableColumn>
-              <template v-if="featureFlagStore.isTenantMode">
-                <BkTableColumn
-                  :label="t('租户模式')"
-                  field="tenant_mode"
-                  :width="120"
-                >
-                  <template #default="{ row }">
-                    {{ TENANT_MODE_TEXT_MAP[row.tenant_mode as string] || '--' }}
-                  </template>
-                </BkTableColumn>
-                <BkTableColumn
-                  :label="t('租户 ID')"
-                  field="tenant_id"
-                  :width="120"
-                >
-                  <template #default="{ row }">
-                    {{ row.tenant_id || '--' }}
-                  </template>
-                </BkTableColumn>
-              </template>
-              <BkTableColumn
-                :label="t('网关描述')"
-                field="description"
-                :min-width="500"
-              >
-                <template #default="{ row }">
-                  {{ row.description || '--' }}
-                </template>
-              </BkTableColumn>
-              <BkTableColumn
-                v-if="!featureFlagStore.isTenantMode"
-                :label="t('网关负责人')"
-                field="maintainers"
-                placement="auto-start"
-              >
-                <template #default="{ row }">
-                  <span v-if="!row?.maintainers?.length">
-                    --
-                  </span>
-                  <template v-else>
-                    <span v-if="!featureFlagStore.isEnableDisplayName">{{ row.maintainers.join(', ') }}</span>
-                    <template v-else>
-                      <span
-                        v-for="(maintainer, index) in row.maintainers"
-                        :key="maintainer.login_name"
-                      >
-                        <bk-user-display-name :user-id="maintainer" />
-                        <span v-if="index !== (row.maintainers.length - 1)">,</span>
-                      </span>
-                    </template>
-                  </template>
-                </template>
-              </BkTableColumn>
-              <BkTableColumn
-                :label="t('操作')"
-                width="180"
-                fixed="right"
-              >
-                <template #default="{ row }: { row: IApiGatewayBasics }">
-                  <BkButton
-                    v-bk-tooltips="{ content: t('SDK未生成，可联系负责人生成SDK'), disabled: row.sdks?.length }"
-                    text
-                    theme="primary"
-                    :disabled="!row.sdks?.length"
-                    @click="handleSdkDetailClick(row)"
-                  >
-                    {{ t('查看 SDK') }}
-                  </BkButton>
-                </template>
-              </BkTableColumn>
-              <template #empty>
-                <TableEmpty
-                  :is-loading="isLoading"
-                  :empty-type="tableEmptyConf.emptyType"
-                  :abnormal="tableEmptyConf.isAbnormal"
-                  @reacquire="getList"
-                  @clear-filter="handleClearFilterKey"
-                />
-              </template>
-            </BkTable>
-          </BkLoading>
+          <AgTable
+            ref="tableRef"
+            show-settings
+            resizable
+            :api-method="getTableData"
+            :columns="columns"
+            @clear-filter="handleClearFilterKey"
+          />
         </main>
       </div>
       <!--  当选中 组件API文档 时  -->
@@ -326,15 +225,12 @@
   </div>
 </template>
 
-<script lang="ts" setup>
-import { useQueryList } from '@/hooks';
+<script lang="tsx" setup>
 import {
   getComponentSystemList,
   getESBSDKlist,
 } from '@/services/source/docs-esb';
 import { getGatewaysDocs } from '@/services/source/docs';
-import { useMaxTableLimit } from '@/hooks/use-max-table-limit';
-import TableEmpty from '@/components/table-empty/Index.vue';
 import SDKInstructionSlider from './components/SDKInstructionSlider.vue';
 import SDKDetailDialog from './components/SDKDetailDialog.vue';
 import ComponentSearcher from './components/ComponentSearcher.vue';
@@ -351,6 +247,8 @@ import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useTemplateRefsList } from '@vueuse/core';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { useFeatureFlag } from '@/stores';
+import type { PrimaryTableProps } from '@blueking/tdesign-ui';
+import AgTable from '@/components/ag-table/Index.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -359,42 +257,9 @@ const featureFlagStore = useFeatureFlag();
 
 const filterData = ref({ keyword: '' });
 
-// 当前视口高度能展示最多多少条表格数据
-const { clientHeight, maxTableLimit } = useMaxTableLimit({ allocatedHeight: 186 });
-
-const {
-  tableData,
-  pagination,
-  isLoading,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-} = useQueryList({
-  apiMethod: getGatewaysDocs,
-  filterData,
-  id: null,
-  filterNoResetPage: false,
-  initialPagination: {
-    limitList: [
-      maxTableLimit,
-      10,
-      20,
-      50,
-      100,
-    ],
-    limit: maxTableLimit,
-  },
-});
-
+const tableRef = ref();
 // 组件分类模板引用列表
 const categoryRefs = useTemplateRefsList<HTMLElement>();
-const tableEmptyConf = ref<{
-  emptyType: string
-  isAbnormal: boolean
-}>({
-  emptyType: '',
-  isAbnormal: false,
-});
 
 // 当前展示的是 网关 | 组件 相关内容
 const curTab = ref<TabType>('gateway');
@@ -412,11 +277,121 @@ const curTargetMaintainers = ref<string[]>([]);
 // 注入时请使用：const curTab = inject<Ref<TabType>>('curTab');
 provide('curTab', curTab);
 
+const columns = computed<PrimaryTableProps['columns']>(() => [
+  {
+    colKey: 'name',
+    title: t('网关名称'),
+    width: 300,
+    cell: (h, { row }) => (
+      <div>
+        <span
+          class="color-#3a84ff cursor-pointer"
+          onClick={() => gotoDetails(row)}
+        >
+          { row.name || '--' }
+        </span>
+        {
+          row.is_official
+            ? (
+              <bk-tag theme="success">
+                { t('官方') }
+              </bk-tag>
+            )
+            : ''
+        }
+      </div>
+    ),
+  },
+  ...(featureFlagStore.isTenantMode
+    ? [
+      {
+        colKey: 'tenant_mode',
+        title: t('租户模式'),
+        width: 120,
+        cell: (h, { row }) => <span>{ TENANT_MODE_TEXT_MAP[row.tenant_mode as string] || '--' }</span>,
+      },
+      {
+        colKey: 'tenant_id',
+        title: t('租户 ID'),
+        width: 120,
+        cell: (h, { row }) => <span>{ row.tenant_id || '--' }</span>,
+      },
+    ]
+    : []),
+  {
+    colKey: 'description',
+    title: t('网关描述'),
+    width: 500,
+    cell: (h, { row }) =>
+      <span>{ row.description || '--' }</span>,
+  },
+  ...(!featureFlagStore.isTenantMode
+    ? [
+      {
+        colKey: 'maintainers',
+        title: t('网关负责人'),
+        width: 180,
+        cell: (h, { row }) => (
+          row.maintainers?.length
+            ? (
+              <div>
+                {
+                  !featureFlagStore.isEnableDisplayName
+                    ? <span>{ row.maintainers.join(', ') }</span>
+                    : (
+                      <span>
+                        {
+                          row.maintainers.map((maintainer, index) => (
+                            <span
+                              key={maintainer.login_name}
+                            >
+                              <bk-user-display-name userId={maintainer} />
+                              {
+                                index !== (row.maintainers.length - 1)
+                                  ? <span>,</span>
+                                  : ''
+                              }
+                            </span>
+                          ))
+                        }
+                      </span>
+                    )
+                }
+              </div>
+            )
+            : '--'
+
+        ),
+      },
+    ]
+    : []),
+  {
+    colKey: 'actions',
+    title: t('操作'),
+    width: 100,
+    fixed: 'right',
+    cell: (h, { row }) => (
+      <bk-button
+        v-bk-tooltips={{
+          content: t('SDK未生成，可联系负责人生成SDK'),
+          disabled: row.sdks?.length,
+        }}
+        text
+        theme="primary"
+        disabled={!row.sdks?.length}
+        onClick={() => handleSdkDetailClick(row)}
+      >
+        {t('查看 SDK')}
+      </bk-button>
+    ),
+  },
+]);
+
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 
 const routerViewWrapperClass = computed(() => {
   const initClass = 'default-header-view';
-  const displayBkuiTable = ['ApiDocs'].includes(route.name) ? 'need-bkui-table-wrapper' : '';
+  const displayBkuiTable = ['ApiDocs'].includes(route.name as string) ? 'need-bkui-table-wrapper' : '';
   if (isShowNoticeAlert.value) {
     return `${initClass} show-notice ${displayBkuiTable}`;
   }
@@ -424,12 +399,14 @@ const routerViewWrapperClass = computed(() => {
 });
 
 watch(
-  tableData,
+  filterData,
   () => {
-    updateTableEmptyConfig();
+    tableRef.value!.fetchData(filterData.value);
   },
   { deep: true },
 );
+
+const getTableData = async (params: Record<string, any> = {}) => getGatewaysDocs(params);
 
 const gotoDetails = (row: IApiGatewayBasics | ISystem, systemBoard?: string) => {
   const params = {
@@ -449,23 +426,6 @@ const gotoDetails = (row: IApiGatewayBasics | ISystem, systemBoard?: string) => 
 
 const handleClearFilterKey = () => {
   filterData.value = { keyword: '' };
-  getList();
-  updateTableEmptyConfig();
-};
-
-const updateTableEmptyConfig = () => {
-  const searchParams = { ...filterData.value };
-  const list = Object.values(searchParams).filter(item => item !== '');
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (list.length && !tableData.value.length) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
-  }
-  if (list.length) {
-    tableEmptyConf.value.emptyType = 'empty';
-    return;
-  }
-  tableEmptyConf.value.emptyType = '';
 };
 
 const fetchComponentSystemList = async () => {
@@ -596,11 +556,6 @@ $primary-color: #3a84ff;
         margin-bottom: 16px;
         justify-content: flex-end;
         align-items: center;
-      }
-
-      .link-name {
-        color: #3a84ff;
-        cursor: pointer;
       }
     }
 

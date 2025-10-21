@@ -40,106 +40,26 @@
     </div>
     <div class="flex resource-content">
       <div class="w-full">
-        <BkLoading :loading="isLoading">
-          <BkTable
-            class="sdk-table table-layout"
-            :data="tableData"
-            remote-pagination
-            :pagination="pagination"
-            show-overflow-tooltip
-            row-hover="auto"
-            border="outer"
-            @page-limit-change="handlePageSizeChange"
-            @page-value-change="handlePageChange"
-          >
-            <BkTableColumn
-              :label="t('SDK 版本号')"
-              prop="version_number"
-            />
-            <BkTableColumn
-              :label="t('SDK 名称')"
-              prop="name"
-            />
-            <BkTableColumn
-              :label="t('资源版本')"
-              prop="resource_version"
-            >
-              <template #default="{ row }">
-                <BkButton
-                  text
-                  theme="primary"
-                  @click="() => goVersionList(row)"
-                >
-                  {{ row?.resource_version?.version }}
-                </BkButton>
-              </template>
-            </BkTableColumn>
-            <BkTableColumn
-              prop="language"
-              :label="t('语言')"
-            />
-            <BkTableColumn
-              :label="t('创建人')"
-              prop="created_by"
-            >
-              <template #default="{ row }">
-                <span v-if="!featureFlagStore.isEnableDisplayName">{{ row.created_by }}</span>
-                <span v-else><bk-user-display-name :user-id="row.created_by" /></span>
-              </template>
-            </BkTableColumn>
-            <BkTableColumn
-              :label="t('生成时间')"
-              prop="created_time"
-            />
-            <BkTableColumn :label="t('操作')">
-              <template #default="{ row, data }">
-                <div class="flex gap-10px">
-                  <BkButton
-                    text
-                    theme="primary"
-                    @click="() => copy(data.download_url)"
-                  >
-                    {{ t('复制地址') }}
-                  </BkButton>
-                  <BkButton
-                    v-bk-tooltips="{
-                      content: !row.download_url ? t('暂无下载地址') : '',
-                      disabled: row.download_url,
-                    }"
-                    text
-                    theme="primary"
-                    class="px-10px"
-                    :disabled="!row.download_url"
-                    @click="() => handleDownload(data)"
-                  >
-                    {{ t('下载') }}
-                  </BkButton>
-                </div>
-              </template>
-            </BkTableColumn>
-            <template #empty>
-              <TableEmpty
-                :empty-type="tableEmptyConf.emptyType"
-                :abnormal="tableEmptyConf.isAbnormal"
-                @refresh="getList"
-                @clear-filter="handleClearFilterKey"
-              />
-            </template>
-          </BkTable>
-        </BkLoading>
+        <AgTable
+          ref="tableRef"
+          show-settings
+          resizable
+          :api-method="getTableData"
+          :columns="columns"
+          @clear-filter="handleClearFilterKey"
+        />
       </div>
     </div>
 
     <!-- 生成sdk弹窗 -->
     <CreateSDK
       ref="createSdkRef"
-      @done="getList"
+      @done="refresh"
     />
   </div>
 </template>
 
-<script setup lang="ts">
-import { useQueryList } from '@/hooks';
+<script setup lang="tsx">
 import { getSDKList } from '@/services/source/sdks';
 import { copy } from '@/utils';
 import {
@@ -147,48 +67,100 @@ import {
   useResourceVersion,
 } from '@/stores';
 import CreateSDK from './CreateSDK.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import type { PrimaryTableProps } from '@blueking/tdesign-ui';
+import AgTable from '@/components/ag-table/Index.vue';
 
 const emits = defineEmits<{ 'on-show-version': [version: string] }>();
 
 const { t } = useI18n();
+const route = useRoute();
 const featureFlagStore = useFeatureFlag();
 const resourceVersionStore = useResourceVersion();
 
+const tableRef = ref();
 const keyword = ref('');
 const createSdkRef = ref();
 const filterData = ref({
   keyword: '',
   resource_version_id: '',
 });
-const tableEmptyConf = ref<{
-  emptyType: string
-  isAbnormal: boolean
-}>({
-  emptyType: '',
-  isAbnormal: false,
-});
 
-// 列表hooks
-const {
-  tableData,
-  pagination,
-  isLoading,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-} = useQueryList({
-  apiMethod: getSDKList,
-  filterData,
-});
+const apigwId = computed(() => +route.params.id);
 
-watch(
-  filterData,
-  () => {
-    updateTableEmptyConfig();
+const columns = computed<PrimaryTableProps['columns']>(() => [
+  {
+    title: t('SDK 版本号'),
+    colKey: 'version_number',
   },
-  { deep: true },
-);
+  {
+    title: t('SDK 名称'),
+    colKey: 'name',
+  },
+  {
+    title: t('资源版本'),
+    colKey: 'resource_version',
+    cell: (h, { row }) => (
+      <bk-button
+        text
+        theme="primary"
+        onClick={() => goVersionList(row)}
+      >
+        { row.resource_version?.version }
+      </bk-button>
+    ),
+  },
+  {
+    title: t('语言'),
+    colKey: 'language',
+  },
+  {
+    title: t('创建人'),
+    colKey: 'created_by',
+    cell: (h, { row }) => (
+      <div>
+        {
+          featureFlagStore.isEnableDisplayName
+            ? <span><bk-user-display-name userId={row.created_by} /></span>
+            : <span>{ row.created_by }</span>
+        }
+      </div>
+    ),
+  },
+  {
+    title: t('生成时间'),
+    colKey: 'created_time',
+  },
+  {
+    title: t('操作'),
+    colKey: 'operate',
+    cell: (h, { row }) => {
+      return (
+        <div class="flex gap-10px">
+          <bk-button
+            text
+            theme="primary"
+            onClick={() => copy(row.download_url)}
+          >
+            { t('复制地址') }
+          </bk-button>
+          <bk-button
+            v-bk-tooltips={{
+              content: !row.download_url ? t('暂无下载地址') : '',
+              disabled: row.download_url,
+            }}
+            disabled={!row.download_url}
+            text
+            theme="primary"
+            class="px-10px"
+            onClick={() => handleDownload(row)}
+          >
+            { t('下载') }
+          </bk-button>
+        </div>
+      );
+    },
+  },
+]);
 
 watch(
   () => resourceVersionStore.getResourceFilter,
@@ -198,6 +170,12 @@ watch(
   },
   { immediate: true },
 );
+
+watch(filterData, () => {
+  tableRef.value!.fetchData(filterData.value);
+}, { deep: true });
+
+const getTableData = async (params: Record<string, any> = {}) => getSDKList(apigwId.value, params);
 
 const handleKeywordChange = () => {
   filterData.value.resource_version_id = '';
@@ -217,39 +195,17 @@ const openCreateSdk = () => {
 
 const handleClearFilterKey = () => {
   keyword.value = '';
-  filterData.value.resource_version_id = '';
-  filterData.value.keyword = '';
-  getList();
-  updateTableEmptyConfig();
-};
-
-const updateTableEmptyConfig = () => {
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (filterData.value.keyword && !tableData.value.length) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
-  }
-  if (keyword.value) {
-    tableEmptyConf.value.emptyType = keyword.value;
-    return;
-  }
-  tableEmptyConf.value.emptyType = '';
+  filterData.value = {
+    keyword: '',
+    resource_version_id: '',
+  };
 };
 
 const goVersionList = (data: any) => {
   emits('on-show-version', data?.resource_version?.version || '');
 };
+
+const refresh = () => {
+  tableRef.value!.refresh();
+};
 </script>
-
-<style lang="scss" scoped>
-.sdk-table {
-
-  :deep(.bk-table-head) {
-    scrollbar-color: transparent transparent;
-  }
-
-  :deep(.bk-table-body) {
-    scrollbar-color: transparent transparent;
-  }
-}
-</style>

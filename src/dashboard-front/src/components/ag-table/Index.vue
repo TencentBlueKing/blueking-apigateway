@@ -168,10 +168,10 @@ const emit = defineEmits<{
     selections: TableRowData
     selectionsRowKeys: string[] | number[]
   }
-  'clear-selection': void
-  'request-done': void
-  'clear-filter': void
-  'refresh': void
+  'clear-selection': [void]
+  'request-done': [void]
+  'clear-filter': [void]
+  'refresh': [void]
 }>();
 
 const slots = useSlots();
@@ -567,10 +567,11 @@ defineExpose({
 
 <style lang="scss">
 .primary-table-wrapper {
+
   .cell-single-ellipse {
-    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 
     &.is-color-active {
       color: #3a84ff;
@@ -581,10 +582,10 @@ defineExpose({
   .table-first-full-row {
     width: 100%;
     height: 32px;
-    line-height: 32px;
-    background-color: #f0f1f5;
-    text-align: center;
     font-size: 12px;
+    line-height: 32px;
+    text-align: center;
+    background-color: #f0f1f5;
 
     .normal-text {
       color: #4d4f56;
@@ -620,14 +621,15 @@ defineExpose({
     }
 
     .t-pagination__number.t-is-current {
-      background-color: #e1ecff;
-      color: #3a84ff;
-      border: none;
       font-size: 12px;
+      color: #3a84ff;
+      background-color: #e1ecff;
+      border: none;
     }
   }
 
   // 默认的 loading 图标
+
   .t-loading svg.t-icon-loading {
     display: none !important;
   }
@@ -645,6 +647,7 @@ defineExpose({
   }
 
   &.primary-table-no-data {
+
     .t-table__row--full.t-table__first-full-row {
       height: 0;
     }
@@ -652,7 +655,9 @@ defineExpose({
 }
 
 .custom-radio-filter-wrapper {
+
   .t-table__filter--bottom-buttons {
+
     .t-button:nth-child(2) {
       display: none !important;
     }
