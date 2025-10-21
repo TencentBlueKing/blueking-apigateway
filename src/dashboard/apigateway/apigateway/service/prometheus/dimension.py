@@ -45,11 +45,11 @@ class BaseMetrics(BasePrometheusMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        backend_name: Optional[str],
     ) -> str:
         pass
 
@@ -57,17 +57,17 @@ class BaseMetrics(BasePrometheusMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         start: int,
         end: int,
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        backend_name: Optional[str],
     ):
         # generate query expression
         promql = self._get_query_promql(
-            gateway_name, stage_name, step, stage_id, resource_id, resource_name, backend_name
+            gateway_name, stage_name, backend_name, step, stage_id, resource_id, resource_name
         )
 
         # request prometheus http api to get metrics data
@@ -83,17 +83,17 @@ class BaseMetrics(BasePrometheusMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         start: int,
         end: int,
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        backend_name: Optional[str],
     ):
         # generate query expression
         promql = self._get_query_promql(
-            gateway_name, stage_name, step, stage_id, resource_id, resource_name, backend_name
+            gateway_name, stage_name, backend_name, step, stage_id, resource_id, resource_name
         )
         result: Dict[str, Any] = {}
         data = query_range(
@@ -161,19 +161,19 @@ class RequestsMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        backend_name: Optional[str],
     ) -> str:
         labels = self._get_labels_expression(
             [
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
                 ("backend_name", "=", backend_name),
+                ("resource_name", "=", resource_name),
             ]
         )
         return f"sum(increase({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}}[{step}]))"
@@ -186,19 +186,19 @@ class Non20XStatusMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        backend_name: Optional[str],
     ) -> str:
         labels = self._get_labels_expression(
             [
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
                 ("backend_name", "=", backend_name),
+                ("resource_name", "=", resource_name),
                 ("status", "=~", "3..|4..|5.."),
             ]
         )
@@ -216,19 +216,19 @@ class AppRequestsMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        backend_name: Optional[str],
     ) -> str:
         labels = self._get_labels_expression(
             [
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
                 ("backend_name", "=", backend_name),
+                ("resource_name", "=", resource_name),
             ]
         )
         return (
@@ -245,19 +245,19 @@ class ResourceRequestsMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        backend_name: Optional[str],
     ) -> str:
         labels = self._get_labels_expression(
             [
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
                 ("backend_name", "=", backend_name),
+                ("resource_name", "=", resource_name),
             ]
         )
         return (
@@ -274,19 +274,19 @@ class ResponseTimeBaseMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        backend_name: Optional[str],
     ) -> str:
         labels = self._get_labels_expression(
             [
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
                 ("backend_name", "=", backend_name),
+                ("resource_name", "=", resource_name),
             ]
         )
         return (
@@ -324,11 +324,11 @@ class IngressMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        backend_name: Optional[str],
     ) -> str:
         # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
         label_list = [
@@ -354,11 +354,11 @@ class EgressMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        backend_name: Optional[str],
     ) -> str:
         # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
         label_list = [
@@ -385,19 +385,19 @@ class RequestsTotalMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        backend_name: Optional[str],
     ) -> str:
         labels = self._get_labels_expression(
             [
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
                 ("backend_name", "=", backend_name),
+                ("resource_name", "=", resource_name),
             ]
         )
         return f"sum({self.metric_name_prefix}apigateway_api_requests_total{{{labels}}})"
@@ -411,19 +411,19 @@ class HealthRateMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
         resource_name: Optional[str],
-        backend_name: Optional[str],
     ) -> str:
         labels = self._get_labels_expression(
             [
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
-                ("resource_name", "=", resource_name),
                 ("backend_name", "=", backend_name),
+                ("resource_name", "=", resource_name),
                 ("status", "=~", "5.."),
                 # ("proxy_error", "=", "1"),
             ]
