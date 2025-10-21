@@ -79,15 +79,3 @@ class BatchTranslateOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.ai_completion.serializers.BatchTranslateOutputSLZ"
-
-
-class TaskStatusOutputSLZ(serializers.Serializer):
-    """任务状态输出序列化器"""
-
-    task_id = serializers.CharField(help_text="任务ID")
-    status = serializers.CharField(help_text="任务状态")
-    result = serializers.DictField(help_text="任务结果", allow_null=True)
-    error = serializers.CharField(help_text="错误信息", allow_null=True)
-
-    class Meta:
-        ref_name = "apigateway.apis.web.ai_completion.serializers.TaskStatusOutputSLZ"
