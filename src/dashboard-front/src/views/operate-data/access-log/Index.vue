@@ -691,7 +691,6 @@ const getResources = async () => {
     offset: 0,
     limit: 10000,
     backend_id: backend_id.value,
-    backend_name: searchParams.value.backend_name,
   };
 
   try {
