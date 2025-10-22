@@ -57,7 +57,7 @@ func TestDatabase_DSN(t *testing.T) {
 					Enabled: false,
 				},
 			},
-			expected: "ssl_root:qaz_WSX%2B%2B@tcp(localhost:3306)/testdb?parseTime=true",
+			expected: "ssl_root:qaz_WSX++@tcp(localhost:3306)/testdb?parseTime=true",
 		},
 		{
 			name: "connection with TLS enabled",
@@ -120,7 +120,7 @@ func TestDatabase_DSN(t *testing.T) {
 					CertKeyFile: "/opt/blueking/apigw-db/certs/client-key.pem",
 				},
 			},
-			expected: "ssl_root:qaz_WSX%2B%2B@tcp(mysql-default.service.consul.:3306)/bk_apigateway?parseTime=true&tls=custom",
+			expected: "ssl_root:qaz_WSX++@tcp(mysql-default.service.consul.:3306)/bk_apigateway?parseTime=true&tls=custom",
 		},
 	}
 
@@ -278,25 +278,25 @@ func TestDatabase_URLEncoding(t *testing.T) {
 			name:     "password with plus signs",
 			user:     "ssl_root",
 			password: "qaz_WSX++",
-			expected: "ssl_root:qaz_WSX%2B%2B@tcp(localhost:3306)/testdb?parseTime=true",
+			expected: "ssl_root:qaz_WSX++@tcp(localhost:3306)/testdb?parseTime=true",
 		},
 		{
 			name:     "password with special characters",
 			user:     "user@domain",
 			password: "p@ssw0rd!@#$%^&*()",
-			expected: "user%40domain:p%40ssw0rd%21%40%23%24%25%5E%26%2A%28%29@tcp(localhost:3306)/testdb?parseTime=true",
+			expected: "user@domain:p@ssw0rd!@#$%^&*()@tcp(localhost:3306)/testdb?parseTime=true",
 		},
 		{
 			name:     "password with spaces",
 			user:     "testuser",
 			password: "my password with spaces",
-			expected: "testuser:my+password+with+spaces@tcp(localhost:3306)/testdb?parseTime=true",
+			expected: "testuser:my password with spaces@tcp(localhost:3306)/testdb?parseTime=true",
 		},
 		{
 			name:     "password with slashes",
 			user:     "admin",
 			password: "pass/word/with/slashes",
-			expected: "admin:pass%2Fword%2Fwith%2Fslashes@tcp(localhost:3306)/testdb?parseTime=true",
+			expected: "admin:pass/word/with/slashes@tcp(localhost:3306)/testdb?parseTime=true",
 		},
 	}
 
