@@ -53,7 +53,7 @@ api_log_err_code_file_name = {
 
 # 文档翻译提示词模板
 DOC_TRANSLATE_ZH_TEMPLATE = """
-请将以下API接口文档翻译成中文或者英文，保持markdown格式不变，只翻译文本内容：
+请将以下API接口文档翻译成中文或者英文，保持markdown格式不变，只翻译文本内容(不要添加任何多余的注释或者说明)：
 
 {doc_content}
 
@@ -67,7 +67,7 @@ DOC_TRANSLATE_ZH_TEMPLATE = """
 """
 
 DOC_TRANSLATE_EN_TEMPLATE = """
-Please translate the following API documentation to English or Chinese, maintaining the markdown format and only translating the text content:
+Please translate the following API documentation to English or Chinese, maintaining the markdown format and only translating the text content(Do not add any extra comments or explanations):
 
 {doc_content}
 

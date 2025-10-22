@@ -18,8 +18,9 @@
 #
 from django.urls import path
 
-from .views import AICompletionCreateApi
+from .views import AICompletionCreateApi, BatchTranslateApi
 
 urlpatterns = [
     path("completion/", AICompletionCreateApi.as_view(), name="ai_completion.create"),
+    path("batch-translate/", BatchTranslateApi.as_view(), name="ai_completion.batch_translate"),
 ]
