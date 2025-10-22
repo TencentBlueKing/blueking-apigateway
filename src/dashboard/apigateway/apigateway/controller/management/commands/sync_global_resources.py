@@ -31,4 +31,6 @@ class Command(BaseCommand):
         pass
 
     def handle(self, *args, **options):
+        print("syncing global resources ...")
         distribute_global_resources.delay()
+        print("start global resources syncing task successfully, please wait for the celery task to complete")

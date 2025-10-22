@@ -36,4 +36,4 @@ class GlobalKeyPrefixHandler:
     prefix: str = settings.BK_GATEWAY_ETCD_NAMESPACE_PREFIX
 
     def get_release_key_prefix(self) -> str:
-        return f"{self.prefix}/global/{self.api_version}/"
+        return f"{self.prefix}/{self.api_version}/global/"

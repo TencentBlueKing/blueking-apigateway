@@ -166,13 +166,10 @@ class GatewayReleaser:
         # create publish event
         PublishEventReporter.report_create_publish_task_doing(release_history)
 
-        task = self._create_release_task(release_history)
+        task = release_gateway_by_registry.si(publish_id=release_history.pk)  # type: ignore
 
         # 使用 celery 的编排能力，task 执行成功才会执行 release_success_callback
         delay_on_commit(task | release_success_callback)
-
-    def _create_release_task(self, release_history: ReleaseHistory):
-        return release_gateway_by_registry.si(publish_id=release_history.pk)  # type: ignore
 
 
 def release(
