@@ -16,18 +16,15 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple
-
-from apigateway.core.models import Release
+from typing import Tuple
 
 
 class BaseDistributor(ABC):
     @abstractmethod
     def distribute(
         self,
-        release: Release,
-        release_task_id: Optional[str] = None,
-        publish_id: Optional[int] = None,
+        release_task_id: str,
+        publish_id: int,
     ) -> Tuple[bool, str]:
         """发布到微网关"""
         raise NotImplementedError()
@@ -35,9 +32,8 @@ class BaseDistributor(ABC):
     @abstractmethod
     def revoke(
         self,
-        release: Release,
-        release_task_id: Optional[str] = None,
-        publish_id: Optional[int] = None,
+        release_task_id: str,
+        publish_id: int,
     ) -> Tuple[bool, str]:
         """撤销微网关已发布内容"""
         raise NotImplementedError()

@@ -51,6 +51,9 @@ sync_bk_esb() {
     echo "API gateway bk-esb sync definition end"
 }
 
+# 同步全局资源
+python manage.py sync_global_resources
+
 # 同步内置网关
 sync_bk_apigateway
 

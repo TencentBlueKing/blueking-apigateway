@@ -17,7 +17,7 @@
 #
 
 import base64
-from typing import Dict, List, Union
+from typing import Dict, List
 
 from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
@@ -37,14 +37,13 @@ from apigateway.controller.uri_render import URIRender
 from apigateway.core.models import Backend
 
 from .base import GatewayResourceConvertor
-from .constants import LABEL_KEY_BACKEND_ID, LABEL_KEY_PUBLISH_ID
+from .constants import LABEL_KEY_BACKEND_ID
 from .utils import UrlInfo, truncate_string
 
 
 class ServiceConvertor(GatewayResourceConvertor):
-    def __init__(self, release_data: ReleaseData, publish_id: Union[int, None] = None):
-        super().__init__(release_data)
-        self._publish_id = publish_id
+    def __init__(self, release_data: ReleaseData, publish_id: int):
+        super().__init__(release_data=release_data, publish_id=publish_id)
 
     def convert(self) -> List[GatewayApisixModel]:
         # FIXME: should not generate service if the backend is not related to any resource
@@ -103,20 +102,8 @@ class ServiceConvertor(GatewayResourceConvertor):
                 upstream.nodes.append(Node(host=url_info.domain, port=url_info.port, weight=node.get("weight", 1)))
 
             # FIXME: 如何处理 http/https 协议
-
-            stage_description = self.stage.description
-
             backend = Backend.objects.get(id=backend_id)
             backend_name = backend.name
-            backend_description = backend.description
-
-            description = f"{self.stage_name}/{self.stage_id}"
-            if stage_description:
-                description += f": {stage_description[:32]}"
-            description += f" (backend={backend_name}"
-            if backend_description:
-                description += f": {backend_description[:32]}"
-            description += ")"
 
             # currently, only add one plugin for service of per backend
             # other plugins are shared by stage, they will be merged on operator
@@ -129,9 +116,8 @@ class ServiceConvertor(GatewayResourceConvertor):
             # stage_name max length is 20, stage_id 6, backend_id is 4, other 10
             # total max length is 64, so the buffer is 24 ( stage_id length + backend_id length)
             labels = self.get_gateway_resource_labels()
-            if self._publish_id:
-                labels.add_label(LABEL_KEY_PUBLISH_ID, str(self._publish_id))
 
+            # for build the mapping of backend_id to service_id
             labels.add_label(LABEL_KEY_BACKEND_ID, str(backend_id))
 
             services.append(
@@ -145,8 +131,14 @@ class ServiceConvertor(GatewayResourceConvertor):
                     id=f"{self.gateway_name}.{self.stage_name[:10]}.{self.stage_id}-{backend_id}",
                     # example: bk-apigateway-inner.prod.stage-6-backend-7
                     # length is: 30 + 1 + 20 + 1 + 20 = 72
-                    name=truncate_string(f"{self.gateway_name}.{self.stage_name}.{backend_name}", 100),
-                    desc=description,
+                    name=truncate_string(
+                        f"{self.gateway_name}.{self.stage_name}.{backend_name}",
+                        100,
+                    ),
+                    desc=truncate_string(
+                        f"stage={self.stage_name}/{self.stage_id}, backend={backend_name}/{backend_id}",
+                        100,
+                    ),
                     labels=labels,
                     plugins=plugins,
                     upstream=upstream,

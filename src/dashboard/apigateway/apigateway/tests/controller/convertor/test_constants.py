@@ -28,11 +28,11 @@ class TestConvertorConstants:
 
     def test_label_keys(self):
         """Test label key constants"""
-        assert constants.LABEL_KEY_GATEWAY == "gateway"
-        assert constants.LABEL_KEY_STAGE == "stage"
-        assert constants.LABEL_KEY_APISIX_VERSION == "apisix-version"
-        assert constants.LABEL_KEY_PUBLISH_ID == "publish-id"
-        assert constants.LABEL_KEY_BACKEND_ID == "backend-id"
+        assert constants.LABEL_KEY_GATEWAY == "gateway.bk.tencent.com/gateway"
+        assert constants.LABEL_KEY_STAGE == "gateway.bk.tencent.com/stage"
+        assert constants.LABEL_KEY_APISIX_VERSION == "gateway.bk.tencent.com/apisix-version"
+        assert constants.LABEL_KEY_PUBLISH_ID == "gateway.bk.tencent.com/publish-id"
+        assert constants.LABEL_KEY_BACKEND_ID == "gateway.bk.tencent.com/backend-id"
 
     def test_subpath_param_name(self):
         """Test SUBPATH_PARAM_NAME constant"""

@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import ClassVar, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -307,4 +307,7 @@ class GlobalApisixModel(ApisixModel):
 class PluginMetadata(GlobalApisixModel):
     kind = "plugin_metadata"
 
-    config: Dict[str, Any] = Field(default_factory=dict, description="config")
+    model_config = ConfigDict(extra="allow")
+
+    def __init__(self, **data):
+        super().__init__(**data)

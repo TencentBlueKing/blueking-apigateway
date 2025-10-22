@@ -21,7 +21,13 @@ from typing import List
 from apigateway.controller.models import ApisixModel, Labels
 from apigateway.controller.release_data import ReleaseData
 
-from .constants import DEFAULT_APISIX_VERSION, LABEL_KEY_APISIX_VERSION, LABEL_KEY_GATEWAY, LABEL_KEY_STAGE
+from .constants import (
+    DEFAULT_APISIX_VERSION,
+    LABEL_KEY_APISIX_VERSION,
+    LABEL_KEY_GATEWAY,
+    LABEL_KEY_PUBLISH_ID,
+    LABEL_KEY_STAGE,
+)
 
 
 class BaseResourceConvertor(ABC):
@@ -38,9 +44,11 @@ class GatewayResourceConvertor(BaseResourceConvertor):
     def __init__(
         self,
         release_data: ReleaseData,
+        publish_id: int,
         apisix_version: str = DEFAULT_APISIX_VERSION,
     ):
         self._release_data = release_data
+        self._publish_id = publish_id
         self._apisix_version = apisix_version
 
     @property
@@ -76,6 +84,7 @@ class GatewayResourceConvertor(BaseResourceConvertor):
             **{
                 LABEL_KEY_GATEWAY: self.gateway_name,
                 LABEL_KEY_STAGE: self.stage_name,
+                LABEL_KEY_PUBLISH_ID: str(self._publish_id),
                 LABEL_KEY_APISIX_VERSION: self._apisix_version,
             }
         )

@@ -38,25 +38,25 @@ class TestProtoConvertor:
 
     def test_proto_convertor_initialization(self, mock_release_data):
         """Test ProtoConvertor initialization"""
-        convertor = ProtoConvertor(mock_release_data)
+        convertor = ProtoConvertor(mock_release_data, publish_id=123)
         assert convertor is not None
         assert convertor._release_data == mock_release_data
 
     def test_convert_not_implemented(self, mock_release_data):
         """Test that convert method raises NotImplementedError"""
-        convertor = ProtoConvertor(mock_release_data)
+        convertor = ProtoConvertor(mock_release_data, publish_id=123)
 
         with pytest.raises(NotImplementedError):
             convertor.convert()
 
     def test_proto_convertor_is_gateway_resource_convertor(self, mock_release_data):
         """Test that ProtoConvertor is a GatewayResourceConvertor"""
-        convertor = ProtoConvertor(mock_release_data)
+        convertor = ProtoConvertor(mock_release_data, publish_id=123)
         assert isinstance(convertor, GatewayResourceConvertor)
 
     def test_proto_convertor_inherits_gateway_properties(self, mock_release_data):
         """Test that ProtoConvertor inherits properties from GatewayResourceConvertor"""
-        convertor = ProtoConvertor(mock_release_data)
+        convertor = ProtoConvertor(mock_release_data, publish_id=123)
 
         # Test inherited properties
         assert convertor.gateway_id == 123
@@ -66,5 +66,5 @@ class TestProtoConvertor:
 
     def test_proto_convertor_with_custom_apisix_version(self, mock_release_data):
         """Test ProtoConvertor with custom apisix version"""
-        convertor = ProtoConvertor(mock_release_data, apisix_version="3.14")
+        convertor = ProtoConvertor(mock_release_data, publish_id=123, apisix_version="3.14")
         assert convertor._apisix_version == "3.14"

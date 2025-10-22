@@ -25,7 +25,7 @@ from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersi
 from apigateway.biz.resource_version import ResourceDocVersionHandler
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.controller.distributor.base import BaseDistributor
-from apigateway.controller.distributor.etcd import EtcdDistributor
+from apigateway.controller.distributor.etcd import GatewayResourceDistributor
 from apigateway.controller.release_logger import ReleaseProcedureLogger
 from apigateway.core.constants import ReleaseHistoryStatusEnum, StageStatusEnum
 from apigateway.core.models import (
@@ -45,7 +45,6 @@ logger = logging.getLogger(__name__)
 
 def _release_gateway(
     distributor: BaseDistributor,
-    release: Release,
     release_history: ReleaseHistory,
     procedure_logger: ReleaseProcedureLogger,
 ):
@@ -58,7 +57,6 @@ def _release_gateway(
     PublishEventReporter.report_distribute_config_doing(release_history)
     try:
         is_success, fail_msg = distributor.distribute(
-            release=release,
             release_task_id=procedure_logger.release_task_id,
             publish_id=release_history.id,
         )
@@ -108,8 +106,7 @@ def release_gateway_by_registry(publish_id):
         publish_id=publish_id,
     )
     return _release_gateway(
-        distributor=EtcdDistributor(),
-        release=release,
+        distributor=GatewayResourceDistributor(release),
         release_history=release_history,
         procedure_logger=procedure_logger,
     )

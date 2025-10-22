@@ -166,7 +166,6 @@ class GatewayReleaser:
         # create publish event
         PublishEventReporter.report_create_publish_task_doing(release_history)
 
-        # NOTE: only support release for shared gateway
         task = self._create_release_task(release_history)
 
         # 使用 celery 的编排能力，task 执行成功才会执行 release_success_callback

@@ -27,14 +27,21 @@ from .base import GlobalResourceConvertor
 
 class PluginMetadataConvertor(GlobalResourceConvertor):
     def convert(self) -> List[GlobalApisixModel]:
-        # FIXME: impls the global flow
-        # FIXME: use plugin_metadata to apisix config
-        # it's global, so no need to get data from release_data
-        # how to convert to a {id -> config } key-and-value fields for the stage?
+        """convert plugin metadata config to apisix plugin metadata model
+        example:
+        {
+            "log_format": {
+                "host": "$host",
+                "@timestamp": "$time_iso8601",
+                "client_ip": "$remote_addr"
+            },
+            "id": "http-logger"
+        }
+        """
         return [
             PluginMetadata(
                 id=name,
-                config=config,
+                **config,
             )
             for name, config in settings.PLUGIN_METADATA_CONFIG.items()
         ]

@@ -23,8 +23,8 @@ from datetime import datetime
 from celery import shared_task
 
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
-from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
-from apigateway.controller.distributor.etcd import EtcdDistributor
+from apigateway.controller.constants import DELETE_PUBLISH_ID, GLOBAL_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
+from apigateway.controller.distributor.etcd import GatewayResourceDistributor, GlobalResourceDistributor
 from apigateway.controller.release_logger import ReleaseProcedureLogger
 from apigateway.core.constants import (
     PublishSourceEnum,
@@ -36,6 +36,13 @@ from apigateway.service.event.event import PublishEventReporter
 from apigateway.utils.time import now_datetime
 
 logger = logging.getLogger(__name__)
+
+
+@shared_task(ignore_result=True)
+def distribute_global_resources():
+    """发布全局资源"""
+    distributor = GlobalResourceDistributor()
+    distributor.distribute(release_task_id=str(uuid.uuid4()), publish_id=GLOBAL_PUBLISH_ID)
 
 
 @shared_task(ignore_result=True)
@@ -54,7 +61,7 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
     PublishEventReporter.report_create_publish_task_success(release_history)
     logger.info("rolling_update_release[gateway_id=%d] begin", gateway_id)
 
-    distributor = EtcdDistributor()
+    distributor = GatewayResourceDistributor(release)
 
     release_task_id = str(uuid.uuid4())
     procedure_logger = ReleaseProcedureLogger(
@@ -70,7 +77,6 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
     procedure_logger.info("distribute begin")
 
     is_success, err_msg = distributor.distribute(
-        release,
         release_task_id=release_task_id,
         publish_id=publish_id,
     )
@@ -103,9 +109,9 @@ def revoke_release(release_id: int, publish_id: int):
 
     release = Release.objects.get(id=release_id)
 
-    distributor = EtcdDistributor()
+    distributor = GatewayResourceDistributor(release)
     if publish_id == DELETE_PUBLISH_ID:
-        is_success, err_msg = distributor.revoke(release, str(uuid.uuid4()), publish_id=publish_id)
+        is_success, err_msg = distributor.revoke(str(uuid.uuid4()), publish_id=publish_id)
         if not is_success:
             logger.error(err_msg)
         return is_success
@@ -129,7 +135,6 @@ def revoke_release(release_id: int, publish_id: int):
     procedure_logger.info("revoke begin")
 
     is_success, err_msg = distributor.revoke(
-        release,
         procedure_logger.release_task_id,
         publish_id=release_history.pk,
     )

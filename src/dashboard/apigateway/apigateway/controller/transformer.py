@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from dataclasses import dataclass, field
+from abc import ABC, abstractmethod
 from typing import Dict, Iterable, List, Optional
 
 from apigateway.controller.convertor import (
@@ -24,6 +24,7 @@ from apigateway.controller.convertor import (
     ServiceConvertor,
 )
 from apigateway.controller.convertor.constants import LABEL_KEY_BACKEND_ID
+from apigateway.controller.convertor.plugin_metadata import PluginMetadataConvertor
 from apigateway.controller.models import ApisixModel, GatewayApisixModel
 from apigateway.controller.release_data import ReleaseData
 from apigateway.core.models import Release
@@ -31,21 +32,31 @@ from apigateway.core.models import Release
 logger = logging.getLogger(__name__)
 
 
-class GlobalApisixResourceConvertor:
-    """全局资源转换器"""
+class BaseTransformer(ABC):
+    @abstractmethod
+    def transform(self):
+        raise NotImplementedError()
 
-    def __init__(self, release: Release):
-        self.release = release
-        self._plugin_metadata: List[ApisixModel] = []
-
-    # FIXME: convert plugin_metadata
-
-    def convert(self):
+    @abstractmethod
+    def get_transformed_resources(self) -> Iterable[ApisixModel]:
         raise NotImplementedError()
 
 
-@dataclass
-class GatewayApisixResourceConvertor:
+class GlobalApisixResourceTransformer(BaseTransformer):
+    """全局资源转换器"""
+
+    def __init__(self):
+        self._converted_plugin_metadata: List[ApisixModel] = []
+
+    def transform(self):
+        plugin_metadata_convertor = PluginMetadataConvertor()
+        self._converted_plugin_metadata = plugin_metadata_convertor.convert()
+
+    def get_transformed_resources(self) -> Iterable[ApisixModel]:
+        yield from self._converted_plugin_metadata
+
+
+class GatewayApisixResourceTransformer(BaseTransformer):
     """网关资源转换器"""
 
     # 为何 Convertor 需要一个中间的 registry？
@@ -57,28 +68,26 @@ class GatewayApisixResourceConvertor:
     # 2. 转换过程也会从 registry 查询，如果使用目标 registry，会有历史数据的干扰
     # 3. 中间 registry 应该看做目标 registry 的最终状态
 
-    release: Release
-    publish_id: Optional[int] = field(default=None)
-    # 是否是撤销资源
-    revoke_flag: Optional[bool] = field(default=False)
-
-    # 转换后的资源
-    _converted_services: List[GatewayApisixModel] = field(init=False, default_factory=list)
-    _converted_routes: List[GatewayApisixModel] = field(init=False, default_factory=list)
-    _converted_ssls: List[GatewayApisixModel] = field(init=False, default_factory=list)
-    _converted_protos: List[GatewayApisixModel] = field(init=False, default_factory=list)
-
-    def __post_init__(self):
-        if self.release.resource_version.is_schema_v2:
-            self._release_data = ReleaseData(self.release)
+    def __init__(self, release: Release, publish_id: Optional[int] = None, revoke_flag: Optional[bool] = False):
+        if release.resource_version.is_schema_v2:
+            self._release_data = ReleaseData(release)
         else:
             raise ValueError("Only support resource_version schema v2, v1 is deprecated")
 
-    def convert(self):
+        self.publish_id = publish_id
+        # 是否是撤销资源
+        self.revoke_flag = revoke_flag
+
+        # 转换后的资源
+        self._converted_services: List[GatewayApisixModel] = []
+        self._converted_routes: List[GatewayApisixModel] = []
+        self._converted_ssls: List[GatewayApisixModel] = []
+        self._converted_protos: List[GatewayApisixModel] = []
+
+    def transform(self):
         service_convertor = ServiceConvertor(self._release_data, self.publish_id)
         self._converted_services = service_convertor.convert()
 
-        # FIXME: build the mapping
         backend_service_mapping: Dict[int, str] = {}
         for svc in self._converted_services:
             backend_id = svc.labels.get_label(LABEL_KEY_BACKEND_ID)
@@ -105,7 +114,7 @@ class GatewayApisixResourceConvertor:
         # proto_convertor = ProtoConvertor(self._release_data)
         # self._converted_protos = proto_convertor.convert()
 
-    def get_apisix_resources(self) -> Iterable[ApisixModel]:
+    def get_transformed_resources(self) -> Iterable[ApisixModel]:
         yield from self._converted_ssls
 
         yield from self._converted_protos

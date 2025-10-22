@@ -39,11 +39,10 @@ class RouteConvertor(GatewayResourceConvertor):
         self,
         release_data: ReleaseData,
         backend_service_mapping: Dict[int, str],
-        publish_id: Union[int, None] = None,
+        publish_id: int,
         revoke_flag: Union[bool, None] = False,
     ):
-        super().__init__(release_data)
-        self._publish_id = publish_id
+        super().__init__(release_data=release_data, publish_id=publish_id)
         self._revoke_flag = revoke_flag
         self._backend_service_mapping = backend_service_mapping
 

@@ -38,25 +38,25 @@ class TestSSLConvertor:
 
     def test_ssl_convertor_initialization(self, mock_release_data):
         """Test SSLConvertor initialization"""
-        convertor = SSLConvertor(mock_release_data)
+        convertor = SSLConvertor(mock_release_data, publish_id=123)
         assert convertor is not None
         assert convertor._release_data == mock_release_data
 
     def test_convert_not_implemented(self, mock_release_data):
         """Test that convert method raises NotImplementedError"""
-        convertor = SSLConvertor(mock_release_data)
+        convertor = SSLConvertor(mock_release_data, publish_id=123)
 
         with pytest.raises(NotImplementedError):
             convertor.convert()
 
     def test_ssl_convertor_is_gateway_resource_convertor(self, mock_release_data):
         """Test that SSLConvertor is a GatewayResourceConvertor"""
-        convertor = SSLConvertor(mock_release_data)
+        convertor = SSLConvertor(mock_release_data, publish_id=123)
         assert isinstance(convertor, GatewayResourceConvertor)
 
     def test_ssl_convertor_inherits_gateway_properties(self, mock_release_data):
         """Test that SSLConvertor inherits properties from GatewayResourceConvertor"""
-        convertor = SSLConvertor(mock_release_data)
+        convertor = SSLConvertor(mock_release_data, publish_id=123)
 
         # Test inherited properties
         assert convertor.gateway_id == 123
@@ -66,5 +66,5 @@ class TestSSLConvertor:
 
     def test_ssl_convertor_with_custom_apisix_version(self, mock_release_data):
         """Test SSLConvertor with custom apisix version"""
-        convertor = SSLConvertor(mock_release_data, apisix_version="3.14")
+        convertor = SSLConvertor(mock_release_data, publish_id=123, apisix_version="3.14")
         assert convertor._apisix_version == "3.14"
