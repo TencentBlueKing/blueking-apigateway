@@ -18,6 +18,7 @@
 #
 import json
 import logging
+import uuid
 from datetime import datetime
 from typing import ClassVar, Dict, List
 
@@ -38,6 +39,7 @@ from apigateway.core.constants import (
     ContextTypeEnum,
     GatewayKindEnum,
     GatewayStatusEnum,
+    MicroGatewayStatusEnum,
     ProgrammableGatewayLanguageEnum,
     ProxyTypeEnum,
     PublishEventEnum,
@@ -202,6 +204,9 @@ class Stage(TimestampedModelMixin, OperatorModelMixin):
     description_i18n = I18nProperty(models.CharField(max_length=512, blank=True, null=True))
     description = description_i18n.default_field()
     description_en = description_i18n.field("en", default=None)
+
+    # FIXME: deprecated, will be removed after 1.20, drop it at 1.22
+    micro_gateway = models.ForeignKey("MicroGateway", on_delete=models.SET_NULL, null=True, default=None)
 
     _vars = models.TextField(db_column="vars", default="{}")
 
@@ -745,3 +750,41 @@ class GatewayRelatedApp(TimestampedModelMixin):
 
     class Meta:
         db_table = "core_api_related_app"
+
+
+# ============================================ gateway instance ============================================
+
+
+# FIXME: deprecated, will be removed after 1.20, drop it at 1.22
+class MicroGateway(ConfigModelMixin):
+    """微网关实例"""
+
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
+
+    name = models.CharField(max_length=256, blank=False, null=False, db_index=True)
+    description_i18n = I18nProperty(models.TextField(blank=True, null=True, default=None))
+    description = description_i18n.default_field(default="")
+    description_en = description_i18n.field("en")
+    is_shared = models.BooleanField(default=False, help_text=_("是否共享实例"))
+    # 非管理实例表示外部部署接入的，不需要通过 bcs + helm 来管理更新
+    is_managed = models.BooleanField(default=True, help_text=_("是否托管实例"))
+
+    status = models.CharField(
+        max_length=64,
+        choices=MicroGatewayStatusEnum.get_choices(),
+        default=MicroGatewayStatusEnum.PENDING.value,
+    )
+    status_updated_time = models.DateTimeField(null=True, blank=True)
+    comment = models.CharField(max_length=512, blank=True, default="")
+
+    schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
+
+    class Meta:
+        db_table = "core_micro_gateway"
+
+    @property
+    def instance_id(self):
+        """微网关实例 ID"""
+        return str(self.pk)
