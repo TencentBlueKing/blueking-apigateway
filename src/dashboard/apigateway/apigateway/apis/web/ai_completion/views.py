@@ -17,17 +17,24 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+import logging
 
+from blue_krill.async_utils.django_utils import delay_on_commit
 from django.http import StreamingHttpResponse
 from django.utils.decorators import method_decorator
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apps.support.models import ResourceDoc
+from apigateway.apps.support.task import batch_translate_docs
 from apigateway.biz.ai.ai import AIHandler
 from apigateway.biz.ai.constant import AIContentTypeEnum
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 
-from .serializers import AICompletionInputSLZ
+from .serializers import AICompletionInputSLZ, BatchTranslateInputSLZ, BatchTranslateOutputSLZ
+
+logger = logging.getLogger(__name__)
 
 
 @method_decorator(
@@ -84,3 +91,50 @@ class AICompletionCreateApi(generics.CreateAPIView):
                 },
             }
         )
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        request_body=BatchTranslateInputSLZ(),
+        responses={status.HTTP_200_OK: BatchTranslateOutputSLZ()},
+        tags=["WebAPI.AI_Completion"],
+        operation_description="批量翻译文档",
+    ),
+)
+class BatchTranslateApi(generics.CreateAPIView):
+    """批量翻译文档API"""
+
+    serializer_class = BatchTranslateInputSLZ
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        gateway_name = request.gateway.name
+
+        doc_ids = serializer.validated_data["doc_ids"]
+        target_language = serializer.validated_data.get("target_language")
+
+        docs = ResourceDoc.objects.filter(id__in=doc_ids)
+        if not docs.exists():
+            return FailJsonResponse(
+                status=status.HTTP_400_BAD_REQUEST,
+                code="NOT_FOUND",
+                message=_("未找到指定的文档"),
+            )
+        try:
+            # 启动异步翻译任务，使用delay_on_commit确保在事务提交后执行
+            delay_on_commit(batch_translate_docs, doc_ids=doc_ids, target_language=target_language)
+
+            logger.info("[gateway:%s]启动批量翻译任务，文档ID列表: %s", gateway_name, doc_ids)
+
+            return OKJsonResponse(data={"message": "批量翻译任务已启动", "doc_count": len(doc_ids)})
+
+        except Exception as e:
+            logger.exception("[gateway:%s]启动批量翻译任务失败", gateway_name)
+            return FailJsonResponse(
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                code="INTERNAL_ERROR",
+                message=_("启动批量翻译任务失败"),
+            )
