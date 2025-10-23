@@ -135,22 +135,6 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
     ),
 )
 class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
-    def get_filter_resource_path(self, resource_path, queryset, resource_map):
-        filtered_data = []
-        for obj in queryset:
-            resource_id = obj.get("resource_id", 0)
-            if not resource_id:
-                continue
-
-            resource = resource_map.get(resource_id)
-            if not resource:
-                continue
-
-            if resource.path_display.lower().startswith(resource_path.lower()):
-                filtered_data.append(obj)
-
-        return filtered_data
-
     def get_queryset(self):
         query_params = self.request.query_params
         app_gateway_permissions = AppGatewayPermissionFilter(self.request.GET, queryset=self.get_gateway_queryset()).qs
@@ -168,6 +152,14 @@ class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
         if query_params.get("grant_dimension") == GrantDimensionEnum.API.value:
             app_resource_permissions = []
 
+        if query_params.get("resource_path"):
+            if app_resource_permissions:
+                # 如果匹配到资源数据，则忽略掉网关维度的（只有资源维度可过滤请求路径）
+                app_gateway_permissions = []
+            else:
+                # 如果没有匹配到资源权限数据，全部为空
+                return []
+
         return self.get_app_permissions(app_gateway_permissions, app_resource_permissions)
 
     def get(self, request, *args, **kwargs):
@@ -181,11 +173,9 @@ class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
         page = self.paginate_queryset(queryset)
         resource_ids = [perm["resource_id"] for perm in page if perm.get("resource_id")]
         resources = Resource.objects.filter(id__in=resource_ids)
-        resource_map = {resource.id: resource for resource in resources}
-        resource_path = slz.validated_data.get("resource_path")
-        if resource_path:
-            page = self.get_filter_resource_path(resource_path, page, resource_map)
-        serializer = AppPermissionOutputSLZ(page, many=True, context={"resource_map": resource_map})
+        serializer = AppPermissionOutputSLZ(
+            page, many=True, context={"resource_map": {resource.id: resource for resource in resources}}
+        )
         return self.get_paginated_response(serializer.data)
 
 
@@ -289,6 +279,16 @@ class AppPermissionExportApi(AppPermissionQuerySetMixin, generics.CreateAPIView)
             ).qs
             if data.get("grant_dimension") == GrantDimensionEnum.API.value:
                 resource_queryset = []
+
+            if data.get("resource_path"):
+                if resource_queryset:
+                    # 如果匹配到资源数据，则忽略掉网关维度的（只有资源维度可过滤请求路径）
+                    gateway_queryset = []
+                else:
+                    # 如果没有匹配到资源权限数据，全部为空
+                    gateway_queryset = []
+                    resource_queryset = []
+
         elif data["export_type"] == ExportTypeEnum.SELECTED.value:
             if data.get("resource_permission_ids"):
                 resource_queryset = self.get_resource_queryset().filter(id__in=data["resource_permission_ids"])

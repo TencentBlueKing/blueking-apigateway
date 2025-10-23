@@ -32,6 +32,7 @@ from apigateway.apps.permission.models import (
 class AppResourcePermissionFilter(filters.FilterSet):
     bk_app_code = filters.CharFilter()
     keyword = filters.CharFilter(method="query_filter")
+    resource_path = filters.CharFilter(method="resource_path_filter")
     grant_type = filters.ChoiceFilter(choices=GrantTypeEnum.get_choices())
     resource_id = filters.NumberFilter()
     order_by = filters.OrderingFilter(
@@ -50,6 +51,13 @@ class AppResourcePermissionFilter(filters.FilterSet):
 
     def query_filter(self, queryset, name, value):
         return queryset.filter(bk_app_code__icontains=value)
+
+    def resource_path_filter(self, queryset, name, value):
+        # 只有网关资源权限可过滤请求路径
+        resource_ids = [
+            r.id for r in [obj.resource for obj in queryset] if r.path_display.lower().startswith(value.lower())
+        ]
+        return queryset.filter(resource_id__in=resource_ids)
 
 
 class AppPermissionApplyFilter(filters.FilterSet):

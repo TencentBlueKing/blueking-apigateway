@@ -150,6 +150,7 @@ class AppPermissionExportInputSLZ(serializers.Serializer):
     bk_app_code = serializers.CharField(allow_blank=True, required=False)
     resource_id = serializers.IntegerField(allow_null=True, required=False, help_text="资源ID")
     keyword = serializers.CharField(allow_blank=True, required=False, help_text="查询条件")
+    resource_path = serializers.CharField(help_text="请求路径", required=False)
     grant_type = serializers.ChoiceField(
         choices=GrantTypeEnum.get_choices(), allow_blank=True, required=False, help_text="授权类型"
     )
