@@ -239,7 +239,7 @@
                   text
                   theme="primary"
                   class="ml-20px"
-                  @click="() => handleGoPage('AccessLogDetail', item)"
+                  @click="() => handleGoPage('AccessLog', item)"
                 >
                   {{ t('流水日志') }}
                 </BkButton>
