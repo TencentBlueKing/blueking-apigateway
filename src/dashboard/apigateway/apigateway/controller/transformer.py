@@ -20,10 +20,10 @@ from abc import ABC, abstractmethod
 from typing import Dict, Iterable, List, Optional
 
 from apigateway.controller.convertor import (
+    BkReleaseConvertor,
     RouteConvertor,
     ServiceConvertor,
 )
-from apigateway.controller.convertor.bk_release import BkReleaseConvertor
 from apigateway.controller.convertor.constants import LABEL_KEY_BACKEND_ID
 from apigateway.controller.convertor.plugin_metadata import PluginMetadataConvertor
 from apigateway.controller.models import ApisixModel, GatewayApisixModel

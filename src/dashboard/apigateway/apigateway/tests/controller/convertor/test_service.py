@@ -21,8 +21,8 @@ import pytest
 from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
 
+from apigateway.controller.convertor import ServiceConvertor
 from apigateway.controller.convertor.base import GatewayResourceConvertor
-from apigateway.controller.convertor.service import ServiceConvertor
 
 
 class TestServiceConvertor:
@@ -227,7 +227,7 @@ class TestServiceConvertor:
         result = convertor._build_service_plugins()
 
         # Should contain all plugins from the three methods
-        assert len(result) == len(mock_default_plugins) + len(mock_binding_plugins) + len(mock_extra_plugins)
+        assert len(result) == 4
         expected_plugins = {**mock_default_plugins, **mock_binding_plugins, **mock_extra_plugins}
         assert result == expected_plugins
 

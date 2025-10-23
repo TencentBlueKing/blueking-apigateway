@@ -17,8 +17,8 @@
 #
 import pytest
 
+from apigateway.controller.convertor import ProtoConvertor
 from apigateway.controller.convertor.base import GatewayResourceConvertor
-from apigateway.controller.convertor.proto import ProtoConvertor
 
 
 class TestProtoConvertor:

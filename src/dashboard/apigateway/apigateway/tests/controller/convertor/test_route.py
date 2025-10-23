@@ -20,8 +20,8 @@ import json
 
 import pytest
 
+from apigateway.controller.convertor import RouteConvertor
 from apigateway.controller.convertor.constants import MATCH_SUB_PATH_PRIORITY, SUBPATH_PARAM_NAME
-from apigateway.controller.convertor.route import RouteConvertor
 from apigateway.controller.models import Route, Timeout
 from apigateway.controller.models.constants import HttpMethodEnum
 from apigateway.core.constants import ProxyTypeEnum
