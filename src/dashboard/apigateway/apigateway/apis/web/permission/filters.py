@@ -54,11 +54,7 @@ class AppResourcePermissionFilter(filters.FilterSet):
 
     def resource_path_filter(self, queryset, name, value):
         # 只有网关资源权限可过滤请求路径
-        resource_ids = [
-            r.id
-            for r in [obj.resource for obj in queryset]
-            if r.path_display.lower().startswith(value.lower()) or value.lower() in r.path_display.lower()
-        ]
+        resource_ids = [r.id for r in [obj.resource for obj in queryset] if value.lower() in r.path_display.lower()]
         return queryset.filter(resource_id__in=resource_ids)
 
 
