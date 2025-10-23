@@ -406,10 +406,6 @@ const handleRowEnter = ({ e, row }: {
   e: MouseEvent
   row: TableRowData
 }) => {
-  const truncateNode = e.target?.querySelector('.cell-single-ellipse');
-  if (truncateNode) {
-    row.isOverflow = truncateNode?.scrollWidth > truncateNode.clientWidth;
-  }
   emit('row-mouseenter', {
     e,
     row,
@@ -425,6 +421,20 @@ const handleRowLeave = ({ e, row }: {
     e,
     row,
   });
+};
+
+const handleCellEnter = ({ e, row }: {
+  e: MouseEvent
+  row: TableRowData
+}) => {
+  const cell = (e.target as HTMLElement).closest('.cell-single-ellipse');
+  if (cell) {
+    row.isOverflow = cell.scrollWidth > cell.clientWidth;
+  }
+};
+
+const handleCellLeave = ({ row }: { row: TableRowData }) => {
+  delete row.isOverflow;
 };
 
 const handlePageChange = ({ current, pageSize }: {
@@ -561,6 +571,8 @@ defineExpose({
   setPaginationTheme,
   resetPaginationTheme,
   refresh,
+  handleCellEnter,
+  handleCellLeave,
 });
 
 </script>

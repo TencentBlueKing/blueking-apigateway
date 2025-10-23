@@ -51,22 +51,29 @@
         class="content-of-apigw"
       >
         <!--  搜索栏和 SDK使用说明  -->
-        <header class="top-bar">
-          <BkInput
-            v-model="filterData.keyword"
-            type="search"
-            :placeholder="t('请输入网关名称或描述')"
-            clearable
-            style="width: 400px"
-          />
-          <BkLink
-            theme="primary"
-            class="text-12px ml-24px"
-            @click.prevent="isSdkInstructionSliderShow = true"
-          >
-            <AgIcon name="document" />
-            {{ t('SDK 使用说明') }}
-          </BkLink>
+        <header class="flex items-center justify-between mb-16px">
+          <div>
+            <BkCheckbox v-model="filterData.show_plugin_gateway">
+              {{ t('展示插件网关') }}
+            </BkCheckbox>
+          </div>
+          <div>
+            <BkInput
+              v-model="filterData.keyword"
+              type="search"
+              :placeholder="t('请输入网关名称或描述')"
+              clearable
+              style="width: 400px"
+            />
+            <BkLink
+              theme="primary"
+              class="text-12px ml-24px"
+              @click.prevent="isSdkInstructionSliderShow = true"
+            >
+              <AgIcon name="document" />
+              {{ t('SDK 使用说明') }}
+            </BkLink>
+          </div>
         </header>
         <!--  网关列表  -->
         <main class="docs-list">
@@ -255,7 +262,10 @@ const route = useRoute();
 const router = useRouter();
 const featureFlagStore = useFeatureFlag();
 
-const filterData = ref({ keyword: '' });
+const filterData = ref({
+  keyword: '',
+  show_plugin_gateway: false,
+});
 
 const tableRef = ref();
 // 组件分类模板引用列表
@@ -282,25 +292,43 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     colKey: 'name',
     title: t('网关名称'),
     width: 300,
-    cell: (h, { row }) => (
-      <div>
-        <span
-          class="color-#3a84ff cursor-pointer"
-          onClick={() => gotoDetails(row)}
-        >
-          { row.name || '--' }
-        </span>
-        {
-          row.is_official
-            ? (
-              <bk-tag theme="success">
-                { t('官方') }
-              </bk-tag>
-            )
-            : ''
-        }
-      </div>
-    ),
+    cell: (h, { row }) => {
+      if (!row?.name) {
+        return '--';
+      }
+      return (
+        <div class="flex-row">
+          <div
+            v-bk-tooltips={{
+              content: row.name,
+              placement: 'top',
+              disabled: !row.isOverflow,
+            }}
+            class="cell-single-ellipse color-#3a84ff cursor-pointer mr-4px"
+            onMouseenter={e => tableRef.value?.handleCellEnter({
+              e,
+              row,
+            })}
+            onMouseLeave={e => tableRef.value?.handleCellLeave({
+              e,
+              row,
+            })}
+            onClick={() => gotoDetails(row)}
+          >
+            { row.name }
+          </div>
+          {
+            row.is_official
+              ? (
+                <bk-tag theme="success">
+                  { t('官方') }
+                </bk-tag>
+              )
+              : ''
+          }
+        </div>
+      );
+    },
   },
   ...(featureFlagStore.isTenantMode
     ? [
@@ -308,12 +336,14 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         colKey: 'tenant_mode',
         title: t('租户模式'),
         width: 120,
+        ellipsis: true,
         cell: (h, { row }) => <span>{ TENANT_MODE_TEXT_MAP[row.tenant_mode as string] || '--' }</span>,
       },
       {
         colKey: 'tenant_id',
         title: t('租户 ID'),
         width: 120,
+        ellipsis: true,
         cell: (h, { row }) => <span>{ row.tenant_id || '--' }</span>,
       },
     ]
@@ -322,6 +352,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     colKey: 'description',
     title: t('网关描述'),
     width: 500,
+    ellipsis: true,
     cell: (h, { row }) =>
       <span>{ row.description || '--' }</span>,
   },
@@ -334,10 +365,29 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         cell: (h, { row }) => (
           row.maintainers?.length
             ? (
-              <div>
+              <div
+                v-bk-tooltips={{
+                  content: row.maintainers.join(','),
+                  placement: 'top',
+                  disabled: !row.isOverflow,
+                }}
+                class="cell-single-ellipse"
+                onMouseenter={e => tableRef.value?.handleCellEnter({
+                  e,
+                  row,
+                })}
+                onMouseLeave={e => tableRef.value?.handleCellLeave({
+                  e,
+                  row,
+                })}
+              >
                 {
                   !featureFlagStore.isEnableDisplayName
-                    ? <span>{ row.maintainers.join(', ') }</span>
+                    ? (
+                      <span>
+                        { row.maintainers.join(',') }
+                      </span>
+                    )
                     : (
                       <span>
                         {
@@ -365,6 +415,22 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
       },
     ]
     : []),
+  {
+    colKey: 'is_plugin_gateway',
+    title: () => {
+      return (
+        <div
+          v-bk-tooltips={{ content: t('由蓝鲸应用插件自动创建的网关') }}
+          class="underline decoration-dashed underline-offset-4"
+        >
+          {t('是否为插件网关')}
+        </div>
+      );
+    },
+    cell: (h, { row }) => (
+      row.is_plugin_gateway ? t('是') : t('否')
+    ),
+  },
   {
     colKey: 'actions',
     title: t('操作'),
@@ -401,7 +467,7 @@ const routerViewWrapperClass = computed(() => {
 watch(
   filterData,
   () => {
-    tableRef.value!.fetchData(filterData.value);
+    tableRef.value!.fetchData(filterData.value, { resetPage: true });
   },
   { deep: true },
 );
@@ -425,7 +491,10 @@ const gotoDetails = (row: IApiGatewayBasics | ISystem, systemBoard?: string) => 
 };
 
 const handleClearFilterKey = () => {
-  filterData.value = { keyword: '' };
+  filterData.value = Object.assign(filterData.value, {
+    keyword: '',
+    show_plugin_gateway: false,
+  });
 };
 
 const fetchComponentSystemList = async () => {
@@ -548,16 +617,6 @@ $primary-color: #3a84ff;
   .docs-main-content {
     width: 1280px;
     margin: auto;
-
-    .content-of-apigw {
-
-      .top-bar {
-        display: flex;
-        margin-bottom: 16px;
-        justify-content: flex-end;
-        align-items: center;
-      }
-    }
 
     .content-of-component {
       display: flex;
