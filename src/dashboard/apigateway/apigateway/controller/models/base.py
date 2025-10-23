@@ -296,6 +296,15 @@ class Proto(GatewayApisixModel):
     proto: str = Field(description="proto")
 
 
+class BkRelease(GatewayApisixModel):
+    kind = "_bk_release"
+
+    publish_id: int = Field(description="publish id")
+    publish_time: str = Field(description="publish time")
+    apisix_version: str = Field(description="apisix version")
+    resource_version: str = Field(description="resource version")
+
+
 # ------------------------------------------------------------
 ## global models, not belong to any gateway/stage
 class GlobalApisixModel(ApisixModel):

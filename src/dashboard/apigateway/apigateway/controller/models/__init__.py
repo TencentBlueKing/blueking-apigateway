@@ -20,6 +20,7 @@ from .base import (
     SSL,
     ApisixModel,
     BaseUpstream,
+    BkRelease,
     GatewayApisixModel,
     GlobalApisixModel,
     Labels,
@@ -46,4 +47,5 @@ __all__ = [
     "Node",
     "GatewayApisixModel",
     "GlobalApisixModel",
+    "BkRelease",
 ]

@@ -23,6 +23,7 @@ from apigateway.controller.convertor import (
     RouteConvertor,
     ServiceConvertor,
 )
+from apigateway.controller.convertor.bk_release import BkReleaseConvertor
 from apigateway.controller.convertor.constants import LABEL_KEY_BACKEND_ID
 from apigateway.controller.convertor.plugin_metadata import PluginMetadataConvertor
 from apigateway.controller.models import ApisixModel, GatewayApisixModel
@@ -83,6 +84,7 @@ class GatewayApisixResourceTransformer(BaseTransformer):
         self._converted_routes: List[GatewayApisixModel] = []
         self._converted_ssls: List[GatewayApisixModel] = []
         self._converted_protos: List[GatewayApisixModel] = []
+        self._converted_bk_releases: List[GatewayApisixModel] = []
 
     def transform(self):
         service_convertor = ServiceConvertor(self._release_data, self.publish_id)
@@ -114,6 +116,9 @@ class GatewayApisixResourceTransformer(BaseTransformer):
         # proto_convertor = ProtoConvertor(self._release_data)
         # self._converted_protos = proto_convertor.convert()
 
+        bk_release_convertor = BkReleaseConvertor(self._release_data, self.publish_id)
+        self._converted_bk_releases = bk_release_convertor.convert()
+
     def get_transformed_resources(self) -> Iterable[ApisixModel]:
         yield from self._converted_ssls
 
@@ -122,3 +127,6 @@ class GatewayApisixResourceTransformer(BaseTransformer):
         yield from self._converted_services
 
         yield from self._converted_routes
+
+        # NOTE: this should be the last resource
+        yield from self._converted_bk_releases

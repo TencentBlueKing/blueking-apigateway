@@ -215,7 +215,8 @@ class RouteConvertor(GatewayResourceConvertor):
                 response_example=json.dumps(
                     {
                         "publish_id": self._publish_id,
-                        "start_time": now_str(),
+                        "publish_time": now_str(),
+                        "apisix_version": self._apisix_version,
                     }
                 ),
                 response_headers={"Content-Type": "application/json"},
