@@ -53,10 +53,10 @@ import SdkDetail from './SDKDetail.vue';
 import { useI18n } from 'vue-i18n';
 
 interface IProps {
-  sdks: ISdk[]
-  targetName: string
-  languages: LanguageType[]
-  maintainers: string[]
+  sdks?: ISdk[]
+  targetName?: string
+  languages: LanguageType[] | undefined
+  maintainers?: string[]
 }
 
 const isShow = defineModel<boolean>({

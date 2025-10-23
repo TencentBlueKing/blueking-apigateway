@@ -30,13 +30,11 @@
           :opened-keys="openedKeys"
           :active-key="activeMenuKey"
         >
-          <template
-            v-for="menu in platformToolsMenu"
-            :key="menu.name"
-          >
+          <template v-for="menu in platformToolsMenu">
             <BkMenuItem
               v-if="menu.enabled"
-              @click="() => handleGoPage(menu.name)"
+              :key="menu.name"
+              @click.stop="() => handleGoPage(menu.name)"
             >
               <template #icon>
                 <AgIcon

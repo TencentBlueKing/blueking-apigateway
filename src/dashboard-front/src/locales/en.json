@@ -2005,5 +2005,8 @@
   "请点击\"编辑\"按钮为资源配置适当的认证方式。": "Click 'Edit' to configure.",
   "如当前配置符合预期，可忽略该提示。": "Ignore when this is expected",
   "启用 Websocket": "Enable Websocket",
-  "已开启": "Enabled"
+  "已开启": "Enabled",
+  "展示插件网关": "Display plugin gateway",
+  "是否为插件网关": "Is it plugin gateway",
+  "由蓝鲸应用插件自动创建的网关": "Gateway automatically created by BlueKing application plugin"
 }
