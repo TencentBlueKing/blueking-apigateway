@@ -135,6 +135,22 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
     ),
 )
 class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
+    def get_filter_resource_path(self, resource_path, queryset, resource_map):
+        filtered_data = []
+        for obj in queryset:
+            resource_id = obj.get("resource_id", 0)
+            if not resource_id:
+                continue
+
+            resource = resource_map.get(resource_id)
+            if not resource:
+                continue
+
+            if resource.path_display.lower().startswith(resource_path.lower()):
+                filtered_data.append(obj)
+
+        return filtered_data
+
     def get_queryset(self):
         query_params = self.request.query_params
         app_gateway_permissions = AppGatewayPermissionFilter(self.request.GET, queryset=self.get_gateway_queryset()).qs
@@ -165,9 +181,11 @@ class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
         page = self.paginate_queryset(queryset)
         resource_ids = [perm["resource_id"] for perm in page if perm.get("resource_id")]
         resources = Resource.objects.filter(id__in=resource_ids)
-        serializer = AppPermissionOutputSLZ(
-            page, many=True, context={"resource_map": {resource.id: resource for resource in resources}}
-        )
+        resource_map = {resource.id: resource for resource in resources}
+        resource_path = slz.validated_data.get("resource_path")
+        if resource_path:
+            page = self.get_filter_resource_path(resource_path, page, resource_map)
+        serializer = AppPermissionOutputSLZ(page, many=True, context={"resource_map": resource_map})
         return self.get_paginated_response(serializer.data)
 
 

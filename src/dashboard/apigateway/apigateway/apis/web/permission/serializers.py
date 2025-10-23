@@ -42,6 +42,7 @@ from apigateway.utils.time import NeverExpiresTime, to_datetime_from_now
 class AppPermissionQueryInputSLZ(serializers.Serializer):
     bk_app_code = serializers.CharField(help_text="应用ID", required=False)
     keyword = serializers.CharField(help_text="查询关键字", required=False)
+    resource_path = serializers.CharField(help_text="请求路径", required=False)
     grant_type = serializers.ChoiceField(choices=GrantTypeEnum.get_choices(), required=False)
     resource_id = serializers.IntegerField(help_text="资源id", required=False)
     order_by = serializers.ChoiceField(
