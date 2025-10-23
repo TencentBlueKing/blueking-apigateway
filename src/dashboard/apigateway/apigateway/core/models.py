@@ -205,8 +205,8 @@ class Stage(TimestampedModelMixin, OperatorModelMixin):
     description = description_i18n.default_field()
     description_en = description_i18n.field("en", default=None)
 
-    # 环境对应的微网关实例，不同环境允许使用不同网关实例，提供隔离能力
-    micro_gateway = models.ForeignKey("MicroGateway", on_delete=models.SET_NULL, null=True, default=None, blank=True)
+    # FIXME: deprecated, will be removed after 1.20, drop it at 1.22
+    micro_gateway = models.ForeignKey("MicroGateway", on_delete=models.SET_NULL, null=True, default=None)
 
     _vars = models.TextField(db_column="vars", default="{}")
 
@@ -755,6 +755,7 @@ class GatewayRelatedApp(TimestampedModelMixin):
 # ============================================ gateway instance ============================================
 
 
+# FIXME: deprecated, will be removed after 1.20, drop it at 1.22
 class MicroGateway(ConfigModelMixin):
     """微网关实例"""
 
@@ -779,8 +780,6 @@ class MicroGateway(ConfigModelMixin):
     comment = models.CharField(max_length=512, blank=True, default="")
 
     schema = models.ForeignKey(Schema, on_delete=models.PROTECT)
-
-    objects: ClassVar[managers.MicroGatewayManager] = managers.MicroGatewayManager()
 
     class Meta:
         db_table = "core_micro_gateway"

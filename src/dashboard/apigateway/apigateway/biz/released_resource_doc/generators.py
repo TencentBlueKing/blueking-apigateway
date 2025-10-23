@@ -97,7 +97,7 @@ class DocGenerator:
 
     def _get_resource_url(self):
         return get_resource_url(
-            resource_url_tmpl=ResourceURLHandler.get_resource_url_tmpl(self.gateway.name, self.stage_name),
+            resource_url_tmpl=ResourceURLHandler.get_resource_url_tmpl(),
             gateway_name=self.gateway.name,
             stage_name=self.stage_name,
             resource_path=get_path_display(self.resource_data.path, self.resource_data.match_subpath),
