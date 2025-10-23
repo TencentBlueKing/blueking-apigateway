@@ -79,27 +79,3 @@ def env_render(source: str, vars: Dict[str, str]) -> str:
         logger.warning("Missing environment variables: %s in source: %s", missing_vars, source)
 
     return result
-
-
-if __name__ == "__main__":
-    # Example usage and testing
-    vars_dict = {"stage": "prod", "version": "v1"}
-
-    # Test URIRender
-    uri_renderer = URIRender()
-    source_uri = "/api/{env.stage}/{env.version}/users/{userId}/profile"
-    result_uri = uri_renderer.render(source_uri, vars_dict)
-    print(f"URIRender: {source_uri} -> {result_uri}")
-    # Expected: /api/prod/v1/users/:userId/profile
-
-    # Test UpstreamURIRender
-    upstream_renderer = UpstreamURIRender()
-    result_upstream = upstream_renderer.render(source_uri, vars_dict)
-    print(f"UpstreamURIRender: {source_uri} -> {result_upstream}")
-    # Expected: /api/prod/v1/users/${userId}/profile
-
-    # Test with missing variables
-    incomplete_vars = {"stage": "dev"}
-    result_incomplete = uri_renderer.render(source_uri, incomplete_vars)
-    print(f"With incomplete vars: {source_uri} -> {result_incomplete}")
-    # Expected: /api/dev/{env.version}/users/:userId/profile
