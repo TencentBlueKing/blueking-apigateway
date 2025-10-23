@@ -83,7 +83,7 @@ class GlobalResourceDistributor(BaseDistributor):
             fail_msg = f"distribute global resources to etcd failed: {type(e).__name__}: {str(e)}"
             procedure_logger.exception(fail_msg)
             return False, fail_msg
-        return True, ""
+        return True, "ok"
 
     def revoke(
         self,
@@ -179,7 +179,7 @@ class GatewayResourceDistributor(BaseDistributor):
                 fail_msg = f"revoke gateway resources delete resources from etcd failed: {type(e).__name__}: {str(e)}"
                 logger.exception(fail_msg)
                 return False, fail_msg
-            return True, ""
+            return True, "ok"
 
         procedure_logger = ReleaseProcedureLogger(
             "gateway-revoking",
@@ -213,4 +213,4 @@ class GatewayResourceDistributor(BaseDistributor):
             return False, fail_msg
 
         procedure_logger.info("revoke gateway resources from etcd succeeded")
-        return True, ""
+        return True, "ok"
