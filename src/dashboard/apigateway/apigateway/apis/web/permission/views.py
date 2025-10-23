@@ -281,12 +281,10 @@ class AppPermissionExportApi(AppPermissionQuerySetMixin, generics.CreateAPIView)
                 resource_queryset = []
 
             if data.get("resource_path"):
-                if resource_queryset:
-                    # 如果匹配到资源数据，则忽略掉网关维度的（只有资源维度可过滤请求路径）
-                    gateway_queryset = []
-                else:
+                # 如果匹配到资源数据，则忽略掉网关维度的（只有资源维度可过滤请求路径）
+                gateway_queryset = []
+                if not resource_queryset:
                     # 如果没有匹配到资源权限数据，全部为空
-                    gateway_queryset = []
                     resource_queryset = []
 
         elif data["export_type"] == ExportTypeEnum.SELECTED.value:
