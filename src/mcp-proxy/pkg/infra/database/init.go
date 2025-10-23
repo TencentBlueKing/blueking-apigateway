@@ -21,11 +21,15 @@ package database
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
 	"log"
+	"os"
 	"sync"
 	"time"
 
+	ms "github.com/go-sql-driver/mysql"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/plugin/opentelemetry/tracing"
@@ -61,8 +65,48 @@ func SetClient(client *gorm.DB) {
 	db = client
 }
 
+// 初始化 MySQL TLS 配置，加载 CA 证书 & 客户端证书并执行 mysql driver RegisterTLSConfig
+func initMysqlTLS(cfg *config.Database) {
+	// 没有启用 TLS，直接返回
+	if !cfg.TLS.Enabled {
+		return
+	}
+	// 服务器证书
+	caCert, err := os.ReadFile(cfg.TLS.CertCaFile)
+	if err != nil {
+		log.Fatalf("failed to read ca cert: %s: %s", cfg.TLS.CertCaFile, err)
+	}
+	pool := x509.NewCertPool()
+	if ok := pool.AppendCertsFromPEM(caCert); !ok {
+		log.Fatalf("failed to append ca cert: %s", cfg.TLS.CertCaFile)
+	}
+	tlsConfig := &tls.Config{
+		RootCAs:            pool,
+		InsecureSkipVerify: cfg.TLS.InsecureSkipVerify,
+	}
+	// 客户端证书
+	if cfg.TLS.CertFile != "" && cfg.TLS.CertKeyFile != "" {
+		cert, err := tls.LoadX509KeyPair(cfg.TLS.CertFile, cfg.TLS.CertKeyFile)
+		if err != nil {
+			log.Fatalf(
+				"failed to load x509 key pair, cert: %s, key: %s: %s",
+				cfg.TLS.CertFile,
+				cfg.TLS.CertKeyFile,
+				err,
+			)
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
+	if err = ms.RegisterTLSConfig(cfg.TLSCfgName(), tlsConfig); err != nil {
+		log.Fatalf("failed to register TLS config: %s", err)
+	}
+}
+
 // InitDBClient 初始化数据库客户端
 func InitDBClient(cfg *config.Database) {
+	// 初始化 MySQL TLS 配置
+	initMysqlTLS(cfg)
+
 	if db != nil {
 		return
 	}
