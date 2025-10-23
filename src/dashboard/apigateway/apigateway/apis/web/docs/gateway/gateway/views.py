@@ -67,8 +67,6 @@ class GatewayListApi(generics.ListAPIView):
         show_plugin_gateway = slz.validated_data["show_plugin_gateway"]
         if not show_plugin_gateway:
             queryset = queryset.exclude(name__startswith=PLUGIN_GATEWAY_PREFIX)
-        else:
-            queryset = queryset.filter(name__startswith=PLUGIN_GATEWAY_PREFIX)
 
         # 网关存在已发布的版本
         released_gateway_ids = Release.objects.all().values_list("gateway_id", flat=True).distinct()
