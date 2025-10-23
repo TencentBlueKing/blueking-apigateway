@@ -85,7 +85,7 @@ class Node(BaseApisixModel):
     """node for upstream"""
 
     host: str = Field(min_length=1, description="host")
-    port: int = Field(default=0, ge=1, le=65535, description="port")
+    port: int = Field(default=80, ge=1, le=65535, description="port")
     # the frontend make it gte 1, it's different from apisix
     weight: int = Field(default=1, gt=0, description="weight")
 
@@ -167,6 +167,7 @@ class Check(BaseApisixModel):
     def check_active_or_passive(self):
         if not self.active and not self.passive:
             raise ValueError("either active or passive must be set")
+        return self
 
 
 class Tls(BaseApisixModel):
