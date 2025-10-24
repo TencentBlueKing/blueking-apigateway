@@ -305,7 +305,7 @@ class ResourceHandler:
         )
 
     @staticmethod
-    def get_updated_time(gateway_id: int, name: str) -> Optional[str]:
+    def get_updated_time(gateway_id: int, name: str) -> str:
         """获取网关下某个资源的更新时间"""
         resource = Resource.objects.filter(gateway_id=gateway_id, name=name).first()
         if not resource:
