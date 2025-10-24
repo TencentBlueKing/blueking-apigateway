@@ -42,12 +42,9 @@
       <AgTable
         ref="tableRef"
         v-model:table-data="tableData"
-        v-model:settings="settings"
         show-settings
-        :hover="false"
         resizable
         :filter-value="filterData"
-        :sort="sortData"
         :api-method="getTableData"
         :columns="tableColumns"
         @clear-filter="handleClearFilter"
@@ -73,7 +70,6 @@ import { Button, Loading, Message, Switcher } from 'bkui-vue';
 import type {
   FilterValue,
   PrimaryTableProps,
-  SortInfo,
 } from '@blueking/tdesign-ui';
 import type { ITableMethod } from '@/types/common';
 import { useGateway } from '@/stores';
@@ -92,10 +88,8 @@ import AddAlarmStrategy from '@/views/monitor-alarm/alarm-strategy/components/Ad
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
-// const { maxTableLimit, clientHeight } = useMaxTableLimit();
 
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
-
 const tableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: t('告警策略名称'),
@@ -217,14 +211,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
   },
 ]);
 
-const settings = shallowRef({
-  size: 'small',
-  checked: [],
-  disabled: [],
-});
-
 const filterData = ref<FilterValue>({});
-const sortData = ref<SortInfo>({});
 const statusSwitcherDisabled = ref(false);
 const tableData = ref([]);
 const labelList = ref([]);

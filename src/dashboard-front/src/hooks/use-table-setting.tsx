@@ -36,7 +36,7 @@ export function useTableSetting(setting: ShallowRef<ITableSettings>, name: strin
 
   onMounted(() => {
     const cache = localStorage.getItem(tableName);
-    if (cache) {
+    if (cache && setting) {
       try {
         setting.value = { ...JSON.parse(cache) };
       }

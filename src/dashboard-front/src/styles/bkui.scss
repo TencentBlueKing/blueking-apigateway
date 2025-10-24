@@ -70,9 +70,11 @@
     border: 1px solid #dcdee5;
   }
 
-  &.t-is-checked .t-checkbox__input {
-    border-color: #3a84ff !important;
-    background-color: #3a84ff !important;
+  &.t-is-checked:not(.t-is-disabled) {
+    .t-checkbox__input {
+      border-color: #3a84ff !important;
+      background-color: #3a84ff !important;
+    }
   }
 }
 
