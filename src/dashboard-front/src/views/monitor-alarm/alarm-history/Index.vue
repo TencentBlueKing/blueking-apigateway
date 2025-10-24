@@ -76,36 +76,25 @@
               v-for="option in alarmStatus"
               :key="option.value"
               :value="option.value"
-              :label="option.name"
+              :label="option.label"
             />
           </BkSelect>
         </BkFormItem>
       </BkForm>
     </div>
     <div class="alarm-history-content">
-      <BkLoading :loading="isLoading">
-        <BkTable
-          class="alarm-history-table"
-          :data="tableData"
-          remote-pagination
-          :pagination="pagination"
-          :columns="tableColumns"
-          :max-height="clientHeight"
-          row-hover="auto"
-          @page-limit-change="handlePageSizeChange"
-          @page-value-change="handlePageChange"
-          @row-click="handleRowClick"
-        >
-          <template #empty>
-            <TableEmpty
-              :empty-type="tableEmptyConfig.emptyType"
-              :abnormal="tableEmptyConfig.isAbnormal"
-              @refresh="getList"
-              @clear-filter="handleClearFilterKey"
-            />
-          </template>
-        </BkTable>
-      </BkLoading>
+      <AgTable
+        ref="tableRef"
+        v-model:table-data="tableData"
+        show-settings
+        resizable
+        :filter-value="filterData"
+        :api-method="getTableData"
+        :columns="tableColumns"
+        @row-click="handleRowClick"
+        @filter-change="handleFilterChange"
+        @clear-filter="handleClearFilter"
+      />
     </div>
 
     <!-- 详情 -->
@@ -184,39 +173,74 @@
 </template>
 
 <script lang="tsx" setup>
-import { cloneDeep } from 'lodash-es';
 import { useAccessLog, useGateway } from '@/stores';
-import { useDatePicker, useMaxTableLimit, useQueryList } from '@/hooks';
+import { useDatePicker } from '@/hooks';
 import { type IAlarmRecord, getRecordList, getStrategyList } from '@/services/source/monitor';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
 const accessLogStore = useAccessLog();
-const { maxTableLimit, clientHeight } = useMaxTableLimit();
-
 const { alarmStatus } = accessLogStore;
+
+const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const dateKey = ref('dateKey');
 const curStrategyCount = ref(0);
 const scrollLoading = ref(false);
+const tableData = ref([]);
 const alarmStrategyOption = ref([]);
-const tableColumns = ref([
+const initParams = reactive({
+  limit: 10,
+  offset: 0,
+  order_by: 'name',
+});
+let sliderConfig = reactive({
+  isShow: false,
+  title: t('告警详情'),
+  data: {
+    id: -1,
+    created_time: '',
+    alarm_strategy_names: [],
+    message: '',
+    status: '',
+  },
+});
+const filterData = ref({});
+
+const {
+  dateValue,
+  shortcutsRange,
+  shortcutSelectedIndex,
+  handleChange,
+  handleClear,
+  handleConfirm,
+  handleShortcutChange,
+  handleSelectionModeChange,
+} = useDatePicker(filterData);
+
+const apigwId = computed(() => gatewayStore.apigwId);
+const tableColumns = computed(() => ([
   {
-    label: t('告警ID'),
-    field: 'id',
-    width: 100,
+    title: t('告警ID'),
+    colKey: 'id',
+    ellipsis: true,
+    fixed: 'left',
   },
   {
-    label: t('告警时间'),
-    field: 'created_time',
-    width: 260,
+    title: t('告警时间'),
+    colKey: 'created_time',
+    ellipsis: true,
   },
   {
-    label: t('告警策略'),
-    field: 'alarm_strategy_names',
-    width: 320,
-    showOverflowTooltip: false,
-    render: ({ row }: { row?: Partial<IAlarmRecord> }) => {
+    title: t('告警策略'),
+    colKey: 'alarm_strategy_id',
+    filter: {
+      type: 'single',
+      showConfirmAndReset: true,
+      popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+      list: alarmStrategyOption.value,
+    },
+    cell: (h, { row }: { row?: Partial<IAlarmRecord> }) => {
       if (row?.alarm_strategy_names?.length) {
         return (
           <div class="lh-1">
@@ -249,9 +273,9 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('告警内容'),
-    field: 'message',
-    render: ({ row }: { row?: Partial<IAlarmRecord> }) => {
+    title: t('告警内容'),
+    colKey: 'message',
+    cell: (h, { row }: { row?: Partial<IAlarmRecord> }) => {
       return (
         <span
           v-bk-tooltips={{
@@ -266,10 +290,15 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('状态'),
-    field: 'status',
-    width: 200,
-    render: ({ row }: { row?: Partial<IAlarmRecord> }) => {
+    title: t('状态'),
+    colKey: 'status',
+    filter: {
+      type: 'single',
+      showConfirmAndReset: true,
+      popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+      list: alarmStatus,
+    },
+    cell: (h, { row }: { row?: Partial<IAlarmRecord> }) => {
       return (
         <span>
           <span class={['m-r-4px', 'ag-outline-dot', row?.status]} />
@@ -286,66 +315,24 @@ const tableColumns = ref([
       );
     },
   },
-]);
-const tableEmptyConfig = ref<{
-  emptyType: string
-  isAbnormal: boolean
-}>({
-  emptyType: '',
-  isAbnormal: false,
-});
-const initParams = reactive({
-  limit: 10,
-  offset: 0,
-  order_by: 'name',
-});
-const initFilterData = reactive({
-  alarm_strategy_id: '',
-  status: '',
-  time_start: '',
-  time_end: '',
-});
-let sliderConfig = reactive({
-  isShow: false,
-  title: t('告警详情'),
-  data: {
-    id: -1,
-    created_time: '',
-    alarm_strategy_names: [],
-    message: '',
-    status: '',
-  },
-});
-const filterData = ref(cloneDeep(initFilterData));
+]));
 
-// 列表hooks
-const {
-  tableData,
-  pagination,
-  isLoading,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-} = useQueryList({
-  apiMethod: getRecordList,
-  filterData,
-  initialPagination: {
-    limitList: [maxTableLimit, 10, 20, 50, 100],
-    limit: maxTableLimit,
-  },
-});
-const {
-  dateValue,
-  shortcutsRange,
-  shortcutSelectedIndex,
-  handleChange,
-  handleClear,
-  handleConfirm,
-  handleShortcutChange,
-  handleSelectionModeChange,
-} = useDatePicker(filterData);
+watch(() => filterData, () => {
+  getList();
+}, { deep: true });
 
-const apigwId = computed(() => gatewayStore.apigwId);
+function getList() {
+  tableRef.value!.fetchData(filterData.value, { resetPage: true });
+};
+
+const getTableData = async (params: Record<string, any> = {}) => {
+  const results = await getRecordList(apigwId.value, params);
+  return results ?? [];
+};
+
+const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
+  filterData.value = Object.assign(filterData.value, filterItem);
+};
 
 // 日期清除
 const handleTimeClear = () => {
@@ -367,7 +354,7 @@ const handlePickSuccess = () => {
 // 获取状态name
 const getAlarmStatusText = (status: string) => {
   const curStatus = alarmStatus.find(item => item.value === status) ?? {};
-  return curStatus.name ?? '--';
+  return curStatus.label ?? '--';
 };
 
 // 获取告警策略list
@@ -379,6 +366,8 @@ const getStrategyOption = async () => {
     value: item.id,
   }));
 };
+getStrategyOption();
+
 // 滚动获取告警策略
 const handleScrollEnd = async () => {
   if (alarmStrategyOption.value.length === curStrategyCount.value) return;
@@ -413,35 +402,12 @@ const handleRowClick = (e: MouseEvent, row: IAlarmRecord) => {
   });
 };
 
-const handleClearFilterKey = async () => {
+const handleClearFilter = () => {
   dateValue.value = [];
   shortcutSelectedIndex.value = -1;
   dateKey.value = String(+new Date());
-  filterData.value = cloneDeep(initFilterData);
-  await getList();
-  updateTableEmptyConfig();
+  filterData.value = {};
 };
-
-const updateTableEmptyConfig = () => {
-  const list = Object.values(filterData.value).filter(item => item !== '');
-  tableEmptyConfig.value.isAbnormal = pagination.value.abnormal;
-  if (list.length && !tableData.value.length) {
-    tableEmptyConfig.value.emptyType = 'searchEmpty';
-    return;
-  }
-  if (list.length) {
-    tableEmptyConfig.value.emptyType = 'empty';
-    return;
-  }
-  tableEmptyConfig.value.emptyType = '';
-};
-
-watch(
-  () => tableData.value, () => {
-    updateTableEmptyConfig();
-  },
-  { deep: true },
-);
 </script>
 
 <style lang="scss" scoped>
