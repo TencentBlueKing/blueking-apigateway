@@ -26,13 +26,12 @@
     @closed="handleClose"
   >
     <template #default>
-      <BkTable
-        :key="selections.length"
-        :data="selections"
+      <AgTable
+        v-model:table-data="tableData"
+        local-page
         :size="'small'"
-        :max-height="200"
+        :max-height="300"
         :columns="approvalColumns"
-        show-overflow-tooltip
       />
       <BkForm
         ref="batchApprovalFormRef"
@@ -90,6 +89,7 @@
 
 <script lang="ts" setup>
 import { t } from '@/locales';
+import AgTable from '@/components/ag-table/Index.vue';
 
 interface IProps {
   title?: string
@@ -142,18 +142,23 @@ const emits = defineEmits<Emits>();
 const batchApprovalFormRef = ref<InstanceType<typeof BkForm> & FormMethod>();
 const approvalColumns = shallowRef([
   {
-    label: t('蓝鲸应用ID'),
-    field: 'bk_app_code',
+    title: t('蓝鲸应用ID'),
+    colKey: 'bk_app_code',
+    ellipsis: true,
   },
   {
-    label: t('申请人'),
-    field: 'applied_by',
+    title: t('申请人'),
+    colKey: 'applied_by',
+    ellipsis: true,
   },
   {
-    label: t('申请时间'),
-    field: 'created_time',
+    title: t('申请时间'),
+    colKey: 'created_time',
+    ellipsis: true,
   },
 ]);
+
+const tableData = computed(() => selections);
 
 const batchApplyDialogConf = computed({
   get: () => dialogParams,

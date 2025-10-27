@@ -69,8 +69,8 @@
       <AgTable
         ref="tableRef"
         v-model:table-data="tableData"
-        show-settings
         resizable
+        show-settings
         show-selection
         :show-first-full-row="curSelections.length > 0"
         :disabled-check-selection="disabledSelection"
@@ -80,7 +80,6 @@
         @clear-filter="handleClearFilter"
         @filter-change="handleFilterChange"
         @selection-change="handleSelectionChange"
-        @clear-selection="handleClearSelection"
       />
     </div>
 
@@ -140,7 +139,7 @@ import {
   getResourcePermissionAppList,
 } from '@/services/source/permission';
 import { useGateway, usePermission } from '@/stores';
-import { IDropList, ITableMethod } from '@/types/common';
+import type { IDropList, ITableMethod } from '@/types/common';
 import { IFilterValues, IPermission, IResource } from '@/types/permission';
 import { sortByKey } from '@/utils';
 import ProactiveAuthorization from '@/views/permission/app/components/ProactiveAuthorization.vue';
@@ -361,7 +360,7 @@ const filterConditions = ref<ISearchItem[]>([
   },
   {
     name: t('请求路径'),
-    id: 'resource_path ',
+    id: 'resource_path',
     children: [],
     onlyRecommendChildren: true,
   },
@@ -489,6 +488,7 @@ const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: Fil
 };
 
 function handleClearSelection() {
+  tableRef.value.handleResetSelection();
   curSelections.value = [];
   isBatchRenewal.value = false;
 };

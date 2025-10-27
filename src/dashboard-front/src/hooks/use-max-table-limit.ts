@@ -36,9 +36,9 @@ type ITableLimit = {
  */
 function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string, number> {
   const curSetting = localStorage.getItem(`table-setting-${locale.value}-${className}`);
-  let tableSize = curSetting ? JSON.parse(curSetting)?.size : 'mini';
+  let tableSize = curSetting ? JSON.parse(curSetting)?.size : 'small';
   if (['tdesign'].includes(mode)) {
-    tableSize = curSetting ? JSON.parse(curSetting)?.rowSize : 'small';
+    tableSize = curSetting ? JSON.parse(curSetting)?.rowSize : 'medium';
   }
   // 后续其他表格也可以适配，默认先以bkui-vue表格为例
   const sizeMap: ReturnRecordType<string, Record<string, number>> = {
@@ -50,8 +50,8 @@ function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string
         };
       }
       return {
-        lineH: 36,
-        topHead: 42,
+        lineH: 32,
+        topHead: 32,
       };
     },
     small: () => {
@@ -63,8 +63,8 @@ function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string
       }
       if (['tdesign'].includes(mode)) {
         return {
-          lineH: 46,
-          topHead: 46,
+          lineH: 36,
+          topHead: 36,
         };
       }
       return {
@@ -79,9 +79,15 @@ function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string
           topHead: 42,
         };
       }
+      if (['tdesign'].includes(mode)) {
+        return {
+          lineH: 42,
+          topHead: 42,
+        };
+      }
       return {
-        lineH: 44,
-        topHead: 47,
+        lineH: 60,
+        topHead: 42,
       };
     },
     large: () => {
@@ -137,7 +143,6 @@ export function useMaxTableLimit(payload?: Partial<ITableLimit>) {
   const rowHeight = payload?.customLineHeight ?? lineH;
   // 为了防止body区域出现滚动条，需要减去表头和分页器的高度
   const maxTableLimit = Math.max(Math.floor((clientHeight - paginationH - topHead) / rowHeight), 1);
-
   return {
     maxTableLimit,
     clientHeight,
