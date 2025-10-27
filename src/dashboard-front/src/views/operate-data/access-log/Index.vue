@@ -233,7 +233,7 @@
                 resizable
                 height="auto"
                 max-height="none"
-                scroll="{{}}"
+                :scroll="{}"
                 :immediate="false"
                 :filter-value="searchParams"
                 :api-method="getTableData"
@@ -1094,7 +1094,7 @@ const handleClearFilterKey = () => {
 
 const updateTableEmptyConfig = () => {
   const time = dateValue.value.some(Boolean);
-  if (keyword.value || !table.value.list.length) {
+  if (keyword.value || !tableData.value.length) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }

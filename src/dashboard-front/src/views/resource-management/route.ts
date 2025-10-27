@@ -37,7 +37,7 @@ const route: RouteRecordRaw[] = [
         component: () => import('./settings/edit/Index.vue'),
         meta: {
           title: t('编辑资源'),
-          menuKey: 'ResourceSetting',
+          matchRoute: 'ResourceSetting',
           showBackIcon: true,
           showPageName: true,
         },
@@ -48,7 +48,7 @@ const route: RouteRecordRaw[] = [
         component: () => import('./settings/edit/Index.vue'),
         meta: {
           title: t('新建资源'),
-          menuKey: 'ResourceSetting',
+          matchRoute: 'ResourceSetting',
           showBackIcon: true,
         },
       },
@@ -58,7 +58,7 @@ const route: RouteRecordRaw[] = [
         component: () => import('./settings/edit/Index.vue'),
         meta: {
           title: t('克隆资源'),
-          menuKey: 'ResourceSetting',
+          matchRoute: 'ResourceSetting',
           showBackIcon: true,
         },
       },
@@ -68,7 +68,7 @@ const route: RouteRecordRaw[] = [
         component: () => import('./settings/import/Index.vue'),
         meta: {
           title: t('导入资源配置'),
-          menuKey: 'ResourceSetting',
+          matchRoute: 'ResourceSetting',
           topMenu: 'home',
           showBackIcon: true,
         },
@@ -79,7 +79,7 @@ const route: RouteRecordRaw[] = [
         component: () => import('./settings/import-doc/Index.vue'),
         meta: {
           title: t('导入资源文档'),
-          menuKey: 'ResourceSetting',
+          matchRoute: 'ResourceSetting',
           topMenu: 'home',
           showBackIcon: true,
         },

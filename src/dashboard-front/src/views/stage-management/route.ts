@@ -42,20 +42,14 @@ const routes: RouteRecordRaw[] = [
             path: 'card-mode',
             name: 'StageOverviewCardMode',
             component: () => import('./overview/card-mode/Index.vue'),
-            meta: {
-              menuKey: 'StageOverview',
-              matchRoute: 'StageManagement',
-            },
+            meta: { matchRoute: 'StageOverview' },
           },
           {
             path: 'detail-mode/:stageId',
             name: 'StageOverviewDetailMode',
             component: () => import('./overview/detail-mode/Index.vue'),
             props: true,
-            meta: {
-              menuKey: 'StageOverview',
-              matchRoute: 'StageManagement',
-            },
+            meta: { matchRoute: 'StageOverview' },
           },
         ],
       },
@@ -65,8 +59,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./release-record/Index.vue'),
         meta: {
           title: t('发布记录'),
-          matchRoute: 'StageManagement',
-          menuKey: 'StageReleaseRecord',
+          matchRoute: 'StageReleaseRecord',
         },
       },
     ],

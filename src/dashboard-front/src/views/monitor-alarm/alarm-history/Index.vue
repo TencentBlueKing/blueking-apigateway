@@ -113,7 +113,7 @@
                 {{ t("告警ID：") }}
               </div>
               <div class="value">
-                {{ sliderConfig.data.id }}
+                {{ sliderConfig?.data?.id }}
               </div>
             </div>
             <div class="item">
@@ -121,7 +121,7 @@
                 {{ t("告警时间：") }}
               </div>
               <div class="value">
-                {{ sliderConfig.data.created_time }}
+                {{ sliderConfig?.data?.created_time }}
               </div>
             </div>
             <div class="item">
@@ -130,7 +130,7 @@
               </div>
               <div class="value strategy-name-list">
                 <p
-                  v-for="(name, index) of sliderConfig.data.alarm_strategy_names"
+                  v-for="(name, index) of sliderConfig?.data?.alarm_strategy_names"
                   :key="index"
                   class="name-item"
                 >
@@ -173,6 +173,7 @@
 </template>
 
 <script lang="tsx" setup>
+import type { ITableMethod } from '@/types/common';
 import { useAccessLog, useGateway } from '@/stores';
 import { useDatePicker } from '@/hooks';
 import { type IAlarmRecord, getRecordList, getStrategyList } from '@/services/source/monitor';
@@ -275,15 +276,10 @@ const tableColumns = computed(() => ([
   {
     title: t('告警内容'),
     colKey: 'message',
+    ellipsis: true,
     cell: (h, { row }: { row?: Partial<IAlarmRecord> }) => {
       return (
-        <span
-          v-bk-tooltips={{
-            content: row?.message || '',
-            placement: 'left',
-            extCls: 'monitor-tooltips',
-          }}
-        >
+        <span>
           { row?.message }
         </span>
       );

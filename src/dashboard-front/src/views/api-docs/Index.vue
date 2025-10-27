@@ -304,7 +304,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
               placement: 'top',
               disabled: !row.isOverflow,
             }}
-            class="cell-single-ellipse color-#3a84ff cursor-pointer mr-4px"
+            class="truncate color-#3a84ff cursor-pointer mr-4px"
             onMouseenter={e => tableRef.value?.handleCellEnter({
               e,
               row,
@@ -371,7 +371,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
                   placement: 'top',
                   disabled: !row.isOverflow,
                 }}
-                class="cell-single-ellipse"
+                class="truncate"
                 onMouseenter={e => tableRef.value?.handleCellEnter({
                   e,
                   row,

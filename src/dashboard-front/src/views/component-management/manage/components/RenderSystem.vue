@@ -87,6 +87,7 @@
             <TableEmpty
               :empty-type="tableEmptyConf.emptyType"
               :abnormal="tableEmptyConf.isAbnormal"
+              background="transparent"
               @clear-filter="clearFilterKey"
             />
           </div>

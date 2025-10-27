@@ -66,7 +66,7 @@ const routes: RouteRecordRaw[] = [
     component: SyncApigwAccess,
     meta: {
       title: t('同步组件配置到 API 网关'),
-      matchRoute: 'SyncApigwAccess',
+      matchRoute: 'ComponentsManage',
       topMenu: 'ComponentsMain',
       showBackIcon: true,
     },
@@ -77,7 +77,7 @@ const routes: RouteRecordRaw[] = [
     component: SyncHistory,
     meta: {
       title: t('组件同步历史'),
-      matchRoute: 'SyncHistory',
+      matchRoute: 'ComponentsManage',
       topMenu: 'ComponentsMain',
       showBackIcon: true,
     },
@@ -88,7 +88,7 @@ const routes: RouteRecordRaw[] = [
     component: SyncVersion,
     meta: {
       title: t('组件同步版本'),
-      matchRoute: 'SyncVersion',
+      matchRoute: 'ComponentsManage',
       topMenu: 'ComponentsMain',
       showBackIcon: true,
     },

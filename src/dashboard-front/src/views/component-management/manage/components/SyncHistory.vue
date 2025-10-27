@@ -43,73 +43,62 @@
           />
         </BkFormItem>
       </BkForm>
-      <BkLoading
-        :loading="isLoading"
-        :opacity="1"
-      >
-        <BkTable
-          size="small"
-          border="outer"
-          :data="tableData"
-          :columns="tableColumns"
-          :max-height="clientHeight"
-          :pagination="pagination"
-          remote-pagination
-          show-overflow-tooltip
-          @page-value-change="handlePageChange"
-          @page-limit-change="handlePageSizeChange"
-        >
-          <template #empty>
-            <TableEmpty
-              :empty-type="tableEmptyConf.emptyType"
-              :abnormal="tableEmptyConf.isAbnormal"
-              @refresh="getList"
-              @clear-filter="handleClearFilterKey"
-            />
-          </template>
-        </BkTable>
-      </BkLoading>
+      <AgTable
+        ref="tableRef"
+        v-model:table-data="tableData"
+        show-settings
+        resizable
+        :api-method="getTableData"
+        :columns="tableColumns"
+        :max-limit-config="{ allocatedHeight: 268, mode: 'tdesign'}"
+        @clear-filter="handleClearFilter"
+      />
     </div>
   </div>
 </template>
 
 <script lang="tsx" setup>
 import { Button, Loading } from 'bkui-vue';
-import { useDatePicker, useMaxTableLimit, useQueryList } from '@/hooks';
+import { useDatePicker } from '@/hooks';
 import { OPERATE_STATUS_MAP } from '@/enums';
+import type { ITableMethod } from '@/types/common';
 import { type ISyncHistoryItem, getSyncHistory } from '@/services/source/componentManagement';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
 
 const router = useRouter();
 const { t, locale } = useI18n();
-const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 195 });
 
-const dateKey = ref('dateKey');
-const tableColumns = ref([
+const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const tableColumns = shallowRef([
   {
-    label: 'ID',
-    field: 'resource_version_title',
-    render: ({ row }: { row?: Partial<ISyncHistoryItem> }) => {
+    title: 'ID',
+    colKey: 'resource_version_title',
+    cell: (h, { row }: { row?: Partial<ISyncHistoryItem> }) => {
+      if (!row?.id) {
+        return '--';
+      }
       return (
         <Button
           theme="primary"
-          class="m-rr-10px"
+          class="mr-10px"
           text
-          onClick={() => handleVersion(row?.id)}
+          onClick={() => handleVersion(row.id)}
         >
-          { row?.id || '--' }
+          { row.id }
         </Button>
       );
     },
   },
   {
-    label: t('同步时间'),
-    field: 'created_time',
+    title: t('同步时间'),
+    colKey: 'created_time',
+    ellipse: true,
   },
   {
-    label: t('同步版本号（版本标题）'),
-    field: 'resource_version_name',
-    render: ({ row }: { row?: Partial<ISyncHistoryItem> }) => {
+    title: t('同步版本号（版本标题）'),
+    colKey: 'resource_version_name',
+    ellipse: true,
+    cell: (h, { row }: { row?: Partial<ISyncHistoryItem> }) => {
       return (
         <span>
           { row?.resource_version_display || '--' }
@@ -118,9 +107,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('操作人'),
-    field: 'component_name',
-    render: ({ row }: { row?: Partial<ISyncHistoryItem> }) => {
+    title: t('操作人'),
+    colKey: 'component_name',
+    ellipse: true,
+    cell: (h, { row }: { row?: Partial<ISyncHistoryItem> }) => {
       return (
         <span>
           { row?.created_by || '--' }
@@ -129,9 +119,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('操作结果'),
-    field: 'status ',
-    render: ({ row }: { row?: Partial<ISyncHistoryItem> }) => {
+    title: t('操作结果'),
+    colKey: 'status ',
+    ellipse: true,
+    cell: (h, { row }: { row?: Partial<ISyncHistoryItem> }) => {
       if (['releasing'].includes(row?.status)) {
         return (
           <span>
@@ -139,7 +130,7 @@ const tableColumns = ref([
               size="mini"
               theme="primary"
               mode="spin"
-              class="m-r-5px"
+              class="mr-4px"
             />
             { t('同步中') }
           </span>
@@ -154,9 +145,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('操作日志'),
+    title: t('操作日志'),
     field: 'message',
-    render: ({ row }: { row?: Partial<ISyncHistoryItem> }) => {
+    ellipse: true,
+    cell: (h, { row }: { row?: Partial<ISyncHistoryItem> }) => {
       return (
         <span>
           { row?.message || '--' }
@@ -165,36 +157,11 @@ const tableColumns = ref([
     },
   },
 ]);
+const tableData = ref([]);
+const dateKey = ref('dateKey');
 const searchParams = ref({
   time_start: '',
   time_end: '',
-});
-const tableEmptyConf = ref({
-  emptyType: '',
-  isAbnormal: false,
-});
-
-const {
-  isLoading,
-  tableData,
-  pagination,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-} = useQueryList({
-  apiMethod: getSyncHistory,
-  filterData: searchParams,
-  initialPagination: {
-    limitList: [
-      maxTableLimit,
-      10,
-      20,
-      50,
-      100,
-    ],
-    limit: maxTableLimit,
-  },
-  needApigwId: false,
 });
 
 const {
@@ -208,32 +175,28 @@ const {
   handleSelectionModeChange,
 } = useDatePicker(searchParams);
 
-const updateTableEmptyConfig = () => {
-  const isEmpty = dateValue.value?.some(Boolean);
-  if (isEmpty) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
-  }
-  tableEmptyConf.value.emptyType = '';
+const getList = () => {
+  tableRef.value?.fetchData(searchParams.value, { resetPage: true });
+};
+
+const getTableData = async (params: Record<string, any> = {}) => {
+  const res = await getSyncHistory(params);
+  return res ?? {};
 };
 
 const handlePickClear = () => {
   handleClear();
-  handleTimeClear();
+  getList();
 };
 
 const handlePickSuccess = () => {
   handleConfirm();
-  updateTableEmptyConfig();
+  getList();
 };
 
-const handleClearFilterKey = () => {
+const handleClearFilter = () => {
   handlePickClear();
   dateKey.value = String(+new Date());
-  pagination.value = Object.assign(pagination.value, {
-    current: 1,
-    limit: 10,
-  });
 };
 
 const handleVersion = (id: string) => {
@@ -241,10 +204,5 @@ const handleVersion = (id: string) => {
     name: 'SyncVersion',
     query: { id },
   });
-};
-
-const handleTimeClear = () => {
-  pagination.value.current = 1;
-  updateTableEmptyConfig();
 };
 </script>
