@@ -271,7 +271,7 @@
               </div>
               <div class="target-box">
                 <div
-                  class="metadata color-#2dcb56"
+                  class="metadata success"
                   @click="() => handleToggle(addItem)"
                 >
                   <AgIcon
@@ -341,7 +341,7 @@
               </div>
               <div class="target-box">
                 <div
-                  class="metadata color-#ea3636"
+                  class="metadata danger"
                   @click="() => handleToggle(deleteItem)"
                 >
                   <AgIcon
@@ -414,7 +414,7 @@
               </div>
               <div class="target-box">
                 <div
-                  class="metadata color-#ff9c01!"
+                  class="metadata warning"
                   @click="() => handleToggle(updateItem)"
                 >
                   <AgIcon
