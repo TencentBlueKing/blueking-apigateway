@@ -86,7 +86,7 @@ class GatewayDisplayablePermission(permissions.BasePermission):
         return True
 
     def _get_displayable_gateway(self, view):
-        """在文档中心用于给普通用户展示展示文档，需要网关是公开并且启用的"""
+        """在文档中心用于给普通用户展示文档，需要网关是公开并且启用的"""
         lookup_url_kwarg = "gateway_name"
 
         if lookup_url_kwarg not in view.kwargs:
