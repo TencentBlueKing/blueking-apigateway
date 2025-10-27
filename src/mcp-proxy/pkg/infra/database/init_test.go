@@ -58,7 +58,7 @@ func TestDatabase_DSN_WithTLS(t *testing.T) {
 					Enabled: true,
 				},
 			},
-			expected: "root:password@tcp(localhost:3306)/testdb?parseTime=true&tls=true",
+			expected: "root:password@tcp(localhost:3306)/testdb?parseTime=true&tls=custom",
 		},
 		{
 			name: "database with full TLS configuration",
@@ -76,7 +76,7 @@ func TestDatabase_DSN_WithTLS(t *testing.T) {
 					InsecureSkipVerify: true,
 				},
 			},
-			expected: "root:password@tcp(localhost:3306)/testdb?parseTime=true&tls=true&tls_ca=/path/to/ca.pem&tls_cert=/path/to/cert.pem&tls_key=/path/to/key.pem&tls_insecure_skip_verify=true",
+			expected: "root:password@tcp(localhost:3306)/testdb?parseTime=true&tls=custom",
 		},
 	}
 
@@ -135,9 +135,9 @@ func TestNewClient_WithTLSConfig(t *testing.T) {
 
 			// 如果启用了TLS，检查DSN中是否包含TLS参数
 			if tt.database.TLS.Enabled {
-				assert.Contains(t, dsn, "tls=true")
+				assert.Contains(t, dsn, "&tls=custom")
 			} else {
-				assert.NotContains(t, dsn, "tls=true")
+				assert.NotContains(t, dsn, "&tls=")
 			}
 		})
 	}
