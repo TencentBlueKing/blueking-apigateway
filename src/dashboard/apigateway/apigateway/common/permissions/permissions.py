@@ -74,7 +74,11 @@ class GatewayDisplayablePermission(permissions.BasePermission):
     message = gettext_lazy("网关不存在")
 
     def has_permission(self, request, view):
-        gateway_obj = self._get_displayable_gateway(view)
+        source = request.GET.get("source")
+        if source in ["api_debug"]:
+            gateway_obj = self._get_gateway_with_permission(request, view)
+        else:
+            gateway_obj = self._get_displayable_gateway(view)
         if not gateway_obj:
             raise Http404
 
@@ -93,3 +97,18 @@ class GatewayDisplayablePermission(permissions.BasePermission):
             is_public=True,
             name=gateway_name,
         ).first()
+
+    def _get_gateway_with_permission(self, request, view):
+        lookup_url_kwarg = "gateway_name"
+
+        if lookup_url_kwarg not in view.kwargs:
+            return None
+
+        gateway_name = view.kwargs[lookup_url_kwarg]
+        gateway = Gateway.objects.filter(name=gateway_name).first()
+        if not gateway:
+            return None
+        if not gateway.has_permission(request.user.username):
+            return None
+
+        return gateway
