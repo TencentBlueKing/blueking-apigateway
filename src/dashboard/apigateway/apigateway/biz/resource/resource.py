@@ -305,6 +305,14 @@ class ResourceHandler:
         )
 
     @staticmethod
+    def get_updated_time(gateway_id: int, name: str) -> str:
+        """获取网关下某个资源的更新时间"""
+        resource = Resource.objects.filter(gateway_id=gateway_id, name=name).only("updated_time").first()
+        if not resource:
+            return ""
+        return time.format(resource.updated_time)
+
+    @staticmethod
     def get_id_to_resource(gateway_id: int) -> Dict[int, Resource]:
         return {r.id: r for r in Resource.objects.filter(gateway_id=gateway_id)}
 
