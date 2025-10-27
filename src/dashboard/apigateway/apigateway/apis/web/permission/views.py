@@ -152,6 +152,14 @@ class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
         if query_params.get("grant_dimension") == GrantDimensionEnum.API.value:
             app_resource_permissions = []
 
+        if query_params.get("resource_path"):
+            if app_resource_permissions:
+                # 如果匹配到资源数据，则忽略掉网关维度的（只有资源维度可过滤请求路径）
+                app_gateway_permissions = []
+            else:
+                # 如果没有匹配到资源权限数据，全部为空
+                return []
+
         return self.get_app_permissions(app_gateway_permissions, app_resource_permissions)
 
     def get(self, request, *args, **kwargs):
@@ -271,6 +279,14 @@ class AppPermissionExportApi(AppPermissionQuerySetMixin, generics.CreateAPIView)
             ).qs
             if data.get("grant_dimension") == GrantDimensionEnum.API.value:
                 resource_queryset = []
+
+            if data.get("resource_path"):
+                # 如果匹配到资源数据，则忽略掉网关维度的（只有资源维度可过滤请求路径）
+                gateway_queryset = []
+                if not resource_queryset:
+                    # 如果没有匹配到资源权限数据，全部为空
+                    resource_queryset = []
+
         elif data["export_type"] == ExportTypeEnum.SELECTED.value:
             if data.get("resource_permission_ids"):
                 resource_queryset = self.get_resource_queryset().filter(id__in=data["resource_permission_ids"])
