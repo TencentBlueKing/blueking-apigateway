@@ -21,7 +21,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy
 from rest_framework import permissions
 
-from apigateway.core.constants import GatewayStatusEnum
+from apigateway.core.constants import GatewaySourceEnum, GatewayStatusEnum
 from apigateway.core.models import Gateway
 
 
@@ -75,7 +75,7 @@ class GatewayDisplayablePermission(permissions.BasePermission):
 
     def has_permission(self, request, view):
         source = request.GET.get("source")
-        if source in ["api_debug"]:
+        if source in [GatewaySourceEnum.API_DEBUG.value]:
             gateway_obj = self._get_gateway_with_permission(request, view)
         else:
             gateway_obj = self._get_displayable_gateway(view)
@@ -86,6 +86,7 @@ class GatewayDisplayablePermission(permissions.BasePermission):
         return True
 
     def _get_displayable_gateway(self, view):
+        """在文档中心用于给普通用户展示展示文档，需要网关是公开并且启用的"""
         lookup_url_kwarg = "gateway_name"
 
         if lookup_url_kwarg not in view.kwargs:
@@ -99,6 +100,7 @@ class GatewayDisplayablePermission(permissions.BasePermission):
         ).first()
 
     def _get_gateway_with_permission(self, request, view):
+        """在网关管理页面在线调试展示文档，网关管理员能直接展示，不区分是否公开/启用"""
         lookup_url_kwarg = "gateway_name"
 
         if lookup_url_kwarg not in view.kwargs:
