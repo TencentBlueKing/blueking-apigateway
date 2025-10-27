@@ -121,8 +121,8 @@
   "禁用环境": "Disable Stages",
   "资源文档": "Resource Doc",
   "文档更新时间": "Doc Update Time",
-  "轮询(Round-Robin)": "Round-Robin",
-  "加权轮询(Weighted Round-Robin)": "Weighted Round-Robin",
+  "轮询（Round-Robin）": "Round-Robin",
+  "加权轮询（Weighted Round-Robin）": "Weighted Round-Robin",
   "搜索": "Search",
   "请输入查询条件": "Please input query condition",
   "对比结果": "Diff Result",
@@ -2008,5 +2008,9 @@
   "已开启": "Enabled",
   "展示插件网关": "Display plugin gateway",
   "是否为插件网关": "Is it plugin gateway",
-  "由蓝鲸应用插件自动创建的网关": "Gateway automatically created by BlueKing application plugin"
+  "由蓝鲸应用插件自动创建的网关": "Gateway automatically created by BlueKing application plugin",
+  "一致性哈希（CHash）": "CHash",
+  "指数加权移动平均法（EWMA）": "EWMA",
+  "最小连接数（least_conn）": "least_conn",
+  "哈希位置": "Hash On"
 }

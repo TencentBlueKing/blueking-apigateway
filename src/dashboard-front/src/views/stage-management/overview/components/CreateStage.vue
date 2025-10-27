@@ -486,11 +486,11 @@ const isAdd = ref(true);
 const loadbalanceList = [
   {
     id: 'roundrobin',
-    name: t('轮询(Round-Robin)'),
+    name: t('轮询（Round-Robin）'),
   },
   {
     id: 'weighted-roundrobin',
-    name: t('加权轮询(Weighted Round-Robin)'),
+    name: t('加权轮询（Weighted Round-Robin）'),
   },
 ];
 
@@ -1065,14 +1065,14 @@ defineExpose({ handleShowSideslider });
 }
 
 .fixed-footer-btn-wrapper {
-  width: 100%;
-  max-width: 960px;
   position: fixed;
   right: 0;
   bottom: 0;
   z-index: 9;
+  width: 100%;
+  max-width: 960px;
   padding: 10px 0 10px 40px;
-  background-color: #ffffff;
+  background-color: #fff;
   box-shadow: 0 -1px 0 0 #dcdee5;
   transition: .2s;
 }
@@ -1100,8 +1100,8 @@ defineExpose({ handleShowSideslider });
     .panel-header-show,
     .panel-header-hide {
       color: #63656e;
-      transition: .2s;
       transform: rotate(0deg);
+      transition: .2s;
     }
 
     .panel-header-hide {
@@ -1123,8 +1123,8 @@ defineExpose({ handleShowSideslider });
     }
 
     :deep(.bk-collapse-item) {
-      background-color: #f5f7fb;
       margin-bottom: 16px;
+      background-color: #f5f7fb;
 
       .bk-collapse-header {
         height: 40px;
