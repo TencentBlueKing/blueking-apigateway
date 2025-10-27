@@ -28,7 +28,7 @@ from .models import SDKFactory
 
 class GatewaySDKHandler:
     @classmethod
-    def get_stage_sdks(cls, gateway_id: int, language: str) -> List:
+    def get_stage_sdks(cls, gateway_id: int, language: str, is_public: bool = True) -> List:
         releases = list(
             Release.objects.filter(gateway_id=gateway_id).values(
                 "stage__id",
@@ -40,7 +40,10 @@ class GatewaySDKHandler:
         )
 
         resource_version_ids = [release["resource_version__id"] for release in releases]
-        gateway_sdks = cls._get_resource_version_latest_public_sdk(gateway_id, resource_version_ids, language)
+        if is_public:
+            gateway_sdks = cls._get_resource_version_latest_public_sdk(gateway_id, resource_version_ids, language)
+        else:
+            gateway_sdks = cls._get_resource_version_latest_sdk(gateway_id, resource_version_ids, language)
 
         stage_sdks = []
         for release in releases:
@@ -72,6 +75,23 @@ class GatewaySDKHandler:
             gateway_id=gateway_id,
             resource_version_id__in=resource_version_ids,
             is_public=True,
+            language=language,
+        ).order_by("id")
+
+        sdks = {}
+        for sdk in queryset:
+            # 按 id 排序，则最后一个即为最新
+            sdks[sdk.resource_version_id] = sdk
+
+        return sdks
+
+    @staticmethod
+    def _get_resource_version_latest_sdk(
+        gateway_id: int, resource_version_ids: List[int], language: str
+    ) -> Dict[int, GatewaySDK]:
+        queryset = GatewaySDK.objects.filter(
+            gateway_id=gateway_id,
+            resource_version_id__in=resource_version_ids,
             language=language,
         ).order_by("id")
 

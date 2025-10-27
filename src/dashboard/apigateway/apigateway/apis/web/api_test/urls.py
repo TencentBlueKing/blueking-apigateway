@@ -18,7 +18,15 @@
 #
 from django.urls import include, path
 
-from .views import APIDebugHistoryListApi, APIDebugHistoryRetrieveDestroyApi, APITestApi
+from .views import (
+    APIDebugHistoryListApi,
+    APIDebugHistoryRetrieveDestroyApi,
+    APITestApi,
+    ApiTestDocsGatewayRetrieveApi,
+    ApiTestDocsResourceDocRetrieveApi,
+    ApiTestDocsResourceListApi,
+    ApiTestDocsSDKListApi,
+)
 
 urlpatterns = [
     path("", APITestApi.as_view(), name="api_test.tests"),
@@ -31,6 +39,21 @@ urlpatterns = [
                     "<int:id>/",
                     APIDebugHistoryRetrieveDestroyApi.as_view(),
                     name="api_debug.histories.retrieve-destroy",
+                ),
+            ]
+        ),
+    ),
+    path(
+        "docs/",
+        include(
+            [
+                path("", ApiTestDocsGatewayRetrieveApi.as_view(), name="api_test.docs.gateway.retrieve"),
+                path("sdks/", ApiTestDocsSDKListApi.as_view(), name="api_test.docs.gateway_sdk.list"),
+                path("resources/", ApiTestDocsResourceListApi.as_view(), name="api_test.docs.resource.list"),
+                path(
+                    "resources/<slug:resource_name>/doc/",
+                    ApiTestDocsResourceDocRetrieveApi.as_view(),
+                    name="api_test.docs.resource.doc.retrieve",
                 ),
             ]
         ),

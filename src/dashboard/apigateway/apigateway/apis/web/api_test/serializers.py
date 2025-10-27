@@ -21,7 +21,10 @@ from typing import Any, Dict
 from django.conf import settings
 from rest_framework import serializers
 
-from apigateway.core.constants import HTTP_METHOD_CHOICES
+from apigateway.apps.support.constants import ProgrammingLanguageEnum
+from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
+from apigateway.common.i18n.field import SerializerTranslatedField
+from apigateway.core.constants import HTTP_METHOD_CHOICES, PLUGIN_GATEWAY_PREFIX
 
 
 class AuthorizationSLZ(serializers.Serializer):
@@ -92,3 +95,120 @@ class APIDebugHistoriesListOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.api_test.serializers.APIDebugHistoriesListOutputSLZ"
+
+
+class ApiTestDocsGatewayOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(help_text="网关 ID")
+    name = serializers.CharField(help_text="网关名称")
+    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, help_text="网关描述")
+    tenant_mode = serializers.CharField(read_only=True, help_text="租户模式")
+    tenant_id = serializers.CharField(read_only=True, help_text="租户 ID")
+    maintainers = serializers.ListField(help_text="网关负责人")
+    doc_maintainers = serializers.JSONField(help_text="网关文档维护人员")
+    is_official = serializers.SerializerMethodField(help_text="是否为官方网关, true: 是, false: 否")
+    is_plugin_gateway = serializers.SerializerMethodField(help_text="是否为插件网关, true: 是, false: 否")
+    api_url = serializers.SerializerMethodField(help_text="网关访问地址")
+    sdks = serializers.SerializerMethodField(help_text="SDK")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.api_test.serializers.ApiTestDocsGatewayOutputSLZ"
+
+    def get_api_url(self, obj):
+        return GatewayHandler.get_api_domain(obj)
+
+    def get_is_official(self, obj):
+        return GatewayTypeHandler.is_official(self.context["gateway_auth_configs"][obj.id].gateway_type)
+
+    def get_is_plugin_gateway(self, obj):
+        return obj.name.startswith(PLUGIN_GATEWAY_PREFIX)
+
+    def get_sdks(self, obj):
+        return self.context["gateway_sdks"].get(obj.id, [])
+
+
+class ApiTestDocsSDKListInputSLZ(serializers.Serializer):
+    language = serializers.ChoiceField(
+        choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python"
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.api_test.serializers.ApiTestDocsSDKListInputSLZ"
+
+
+class ApiTestDocsStageSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="网关环境 ID")
+    name = serializers.CharField(read_only=True, help_text="网关环境名称")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.api_test.serializers.ApiTestDocsStageSLZ"
+
+
+class ApiTestDocsSDKSLZ(serializers.Serializer):
+    name = serializers.CharField(read_only=True, help_text="SDK 名称")
+    version = serializers.CharField(read_only=True, help_text="SDK 版本号")
+    url = serializers.CharField(read_only=True, help_text="SDK 下载链接")
+    install_command = serializers.CharField(read_only=True, help_text="SDK 安装命令")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.api_test.serializers.ApiTestDocsSDKSLZ"
+
+
+class ApiTestDocsResourceVersionSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="资源版本 ID")
+    version = serializers.CharField(read_only=True, help_text="资源版本号")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.api_test.serializers.ApiTestDocsResourceVersionSLZ"
+
+
+class ApiTestDocsStageSDKOutputSLZ(serializers.Serializer):
+    stage = ApiTestDocsStageSLZ(help_text="网关环境")
+    resource_version = ApiTestDocsResourceVersionSLZ(help_text="资源版本")
+    sdk = ApiTestDocsSDKSLZ(allow_null=True, help_text="SDK")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.api_test.serializers.ApiTestDocsStageSDKOutputSLZ"
+
+
+class ApiTestDocsResourceListInputSLZ(serializers.Serializer):
+    stage_name = serializers.CharField(help_text="网关环境名称")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.api_test.serializers.ApiTestDocsResourceListInputSLZ"
+
+
+class ApiTestDocsResourceOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="资源 ID")
+    name = serializers.CharField(read_only=True, help_text="资源名称")
+    description = SerializerTranslatedField(
+        translated_fields={"en": "description_en"}, allow_blank=True, read_only=True, help_text="资源描述"
+    )
+    method = serializers.CharField(read_only=True, help_text="资源前端请求方法")
+    path = serializers.CharField(read_only=True, help_text="资源前端请求路径")
+    verified_user_required = serializers.BooleanField(read_only=True, help_text="是否需要认证用户")
+    verified_app_required = serializers.BooleanField(read_only=True, help_text="是否需要认证应用")
+    resource_perm_required = serializers.BooleanField(read_only=True, help_text="是否验证应用访问资源的权限")
+    allow_apply_permission = serializers.BooleanField(read_only=True, help_text="是否需要申请权限")
+    labels = serializers.SerializerMethodField(help_text="资源标签列表")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.api_test.serializers.ApiTestDocsResourceOutputSLZ"
+
+    def get_labels(self, obj):
+        return self.context["labels"].get(obj.id, [])
+
+
+class ApiTestDocsResourceDocInputSLZ(serializers.Serializer):
+    stage_name = serializers.CharField(help_text="网关环境名称")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.api_test.serializers.ApiTestDocsResourceDocInputSLZ"
+
+
+class ApiTestDocsResourceDocOutputSLZ(serializers.Serializer):
+    type = serializers.CharField(help_text="文档类型，如 markdown")
+    content = serializers.CharField(help_text="文档内容")
+    updated_time = serializers.DateTimeField(help_text="文档更新时间")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.api_test.serializers.ApiTestDocsResourceDocOutputSLZ"

@@ -31,8 +31,16 @@ from rest_framework import generics, status
 from apigateway.apps.api_debug.constants import SPEC_VERSION
 from apigateway.apps.api_debug.models import APIDebugHistory
 from apigateway.biz.permission import ResourcePermissionHandler
-from apigateway.biz.released_resource import get_released_resource_data
+from apigateway.biz.released_resource import ReleasedResourceHandler, get_released_resource_data
+from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
+from apigateway.biz.released_resource_doc.generators import DocGenerator
+from apigateway.biz.resource import ResourceLabelHandler
+from apigateway.biz.resource_doc import ResourceDocHandler
+from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
+from apigateway.common.django.translation import get_current_language_code
+from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Stage
+from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.curlify import to_curl
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 from apigateway.utils.time import convert_second_to_epoch_millisecond
@@ -40,7 +48,18 @@ from apigateway.utils.time import convert_second_to_epoch_millisecond
 from .data_models import ApiDebugHistoryRequest, ApiDebugHistoryResponse
 from .filters import APIDebugHistoryRecordFilter
 from .prepared_request import PreparedRequestHeaders, PreparedRequestURL
-from .serializers import APIDebugHistoriesListOutputSLZ, APITestInputSLZ, APITestOutputSLZ
+from .serializers import (
+    APIDebugHistoriesListOutputSLZ,
+    ApiTestDocsGatewayOutputSLZ,
+    ApiTestDocsResourceDocInputSLZ,
+    ApiTestDocsResourceDocOutputSLZ,
+    ApiTestDocsResourceListInputSLZ,
+    ApiTestDocsResourceOutputSLZ,
+    ApiTestDocsSDKListInputSLZ,
+    ApiTestDocsStageSDKOutputSLZ,
+    APITestInputSLZ,
+    APITestOutputSLZ,
+)
 
 TEST_PERMISSION_EXPIRE_DAYS = 1
 
@@ -264,3 +283,115 @@ class APIDebugHistoryRetrieveDestroyApi(APIDebugHistoriesQuerySetMixin, generics
         instance = self.get_object()
         instance.delete()
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取网关详情，仅显示公开的、已发布的网关",
+        responses={status.HTTP_200_OK: ApiTestDocsGatewayOutputSLZ()},
+        tags=["WebAPI.Docs.Gateway"],
+    ),
+)
+class ApiTestDocsGatewayRetrieveApi(generics.RetrieveAPIView):
+    def retrieve(self, request, *args, **kwargs):
+        """根据网关名称，获取网关详情"""
+        slz = ApiTestDocsGatewayOutputSLZ(
+            request.gateway,
+            context={
+                "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([request.gateway.id]),
+                "gateway_sdks": GatewaySDKHandler.get_sdks([request.gateway.id]),
+            },
+        )
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取网关 SDK 列表",
+        query_serializer=ApiTestDocsSDKListInputSLZ,
+        responses={status.HTTP_200_OK: ApiTestDocsStageSDKOutputSLZ(many=True)},
+        tags=["WebAPI.Docs.Gateway.SDK"],
+    ),
+)
+class ApiTestDocsSDKListApi(generics.ListAPIView):
+    def list(self, request, *args, **kwargs):
+        """获取网关SDK列表"""
+        slz = ApiTestDocsSDKListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        sdks = GatewaySDKHandler.get_stage_sdks(
+            gateway_id=request.gateway.id,
+            language=slz.validated_data["language"],
+            is_public=False,
+        )
+        output_slz = ApiTestDocsStageSDKOutputSLZ(sdks, many=True)
+        return OKJsonResponse(data=output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取网关环境下已发布的资源列表",
+        query_serializer=ApiTestDocsResourceListInputSLZ,
+        responses={status.HTTP_200_OK: ApiTestDocsResourceOutputSLZ(many=True)},
+        tags=["WebAPI.Docs.Resource"],
+    ),
+)
+class ApiTestDocsResourceListApi(generics.ListAPIView):
+    def list(self, request, *args, **kwargs):
+        """获取网关环境下已发布的资源列表"""
+        slz = ApiTestDocsResourceListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        resources = ReleasedResourceHandler.get_public_released_resource_data_list(
+            request.gateway.id, slz.validated_data["stage_name"]
+        )
+        label_ids = list({label_id for resource in resources for label_id in resource.gateway_labels})
+
+        output_slz = ApiTestDocsResourceOutputSLZ(
+            resources,
+            many=True,
+            context={
+                "labels": ResourceLabelHandler.get_labels_by_ids(label_ids),
+            },
+        )
+        return OKJsonResponse(data=output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取网关资源的文档",
+        query_serializer=ApiTestDocsResourceDocInputSLZ,
+        responses={status.HTTP_200_OK: ApiTestDocsResourceDocOutputSLZ()},
+        tags=["WebAPI.Docs.ResourceDoc"],
+    ),
+)
+class ApiTestDocsResourceDocRetrieveApi(generics.RetrieveAPIView):
+    def retrieve(self, request, resource_name: str, *args, **kwargs):
+        """获取网关资源的文档"""
+        slz = ApiTestDocsResourceDocInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        resource_data, doc_data = ReleasedResourceDocHandler.get_released_resource_doc_data(
+            gateway_id=request.gateway.id,
+            stage_name=slz.validated_data["stage_name"],
+            resource_name=resource_name,
+            language=ResourceDocHandler.get_doc_language(get_current_language_code()),
+        )
+        if not (resource_data and doc_data):
+            raise error_codes.NOT_FOUND
+
+        generator = DocGenerator(
+            gateway=request.gateway,
+            stage_name=slz.validated_data["stage_name"],
+            resource_data=resource_data,
+            doc_data=doc_data,
+            language=ResourceDocHandler.get_doc_language(get_current_language_code()),
+        )
+
+        doc = generator.get_doc()
+        output_slz = ApiTestDocsResourceDocOutputSLZ(doc)
+        return OKJsonResponse(data=output_slz.data)
