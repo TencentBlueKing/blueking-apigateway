@@ -115,25 +115,17 @@ func (d *Database) DSN() string {
 		d.Port,
 		d.Name,
 	)
-
 	// 添加TLS配置参数
 	if d.TLS.Enabled {
-		dsn += "&tls=true"
-		if d.TLS.CertCaFile != "" {
-			dsn += fmt.Sprintf("&tls_ca=%s", d.TLS.CertCaFile)
-		}
-		if d.TLS.CertFile != "" {
-			dsn += fmt.Sprintf("&tls_cert=%s", d.TLS.CertFile)
-		}
-		if d.TLS.CertKeyFile != "" {
-			dsn += fmt.Sprintf("&tls_key=%s", d.TLS.CertKeyFile)
-		}
-		if d.TLS.InsecureSkipVerify {
-			dsn += "&tls_insecure_skip_verify=true"
-		}
+		dsn = fmt.Sprintf("%s&tls=%s", dsn, d.TLSCfgName())
 	}
 
 	return dsn
+}
+
+// TLSCfgName mysql tls 配置名称
+func (d *Database) TLSCfgName() string {
+	return "custom"
 }
 
 // Sentry is the config for sentry
