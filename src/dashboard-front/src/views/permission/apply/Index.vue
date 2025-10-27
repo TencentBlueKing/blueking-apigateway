@@ -251,11 +251,7 @@ const childrenColumns = shallowRef([
     ellipsis: true,
   },
 ]);
-const filterData = ref({
-  bk_app_code: '',
-  applied_by: '',
-  grant_dimension: '',
-});
+const filterData = ref({});
 const curAction = ref({
   ids: [],
   status: '',
@@ -727,11 +723,7 @@ const handleRowClick = ({ e, row }: {
 };
 
 const handleClearFilter = () => {
-  filterData.value = Object.assign({}, {
-    bk_app_code: '',
-    applied_by: '',
-    grant_dimension: '',
-  });
+  filterData.value = {};
 };
 
 const handleClearSelection = () => {

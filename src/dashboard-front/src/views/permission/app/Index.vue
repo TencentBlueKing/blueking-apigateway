@@ -360,6 +360,12 @@ const filterConditions = ref<ISearchItem[]>([
     onlyRecommendChildren: true,
   },
   {
+    name: t('请求路径'),
+    id: 'resource_path ',
+    children: [],
+    onlyRecommendChildren: true,
+  },
+  {
     name: t('模糊搜索'),
     id: 'keyword',
   },

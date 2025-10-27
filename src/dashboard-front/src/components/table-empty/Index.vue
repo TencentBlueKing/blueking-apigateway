@@ -83,7 +83,11 @@ const exceptionAttrs = computed(() => {
   const queryParams = cloneDeep(queryListParams?.[0] ?? {});
   delete queryParams.limit;
   delete queryParams.offset;
-
+  Object.keys(queryParams).forEach((key) => {
+    if ((typeof queryParams[key] === 'string' && !queryParams[key]) || ['offset', 'limit'].includes(key)) {
+      delete queryParams[key];
+    }
+  });
   if (Object.keys(queryParams).length > 0 || ['search-empty'].includes(emptyType)) {
     return {
       type: 'search-empty',
