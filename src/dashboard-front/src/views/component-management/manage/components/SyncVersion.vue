@@ -26,55 +26,44 @@
           :right-icon="'bk-icon icon-search'"
           class="sync-version-search"
           @enter="handleSearch"
+          @clear="handleClearFilter"
         />
       </div>
       <BkLoading :loading="isLoading">
-        <BkTable
-          size="small"
-          :data="componentList"
-          :pagination="pagination"
+        <AgTable
+          ref="tableRef"
+          v-model:table-data="displayData"
+          table-row-key="component_id"
+          show-settings
+          resizable
+          local-page
+          :table-empty-type="tableEmptyType"
+          :max-limit-config="{ allocatedHeight: 260, mode: 'tdesign'}"
           :columns="tableColumns"
-          :max-height="clientHeight"
-          remote-pagination
-          show-overflow-tooltip
-          @page-value-change="handlePageChange"
-          @page-limit-change="handlePageLimitChange"
-        >
-          <template #empty>
-            <TableEmpty
-              :is-loading="isLoading"
-              :empty-type="tableEmptyConf.emptyType"
-              :abnormal="tableEmptyConf.isAbnormal"
-              @refresh="getComponents"
-              @clear-filter="handleClearFilterKey"
-            />
-          </template>
-        </BkTable>
+          @clear-filter="handleClearFilter"
+        />
       </BkLoading>
     </div>
   </div>
 </template>
 
 <script lang="tsx" setup>
-import {
-  delay,
-  sortBy,
-  sortedUniq,
-} from 'lodash-es';
+import { delay } from 'lodash-es';
 import { PERMISSION_LEVEL_MAP } from '@/enums';
-import { useMaxTableLimit } from '@/hooks';
+import type { ITableMethod } from '@/types/common';
 import { type ISyncApigwItem, getSyncVersion } from '@/services/source/componentManagement';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
 
 const { t } = useI18n();
-const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 226 });
 const route = useRoute();
 
+const tableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
 const tableColumns = ref([
   {
-    label: t('系统名称'),
-    field: 'system_name',
-    render: ({ row }: { row?: Partial<ISyncApigwItem> }) => {
+    title: t('系统名称'),
+    colKey: 'system_name',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           {row?.system_name || '--' }
@@ -83,9 +72,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('组件名称'),
-    field: 'component_name',
-    render: ({ row }: { row?: Partial<ISyncApigwItem> }) => {
+    title: t('组件名称'),
+    colKey: 'component_name',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           { row?.component_name || '--' }
@@ -94,9 +84,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('组件请求方法'),
-    field: 'component_method',
-    render: ({ row }: { row?: Partial<ISyncApigwItem> }) => {
+    title: t('组件请求方法'),
+    colKey: 'component_method',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           { row?.component_method || '--' }
@@ -105,9 +96,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('组件请求路径'),
-    field: 'component_path',
-    render: ({ row }: { row?: Partial<ISyncApigwItem> }) => {
+    title: t('组件请求路径'),
+    colKey: 'component_path',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           { row?.component_path || '--' }
@@ -116,10 +108,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('资源ID'),
-    field: 'resource_id',
-    showOverflowTooltip: false,
-    render: ({ row }: { row?: Partial<ISyncApigwItem> }) => {
+    title: t('资源ID'),
+    colKey: 'resource_id',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           { row?.resource_id || '--'}
@@ -128,9 +120,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('组件ID'),
-    field: 'component_id ',
-    render: ({ row }: { row?: Partial<ISyncApigwItem> }) => {
+    title: t('组件ID'),
+    colKey: 'component_id',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           { row?.component_id || '--' }
@@ -139,10 +132,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('权限级别'),
-    field: 'component_permission_level ',
-    width: 100,
-    render: ({ row }: { row?: Partial<ISyncApigwItem> }) => {
+    title: t('权限级别'),
+    colKey: 'component_permission_level',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           { PERMISSION_LEVEL_MAP[row?.component_permission_level] ?? '--' }
@@ -151,23 +144,13 @@ const tableColumns = ref([
     },
   },
 ]);
-const componentList = ref([]);
-const pagination = reactive({
-  current: 1,
-  count: 0,
-  limit: maxTableLimit,
-  limitList: sortedUniq(sortBy([10, 20, 50, 100, maxTableLimit])),
-});
+let pagination = reactive({});
 const requestQueue = reactive(['component']);
 const allData = ref([]);
 const displayData = ref([]);
-const displayDataLocal = ref([]);
 const isLoading = ref(false);
 const pathUrl = ref('');
-const tableEmptyConf = reactive({
-  emptyType: '',
-  isAbnormal: false,
-});
+const tableEmptyType = ref<'empty' | 'search-empty'>('empty');
 
 const historyId = computed(() => route.query.id);
 
@@ -175,15 +158,8 @@ const getComponents = async () => {
   isLoading.value = true;
   try {
     const res = await getSyncVersion(historyId.value);
-    allData.value = Object.freeze(res);
-    displayData.value = res;
-    displayDataLocal.value = res;
-    pagination.count = displayData.value?.length;
-    componentList.value = getDataByPage();
-    tableEmptyConf.isAbnormal = false;
-  }
-  catch {
-    tableEmptyConf.isAbnormal = true;
+    [displayData.value, allData.value] = [Object.freeze(res), Object.freeze(res)];
+    pagination.total = displayData.value?.length;
   }
   finally {
     if (requestQueue?.length > 0) {
@@ -194,81 +170,26 @@ const getComponents = async () => {
     }, 500);
   }
 };
+getComponents();
 
-const updateTableEmptyConfig = () => {
-  if (pathUrl.value && !componentList.value.length) {
-    tableEmptyConf.emptyType = 'searchEmpty';
-    return;
-  }
-  tableEmptyConf.emptyType = '';
-};
-
-const handleClearFilterKey = async () => {
+const handleClearFilter = async () => {
   pathUrl.value = '';
   await getComponents();
 };
 
-const getDataByPage = (page?: number) => {
-  if (!page) {
-    page = 1;
-    pagination.current = 1;
-  }
-  let startIndex = (page - 1) * pagination.limit;
-  let endIndex = page * pagination.limit;
-  if (startIndex < 0) {
-    startIndex = 0;
-  }
-  if (endIndex > displayData.value?.length) {
-    endIndex = displayData.value?.length;
-  }
-  updateTableEmptyConfig();
-  return displayData.value?.slice(startIndex, endIndex);
-};
-
-const handlePageChange = (page: number) => {
-  isLoading.value = true;
-  pagination.current = page;
-  const data = getDataByPage(page);
-  componentList.value?.splice(0, componentList.value?.length, ...data);
-  setTimeout(() => {
-    isLoading.value = false;
-  }, 500);
-};
-
-const handlePageLimitChange = (limit: number) => {
-  pagination.limit = limit;
-  pagination.current = 1;
-  handlePageChange(pagination.current);
-};
-
 const handleSearch = () => {
   isLoading.value = true;
-  displayData.value = displayDataLocal.value?.filter((item: IISyncApigwItem) => {
+  tableEmptyType.value = pathUrl.value ? 'search-empty' : 'empty';
+  displayData.value = allData.value?.filter((item: IISyncApigwItem) => {
     return (item?.component_path?.includes(pathUrl.value)) || (item?.component_name?.includes(pathUrl.value));
   });
-  componentList.value = getDataByPage();
-  pagination.count = displayData.value?.length;
+  pagination.total = displayData.value?.length;
   delay(() => isLoading.value = false, 100);
-  updateTableEmptyConfig();
 };
 
-const init = () => {
-  getComponents();
-};
-
-watch(
-  () => pathUrl.value,
-  (value) => {
-    if (!value) {
-      displayData.value = displayDataLocal.value;
-      pagination.count = displayData.value?.length;
-      componentList.value = getDataByPage();
-    }
-  },
-);
-
-init();
-
+onMounted(() => {
+  pagination = tableRef.value?.getPagination();
+});
 </script>
 
 <style lang="scss" scoped>

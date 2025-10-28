@@ -108,6 +108,7 @@ import { Checkbox } from 'bkui-vue';
 import { useRequest } from 'vue-request';
 import { cloneDeep, sortBy, sortedUniq } from 'lodash-es';
 import type { BkUiSettings } from '@blueking/tdesign-ui/typings/packages/table/types/table';
+import type { ITableMethod } from '@/types/common';
 import { useMaxTableLimit, useTDesignSelection, useTableSetting } from '@/hooks';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
