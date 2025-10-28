@@ -69,20 +69,6 @@
             {{ basics.description }}
           </main>
         </article>
-        <article>
-          <header class="content-title">
-            {{ t('网关负责人') }}
-          </header>
-          <main class="content-main">
-            <span v-if="!featureFlagStore.isEnableDisplayName">{{ basics.maintainers.join(', ') }}</span>
-            <span v-else>
-              <bk-user-display-name
-                :user-id="basics.maintainers.join(', ')"
-                style="word-break: break-all;"
-              />
-            </span>
-          </main>
-        </article>
         <template v-if="featureFlagStore.isTenantMode">
           <article>
             <header class="content-title">
@@ -101,6 +87,20 @@
             </main>
           </article>
         </template>
+        <article>
+          <header class="content-title">
+            {{ t('网关负责人') }}
+          </header>
+          <main class="content-main">
+            <span v-if="!featureFlagStore.isEnableDisplayName">{{ basics.maintainers.join(', ') }}</span>
+            <span v-else>
+              <bk-user-display-name
+                :user-id="basics.maintainers.join(', ')"
+                style="word-break: break-all;"
+              />
+            </span>
+          </main>
+        </article>
         <article>
           <header class="content-title">
             {{ t('文档联系人') }}
