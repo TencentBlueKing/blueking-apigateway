@@ -409,8 +409,107 @@ const expandedFields = ref([]);
 const pageCount = ref<number>(0);
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const settings = shallowRef({
-  size: 'small',
   checked: ['timestamp', 'method', 'http_path', 'status', 'backend_duration', 'error'],
+  fields: [
+    {
+      label: t('请求ID'),
+      field: 'request_id',
+    },
+    {
+      label: t('请求时间'),
+      field: 'timestamp',
+    },
+    {
+      label: t('蓝鲸应用'),
+      field: 'app_code',
+    },
+    {
+      label: t('蓝鲸用户'),
+      field: 'bk_username',
+    },
+    {
+      label: t('客户端IP'),
+      field: 'client_ip',
+    },
+    {
+      label: t('环境'),
+      field: 'stage',
+    },
+    {
+      label: t('资源ID'),
+      field: 'resource_id',
+    },
+    {
+      label: t('资源名称'),
+      field: 'resource_name',
+    },
+    {
+      label: t('请求方法'),
+      field: 'method',
+      disabled: true,
+    },
+    {
+      label: t('请求域名'),
+      field: 'http_host',
+    },
+    {
+      label: t('请求路径'),
+      field: 'http_path',
+      disabled: true,
+    },
+    {
+      label: 'QueryString',
+      field: 'params',
+    },
+    {
+      label: 'Body',
+      field: 'body',
+    },
+    {
+      label: t('后端请求方法'),
+      field: 'backend_method',
+    },
+    {
+      label: t('后端Scheme'),
+      field: 'backend_scheme',
+    },
+    {
+      label: t('后端域名'),
+      field: 'backend_host',
+    },
+    {
+      label: t('后端路径'),
+      field: 'backend_path',
+    },
+    {
+      label: t('响应体大小'),
+      field: 'response_size',
+    },
+    {
+      label: t('状态码'),
+      field: 'status',
+    },
+    {
+      label: t('请求总耗时'),
+      field: 'request_duration',
+    },
+    {
+      label: t('耗时(毫秒)'),
+      field: 'backend_duration',
+    },
+    {
+      label: t('错误编码名称'),
+      field: 'code_name',
+    },
+    {
+      label: t('错误'),
+      field: 'error',
+    },
+    {
+      label: t('响应说明'),
+      field: 'response_desc',
+    },
+  ],
 });
 
 const includeObj = ref<string[]>([]);
