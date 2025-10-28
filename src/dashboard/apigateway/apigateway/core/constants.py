@@ -57,6 +57,10 @@ class GatewayTypeEnum(StructuredEnum):
     CLOUDS_API = EnumField(10, "云API")
 
 
+class GatewaySourceEnum(StructuredEnum):
+    API_DEBUG = EnumField("api_debug")
+
+
 class StageStatusEnum(StructuredEnum):
     INACTIVE = EnumField(0, "INACTIVE")
     ACTIVE = EnumField(1, "ACTIVE")

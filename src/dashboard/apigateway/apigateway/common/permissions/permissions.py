@@ -21,7 +21,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy
 from rest_framework import permissions
 
-from apigateway.core.constants import GatewayStatusEnum
+from apigateway.core.constants import GatewaySourceEnum, GatewayStatusEnum
 from apigateway.core.models import Gateway
 
 
@@ -74,7 +74,11 @@ class GatewayDisplayablePermission(permissions.BasePermission):
     message = gettext_lazy("网关不存在")
 
     def has_permission(self, request, view):
-        gateway_obj = self._get_displayable_gateway(view)
+        source = request.GET.get("source")
+        if source in [GatewaySourceEnum.API_DEBUG.value]:
+            gateway_obj = self._get_gateway_with_permission(request, view)
+        else:
+            gateway_obj = self._get_displayable_gateway(view)
         if not gateway_obj:
             raise Http404
 
@@ -82,6 +86,7 @@ class GatewayDisplayablePermission(permissions.BasePermission):
         return True
 
     def _get_displayable_gateway(self, view):
+        """在文档中心用于给普通用户展示文档，需要网关是公开并且启用的"""
         lookup_url_kwarg = "gateway_name"
 
         if lookup_url_kwarg not in view.kwargs:
@@ -93,3 +98,19 @@ class GatewayDisplayablePermission(permissions.BasePermission):
             is_public=True,
             name=gateway_name,
         ).first()
+
+    def _get_gateway_with_permission(self, request, view):
+        """在网关管理页面在线调试展示文档，网关管理员能直接展示，不区分是否公开/启用"""
+        lookup_url_kwarg = "gateway_name"
+
+        if lookup_url_kwarg not in view.kwargs:
+            return None
+
+        gateway_name = view.kwargs[lookup_url_kwarg]
+        gateway = Gateway.objects.filter(name=gateway_name).first()
+        if not gateway:
+            return None
+        if not gateway.has_permission(request.user.username):
+            return None
+
+        return gateway
