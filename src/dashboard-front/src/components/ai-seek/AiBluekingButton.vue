@@ -18,7 +18,7 @@
 
 <template>
   <div
-    v-bk-tooltips="t('问问AI')"
+    v-bk-tooltips="tooltipOptions"
     class="ai-blueking-button"
     :style="{ background: `url(${logo}) center center / 18px 18px no-repeat` }"
     v-bind="$attrs"
@@ -27,10 +27,13 @@
 
 <script lang="ts" setup>
 import AIBluekingLogo from '@/images/ai-blueking.svg';
+import { t } from '@/locales';
+
+interface IProps { tooltipOptions?: Record<string, any> | string }
+
+const { tooltipOptions = t('问问AI') } = defineProps<IProps>();
 
 const logo = AIBluekingLogo;
-
-const { t } = useI18n();
 </script>
 
 <style lang="scss" scoped>
