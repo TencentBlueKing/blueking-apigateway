@@ -36,7 +36,6 @@
     :row-key="tableRowKey"
     :bk-ui-settings="tableSetting"
     v-bind="$attrs"
-    @bk-ui-settings-change="handleSettingChange"
     @row-mouseenter="handleRowEnter"
     @row-mouseleave="handleRowLeave"
     @page-change="handlePageChange"
@@ -107,7 +106,7 @@ import { Checkbox } from 'bkui-vue';
 import { useRequest } from 'vue-request';
 import { cloneDeep } from 'lodash-es';
 import type { BkUiSettings } from '@blueking/tdesign-ui/typings/packages/table/types/table';
-import { useMaxTableLimit, useTDesignSelection, useTableSetting } from '@/hooks';
+import { useMaxTableLimit, useTDesignSelection } from '@/hooks';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 interface IProps {
@@ -215,7 +214,7 @@ const pagination = ref<PrimaryTableProps['pagination']>({
   showPageSize: true,
 });
 
-const { changeTableSetting, isDiffSize } = useTableSetting(tableSetting.value);
+// const { changeTableSetting, isDiffSize } = useTableSetting(tableSetting.value);
 
 // 设置表格半选效果
 const setIndeterminate = computed(() => {
@@ -451,15 +450,15 @@ const handlePageChange = ({ current, pageSize }: {
   }
 };
 
-const handleSettingChange = (setting: BkUiSettings) => {
-  tableSetting.value = setting ?? {};
-  const isExistDiff = isDiffSize(setting);
-  changeTableSetting(setting);
-  if (!isExistDiff) {
-    // 这里处理高级设置事件回调后需要处理的业务
-    return;
-  }
-};
+// const handleSettingChange = (setting: BkUiSettings) => {
+//   tableSetting.value = setting ?? {};
+//   const isExistDiff = isDiffSize(setting);
+//   changeTableSetting(setting);
+//   if (!isExistDiff) {
+//     // 这里处理高级设置事件回调后需要处理的业务
+//     return;
+//   }
+// };
 
 // 处理自定义重置功能和点击单选直接关闭弹框
 const handleRadioFilterClick = () => {
