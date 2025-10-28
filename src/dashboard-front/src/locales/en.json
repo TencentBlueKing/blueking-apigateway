@@ -2012,5 +2012,10 @@
   "一致性哈希（CHash）": "CHash",
   "指数加权移动平均法（EWMA）": "EWMA",
   "最小连接数（least_conn）": "least_conn",
-  "哈希位置": "Hash On"
+  "哈希位置": "Hash On",
+  "资源文档一键翻译": "Auto resource doc translation",
+  "一键生成全部英文文档": "Auto generate all English docs",
+  "有": "Yes",
+  "一键翻译英文": "Translate to EN",
+  "一键翻译中文": "Translate to CN"
 }
