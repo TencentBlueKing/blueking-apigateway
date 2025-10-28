@@ -32,7 +32,7 @@
     <BkLoading :loading="isLoading">
       <AgTable
         ref="tableRef"
-        v-model:table-data="docCategoryList"
+        v-model:table-data="displayData"
         show-settings
         resizable
         local-page
@@ -218,7 +218,6 @@ const tableColumns = ref([
     },
   },
 ]);
-const docCategoryList = ref([]);
 const pagination = ref({
   offset: 1,
   count: 0,
@@ -327,8 +326,7 @@ const getDocCategoryList = async (loading = false) => {
   isLoading.value = loading;
   try {
     const res = await getDocCategory();
-    allData.value = Object.freeze(res);
-    displayData.value = res;
+    [allData.value, displayData.value] = [Object.freeze(res), Object.freeze(res)];
     allData.value.forEach((item) => {
       if (!classifyFilters.value.map(subItem => subItem.value).includes(item.doc_category_id)) {
         classifyFilters.value.push({
@@ -338,7 +336,6 @@ const getDocCategoryList = async (loading = false) => {
       }
     });
     pagination.value.count = displayData.value.length;
-    docCategoryList.value = getDataByPage();
   }
   finally {
     setDelay(500);
@@ -348,23 +345,6 @@ getDocCategoryList(true);
 
 const updateTableEmptyConfig = () => {
   tableEmptyType.value = keyword.value ? 'search-empty' : 'empty';
-};
-
-// 获取当前页数据
-const getDataByPage = (page?: number) => {
-  if (!page) {
-    pagination.value.offset = page = 1;
-  }
-  let startIndex = (page - 1) * pagination.value.limit;
-  let endIndex = page * pagination.value.limit;
-  if (startIndex < 0) {
-    startIndex = 0;
-  }
-  if (endIndex > displayData.value.length) {
-    endIndex = displayData.value.length;
-  }
-  updateTableEmptyConfig();
-  return displayData.value.slice(startIndex, endIndex);
 };
 
 // 编辑文档
@@ -398,7 +378,6 @@ const handleSearch = (payload: string) => {
     return item.name.match(reg);
   });
   pagination.value.count = displayData.value.length;
-  docCategoryList.value = getDataByPage();
   setDelay(500);
 };
 
