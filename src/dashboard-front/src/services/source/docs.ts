@@ -23,7 +23,7 @@ const path = '/docs/gateways';
 export const getGatewaysDocs = (data: any) => http.get(`${path}/`, data);
 
 // 获取网关文档详情
-export const getGatewaysDetailsDocs = (gatewayName: string) => http.get(`${path}/${gatewayName}/`);
+export const getGatewaysDetailsDocs = (gatewayName: string, data: any) => http.get(`${path}/${gatewayName}/`, data);
 
 // 获取网关资源的文档
 export const getApigwResourceDocDocs = (gatewayName: string, resourceName: string, data: any) => http.get(`${path}/${gatewayName}/resources/${resourceName}/doc/`, data);

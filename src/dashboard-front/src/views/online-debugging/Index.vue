@@ -426,6 +426,7 @@
         <Doc
           ref="docContentRef"
           :stage-name="getStageName"
+          :stage-id="stage"
           :resource-name="curResource?.name"
         />
       </div>
