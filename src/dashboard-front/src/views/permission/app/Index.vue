@@ -25,7 +25,7 @@
             disabled: curSelections.length,
           }"
           theme="primary"
-          :disabled="!curSelections.length"
+          :disabled="!curSelections.length || !isBatchRenewal"
           @click="handleBatchApplyPermission"
         >
           {{ t("批量续期") }}
@@ -69,7 +69,6 @@
       <AgTable
         ref="tableRef"
         v-model:table-data="tableData"
-        v-model:settings="settings"
         show-settings
         resizable
         show-selection
@@ -107,7 +106,7 @@
     <RenewalDialog
       v-model:expire-date="expireDays"
       v-model:dialog-params="ApplyDialogConf"
-      :selections="curSelections"
+      v-model:selections="curSelections"
       :apply-count="applyCount"
       @confirm="handleBatchConfirm"
     />
@@ -141,7 +140,6 @@ import {
   getResourcePermissionAppList,
 } from '@/services/source/permission';
 import { useGateway, usePermission } from '@/stores';
-// import { useMaxTableLimit } from '@/hooks';
 import { IDropList, ITableMethod } from '@/types/common';
 import { IFilterValues, IPermission, IResource } from '@/types/permission';
 import { sortByKey } from '@/utils';
@@ -150,11 +148,9 @@ import RenewalDialog from '@/views/permission/app/components/Renewal.vue';
 import BatchRenewal from '@/views/permission/app/components/BatchRenewal.vue';
 import DeletePermission from '@/views/permission/app/components/DeletePermission.vue';
 import AgTable from '@/components/ag-table/Index.vue';
-// import TableHeaderFilter from '@/components/table-header-filter';
 
 const { t } = useI18n();
 const { handleTableFilterChange } = useTableFilterChange();
-// const { maxTableLimit, clientHeight } = useMaxTableLimit();
 const gatewayStore = useGateway();
 const permissionStore = usePermission();
 
@@ -240,7 +236,6 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('操作'),
     colKey: 'operate',
     fixed: 'right',
-    width: 150,
     cell: (h, { row }: { row: IPermission }) => {
       return (
         <div>
@@ -315,6 +310,7 @@ const curAuthData = ref<IAuthData>({
 const curAuthDataBack = ref<IAuthData>(cloneDeep(curAuthData.value));
 const componentKey = ref(0);
 const expireDays = ref(0);
+const isBatchRenewal = ref(true);
 // 批量续期dialog
 const batchApplySliderConf = reactive({
   isShow: false,
@@ -364,15 +360,17 @@ const filterConditions = ref<ISearchItem[]>([
     onlyRecommendChildren: true,
   },
   {
+    name: t('请求路径'),
+    id: 'resource_path ',
+    children: [],
+    onlyRecommendChildren: true,
+  },
+  {
     name: t('模糊搜索'),
     id: 'keyword',
   },
 ]);
 const tableData = ref([]);
-const settings = shallowRef({
-  size: 'small',
-  checked: [],
-});
 
 const apigwId = computed(() => gatewayStore.apigwId);
 // 可续期的数量
@@ -422,10 +420,10 @@ const getTableData = async (params: Record<string, any> = {}) => {
   return results ?? [];
 };
 
-function disabledSelection(row) {
+const disabledSelection = (row) => {
   row.selectionTip = row.renewable ? '' : t('权限有效期大于 360 天时，暂无法续期');
   return !row.renewable;
-}
+};
 
 function getList() {
   tableRef.value?.fetchData(filterData.value, { resetPage: true });
@@ -475,6 +473,7 @@ function handleSearch() {
 }
 
 const handleSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }) => {
+  isBatchRenewal.value = true;
   curSelections.value = selections;
 };
 
@@ -491,6 +490,7 @@ const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: Fil
 
 function handleClearSelection() {
   curSelections.value = [];
+  isBatchRenewal.value = false;
 };
 
 const getBkAppCodes = async () => {
@@ -588,6 +588,7 @@ const handleBatchApplyPermission = () => {
 
 // 单个续期
 const handleSingleApply = (data: IPermission) => {
+  isBatchRenewal.value = curSelections.value.length > 0;
   curSelections.value = [data];
   ApplyDialogConf.isShow = true;
 };

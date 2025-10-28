@@ -21,6 +21,7 @@ from typing import Any, Dict, Optional, Tuple
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.released_resource import ReleasedResourceData, ReleasedResourceHandler
+from apigateway.biz.resource import ResourceHandler
 
 
 @dataclass
@@ -69,7 +70,12 @@ class ReleasedResourceDocHandler:
             resource_id=released_resource.resource_id,
             language=language,
         ).first()
-        if not doc:
-            return ReleasedResourceData.from_data(released_resource.data), DummyResourceDocData.create(language)
 
+        resource_updated_time = ResourceHandler.get_updated_time(gateway_id, resource_name)
+        if not doc:
+            doc_data = DummyResourceDocData.create(language)
+            doc_data.updated_time = resource_updated_time
+            return ReleasedResourceData.from_data(released_resource.data), doc_data
+
+        doc.data["updated_time"] = resource_updated_time
         return ReleasedResourceData.from_data(released_resource.data), ReleasedResourceDocData.from_data(doc.data)

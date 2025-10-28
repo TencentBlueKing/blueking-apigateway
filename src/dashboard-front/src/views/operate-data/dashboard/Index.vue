@@ -350,6 +350,7 @@ const searchParams = ref<ISearchParamsType>({
   time_start: dayjs(formatTime.value[0]).unix(),
   time_end: dayjs(formatTime.value[1]).unix(),
   metrics: '',
+  backend_name: '',
 });
 
 let timeId: NodeJS.Timeout | null = null;
@@ -419,6 +420,7 @@ const getBackendServices = async () => {
 };
 
 const handleBackendChange = async () => {
+  searchParams.value.backend_name = backendList.value.find((item: any) => item.id === backend_id.value)?.name || '';
   searchParams.value.resource_id = '';
   await getResources();
 };
@@ -526,6 +528,7 @@ const handleClearParams = () => {
     time_start: dayjs(formatTime.value[0]).unix(),
     time_end: dayjs(formatTime.value[1]).unix(),
     metrics: '',
+    backend_name: '',
   };
   backend_id.value = '';
   topRef.value?.reset();

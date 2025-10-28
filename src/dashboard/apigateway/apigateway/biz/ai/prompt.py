@@ -44,7 +44,11 @@ Please analyze in the following format:
 2. Handling suggestions: (Provide recommended measures based on the document content)
 """
 
-log_language_prompt_template = {"zh-cn": ERROR_LOG_ANALYSIS_ZH_TEMPLATE, "en": ERROR_LOG_ANALYSIS_EN_TEMPLATE}
+log_language_prompt_template = {
+    "zh-cn": ERROR_LOG_ANALYSIS_ZH_TEMPLATE,
+    "zh-hans": ERROR_LOG_ANALYSIS_ZH_TEMPLATE,
+    "en": ERROR_LOG_ANALYSIS_EN_TEMPLATE,
+}
 
 api_log_err_code_file_name = {
     "zh-cn": "api_response_err_code.md",
@@ -53,7 +57,7 @@ api_log_err_code_file_name = {
 
 # 文档翻译提示词模板
 DOC_TRANSLATE_ZH_TEMPLATE = """
-请将以下API接口文档翻译成中文或者英文，保持markdown格式不变，只翻译文本内容：
+请将以下API接口文档翻译成中文或者英文，保持markdown格式不变，只翻译文本内容(不要添加任何多余的注释或者说明)：
 
 {doc_content}
 
@@ -67,7 +71,7 @@ DOC_TRANSLATE_ZH_TEMPLATE = """
 """
 
 DOC_TRANSLATE_EN_TEMPLATE = """
-Please translate the following API documentation to English or Chinese, maintaining the markdown format and only translating the text content:
+Please translate the following API documentation to English or Chinese, maintaining the markdown format and only translating the text content(Do not add any extra comments or explanations):
 
 {doc_content}
 
@@ -80,7 +84,11 @@ Translation requirements:
 6. Ensure the translated documentation is professional, clear, and easy to understand
 """
 
-doc_translate_language_prompt_template = {"zh-cn": DOC_TRANSLATE_ZH_TEMPLATE, "en": DOC_TRANSLATE_EN_TEMPLATE}
+doc_translate_language_prompt_template = {
+    "zh-cn": DOC_TRANSLATE_ZH_TEMPLATE,
+    "zh-hans": DOC_TRANSLATE_ZH_TEMPLATE,
+    "en": DOC_TRANSLATE_EN_TEMPLATE,
+}
 
 
 class PromptBuilder:
@@ -109,6 +117,6 @@ def _build_doc_translate_prompt(doc_content: str) -> str:
 
 
 ai_content_prompt_builders = {
-    AIContentTypeEnum.LOG_ANALYSIS.value: _build_log_analyze_prompt,
-    AIContentTypeEnum.DOC_TRANSLATE.value: _build_doc_translate_prompt,
+    AIContentTypeEnum.LOG_ANALYSIS: _build_log_analyze_prompt,
+    AIContentTypeEnum.DOC_TRANSLATE: _build_doc_translate_prompt,
 }

@@ -31,6 +31,7 @@
     :loading="loading"
     :filter-row="null"
     :hover="false"
+    :max-height="clientHeight"
     :table-layout="tableLayout"
     :row-key="tableRowKey"
     :bk-ui-settings="tableSetting"
@@ -106,7 +107,7 @@ import { Checkbox } from 'bkui-vue';
 import { useRequest } from 'vue-request';
 import { cloneDeep } from 'lodash-es';
 import type { BkUiSettings } from '@blueking/tdesign-ui/typings/packages/table/types/table';
-import { useTDesignSelection, useTableSetting } from '@/hooks';
+import { useMaxTableLimit, useTDesignSelection, useTableSetting } from '@/hooks';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 interface IProps {
@@ -121,6 +122,7 @@ interface IProps {
   showSettings?: boolean
   tableLayout?: string
   tableEmptyType?: 'empty' | 'search-empty'
+  maxLimitConfig?: Record<string, any> | null
 }
 
 const selectedRowKeys = defineModel<any[]>('selectedRowKeys', { default: () => [] });
@@ -149,6 +151,8 @@ const {
   tableLayout = 'fixed',
   // 禁止勾选复选框的条件
   disabledCheckSelection = undefined,
+  // 表格最大可分页数量配置项
+  maxLimitConfig = {},
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -164,10 +168,10 @@ const emit = defineEmits<{
     selections: TableRowData
     selectionsRowKeys: string[] | number[]
   }
-  'clear-selection': void
-  'request-done': void
-  'clear-filter': void
-  'refresh': void
+  'clear-selection': [void]
+  'request-done': [void]
+  'clear-filter': [void]
+  'refresh': [void]
 }>();
 
 const slots = useSlots();
@@ -175,6 +179,8 @@ const slots = useSlots();
 const route = useRoute();
 
 const { t, locale } = useI18n();
+
+const { maxTableLimit, clientHeight } = useMaxTableLimit(maxLimitConfig);
 
 const {
   isAllSelection,
@@ -366,7 +372,10 @@ const fetchData = (
   options: { resetPage?: boolean } = { resetPage: false },
 ) => {
   if (options.resetPage) {
-    pagination.value!.current = 1;
+    pagination.value.current = 1;
+  }
+  if (Object.keys(maxLimitConfig)?.length) {
+    pagination.value.current = maxTableLimit;
   }
   run({
     ...params,
@@ -397,10 +406,6 @@ const handleRowEnter = ({ e, row }: {
   e: MouseEvent
   row: TableRowData
 }) => {
-  const truncateNode = e.target?.querySelector('.cell-single-ellipse');
-  if (truncateNode) {
-    row.isOverflow = truncateNode?.scrollWidth > truncateNode.clientWidth;
-  }
   emit('row-mouseenter', {
     e,
     row,
@@ -418,6 +423,20 @@ const handleRowLeave = ({ e, row }: {
   });
 };
 
+const handleCellEnter = ({ e, row }: {
+  e: MouseEvent
+  row: TableRowData
+}) => {
+  const cell = (e.target as HTMLElement).closest('.cell-single-ellipse');
+  if (cell) {
+    row.isOverflow = cell.scrollWidth > cell.clientWidth;
+  }
+};
+
+const handleCellLeave = ({ row }: { row: TableRowData }) => {
+  delete row.isOverflow;
+};
+
 const handlePageChange = ({ current, pageSize }: {
   current: number
   pageSize: number
@@ -433,7 +452,7 @@ const handlePageChange = ({ current, pageSize }: {
 };
 
 const handleSettingChange = (setting: BkUiSettings) => {
-  tableSetting.value = { ...setting };
+  tableSetting.value = setting ?? {};
   const isExistDiff = isDiffSize(setting);
   changeTableSetting(setting);
   if (!isExistDiff) {
@@ -552,16 +571,19 @@ defineExpose({
   setPaginationTheme,
   resetPaginationTheme,
   refresh,
+  handleCellEnter,
+  handleCellLeave,
 });
 
 </script>
 
 <style lang="scss">
 .primary-table-wrapper {
+
   .cell-single-ellipse {
-    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 
     &.is-color-active {
       color: #3a84ff;
@@ -572,10 +594,10 @@ defineExpose({
   .table-first-full-row {
     width: 100%;
     height: 32px;
-    line-height: 32px;
-    background-color: #f0f1f5;
-    text-align: center;
     font-size: 12px;
+    line-height: 32px;
+    text-align: center;
+    background-color: #f0f1f5;
 
     .normal-text {
       color: #4d4f56;
@@ -611,14 +633,15 @@ defineExpose({
     }
 
     .t-pagination__number.t-is-current {
-      background-color: #e1ecff;
-      color: #3a84ff;
-      border: none;
       font-size: 12px;
+      color: #3a84ff;
+      background-color: #e1ecff;
+      border: none;
     }
   }
 
   // 默认的 loading 图标
+
   .t-loading svg.t-icon-loading {
     display: none !important;
   }
@@ -636,6 +659,7 @@ defineExpose({
   }
 
   &.primary-table-no-data {
+
     .t-table__row--full.t-table__first-full-row {
       height: 0;
     }
@@ -643,7 +667,9 @@ defineExpose({
 }
 
 .custom-radio-filter-wrapper {
+
   .t-table__filter--bottom-buttons {
+
     .t-button:nth-child(2) {
       display: none !important;
     }

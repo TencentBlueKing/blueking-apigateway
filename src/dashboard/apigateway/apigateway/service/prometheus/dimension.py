@@ -45,6 +45,7 @@ class BaseMetrics(BasePrometheusMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
@@ -56,6 +57,7 @@ class BaseMetrics(BasePrometheusMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         start: int,
         end: int,
         step: str,
@@ -64,7 +66,9 @@ class BaseMetrics(BasePrometheusMetrics):
         resource_name: Optional[str],
     ):
         # generate query expression
-        promql = self._get_query_promql(gateway_name, stage_name, step, stage_id, resource_id, resource_name)
+        promql = self._get_query_promql(
+            gateway_name, stage_name, backend_name, step, stage_id, resource_id, resource_name
+        )
 
         # request prometheus http api to get metrics data
         return query_range(
@@ -79,6 +83,7 @@ class BaseMetrics(BasePrometheusMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         start: int,
         end: int,
         step: str,
@@ -87,7 +92,9 @@ class BaseMetrics(BasePrometheusMetrics):
         resource_name: Optional[str],
     ):
         # generate query expression
-        promql = self._get_query_promql(gateway_name, stage_name, step, stage_id, resource_id, resource_name)
+        promql = self._get_query_promql(
+            gateway_name, stage_name, backend_name, step, stage_id, resource_id, resource_name
+        )
         result: Dict[str, Any] = {}
         data = query_range(
             bk_biz_id=getattr(settings, "BCS_CLUSTER_BK_BIZ_ID", ""),
@@ -154,6 +161,7 @@ class RequestsMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
@@ -164,6 +172,7 @@ class RequestsMetrics(BaseMetrics):
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
+                ("backend_name", "=", backend_name),
                 ("resource_name", "=", resource_name),
             ]
         )
@@ -177,6 +186,7 @@ class Non20XStatusMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
@@ -187,6 +197,7 @@ class Non20XStatusMetrics(BaseMetrics):
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
+                ("backend_name", "=", backend_name),
                 ("resource_name", "=", resource_name),
                 ("status", "=~", "3..|4..|5.."),
             ]
@@ -205,6 +216,7 @@ class AppRequestsMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
@@ -215,6 +227,7 @@ class AppRequestsMetrics(BaseMetrics):
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
+                ("backend_name", "=", backend_name),
                 ("resource_name", "=", resource_name),
             ]
         )
@@ -232,6 +245,7 @@ class ResourceRequestsMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
@@ -242,6 +256,7 @@ class ResourceRequestsMetrics(BaseMetrics):
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
+                ("backend_name", "=", backend_name),
                 ("resource_name", "=", resource_name),
             ]
         )
@@ -259,6 +274,7 @@ class ResponseTimeBaseMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
@@ -269,6 +285,7 @@ class ResponseTimeBaseMetrics(BaseMetrics):
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
+                ("backend_name", "=", backend_name),
                 ("resource_name", "=", resource_name),
             ]
         )
@@ -307,6 +324,7 @@ class IngressMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
@@ -336,6 +354,7 @@ class EgressMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
@@ -366,6 +385,7 @@ class RequestsTotalMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
@@ -376,6 +396,7 @@ class RequestsTotalMetrics(BaseMetrics):
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
+                ("backend_name", "=", backend_name),
                 ("resource_name", "=", resource_name),
             ]
         )
@@ -390,6 +411,7 @@ class HealthRateMetrics(BaseMetrics):
         self,
         gateway_name: str,
         stage_name: str,
+        backend_name: Optional[str],
         step: str,
         stage_id: Optional[int],
         resource_id: Optional[int],
@@ -400,6 +422,7 @@ class HealthRateMetrics(BaseMetrics):
                 *self.default_labels,
                 ("api_name", "=", gateway_name),
                 ("stage_name", "=", stage_name),
+                ("backend_name", "=", backend_name),
                 ("resource_name", "=", resource_name),
                 ("status", "=~", "5.."),
                 # ("proxy_error", "=", "1"),

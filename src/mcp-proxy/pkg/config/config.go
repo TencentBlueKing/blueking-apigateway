@@ -106,15 +106,26 @@ type Database struct {
 }
 
 // DSN ...
-func (cfg *Database) DSN() string {
-	return fmt.Sprintf(
+func (d *Database) DSN() string {
+	dsn := fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?parseTime=true",
-		cfg.User,
-		cfg.Password,
-		cfg.Host,
-		cfg.Port,
-		cfg.Name,
+		d.User,
+		d.Password,
+		d.Host,
+		d.Port,
+		d.Name,
 	)
+	// 添加TLS配置参数
+	if d.TLS.Enabled {
+		dsn = fmt.Sprintf("%s&tls=%s", dsn, d.TLSCfgName())
+	}
+
+	return dsn
+}
+
+// TLSCfgName mysql tls 配置名称
+func (d *Database) TLSCfgName() string {
+	return "custom"
 }
 
 // Sentry is the config for sentry
@@ -188,6 +199,13 @@ func Load(v *viper.Viper) (*Config, error) {
 		return nil, errors.New("database cannot be empty")
 	}
 
+	// 验证所有数据库配置
+	for _, db := range cfg.Databases {
+		if err := db.ValidateDatabase(); err != nil {
+			return nil, err
+		}
+	}
+
 	if cfg.McpServer.Interval == 0 {
 		cfg.McpServer.Interval = 60 * time.Second
 	}
@@ -223,4 +241,42 @@ func (t Tracing) GinAPIEnabled() bool {
 // DBAPIEnabled get db api trace switch
 func (t Tracing) DBAPIEnabled() bool {
 	return t.Enable && t.Instrument.DbAPI
+}
+
+// ValidateTLS 验证TLS配置
+func (t TLS) ValidateTLS() error {
+	if !t.Enabled {
+		return nil
+	}
+
+	// 如果启用了TLS，检查证书文件是否存在
+	if t.CertCaFile != "" {
+		if _, err := os.Stat(t.CertCaFile); os.IsNotExist(err) {
+			return fmt.Errorf("TLS CA certificate file not found: %s", t.CertCaFile)
+		}
+	}
+
+	if t.CertFile != "" {
+		if _, err := os.Stat(t.CertFile); os.IsNotExist(err) {
+			return fmt.Errorf("TLS certificate file not found: %s", t.CertFile)
+		}
+	}
+
+	if t.CertKeyFile != "" {
+		if _, err := os.Stat(t.CertKeyFile); os.IsNotExist(err) {
+			return fmt.Errorf("TLS private key file not found: %s", t.CertKeyFile)
+		}
+	}
+
+	return nil
+}
+
+// ValidateDatabase 验证数据库配置
+func (d Database) ValidateDatabase() error {
+	// 验证TLS配置
+	if err := d.TLS.ValidateTLS(); err != nil {
+		return fmt.Errorf("database %s TLS config validation failed: %w", d.ID, err)
+	}
+
+	return nil
 }
