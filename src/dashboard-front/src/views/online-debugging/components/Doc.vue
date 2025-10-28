@@ -150,20 +150,22 @@ import hljs from 'highlight.js';
 import {
   getApigwResourceDocDocs,
   getApigwResourceSDKDocs,
-  getApigwResourcesDocs,
-  getApigwSDKDocs,
+  // getApigwSDKDocs,
   getGatewaysDetailsDocs,
 } from '@/services/source/docs';
+import { getResourcesOnline } from '@/services/source/online-debugging';
 import Chat from '@/components/chat/Index.vue';
 import 'highlight.js/styles/github.css';
 
 interface IProps {
   stageName?: string
+  stageId?: number
   resourceName?: string
 }
 
 const {
   stageName = '',
+  stageId = 0,
   resourceName = '',
 } = defineProps<IProps>();
 
@@ -172,7 +174,6 @@ const userStore = useUserInfo();
 const gatewayStore = useGateway();
 const featureFlagStore = useFeatureFlag();
 
-const curSdk = ref({});
 const active = ref('doc');
 const curComponent = ref({
   id: '',
@@ -190,7 +191,8 @@ const curApigw = ref({
 const curDocUpdated = ref('');
 const sdkMarkdownHtml = ref('');
 const renderHtmlIndex = ref(0);
-const sdks = ref([]);
+// const curSdk = ref({});
+// const sdks = ref([]);
 
 const curUser = computed(() => userStore.info);
 const userList = computed(() => {
@@ -290,16 +292,15 @@ const initMarkdownHtml = (box: string) => {
 };
 
 const getApigwAPIDetail = async () => {
-  curApigw.value = await getGatewaysDetailsDocs(gatewayStore.currentGateway?.name);
+  curApigw.value = await getGatewaysDetailsDocs(gatewayStore.currentGateway?.name, { source: 'api_debug' });
 };
 
 const getApigwResourceDetail = async () => {
   const query = {
     limit: 10000,
     offset: 0,
-    stage_name: stageName,
   };
-  const res = await getApigwResourcesDocs(gatewayStore.currentGateway?.name, query);
+  const res = await getResourcesOnline(gatewayStore.currentGateway?.id, stageId, query);
 
   const match = res?.find((item) => {
     return item.name === resourceName;
@@ -313,7 +314,10 @@ const getApigwResourceDetail = async () => {
 };
 
 const getApigwResourceDoc = async () => {
-  const query = { stage_name: stageName };
+  const query = {
+    stage_name: stageName,
+    source: 'api_debug',
+  };
   const res = await getApigwResourceDocDocs(gatewayStore.currentGateway?.name, resourceName, query);
   const { content } = res;
   curComponent.value.content = content;
@@ -329,6 +333,7 @@ const getApigwResourceSDK = async () => {
     language: 'python',
     stage_name: stageName,
     resource_name: resourceName,
+    source: 'api_debug',
   };
   const res = await getApigwResourceSDKDocs(gatewayStore.currentGateway?.name, query);
   const { content } = res;
@@ -336,24 +341,24 @@ const getApigwResourceSDK = async () => {
   initMarkdownHtml('sdk-markdown');
 };
 
-const getApigwSDK = async (language: string) => {
-  const query = {
-    limit: 10000,
-    offset: 0,
-    language,
-  };
-  const res = await getApigwSDKDocs(gatewayStore.currentGateway?.name, query);
-  sdks.value = res;
-  const match = sdks.value?.find(item => item?.stage?.name === stageName);
-  curSdk.value = match || {};
-  getApigwResourceSDK();
-};
+// const getApigwSDK = async (language: string) => {
+// const query = {
+//   limit: 10000,
+//   offset: 0,
+//   language,
+// };
+// const res = await getApigwSDKDocs(gatewayStore.currentGateway?.name, query);
+// sdks.value = res;
+// const match = sdks.value?.find(item => item?.stage?.name === stageName);
+// curSdk.value = match || {};
+// getApigwResourceSDK();
+// };
 
 const init = () => {
   getApigwAPIDetail();
   getApigwResourceDetail();
   getApigwResourceDoc();
-  getApigwSDK('python');
+  getApigwResourceSDK();
 };
 
 defineExpose({ init });
