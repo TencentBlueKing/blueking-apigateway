@@ -79,7 +79,7 @@ class ResourceInfoSLZ(serializers.Serializer):
         backend_id = obj["proxy"].get("backend_id", None)
         if backend_id:
             # 后端服务
-            backend = self.context["resource_backends"].get("backend_id", None)
+            backend = self.context["resource_backends"].get(backend_id, None)
             backend_info = {"id": backend_id, "name": backend.name if backend else ""}
 
             # 后端服务配置

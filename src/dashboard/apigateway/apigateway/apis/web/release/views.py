@@ -190,10 +190,9 @@ class ReleaseCreateApi(generics.CreateAPIView):
             for backend_id in not_exist_backend_ids:
                 resource_names.extend(backend_to_resources[backend_id])
 
-            if resource_names:
-                raise error_codes.NOT_FOUND.format(
-                    _("资源【{}】对应的后端服务不存在，不可发布".format(", ".join(resource_names)))
-                )
+            raise error_codes.NOT_FOUND.format(
+                _("资源【{}】对应的后端服务不存在，不可发布".format(", ".join(resource_names)))
+            )
 
     def get_queryset(self):
         return Release.objects.filter(gateway=self.request.gateway)
