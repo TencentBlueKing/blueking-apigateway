@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
+from collections import defaultdict
 
 from django.conf import settings
 from django.http import Http404
@@ -45,7 +46,7 @@ from apigateway.components.bkpaas import (
     get_pass_deploy_streams_history_events,
 )
 from apigateway.core.constants import PublishSourceEnum
-from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion
+from apigateway.core.models import Backend, PublishEvent, Release, ReleaseHistory, ResourceVersion
 from apigateway.utils import openapi as openapi_utils
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
@@ -166,6 +167,34 @@ class ReleaseCreateApi(generics.CreateAPIView):
     serializer_class = ReleaseInputSLZ
     lookup_field = "id"
 
+    def _check_resource_version_backend(self, resource_version_id: int) -> None:
+        """检查资源版本的后端是否存在"""
+        try:
+            resource_version = ResourceVersion.objects.get(id=resource_version_id)
+        except ResourceVersion.DoesNotExist:
+            raise error_codes.NOT_FOUND.format(_("资源版本不存在"))
+
+        backend_to_resources = defaultdict(list)
+        for resource_data in resource_version.data:
+            backend_id = resource_data.get("proxy", {}).get("backend_id", None)
+            if backend_id:
+                backend_to_resources[backend_id].append(resource_data["name"])
+
+        exist_backend_ids = set(
+            Backend.objects.filter(id__in=backend_to_resources.keys()).values_list("id", flat=True)
+        )
+
+        not_exist_backend_ids = set(backend_to_resources.keys()) - exist_backend_ids
+        if not_exist_backend_ids:
+            resource_names = []
+            for backend_id in not_exist_backend_ids:
+                resource_names.extend(backend_to_resources[backend_id])
+
+            if resource_names:
+                raise error_codes.NOT_FOUND.format(
+                    _("资源【{}】对应的后端服务不存在，不可发布".format(", ".join(resource_names)))
+                )
+
     def get_queryset(self):
         return Release.objects.filter(gateway=self.request.gateway)
 
@@ -177,6 +206,10 @@ class ReleaseCreateApi(generics.CreateAPIView):
         stage_id = slz.validated_data["stage_id"]
         gateway_id = request.gateway.id
 
+        resource_version_id = slz.validated_data["resource_version_id"]
+        if resource_version_id:
+            self._check_resource_version_backend(resource_version_id)
+
         try:
             with Lock(
                 f"{gateway_id}_{stage_id}",
@@ -186,7 +219,7 @@ class ReleaseCreateApi(generics.CreateAPIView):
                 history = release(
                     gateway=request.gateway,
                     stage_id=slz.validated_data["stage_id"],
-                    resource_version_id=slz.validated_data["resource_version_id"],
+                    resource_version_id=resource_version_id,
                     comment=slz.validated_data.get("comment", ""),
                     username=request.user.username,
                 )
