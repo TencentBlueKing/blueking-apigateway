@@ -870,7 +870,10 @@ const handleLoadBalanceChange = (value: string, stageId: number) => {
 const handleHashOnChange = (value: string, stageId: number) => {
   const stage = stageConfig.value.find(item => item.id === stageId);
   if (stage) {
-    if (value === 'header') {
+    if (value === 'vars') {
+      stage.configs.key = 'remote_addr';
+    }
+    else if (value === 'header') {
       stage.configs.key = 'http_';
     }
     else if (value === 'cookie') {
