@@ -276,7 +276,6 @@ const tableColumns = ref([
     },
   },
 ]);
-const systemList = ref([]);
 const initData = ref({});
 const pagination = ref({
   offset: 0,
@@ -322,35 +321,17 @@ const getCategories = async () => {
 };
 
 // 获取系统列表
-const getSystemList = async (loading = false, curPage = 1) => {
+const getSystemList = async (loading = false) => {
   isLoading.value = loading;
   try {
     const res = await getSystems();
     const results = Object.freeze(res || []);
     [allData.value, displayData.value] = [results, results];
     pagination.value.count = displayData.value.length;
-    systemList.value = getDataByPage(curPage);
   }
   finally {
     setDelay(1000);
   }
-};
-
-// 前端分页
-const getDataByPage = (page = 1) => {
-  if (!page) {
-    pagination.value.offset = 0;
-    page = 1;
-  }
-  let startIndex = (page - 1) * pagination.value.limit;
-  let endIndex = page * pagination.value.limit;
-  if (startIndex < 0) {
-    startIndex = 0;
-  }
-  if (endIndex > displayData.value.length) {
-    endIndex = displayData.value.length;
-  }
-  return displayData.value.slice(startIndex, endIndex);
 };
 
 const init = () => {
@@ -405,8 +386,8 @@ const handleDeleteSystem = async () => {
 };
 
 const handleSearch = (payload: string) => {
+  tableEmptyType.value = payload ? 'search-empty' : 'empty';
   if (!payload) {
-    tableEmptyType.value = 'empty';
     return;
   }
   isLoading.value = true;
@@ -414,13 +395,11 @@ const handleSearch = (payload: string) => {
     offset: 0,
     limit: 10,
   });
-  tableEmptyType.value = 'search-empty';
   displayData.value = allData.value.filter((item) => {
     const reg = new RegExp(`(${payload})`, 'gi');
     return item.name.match(reg) || item.description.match(reg);
   });
   pagination.value.count = displayData.value.length;
-  systemList.value = getDataByPage();
   setDelay(500);
 };
 
