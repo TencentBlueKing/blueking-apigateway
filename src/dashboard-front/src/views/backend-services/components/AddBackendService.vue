@@ -204,7 +204,7 @@
                           property="configs.key"
                           :disabled="disabled"
                           required
-                          @change="(value) => {slotProps = value}"
+                          @change="handleHashOnKeyChange"
                         />
 
                         <BkFormItem
@@ -813,6 +813,13 @@ const handleHashOnChange = (value: string, stageId: number) => {
     else if (value === 'cookie') {
       stage.configs.key = 'cookie_';
     }
+  }
+};
+
+const handleHashOnKeyChange = (config: any) => {
+  const stage = stageConfig.value.find(item => item.id === config.id);
+  if (stage) {
+    stage.configs.key = config.configs.key;
   }
 };
 

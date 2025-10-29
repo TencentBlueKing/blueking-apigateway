@@ -147,7 +147,7 @@ const rules = [
       }
       return true;
     },
-    message: t('必须以arg_ 开头并填写数字、字母、下划线、减号'),
+    message: t('必须以 arg_ 开头并填写数字、字母、下划线、减号'),
     trigger: 'blur',
   },
 ];
