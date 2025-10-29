@@ -101,8 +101,24 @@
         <div class="main-content-wrap">
           <template v-if="selectedTool">
             <header class="tool-name">
-              <span class="name">{{ selectedTool.name }}</span>
-              <span class="desc">（{{ selectedTool.description }}）</span>
+              <div class="truncate name">
+                {{ selectedTool.name }}
+              </div>
+              <div class="desc">
+                （{{ selectedTool.description }}）
+              </div>
+              <BkButton
+                theme="primary"
+                text
+                @click="handleNavDocDetail"
+              >
+                <AgIcon
+                  name="jump"
+                  size="16"
+                  class="mr-6px"
+                />
+                {{ t('查看文档详情') }}
+              </BkButton>
             </header>
             <article class="tool-basics">
               <section class="basic-cell">
@@ -147,24 +163,21 @@
             </article>
           </template>
           <!--  API markdown 文档  -->
-          <article
-            v-if="selectedToolMarkdownHtml"
-            class="tool-detail-content"
-          >
-            <div
+          <article class="tool-detail-content">
+            <!-- <div
               id="toolDocMarkdown"
               v-dompurify-html="selectedToolMarkdownHtml"
               class="ag-markdown-view"
-            />
+              /> -->
             <div class="schema-wrapper">
               <article class="schema-group">
-                <h3 class="title">
+                <h3 class="title mt-0!">
                   {{ t('请求参数') }}
                 </h3>
                 <RequestParams
-                  v-if="!selectedToolSchema.none_schema &&
-                    (selectedToolSchema.parameters?.length
-                      || Object.keys(selectedToolSchema.requestBody || {}).length)"
+                  v-if="!selectedToolSchema?.none_schema &&
+                    (selectedToolSchema?.parameters?.length
+                      || Object.keys(selectedToolSchema?.requestBody || {}).length)"
                   :detail="{ schema: selectedToolSchema }"
                   readonly
                 />
@@ -177,7 +190,7 @@
                   {{ t('响应参数') }}
                 </h3>
                 <ResponseParams
-                  v-if="Object.keys(selectedToolSchema.responses || {}).length"
+                  v-if="Object.keys(selectedToolSchema?.responses || {}).length"
                   :detail="{ schema: selectedToolSchema }"
                   readonly
                 />
@@ -187,7 +200,7 @@
               </article>
             </div>
           </article>
-          <TableEmpty v-else />
+          <!-- <TableEmpty v-else /> -->
         </div>
       </template>
     </BkResizeLayout>
@@ -208,6 +221,7 @@ import { getMcpServerToolDoc } from '@/services/source/mcp-market';
 import { copy } from '@/utils';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
+import AgIcon from '@/components/ag-icon/Index.vue';
 import ResponseParams from '@/views/resource-management/components/response-params/Index.vue';
 import RequestParams from '@/views/resource-management/components/request-params/Index.vue';
 import 'highlight.js/styles/github.css';
@@ -225,6 +239,7 @@ const emit = defineEmits<{ 'update-count': [count: number] }>();
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
 // 网关id
 const gatewayId = useRouteParams('id', 0, { transform: Number });
 
@@ -332,7 +347,7 @@ watch(toolList, () => {
 });
 
 const fetchToolList = async () => {
-  if (!server.id) {
+  if (!server?.id) {
     return;
   }
   try {
@@ -453,6 +468,18 @@ const getHighlightedHtml = (value: string) => {
     return value.replace(new RegExp(`(${keyword.value})`, 'i'), '<em class="ag-keyword">$1</em>');
   }
   return value;
+};
+
+const handleNavDocDetail = () => {
+  const routeData = router.resolve({
+    name: 'ApiDocDetail',
+    params: {
+      curTab: 'gateway',
+      targetName: server.gateway?.name,
+    },
+    query: { apiName: selectedTool.value.name },
+  });
+  window.open(routeData.href, '_blank');
 };
 
 onMounted(() => {
@@ -625,6 +652,7 @@ $code-color: #63656e;
       gap: 6px;
 
       .name {
+        max-width: 660px;
         font-size: 16px;
         font-weight: 700;
         line-height: 22px;
