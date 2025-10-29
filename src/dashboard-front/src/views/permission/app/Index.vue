@@ -264,10 +264,6 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     },
   },
 ]);
-const defaultFilterData = ref<DefaultSearchParamsInterface>({ grant_dimension: 'ALL' });
-const singleSelectData = ref<{ [key: string]: string }>(cloneDeep(defaultFilterData));
-const checkedGrantDimensionFilterOptions = ref<string[]>([]);
-const checkedGrantTypeFilterOptions = ref<string[]>([]);
 const filterData = ref<IFilterParams>({});
 const resourceList = ref<IResource[]>([]);
 const curPermission = ref<Partial<IPermission>>({
@@ -355,14 +351,10 @@ const filterConditions = ref<ISearchItem[]>([
   {
     name: t('资源名称'),
     id: 'resource_id',
-    children: [],
-    onlyRecommendChildren: true,
   },
   {
     name: t('请求路径'),
     id: 'resource_path',
-    children: [],
-    onlyRecommendChildren: true,
   },
   {
     name: t('模糊搜索'),
@@ -429,26 +421,7 @@ function getList() {
 };
 
 function handleSearch() {
-  let isEmpty = false;
   filterData.value = {};
-  // 当前有资源名称过滤，且过滤值不在资源列表中，则删除该过滤条件
-  const resourceIdFilterIndex = filterValues.value.findIndex(
-    filter => filter.id === 'resource_id',
-  );
-    // 找到授权维度联动表头筛选
-  const rantDimensionIndex = filterValues.value.findIndex(filter => ['grant_dimension'].includes(filter.id));
-  singleSelectData.value.grant_dimension = rantDimensionIndex > -1 ? filterValues.value[rantDimensionIndex].values?.[0]?.id : 'ALL';
-  if (resourceIdFilterIndex > -1) {
-    const resourceId = filterValues.value[resourceIdFilterIndex].values[0].id as string;
-    const validResourceIds = filterConditions.value.find(condition => condition.id === 'resource_id')?.children.map(option => option.id);
-    if (!validResourceIds.includes(resourceId)) {
-      filterValues.value.splice(resourceIdFilterIndex, 1);
-      Message({
-        theme: 'warning',
-        message: t('请选择有效的资源名称'),
-      });
-    }
-  }
   if (filterValues.value) {
     // 把纯文本搜索项转换成查询参数
     const textItem = filterValues.value.find(val => val.type === 'text');
@@ -460,12 +433,11 @@ function handleSearch() {
         filterData.value[item.id] = item.values[0].id;
       }
     });
-    isEmpty = filterValues.value.length === 0;
   }
-  exportDropData.value.forEach((e: IDropList) => {
+  exportDropData.value.forEach((exp: IDropList) => {
     // 已选资源
-    if (e.value === 'filtered') {
-      e.disabled = isEmpty;
+    if (exp.value.includes('filtered')) {
+      exp.disabled = filterValues.value.length === 0;
     }
   });
   getList();
@@ -633,8 +605,6 @@ const handleSave = () => {
 const handleClearFilter = () => {
   filterData.value = {};
   filterValues.value = [];
-  checkedGrantDimensionFilterOptions.value = [];
-  checkedGrantTypeFilterOptions.value = [];
 };
 
 const getSearchDimensionText = (row: string | null) => {
