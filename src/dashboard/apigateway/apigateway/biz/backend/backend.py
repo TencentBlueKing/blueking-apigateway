@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from typing import Any, Dict, List, Tuple
 
 from django.db import transaction
@@ -23,6 +24,8 @@ from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, GatewayStatusEnum, PublishSourceEnum, StageStatusEnum
 from apigateway.core.models import Backend, BackendConfig, Proxy, Stage
 from apigateway.utils.time import now_datetime
+
+logger = logging.getLogger(__name__)
 
 
 class BackendHandler:
@@ -94,6 +97,14 @@ class BackendHandler:
             status=StageStatusEnum.ACTIVE.value,
             gateway__status=GatewayStatusEnum.ACTIVE.value,
         ).values_list("id", flat=True)
+
+        if not active_stage_ids:
+            logger.info(
+                "no active stage found, skip publish. gateway_id=%s, updated_stage_ids=%s",
+                backend.gateway.id,
+                updated_stage_ids,
+            )
+            return backend, active_stage_ids
 
         gateway_id = backend.gateway.id
         for stage_id in active_stage_ids:
