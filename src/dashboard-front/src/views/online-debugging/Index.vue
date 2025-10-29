@@ -113,243 +113,205 @@
         v-show="resourceGroupLength"
         class="resize-main"
       >
-        <div class="request-setting">
-          <BkCollapse
-            v-model="activeIndex"
-            class="request-setting-collapse"
+        <div class="request-setting-title">
+          <div
+            class="request-source-name"
+            @click="isSpread = !isSpread"
           >
-            <BkCollapsePanel :name="1">
-              <template #header>
-                <div class="request-setting-title">
-                  <div class="request-source-name">
-                    <RightShape
-                      class="request-source-icon"
-                      :class="[activeIndex?.includes(1) ? 'switch' : '']"
+            <RightShape
+              class="request-source-icon"
+              :class="[isSpread ? 'switch' : '']"
+            />
+            <span class="source-title">{{ curResource?.name }}</span>
+            <span class="source-subtitle">（ {{ curResource?.description }} ）</span>
+          </div>
+          <div
+            class="request-setting-content"
+            :class="{'anim-hidden': !isSpread}"
+          >
+            <div v-show="isSpread">
+              <div class="request-setting-item top-flush">
+                <div class="request-setting-label">
+                  {{ t('应用认证') }}：
+                </div>
+                <div class="request-setting-main">
+                  <span>
+                    ({{ isDefaultAppAuth ? t('默认测试应用') : t('自定义应用') }})
+                    bk_app_code：{{ isDefaultAppAuth ? testAppCode : formData.authorization.bk_app_code }}；
+                    bk_app_secret：{{ isDefaultAppAuth ? '******' : formData.authorization.bk_app_secret }}
+                  </span>
+                  <BkPopConfirm
+                    width="470"
+                    trigger="click"
+                    @confirm="saveAppAuthEdit"
+                    @cancel="cancelAppAuthEdit"
+                  >
+                    <EditLine
+                      class="edit-auth"
+                      @click="handleEditAppAuth"
                     />
-                    <span class="source-title">{{ curResource?.name }}</span>
-                    <span class="source-subtitle">（ {{ curResource?.description }} ）</span>
-                  </div>
-                  <div
-                    v-show="showPath"
-                    class="request-source-path seldom-path"
-                  >
-                    <div class="path-title">
-                      {{ t('请求路径') }}：
-                    </div>
-                    <div class="source-path">
-                      <div class="request-path-box">
-                        <BkTag
-                          theme="success"
-                          class="method-tag"
+
+                    <template #content>
+                      <div class="edit-user-auth">
+                        <div class="title">
+                          {{ t('应用认证') }}<span>*</span>
+                        </div>
+                        <BkRadioGroup
+                          v-model="appAuthorization.appAuth"
+                          class="auth-type"
                         >
-                          {{ curResource?.method }}
-                        </BkTag>
-                        <span class="request-path">{{ curResource?.path }}</span>
-                      </div>
-                      <BkButton
-                        class="fixed-w"
-                        theme="primary"
-                        :loading="isLoading"
-                        :disabled="isLoading"
-                        @click="handleSend"
-                      >
-                        {{ t('发送') }}
-                      </BkButton>
-                      <BkButton
-                        class="ml8 fixed-w"
-                        @click="viewDoc"
-                      >
-                        {{ t('查看文档') }}
-                      </BkButton>
-                    </div>
-                  </div>
-                </div>
-              </template>
-              <template #content>
-                <div class="request-setting-content">
-                  <div class="request-setting-item top-flush">
-                    <div class="request-setting-label">
-                      {{ t('应用认证') }}：
-                    </div>
-                    <div class="request-setting-main">
-                      <span>
-                        ({{ isDefaultAppAuth ? t('默认测试应用') : t('自定义应用') }})
-                        bk_app_code：{{ isDefaultAppAuth ? testAppCode : formData.authorization.bk_app_code }}；
-                        bk_app_secret：{{ isDefaultAppAuth ? '******' : formData.authorization.bk_app_secret }}
-                      </span>
-                      <BkPopConfirm
-                        width="470"
-                        trigger="click"
-                        @confirm="saveAppAuthEdit"
-                        @cancel="cancelAppAuthEdit"
-                      >
-                        <EditLine
-                          class="edit-auth"
-                          @click="handleEditAppAuth"
-                        />
-
-                        <template #content>
-                          <div class="edit-user-auth">
-                            <div class="title">
-                              {{ t('应用认证') }}<span>*</span>
-                            </div>
-                            <BkRadioGroup
-                              v-model="appAuthorization.appAuth"
-                              class="auth-type"
-                            >
-                              <BkRadioButton label="use_test_app">
-                                {{ t('默认测试应用') }}
-                              </BkRadioButton>
-                              <BkRadioButton label="use_custom_app">
-                                {{ t('自定义应用') }}
-                              </BkRadioButton>
-                            </BkRadioGroup>
-                            <template v-if="appAuthorization.appAuth === 'use_test_app'">
-                              <BkInput
-                                class="auth-value"
-                                prefix="bk_app_code"
-                                :value="testAppCode"
-                                disabled
-                              />
-                              <BkInput
-                                class="auth-value"
-                                prefix="bk_app_secret"
-                                :value="'******'"
-                                disabled
-                              />
-                            </template>
-                            <template v-else>
-                              <BkInput
-                                v-model="appAuthorization.bk_app_code"
-                                class="auth-value"
-                                prefix="bk_app_code"
-                                :placeholder="t('请输入蓝鲸应用ID')"
-                              />
-                              <BkInput
-                                v-model="appAuthorization.bk_app_secret"
-                                class="auth-value"
-                                prefix="bk_app_secret"
-                                :placeholder="t('请输入蓝鲸应用密钥')"
-                              />
-                            </template>
-                            <div class="edit-user-tips">
-                              <InfoLine class="icon" />
-                              <span class="tips">{{ t('默认测试应用，网关自动为其短期授权；自定义应用，需主动为应用授权资源访问权限') }}</span>
-                            </div>
-                            <!-- <div class="edit-user-btns">
-                              <BkButton theme="primary" @click="saveAppAuthEdit">{{ t('保存') }}</BkButton>
-                              <BkButton class="ml8" @click="cancelAppAuthEdit">{{ t('取消') }}</BkButton>
-                              </div> -->
-                          </div>
+                          <BkRadioButton label="use_test_app">
+                            {{ t('默认测试应用') }}
+                          </BkRadioButton>
+                          <BkRadioButton label="use_custom_app">
+                            {{ t('自定义应用') }}
+                          </BkRadioButton>
+                        </BkRadioGroup>
+                        <template v-if="appAuthorization.appAuth === 'use_test_app'">
+                          <BkInput
+                            class="auth-value"
+                            prefix="bk_app_code"
+                            :value="testAppCode"
+                            disabled
+                          />
+                          <BkInput
+                            class="auth-value"
+                            prefix="bk_app_secret"
+                            :value="'******'"
+                            disabled
+                          />
                         </template>
-                      </BkPopConfirm>
-                    </div>
-                  </div>
-                  <div
-                    v-if="curResource?.verified_user_required"
-                    class="request-setting-item top-flush"
+                        <template v-else>
+                          <BkInput
+                            v-model="appAuthorization.bk_app_code"
+                            class="auth-value"
+                            prefix="bk_app_code"
+                            :placeholder="t('请输入蓝鲸应用ID')"
+                          />
+                          <BkInput
+                            v-model="appAuthorization.bk_app_secret"
+                            class="auth-value"
+                            prefix="bk_app_secret"
+                            :placeholder="t('请输入蓝鲸应用密钥')"
+                          />
+                        </template>
+                        <div class="edit-user-tips">
+                          <InfoLine class="icon" />
+                          <span class="tips">{{ t('默认测试应用，网关自动为其短期授权；自定义应用，需主动为应用授权资源访问权限') }}</span>
+                        </div>
+                        <!-- <div class="edit-user-btns">
+                          <BkButton theme="primary" @click="saveAppAuthEdit">{{ t('保存') }}</BkButton>
+                          <BkButton class="ml8" @click="cancelAppAuthEdit">{{ t('取消') }}</BkButton>
+                          </div> -->
+                      </div>
+                    </template>
+                  </BkPopConfirm>
+                </div>
+              </div>
+              <div
+                v-if="curResource?.verified_user_required"
+                class="request-setting-item top-flush"
+              >
+                <div class="request-setting-label">
+                  {{ t('用户认证') }}：
+                </div>
+                <div class="request-setting-main">
+                  <span>
+                    ({{ formData.useUserFromCookies ? t('默认用户认证') : t('自定义用户认证') }})
+                    bk_token：{{ formData.useUserFromCookies ? '******' : formData.authorization.bk_token }}
+                  </span>
+                  <BkPopConfirm
+                    width="470"
+                    trigger="click"
+                    @confirm="saveUserAuthEdit"
+                    @cancel="cancelUserAuthEdit"
                   >
-                    <div class="request-setting-label">
-                      {{ t('用户认证') }}：
-                    </div>
-                    <div class="request-setting-main">
-                      <span>
-                        ({{ formData.useUserFromCookies ? t('默认用户认证') : t('自定义用户认证') }})
-                        bk_token：{{ formData.useUserFromCookies ? '******' : formData.authorization.bk_token }}
-                      </span>
-                      <BkPopConfirm
-                        width="470"
-                        trigger="click"
-                        @confirm="saveUserAuthEdit"
-                        @cancel="cancelUserAuthEdit"
-                      >
-                        <EditLine
-                          class="edit-auth"
-                          @click="handleEditUserAuth"
-                        />
+                    <EditLine
+                      class="edit-auth"
+                      @click="handleEditUserAuth"
+                    />
 
-                        <template #content>
-                          <div class="edit-user-auth">
-                            <div class="title">
-                              {{ t('用户认证') }}<span>*</span>
-                            </div>
-                            <BkRadioGroup
-                              v-model="userCookies.useUserFromCookies"
-                              class="auth-type"
-                            >
-                              <BkRadioButton label>
-                                {{ t('默认用户认证') }}
-                              </BkRadioButton>
-                              <BkRadioButton :label="false">
-                                {{ t('自定义用户认证') }}
-                              </BkRadioButton>
-                            </BkRadioGroup>
-                            <template v-if="userCookies.useUserFromCookies">
-                              <BkInput
-                                class="auth-value"
-                                prefix="bk_token"
-                                :placeholder="t('请输入 Cookies 中，字段 bk_token 的值')"
-                                :value="'******'"
-                                disabled
-                              />
-                            </template>
-                            <template v-else>
-                              <BkInput
-                                v-model="userCookies.bk_token"
-                                class="auth-value"
-                                prefix="bk_token"
-                                :placeholder="t('请输入 Cookies 中，字段 bk_token 的值')"
-                              />
-                            </template>
-
-                            <div class="edit-user-tips">
-                              <InfoLine class="icon" />
-                              <span class="tips">{{ t('默认用户认证，将默认从 Cookies 中获取用户认证信息；自定义用户认证，可自定义用户认证信息') }}</span>
-                            </div>
-                            <!-- <div class="edit-user-btns">
-                              <BkButton theme="primary" @click="saveUserAuthEdit">{{ t('保存') }}</BkButton>
-                              <BkButton class="ml8" @click="cancelUserAuthEdit">{{ t('取消') }}</BkButton>
-                              </div> -->
-                          </div>
-                        </template>
-                      </BkPopConfirm>
-                    </div>
-                  </div>
-                  <div class="request-setting-item request-source-path">
-                    <div class="request-setting-label path-title">
-                      {{ t('请求路径') }}：
-                    </div>
-                    <div class="request-setting-main source-path">
-                      <div class="request-path-box">
-                        <BkTag
-                          theme="success"
-                          class="method-tag"
+                    <template #content>
+                      <div class="edit-user-auth">
+                        <div class="title">
+                          {{ t('用户认证') }}<span>*</span>
+                        </div>
+                        <BkRadioGroup
+                          v-model="userCookies.useUserFromCookies"
+                          class="auth-type"
                         >
-                          {{ curResource?.method }}
-                        </BkTag>
-                        <span class="request-path">{{ curResource?.path }}</span>
+                          <BkRadioButton label>
+                            {{ t('默认用户认证') }}
+                          </BkRadioButton>
+                          <BkRadioButton :label="false">
+                            {{ t('自定义用户认证') }}
+                          </BkRadioButton>
+                        </BkRadioGroup>
+                        <template v-if="userCookies.useUserFromCookies">
+                          <BkInput
+                            class="auth-value"
+                            prefix="bk_token"
+                            :placeholder="t('请输入 Cookies 中，字段 bk_token 的值')"
+                            :value="'******'"
+                            disabled
+                          />
+                        </template>
+                        <template v-else>
+                          <BkInput
+                            v-model="userCookies.bk_token"
+                            class="auth-value"
+                            prefix="bk_token"
+                            :placeholder="t('请输入 Cookies 中，字段 bk_token 的值')"
+                          />
+                        </template>
+
+                        <div class="edit-user-tips">
+                          <InfoLine class="icon" />
+                          <span class="tips">{{ t('默认用户认证，将默认从 Cookies 中获取用户认证信息；自定义用户认证，可自定义用户认证信息') }}</span>
+                        </div>
+                        <!-- <div class="edit-user-btns">
+                          <BkButton theme="primary" @click="saveUserAuthEdit">{{ t('保存') }}</BkButton>
+                          <BkButton class="ml8" @click="cancelUserAuthEdit">{{ t('取消') }}</BkButton>
+                          </div> -->
                       </div>
-                      <BkButton
-                        class="fixed-w"
-                        theme="primary"
-                        :loading="isLoading"
-                        :disabled="isLoading"
-                        @click="handleSend"
-                      >
-                        {{ t('发送') }}
-                      </BkButton>
-                      <BkButton
-                        class="ml8 fixed-w"
-                        @click="viewDoc"
-                      >
-                        {{ t('查看文档') }}
-                      </BkButton>
-                    </div>
-                  </div>
+                    </template>
+                  </BkPopConfirm>
                 </div>
-              </template>
-            </BkCollapsePanel>
-          </BkCollapse>
+              </div>
+            </div>
+
+            <div class="request-setting-item request-source-path">
+              <div class="request-setting-label path-title">
+                {{ t('请求路径') }}：
+              </div>
+              <div class="request-setting-main source-path">
+                <div class="request-path-box">
+                  <BkTag
+                    theme="success"
+                    class="method-tag"
+                  >
+                    {{ curResource?.method }}
+                  </BkTag>
+                  <span class="request-path">{{ curResource?.path }}</span>
+                </div>
+                <BkButton
+                  class="fixed-w"
+                  theme="primary"
+                  :loading="isLoading"
+                  :disabled="isLoading"
+                  @click="handleSend"
+                >
+                  {{ t('发送') }}
+                </BkButton>
+                <BkButton
+                  class="ml8 fixed-w"
+                  @click="viewDoc"
+                >
+                  {{ t('查看文档') }}
+                </BkButton>
+              </div>
+            </div>
+          </div>
         </div>
 
         <BkResizeLayout
@@ -467,7 +429,7 @@ const envStore = useEnv();
 
 const isLoading = ref(false);
 const keyword = ref('');
-const activeIndex = ref<number[]>([1]);
+const isSpread = ref<boolean>(true);
 const stage = ref<number>();
 const stageList = ref<any[]>([]);
 const resourceList = ref<any>([]);
@@ -532,7 +494,6 @@ const formData = ref<any>({ ...defaultValue.formData });
 const isShowDoc = ref(false);
 const requestPayloadRef = ref();
 const responseContentRef = ref();
-const showPath = ref(false);
 const payloadType = reactive<any>({
   rawPayload: {},
   queryPayload: [],
@@ -628,15 +589,6 @@ const resourceGroup = computed(() => {
 const resourceGroupLength = computed(() => {
   return Object.keys(resourceGroup.value)?.length;
 });
-
-watch(
-  () => activeIndex.value,
-  (index) => {
-    setTimeout(() => {
-      showPath.value = !index?.includes(1);
-    }, 180);
-  },
-);
 
 // watch(
 //   () => curGroup.value,
@@ -1156,44 +1108,48 @@ init();
     }
   }
 
-  .request-setting {
+  .request-setting-title {
+    padding: 24px 24px 4px;
     background: #FFF;
     box-shadow: 0 2px 4px 0 #1919290d;
 
-    .request-setting-title {
-      padding: 24px 24px 4px;
+    .request-source-name {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      cursor: pointer;
 
-      .request-source-name {
-        display: flex;
-        align-items: center;
-        margin-bottom: 12px;
-        cursor: pointer;
+      .request-source-icon {
+        transform: rotate(0deg);
+        transition: all .3s ease;
 
-        .request-source-icon {
-          transition: all .2s;
-
-          &.switch {
-            transform: rotate(90deg);
-          }
+        &.switch {
+          transform: rotate(90deg);
         }
+      }
 
-        .source-title {
-          margin: 0 8px;
-          font-size: 16px;
-          font-weight: 700;
-          color: #313238;
-        }
+      .source-title {
+        margin: 0 8px;
+        font-size: 16px;
+        font-weight: 700;
+        color: #313238;
+      }
 
-        .source-subtitle {
-          margin-top: 2px;
-          font-size: 12px;
-          color: #979BA5;
-        }
+      .source-subtitle {
+        margin-top: 2px;
+        font-size: 12px;
+        color: #979BA5;
       }
     }
   }
 
   .request-setting-content {
+    padding: 0 45px 20px;
+    max-height: 88px;
+    transition: all 0.3s ease;
+    &.anim-hidden {
+      max-height: 56px;
+    }
 
     .request-setting-item {
       display: flex;
@@ -1215,13 +1171,6 @@ init();
       .request-setting-main {
         font-size: 12px;
       }
-    }
-  }
-
-  .request-setting-collapse {
-
-    :deep(.bk-collapse-content) {
-      padding: 0 45px 20px;
     }
   }
 }
