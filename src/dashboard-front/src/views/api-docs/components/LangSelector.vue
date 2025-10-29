@@ -41,11 +41,11 @@ import { useChangeCase } from '@vueuse/integrations/useChangeCase';
 import type { LanguageType } from '../types.d.ts';
 
 interface IProps {
-  width: number
-  marginBottom: number
-  sdkLanguages: LanguageType[]
-  langList: LanguageType[]
-  maintainers: string[]
+  width?: number
+  marginBottom?: number
+  sdkLanguages?: LanguageType[]
+  langList?: LanguageType[]
+  maintainers?: string[]
 }
 
 const language = defineModel<LanguageType>({ default: 'python' });
