@@ -43,10 +43,10 @@ export function useTableFilterChange() {
         Object.assign(filterData.value, { [colKey]: checkValues });
         const searchOption = searchOptions?.value?.find(option => option.id === colKey);
         const filterOption = searchParams?.value?.find(searchItem => searchItem.id === colKey);
-        if (searchOption) {
-          const filterChildren = searchOption?.children?.filter(item => (isMultiple
-            ? checkValues.includes(item.id)
-            : item.id === filterData.value[colKey]));
+        if (searchOption?.children) {
+          const filterChildren = searchOption.children.filter(item =>
+            isMultiple ? checkValues.includes(item.id) : item.id === filterData.value[colKey],
+          );
           if (filterOption) {
             filterOption.values = filterChildren ?? [];
           }
