@@ -216,8 +216,8 @@ import { useBkUserDisplayName } from '@/hooks';
 import { useFeatureFlag, useUserInfo } from '@/stores';
 
 interface IProps {
-  basics: IApiGatewayBasics & ISystemBasics | null
-  sdks: IApiGatewaySdkDoc[] & IComponentSdk[]
+  basics?: IApiGatewayBasics & ISystemBasics | null
+  sdks?: IApiGatewaySdkDoc[] & IComponentSdk[]
 }
 
 const {

@@ -45,8 +45,8 @@ import CopyButton from '@/components/copy-button/Index.vue';
 import CardContainer from '@/components/card-container/Index.vue';
 import mavonEditor from 'mavon-editor';
 import 'mavon-editor/dist/css/index.css';
-// highlight.js 代码高亮风格
-import 'highlight.js/styles/vs2015.min.css';
+//  highlight.js github代码高亮风格
+import 'highlight.js/styles/github.css';
 // 多租户组件样式
 import '@blueking/bk-user-selector/vue3/vue3.css';
 // tdesign 表格样式

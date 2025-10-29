@@ -155,7 +155,6 @@ import {
 } from '@/services/source/docs';
 import { getResourcesOnline } from '@/services/source/online-debugging';
 import Chat from '@/components/chat/Index.vue';
-import 'highlight.js/styles/github.css';
 
 interface IProps {
   stageName?: string

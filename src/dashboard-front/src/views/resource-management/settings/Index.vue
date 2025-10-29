@@ -851,7 +851,8 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     {
       colKey: 'updated_time',
       title: t('更新时间'),
-      minWidth: 220,
+      width: 260,
+      ellipsis: true,
       sorter: true,
     },
     {

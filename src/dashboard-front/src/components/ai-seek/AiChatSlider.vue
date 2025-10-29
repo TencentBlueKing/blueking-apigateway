@@ -54,9 +54,8 @@ import { getAICompletion } from '@/services/source/ai';
 import { useGateway } from '@/stores';
 import { onClickOutside } from '@vueuse/core';
 import MarkdownIt from 'markdown-it';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
+import hljs from 'highlight.js';
 
 interface IProps {
   title?: string

@@ -224,7 +224,6 @@ import hljs from 'highlight.js';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import ResponseParams from '@/views/resource-management/components/response-params/Index.vue';
 import RequestParams from '@/views/resource-management/components/request-params/Index.vue';
-import 'highlight.js/styles/github.css';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 

@@ -78,11 +78,11 @@ import { useStage } from '@/stores';
 import { Message } from 'bkui-vue';
 
 interface IProps {
-  name: string
-  owner: string
-  defaultUserList: string[]
-  content: string
-  isQuery: boolean
+  name?: string
+  owner?: string
+  defaultUserList?: string[]
+  content?: string
+  isQuery?: boolean
 }
 
 const {

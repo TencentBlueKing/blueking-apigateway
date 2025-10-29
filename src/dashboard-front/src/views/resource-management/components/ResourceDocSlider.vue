@@ -117,10 +117,9 @@
                   :language="language"
                   :box-shadow="false"
                   :subfield="false"
-                  ishljs
-                  code-style="vs2015"
-                  :toolbars="toolbars"
+                  :is-hljs="hljs"
                   :tab-size="4"
+                  :toolbars="toolbars"
                   @full-screen="handleFullscreen"
                 />
               </div>
@@ -177,6 +176,7 @@
 </template>
 
 <script setup lang="ts">
+import MarkdownIt from 'markdown-it';
 import { cloneDeep } from 'lodash-es';
 import {
   deleteResourceDocs,
@@ -191,6 +191,7 @@ import { copy } from '@/utils';
 import { useRouteParams } from '@vueuse/router';
 import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
 import { getAICompletion } from '@/services/source/ai.ts';
+import hljs from 'highlight.js';
 
 interface IProps {
   resource?: object
@@ -281,6 +282,30 @@ const hasDoc = computed(() => {
   const enDoc = docData.value.find((e: any) => e.language === 'en')?.id;
   return cnDoc || enDoc;
 });
+
+// 渲染highlight的markdown
+const renderHljsMd = (content: string) => {
+  const md = new MarkdownIt({
+    linkify: false,
+    html: true,
+    breaks: true,
+    highlight(str: string, lang: string) {
+      try {
+        if (lang && hljs.getLanguage(lang)) {
+          return hljs.highlight(str, {
+            language: lang,
+            ignoreIllegals: true,
+          }).value;
+        }
+      }
+      catch {
+        return str;
+      }
+      return str;
+    },
+  });
+  markdownHtml.value = md.render(content);
+};
 
 // 编辑markdown
 const handleEditMarkdown = (type: string) => {
@@ -426,7 +451,7 @@ const handleDocDataWithLanguage = () => {
     docId.value = docDataItem.id;
     isEmpty.value = !docDataItem.id;
     markdownDoc.value = docDataItem.content;
-    markdownHtml.value = markdownRef.value.markdownIt.render(docDataItem.content);
+    renderHljsMd(docDataItem.content);
     nextTick(() => {
       const markdownDom = document.getElementById('resource-doc-markdown');
       if (markdownDom) {
@@ -466,7 +491,7 @@ const handleDocDataWithLanguage = () => {
     const doc = docData.value.find((d: any) => d.language === language.value);
     const content = doc?.content ?? '';
     markdownDoc.value = content;
-    markdownHtml.value = markdownRef.value?.markdownIt.render(content);
+    renderHljsMd(content);
   }
 };
 

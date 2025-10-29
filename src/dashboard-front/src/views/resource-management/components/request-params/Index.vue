@@ -291,7 +291,7 @@ interface IProp {
 const disabled = defineModel<boolean>('is-no-params', { default: false });
 
 const {
-  detail,
+  detail = {},
   readonly = false,
 } = defineProps<IProp>();
 
