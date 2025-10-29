@@ -17,7 +17,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from collections import defaultdict
 
 from django.conf import settings
 from django.http import Http404
@@ -174,11 +173,7 @@ class ReleaseCreateApi(generics.CreateAPIView):
         except ResourceVersion.DoesNotExist:
             raise error_codes.NOT_FOUND.format(_("资源版本不存在"))
 
-        backend_to_resources = defaultdict(list)
-        for resource_data in resource_version.data:
-            backend_id = resource_data.get("proxy", {}).get("backend_id", None)
-            if backend_id:
-                backend_to_resources[backend_id].append(resource_data["name"])
+        backend_to_resources = ResourceVersionHandler.get_backend_id_to_resources(resource_version)
 
         exist_backend_ids = set(
             Backend.objects.filter(id__in=backend_to_resources.keys()).values_list("id", flat=True)
@@ -188,7 +183,7 @@ class ReleaseCreateApi(generics.CreateAPIView):
         if not_exist_backend_ids:
             resource_names = []
             for backend_id in not_exist_backend_ids:
-                resource_names.extend(backend_to_resources[backend_id])
+                resource_names.extend([resource["name"] for resource in backend_to_resources[backend_id]])
 
             raise error_codes.NOT_FOUND.format(
                 _("资源【{}】对应的后端服务不存在，不可发布".format(", ".join(resource_names)))
