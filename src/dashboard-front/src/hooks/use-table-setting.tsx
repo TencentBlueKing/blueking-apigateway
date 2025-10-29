@@ -51,7 +51,7 @@ export function useTableSetting(setting: ShallowRef<ITableSettings>, name?: stri
     if (isEqual(curSetting, setting?.value)) {
       return;
     }
-    if(setting) {
+    if (setting) {
       setting.value = { ...curSetting };
       localStorage.setItem(tableName, JSON.stringify(setting.value));
     }

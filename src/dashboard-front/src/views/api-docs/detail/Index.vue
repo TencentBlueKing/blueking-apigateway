@@ -249,7 +249,6 @@ import SDKInstructionSlider from '../components/SDKInstructionSlider.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
 
 const { t } = useI18n();
 const route = useRoute();

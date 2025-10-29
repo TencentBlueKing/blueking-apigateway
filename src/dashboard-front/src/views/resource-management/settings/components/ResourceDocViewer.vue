@@ -106,8 +106,7 @@
             :language="language"
             :box-shadow="false"
             :subfield="false"
-            ishljs
-            code-style="vs2015"
+            :hljs="hljs"
             :toolbars="toolbars"
             :tab-size="4"
             @full-screen="handleFullscreen"
@@ -218,11 +217,11 @@ import { Message } from 'bkui-vue';
 import { useRouteParams } from '@vueuse/router';
 import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
 import { getAICompletion } from '@/services/source/ai.ts';
-// import mitt from '@/common/event-bus';
+import hljs from 'highlight.js';
 
 interface IProps {
   curResource?: Record<string, any>
-  height?: string
+  height: string
   source?: string
   docRootClass?: string
   showFooter?: boolean
@@ -329,6 +328,30 @@ const hasDoc = computed(() => {
   const enDoc = docData.value.find((e: any) => e.language === 'en')?.id;
   return cnDoc || enDoc;
 });
+
+// 渲染highlight的markdown
+const renderHljsMd = (content: string) => {
+  const md = new MarkdownIt({
+    linkify: false,
+    html: true,
+    breaks: true,
+    highlight(str: string, lang: string) {
+      try {
+        if (lang && hljs.getLanguage(lang)) {
+          return hljs.highlight(str, {
+            language: lang,
+            ignoreIllegals: true,
+          }).value;
+        }
+      }
+      catch {
+        return str;
+      }
+      return str;
+    },
+  });
+  markdownHtml.value = md.render(content);
+};
 
 // 编辑markdown
 const handleEditMarkdown = (type: string) => {
@@ -447,13 +470,13 @@ const handleDocDataWithLanguage = () => {
     docId.value = docDataItem.id;
     isEmpty.value = !docDataItem.id;
     markdownDoc.value = docDataItem.content;
-    markdownHtml.value = markdownRef.value?.markdownIt.render(docDataItem.content);
+    renderHljsMd(docDataItem.content);
   }
   else {
     // 预览资源文档会走到这里
     const content = docData.value[0]?.content ?? '';
     markdownDoc.value = content;
-    markdownHtml.value = markdownRef.value?.markdownIt.render(content);
+    renderHljsMd(content);
   }
 };
 
