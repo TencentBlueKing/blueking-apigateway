@@ -15,14 +15,17 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from typing import Any, Dict, List, Tuple
 
 from django.db import transaction
 
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import DEFAULT_BACKEND_NAME, PublishSourceEnum, StageStatusEnum
-from apigateway.core.models import Backend, BackendConfig, Proxy, Release
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, GatewayStatusEnum, PublishSourceEnum, StageStatusEnum
+from apigateway.core.models import Backend, BackendConfig, Proxy, Release, Stage
 from apigateway.utils.time import now_datetime
+
+logger = logging.getLogger(__name__)
 
 
 class BackendHandler:
@@ -88,16 +91,30 @@ class BackendHandler:
 
         BackendConfig.objects.bulk_update(backend_configs, fields=["config", "updated_by", "updated_time"])
 
-        # 触发变更的stage的发布流程
+        # 触发变更的stage的发布流程（网关启用+环境发布时才可触发）
+        active_stage_ids = Stage.objects.filter(
+            id__in=updated_stage_ids,
+            status=StageStatusEnum.ACTIVE.value,
+            gateway__status=GatewayStatusEnum.ACTIVE.value,
+        ).values_list("id", flat=True)
+
+        if not active_stage_ids:
+            logger.info(
+                "no active stage found, skip publish. gateway_id=%s, updated_stage_ids=%s",
+                backend.gateway.id,
+                updated_stage_ids,
+            )
+            return backend, active_stage_ids
+
         gateway_id = backend.gateway.id
-        for stage_id in updated_stage_ids:
+        for stage_id in active_stage_ids:
             trigger_gateway_publish(
                 PublishSourceEnum.BACKEND_UPDATE,
                 updated_by,
                 gateway_id,
                 stage_id,
             )
-        return backend, updated_stage_ids
+        return backend, active_stage_ids
 
     @staticmethod
     def deletable(backend: Backend) -> bool:
