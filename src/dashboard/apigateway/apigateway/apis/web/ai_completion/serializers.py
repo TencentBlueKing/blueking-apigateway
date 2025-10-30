@@ -47,9 +47,7 @@ class AICompletionInputSLZ(serializers.Serializer):
 class BatchTranslateInputSLZ(serializers.Serializer):
     """批量翻译输入序列化器"""
 
-    doc_ids = serializers.ListField(
-        child=serializers.IntegerField(min_value=1), required=True, help_text="需要翻译的文档ID列表"
-    )
+    doc_ids = serializers.ListField(child=serializers.IntegerField(), required=False, help_text="需要翻译的文档ID列表")
     target_language = serializers.ChoiceField(
         choices=DocLanguageEnum.get_choices(),
         required=False,
@@ -59,16 +57,6 @@ class BatchTranslateInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.ai_completion.serializers.BatchTranslateInputSLZ"
-
-    def validate_doc_ids(self, value):
-        """验证文档ID列表"""
-        if not value:
-            raise serializers.ValidationError("文档ID列表不能为空")
-
-        if len(value) > 100:
-            raise serializers.ValidationError("一次最多只能翻译100个文档")
-
-        return value
 
 
 class BatchTranslateOutputSLZ(serializers.Serializer):
