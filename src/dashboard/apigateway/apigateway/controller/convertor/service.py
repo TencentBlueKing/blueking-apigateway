@@ -80,6 +80,8 @@ class ServiceConvertor(GatewayResourceConvertor):
             if not hosts:
                 raise ValueError(f"backend {backend_id} has no hosts")
 
+            # FIXME: check from backend_config and add tls.client_cert_id here, and build the name of ssl
+
             for node in hosts:
                 host = node["host"]
                 # 如果 default 没有设置 host，则默认使用 your-backend-host 来替代，避免 apisix 加载报错

@@ -77,6 +77,18 @@ class ReleaseData:
     def gateway_auth_config(self) -> Dict[str, Any]:
         return GatewayAuthContext().get_config(self.gateway.pk)
 
+    def get_stage_backend_configs(self) -> Dict[int, Dict[str, Any]]:
+        backend_configs = (
+            BackendConfig.objects.filter(
+                gateway_id=self.gateway.pk,
+                stage_id=self.stage.pk,
+            )
+            .prefetch_related("backend")
+            .all()
+        )
+
+        return {b.backend.id: b.config for b in backend_configs}
+
     def get_stage_plugins(self) -> List[PluginData]:
         plugins: List[PluginData] = []
 
@@ -100,18 +112,6 @@ class ReleaseData:
         # 如果环境，同时绑定了同一类型的访问策略、插件，那么只使用插件配置
         name_to_plugins = {plugin.name: plugin for plugin in plugins}
         return list(name_to_plugins.values())
-
-    def get_stage_backend_configs(self) -> Dict[int, Dict[str, Any]]:
-        backend_configs = (
-            BackendConfig.objects.filter(
-                gateway_id=self.gateway.pk,
-                stage_id=self.stage.pk,
-            )
-            .prefetch_related("backend")
-            .all()
-        )
-
-        return {b.backend.id: b.config for b in backend_configs}
 
     def get_resource_plugins(self, resource_id: int) -> List[PluginData]:
         plugins = self._resources_plugins.get(resource_id, [])

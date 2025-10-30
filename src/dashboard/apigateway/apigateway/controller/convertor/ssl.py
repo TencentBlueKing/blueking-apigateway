@@ -25,4 +25,5 @@ from .base import GatewayResourceConvertor
 
 class SSLConvertor(GatewayResourceConvertor):
     def convert(self) -> List[GatewayApisixModel]:
+        # convert the ssl, should with the id(with stage_name prefix), and length < 64
         raise NotImplementedError()

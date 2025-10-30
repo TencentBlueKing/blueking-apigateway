@@ -294,7 +294,7 @@ class Proto(GatewayApisixModel):
 
     name: Optional[str] = Field(default=None, min_length=1, max_length=100, description="name")
 
-    proto: str = Field(description="proto")
+    content: str = Field(min_length=1, max_length=1024 * 1024, description="content")
 
 
 class BkRelease(GatewayApisixModel):

@@ -179,6 +179,20 @@ class BackendConfigAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_filter = ["gateway", "backend", "stage"]
 
 
+# class ProtoAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+#     djangoql_completion_enabled_by_default = False
+#     list_display = ["id", "gateway", "name"]
+#     search_fields = ["gateway__id", "gateway__name", "name"]
+#     list_filter = ["gateway"]
+
+
+# class SSLAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+#     djangoql_completion_enabled_by_default = False
+#     list_display = ["id", "gateway", "name"]
+#     search_fields = ["gateway__id", "gateway__name", "name"]
+#     list_filter = ["gateway"]
+
+
 admin.site.register(Gateway, GatewayAdmin)
 admin.site.register(Stage, StageAdmin)
 admin.site.register(Resource, ResourceAdmin)
@@ -194,3 +208,5 @@ admin.site.register(JWT, JWTAdmin)
 admin.site.register(GatewayRelatedApp, GatewayRelatedAppAdmin)
 admin.site.register(Backend, BackendAdmin)
 admin.site.register(BackendConfig, BackendConfigAdmin)
+# admin.site.register(Proto, ProtoAdmin)
+# admin.site.register(SSL, SSLAdmin)

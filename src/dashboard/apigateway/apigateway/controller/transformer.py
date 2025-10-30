@@ -87,6 +87,11 @@ class GatewayApisixResourceTransformer(BaseTransformer):
         self._converted_bk_releases: List[GatewayApisixModel] = []
 
     def transform(self):
+        # FIXME:
+        # 1. should check the proto_id of route plugins are all exists
+        # 2. should check the ssl_id of service.upstream are all exists
+        # 3. distribute the ssl/proto
+
         service_convertor = ServiceConvertor(self._release_data, self.publish_id)
         self._converted_services = service_convertor.convert()
 

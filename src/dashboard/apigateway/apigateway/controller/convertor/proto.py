@@ -25,4 +25,5 @@ from .base import GatewayResourceConvertor
 
 class ProtoConvertor(GatewayResourceConvertor):
     def convert(self) -> List[GatewayApisixModel]:
+        # convert the proto, should with the id(with stage_name prefix), and length < 64
         raise NotImplementedError()
