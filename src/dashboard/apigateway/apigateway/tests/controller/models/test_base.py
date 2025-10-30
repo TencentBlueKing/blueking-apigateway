@@ -419,13 +419,13 @@ class TestProto:
         proto = Proto(
             id="proto-1",
             labels=labels,
-            proto="proto-content",
+            content="proto-content",
             name="test-proto",
         )
 
         assert proto.id == "proto-1"
         assert proto.kind == "proto"
-        assert proto.proto == "proto-content"
+        assert proto.content == "proto-content"
         assert proto.name == "test-proto"
 
 
