@@ -25,11 +25,10 @@ from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersi
 from apigateway.biz.resource_version import ResourceDocVersionHandler
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.controller.distributor.base import BaseDistributor
-from apigateway.controller.distributor.etcd import EtcdDistributor
-from apigateway.controller.procedure_logger.release_logger import ReleaseProcedureLogger
+from apigateway.controller.distributor.etcd import GatewayResourceDistributor
+from apigateway.controller.release_logger import ReleaseProcedureLogger
 from apigateway.core.constants import ReleaseHistoryStatusEnum, StageStatusEnum
 from apigateway.core.models import (
-    MicroGateway,
     PublishEvent,
     Release,
     ReleasedResource,
@@ -46,9 +45,7 @@ logger = logging.getLogger(__name__)
 
 def _release_gateway(
     distributor: BaseDistributor,
-    release: Release,
     release_history: ReleaseHistory,
-    micro_gateway: MicroGateway,
     procedure_logger: ReleaseProcedureLogger,
 ):
     """发布资源到微网关"""
@@ -60,8 +57,6 @@ def _release_gateway(
     PublishEventReporter.report_distribute_config_doing(release_history)
     try:
         is_success, fail_msg = distributor.distribute(
-            release=release,
-            micro_gateway=micro_gateway,
             release_task_id=procedure_logger.release_task_id,
             publish_id=release_history.id,
         )
@@ -85,21 +80,13 @@ def _release_gateway(
 
 
 @shared_task(ignore_result=True)
-def release_gateway_by_registry(micro_gateway_id, publish_id):
+def release_gateway_by_registry(publish_id):
     """发布资源到共享网关，为了使得类似环境变量等引用生效，同时会将所有配置都进行同步"""
-    logger.info(
-        "release_gateway_by_etcd: publish_id=%s, micro_gateway_id=%s",
-        publish_id,
-        micro_gateway_id,
-    )
+    logger.info("release_gateway_by_etcd: publish_id=%s", publish_id)
 
     release_history = ReleaseHistory.objects.get(id=publish_id)
     if not release_history:
-        logger.error(
-            "release_gateway_by_etcd:publish_id=%s,micro_gateway_id=%s,can't find release_history",
-            publish_id,
-            micro_gateway_id,
-        )
+        logger.error("release_gateway_by_etcd:publish_id=%s, can't find release_history", publish_id)
         return None
 
     # 改成了延迟更新发布关联数据，这里的 release 数据需要用 release_history 相关的数据来获取
@@ -110,25 +97,17 @@ def release_gateway_by_registry(micro_gateway_id, publish_id):
         comment=release_history.comment,
         username=release_history.created_by,
     )
-    micro_gateway = MicroGateway.objects.get(id=micro_gateway_id, is_shared=True)
-    # 如果是共享实例对应的网关发布，同时将对应的实例资源下发
-    include_gateway_global_config = release.gateway_id == micro_gateway.gateway_id
     procedure_logger = ReleaseProcedureLogger(
         "release_gateway_by_etcd",
         logger=logger,
         gateway=release.gateway,
         stage=release.stage,
-        micro_gateway=micro_gateway,
         release_task_id=publish_id,
         publish_id=publish_id,
     )
     return _release_gateway(
-        distributor=EtcdDistributor(
-            include_gateway_global_config=include_gateway_global_config,
-        ),
-        release=release,
+        distributor=GatewayResourceDistributor(release),
         release_history=release_history,
-        micro_gateway=micro_gateway,
         procedure_logger=procedure_logger,
     )
 

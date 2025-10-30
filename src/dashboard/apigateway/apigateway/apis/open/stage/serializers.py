@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import uuid
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
@@ -180,7 +179,6 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         help_text="插件配置", child=PluginConfigSLZ(), allow_null=True, required=False
     )
 
-    micro_gateway_id = serializers.UUIDField(allow_null=True, required=False)
     description = SerializerTranslatedField(
         default_field="description_i18n", allow_blank=True, allow_null=True, max_length=512, required=False
     )
@@ -199,7 +197,6 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "proxy_http",
             "backends",
             "plugin_configs",
-            "micro_gateway_id",
         )
         extra_kwargs = {
             "description_en": {
@@ -225,7 +222,6 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         ]
 
     def validate(self, data):
-        self._validate_micro_gateway_stage_unique(data.get("micro_gateway_id"))
         self._validate_plugin_configs(data.get("plugin_configs"))
         if data.get("backends"):
             self._validate_scheme_host(data.get("backends"))
@@ -408,18 +404,6 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         self._sync_plugins(instance.gateway_id, instance.id, validated_data.get("plugin_configs", None))
 
         return instance
-
-    def _validate_micro_gateway_stage_unique(self, micro_gateway_id: Optional[uuid.UUID]):
-        """校验 micro_gateway 仅绑定到一个环境"""
-        if not micro_gateway_id:
-            return
-
-        queryset = Stage.objects.filter(micro_gateway_id=micro_gateway_id)
-        if self.instance is not None:
-            queryset = queryset.exclude(pk=self.instance.pk)
-
-        if queryset.exists():
-            raise serializers.ValidationError(_("微网关实例已绑定到其它环境。"))
 
     def _validate_plugin_configs(self, plugin_configs):
         """

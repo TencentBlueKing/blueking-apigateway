@@ -25,4 +25,3 @@ class SchemaTypeEnum(StructuredEnum):
     PLUGIN = EnumField("plugin")
     MONITOR = EnumField("monitor")
     APISDK = EnumField("apisdk")
-    MICRO_GATEWAY = EnumField("micro_gateway")
