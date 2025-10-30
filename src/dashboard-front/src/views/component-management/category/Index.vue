@@ -20,38 +20,27 @@
     <div class="ag-top-header">
       <BkInput
         v-model="keyword"
-        class="float-right"
+        class="float-right w-240px"
         clearable
         :placeholder="t('请输入文档分类名称，按Enter搜索')"
         :right-icon="'bk-icon icon-search'"
-        style="width: 240px"
         @enter="handleSearch"
+        @clear="handleClearFilter"
       />
     </div>
+
     <BkLoading :loading="isLoading">
-      <BkTable
-        size="small"
-        class="m-t-16px"
-        border="outer"
-        ext-cls="ag-stage-table"
-        :max-height="clientHeight"
+      <AgTable
+        ref="tableRef"
+        v-model:table-data="displayData"
+        show-settings
+        resizable
+        local-page
+        :max-limit-config="{ allocatedHeight: 260, mode: 'tdesign'}"
         :columns="tableColumns"
-        :data="docCategoryList"
-        :pagination="pagination"
-        remote-pagination
-        show-overflow-tooltip
-        @page-limit-change="handlePageLimitChange"
-        @page-value-change="handlePageChange"
-      >
-        <template #empty>
-          <TableEmpty
-            :empty-type="tableEmptyConf.emptyType"
-            :abnormal="tableEmptyConf.isAbnormal"
-            @refresh="getDocCategoryList(true)"
-            @clear-filter="clearFilterKey"
-          />
-        </template>
-      </BkTable>
+        :table-empty-type="tableEmptyType"
+        @clear-filter="handleClearFilter"
+      />
     </BkLoading>
 
     <BkDialog
@@ -109,12 +98,10 @@
 </template>
 
 <script setup lang="tsx">
-import {
-  sortBy,
-  sortedUniq,
-} from 'lodash-es';
-import { Message } from 'bkui-vue';
-import { useMaxTableLimit, usePopInfoBox } from '@/hooks';
+import { delay } from 'lodash-es';
+import { Button, Message } from 'bkui-vue';
+import type { ITableMethod } from '@/types/common';
+import { usePopInfoBox } from '@/hooks';
 import {
   type ICategoryItem,
   addDocCategory,
@@ -122,7 +109,7 @@ import {
   getDocCategory,
   updateDocCategory,
 } from '@/services/source/category';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
 
 type IFormMethod = {
   validate: () => void
@@ -130,27 +117,45 @@ type IFormMethod = {
 };
 
 const { t } = useI18n();
-const { maxTableLimit, clientHeight } = useMaxTableLimit();
 
+const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const validateFormRef = ref<InstanceType<typeof BkForm> & IFormMethod>();
 const keyword = ref('');
 const tableColumns = ref([
   {
-    label: t('名称'),
-    field: 'name',
-    render: ({ row }: { row?: Partial<ISystemItem> }) => {
+    title: t('名称'),
+    colKey: 'name',
+    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
       return (
-        <span>
-          <span class="m-r-4px">{row?.name || '--' }</span>
+        <div class="flex-row">
+          <div
+            v-bk-tooltips={{
+              content: row.name,
+              placement: 'top',
+              disabled: !row.isOverflow,
+            }}
+            class="truncate mr-4px"
+            onMouseenter={e => tableRef.value?.handleCellEnter({
+              e,
+              row,
+            })}
+            onMouseLeave={e => tableRef.value?.handleCellLeave({
+              e,
+              row,
+            })}
+          >
+            {row?.name || '--' }
+          </div>
           { row.is_official && <span class="official">{ t('官方') }</span> }
-        </span>
+        </div>
       );
     },
   },
   {
-    label: t('优先级'),
-    field: 'priority',
-    render: ({ row }: { row?: Partial<ISystemItem> }) => {
+    title: t('优先级'),
+    colKey: 'priority',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
       return (
         <span>
           { row.priority || '--'}
@@ -159,28 +164,31 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('关联系统数量'),
-    field: 'system_count',
+    title: t('关联系统数量'),
+    colKey: 'system_count',
+    ellipsis: true,
   },
   {
-    label: t('更新时间'),
-    field: 'updated_time',
+    title: t('更新时间'),
+    colKey: 'updated_time',
+    ellipsis: true,
   },
   {
-    label: t('操作'),
-    field: 'operate',
+    title: t('操作'),
+    colKey: 'operate',
+    ellipsis: true,
     width: 150,
-    render: ({ row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
       return (
         <div>
-          <BkButton
-            class="m-r-10px"
+          <Button
+            class="mr-10px"
             theme="primary"
             text
             onClick={() => handleEdit(row)}
           >
             { t('编辑') }
-          </BkButton>
+          </Button>
           <BkButton
             theme="primary"
             text
@@ -210,12 +218,10 @@ const tableColumns = ref([
     },
   },
 ]);
-const docCategoryList = ref([]);
 const pagination = ref({
   offset: 1,
   count: 0,
-  limit: maxTableLimit,
-  limitList: sortedUniq(sortBy([10, 20, 50, 100, maxTableLimit])),
+  limit: 10,
 });
 const curDocCategory = ref({
   name: '',
@@ -226,7 +232,6 @@ const allData = ref([]);
 const displayData = ref([]);
 const classifyFilters = ref([]);
 const isLoading = ref(false);
-const isFilter = ref(false);
 const docCategoryDialog = ref({
   visible: false,
   width: 480,
@@ -237,10 +242,7 @@ const docCategoryDialog = ref({
   title: '',
   loading: false,
 });
-const tableEmptyConf = ref({
-  emptyType: '',
-  isAbnormal: false,
-});
+const tableEmptyType = ref<'empty' | 'search-empty'>('empty');
 const rules = ref({
   name: [
     {
@@ -257,23 +259,6 @@ const rules = ref({
     },
   ],
 });
-
-watch(keyword, (newVal, oldVal) => {
-  if (oldVal && !newVal && isFilter.value) {
-    isFilter.value = false;
-    displayData.value = allData.value;
-    pagination.value = Object.assign(pagination.value, {
-      offset: 0,
-      limit: maxTableLimit,
-      count: displayData.value.length,
-    });
-    docCategoryList.value = getDataByPage();
-  }
-});
-
-const init = () => {
-  getDocCategoryList(true);
-};
 
 const handleConfirm = () => {
   docCategoryDialog.value.loading = true;
@@ -329,13 +314,19 @@ const updateDocCategoryFun = async () => {
   }
 };
 
+const setDelay = (duration: number) => {
+  isLoading.value = true;
+  delay(() => {
+    isLoading.value = false;
+  }, duration);
+};
+
 // 获取文档分类列表
 const getDocCategoryList = async (loading = false) => {
   isLoading.value = loading;
   try {
     const res = await getDocCategory();
-    allData.value = Object.freeze(res);
-    displayData.value = res;
+    [allData.value, displayData.value] = [Object.freeze(res), Object.freeze(res)];
     allData.value.forEach((item) => {
       if (!classifyFilters.value.map(subItem => subItem.value).includes(item.doc_category_id)) {
         classifyFilters.value.push({
@@ -345,49 +336,15 @@ const getDocCategoryList = async (loading = false) => {
       }
     });
     pagination.value.count = displayData.value.length;
-    docCategoryList.value = getDataByPage();
-    tableEmptyConf.value.isAbnormal = false;
-  }
-  catch (e) {
-    tableEmptyConf.value.isAbnormal = true;
-    console.error(e);
   }
   finally {
-    setTimeout(() => {
-      isLoading.value = false;
-    }, 500);
+    setDelay(500);
   }
 };
+getDocCategoryList(true);
 
-const handlePageLimitChange = (limit) => {
-  pagination.value = Object.assign(pagination.value, {
-    offset: 0,
-    limit,
-  });
-  handlePageChange(pagination.value.offset);
-};
-
-const handlePageChange = (page) => {
-  pagination.value.offset = page;
-  const data = getDataByPage(page);
-  docCategoryList.value.splice(0, docCategoryList.value.length, ...data);
-};
-
-// 获取当前页数据
-const getDataByPage = (page?: number) => {
-  if (!page) {
-    pagination.value.offset = page = 1;
-  }
-  let startIndex = (page - 1) * pagination.value.limit;
-  let endIndex = page * pagination.value.limit;
-  if (startIndex < 0) {
-    startIndex = 0;
-  }
-  if (endIndex > displayData.value.length) {
-    endIndex = displayData.value.length;
-  }
-  updateTableEmptyConfig();
-  return displayData.value.slice(startIndex, endIndex);
+const updateTableEmptyConfig = () => {
+  tableEmptyType.value = keyword.value ? 'search-empty' : 'empty';
 };
 
 // 编辑文档
@@ -412,20 +369,16 @@ const handleDeleteDocCategory = async (id: number) => {
 };
 
 const handleSearch = (payload: string) => {
+  updateTableEmptyConfig();
   if (!payload) {
     return;
   }
-  pagination.value = Object.assign(pagination.value, {
-    offset: 0,
-    limit: maxTableLimit,
-  });
-  isFilter.value = true;
   displayData.value = allData.value.filter((item) => {
     const reg = new RegExp(`(${payload})`, 'gi');
     return item.name.match(reg);
   });
   pagination.value.count = displayData.value.length;
-  docCategoryList.value = getDataByPage();
+  setDelay(500);
 };
 
 const handleDelete = (data: ICategoryItem) => {
@@ -447,16 +400,10 @@ const closeDocCategoryDialog = () => {
   validateFormRef.value?.clearValidate();
 };
 
-const clearFilterKey = () => {
+const handleClearFilter = () => {
   keyword.value = '';
   getDocCategoryList(true);
 };
-
-const updateTableEmptyConfig = () => {
-  tableEmptyConf.value.emptyType = keyword.value ? 'searchEmpty' : 'empty';
-};
-
-init();
 </script>
 
 <style lang="scss" scoped>

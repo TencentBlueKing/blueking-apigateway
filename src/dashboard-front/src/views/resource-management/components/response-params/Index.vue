@@ -75,7 +75,7 @@ interface IResponse {
 }
 
 const {
-  detail,
+  detail = {},
   readonly = false,
 } = defineProps<IProp>();
 

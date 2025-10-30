@@ -25,15 +25,16 @@
         'primary-table-no-data': !localTableData.length
       }
     ]"
+    :size="tableSetting.rowSize ?? 'medium'"
     :data="localTableData"
     :columns="tableColumns"
     :pagination="pagination"
     :loading="loading"
     :filter-row="null"
     :hover="false"
-    :max-height="clientHeight"
     :table-layout="tableLayout"
     :row-key="tableRowKey"
+    :max-height="clientHeight"
     :bk-ui-settings="tableSetting"
     v-bind="$attrs"
     @bk-ui-settings-change="handleSettingChange"
@@ -43,7 +44,7 @@
     @select-change="handleSelectionChange"
   >
     <template #firstFullRow>
-      <template v-if="showFirstFullRow && selections.length > 0">
+      <template v-if="isShowSelectionRow">
         <slot
           v-if="slots.firstFullRow"
           name="firstFullRow"
@@ -105,8 +106,9 @@ import {
 } from '@blueking/tdesign-ui';
 import { Checkbox } from 'bkui-vue';
 import { useRequest } from 'vue-request';
-import { cloneDeep } from 'lodash-es';
+import { cloneDeep, sortBy, sortedUniq } from 'lodash-es';
 import type { BkUiSettings } from '@blueking/tdesign-ui/typings/packages/table/types/table';
+import type { ITableMethod } from '@/types/common';
 import { useMaxTableLimit, useTDesignSelection, useTableSetting } from '@/hooks';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
@@ -208,14 +210,24 @@ const localTableData = ref<any[]>([]);
 const pagination = ref<PrimaryTableProps['pagination']>({
   current: 1,
   pageSize: 10,
-  defaultCurrent: 1,
-  defaultPageSize: 10,
   total: 0,
   theme: 'default',
   showPageSize: true,
+  pageSizeOptions: [10, 20, 50, 100],
 });
 
+if (Object.keys(maxLimitConfig)?.length) {
+  pagination.value = Object.assign(pagination.value, {
+    pageSize: maxTableLimit,
+    pageSizeOptions: sortedUniq(sortBy([10, 20, 50, 100, maxTableLimit])),
+  });
+}
+
 const { changeTableSetting, isDiffSize } = useTableSetting(tableSetting.value);
+
+const isShowSelectionRow = computed(() => {
+  return showFirstFullRow && selections.value.length > 0;
+});
 
 // 设置表格半选效果
 const setIndeterminate = computed(() => {
@@ -331,14 +343,14 @@ const { params, loading, error, refresh, run } = useRequest(apiMethod, {
     const results = response?.results ?? [];
     paramsData.value = { ...params.value?.[0] };
     pagination.value!.total = response?.count ?? 0;
-    tableData.value = cloneDeep(results);
+    tableData.value = [...results];
     getSelectionData();
     // 处理接口调用成功后抛出事件，为每个页面提供单独业务处理
     emit('request-done');
   },
   onError: (error) => {
     tableData.value = [];
-    pagination.value!.total = 0;
+    pagination.value.total = 0;
     isAllSelection.value = false;
     getSelectionData();
     console.error(error);
@@ -348,7 +360,8 @@ const { params, loading, error, refresh, run } = useRequest(apiMethod, {
 watch(tableSetting, () => {
   if (!tableSetting.value && showSettings) {
     tableSetting.value = {
-      size: 'small',
+      size: 'medium',
+      rowSize: 'medium',
       checked: [],
     };
   }
@@ -373,9 +386,6 @@ const fetchData = (
 ) => {
   if (options.resetPage) {
     pagination.value.current = 1;
-  }
-  if (Object.keys(maxLimitConfig)?.length) {
-    pagination.value.current = maxTableLimit;
   }
   run({
     ...params,
@@ -427,7 +437,7 @@ const handleCellEnter = ({ e, row }: {
   e: MouseEvent
   row: TableRowData
 }) => {
-  const cell = (e.target as HTMLElement).closest('.cell-single-ellipse');
+  const cell = (e.target as HTMLElement).closest('.truncate');
   if (cell) {
     row.isOverflow = cell.scrollWidth > cell.clientWidth;
   }
@@ -441,8 +451,10 @@ const handlePageChange = ({ current, pageSize }: {
   current: number
   pageSize: number
 }) => {
-  pagination.value!.current = current;
-  pagination.value!.pageSize = pageSize;
+  pagination.value = Object.assign(pagination.value, {
+    current,
+    pageSize,
+  });
   if (!localPage) {
     fetchData({
       ...paramsData.value,
@@ -452,9 +464,10 @@ const handlePageChange = ({ current, pageSize }: {
 };
 
 const handleSettingChange = (setting: BkUiSettings) => {
-  tableSetting.value = setting ?? {};
   const isExistDiff = isDiffSize(setting);
   changeTableSetting(setting);
+  tableSetting.value = Object.assign(tableSetting.value, setting ?? {});
+  delete tableSetting.value.value;
   if (!isExistDiff) {
     // 这里处理高级设置事件回调后需要处理的业务
     return;
@@ -548,7 +561,11 @@ onMounted(() => {
   const tableSet = localStorage.getItem(`table-setting-${locale.value}-${route.name}`);
   if (tableSet && tableSetting.value) {
     const storageCache = JSON.parse(tableSet);
-    tableSetting.value = Object.assign(tableSetting.value, storageCache);
+    tableSetting.value = {
+      ...tableSetting.value,
+      ...storageCache,
+      size: storageCache.rowSize,
+    };
     delete tableSetting.value.value;
   }
   handleListenerRadio();
@@ -571,6 +588,7 @@ defineExpose({
   setPaginationTheme,
   resetPaginationTheme,
   refresh,
+  handleResetSelection,
   handleCellEnter,
   handleCellLeave,
 });
@@ -579,17 +597,6 @@ defineExpose({
 
 <style lang="scss">
 .primary-table-wrapper {
-
-  .cell-single-ellipse {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-
-    &.is-color-active {
-      color: #3a84ff;
-      cursor: pointer;
-    }
-  }
 
   .table-first-full-row {
     width: 100%;
@@ -656,6 +663,10 @@ defineExpose({
     .t-table__row-full-element {
       padding: 0;
     }
+  }
+
+  .t-table__row--hover {
+    background-color: transparent !important;
   }
 
   &.primary-table-no-data {

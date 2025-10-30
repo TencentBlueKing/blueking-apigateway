@@ -35,7 +35,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/permission/record/Index.vue'),
     meta: {
       title: t('审批历史'),
-      matchRoute: 'PermissionRecord',
+      matchRoute: 'PermissionApply',
       topMenu: 'Home',
       showBackIcon: true,
     },

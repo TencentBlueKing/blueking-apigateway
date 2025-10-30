@@ -539,6 +539,27 @@ class TestResponseRewriteChecker:
             ),
             (
                 {
+                    "body": '{"code":"ok","message":"new json body"}',
+                    "headers": {
+                        "add": [{"key": "name:value"}],
+                        "set": [
+                            {"key": "key1", "value": "value1"},
+                            {"key": "key2", "value": "value2"},
+                        ],
+                        "remove": [{"key": "key2"}],
+                    },
+                    "vars": '[[["status", "==", 200]]]',
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "status_code": "test",
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
                     "headers": {  # add key 重复
                         "add": [{"key": "name:value"}, {"key": "name:value"}]
                     },

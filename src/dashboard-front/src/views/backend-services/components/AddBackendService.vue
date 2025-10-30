@@ -185,6 +185,7 @@
                             v-model="slotProps.configs.hash_on"
                             :clearable="false"
                             :filterable="false"
+                            :disabled="disabled"
                             @change="(value: string) => handleHashOnChange(value, slotProps.id)"
                           >
                             <BkOption
@@ -196,40 +197,15 @@
                           </BkSelect>
                         </BkFormItem>
 
-                        <!-- key -->
-                        <BkFormItem
+                        <KeyFormItem
                           v-if="slotProps.configs.loadbalance === 'chash'"
+                          :stage-config="slotProps"
                           label="Key"
                           property="configs.key"
+                          :disabled="disabled"
                           required
-                        >
-                          <BkDropdown
-                            placement="bottom-start"
-                            :popover-options="{
-                              boundary: 'parent',
-                              width: '100%',
-                            }"
-                            class="w-full!"
-                          >
-                            <BkInput
-                              v-model="slotProps.configs.key"
-                            />
-                            <template
-                              v-if="slotProps.configs.hash_on !== 'header' && slotProps.configs.hash_on !== 'cookie'"
-                              #content
-                            >
-                              <BkDropdownMenu>
-                                <BkDropdownItem
-                                  v-for="option in hashOnKeyOptions"
-                                  :key="option.id"
-                                  @click="() => handleHashOnKeyClick(option.id, slotProps.id)"
-                                >
-                                  {{ option.name }}
-                                </BkDropdownItem>
-                              </BkDropdownMenu>
-                            </template>
-                          </BkDropdown>
-                        </BkFormItem>
+                          @change="handleHashOnKeyChange"
+                        />
 
                         <BkFormItem
                           v-for="(hostItem, i) in slotProps.configs.hosts"
@@ -427,6 +403,7 @@ import {
 import { type IStageListItem, getStageList } from '@/services/source/stage';
 import { AngleUpFill, Success } from 'bkui-lib/icon';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
+import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
 
 interface IProps {
   editId?: number
@@ -583,49 +560,6 @@ const hashOnOptions = [
   },
 ];
 
-const hashOnKeyOptions = [
-  {
-    id: 'uri',
-    name: 'uri',
-  },
-  {
-    id: 'server_name',
-    name: 'server_name',
-  },
-  {
-    id: 'server_addr',
-    name: 'server_addr',
-  },
-  {
-    id: 'request_uri',
-    name: 'request_uri',
-  },
-  {
-    id: 'remote_port',
-    name: 'remote_port',
-  },
-  {
-    id: 'remote_addr',
-    name: 'remote_addr',
-  },
-  {
-    id: 'query_string',
-    name: 'query_string',
-  },
-  {
-    id: 'host',
-    name: 'host',
-  },
-  {
-    id: 'hostname',
-    name: 'hostname',
-  },
-  {
-    id: 'arg_***',
-    name: 'arg_***',
-  },
-];
-
 const apigwId = computed<number>(() => gatewayStore.apigwId);
 
 watch(
@@ -703,8 +637,8 @@ const handleConfirm = async () => {
   catch {
     if (emptyHostIndex > -1) {
       handleScrollView(stageConfigRef.value[emptyHostIndex]?.$el);
-      return;
     }
+    return;
   }
   finalConfigs.value = stageConfig.value.map((item) => {
     const id = !editId ? item.id : item.configs.stage.id;
@@ -882,10 +816,10 @@ const handleHashOnChange = (value: string, stageId: number) => {
   }
 };
 
-const handleHashOnKeyClick = (value: string, stageId: number) => {
-  const stage = stageConfig.value.find(item => item.id === stageId);
+const handleHashOnKeyChange = (config: any) => {
+  const stage = stageConfig.value.find(item => item.id === config.id);
   if (stage) {
-    stage.configs.key = value;
+    stage.configs.key = config.configs.key;
   }
 };
 

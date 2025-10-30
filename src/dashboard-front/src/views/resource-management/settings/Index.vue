@@ -224,6 +224,7 @@
                 :api-method="getTableData"
                 :columns="columns"
                 :show-selection="isShowSelection"
+                :show-first-full-row="selectedRows.length > 0"
                 :table-row-key="'id'"
                 show-settings
                 resizable
@@ -725,11 +726,13 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
       colKey: 'backend.name',
       title: t('后端服务'),
       width: 130,
+      ellipsis: true,
     },
     {
       colKey: 'method',
       title: t('前端请求方法'),
       width: 130,
+      ellipsis: true,
       cell: (h, { row }) => (
         <bk-tag theme={METHOD_THEMES[row.method as keyof typeof METHOD_THEMES]}>
           {row.method}
@@ -766,6 +769,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
       colKey: 'docs',
       title: t('文档'),
       width: 80,
+      ellipsis: true,
       cell: (h, { row }) => (
         <div>
           {row.docs?.length
@@ -847,7 +851,8 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     {
       colKey: 'updated_time',
       title: t('更新时间'),
-      minWidth: 220,
+      width: 260,
+      ellipsis: true,
       sorter: true,
     },
     {

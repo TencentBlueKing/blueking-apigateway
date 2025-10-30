@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 <template>
-  <div class="app-content apigw-access-manager-wrapper flex">
+  <div class="flex app-content apigw-access-manager-wrapper">
     <div
       class="left-system-nav"
       :class="[{ 'is-expand': !isExpand }]"
@@ -84,6 +84,7 @@
             v-model="searchValue"
             :data="searchData"
             unique-select
+            value-behavior="need-key"
             :placeholder="t('请输入组件名称、请求路径，按Enter搜索')"
             :value-split-code="'+'"
           />
@@ -95,39 +96,20 @@
           />
         </div>
       </div>
-      <BkLoading
-        :loading="isLoading"
-        :opacity="1"
-      >
-        <BkTable
-          ref="comTableRef"
-          border="outer"
-          :data="tableData"
-          :size="'small'"
-          :is-row-select-enable="setDefaultSelect"
-          :pagination="pagination"
-          :columns="getTableColumns"
-          :max-height="clientHeight"
-          remote-pagination
-          show-overflow-tooltip
-          @select="handleSelectionChange"
-          @select-all="handleSelectAllChange"
-          @page-limit-change="handlePageSizeChange"
-          @page-value-change="handlePageChange"
-          @row-mouse-enter="handleRowEnter"
-          @row-mouse-leave="handleRowLeave"
-        >
-          <template #empty>
-            <TableEmpty
-              :is-loading="isLoading"
-              :empty-type="tableEmptyConfig.emptyType"
-              :abnormal="tableEmptyConfig.isAbnormal"
-              @refresh="getList"
-              @clear-filter="handleClearFilterKey"
-            />
-          </template>
-        </BkTable>
-      </BkLoading>
+      <AgTable
+        ref="tableRef"
+        v-model:table-data="tableData"
+        resizable
+        show-selection
+        show-settings
+        :show-first-full-row="selections.length > 0"
+        :disabled-check-selection="disabledSelection"
+        :api-method="getTableData"
+        :columns="tableColumns"
+        :max-limit-config="{ allocatedHeight: 290, mode: 'tdesign'}"
+        @selection-change="handleSelectionChange"
+        @clear-filter="handleClearFilter"
+      />
     </div>
 
     <!-- 新建/编辑 -->
@@ -144,14 +126,10 @@
 
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
-import { Message, OverflowTitle, Table } from 'bkui-vue';
+import { Button, Message } from 'bkui-vue';
 import type { ISearchValue } from 'bkui-lib/search-select/utils';
-import {
-  useMaxTableLimit,
-  usePopInfoBox,
-  useQueryList,
-  useSelection,
-} from '@/hooks';
+import type { ITableMethod } from '@/types/common';
+import { usePopInfoBox } from '@/hooks';
 import {
   type IComponentItem,
   checkEsbNeedNewVersion,
@@ -164,7 +142,7 @@ import {
 import { getSystems } from '@/services/source/system';
 import AddComponentSlider from './components/AddComponent.vue';
 import RenderSystem from './components/RenderSystem.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
 
 type ISystemFilterMethod = {
   setSelected: (value: number) => void
@@ -173,13 +151,6 @@ type ISystemFilterMethod = {
 
 const router = useRouter();
 const { t, locale } = useI18n();
-const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 256 });
-const {
-  selections,
-  handleSelectionChange,
-  handleSelectAllChange,
-  resetSelections,
-} = useSelection();
 
 const systemFilterRef = ref<InstanceType<typeof RenderSystem> & ISystemFilterMethod>();
 
@@ -211,7 +182,7 @@ const searchData = shallowRef([
     placeholder: t('请输入请求路径'),
   },
 ]);
-const comTableRef = ref<InstanceType<typeof Table> & { clearSelection: () => void }>();
+const tableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
 const searchValue = ref([]);
 const searchParams = ref({
   name: '',
@@ -225,58 +196,25 @@ const formData = ref(getDefaultData());
 const needNewVersion = ref(false);
 const syncEsbToApigwEnabled = ref(false);
 const isReleasing = ref(false);
-const isCursor = ref(false);
-const isOverflow = ref(false);
 const isExpand = ref(true);
-const cursorId = ref('');
 const curSelectSystemId = ref('*');
+const tableData = ref([]);
 const systemList = ref([]);
+const selections = ref([]);
 const requestQueue = reactive(['system', 'component']);
 const deleteDialogConf = reactive({
   loading: false,
   ids: [],
 });
-const tableEmptyConfig = reactive({
-  emptyType: '',
-  isAbnormal: false,
-});
 let initData = reactive({});
 
-// 列表hooks
-const {
-  tableData,
-  pagination,
-  isLoading,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-} = useQueryList({
-  apiMethod: getEsbComponents,
-  filterData: searchParams,
-  initialPagination: {
-    limitList: [
-      maxTableLimit,
-      10,
-      20,
-      50,
-      100,
-    ],
-    limit: maxTableLimit,
-  },
-  needApigwId: false,
-});
-
-const getTableColumns = computed(() => {
-  const tableColumn = [
+const tableColumns = computed(() => {
+  return [
     {
-      type: 'selection',
-      width: 60,
-      align: 'center',
-    },
-    {
-      label: t('系统名称'),
-      field: 'system_name',
-      render: ({ row }: { row?: Partial<IComponentItem> }) => {
+      title: t('系统名称'),
+      colKey: 'system_name',
+      ellipsis: true,
+      cell: (h, { row }: { row?: Partial<IComponentItem> }) => {
         return (
           <span>
             {row?.system_name || '--' }
@@ -285,19 +223,26 @@ const getTableColumns = computed(() => {
       },
     },
     {
-      label: t('组件名称'),
-      field: 'name',
-      showOverflowTooltip: true,
-      render: ({ row }: { row?: Partial<IComponentItem> }) => {
+      title: t('组件名称'),
+      colKey: 'name',
+      cell: (h, { row }: { row?: Partial<IComponentItem> }) => {
         return (
           <div class="flex items-center">
             <div
               v-bk-tooltips={{
                 placement: 'top',
                 content: row?.name,
-                disabled: !row?.name || !isOverflow.value,
+                disabled: !row.isOverflow,
               }}
               class="truncate"
+              onMouseenter={e => tableRef.value?.handleCellEnter({
+                e,
+                row,
+              })}
+              onMouseLeave={e => tableRef.value?.handleCellLeave({
+                e,
+                row,
+              })}
             >
               { row?.name || '--' }
             </div>
@@ -320,46 +265,49 @@ const getTableColumns = computed(() => {
       },
     },
     {
-      label: t('请求方法'),
-      field: 'method',
+      title: t('请求方法'),
+      colKey: 'method',
+      ellipsis: true,
       width: 90,
-      render: ({ row }: { row?: Partial<IComponentItem> }) => {
+      cell: (h, { row }: { row?: Partial<IComponentItem> }) => {
         return (
-          <OverflowTitle type="tips">{ row.method || '--' }</OverflowTitle>
+          <span>{ row.method || '--' }</span>
         );
       },
     },
     {
-      label: t('请求路径'),
-      field: 'path',
-      render: ({ row }: { row?: Partial<IComponentItem> }) => {
+      title: t('请求路径'),
+      colKey: 'path',
+      ellipsis: true,
+      cell: (h, { row }: { row?: Partial<IComponentItem> }) => {
         return (
-          <OverflowTitle type="tips">{ row.path || '--' }</OverflowTitle>
+          <span>{ row.path || '--' }</span>
         );
       },
     },
     {
-      label: t('更新时间'),
-      field: 'updated_time',
+      title: t('更新时间'),
+      colKey: 'updated_time',
+      ellipsis: true,
       width: 260,
     },
     {
-      label: t('操作'),
-      field: 'operate',
+      title: t('操作'),
+      colKey: 'operate',
       fixed: 'right',
-      width: 100,
-      render: ({ row }: { row?: Partial<IComponentItem> }) => {
+      width: 120,
+      cell: (h, { row }: { row?: Partial<IComponentItem> }) => {
         return (
           <div>
-            <BkButton
-              class="m-r-10px"
+            <Button
+              class="mr-10px"
               theme="primary"
               text
               onClick={() => handleEdit(row)}
             >
               { t('编辑') }
-            </BkButton>
-            <BkButton
+            </Button>
+            <Button
               theme="primary"
               text
               disabled={row.is_official}
@@ -374,23 +322,32 @@ const getTableColumns = computed(() => {
                   )
                   : t('删除')
               }
-            </BkButton>
+            </Button>
           </div>
         );
       },
     },
   ];
-  return tableColumn;
 });
+
+const getList = () => {
+  tableRef.value?.fetchData(searchParams.value, { resetPage: true });
+};
+
+const getTableData = async (params: Record<string, any> = {}) => {
+  const res = await getEsbComponents(params);
+  return res ?? {};
+};
+
+const disabledSelection = (row) => {
+  row.selectionTip = row.is_official ? t('官方组件，不可删除') : '';
+  return row.is_official;
+};
 
 const handleSelect = ({ id }: { id: number }) => {
   curSelectSystemId.value = id;
   getSystemName(id);
   getList();
-};
-
-const setDefaultSelect = ({ row }: IComponentItem) => {
-  return !row?.is_official;
 };
 
 const handleSysSelect = (
@@ -433,7 +390,7 @@ const getSystemList = async () => {
 };
 
 const handleConfirm = () => {
-  resetSelections(comTableRef.value);
+  handleClearSelection();
   getList();
   getSystemList();
 };
@@ -500,7 +457,7 @@ const handleConfirmDelete = () => {
           message: t('删除成功'),
           theme: 'success',
         });
-        selections.value = [];
+        handleClearSelection();
         getList();
         getSystemList();
       }
@@ -544,21 +501,6 @@ const handleNavRoute = (name: string) => {
   router.push({ name });
 };
 
-const handleRowEnter = (e, row) => {
-  const truncateNode = e.target?.querySelector('.truncate');
-  if (truncateNode) {
-    isOverflow.value = truncateNode?.scrollWidth > truncateNode.clientWidth;
-  }
-  cursorId.value = row?.id;
-  isCursor.value = true;
-};
-
-const handleRowLeave = () => {
-  cursorId.value = '';
-  isCursor.value = false;
-  isOverflow.value = false;
-};
-
 const getFeature = async () => {
   const params = {
     limit: 10000,
@@ -568,9 +510,17 @@ const getFeature = async () => {
   syncEsbToApigwEnabled.value = res?.SYNC_ESB_TO_APIGW_ENABLED;
 };
 
-const handleClearFilterKey = () => {
+const handleSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections: selected }) => {
+  selections.value = selected;
+};
+
+const handleClearFilter = () => {
   searchValue.value = [];
-  getList();
+};
+
+const handleClearSelection = () => {
+  tableRef.value.handleResetSelection();
+  selections.value = [];
 };
 
 const getSystemName = (id: number) => {
@@ -578,20 +528,6 @@ const getSystemName = (id: number) => {
     const curSystem = systemList.value?.find(item => item?.id === curSelectSystemId.value);
     searchParams.value.system_name = curSystem?.name;
   }
-};
-
-const updateTableEmptyConfig = () => {
-  tableEmptyConfig.isAbnormal = pagination.value.abnormal;
-  const filterParams = Object.values(searchParams.value).filter(item => item !== '');
-  if (filterParams?.length && !tableData.value?.length) {
-    tableEmptyConfig.emptyType = 'searchEmpty';
-    return;
-  }
-  if (filterParams?.length) {
-    tableEmptyConfig.emptyType = 'empty';
-    return;
-  }
-  tableEmptyConfig.emptyType = '';
 };
 
 const init = () => {
@@ -604,7 +540,7 @@ init();
 watch(
   () => searchValue.value,
   () => {
-    searchParams.value = Object.assign(searchParams.value, {
+    searchParams.value = Object.assign({}, {
       name: '',
       path: '',
       system_name: '',
@@ -613,14 +549,7 @@ watch(
       searchParams.value[item.id] = item.values[0].id;
     });
     getSystemName(curSelectSystemId.value);
-    updateTableEmptyConfig();
-  },
-  { deep: true },
-);
-
-watch(
-  () => tableData.value, () => {
-    updateTableEmptyConfig();
+    getList();
   },
   { deep: true },
 );
@@ -725,47 +654,6 @@ watch(
         color: #63656e;
       }
     }
-  }
-
-  .bk-table {
-    .api-name,
-    .docu-link {
-      max-width: 200px;
-      display: inline-block;
-      word-break: break-all;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      vertical-align: bottom;
-    }
-
-    .copy-icon {
-      font-size: 14px;
-      cursor: pointer;
-      &:hover {
-        color: #3a84ff;
-      }
-    }
-  }
-}
-
-:deep(.path-wrapper) {
-  position: relative;
-  display: flex;
-  width: 100%;
-
-  .path-text {
-    width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .path-icon {
-    position: absolute;
-    right: 0px;
-    cursor: pointer;
-    color: #3a84ff;
   }
 }
 </style>
