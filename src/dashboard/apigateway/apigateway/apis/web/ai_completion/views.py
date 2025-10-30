@@ -116,21 +116,19 @@ class BatchTranslateApi(generics.CreateAPIView):
 
         doc_ids = serializer.validated_data.get("doc_ids")
         target_language = serializer.validated_data.get("target_language")
-
+        # 如果没有提供doc_ids，则查询网关下所有文档的ID
+        if not doc_ids:
+            all_doc_ids = list(ResourceDoc.objects.filter(gateway_id=gateway_id).values_list("id", flat=True))
+            if not all_doc_ids:
+                logger.warning("[gateway:%s]网关下未找到需要翻译的文档", gateway_name)
+                return FailJsonResponse(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    code="NO_DOCS_FOUND",
+                    message=_("网关下未找到需要翻译的文档"),
+                )
+            doc_ids = all_doc_ids
+            logger.info("[gateway:%s]查询到网关下所有文档ID: %s", gateway_name, len(doc_ids))
         try:
-            # 如果没有提供doc_ids，则查询网关下所有文档的ID
-            if not doc_ids:
-                all_doc_ids = list(ResourceDoc.objects.filter(gateway_id=gateway_id).values_list("id", flat=True))
-                if not all_doc_ids:
-                    logger.warning("[gateway:%s]网关下未找到需要翻译的文档", gateway_name)
-                    return FailJsonResponse(
-                        status=status.HTTP_400_BAD_REQUEST,
-                        code="NO_DOCS_FOUND",
-                        message=_("网关下未找到需要翻译的文档"),
-                    )
-                doc_ids = all_doc_ids
-                logger.info("[gateway:%s]查询到网关下所有文档ID: %s", gateway_name, len(doc_ids))
-
             # 启动异步翻译任务，使用delay_on_commit确保在事务提交后执行
             delay_on_commit(batch_translate_docs, doc_ids=doc_ids, target_language=target_language)
 

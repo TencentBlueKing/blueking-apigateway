@@ -47,7 +47,9 @@ class AICompletionInputSLZ(serializers.Serializer):
 class BatchTranslateInputSLZ(serializers.Serializer):
     """批量翻译输入序列化器"""
 
-    doc_ids = serializers.ListField(child=serializers.IntegerField(), required=False, help_text="需要翻译的文档ID列表")
+    doc_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), required=False, help_text="需要翻译的文档ID列表"
+    )
     target_language = serializers.ChoiceField(
         choices=DocLanguageEnum.get_choices(),
         required=False,
