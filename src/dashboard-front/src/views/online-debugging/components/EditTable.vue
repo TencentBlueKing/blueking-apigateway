@@ -198,6 +198,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useFeatureFlag, useUserInfo } from '@/stores';
 import { Message } from 'bkui-vue';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import headersNames from '@/constants/headers-name';
@@ -234,6 +235,8 @@ const {
 const emit = defineEmits<{ change: [data: IRowType[]] }>();
 
 const { t } = useI18n();
+const userStore = useUserInfo();
+const featureFlagStore = useFeatureFlag();
 
 const getDefaultTbRow = () => {
   return {
@@ -400,6 +403,18 @@ watch(
       tableData.value = list;
     }
 
+    if (type === 'headers' && featureFlagStore.isTenantMode) {
+      tableData.value.unshift({
+        id: +new Date(),
+        name: 'x-bk-tenant-id',
+        value: userStore.info?.tenant_id || '',
+        instructions: t('租户id'),
+        required: false,
+        type: 'string',
+        default: userStore.info?.tenant_id || '',
+      });
+    }
+
     checkedList.value = [...tableData.value];
   },
   {
@@ -507,7 +522,7 @@ defineExpose({
 
 .variable-table {
   .td-text {
-    padding: 0 16px;
+    //padding: 0 16px;
   }
 
   :deep(.bk-form-error-tips) {
@@ -525,7 +540,7 @@ defineExpose({
           line-height: 42px;
           border: 0;
           .bk-input--text {
-            padding: 0 16px;
+            //padding: 0 16px;
           }
         }
         .edit-input.bk-input {
