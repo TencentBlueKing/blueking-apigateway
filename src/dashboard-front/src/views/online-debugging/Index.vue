@@ -730,9 +730,8 @@ const getItemName = (item: any) => {
 
 const handleStageChange = (payload: number) => {
   const hasData = stageList.value.find((item: Record<string, number>) => item.id === payload);
-  // 如果是未发布或者发布失败则不需要调资源列表
-  if (!['unreleased', 'failure'].includes(hasData?.release?.status)) {
-    router.replace({ query: { stage_id: payload } });
+  // 未发布则不需要调资源列表（发布失败，但已有生效版本仍需要调资源列表）
+  if (!['unreleased'].includes(hasData?.release?.status) && hasData?.resource_version?.version) {
     getApigwReleaseResources();
   }
   else {
@@ -832,14 +831,14 @@ const getApigwStages = async () => {
     const res = await getStages(apigwId.value, pageParams);
     stageList.value = res || [];
     if (stageList.value.length) {
-      const effectiveStage = stageList.value.find((item: any) => item.release?.status === 'success') || stageList.value[0];
-      const { id, release } = effectiveStage;
+      const effectiveStage = stageList.value.find((item: any) => item.release?.status === 'success' || item.resource_version?.version) || stageList.value[0];
+      const { id, release, resource_version } = effectiveStage;
 
       if (!stage.value) {
         stage.value = id;
       }
-      // 如果是未发布或者发布失败则不需要调资源列表
-      if (!['unreleased', 'failure'].includes(release?.status)) {
+      // 未发布则不需要调资源列表（发布失败，但已有生效版本仍需要调资源列表）
+      if (!['unreleased'].includes(release?.status) && resource_version?.version) {
         getApigwReleaseResources();
       }
     }
@@ -1144,8 +1143,8 @@ init();
   }
 
   .request-setting-content {
-    padding: 0 45px 20px;
-    max-height: 88px;
+    padding: 0 22px 20px;
+    max-height: 116px;
     transition: all 0.3s ease;
     &.anim-hidden {
       max-height: 56px;
