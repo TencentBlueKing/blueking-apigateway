@@ -22,7 +22,7 @@ from django.db import transaction
 
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, GatewayStatusEnum, PublishSourceEnum, StageStatusEnum
-from apigateway.core.models import Backend, BackendConfig, Proxy, Stage
+from apigateway.core.models import Backend, BackendConfig, Proxy, Release, Stage
 from apigateway.utils.time import now_datetime
 
 logger = logging.getLogger(__name__)
@@ -123,6 +123,30 @@ class BackendHandler:
             return False
 
         return not Proxy.objects.filter(backend=backend).exists()
+
+    @staticmethod
+    def get_resource_version_released_stage_names(backend: Backend) -> List[str]:
+        """获取已发布的资源版本中包含该后端服务的环境名称列表"""
+        if backend.name == DEFAULT_BACKEND_NAME:
+            return []
+
+        releases = Release.objects.filter(
+            gateway__id=backend.gateway.id, stage__status=StageStatusEnum.ACTIVE.value
+        ).select_related("stage", "resource_version")
+
+        stage_names = set()
+        for release in releases:
+            resource_data_list = release.resource_version.data
+            if not resource_data_list:
+                continue
+
+            for resource_data in resource_data_list:
+                backend_id = resource_data.get("proxy", {}).get("backend_id", None)
+                if backend_id and backend_id == backend.id:
+                    stage_names.add(release.stage.name)
+                    break
+
+        return list(stage_names)
 
     @staticmethod
     def get_id_to_instance(gateway_id: int) -> Dict[int, Backend]:
