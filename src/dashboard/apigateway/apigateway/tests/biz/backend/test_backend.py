@@ -19,7 +19,7 @@
 from django_dynamic_fixture import G
 
 from apigateway.biz.backend import BackendHandler
-from apigateway.core.models import Backend, BackendConfig, Proxy, Resource
+from apigateway.core.models import Backend, BackendConfig, Proxy, Release, Resource, Stage
 
 
 class TestBackendHandler:
@@ -115,3 +115,27 @@ class TestBackendHandler:
             "loadbalance": "roundrobin",
             "hosts": [{"scheme": "https", "host": "www.example.com", "weight": 1}],
         }
+
+    def test_get_resource_version_released_stage_names(self, fake_gateway, fake_backend, fake_resource_version):
+        stage1 = G(Stage, gateway=fake_gateway, status=1, name="stage1")
+        stage2 = G(Stage, gateway=fake_gateway, status=1, name="stage2")
+
+        G(Release, gateway=fake_gateway, stage=stage1, resource_version=fake_resource_version)
+        G(Release, gateway=fake_gateway, stage=stage2, resource_version=fake_resource_version)
+
+        result = BackendHandler.get_resource_version_released_stage_names(fake_backend)
+
+        assert len(result) == 2
+
+    def test_get_resource_version_released_stage_names_with_inactive_stage(
+        self, fake_gateway, fake_backend, fake_resource_version
+    ):
+        stage1 = G(Stage, gateway=fake_gateway, status=0, name="stage1")
+        stage2 = G(Stage, gateway=fake_gateway, status=0, name="stage2")
+
+        G(Release, gateway=fake_gateway, stage=stage1, resource_version=fake_resource_version)
+        G(Release, gateway=fake_gateway, stage=stage2, resource_version=fake_resource_version)
+
+        result = BackendHandler.get_resource_version_released_stage_names(fake_backend)
+
+        assert len(result) == 0

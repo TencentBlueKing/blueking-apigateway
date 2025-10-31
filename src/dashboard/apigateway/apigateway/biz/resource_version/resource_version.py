@@ -320,6 +320,18 @@ class ResourceVersionHandler:
         return -1
 
     @staticmethod
+    def get_backend_id_to_resources(resource_version: ResourceVersion) -> Dict[int, list]:
+        """
+        获取资源版本下的后端 ID 与资源的映射关系
+        """
+        backend_to_resources = defaultdict(list)
+        for resource_data in resource_version.data:
+            backend_id = resource_data.get("proxy", {}).get("backend_id", None)
+            if backend_id:
+                backend_to_resources[backend_id].append(resource_data)
+        return backend_to_resources
+
+    @staticmethod
     @cached(cache=TTLCache(maxsize=300, ttl=CACHE_TIME_5_MINUTES))
     def get_resource_names_set(resource_version_id: int, raise_exception: bool = False) -> Set[str]:
         """获取资源版本中的资源名称列表, 缓存 5 分钟

@@ -175,6 +175,13 @@ class BackendRetrieveUpdateDestroyApi(BackendQuerySetMixin, generics.RetrieveUpd
         if not BackendHandler.deletable(instance):
             raise error_codes.FAILED_PRECONDITION.format(_("请先下线后端服务，然后再删除。"))
 
+        # 查询后端是否绑定了已发布的资源版本
+        stage_names = BackendHandler.get_resource_version_released_stage_names(instance)
+        if stage_names:
+            raise error_codes.FAILED_PRECONDITION.format(
+                _("已发布环境：【{}】 的资源版本中已关联该后端服务，不可删除。").format(", ".join(stage_names))
+            )
+
         BackendConfig.objects.filter(backend=instance).delete()
         instance.delete()
 
