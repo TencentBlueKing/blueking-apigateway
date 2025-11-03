@@ -94,18 +94,32 @@
                   v-show="showBatch"
                   class="batch-status"
                 >
-                  <BkButton
-                    class="mr-8px"
-                    @click="() => handleBatchOperate('edit')"
+                  <BkPopover
+                    :content="t('请先勾选资源')"
+                    :disabled="selectedRowKeys?.length > 0"
+                    :popover-delay="0"
                   >
-                    {{ t('编辑资源') }}
-                  </BkButton>
-                  <BkButton
-                    class="mr-8px"
-                    @click="() => handleBatchOperate('delete')"
+                    <BkButton
+                      class="mr-8px"
+                      :disabled="!selectedRowKeys?.length"
+                      @click="() => handleBatchOperate('edit')"
+                    >
+                      {{ t('编辑资源') }}
+                    </BkButton>
+                  </BkPopover>
+                  <BkPopover
+                    :content="t('请先勾选资源')"
+                    :disabled="selectedRowKeys?.length > 0"
+                    :popover-delay="0"
                   >
-                    {{ t('删除资源') }}
-                  </BkButton>
+                    <BkButton
+                      class="mr-8px"
+                      :disabled="!selectedRowKeys?.length"
+                      @click="() => handleBatchOperate('delete')"
+                    >
+                      {{ t('删除资源') }}
+                    </BkButton>
+                  </BkPopover>
                 </div>
                 <AgDropdown
                   v-show="!isCollapsed"
@@ -232,7 +246,6 @@
                 @sort-change="handleSortChange"
                 @selection-change="handleSelectionChange"
                 @clear-filter="handleClearQueries"
-                @clear-selection="handleClearSelection"
               />
             </div>
           </div>
@@ -477,9 +490,9 @@ const exportDropData = ref<ApigwIDropList[]>([
   },
   {
     value: 'filtered',
-    label: t('已筛选资源'),
+    label: t('(进入批量操作) 选择资源'),
     disabled: false,
-    tooltips: t('请先筛选资源'),
+    tooltips: '',
   },
   // { value: 'selected', label: t('已选资源'), disabled: false, tooltips: t('请先勾选资源') },
 ]);
@@ -934,8 +947,8 @@ watch(
     });
 
     exportDropData.value.forEach((e: IDropList) => {
-      if (e.value === 'filtered') {
-        e.disabled = !v.length || !searchValue.value.length;
+      if (['filtered'].includes(e.value)) {
+        e.disabled = false;
       }
     });
   },
@@ -1010,8 +1023,8 @@ watch(
 
     exportDropData.value.forEach((e: IDropList) => {
       // 已选资源
-      if (e.value === 'filtered') {
-        e.disabled = !searchValue.value.length;
+      if (['filtered'].includes(e.value)) {
+        e.disabled = false;
       }
     });
   },
@@ -1135,8 +1148,7 @@ const handleShowBatch = () => {
 // 退出批量操作
 const handleOutBatch = () => {
   showBatch.value = false;
-  selectedRowKeys.value = [];
-  selectedRows.value = [];
+  handleClearSelection();
   exportDropData.value = [
     {
       value: 'all',
@@ -1144,9 +1156,9 @@ const handleOutBatch = () => {
     },
     {
       value: 'filtered',
-      label: t('已筛选资源'),
-      disabled: !searchValue.value.length || !tableData.value.length,
-      tooltips: t('请先筛选资源'),
+      label: t('(进入批量操作) 选择资源'),
+      disabled: false,
+      tooltips: '',
     },
   ];
 };
@@ -1178,15 +1190,6 @@ const handleShowDiff = async () => {
 
 // 处理批量编辑或删除
 const handleBatchOperate = async (type: string) => {
-  if (!selectedRowKeys.value?.length) {
-    Message({
-      message: t('请先勾选资源'),
-      theme: 'warning',
-      width: 'auto',
-    });
-    return;
-  }
-
   dialogData.isShow = true;
   // 批量删除
   if (type === 'delete') {
@@ -1215,6 +1218,10 @@ const handleExport = async ({ value }: { value: string }) => {
       exportParams.resource_filter_condition = undefined;
       exportParams.resource_ids = undefined;
       break;
+  }
+  if (['filtered'].includes(value)) {
+    handleShowBatch();
+    return;
   }
   exportParams.export_type = value;
   exportDialogConfig.exportFileDocType = 'resource';
@@ -1430,6 +1437,7 @@ const getTableData = async (params: Record<string, any> = {}) => getResourceList
 const handleClearSelection = () => {
   selectedRows.value = [];
   selectedRowKeys.value = [];
+  tableRef.value?.handleResetSelection();
 };
 
 const handleClearQueries = () => {

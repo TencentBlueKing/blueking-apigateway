@@ -44,6 +44,7 @@
         :filter-row="null"
         :frontend-search="isSearching"
         local-page
+        :row-class-name="getRowClassName"
         @filter-change="handleFilterChange"
         @clear-filter="handleClearQueries"
       />
@@ -60,6 +61,7 @@
   <CreateStage
     ref="stageSidesliderRef"
     :stage-id="stageId"
+    @hidden="handleCloseStage"
   />
 </template>
 
@@ -103,6 +105,8 @@ const currentStage = ref<any>(null);
 const currentResource = ref<any>({});
 const resourceDetailsRef = ref();
 const stageSidesliderRef = ref();
+// 是否是点击了后端服务
+const highlightRowId = ref(0);
 
 // 网关标签
 const labels = ref<any[]>([]);
@@ -131,6 +135,14 @@ const customMethodsList = computed(() => {
   ];
 });
 
+const renderStageTag = computed(() => {
+  return <span class="inline-block bg-#e4faf0 color-#14a568 rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('环') }</span>;
+});
+
+const renderResourceTag = computed(() => {
+  return <span class="inline-block bg-#EDF4FF color-#3A84FF rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('资') }</span>;
+});
+
 const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'backend',
@@ -139,10 +151,13 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
       <bk-button
         theme="primary"
         text
-        onClick={() => handleCheckStage({
-          resourceName: row.name,
-          backendName: row.proxy?.backend?.name,
-        })}
+        onClick={() => {
+          highlightRowId.value = row.id;
+          handleCheckStage({
+            resourceName: row.name,
+            backendName: row.proxy?.backend?.name,
+          });
+        }}
       >
         { row.proxy?.backend?.name ?? '--' }
       </bk-button>
@@ -216,7 +231,36 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   },
   {
     colKey: 'plugins',
-    title: t('生效的插件'),
+    title: () => {
+      return (
+        <div>
+          <bk-popover
+            allow-html
+            content="#plugins_header_tip"
+            theme="light"
+            popoverDelay={0}
+          >
+            <div class="underline decoration-dashed underline-offset-4">
+              {t('生效的插件')}
+            </div>
+          </bk-popover>
+
+          <div id="plugins_header_tip">
+            <div class="mb-16px break-all">
+              { t('当环境与资源同时启用同一个插件时，资源的优先级将高于环境')}
+            </div>
+            <div class="mb-8px">
+              { renderResourceTag.value }
+              <span class="ml-8px">{t('代表“ 资源中配置的插件生效 ”')}</span>
+            </div>
+            <div>
+              { renderStageTag.value }
+              <span class="ml-8px">{t('代表“ 环境中配置的插件生效 ”')}</span>
+            </div>
+          </div>
+        </div>
+      );
+    },
     ellipsis: true,
     cell: (h, { row }) => (
       row.plugins?.length
@@ -224,8 +268,8 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
           <div class="flex items-center">
             {row.plugins.map(plugin => (
               <div class="flex items-center" key={plugin.id}>
-                {plugin.binding_type === 'stage' ? <span class="inline-block bg-#e4faf0 color-#14a568 rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('环') }</span> : ''}
-                {plugin.binding_type === 'resource' ? <span class="inline-block bg-#EDF4FF color-#3A84FF rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('资') }</span> : ''}
+                {plugin.binding_type === 'stage' ? renderStageTag.value : ''}
+                {plugin.binding_type === 'resource' ? renderResourceTag.value : ''}
                 <span class="v-middle ml-4px mr-4px">{ plugin.name }</span>
               </div>
             ))}
@@ -360,6 +404,14 @@ async function getLabels() {
   labels.value = await getGatewayLabels(gatewayId.value);
 };
 
+const getRowClassName = ({ row }) => {
+  return row.id === highlightRowId.value ? 'highlight-row' : '';
+};
+
+const handleCloseStage = () => {
+  highlightRowId.value = 0;
+};
+
 const showDetails = (row: any) => {
   currentResource.value = row;
   resourceDetailsRef.value?.showSideslider();
@@ -411,6 +463,12 @@ defineExpose({ reload: init });
     width: 220px;
     height: 130px;
   }
+}
+
+:deep(.highlight-row) {
+  background-color: #e1ecff;
+  color: #3a84ff;
+  font-weight: 700;
 }
 </style>
 
