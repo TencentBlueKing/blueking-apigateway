@@ -365,3 +365,32 @@ class Auditor:
             data_after=data_after,
             comment=comment,
         )
+
+    @staticmethod
+    def record_permission_op_success(
+        op_type: OpTypeEnum,
+        username: str,
+        gateway_id: int,
+        instance_id: int,
+        instance_name: str,
+        data_before: Union[list, dict, str, None] = None,
+        data_after: Union[list, dict, str, None] = None,
+        comment: Optional[str] = None,
+    ):
+        if comment is None:
+            comment = {
+                OpTypeEnum.DELETE: "删除 应用权限",
+            }.get(op_type, "-")
+
+        record_audit_log(
+            username=username,
+            op_type=op_type.value,
+            op_status=OpStatusEnum.SUCCESS.value,
+            op_object_group=gateway_id,
+            op_object_type=OpObjectTypeEnum.PERMISSION.value,
+            op_object_id=instance_id,
+            op_object=instance_name,
+            data_before=data_before,
+            data_after=data_after,
+            comment=comment,
+        )
