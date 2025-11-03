@@ -723,8 +723,11 @@ const getItemName = (item: any) => {
   if (item?.release?.status === 'unreleased') {
     return `${item.name} （未发布）`;
   }
-  if (item?.release?.status === 'failure') {
+  if (item?.release?.status === 'failure' && !item?.resource_version?.version) {
     return `${item.name} （发布失败）`;
+  }
+  else {
+    return item.name;
   }
 };
 

@@ -95,7 +95,10 @@
                 class="suffix"
                 :class="[status]"
               >{{ t('（{version} 版本发布失败，', {
-                version: stage.paasInfo?.latest_deployment?.version || stage.paasInfo?.version || '--'
+                version: stage.paasInfo?.latest_deployment?.version
+                  || stage.paasInfo?.version
+                  || stage?.publish_version
+                  || '--'
               }) }}<span><BkButton
                 text
                 theme="primary"
