@@ -141,7 +141,7 @@
                           <BkFormItem
                             required
                             :label="t('负载均衡类型')"
-                            class="mt-20px"
+                            class="mt-20px relative"
                           >
                             <BkSelect
                               v-model="backend.config.loadbalance"
@@ -155,6 +155,19 @@
                                 :name="option.name"
                               />
                             </BkSelect>
+                            <BkLink
+                              class="absolute right-0 top--30px"
+                              theme="primary"
+                              :href="envStore.env.DOC_LINKS.LOADBALANCE"
+                              target="_blank"
+                            >
+                              <AgIcon
+                                name="jump"
+                                size="12"
+                                class="mr-4px"
+                              />
+                              <span class="text-12px">{{ t('帮助文档') }}</span>
+                            </BkLink>
                           </BkFormItem>
 
                           <BkFormItem

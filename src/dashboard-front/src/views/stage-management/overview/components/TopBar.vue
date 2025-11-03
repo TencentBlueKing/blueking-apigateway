@@ -57,6 +57,10 @@
           />
           <span
             v-else
+            v-bk-tooltips="{
+              content: getStageStatus(stage) === 'unreleased' ? t('未发布') : t('未上线'),
+              disabled: !['unreleased', 'delist'].includes(getStageStatus(stage))
+            }"
             class="dot"
             :class="[getStageStatus(stage)]"
           />
