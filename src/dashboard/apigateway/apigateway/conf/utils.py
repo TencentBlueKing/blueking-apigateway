@@ -63,6 +63,10 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
         ),
         # 网关认证
         "AUTH": env.str("DOC_LINK_AUTH", default=f"{doc_link_prefix}/UserGuide/Explanation/authorization.md"),
+        # 负载均衡
+        "LOADBALANCE": env.str(
+            "DOC_LINK_LOADBALANCE", default=f"{doc_link_prefix}/UserGuide/Explanation/loadbalance.md"
+        ),
         # Swagger 说明文档
         "SWAGGER": env.str(
             "DOC_LINK_SWAGGER", default=f"{doc_link_prefix}/UserGuide/HowTo/Connect/swagger-explain.md"
