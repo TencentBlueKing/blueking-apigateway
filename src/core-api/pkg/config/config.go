@@ -104,7 +104,7 @@ type Instrument struct {
 	DbAPI  bool
 }
 
-type Dashboard struct {
+type Auth struct {
 	ID     string
 	Secret string
 }
@@ -116,7 +116,7 @@ type Config struct {
 	Server Server
 	Sentry Sentry
 
-	Dashboard Dashboard
+	Auth Auth
 
 	Databases   []Database
 	DatabaseMap map[string]Database
@@ -133,8 +133,8 @@ func Load(v *viper.Viper) (*Config, error) {
 		return nil, err
 	}
 
-	if cfg.Dashboard.ID == "" || cfg.Dashboard.Secret == "" {
-		return nil, errors.New("dashboard id and secret cannot be empty")
+	if cfg.Auth.ID == "" || cfg.Auth.Secret == "" {
+		return nil, errors.New("auth id and secret cannot be empty")
 	}
 
 	// parse the list to map

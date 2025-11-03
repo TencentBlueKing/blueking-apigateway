@@ -130,6 +130,7 @@ formatters:
       chain-split-dots: false
 
   exclusions:
+    warn-unused: true
     generated: lax
     paths:
       - third_party$
