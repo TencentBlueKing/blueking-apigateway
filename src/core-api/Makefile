@@ -6,7 +6,7 @@ init:
 	pip install pre-commit
 	pre-commit install
 	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v2.1.6
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v2.6.0
 	# for ginkgo
 	go install github.com/onsi/ginkgo/v2/ginkgo@latest
 	# for make mock
@@ -46,9 +46,7 @@ check-license:
 
 .PHONY: fmt
 fmt:
-	golines ./ -m 120 -w --base-formatter gofmt --no-reformat-tags
-	gofumpt  -l -w .
-	goimports-reviser -rm-unused -set-alias -excludes '.git,vendor' -format ./...
+	golangci-lint fmt
 
 
 .PHONY: test

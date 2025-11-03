@@ -38,7 +38,7 @@ func (k ReleaseHistoryCacheKey) Key() string {
 	return strconv.FormatInt(k.ReleaseID, 10)
 }
 
-func retrieveReleaseHistory(ctx context.Context, k cache.Key) (interface{}, error) {
+func retrieveReleaseHistory(ctx context.Context, k cache.Key) (any, error) {
 	key := k.(ReleaseHistoryCacheKey)
 
 	manager := dao.NewReleaseHistoryManger()
@@ -56,17 +56,17 @@ func GetReleaseHistory(ctx context.Context, releaseID int64) (releaseHistory dao
 	key := ReleaseHistoryCacheKey{
 		ReleaseID: releaseID,
 	}
-	var value interface{}
+	var value any
 	value, err = cacheGet(ctx, releaseHistoryCache, key)
 	if err != nil {
-		return
+		return releaseHistory, err
 	}
 
 	var ok bool
 	releaseHistory, ok = value.(dao.ReleaseHistory)
 	if !ok {
 		err = errors.New("not ReleaseHistory in cache")
-		return
+		return releaseHistory, err
 	}
-	return
+	return releaseHistory, err
 }

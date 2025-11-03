@@ -104,12 +104,19 @@ type Instrument struct {
 	DbAPI  bool
 }
 
+type Dashboard struct {
+	ID     string
+	Secret string
+}
+
 // Config is the config for the whole project
 type Config struct {
 	Debug bool
 
 	Server Server
 	Sentry Sentry
+
+	Dashboard Dashboard
 
 	Databases   []Database
 	DatabaseMap map[string]Database
@@ -124,6 +131,10 @@ func Load(v *viper.Viper) (*Config, error) {
 	// 将配置信息绑定到结构体上
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, err
+	}
+
+	if cfg.Dashboard.ID == "" || cfg.Dashboard.Secret == "" {
+		return nil, errors.New("dashboard id and secret cannot be empty")
 	}
 
 	// parse the list to map

@@ -27,12 +27,12 @@ import (
 )
 
 type (
-	queryFunc func(ctx context.Context, db *sqlx.DB, dest interface{}, query string, args ...interface{}) error
+	queryFunc func(ctx context.Context, db *sqlx.DB, dest any, query string, args ...any) error
 	execFunc  func(ctx context.Context, db *sqlx.DB, query string, args ...any) (sql.Result, error)
 )
 
 func queryTimer(f queryFunc) queryFunc {
-	return func(ctx context.Context, db *sqlx.DB, dest interface{}, query string, args ...interface{}) error {
+	return func(ctx context.Context, db *sqlx.DB, dest any, query string, args ...any) error {
 		start := time.Now()
 		defer logSlowSQL(start, query, args)
 		// NOTE: must be args...
@@ -49,7 +49,7 @@ func execTimer(f execFunc) execFunc {
 	}
 }
 
-func sqlxSelectFunc(ctx context.Context, db *sqlx.DB, dest interface{}, query string, args ...interface{}) error {
+func sqlxSelectFunc(ctx context.Context, db *sqlx.DB, dest any, query string, args ...any) error {
 	query, args, err := sqlx.In(query, args...)
 	if err != nil {
 		return err
@@ -58,7 +58,7 @@ func sqlxSelectFunc(ctx context.Context, db *sqlx.DB, dest interface{}, query st
 	return err
 }
 
-func sqlxGetFunc(ctx context.Context, db *sqlx.DB, dest interface{}, query string, args ...interface{}) error {
+func sqlxGetFunc(ctx context.Context, db *sqlx.DB, dest any, query string, args ...any) error {
 	query, args, err := sqlx.In(query, args...)
 	if err != nil {
 		return err

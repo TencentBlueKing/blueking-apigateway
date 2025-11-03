@@ -147,7 +147,7 @@ func BkGatewayJWTAuthMiddlewareV2() func(c *gin.Context) {
 
 // BKJWTAuthMiddleware parse the bk jwt
 func parseBKJWTToken(tokenString string, publicKey []byte) (jwt.MapClaims, error) {
-	keyFunc := func(token *jwt.Token) (interface{}, error) {
+	keyFunc := func(token *jwt.Token) (any, error) {
 		pubKey, err := jwt.ParseRSAPublicKeyFromPEM(publicKey)
 		if err != nil {
 			return pubKey, fmt.Errorf("jwt parse fail, err=%w", err)
@@ -185,7 +185,7 @@ func verifyJwtToken(claims jwt.MapClaims) error {
 	if !ok {
 		return ErrAPIGatewayJWTMissingApp
 	}
-	app, ok := appInfo.(map[string]interface{})
+	app, ok := appInfo.(map[string]any)
 	if !ok {
 		return ErrAPIGatewayJWTAppInfoParseFail
 	}

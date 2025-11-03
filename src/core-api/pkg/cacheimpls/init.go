@@ -38,22 +38,6 @@ func newRandomDuration(seconds int) backend.RandomExtraExpirationDurationFunc {
 var (
 	// NOTE: 以下几个cache, 业务逻辑侧会保证 id/name -> obj 是确定的不会变的
 
-	// instance_id => micro_gateway, will never change
-	// TODO: 需要关注未来 micro_gateway.config中 配置修改的问题
-	microGatewayCache = memory.NewCache(
-		"micro_gateway",
-		tracedFuncWrapper("micro_gateway", retrieveMicroGateway),
-		12*time.Hour,
-		newRandomDuration(30),
-	)
-
-	microGatewayCredentialsCache = memory.NewCache(
-		"micro_gateway_credentials",
-		tracedFuncWrapper("micro_gateway_credentials", retrieveAndVerifyMicroGatewayCredentials),
-		2*time.Hour,
-		newRandomDuration(30),
-	)
-
 	// gateway_id => gateway or gateway_name => gateway will never change
 	gatewayCache = memory.NewCache(
 		"gateway",

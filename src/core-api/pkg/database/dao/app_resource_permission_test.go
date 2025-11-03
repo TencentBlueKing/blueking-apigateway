@@ -46,7 +46,7 @@ func Test_appResourcePermissionManager_Get(t *testing.T) {
 			Expires:    time.Now(),
 		}
 
-		mockData := []interface{}{
+		mockData := []any{
 			permission,
 		}
 		mockRows := database.NewMockRows(mock, mockData...)
