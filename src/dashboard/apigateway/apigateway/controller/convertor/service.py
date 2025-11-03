@@ -106,6 +106,7 @@ class ServiceConvertor(GatewayResourceConvertor):
             # FIXME: 如何处理 http/https 协议
             backend = Backend.objects.get(id=backend_id)
             backend_name = backend.name
+            backend_desc = backend.description
 
             # currently, only add one plugin for service of per backend
             # other plugins are shared by stage, they will be merged on operator
@@ -131,14 +132,13 @@ class ServiceConvertor(GatewayResourceConvertor):
                     # so we truncate the stage_name to 10
                     # 30 + 1 + 10 + 1 + x + 1 + y = 43 + x + y, so x + y <= 21 (enough buffer)
                     id=f"{self.gateway_name}.{self.stage_name[:10]}.{self.stage_id}-{backend_id}",
-                    # example: bk-apigateway-inner.prod.stage-6-backend-7
                     # length is: 30 + 1 + 20 + 1 + 20 = 72
                     name=truncate_string(
                         f"{self.gateway_name}.{self.stage_name}.{backend_name}",
                         100,
                     ),
                     desc=truncate_string(
-                        f"stage={self.stage_name}/{self.stage_id}, backend={backend_name}/{backend_id}",
+                        f"[{self.stage_name}/{self.stage_id}, {backend_name}/{backend_id}] {backend_desc}",
                         100,
                     ),
                     labels=labels,
