@@ -328,10 +328,11 @@
                 class="title"
                 :class="{ highlighted: backend.name === selectedBackendName }"
               >
-                {{ `后端服务：${backend.name}` }}
+                {{ `${t('后端服务')}：${backend.name}` }}
               </p>
               <BkContainer
                 class="ag-kv-box"
+                :class="{ highlighted: backend.name === selectedBackendName }"
                 :col="14"
                 :margin="6"
               >
@@ -942,8 +943,6 @@ defineExpose({ handleShowSideslider });
 
     .title {
       padding: 5px 0 5px 5px;
-      margin-top: 15px;
-      margin-bottom: 17px;
       font-size: 13px;
       font-weight: bold;
       color: #63656e;
@@ -951,6 +950,7 @@ defineExpose({ handleShowSideslider });
 
       &.highlighted {
         background-color: #e1ecff;
+        font-weight: 700;
       }
     }
 
@@ -971,6 +971,11 @@ defineExpose({ handleShowSideslider });
       .ag-value {
         font-size: 14px;
         color: #313238;
+      }
+
+      &.highlighted {
+        background-color: #e1ecff;
+        font-weight: 700;
       }
     }
   }
