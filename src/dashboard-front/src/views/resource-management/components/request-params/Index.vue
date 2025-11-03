@@ -137,6 +137,7 @@
           <BkSwitcher
             v-else
             v-model="row.required"
+            :disabled="row.in === 'path'"
             class="ml-16px!"
             theme="primary"
           />
@@ -484,6 +485,9 @@ const handleInChange = (row: ITableRow) => {
       }
     }
     else {
+      if (row.in === 'path') {
+        _row.required = true;
+      }
       if (row.type === 'object' || row.type === 'array') {
         _row.type = 'string';
       }
