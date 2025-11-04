@@ -466,8 +466,6 @@ defineExpose({ reload: init });
 }
 
 :deep(.highlight-row) {
-  font-weight: 700;
-  color: #3a84ff;
   background-color: #e1ecff;
 }
 </style>
