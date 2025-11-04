@@ -46,6 +46,7 @@ class OpObjectTypeEnum(StructuredEnum):
     PLUGIN = EnumField("plugin", label=_("插件"))
     RESOURCE_DOC = EnumField("resource_doc", label=_("资源文档"))
     MCP_SERVER = EnumField("mcp_server", label=_("MCPServer"))
+    PERMISSION = EnumField("permission", label=_("应用权限"))
 
 
 # for translation only

@@ -25,12 +25,14 @@ from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
+from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.constants import ExportTypeEnum
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.permission.constants import (
     VIRTUAL_APP_CODE_PREFIX,
     ApplyStatusEnum,
@@ -44,9 +46,11 @@ from apigateway.apps.permission.models import (
     AppResourcePermission,
 )
 from apigateway.apps.permission.tasks import send_mail_for_perm_handle
+from apigateway.biz.audit import Auditor
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.resource import ResourceHandler
 from apigateway.core.models import Resource
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
 from .filters import (
@@ -416,7 +420,26 @@ class AppResourcePermissionDeleteApi(AppResourcePermissionQuerySetMixin, generic
 
         data = slz.validated_data
 
-        self.get_queryset().filter(id__in=data["ids"]).delete()
+        queryset = self.get_queryset().filter(id__in=data["ids"])
+        if not queryset.exists():
+            raise Http404
+
+        instance = queryset[0]
+        instance_id = instance.id
+        bk_app_code = instance.bk_app_code
+        data_before = get_model_dict(instance)
+        queryset.delete()
+
+        Auditor.record_permission_op_success(
+            op_type=OpTypeEnum.DELETE,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=instance_id,
+            instance_name=bk_app_code,
+            data_before=data_before,
+            data_after={},
+            comment="授权维度：资源",
+        )
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -494,7 +517,27 @@ class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.
 
         data = slz.validated_data
 
-        self.get_queryset().filter(id__in=data["ids"]).delete()
+        queryset = self.get_queryset().filter(id__in=data["ids"])
+        if not queryset.exists():
+            raise Http404
+
+        instance = queryset[0]
+        instance_id = instance.id
+        bk_app_code = instance.bk_app_code
+        data_before = get_model_dict(instance)
+        queryset.delete()
+
+        Auditor.record_permission_op_success(
+            op_type=OpTypeEnum.DELETE,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=instance_id,
+            instance_name=bk_app_code,
+            data_before=data_before,
+            data_after={},
+            comment="授权维度：网关",
+        )
+
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
