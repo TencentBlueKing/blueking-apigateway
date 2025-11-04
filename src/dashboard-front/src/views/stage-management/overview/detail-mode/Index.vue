@@ -668,6 +668,7 @@ const handleDevGuideClick = () => {
     window.open('https://github.com/TencentBlueKing/bk-apigateway-framework/blob/master/docs/golang.md');
   }
 };
+
 </script>
 
 <style lang="scss" scoped>

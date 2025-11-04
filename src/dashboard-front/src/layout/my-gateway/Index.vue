@@ -583,6 +583,7 @@ onMounted(() => {
         position: absolute;
         top: 1px;
         left: 120px;
+
         &.en {
           left: 142px;
         }
@@ -607,6 +608,7 @@ onMounted(() => {
             position: absolute;
             top: 6px;
             left: 58px;
+
              &.en {
               left: 130px;
             }
