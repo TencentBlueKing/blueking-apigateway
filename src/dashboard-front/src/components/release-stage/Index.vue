@@ -694,7 +694,7 @@ defineExpose({ showReleaseSideslider });
     }
 
     .main {
-      padding: 0 100px;
+      padding: 0 40px;
 
       .add {
         color: #34d97b;

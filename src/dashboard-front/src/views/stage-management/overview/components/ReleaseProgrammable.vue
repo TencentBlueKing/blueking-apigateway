@@ -520,7 +520,7 @@ defineExpose({ showReleaseSideslider });
     width: 100%;
 
     .main {
-      padding: 0 100px;
+      padding: 0 40px;
 
       :deep(.bk-alert-wraper) {
         align-items: center;

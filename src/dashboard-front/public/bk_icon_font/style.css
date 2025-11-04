@@ -578,3 +578,6 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-plugin-proxy-cache:before {
 	content: "\e1dc";
 }
+.icon-ag-miaozhun:before {
+	content: "\e1df";
+}
