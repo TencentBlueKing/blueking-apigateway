@@ -25,7 +25,7 @@ const routes: RouteRecordRaw[] = [
     redirect: { name: 'StageOverview' },
     meta: {
       title: t('环境管理'),
-      matchRoute: 'StageManagement',
+      matchRoute: 'StageOverview',
     },
     children: [
       {
@@ -34,7 +34,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./overview/Index.vue'),
         meta: {
           title: t('环境概览'),
-          matchRoute: 'StageManagement',
+          matchRoute: 'StageOverview',
         },
       },
       {
