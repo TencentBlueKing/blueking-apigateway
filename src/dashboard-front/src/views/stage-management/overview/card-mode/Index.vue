@@ -125,11 +125,13 @@ type IPaasInfo = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
 
 interface ILocalStageItem extends IStageListItem { paasInfo?: IPaasInfo }
 
-const emit = defineEmits<{ updated: [void] }>();
+const emit = defineEmits<{
+  'updated': [void]
+  'switch-mode': [number]
+}>();
 
 const { t } = useI18n();
 const route = useRoute();
-const router = useRouter();
 const gatewayStore = useGateway();
 
 const historyId = ref<number>();
@@ -242,14 +244,7 @@ const handleToDetail = (stage: IStageListItem) => {
   if (isLoading.value) {
     return;
   }
-  router.replace({
-    name: 'StageOverviewDetailMode',
-    params: { stageId: stage.id },
-  });
-  // mitt.emit('switch-mode', {
-  //   id: data.id,
-  //   name: data.name,
-  // });
+  emit('switch-mode', stage.id);
 };
 
 // 发布资源
