@@ -34,8 +34,13 @@
         </div>
         <div
           v-show="isDetail && currentSource?.name"
-          class="current-resource"
+          class="current-resource flex items-center"
         >
+          <AgIcon
+            name="miaozhun"
+            size="14"
+            class="mr-4px mt-4px"
+          />
           {{ currentSource?.name }}
         </div>
       </div>
@@ -105,6 +110,7 @@ import AgTable from '@/components/ag-table/Index.vue';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import { getResourceList } from '@/services/source/resource.ts';
 import { batchResourceDocAITranslate } from '@/services/source/ai.ts';
+import AgIcon from '@/components/ag-icon/Index.vue';
 import { Message } from 'bkui-vue';
 
 interface IProps {
@@ -221,7 +227,7 @@ const handleCancelClick = () => {
       .current-resource {
         padding: 4px 8px;
         font-size: 12px;
-        color: #63656E;
+        color: #4D4F56;
         background: #F0F1F5;
         border-radius: 2px;
       }
