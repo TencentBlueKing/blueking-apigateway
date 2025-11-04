@@ -32,26 +32,10 @@ const routes: RouteRecordRaw[] = [
         path: 'overview',
         name: 'StageOverview',
         component: () => import('./overview/Index.vue'),
-        redirect: { name: 'StageOverviewCardMode' },
         meta: {
           title: t('环境概览'),
           matchRoute: 'StageManagement',
         },
-        children: [
-          {
-            path: 'card-mode',
-            name: 'StageOverviewCardMode',
-            component: () => import('./overview/card-mode/Index.vue'),
-            meta: { matchRoute: 'StageOverview' },
-          },
-          {
-            path: 'detail-mode/:stageId',
-            name: 'StageOverviewDetailMode',
-            component: () => import('./overview/detail-mode/Index.vue'),
-            props: true,
-            meta: { matchRoute: 'StageOverview' },
-          },
-        ],
       },
       {
         path: 'release-record',
