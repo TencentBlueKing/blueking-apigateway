@@ -285,19 +285,18 @@
             v-else
             class="sideslider-content check-mode"
           >
-            <p class="title">
+            <div class="title">
               {{ t("基本信息") }}
-            </p>
+            </div>
             <BkContainer
               class="ag-kv-box"
               :col="14"
-              :margin="6"
             >
               <BkRow>
-                <BkCol :span="4">
-                  <label class="ag-key">{{ t("环境名称") }}:</label>
+                <BkCol :span="2">
+                  <label class="ag-key">{{ t("环境名称") }}: </label>
                 </BkCol>
-                <BkCol :span="10">
+                <BkCol :span="12">
                   <div class="ag-value">
                     {{ curStageData.name }}
                   </div>
@@ -306,12 +305,12 @@
 
               <BkRow>
                 <BkCol
-                  :span="4"
+                  :span="2"
                   class="mt-8px"
                 >
                   <label class="ag-key">{{ t("访问地址") }}:</label>
                 </BkCol>
-                <BkCol :span="10">
+                <BkCol :span="12">
                   <div class="ag-value address">
                     <span>{{ stageAddress || '--' }}</span>
                     <CopyButton :source="stageAddress" />
@@ -324,23 +323,23 @@
               v-for="backend in curStageData.backends"
               :key="backend.name"
             >
-              <p
-                class="title"
+              <div
+                class="title truncate w-full"
                 :class="{ highlighted: backend.name === selectedBackendName }"
               >
-                {{ `${t('后端服务')}：${backend.name}` }}
-              </p>
+                <span>{{ `${t('后端服务')}:` }}</span>
+                <span class="ml-8px">{{ backend.name }}</span>
+              </div>
               <BkContainer
                 class="ag-kv-box"
                 :class="{ highlighted: backend.name === selectedBackendName }"
                 :col="14"
-                :margin="6"
               >
                 <BkRow>
-                  <BkCol :span="4">
+                  <BkCol :span="2">
                     <label class="ag-key">{{ t("负载均衡类型") }}:</label>
                   </BkCol>
-                  <BkCol :span="10">
+                  <BkCol :span="8">
                     <div class="ag-value">
                       {{ getLoadBalanceText(backend.config.loadbalance) }}
                     </div>
@@ -351,20 +350,20 @@
                   :key="host.host"
                 >
                   <BkRow>
-                    <BkCol :span="4">
+                    <BkCol :span="2">
                       <label class="ag-key">{{ t("后端服务地址") }}:</label>
                     </BkCol>
-                    <BkCol :span="10">
+                    <BkCol :span="12">
                       <div class="ag-value">
                         {{ `${host.scheme}://${host.host}` }}
                       </div>
                     </BkCol>
                   </BkRow>
                   <BkRow v-if="backend.config.loadbalance === 'weighted-roundrobin'">
-                    <BkCol :span="4">
+                    <BkCol :span="2">
                       <label class="ag-key">{{ t("权重") }}:</label>
                     </BkCol>
-                    <BkCol :span="10">
+                    <BkCol :span="12">
                       <div class="ag-value">
                         {{ host.weight }}
                       </div>
@@ -372,10 +371,10 @@
                   </BkRow>
                 </template>
                 <BkRow>
-                  <BkCol :span="4">
+                  <BkCol :span="2">
                     <label class="ag-key">{{ t("超时时间") }}:</label>
                   </BkCol>
-                  <BkCol :span="10">
+                  <BkCol :span="12">
                     <div class="ag-value">
                       {{ `${backend.config.timeout}秒` }}
                     </div>
@@ -907,10 +906,9 @@ defineExpose({ handleShowSideslider });
 
   .address {
     height: 40px;
-    padding: 0 16px;
     line-height: 40px;
-    background: #f5f7fa;
-    border-radius: 2px;
+    padding: 0 12px;
+    background-color: #f5f7fa;
 
     label {
       height: 22px;
@@ -942,40 +940,51 @@ defineExpose({ handleShowSideslider });
   &.check-mode {
 
     .title {
-      padding: 5px 0 5px 5px;
-      font-size: 13px;
-      font-weight: bold;
+      padding: 0 8px;
+      font-size: 12px;
+      height: 40px;
+      line-height: 40px;
+      font-weight: 700;
       color: #63656e;
       border-bottom: 1px solid #dcdee5;
 
       &.highlighted {
-        background-color: #e1ecff;
-        font-weight: 700;
+        color: #4d4f56;
+        background-color: #cddffe;
+        box-shadow: inset 0 -1px 0 0 #a3c5fd;
+        border-bottom: none;
       }
     }
 
     .ag-kv-box {
+      padding-top: 12px;
+      padding-left: 0 !important;
+      padding-right: 24px;
+      margin-bottom: 24px;
 
       .bk-grid-row {
-        margin-bottom: 12px;
+        padding-bottom: 12px;
+        margin-bottom: 0;
+
+        .bk-grid-col {
+          padding-left: 0 !important;
+          padding-right: 16px !important;
+        }
       }
 
       .ag-key {
-        display: block;
-        padding-right: 0;
-        font-size: 14px;
-        color: #63656e;
+        font-size: 12px;
+        color: #4d4f56;
         text-align: right;
       }
 
       .ag-value {
-        font-size: 14px;
+        font-size: 12px;
         color: #313238;
       }
 
       &.highlighted {
-        background-color: #e1ecff;
-        font-weight: 700;
+        background-color: #f0f5ff;
       }
     }
   }
