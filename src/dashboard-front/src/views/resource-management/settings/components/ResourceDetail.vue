@@ -559,7 +559,7 @@
                 </div>
                 <div
                   v-else
-                  class="edit-name mb-12px"
+                  class="edit-name"
                 >
                   <BkSelect
                     v-model="formData.backend.id"
@@ -838,16 +838,13 @@
       class="footer-btn-wrapper"
       :class="{ 'fixed-footer-btn-wrapper': isStickyFixed }"
     >
-      <RouterLink
-        :to="{name: 'ResourceEdit', params:{'resourceId': `${formData?.id}`}}"
+      <BkButton
+        theme="primary"
+        class="min-w-88px"
+        @click="handleEditClick"
       >
-        <BkButton
-          theme="primary"
-          class="min-w-88px"
-        >
-          {{ t('编辑') }}
-        </BkButton>
-      </RouterLink>
+        {{ t('编辑') }}
+      </BkButton>
       <BkPopConfirm
         :title="t('确认删除资源{resourceName}？', { resourceName: formData?.name || '' })"
         :content="t('删除操作无法撤回，请谨慎操作')"
@@ -901,6 +898,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const route = useRoute();
 const router = useRouter();
 const gatewayStore = useGateway();
 const stageStore = useStage();
@@ -971,6 +969,14 @@ watch(
   },
   { immediate: true },
 );
+
+const handleEditClick = () => {
+  router.push({
+    name: 'ResourceEdit',
+    params: { resourceId: `${formData.value.id}` },
+    query: { ...route.query },
+  });
+};
 
 const initLabels = async () => {
   labelsData.value = await getGatewayLabels(gatewayId);

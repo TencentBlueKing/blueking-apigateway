@@ -155,7 +155,7 @@
                         <BkFormItem
                           :label="t('负载均衡类型')"
                           property="configs.loadbalance"
-                          class="mt-20px"
+                          class="mt-20px relative"
                           required
                           :rules="configRules.loadbalance"
                         >
@@ -172,6 +172,19 @@
                               :label="option.name"
                             />
                           </BkSelect>
+                          <BkLink
+                            class="absolute right-0 top--30px"
+                            theme="primary"
+                            :href="envStore.env.DOC_LINKS.LOADBALANCE"
+                            target="_blank"
+                          >
+                            <AgIcon
+                              name="jump"
+                              size="12"
+                              class="mr-4px"
+                            />
+                            <span class="text-12px">{{ t('帮助文档') }}</span>
+                          </BkLink>
                         </BkFormItem>
 
                         <!-- hash_on -->
@@ -393,7 +406,10 @@
 <script lang="ts" setup>
 import { Message } from 'bkui-vue';
 import { cloneDeep, isEqual } from 'lodash-es';
-import { useGateway } from '@/stores';
+import {
+  useEnv,
+  useGateway,
+} from '@/stores';
 import {
   type IBackendServicesConfig,
   createBackendService,
@@ -416,9 +432,10 @@ interface Emits { (e: 'done'): void }
 const { editId = 0, base } = defineProps<IProps>();
 const emits = defineEmits<Emits>();
 
+const { t, locale } = useI18n();
 const router = useRouter();
 const gatewayStore = useGateway();
-const { t, locale } = useI18n();
+const envStore = useEnv();
 
 const hostReg = /^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?$|^\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?$/;
 const activeKey = ref(['base-info', 'stage-config']);
