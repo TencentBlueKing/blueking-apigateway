@@ -87,10 +87,18 @@ class HttpResourceConvertor(BaseConvertor):
         if resource["method"] != "ANY":
             methods = [resource["method"]]
 
+        name = resource["name"]
+        if name and len(name) > 100:
+            name = name[:100]
+
+        description = resource["description"]
+        if description and len(description) > 64:
+            description = description[:64]
+
         spec = BkGatewayResourceSpec(
             id=resource["id"],
-            name=resource["name"],
-            description=resource["description"],
+            name=name,
+            description=description,
             uri=resource["path"],
             methods=methods,
             match_subpath=resource_proxy.get("match_subpath", False),
