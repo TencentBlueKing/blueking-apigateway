@@ -701,7 +701,7 @@
   "允许，则任何蓝鲸应用可在蓝鲸开发者中心申请资源的访问权限；否则，只能通过网关管理员主动授权为某应用添加权限": "If available, any BlueKing app can apply for resource permission in the BlueKing Developer Center; otherwise, you can only contact the gateway managers to add permissions to the app",
   "匹配所有子路径": "Match all subpath",
   "若勾选，则添加子路径通配符(*)，如：/users 表示 /users/*，可匹配路径 /users/123/": "If checked, append the subpath wildcard (*), e.g. /users means /users/*, which can match the path /users/123/",
-  "资源请求路径支持路径变量，包含在{}中，如：/users/{id}/": "Path support path variables, which are contained in {}, e.g. /users/{id}/",
+  "资源请求路径支持路径变量，包含在{'{}'}中，如：/users/{id}/": "Path support path variables, which are contained in {'{}'}, e.g. /users/{id}/",
   "文档类型": "Doc Type",
   "压缩包": "Compressed package",
   "支持 tgz, zip 压缩格式": "Support tgz, zip compression format",

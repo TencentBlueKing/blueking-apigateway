@@ -105,7 +105,7 @@
           size="small"
         />
         <BkCheckbox
-          v-if="formData.is_public"
+          v-if="formData.is_public && formData.auth_config.resource_perm_required"
           v-model="formData.allow_apply_permission"
           class="ml-40px!"
         >
