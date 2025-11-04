@@ -452,6 +452,7 @@ import CreateResourceVersion from '@/components/create-resource-version/Index.vu
 import VersionDiff from '@/components/version-diff/Index.vue';
 import ResourceDocSlider from '../components/ResourceDocSlider.vue';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
+import { useRouteQuery } from '@vueuse/router';
 
 interface ApigwIDropList extends IDropList { tooltips?: string }
 
@@ -466,6 +467,12 @@ const gatewayStore = useGateway();
 const resourceVersionStore = useResourceVersion();
 const resourceSettingStore = useResourceSetting();
 const featureFlagStore = useFeatureFlag();
+
+// 资源列表 url query
+const queryName = useRouteQuery('name');
+const queryPath = useRouteQuery('path');
+const queryMethod = useRouteQuery('method');
+const queryBackendName = useRouteQuery('backend_name');
 
 const tableData = ref<any[]>([]);
 const tableRef = useTemplateRef('tableRef');
@@ -521,7 +528,7 @@ const active = ref('resourceInfo');
 
 const isComponentLoading = ref(false);
 
-const searchValue = ref([]);
+const searchValue = ref<any[]>([]);
 const searchData = shallowRef([
   // {
   //   name: t('模糊查询'),
@@ -1015,10 +1022,27 @@ watch(
             tableQueries.value[e.id] = e.values[0].id;
           }
         }
+
+        if (e.id === 'name') {
+          queryName.value = e.values[0].id;
+        }
+        else if (e.id === 'path') {
+          queryPath.value = e.values[0].id;
+        }
+        else if (e.id === 'method') {
+          queryMethod.value = e.values?.map((item: any) => item.id)?.join(',');
+        }
+        else if (e.id === 'backend_name') {
+          queryBackendName.value = e.values[0].id;
+        }
       });
     }
     else {
       tableQueries.value = {};
+      queryName.value = undefined;
+      queryPath.value = undefined;
+      queryMethod.value = undefined;
+      queryBackendName.value = undefined;
     }
 
     exportDropData.value.forEach((e: IDropList) => {
@@ -1055,6 +1079,68 @@ watch(
           pageSize,
         });
       });
+    }
+    if (route.query?.name) {
+      queryName.value = route.query.name as string;
+      const searchValueItem = searchValue.value.find((item: any) => item.id === 'name');
+      if (!searchValueItem) {
+        searchValue.value.push({
+          id: 'name',
+          name: t('资源名称'),
+          values: [
+            {
+              id: queryName.value,
+              name: queryName.value,
+            },
+          ],
+        });
+      }
+    }
+    if (route.query?.path) {
+      queryPath.value = route.query.path as string;
+      const searchValueItem = searchValue.value.find((item: any) => item.id === 'name');
+      if (!searchValueItem) {
+        searchValue.value.push({
+          id: 'path',
+          name: t('前端请求路径'),
+          values: [
+            {
+              id: queryPath.value,
+              name: queryPath.value,
+            },
+          ],
+        });
+      }
+    }
+    if (route.query?.method) {
+      queryMethod.value = route.query.method as string;
+      const searchValueItem = searchValue.value.find((item: any) => item.id === 'name');
+      if (!searchValueItem) {
+        searchValue.value.push({
+          id: 'method',
+          name: t('前端请求方法'),
+          values: queryMethod.value.split(',').map((item: string) => ({
+            id: item,
+            name: item,
+          })),
+        });
+      }
+    }
+    if (route.query?.backend_name) {
+      queryBackendName.value = route.query.backend_name as string;
+      const searchValueItem = searchValue.value.find((item: any) => item.id === 'name');
+      if (!searchValueItem) {
+        searchValue.value.push({
+          id: 'backend_name',
+          name: t('后端服务'),
+          values: [
+            {
+              id: queryBackendName.value,
+              name: queryBackendName.value,
+            },
+          ],
+        });
+      }
     }
   },
   {
