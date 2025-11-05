@@ -46,6 +46,8 @@
         "detail_url": "",
         "updated_by": "admin",
         "created_by": "admin",
+        "application_url": "https://test.com/api/bk-apigateway/prod/api/v2/mcp-servers/test/application/sse/",
+        "least_privilege": "application",
         "updated_time": "2025-09-01 00:00:00 +0800",
         "created_time": "2025-09-01 00:00:00 +0800"
       }
@@ -63,24 +65,25 @@
 
 #### data
 
-| 参数名称           | 参数类型    | 描述                         |
-|----------------|---------|----------------------------|
-| id             | int     | mcp_server ID              |
-| name           | string  | mcp_server 名称              |
-| description    | string  | mcp_server 描述              |
-| is_public      | boolean | mcp_server 是否公开            |
-| labels         | array   | mcp_server 标签              |
-| resource_names | array   | mcp_server 资源名称            |
-| status         | int     | mcp_server 状态（0：已停用，1：启用中） |
-| tools_count    | int     | mcp_server 工具数量            |
-| url            | string  | mcp_server 访问地址            |
-| detail_url     | string  | mcp_server 网关站点详情地址        |
-| updated_by     | string  | 更新人                        |
-| created_by     | string  | 创建人                        |
-| updated_time   | string  | 更新时间                       |
-| created_time   | string  | 创建时间                       |
-| gateway        | object  | mcp_server 网关信息            |
-| stage          | object  | mcp_server 环境信息            |
+| 参数名称                | 参数类型    | 描述                         |
+|---------------------|---------|----------------------------|
+| id                  | int     | mcp_server ID              |
+| name                | string  | mcp_server 名称              |
+| description         | string  | mcp_server 描述              |
+| is_public           | boolean | mcp_server 是否公开            |
+| labels              | array   | mcp_server 标签              |
+| resource_names      | array   | mcp_server 资源名称            |
+| status              | int     | mcp_server 状态（0：已停用，1：启用中） |
+| tools_count         | int     | mcp_server 工具数量            |
+| url                 | string  | mcp_server 访问地址            |
+| detail_url          | string  | mcp_server 网关站点详情地址        |
+| updated_by          | string  | 更新人                        |
+| created_by          | string  | 创建人                        |
+| application_url     | string  | 应用态 URL                    |
+| least_privilege     | string  | 最低权限要求（user / application） |
+| created_time        | string  | 创建时间                       |
+| gateway             | object  | mcp_server 网关信息            |
+| stage               | object  | mcp_server 环境信息            |
 
 
 #### data.gateway
