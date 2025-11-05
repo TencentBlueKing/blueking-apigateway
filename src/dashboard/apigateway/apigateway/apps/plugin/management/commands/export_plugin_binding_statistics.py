@@ -17,10 +17,10 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import csv
-import datetime
 from typing import Any, Dict, List, Optional
 
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from apigateway.apps.plugin.models import PluginBinding, PluginType
@@ -86,7 +86,7 @@ class Command(BaseCommand):
                 "gateway_name": gateway.name,
                 "gateway_desc": gateway.description or "",
                 "gateway_maintainers": gateway._maintainers or "",
-                "gateway_status": gateway.status,
+                "gateway_status": "启用" if gateway.is_active else "停用",
             }
             for gateway in gateways
         ]
@@ -110,8 +110,7 @@ class Command(BaseCommand):
 
     def _build_resource_list_section(self, plugin_bindings) -> Optional[Dict[str, Any]]:
         # 资源ID到插件配置ID的映射
-        resource_config_map = {binding.scope_id: binding.config_id for binding in plugin_bindings}
-
+        resource_config_map = {b["scope_id"]: b["config_id"] for b in plugin_bindings.values("scope_id", "config_id")}
         resources = Resource.objects.filter(id__in=resource_config_map.keys())
 
         resource_data = [
@@ -210,6 +209,6 @@ class Command(BaseCommand):
             if resource_section:
                 sections.append(resource_section)
 
-        now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        now = timezone.now().strftime("%Y%m%d%H%M%S")
         filename = f"plugin_usage_{plugin_name}_{now}.csv"
         self._export_to_csv(sections, filename)
