@@ -29,7 +29,7 @@ from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
-from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
+from apigateway.apps.mcp_server.constants import MCPServerLeastPrivilegeEnum, MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
@@ -37,12 +37,13 @@ from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
 from apigateway.biz.mcp_server import MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
+from apigateway.biz.released_resource import ReleasedResourceData
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
-from apigateway.core.models import Gateway, Stage
+from apigateway.core.models import Gateway, Release, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.responses import OKJsonResponse
 
@@ -472,12 +473,36 @@ class UserMCPServerListApi(generics.ListAPIView):
             for stage in Stage.objects.filter(id__in=stage_ids)
         }
 
+        gateway_stage_pairs = set()
+        for mcp_server in page:
+            gateway_stage_pairs.add((mcp_server.gateway.id, mcp_server.stage.id))
+
+        # 批量查询所有相关的 Release 记录
+        release_filters = Q()
+        for gateway_id, stage_id in gateway_stage_pairs:
+            release_filters |= Q(gateway_id=gateway_id, stage_id=stage_id)
+
+        releases = Release.objects.filter(release_filters).prefetch_related("resource_version")
+
+        # 获取资源的最低权限
+        least_privileges = {}
+        for release in releases:
+            least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION.value
+            for resource in release.resource_version.data:
+                # 如果资源权限为用户态，则最低权限是 user
+                release_resource_data = ReleasedResourceData.from_data(resource)
+                if release_resource_data.verified_app_required and release_resource_data.verified_user_required:
+                    least_privilege = MCPServerLeastPrivilegeEnum.USER.value
+                    break
+            least_privileges[(release.gateway.id, release.stage.id)] = least_privilege
+
         output_slz = UserMCPServerListOutputSLZ(
             page,
             many=True,
             context={
                 "gateways": gateways,
                 "stages": stages,
+                "least_privileges": least_privileges,
             },
         )
 
