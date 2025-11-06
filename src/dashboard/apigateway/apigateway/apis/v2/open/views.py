@@ -409,8 +409,10 @@ class UserMCPServerListApi(generics.ListAPIView):
 
     def _get_least_privileges(self, queryset):
         gateway_stage_pairs = set()
+        gateway_stage_tools = {}
         for mcp_server in queryset:
             gateway_stage_pairs.add((mcp_server.gateway.id, mcp_server.stage.id))
+            gateway_stage_tools[(mcp_server.gateway.id, mcp_server.stage.id)] = mcp_server.resource_names
 
         # 批量查询所有相关的 Release 记录
         release_filters = Q()
@@ -422,14 +424,20 @@ class UserMCPServerListApi(generics.ListAPIView):
         # 获取资源的最低权限
         least_privileges = {}
         for release in releases:
+            gateway_stage_key = (release.gateway.id, release.stage.id)
+            # 获取 mcp server 的工具名称列表
+            tool_names = gateway_stage_tools.get(gateway_stage_key, [])
             least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION.value
             for resource in release.resource_version.data:
-                # 如果资源权限为用户态，则最低权限是 user
+                # 如果资源不在工具名称列表中，则跳过
+                if resource["name"] not in tool_names:
+                    continue
+                # 应用认证是强制的，如果 tools 中有任意一个是用户认证的，此时确定是 APPLICATION_AND_USER
                 release_resource_data = ReleasedResourceData.from_data(resource)
-                if release_resource_data.verified_app_required and release_resource_data.verified_user_required:
+                if release_resource_data.verified_user_required:
                     least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
                     break
-            least_privileges[(release.gateway.id, release.stage.id)] = least_privilege
+            least_privileges[gateway_stage_key] = least_privilege
 
         return least_privileges
 
