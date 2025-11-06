@@ -65,7 +65,10 @@ export default (interceptors: AxiosInterceptorManager<AxiosResponse>) => {
         return response.data;
       }
       if (response.data.data !== undefined || response.status < 400) {
-        hasLoggedIn = true;
+        // 以下接口不鉴权，即使请求成功也不判定为已登录状态
+        if (!['/version-log/', '/ping/', '/healthz/'].includes(response.config?.url || '')) {
+          hasLoggedIn = true;
+        }
         return response.data;
       }
       // 后端逻辑处理报错
