@@ -49,7 +49,9 @@
           {{ t('微网关控制面') }}
         </div>
         <div class="desc">
-          {{ t('提供了统一的控制面  https://bk-apisix.woa.com/ （这个地址通过环境变量注入）， 可以统一管理所有数据面。支持所有 APISIX 资源生命周期管理，可以非常方便地对资源进行添加，对比，发布。还支持导入导出，自定义插件等扩展能力。') }}
+          {{ t(
+            '提供了统一的控制面 {url} ，可以统一管理所有数据面。支持所有 APISIX 资源生命周期管理，可以非常方便地对资源进行添加，对比，发布。还支持导入导出，自定义插件等扩展能力。',
+            { url: envStore.env.BK_APISIX_URL }) }}
         </div>
       </div>
       <div class="title-desc-group">
@@ -57,7 +59,10 @@
           {{ t('微网关数据面') }}
         </div>
         <div class="desc">
-          {{ t('提供了统一的数据面 helm-chart， 可以在 BCS 公共仓库中非常便捷地一件部署 BK-APISIX 数据面，降低部署及维护成本。 具体参考： https://iwiki.woa.com/p/4013360839 使用 BCS（TKEx-IEG 容器平台）helm chart 公共仓库部署 （这个地址通过环境变量注入）') }}
+          {{ t('提供了统一的数据面 helm-chart，可以在 BCS 公共仓库中非常便捷地一键部署 BK-APISIX 数据面，降低部署及维护成本。') }}
+          {{ t(
+            '具体参考：{url} 使用 BCS（TKEx-IEG 容器平台）helm chart 公共仓库部署',
+            { url: envStore.env.BK_APISIX_DOC_URL }) }}
         </div>
       </div>
     </div>
