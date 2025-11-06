@@ -204,10 +204,11 @@ watch(
 );
 
 watch(
-  () => formData.value.is_public,
-  (val: boolean) => {
-    // 必须要公开 才能允许申请权限
-    formData.value.allow_apply_permission = val;
+  () => [formData.value.is_public, formData.value.auth_config.resource_perm_required],
+  ([v1, v2]) => {
+    if (!v1 || !v2) {
+      formData.value.allow_apply_permission = false;
+    }
   },
 );
 
