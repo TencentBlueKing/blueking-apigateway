@@ -73,6 +73,7 @@ export function getEnv() {
     BK_PAAS_APP_REPO_URL_TMPL: string
     EDITION: string
     BK_APISIX_URL: string
+    BK_APISIX_DOC_URL: string
     BK_APIGATEWAY_VERSION: string
     BK_DOCS_URL_PREFIX: string
     BK_USER_WEB_API_URL: string
