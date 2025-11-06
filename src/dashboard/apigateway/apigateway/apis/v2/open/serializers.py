@@ -312,7 +312,7 @@ class UserMCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
         return ""
 
     def get_least_privilege(self, obj) -> str:
-        return self.context["least_privileges"].get((obj.gateway.id, obj.stage.id))
+        return self.context["least_privileges"].get((obj.gateway.id, obj.stage.id), "")
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.UserMCPServerListOutputSLZ"

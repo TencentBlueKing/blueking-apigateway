@@ -81,6 +81,7 @@
 | created_by          | string  | 创建人                        |
 | application_url     | string  | 应用态 URL                    |
 | least_privilege     | string  | 最低权限要求（user / application） |
+| updated_time        | string  | 更新时间                       |
 | created_time        | string  | 创建时间                       |
 | gateway             | object  | mcp_server 网关信息            |
 | stage               | object  | mcp_server 环境信息            |
