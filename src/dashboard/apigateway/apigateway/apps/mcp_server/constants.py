@@ -59,5 +59,5 @@ class MCPServerPermissionActionEnum(StructuredEnum):
 
 
 class MCPServerLeastPrivilegeEnum(StructuredEnum):
-    USER = EnumField("user")
     APPLICATION = EnumField("application")
+    APPLICATION_AND_USER = EnumField("application_and_user")

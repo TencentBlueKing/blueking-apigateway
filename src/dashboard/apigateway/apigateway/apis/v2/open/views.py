@@ -407,6 +407,32 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
 class UserMCPServerListApi(generics.ListAPIView):
     permission_classes = [OpenAPIV2Permission]
 
+    def _get_least_privileges(self, queryset):
+        gateway_stage_pairs = set()
+        for mcp_server in queryset:
+            gateway_stage_pairs.add((mcp_server.gateway.id, mcp_server.stage.id))
+
+        # 批量查询所有相关的 Release 记录
+        release_filters = Q()
+        for gateway_id, stage_id in gateway_stage_pairs:
+            release_filters |= Q(gateway_id=gateway_id, stage_id=stage_id)
+
+        releases = Release.objects.filter(release_filters).prefetch_related("resource_version")
+
+        # 获取资源的最低权限
+        least_privileges = {}
+        for release in releases:
+            least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION.value
+            for resource in release.resource_version.data:
+                # 如果资源权限为用户态，则最低权限是 user
+                release_resource_data = ReleasedResourceData.from_data(resource)
+                if release_resource_data.verified_app_required and release_resource_data.verified_user_required:
+                    least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
+                    break
+            least_privileges[(release.gateway.id, release.stage.id)] = least_privilege
+
+        return least_privileges
+
     def list(self, request, *args, **kwargs):
         slz = UserMCPServerListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -473,28 +499,7 @@ class UserMCPServerListApi(generics.ListAPIView):
             for stage in Stage.objects.filter(id__in=stage_ids)
         }
 
-        gateway_stage_pairs = set()
-        for mcp_server in page:
-            gateway_stage_pairs.add((mcp_server.gateway.id, mcp_server.stage.id))
-
-        # 批量查询所有相关的 Release 记录
-        release_filters = Q()
-        for gateway_id, stage_id in gateway_stage_pairs:
-            release_filters |= Q(gateway_id=gateway_id, stage_id=stage_id)
-
-        releases = Release.objects.filter(release_filters).prefetch_related("resource_version")
-
-        # 获取资源的最低权限
-        least_privileges = {}
-        for release in releases:
-            least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION.value
-            for resource in release.resource_version.data:
-                # 如果资源权限为用户态，则最低权限是 user
-                release_resource_data = ReleasedResourceData.from_data(resource)
-                if release_resource_data.verified_app_required and release_resource_data.verified_user_required:
-                    least_privilege = MCPServerLeastPrivilegeEnum.USER.value
-                    break
-            least_privileges[(release.gateway.id, release.stage.id)] = least_privilege
+        least_privileges = self._get_least_privileges(page)
 
         output_slz = UserMCPServerListOutputSLZ(
             page,
