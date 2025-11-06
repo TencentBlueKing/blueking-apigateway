@@ -469,6 +469,7 @@ const resourceSettingStore = useResourceSetting();
 const featureFlagStore = useFeatureFlag();
 
 // 资源列表 url query
+const queryKeyword = useRouteQuery('keyword');
 const queryName = useRouteQuery('name');
 const queryPath = useRouteQuery('path');
 const queryMethod = useRouteQuery('method');
@@ -1023,7 +1024,10 @@ watch(
           }
         }
 
-        if (e.id === 'name') {
+        if (e.id === e.name) {
+          queryKeyword.value = e.name;
+        }
+        else if (e.id === 'name') {
           queryName.value = e.values[0].id;
         }
         else if (e.id === 'path') {
@@ -1039,6 +1043,7 @@ watch(
     }
     else {
       tableQueries.value = {};
+      queryKeyword.value = undefined;
       queryName.value = undefined;
       queryPath.value = undefined;
       queryMethod.value = undefined;
@@ -1079,6 +1084,17 @@ watch(
           pageSize,
         });
       });
+    }
+    if (route.query?.keyword) {
+      queryKeyword.value = route.query.keyword as string;
+      const searchValueItem = searchValue.value.find((item: any) => item.id === queryKeyword.value);
+      if (!searchValueItem) {
+        searchValue.value.push({
+          id: queryKeyword.value,
+          name: queryKeyword.value,
+          type: 'text',
+        });
+      }
     }
     if (route.query?.name) {
       queryName.value = route.query.name as string;
