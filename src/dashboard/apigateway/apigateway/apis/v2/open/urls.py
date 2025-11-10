@@ -43,6 +43,18 @@ urlpatterns = [
                             path("", views.GatewayRetrieveApi.as_view(), name="openapi.v2.open.gateway.retrieve"),
                             # NOTE: this url been redirected to core-api, so no need to implement this
                             # GET /api/v2/open/gateways/{gateway_name}/public_key/
+                            # GET /api/v2/open/gateways/{gateway_name}/resources/
+                            path(
+                                "resources/",
+                                views.GatewayResourceListApi.as_view(),
+                                name="openapi.v2.open.gateway.resources.list",
+                            ),
+                            # GET /api/v2/open/gateways/{gateway_name}/resources/{resource_name}/
+                            path(
+                                "resources/<str:resource_name>/",
+                                views.GatewayResourceDetailApi.as_view(),
+                                name="openapi.v2.open.gateway.resources.detail",
+                            ),
                             # POST /api/v2/open/gateways/{gateway_name}/permissions/apply/
                             path(
                                 "permissions/apply/",
