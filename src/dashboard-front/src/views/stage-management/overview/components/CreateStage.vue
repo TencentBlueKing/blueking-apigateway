@@ -505,6 +505,18 @@ const loadbalanceList = [
     id: 'weighted-roundrobin',
     name: t('加权轮询（Weighted Round-Robin）'),
   },
+  {
+    id: 'chash',
+    name: t('一致性哈希（CHash）'),
+  },
+  {
+    id: 'ewma',
+    name: t('指数加权移动平均法（EWMA）'),
+  },
+  {
+    id: 'least_conn',
+    name: t('最小连接数（least_conn）'),
+  },
 ];
 
 // scheme 类型
@@ -906,8 +918,8 @@ defineExpose({ handleShowSideslider });
 
   .address {
     height: 40px;
-    line-height: 40px;
     padding: 0 12px;
+    line-height: 40px;
     background-color: #f5f7fa;
 
     label {
@@ -940,26 +952,26 @@ defineExpose({ handleShowSideslider });
   &.check-mode {
 
     .title {
+      height: 40px;
       padding: 0 8px;
       font-size: 12px;
-      height: 40px;
-      line-height: 40px;
       font-weight: 700;
+      line-height: 40px;
       color: #63656e;
       border-bottom: 1px solid #dcdee5;
 
       &.highlighted {
         color: #4d4f56;
         background-color: #cddffe;
-        box-shadow: inset 0 -1px 0 0 #a3c5fd;
         border-bottom: none;
+        box-shadow: inset 0 -1px 0 0 #a3c5fd;
       }
     }
 
     .ag-kv-box {
       padding-top: 12px;
-      padding-left: 0 !important;
       padding-right: 24px;
+      padding-left: 0 !important;
       margin-bottom: 24px;
 
       .bk-grid-row {
@@ -967,8 +979,8 @@ defineExpose({ handleShowSideslider });
         margin-bottom: 0;
 
         .bk-grid-col {
-          padding-left: 0 !important;
           padding-right: 16px !important;
+          padding-left: 0 !important;
         }
       }
 
