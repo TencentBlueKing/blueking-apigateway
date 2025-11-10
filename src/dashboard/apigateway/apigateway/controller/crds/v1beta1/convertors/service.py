@@ -37,7 +37,7 @@ class ServiceConvertor(BaseConvertor):
         #   "timeout": 60,
         #   "loadbalance": "roundrobin", # or "chash"
         #   "hash_on": "header",
-        #   "key": "http_abc",
+        #   "key": "content-type",
         #   "hosts": [
         #     {
         #       "scheme": "http",

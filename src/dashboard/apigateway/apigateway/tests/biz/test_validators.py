@@ -956,12 +956,12 @@ class TestUpstreamValidator:
         assert result is None
 
     def test_validate_chash_cookie_hash_on_with_cookie_prefix(self):
-        """测试 CHash 负载均衡类型，cookie hash_on 且 key 以 cookie_ 开头"""
+        """测试 CHash 负载均衡类型，cookie hash_on 且 key"""
         validator = UpstreamValidator()
         attrs = {
             "loadbalance": "chash",
             "hash_on": "cookie",
-            "key": "session_id",  # 以 cookie_ 开头
+            "key": "session_id",
             "hosts": [{"host": "example.com"}],
         }
         serializer = None
