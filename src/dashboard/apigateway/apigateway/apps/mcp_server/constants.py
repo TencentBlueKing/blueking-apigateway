@@ -56,3 +56,8 @@ class MCPServerPermissionStatusEnum(StructuredEnum):
 class MCPServerPermissionActionEnum(StructuredEnum):
     APPLY = EnumField("apply")
     RENEW = EnumField("renew")
+
+
+class MCPServerLeastPrivilegeEnum(StructuredEnum):
+    APPLICATION = EnumField("application")
+    APPLICATION_AND_USER = EnumField("application_and_user")
