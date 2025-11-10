@@ -16,11 +16,12 @@
       :disabled="disabled"
     >
       <BkInput
-        v-model="localStageConfig.configs.key"
+        v-model="localStageConfig[configField]!.key"
         :disabled="disabled"
       />
       <template
-        v-if="localStageConfig.configs.hash_on !== 'header' && localStageConfig.configs.hash_on !== 'cookie'"
+        v-if="localStageConfig[configField]!.hash_on !== 'header'
+          && localStageConfig[configField]!.hash_on !== 'cookie'"
         #content
       >
         <BkDropdownMenu>
@@ -46,13 +47,22 @@ import {
 interface IProps {
   disabled?: boolean
   stageConfig: IStageConfig
+  configField?: 'configs' | 'config'
 }
 
 interface IStageConfig {
   description: string
   id: number
   name: string
-  configs: {
+  configs?: {
+    loadbalance: string
+    hash_on?: string
+    key?: string
+    timeout: number
+    hosts: any[]
+    stage_id: number
+  }
+  config?: {
     loadbalance: string
     hash_on?: string
     key?: string
@@ -62,7 +72,7 @@ interface IStageConfig {
   }
 }
 
-const { disabled, stageConfig } = defineProps<IProps>();
+const { disabled, stageConfig, configField = 'configs' } = defineProps<IProps>();
 
 const emit = defineEmits<{ change: [IStageConfig] }>();
 
@@ -116,7 +126,7 @@ const hashOnKeyOptions = [
 const rules = [
   {
     validator: (value: string) => {
-      if (localStageConfig.value.configs.hash_on === 'vars') {
+      if (localStageConfig.value[configField].hash_on === 'vars') {
         if (value.startsWith('arg_')) {
           return /arg_[0-9a-zA-z_-]+/.test(value);
         }
@@ -144,7 +154,7 @@ watch(localStageConfig, () => {
 
 const handleHashOnKeyClick = (value: string) => {
   if (localStageConfig.value) {
-    localStageConfig.value.configs.key = value;
+    localStageConfig.value[configField].key = value;
   }
 };
 </script>
