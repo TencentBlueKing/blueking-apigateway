@@ -3,8 +3,6 @@
 获取网关下的所有资源列表，返回完整的资源信息（包括后端服务、标签、文档、认证配置等）。
 
 - 只返回公开的资源
-- 不传分页参数时返回所有数据
-- 传分页参数时按分页返回
 
 ### 输入参数
 
@@ -14,16 +12,9 @@
 |--------------|----------|-------|-----|-------|
 | gateway_name | string   | path  | 是   | 网关名称  |
 
-### 查询参数
-
-| 参数名称      | 参数类型  | 参数位置  | 必须  | 描述                               |
-|-----------|-------|-------|-----|----------------------------------|
-| limit     | int   | query | 否   | 每页数量，传此参数时启用分页                   |
-| offset    | int   | query | 否   | 偏移量，传此参数时启用分页                    |
 
 ### 响应示例
 
-#### 不分页时（不传 limit/offset）
 
 ```json
 {
@@ -66,51 +57,6 @@
 }
 ```
 
-#### 分页时（传 limit/offset）
-
-```json
-{
-    "code": 0,
-    "message": "OK",
-    "data": {
-        "count": 100,
-        "results": [
-            {
-                "id": 1,
-                "name": "get_user_info",
-                "description": "获取用户信息",
-                "method": "GET",
-                "path": "/api/v1/users/{user_id}/",
-                "match_subpath": false,
-                "enable_websocket": false,
-                "is_public": true,
-                "allow_apply_permission": true,
-                "backend": {
-                    "id": 1,
-                    "name": "default"
-                },
-                "labels": [
-                    {
-                        "id": 1,
-                        "name": "用户管理"
-                    }
-                ],
-                "docs": [
-                    {
-                        "id": 1,
-                        "language": "zh"
-                    }
-                ],
-                "auth_config": {
-                    "auth_verified_required": true,
-                    "app_verified_required": true,
-                    "resource_perm_required": true
-                }
-            }
-        ]
-    }
-}
-```
 
 ### 响应参数说明
 
@@ -118,7 +64,7 @@
 |---------|---------------|--------------------------------------|
 | code    | int           | 返回码，0 表示成功，其它值表示失败                  |
 | message | string        | 错误信息                                 |
-| data    | array/object  | 结果数据。不分页时为数组，分页时为对象（包含 count 和 results） |
+| data    | array | 结果数据 |
 
 #### data（不分页时为数组）
 
@@ -138,12 +84,6 @@
 | docs                  | array   | 资源文档列表，详见 docs[] 说明     |
 | auth_config           | object  | 认证配置，详见 auth_config 说明  |
 
-#### data（分页时为对象）
-
-| 参数名称    | 参数类型  | 描述                    |
-|---------|-------|------------------------|
-| count   | int   | 总数量                  |
-| results | array | 资源列表，每项结构同不分页时的 data[] |
 
 #### backend
 

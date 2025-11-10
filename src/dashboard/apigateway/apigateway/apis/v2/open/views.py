@@ -515,7 +515,6 @@ class GatewayResourceListApi(generics.ListAPIView):
         获取网关下的所有资源列表
         - 只返回公开的资源
         - 返回资源的完整信息，包括后端服务、标签、文档、认证配置等
-        - 如果不传分页参数，返回所有数据；传了分页参数则按分页返回
         """
         # 查询该网关下所有公开的资源，按更新时间倒序排列
         queryset = Resource.objects.filter(
@@ -523,25 +522,8 @@ class GatewayResourceListApi(generics.ListAPIView):
             is_public=True,
         ).order_by("-updated_time")
 
-        # 检查是否有分页参数
-        has_pagination_params = any(
-            [
-                request.query_params.get("limit"),
-                request.query_params.get("offset"),
-                request.query_params.get("page"),
-                request.query_params.get("page_size"),
-            ]
-        )
-
-        # 如果有分页参数，进行分页；否则返回所有数据
-        if has_pagination_params:
-            page = self.paginate_queryset(queryset)
-            resource_ids = [resource.id for resource in page]
-            resources = page
-        else:
-            # 返回所有数据
-            resources = list(queryset)
-            resource_ids = [resource.id for resource in resources]
+        resources = list(queryset)
+        resource_ids = [resource.id for resource in resources]
 
         # 准备上下文数据
         output_slz = self.get_serializer(
@@ -555,10 +537,6 @@ class GatewayResourceListApi(generics.ListAPIView):
                 "auth_configs": ResourceAuthContext().get_resource_id_to_auth_config(resource_ids),
             },
         )
-
-        # 根据是否分页返回不同格式
-        if has_pagination_params:
-            return self.get_paginated_response(output_slz.data)
         return OKJsonResponse(data=output_slz.data)
 
 
