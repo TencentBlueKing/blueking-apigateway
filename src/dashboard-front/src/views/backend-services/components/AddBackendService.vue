@@ -812,8 +812,8 @@ const handleLoadBalanceChange = (value: string, stageId: number) => {
       stage.configs.key = 'remote_addr';
     }
     else {
-      stage.configs.hash_on = '';
-      stage.configs.key = '';
+      delete stage.configs.hash_on;
+      delete stage.configs.key;
     }
   }
 };
@@ -824,11 +824,8 @@ const handleHashOnChange = (value: string, stageId: number) => {
     if (value === 'vars') {
       stage.configs.key = 'remote_addr';
     }
-    else if (value === 'header') {
-      stage.configs.key = 'http_';
-    }
-    else if (value === 'cookie') {
-      stage.configs.key = 'cookie_';
+    else {
+      stage.configs.key = '';
     }
   }
 };

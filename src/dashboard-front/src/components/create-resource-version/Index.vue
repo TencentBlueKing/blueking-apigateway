@@ -24,6 +24,7 @@
       :title="t('生成资源版本')"
       quick-close
       class="scroll"
+      render-directive="if"
       @hidden="handleCancel"
     >
       <template #default>
