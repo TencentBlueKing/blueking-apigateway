@@ -781,6 +781,64 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
+  /api/v2/open/gateways/{gateway_name}/resources/:
+    get:
+      operationId: v2_open_list_gateway_resources
+      description: 获取网关资源列表
+      tags:
+        - v2_open
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/gateways/{gateway_name}/resources/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/open/gateways/{gateway_name}/resources/{resource_name}/:
+    get:
+      operationId: v2_open_retrieve_gateway_api_details
+      description: 获取网关资源详情
+      tags:
+        - v2_open
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/gateways/{gateway_name}/resources/{resource_name}/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
   /api/v2/open/gateway/{gateway_name}/public_key/:
     get:
       operationId: v2_open_get_gateway_public_key
