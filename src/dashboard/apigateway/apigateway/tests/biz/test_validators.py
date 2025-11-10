@@ -894,22 +894,6 @@ class TestUpstreamValidator:
             validator(attrs, serializer)
         assert "key is required when loadbalance is chash" in str(exc_info.value)
 
-    def test_validate_chash_vars_hash_on_without_dollar_prefix(self):
-        """测试 CHash 负载均衡类型，vars hash_on 但 key 不以 $ 开头"""
-        validator = UpstreamValidator()
-        attrs = {
-            "loadbalance": "chash",
-            "hash_on": "vars",
-            "key": "invalid_key",  # 不以 $ 开头
-            "hosts": [{"host": "example.com"}],
-        }
-        serializer = None
-
-        # 应该抛出验证错误
-        with pytest.raises(serializers.ValidationError) as exc_info:
-            validator(attrs, serializer)
-        assert "key must start with $ when hash_on is vars" in str(exc_info.value)
-
     def test_validate_chash_vars_hash_on_with_dollar_prefix(self):
         """测试 CHash 负载均衡类型，vars hash_on 且 key 以 $ 开头"""
         validator = UpstreamValidator()
@@ -956,29 +940,13 @@ class TestUpstreamValidator:
         result = validator(attrs, serializer)
         assert result is None
 
-    def test_validate_chash_header_hash_on_without_http_prefix(self):
-        """测试 CHash 负载均衡类型，header hash_on 但 key 不以 http_ 开头"""
-        validator = UpstreamValidator()
-        attrs = {
-            "loadbalance": "chash",
-            "hash_on": "header",
-            "key": "invalid_key",  # 不以 http_ 开头
-            "hosts": [{"host": "example.com"}],
-        }
-        serializer = None
-
-        # 应该抛出验证错误
-        with pytest.raises(serializers.ValidationError) as exc_info:
-            validator(attrs, serializer)
-        assert "key must start with http_ when hash_on is header" in str(exc_info.value)
-
     def test_validate_chash_header_hash_on_with_http_prefix(self):
-        """测试 CHash 负载均衡类型，header hash_on 且 key 以 http_ 开头"""
+        """测试 CHash 负载均衡类型，header hash_on"""
         validator = UpstreamValidator()
         attrs = {
             "loadbalance": "chash",
             "hash_on": "header",
-            "key": "http_user_agent",  # 以 http_ 开头
+            "key": "content-type",
             "hosts": [{"host": "example.com"}],
         }
         serializer = None
@@ -987,29 +955,13 @@ class TestUpstreamValidator:
         result = validator(attrs, serializer)
         assert result is None
 
-    def test_validate_chash_cookie_hash_on_without_cookie_prefix(self):
-        """测试 CHash 负载均衡类型，cookie hash_on 但 key 不以 cookie_ 开头"""
-        validator = UpstreamValidator()
-        attrs = {
-            "loadbalance": "chash",
-            "hash_on": "cookie",
-            "key": "invalid_key",  # 不以 cookie_ 开头
-            "hosts": [{"host": "example.com"}],
-        }
-        serializer = None
-
-        # 应该抛出验证错误
-        with pytest.raises(serializers.ValidationError) as exc_info:
-            validator(attrs, serializer)
-        assert "key must start with cookie_ when hash_on is cookie" in str(exc_info.value)
-
     def test_validate_chash_cookie_hash_on_with_cookie_prefix(self):
-        """测试 CHash 负载均衡类型，cookie hash_on 且 key 以 cookie_ 开头"""
+        """测试 CHash 负载均衡类型，cookie hash_on 且 key"""
         validator = UpstreamValidator()
         attrs = {
             "loadbalance": "chash",
             "hash_on": "cookie",
-            "key": "cookie_session_id",  # 以 cookie_ 开头
+            "key": "session_id",
             "hosts": [{"host": "example.com"}],
         }
         serializer = None

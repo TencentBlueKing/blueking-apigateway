@@ -18,7 +18,7 @@
 from typing import List
 
 from apigateway.common.constants import DEFAULT_BACKEND_HOST_FOR_MISSING
-from apigateway.controller.crds.constants import UpstreamSchemeEnum, UpstreamTypeEnum
+from apigateway.controller.crds.constants import UpstreamHashOnEnum, UpstreamSchemeEnum, UpstreamTypeEnum
 from apigateway.controller.crds.v1beta1.convertors.base import BaseConvertor, UrlInfo
 from apigateway.controller.crds.v1beta1.models.base import PluginConfig, TimeoutConfig, Upstream, UpstreamNode
 from apigateway.controller.crds.v1beta1.models.gateway_service import BkGatewayService, BkGatewayServiceSpec
@@ -35,7 +35,9 @@ class ServiceConvertor(BaseConvertor):
         # {
         #   "type": "node",
         #   "timeout": 60,
-        #   "loadbalance": "roundrobin",
+        #   "loadbalance": "roundrobin", # or "chash"
+        #   "hash_on": "header",
+        #   "key": "content-type",
         #   "hosts": [
         #     {
         #       "scheme": "http",
@@ -49,14 +51,20 @@ class ServiceConvertor(BaseConvertor):
 
         for backend_id, backend_config in backend_configs.items():
             timeout = backend_config.get("timeout", 60)
+            loadbalance_type = backend_config.get("loadbalance", UpstreamTypeEnum.ROUNDROBIN.value)
+
             upstream = Upstream(
-                type=UpstreamTypeEnum.ROUNDROBIN,
+                type=UpstreamTypeEnum(loadbalance_type),
                 timeout=TimeoutConfig(
                     connect=timeout,
                     send=timeout,
                     read=timeout,
                 ),
             )
+            if loadbalance_type == UpstreamTypeEnum.CHASH.value:
+                upstream.hash_on = UpstreamHashOnEnum(backend_config.get("hash_on", UpstreamHashOnEnum.VARS.value))
+                upstream.key = backend_config.get("key", "")
+
             hosts = backend_config.get("hosts", [])
             if not hosts:
                 raise ValueError(f"backend {backend_id} has no hosts")
