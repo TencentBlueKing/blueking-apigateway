@@ -39,7 +39,7 @@
           <AgIcon
             name="miaozhun"
             size="14"
-            class="mr-4px mt-4px"
+            class="mr-4px"
           />
           {{ currentSource?.name }}
         </div>

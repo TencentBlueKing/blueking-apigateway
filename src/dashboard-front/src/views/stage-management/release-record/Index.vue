@@ -187,6 +187,7 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         title: t('操作时间'),
         colKey: 'created_time',
+        width: 220,
       },
       {
         colKey: 'operator',
@@ -251,6 +252,7 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         colKey: 'actionStatus',
         title: t('操作状态'),
+        width: 120,
         cell: (h, { row }: any) => (
           <div>
             {
@@ -265,6 +267,7 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         title: t('操作时间'),
         colKey: 'created_time',
+        width: 220,
       },
       {
         colKey: 'operator',
