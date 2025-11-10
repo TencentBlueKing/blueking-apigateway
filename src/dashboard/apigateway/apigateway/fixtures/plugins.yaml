@@ -3072,7 +3072,7 @@
     type:
     - bk-user-restriction
     notes: 通过将用户列入白名单或黑名单来限制对资源的访问，注意：对应资源认证方式需要配置开启用户认证。
-    example: '作用：仅允许用户 admin 请求当前接口\n\n类型：白名单\n白名单： ["admin"]'
+    example: '作用：仅允许用户 admin 请求当前接口\n\n类型：白名单\n白名单： ["admin"]\nmessage: "The bk-user is not allowed"'
     style: dynamic
     default_value: ''
     config: |-
@@ -3168,7 +3168,7 @@
     - bk-user-restriction
     notes: |-
       Restrict access to resources by whitelisting or blacklisting users. Note: The corresponding resource authentication method needs to be configured to enable user authentication.
-    example: 'Purpose: Only User admin are allowed to request the current interface\n\nType: whitelist\nwhitelist: ["admin"]'
+    example: 'Purpose: Only User admin are allowed to request the current interface\n\nType: whitelist\nwhitelist: ["admin"]\nmessage: "The bk-user is not allowed"'
     style: dynamic
     default_value: ''
     config: |-
