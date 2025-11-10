@@ -582,15 +582,7 @@ const handleRefreshClick = async () => {
   }
   filterKeyword.value = '';
   loadingResource.value = true;
-  const response = await getVersionDetail(
-    gatewayStore.currentGateway!.id!,
-    stage.value.resource_version.id,
-    {
-      stage_id: stage.value.id,
-      source: 'mcp_server',
-    },
-  );
-  resourceList.value = response?.resources || [];
+  await fetchStageList();
   selections.value = selections.value.filter(selectedResourceName =>
     resourceList.value.some(resource => resource.name === selectedResourceName),
   );
