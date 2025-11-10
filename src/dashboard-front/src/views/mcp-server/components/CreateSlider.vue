@@ -179,7 +179,7 @@
                       <template #empty>
                         <TableEmpty
                           :empty-type="!!filterKeyword ? 'searchEmpty' : 'empty'"
-                          @clear-filter="filterKeyword = ''"
+                          @clear-filter="handleClearFilter"
                         />
                       </template>
                     </BkTable>
@@ -624,6 +624,14 @@ const handleCancel = () => {
 
 const handleCopyClick = () => {
   copy(url.value || previewUrl.value);
+};
+
+const handleClearFilter = () => {
+  filterKeyword.value = '';
+  loadingResource.value = true;
+  setTimeout(() => {
+    loadingResource.value = false;
+  }, 500);
 };
 
 const resetSliderData = () => {

@@ -428,6 +428,10 @@ export const useAccessLog = defineStore('useAccessLog', {
           value: 'backend',
         },
         {
+          name: t('应用权限'),
+          value: 'permission',
+        },
+        {
           name: 'MCP Server',
           value: 'mcp_server',
         },
