@@ -37,7 +37,6 @@
       :border="['outer', 'row']"
       class="request-params-table"
       row-hover="auto"
-      :scrollbar="false"
       @vue:mounted="handleTableMounted"
     >
       <BkTableColumn
