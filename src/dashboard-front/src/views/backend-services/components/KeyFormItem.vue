@@ -116,30 +116,6 @@ const hashOnKeyOptions = [
 const rules = [
   {
     validator: (value: string) => {
-      if (localStageConfig.value.configs.hash_on === 'header') {
-        if (value.startsWith('http_')) {
-          return /http_[0-9a-zA-z_-]+/.test(value);
-        }
-      }
-      return true;
-    },
-    message: t('必须以 http_ 开头并填写数字、字母、下划线、减号'),
-    trigger: 'blur',
-  },
-  {
-    validator: (value: string) => {
-      if (localStageConfig.value.configs.hash_on === 'cookie') {
-        if (value.startsWith('cookie_')) {
-          return /cookie_[0-9a-zA-z_-]+/.test(value);
-        }
-      }
-      return true;
-    },
-    message: t('必须以 cookie_ 开头并填写数字、字母、下划线、减号'),
-    trigger: 'blur',
-  },
-  {
-    validator: (value: string) => {
       if (localStageConfig.value.configs.hash_on === 'vars') {
         if (value.startsWith('arg_')) {
           return /arg_[0-9a-zA-z_-]+/.test(value);
