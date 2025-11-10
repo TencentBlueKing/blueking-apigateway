@@ -67,12 +67,6 @@
 | auth_config           | object  | 认证配置，详见 auth_config 说明  |
 
 
-#### backend
-
-| 参数名称  | 参数类型   | 描述      |
-|-------|--------|---------|
-| id    | int    | 后端服务 ID |
-| name  | string | 后端服务名称  |
 
 #### labels[]
 
