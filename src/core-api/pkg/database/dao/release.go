@@ -43,7 +43,7 @@ type Release struct {
 
 // ReleaseManager ...
 type ReleaseManager interface {
-	Get(ctx context.Context, gatewayID int64, stageID int64) (Release, error)
+	Get(ctx context.Context, gatewayID, stageID int64) (Release, error)
 }
 
 type releaseManager struct {
@@ -58,7 +58,7 @@ func NewReleaseManager() ReleaseManager {
 }
 
 // Get ...
-func (m releaseManager) Get(ctx context.Context, gatewayID int64, stageID int64) (Release, error) {
+func (m releaseManager) Get(ctx context.Context, gatewayID, stageID int64) (Release, error) {
 	Release := Release{}
 	query := `SELECT
 		id,

@@ -29,6 +29,7 @@ import (
 	sentry "github.com/getsentry/sentry-go"
 	"github.com/tchap/zapext/v2/zapsentry"
 	"go.uber.org/zap"
+
 	"go.uber.org/zap/zapcore"
 
 	"core/pkg/config"

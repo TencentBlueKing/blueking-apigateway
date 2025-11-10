@@ -50,7 +50,7 @@ type Event struct {
 	Name      string
 	Status    string
 	PublishID int64
-	DetailMap map[string]interface{}
+	DetailMap map[string]any
 	Ts        int64
 }
 

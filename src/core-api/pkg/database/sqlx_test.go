@@ -34,7 +34,7 @@ func TestSqlxSelect(t *testing.T) {
 		Name string `db:"name"`
 	}
 	RunWithMock(t, func(db *sqlx.DB, mock sqlmock.Sqlmock, t *testing.T) {
-		mockSnippets := []interface{}{
+		mockSnippets := []any{
 			Snippet{
 				Name: "test1",
 			},
@@ -85,7 +85,7 @@ func TestSqlxGet(t *testing.T) {
 		Name string `db:"name"`
 	}
 	RunWithMock(t, func(db *sqlx.DB, mock sqlmock.Sqlmock, t *testing.T) {
-		mockSnippets := []interface{}{
+		mockSnippets := []any{
 			Snippet{
 				Name: "test",
 			},

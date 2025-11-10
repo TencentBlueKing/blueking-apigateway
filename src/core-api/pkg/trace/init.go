@@ -97,7 +97,7 @@ func InitTrace(config config.Tracing) error {
 }
 
 // getExporterClient Get exporter client
-func getExporterClient(protocolType string, endpoint string) (otlptrace.Client, error) {
+func getExporterClient(protocolType, endpoint string) (otlptrace.Client, error) {
 	switch protocolType {
 	case "http":
 		return otlptracehttp.NewClient(

@@ -40,7 +40,7 @@ func Test_publishEventManager_Create(t *testing.T) {
 			Name:      constant.EventNameApplyConfiguration,
 			Step:      1,
 			Status:    constant.EventStatusSuccess,
-			Detail:    map[string]interface{}{"err_msg": "success"},
+			Detail:    map[string]any{"err_msg": "success"},
 		}
 		mock.ExpectExec(mockQuery).WillReturnResult(
 			sqlmock.NewResult(1, 1))

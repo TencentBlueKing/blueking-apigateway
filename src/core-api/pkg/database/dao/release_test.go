@@ -43,7 +43,7 @@ func Test_releaseManager_Get(t *testing.T) {
 			ResourceVersionID: 4,
 		}
 
-		mockData := []interface{}{
+		mockData := []any{
 			record,
 		}
 		mockRows := database.NewMockRows(mock, mockData...)

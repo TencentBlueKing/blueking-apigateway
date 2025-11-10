@@ -75,7 +75,7 @@ type DBClient struct {
 func (db *DBClient) TestConnection() (err error) {
 	conn, err := sqlx.Connect("mysql", db.dataSource)
 	if err != nil {
-		return
+		return err
 	}
 
 	conn.Close()
@@ -194,9 +194,13 @@ func NewDBClient(cfg *config.Database) *DBClient {
 
 	if maxOpenConns < maxIdleConns {
 		logging.GetLogger().
-			Errorf("error config for database %s, maxOpenConns should greater or equals to maxIdleConns, will"+
-				"use the default [defaultMaxOpenConns=%d, defaultMaxIdleConns=%d]",
-				cfg.Name, defaultMaxOpenConns, defaultMaxIdleConns)
+			Errorf(
+				"error config for database %s, maxOpenConns should greater or equals to maxIdleConns, will"+
+					"use the default [defaultMaxOpenConns=%d, defaultMaxIdleConns=%d]",
+				cfg.Name,
+				defaultMaxOpenConns,
+				defaultMaxIdleConns,
+			)
 		maxOpenConns = defaultMaxOpenConns
 		maxIdleConns = defaultMaxIdleConns
 	}

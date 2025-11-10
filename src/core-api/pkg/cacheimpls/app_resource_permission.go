@@ -42,7 +42,7 @@ func (k AppResourcePermissionKey) Key() string {
 	return k.AppCode + ":" + strconv.FormatInt(k.GatewayID, 10) + ":" + strconv.FormatInt(k.ResourceID, 10)
 }
 
-func retrieveAppResourcePermission(ctx context.Context, k cache.Key) (interface{}, error) {
+func retrieveAppResourcePermission(ctx context.Context, k cache.Key) (any, error) {
 	key := k.(AppResourcePermissionKey)
 
 	manager := dao.NewAppResourcePermissionManager()
@@ -51,8 +51,18 @@ func retrieveAppResourcePermission(ctx context.Context, k cache.Key) (interface{
 
 	// if not permission records, cache `nil`
 	if errors.Is(err, sql.ErrNoRows) {
-		logging.GetLogger().Debugw("retrieveAppResourcePermission",
-			"appCode", key.AppCode, "gatewayID", key.GatewayID, "resourceID", key.ResourceID, "perm", perm, "err", err,
+		logging.GetLogger().Debugw(
+			"retrieveAppResourcePermission",
+			"appCode",
+			key.AppCode,
+			"gatewayID",
+			key.GatewayID,
+			"resourceID",
+			key.ResourceID,
+			"perm",
+			perm,
+			"err",
+			err,
 		)
 		return nil, nil
 	}

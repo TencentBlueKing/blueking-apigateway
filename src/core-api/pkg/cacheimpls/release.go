@@ -39,7 +39,7 @@ func (k ReleaseKey) Key() string {
 	return strconv.FormatInt(k.GatewayID, 10) + ":" + strconv.FormatInt(k.StageID, 10)
 }
 
-func retrieveStageByGatewayIDStageID(ctx context.Context, k cache.Key) (interface{}, error) {
+func retrieveStageByGatewayIDStageID(ctx context.Context, k cache.Key) (any, error) {
 	key := k.(ReleaseKey)
 
 	manager := dao.NewReleaseManager()
@@ -52,17 +52,17 @@ func GetRelease(ctx context.Context, gatewayID, stageID int64) (release dao.Rele
 		GatewayID: gatewayID,
 		StageID:   stageID,
 	}
-	var value interface{}
+	var value any
 	value, err = cacheGet(ctx, releaseCache, key)
 	if err != nil {
-		return
+		return release, err
 	}
 
 	var ok bool
 	release, ok = value.(dao.Release)
 	if !ok {
 		err = errors.New("not dao.Release in cache")
-		return
+		return release, err
 	}
-	return
+	return release, err
 }

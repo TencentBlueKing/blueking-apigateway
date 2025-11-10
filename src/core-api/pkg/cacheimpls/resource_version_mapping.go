@@ -41,7 +41,7 @@ func (k ResourceVersionMappingKey) Key() string {
 	return strconv.FormatInt(k.ID, 10)
 }
 
-func retrieveResourceVersionMapping(ctx context.Context, k cache.Key) (interface{}, error) {
+func retrieveResourceVersionMapping(ctx context.Context, k cache.Key) (any, error) {
 	key := k.(ResourceVersionMappingKey)
 
 	manager := dao.NewResourceVersionManager()
@@ -52,7 +52,7 @@ func retrieveResourceVersionMapping(ctx context.Context, k cache.Key) (interface
 		return nil, err
 	}
 
-	var releaseResourcesData []map[string]interface{}
+	var releaseResourcesData []map[string]any
 	j := jsoniter.Config{UseNumber: true}.Froze()
 	err = j.UnmarshalFromString(releaseResources.Data, &releaseResourcesData)
 	if err != nil {
@@ -84,17 +84,17 @@ func GetResourceVersionMapping(ctx context.Context, id int64) (resourceNameToID 
 	key := ResourceVersionMappingKey{
 		ID: id,
 	}
-	var value interface{}
+	var value any
 	value, err = cacheGet(ctx, resourceVersionMappingCache, key)
 	if err != nil {
-		return
+		return resourceNameToID, err
 	}
 
 	var ok bool
 	resourceNameToID, ok = value.(map[string]int64)
 	if !ok {
 		err = errors.New("not map[string]int64 in cache")
-		return
+		return resourceNameToID, err
 	}
-	return
+	return resourceNameToID, err
 }

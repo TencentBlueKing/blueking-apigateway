@@ -43,7 +43,7 @@ func Test_stageManager_GetByName(t *testing.T) {
 			Name: name,
 		}
 
-		mockData := []interface{}{
+		mockData := []any{
 			record,
 		}
 		mockRows := database.NewMockRows(mock, mockData...)

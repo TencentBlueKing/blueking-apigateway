@@ -40,7 +40,7 @@ const (
 
 // SuccessResponse ...
 type SuccessResponse struct {
-	Data interface{} `json:"data"`
+	Data any `json:"data"`
 }
 
 // Error ...
@@ -57,10 +57,10 @@ type ErrorResponse struct {
 
 // LegacySuccessResponse  ...
 type LegacySuccessResponse struct {
-	Data    interface{} `json:"data"`
-	Result  bool        `json:"result"`
-	Message string      `json:"message"`
-	Code    int         `json:"code"`
+	Data    any    `json:"data"`
+	Result  bool   `json:"result"`
+	Message string `json:"message"`
+	Code    int    `json:"code"`
 }
 
 // LegacyErrorResponse  ...
@@ -71,14 +71,14 @@ type LegacyErrorResponse struct {
 }
 
 // SuccessJSONResponse ...
-func SuccessJSONResponse(c *gin.Context, data interface{}) {
+func SuccessJSONResponse(c *gin.Context, data any) {
 	c.JSON(http.StatusOK, SuccessResponse{
 		Data: data,
 	})
 }
 
 // BaseErrorJSONResponse ...
-func BaseErrorJSONResponse(c *gin.Context, errorCode string, message string, statusCode int) {
+func BaseErrorJSONResponse(c *gin.Context, errorCode, message string, statusCode int) {
 	// BaseJSONResponse(c, statusCode, code, message, gin.H{})
 	c.JSON(statusCode, ErrorResponse{Error: Error{
 		Code:    errorCode,
@@ -98,7 +98,7 @@ func NewErrorJSONResponse(
 }
 
 // LegacySuccessJsonResponse ...
-func LegacySuccessJsonResponse(c *gin.Context, data interface{}) {
+func LegacySuccessJsonResponse(c *gin.Context, data any) {
 	// 兼容历史接口
 	c.JSON(http.StatusOK, LegacySuccessResponse{
 		Result: true,
