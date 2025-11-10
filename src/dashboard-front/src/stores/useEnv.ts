@@ -83,6 +83,8 @@ export const useEnv = defineStore('useEnv', {
         UPGRADE_TO_113_TIP: '',
         // mcp 权限申请指引
         MCP_SERVER_PERMISSION_APPLY: '',
+        // 负载均衡帮助文档
+        LOADBALANCE: '',
       },
     },
   }),
