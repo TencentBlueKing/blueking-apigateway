@@ -31,7 +31,7 @@ from apigateway.controller.models import (
     Service,
     Timeout,
 )
-from apigateway.controller.models.constants import UpstreamSchemeEnum, UpstreamTypeEnum
+from apigateway.controller.models.constants import UpstreamHashOnEnum, UpstreamSchemeEnum, UpstreamTypeEnum
 from apigateway.controller.release_data import ReleaseData
 from apigateway.controller.uri_render import URIRender
 from apigateway.core.models import Backend
@@ -54,7 +54,9 @@ class ServiceConvertor(GatewayResourceConvertor):
         # {
         #   "type": "node",
         #   "timeout": 60,
-        #   "loadbalance": "roundrobin",
+        #   "loadbalance": "roundrobin", # or "chash"
+        #   "hash_on": "header",
+        #   "key": "content-type",
         #   "hosts": [
         #     {
         #       "scheme": "http",
@@ -68,14 +70,19 @@ class ServiceConvertor(GatewayResourceConvertor):
 
         for backend_id, backend_config in backend_configs.items():
             timeout = backend_config.get("timeout", 60)
+            loadbalance_type = backend_config.get("loadbalance", UpstreamTypeEnum.ROUNDROBIN.value)
             upstream = BaseUpstream(
-                type=UpstreamTypeEnum.ROUNDROBIN,
+                type=UpstreamTypeEnum(loadbalance_type),
                 timeout=Timeout(
                     connect=timeout,
                     send=timeout,
                     read=timeout,
                 ),
             )
+            if loadbalance_type == UpstreamTypeEnum.CHASH.value:
+                upstream.hash_on = UpstreamHashOnEnum(backend_config.get("hash_on", UpstreamHashOnEnum.VARS.value))
+                upstream.key = backend_config.get("key", "")
+
             hosts = backend_config.get("hosts", [])
             if not hosts:
                 raise ValueError(f"backend {backend_id} has no hosts")
