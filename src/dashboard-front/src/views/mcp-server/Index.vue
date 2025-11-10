@@ -161,7 +161,7 @@ onMounted(() => {
     box-sizing: border-box;
 
     .add-server-card {
-      // height: 228px;
+      min-height: 228px;
       color: #979ba5;
       border-radius: 2px;
       background-color: #ffffff;
