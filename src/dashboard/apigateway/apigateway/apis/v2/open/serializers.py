@@ -318,6 +318,17 @@ class UserMCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
         ref_name = "apigateway.apis.v2.open.serializers.UserMCPServerListOutputSLZ"
 
 
+class AuthConfigOutputSLZ(serializers.Serializer):
+    """认证配置输出"""
+
+    user_verified_required = serializers.BooleanField(read_only=True, help_text="是否需要用户认证")
+    app_verified_required = serializers.BooleanField(read_only=True, help_text="是否需要应用认证")
+    resource_perm_required = serializers.BooleanField(read_only=True, help_text="是否需要资源权限")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.AuthConfigOutputSLZ"
+
+
 class GatewayResourceListOutputSLZ(serializers.Serializer):
     """网关资源列表输出"""
 
@@ -331,10 +342,7 @@ class GatewayResourceListOutputSLZ(serializers.Serializer):
     match_subpath = serializers.BooleanField(read_only=True, help_text="是否匹配子路径")
     enable_websocket = serializers.BooleanField(read_only=True, help_text="是否启用 WebSocket")
     is_public = serializers.BooleanField(read_only=True, help_text="是否公开")
-    allow_apply_permission = serializers.BooleanField(read_only=True, help_text="是否允许申请权限")
-    backend = serializers.SerializerMethodField(help_text="后端服务")
     labels = serializers.SerializerMethodField(help_text="标签列表")
-    docs = serializers.SerializerMethodField(help_text="资源文档列表")
     auth_config = serializers.SerializerMethodField(help_text="认证配置")
 
     class Meta:
@@ -344,30 +352,20 @@ class GatewayResourceListOutputSLZ(serializers.Serializer):
         """返回路径显示，包含子路径匹配标识"""
         return obj.path_display
 
-    def get_backend(self, obj):
-        """获取后端服务信息"""
-        proxy = self.context.get("proxies", {}).get(obj.id)
-        if not proxy:
-            return None
-        backend = self.context.get("backends", {}).get(proxy.backend_id)
-        if not backend:
-            return None
-        return {
-            "id": backend.id,
-            "name": backend.name,
-        }
-
     def get_labels(self, obj):
         """获取标签列表"""
         return self.context.get("labels", {}).get(obj.id, [])
 
-    def get_docs(self, obj):
-        """获取文档列表"""
-        return self.context.get("docs", {}).get(obj.id, [])
-
     def get_auth_config(self, obj):
         """获取认证配置"""
-        return self.context.get("auth_configs", {}).get(obj.id, {})
+        auth_config = self.context.get("auth_configs", {}).get(obj.id, {})
+        return AuthConfigOutputSLZ(
+            {
+                "user_verified_required": auth_config.get("auth_verified_required", False),
+                "app_verified_required": auth_config.get("app_verified_required", True),
+                "resource_perm_required": auth_config.get("resource_perm_required", False),
+            }
+        ).data
 
 
 class GatewayResourceDetailInputSLZ(serializers.Serializer):
@@ -395,10 +393,9 @@ class GatewayResourceDetailOutputSLZ(serializers.Serializer):
     match_subpath = serializers.BooleanField(read_only=True, help_text="是否匹配子路径")
     enable_websocket = serializers.BooleanField(read_only=True, help_text="是否启用 WebSocket")
     is_public = serializers.BooleanField(read_only=True, help_text="是否公开")
-    allow_apply_permission = serializers.BooleanField(read_only=True, help_text="是否允许申请权限")
     schema = serializers.DictField(read_only=True, help_text="资源的 OpenAPI Schema 定义")
     doc = serializers.DictField(read_only=True, help_text="资源文档信息", allow_null=True)
-    auth_config = serializers.DictField(read_only=True, help_text="认证配置")
+    auth_config = AuthConfigOutputSLZ(read_only=True, help_text="认证配置")
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayResourceDetailOutputSLZ"

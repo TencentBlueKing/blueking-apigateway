@@ -34,7 +34,6 @@ from apigateway.apps.mcp_server.constants import MCPServerLeastPrivilegeEnum, MC
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
-from apigateway.biz.backend import BackendHandler
 from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
 from apigateway.biz.mcp_server import MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
@@ -51,7 +50,7 @@ from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
-from apigateway.core.models import Gateway, Proxy, Release, Resource, Stage
+from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.contexts import GatewayAuthContext, ResourceAuthContext
 from apigateway.utils.responses import OKJsonResponse
 
@@ -552,7 +551,7 @@ class GatewayResourceListApi(generics.ListAPIView):
         """
         获取网关下的所有资源列表
         - 只返回公开的资源
-        - 返回资源的完整信息，包括后端服务、标签、文档、认证配置等
+        - 返回资源的完整信息
         """
         # 查询该网关下所有公开的资源，按更新时间倒序排列
         queryset = Resource.objects.filter(
@@ -569,9 +568,6 @@ class GatewayResourceListApi(generics.ListAPIView):
             many=True,
             context={
                 "labels": ResourceLabelHandler.get_labels(resource_ids),
-                "docs": ResourceDocHandler.get_docs(resource_ids),
-                "backends": BackendHandler.get_id_to_instance(request.gateway.id),
-                "proxies": {proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=resource_ids)},
                 "auth_configs": ResourceAuthContext().get_resource_id_to_auth_config(resource_ids),
             },
         )
@@ -653,11 +649,10 @@ class GatewayResourceDetailApi(generics.RetrieveAPIView):
             "match_subpath": resource_data.match_subpath,
             "enable_websocket": resource_data.enable_websocket,
             "is_public": resource_data.is_public,
-            "allow_apply_permission": resource_data.allow_apply_permission,
             "schema": resource_schema or {},
             "doc": doc_info,
             "auth_config": {
-                "auth_verified_required": resource_data.verified_user_required,
+                "user_verified_required": resource_data.verified_user_required,
                 "app_verified_required": resource_data.verified_app_required,
                 "resource_perm_required": resource_data.resource_perm_required,
             },

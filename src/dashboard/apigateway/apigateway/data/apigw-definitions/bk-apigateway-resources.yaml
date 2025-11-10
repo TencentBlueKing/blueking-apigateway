@@ -792,10 +792,74 @@ paths:
           description: ''
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    properties:
+                      resource_info:
+                        type: object
+                        properties:
+                          id:
+                            type: number
+                            description: 资源id
+                          name:
+                            type: string
+                            description: 资源name
+                          description:
+                            type: string
+                            description: 资源描述
+                          method:
+                            type: string
+                            description: 请求方法（GET、POST 等）
+                          path:
+                            type: string
+                            description: '资源路径  '
+                          match_subpath:
+                            type: boolean
+                            description: '是否匹配子路径 '
+                          enable_websocket:
+                            type: boolean
+                            description: '是否启用 WebSocket '
+                          is_public:
+                            type: boolean
+                            description: 是否公开
+                          labels:
+                            type: array
+                            description: 标签列表
+                            properties:
+                              label:
+                                type: object
+                                properties:
+                                  id:
+                                    type: number
+                                    description: 标签id
+                                  name:
+                                    type: string
+                                    description: 标签name
+                          auth_config:
+                            type: object
+                            properties:
+                              user_verified_required:
+                                type: boolean
+                                description: '是否需要用户认证; True: 那么调用接口需要提供用户身份：例如：bk_ticket'
+                              app_verified_required:
+                                type: boolean
+                                description: '是否需要应用认证; True: 那么调用接口需要提供应用身份：bk_app_code+bk_app_secret'
+                              resource_perm_required:
+                                type: boolean
+                                description: '是否需要资源权限; True: 则需要申请该资源权限才可以调用'
+      parameters:
+        - in: path
+          name: gateway_name
+          description: 网关name
+          required: true
+          schema:
+            type: string
       x-bk-apigateway-resource:
         isPublic: true
-        allowApplyPermission: true
+        allowApplyPermission: false
         matchSubpath: false
         enableWebsocket: false
         backend:
@@ -818,13 +882,90 @@ paths:
         - v2_open
       responses:
         default:
-          description: ''
+          description: 资源详情
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                description: 资源详情
+                properties:
+                  id:
+                    type: number
+                    description: 资源id
+                  name:
+                    type: string
+                    description: 资源名称
+                  description:
+                    type: string
+                    description: 资源描述（中文）
+                  description_en:
+                    type: string
+                    description: '资源描述（英文） '
+                  method:
+                    type: string
+                    description: '请求方法（GET、POST 等） '
+                  path:
+                    type: string
+                    description: ' 资源路径  '
+                  'match_subpath ':
+                    type: string
+                    description: 是否匹配子路径
+                  enable_websocket:
+                    type: string
+                    description: '是否启用 WebSocket '
+                  is_public:
+                    type: boolean
+                    description: '是否公开 '
+                  schema:
+                    type: object
+                    description: OpenAPI Schema 定义
+                  doc:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        description: 文档类型（通常为 markdown）
+                      content:
+                        type: string
+                        description: 文档内容（Markdown 格式）
+                      updated_time:
+                        type: string
+                        description: 文档更新时间（ISO 8601 格式）
+                  auth_config:
+                    type: object
+                    description: 资源认证相关信息
+                    properties:
+                      user_verified_required:
+                        type: boolean
+                        description: '是否需要用户认证; True: 那么调用接口需要提供用户身份：例如：bk_ticket)'
+                      app_verified_required:
+                        type: boolean
+                        description: '是否需要应用认证; True: 那么调用接口需要提供应用身份：bk_app_code+bk_app_secret'
+                      resource_perm_required:
+                        type: boolean
+                        description: '是否需要资源权限; True: 则需要申请该资源权限才可以调用      '
+      parameters:
+        - in: path
+          name: gateway_name
+          description: 网关名
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: resource_name
+          description: 资源名称
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: stage_name
+          description: 环境名称
+          required: true
+          schema:
+            type: string
       x-bk-apigateway-resource:
         isPublic: true
-        allowApplyPermission: true
+        allowApplyPermission: false
         matchSubpath: false
         enableWebsocket: false
         backend:

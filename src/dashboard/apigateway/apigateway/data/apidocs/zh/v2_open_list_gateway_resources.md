@@ -18,8 +18,6 @@
 
 ```json
 {
-    "code": 0,
-    "message": "OK",
     "data": [
         {
             "id": 1,
@@ -30,25 +28,14 @@
             "match_subpath": false,
             "enable_websocket": false,
             "is_public": true,
-            "allow_apply_permission": true,
-            "backend": {
-                "id": 1,
-                "name": "default"
-            },
             "labels": [
                 {
                     "id": 1,
                     "name": "用户管理"
                 }
             ],
-            "docs": [
-                {
-                    "id": 1,
-                    "language": "zh"
-                }
-            ],
             "auth_config": {
-                "auth_verified_required": true,
+                "user_verified_required": true,
                 "app_verified_required": true,
                 "resource_perm_required": true
             }
@@ -62,8 +49,6 @@
 
 | 字段      | 类型            | 描述                                   |
 |---------|---------------|--------------------------------------|
-| code    | int           | 返回码，0 表示成功，其它值表示失败                  |
-| message | string        | 错误信息                                 |
 | data    | array | 结果数据 |
 
 #### data（不分页时为数组）
@@ -78,10 +63,7 @@
 | match_subpath         | boolean | 是否匹配子路径                 |
 | enable_websocket      | boolean | 是否启用 WebSocket          |
 | is_public             | boolean | 是否公开                    |
-| allow_apply_permission | boolean | 是否允许申请权限                |
-| backend               | object  | 后端服务信息，详见 backend 说明    |
 | labels                | array   | 标签列表，详见 labels[] 说明     |
-| docs                  | array   | 资源文档列表，详见 docs[] 说明     |
 | auth_config           | object  | 认证配置，详见 auth_config 说明  |
 
 
@@ -99,18 +81,11 @@
 | id    | int    | 标签 ID |
 | name  | string | 标签名称  |
 
-#### docs[]
-
-| 参数名称     | 参数类型   | 描述              |
-|----------|--------|-----------------|
-| id       | int    | 文档 ID           |
-| language | string | 文档语言（zh、en 等） |
 
 #### auth_config
 
-| 参数名称                    | 参数类型    | 描述       |
-|-------------------------|---------|----------|
-| auth_verified_required  | boolean | 是否需要用户认证 |
-| app_verified_required   | boolean | 是否需要应用认证 |
-| resource_perm_required  | boolean | 是否需要资源权限 |
-
+| 参数名称                     | 参数类型    | 描述                                                                                                                                   |
+|--------------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------|
+| user_verified_required   | boolean | 是否需要用户认证; True: 那么调用接口需要提供用户身份bk_ticket; 认证请求头：X-Bkapi-Authorization: {"bk_ticket": "x"}                                             |
+| app_verified_required    | boolean | 是否需要应用认证; True: 那么调用接口需要提供应用身份：bk_app_code+bk_app_secret; 认证请求头: . X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y"} |
+| resource_perm_required   | boolean | 是否需要资源权限; True: 则需要申请该资源权限才可以调用                                                                                                      |

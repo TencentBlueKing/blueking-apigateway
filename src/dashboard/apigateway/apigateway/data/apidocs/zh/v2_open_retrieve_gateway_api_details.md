@@ -26,8 +26,6 @@
 
 ```json
 {
-    "code": 0,
-    "message": "OK",
     "data": {
         "id": 1,
         "name": "get_user_info",
@@ -90,8 +88,6 @@
 
 | 字段      | 类型     | 描述                       |
 |---------|--------|--------------------------|
-| code    | int    | 返回码，0 表示成功，其它值表示失败      |
-| message | string | 错误信息                     |
 | data    | object | 结果数据，详细信息请见下面说明        |
 
 #### data
@@ -107,7 +103,6 @@
 | match_subpath          | boolean | 是否匹配子路径                   |
 | enable_websocket       | boolean | 是否启用 WebSocket            |
 | is_public              | boolean | 是否公开                      |
-| allow_apply_permission | boolean | 是否允许申请权限                  |
 | schema                 | object  | OpenAPI Schema 定义，详见下面说明  |
 | doc                    | object  | 资源文档信息，详见 doc 说明（可能为 null） |
 | auth_config            | object  | 认证配置，详见 auth_config 说明   |
@@ -140,11 +135,11 @@ OpenAPI 3.0 格式的 Schema 定义，包含以下常见字段：
 
 #### auth_config
 
-| 参数名称                     | 参数类型    | 描述       |
-|--------------------------|---------|----------|
-| auth_verified_required   | boolean | 是否需要用户认证 |
-| app_verified_required    | boolean | 是否需要应用认证 |
-| resource_perm_required   | boolean | 是否需要资源权限 |
+| 参数名称                     | 参数类型    | 描述                                                                                                                                   |
+|--------------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------|
+| user_verified_required   | boolean | 是否需要用户认证; True: 那么调用接口需要提供用户身份bk_ticket; 认证请求头：X-Bkapi-Authorization: {"bk_ticket": "x"}                                             |
+| app_verified_required    | boolean | 是否需要应用认证; True: 那么调用接口需要提供应用身份：bk_app_code+bk_app_secret; 认证请求头: . X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y"} |
+| resource_perm_required   | boolean | 是否需要资源权限; True: 则需要申请该资源权限才可以调用                                                                                                      |
 
 ### 错误说明
 
