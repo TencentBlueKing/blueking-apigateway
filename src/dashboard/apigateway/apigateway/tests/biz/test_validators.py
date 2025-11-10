@@ -941,12 +941,12 @@ class TestUpstreamValidator:
         assert result is None
 
     def test_validate_chash_header_hash_on_with_http_prefix(self):
-        """测试 CHash 负载均衡类型，header hash_on 且 key 以 http_ 开头"""
+        """测试 CHash 负载均衡类型，header hash_on"""
         validator = UpstreamValidator()
         attrs = {
             "loadbalance": "chash",
             "hash_on": "header",
-            "key": "content-type",  # 以 http_ 开头
+            "key": "content-type",
             "hosts": [{"host": "example.com"}],
         }
         serializer = None
