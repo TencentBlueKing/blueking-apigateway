@@ -24,13 +24,18 @@ from rest_framework import serializers
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
+    MCPServerLeastPrivilegeEnum,
     MCPServerStatusEnum,
 )
 from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionApplyExpireDaysEnum
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.service.mcp.mcp_server import build_mcp_server_detail_url, build_mcp_server_url
+from apigateway.service.mcp.mcp_server import (
+    build_mcp_server_application_url,
+    build_mcp_server_detail_url,
+    build_mcp_server_url,
+)
 
 
 class GatewayListInputSLZ(serializers.Serializer):
@@ -297,5 +302,17 @@ class UserMCPServerListInputSLZ(serializers.Serializer):
 
 
 class UserMCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
+    application_url = serializers.SerializerMethodField(help_text="应用态 URL")
+    least_privilege = serializers.SerializerMethodField(help_text="最低权限")
+
+    def get_application_url(self, obj) -> str:
+        least_privilege = self.context["least_privileges"].get((obj.gateway.id, obj.stage.id))
+        if least_privilege == MCPServerLeastPrivilegeEnum.APPLICATION.value:
+            return build_mcp_server_application_url(obj.name)
+        return ""
+
+    def get_least_privilege(self, obj) -> str:
+        return self.context["least_privileges"].get((obj.gateway.id, obj.stage.id), "")
+
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.UserMCPServerListOutputSLZ"
