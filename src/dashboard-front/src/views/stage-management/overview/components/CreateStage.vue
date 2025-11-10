@@ -142,11 +142,13 @@
                             required
                             :label="t('负载均衡类型')"
                             class="mt-20px relative"
+                            property="config.loadbalance"
                           >
                             <BkSelect
                               v-model="backend.config.loadbalance"
                               :clearable="false"
                               :placeholder="t('负载均衡类型')"
+                              @change="(value: string) => handleLoadBalanceChange(value, backend.id)"
                             >
                               <BkOption
                                 v-for="option in loadbalanceList"
@@ -169,6 +171,38 @@
                               <span class="text-12px">{{ t('帮助文档') }}</span>
                             </BkLink>
                           </BkFormItem>
+
+                          <!-- hash_on -->
+                          <BkFormItem
+                            v-if="backend.config.loadbalance === 'chash'"
+                            :label="t('哈希位置')"
+                            property="config.hash_on"
+                            required
+                          >
+                            <BkSelect
+                              v-model="backend.config.hash_on"
+                              :clearable="false"
+                              :filterable="false"
+                              @change="(value: string) => handleHashOnChange(value, backend.id)"
+                            >
+                              <BkOption
+                                v-for="type in hashOnOptions"
+                                :id="type.id"
+                                :key="type.id"
+                                :name="type.name"
+                              />
+                            </BkSelect>
+                          </BkFormItem>
+
+                          <KeyFormItem
+                            v-if="backend.config.loadbalance === 'chash'"
+                            :stage-config="backend"
+                            label="Key"
+                            property="config.key"
+                            required
+                            config-field="config"
+                            @change="handleHashOnKeyChange"
+                          />
 
                           <BkFormItem
                             v-for="(hostItem, index) of backend.config.hosts"
@@ -441,6 +475,7 @@ import {
   useEnv,
   useGateway,
 } from '@/stores';
+import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
 
 interface IProps { stageId?: number }
 
@@ -516,6 +551,21 @@ const loadbalanceList = [
   {
     id: 'least_conn',
     name: t('最小连接数（least_conn）'),
+  },
+];
+
+const hashOnOptions = [
+  {
+    id: 'vars',
+    name: 'vars',
+  },
+  {
+    id: 'header',
+    name: 'header',
+  },
+  {
+    id: 'cookie',
+    name: 'cookie',
   },
 ];
 
@@ -742,6 +792,39 @@ const handleShowSideslider = async (type: string, { backendName = '' } = {}) => 
     selectedBackendName.value = backendName;
   }
   isShow.value = true;
+};
+
+const handleLoadBalanceChange = (value: string, stageId: number) => {
+  const stage = curStageData.value.backends.find(item => item.id === stageId);
+  if (stage) {
+    if (value === 'chash') {
+      stage.config.hash_on = 'vars';
+      stage.config.key = 'remote_addr';
+    }
+    else {
+      delete stage.config.hash_on;
+      delete stage.config.key;
+    }
+  }
+};
+
+const handleHashOnChange = (value: string, stageId: number) => {
+  const stage = curStageData.value.backends.find(item => item.id === stageId);
+  if (stage) {
+    if (value === 'vars') {
+      stage.config.key = 'remote_addr';
+    }
+    else {
+      stage.config.key = '';
+    }
+  }
+};
+
+const handleHashOnKeyChange = (config: any) => {
+  const stage = curStageData.value.backends.find(item => item.id === config.id);
+  if (stage) {
+    stage.config.key = config.config.key;
+  }
 };
 
 // 确定
