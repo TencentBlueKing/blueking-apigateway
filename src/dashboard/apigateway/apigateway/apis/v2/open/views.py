@@ -657,7 +657,7 @@ class GatewayResourceDetailApi(generics.RetrieveAPIView):
             "schema": resource_schema or {},
             "doc": doc_info,
             "auth_config": {
-                "verified_user_required": resource_data.verified_user_required,
+                "auth_verified_required": resource_data.verified_user_required,
                 "app_verified_required": resource_data.verified_app_required,
                 "resource_perm_required": resource_data.resource_perm_required,
             },

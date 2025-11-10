@@ -78,7 +78,7 @@
             "updated_time": "2025-01-10T15:30:00Z"
         },
         "auth_config": {
-            "verified_user_required": true,
+            "auth_verified_required": true,
             "app_verified_required": true,
             "resource_perm_required": true
         }
@@ -142,7 +142,7 @@ OpenAPI 3.0 格式的 Schema 定义，包含以下常见字段：
 
 | 参数名称                     | 参数类型    | 描述       |
 |--------------------------|---------|----------|
-| verified_user_required   | boolean | 是否需要用户认证 |
+| auth_verified_required   | boolean | 是否需要用户认证 |
 | app_verified_required    | boolean | 是否需要应用认证 |
 | resource_perm_required   | boolean | 是否需要资源权限 |
 

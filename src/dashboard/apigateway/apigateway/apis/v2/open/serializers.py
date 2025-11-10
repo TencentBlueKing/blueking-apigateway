@@ -323,7 +323,9 @@ class GatewayResourceListOutputSLZ(serializers.Serializer):
 
     id = serializers.IntegerField(read_only=True, help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
-    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
+    description = SerializerTranslatedField(
+        default_field="description_i18n", translated_fields={"en": "description_en"}
+    )
     method = serializers.CharField(read_only=True, help_text="请求方法")
     path = serializers.SerializerMethodField(help_text="资源路径")
     match_subpath = serializers.BooleanField(read_only=True, help_text="是否匹配子路径")
