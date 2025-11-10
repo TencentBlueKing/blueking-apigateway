@@ -132,6 +132,7 @@
         class="empty-wrapper"
       >
         <TableEmpty
+          background="#f5f7fa"
           :empty-type="tableEmptyConf.emptyType"
           :abnormal="tableEmptyConf.isAbnormal"
           @refresh="getList"

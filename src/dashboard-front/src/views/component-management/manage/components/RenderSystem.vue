@@ -132,7 +132,7 @@ const allCount = computed(() => {
 
 const updateTableEmptyConfig = () => {
   if (searchValue.value && !curList.value.length) {
-    tableEmptyConf.emptyType = 'searchEmpty';
+    tableEmptyConf.emptyType = 'search-empty';
     return;
   }
   if (searchValue.value.length) {

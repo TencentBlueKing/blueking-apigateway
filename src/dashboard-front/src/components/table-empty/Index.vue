@@ -52,7 +52,7 @@ import { useI18n } from 'vue-i18n';
 import { cloneDeep } from 'lodash-es';
 
 interface IProps {
-  emptyType?: 'empty' | 'search-empty' | 'refresh'
+  emptyType?: 'empty' | 'search-empty' | 'searchEmpty' | 'refresh'
   error?: Record<string, any> | null
   queryListParams?: any[]
   background?: string
@@ -88,7 +88,7 @@ const exceptionAttrs = computed(() => {
       delete queryParams[key];
     }
   });
-  if (Object.keys(queryParams).length > 0 || ['search-empty'].includes(emptyType)) {
+  if (Object.keys(queryParams).length > 0 || ['search-empty', 'searchEmpty'].includes(emptyType)) {
     return {
       type: 'search-empty',
       title: t('搜索结果为空'),

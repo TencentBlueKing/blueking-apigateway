@@ -211,6 +211,7 @@
 import TableEmpty from '@/components/table-empty/Index.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useRouteParams } from '@vueuse/router';
+import { useGateway } from '@/stores';
 import {
   type IMCPServerTool,
   getServer,
@@ -241,6 +242,7 @@ const route = useRoute();
 const router = useRouter();
 // 网关id
 const gatewayId = useRouteParams('id', 0, { transform: Number });
+const gatewayStore = useGateway();
 
 const md = new MarkdownIt({
   linkify: false,
@@ -474,7 +476,7 @@ const handleNavDocDetail = () => {
     name: 'ApiDocDetail',
     params: {
       curTab: 'gateway',
-      targetName: server.gateway?.name,
+      targetName: gatewayStore.currentGateway?.name,
     },
     query: { apiName: selectedTool.value.name },
   });

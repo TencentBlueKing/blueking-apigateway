@@ -78,6 +78,7 @@
       row-key="event_id"
       show-settings
       resizable
+      :max-limit-config="{ allocatedHeight: 260, mode: 'tdesign'}"
       :filter-value="filterData"
       :api-method="getTableData"
       :columns="tableColumns"
