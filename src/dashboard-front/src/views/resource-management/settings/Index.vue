@@ -474,6 +474,7 @@ const queryName = useRouteQuery('name');
 const queryPath = useRouteQuery('path');
 const queryMethod = useRouteQuery('method');
 const queryBackendName = useRouteQuery('backend_name');
+const queryBackendId = useRouteQuery('backend_id');
 
 const tableData = ref<any[]>([]);
 const tableRef = useTemplateRef('tableRef');
@@ -557,6 +558,11 @@ const searchData = shallowRef([
     name: t('后端服务'),
     id: 'backend_name',
     placeholder: t('请输入后端服务'),
+  },
+  {
+    name: t('后端服务ID'),
+    id: 'backend_id',
+    placeholder: t('请输入后端服务ID'),
   },
 ]);
 
@@ -998,6 +1004,8 @@ watch(
 watch(
   searchValue,
   () => {
+    tableQueries.value = { order_by: tableQueries.value.order_by };
+
     if (route.query?.backend_id) {
       const { backend_id } = route.query;
       tableQueries.value.backend_id = backend_id;
@@ -1039,6 +1047,9 @@ watch(
         else if (e.id === 'backend_name') {
           queryBackendName.value = e.values[0].id;
         }
+        else if (e.id === 'backend_id') {
+          queryBackendId.value = e.values[0].id;
+        }
       });
     }
     else {
@@ -1048,6 +1059,7 @@ watch(
       queryPath.value = undefined;
       queryMethod.value = undefined;
       queryBackendName.value = undefined;
+      queryBackendId.value = undefined;
     }
 
     exportDropData.value.forEach((e: IDropList) => {
@@ -1072,19 +1084,6 @@ watch(tableQueries, () => {
 watch(
   () => route.query,
   () => {
-    if (route.query?.backend_id) {
-      const { backend_id } = route.query;
-      tableQueries.value.backend_id = backend_id;
-    }
-    if (resourceSettingStore.previousPagination) {
-      nextTick(() => {
-        const { current, pageSize } = resourceSettingStore.previousPagination;
-        tableRef.value?.setPagination({
-          current,
-          pageSize,
-        });
-      });
-    }
     if (route.query?.keyword) {
       queryKeyword.value = route.query.keyword as string;
       const searchValueItem = searchValue.value.find((item: any) => item.id === queryKeyword.value);
@@ -1114,7 +1113,7 @@ watch(
     }
     if (route.query?.path) {
       queryPath.value = route.query.path as string;
-      const searchValueItem = searchValue.value.find((item: any) => item.id === 'name');
+      const searchValueItem = searchValue.value.find((item: any) => item.id === 'path');
       if (!searchValueItem) {
         searchValue.value.push({
           id: 'path',
@@ -1130,7 +1129,7 @@ watch(
     }
     if (route.query?.method) {
       queryMethod.value = route.query.method as string;
-      const searchValueItem = searchValue.value.find((item: any) => item.id === 'name');
+      const searchValueItem = searchValue.value.find((item: any) => item.id === 'method');
       if (!searchValueItem) {
         searchValue.value.push({
           id: 'method',
@@ -1144,7 +1143,7 @@ watch(
     }
     if (route.query?.backend_name) {
       queryBackendName.value = route.query.backend_name as string;
-      const searchValueItem = searchValue.value.find((item: any) => item.id === 'name');
+      const searchValueItem = searchValue.value.find((item: any) => item.id === 'backend_name');
       if (!searchValueItem) {
         searchValue.value.push({
           id: 'backend_name',
@@ -1157,6 +1156,31 @@ watch(
           ],
         });
       }
+    }
+    if (route.query?.backend_id) {
+      queryBackendId.value = route.query.backend_id as string;
+      const searchValueItem = searchValue.value.find((item: any) => item.id === 'backend_id');
+      if (!searchValueItem) {
+        searchValue.value.push({
+          id: 'backend_id',
+          name: t('后端服务ID'),
+          values: [
+            {
+              id: queryBackendId.value,
+              name: queryBackendId.value,
+            },
+          ],
+        });
+      }
+    }
+    if (resourceSettingStore.previousPagination) {
+      nextTick(() => {
+        const { current, pageSize } = resourceSettingStore.previousPagination;
+        tableRef.value?.setPagination({
+          current,
+          pageSize,
+        });
+      });
     }
   },
   {
