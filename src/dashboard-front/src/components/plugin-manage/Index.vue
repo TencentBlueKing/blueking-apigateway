@@ -302,13 +302,16 @@
                   </div>
                 </div>
               </div>
-              <TableEmpty
-                v-if="!pluginListDate.length"
-                :empty-type="tableEmptyConf.emptyType"
-                :abnormal="tableEmptyConf.isAbnormal"
-                @refresh="handleSearch"
-                @clear-filter="handleClearFilterKey"
-              />
+              <div class="mt-82px">
+                <TableEmpty
+                  v-if="!pluginListDate.length"
+                  background="#f5f7fa"
+                  :empty-type="tableEmptyConf.emptyType"
+                  :abnormal="tableEmptyConf.isAbnormal"
+                  @refresh="handleSearch"
+                  @clear-filter="handleClearFilterKey"
+                />
+              </div>
             </BkLoading>
           </div>
           <!-- 配置插件 -->

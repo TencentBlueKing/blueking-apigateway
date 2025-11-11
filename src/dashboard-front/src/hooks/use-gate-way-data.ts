@@ -28,11 +28,13 @@ const initPagination: IPagination = {
 };
 const pagination = ref<IPagination>(initPagination);
 const dataList = ref<IApiGateway[]>([]);
+const isLoading = ref(false);
 
 // 自定义hook，用于获取API列表
 export function useGatewaysList(filter: Ref) {
   // 异步获取网关列表数据
   const getGatewaysListData = async () => {
+    isLoading.value = true;
     try {
       const params = {
         limit: pagination.value.limit,
@@ -49,6 +51,9 @@ export function useGatewaysList(filter: Ref) {
     catch (error) {
       console.error(error);
     }
+    finally {
+      isLoading.value = false;
+    }
   };
 
   // 监听输入框改变
@@ -64,5 +69,6 @@ export function useGatewaysList(filter: Ref) {
     getGatewaysListData,
     dataList,
     pagination,
+    isLoading,
   };
 };
