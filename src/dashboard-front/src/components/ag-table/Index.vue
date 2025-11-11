@@ -86,13 +86,15 @@
       <BkLoading :loading="loading" />
     </template>
     <template #empty>
-      <TableEmpty
-        :error="error"
-        :empty-type="tableEmptyType"
-        :query-list-params="params"
-        @clear-filter="handlerClearFilter"
-        @refresh="handleRefresh"
-      />
+      <slot name="empty">
+        <TableEmpty
+          :error="error"
+          :empty-type="tableEmptyType"
+          :query-list-params="params"
+          @clear-filter="handlerClearFilter"
+          @refresh="handleRefresh"
+        />
+      </slot>
     </template>
   </PrimaryTable>
 </template>
