@@ -78,6 +78,7 @@
         :api-method="getTableData"
         :columns="tableColumns"
         @clear-filter="handleClearFilter"
+        @clear-selection="isBatchRenewal = false"
         @filter-change="handleFilterChange"
         @selection-change="handleSelectionChange"
       />
