@@ -47,7 +47,14 @@
         :row-class-name="getRowClassName"
         @filter-change="handleFilterChange"
         @clear-filter="handleClearQueries"
-      />
+      >
+        <template #empty>
+          <TableEmpty
+            :empty-type="filterValue.keyword ? 'search-empty' : 'empty'"
+            @clear-filter="filterValue.keyword = ''"
+          />
+        </template>
+      </AgTable>
     </div>
   </template>
 
@@ -82,6 +89,7 @@ import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import { METHOD_THEMES } from '@/enums';
 import { HTTP_METHODS } from '@/constants';
 import { cloneDeep } from 'lodash-es';
+import TableEmpty from '@/components/table-empty/Index.vue';
 
 interface IProps {
   stageAddress: string
