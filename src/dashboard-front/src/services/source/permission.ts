@@ -15,6 +15,7 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
+import { blobDownLoad } from '@/utils/blobDownload';
 import http from '../http';
 
 export interface IBatchUpdateParams {
@@ -221,7 +222,11 @@ export function getResourceListData(apigwId: number, params: {
  * @param params 导出参数
  */
 export async function exportPermissionList(apigwId: number, params: IExportParams) {
-  return http.post(`/gateways/${apigwId}/permissions/app-permissions/export/`, params);
+  const res = await http.post(`/gateways/${apigwId}/permissions/app-permissions/export/`, params, {
+    responseType: 'blob',
+    catchError: true,
+  });
+  return blobDownLoad(res);
 };
 
 /**
