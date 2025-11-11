@@ -102,7 +102,7 @@
         </BkCollapse>
         <template v-else-if="keyword">
           <TableEmpty
-            :keyword="keyword"
+            empty-type="search-empty"
             @clear-filter="keyword = ''"
           />
         </template>
