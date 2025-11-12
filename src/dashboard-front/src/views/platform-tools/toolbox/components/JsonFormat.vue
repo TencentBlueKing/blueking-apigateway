@@ -54,7 +54,7 @@
       </div>
     </div>
     <div class="decode-section-wrapper">
-      <div class="decode-section-header">
+      <div class="flex items-center justify-between decode-section-header">
         <div class="section-header">
           <span class="header-title">{{ t('转化结果') }}</span>
           <span class="header-subtitle">{{ t('（以下是转化的结果）') }}</span>
@@ -213,9 +213,9 @@ const highlightJson = (value: string) => {
     overflow-y: auto;
 
     .decode-section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      position: sticky;
+      top: 0;
+      background-color: #ffffff;
 
       .copy-btn {
         font-size: 12px;
