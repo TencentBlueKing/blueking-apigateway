@@ -42,6 +42,7 @@
       .encoded-input-comp {
 
         :deep(textarea) {
+          height: 100%;
           padding: 10px 16px;
         }
 
@@ -57,6 +58,12 @@
 
   .decode-section-wrapper {
     overflow-y: auto;
+
+    .decode-section-header {
+      position: sticky;
+      top: 0;
+      background-color: #ffffff;
+    }
 
     .decode-result {
       height: 100%;

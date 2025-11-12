@@ -239,6 +239,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   },
   {
     colKey: 'plugins',
+    displayTitle: t('生效的插件'),
     title: () => {
       return (
         <div>
@@ -269,7 +270,6 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         </div>
       );
     },
-    ellipsis: true,
     cell: (h, { row }) => (
       row.plugins?.length
         ? (

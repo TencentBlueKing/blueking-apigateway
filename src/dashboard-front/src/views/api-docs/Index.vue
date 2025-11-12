@@ -417,6 +417,8 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     : []),
   {
     colKey: 'is_plugin_gateway',
+    displayTitle: t('是否为插件网关'),
+    width: 180,
     title: () => {
       return (
         <div
@@ -434,7 +436,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'actions',
     title: t('操作'),
-    width: 100,
+    width: 120,
     fixed: 'right',
     cell: (h, { row }) => (
       <bk-button
