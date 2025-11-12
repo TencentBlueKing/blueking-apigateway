@@ -373,6 +373,7 @@ const getResponseHeader = (row: Record<string, any>) => {
   if (!row) return [];
 
   const { headers } = row.response.data;
+  console.log(headers);
   const keys = Object.keys(headers);
 
   if (!keys?.length) {

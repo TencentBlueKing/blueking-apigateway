@@ -38,7 +38,7 @@
               {{ mcpDetails?.name }}
             </div>
             <BkTag
-              v-if="mcpDetails?.is_public"
+              v-if="mcpDetails?.gateway?.is_official"
               theme="success"
               class="mr8"
             >
