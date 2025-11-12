@@ -109,7 +109,7 @@ class RouteConvertor(GatewayResourceConvertor):
             plugins=plugins,
             service_id=service_id,
             # NOTE: should not set upstream here!
-            labels=self.get_gateway_resource_labels(),
+            labels=self.get_labels(),
         )
         if priority:
             route.priority = priority
@@ -234,7 +234,7 @@ class RouteConvertor(GatewayResourceConvertor):
             timeout=Timeout(connect=60, send=60, read=60),
             plugins=plugins,
             service_id=None,
-            labels=self.get_gateway_resource_labels(),
+            labels=self.get_labels(),
         )
 
     def _calculate_match_subpath_route_priority(self, path: str) -> int:

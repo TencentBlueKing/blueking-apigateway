@@ -437,11 +437,13 @@ class TestPluginMetadata:
         metadata = PluginMetadata(
             id="plugin-metadata-1",
             config={"key": "value"},
+            labels=Labels(gateway="test"),
         )
 
         assert metadata.id == "plugin-metadata-1"
         assert metadata.kind == "plugin_metadata"
         assert metadata.config == {"key": "value"}
+        assert metadata.labels == Labels(gateway="test")
 
 
 class TestApisixModelValidation:

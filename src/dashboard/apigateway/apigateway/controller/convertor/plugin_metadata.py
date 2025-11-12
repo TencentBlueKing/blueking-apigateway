@@ -42,6 +42,7 @@ class PluginMetadataConvertor(GlobalResourceConvertor):
             PluginMetadata(
                 id=name,
                 **config,
+                labels=self.get_labels(),
             )
             for name, config in settings.PLUGIN_METADATA_CONFIG.items()
         ]

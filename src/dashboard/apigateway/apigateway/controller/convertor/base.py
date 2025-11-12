@@ -35,9 +35,18 @@ class BaseResourceConvertor(ABC):
     def convert(self):
         raise NotImplementedError()
 
+    @abstractmethod
+    def get_labels(self) -> Labels:
+        raise NotImplementedError()
+
 
 class GlobalResourceConvertor(BaseResourceConvertor):
-    pass
+    def get_labels(self) -> Labels:
+        return Labels(
+            **{
+                LABEL_KEY_APISIX_VERSION: DEFAULT_APISIX_VERSION,
+            }
+        )
 
 
 class GatewayResourceConvertor(BaseResourceConvertor):
@@ -79,7 +88,7 @@ class GatewayResourceConvertor(BaseResourceConvertor):
     def convert(self) -> List[ApisixModel]:
         raise NotImplementedError()
 
-    def get_gateway_resource_labels(self) -> Labels:
+    def get_labels(self) -> Labels:
         return Labels(
             **{
                 LABEL_KEY_GATEWAY: self.gateway_name,

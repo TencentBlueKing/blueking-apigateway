@@ -37,6 +37,6 @@ class BkReleaseConvertor(GatewayResourceConvertor):
                 publish_time=now_str(),
                 apisix_version=self._apisix_version,
                 resource_version=self._release_data.resource_version.version,
-                labels=self.get_gateway_resource_labels(),
+                labels=self.get_labels(),
             )
         ]

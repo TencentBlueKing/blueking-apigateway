@@ -88,16 +88,16 @@ class TestGatewayResourceConvertor:
         """Test stage_name property"""
         assert convertor.stage_name == "prod"
 
-    def test_get_gateway_resource_labels(self, convertor):
+    def test_get_labels(self, convertor):
         """Test get_gateway_resource_labels method"""
-        labels = convertor.get_gateway_resource_labels()
+        labels = convertor.get_labels()
 
         assert labels.get_label(LABEL_KEY_GATEWAY) == "test-gateway"
         assert labels.get_label(LABEL_KEY_STAGE) == "prod"
         assert labels.get_label(LABEL_KEY_PUBLISH_ID) == "123"
         assert labels.get_label(LABEL_KEY_APISIX_VERSION) == DEFAULT_APISIX_VERSION
 
-    def test_get_gateway_resource_labels_custom_version(self, mock_release_data):
+    def test_get_labels_custom_version(self, mock_release_data):
         """Test get_gateway_resource_labels with custom apisix version"""
 
         class TestConvertor(GatewayResourceConvertor):
@@ -105,7 +105,7 @@ class TestGatewayResourceConvertor:
                 return []
 
         convertor = TestConvertor(mock_release_data, publish_id=123, apisix_version="3.14")
-        labels = convertor.get_gateway_resource_labels()
+        labels = convertor.get_labels()
 
         assert labels.get_label(LABEL_KEY_APISIX_VERSION) == "3.14"
 

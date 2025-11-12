@@ -313,6 +313,9 @@ class GlobalApisixModel(ApisixModel):
     Base class for global models that do not belong to gateway.
     """
 
+    # NOTE: we required the labels here, add apisix version label here
+    labels: Labels = Field(description="labels")
+
 
 class PluginMetadata(GlobalApisixModel):
     kind = "plugin_metadata"
