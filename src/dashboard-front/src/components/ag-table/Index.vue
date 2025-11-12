@@ -364,7 +364,15 @@ watch(tableSetting, () => {
     tableSetting.value = {
       size: 'medium',
       rowSize: 'medium',
-      checked: [],
+      checked: tableColumns.value?.map(col => col.colKey),
+      fields: tableColumns.value.map((col) => {
+        return {
+          label: col.displayTitle ?? col.title,
+          field: col.colKey,
+        };
+      }),
+      // 默认禁用第一项展示文本的表列，不允许取消全部表列
+      disabled: [tableColumns.value?.filter(col => !['row-select', 'serial-number'].includes(col.colKey))?.[0]?.colKey],
     };
   }
 }, { immediate: true });
