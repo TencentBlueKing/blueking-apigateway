@@ -51,7 +51,7 @@ def delete_old_resource_doc_version_records():
 
     delete_end_time = datetime.now() - timedelta(days=settings.CLEAN_TABLE_INTERVAL_DAYS)
 
-    # 找到所有 CLEAN_TABLE_INTERVAL_DAYS以前的 ResourceVersion
+    # 找到所有 CLEAN_TABLE_INTERVAL_DAYS 以前的 ResourceVersion
     old_resource_doc_versions = ResourceDocVersion.objects.filter(created_time__lt=delete_end_time)
 
     # 找到所有在 Release 中引用的 ResourceVersion

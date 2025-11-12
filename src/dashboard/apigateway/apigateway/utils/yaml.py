@@ -17,10 +17,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from collections import OrderedDict
-from enum import Enum
 
-import ruamel
-from ruamel.yaml import YAML, Dumper
+from ruamel.yaml import YAML
 from ruamel.yaml import resolver as yaml_resolver
 from ruamel.yaml.compat import StringIO
 
@@ -106,8 +104,8 @@ def yaml_export_dumps(data):
     return stream.getvalue()
 
 
-def yaml_load_all(content):
-    return _yaml.load_all(content)
+# def yaml_load_all(content):
+#     return _yaml.load_all(content)
 
 
 def yaml_dumps(data):
@@ -120,39 +118,8 @@ def yaml_dumps(data):
     return stream.getvalue()
 
 
-def yaml_dumps_multiline_string(data):
-    return ruamel.yaml.dump(data, default_style="|")
-
-
-class YamlRepresenterHookMixin:
-    """This mixin is used to add a representer hook to the yaml dumper."""
-
-    def __init_subclass__(cls, **kwargs):
-        _yaml.representer.add_representer(cls, cls.yaml_representer)
-
-    @classmethod
-    def yaml_representer(cls, dumper: Dumper, data):
-        """This method is used to represent the data in the yaml, work for yaml_dumps."""
-
-        raise NotImplementedError
-
-
-class YamlRepresenterEnum(YamlRepresenterHookMixin, Enum):
-    """This class is bound to the enum class, and used to represent the enum in the yaml."""
-
-    def __reduce_ex__(self, proto):
-        # this method is used to help the pickle library to handle the enum classes under python3.6
-        return self.name
-
-    @classmethod
-    def yaml_representer(cls, dumper: Dumper, data):
-        data_type = type(data.value)
-        representer_name = f"represent_{data_type.__name__}"
-        representer = getattr(dumper, representer_name, None)
-        if not representer:
-            raise NotImplementedError(representer_name)
-
-        return representer(data.value)
+# def yaml_dumps_multiline_string(data):
+#     return ruamel.yaml.dump(data, default_style="|")
 
 
 def multiline_str_presenter(dumper, data):
