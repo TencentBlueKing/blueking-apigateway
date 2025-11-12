@@ -36,13 +36,14 @@ class AppGatewayPermissionManager(models.Manager):
         return self.filter(bk_app_code=bk_app_code, gateway__is_public=True)
 
     def save_permissions(self, gateway, resource_ids=None, bk_app_code=None, grant_type=None, expire_days=None):
-        self.update_or_create(
+        obj, _ = self.update_or_create(
             gateway=gateway,
             bk_app_code=bk_app_code,
             defaults={
                 "expires": calculate_expires(expire_days),
             },
         )
+        return obj
 
     def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS):
         queryset = self.filter(gateway=gateway, id__in=ids)

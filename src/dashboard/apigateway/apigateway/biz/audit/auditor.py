@@ -379,7 +379,9 @@ class Auditor:
     ):
         if comment is None:
             comment = {
-                OpTypeEnum.DELETE: "删除 应用权限",
+                OpTypeEnum.CREATE: "创建应用权限",
+                OpTypeEnum.MODIFY: "更新应用权限",
+                OpTypeEnum.DELETE: "删除应用权限",
             }.get(op_type, "-")
 
         record_audit_log(

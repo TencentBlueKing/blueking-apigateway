@@ -204,14 +204,67 @@ class AppPermissionRenewApi(generics.CreateAPIView):
         data = slz.validated_data
 
         if data["resource_dimension_ids"]:
+            # 查询更新之前的资源权限
+            before_queryset = list(
+                AppResourcePermission.objects.filter(
+                    gateway=request.gateway,
+                    id__in=data["resource_dimension_ids"],
+                )
+            )
             AppResourcePermission.objects.renew_by_ids(
                 gateway=request.gateway, ids=data["resource_dimension_ids"], expires=data["expire_days"]
             )
+            # 查询更新之后的资源权限
+            after_queryset = AppResourcePermission.objects.filter(
+                gateway=request.gateway,
+                id__in=data["resource_dimension_ids"],
+            )
+
+            resource_dimension_ids = [str(dimension_id) for dimension_id in data["resource_dimension_ids"]]
+            bk_app_codes = [perm.bk_app_code for perm in before_queryset]
+
+            Auditor.record_permission_op_success(
+                op_type=OpTypeEnum.MODIFY,
+                username=request.user.username,
+                gateway_id=request.gateway.id,
+                instance_id=";".join(resource_dimension_ids),
+                instance_name=";".join(bk_app_codes),
+                data_before=[get_model_dict(perm) for perm in before_queryset],
+                data_after=[get_model_dict(perm) for perm in after_queryset],
+                comment="批量续期资源",
+            )
 
         if data["gateway_dimension_ids"]:
+            # 查询更新之前的网关权限
+            before_queryset = list(
+                AppGatewayPermission.objects.filter(
+                    gateway=request.gateway,
+                    id__in=data["gateway_dimension_ids"],
+                )
+            )
             AppGatewayPermission.objects.renew_by_ids(
                 gateway=request.gateway, ids=data["gateway_dimension_ids"], expires=data["expire_days"]
             )
+            # 查询更新之后的网关权限
+            after_queryset = AppGatewayPermission.objects.filter(
+                gateway=request.gateway,
+                id__in=data["gateway_dimension_ids"],
+            )
+
+            gateway_dimension_ids = [str(dimension_id) for dimension_id in data["gateway_dimension_ids"]]
+            bk_app_codes = [perm.bk_app_code for perm in before_queryset]
+
+            Auditor.record_permission_op_success(
+                op_type=OpTypeEnum.MODIFY,
+                username=request.user.username,
+                gateway_id=request.gateway.id,
+                instance_id=";".join(gateway_dimension_ids),
+                instance_name=";".join(bk_app_codes),
+                data_before=[get_model_dict(perm) for perm in before_queryset],
+                data_after=[get_model_dict(perm) for perm in after_queryset],
+                comment="批量续期网关",
+            )
+
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
 
@@ -373,6 +426,24 @@ class AppResourcePermissionCreateApi(generics.CreateAPIView):
             grant_type=GrantTypeEnum.INITIALIZE.value,
         )
 
+        # 查询授权后的资源权限
+        queryset = AppResourcePermission.objects.filter(
+            gateway=request.gateway,
+            bk_app_code=data["bk_app_code"],
+            resource_id__in=data["resource_ids"],
+        )
+
+        Auditor.record_permission_op_success(
+            op_type=OpTypeEnum.CREATE,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=";".join([str(perm.id) for perm in queryset]),
+            instance_name=data["bk_app_code"],
+            data_before={},
+            data_after=[get_model_dict(perm) for perm in queryset],
+            comment="资源权限主动授权",
+        )
+
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
 
@@ -462,12 +533,23 @@ class AppGatewayPermissionCreateApi(generics.CreateAPIView):
 
         data = slz.validated_data
 
-        AppGatewayPermission.objects.save_permissions(
+        instance = AppGatewayPermission.objects.save_permissions(
             gateway=request.gateway,
             resource_ids=data["resource_ids"],
             bk_app_code=data["bk_app_code"],
             expire_days=data["expire_days"],
             grant_type=GrantTypeEnum.INITIALIZE.value,
+        )
+
+        Auditor.record_permission_op_success(
+            op_type=OpTypeEnum.CREATE,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=instance.id,
+            instance_name=instance.bk_app_code,
+            data_before={},
+            data_after=get_model_dict(instance),
+            comment="网关权限主动授权",
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
