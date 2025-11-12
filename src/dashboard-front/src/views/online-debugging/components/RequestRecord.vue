@@ -122,7 +122,7 @@
                     </div>
                   </div>
                   <div
-                    v-show="row?.activeIndex !== 'requestHeader'"
+                    v-show="!['requestHeader', 'responseHeader']?.includes(row?.activeIndex)"
                     class="header-copy"
                   >
                     <CopyShape @click="() => handleCopyDetails(row)" />
@@ -199,6 +199,22 @@
                       :minimap="false"
                       :show-copy="false"
                       read-only
+                    />
+                  </div>
+
+                  <div
+                    v-show="row?.activeIndex === 'responseHeader'"
+                    class="content-item request-header"
+                  >
+                    <BkTable
+                      class="request-header-table"
+                      size="small"
+                      row-hover="auto"
+                      header-align="left"
+                      max-height="252px"
+                      stripe
+                      :columns="requestHeaderCols"
+                      :data="() => getResponseHeader(row)"
                     />
                   </div>
                 </div>
@@ -291,6 +307,10 @@ const tabList = ref([
     name: 'Response Body',
     id: 'responseBody',
   },
+  {
+    name: 'Response Header',
+    id: 'responseHeader',
+  },
 ]);
 const requestHeaderCols = [
   {
@@ -335,6 +355,24 @@ const getRequestHeader = (row: Record<string, any>) => {
   if (!row) return [];
 
   const { headers } = row.request;
+  const keys = Object.keys(headers);
+
+  if (!keys?.length) {
+    return [];
+  }
+
+  return keys.map((key) => {
+    return {
+      name: key,
+      value: headers[key],
+    };
+  });
+};
+
+const getResponseHeader = (row: Record<string, any>) => {
+  if (!row) return [];
+
+  const { headers } = row.response.data;
   const keys = Object.keys(headers);
 
   if (!keys?.length) {
