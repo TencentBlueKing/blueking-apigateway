@@ -217,6 +217,7 @@ import { Message } from 'bkui-vue';
 import { useRouteParams } from '@vueuse/router';
 import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
 import { getAICompletion } from '@/services/source/ai.ts';
+import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 
 interface IProps {
@@ -536,7 +537,9 @@ const observerBtnScroll = () => {
   resizeObserver = new ResizeObserver(() => {
     controlToggle();
   });
-  resizeObserver?.observe(parentDom);
+  if (parentDom) {
+    resizeObserver?.observe(parentDom);
+  }
 };
 
 const destroyEvent = () => {
