@@ -270,6 +270,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         </div>
       );
     },
+    ellipsis: true,
     cell: (h, { row }) => (
       row.plugins?.length
         ? (
