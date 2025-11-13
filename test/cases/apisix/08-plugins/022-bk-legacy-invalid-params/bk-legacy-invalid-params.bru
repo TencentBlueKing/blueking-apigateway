@@ -1,0 +1,26 @@
+meta {
+  name: bk-legacy-invalid-params
+  type: http
+  seq: 22
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/smoke/prod/bk-legacy-invalid-params?a=1&b=2
+  body: none
+  auth: none
+}
+
+params:query {
+  a: 1
+  b: 2
+}
+
+headers {
+  X-Bkapi-Authorization: {"access_token": "{{access_token}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.args["a"]: eq "1"
+  res.body.args["b"]: eq "2"
+}

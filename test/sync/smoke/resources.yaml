@@ -530,3 +530,85 @@ paths:
           appVerifiedRequired: false
           resourcePermissionRequired: false
         descriptionEn:
+  /bk-user-restriction-tom:
+    get:
+      operationId: bk-user-restriction-tom
+      description: ''
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          name: default
+          method: get
+          path: /get
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs:
+        - type: bk-user-restriction
+          yaml: |-
+            whitelist:
+              - key: "tom"
+        authConfig:
+          userVerifiedRequired: true
+          appVerifiedRequired: false
+          resourcePermissionRequired: false
+        descriptionEn:
+  /bk-user-restriction-admin:
+    get:
+      operationId: bk-user-restriction-admin
+      description: ''
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          name: default
+          method: get
+          path: /get
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs:
+        - type: bk-user-restriction
+          yaml: |-
+            whitelist:
+              - key: "admin"
+        authConfig:
+          userVerifiedRequired: true
+          appVerifiedRequired: false
+          resourcePermissionRequired: false
+        descriptionEn:
+  /bk-legacy-invalid-params:
+    get:
+      operationId: bk-legacy-invalid-params
+      description: ''
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        backend:
+          name: default
+          method: get
+          path: /get
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs:
+        - type: bk-legacy-invalid-params
+          yaml: '{}'
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: false
+          resourcePermissionRequired: false
+        descriptionEn:
