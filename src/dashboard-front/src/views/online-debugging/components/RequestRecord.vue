@@ -32,6 +32,7 @@
             :placeholder="t('请输入资源名称')"
             @blur="getList()"
             @enter="getList()"
+            @input="handleInput"
           />
           <BkDatePicker
             ref="topDatePicker"
@@ -435,6 +436,12 @@ const handleClearFilterKey = () => {
   clear();
   getList();
   dateKey.value = String(+new Date());
+};
+
+const handleInput = () => {
+  if (!filterData.value.resource_name) {
+    getList();
+  }
 };
 
 const getDetails = async (id: number, row: Record<string, any>) => {

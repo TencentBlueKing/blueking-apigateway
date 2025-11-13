@@ -36,6 +36,7 @@
             @enter="getList"
             @blur="getList"
             @clear="getList"
+            @input="handleInput"
           />
           <!-- <BkCheckbox v-model="isPublic">{{ t('仅展示官方') }}</BkCheckbox> -->
         </div>
@@ -194,6 +195,12 @@ const getList = async () => {
   mcpAllList.value = res.results;
 };
 getList();
+
+const handleInput = () => {
+  if (!search.value) {
+    getList();
+  }
+};
 
 const handleCopy = (str: string) => {
   copy(str);
