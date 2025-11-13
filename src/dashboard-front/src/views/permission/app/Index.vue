@@ -546,6 +546,7 @@ const handleBatchConfirm = async () => {
     });
     batchApplySliderConf.isShow = false;
     ApplyDialogConf.isShow = false;
+    handleClearSelection();
     getList();
   }
   finally {

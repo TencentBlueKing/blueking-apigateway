@@ -25,7 +25,7 @@
         'primary-table-no-data': !localTableData.length
       }
     ]"
-    :size="tableSetting.rowSize ?? 'medium'"
+    :size="tableSetting?.rowSize ?? 'medium'"
     :data="localTableData"
     :columns="tableColumns"
     :pagination="pagination"
@@ -124,6 +124,7 @@ interface IProps {
   showFirstFullRow?: boolean
   showSelection?: boolean
   showSettings?: boolean
+  showPagination?: boolean
   tableLayout?: string
   tableEmptyType?: 'empty' | 'search-empty'
   maxLimitConfig?: Record<string, any> | null
@@ -157,6 +158,8 @@ const {
   disabledCheckSelection = undefined,
   // 表格最大可分页数量配置项
   maxLimitConfig = {},
+  // 显示分页组件
+  showPagination = true,
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -222,6 +225,17 @@ if (Object.keys(maxLimitConfig)?.length) {
   pagination.value = Object.assign(pagination.value, {
     pageSize: maxTableLimit,
     pageSizeOptions: sortedUniq(sortBy([10, 20, 50, 100, maxTableLimit])),
+  });
+}
+
+// 隐藏分页组件相关配置项
+if (!showPagination) {
+  pagination.value = Object.assign(pagination.value, {
+    showJumper: false,
+    showPageSize: false,
+    showPageNumber: false,
+    showPreviousAndNextBtn: false,
+    totalContent: false,
   });
 }
 
