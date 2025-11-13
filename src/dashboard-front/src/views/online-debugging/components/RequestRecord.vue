@@ -52,62 +52,21 @@
         </div>
 
         <div class="history-data">
-          <BkTable
+          <AgTable
             ref="tableRef"
-            size="small"
-            class="history-table"
-            border="outer"
-            :data="tableList"
-            :row-style="{ cursor: 'pointer' }"
-            show-overflow-tooltip
-            :pagination="pagination"
-            @row-click="handleRowClick"
+            v-model:table-data="tableData"
+            row-class-name="cursor-pointer"
+            :columns="columns"
+            resizable
+            show-settings
+            expand-on-row-click
+            :expanded-row-keys="expandedRowKeys"
+            :filter-value="filterData"
+            :api-method="getTableData"
+            @expand-change="handleExpandChange"
+            @clear-filter="handleClearFilterKey"
           >
-            <BkTableColumn
-              :label="t('资源名称')"
-              prop="resource_name"
-            />
-            <BkTableColumn
-              :label="t('响应状态码')"
-              prop="status_code"
-              width="120"
-            >
-              <template #default="{ data }">
-                <span
-                  class="dot"
-                  :class="[String(data?.response?.data?.status_code)?.startsWith('2') ? 'success' : 'failure']"
-                />
-                {{ data?.response?.data?.status_code }}
-              </template>
-            </BkTableColumn>
-            <BkTableColumn
-              :label="t('耗时')"
-              prop="proxy_time"
-              width="120"
-            >
-              <template #default="{ data }">
-                {{ data?.response?.data?.proxy_time }} ms
-              </template>
-            </BkTableColumn>
-            <BkTableColumn
-              :label="t('调用时间')"
-              prop="created_time"
-            />
-            <BkTableColumn
-              :label="t('操作')"
-              width="120"
-            >
-              <template #default="{ row }">
-                <BkButton
-                  theme="primary"
-                  text
-                  @click="(e: any) => handleShowDetails(e, row)"
-                >
-                  {{ t('请求详情') }}
-                </BkButton>
-              </template>
-            </BkTableColumn>
-            <template #expandRow="row">
+            <template #expandedRow="{ row }">
               <div class="details-tab">
                 <div class="tab-header">
                   <div class="header-title">
@@ -158,15 +117,15 @@
                     v-show="row?.activeIndex === 'requestHeader'"
                     class="content-item request-header"
                   >
-                    <BkTable
+                    <AgTable
                       class="request-header-table"
                       size="small"
-                      row-hover="auto"
-                      header-align="left"
                       max-height="252px"
-                      stripe
+                      table-row-key="value"
+                      local-page
+                      show-settings
+                      :table-data="getRequestHeader(row)"
                       :columns="requestHeaderCols"
-                      :data="() => getRequestHeader(row)"
                     />
                   </div>
 
@@ -206,41 +165,35 @@
                     v-show="row?.activeIndex === 'responseHeader'"
                     class="content-item request-header"
                   >
-                    <BkTable
+                    <AgTable
                       class="request-header-table"
                       size="small"
-                      row-hover="auto"
-                      header-align="left"
                       max-height="252px"
-                      stripe
+                      table-row-key="value"
+                      local-page
+                      show-settings
+                      :table-data="getResponseHeader(row)"
                       :columns="requestHeaderCols"
-                      :data="() => getResponseHeader(row)"
                     />
                   </div>
                 </div>
               </div>
             </template>
-            <template #empty>
-              <TableEmpty
-                :empty-type="tableEmptyConf.emptyType"
-                :abnormal="tableEmptyConf.isAbnormal"
-                @refresh="getList"
-                @clear-filter="handleClearFilterKey"
-              />
-            </template>
-          </BkTable>
+          </AgTable>
         </div>
       </div>
     </template>
   </AgSideslider>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { useGateway } from '@/stores';
 import { useDatePicker } from '@/hooks';
-import TableEmpty from '@/components/table-empty/Index.vue';
 import EditorMonaco from '@/components/ag-editor/Index.vue';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
+import type { ITableMethod } from '@/types/common';
+import type { ExpandOptions, PrimaryTableProps } from '@blueking/tdesign-ui';
 import {
   getTestHistories,
   getTestHistoriesDetails,
@@ -271,21 +224,10 @@ const {
 
 const dateKey = ref<string>('dateKey');
 const topDatePicker = ref();
-const tableRef = ref();
+const tableData = ref([]);
+const expandedRowKeys = ref<Array<string | number>>([]);
+const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const resourceEditorRef: any = ref<InstanceType<typeof EditorMonaco>>();
-const tableList = ref<any>([]);
-const tableEmptyConf = reactive<any>({
-  emptyType: '',
-  isAbnormal: false,
-});
-let expandIds: number[] = [];
-const pagination = ref<{
-  count: number
-  limit: number
-}>({
-  count: 0,
-  limit: 10,
-});
 const tabList = ref([
   {
     name: t('请求代码'),
@@ -314,14 +256,67 @@ const tabList = ref([
 ]);
 const requestHeaderCols = [
   {
-    label: t('名称'),
-    field: 'name',
+    title: t('名称'),
+    colKey: 'name',
   },
   {
-    label: t('值'),
-    field: 'value',
+    title: t('值'),
+    colKey: 'value',
   },
 ];
+
+const columns = shallowRef<PrimaryTableProps['columns']>([
+  {
+    title: t('资源名称'),
+    colKey: 'resource_name',
+    ellipsis: true,
+  },
+  {
+    title: t('响应状态码'),
+    colKey: 'status_code',
+    ellipsis: true,
+    width: 120,
+    cell: (h, { row }) => (
+      <div>
+        <span
+          class={[String(row?.response?.data?.status_code)?.startsWith('2') ? 'dot success' : 'dot failure']}
+        />
+        { row?.response?.data?.status_code }
+      </div>
+    ),
+  },
+  {
+    title: t('耗时'),
+    colKey: 'proxy_time',
+    ellipsis: true,
+    width: 120,
+    cell: (h, { row }) => (
+      <span>
+        { row?.response?.data?.proxy_time }
+        ms
+      </span>
+    ),
+  },
+  {
+    title: t('调用时间'),
+    colKey: 'created_time',
+    ellipsis: true,
+  },
+  {
+    title: t('操作'),
+    colKey: 'act',
+    width: 120,
+    cell: (h, { row }: { row: Record<string, any> }) => (
+      <bk-button
+        theme="primary"
+        text
+        onClick={(e: any) => handleShowDetails(e, row)}
+      >
+        { t('请求详情') }
+      </bk-button>
+    ),
+  },
+]);
 
 const apigwId = computed(() => gatewayStore.apigwId);
 
@@ -373,7 +368,6 @@ const getResponseHeader = (row: Record<string, any>) => {
   if (!row) return [];
 
   const { headers } = row.response.data;
-  console.log(headers);
   const keys = Object.keys(headers);
 
   if (!keys?.length) {
@@ -388,37 +382,14 @@ const getResponseHeader = (row: Record<string, any>) => {
   });
 };
 
-const updateTableEmptyConfig = () => {
-  if (filterData.value.resource_name || filterData.value.time_end) {
-    tableEmptyConf.emptyType = 'searchEmpty';
-    return;
-  }
-  tableEmptyConf.emptyType = '';
-};
-
 const handlePickClear = () => {
   handleClear();
   getList();
-  updateTableEmptyConfig();
 };
 
 const handlePickSuccess = () => {
   handleConfirm();
   getList();
-};
-
-const handleShowDetails = async (event: Event, row: Record<string, any>) => {
-  event.stopPropagation();
-  if (!row.isExpand) {
-    await getDetails(row.id, row);
-  }
-  else {
-    row.isExpand = !row.isExpand;
-    expandIds = expandIds.filter((id: number) => id !== row.id);
-    nextTick(() => {
-      tableRef.value?.setRowExpand(row, row.isExpand);
-    });
-  }
 };
 
 const clear = () => {
@@ -435,28 +406,34 @@ const show = () => {
   getList();
 };
 
-const getList = async () => {
+const getList = () => {
   const data = {
     offset: 0,
     limit: 10000,
     ...filterData.value,
   };
-  const response = await getTestHistories(apigwId.value, data);
-  response?.forEach((item: any) => {
+  tableRef.value?.fetchData(data, { resetPage: true });
+};
+
+const getTableData = async (params: Record<string, any> = {}) => {
+  const results = await getTestHistories(apigwId.value, params);
+
+  results?.forEach((item: any) => {
     item.editorText = '';
     item.requestBody = '';
     item.responseBody = '';
     item.activeIndex = 'code';
   });
-  tableList.value = response;
-  pagination.value.count = response?.length || 0;
-  updateTableEmptyConfig();
+
+  return {
+    count: results?.length || 0,
+    results,
+  };
 };
 
 const handleClearFilterKey = () => {
   clear();
   getList();
-  updateTableEmptyConfig();
   dateKey.value = String(+new Date());
 };
 
@@ -466,8 +443,7 @@ const getDetails = async (id: number, row: Record<string, any>) => {
   row.editorText = response?.response?.data?.curl;
   row.requestBody = response?.request?.body;
   row.responseBody = response?.response?.data?.body;
-  row.isExpand = !row.isExpand;
-  expandIds.push(id);
+
   nextTick(() => {
     const editorTextLen = Math.ceil(row.editorText?.length / 200);
     const requestBodyLen = Math.ceil(row.requestBody?.length / 200);
@@ -486,21 +462,30 @@ const getDetails = async (id: number, row: Record<string, any>) => {
       }
     `;
     document.head.appendChild(styleElement);
-
-    tableRef.value?.setRowExpand(row, row.isExpand);
   });
 };
 
-const handleRowClick = (event: Event, row: Record<string, any>) => {
-  handleShowDetails(event, row);
+const handleShowDetails = async (event: Event, row: Record<string, any>) => {
+  event.stopPropagation();
+
+  if (!expandedRowKeys.value.includes(row.id)) {
+    await getDetails(row.id, row);
+    expandedRowKeys.value.push(row.id);
+  }
+  else {
+    expandedRowKeys.value = expandedRowKeys.value.filter((id: number | string) => id !== row.id);
+  }
 };
 
-// const getCellClass = (_column: any, _index: number, row: any) => {
-//   if (expandIds.includes(row.id)) {
-//     return 'td-highlight-bg';
-//   }
-//   return '';
-// };
+const handleExpandChange = async (expandedKeys: Array<string | number>,
+  expandedRowData: ExpandOptions<Record<string, any>>) => {
+  expandedRowKeys.value = expandedKeys;
+  const { currentRowData } = expandedRowData;
+
+  if (expandedRowKeys.value.includes(currentRowData.id)) {
+    await getDetails(currentRowData.id, currentRowData);
+  }
+};
 
 defineExpose({ show });
 </script>
