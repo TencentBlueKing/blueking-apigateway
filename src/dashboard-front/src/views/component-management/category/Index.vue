@@ -370,9 +370,6 @@ const handleDeleteDocCategory = async (id: number) => {
 
 const handleSearch = (payload: string) => {
   updateTableEmptyConfig();
-  if (!payload) {
-    return;
-  }
   displayData.value = allData.value.filter((item) => {
     const reg = new RegExp(`(${payload})`, 'gi');
     return item.name.match(reg);
