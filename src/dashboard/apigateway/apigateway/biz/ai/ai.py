@@ -26,11 +26,11 @@ from .prompt import PromptBuilder
 
 class AIHandler:
     @staticmethod
-    def analyze_content(content_type: AIContentTypeEnum, content: str, stream_enabled=False):
+    def analyze_content(content_type: AIContentTypeEnum, content: str, language: str, stream_enabled=False):
         """分析内容"""
         client = get_ai_client()
         return client.chat.completions.create(
             model=settings.AI_MODEL,
-            messages=[{"role": "user", "content": PromptBuilder(content_type).build(content)}],
+            messages=[{"role": "user", "content": PromptBuilder(content_type).build(content, language)}],
             stream=stream_enabled,
         )

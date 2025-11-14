@@ -21,6 +21,7 @@ import logging
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 from django.http import StreamingHttpResponse
+from django.utils import translation
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -57,16 +58,19 @@ class AICompletionCreateApi(generics.CreateAPIView):
         content_type = AIContentTypeEnum(serializer.validated_data["inputs"]["type"])
         user_content = serializer.validated_data["inputs"]["input"]
         enable_streaming = serializer.validated_data["inputs"]["enable_streaming"]
+        language = serializer.validated_data["inputs"]["language"]
+        if not language:
+            language = translation.get_language()
         if enable_streaming:
             # 流式响应处理
-            return self.handle_streaming_response(content_type, user_content)
+            return self.handle_streaming_response(content_type, user_content, language)
         # 普通响应处理
-        return self.handle_normal_response(content_type, user_content)
+        return self.handle_normal_response(content_type, user_content, language)
 
-    def handle_streaming_response(self, content_type: AIContentTypeEnum, content: str):
+    def handle_streaming_response(self, content_type: AIContentTypeEnum, content: str, language: str):
         def generate_stream():
             try:
-                stream = AIHandler.analyze_content(content_type, content, stream_enabled=True)
+                stream = AIHandler.analyze_content(content_type, content, language, stream_enabled=True)
                 for chunk in stream:
                     if chunk.choices[0].delta.content:
                         yield f"data: {json.dumps({'content': chunk.choices[0].delta.content})}\n\n"
@@ -80,8 +84,8 @@ class AICompletionCreateApi(generics.CreateAPIView):
             generate_stream(), content_type="text/event-stream", headers={"Cache-Control": "no-cache"}
         )
 
-    def handle_normal_response(self, content_type: AIContentTypeEnum, content: str):
-        response = AIHandler.analyze_content(content_type, content)
+    def handle_normal_response(self, content_type: AIContentTypeEnum, content: str, language: str):
+        response = AIHandler.analyze_content(content_type, content, language)
         return OKJsonResponse(
             data={
                 "content": response.choices[0].message.content,
