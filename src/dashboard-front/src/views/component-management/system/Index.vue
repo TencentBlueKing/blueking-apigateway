@@ -386,11 +386,8 @@ const handleDeleteSystem = async () => {
 };
 
 const handleSearch = (payload: string) => {
-  tableEmptyType.value = payload ? 'search-empty' : 'empty';
-  if (!payload) {
-    return;
-  }
   isLoading.value = true;
+  tableEmptyType.value = payload ? 'search-empty' : 'empty';
   pagination.value = Object.assign(pagination.value, {
     offset: 0,
     limit: 10,
