@@ -32,6 +32,6 @@ export const getAICompletion = (gatewayId: number, data: any) => http.post(`${pa
  * @param data 参数
  */
 export const batchResourceDocAITranslate = (gatewayId: number, data: {
-  doc_ids: number[]
-  target_language: string
+  doc_ids?: number[]
+  target_language?: string
 }) => http.post(`${path}/${gatewayId}/ai/batch-translate/`, data);
