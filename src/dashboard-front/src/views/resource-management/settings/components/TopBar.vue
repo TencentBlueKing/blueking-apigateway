@@ -64,7 +64,10 @@
                   {{ t('资源文档一键翻译') }}
                 </div>
                 <div class="gradient-text-color mb-10px cursor-pointer">
-                  {{ t('一键生成全部英文文档') }}
+                  <span
+                    v-bk-tooltips="{ content: t('自动将文档翻译成中文/英文'), placement: 'right'}"
+                    @click="handleTranslateAllClick"
+                  >{{ t('点击翻译全部文档') }}</span>
                 </div>
               </div>
               <div>
@@ -166,15 +169,23 @@ const getHasDocText = (resource: any, lang = 'zh') =>
   resource.docs?.find(item => item.language === lang)?.id ? t('有') : t('无');
 
 const handleTranslateConfirmClick = async () => {
-  await batchResourceDocAITranslate(toValue(gatewayId), {
-    doc_ids: selectedResources.value.filter(item => item.docs?.find(doc => doc.language === 'zh')).map(item => item.docs.find(doc => doc.language === 'zh').id),
-    target_language: 'en',
-  });
+  await batchResourceDocAITranslate(toValue(gatewayId), { doc_ids: selectedResources.value.filter(item => item.docs?.find(doc => doc.language === 'zh')).map(item => item.docs.find(doc => doc.language === 'zh').id) });
+  popoverRef.value?.hide();
   Message({
     theme: 'success',
     message: t('已启动翻译任务，请稍后查看翻译结果'),
   });
-  tableRef.value!.refresh();
+  tableRef.value?.refresh();
+};
+
+const handleTranslateAllClick = async () => {
+  await batchResourceDocAITranslate(toValue(gatewayId), {});
+  popoverRef.value?.hide();
+  Message({
+    theme: 'success',
+    message: t('已启动翻译任务，请稍后查看翻译结果'),
+  });
+  tableRef.value?.refresh();
 };
 
 const handleResourceSelect = ({ selections }: { selections: any[] }) => {

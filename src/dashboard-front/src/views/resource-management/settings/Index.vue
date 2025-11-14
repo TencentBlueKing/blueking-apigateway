@@ -251,7 +251,10 @@
           </div>
         </template>
         <template #aside>
-          <aside v-if="!isCollapsed">
+          <aside
+            v-if="!isCollapsed"
+            id="resource-setting-aside"
+          >
             <BkTab
               v-model:active="active"
               class="resource-tab-panel"

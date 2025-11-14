@@ -2017,7 +2017,7 @@
   "最小连接数（least_conn）": "least_conn",
   "哈希位置": "Hash On",
   "资源文档一键翻译": "Auto resource doc translation",
-  "一键生成全部英文文档": "Auto generate all English docs",
+  "点击翻译全部文档": "Auto generate all English docs",
   "有": "Yes",
   "一键翻译英文": "Translate to EN",
   "一键翻译中文": "Translate to CN",
@@ -2026,5 +2026,10 @@
    "(进入批量操作) 选择资源": "(Enter batch operation) Select resources",
   "代表“ 资源中配置的插件生效 ”": "Represents' plugins configured in resources take effect '",
   "代表“ 环境中配置的插件生效 ”": "Represents' plugins configured in environment take effect '",
-  "当环境与资源同时启用同一个插件时，资源的优先级将高于环境": " When the same plugin is enabled for both the environment and resources, the priority of the resources will be higher than that of the environment"
+  "当环境与资源同时启用同一个插件时，资源的优先级将高于环境": " When the same plugin is enabled for both the environment and resources, the priority of the resources will be higher than that of the environment",
+  "{lang}文档创建成功": "{lang} doc created",
+  "{lang}文档更新成功": "{lang} doc updated",
+  "文档已存在，确定更新吗？": "Doc already exists, confirm to update?",
+  "获取翻译中": "Translating",
+  "自动将文档翻译成中文/英文": "Auto translate doc to chinese/english"
 }
