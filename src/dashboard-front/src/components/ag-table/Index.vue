@@ -22,16 +22,19 @@
     class="primary-table-wrapper"
     :class="[
       {
-        'primary-table-no-data': !localTableData.length
+        'primary-table-no-data': !localTableData.length,
+        'primary-table-no-border': !bordered,
+        'primary-table-show-pagination': showPagination
       }
     ]"
     :size="tableSetting?.rowSize ?? 'medium'"
     :data="localTableData"
     :columns="tableColumns"
-    :pagination="showPagination ? pagination : false"
+    :pagination="showPagination ? pagination : null"
     :loading="loading"
     :filter-row="null"
     :hover="false"
+    :bordered="bordered"
     :table-layout="tableLayout"
     :row-key="tableRowKey"
     :max-height="clientHeight"
@@ -125,6 +128,7 @@ interface IProps {
   showSelection?: boolean
   showSettings?: boolean
   showPagination?: boolean
+  bordered?: string | boolean
   tableLayout?: string
   tableEmptyType?: 'empty' | 'search-empty'
   maxLimitConfig?: Record<string, any> | null
@@ -160,6 +164,8 @@ const {
   maxLimitConfig = {},
   // 显示分页组件
   showPagination = true,
+  // 展示外边框
+  bordered = false,
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -225,17 +231,6 @@ if (Object.keys(maxLimitConfig)?.length) {
   pagination.value = Object.assign(pagination.value, {
     pageSize: maxTableLimit,
     pageSizeOptions: sortedUniq(sortBy([10, 20, 50, 100, maxTableLimit])),
-  });
-}
-
-// 隐藏分页组件相关配置项
-if (!showPagination) {
-  pagination.value = Object.assign(pagination.value, {
-    showJumper: false,
-    showPageSize: false,
-    showPageNumber: false,
-    showPreviousAndNextBtn: false,
-    totalContent: false,
   });
 }
 
@@ -697,6 +692,20 @@ defineExpose({
 
     .t-table__row--full.t-table__first-full-row {
       height: 0;
+    }
+  }
+
+  &.primary-table-no-border {
+
+    .t-table__header--fixed {
+      top: -1px;
+    }
+  }
+
+  &.primary-table-show-pagination {
+
+    .t-table--scroll-vertical {
+      bottom: 64px;
     }
   }
 }
