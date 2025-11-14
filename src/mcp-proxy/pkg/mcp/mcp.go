@@ -64,14 +64,21 @@ func Init(ctx context.Context, mcpProxy *proxy.MCPProxy) (*MCP, error) {
 func (m *MCP) Run(ctx context.Context) *proxy.MCPProxy {
 	ticker := time.NewTicker(config.G.McpServer.Interval)
 	util.GoroutineWithRecovery(ctx, func() {
-		for range ticker.C {
-			logging.GetLogger().Infof("reload mcp server start")
-			err := LoadMCPServer(ctx, m.proxy)
-			if err != nil {
-				logging.GetLogger().Errorf("reload mcp server error: %v", err)
-				continue
+		defer ticker.Stop() // 确保 ticker 被正确停止
+		for {
+			select {
+			case <-ticker.C:
+				logging.GetLogger().Infof("reload mcp server start")
+				err := LoadMCPServer(ctx, m.proxy)
+				if err != nil {
+					logging.GetLogger().Errorf("reload mcp server error: %v", err)
+					continue
+				}
+				logging.GetLogger().Infof("reload mcp server success")
+			case <-ctx.Done():
+				logging.GetLogger().Info("mcp server reload goroutine stopped due to context cancellation")
+				return // ✅ 响应 context 取消，正确退出
 			}
-			logging.GetLogger().Infof("reload mcp server success")
 		}
 	})
 	return m.proxy
@@ -87,17 +94,13 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 	activeMcpServer := make(map[string]struct{})
 	for _, server := range servers {
 		activeMcpServer[server.Name] = struct{}{}
-		registeredToolMap := make(map[string]struct{})
-		for _, tool := range server.ResourceNames {
-			registeredToolMap[tool] = struct{}{}
-		}
 		conf, err := GetMCPServerConfig(ctx, server)
 		if err != nil {
 			logging.GetLogger().Errorf("get mcp server[name:%s] openapi file error: %v", server.Name, err)
 			continue
 		}
 		if !mcpProxy.IsMCPServerExist(server.Name) {
-			err = mcpProxy.AddMCPServerFromOpenApiSpec(server.Name, conf.openapiFileData, registeredToolMap)
+			err = mcpProxy.AddMCPServerFromOpenApiSpec(server.Name, conf.openapiFileData, server.ResourceNames)
 			if err != nil {
 				logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", server.Name, err)
 				continue
@@ -114,7 +117,8 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 			}
 		}
 		// 更新mcp server
-		err = mcpProxy.UpdateMCPServerFromOpenApiSpec(mcpServer, server.Name, conf.openapiFileData, registeredToolMap)
+		err = mcpProxy.UpdateMCPServerFromOpenApiSpec(mcpServer, server.Name, conf.openapiFileData,
+			server.ResourceNames)
 		if err != nil {
 			return err
 		}
@@ -126,10 +130,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 			mcpProxy.DeleteMCPServer(server)
 		}
 	}
-	// 启动所有的mcp server
-	util.GoroutineWithRecovery(ctx, func() {
-		mcpProxy.Run(ctx)
-	})
+	mcpProxy.Run(ctx)
 	return nil
 }
 
