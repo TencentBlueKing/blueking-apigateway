@@ -85,7 +85,9 @@ def batch_translate_docs(doc_ids: List[int], target_language: str = DocLanguageE
                 # 调用AI翻译
                 logger.info("开始翻译文档 %s，从 %s 到 %s", doc.id, doc.language, target_language)
 
-                response = AIHandler.analyze_content(content_type=AIContentTypeEnum.DOC_TRANSLATE, content=doc.content)
+                response = AIHandler.analyze_content(
+                    content_type=AIContentTypeEnum.DOC_TRANSLATE, content=doc.content, language=target_language
+                )
 
                 translated_content = response.choices[0].message.content
 

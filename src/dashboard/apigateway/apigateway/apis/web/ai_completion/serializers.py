@@ -31,6 +31,12 @@ class AICompletionContentInfo(serializers.Serializer):
     )
     input = serializers.CharField(required=True, help_text="ai content")
     enable_streaming = serializers.BooleanField(default=False, help_text="开启流式返回")
+    language = serializers.ChoiceField(
+        choices=DocLanguageEnum.get_choices(),
+        required=False,
+        allow_null=True,
+        help_text="语言",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.ai_completion.serializers.AICompletionContentInfo"
