@@ -22,6 +22,7 @@ import (
 	"context"
 
 	raven "github.com/getsentry/raven-go"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/contrib/sentry"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -67,6 +68,10 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 			"status": "ok",
 		})
 	})
+
+	// pprof
+	pprof.Register(router)
+
 	// metrics
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
