@@ -28,7 +28,7 @@
     :size="tableSetting?.rowSize ?? 'medium'"
     :data="localTableData"
     :columns="tableColumns"
-    :pagination="pagination"
+    :pagination="showPagination ? pagination : false"
     :loading="loading"
     :filter-row="null"
     :hover="false"
