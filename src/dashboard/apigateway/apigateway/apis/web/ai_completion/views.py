@@ -58,7 +58,7 @@ class AICompletionCreateApi(generics.CreateAPIView):
         content_type = AIContentTypeEnum(serializer.validated_data["inputs"]["type"])
         user_content = serializer.validated_data["inputs"]["input"]
         enable_streaming = serializer.validated_data["inputs"]["enable_streaming"]
-        language = serializer.validated_data["inputs"]["language"]
+        language = serializer.validated_data["inputs"].get("language")
         if not language:
             language = translation.get_language()
         if enable_streaming:
