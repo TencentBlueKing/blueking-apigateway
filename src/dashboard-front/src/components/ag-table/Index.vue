@@ -25,7 +25,7 @@
         'primary-table-no-data': !localTableData.length
       }
     ]"
-    :size="tableSetting.rowSize ?? 'medium'"
+    :size="tableSetting?.rowSize ?? 'medium'"
     :data="localTableData"
     :columns="tableColumns"
     :pagination="pagination"
