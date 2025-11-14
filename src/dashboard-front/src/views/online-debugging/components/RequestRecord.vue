@@ -20,6 +20,7 @@
   <AgSideslider
     v-model="isShow"
     :title="t('调用历史')"
+    :scrollbar="false"
     ext-cls="sutra-scrollbar"
   >
     <template #default>
@@ -30,7 +31,6 @@
             class="search-input"
             type="search"
             :placeholder="t('请输入资源名称')"
-            @blur="getList()"
             @enter="getList()"
             @input="handleInput"
           />
@@ -121,10 +121,11 @@
                     <AgTable
                       class="request-header-table"
                       size="small"
-                      max-height="252px"
+                      max-height="234px"
                       table-row-key="value"
                       local-page
-                      show-settings
+                      :show-pagination="false"
+                      :show-settings="false"
                       :table-data="getRequestHeader(row)"
                       :columns="requestHeaderCols"
                     />
@@ -169,10 +170,11 @@
                     <AgTable
                       class="request-header-table"
                       size="small"
-                      max-height="252px"
+                      max-height="234px"
                       table-row-key="value"
                       local-page
-                      show-settings
+                      :show-pagination="false"
+                      :show-settings="false"
                       :table-data="getResponseHeader(row)"
                       :columns="requestHeaderCols"
                     />
@@ -399,6 +401,7 @@ const clear = () => {
   filterData.value.time_end = '';
   shortcutSelectedIndex.value = -1;
   dateValue.value = [];
+  expandedRowKeys.value = [];
 };
 
 const show = () => {
@@ -525,9 +528,6 @@ defineExpose({ show });
     scrollbar-gutter: auto;
   }
 
-  :deep(.bk-table-body) {
-    scrollbar-gutter: auto;
-  }
 }
 
 .details-tab {
