@@ -37,10 +37,13 @@
     </template>
     <template #default>
       <div class="drawer-container">
-        <div class="drawer-content">
+        <div :class="{'drawer-content': scrollbar}">
           <slot name="default" />
         </div>
-        <div class="drawer-footer">
+        <div
+          v-if="$slots.footer"
+          class="drawer-footer"
+        >
           <slot name="footer" />
         </div>
       </div>
@@ -60,6 +63,7 @@ interface IProps {
   direction?: 'left' | 'right'
   extCls?: string
   initData?: object | undefined
+  scrollbar?: boolean
 }
 
 const isShow = defineModel<boolean>({
@@ -76,6 +80,7 @@ const {
   direction = 'right',
   extCls = '',
   initData = undefined,
+  scrollbar = true,
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
