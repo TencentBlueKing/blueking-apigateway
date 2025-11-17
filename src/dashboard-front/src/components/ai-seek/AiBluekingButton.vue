@@ -20,6 +20,7 @@
   <div
     v-bk-tooltips="tooltipOptions"
     class="ai-blueking-button"
+    :class="{ disabled }"
     :style="{ background: `url(${logo}) center center / 18px 18px no-repeat` }"
     v-bind="$attrs"
   />
@@ -29,9 +30,12 @@
 import AIBluekingLogo from '@/images/ai-blueking.svg';
 import { t } from '@/locales';
 
-interface IProps { tooltipOptions?: Record<string, any> | string }
+interface IProps {
+  tooltipOptions?: Record<string, any> | string
+  disabled?: boolean
+}
 
-const { tooltipOptions = t('问问AI') } = defineProps<IProps>();
+const { tooltipOptions = t('问问AI'), disabled = false } = defineProps<IProps>();
 
 const logo = AIBluekingLogo;
 </script>
@@ -42,5 +46,10 @@ const logo = AIBluekingLogo;
   height: 18px;
   margin-right: 8px;
   cursor: pointer;
+
+  &.disabled {
+    cursor: not-allowed;
+    filter: grayscale(100%);
+  }
 }
 </style>

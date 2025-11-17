@@ -2031,5 +2031,6 @@
   "{lang}文档更新成功": "{lang} doc updated",
   "文档已存在，确定更新吗？": "Doc already exists, confirm to update?",
   "获取翻译中": "Translating",
-  "自动将文档翻译成中文/英文": "Auto translate doc to chinese/english"
+  "自动将文档翻译成中文/英文": "Auto translate doc to chinese/english",
+  "请先创建文档": "A doc should be created before translation"
 }
