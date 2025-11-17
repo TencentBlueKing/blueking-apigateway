@@ -164,6 +164,12 @@ type McpServer struct {
 	CryptoNonce                 string
 }
 
+// PProf is the config for pprof
+type PProf struct {
+	Username string
+	Password string
+}
+
 // Config is the config for the whole project
 type Config struct {
 	Debug bool
@@ -178,6 +184,7 @@ type Config struct {
 	Tracing Tracing
 
 	McpServer McpServer
+	PProf     PProf
 }
 
 // Load will load config from viper
@@ -227,6 +234,19 @@ func Load(v *viper.Viper) (*Config, error) {
 	}
 	if cfg.McpServer.CryptoNonce == "" {
 		cfg.McpServer.CryptoNonce = os.Getenv("BK_APIGW_CRYPTO_NONCE")
+	}
+
+	if cfg.PProf.Username == "" {
+		cfg.PProf.Username = os.Getenv("PPROF_USERNAME")
+		if cfg.PProf.Username == "" {
+			cfg.PProf.Username = "admin" // 默认用户名
+		}
+	}
+	if cfg.PProf.Password == "" {
+		cfg.PProf.Password = os.Getenv("PPROF_PASSWORD")
+		if cfg.PProf.Password == "" {
+			cfg.PProf.Password = "admin" // 默认密码，生产环境应该修改
+		}
 	}
 
 	G = cfg
