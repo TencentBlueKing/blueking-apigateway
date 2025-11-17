@@ -22,6 +22,7 @@ import (
 	"context"
 
 	raven "github.com/getsentry/raven-go"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/contrib/sentry"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -67,6 +68,15 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 			"status": "ok",
 		})
 	})
+
+	// pprof with basic auth (仅在启用时注册)
+	pprofGroup := router.Group("/debug/pprof")
+	pprofGroup.Use(gin.BasicAuth(gin.Accounts{
+		cfg.PProf.Username: cfg.PProf.Password,
+	}))
+	pprof.RouteRegister(pprofGroup, "")
+	logging.GetLogger().Infof("pprof enabled with basic auth at /debug/pprof")
+
 	// metrics
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
