@@ -44,6 +44,7 @@
         :filter-row="null"
         :frontend-search="isSearching"
         local-page
+        resizable
         :row-class-name="getRowClassName"
         @filter-change="handleFilterChange"
         @clear-filter="handleClearQueries"
@@ -175,27 +176,27 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     colKey: 'name',
     title: t('资源名称'),
     ellipsis: true,
+    minWidth: 150,
     cell: (h, { row }) => (
-      <div>
-        <bk-button
-          theme="primary"
-          text
-          onClick={() => showDetails(row)}
-        >
-          { row.name }
-        </bk-button>
-        {
-          hasNoVerification(row)
-            ? (
-              <ag-icon
-                v-bk-tooltips={{ content: t('该资源未配置认证方式，存在安全风险。') + t('如当前配置符合预期，可忽略该提示。') }}
-                name="exclamation-circle-fill"
-                class="ml-6px color-#F59500"
-              />
-            )
-            : ''
-        }
-      </div>
+      <span
+        class="color-#3A84FF cursor-pointer"
+        onClick={() => showDetails(row)}
+      >
+        <span>{ row.name }</span>
+        <span>
+          {
+            hasNoVerification(row)
+              ? (
+                <ag-icon
+                  v-bk-tooltips={{ content: t('该资源未配置认证方式，存在安全风险。') + t('如当前配置符合预期，可忽略该提示。') }}
+                  name="exclamation-circle-fill"
+                  class="ml-6px color-#F59500"
+                />
+              )
+              : ''
+          }
+        </span>
+      </span>
     ),
   },
   {

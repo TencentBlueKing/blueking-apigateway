@@ -49,6 +49,7 @@
           ref="popoverRef"
           width="650"
           theme="light"
+          z-index="5000"
           trigger="click"
         >
           <div class="flex items-center cursor-pointer">
@@ -77,7 +78,9 @@
                   :columns="columns"
                   table-row-key="id"
                   resizable
+                  show-first-full-row
                   select-on-row-click
+                  @clear-selection="() => { selectedResources = [] }"
                   @selection-change="handleResourceSelect"
                 />
               </div>

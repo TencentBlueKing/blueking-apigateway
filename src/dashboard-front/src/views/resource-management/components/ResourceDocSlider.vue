@@ -61,11 +61,21 @@
                 </BkButtonGroup>
                 <div
                   v-if="hasDoc"
+                  v-bk-tooltips="{ content: t('请先创建文档'), disabled: hasDocByLanguage(language) }"
                   class="absolute right-0 top-7px flex items-center cursor-pointer"
                   @click="handleTranslateClick"
                 >
-                  <AiBluekingButton :tooltip-options="{ disabled: true }" />
-                  <div class="text-12px gradient-text-color">
+                  <AiBluekingButton
+                    :disabled="!hasDocByLanguage(language)"
+                    :tooltip-options="{ disabled: true }"
+                  />
+                  <div
+                    class="text-12px"
+                    :class="{
+                      'color-#dcdee5 cursor-not-allowed': !hasDocByLanguage(language),
+                      'gradient-text-color': hasDocByLanguage(language),
+                    }"
+                  >
                     {{ language === 'zh' ? t('一键翻译英文') : t('一键翻译中文') }}
                   </div>
                 </div>
@@ -286,6 +296,8 @@ const hasDoc = computed(() => {
   return cnDoc || enDoc;
 });
 
+const hasDocByLanguage = (lang: string) => !!docData.value.find((e: any) => e.language === lang)?.id;
+
 // 渲染highlight的markdown
 const renderHljsMd = (content: string) => {
   const md = new MarkdownIt({
@@ -363,6 +375,9 @@ const initData = async () => {
 const isDocEmptyByLanguage = (lang: string) => !docData.value.find((item: any) => item.language === lang)?.id;
 
 const handleTranslateClick = async () => {
+  if (!hasDocByLanguage(language.value)) {
+    return;
+  }
   // 要翻译成什么语言
   const targetLanguage = language.value === 'zh' ? 'en' : 'zh';
   const input = docData.value.find((item: any) => item.language === language.value)?.content;
@@ -378,6 +393,7 @@ const handleTranslateClick = async () => {
           input,
           type: 'doc_translate',
           enable_streaming: false,
+          language: targetLanguage,
         },
       });
       await saveResourceDocs(gatewayId.value, resource.id, {
@@ -386,7 +402,7 @@ const handleTranslateClick = async () => {
       });
       Message({
         theme: 'success',
-        message: t('{lang}文档创建成功', { lang: language.value === 'zh' ? t('英文') : t('中文') }),
+        message: t('{lang}文档创建成功', { lang: targetLanguage === 'zh' ? t('中文') : t('英文') }),
       });
       initData();
       emit('fetch');
@@ -403,6 +419,7 @@ const handleTranslateClick = async () => {
               input,
               type: 'doc_translate',
               enable_streaming: false,
+              language: targetLanguage,
             },
           });
           const docId = docData.value.find((item: any) => item.language === targetLanguage)!.id;
