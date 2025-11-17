@@ -559,6 +559,7 @@ const handleResetSelection = () => {
     item.isCustomCheck = false;
   });
   resetSelections();
+  selectedRowKeys.value = [];
   emit('clear-selection');
 };
 
