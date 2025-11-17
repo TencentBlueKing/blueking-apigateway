@@ -8,6 +8,7 @@ require (
 	github.com/getkin/kin-openapi v0.132.0
 	github.com/getsentry/raven-go v0.2.0
 	github.com/getsentry/sentry-go v0.34.1
+	github.com/gin-contrib/pprof v1.5.3
 	github.com/gin-gonic/contrib v0.0.0-20250521004450-2b1292699c15
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-openapi/runtime v0.28.0
