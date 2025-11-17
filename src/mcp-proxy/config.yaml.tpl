@@ -73,6 +73,5 @@ tracing:
 
 ## config for pprof
 pprof:
-  enabled: false  # 默认禁用，生产环境谨慎启用
   username: "admin"  # 可通过环境变量 PPROF_USERNAME 覆盖
   password: "admin"  # 可通过环境变量 PPROF_PASSWORD 覆盖，生产环境请使用强密码
