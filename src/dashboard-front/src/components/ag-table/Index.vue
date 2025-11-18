@@ -399,6 +399,13 @@ watch(tableData, () => {
   deep: true,
 });
 
+watch([selections, selectedRowKeys], () => {
+  emit('selection-change', {
+    selectionsRowKeys: selectionsRowKeys.value,
+    selections: selections.value,
+  });
+}, { deep: true });
+
 const fetchData = (
   params: Record<string, any> = {},
   options: { resetPage?: boolean } = { resetPage: false },
