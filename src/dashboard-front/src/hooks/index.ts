@@ -44,3 +44,5 @@ export * from './use-stage-data';
 export * from './use-text-getter';
 export * from './use-table-setting';
 export * from './use-sticky-bottom';
+// 操作锁
+export * from './use-operation-lock';

@@ -81,7 +81,16 @@
             />
           </div>
           <div class="header-info-button">
-            <div>
+            <div v-if="isLocked">
+              <BkButton
+                class="operate-btn"
+                theme="primary"
+                disabled
+              >
+                {{ remainingTime }} {{ t('秒后再试') }}
+              </BkButton>
+            </div>
+            <div v-else>
               <BkButton
                 v-if="basicInfoData.status > 0"
                 class="deactivate-btn operate-btn"
@@ -626,6 +635,7 @@ import {
   useFeatureFlag,
   useGateway,
 } from '@/stores';
+import { useOperationLock } from '@/hooks';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import EditAPIDoc from '@/views/basic-info/components/EditAPIDoc.vue';
 
@@ -682,6 +692,15 @@ const delApigwDialog = ref({
   loading: false,
 });
 const statusChanging = ref(false);
+
+const {
+  isLocked,
+  remainingTime,
+  setLock,
+} = useOperationLock({
+  lockTime: 30,
+  storageKey: 'enable_lock',
+});
 
 const formRemoveApigw = computed(() => {
   return basicInfoData.value.name === formRemoveConfirmApigw.value;
@@ -792,6 +811,8 @@ const handleChangeApigwStatus = async () => {
 
 const handleOperate = async (type: string) => {
   if (['enable', 'deactivate'].includes(type)) {
+    if (isLocked.value) return;
+
     let title = t('确认要启用网关？');
     let subTitle = '';
     if (basicInfoData.value.status > 0) {
@@ -807,6 +828,7 @@ const handleOperate = async (type: string) => {
         if (statusChanging.value) {
           return;
         }
+        setLock();
         handleChangeApigwStatus();
       },
     });
