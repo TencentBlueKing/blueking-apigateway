@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task
-def batch_translate_docs(doc_ids: List[int], target_language: str = DocLanguageEnum.EN.value):
+def batch_translate_docs(doc_ids: List[int], target_language: str = ""):
     """
     批量翻译文档任务
 
@@ -40,7 +40,7 @@ def batch_translate_docs(doc_ids: List[int], target_language: str = DocLanguageE
 
     Args:
         doc_ids: 需要翻译的文档ID列表
-        target_language: 目标语言，如果为None则自动检测并翻译为相反语言
+        target_language: 目标语言，如果为空则自动检测并翻译为相反语言
     """
     logger.info("开始批量翻译任务，文档ID列表: %s", doc_ids)
 
@@ -140,7 +140,7 @@ def batch_translate_docs(doc_ids: List[int], target_language: str = DocLanguageE
 
 
 @shared_task
-def translate_single_doc(doc_id: int, target_language: str = DocLanguageEnum.EN.value):
+def translate_single_doc(doc_id: int, target_language: str = ""):
     """
     翻译单个文档任务
 
@@ -148,6 +148,6 @@ def translate_single_doc(doc_id: int, target_language: str = DocLanguageEnum.EN.
 
     Args:
         doc_id: 需要翻译的文档ID
-        target_language: 目标语言，如果为None则自动检测并翻译为相反语言
+        target_language: 目标语言，如果为空则自动检测并翻译为相反语言
     """
     return batch_translate_docs([doc_id], target_language)
