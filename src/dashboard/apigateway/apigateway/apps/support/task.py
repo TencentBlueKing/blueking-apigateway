@@ -57,24 +57,23 @@ def batch_translate_docs(doc_ids: List[int], target_language: str = ""):
         error_messages = []
 
         for doc in docs:
-            try:
-                # 如果目标语言未指定，则根据当前语言自动选择相反语言
-                if not target_language:
-                    if doc.language == DocLanguageEnum.ZH.value:
-                        target_language = DocLanguageEnum.EN.value
-                    elif doc.language == DocLanguageEnum.EN.value:
-                        target_language = DocLanguageEnum.ZH.value
-                    else:
-                        # 默认翻译为英文
-                        target_language = DocLanguageEnum.EN.value
+            if target_language and doc.language == target_language:
+                logger.info("文档 %s 的目标语言 %s 已经是当前语言，跳过翻译", doc.id, target_language)
+                continue
 
+            trans_target_language = ""
+            if doc.language == DocLanguageEnum.ZH.value:
+                trans_target_language = DocLanguageEnum.EN.value
+            elif doc.language == DocLanguageEnum.EN.value:
+                trans_target_language = DocLanguageEnum.ZH.value
+            try:
                 # 检查是否已经存在目标语言的文档
                 existing_doc = ResourceDoc.objects.filter(
-                    gateway=doc.gateway, resource_id=doc.resource_id, language=target_language
+                    gateway=doc.gateway, resource_id=doc.resource_id, language=trans_target_language
                 ).first()
 
                 if existing_doc and existing_doc.content.strip():
-                    logger.info("文档 %s 的目标语言 %s 已存在，跳过翻译", doc.id, target_language)
+                    logger.info("文档 %s 的目标语言 %s 已存在，跳过翻译", doc.id, trans_target_language)
                     continue
 
                 # 检查源文档是否有内容
@@ -83,10 +82,10 @@ def batch_translate_docs(doc_ids: List[int], target_language: str = ""):
                     continue
 
                 # 调用AI翻译
-                logger.info("开始翻译文档 %s，从 %s 到 %s", doc.id, doc.language, target_language)
+                logger.info("开始翻译文档 %s，从 %s 到 %s", doc.id, doc.language, trans_target_language)
 
                 response = AIHandler.analyze_content(
-                    content_type=AIContentTypeEnum.DOC_TRANSLATE, content=doc.content, language=target_language
+                    content_type=AIContentTypeEnum.DOC_TRANSLATE, content=doc.content, language=trans_target_language
                 )
 
                 translated_content = response.choices[0].message.content
@@ -105,7 +104,7 @@ def batch_translate_docs(doc_ids: List[int], target_language: str = ""):
                             gateway=doc.gateway,
                             resource_id=doc.resource_id,
                             type=doc.type,
-                            language=target_language,
+                            language=trans_target_language,
                             source=doc.source,
                             content=translated_content,
                             created_by=doc.created_by,
