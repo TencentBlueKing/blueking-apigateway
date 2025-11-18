@@ -24,7 +24,7 @@
         form-type="vertical"
       >
         <BkFormItem
-          :label="t('选择时间')"
+          :label="t('起止时间')"
           class="ag-form-item-datepicker"
         >
           <BkDatePicker
