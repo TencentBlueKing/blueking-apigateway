@@ -22,6 +22,7 @@ from apigateway.controller.crds.constants import UpstreamHashOnEnum, UpstreamSch
 from apigateway.controller.crds.v1beta1.convertors.base import BaseConvertor, UrlInfo
 from apigateway.controller.crds.v1beta1.models.base import PluginConfig, TimeoutConfig, Upstream, UpstreamNode
 from apigateway.controller.crds.v1beta1.models.gateway_service import BkGatewayService, BkGatewayServiceSpec
+from apigateway.core.constants import LoadBalanceTypeEnum
 from apigateway.core.models import Backend
 
 
@@ -52,6 +53,9 @@ class ServiceConvertor(BaseConvertor):
         for backend_id, backend_config in backend_configs.items():
             timeout = backend_config.get("timeout", 60)
             loadbalance_type = backend_config.get("loadbalance", UpstreamTypeEnum.ROUNDROBIN.value)
+            # while the apisix has no wrr, we convert it to roundrobin, the weight would be set below
+            if loadbalance_type == LoadBalanceTypeEnum.WRR.value:
+                loadbalance_type = UpstreamTypeEnum.ROUNDROBIN.value
 
             upstream = Upstream(
                 type=UpstreamTypeEnum(loadbalance_type),
