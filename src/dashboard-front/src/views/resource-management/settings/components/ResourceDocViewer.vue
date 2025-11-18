@@ -51,19 +51,22 @@
           </BkButtonGroup>
           <div
             v-if="hasDoc"
-            v-bk-tooltips="{ content: t('请先创建文档'), disabled: hasDocByLanguage(language) }"
+            v-bk-tooltips="{
+              content: isTranslating ? t('翻译中') : t('请先创建文档'),
+              disabled: !isTranslating && hasDocByLanguage(language),
+            }"
             class="absolute right-0 top-7px flex items-center cursor-pointer"
             @click="handleTranslateClick"
           >
             <AiBluekingButton
-              :disabled="!hasDocByLanguage(language)"
+              :disabled="isTranslating || !hasDocByLanguage(language)"
               :tooltip-options="{ disabled: true }"
             />
             <div
               class="text-12px"
               :class="{
-                'color-#dcdee5 cursor-not-allowed': !hasDocByLanguage(language),
-                'gradient-text-color': hasDocByLanguage(language),
+                'color-#dcdee5 cursor-not-allowed': isTranslating || !hasDocByLanguage(language),
+                'gradient-text-color': !isTranslating && hasDocByLanguage(language),
               }"
             >
               {{ language === 'zh' ? t('一键翻译英文') : t('一键翻译中文') }}
@@ -319,6 +322,7 @@ const toolbars = ref<any>({
   subfield: true,
   preview: true,
 });
+const isTranslating = ref(false);
 
 const resourcesHeight = computed(() => {
   if (source === 'side') {
@@ -500,7 +504,7 @@ const handleDocDataWithLanguage = () => {
 const isDocEmptyByLanguage = (lang: string) => !docData.value.find((item: any) => item.language === lang)?.id;
 
 const handleTranslateClick = async () => {
-  if (!hasDocByLanguage(language.value)) {
+  if (isTranslating.value || !hasDocByLanguage(language.value)) {
     return;
   }
   // 要翻译成什么语言
@@ -513,6 +517,7 @@ const handleTranslateClick = async () => {
         theme: 'primary',
         message: t('获取翻译中'),
       });
+      isTranslating.value = true;
       const response = await getAICompletion(gatewayId.value, {
         inputs: {
           input,
@@ -531,6 +536,7 @@ const handleTranslateClick = async () => {
       });
       initData();
       emit('fetch');
+      isTranslating.value = false;
     }
     else {
       InfoBox({
@@ -539,6 +545,7 @@ const handleTranslateClick = async () => {
         confirmText: t('更新'),
         cancelText: t('取消'),
         onConfirm: async () => {
+          isTranslating.value = true;
           const response = await getAICompletion(gatewayId.value, {
             inputs: {
               input,
@@ -560,6 +567,7 @@ const handleTranslateClick = async () => {
       });
       initData();
       emit('fetch');
+      isTranslating.value = false;
     }
   }
 };
