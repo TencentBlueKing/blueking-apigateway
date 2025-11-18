@@ -81,9 +81,7 @@ class RouteConvertor(GatewayResourceConvertor):
             raise ValueError(f"backend_id is 0 or not set, which is not allowed. resource: {resource}")
 
         service_id = self._get_service_id(backend_id)
-        # logger.error("the service_id: %s, and it's type %s", service_id, type(service_id))
 
-        # operator 会将环境级别的插件绑定到 service，如果资源没有定义上游，依然绑定服务
         methods = []
         if resource["method"] != "ANY":
             methods = [HttpMethodEnum(resource["method"])]

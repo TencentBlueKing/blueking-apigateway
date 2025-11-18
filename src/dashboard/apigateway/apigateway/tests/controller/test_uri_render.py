@@ -114,6 +114,32 @@ class TestURIRender:
         # env vars not replaced, but path params are converted
         assert result == "/api/{env.stage}/users/:userId"
 
+    def test_render_legacy_golang_version_cases(self):
+        renderer = URIRender()
+        source = "/uri/with/{param1}/and/{env.key1}/{env.key_2}/"
+
+        result1 = renderer.render(source, {"key1": "value1"})
+        assert result1 == "/uri/with/:param1/and/value1/{env.key_2}/"
+
+        result2 = renderer.render(source, {"key1": "value1", "key_2": "value2"})
+        assert result2 == "/uri/with/:param1/and/value1/value2/"
+
+        source3 = "/uri/without/anything"
+        result3 = renderer.render(source3, {"key1": "value1"})
+        assert result3 == "/uri/without/anything"
+
+        source4 = ""
+        result4 = renderer.render(source4, {"key1": "value1"})
+        assert result4 == ""
+
+        source5 = "/uri/with/{env.}"
+        result5 = renderer.render(source5, {"key1": "value1"})
+        assert result5 == "/uri/with/{env.}"
+
+        source6 = "/uri/with/{boo.key1}"
+        result6 = renderer.render(source6, {"key1": "value1"})
+        assert result6 == "/uri/with/{boo.key1}"
+
 
 class TestUpstreamURIRender:
     """Test UpstreamURIRender class"""
@@ -163,3 +189,29 @@ class TestUpstreamURIRender:
         vars_dict = {"region": "eu-central", "stage": "staging", "version": "3"}
         result = renderer.render(source, vars_dict)
         assert result == "/api/eu-central/staging/v3/users/${userId}/posts/${postId}"
+
+    def test_render_legacy_golang_version_cases(self):
+        renderer = UpstreamURIRender()
+        source = "/uri/with/{param1}/and/{env.key1}/{env.key_2}/"
+
+        result1 = renderer.render(source, {"key1": "value1"})
+        assert result1 == "/uri/with/${param1}/and/value1/{env.key_2}/"
+
+        result2 = renderer.render(source, {"key1": "value1", "key_2": "value2"})
+        assert result2 == "/uri/with/${param1}/and/value1/value2/"
+
+        source3 = "/uri/without/anything"
+        result3 = renderer.render(source3, {"key1": "value1"})
+        assert result3 == "/uri/without/anything"
+
+        source4 = ""
+        result4 = renderer.render(source4, {"key1": "value1"})
+        assert result4 == ""
+
+        source5 = "/uri/with/{env.}"
+        result5 = renderer.render(source5, {"key1": "value1"})
+        assert result5 == "/uri/with/{env.}"
+
+        source6 = "/uri/with/{boo.key1}"
+        result6 = renderer.render(source6, {"key1": "value1"})
+        assert result6 == "/uri/with/{boo.key1}"
