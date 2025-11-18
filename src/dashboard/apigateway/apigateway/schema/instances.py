@@ -32,7 +32,6 @@ SCHEMA_NAME_PROXY_HTTP = "ProxyHTTP"
 SCHEMA_NAME_MONITOR_ALARM_FILTER = "MonitorAlarmFilter"
 SCHEMA_NAME_MONITOR_ALARM_STRATEGY = "MonitorAlarmStrategy"
 SCHEMA_NAME_API_SDK = "APISDK"
-SCHEMA_NAME_MICRO_GATEWAY = "MicroGateway"
 
 
 class NewMetaSchemaMixin:
@@ -490,94 +489,3 @@ class APISDK(NewMetaSchemaMixin, metaclass=Singleton):
     name = SCHEMA_NAME_API_SDK
     type = SchemaTypeEnum.APISDK.value
     description = "api sdk"
-
-
-class MicroGateway(NewMetaSchemaMixin, metaclass=Singleton):
-    version = "1"
-    schema = """
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": ["jwt_auth", "http"],
-  "properties": {
-    "metadata": {
-      "type": "object",
-      "properties": {
-        "is_managed": {
-          "type": "boolean"
-        }
-      }
-    },
-    "bcs": {
-      "type": "object",
-      "properties": {
-        "project_name": {
-          "type": "string"
-        },
-        "project_id": {
-          "type": "string"
-        },
-        "cluster_id": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "chart_name": {
-          "type": "string"
-        },
-        "chart_version": {
-          "type": "string"
-        },
-        "release_name": {
-          "type": "string"
-        }
-      }
-    },
-    "jwt_auth": {
-      "type": "object",
-      "required": ["secret_key"],
-      "properties": {
-        "secret_key": {
-          "type": "string"
-        }
-      }
-    },
-    "http": {
-      "type": "object",
-      "required": ["http_url"],
-      "properties": {
-        "http_url": {
-          "type": "string"
-        }
-      }
-    },
-    "values": {
-      "type": "object",
-      "additionalProperties": true
-    }
-  }
-}
-    """
-    example = """
-{
-    "bcs": {
-        "project_name": "demo",
-        "project_id": "demo",
-        "cluster_id": "demo",
-        "namespace": "default",
-        "chart_name": "bk-micro-gateway",
-        "chart_version": "1.0.0",
-        "release_name": "demo-v1"
-    },
-    "jwt_auth": {
-      "secret_key": "my-secret"
-    },
-    "http": {
-      "http_url": "http://demo.example.com"
-    }
-}
-    """
-    name = SCHEMA_NAME_MICRO_GATEWAY
-    type = SchemaTypeEnum.MICRO_GATEWAY.value
-    description = "micro gateway"

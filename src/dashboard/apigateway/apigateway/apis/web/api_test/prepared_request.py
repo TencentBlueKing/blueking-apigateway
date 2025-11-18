@@ -108,7 +108,7 @@ class PreparedRequestURL:
             resource_path = render_path(resource_path, self.path_params)
 
         return get_resource_url(
-            resource_url_tmpl=ResourceURLHandler.get_resource_url_tmpl(self.gateway_name, self.stage_name),
+            resource_url_tmpl=ResourceURLHandler.get_resource_url_tmpl(),
             gateway_name=self.gateway_name,
             stage_name=self.stage_name,
             resource_path=resource_path,

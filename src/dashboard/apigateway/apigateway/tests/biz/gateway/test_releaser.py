@@ -122,14 +122,13 @@ class TestGatewayReleaser:
             release_data["comment"],
         )
 
-    def test_do_release_shared_gateway(
+    def test_do_release(
         self,
         mocker,
         celery_task_eager_mode,
         fake_gateway,
         fake_stage,
         fake_resource_version,
-        fake_shared_gateway,
         fake_release,
         fake_release_history,
         fake_publish_success_event,
@@ -144,7 +143,6 @@ class TestGatewayReleaser:
         releaser._do_release(fake_release, fake_release_history)
 
         mock_release_gateway_by_registry.si.assert_called_once_with(
-            micro_gateway_id=fake_shared_gateway.id,
             publish_id=fake_release_history.id,
         )
 

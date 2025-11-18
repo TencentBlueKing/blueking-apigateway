@@ -16,83 +16,31 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 
-from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.common.tenant.user_credentials import UserCredentials
-from apigateway.components.bkpaas import paas_app_module_offline
 from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.tasks import revoke_release, rolling_update_release
 from apigateway.core.constants import (
-    GatewayStatusEnum,
     PublishSourceEnum,
     PublishSourceTriggerPublishTypeMapping,
-    StageStatusEnum,
     TriggerPublishTypeEnum,
 )
-from apigateway.core.models import Gateway, Release, ReleaseHistory
+from apigateway.core.models import Release, ReleaseHistory
 from apigateway.service.event.event import PublishEventReporter
+
+from .hooks import (
+    _pre_publish_check_is_gateway_ready_for_releasing,
+    _pre_publish_programmable_gateway_offline,
+    _pre_publish_save_release_history,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def _is_gateway_ok_for_releasing(release: Release, source: PublishSourceEnum) -> Tuple[bool, str]:
-    """网关发布校验"""
-    if not release:
-        return False, "release is None, ignored"
-
-    gateway_id = release.gateway.pk
-    # 剔除停用的网关
-    gateway = Gateway.objects.get(pk=gateway_id)
-
-    trigger_publish_type = PublishSourceTriggerPublishTypeMapping[source]
-
-    # 校验环境
-    if not release.stage:
-        msg = f"release(id={release.pk}) has not stage, ignored"
-        return False, msg
-
-    # 非 TRIGGER_REVOKE_DISABLE_RELEASE 并且不是网关启用场景才需要校验状态
-    if (
-        trigger_publish_type != TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE
-        and source != PublishSourceEnum.GATEWAY_ENABLE
-    ):
-        if gateway.status != GatewayStatusEnum.ACTIVE.value:
-            msg = f"rolling_update_release: gateway(id={gateway_id}) is not active, skip"
-            return False, msg
-
-        if release.stage.status != StageStatusEnum.ACTIVE.value:
-            msg = f"release(id={release.pk})  stage(name={release.stage.name}) is not active, ignored"
-            return False, msg
-
-    # 校验版本，现在只支持 v2 发布
-    if (
-        trigger_publish_type != TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE
-        and not release.resource_version.is_schema_v2
-    ):
-        msg = (
-            f"The data structure of version [{release.resource_version.object_display}] is incompatible and is not "
-            f"allowed to be published. Please create a new version in [Resource Configuration] before publishing."
-        )
-        return False, msg
-
-    return True, ""
-
-
-def _save_release_history(release: Release, source: PublishSourceEnum, author: str) -> ReleaseHistory:
-    """保存发布历史"""
-    return ReleaseHistory.objects.create(
-        gateway=release.gateway,
-        stage=release.stage,
-        source=source.value,
-        resource_version=release.resource_version,
-        created_by=author,
-    )
-
-
-def _trigger_rolling_publish(
+def _trigger_rolling_update(
     source: PublishSourceEnum,
     author: str,
     release_list: List[Release],
@@ -108,11 +56,11 @@ def _trigger_rolling_publish(
             publish_id = NO_NEED_REPORT_EVENT_PUBLISH_ID
         else:
             # 如果不是手动同步就需要生成发布历史
-            release_history = _save_release_history(release, source, author)
+            release_history = _pre_publish_save_release_history(release, source, author)
             publish_id = release_history.pk
 
         # 发布 check
-        ok, msg = _is_gateway_ok_for_releasing(release, source)
+        ok, msg = _pre_publish_check_is_gateway_ready_for_releasing(release, source)
         if not ok:
             logger.warning(msg)
             PublishEventReporter.report_config_validate_failure(release_history, msg)
@@ -135,48 +83,23 @@ def _trigger_rolling_publish(
     return True
 
 
-def _trigger_revoke_publish_for_disable(
+def _trigger_revoke_disable(
     source: PublishSourceEnum,
     author: str,
     release_list: List[Release],
     is_sync: Optional[bool] = False,
     user_credentials: Optional[UserCredentials] = None,
 ):
-    """触发撤销发布"""
+    """触发停用/下架发布"""
 
     for release in release_list:
         # 创建发布历史
-        release_history = _save_release_history(release, source, author)
+        release_history = _pre_publish_save_release_history(release, source, author)
 
         # 如果是编程网关需要特殊处理
-        if release.gateway.is_programmable and user_credentials:
-            # 需要调用 paas 下线接口
-            # 停用时，需要调用 paas 的 module_offline 接口下架环境
-            offline_operation_id = paas_app_module_offline(
-                app_code=release.gateway.name,
-                module="default",
-                env=release.stage.name,
-                user_credentials=user_credentials,
-            )
-            last_deploy_history = ProgrammableGatewayDeployHistory.objects.filter(
-                gateway=release.gateway,
-                version=release.resource_version.version,
-            ).first()
-            if last_deploy_history:
-                ProgrammableGatewayDeployHistory.objects.create(
-                    gateway=release.gateway,
-                    stage=release.stage,
-                    branch=last_deploy_history.branch,
-                    version=release.resource_version.version,
-                    commit_id=last_deploy_history.commit_id,
-                    deploy_id=offline_operation_id,
-                    publish_id=release_history.id,
-                    created_by=author,
-                    source=source.value,
-                )
-
+        _pre_publish_programmable_gateway_offline(source, author, release, release_history, user_credentials)
         # 发布 check
-        ok, msg = _is_gateway_ok_for_releasing(release, source)
+        ok, msg = _pre_publish_check_is_gateway_ready_for_releasing(release, source)
         # 上报发布配置校验事件
         if not ok:
             logger.warning(msg)
@@ -190,10 +113,11 @@ def _trigger_revoke_publish_for_disable(
         if is_sync:
             return revoke_release(release_id=release.id, publish_id=release_history.id)
         delay_on_commit(revoke_release, release_id=release.id, publish_id=release_history.id)
+
     return None
 
 
-def _trigger_revoke_publish_for_deleting(
+def _trigger_revoke_deleting(
     release_list: List[Release],
     is_sync: Optional[bool] = False,
 ):
@@ -238,14 +162,19 @@ def trigger_gateway_publish(
     if not release_list:
         return True
 
+    # rolling update release
     if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE:
-        return _trigger_rolling_publish(source, author, release_list, is_sync=is_sync)
+        return _trigger_rolling_update(source, author, release_list, is_sync=is_sync)
 
+    # revoke disable release
     if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE:
-        return _trigger_revoke_publish_for_disable(
+        return _trigger_revoke_disable(
             source, author, release_list, is_sync=is_sync, user_credentials=user_credentials
         )
 
+    # revoke delete release
     if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_REVOKE_DELETE_RELEASE:
-        return _trigger_revoke_publish_for_deleting(release_list, is_sync=is_sync)
+        return _trigger_revoke_deleting(release_list, is_sync=is_sync)
+
+    # do nothing
     return None

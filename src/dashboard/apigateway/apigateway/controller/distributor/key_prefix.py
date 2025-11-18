@@ -15,19 +15,25 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import logging
 from dataclasses import dataclass
 
 from django.conf import settings
 
-logger = logging.getLogger(__name__)
+
+@dataclass
+class GatewayKeyPrefixHandler:
+    api_version: str = "v2"
+    prefix: str = settings.BK_GATEWAY_ETCD_NAMESPACE_PREFIX
+
+    def get_release_key_prefix(self, gateway_name: str, stage_name: str) -> str:
+        """利用网关名称、环境名称，构造发布的键前缀；在 etcd 中，一次发布的所有数据，都会在此前缀下"""
+        return f"{self.prefix}/{self.api_version}/gateway/{gateway_name}/{stage_name}/"
 
 
 @dataclass
-class KeyPrefixHandler:
-    api_version: str = "v1beta1"
+class GlobalKeyPrefixHandler:
+    api_version: str = "v2"
     prefix: str = settings.BK_GATEWAY_ETCD_NAMESPACE_PREFIX
 
-    def get_release_key_prefix(self, micro_gateway_name: str, gateway_name: str, stage_name: str) -> str:
-        """利用微网关名称、网关名称、环境名称，构造发布的键前缀；在 etcd 中，一次发布的所有数据，都会在此前缀下"""
-        return f"{self.prefix}/{micro_gateway_name}/{gateway_name}/{stage_name}/{self.api_version}/"
+    def get_release_key_prefix(self) -> str:
+        return f"{self.prefix}/{self.api_version}/global/"

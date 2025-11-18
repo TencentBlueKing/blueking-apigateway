@@ -19,3 +19,6 @@
 # 发布资源特殊 publish_id
 NO_NEED_REPORT_EVENT_PUBLISH_ID = -1
 DELETE_PUBLISH_ID = -2
+
+# global resource publish id
+GLOBAL_PUBLISH_ID = -3

@@ -15,16 +15,81 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.controller.distributor.key_prefix import KeyPrefixHandler
+from apigateway.controller.distributor.key_prefix import (
+    GatewayKeyPrefixHandler,
+    GlobalKeyPrefixHandler,
+)
 
 
-class TestKeyPrefixHandler:
-    def test_get_release_key_prefix(self, edge_gateway, edge_gateway_stage, micro_gateway, settings):
-        handler = KeyPrefixHandler(api_version="v1")
-        assert handler.get_release_key_prefix(micro_gateway.name, edge_gateway.name, edge_gateway_stage.name) == (
-            f"{settings.BK_GATEWAY_ETCD_NAMESPACE_PREFIX}/"
-            f"{micro_gateway.name}/"
-            f"{edge_gateway.name}/"
-            f"{edge_gateway_stage.name}/"
-            f"{handler.api_version}/"
-        )
+class TestGatewayKeyPrefixHandler:
+    """Test GatewayKeyPrefixHandler class"""
+
+    def test_constructor(self):
+        """Test GatewayKeyPrefixHandler constructor with various parameters"""
+        # Test default values
+        handler = GatewayKeyPrefixHandler()
+        assert handler.api_version == "v2"
+        assert handler.prefix is not None
+        assert isinstance(handler.prefix, str)
+
+        # Test custom parameters
+        handler = GatewayKeyPrefixHandler(prefix="/custom-prefix", api_version="v3")
+        assert handler.prefix == "/custom-prefix"
+        assert handler.api_version == "v3"
+
+    def test_get_release_key_prefix(self):
+        """Test get_release_key_prefix method with various scenarios"""
+        # Test basic functionality
+        handler = GatewayKeyPrefixHandler(prefix="/bk-gateway")
+        prefix = handler.get_release_key_prefix("test-gateway", "prod")
+        assert prefix == "/bk-gateway/v2/gateway/test-gateway/prod/"
+        assert prefix.endswith("/")
+
+        # Test with different parameters
+        prefix = handler.get_release_key_prefix("my-api", "staging")
+        assert prefix == "/bk-gateway/v2/gateway/my-api/staging/"
+
+        # Test with custom api version
+        handler = GatewayKeyPrefixHandler(prefix="/bk-gateway", api_version="v3")
+        prefix = handler.get_release_key_prefix("test-gateway", "prod")
+        assert prefix == "/bk-gateway/v3/gateway/test-gateway/prod/"
+
+        # Test with custom prefix
+        handler = GatewayKeyPrefixHandler(prefix="/custom")
+        prefix = handler.get_release_key_prefix("api-gateway", "dev")
+        assert prefix == "/custom/v2/gateway/api-gateway/dev/"
+
+
+class TestGlobalKeyPrefixHandler:
+    """Test GlobalKeyPrefixHandler class"""
+
+    def test_constructor(self):
+        """Test GlobalKeyPrefixHandler constructor with various parameters"""
+        # Test default values
+        handler = GlobalKeyPrefixHandler()
+        assert handler.api_version == "v2"
+        assert handler.prefix is not None
+        assert isinstance(handler.prefix, str)
+
+        # Test custom parameters
+        handler = GlobalKeyPrefixHandler(prefix="/custom-prefix", api_version="v3")
+        assert handler.prefix == "/custom-prefix"
+        assert handler.api_version == "v3"
+
+    def test_get_release_key_prefix(self):
+        """Test get_release_key_prefix method with various scenarios"""
+        # Test basic functionality
+        handler = GlobalKeyPrefixHandler(prefix="/bk-gateway")
+        prefix = handler.get_release_key_prefix()
+        assert prefix == "/bk-gateway/v2/global/"
+        assert prefix.endswith("/")
+
+        # Test with custom api version
+        handler = GlobalKeyPrefixHandler(prefix="/bk-gateway", api_version="v3")
+        prefix = handler.get_release_key_prefix()
+        assert prefix == "/bk-gateway/v3/global/"
+
+        # Test with custom prefix
+        handler = GlobalKeyPrefixHandler(prefix="/custom")
+        prefix = handler.get_release_key_prefix()
+        assert prefix == "/custom/v2/global/"

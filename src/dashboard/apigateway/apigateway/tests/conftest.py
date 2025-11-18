@@ -56,7 +56,6 @@ from apigateway.core.models import (
     BackendConfig,
     Context,
     Gateway,
-    MicroGateway,
     Proxy,
     PublishEvent,
     Release,
@@ -67,7 +66,6 @@ from apigateway.core.models import (
     Schema,
     Stage,
 )
-from apigateway.schema import instances
 from apigateway.schema.data.meta_schema import init_meta_schemas
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.tests.utils.testing import dummy_time, get_response_json
@@ -138,11 +136,6 @@ def fake_gateway(faker):
     GatewayAuthContext().save(gateway.pk, {})
 
     return gateway
-
-
-@pytest.fixture()
-def fake_gateway_for_micro_gateway(fake_gateway):
-    return fake_gateway
 
 
 @pytest.fixture
@@ -428,58 +421,6 @@ def fake_resource_ctx(fake_gateway):
         ),
     )
     return [resource1, resource2, resource3, resource4, resource5]
-
-
-@pytest.fixture
-def fake_micro_gateway(fake_gateway_for_micro_gateway, faker):
-    return G(
-        MicroGateway,
-        gateway=fake_gateway_for_micro_gateway,
-        name=faker.color_name(),
-        is_shared=False,
-        _config=json.dumps(
-            {
-                "bcs": {
-                    "project_id": faker.color_name(),
-                    "project_name": faker.color_name(),
-                    "cluster_id": faker.color_name(),
-                    "namespace": faker.color_name(),
-                    "chart_version": "1.0.0",
-                    "release_name": faker.color_name(),
-                },
-                "http": {
-                    "http_url": f"http://{faker.domain_name()}",
-                },
-                "jwt_auth": {
-                    "secret_key": faker.password(),
-                },
-            }
-        ),
-    )
-
-
-@pytest.fixture
-def fake_edge_gateway(fake_micro_gateway, fake_stage):
-    """专享网关"""
-    fake_stage.micro_gateway = fake_micro_gateway
-    fake_stage.save()
-
-    return fake_micro_gateway
-
-
-@pytest.fixture
-def fake_shared_gateway(fake_micro_gateway, settings):
-    """共享网关"""
-    gateway = G(
-        MicroGateway,
-        gateway=fake_micro_gateway.gateway,
-        name=fake_micro_gateway.name,
-        is_shared=True,
-        _config=fake_micro_gateway._config,
-    )
-
-    settings.DEFAULT_MICRO_GATEWAY_ID = str(gateway.id)
-    return gateway
 
 
 @pytest.fixture
@@ -787,11 +728,6 @@ def request_view(request_factory):
 @pytest.fixture
 def skip_view_permissions_check(mocker):
     mocker.patch("rest_framework.views.APIView.check_permissions")
-
-
-@pytest.fixture
-def micro_gateway_schema():
-    return Schema.objects.get(name=instances.SCHEMA_NAME_MICRO_GATEWAY)
 
 
 @pytest.fixture(autouse=True)

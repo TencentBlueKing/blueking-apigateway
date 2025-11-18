@@ -23,7 +23,6 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from cachetools import TTLCache, cached
-from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
@@ -372,8 +371,3 @@ class ContextManager(models.Manager):
 
     def delete_by_scope_ids(self, scope_type: str, scope_ids: List[int]):
         self.filter(scope_type=scope_type, scope_id__in=scope_ids).delete()
-
-
-class MicroGatewayManager(models.Manager):
-    def get_default_shared_gateway(self):
-        return self.get(is_shared=True, id=settings.DEFAULT_MICRO_GATEWAY_ID)

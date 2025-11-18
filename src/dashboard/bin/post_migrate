@@ -51,19 +51,10 @@ sync_bk_esb() {
     echo "API gateway bk-esb sync definition end"
 }
 
-sync_bk_default() {
-    # sync gateway bk-default
-    echo "API gateway ${DEFAULT_MICRO_GATEWAY_API_NAME} sync definition start ..."
-    python manage.py sync_apigw_config --api-name="${DEFAULT_MICRO_GATEWAY_API_NAME}" --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-default-definition.yaml"
-    python manage.py sync_apigw_stage --api-name="${DEFAULT_MICRO_GATEWAY_API_NAME}" --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-default-definition.yaml"
-    python manage.py sync_apigw_resources --delete --api-name="${DEFAULT_MICRO_GATEWAY_API_NAME}" --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-default-resources.yaml"
-    python manage.py create_version_and_release_apigw --api-name="${DEFAULT_MICRO_GATEWAY_API_NAME}" --stage=default --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-default-definition.yaml"
-    echo "API gateway ${DEFAULT_MICRO_GATEWAY_API_NAME} sync definition end"
-}
+# 同步全局资源
+python manage.py sync_global_resources
 
 # 同步内置网关
-# 默认共享网关实例挂在 bk-default 这个网关中，所以 sync_bk_default 必须在第一位
-sync_bk_default
 sync_bk_apigateway
 
 # only init esb when ENABLE_MULTI_TENANT_MODE != true/True
@@ -71,4 +62,5 @@ if [ "${ENABLE_MULTI_TENANT_MODE}" != "true" ] && [ "${ENABLE_MULTI_TENANT_MODE}
     sync_bk_esb
 fi
 
+# TODO: should been merged into sync_bk_apigateway, and remove this
 sync_bk_apigateway_inner
