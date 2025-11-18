@@ -38,16 +38,24 @@
       />
       <AgTable
         v-model:table-data="tableData"
-        v-model:settings="settings"
         :columns="columns"
-        row-key="id"
+        table-row-key="id"
         show-settings
         :filter-row="null"
         :frontend-search="isSearching"
         local-page
+        resizable
+        :row-class-name="getRowClassName"
         @filter-change="handleFilterChange"
         @clear-filter="handleClearQueries"
-      />
+      >
+        <template #empty>
+          <TableEmpty
+            :empty-type="filterValue.keyword ? 'search-empty' : 'empty'"
+            @clear-filter="filterValue.keyword = ''"
+          />
+        </template>
+      </AgTable>
     </div>
   </template>
 
@@ -61,6 +69,7 @@
   <CreateStage
     ref="stageSidesliderRef"
     :stage-id="stageId"
+    @hidden="handleCloseStage"
   />
 </template>
 
@@ -81,6 +90,7 @@ import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import { METHOD_THEMES } from '@/enums';
 import { HTTP_METHODS } from '@/constants';
 import { cloneDeep } from 'lodash-es';
+import TableEmpty from '@/components/table-empty/Index.vue';
 
 interface IProps {
   stageAddress: string
@@ -104,6 +114,8 @@ const currentStage = ref<any>(null);
 const currentResource = ref<any>({});
 const resourceDetailsRef = ref();
 const stageSidesliderRef = ref();
+// 是否是点击了后端服务
+const highlightRowId = ref(0);
 
 // 网关标签
 const labels = ref<any[]>([]);
@@ -112,12 +124,6 @@ const labels = ref<any[]>([]);
 const tableData = ref<any[]>([]);
 const initTableData = ref<any[]>([]);
 const stageList = ref<IStageListItem[]>([]);
-
-const settings = ref({
-  size: 'small',
-  checked: [],
-  disabled: [],
-});
 
 const gatewayId = computed<number>(() => gatewayStore.apigwId);
 
@@ -138,6 +144,14 @@ const customMethodsList = computed(() => {
   ];
 });
 
+const renderStageTag = computed(() => {
+  return <span class="inline-block bg-#e4faf0 color-#14a568 rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('环') }</span>;
+});
+
+const renderResourceTag = computed(() => {
+  return <span class="inline-block bg-#EDF4FF color-#3A84FF rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('资') }</span>;
+});
+
 const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'backend',
@@ -146,10 +160,13 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
       <bk-button
         theme="primary"
         text
-        onClick={() => handleCheckStage({
-          resourceName: row.name,
-          backendName: row.proxy?.backend?.name,
-        })}
+        onClick={() => {
+          highlightRowId.value = row.id;
+          handleCheckStage({
+            resourceName: row.name,
+            backendName: row.proxy?.backend?.name,
+          });
+        }}
       >
         { row.proxy?.backend?.name ?? '--' }
       </bk-button>
@@ -158,14 +175,28 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'name',
     title: t('资源名称'),
+    ellipsis: true,
+    minWidth: 150,
     cell: (h, { row }) => (
-      <bk-button
-        theme="primary"
-        text
+      <span
+        class="color-#3A84FF cursor-pointer"
         onClick={() => showDetails(row)}
       >
-        { row.name }
-      </bk-button>
+        <span>{ row.name }</span>
+        <span>
+          {
+            hasNoVerification(row)
+              ? (
+                <ag-icon
+                  v-bk-tooltips={{ content: t('该资源未配置认证方式，存在安全风险。') + t('如当前配置符合预期，可忽略该提示。') }}
+                  name="exclamation-circle-fill"
+                  class="ml-6px color-#F59500"
+                />
+              )
+              : ''
+          }
+        </span>
+      </span>
     ),
   },
   {
@@ -209,7 +240,37 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   },
   {
     colKey: 'plugins',
-    title: t('生效的插件'),
+    displayTitle: t('生效的插件'),
+    title: () => {
+      return (
+        <div>
+          <bk-popover
+            allow-html
+            content="#plugins_header_tip"
+            theme="light"
+            popoverDelay={0}
+          >
+            <div class="underline decoration-dashed underline-offset-4">
+              {t('生效的插件')}
+            </div>
+          </bk-popover>
+
+          <div id="plugins_header_tip">
+            <div class="mb-16px break-all">
+              { t('当环境与资源同时启用同一个插件时，资源的优先级将高于环境')}
+            </div>
+            <div class="mb-8px">
+              { renderResourceTag.value }
+              <span class="ml-8px">{t('代表“ 资源中配置的插件生效 ”')}</span>
+            </div>
+            <div>
+              { renderStageTag.value }
+              <span class="ml-8px">{t('代表“ 环境中配置的插件生效 ”')}</span>
+            </div>
+          </div>
+        </div>
+      );
+    },
     ellipsis: true,
     cell: (h, { row }) => (
       row.plugins?.length
@@ -217,8 +278,8 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
           <div class="flex items-center">
             {row.plugins.map(plugin => (
               <div class="flex items-center" key={plugin.id}>
-                {plugin.binding_type === 'stage' ? <span class="inline-block bg-#e4faf0 color-#14a568 rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('环') }</span> : ''}
-                {plugin.binding_type === 'resource' ? <span class="inline-block bg-#EDF4FF color-#3A84FF rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('资') }</span> : ''}
+                {plugin.binding_type === 'stage' ? renderStageTag.value : ''}
+                {plugin.binding_type === 'resource' ? renderResourceTag.value : ''}
                 <span class="v-middle ml-4px mr-4px">{ plugin.name }</span>
               </div>
             ))}
@@ -353,6 +414,14 @@ async function getLabels() {
   labels.value = await getGatewayLabels(gatewayId.value);
 };
 
+const getRowClassName = ({ row }) => {
+  return row.id === highlightRowId.value ? 'highlight-row' : '';
+};
+
+const handleCloseStage = () => {
+  highlightRowId.value = 0;
+};
+
 const showDetails = (row: any) => {
   currentResource.value = row;
   resourceDetailsRef.value?.showSideslider();
@@ -379,6 +448,11 @@ const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filters) => {
   Object.assign(filterValue.value, filters);
 };
 
+const hasNoVerification = (row: any) => {
+  const config = JSON.parse(row.contexts?.resource_auth?.config || '{}');
+  return config.auth_verified_required === false && config.app_verified_required === false;
+};
+
 defineExpose({ reload: init });
 
 </script>
@@ -399,6 +473,10 @@ defineExpose({ reload: init });
     width: 220px;
     height: 130px;
   }
+}
+
+:deep(.highlight-row) {
+  background-color: #e1ecff;
 }
 </style>
 

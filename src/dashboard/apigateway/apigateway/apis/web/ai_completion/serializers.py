@@ -19,6 +19,7 @@
 
 from rest_framework import serializers
 
+from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.ai.constant import AIContentTypeEnum
 
 
@@ -30,6 +31,12 @@ class AICompletionContentInfo(serializers.Serializer):
     )
     input = serializers.CharField(required=True, help_text="ai content")
     enable_streaming = serializers.BooleanField(default=False, help_text="开启流式返回")
+    language = serializers.ChoiceField(
+        choices=DocLanguageEnum.get_choices(),
+        required=False,
+        allow_null=True,
+        help_text="语言",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.ai_completion.serializers.AICompletionContentInfo"
@@ -41,3 +48,30 @@ class AICompletionInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.ai_completion.serializers.AICompletionInputSLZ"
+
+
+class BatchTranslateInputSLZ(serializers.Serializer):
+    """批量翻译输入序列化器"""
+
+    doc_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), required=False, help_text="需要翻译的文档ID列表"
+    )
+    target_language = serializers.ChoiceField(
+        choices=DocLanguageEnum.get_choices(),
+        required=False,
+        allow_null=True,
+        help_text="目标语言，如果不指定则自动检测并翻译为相反语言",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.ai_completion.serializers.BatchTranslateInputSLZ"
+
+
+class BatchTranslateOutputSLZ(serializers.Serializer):
+    """批量翻译输出序列化器"""
+
+    message = serializers.CharField(help_text="任务信息")
+    doc_count = serializers.IntegerField(help_text="文档数量")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.ai_completion.serializers.BatchTranslateOutputSLZ"

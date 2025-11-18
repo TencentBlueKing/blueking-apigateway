@@ -44,6 +44,10 @@ class GatewayTypeEnum(StructuredEnum):
     CLOUDS_API = EnumField(10, "云API")
 
 
+class GatewaySourceEnum(StructuredEnum):
+    API_DEBUG = EnumField("api_debug")
+
+
 class StageStatusEnum(StructuredEnum):
     INACTIVE = EnumField(0, "INACTIVE")
     ACTIVE = EnumField(1, "ACTIVE")
@@ -266,3 +270,7 @@ class MicroGatewayStatusEnum(StructuredEnum):
     # 可能会因为 helm install 超时导致失败，此时资源可能更新了，但 release 状态未更新
     # 所以不能简单标识安装或者未安装
     ABNORMAL = EnumField("abnormal", _("安装异常"))
+
+
+# 插件网关前缀
+PLUGIN_GATEWAY_PREFIX = "bp-"

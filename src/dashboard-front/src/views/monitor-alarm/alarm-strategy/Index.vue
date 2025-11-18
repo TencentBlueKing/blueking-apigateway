@@ -42,12 +42,9 @@
       <AgTable
         ref="tableRef"
         v-model:table-data="tableData"
-        v-model:settings="settings"
         show-settings
-        :hover="false"
         resizable
         :filter-value="filterData"
-        :sort="sortData"
         :api-method="getTableData"
         :columns="tableColumns"
         @clear-filter="handleClearFilter"
@@ -69,13 +66,12 @@
 
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
-import { Message, Switcher } from 'bkui-vue';
+import { Button, Loading, Message, Switcher } from 'bkui-vue';
 import type {
   FilterValue,
   PrimaryTableProps,
-  SortInfo,
 } from '@blueking/tdesign-ui';
-import { ITableMethod } from '@/types/common';
+import type { ITableMethod } from '@/types/common';
 import { useGateway } from '@/stores';
 import { usePopInfoBox } from '@/hooks';
 import { getGatewayLabels } from '@/services/source/gateway';
@@ -92,10 +88,8 @@ import AddAlarmStrategy from '@/views/monitor-alarm/alarm-strategy/components/Ad
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
-// const { maxTableLimit, clientHeight } = useMaxTableLimit();
 
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
-
 const tableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: t('告警策略名称'),
@@ -158,6 +152,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: t('更新时间'),
     colKey: 'updated_time',
+    ellipsis: true,
   },
   {
     title: t('是否启用'),
@@ -165,7 +160,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     cell: (h, { row }: { row?: Partial<IAlarmStrategy> }) => {
       if (row?.statusUpdating) {
         return (
-          <BkLoading
+          <Loading
             style="width: 48px;"
             loading
             theme="default"
@@ -173,7 +168,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
             opacity={1}
           >
             <div style="height: 20px;" />
-          </BkLoading>
+          </Loading>
         );
       }
       return (
@@ -195,35 +190,28 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     cell: (h, { row }: { row?: Partial<IAlarmStrategy> }) => {
       return (
         <div>
-          <BkButton
-            class="m-r-25px"
+          <Button
+            class="mr-24px"
             theme="primary"
             text
             onClick={() => handleEdit(row)}
           >
             { t('编辑') }
-          </BkButton>
-          <BkButton
+          </Button>
+          <Button
             theme="primary"
             text
             onClick={() => handleDelete(row)}
           >
             { t('删除') }
-          </BkButton>
+          </Button>
         </div>
       );
     },
   },
 ]);
 
-const settings = shallowRef({
-  size: 'small',
-  checked: [],
-  disabled: [],
-});
-
 const filterData = ref<FilterValue>({});
-const sortData = ref<SortInfo>({});
 const statusSwitcherDisabled = ref(false);
 const tableData = ref([]);
 const labelList = ref([]);

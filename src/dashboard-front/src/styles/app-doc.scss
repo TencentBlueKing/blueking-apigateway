@@ -24,6 +24,8 @@
   line-height: 19px;
   color: #63656e;
   text-align: left;
+  line-height: 1.5 !important;
+  font-size: 16px !important;
 
   h1,
   h2,
@@ -37,6 +39,8 @@
     line-height: 21px;
     color: #313238;
     text-align: left;
+    margin-top: 24px !important;
+    margin-bottom: 16px !important;
   }
 
   h1 {
@@ -67,8 +71,16 @@
     font-size: 14px;
     line-height: 22px;
     color: #63656e;
+    margin-top: 0 !important;
+    margin-bottom: 16px !important;
     word-break: break-all;
     white-space: normal;
+  }
+
+  ul,
+  ol {
+    margin-bottom: 16px !important;
+    padding-left: 2em !important;
   }
 
   ul {
@@ -165,11 +177,10 @@
     overflow: auto;
     font-size: 14px;
     line-height: 24px;
-    // color: #fff;
     text-align: left;
-    // background: #1e1e1e;
     background-color: #f6f8fa;
-    /* color: #1f2328; */
+    margin-bottom: 16px !important;
+    padding: 16px !important;
     border-radius: 2px;
 
     code {
@@ -188,6 +199,7 @@
     padding: 10px 15px;
     overflow-x: auto;
     border-radius: 3px;
+    background-color: transparent;
 
     &::-webkit-scrollbar {
       width: 4px;
@@ -207,8 +219,8 @@
   z-index: 10;
   font-size: 18px;
   color: #979ba5;
+  background-color: transparent;
   cursor: pointer;
-  // background: #1e1e1e;
   border: none;
 
   &:hover {

@@ -129,7 +129,7 @@
                     ]"
                   />
                   <div class="title">
-                    {{ t("各环境的服务配置") }}
+                    {{ t('各环境的服务配置') }}
                   </div>
                 </div>
               </template>
@@ -155,7 +155,7 @@
                         <BkFormItem
                           :label="t('负载均衡类型')"
                           property="configs.loadbalance"
-                          class="mt-20px"
+                          class="mt-20px relative"
                           required
                           :rules="configRules.loadbalance"
                         >
@@ -163,6 +163,7 @@
                             v-model="slotProps.configs.loadbalance"
                             :clearable="false"
                             :disabled="disabled"
+                            @change="(value: string) => handleLoadBalanceChange(value, slotProps.id)"
                           >
                             <BkOption
                               v-for="option of loadbalanceList"
@@ -171,7 +172,54 @@
                               :label="option.name"
                             />
                           </BkSelect>
+                          <BkLink
+                            class="absolute right-0 top--30px"
+                            theme="primary"
+                            :href="envStore.env.DOC_LINKS.LOADBALANCE"
+                            target="_blank"
+                          >
+                            <AgIcon
+                              name="jump"
+                              size="12"
+                              class="mr-4px"
+                            />
+                            <span class="text-12px">{{ t('帮助文档') }}</span>
+                          </BkLink>
                         </BkFormItem>
+
+                        <!-- hash_on -->
+                        <BkFormItem
+                          v-if="slotProps.configs.loadbalance === 'chash'"
+                          :label="t('哈希位置')"
+                          property="configs.hash_on"
+                          required
+                        >
+                          <BkSelect
+                            v-model="slotProps.configs.hash_on"
+                            :clearable="false"
+                            :filterable="false"
+                            :disabled="disabled"
+                            @change="(value: string) => handleHashOnChange(value, slotProps.id)"
+                          >
+                            <BkOption
+                              v-for="type in hashOnOptions"
+                              :id="type.id"
+                              :key="type.id"
+                              :name="type.name"
+                            />
+                          </BkSelect>
+                        </BkFormItem>
+
+                        <KeyFormItem
+                          v-if="slotProps.configs.loadbalance === 'chash'"
+                          :stage-config="slotProps"
+                          label="Key"
+                          property="configs.key"
+                          :disabled="disabled"
+                          required
+                          @change="handleHashOnKeyChange"
+                        />
+
                         <BkFormItem
                           v-for="(hostItem, i) in slotProps.configs.hosts"
                           :key="i"
@@ -266,7 +314,7 @@
                                 class="group-text group-text-style"
                                 :class="locale === 'en' ? 'long' : ''"
                               >
-                                {{ t("秒") }}
+                                {{ t('秒') }}
                               </div>
                             </template>
                           </BkInput>
@@ -274,7 +322,7 @@
                             class="timeout-tip"
                             :class="locale === 'en' ? 'long' : ''"
                           >
-                            {{ t("最大 300 秒") }}
+                            {{ t('最大 300 秒') }}
                           </span>
                         </BkFormItem>
                       </BkForm>
@@ -287,11 +335,11 @@
         </div>
       </template>
       <template #footer>
-        <div class="p-l-40px">
+        <div class="pl-40px">
           <BkButton
             :disabled="disabled"
             :loading="isSaveLoading"
-            class="m-r-8px w-88px"
+            class="mr-8px w-88px"
             theme="primary"
             @click="handleConfirm"
           >
@@ -344,7 +392,7 @@
             {{ t("去查看发布记录") }}
           </BkButton>
           <BkButton
-            class="m-l-10px"
+            class="ml-10px"
             @click="publishDialog.isShow = false"
           >
             {{ t("关闭") }}
@@ -358,7 +406,10 @@
 <script lang="ts" setup>
 import { Message } from 'bkui-vue';
 import { cloneDeep, isEqual } from 'lodash-es';
-import { useGateway } from '@/stores';
+import {
+  useEnv,
+  useGateway,
+} from '@/stores';
 import {
   type IBackendServicesConfig,
   createBackendService,
@@ -368,6 +419,7 @@ import {
 import { type IStageListItem, getStageList } from '@/services/source/stage';
 import { AngleUpFill, Success } from 'bkui-lib/icon';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
+import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
 
 interface IProps {
   editId?: number
@@ -380,9 +432,10 @@ interface Emits { (e: 'done'): void }
 const { editId = 0, base } = defineProps<IProps>();
 const emits = defineEmits<Emits>();
 
+const { t, locale } = useI18n();
 const router = useRouter();
 const gatewayStore = useGateway();
-const { t, locale } = useI18n();
+const envStore = useEnv();
 
 const hostReg = /^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?$|^\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?$/;
 const activeKey = ref(['base-info', 'stage-config']);
@@ -404,22 +457,11 @@ const stageList = ref([]);
 const stageConfigRef = ref([]);
 const isPublish = ref(false);
 const isSaveLoading = ref(false);
-const finaConfigs = ref([]);
+const finalConfigs = ref([]);
 const nameRef = ref<InstanceType<typeof BkInput>>(null);
 const baseInfoEl = useTemplateRef<InstanceType<typeof BkForm> & { validate: () => void }>(
   'baseInfoRef',
 );
-// 负载均衡类型
-const loadbalanceList = shallowRef([
-  {
-    id: 'roundrobin',
-    name: t('轮询(Round-Robin)'),
-  },
-  {
-    id: 'weighted-roundrobin',
-    name: t('加权轮询(Weighted Round-Robin)'),
-  },
-]);
 let publishDialog = reactive({
   isShow: false,
   stageNames: [],
@@ -496,6 +538,44 @@ const configRules = {
     },
   ],
 };
+// 负载均衡类型
+const loadbalanceList = [
+  {
+    id: 'roundrobin',
+    name: t('轮询（Round-Robin）'),
+  },
+  {
+    id: 'weighted-roundrobin',
+    name: t('加权轮询（Weighted Round-Robin）'),
+  },
+  {
+    id: 'chash',
+    name: t('一致性哈希（CHash）'),
+  },
+  {
+    id: 'ewma',
+    name: t('指数加权移动平均法（EWMA）'),
+  },
+  {
+    id: 'least_conn',
+    name: t('最小连接数（least_conn）'),
+  },
+];
+
+const hashOnOptions = [
+  {
+    id: 'vars',
+    name: 'vars',
+  },
+  {
+    id: 'header',
+    name: 'header',
+  },
+  {
+    id: 'cookie',
+    name: 'cookie',
+  },
+];
 
 const apigwId = computed<number>(() => gatewayStore.apigwId);
 
@@ -574,27 +654,30 @@ const handleConfirm = async () => {
   catch {
     if (emptyHostIndex > -1) {
       handleScrollView(stageConfigRef.value[emptyHostIndex]?.$el);
-      return;
     }
+    return;
   }
-  finaConfigs.value = stageConfig.value.map((item) => {
+  finalConfigs.value = stageConfig.value.map((item) => {
     const id = !editId ? item.id : item.configs.stage.id;
-    const results = Object.assign(
-      {},
-      {
-        timeout: item.configs.timeout,
-        loadbalance: item.configs.loadbalance,
-        hosts: item.configs.hosts,
-        stage_id: id,
-      },
-    );
+    const results = {
+      timeout: item.configs.timeout,
+      loadbalance: item.configs.loadbalance,
+      hosts: item.configs.hosts,
+      stage_id: id,
+    };
+    if (item.configs.hash_on) {
+      Object.assign(results, { hash_on: item.configs.hash_on });
+    }
+    if (item.configs.key) {
+      Object.assign(results, { key: item.configs.key });
+    }
     return results;
   });
   const { name, description } = baseInfo.value;
   const params = {
     name,
     description,
-    configs: finaConfigs.value,
+    configs: finalConfigs.value,
   };
   if (editId) {
     const detailContent = {
@@ -719,6 +802,39 @@ const getInfo = async () => {
     baseInfo: baseInfo.value,
   };
   initData.value = cloneDeep(sliderParams);
+};
+
+const handleLoadBalanceChange = (value: string, stageId: number) => {
+  const stage = stageConfig.value.find(item => item.id === stageId);
+  if (stage) {
+    if (value === 'chash') {
+      stage.configs.hash_on = 'vars';
+      stage.configs.key = 'remote_addr';
+    }
+    else {
+      delete stage.configs.hash_on;
+      delete stage.configs.key;
+    }
+  }
+};
+
+const handleHashOnChange = (value: string, stageId: number) => {
+  const stage = stageConfig.value.find(item => item.id === stageId);
+  if (stage) {
+    if (value === 'vars') {
+      stage.configs.key = 'remote_addr';
+    }
+    else {
+      stage.configs.key = '';
+    }
+  }
+};
+
+const handleHashOnKeyChange = (config: any) => {
+  const stage = stageConfig.value.find(item => item.id === config.id);
+  if (stage) {
+    stage.configs.key = config.configs.key;
+  }
 };
 
 const show = async () => {

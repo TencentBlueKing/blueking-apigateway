@@ -25,39 +25,17 @@ const routes: RouteRecordRaw[] = [
     redirect: { name: 'StageOverview' },
     meta: {
       title: t('环境管理'),
-      matchRoute: 'StageManagement',
+      matchRoute: 'StageOverview',
     },
     children: [
       {
         path: 'overview',
         name: 'StageOverview',
         component: () => import('./overview/Index.vue'),
-        redirect: { name: 'StageOverviewCardMode' },
         meta: {
           title: t('环境概览'),
-          matchRoute: 'StageManagement',
+          matchRoute: 'StageOverview',
         },
-        children: [
-          {
-            path: 'card-mode',
-            name: 'StageOverviewCardMode',
-            component: () => import('./overview/card-mode/Index.vue'),
-            meta: {
-              menuKey: 'StageOverview',
-              matchRoute: 'StageManagement',
-            },
-          },
-          {
-            path: 'detail-mode/:stageId',
-            name: 'StageOverviewDetailMode',
-            component: () => import('./overview/detail-mode/Index.vue'),
-            props: true,
-            meta: {
-              menuKey: 'StageOverview',
-              matchRoute: 'StageManagement',
-            },
-          },
-        ],
       },
       {
         path: 'release-record',
@@ -65,8 +43,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./release-record/Index.vue'),
         meta: {
           title: t('发布记录'),
-          matchRoute: 'StageManagement',
-          menuKey: 'StageReleaseRecord',
+          matchRoute: 'StageReleaseRecord',
         },
       },
     ],

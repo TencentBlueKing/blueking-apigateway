@@ -48,12 +48,26 @@
           <BkSelect
             v-model="searchParams.stage_id"
             :clearable="false"
-            searchable
             style="width: 150px;"
             @change="handleStageChange"
           >
             <BkOption
               v-for="option in stageList"
+              :id="option.id"
+              :key="option.id"
+              :name="option.name"
+            />
+          </BkSelect>
+        </BkFormItem>
+        <BkFormItem :label="t('后端服务')">
+          <BkSelect
+            v-model="backend_id"
+            clearable
+            style="width: 150px;"
+            @change="handleBackendChange"
+          >
+            <BkOption
+              v-for="option in backendList"
               :id="option.id"
               :key="option.id"
               :name="option.name"
@@ -199,7 +213,7 @@
                 {{ t('下载日志') }}
               </span>
               <BkAlert
-                v-if="table?.list?.length >= 10000"
+                v-if="pageCount >= 10000"
                 class="flex1"
                 theme="warning"
                 closable
@@ -209,27 +223,28 @@
           </template>
           <template #content>
             <div class="list">
-              <BkTable
+              <AgTable
                 ref="tableRef"
-                size="small"
-                class="access-log-table"
-                border="outer"
-                :data="table.list"
-                :columns="table.headers"
-                :pagination="pagination"
-                remote-pagination
-                :row-style="{ cursor: 'pointer' }"
-                :row-class="getRowClass"
-                show-overflow-tooltip
-                :settings="table.settings"
-                @row-click="handleRowClick"
-                @page-value-change="handlePageChange"
-                @page-limit-change="handlePageLimitChange"
+                v-model:table-data="tableData"
+                v-model:settings="settings"
+                row-key="request_id"
+                show-settings
+                expand-on-row-click
+                resizable
+                height="auto"
+                max-height="none"
+                :scroll="{}"
+                :immediate="false"
+                :filter-value="searchParams"
+                :api-method="getTableData"
+                :row-class-name="getRowClass"
+                :columns="tableColumns"
+                @clear-filter="handleClearFilterKey"
               >
-                <template #expandRow="row">
+                <template #expandedRow="{ row }">
                   <dl class="details">
                     <div
-                      v-for="({ label, field/*, is_filter: showCopy*/ }, index) in table.fields"
+                      v-for="({ label, field }, index) in expandedFields"
                       :key="index"
                       class="item"
                     >
@@ -244,13 +259,6 @@
                             {{ field }}
                           </span> ) :
                         </span>
-                        <!-- <i
-                          v-if="showCopy"
-                          v-bk-tooltips="$t('复制字段名')"
-                          @click.stop="copy(field)"
-                          class="apigateway-icon icon-ag-clipboard copy-btn"
-                          >
-                          </i> -->
                       </dt>
                       <dd class="value">
                         <span
@@ -303,15 +311,7 @@
                     </div>
                   </dl>
                 </template>
-                <template #empty>
-                  <TableEmpty
-                    :empty-type="tableEmptyConf.emptyType"
-                    :abnormal="tableEmptyConf.isAbnormal"
-                    @refresh="getSearchData"
-                    @clear-filter="handleClearFilterKey"
-                  />
-                </template>
-              </BkTable>
+              </AgTable>
             </div>
           </template>
         </BkCollapsePanel>
@@ -351,6 +351,7 @@ import {
 } from '@/services/source/access-log';
 import { exportLogs } from '@/services/source/report';
 import { getApigwResources } from '@/services/source/dashboard';
+import { getBackendServiceList } from '@/services/source/backendServices';
 import {
   AngleUpFill,
   CopyShape,
@@ -366,6 +367,9 @@ import ResourceSearcher from '@/views/operate-data/dashboard/components/Resource
 import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
 import AiChatSlider from '@/components/ai-seek/AiChatSlider.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
+import type { PrimaryTableProps } from '@blueking/tdesign-ui';
+import type { ITableMethod } from '@/types/common';
+import AgTable from '@/components/ag-table/Index.vue';
 
 const { t } = useI18n();
 const { getChartIntervalOption } = useChartIntervalOption();
@@ -380,147 +384,140 @@ const activeIndex = ref<number[]>([1, 2, 3]);
 const keyword = ref('');
 const chartInstance = ref(null);
 const chartContainer = ref(null);
-const tableRef = ref(null);
 const datePickerRef = ref(null);
 const isPageLoading = ref(false);
 const isDataLoading = ref(false);
 const isShareLoading = ref(false);
 const dateKey = ref('dateKey');
 const resourceList = ref<any>([]);
-const pagination = ref({
-  current: 1,
-  count: 0,
-  limit: 10,
-  showTotalCount: true,
-});
+const backend_id = ref('');
 const searchParams = ref<ISearchParamsInterface>({
   stage_id: 0,
   resource_id: '',
   time_start: '',
   time_end: '',
   query: '',
+  backend_name: '',
 });
 const tableEmptyConf = ref({
   emptyType: '',
   isAbnormal: false,
 });
-const table = ref({
-  list: [],
-  fields: [],
-  headers: [],
-  settings: {
-    fields: [
-      {
-        label: t('请求ID'),
-        field: 'request_id',
-      },
-      {
-        label: t('请求时间'),
-        field: 'timestamp',
-      },
-      {
-        label: t('蓝鲸应用'),
-        field: 'app_code',
-      },
-      {
-        label: t('蓝鲸用户'),
-        field: 'bk_username',
-      },
-      {
-        label: t('客户端IP'),
-        field: 'client_ip',
-      },
-      {
-        label: t('环境'),
-        field: 'stage',
-      },
-      {
-        label: t('资源ID'),
-        field: 'resource_id',
-      },
-      {
-        label: t('资源名称'),
-        field: 'resource_name',
-      },
-      {
-        label: t('请求方法'),
-        field: 'method',
-        disabled: true,
-      },
-      {
-        label: t('请求域名'),
-        field: 'http_host',
-      },
-      {
-        label: t('请求路径'),
-        field: 'http_path',
-        disabled: true,
-      },
-      {
-        label: 'QueryString',
-        field: 'params',
-      },
-      {
-        label: 'Body',
-        field: 'body',
-      },
-      {
-        label: t('后端请求方法'),
-        field: 'backend_method',
-      },
-      {
-        label: t('后端Scheme'),
-        field: 'backend_scheme',
-      },
-      {
-        label: t('后端域名'),
-        field: 'backend_host',
-      },
-      {
-        label: t('后端路径'),
-        field: 'backend_path',
-      },
-      {
-        label: t('响应体大小'),
-        field: 'response_size',
-      },
-      {
-        label: t('状态码'),
-        field: 'status',
-      },
-      {
-        label: t('请求总耗时'),
-        field: 'request_duration',
-      },
-      {
-        label: t('耗时(毫秒)'),
-        field: 'backend_duration',
-      },
-      {
-        label: t('错误编码名称'),
-        field: 'code_name',
-      },
-      {
-        label: t('错误'),
-        field: 'error',
-      },
-      {
-        label: t('响应说明'),
-        field: 'response_desc',
-      },
-    ],
-    extCls: 'hide-table-setting-line-height',
-    checked: ['timestamp', 'method', 'http_path', 'status', 'backend_duration', 'error'],
-  },
+
+const tableData = ref([]);
+const expandedFields = ref([]);
+const pageCount = ref<number>(0);
+const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const settings = shallowRef({
+  checked: ['timestamp', 'method', 'http_path', 'status', 'backend_duration', 'error'],
+  fields: [
+    {
+      label: t('请求ID'),
+      field: 'request_id',
+    },
+    {
+      label: t('请求时间'),
+      field: 'timestamp',
+    },
+    {
+      label: t('蓝鲸应用'),
+      field: 'app_code',
+    },
+    {
+      label: t('蓝鲸用户'),
+      field: 'bk_username',
+    },
+    {
+      label: t('客户端IP'),
+      field: 'client_ip',
+    },
+    {
+      label: t('环境'),
+      field: 'stage',
+    },
+    {
+      label: t('资源ID'),
+      field: 'resource_id',
+    },
+    {
+      label: t('资源名称'),
+      field: 'resource_name',
+    },
+    {
+      label: t('请求方法'),
+      field: 'method',
+      disabled: true,
+    },
+    {
+      label: t('请求域名'),
+      field: 'http_host',
+    },
+    {
+      label: t('请求路径'),
+      field: 'http_path',
+      disabled: true,
+    },
+    {
+      label: 'QueryString',
+      field: 'params',
+    },
+    {
+      label: 'Body',
+      field: 'body',
+    },
+    {
+      label: t('后端请求方法'),
+      field: 'backend_method',
+    },
+    {
+      label: t('后端Scheme'),
+      field: 'backend_scheme',
+    },
+    {
+      label: t('后端域名'),
+      field: 'backend_host',
+    },
+    {
+      label: t('后端路径'),
+      field: 'backend_path',
+    },
+    {
+      label: t('响应体大小'),
+      field: 'response_size',
+    },
+    {
+      label: t('状态码'),
+      field: 'status',
+    },
+    {
+      label: t('请求总耗时'),
+      field: 'request_duration',
+    },
+    {
+      label: t('耗时(毫秒)'),
+      field: 'backend_duration',
+    },
+    {
+      label: t('错误编码名称'),
+      field: 'code_name',
+    },
+    {
+      label: t('错误'),
+      field: 'error',
+    },
+    {
+      label: t('响应说明'),
+      field: 'response_desc',
+    },
+  ],
 });
+
 const includeObj = ref<string[]>([]);
 const excludeObj = ref<string[]>([]);
 
-// const searchUsage = ref({
-//   showed: false,
-// });
 const chartData: Record<string, any> = ref({});
 const stageList = ref([]);
+const backendList = ref([]);
 const isAISliderShow = ref(false);
 const aiRequestMessage = ref('');
 
@@ -547,10 +544,6 @@ const searchConditions = computed(() => {
     res.push(`${tempArr[0]}!=${tempArr[1]}`);
   });
   return res;
-});
-
-const pageCount = computed(() => {
-  return pagination.value.count;
 });
 
 const isShowChart = computed(() => {
@@ -672,6 +665,7 @@ const getResources = async () => {
     order_by: 'path',
     offset: 0,
     limit: 10000,
+    backend_id: backend_id.value,
   };
 
   try {
@@ -684,147 +678,160 @@ const getResources = async () => {
   }
 };
 
-const setTableHeader = () => {
-  const columns = [
-    {
-      type: 'expand',
-      width: 30,
-      minWidth: 30,
-      showOverflowTooltip: false,
+const tableColumns = shallowRef<PrimaryTableProps['columns']>([
+  {
+    title: t('请求ID'),
+    colKey: 'request_id',
+    ellipsis: true,
+    width: 180,
+  },
+  {
+    title: t('请求时间'),
+    colKey: 'timestamp',
+    ellipsis: true,
+    width: 180,
+    cell: (h, { row }: { row: Record<string, any> }) => {
+      return formatValue(row.timestamp, 'timestamp');
     },
-    {
-      field: 'request_id',
-      width: 180,
-      label: t('请求ID'),
+  },
+  {
+    title: t('蓝鲸应用'),
+    colKey: 'app_code',
+    ellipsis: true,
+    width: 100,
+  },
+  {
+    title: t('蓝鲸用户'),
+    colKey: 'bk_username',
+    ellipsis: true,
+    width: 100,
+  },
+  {
+    title: t('客户端IP'),
+    colKey: 'client_ip',
+    ellipsis: true,
+    width: 100,
+  },
+  {
+    title: t('环境'),
+    colKey: 'stage',
+    ellipsis: true,
+    width: 80,
+  },
+  {
+    title: t('资源ID'),
+    colKey: 'resource_id',
+    ellipsis: true,
+    width: 80,
+  },
+  {
+    title: t('资源名称'),
+    colKey: 'resource_name',
+    ellipsis: true,
+    width: 160,
+  },
+  {
+    title: t('请求方法'),
+    colKey: 'method',
+    ellipsis: true,
+    width: 100,
+  },
+  {
+    title: t('请求域名'),
+    colKey: 'http_host',
+    ellipsis: true,
+    width: 160,
+  },
+  {
+    title: t('请求路径'),
+    colKey: 'http_path',
+    ellipsis: true,
+    width: 260,
+  },
+  {
+    title: 'QueryString',
+    colKey: 'params',
+    ellipsis: true,
+    width: 120,
+  },
+  {
+    title: 'Body',
+    colKey: 'body',
+    ellipsis: true,
+    width: 120,
+  },
+  {
+    title: t('后端请求方法'),
+    colKey: 'backend_method',
+    ellipsis: true,
+    width: 120,
+  },
+  {
+    title: t('后端Scheme'),
+    colKey: 'backend_scheme',
+    ellipsis: true,
+    width: 120,
+  },
+  {
+    title: t('后端域名'),
+    colKey: 'backend_host',
+    ellipsis: true,
+    width: 160,
+  },
+  {
+    title: t('后端路径'),
+    colKey: 'backend_path',
+    ellipsis: true,
+    width: 160,
+  },
+  {
+    title: t('响应体大小'),
+    colKey: 'response_size',
+    ellipsis: true,
+    width: 100,
+  },
+  {
+    title: t('状态码'),
+    colKey: 'status',
+    ellipsis: true,
+    width: 100,
+  },
+  {
+    title: t('请求总耗时'),
+    colKey: 'request_duration',
+    ellipsis: true,
+    width: 120,
+  },
+  {
+    title: t('耗时(毫秒)'),
+    colKey: 'backend_duration',
+    ellipsis: true,
+    width: 120,
+  },
+  {
+    title: t('错误编码名称'),
+    colKey: 'code_name',
+    ellipsis: true,
+    width: 120,
+  },
+  {
+    title: t('错误'),
+    colKey: 'error',
+    ellipsis: true,
+    width: 120,
+    cell: (h, { row }: { row: Record<string, any> }) => {
+      return row.error || '--';
     },
-    {
-      field: 'timestamp',
-      width: 180,
-      label: t('请求时间'),
-      render: ({ data }: Record<string, any>) => {
-        return formatValue(data.timestamp, 'timestamp');
-      },
-    },
-    {
-      field: 'app_code',
-      width: 100,
-      label: t('蓝鲸应用'),
-    },
-    {
-      field: 'bk_username',
-      width: 100,
-      label: t('蓝鲸用户'),
-    },
-    {
-      field: 'client_ip',
-      width: 100,
-      label: t('客户端IP'),
-    },
-    {
-      field: 'stage',
-      width: 80,
-      label: t('环境'),
-    },
-    {
-      field: 'resource_id',
-      width: 80,
-      label: t('资源ID'),
-    },
-    {
-      field: 'resource_name',
-      width: 160,
-      label: t('资源名称'),
-    },
-    {
-      field: 'method',
-      width: 100,
-      label: t('请求方法'),
-    },
-    {
-      field: 'http_host',
-      width: 160,
-      label: t('请求域名'),
-    },
-    {
-      field: 'http_path',
-      label: t('请求路径'),
-      width: 260,
-    },
-    {
-      field: 'params',
-      width: 120,
-      label: 'QueryString',
-    },
-    {
-      field: 'body',
-      width: 120,
-      label: 'Body',
-    },
-    {
-      field: 'backend_method',
-      width: 120,
-      label: t('后端请求方法'),
-    },
-    {
-      field: 'backend_scheme',
-      width: 120,
-      label: t('后端Scheme'),
-    },
-    {
-      field: 'backend_host',
-      width: 160,
-      label: t('后端域名'),
-    },
-    {
-      field: 'backend_path',
-      width: 160,
-      label: t('后端路径'),
-    },
-    {
-      field: 'response_size',
-      width: 100,
-      label: t('响应体大小'),
-    },
-    {
-      field: 'status',
-      width: 100,
-      label: t('状态码'),
-    },
-    {
-      field: 'request_duration',
-      width: 120,
-      label: t('请求总耗时'),
-    },
-    {
-      field: 'backend_duration',
-      width: 120,
-      label: t('耗时(毫秒)'),
-    },
-    {
-      field: 'code_name',
-      width: 120,
-      label: t('错误编码名称'),
-    },
-    {
-      field: 'error',
-      width: 120,
-      label: t('错误'),
-      showOverflowTooltip: true,
-      render: ({ data }: Record<string, any>) => {
-        return data.error || '--';
-      },
-    },
-    {
-      field: 'response_desc',
-      width: 120,
-      label: t('响应说明'),
-    },
-  ];
-  table.value.headers = columns;
-};
+  },
+  {
+    title: t('响应说明'),
+    colKey: 'response_desc',
+    ellipsis: true,
+    width: 120,
+  },
+]);
 
-const handleResourceChange = (value: any) => {
-  searchParams.value.resource_id = value;
+const handleResourceChange = () => {
   getSearchData();
 };
 
@@ -838,6 +845,15 @@ const getApigwStages = async () => {
   if (stageList.value.length) {
     searchParams.value.stage_id = stageList.value[0].id;
   }
+};
+
+const getBackendServices = async () => {
+  const pageParams = {
+    offset: 0,
+    limit: 10000,
+  };
+  const res = await getBackendServiceList(apigwId.value, pageParams);
+  backendList.value = res?.results || [];
 };
 
 const getPayload = () => {
@@ -861,43 +877,43 @@ const getPayload = () => {
   };
 };
 
-const getApigwAccessLogList = async () => {
-  const { params, path } = getPayload();
-  params.offset = (pagination.value.current - 1) * pagination.value.limit;
-  params.limit = pagination.value.limit;
+const getList = () => {
+  const { params } = getPayload();
+  tableRef.value?.fetchData(params, { resetPage: true });
+};
 
-  return await fetchApigwAccessLogList(apigwId.value, params, path);
+const getTableData = async (params: Record<string, any> = {}) => {
+  // setSearchTimeRange();
+  const { path } = getPayload();
+  const results = await fetchApigwAccessLogList(apigwId.value, params, path);
+
+  expandedFields.value = results?.fields || [];
+  pageCount.value = results?.count || 0;
+
+  return results;
 };
 
 const getApigwAccessLogChart = async () => {
+  // setSearchTimeRange();
   const { params, path } = getPayload();
   params.no_page = true;
 
-  return await fetchApigwAccessLogChart(apigwId.value, params, path);
+  const results = await fetchApigwAccessLogChart(apigwId.value, params, path);
+
+  chartData.value = results || {};
+  renderChart(chartData.value);
+  chartInstance.value?.dispatchAction({ type: 'restore' });
 };
 
 const getSearchData = async () => {
   isDataLoading.value = true;
   try {
     setSearchTimeRange();
-    const [listRes, chartRes]: any = await Promise.all([
-      getApigwAccessLogList(),
+    await Promise.all([
+      getList(),
       getApigwAccessLogChart(),
     ]);
-    chartData.value = chartRes || {};
-    renderChart(chartData.value);
-    chartInstance.value?.dispatchAction({ type: 'restore' });
-    table.value = Object.assign(table.value, {
-      list: listRes?.results || [],
-      fields: listRes?.fields || [],
-    });
-    table.value.list.forEach((item) => {
-      item.isExpand = false;
-    });
-    pagination.value.count = listRes?.count || 0;
-    setTableHeader();
     updateTableEmptyConfig();
-    tableEmptyConf.value.isAbnormal = false;
   }
   catch (err) {
     console.error(err);
@@ -906,7 +922,6 @@ const getSearchData = async () => {
   finally {
     isPageLoading.value = false;
     isDataLoading.value = false;
-    setTableHeader();
   }
 };
 
@@ -991,22 +1006,21 @@ const handleClearSearch = () => {
 };
 
 const handleDownload = async (event: Event) => {
-  if (pagination.value.count === 0) {
+  if (pageCount.value === 0) {
     return;
   }
   event.stopPropagation();
   try {
     const { params, path } = getPayload();
-    params.offset = (pagination.value.current - 1) * pagination.value.limit;
+    params.offset = tableRef.value?.getPagination()?.current || 1;
     params.limit = 10000;
 
-    const res = await exportLogs(apigwId.value, params, path);
-    if (res.success) {
-      Message({
-        message: t('导出成功'),
-        theme: 'success',
-      });
-    }
+    await exportLogs(apigwId.value, params, path);
+
+    Message({
+      message: t('导出成功'),
+      theme: 'success',
+    });
   }
   catch (err) {
     const error = err as Error;
@@ -1034,22 +1048,23 @@ const handleClickCopyLink = async ({ request_id }: any) => {
 
 const handlePickerConfirm = () => {
   handleConfirm();
-  nextTick(() => {
-    pagination.value.current = 1;
-    getSearchData();
-  });
+  getSearchData();
 };
 
-const handleStageChange = (value: number) => {
-  searchParams.value.stage_id = value;
-  pagination.value.current = 1;
+const handleStageChange = () => {
   getSearchData();
+};
+
+const handleBackendChange = async () => {
+  searchParams.value.backend_name = backendList.value.find((item: any) => item.id === backend_id.value)?.name || '';
+  searchParams.value.resource_id = '';
+  await getResources();
+  await getSearchData();
 };
 
 const handleSearch = (value: string) => {
   keyword.value = value;
   searchParams.value.query = keyword.value;
-  pagination.value.current = 1;
   // 若是非空字符串则写入搜索历史
   if (trim(value) !== '') {
     queryHistory.value.unshift(value);
@@ -1062,32 +1077,13 @@ const handleChoose = (search: string) => {
   keyword.value = search;
 };
 
-const handlePageLimitChange = (limit: number) => {
-  pagination.value = Object.assign(pagination.value, {
-    current: 1,
-    limit,
-  });
-  getSearchData();
-};
-
-const handlePageChange = (current: number) => {
-  pagination.value = Object.assign(pagination.value, { current });
-  getSearchData();
-};
-
-const handleRowClick = (event: Event, row: Record<string, any>) => {
-  event.stopPropagation();
-  row.isExpand = !row.isExpand;
-  nextTick(() => {
-    tableRef.value.setRowExpand(row, row.isExpand);
-  });
-};
-
 const handleClearFilterKey = () => {
   keyword.value = '';
   if (stageList.value.length) {
     searchParams.value.stage_id = stageList.value[0].id;
   }
+  backend_id.value = '';
+  searchParams.value.backend_name = '';
   searchParams.value.resource_id = '';
   [datePickerRef.value.shortcut] = [accessLogStore.datepickerShortcuts[1]];
   dateValue.value = [];
@@ -1098,7 +1094,7 @@ const handleClearFilterKey = () => {
 
 const updateTableEmptyConfig = () => {
   const time = dateValue.value.some(Boolean);
-  if (keyword.value || !table.value.list.length) {
+  if (keyword.value || !tableData.value.length) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
@@ -1109,8 +1105,8 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.emptyType = '';
 };
 
-const getRowClass = (row: Record<string, any>) => {
-  return !(row.status >= 200 && row.status < 300) || row.error ? 'exception' : '';
+const getRowClass = ({ row }: { row: Record<string, any> }) => {
+  return !(row.status >= 200 && row.status < 300) || row.error ? 'exception hover:cursor-pointer' : 'hover:cursor-pointer';
 };
 
 const chartResize = () => {
@@ -1121,6 +1117,7 @@ const chartResize = () => {
 
 const initData = async () => {
   await getApigwStages();
+  await getBackendServices();
   await getResources();
   await getSearchData();
 };
@@ -1159,7 +1156,7 @@ const initChart = async () => {
 
 const handleAIChatClick = (row: any) => {
   const res: Record<string, any> = {};
-  table.value.fields.forEach(({ label, field }) => {
+  expandedFields.value.forEach(({ label, field }) => {
     res[`${label}(${field})`] = row[field] || '--';
   });
   try {

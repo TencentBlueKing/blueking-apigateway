@@ -46,29 +46,15 @@
         />
       </div>
     </div>
-    <BkLoading :loading="isLoading">
-      <BkTable
-        class="table-layout"
-        :data="tableData"
-        remote-pagination
-        :pagination="pagination"
-        show-overflow-tooltip
-        :columns="columns"
-        border="outer"
-        row-hover="auto"
-        @page-limit-change="handlePageSizeChange"
-        @page-value-change="handlePageChange"
-      >
-        <template #empty>
-          <TableEmpty
-            :empty-type="tableEmptyConf.emptyType"
-            :abnormal="tableEmptyConf.isAbnormal"
-            @refresh="getList"
-            @clear-filter="handleClearFilterKey"
-          />
-        </template>
-      </BkTable>
-    </BkLoading>
+
+    <AgTable
+      ref="tableRef"
+      show-settings
+      resizable
+      :api-method="getTableData"
+      :columns="columns"
+      @clear-filter="handleClearFilter"
+    />
 
     <!-- 日志抽屉 -->
     <ReleaseStageEvent
@@ -86,13 +72,9 @@
 </template>
 
 <script lang="tsx" setup>
-import {
-  useDatePicker,
-  useQueryList,
-} from '@/hooks';
+import { useDatePicker } from '@/hooks';
 import { Spinner } from 'bkui-vue/lib/icon';
 import { getReleaseHistories } from '@/services/source/release';
-import TableEmpty from '@/components/table-empty/Index.vue';
 import {
   type IEventResponse,
   getDeployHistories,
@@ -103,6 +85,8 @@ import ReleaseProgrammableEvent from '../components/ReleaseProgrammableEvent.vue
 import EditMember from '@/views/basic-info/components/EditMember.vue';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import { t } from '@/locales';
+import AgTable from '@/components/ag-table/Index.vue';
+import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 
 type Enums = typeof publishSourceEnum | typeof publishStatusEnum;
 
@@ -115,23 +99,6 @@ const filterData = ref({
   time_start: '',
   time_end: '',
 });
-
-// 列表hooks
-const {
-  tableData,
-  pagination,
-  isLoading,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-} = useQueryList(
-  {
-    apiMethod: gatewayStore.isProgrammableGateway ? getDeployHistories : getReleaseHistories,
-    filterData,
-    filterNoResetPage: false,
-    immediate: false,
-  },
-);
 
 // datepicker 时间选择器 hooks 适用于列表筛选
 const {
@@ -147,10 +114,7 @@ const {
 
 const dateKey = ref('dateKey');
 
-const tableEmptyConf = ref({
-  emptyType: '',
-  isAbnormal: false,
-});
+const tableRef = useTemplateRef('tableRef');
 
 const publishSourceEnum = {
   gateway_enable: t('网关启用'),
@@ -178,34 +142,38 @@ const programmableLogDetailsRef = ref();
 
 let timerId: any = null;
 
-const columns = computed(() =>
+const apigwId = computed(() => gatewayStore.apigwId);
+
+const columns = computed<PrimaryTableProps['columns']>(() =>
   gatewayStore.isProgrammableGateway
     ? [
       {
-        label: t('已发布的环境'),
-        field: 'stage.name',
+        title: t('已发布的环境'),
+        colKey: 'stage.name',
       },
       {
-        label: t('类型'),
+        colKey: 'type',
+        title: t('类型'),
         width: 100,
-        render: ({ row }: any) => <div>{getTextFromEnum(publishSourceEnum, row.source)}</div>,
+        cell: (h, { row }: any) => <div>{getTextFromEnum(publishSourceEnum, row.source)}</div>,
       },
       {
-        label: t('分支'),
-        field: 'branch',
+        title: t('分支'),
+        colKey: 'branch',
       },
       {
-        label: 'commit_id',
-        field: 'commit_id',
+        title: 'commit_id',
+        colKey: 'commit_id',
       },
       {
-        label: t('版本号'),
-        field: 'version',
+        title: t('版本号'),
+        colKey: 'version',
       },
       {
-        label: t('部署状态'),
+        colKey: 'deployStatus',
+        title: t('部署状态'),
         width: 120,
-        render: ({ row }: any) => (
+        cell: (h, { row }: any) => (
           <div>
             {
               row?.status === 'doing'
@@ -217,12 +185,14 @@ const columns = computed(() =>
         ),
       },
       {
-        label: t('操作时间'),
-        field: 'created_time',
+        title: t('操作时间'),
+        colKey: 'created_time',
+        width: 220,
       },
       {
-        label: t('操作人'),
-        render: ({ row }: any) => (
+        colKey: 'operator',
+        title: t('操作人'),
+        cell: (h, { row }: any) => (
           <div>
             {
               !featureFlagStore.isEnableDisplayName
@@ -247,38 +217,43 @@ const columns = computed(() =>
         ),
       },
       {
-        label: t('操作'),
-        render: ({ row }: any) => (
-          <BkButton text theme="primary" disabled={!row.deploy_id} onClick={() => showLogs(row.deploy_id, row)}>
+        colKey: 'actions',
+        title: t('操作'),
+        cell: (h, { row }: any) => (
+          <bk-button text theme="primary" disabled={!row.deploy_id} onClick={() => showLogs(row.deploy_id, row)}>
             {t('发布日志')}
-          </BkButton>
+          </bk-button>
         ),
       },
     ]
     : [
       {
-        label: t('已发布的环境'),
-        field: 'stage.name',
+        title: t('已发布的环境'),
+        colKey: 'stage.name',
       },
       {
-        label: t('类型'),
-        render: ({ row }: any) => <div>{getTextFromEnum(publishSourceEnum, row.source)}</div>,
+        colKey: 'type',
+        title: t('类型'),
+        cell: (h, { row }: any) => <div>{getTextFromEnum(publishSourceEnum, row.source)}</div>,
       },
       {
-        label: t('版本号'),
-        render: ({ row }: any) => (
-          <BkButton
+        colKey: 'version',
+        title: t('版本号'),
+        cell: (h, { row }: any) => (
+          <bk-button
             text
             theme="primary"
             onClick={() => goVersionList(row)}
           >
             {row.resource_version_display}
-          </BkButton>
+          </bk-button>
         ),
       },
       {
-        label: t('操作状态'),
-        render: ({ row }: any) => (
+        colKey: 'actionStatus',
+        title: t('操作状态'),
+        width: 120,
+        cell: (h, { row }: any) => (
           <div>
             {
               row?.status === 'doing'
@@ -290,12 +265,14 @@ const columns = computed(() =>
         ),
       },
       {
-        label: t('操作时间'),
-        field: 'created_time',
+        title: t('操作时间'),
+        colKey: 'created_time',
+        width: 220,
       },
       {
-        label: t('操作人'),
-        render: ({ row }: any) => (
+        colKey: 'operator',
+        title: t('操作人'),
+        cell: (h, { row }: any) => (
           <div>
             {
               !featureFlagStore.isEnableDisplayName
@@ -320,36 +297,36 @@ const columns = computed(() =>
         ),
       },
       {
-        label: t('耗时'),
-        field: 'duration',
+        title: t('耗时'),
+        colKey: 'duration',
       },
       {
-        label: t('操作'),
-        render: ({ row }: any) => (
-          <BkButton text theme="primary" onClick={() => showLogs(row.id)}>
+        colKey: 'actions',
+        title: t('操作'),
+        cell: (h, { row }: any) => (
+          <bk-button text theme="primary" onClick={() => showLogs(row.id)}>
             {t('发布日志')}
-          </BkButton>
+          </bk-button>
         ),
       },
     ],
 );
 
-watch(tableData, () => {
-  updateTableEmptyConfig();
-}, { deep: true });
-
 watch(() => gatewayStore.isProgrammableGateway, () => {
-  if (gatewayStore.isProgrammableGateway) {
-    getList(getDeployHistories);
-  }
-  else {
-    getList(getReleaseHistories);
-  }
   clearInterval(timerId);
   timerId = setInterval(() => {
-    getList(gatewayStore.isProgrammableGateway ? getDeployHistories : getReleaseHistories, false);
+    tableRef.value!.fetchData(filterData.value);
   }, 1000 * 30);
 }, { immediate: true });
+
+watch(filterData, () => {
+  tableRef.value!.fetchData(filterData.value);
+}, { deep: true });
+
+const getTableData = async (params: Record<string, any> = {}) =>
+  gatewayStore.isProgrammableGateway
+    ? getDeployHistories(apigwId.value, params)
+    : getReleaseHistories(apigwId.value, params);
 
 const showLogs = (id: number | string, row?: IEventResponse) => {
   // 可编程网关
@@ -366,31 +343,16 @@ const showLogs = (id: number | string, row?: IEventResponse) => {
   }
 };
 
-const handleClearFilterKey = () => {
-  filterData.value = Object.assign(filterData.value, {
+const handleClearFilter = () => {
+  filterData.value = {
     keyword: '',
     time_start: '',
     time_end: '',
-  });
+  };
   dateValue.value = [];
   shortcutSelectedIndex.value = -1;
   dateKey.value = String(+new Date());
-  getList();
-  updateTableEmptyConfig();
-};
-
-const updateTableEmptyConfig = () => {
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  const isSearch = dateValue.value.length > 0 || filterData.value.keyword;
-  if (isSearch && !tableData.value.length) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
-  }
-  if (isSearch) {
-    tableEmptyConf.value.emptyType = 'empty';
-    return;
-  }
-  tableEmptyConf.value.emptyType = '';
+  tableRef.value!.fetchData(filterData.value, { resetPage: true });
 };
 
 const goVersionList = (data: any) => {
@@ -426,18 +388,6 @@ onUnmounted(() => {
     .operate-input {
       width: 500px;
       margin-inline: 10px;
-    }
-  }
-
-  .table-layout {
-
-    :deep(.bk-table-head) {
-      padding-right: 0;
-      scrollbar-color: transparent transparent;
-    }
-
-    :deep(.bk-table-body) {
-      scrollbar-color: transparent transparent;
     }
   }
 }

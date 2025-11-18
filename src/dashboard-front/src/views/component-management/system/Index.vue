@@ -30,34 +30,23 @@
           :placeholder="t('请输入系统名称、描述，按Enter搜索')"
           :right-icon="'bk-icon icon-search'"
           @enter="handleSearch"
+          @clear="handleClearFilter"
         />
       </div>
     </div>
-
     <BkLoading :loading="isLoading">
-      <BkTable
-        ext-cls="ag-stage-table"
-        :data="systemList"
-        :pagination="pagination"
+      <AgTable
+        ref="tableRef"
+        v-model:table-data="displayData"
+        show-settings
+        resizable
+        local-page
+        :table-empty-type="tableEmptyType"
+        :max-limit-config="{ allocatedHeight: 300, mode: 'tdesign'}"
         :columns="tableColumns"
-        :max-height="clientHeight"
-        remote-pagination
-        show-overflow-tooltip
-        @page-limit-change="handlePageLimitChange"
-        @page-value-change="handlePageChange"
-      >
-        <template #empty>
-          <TableEmpty
-            :is-loading="isLoading"
-            :empty-type="tableEmptyConf.emptyType"
-            :abnormal="tableEmptyConf.isAbnormal"
-            @refresh="getSystemList"
-            @clear-filter="handleClearFilterKey"
-          />
-        </template>
-      </BkTable>
+        @clear-filter="handleClearFilter"
+      />
     </BkLoading>
-
     <!-- 编辑系统 -->
     <AddSystemSlider
       v-model:slider-params="sliderConfig"
@@ -148,8 +137,8 @@ import {
   sortBy,
   sortedUniq,
 } from 'lodash-es';
-import { Message } from 'bkui-vue';
-import { useMaxTableLimit } from '@/hooks';
+import { Button, Message } from 'bkui-vue';
+import type { ITableMethod } from '@/types/common';
 import {
   addDocCategory,
   getDocCategory,
@@ -160,11 +149,10 @@ import {
   getSystemDetail,
   getSystems,
 } from '@/services/source/system';
+import AgTable from '@/components/ag-table/Index.vue';
 import AddSystemSlider from './components/AddSystemSlider.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
 
 const { t } = useI18n();
-const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 252 });
 
 const getDefaultData = () => {
   return {
@@ -180,24 +168,46 @@ const getDefaultData = () => {
   };
 };
 
+const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const isLoading = ref(false);
 const keyword = ref('');
+const tableEmptyType = ref<'empty' | 'search-empty'>('empty');
 const tableColumns = ref([
   {
-    label: t('名称'),
-    field: 'name',
-    render: ({ row }: { row?: Partial<ISystemItem> }) => {
+    title: t('名称'),
+    colKey: 'name',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
       return (
-        <span>
-          <span class="m-r-4px">{row?.name || '--' }</span>
+        <div class="flex-row">
+          <div
+            v-bk-tooltips={{
+              content: row.name,
+              placement: 'top',
+              disabled: !row.isOverflow,
+            }}
+            class="truncate mr-4px"
+            onMouseenter={e => tableRef.value?.handleCellEnter({
+              e,
+              row,
+            })}
+            onMouseLeave={e => tableRef.value?.handleCellLeave({
+              e,
+              row,
+            })}
+          >
+            {row?.name || '--' }
+          </div>
           { row.is_official && <span class="official">{ t('官方') }</span> }
-        </span>
+        </div>
       );
     },
   },
   {
-    label: t('描述'),
-    field: 'description',
-    render: ({ row }: { row?: Partial<ISystemItem> }) => {
+    title: t('描述'),
+    colKey: 'description',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
       return (
         <span>
           {row?.description || '--' }
@@ -206,9 +216,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('系统负责人'),
-    field: 'maintainers',
-    render: ({ row }: { row?: Partial<ISystemItem> }) => {
+    title: t('系统负责人'),
+    colKey: 'maintainers',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
       return (
         <span>
           {row?.maintainers?.length ? row.maintainers.join('；') : '--' }
@@ -217,9 +228,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('文档分类'),
-    field: 'doc_category_id',
-    render: ({ row }: { row?: Partial<ISystemItem> }) => {
+    title: t('文档分类'),
+    colKey: 'doc_category_id',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
       return (
         <span>
           {row?.doc_category_name || '--' }
@@ -228,22 +240,22 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('操作'),
-    field: 'operate',
+    title: t('操作'),
+    colKey: 'operate',
     fixed: 'right',
     width: 150,
-    render: ({ row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
       return (
         <div>
-          <BkButton
-            class="m-r-10px"
+          <Button
+            class="mr-10px"
             theme="primary"
             text
             onClick={() => handleEditSys(row)}
           >
             { t('编辑') }
-          </BkButton>
-          <BkButton
+          </Button>
+          <Button
             theme="primary"
             text
             disabled={row.is_official}
@@ -258,27 +270,24 @@ const tableColumns = ref([
                 )
                 : t('删除')
             }
-          </BkButton>
+          </Button>
         </div>
       );
     },
   },
 ]);
-const systemList = ref([]);
 const initData = ref({});
 const pagination = ref({
   offset: 0,
-  limit: maxTableLimit,
+  limit: 10,
   count: 0,
-  limitList: sortedUniq(sortBy([10, 20, 50, 100, maxTableLimit])),
+  limitList: sortedUniq(sortBy([10, 20, 50, 100])),
 });
 const curSystem = ref({});
 const deleteDialogConf = ref({
   visible: false,
   loading: false,
 });
-const isLoading = ref(false);
-const isFilter = ref(false);
 const formData = ref(getDefaultData());
 const categoryList = ref([]);
 const allData = ref([]);
@@ -295,11 +304,6 @@ const docCategoryDialog = ref({
   categoryName: '',
   loading: false,
 });
-const tableEmptyConf = ref({
-  emptyType: '',
-  isAbnormal: false,
-});
-
 const isEdit = computed(() => {
   return Object.keys(curSystem.value).length > 0;
 }); ;
@@ -311,27 +315,32 @@ const deleteDialogTitle = computed(() => {
   return `${t('确认删除系统')}【${curSystem.value.name}】？`;
 });
 
-watch(
-  () => keyword.value,
-  (newVal, oldVal) => {
-    if (oldVal && !newVal && isFilter) {
-      isFilter.value = false;
-      pagination.value = Object.assign(pagination.value, {
-        offset: 0,
-        limit: maxTableLimit,
-      });
-      displayData.value = allData.value;
-      systemList.value = getDataByPage();
-    }
-  },
-);
-
-const init = () => {
-  getSystemList(true);
-  getCategories();
+const getCategories = async () => {
+  const res = await getDocCategory();
+  categoryList.value = res;
 };
 
-const handleClearFilterKey = () => {
+// 获取系统列表
+const getSystemList = async (loading = false) => {
+  isLoading.value = loading;
+  try {
+    const res = await getSystems();
+    const results = Object.freeze(res || []);
+    [allData.value, displayData.value] = [results, results];
+    pagination.value.count = displayData.value.length;
+  }
+  finally {
+    setDelay(1000);
+  }
+};
+
+const init = () => {
+  getCategories();
+  getSystemList();
+};
+init();
+
+const handleClearFilter = () => {
   keyword.value = '';
   getSystemList(true);
 };
@@ -360,66 +369,6 @@ const handleSubmit = () => {
   getSystemList(true);
 };
 
-const getCategories = async () => {
-  const res = await getDocCategory();
-  categoryList.value = res;
-};
-
-// 获取系统列表
-const getSystemList = async (loading = false, curPage = 1) => {
-  isLoading.value = loading;
-  try {
-    const res = await getSystems();
-    allData.value = Object.freeze(res) || [];
-    displayData.value = res;
-    pagination.value.count = displayData.value.length;
-    systemList.value = getDataByPage(curPage);
-    tableEmptyConf.value.isAbnormal = false;
-  }
-  catch (e) {
-    tableEmptyConf.value.isAbnormal = true;
-    console.error(e);
-  }
-  finally {
-    setDelay(1000);
-  }
-};
-
-const handlePageLimitChange = (limit: number) => {
-  pagination.value = Object.assign(pagination.value, {
-    offset: 0,
-    limit,
-  });
-  handlePageChange(pagination.value.offset);
-};
-
-// 改变页码
-const handlePageChange = (page: number) => {
-  isLoading.value = true;
-  pagination.value.offset = page;
-  const data = getDataByPage(page);
-  systemList.value.splice(0, systemList.value.length, ...data);
-  setDelay(1000);
-};
-
-// 前端分页
-const getDataByPage = (page = 1) => {
-  if (!page) {
-    pagination.value.offset = 0;
-    page = 1;
-  }
-  let startIndex = (page - 1) * pagination.value.limit;
-  let endIndex = page * pagination.value.limit;
-  if (startIndex < 0) {
-    startIndex = 0;
-  }
-  if (endIndex > displayData.value.length) {
-    endIndex = displayData.value.length;
-  }
-  updateTableEmptyConfig();
-  return displayData.value.slice(startIndex, endIndex);
-};
-
 const handleDeleteSystem = async () => {
   deleteDialogConf.value.loading = true;
   try {
@@ -437,22 +386,18 @@ const handleDeleteSystem = async () => {
 };
 
 const handleSearch = (payload: string) => {
-  if (!payload) {
-    return;
-  }
   isLoading.value = true;
+  tableEmptyType.value = payload ? 'search-empty' : 'empty';
   pagination.value = Object.assign(pagination.value, {
     offset: 0,
-    limit: maxTableLimit,
+    limit: 10,
   });
-  isFilter.value = true;
   displayData.value = allData.value.filter((item) => {
     const reg = new RegExp(`(${payload})`, 'gi');
     return item.name.match(reg) || item.description.match(reg);
   });
   pagination.value.count = displayData.value.length;
-  systemList.value = getDataByPage();
-  setDelay(1000);
+  setDelay(500);
 };
 
 const handleEditSys = async (data: ISystemItem) => {
@@ -477,24 +422,11 @@ const handleDeleteSys = (data: ISystemItem) => {
   deleteDialogConf.value.visible = true;
 };
 
-const updateTableEmptyConfig = () => {
-  if (keyword.value || !systemList.value.length) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
-  }
-  if (keyword.value) {
-    tableEmptyConf.value.emptyType = 'empty';
-    return;
-  }
-  tableEmptyConf.value.emptyType = '';
-};
-
 const setDelay = (duration: number) => {
   delay(() => {
     isLoading.value = false;
   }, duration);
 };
-init();
 </script>
 
 <style lang="scss" scoped>

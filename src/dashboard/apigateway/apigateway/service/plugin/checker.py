@@ -240,8 +240,13 @@ class ResponseRewriteChecker(BaseChecker):
             raise ValueError("YAML cannot be empty")
 
         status_code = loaded_data.get("status_code")
-        if status_code is not None and not (200 <= status_code <= 598):
-            raise ValueError("status_code must be between 200 and 598.")
+        if status_code:
+            try:
+                status_code = int(status_code)
+            except ValueError:
+                raise ValueError("status_code must be an integer.")
+            if not (200 <= status_code <= 598):
+                raise ValueError("status_code must be between 200 and 598.")
 
         response_rewrite_vars = loaded_data.get("vars")
         if response_rewrite_vars:
@@ -285,6 +290,64 @@ class BkAccessTokenSourceChecker(BaseChecker):
         source = loaded_data.get("source")
         if source not in ["bearer", "api_key"]:
             raise ValueError("source must be bearer or api_key.")
+
+
+class BKRequestBodyLimitChecker(BaseChecker):
+    MAX_BODY_SIZE = 32 * 1024 * 1024  # 32MB
+
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
+        if not loaded_data:
+            raise ValueError("YAML cannot be empty")
+
+        max_body_size = loaded_data.get("max_body_size")
+        if not (1 <= int(max_body_size) <= self.MAX_BODY_SIZE):
+            raise ValueError("max_body_size must be between 1 byte and 33554432 bytes.")
+
+
+class BKUserRestrictionChecker(BaseChecker):
+    def _check_user_list(self, user_list: list, name: str):
+        user_keys = [item["key"] for item in user_list]
+        user_duplicate_keys = [key for key, count in Counter(user_keys).items() if count >= 2]
+        if user_duplicate_keys:
+            raise ValueError(_("{} has duplicate elements：{}").format(name, ", ".join(user_duplicate_keys)))
+
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
+        if not loaded_data:
+            raise ValueError("YAML cannot be empty")
+
+        whitelist = loaded_data.get("whitelist", [])
+        blacklist = loaded_data.get("blacklist", [])
+        if not (whitelist or blacklist):
+            raise ValueError("whitelist and blacklist can not be empty at the same time")
+
+        if whitelist:
+            self._check_user_list(whitelist, "whitelist")
+
+        if blacklist:
+            self._check_user_list(blacklist, "blacklist")
+
+
+class ProxyCacheChecker(BaseChecker):
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
+        if not loaded_data:
+            raise ValueError("YAML cannot be empty")
+
+        cache_methods = [item["key"] for item in loaded_data["cache_method"]]
+        if not cache_methods:
+            raise ValueError("cache_method can not be empty")
+        cache_method_keys = [key for key, count in Counter(cache_methods).items() if count >= 2]
+        if cache_method_keys:
+            raise ValueError(_("cache_method has duplicate elements：{}。").format(", ".join(cache_method_keys)))
+        for method in cache_methods:
+            if method not in ["GET", "HEAD"]:
+                raise ValueError("cache_method only supports GET and HEAD")
+
+        cache_ttl = loaded_data.get("cache_ttl")
+        if not (1 <= int(cache_ttl) <= 3600):
+            raise ValueError("cache_ttl must be between 1 and 3600 seconds")
 
 
 def check_vars(vars, location):
@@ -338,6 +401,9 @@ class PluginConfigYamlChecker:
         PluginTypeCodeEnum.RESPONSE_REWRITE.value: ResponseRewriteChecker(),
         PluginTypeCodeEnum.REDIRECT.value: RedirectChecker(),
         PluginTypeCodeEnum.BK_ACCESS_TOKEN_SOURCE.value: BkAccessTokenSourceChecker(),
+        PluginTypeCodeEnum.BK_REQUEST_BODY_LIMIT.value: BKRequestBodyLimitChecker(),
+        PluginTypeCodeEnum.BK_USER_RESTRICTION.value: BKUserRestrictionChecker(),
+        PluginTypeCodeEnum.PROXY_CACHE.value: ProxyCacheChecker(),
     }
 
     def __init__(self, type_code: str):

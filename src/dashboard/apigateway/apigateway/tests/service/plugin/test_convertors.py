@@ -22,10 +22,12 @@ from apigateway.service.plugin.convertor import (
     BkAccessTokenSourceConvertor,
     BkCorsConvertor,
     BkMockConvertor,
+    BKUserRestrictionConvertor,
     DefaultPluginConvertor,
     HeaderWriteConvertor,
     IPRestrictionConvertor,
     PluginConvertorFactory,
+    ProxyCacheConvertor,
     RedirectConvertor,
     ResponseRewriteConvertor,
 )
@@ -323,6 +325,68 @@ class TestBkAccessTokenSourceConvertor:
     )
     def test_convert(self, data, expected):
         convertor = BkAccessTokenSourceConvertor()
+        result = convertor.convert(data)
+        assert result == expected
+
+
+class TestBKUserRestrictionConvertor:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {
+                    "whitelist": [{"key": "admin"}],
+                    "blacklist": [],
+                },
+                {"whitelist": ["admin"]},
+            ),
+            (
+                {
+                    "whitelist": [],
+                    "blacklist": [{"key": "admin"}],
+                },
+                {"blacklist": ["admin"]},
+            ),
+        ],
+    )
+    def test_convert(self, data, expected):
+        convertor = BKUserRestrictionConvertor()
+        result = convertor.convert(data)
+        assert result == expected
+
+
+class TestProxyCacheConvertor:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {
+                    "cache_method": [{"key": "GET"}],
+                    "cache_ttl": 300,
+                },
+                {
+                    "cache_method": ["GET"],
+                    "cache_ttl": 300,
+                    "cache_http_status": [200],
+                    "no_cache": ["$arg_no_cache", "$http_no_cache"],
+                },
+            ),
+            (
+                {
+                    "cache_method": [{"key": "GET"}, {"key": "HEAD"}],
+                    "cache_ttl": 300,
+                },
+                {
+                    "cache_method": ["GET", "HEAD"],
+                    "cache_ttl": 300,
+                    "cache_http_status": [200],
+                    "no_cache": ["$arg_no_cache", "$http_no_cache"],
+                },
+            ),
+        ],
+    )
+    def test_convert(self, data, expected):
+        convertor = ProxyCacheConvertor()
         result = convertor.convert(data)
         assert result == expected
 

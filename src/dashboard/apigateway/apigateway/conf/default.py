@@ -730,12 +730,12 @@ API_RESPONSE_ERR_CODE_DOC_DIR = os.path.join(BASE_DIR, "data/knowledge_doc/api_r
 # 访问日志
 # ==============================================================================
 ACCESS_LOG_CONFIG = {
-    "es_time_field_name": env.str("BK_APIGW_ES_TIME_FIELD_NAME", "dtEventTimeStamp"),
+    "es_time_field_name": "dtEventTimeStamp",
     "es_index": env.str("BK_APIGW_API_LOG_ES_INDEX", "2_bklog_bkapigateway_apigateway_container*"),
 }
 
 BK_ESB_ACCESS_LOG_CONFIG = {
-    "es_time_field_name": env.str("BK_ESB_ES_TIME_FIELD_NAME", "dtEventTimeStamp"),
+    "es_time_field_name": "dtEventTimeStamp",
     "es_index": env.str("BK_ESB_API_LOG_ES_INDEX", "2_bklog_bkapigateway_esb_container*"),
 }
 
@@ -783,7 +783,7 @@ PLUGIN_METADATA_CONFIG = {
             "method": "$request_method",
             "http_host": "$host",
             "http_path": "$uri",
-            "headers": "-",
+            # "headers": "-",
             "params": "$args",
             "body": "$bk_log_request_body",
             "app_code": "$bk_app_code",
@@ -794,8 +794,13 @@ PLUGIN_METADATA_CONFIG = {
             "bk_username": "$bk_username",
             "bk_tenant_id": "$bk_tenant_id",
             # 网关信息
+            # FIXME: remove api_id and api_name, from 1.23
+            # FIXME: change the access_log filter / metrics filter to gateway_id and gateway_name, from 1.23
             "api_id": "$bk_gateway_id",
             "api_name": "$bk_gateway_name",
+            # rename to gateway_id and gateway_name, from 1.19
+            "gateway_id": "$bk_gateway_id",
+            "gateway_name": "$bk_gateway_name",
             "resource_id": "$bk_resource_id",
             "resource_name": "$bk_resource_name",
             "stage": "$bk_stage_name",
@@ -930,6 +935,9 @@ ENV_VARS_FOR_FRONTEND = {
     "BK_USER_WEB_API_URL": BK_API_URL_TMPL.format(api_name="bk-user-web") + "/prod",
     # 登录地址，带 /login/
     "BK_LOGIN_URL": BK_LOGIN_URL,
+    # 微网关主站地址
+    "BK_APISIX_URL": env.str("BK_APISIX_URL", default=""),
+    "BK_APISIX_DOC_URL": env.str("BK_APISIX_DOC_URL", default=""),
     # 访问统计
     "BK_ANALYSIS_SCRIPT_SRC": env.str("BK_ANALYSIS_SCRIPT_SRC", default=""),
     "CREATE_CHAT_API": env.str("CREATE_CHAT_API", default=""),

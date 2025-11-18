@@ -38,8 +38,11 @@
         >
           <template #trigger="{ selected }">
             <div class="refresh-time-trigger">
-              <div class="label">
-                <AgIcon name="miniapi" />
+              <div
+                v-bk-tooltips="{ content: t('精度') }"
+                class="label"
+              >
+                <AgIcon name="xuanzejingdu" />
               </div>
               <div class="value">
                 <span
@@ -72,7 +75,10 @@
         >
           <template #trigger="{ selected }">
             <div class="refresh-time-trigger">
-              <div class="label">
+              <div
+                v-bk-tooltips="{ content: t('自动刷新间隔') }"
+                class="label"
+              >
                 <AgIcon name="lishijilu" />
               </div>
               <div class="value">
@@ -252,6 +258,7 @@ defineExpose({ reset });
         border-radius: 2px;
         display: flex;
         align-items: center;
+        cursor: pointer;
         .label {
           width: 32px;
           height: 32px;

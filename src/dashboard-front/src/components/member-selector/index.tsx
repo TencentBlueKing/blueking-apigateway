@@ -43,8 +43,12 @@ export default defineComponent({
   props: {
     // 是否禁用组件
     disabled: { type: Boolean },
+
     // 绑定的值，类型为字符串数组
-    modelValue: { type: Array as PropType<string[]> },
+    modelValue: {
+      type: Array as PropType<string[]>,
+      default: () => [],
+    },
 
     // 员工类型，默认值为 StaffEnum.RTX
     type: {

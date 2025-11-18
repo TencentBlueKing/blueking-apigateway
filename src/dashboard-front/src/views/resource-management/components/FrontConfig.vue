@@ -66,6 +66,9 @@
           {{ t('匹配所有子路径') }}
         </BkCheckbox>
       </div>
+      <div class="text-12px! color-#979ba5!">
+        {{ t("资源请求路径支持路径变量，包含在{'{}'}中，如：/users/{id}/", {id: '{id}'}) }}
+      </div>
     </BkFormItem>
     <BkFormItem
       :label="t('启用 WebSocket')"

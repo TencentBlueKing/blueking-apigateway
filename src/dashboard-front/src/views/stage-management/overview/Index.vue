@@ -25,53 +25,34 @@
       :stage-id="stageId"
       @change-stage="handleStageIdChange"
     />
-    <RouterView v-slot="{ Component }">
-      <component
-        :is="Component"
-        @updated="handleStageUpdated"
-      />
-    </RouterView>
+    <CardMode
+      v-if="mode === 'card-mode'"
+      @updated="handleStageUpdated"
+      @switch-mode="handleSwitchMode"
+    />
+    <DetailMode
+      v-if="mode === 'detail-mode'"
+      :stage-id="stageId"
+      @updated="handleStageUpdated"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
 import TopBar from './components/TopBar.vue';
+import CardMode from './card-mode/Index.vue';
+import DetailMode from './detail-mode/Index.vue';
 
-const route = useRoute();
 const router = useRouter();
 
-const mode = ref('');
+const mode = ref('card-mode');
 const stageId = ref(0);
 const topBarRef = ref();
 
-watch(
-  [
-    () => route.name,
-    () => route.params,
-  ],
-  () => {
-    if (route.name === 'StageOverviewCardMode') {
-      mode.value = 'card-mode';
-    }
-    else if (route.name === 'StageOverviewDetailMode') {
-      stageId.value = Number(route.params.stageId);
-      mode.value = 'detail-mode';
-    }
-  },
-  { immediate: true },
-);
-
-watch(mode, () => {
-  if (mode.value === 'card-mode') {
-    router.replace({ name: 'StageOverviewCardMode' });
-  }
-  else if (mode.value === 'detail-mode') {
-    router.replace({
-      name: 'StageOverviewDetailMode',
-      params: { stageId: stageId.value },
-    });
-  }
-});
+const handleSwitchMode = (id: number) => {
+  stageId.value = id;
+  mode.value = 'detail-mode';
+};
 
 const handleStageIdChange = (id: number) => {
   stageId.value = id;

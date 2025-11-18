@@ -105,7 +105,7 @@
           size="small"
         />
         <BkCheckbox
-          v-if="formData.is_public"
+          v-if="formData.is_public && formData.auth_config.resource_perm_required"
           v-model="formData.allow_apply_permission"
           class="ml-40px!"
         >
@@ -204,10 +204,11 @@ watch(
 );
 
 watch(
-  () => formData.value.is_public,
-  (val: boolean) => {
-    // 必须要公开 才能允许申请权限
-    formData.value.allow_apply_permission = val;
+  () => [formData.value.is_public, formData.value.auth_config.resource_perm_required],
+  ([v1, v2]) => {
+    if (!v1 || !v2) {
+      formData.value.allow_apply_permission = false;
+    }
   },
 );
 

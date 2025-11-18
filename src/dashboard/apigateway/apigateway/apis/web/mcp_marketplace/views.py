@@ -162,10 +162,12 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
         # set the guideline here, for slz
         instance.guideline = guideline
 
+        gateway_auth_configs = GatewayAuthContext().get_gateway_id_to_auth_config([instance.gateway.id])
         gateways = {
             instance.gateway.id: {
                 "id": instance.gateway.id,
                 "name": instance.gateway.name,
+                "is_official": GatewayTypeHandler.is_official(gateway_auth_configs[instance.gateway.id].gateway_type),
             }
         }
         stages = {

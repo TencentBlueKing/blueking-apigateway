@@ -42,19 +42,47 @@
                   {{ language === 'zh' ? t('中文文档') : t('英文文档') }}
                 </p>
               </template>
-              <BkButtonGroup v-else>
-                <BkButton
-                  v-for="item in languagesData"
-                  :key="item.value"
-                  :selected="language === item.value"
-                  :disabled="isEdited && language !== item.value"
-                  @click="() => handleSelectLanguage(item.value as 'zh' | 'en')"
+              <div
+                v-else
+                class="relative"
+              >
+                <BkButtonGroup>
+                  <BkButton
+                    v-for="item in languagesData"
+                    :key="item.value"
+                    :selected="language === item.value"
+                    :disabled="isEdited && language !== item.value"
+                    @click="() => handleSelectLanguage(item.value as 'zh' | 'en')"
+                  >
+                    <div>
+                      {{ item.label }}
+                    </div>
+                  </BkButton>
+                </BkButtonGroup>
+                <div
+                  v-if="hasDoc"
+                  v-bk-tooltips="{
+                    content: isTranslating ? t('翻译中') : t('请先创建文档'),
+                    disabled: !isTranslating && hasDocByLanguage(language),
+                  }"
+                  class="absolute right-0 top-7px flex items-center cursor-pointer"
+                  @click="handleTranslateClick"
                 >
-                  <div>
-                    {{ item.label }}
+                  <AiBluekingButton
+                    :disabled="isTranslating || !hasDocByLanguage(language)"
+                    :tooltip-options="{ disabled: true }"
+                  />
+                  <div
+                    class="text-12px"
+                    :class="{
+                      'color-#dcdee5 cursor-not-allowed': isTranslating || !hasDocByLanguage(language),
+                      'gradient-text-color': !isTranslating && hasDocByLanguage(language),
+                    }"
+                  >
+                    {{ language === 'zh' ? t('一键翻译英文') : t('一键翻译中文') }}
                   </div>
-                </BkButton>
-              </BkButtonGroup>
+                </div>
+              </div>
             </div>
             <div v-show="isEmpty">
               <div class="text-center mt-50px">
@@ -102,10 +130,9 @@
                   :language="language"
                   :box-shadow="false"
                   :subfield="false"
-                  ishljs
-                  code-style="vs2015"
-                  :toolbars="toolbars"
+                  :is-hljs="hljs"
                   :tab-size="4"
+                  :toolbars="toolbars"
                   @full-screen="handleFullscreen"
                 />
               </div>
@@ -162,6 +189,7 @@
 </template>
 
 <script setup lang="ts">
+import MarkdownIt from 'markdown-it';
 import { cloneDeep } from 'lodash-es';
 import {
   deleteResourceDocs,
@@ -170,10 +198,16 @@ import {
   saveResourceDocs,
   updateResourceDocs,
 } from '@/services/source/resource.ts';
-import { Message } from 'bkui-vue';
+import {
+  InfoBox,
+  Message,
+} from 'bkui-vue';
 // import mitt from '@/common/event-bus';
 import { copy } from '@/utils';
 import { useRouteParams } from '@vueuse/router';
+import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
+import { getAICompletion } from '@/services/source/ai.ts';
+import hljs from 'highlight.js';
 
 interface IProps {
   resource?: object
@@ -258,6 +292,39 @@ const toolbars = ref<any>({
   subfield: true,
   preview: true,
 });
+const isTranslating = ref(false);
+
+const hasDoc = computed(() => {
+  const cnDoc = docData.value.find((e: any) => e.language === 'zh')?.id;
+  const enDoc = docData.value.find((e: any) => e.language === 'en')?.id;
+  return cnDoc || enDoc;
+});
+
+const hasDocByLanguage = (lang: string) => !!docData.value.find((e: any) => e.language === lang)?.id;
+
+// 渲染highlight的markdown
+const renderHljsMd = (content: string) => {
+  const md = new MarkdownIt({
+    linkify: false,
+    html: true,
+    breaks: true,
+    highlight(str: string, lang: string) {
+      try {
+        if (lang && hljs.getLanguage(lang)) {
+          return hljs.highlight(str, {
+            language: lang,
+            ignoreIllegals: true,
+          }).value;
+        }
+      }
+      catch {
+        return str;
+      }
+      return str;
+    },
+  });
+  markdownHtml.value = md.render(content);
+};
 
 // 编辑markdown
 const handleEditMarkdown = (type: string) => {
@@ -307,6 +374,77 @@ const initData = async () => {
   // 根据语言找到是否有文档内容
   handleDocDataWithLanguage();
   isLoading.value = false;
+};
+
+const isDocEmptyByLanguage = (lang: string) => !docData.value.find((item: any) => item.language === lang)?.id;
+
+const handleTranslateClick = async () => {
+  if (isTranslating.value || !hasDocByLanguage(language.value)) {
+    return;
+  }
+  // 要翻译成什么语言
+  const targetLanguage = language.value === 'zh' ? 'en' : 'zh';
+  const input = docData.value.find((item: any) => item.language === language.value)?.content;
+  if (input) {
+    // 判断目标语言的文档是否已存在，决定是调用创建文档接口还是更新文档接口
+    if (isDocEmptyByLanguage(targetLanguage)) {
+      Message({
+        theme: 'primary',
+        message: t('获取翻译中'),
+      });
+      isTranslating.value = true;
+      const response = await getAICompletion(gatewayId.value, {
+        inputs: {
+          input,
+          type: 'doc_translate',
+          enable_streaming: false,
+          language: targetLanguage,
+        },
+      });
+      await saveResourceDocs(gatewayId.value, resource.id, {
+        language: targetLanguage,
+        content: response.content,
+      });
+      Message({
+        theme: 'success',
+        message: t('{lang}文档创建成功', { lang: targetLanguage === 'zh' ? t('中文') : t('英文') }),
+      });
+      initData();
+      emit('fetch');
+      isTranslating.value = false;
+    }
+    else {
+      InfoBox({
+        title: t('文档已存在，确定更新吗？'),
+        infoType: 'warning',
+        confirmText: t('更新'),
+        cancelText: t('取消'),
+        onConfirm: async () => {
+          isTranslating.value = true;
+          const response = await getAICompletion(gatewayId.value, {
+            inputs: {
+              input,
+              type: 'doc_translate',
+              enable_streaming: false,
+              language: targetLanguage,
+            },
+          });
+          const docId = docData.value.find((item: any) => item.language === targetLanguage)!.id;
+          await updateResourceDocs(gatewayId.value, resource.id, {
+            language: targetLanguage,
+            content: response.content,
+          }, docId);
+          Message({
+            theme: 'success',
+            message: t('{lang}文档更新成功', { lang: language.value === 'zh' ? t('英文') : t('中文') }),
+          });
+          initData();
+          emit('fetch');
+          isTranslating.value = false;
+        },
+      });
+    }
+  }
 };
 
 // 保存markdown
@@ -378,7 +516,7 @@ const handleDocDataWithLanguage = () => {
     docId.value = docDataItem.id;
     isEmpty.value = !docDataItem.id;
     markdownDoc.value = docDataItem.content;
-    markdownHtml.value = markdownRef.value.markdownIt.render(docDataItem.content);
+    renderHljsMd(docDataItem.content);
     nextTick(() => {
       const markdownDom = document.getElementById('resource-doc-markdown');
       if (markdownDom) {
@@ -418,7 +556,7 @@ const handleDocDataWithLanguage = () => {
     const doc = docData.value.find((d: any) => d.language === language.value);
     const content = doc?.content ?? '';
     markdownDoc.value = content;
-    markdownHtml.value = markdownRef.value?.markdownIt.render(content);
+    renderHljsMd(content);
   }
 };
 

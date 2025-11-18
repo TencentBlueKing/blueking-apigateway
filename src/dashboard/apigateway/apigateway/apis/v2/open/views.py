@@ -24,12 +24,13 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
-from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
+from apigateway.apps.mcp_server.constants import MCPServerLeastPrivilegeEnum, MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
@@ -37,18 +38,28 @@ from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
 from apigateway.biz.mcp_server import MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
+from apigateway.biz.released_resource import ReleasedResourceData
+from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
+from apigateway.biz.released_resource_doc.generators import DocGenerator
+from apigateway.biz.resource import ResourceLabelHandler
+from apigateway.biz.resource_doc import ResourceDocHandler
+from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
-from apigateway.core.models import Gateway, Stage
-from apigateway.service.contexts import GatewayAuthContext
+from apigateway.core.models import Gateway, Release, Resource, Stage
+from apigateway.service.contexts import GatewayAuthContext, ResourceAuthContext
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
 from .serializers import (
     GatewayAppPermissionApplyOutputSLZ,
+    GatewayResourceDetailInputSLZ,
+    GatewayResourceDetailOutputSLZ,
+    GatewayResourceListOutputSLZ,
     MCPServerAppPermissionApplyRecordListOutputSLZ,
     MCPServerAppPermissionListInputSLZ,
     MCPServerAppPermissionListOutputSLZ,
@@ -406,6 +417,40 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
 class UserMCPServerListApi(generics.ListAPIView):
     permission_classes = [OpenAPIV2Permission]
 
+    def _get_least_privileges(self, queryset):
+        gateway_stage_pairs = set()
+        gateway_stage_tools = {}
+        for mcp_server in queryset:
+            gateway_stage_pairs.add((mcp_server.gateway.id, mcp_server.stage.id))
+            gateway_stage_tools[(mcp_server.gateway.id, mcp_server.stage.id)] = mcp_server.resource_names
+
+        # 批量查询所有相关的 Release 记录
+        release_filters = Q()
+        for gateway_id, stage_id in gateway_stage_pairs:
+            release_filters |= Q(gateway_id=gateway_id, stage_id=stage_id)
+
+        releases = Release.objects.filter(release_filters).prefetch_related("resource_version")
+
+        # 获取资源的最低权限
+        least_privileges = {}
+        for release in releases:
+            gateway_stage_key = (release.gateway.id, release.stage.id)
+            # 获取 mcp server 的工具名称列表
+            tool_names = gateway_stage_tools.get(gateway_stage_key, [])
+            least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION.value
+            for resource in release.resource_version.data:
+                # 如果资源不在工具名称列表中，则跳过
+                if resource["name"] not in tool_names:
+                    continue
+                # 应用认证是强制的，如果 tools 中有任意一个是用户认证的，此时确定是 APPLICATION_AND_USER
+                release_resource_data = ReleasedResourceData.from_data(resource)
+                if release_resource_data.verified_user_required:
+                    least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
+                    break
+            least_privileges[gateway_stage_key] = least_privilege
+
+        return least_privileges
+
     def list(self, request, *args, **kwargs):
         slz = UserMCPServerListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -472,13 +517,173 @@ class UserMCPServerListApi(generics.ListAPIView):
             for stage in Stage.objects.filter(id__in=stage_ids)
         }
 
+        least_privileges = self._get_least_privileges(page)
+
         output_slz = UserMCPServerListOutputSLZ(
             page,
             many=True,
             context={
                 "gateways": gateways,
                 "stages": stages,
+                "least_privileges": least_privileges,
             },
         )
 
         return self.get_paginated_response(output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取网关下的所有资源列表",
+        responses={status.HTTP_200_OK: GatewayResourceListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class GatewayResourceListApi(generics.ListAPIView):
+    permission_classes = [OpenAPIV2GatewayNamePermission]
+    serializer_class = GatewayResourceListOutputSLZ
+
+    def get_queryset(self):
+        return Resource.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        """
+        获取网关下的所有资源列表
+        - 只返回公开的资源
+        - 返回资源的完整信息
+        """
+        # 查询该网关下所有公开的资源，按更新时间倒序排列
+        queryset = Resource.objects.filter(
+            gateway=request.gateway,
+            is_public=True,
+        ).order_by("-updated_time")
+
+        resources = list(queryset)
+        resource_ids = [resource.id for resource in resources]
+
+        # 准备上下文数据
+        output_slz = self.get_serializer(
+            resources,
+            many=True,
+            context={
+                "labels": ResourceLabelHandler.get_labels(resource_ids),
+                "auth_configs": ResourceAuthContext().get_resource_id_to_auth_config(resource_ids),
+            },
+        )
+        return OKJsonResponse(data=output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取网关资源的详细信息，包含文档和 Schema",
+        query_serializer=GatewayResourceDetailInputSLZ(),
+        responses={status.HTTP_200_OK: GatewayResourceDetailOutputSLZ()},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class GatewayResourceDetailApi(generics.RetrieveAPIView):
+    """获取网关资源详情接口"""
+
+    permission_classes = [OpenAPIV2GatewayNamePermission]
+    serializer_class = GatewayResourceDetailOutputSLZ
+
+    def get_queryset(self):
+        return Resource.objects.all()
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        获取网关资源的详细信息
+        - 包含资源基本信息
+        - 包含资源文档（Markdown格式）
+        - 包含资源 OpenAPI Schema 定义
+        - 包含认证配置
+        """
+        # 验证查询参数
+        slz = GatewayResourceDetailInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        stage_name = slz.validated_data["stage_name"]
+        resource_name = self.kwargs.get("resource_name")
+
+        # 获取该环境下已发布的资源版本 ID
+        resource_version_id = Release.objects.get_released_resource_version_id(request.gateway.id, stage_name)
+        if not resource_version_id:
+            raise error_codes.NOT_FOUND.format(_("该环境下未找到已发布的资源版本"), replace=True)
+
+        # 获取资源数据和文档数据
+        resource_data, doc_data = ReleasedResourceDocHandler.get_released_resource_doc_data(
+            gateway_id=request.gateway.id,
+            stage_name=stage_name,
+            resource_name=resource_name,
+            language=ResourceDocHandler.get_doc_language(get_current_language_code()),
+        )
+
+        # 检查资源是否存在
+        if not resource_data:
+            raise error_codes.NOT_FOUND.format(
+                _("资源【{resource_name}】不存在").format(resource_name=resource_name), replace=True
+            )
+
+        # 只返回公开的资源
+        if not resource_data.is_public:
+            raise error_codes.NOT_FOUND.format(
+                _("资源【{resource_name}】不存在").format(resource_name=resource_name), replace=True
+            )
+
+        # 获取资源 OpenAPI Schema
+        resource_schema = ResourceVersionHandler.get_resource_schema(resource_version_id, resource_data.id)
+
+        # 生成文档信息
+        doc_info = self._generate_doc_info(request.gateway, stage_name, resource_data, doc_data)
+
+        # 组装返回数据
+        result = {
+            "id": resource_data.id,
+            "name": resource_data.name,
+            "description": resource_data.description,
+            "description_en": resource_data.description_en,
+            "method": resource_data.method,
+            "path": resource_data.path,
+            "match_subpath": resource_data.match_subpath,
+            "enable_websocket": resource_data.enable_websocket,
+            "is_public": resource_data.is_public,
+            "schema": resource_schema or {},
+            "doc": doc_info,
+            "auth_config": {
+                "user_verified_required": resource_data.verified_user_required,
+                "app_verified_required": resource_data.verified_app_required,
+                "resource_perm_required": resource_data.resource_perm_required,
+            },
+        }
+
+        output_slz = self.get_serializer(result)
+        return OKJsonResponse(data=output_slz.data)
+
+    def _generate_doc_info(self, gateway, stage_name, resource_data, doc_data):
+        """生成文档信息"""
+        if not doc_data:
+            return None
+        try:
+            generator = DocGenerator(
+                gateway=gateway,
+                stage_name=stage_name,
+                resource_data=resource_data,
+                doc_data=doc_data,
+                language=ResourceDocHandler.get_doc_language(get_current_language_code()),
+            )
+            doc = generator.get_doc()
+            return {
+                "type": doc.get("type"),
+                "content": doc.get("content"),
+                "updated_time": doc.get("updated_time"),
+            }
+        except Exception:  # pylint: disable=broad-except
+            logger.exception(
+                "generate doc failed, gateway_id=%s, stage_name=%s, resource_name=%s",
+                gateway.id,
+                stage_name,
+                resource_data.name,
+            )
+            return None

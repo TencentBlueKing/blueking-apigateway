@@ -2382,10 +2382,8 @@
         "type": "object",
         "properties": {
             "status_code": {
-                "type": "integer",
-                "description": "new status code for response",
-                "minimum": 200,
-                "maximum": 598
+                "type": "string",
+                "description": "new status code for response"
             },
             "body": {
                 "type": "string",
@@ -2471,9 +2469,7 @@
               "status_code": {
                   "title": "状态码",
                   "description": "修改上游返回状态码，默认保留原始响应代码。",
-                  "type": "integer",
-                  "minimum": 200,
-                  "maximum": 598
+                  "type": "string"
               },
               "body": {
                   "title": "响应体",
@@ -2489,7 +2485,7 @@
                   "type": "object",
                   "properties": {
                       "add": {
-                        "description": "添加新的响应头",
+                        "description": "添加新的请求头",
                         "items": {
                           "type": "object",
                           "properties": {
@@ -2512,7 +2508,7 @@
                           }
                         },
                         "minItems": 0,
-                        "title": "添加",
+                        "title": "添加请求头",
                         "type": "array",
                         "uniqueItems": true,
                         "ui:component": {
@@ -2521,9 +2517,9 @@
                       },
                       "set": {
                           "type": "array",
-                          "title": "设置",
+                          "title": "设置请求头",
                           "minItems": 0,
-                          "description": "改写响应头。",
+                          "description": "设置请求头。",
                           "ui:component": {
                             "name": "bfArray"
                           },
@@ -2550,7 +2546,7 @@
                           }
                       },
                       "remove": {
-                        "description": "删除的响应头",
+                        "description": "删除请求头",
                         "items": {
                           "properties": {
                             "key": {
@@ -2567,7 +2563,7 @@
                           "type": "object"
                         },
                         "minItems": 0,
-                        "title": "删除",
+                        "title": "删除请求头",
                         "type": "array",
                         "uniqueItems": true,
                         "ui:component": {
@@ -2605,9 +2601,7 @@
               "status_code": {
                   "title": "status code",
                   "description": "New HTTP status code in the response. If unset, falls back to the original status code.",
-                  "type": "integer",
-                  "minimum": 200,
-                  "maximum": 598
+                  "type": "string"
               },
               "body": {
                   "title": "body",
@@ -2923,6 +2917,518 @@
     config: |-
       {
         "schema": {},
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+
+- model: schema.schema
+  fields:
+    created_time: 2024-09-26 11:48:21.010753+00:00
+    updated_time: 2024-09-26 11:48:21.010788+00:00
+    name: bk-request-body-limit
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "type": "object",
+        "properties": {
+          "max_body_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 33554432,
+            "description": "Maximum message body size in bytes."
+          }
+        },
+        "required": ["max_body_size"]
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: bk-request-body-limit
+    name: 限制请求体大小
+    name_en: Limit the request body
+    is_public: true
+    scope: stage_and_resource
+    priority: 17690
+    schema:
+    - bk-request-body-limit
+    - plugin
+    - '0'
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+    - bk-request-body-limit
+    notes: 限制请求体大小，最大值 33554432（32 M）。
+    example: '作用：限制请求体大小为 100 B\n\n max_body_size: 100'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "properties": {
+             "max_body_size": {
+               "type": "integer",
+               "minimum": 1,
+               "maximum": 33554432,
+               "description": "最大请求体大小（以字节为单位）。"
+             }
+          },
+          "required": ["max_body_size"]
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+- model: plugin.pluginform
+  fields:
+    language: en
+    type:
+    - bk-request-body-limit
+    notes: Limit the size of the request body, with a maximum of 33554432 (32 M).
+    example: 'Purpose: Limit the request body size to 100 B.\n\n max_body_size: 100'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "properties": {
+             "max_body_size": {
+               "type": "integer",
+               "minimum": 1,
+               "maximum": 33554432,
+               "description": "Maximum message body size in bytes."
+             }
+          },
+          "required": ["max_body_size"]
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+
+- model: schema.schema
+  fields:
+    created_time: 2024-09-26 11:48:21.010753+00:00
+    updated_time: 2024-09-26 11:48:21.010788+00:00
+    name: bk-user-restriction
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "type": "object",
+        "properties": {
+            "whitelist": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "minItems": 1
+            },
+            "blacklist": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "minItems": 1
+            },
+            "message": {
+                "type": "string",
+                "default": "The bk-user is not allowed",
+                "minLength": 1,
+                "maxLength": 1024
+            }
+        },
+        "oneOf": [
+            {
+                "required": ["whitelist"]
+            },
+            {
+                "required": ["blacklist"]
+            }
+        ]
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: bk-user-restriction
+    name: 用户访问限制
+    name_en: User access restriction
+    is_public: true
+    scope: resource
+    priority: 17679
+    schema:
+    - bk-user-restriction
+    - plugin
+    - '0'
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+    - bk-user-restriction
+    notes: 通过将用户列入白名单或黑名单来限制对资源的访问，注意：对应资源认证方式需要配置开启用户认证。
+    example: '作用：仅允许用户 admin 请求当前接口\n\n类型：白名单\n白名单： ["admin"]\nmessage: "The bk-user is not allowed"'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+          "schema": {
+              "type": "object",
+              "oneOf": [
+                  {
+                      "required": [
+                          "whitelist",
+                          "message"
+                      ],
+                      "title": "白名单",
+                      "properties": {
+                          "whitelist": {
+                              "title": "白名单",
+                              "items": {
+                                  "properties": {
+                                      "key": {
+                                          "title": "key",
+                                          "type": "string",
+                                          "ui:rules": [
+                                              "required"
+                                          ]
+                                      }
+                                  },
+                                  "type": "object"
+                              },
+                              "minItems": 0,
+                              "type": "array",
+                              "uniqueItems": true,
+                              "ui:component": {
+                                  "name": "bfArray"
+                              }
+                          },
+                          "message": {
+                              "type": "string",
+                              "default": "The bk-user is not allowed",
+                              "minLength": 1,
+                              "maxLength": 1024
+                          }
+                      }
+                  },
+                  {
+                      "required": [
+                          "blacklist",
+                          "message"
+                      ],
+                      "title": "黑名单",
+                      "properties": {
+                          "blacklist": {
+                              "title": "黑名单",
+                              "items": {
+                                  "properties": {
+                                      "key": {
+                                          "title": "key",
+                                          "type": "string",
+                                          "ui:rules": [
+                                              "required"
+                                          ]
+                                      }
+                                  },
+                                  "type": "object"
+                              },
+                              "minItems": 0,
+                              "type": "array",
+                              "uniqueItems": true,
+                              "ui:component": {
+                                  "name": "bfArray"
+                              }
+                          },
+                          "message": {
+                              "type": "string",
+                              "default": "The bk-user is not allowed",
+                              "minLength": 1,
+                              "maxLength": 1024
+                          }
+                      }
+                  }
+              ],
+              "ui:oneOf": {
+                  "title": "类型"
+              }
+          },
+          "layout": [],
+          "formData": {},
+          "rules": {}
+      }
+- model: plugin.pluginform
+  fields:
+    language: en
+    type:
+    - bk-user-restriction
+    notes: |-
+      Restrict access to resources by whitelisting or blacklisting users. Note: The corresponding resource authentication method needs to be configured to enable user authentication.
+    example: 'Purpose: Only User admin are allowed to request the current interface\n\nType: whitelist\nwhitelist: ["admin"]\nmessage: "The bk-user is not allowed"'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+          "schema": {
+              "type": "object",
+              "oneOf": [
+                  {
+                      "required": [
+                          "whitelist",
+                          "message"
+                      ],
+                      "title": "whitelist",
+                      "properties": {
+                          "whitelist": {
+                              "title": "whitelist",
+                              "items": {
+                                  "properties": {
+                                      "key": {
+                                          "title": "key",
+                                          "type": "string",
+                                          "ui:rules": [
+                                              "required"
+                                          ]
+                                      }
+                                  },
+                                  "type": "object"
+                              },
+                              "minItems": 0,
+                              "type": "array",
+                              "uniqueItems": true,
+                              "ui:component": {
+                                  "name": "bfArray"
+                              }
+                          },
+                          "message": {
+                              "type": "string",
+                              "default": "The bk-user is not allowed",
+                              "minLength": 1,
+                              "maxLength": 1024
+                          }
+                      }
+                  },
+                  {
+                      "required": [
+                          "blacklist",
+                          "message"
+                      ],
+                      "title": "blacklist",
+                      "properties": {
+                          "blacklist": {
+                              "title": "blacklist",
+                              "items": {
+                                  "properties": {
+                                      "key": {
+                                          "title": "key",
+                                          "type": "string",
+                                          "ui:rules": [
+                                              "required"
+                                          ]
+                                      }
+                                  },
+                                  "type": "object"
+                              },
+                              "minItems": 0,
+                              "type": "array",
+                              "uniqueItems": true,
+                              "ui:component": {
+                                  "name": "bfArray"
+                              }
+                          },
+                          "message": {
+                              "type": "string",
+                              "default": "The bk-user is not allowed",
+                              "minLength": 1,
+                              "maxLength": 1024
+                          }
+                      }
+                  }
+              ],
+              "ui:oneOf": {
+                  "title": "Type"
+              }
+          },
+          "layout": [],
+          "formData": {},
+          "rules": {}
+      }
+
+- model: plugin.plugintype
+  fields:
+    code: bk-legacy-invalid-params
+    name: 旧的无效参数兼容
+    name_en: Legacy invalid params
+    is_public: false
+    scope: stage
+    priority: 18880
+    schema: null
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+      - bk-legacy-invalid-params
+    notes: Legacy invalid params
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {},
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+
+- model: schema.schema
+  fields:
+    created_time: 2024-09-26 11:48:21.010753+00:00
+    updated_time: 2024-09-26 11:48:21.010788+00:00
+    name: proxy-cache
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "type": "object",
+        "properties": {
+            "cache_method": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "default": ["GET"],
+                "minItems": 1
+            },
+            "cache_ttl": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 1,
+              "maximum": 3600
+            }
+        }
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: proxy-cache
+    name: 代理缓存
+    name_en: Proxy Cache
+    is_public: true
+    scope: resource
+    priority: 1085
+    schema:
+    - proxy-cache
+    - plugin
+    - '0'
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+    - proxy-cache
+    notes: 提供缓存后端响应数据的能力，仅支持 GET, HEAD 请求，并且状态码为 200 的资源生效。
+    example: '作用：可缓存 GET 请求的响应数据 300 秒\n\n cache_method: ["GET"] \n cache_ttl: 300'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cache_method": {
+                "description": "缓存方法，仅支持：GET, HEAD",
+                "items": {
+                  "properties": {
+                    "key": {
+                      "title": "key",
+                      "type": "string",
+                      "maxLength": 1024,
+                      "ui:rules": [
+                        "required"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array",
+                "uniqueItems": true,
+                "ui:component": {
+                  "name": "bfArray"
+                },
+                "minItems": 1,
+                "default": [
+                    {
+                        "key": "GET"
+                    }
+                ]
+            },
+            "cache_ttl": {
+              "type": "integer",
+              "description": "缓存时间，最大值 3600 秒。",
+              "default": 300,
+              "minimum": 1,
+              "maximum": 3600
+            }
+          }
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+- model: plugin.pluginform
+  fields:
+    language: en
+    type:
+    - proxy-cache
+    notes: |-
+      Provides the ability to cache back-end response data. Only get and head requests are supported, and resources with status code of 200 take effect.
+    example: 'Purpose: The response data of GET request can be cached for 300 seconds.\n\n cache_method: ["GET"] \n cache_ttl: 300'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "cache_method": {
+                "description": "Cache method, only supported: GET, HEAD.",
+                "items": {
+                  "properties": {
+                    "key": {
+                      "title": "key",
+                      "type": "string",
+                      "maxLength": 1024,
+                      "ui:rules": [
+                        "required"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array",
+                "uniqueItems": true,
+                "ui:component": {
+                  "name": "bfArray"
+                },
+                "minItems": 1,
+                "default": [
+                    {
+                        "key": "GET"
+                    }
+                ]
+            },
+            "cache_ttl": {
+              "type": "integer",
+              "description": "Cache time, in seconds.",
+              "default": 300,
+              "minimum": 1,
+              "maximum": 3600
+            }
+          }
+        },
         "layout": [],
         "formData": {},
         "rules": {}

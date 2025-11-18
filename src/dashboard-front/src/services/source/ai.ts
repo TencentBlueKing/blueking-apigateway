@@ -25,3 +25,13 @@ const path = '/gateways';
  * @param data 参数
  */
 export const getAICompletion = (gatewayId: number, data: any) => http.post(`${path}/${gatewayId}/ai/completion/`, data);
+
+/**
+ *  批量AI翻译资源文档
+ * @param gatewayId 网关id
+ * @param data 参数
+ */
+export const batchResourceDocAITranslate = (gatewayId: number, data: {
+  doc_ids?: number[]
+  target_language?: string
+}) => http.post(`${path}/${gatewayId}/ai/batch-translate/`, data);

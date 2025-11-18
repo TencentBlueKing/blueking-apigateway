@@ -615,14 +615,8 @@ class UpstreamValidator:
             if not key:
                 raise serializers.ValidationError("key is required when loadbalance is chash")
 
-            if (hash_on in [HashOnTypeEnum.VARS.value, HashOnTypeEnum.VARS_COMBINATIONS.value]) and not key.startswith(
-                "$"
-            ):
-                raise serializers.ValidationError("key must start with $ when hash_on is vars or vars_combinations")
-            if hash_on == HashOnTypeEnum.HEADER.value and not key.startswith("http_"):
-                raise serializers.ValidationError("key must start with http_ when hash_on is header")
-            if hash_on == HashOnTypeEnum.COOKIE.value and not key.startswith("cookie_"):
-                raise serializers.ValidationError("key must start with cookie_ when hash_on is cookie")
+            if hash_on == HashOnTypeEnum.VARS_COMBINATIONS.value and not key.startswith("$"):
+                raise serializers.ValidationError("key must start with $ when hash_on is vars_combinations")
         # NOTE: currently, the logic of hosts open api v1/v2 and web api is different, so we don't validate hosts here, but should validate it in the serializer. (maybe in the future, we can merge the logic of hosts open api v2 and web api, after remove open api v1)
         # the host is {host(domain), weight} in open api v1/v2
         # the host is {scheme, host(not domain), weight} in web api

@@ -32,7 +32,7 @@ const routes: RouteRecordRaw[] = [
         props: true,
         meta: {
           title: 'MCP Server',
-          matchRoute: 'MCP',
+          matchRoute: 'MCPServer',
           topMenu: 'MCP',
         },
       },
@@ -42,7 +42,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/mcp-server/detail/Index.vue'),
         meta: {
           title: t('详情'),
-          matchRoute: 'MCP',
+          matchRoute: 'MCPServer',
           topMenu: 'MCP',
         },
       },
@@ -52,7 +52,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/mcp-server/permission/Index.vue'),
         meta: {
           title: t('权限审批'),
-          matchRoute: 'MCP',
+          matchRoute: 'MCPServer',
           topMenu: 'MCP',
           showBackIcon: true,
         },

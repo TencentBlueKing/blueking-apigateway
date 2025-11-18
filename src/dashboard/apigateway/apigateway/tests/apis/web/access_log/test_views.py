@@ -171,11 +171,12 @@ class TestLogExportApi:
         formatted_time_start = time_start_dt.strftime("%Y%m%d%H%M%S")
         formatted_time_end = time_end_dt.strftime("%Y%m%d%H%M%S")
         assert response.status_code == 200
-        assert response.headers["Content-Type"] == "text/csv; charset=utf-8"
+        assert response.headers["Content-Type"] == "application/octet-stream"
         assert (
             response["Content-Disposition"]
-            == f'attachment; filename="{fake_gateway.name}-{formatted_time_start}-{formatted_time_end}-logs.csv"'
+            == f'attachment;filename="{fake_gateway.name}-{formatted_time_start}-{formatted_time_end}-logs.csv"'
         )
-        reader = csv.DictReader(StringIO(response.content.decode("utf-8")))
+        content = b"".join(response.streaming_content).decode("utf-8")
+        reader = csv.DictReader(StringIO(content))
         log_count = sum(1 for _ in reader)
         assert log_count == 3

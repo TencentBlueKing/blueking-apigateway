@@ -22,7 +22,7 @@ import type { ITableSettings } from '@/types/common';
 import { isEqual } from 'lodash-es';
 import i18n from '@/locales';
 
-export function useTableSetting(setting: ShallowRef<ITableSettings>, name: string) {
+export function useTableSetting(setting: ShallowRef<ITableSettings>, name?: string) {
   const lang = i18n.global.locale;
   let tempName: string;
   if (!name) {
@@ -36,7 +36,7 @@ export function useTableSetting(setting: ShallowRef<ITableSettings>, name: strin
 
   onMounted(() => {
     const cache = localStorage.getItem(tableName);
-    if (cache) {
+    if (cache && setting) {
       try {
         setting.value = { ...JSON.parse(cache) };
       }
@@ -46,21 +46,19 @@ export function useTableSetting(setting: ShallowRef<ITableSettings>, name: strin
     }
   });
 
-  function changeTableSetting(value: ITableSettings) {
-    const curSetting = { ...setting.value };
+  function changeTableSetting(curSetting: ITableSettings) {
     // 这里需要对比下数据是否一致，避免重复回调
-    if (isEqual(curSetting, value)) {
+    if (isEqual(curSetting, setting?.value)) {
       return;
     }
-    setting.value = {
-      ...curSetting,
-      ...value,
-    };
-    localStorage.setItem(tableName, JSON.stringify(setting.value));
+    if (setting) {
+      setting.value = { ...curSetting };
+      localStorage.setItem(tableName, JSON.stringify(setting.value));
+    }
   }
 
   function isDiffSize(value: ITableSettings) {
-    return setting.value?.rowSize !== value.rowSize;
+    return setting?.value?.rowSize !== value.rowSize;
   }
 
   return {

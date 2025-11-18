@@ -18,7 +18,7 @@
 
 <template>
   <div
-    v-bkloading="{ loading: isLoading, opacity: 1, color: '#f5f7fb' }"
+    v-bkloading="{ loading: isLoading || initLoading, opacity: 1, color: '#f5f7fb' }"
     class="home-loading"
   >
     <div
@@ -239,7 +239,7 @@
                   text
                   theme="primary"
                   class="ml-20px"
-                  @click="() => handleGoPage('AccessLogDetail', item)"
+                  @click="() => handleGoPage('AccessLog', item)"
                 >
                   {{ t('流水日志') }}
                 </BkButton>
@@ -269,6 +269,7 @@
             </div>
           </div>
           <TableEmpty
+            background="#f5f7fa"
             :empty-type="tableEmptyConf.emptyType"
             :abnormal="tableEmptyConf.isAbnormal"
             @refresh="getGatewaysListData"
@@ -437,6 +438,7 @@ const {
   getGatewaysListData,
   dataList,
   pagination,
+  isLoading,
 } = useGatewaysList(filterNameData);
 
 const tableEmptyConf = ref<{
@@ -447,7 +449,7 @@ const tableEmptyConf = ref<{
   isAbnormal: false,
 });
 
-const isLoading = ref(true);
+const initLoading = ref<boolean>(false);
 // 网关列表数据
 const gatewaysList = ref<ConvertedGatewayType[]>([]);
 
@@ -561,12 +563,12 @@ const convertGatewaysList = (arr: GatewayType[]): ConvertedGatewayType[] => {
 
 // 页面初始化
 const init = async () => {
-  isLoading.value = true;
+  initLoading.value = true;
   const response = await getGatewayList({ limit: 10000 });
   gatewaysList.value = convertGatewaysList(response.results || []);
   updateTableEmptyConfig();
   setTimeout(() => {
-    isLoading.value = false;
+    initLoading.value = false;
   }, 100);
 };
 
@@ -843,11 +845,7 @@ onMounted(() => {
 
       .table-header {
         display: flex;
-      }
-
-      .empty-exception {
-        padding-bottom: 40px;
-        background-color: #fff;
+        margin-bottom: 102px;
       }
     }
   }

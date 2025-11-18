@@ -95,7 +95,10 @@
                 class="suffix"
                 :class="[status]"
               >{{ t('（{version} 版本发布失败，', {
-                version: stage.paasInfo?.latest_deployment?.version || stage.paasInfo?.version || '--'
+                version: stage.paasInfo?.latest_deployment?.version
+                  || stage.paasInfo?.version
+                  || stage?.publish_version
+                  || '--'
               }) }}<span><BkButton
                 text
                 theme="primary"
@@ -351,7 +354,7 @@ const fetchMetrics = debounce(() => {
 watch(
   () => stage,
   () => {
-    if (!stage) {
+    if (!stage || !featureFlagStore.flags.ENABLE_RUN_DATA_METRICS) {
       return;
     }
     fetchMetrics();
@@ -372,7 +375,7 @@ async function getRequestCount() {
     metrics: 'requests_total',
   });
   requestCount.value = instant;
-};
+}
 
 async function getRequestTrend() {
   if (!featureFlagStore.flags.ENABLE_RUN_DATA_METRICS) {
@@ -405,7 +408,7 @@ async function getRequestTrend() {
   }
 
   data.value = results;
-};
+}
 
 const handleCheckLog = () => {
   emit('check-log');

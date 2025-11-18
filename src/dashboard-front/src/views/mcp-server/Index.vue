@@ -31,7 +31,7 @@
       />
       <!-- 添加按钮卡片 -->
       <div
-        class="add-server-card"
+        class="flex items-center justify-center add-server-card"
         @click="handleAddServerClick"
       >
         <AgIcon
@@ -158,23 +158,32 @@ onMounted(() => {
     display: flex;
     gap: 16px;
     flex-wrap: wrap;
+    box-sizing: border-box;
 
     .add-server-card {
-      display: flex;
-      width: 533px;
-      height: 228px;
+      min-height: 228px;
       color: #979ba5;
-      cursor: pointer;
-      background: #fff;
       border-radius: 2px;
+      background-color: #ffffff;
       box-shadow: 0 2px 4px 0 #1919290d;
-      align-items: center;
-      justify-content: center;
+      cursor: pointer;
 
       &:hover {
         color: #3a84ff;
       }
     }
+  }
+}
+
+@media (min-width: 768px) {
+  .add-server-card {
+    width: calc(50% - 12px);
+  }
+}
+
+@media (min-width: 1200px) {
+  .add-server-card {
+    width: calc(33.333% - 16px);
   }
 }
 </style>

@@ -38,11 +38,18 @@
             @change="() => handleGoPage(activeMenuKey)"
           >
             <template #prefix>
-              <div class="gateway-selector-prefix">
+              <div
+                v-bk-tooltips="{
+                  content: t('可编程网关'),
+                  placement: 'right',
+                  disabled: !gatewayStore.isProgrammableGateway
+                }"
+                class="gateway-selector-prefix"
+              >
                 <AgIcon
                   v-if="gatewayStore.isProgrammableGateway"
                   name="square-program"
-                  size="20"
+                  size="16"
                 />
               </div>
             </template>
@@ -52,17 +59,38 @@
               :key="item.id"
               :name="item.name"
             >
-              <div class="gateway-select-option">
-                <AgIcon
-                  v-if="item.kind === 1"
-                  name="square-program"
-                  class="mr-6px color-#3a84ff"
-                />
-                <div
-                  v-else
-                  class="w-14px mr-6px"
-                />
-                <span>{{ item.name }}</span>
+              <div class="w-full flex items-center justify-between">
+                <div class="gateway-select-option">
+                  <span
+                    class="text-ov"
+                    :style="{ maxWidth: getOptionTextWidth(item) }"
+                  >
+                    {{ item.name }}
+                  </span>
+                  <BkPopover
+                    v-if="item.kind === 1"
+                    placement="right"
+                    :content="t('可编程网关')"
+                    :popover-delay="0"
+                  >
+                    <AgIcon
+                      name="square-program"
+                      size="16"
+                      class="ml-4px color-#3a84ff"
+                      :class="[
+                        {
+                          'mr-4px': !item.status
+                        }
+                      ]"
+                    />
+                  </BkPopover>
+                </div>
+                <BkTag
+                  v-if="!item.status
+                    || gatewayStore?.currentGateway?.status === 0 && gatewayId === item.id"
+                >
+                  {{ t('已停用') }}
+                </BkTag>
               </div>
             </BkOption>
           </BkSelect>
@@ -388,7 +416,7 @@ watch(
     () => route.name,
   ],
   () => {
-    activeMenuKey.value = (route.meta?.menuKey || route.name) as string;
+    activeMenuKey.value = (route.meta?.matchRoute || route.name) as string;
     gatewayId.value = Number(route.params.id || 0);
     headerTitle.value = route.meta.title as string;
     // 设置全局网关
@@ -438,6 +466,23 @@ async function checkStageVersion() {
     version113UpdateNoticeRef.value?.show();
   }
 }
+// 根据网关不同状态展示文案最大宽度
+const getOptionTextWidth = (gateway) => {
+  // 如果当前网关既是编辑网关且已停用
+  if (gateway.kind === 1) {
+    if (!gateway.status) {
+      return '100px';
+    }
+    return '180px';
+  }
+
+  // 如果当前网关既已停用
+  if (!gateway.status) {
+    return '120px';
+  }
+
+  return '200px';
+};
 
 const handleCollapse = (collapsed: boolean) => {
   isMenuCollapsed.value = !collapsed;
@@ -538,6 +583,7 @@ onMounted(() => {
         position: absolute;
         top: 1px;
         left: 120px;
+
         &.en {
           left: 142px;
         }
@@ -562,6 +608,7 @@ onMounted(() => {
             position: absolute;
             top: 6px;
             left: 58px;
+
              &.en {
               left: 130px;
             }

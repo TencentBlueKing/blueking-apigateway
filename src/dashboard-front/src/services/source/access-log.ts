@@ -25,6 +25,7 @@ export interface ISearchParamsInterface {
   time_start?: string | number // 开始时间，可以是字符串或数字，可选
   time_end?: string | number // 结束时间，可以是字符串或数字，可选
   query?: string // 查询字符串，可选
+  backend_name?: string // 后端服务名称，可选
 }
 
 export interface IChartInterface {

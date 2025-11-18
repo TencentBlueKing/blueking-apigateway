@@ -30,11 +30,12 @@
           :opened-keys="openedKeys"
           :active-key="activeMenuKey"
         >
-          <template
-            v-for="menu in platformToolsMenu"
-            :key="menu.name"
-          >
-            <BkMenuItem @click="() => handleGoPage(menu.name)">
+          <template v-for="menu in platformToolsMenu">
+            <BkMenuItem
+              v-if="menu.enabled"
+              :key="menu.name"
+              @click.stop="() => handleGoPage(menu.name)"
+            >
               <template #icon>
                 <AgIcon
                   :name="menu.icon"
@@ -70,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { useFeatureFlag } from '@/stores';
+import { useEnv, useFeatureFlag } from '@/stores';
 import AgIcon from '@/components/ag-icon/Index.vue';
 
 interface IMenu {
@@ -86,6 +87,7 @@ interface IMenu {
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+const envStore = useEnv();
 const featureFlagStore = useFeatureFlag();
 
 const collapse = ref(true);
@@ -95,16 +97,25 @@ const platformToolsMenu: IMenu[] = [
     name: 'PlatformToolsToolbox',
     title: t('工具箱'),
     icon: 'gongjuxiang',
+    enabled: true,
   },
   {
     name: 'PlatformToolsAutomatedGateway',
     title: t('自动化接入网关'),
     icon: 'zidongjieru',
+    enabled: true,
   },
   {
     name: 'PlatformToolsProgrammableGateway',
     title: t('可编程网关'),
     icon: 'square-program',
+    enabled: true,
+  },
+  {
+    name: 'PlatformToolsMicroGateway',
+    title: t('蓝鲸微网关'),
+    icon: 'apigateway-logo',
+    enabled: envStore.env.EDITION === 'te',
   },
 ];
 const openedKeys = platformToolsMenu.map(e => e.name);

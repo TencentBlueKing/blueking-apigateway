@@ -317,19 +317,19 @@ export const useAccessLog = defineStore('useAccessLog', {
     // 告警状态
     alarmStatus: [
       {
-        name: t('已接收'),
+        label: t('已接收'),
         value: 'received',
       },
       {
-        name: t('已忽略'),
+        label: t('已忽略'),
         value: 'skipped',
       },
       {
-        name: t('告警成功'),
+        label: t('告警成功'),
         value: 'success',
       },
       {
-        name: t('告警失败'),
+        label: t('告警失败'),
         value: 'failure',
       },
     ],
@@ -426,6 +426,10 @@ export const useAccessLog = defineStore('useAccessLog', {
         {
           name: t('后端服务'),
           value: 'backend',
+        },
+        {
+          name: t('应用权限'),
+          value: 'permission',
         },
         {
           name: 'MCP Server',

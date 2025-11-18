@@ -179,7 +179,7 @@
             <template #main>
               <div class="main-content-wrap">
                 <DocDetailMainContent
-                  v-if="apiList.length"
+                  v-if="apiList.length && curApi"
                   v-bkloading="{ loading: isLoading }"
                   :api="curApi"
                   :nav-list="navList"
@@ -249,7 +249,6 @@ import SDKInstructionSlider from '../components/SDKInstructionSlider.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -334,6 +333,11 @@ watch(apiGroupList, () => {
 });
 
 watch(() => route.query, async () => {
+  if (route.query?.stage) {
+    curStageName.value = route.query.stage as string;
+    await fetchApiList();
+  }
+
   if (route.query?.apiName) {
     curComponentApiName.value = route.query.apiName as string;
     curApi.value = apiList.value.find(api => api.name === curComponentApiName.value) ?? null;
@@ -342,11 +346,6 @@ watch(() => route.query, async () => {
     if (curApi.value) {
       await getApigwResourceDoc();
     }
-  }
-
-  if (route.query?.stage) {
-    curStageName.value = route.query.stage as string;
-    await fetchApiList();
   }
 }, { deep: true });
 
@@ -451,7 +450,7 @@ const fetchApiList = async () => {
 };
 
 const handleApiClick = (resId: number, apiName: string) => {
-  if (curApi.value.id === resId) return;
+  if (curApi.value?.id === resId) return;
 
   router.replace({
     name: 'ApiDocDetail',

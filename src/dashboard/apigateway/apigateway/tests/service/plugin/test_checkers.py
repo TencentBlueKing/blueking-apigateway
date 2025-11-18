@@ -24,9 +24,12 @@ from apigateway.service.plugin.checker import (
     BkAccessTokenSourceChecker,
     BkCorsChecker,
     BkIPRestrictionChecker,
+    BKRequestBodyLimitChecker,
+    BKUserRestrictionChecker,
     FaultInjectionChecker,
     HeaderRewriteChecker,
     PluginConfigYamlChecker,
+    ProxyCacheChecker,
     RedirectChecker,
     RequestValidationChecker,
     ResponseRewriteChecker,
@@ -536,6 +539,27 @@ class TestResponseRewriteChecker:
             ),
             (
                 {
+                    "body": '{"code":"ok","message":"new json body"}',
+                    "headers": {
+                        "add": [{"key": "name:value"}],
+                        "set": [
+                            {"key": "key1", "value": "value1"},
+                            {"key": "key2", "value": "value2"},
+                        ],
+                        "remove": [{"key": "key2"}],
+                    },
+                    "vars": '[[["status", "==", 200]]]',
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "status_code": "test",
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
                     "headers": {  # add key 重复
                         "add": [{"key": "name:value"}, {"key": "name:value"}]
                     },
@@ -606,5 +630,91 @@ class TestBkAccessTokenSourceChecker:
     )
     def test_check(self, data, ctx):
         checker = BkAccessTokenSourceChecker()
+        with ctx:
+            checker.check(yaml_dumps(data))
+
+
+class TestBKRequestBodyLimitChecker:
+    @pytest.mark.parametrize(
+        "data, ctx",
+        [
+            (
+                {"max_body_size": 1024},
+                does_not_raise(),
+            ),
+            (
+                {"max_body_size": 33554433},
+                pytest.raises(ValueError),
+            ),
+        ],
+    )
+    def test_check(self, data, ctx):
+        checker = BKRequestBodyLimitChecker()
+        with ctx:
+            checker.check(yaml_dumps(data))
+
+
+class TestBKUserRestrictionChecker:
+    @pytest.mark.parametrize(
+        "data, ctx",
+        [
+            (
+                {
+                    "whitelist": [{"key": "admin"}],
+                    "blacklist": [],
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "whitelist": [],
+                    "blacklist": [{"key": "admin"}],
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "whitelist": [],
+                    "blacklist": [],
+                },
+                pytest.raises(ValueError),
+            ),
+        ],
+    )
+    def test_check(self, data, ctx):
+        checker = BKUserRestrictionChecker()
+        with ctx:
+            checker.check(yaml_dumps(data))
+
+
+class TestProxyCacheChecker:
+    @pytest.mark.parametrize(
+        "data, ctx",
+        [
+            (
+                {
+                    "cache_method": [{"key": "GET"}, {"key": "HEAD"}],
+                    "cache_ttl": 300,
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "cache_method": [{"key": "HEAD"}],
+                    "cache_ttl": 3601,
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "cache_method": [{"key": "TEST"}],
+                    "cache_ttl": 3600,
+                },
+                pytest.raises(ValueError),
+            ),
+        ],
+    )
+    def test_check(self, data, ctx):
+        checker = ProxyCacheChecker()
         with ctx:
             checker.check(yaml_dumps(data))

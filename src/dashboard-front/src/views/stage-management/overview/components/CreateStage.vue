@@ -141,12 +141,14 @@
                           <BkFormItem
                             required
                             :label="t('负载均衡类型')"
-                            class="mt-20px"
+                            class="mt-20px relative"
+                            property="config.loadbalance"
                           >
                             <BkSelect
                               v-model="backend.config.loadbalance"
                               :clearable="false"
                               :placeholder="t('负载均衡类型')"
+                              @change="(value: string) => handleLoadBalanceChange(value, backend.id)"
                             >
                               <BkOption
                                 v-for="option in loadbalanceList"
@@ -155,7 +157,52 @@
                                 :name="option.name"
                               />
                             </BkSelect>
+                            <BkLink
+                              class="absolute right-0 top--30px"
+                              theme="primary"
+                              :href="envStore.env.DOC_LINKS.LOADBALANCE"
+                              target="_blank"
+                            >
+                              <AgIcon
+                                name="jump"
+                                size="12"
+                                class="mr-4px"
+                              />
+                              <span class="text-12px">{{ t('帮助文档') }}</span>
+                            </BkLink>
                           </BkFormItem>
+
+                          <!-- hash_on -->
+                          <BkFormItem
+                            v-if="backend.config.loadbalance === 'chash'"
+                            :label="t('哈希位置')"
+                            property="config.hash_on"
+                            required
+                          >
+                            <BkSelect
+                              v-model="backend.config.hash_on"
+                              :clearable="false"
+                              :filterable="false"
+                              @change="(value: string) => handleHashOnChange(value, backend.id)"
+                            >
+                              <BkOption
+                                v-for="type in hashOnOptions"
+                                :id="type.id"
+                                :key="type.id"
+                                :name="type.name"
+                              />
+                            </BkSelect>
+                          </BkFormItem>
+
+                          <KeyFormItem
+                            v-if="backend.config.loadbalance === 'chash'"
+                            :stage-config="backend"
+                            label="Key"
+                            property="config.key"
+                            required
+                            config-field="config"
+                            @change="handleHashOnKeyChange"
+                          />
 
                           <BkFormItem
                             v-for="(hostItem, index) of backend.config.hosts"
@@ -272,19 +319,18 @@
             v-else
             class="sideslider-content check-mode"
           >
-            <p class="title">
+            <div class="title">
               {{ t("基本信息") }}
-            </p>
+            </div>
             <BkContainer
               class="ag-kv-box"
               :col="14"
-              :margin="6"
             >
               <BkRow>
-                <BkCol :span="4">
-                  <label class="ag-key">{{ t("环境名称") }}:</label>
+                <BkCol :span="2">
+                  <label class="ag-key">{{ t("环境名称") }}: </label>
                 </BkCol>
-                <BkCol :span="10">
+                <BkCol :span="12">
                   <div class="ag-value">
                     {{ curStageData.name }}
                   </div>
@@ -293,12 +339,12 @@
 
               <BkRow>
                 <BkCol
-                  :span="4"
+                  :span="2"
                   class="mt-8px"
                 >
                   <label class="ag-key">{{ t("访问地址") }}:</label>
                 </BkCol>
-                <BkCol :span="10">
+                <BkCol :span="12">
                   <div class="ag-value address">
                     <span>{{ stageAddress || '--' }}</span>
                     <CopyButton :source="stageAddress" />
@@ -311,22 +357,23 @@
               v-for="backend in curStageData.backends"
               :key="backend.name"
             >
-              <p
-                class="title"
+              <div
+                class="title truncate w-full"
                 :class="{ highlighted: backend.name === selectedBackendName }"
               >
-                {{ `后端服务：${backend.name}` }}
-              </p>
+                <span>{{ `${t('后端服务')}:` }}</span>
+                <span class="ml-8px">{{ backend.name }}</span>
+              </div>
               <BkContainer
                 class="ag-kv-box"
+                :class="{ highlighted: backend.name === selectedBackendName }"
                 :col="14"
-                :margin="6"
               >
                 <BkRow>
-                  <BkCol :span="4">
+                  <BkCol :span="2">
                     <label class="ag-key">{{ t("负载均衡类型") }}:</label>
                   </BkCol>
-                  <BkCol :span="10">
+                  <BkCol :span="8">
                     <div class="ag-value">
                       {{ getLoadBalanceText(backend.config.loadbalance) }}
                     </div>
@@ -337,20 +384,20 @@
                   :key="host.host"
                 >
                   <BkRow>
-                    <BkCol :span="4">
+                    <BkCol :span="2">
                       <label class="ag-key">{{ t("后端服务地址") }}:</label>
                     </BkCol>
-                    <BkCol :span="10">
+                    <BkCol :span="12">
                       <div class="ag-value">
                         {{ `${host.scheme}://${host.host}` }}
                       </div>
                     </BkCol>
                   </BkRow>
                   <BkRow v-if="backend.config.loadbalance === 'weighted-roundrobin'">
-                    <BkCol :span="4">
+                    <BkCol :span="2">
                       <label class="ag-key">{{ t("权重") }}:</label>
                     </BkCol>
-                    <BkCol :span="10">
+                    <BkCol :span="12">
                       <div class="ag-value">
                         {{ host.weight }}
                       </div>
@@ -358,10 +405,10 @@
                   </BkRow>
                 </template>
                 <BkRow>
-                  <BkCol :span="4">
+                  <BkCol :span="2">
                     <label class="ag-key">{{ t("超时时间") }}:</label>
                   </BkCol>
-                  <BkCol :span="10">
+                  <BkCol :span="12">
                     <div class="ag-value">
                       {{ `${backend.config.timeout}秒` }}
                     </div>
@@ -428,6 +475,7 @@ import {
   useEnv,
   useGateway,
 } from '@/stores';
+import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
 
 interface IProps { stageId?: number }
 
@@ -486,11 +534,38 @@ const isAdd = ref(true);
 const loadbalanceList = [
   {
     id: 'roundrobin',
-    name: t('轮询(Round-Robin)'),
+    name: t('轮询（Round-Robin）'),
   },
   {
     id: 'weighted-roundrobin',
-    name: t('加权轮询(Weighted Round-Robin)'),
+    name: t('加权轮询（Weighted Round-Robin）'),
+  },
+  {
+    id: 'chash',
+    name: t('一致性哈希（CHash）'),
+  },
+  {
+    id: 'ewma',
+    name: t('指数加权移动平均法（EWMA）'),
+  },
+  {
+    id: 'least_conn',
+    name: t('最小连接数（least_conn）'),
+  },
+];
+
+const hashOnOptions = [
+  {
+    id: 'vars',
+    name: 'vars',
+  },
+  {
+    id: 'header',
+    name: 'header',
+  },
+  {
+    id: 'cookie',
+    name: 'cookie',
   },
 ];
 
@@ -719,6 +794,39 @@ const handleShowSideslider = async (type: string, { backendName = '' } = {}) => 
   isShow.value = true;
 };
 
+const handleLoadBalanceChange = (value: string, stageId: number) => {
+  const stage = curStageData.value.backends.find(item => item.id === stageId);
+  if (stage) {
+    if (value === 'chash') {
+      stage.config.hash_on = 'vars';
+      stage.config.key = 'remote_addr';
+    }
+    else {
+      delete stage.config.hash_on;
+      delete stage.config.key;
+    }
+  }
+};
+
+const handleHashOnChange = (value: string, stageId: number) => {
+  const stage = curStageData.value.backends.find(item => item.id === stageId);
+  if (stage) {
+    if (value === 'vars') {
+      stage.config.key = 'remote_addr';
+    }
+    else {
+      stage.config.key = '';
+    }
+  }
+};
+
+const handleHashOnKeyChange = (config: any) => {
+  const stage = curStageData.value.backends.find(item => item.id === config.id);
+  if (stage) {
+    stage.config.key = config.config.key;
+  }
+};
+
 // 确定
 const handleConfirm = async () => {
   // 表单校验
@@ -893,10 +1001,9 @@ defineExpose({ handleShowSideslider });
 
   .address {
     height: 40px;
-    padding: 0 16px;
+    padding: 0 12px;
     line-height: 40px;
-    background: #f5f7fa;
-    border-radius: 2px;
+    background-color: #f5f7fa;
 
     label {
       height: 22px;
@@ -928,36 +1035,51 @@ defineExpose({ handleShowSideslider });
   &.check-mode {
 
     .title {
-      padding: 5px 0 5px 5px;
-      margin-top: 15px;
-      margin-bottom: 17px;
-      font-size: 13px;
-      font-weight: bold;
+      height: 40px;
+      padding: 0 8px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 40px;
       color: #63656e;
       border-bottom: 1px solid #dcdee5;
 
       &.highlighted {
-        background-color: #e1ecff;
+        color: #4d4f56;
+        background-color: #cddffe;
+        border-bottom: none;
+        box-shadow: inset 0 -1px 0 0 #a3c5fd;
       }
     }
 
     .ag-kv-box {
+      padding-top: 12px;
+      padding-right: 24px;
+      padding-left: 0 !important;
+      margin-bottom: 24px;
 
       .bk-grid-row {
-        margin-bottom: 12px;
+        padding-bottom: 12px;
+        margin-bottom: 0;
+
+        .bk-grid-col {
+          padding-right: 16px !important;
+          padding-left: 0 !important;
+        }
       }
 
       .ag-key {
-        display: block;
-        padding-right: 0;
-        font-size: 14px;
-        color: #63656e;
+        font-size: 12px;
+        color: #4d4f56;
         text-align: right;
       }
 
       .ag-value {
-        font-size: 14px;
+        font-size: 12px;
         color: #313238;
+      }
+
+      &.highlighted {
+        background-color: #f0f5ff;
       }
     }
   }
@@ -1065,14 +1187,14 @@ defineExpose({ handleShowSideslider });
 }
 
 .fixed-footer-btn-wrapper {
-  width: 100%;
-  max-width: 960px;
   position: fixed;
   right: 0;
   bottom: 0;
   z-index: 9;
+  width: 100%;
+  max-width: 960px;
   padding: 10px 0 10px 40px;
-  background-color: #ffffff;
+  background-color: #fff;
   box-shadow: 0 -1px 0 0 #dcdee5;
   transition: .2s;
 }
@@ -1100,8 +1222,8 @@ defineExpose({ handleShowSideslider });
     .panel-header-show,
     .panel-header-hide {
       color: #63656e;
-      transition: .2s;
       transform: rotate(0deg);
+      transition: .2s;
     }
 
     .panel-header-hide {
@@ -1123,8 +1245,8 @@ defineExpose({ handleShowSideslider });
     }
 
     :deep(.bk-collapse-item) {
-      background-color: #f5f7fb;
       margin-bottom: 16px;
+      background-color: #f5f7fb;
 
       .bk-collapse-header {
         height: 40px;

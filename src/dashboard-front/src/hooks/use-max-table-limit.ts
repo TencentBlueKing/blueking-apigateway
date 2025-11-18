@@ -24,6 +24,7 @@ import type { ReturnRecordType } from '@/types/common';
 type ITableLimit = {
   allocatedHeight: number
   customLineHeight: number
+  mode?: string | undefined
   className: string
   hasPagination: boolean
 };
@@ -35,7 +36,10 @@ type ITableLimit = {
  */
 function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string, number> {
   const curSetting = localStorage.getItem(`table-setting-${locale.value}-${className}`);
-  const tableSize = curSetting ? JSON.parse(curSetting)?.size : 'mini';
+  let tableSize = curSetting ? JSON.parse(curSetting)?.size : 'small';
+  if (['tdesign'].includes(mode)) {
+    tableSize = curSetting ? JSON.parse(curSetting)?.rowSize : 'medium';
+  }
   // 后续其他表格也可以适配，默认先以bkui-vue表格为例
   const sizeMap: ReturnRecordType<string, Record<string, number>> = {
     mini: () => {
@@ -46,8 +50,8 @@ function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string
         };
       }
       return {
-        lineH: 36,
-        topHead: 42,
+        lineH: 32,
+        topHead: 32,
       };
     },
     small: () => {
@@ -55,6 +59,12 @@ function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string
         return {
           lineH: 42,
           topHead: 42,
+        };
+      }
+      if (['tdesign'].includes(mode)) {
+        return {
+          lineH: 36,
+          topHead: 36,
         };
       }
       return {
@@ -69,9 +79,15 @@ function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string
           topHead: 42,
         };
       }
+      if (['tdesign'].includes(mode)) {
+        return {
+          lineH: 42,
+          topHead: 42,
+        };
+      }
       return {
-        lineH: 44,
-        topHead: 47,
+        lineH: 60,
+        topHead: 42,
       };
     },
     large: () => {
@@ -79,6 +95,12 @@ function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string
         return {
           lineH: 78,
           topHead: 42,
+        };
+      }
+      if (['tdesign'].includes(mode)) {
+        return {
+          lineH: 56,
+          topHead: 56,
         };
       }
       return {
@@ -106,19 +128,21 @@ export function useMaxTableLimit(payload?: Partial<ITableLimit>) {
   // 默认已占位高度
   const hasAllocatedHeight = payload?.allocatedHeight ?? 186;
   // 默认分页器高度
-  const paginationH = payload?.hasPagination || typeof payload?.hasPagination === 'undefined' ? 60 : 0;
+  let paginationH = payload?.hasPagination || typeof payload?.hasPagination === 'undefined' ? 60 : 0;
+  if (['tdesign'].includes(payload?.mode as string)) {
+    paginationH = 64;
+  }
   // 通知栏高度
   const noticeComH = featureFlagStore.isEnabledNotice ? 40 : 0;
   // 获取表格的最大可视化区域
   const clientHeight = viewportHeight - hasAllocatedHeight - noticeComH;
   const name = payload?.className ?? route.name;
   // topHead是指vxe-table根据不同表格大小动态设置了距离表头top
-  const { lineH, topHead } = getTableSizeLineHeight(name as string);
+  const { lineH, topHead } = getTableSizeLineHeight(name as string, payload?.mode);
   // 优先获取自定义传入行高，默认设置不同大小表格的固定行高
   const rowHeight = payload?.customLineHeight ?? lineH;
   // 为了防止body区域出现滚动条，需要减去表头和分页器的高度
   const maxTableLimit = Math.max(Math.floor((clientHeight - paginationH - topHead) / rowHeight), 1);
-
   return {
     maxTableLimit,
     clientHeight,

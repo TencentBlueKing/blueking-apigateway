@@ -72,45 +72,33 @@
       </BkForm>
     </div>
 
-    <BkLoading
-      :loading="isLoading"
-      :z-index="100"
-    >
-      <BkTable
-        size="small"
-        class="audit-table"
-        border="outer"
-        :data="tableData"
-        :pagination="pagination"
-        :max-height="clientHeight"
-        :columns="getTableColumns()"
-        remote-pagination
-        show-overflow-tooltip
-        @column-sort="handleSortChange"
-        @page-value-change="handlePageChange"
-        @page-limit-change="handlePageSizeChange"
-      >
-        <template #empty>
-          <TableEmpty
-            :empty-type="tableEmptyConfig.emptyType"
-            :abnormal="tableEmptyConfig.isAbnormal"
-            @refresh="getAuditLogList"
-            @clear-filter="handleClearFilterKey"
-          />
-        </template>
-      </BkTable>
-    </BkLoading>
+    <AgTable
+      ref="tableRef"
+      v-model:table-data="tableData"
+      row-key="event_id"
+      show-settings
+      resizable
+      :max-limit-config="{ allocatedHeight: 260, mode: 'tdesign'}"
+      :filter-value="filterData"
+      :api-method="getTableData"
+      :columns="tableColumns"
+      @clear-filter="handleClearFilter"
+      @filter-change="handleFilterChange"
+    />
   </div>
 </template>
 
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
-import type { ISearchSelect, ReturnRecordType } from '@/types/common';
-import { useDatePicker, useMaxTableLimit, useQueryList } from '@/hooks';
+import type { ISearchSelect, ITableMethod } from '@/types/common';
+import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';
+import { useTableFilterChange } from '@/hooks/use-table-filter-change';
+import { useDatePicker } from '@/hooks';
 import {
   useAccessLog,
   useAuditLog,
   useFeatureFlag,
+  useGateway,
   useUserInfo,
 } from '@/stores';
 import { getTenantUsers } from '@/services/source/basic';
@@ -118,19 +106,18 @@ import {
   type IAuditLog,
   getAuditLogList,
 } from '@/services/source/auditLog';
-import TableHeaderFilter from '@/components/table-header-filter';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
 
 const { t, locale } = useI18n();
 const accessLogStore = useAccessLog();
 const auditLogStore = useAuditLog();
 const userInfoStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
+const gatewayStore = useGateway();
+const { handleTableFilterChange } = useTableFilterChange();
 
-const tableKey = ref(-1);
 const orderBy = ref('');
 const dateKey = ref('dateKey');
-const members = ref([]);
 const searchValue = ref([]);
 const defaultSearchData = ref<IAuditLog>({
   keyword: '',
@@ -143,12 +130,9 @@ const defaultSearchData = ref<IAuditLog>({
   time_end: '',
   order_by: '',
 });
-const defaultFilterData = ref<Record<string, string>>({
-  op_type: 'ALL',
-  op_object_type: 'ALL',
-  op_status: 'ALL',
-});
-const curSelectData = ref<Record<string, string>>(cloneDeep(defaultFilterData));
+
+const tableData = ref([]);
+const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const filterData = ref<IAuditLog>(cloneDeep(defaultSearchData));
 const OperateRecordObjectType = ref(
   accessLogStore.auditOptions.OPObjectType.map((item: Record<string, string>) => {
@@ -174,10 +158,8 @@ const OperateRecordStatus = ref(
     };
   }),
 );
-const tableEmptyConfig = reactive({
-  emptyType: '',
-  isAbnormal: false,
-});
+
+const apigwId = computed(() => gatewayStore.apigwId);
 
 const searchData = computed(() => {
   const isTenantMode = featureFlagStore.flags?.ENABLE_MULTI_TENANT_MODE || false;
@@ -225,7 +207,6 @@ const searchData = computed(() => {
   ];
 });
 
-const { maxTableLimit, clientHeight } = useMaxTableLimit();
 const {
   dateValue,
   shortcutsRange,
@@ -236,115 +217,6 @@ const {
   handleShortcutChange,
   handleSelectionModeChange,
 } = useDatePicker(filterData);
-
-const getFilterData = (payload: Record<string, string>, curData: Record<string, string>) => {
-  const { id, name } = payload;
-  filterData.value[curData.id] = payload.id;
-  const hasMethodData = searchValue.value.find((item: ISearchSelect) => [curData.id].includes(item.id));
-  if (hasMethodData) {
-    hasMethodData.values = [{
-      id,
-      name,
-    }];
-  }
-  else {
-    searchValue.value.push({
-      id: curData.id,
-      name: curData.name,
-      values: [{
-        id,
-        name,
-      }],
-    });
-  }
-  if (['ALL'].includes(payload.id)) {
-    delete filterData.value[curData.id];
-    searchValue.value = searchValue.value.filter((item: ISearchSelect) => ![curData.id].includes(item.id));
-  }
-  // refreshTableData();
-};
-
-const renderObjectLabel = () => {
-  return h('div', { class: 'audit-log-custom-label' }, [
-    h(
-      TableHeaderFilter,
-      {
-        key: tableKey.value,
-        hasAll: true,
-        columnLabel: t('操作对象'),
-        selectValue: curSelectData.value.op_object_type,
-        list: OperateRecordObjectType.value,
-        onSelected: (payload: Record<string, string>) => {
-          const curData = {
-            id: 'op_object_type',
-            name: t('操作对象'),
-          };
-          getFilterData(payload, curData);
-        },
-      },
-    ),
-  ]);
-};
-
-const renderTypeLabel = () => {
-  return h('div', { class: 'audit-log-custom-label' }, [
-    h(
-      TableHeaderFilter,
-      {
-        key: tableKey.value,
-        hasAll: true,
-        columnLabel: t('操作类型'),
-        selectValue: curSelectData.value.op_type,
-        list: OperateRecordType.value,
-        onSelected: (payload: Record<string, string>) => {
-          const curData = {
-            id: 'op_type',
-            name: t('操作类型'),
-          };
-          getFilterData(payload, curData);
-        },
-      },
-    ),
-  ]);
-};
-
-const renderStatusLabel = () => {
-  return h('div', { class: 'audit-log-custom-label' }, [
-    h(
-      TableHeaderFilter,
-      {
-        key: tableKey.value,
-        hasAll: true,
-        columnLabel: t('操作状态'),
-        selectValue: curSelectData.value.op_status,
-        list: OperateRecordStatus.value,
-        onSelected: (payload: Record<string, string>) => {
-          const curData = {
-            id: 'op_status',
-            name: t('操作状态'),
-          };
-          getFilterData(payload, curData);
-        },
-      },
-    ),
-  ]);
-};
-
-const handleSortChange = ({ column, type }: Record<string, any>) => {
-  const typeMap: ReturnRecordType<string, string> = {
-    asc: () => {
-      orderBy.value = column.field;
-    },
-    desc: () => {
-      orderBy.value = `-${column.field}`;
-    },
-    null: () => {
-      orderBy.value = '';
-    },
-  };
-  typeMap[type]();
-  refreshTableData();
-};
 
 const getStatusText = (type: string) => {
   const name = auditLogStore.operateStatus.find((item: Record<string, string>) => item.value === type)?.name;
@@ -363,108 +235,133 @@ const getOpObjectTypeText = (type: string) => {
   return name ?? '--';
 };
 
-const getTableColumns = () => {
-  return [
-    {
-      label: renderObjectLabel,
-      field: 'op_object_type',
-      render: ({ row }: { row?: IAuditLog }) => {
-        return (
-          <div class="cell-field">
-            <span class="content">{ getOpObjectTypeText(row.op_object_type) }</span>
-          </div>
-        );
-      },
+const tableColumns = shallowRef<PrimaryTableProps['columns']>([
+  {
+    title: t('操作对象'),
+    colKey: 'op_object_type',
+    ellipsis: true,
+    cell: (h, { row }: { row: IAuditLog }) => {
+      return (
+        <div class="cell-field">
+          <span class="content">{ getOpObjectTypeText(row.op_object_type) }</span>
+        </div>
+      );
     },
-    {
-      label: t('实例'),
-      field: 'op_object',
-      render: ({ row }: { row?: IAuditLog }) => {
-        return (
-          <span>{ row.op_object || '--' }</span>
-        );
-      },
+    filter: {
+      type: 'single',
+      showConfirmAndReset: true,
+      popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+      list: accessLogStore.auditOptions.OPObjectType.map((item: Record<string, string>) => ({
+        ...item,
+        label: item.name,
+      })),
     },
-    {
-      label: renderTypeLabel,
-      field: 'op_type',
-      render: ({ row }: { row?: IAuditLog }) => {
-        return (
-          <span>{ getOpTypeText(row.op_type) || '--' }</span>
-        );
-      },
+  },
+  {
+    title: t('实例'),
+    colKey: 'op_object',
+    ellipsis: true,
+    cell: (h, { row }: { row: IAuditLog }) => {
+      return (
+        <span>{ row.op_object || '--' }</span>
+      );
     },
-    {
-      label: renderStatusLabel,
-      field: 'op_status',
-      render: ({ row }: { row?: IAuditLog }) => {
-        return (
-          <div class="flex items-center">
-            <span class={['mr-5px ag-dot', row.op_status]} />
-            <span class="status-text">{ getStatusText(row.op_status) }</span>
-          </div>
-        );
-      },
+  },
+  {
+    title: t('操作类型'),
+    colKey: 'op_type',
+    ellipsis: true,
+    cell: (h, { row }: { row: IAuditLog }) => {
+      return (
+        <span>{ getOpTypeText(row.op_type) || '--' }</span>
+      );
     },
-    {
-      label: t('操作人'),
-      field: 'username',
-      render: ({ row }: { row: IAuditLog }) =>
-        !featureFlagStore.isEnableDisplayName
-          ? <span>{row.username}</span>
-          : <span><bk-user-display-name user-id={row.username} /></span>,
+    filter: {
+      type: 'single',
+      showConfirmAndReset: true,
+      popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+      list: accessLogStore.auditOptions.OPType.map((item: Record<string, string>) => ({
+        ...item,
+        label: item.name,
+      })),
     },
-    {
-      label: t('操作时间'),
-      field: 'op_time',
+  },
+  {
+    title: t('操作状态'),
+    colKey: 'op_status',
+    ellipsis: true,
+    cell: (h, { row }: { row: IAuditLog }) => {
+      return (
+        <div class="flex items-center">
+          <span class={['mr-5px ag-dot', row.op_status]} />
+          <span class="status-text">{ getStatusText(row.op_status) }</span>
+        </div>
+      );
     },
-    {
-      label: t('描述'),
-      field: 'comment',
+    filter: {
+      type: 'single',
+      showConfirmAndReset: true,
+      popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+      list: auditLogStore.operateStatus.map((item: Record<string, string>) => ({
+        ...item,
+        label: item.name,
+      })),
     },
-  ];
+  },
+  {
+    title: t('操作人'),
+    colKey: 'username',
+    ellipsis: true,
+    cell: (h, { row }: { row: IAuditLog }) =>
+      !featureFlagStore.isEnableDisplayName
+        ? <span>{row.username}</span>
+        : <span><bk-user-display-name user-id={row.username} /></span>,
+  },
+  {
+    title: t('操作时间'),
+    colKey: 'op_time',
+    ellipsis: true,
+  },
+  {
+    title: t('描述'),
+    colKey: 'comment',
+    ellipsis: true,
+  },
+]);
+
+const getList = () => tableRef.value?.fetchData(filterData.value, { resetPage: true });
+
+const getTableData = async (params: Record<string, any> = {}) => {
+  const results = await getAuditLogList(apigwId.value, params);
+  return results ?? [];
+};
+
+const handleClearFilter = () => {
+  filterData.value = cloneDeep(defaultSearchData.value);
+  searchValue.value = [];
+  handleClear();
+  dateKey.value = String(+new Date());
+};
+
+// 处理表头筛选联动搜索框
+const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
+  handleTableFilterChange({
+    filterItem,
+    filterData,
+    searchOptions: searchData,
+    searchParams: searchValue,
+  });
+  getList();
 };
 
 const handlePickSuccess = () => {
   handleConfirm();
-  refreshTableData();
+  getList();
 };
 
 const handlePickClear = () => {
   handleClear();
-  handleTimeClear();
-};
-
-const handleTimeClear = () => {
-  filterData.value = Object.assign(filterData.value, {
-    time_start: '',
-    time_end: '',
-  });
-  pagination.value.current = 1;
-};
-
-const handleClearFilterKey = () => {
-  isLoading.value = true;
-  members.value = [];
-  filterData.value = cloneDeep(defaultSearchData.value);
-  searchValue.value = [];
-  handleTimeClear();
-  dateKey.value = String(+new Date());
-};
-
-const updateTableEmptyConfig = () => {
-  const searchParams = { ...filterData.value };
-  const list = Object.values(searchParams).filter(item => item !== '');
-  if (list.length || shortcutSelectedIndex.value > -1) {
-    tableEmptyConfig.emptyType = 'searchEmpty';
-    return;
-  }
-  tableEmptyConfig.emptyType = 'empty';
-};
-
-const refreshTableData = async () => {
-  await getList();
-  updateTableEmptyConfig();
+  getList();
 };
 
 const getMenuList = async (item: { id: string }, keyword: string) => {
@@ -499,73 +396,24 @@ watch(
           time_end: filterData.value.time_end,
         },
       );
-      curSelectData.value = cloneDeep(defaultFilterData.value);
-      // tableKey.value = +new Date();
-      refreshTableData();
-      return;
     }
-    let notRefresh = false;
-    Object.keys(filterData.value).forEach((filterDataKey: string) => {
-      const hasData = newVal.find((sv: ISearchSelect) => sv.id === filterDataKey);
-      let ret = '';
-      if (hasData) {
-        if (!['op_object_type', 'op_type', 'op_status'].includes(hasData.id)) {
-          ret = hasData.values[0].id || '';
-        }
-        else {
-          const alterSearchDataItem = searchData.value.find(sd => sd.id === hasData.id) ?? {};
-          const alterSearchDataItemChildren = alterSearchDataItem.children || [];
-          if (!alterSearchDataItemChildren.every((child: {
-            name: string
-            id: number
-          }) => child.id !== hasData.values[0].id)) {
-            ret = hasData.values[0].id || '';
-          }
-          else {
-            // op_object_type, op_type, op_status三种搜索项，如果没有采用下拉框的备选项而是自己随意输入时，则替换成下拉框的第一个备选项
-            notRefresh = true;
-            searchValue.value.forEach((sv: ISearchSelect) => {
-              if (sv.id === filterDataKey) {
-                sv.values = [alterSearchDataItemChildren[0]];
-              }
-            });
-          }
-        }
+    else {
+      const textItem = searchValue.value.find(val => val.type === 'text');
+      if (textItem) {
+        filterData.value.keyword = textItem.name || '';
       }
-      if (!['time_start', 'time_end'].includes(filterDataKey)) {
-        filterData.value[filterDataKey] = ret;
-        curSelectData.value[filterDataKey] = ret;
-      }
-    });
-    // tableKey.value = +new Date();
-    if (!notRefresh) {
-      refreshTableData();
+      searchValue.value.forEach((item) => {
+        if (item.values) {
+          filterData.value[item.id] = item.values[0].id;
+        }
+      });
     }
+
+    getList();
   },
   { deep: true },
 );
 
-const {
-  tableData,
-  pagination,
-  isLoading,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-} = useQueryList({
-  apiMethod: getAuditLogList,
-  filterData,
-  initialPagination: {
-    limitList: [
-      maxTableLimit,
-      10,
-      20,
-      50,
-      100,
-    ],
-    limit: maxTableLimit,
-  },
-});
 </script>
 
 <style lang="scss" scoped>

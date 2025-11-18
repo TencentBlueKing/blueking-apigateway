@@ -19,11 +19,12 @@ import csv
 import random
 import time
 from datetime import datetime
+from io import StringIO
 from typing import Dict, List
 from urllib.parse import urlencode
 
 from django.conf import settings
-from django.http import Http404, HttpResponse
+from django.http import Http404
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -36,7 +37,7 @@ from apigateway.biz.access_log.log_search import LogSearchClient
 from apigateway.common.signature import SignatureGenerator, SignatureValidator
 from apigateway.core.models import Gateway, Stage
 from apigateway.utils.paginator import LimitOffsetPaginator
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
 from .serializers import (
     LogDetailQueryInputSLZ,
@@ -68,6 +69,7 @@ class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
         client = LogSearchClient(
             gateway_id=request.gateway.id,
             stage_name=stage_name,
+            backend_name=data.get("backend_name"),
             resource_id=data.get("resource_id"),
             query=data.get("query"),
             include_conditions=data.get("include_conditions"),
@@ -114,6 +116,7 @@ class SearchLogListApi(generics.ListAPIView):
         client = LogSearchClient(
             gateway_id=request.gateway.id,
             stage_name=stage_name,
+            backend_name=data.get("backend_name"),
             resource_id=data.get("resource_id"),
             query=data.get("query"),
             include_conditions=data.get("include_conditions"),
@@ -163,6 +166,7 @@ class LogExportApi(generics.RetrieveAPIView):
         client = LogSearchClient(
             gateway_id=request.gateway.id,
             stage_name=stage_name,
+            backend_name=data.get("backend_name"),
             resource_id=data.get("resource_id"),
             query=data.get("query"),
             include_conditions=data.get("include_conditions"),
@@ -180,8 +184,6 @@ class LogExportApi(generics.RetrieveAPIView):
         logs = DataScrubber().scrub_sensitive_data(logs)
         # 增加扩展数据
         logs = add_or_refine_fields(logs)
-        # 创建一个HttpResponse对象，并设置内容类型为CSV
-        response = HttpResponse(content_type="text/csv; charset=utf-8")
 
         # 准备文件名称数据
         gateway = Gateway.objects.get(id=request.gateway.id)
@@ -193,16 +195,22 @@ class LogExportApi(generics.RetrieveAPIView):
         formatted_time_start = time_start_dt.strftime("%Y%m%d%H%M%S")
         formatted_time_end = time_end_dt.strftime("%Y%m%d%H%M%S")
 
-        response["Content-Disposition"] = (
-            f'attachment; filename="{gateway.name}-{formatted_time_start}-{formatted_time_end}-logs.csv"'
-        )
-
-        writer = csv.writer(response)
+        output = StringIO()
+        writer = csv.writer(output)
 
         # 写入CSV头部
         writer.writerow(field_dict["field"] for field_dict in ES_LOG_FIELDS)
         for log in logs:
             writer.writerow([log.get(field_dict["field"]) for field_dict in ES_LOG_FIELDS])
+
+        content = output.getvalue()
+        output.close()
+
+        response = DownloadableResponse(
+            content, filename=f"{gateway.name}-{formatted_time_start}-{formatted_time_end}-logs.csv"
+        )
+        # use utf-8-sig for windows
+        response.charset = "utf-8-sig" if "windows" in request.headers.get("User-Agent", "").lower() else "utf-8"
         return response
 
 

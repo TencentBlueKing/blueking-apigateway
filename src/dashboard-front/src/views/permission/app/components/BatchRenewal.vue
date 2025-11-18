@@ -59,12 +59,11 @@
                 </div>
               </template>
               <template #content>
-                <BkTable
-                  size="small"
-                  :data="resourceTableList"
+                <AgTable
+                  v-model:table-data="resourceTableList"
+                  local-page
                   :columns="tableColumns"
-                  :border="['row', 'outer']"
-                  show-overflow-tooltip
+                  :show-pagination="false"
                 />
               </template>
             </BkCollapsePanel>
@@ -84,12 +83,11 @@
                 </div>
               </template>
               <template #content>
-                <BkTable
-                  size="small"
-                  :data="apiTableList"
+                <AgTable
+                  v-model:table-data="apiTableList"
                   :columns="tableColumns"
-                  :border="['row', 'outer']"
-                  show-overflow-tooltip
+                  local-page
+                  :show-pagination="false"
                 />
               </template>
             </BkCollapsePanel>
@@ -124,6 +122,7 @@ import { AngleUpFill } from 'bkui-lib/icon';
 import { t } from '@/locales';
 import { usePermission } from '@/stores';
 import { type IPermission } from '@/types/permission';
+import AgTable from '@/components/ag-table/Index.vue';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';
 import ExpireDaySelector from '@/views/permission/app/components/ExpireDaySelector.vue';
 
@@ -169,22 +168,25 @@ const permissionStore = usePermission();
 const activeIndex = ref(['resource', 'gateway']);
 const tableColumns = shallowRef([
   {
-    label: t('蓝鲸应用ID'),
-    field: 'bk_app_code',
+    title: t('蓝鲸应用ID'),
+    colKey: 'bk_app_code',
+    ellipsis: true,
   },
   {
-    label: t('资源名称'),
-    field: 'resource_name',
-    render: ({ row }: { row?: IPermission }) => {
+    title: t('资源名称'),
+    colKey: 'resource_name',
+    ellipsis: true,
+    cell: (h, { row }: { row?: IPermission }) => {
       return (
         <span>{ row.resource_name || '--' }</span>
       );
     },
   },
   {
-    label: t('有效期'),
-    field: 'expires',
-    render: ({ row }: { row?: IPermission }) => {
+    title: t('有效期'),
+    colKey: 'expires',
+    ellipsis: true,
+    cell: (h, { row }: { row?: IPermission }) => {
       return (
         <div>
           <span style={{ color: permissionStore.getDurationTextColor(row.expires) }}>

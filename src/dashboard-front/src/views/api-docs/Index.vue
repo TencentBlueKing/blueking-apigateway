@@ -51,134 +51,40 @@
         class="content-of-apigw"
       >
         <!--  搜索栏和 SDK使用说明  -->
-        <header class="top-bar">
-          <BkInput
-            v-model="filterData.keyword"
-            type="search"
-            :placeholder="t('请输入网关名称或描述')"
-            clearable
-            style="width: 400px"
-          />
-          <BkLink
-            theme="primary"
-            class="text-12px ml-24px"
-            @click.prevent="isSdkInstructionSliderShow = true"
-          >
-            <AgIcon name="document" />
-            {{ t('SDK 使用说明') }}
-          </BkLink>
+        <header class="flex items-center justify-between mb-16px">
+          <div>
+            <BkCheckbox v-model="filterData.show_plugin_gateway">
+              {{ t('展示插件网关') }}
+            </BkCheckbox>
+          </div>
+          <div>
+            <BkInput
+              v-model="filterData.keyword"
+              type="search"
+              :placeholder="t('请输入网关名称或描述')"
+              clearable
+              style="width: 400px"
+            />
+            <BkLink
+              theme="primary"
+              class="text-12px ml-24px"
+              @click.prevent="isSdkInstructionSliderShow = true"
+            >
+              <AgIcon name="document" />
+              {{ t('SDK 使用说明') }}
+            </BkLink>
+          </div>
         </header>
         <!--  网关列表  -->
         <main class="docs-list">
-          <BkLoading :loading="isLoading">
-            <BkTable
-              :data="tableData"
-              remote-pagination
-              :pagination="pagination"
-              :max-height="clientHeight"
-              show-overflow-tooltip
-              :border="['outer']"
-              @page-limit-change="handlePageSizeChange"
-              @page-value-change="handlePageChange"
-            >
-              <BkTableColumn
-                :label="t('网关名称')"
-                field="name"
-              >
-                <template #default="{ row }: { row: IApiGatewayBasics }">
-                  <span
-                    class="link-name"
-                    @click="gotoDetails(row)"
-                  >{{ row.name || '--' }}</span>
-                  <BkTag
-                    v-if="row.is_official"
-                    theme="success"
-                  >
-                    {{ t('官方') }}
-                  </BkTag>
-                </template>
-              </BkTableColumn>
-              <template v-if="featureFlagStore.isTenantMode">
-                <BkTableColumn
-                  :label="t('租户模式')"
-                  field="tenant_mode"
-                  :width="120"
-                >
-                  <template #default="{ row }">
-                    {{ TENANT_MODE_TEXT_MAP[row.tenant_mode as string] || '--' }}
-                  </template>
-                </BkTableColumn>
-                <BkTableColumn
-                  :label="t('租户 ID')"
-                  field="tenant_id"
-                  :width="120"
-                >
-                  <template #default="{ row }">
-                    {{ row.tenant_id || '--' }}
-                  </template>
-                </BkTableColumn>
-              </template>
-              <BkTableColumn
-                :label="t('网关描述')"
-                field="description"
-                :min-width="500"
-              >
-                <template #default="{ row }">
-                  {{ row.description || '--' }}
-                </template>
-              </BkTableColumn>
-              <BkTableColumn
-                v-if="!featureFlagStore.isTenantMode"
-                :label="t('网关负责人')"
-                field="maintainers"
-                placement="auto-start"
-              >
-                <template #default="{ row }">
-                  <span v-if="!row?.maintainers?.length">
-                    --
-                  </span>
-                  <template v-else>
-                    <span v-if="!featureFlagStore.isEnableDisplayName">{{ row.maintainers.join(', ') }}</span>
-                    <template v-else>
-                      <span
-                        v-for="(maintainer, index) in row.maintainers"
-                        :key="maintainer.login_name"
-                      >
-                        <bk-user-display-name :user-id="maintainer" />
-                        <span v-if="index !== (row.maintainers.length - 1)">,</span>
-                      </span>
-                    </template>
-                  </template>
-                </template>
-              </BkTableColumn>
-              <BkTableColumn
-                :label="t('操作')"
-                width="180"
-                fixed="right"
-              >
-                <template #default="{ row }: { row: IApiGatewayBasics }">
-                  <BkButton
-                    v-bk-tooltips="{ content: t('SDK未生成，可联系负责人生成SDK'), disabled: row.sdks?.length }"
-                    text
-                    theme="primary"
-                    :disabled="!row.sdks?.length"
-                    @click="handleSdkDetailClick(row)"
-                  >
-                    {{ t('查看 SDK') }}
-                  </BkButton>
-                </template>
-              </BkTableColumn>
-              <template #empty>
-                <TableEmpty
-                  :is-loading="isLoading"
-                  :empty-type="tableEmptyConf.emptyType"
-                  :abnormal="tableEmptyConf.isAbnormal"
-                  @reacquire="getList"
-                  @clear-filter="handleClearFilterKey"
-                />
-              </template>
-            </BkTable>
-          </BkLoading>
+          <AgTable
+            ref="tableRef"
+            show-settings
+            resizable
+            :api-method="getTableData"
+            :columns="columns"
+            @clear-filter="handleClearFilterKey"
+          />
         </main>
       </div>
       <!--  当选中 组件API文档 时  -->
@@ -326,15 +232,12 @@
   </div>
 </template>
 
-<script lang="ts" setup>
-import { useQueryList } from '@/hooks';
+<script lang="tsx" setup>
 import {
   getComponentSystemList,
   getESBSDKlist,
 } from '@/services/source/docs-esb';
 import { getGatewaysDocs } from '@/services/source/docs';
-import { useMaxTableLimit } from '@/hooks/use-max-table-limit';
-import TableEmpty from '@/components/table-empty/Index.vue';
 import SDKInstructionSlider from './components/SDKInstructionSlider.vue';
 import SDKDetailDialog from './components/SDKDetailDialog.vue';
 import ComponentSearcher from './components/ComponentSearcher.vue';
@@ -351,50 +254,22 @@ import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useTemplateRefsList } from '@vueuse/core';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { useFeatureFlag } from '@/stores';
+import type { PrimaryTableProps } from '@blueking/tdesign-ui';
+import AgTable from '@/components/ag-table/Index.vue';
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const featureFlagStore = useFeatureFlag();
 
-const filterData = ref({ keyword: '' });
-
-// 当前视口高度能展示最多多少条表格数据
-const { clientHeight, maxTableLimit } = useMaxTableLimit({ allocatedHeight: 186 });
-
-const {
-  tableData,
-  pagination,
-  isLoading,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-} = useQueryList({
-  apiMethod: getGatewaysDocs,
-  filterData,
-  id: null,
-  filterNoResetPage: false,
-  initialPagination: {
-    limitList: [
-      maxTableLimit,
-      10,
-      20,
-      50,
-      100,
-    ],
-    limit: maxTableLimit,
-  },
+const filterData = ref({
+  keyword: '',
+  show_plugin_gateway: false,
 });
 
+const tableRef = ref();
 // 组件分类模板引用列表
 const categoryRefs = useTemplateRefsList<HTMLElement>();
-const tableEmptyConf = ref<{
-  emptyType: string
-  isAbnormal: boolean
-}>({
-  emptyType: '',
-  isAbnormal: false,
-});
 
 // 当前展示的是 网关 | 组件 相关内容
 const curTab = ref<TabType>('gateway');
@@ -412,11 +287,179 @@ const curTargetMaintainers = ref<string[]>([]);
 // 注入时请使用：const curTab = inject<Ref<TabType>>('curTab');
 provide('curTab', curTab);
 
+const columns = computed<PrimaryTableProps['columns']>(() => [
+  {
+    colKey: 'name',
+    title: t('网关名称'),
+    width: 300,
+    cell: (h, { row }) => {
+      if (!row?.name) {
+        return '--';
+      }
+      return (
+        <div class="flex-row">
+          <div
+            v-bk-tooltips={{
+              content: row.name,
+              placement: 'top',
+              disabled: !row.isOverflow,
+            }}
+            class="truncate color-#3a84ff cursor-pointer mr-4px"
+            onMouseenter={e => tableRef.value?.handleCellEnter({
+              e,
+              row,
+            })}
+            onMouseLeave={e => tableRef.value?.handleCellLeave({
+              e,
+              row,
+            })}
+            onClick={() => gotoDetails(row)}
+          >
+            { row.name }
+          </div>
+          {
+            row.is_official
+              ? (
+                <bk-tag theme="success">
+                  { t('官方') }
+                </bk-tag>
+              )
+              : ''
+          }
+        </div>
+      );
+    },
+  },
+  ...(featureFlagStore.isTenantMode
+    ? [
+      {
+        colKey: 'tenant_mode',
+        title: t('租户模式'),
+        width: 120,
+        ellipsis: true,
+        cell: (h, { row }) => <span>{ TENANT_MODE_TEXT_MAP[row.tenant_mode as string] || '--' }</span>,
+      },
+      {
+        colKey: 'tenant_id',
+        title: t('租户 ID'),
+        width: 120,
+        ellipsis: true,
+        cell: (h, { row }) => <span>{ row.tenant_id || '--' }</span>,
+      },
+    ]
+    : []),
+  {
+    colKey: 'description',
+    title: t('网关描述'),
+    width: 500,
+    ellipsis: true,
+    cell: (h, { row }) =>
+      <span>{ row.description || '--' }</span>,
+  },
+  ...(!featureFlagStore.isTenantMode
+    ? [
+      {
+        colKey: 'maintainers',
+        title: t('网关负责人'),
+        width: 180,
+        cell: (h, { row }) => (
+          row.maintainers?.length
+            ? (
+              <div
+                v-bk-tooltips={{
+                  content: row.maintainers.join(','),
+                  placement: 'top',
+                  disabled: !row.isOverflow,
+                }}
+                class="truncate"
+                onMouseenter={e => tableRef.value?.handleCellEnter({
+                  e,
+                  row,
+                })}
+                onMouseLeave={e => tableRef.value?.handleCellLeave({
+                  e,
+                  row,
+                })}
+              >
+                {
+                  !featureFlagStore.isEnableDisplayName
+                    ? (
+                      <span>
+                        { row.maintainers.join(',') }
+                      </span>
+                    )
+                    : (
+                      <span>
+                        {
+                          row.maintainers.map((maintainer, index) => (
+                            <span
+                              key={maintainer.login_name}
+                            >
+                              <bk-user-display-name userId={maintainer} />
+                              {
+                                index !== (row.maintainers.length - 1)
+                                  ? <span>,</span>
+                                  : ''
+                              }
+                            </span>
+                          ))
+                        }
+                      </span>
+                    )
+                }
+              </div>
+            )
+            : '--'
+
+        ),
+      },
+    ]
+    : []),
+  {
+    colKey: 'is_plugin_gateway',
+    displayTitle: t('是否为插件网关'),
+    width: 180,
+    title: () => {
+      return (
+        <div
+          v-bk-tooltips={{ content: t('由蓝鲸应用插件自动创建的网关') }}
+          class="underline decoration-dashed underline-offset-4"
+        >
+          {t('是否为插件网关')}
+        </div>
+      );
+    },
+    cell: (h, { row }) => (
+      row.is_plugin_gateway ? t('是') : t('否')
+    ),
+  },
+  {
+    colKey: 'actions',
+    title: t('操作'),
+    width: 120,
+    fixed: 'right',
+    cell: (h, { row }) => (
+      <bk-button
+        v-bk-tooltips={{
+          content: t('SDK未生成，可联系负责人生成SDK'),
+          disabled: row.sdks?.length,
+        }}
+        text
+        theme="primary"
+        disabled={!row.sdks?.length}
+        onClick={() => handleSdkDetailClick(row)}
+      >
+        {t('查看 SDK')}
+      </bk-button>
+    ),
+  },
+]);
+
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 
 const routerViewWrapperClass = computed(() => {
   const initClass = 'default-header-view';
-  const displayBkuiTable = ['ApiDocs'].includes(route.name) ? 'need-bkui-table-wrapper' : '';
+  const displayBkuiTable = ['ApiDocs'].includes(route.name as string) ? 'need-bkui-table-wrapper' : '';
   if (isShowNoticeAlert.value) {
     return `${initClass} show-notice ${displayBkuiTable}`;
   }
@@ -424,12 +467,14 @@ const routerViewWrapperClass = computed(() => {
 });
 
 watch(
-  tableData,
+  filterData,
   () => {
-    updateTableEmptyConfig();
+    tableRef.value!.fetchData(filterData.value, { resetPage: true });
   },
   { deep: true },
 );
+
+const getTableData = async (params: Record<string, any> = {}) => getGatewaysDocs(params);
 
 const gotoDetails = (row: IApiGatewayBasics | ISystem, systemBoard?: string) => {
   const params = {
@@ -448,24 +493,10 @@ const gotoDetails = (row: IApiGatewayBasics | ISystem, systemBoard?: string) => 
 };
 
 const handleClearFilterKey = () => {
-  filterData.value = { keyword: '' };
-  getList();
-  updateTableEmptyConfig();
-};
-
-const updateTableEmptyConfig = () => {
-  const searchParams = { ...filterData.value };
-  const list = Object.values(searchParams).filter(item => item !== '');
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (list.length && !tableData.value.length) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
-  }
-  if (list.length) {
-    tableEmptyConf.value.emptyType = 'empty';
-    return;
-  }
-  tableEmptyConf.value.emptyType = '';
+  filterData.value = Object.assign(filterData.value, {
+    keyword: '',
+    show_plugin_gateway: false,
+  });
 };
 
 const fetchComponentSystemList = async () => {
@@ -588,21 +619,6 @@ $primary-color: #3a84ff;
   .docs-main-content {
     width: 1280px;
     margin: auto;
-
-    .content-of-apigw {
-
-      .top-bar {
-        display: flex;
-        margin-bottom: 16px;
-        justify-content: flex-end;
-        align-items: center;
-      }
-
-      .link-name {
-        color: #3a84ff;
-        cursor: pointer;
-      }
-    }
 
     .content-of-component {
       display: flex;

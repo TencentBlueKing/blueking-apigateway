@@ -97,52 +97,42 @@
       </BkForm>
     </div>
     <div class="apply-content">
-      <BkLoading :loading="isLoading">
-        <BkTable
-          ref="permissionTableRef"
-          class="perm-apply-table"
-          :data="permissionApplyList"
-          :columns="permissionData.headers"
-          remote-pagination
-          :row-style="{ cursor: 'pointer' }"
-          :pagination="pagination"
-          :max-height="clientHeight"
-          row-hover="auto"
-          border="outer"
-          show-overflow-tooltip
-          @page-limit-change="handlePageSizeChange"
-          @page-value-change="handlePageChange"
-          @select-all="handleSelectAllChange"
-          @selection-change="handleSelectionChange"
-          @row-click="handleRowClick"
-        >
-          <template #expandRow="row">
-            <BkTable
-              :ref="(el: HTMLElement) =>(childPermTableRef[row.id] = el)"
-              :key="row.id"
-              :max-height="378"
-              size="small"
-              :data="row.resourceList"
-              :columns="childrenColumns"
-              :outer-border="false"
-              show-overflow-tooltip
-              :cell-style="{ background: '#fafbfd' }"
-              class="ag-expand-table"
-              @select-all="(selection: SelectionType) => handleRowSelectionAllChange(row, selection)"
-              @selection-change="(selection: SelectionType) => handleRowSelectionChange(row, selection)"
-            />
-          </template>
-          <template #empty>
-            <TableEmpty
-              :is-loading="isLoading"
-              :empty-type="tableEmptyConf.emptyType"
-              :abnormal="tableEmptyConf.isAbnormal"
-              @refresh="getList"
-              @clear-filter="handleClearFilterKey"
-            />
-          </template>
-        </BkTable>
-      </BkLoading>
+      <AgTable
+        ref="permissionTableRef"
+        v-model:table-data="tableData"
+        v-model:selected-row-keys="selectedRowKeys"
+        show-settings
+        resizable
+        show-selection
+        :expand-icon="false"
+        :expandable="expandableConfig"
+        :expanded-row-keys="expandableConfig.expandedRowKeys"
+        :show-first-full-row="selections.length > 0"
+        :max-limit-config="{ allocatedHeight: 240, mode: 'tdesign'}"
+        :filter-value="filterValue"
+        :api-method="getTableData"
+        :columns="getTableColumns"
+        :row-class-name="handleSetRowClass"
+        @row-click="handleRowClick"
+        @filter-change="handleFilterChange"
+        @selection-change="handleSelectionChange"
+        @clear-filter="handleClearFilter"
+        @request-done="handleRequestDone"
+      >
+        <template #expandedRow="{row}">
+          <AgTable
+            :ref="(el: HTMLElement) => (childPermTableRef[row.id] = el)"
+            v-model:table-data="row.resourceList"
+            size="small"
+            class="ag-expand-table"
+            local-page
+            show-selection
+            :max-height="378"
+            :columns="childrenColumns"
+            @selection-change="(selection) => handleRowSelectionChange(row, selection)"
+          />
+        </template>
+      </AgTable>
     </div>
 
     <!-- 批量审批 -->
@@ -200,7 +190,7 @@
 
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
-import { Loading, Message } from 'bkui-vue';
+import { Button, Form, Loading, Message, Popover } from 'bkui-vue';
 import {
   getApigwResources,
   getPermissionApplyList,
@@ -213,13 +203,8 @@ import {
   usePermission,
   useUserInfo,
 } from '@/stores';
-import {
-  type SelectionType,
-  useMaxTableLimit,
-  useQueryList,
-  useSelection,
-} from '@/hooks';
 import type { IApprovalListItem } from '@/types/permission';
+import type { ITableMethod } from '@/types/common';
 import { sortByKey } from '@/utils';
 import { AUTHORIZATION_DIMENSION } from '@/constants';
 import { APPROVAL_STATUS_MAP } from '@/enums';
@@ -227,7 +212,7 @@ import BkUserSelector from '@blueking/bk-user-selector';
 import BatchApproval from '@/views/permission/apply/components/BatchApproval.vue';
 import CustomHeader from '@/views/permission/apply/components/CustomHeader.vue';
 import AgIcon from '@/components/ag-icon/Index.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
 
 const envStore = useEnv();
 const gatewayStore = useGateway();
@@ -235,26 +220,39 @@ const userStore = useUserInfo();
 const permissionStore = usePermission();
 const featureFlagStore = useFeatureFlag();
 const { t } = useI18n();
-const {
-  selections,
-  handleSelectionChange,
-  handleSelectAllChange,
-  resetSelections,
-} = useSelection();
-const { maxTableLimit, clientHeight } = useMaxTableLimit();
 
-const approveForm = ref<InstanceType<typeof BkForm> & { validate: () => void }>();
-const permissionTableRef = ref<InstanceType<typeof BkTable> & { setRowExpand: () => void }>();
-const renderTableIndex = ref(0);
-const expandRows = ref([]);
+const permissionTableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('permissionTableRef');
+const approveForm = ref<InstanceType<typeof Form> & { validate: () => void }>();
 const childPermTableRef = ref([]);
+const tableData = ref([]);
+const selections = ref([]);
+const selectedRowKeys = ref([]);
 const resourceList = ref([]);
-const permissionData = ref({ headers: [] });
-const filterData = ref({
-  bk_app_code: '',
-  applied_by: '',
-  grant_dimension: '',
-});
+const childrenColumns = shallowRef([
+  {
+    title: '',
+    colKey: 'serial-number',
+    align: 'center',
+    width: 80,
+  },
+  {
+    title: t('资源名称'),
+    colKey: 'name',
+    ellipsis: true,
+  },
+  {
+    title: t('请求路径'),
+    colKey: 'path',
+    ellipsis: true,
+  },
+  {
+    title: t('请求方法'),
+    colKey: 'method',
+    ellipsis: true,
+  },
+]);
+const filterData = ref({});
+const filterValue = ref({});
 const curAction = ref({
   ids: [],
   status: '',
@@ -269,39 +267,12 @@ const curPermission = ref({
   isSelectAll: true,
   resource_ids: [],
 });
-const curExpandRow = ref({});
-const permissionApplyList = ref([]);
-const childrenColumns = shallowRef([
-  {
-    label: '',
-    type: 'index',
-    width: 60,
+const expandableConfig = ref({
+  expandColumn: false,
+  expandedRowKeys: [],
+  canExpand: (row) => {
+    return ['resource'].includes(row.grant_dimension);
   },
-  {
-    label: '',
-    type: 'selection',
-    width: 50,
-    align: 'center',
-  },
-  {
-    label: t('资源名称'),
-    field: 'name',
-  },
-  {
-    label: t('请求路径'),
-    field: 'path',
-  },
-  {
-    label: t('请求方法'),
-    field: 'method',
-  },
-]);
-const tableEmptyConf = ref<{
-  emptyType: string
-  isAbnormal: boolean
-}>({
-  emptyType: '',
-  isAbnormal: false,
 });
 const batchApplyDialogConf = reactive({
   isLoading: false,
@@ -320,28 +291,6 @@ const rules = reactive({
       trigger: 'blur',
     },
   ],
-});
-
-const {
-  tableData,
-  pagination,
-  isLoading,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-} = useQueryList({
-  apiMethod: getPermissionApplyList,
-  filterData,
-  initialPagination: {
-    limitList: [
-      maxTableLimit,
-      10,
-      20,
-      50,
-      100,
-    ],
-    limit: maxTableLimit,
-  },
 });
 
 const apigwId = computed(() => gatewayStore.apigwId);
@@ -385,172 +334,25 @@ const approveFormMessage = computed(() => {
 watch(
   () => filterData.value,
   () => {
-    updateTableEmptyConfig();
-    resetSelections(permissionTableRef.value);
+    filterValue.value = Object.assign({}, filterData.value);
+    handleSearch();
   },
   { deep: true },
 );
 
-// 监听总数量的变化
 watch(
-  () => pagination.value,
-  (v) => {
-    permissionStore.setCount(v.count);
-    resetSelections(permissionTableRef.value);
+  () => tableData,
+  (tables: IApprovalListItem[]) => {
+    tableData.value = initResourceList(tables.value);
   },
-  { deep: true },
+  { immediate: true },
 );
 
-const setTableHeader = () => {
-  permissionData.value.headers = [
-    {
-      type: 'selection',
-      width: 60,
-      minWidth: 60,
-      align: 'center',
-      showOverflowTooltip: false,
-    },
-    {
-      field: 'bk_app_code',
-      label: t('蓝鲸应用ID'),
-    },
-    {
-      field: 'grant_dimension_display',
-      label: t('授权维度'),
-      render: ({ row }: { row?: Partial<IApprovalListItem> }) => {
-        if (['resource'].includes(row.grant_dimension)) {
-          return (
-            <div class="flex items-center">
-              <AgIcon
-                name={row.isExpand ? 'down-shape' : 'right-shape'}
-                size="10"
-                class="m-r-5px"
-              />
-              {`${row.grant_dimension_display} (${row.resource_ids?.length || '--'})`}
-            </div>
-          );
-        }
-        return row.grant_dimension_display || '--';
-      },
-    },
-    {
-      field: 'expire_days_display',
-      label: t('权限期限'),
-      render: ({ row }: { row?: Partial<IApprovalListItem> }) => {
-        return row?.expire_days_display || '--';
-      },
-    },
-    {
-      field: 'reason',
-      label: t('申请理由'),
-      render: ({ row }: { row?: Partial<IApprovalListItem> }) => {
-        return row?.reason || '--';
-      },
-    },
-    {
-      field: 'applied_by',
-      label: t('申请人'),
-      render: ({ row }: { row?: Partial<IApprovalListItem> }) =>
-        !featureFlagStore.isEnableDisplayName
-          ? <span>{row.applied_by}</span>
-          : <span><bk-user-display-name user-id={row.applied_by} /></span>,
-    },
-    {
-      field: 'created_time',
-      width: 215,
-      label: t('申请时间'),
-    },
-    {
-      field: 'status',
-      width: 150,
-      label: t('审批状态'),
-      render: ({ row }: { row?: Partial<IApprovalListItem> }) => {
-        if (['pending'].includes(row?.status)) {
-          return (
-            <div class="perm-apply-dot">
-              <Loading class="m-r-5px" loading size="mini" mode="spin" theme="primary" />
-              {APPROVAL_STATUS_MAP[row?.status as keyof typeof APPROVAL_STATUS_MAP]}
-            </div>
-          );
-        }
-        else {
-          return (
-            <div class="perm-apply-dot">
-              <span class={['dot', { [row.status]: row?.status }]} />
-              {APPROVAL_STATUS_MAP[row?.status as keyof typeof APPROVAL_STATUS_MAP]}
-            </div>
-          );
-        }
-      },
-    },
-    {
-      field: 'operate',
-      width: 220,
-      label: t('操作'),
-      key: renderTableIndex.value,
-      render: ({ row }: { row?: Partial<IApprovalListItem> }) => {
-        if (
-          expandRows.value.includes(row.id)
-          && row?.selection.length === 0
-          && !['api'].includes(row?.grant_dimension)
-        ) {
-          return (
-            <div>
-              <BkPopover content={t('请选择资源')}>
-                <BkButton
-                  class="m-r-10px is-disabled"
-                  theme="primary"
-                  text
-                  onClick={(e: Event) => {
-                    handlePrevent(e, row);
-                  }}
-                >
-                  {t('全部通过')}
-                </BkButton>
-              </BkPopover>
-              <BkButton
-                theme="primary"
-                text
-                onClick={(e: Event) => {
-                  handleApplyReject(e, row);
-                }}
-              >
-                {t('全部驳回')}
-              </BkButton>
-            </div>
-          );
-        }
-        else {
-          return (
-            <div>
-              <BkButton
-                class="m-r-10px"
-                theme="primary"
-                text
-                onClick={(e: Event) => {
-                  handleApplyApprove(e, row);
-                }}
-              >
-                {row?.isSelectAll ? t('全部通过') : t('部分通过')}
-              </BkButton>
-              <BkButton
-                theme="primary"
-                text
-                onClick={(e: Event) => {
-                  handleApplyReject(e, row);
-                }}
-              >
-                {t('全部驳回')}
-              </BkButton>
-            </div>
-          );
-        }
-      },
-    },
-  ];
+function getList() {
+  permissionTableRef.value?.fetchData(filterData.value, { resetPage: true });
 };
 
-const initResourceList = (resourceArr: IApprovalListItem[]) => {
+function initResourceList(resourceArr: IApprovalListItem[]) {
   resourceArr.forEach((applyItem) => {
     const results = [];
     applyItem.resource_ids.forEach((resourceId: number) => {
@@ -569,6 +371,172 @@ const initResourceList = (resourceArr: IApprovalListItem[]) => {
   return resourceArr;
 };
 
+function handleSearch() {
+  getList();
+};
+
+const getTableColumns = computed(() => {
+  return [
+    {
+      colKey: 'bk_app_code',
+      title: t('蓝鲸应用ID'),
+      ellipsis: true,
+    },
+    {
+      colKey: 'grant_dimension',
+      title: t('授权维度'),
+      ellipsis: true,
+      filter: {
+        type: 'single',
+        showConfirmAndReset: true,
+        popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+        list: AUTHORIZATION_DIMENSION.map(({ name, id }) => ({
+          label: name,
+          value: id,
+        })),
+      },
+      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) => {
+        if (['resource'].includes(row.grant_dimension)) {
+          return (
+            <div class="flex items-center">
+              <AgIcon
+                name={row.isExpand ? 'down-shape' : 'right-shape'}
+                size="10"
+                class="mr-4px"
+              />
+              {`${row.grant_dimension_display} (${row.resource_ids?.length || '--'})`}
+            </div>
+          );
+        }
+        return row.grant_dimension_display || '--';
+      },
+    },
+    {
+      colKey: 'expire_days_display',
+      title: t('权限期限'),
+      ellipsis: true,
+      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) => {
+        return row?.expire_days_display || '--';
+      },
+    },
+    {
+      colKey: 'reason',
+      title: t('申请理由'),
+      ellipsis: true,
+      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) => {
+        return row?.reason || '--';
+      },
+    },
+    {
+      colKey: 'applied_by',
+      title: t('申请人'),
+      ellipsis: true,
+      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) =>
+        !featureFlagStore.isEnableDisplayName
+          ? <span>{row.applied_by}</span>
+          : <span><bk-user-display-name user-id={row.applied_by} /></span>,
+    },
+    {
+      colKey: 'created_time',
+      title: t('申请时间'),
+      width: 220,
+      ellipsis: true,
+    },
+    {
+      colKey: 'status',
+      title: t('审批状态'),
+      ellipsis: true,
+      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) => {
+        if (['pending'].includes(row?.status)) {
+          return (
+            <div class="perm-apply-dot">
+              <Loading class="mr-4px" loading size="mini" mode="spin" theme="primary" />
+              {APPROVAL_STATUS_MAP[row?.status as keyof typeof APPROVAL_STATUS_MAP]}
+            </div>
+          );
+        }
+        else {
+          return (
+            <div class="perm-apply-dot">
+              <span class={['dot', { [row.status]: row?.status }]} />
+              {APPROVAL_STATUS_MAP[row?.status as keyof typeof APPROVAL_STATUS_MAP]}
+            </div>
+          );
+        }
+      },
+    },
+    {
+      colKey: 'operate',
+      title: t('操作'),
+      fixed: 'right',
+      ellipsis: true,
+      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) => {
+        if (
+          expandableConfig.value.expandedRowKeys.includes(row.id)
+          && !row?.selection?.length
+          && !['api'].includes(row?.grant_dimension)
+        ) {
+          return (
+            <div>
+              <Popover content={t('请选择资源')}>
+                <Button
+                  class="m-r-10px is-disabled"
+                  theme="primary"
+                  text
+                  onClick={(e: Event) => {
+                    handlePrevent(e, row);
+                  }}
+                >
+                  {t('全部通过')}
+                </Button>
+              </Popover>
+              <Button
+                theme="primary"
+                text
+                onClick={(e: Event) => {
+                  handleApplyReject(e, row);
+                }}
+              >
+                {t('全部驳回')}
+              </Button>
+            </div>
+          );
+        }
+        else {
+          return (
+            <div>
+              <Button
+                class="mr-10px"
+                theme="primary"
+                text
+                onClick={(e: Event) => {
+                  handleApplyApprove(e, row);
+                }}
+              >
+                {row?.isSelectAll ? t('全部通过') : t('部分通过')}
+              </Button>
+              <Button
+                theme="primary"
+                text
+                onClick={(e: Event) => {
+                  handleApplyReject(e, row);
+                }}
+              >
+                {t('全部驳回')}
+              </Button>
+            </div>
+          );
+        }
+      },
+    },
+  ];
+});
+
+const getTableData = async (params: Record<string, any> = {}) => {
+  const results = await getPermissionApplyList(apigwId.value, params);
+  return results ?? [];
+};
+
 // 获取资源列表数据
 const getResourceList = async () => {
   const pageParams = {
@@ -579,7 +547,14 @@ const getResourceList = async () => {
   };
   const { results } = await getApigwResources(apigwId.value, pageParams);
   resourceList.value = results || [];
-  permissionApplyList.value = initResourceList(tableData.value);
+  tableData.value = initResourceList(tableData.value);
+};
+
+const handleRequestDone = () => {
+  const pageConf = permissionTableRef.value?.getPagination();
+  if (pageConf) {
+    permissionStore.setCount(pageConf.total);
+  }
 };
 
 // 批量审批
@@ -593,47 +568,28 @@ const handleBatchApply = () => {
   batchApplyDialogConf.isShow = true;
 };
 
-// 折叠table 多选发生变化触发
-const handleRowSelectionChange = (payload: Record<string, unknown>, rowSelections: SelectionType) => {
-  const { checked, row } = rowSelections;
-  if (checked) {
-    payload.selection.push(row);
-  }
-  else {
-    payload.selection = payload.selection.filter((item: Partial<IApprovalListItem>) => item.id !== row.id);
-  }
-  const isSelectAll = payload.resourceList.length === payload.selection.length;
-  payload.isSelectAll = isSelectAll;
-  curPermission.value = Object.assign(curPermission.value, {
-    selection: payload.selection,
-    isSelectAll,
-  });
-  renderTableIndex.value++;
-  setTableHeader();
+const handleSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections: selected, selectionsRowKeys }) => {
+  selections.value = selected;
+  selectedRowKeys.value = selectionsRowKeys;
 };
 
-const handleRowSelectionAllChange = (payload: Record<string, unknown>, rowSelections: SelectionType) => {
-  const { checked, data } = rowSelections;
-  if (checked) {
-    payload = Object.assign(payload, {
-      selection: data,
-      isSelectAll: true,
-    });
-    curPermission.value = Object.assign(curPermission.value, {
-      selection: data,
-      isSelectAll: true,
-    });
-  }
-  else {
-    payload = Object.assign(payload, {
-      selection: [],
-      isSelectAll: false,
-    });
-    curPermission.value = Object.assign(curPermission.value, {
-      selection: [],
-      isSelectAll: false,
-    });
-  }
+// 折叠table 多选发生变化触发
+const handleRowSelectionChange = (row: Partial<IApprovalListItem>, rowSelections) => {
+  const { selections } = rowSelections;
+  const isSelectAll = row.resourceList.length === selections.length;
+  row.selection = selections;
+  row.isSelectAll = isSelectAll;
+  curPermission.value = Object.assign(curPermission.value, {
+    selection: row.selection,
+    isSelectAll,
+  });
+};
+
+// 处理表头筛选联动搜索框
+const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
+  filterData.value = Object.assign(filterData.value, filterItem);
+  filterValue.value = Object.assign({}, filterItem);
+  getResourceList();
 };
 
 // 批量审批api
@@ -645,7 +601,7 @@ const updateStatus = async () => {
   const id = params?.ids?.[0] || '';
   if (
     ['approved'].includes(params.status)
-    && expandRows.value.includes(id)
+    && expandableConfig.value.expandedRowKeys.includes(id)
     && selection.length > 0
     && !isSelectAll
   ) {
@@ -657,12 +613,13 @@ const updateStatus = async () => {
   await updatePermissionStatus(apigwId.value, params);
   batchApplyDialogConf.isShow = false;
   applyActionDialogConf.isShow = false;
-  getList();
   Message({
     message: t('操作成功！'),
     theme: 'success',
   });
-  resetSelections(permissionTableRef.value);
+  handleClearSelection();
+  getList();
+  getResourceList();
 };
 
 // 全部通过
@@ -728,73 +685,54 @@ const handleSubmitApprove = () => {
   updateStatus();
 };
 
-const handleRowClick = (e: Event, row: Record<string, unknown>) => {
+const handleSetRowClass = ({ row }) => {
+  if (row.grant_dimension.includes('resource')) {
+    return 'cursor-pointer';
+  }
+  return '';
+};
+
+const handleRowClick = ({ e, row }: {
+  e: Event
+  row: IApprovalListItem
+}) => {
   e.stopPropagation();
-  if (row.grant_dimension === 'resource') {
+  if (row.grant_dimension.includes('resource')) {
     row.isExpand = !row.isExpand;
-    expandRows.value = expandRows.value.filter(item => item.id === row.id);
+    expandableConfig.value.expandedRowKeys
+      = expandableConfig.value.expandedRowKeys.filter(item => item === row.id);
+    const curExpandRow = row.isExpand ? row : {};
     if (row.isExpand) {
-      curExpandRow.value = row;
-      expandRows.value.push(row.id);
+      expandableConfig.value.expandedRowKeys.push(row.id);
     }
     else {
-      curExpandRow.value = {};
-      expandRows.value = expandRows.value.filter(item => item.id === row.id);
+      expandableConfig.value.expandedRowKeys
+        = expandableConfig.value.expandedRowKeys.filter(item => item !== row.id);
     }
-    setTimeout(() => {
-      permissionApplyList.value.forEach((item) => {
-        if (item.id === curExpandRow.value.id) {
-          permissionTableRef.value.setRowExpand(row, row.isExpand);
-          childPermTableRef.value[row.id]?.toggleAllSelection();
-        }
-        else {
-          item = Object.assign(item, {
-            isExpand: false,
-            selection: [],
-            isSelectAll: true,
-          });
-          permissionTableRef.value.setRowExpand(item, false);
-        }
-      });
-    }, 0);
+    tableData.value.forEach((item) => {
+      const isExpand = item.id === curExpandRow.id;
+      item.isExpand = isExpand;
+      if (!isExpand) {
+        item = Object.assign(item, {
+          isExpand: false,
+          selection: [],
+          isSelectAll: true,
+        });
+      }
+    });
   }
 };
 
-const handleClearFilterKey = () => {
-  filterData.value = Object.assign({}, {
-    bk_app_code: '',
-    applied_by: '',
-    grant_dimension: '',
-  });
-  getList();
-  updateTableEmptyConfig();
+const handleClearFilter = () => {
+  filterData.value = {};
 };
 
-const updateTableEmptyConfig = () => {
-  const filterList = Object.values(filterData.value).filter(item => item !== '');
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (filterList.length && !permissionApplyList.value.length) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
-  }
-  if (filterList.length) {
-    tableEmptyConf.value.emptyType = 'empty';
-    return;
-  }
-  tableEmptyConf.value.emptyType = '';
+const handleClearSelection = () => {
+  tableRef.value.handleResetSelection();
+  selections.value = [];
 };
-
-watch(
-  () => tableData.value,
-  async (value: IApprovalListItem[]) => {
-    permissionApplyList.value = await initResourceList(value);
-    updateTableEmptyConfig();
-  },
-  { immediate: true },
-);
 
 onMounted(() => {
-  setTableHeader();
   getResourceList();
 });
 </script>
@@ -834,23 +772,17 @@ onMounted(() => {
   }
 }
 
-.perm-apply-table,
-.ag-expand-table {
-
-  :deep(tr) {
-    background-color: #fafbfd;
-  }
-
-  :deep(th) {
-
-    .head-text {
-      font-weight: bold !important;
-      color: #63656e !important;
-    }
+:deep(.t-table__header) {
+  .t-table__ellipsis {
+    font-weight: 700 !important;
+    color: #63656e !important;
   }
 }
 
-:deep(.ag-expand-table) {
+:deep(.t-table__expanded-row) {
+  .t-table__row-full-element {
+    padding: 0;
+  }
 
   td,
   th {
@@ -861,7 +793,6 @@ onMounted(() => {
 }
 
 :deep(.perm-apply-dot) {
-
   .dot {
     display: inline-block;
     width: 8px;
@@ -870,26 +801,14 @@ onMounted(() => {
     border-radius: 50%;
 
     &.approved {
-      background: #e6f6eb;
+      background-color: #e6f6eb;
       border: 1px solid #43c472;
     }
 
     &.rejected {
-      background: #ffe6e6;
+      background-color: #ffe6e6;
       border: 1px solid #ea3636;
     }
-  }
-}
-
-:deep(.bk-table-expanded-cell) {
-  padding: 0 !important;
-
-  &:hover {
-    cursor: pointer;
-  }
-
-  .bk-table {
-    border: 0;
   }
 }
 </style>

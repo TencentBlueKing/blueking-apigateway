@@ -18,9 +18,13 @@
 
 <template>
   <div class="card-wrapper">
-    <header class="card-header">
-      <div class="header-title-wrapper">
-        <span class="header-title">{{ server.name }}</span>
+    <header class="flex items-center justify-between card-header">
+      <div class="flex items-center header-title-wrapper">
+        <BkOverflowTitle
+          class="header-title"
+        >
+          {{ server.name }}
+        </BkOverflowTitle>
         <BkTag
           v-if="server.status === 1"
           size="small"
@@ -204,22 +208,21 @@ const preventDefault = (e: Event) => {
 
 <style lang="scss" scoped>
 .card-wrapper {
-  width: 520px;
-  height: 228px;
+  // height: 228px;
   padding: 20px 40px;
-  cursor: pointer;
-  background: #fff;
   border-radius: 2px;
+  background-color: #ffffff;
   box-shadow: 0 2px 4px 0 #1919290d;
+  box-sizing: border-box;
+  cursor: pointer;
 
   .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
 
     .header-title-wrapper {
+      max-width: calc(100% - 218px);
 
       .header-title {
+        width: 100%;
         margin-right: 4px;
         font-size: 16px;
         font-weight: 700;
@@ -301,6 +304,18 @@ const preventDefault = (e: Event) => {
         }
       }
     }
+  }
+}
+
+@media (min-width: 768px) {
+  .card-wrapper {
+    width: calc(50% - 12px);
+  }
+}
+
+@media (min-width: 1200px) {
+  .card-wrapper {
+    width: calc(33.333% - 16px);
   }
 }
 </style>

@@ -44,33 +44,14 @@
     </div>
     <!-- 表格区域 -->
     <div class="backend-service-content">
-      <BkLoading :loading="isLoading">
-        <BkTable
-          :key="tableKey"
-          :row-class="isNewCreate"
-          :data="tableData"
-          :pagination="pagination"
-          :max-height="clientHeight"
-          border="outer"
-          class="table-layout"
-          remote-pagination
-          row-hover="auto"
-          show-overflow-tooltip
-          :columns="columns"
-          @page-limit-change="handlePageSizeChange"
-          @page-value-change="handlePageChange"
-        >
-          <template #empty>
-            <TableEmpty
-              :is-loading="isLoading"
-              :empty-type="tableEmptyConf.emptyType"
-              :abnormal="tableEmptyConf.isAbnormal"
-              @refresh="getList"
-              @clear-filter="handleClearFilterKey"
-            />
-          </template>
-        </BkTable>
-      </BkLoading>
+      <AgTable
+        ref="tableRef"
+        show-settings
+        resizable
+        :api-method="getTableData"
+        :columns="columns"
+        @clear-filter="handleClearFilterKey"
+      />
     </div>
 
     <AddBackendService
@@ -78,35 +59,30 @@
       :disabled="gatewayStore.isProgrammableGateway || hasPublishingStage"
       :base="baseInfo"
       :edit-id="backendServiceId"
-      @done="getList()"
+      @done="handleBackendServiceAdded"
     />
   </div>
 </template>
 
 <script setup lang="tsx">
-import { uniqueId } from 'lodash-es';
 import { Message } from 'bkui-vue';
 import { useGateway } from '@/stores';
-import { timeFormatter } from '@/utils/timeFormatter';
-import { useMaxTableLimit, usePopInfoBox, useQueryList } from '@/hooks';
+import { usePopInfoBox } from '@/hooks';
 import {
   deleteBackendService,
   getBackendServiceList,
 } from '@/services/source/backendServices';
 import { getStageList } from '@/services/source/stage';
 import AddBackendService from '@/views/backend-services/components/AddBackendService.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
+import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const gatewayStore = useGateway();
 
-// 当前视口高度能展示最多多少条表格数据
-const { maxTableLimit, clientHeight } = useMaxTableLimit();
-
 const addBackendServiceEl = useTemplateRef<InstanceType<typeof AddBackendService> & { show: () => void }>('addBackendServiceRef');
-const tableKey = ref(uniqueId());
 const backendServiceId = ref();
 // 基础信息
 const baseInfo = ref({
@@ -117,31 +93,30 @@ const filterData = ref({
   name: '',
   type: '',
 });
-const tableEmptyConf = ref({
-  emptyType: '',
-  isAbnormal: false,
-});
 const stageList = ref<{ release: { status: string } }[]>([]);
-const columns = shallowRef([
+
+const tableRef = useTemplateRef('tableRef');
+
+const columns = computed<PrimaryTableProps['columns']>(() => [
   {
-    label: t('后端服务名称'),
-    field: 'name',
-    render: ({ row }) => {
+    title: t('后端服务名称'),
+    colKey: 'name',
+    cell: (h, { row }) => {
       return (
-        <BkButton
+        <bk-button
           text
           theme="primary"
           onClick={() => handleEdit(row)}
         >
           { row?.name }
-        </BkButton>
+        </bk-button>
       );
     },
   },
   {
-    label: t('描述'),
-    field: 'description',
-    render: ({ row }) => {
+    title: t('描述'),
+    colKey: 'description',
+    cell: (h, { row }) => {
       return (
         <span>
           { row?.description || '--' }
@@ -150,9 +125,9 @@ const columns = shallowRef([
     },
   },
   {
-    label: t('关联的资源'),
-    field: 'resource_count',
-    render: ({ row }) => {
+    title: t('关联的资源'),
+    colKey: 'resource_count',
+    cell: (h, { row }) => {
       return !row?.resource_count || gatewayStore.isProgrammableGateway
         ? (
           <span>
@@ -160,20 +135,20 @@ const columns = shallowRef([
           </span>
         )
         : (
-          <BkButton
+          <bk-button
             text
             theme="primary"
             onClick={() => handleResource(row)}
           >
             { row?.resource_count }
-          </BkButton>
+          </bk-button>
         );
     },
   },
   {
-    label: t('更新时间'),
-    field: 'updated_time',
-    render: ({ row }) => {
+    title: t('更新时间'),
+    colKey: 'updated_time',
+    cell: (h, { row }) => {
       return (
         <span>
           { row?.updated_time }
@@ -182,14 +157,14 @@ const columns = shallowRef([
     },
   },
   {
-    label: t('操作'),
-    field: 'operate',
+    title: t('操作'),
+    colKey: 'operate',
     fixed: 'right',
     width: 150,
-    render: ({ row }) => {
+    cell: (h, { row }) => {
       return (
         <div>
-          <BkButton
+          <bk-button
             v-bk-tooltips={{
               content: t('当前有版本正在发布，请稍后再进行后端服务修改'),
               disabled: !hasPublishingStage.value,
@@ -201,7 +176,7 @@ const columns = shallowRef([
             onClick={() => handleEdit(row)}
           >
             { t('编辑') }
-          </BkButton>
+          </bk-button>
           {
             row?.resource_count
               ? (
@@ -212,14 +187,14 @@ const columns = shallowRef([
                       : t('服务被{resourceCount}个资源引用了，不能删除', { resourceCount: row?.resource_count }),
                   }}
                 >
-                  <BkButton
+                  <bk-button
                     text
                     theme="primary"
                     disabled={Boolean(row?.resource_count) || ['default'].includes(row?.name)}
                     onClick={() => handleDelete(row)}
                   >
                     { t('删除') }
-                  </BkButton>
+                  </bk-button>
                 </span>
               )
               : (
@@ -229,14 +204,14 @@ const columns = shallowRef([
                     disabled: !['default'].includes(row?.name),
                   }}
                 >
-                  <BkButton
+                  <bk-button
                     theme="primary"
                     text
                     disabled={['default'].includes(row?.name)}
                     onClick={() => handleDelete(row)}
                   >
                     { t('删除') }
-                  </BkButton>
+                  </bk-button>
                 </span>
               )
           }
@@ -251,29 +226,6 @@ const hasPublishingStage = computed(() => {
   return stageList.value.some(item => ['doing'].includes(item?.release?.status));
 });
 
-// 列表hooks
-const {
-  tableData,
-  pagination,
-  isLoading,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-} = useQueryList({
-  apiMethod: getBackendServiceList,
-  filterData,
-  initialPagination: {
-    limitList: [
-      maxTableLimit,
-      10,
-      20,
-      50,
-      100,
-    ],
-    limit: maxTableLimit,
-  },
-});
-
 watch(() => route.query, () => {
   if (route.query?.name) {
     filterData.value.name = route.query.name as string;
@@ -283,28 +235,11 @@ watch(() => route.query, () => {
   immediate: true,
 });
 
-watch(
-  () => tableData.value, () => {
-    updateTableEmptyConfig();
-  },
-  { deep: true },
-);
+watch(filterData, () => {
+  tableRef.value!.fetchData(filterData.value);
+}, { deep: true });
 
-const isNewCreate = ({ updated_time }: { updated_time: string }) => {
-  return isWithinTime(updated_time) ? 'new-created' : '';
-};
-
-// 判断后端服务新建时间是否在24h之内
-const isWithinTime = (date: string) => {
-  const str = timeFormatter(date);
-  const targetTime = new Date(str);
-  const currentTime = new Date();
-  // 计算两个时间之间的毫秒差
-  const diff = currentTime.getTime() - targetTime.getTime();
-  // 24 小时的毫秒数
-  const twentyFourHours = 24 * 60 * 60 * 1000;
-  return diff < twentyFourHours;
-};
+const getTableData = async (params: Record<string, any> = {}) => getBackendServiceList(apigwId.value, params);
 
 const handleAdd = () => {
   if (hasPublishingStage.value) {
@@ -354,39 +289,25 @@ const handleDelete = ({ id, name }: {
     confirmText: t('删除'),
     confirmButtonTheme: 'danger',
     onConfirm: async () => {
-      try {
-        await deleteBackendService(apigwId.value, id);
-        Message({
-          message: t('删除成功'),
-          theme: 'success',
-        });
-        getList();
-      }
-      catch (error) {
-        console.log('error', error);
-      }
+      await deleteBackendService(apigwId.value, id);
+      Message({
+        message: t('删除成功'),
+        theme: 'success',
+      });
+      tableRef.value!.fetchData(filterData.value);
     },
   });
 };
 
-const handleClearFilterKey = async () => {
-  filterData.value = Object.assign({},
-    {
-      name: '',
-      type: '',
-    },
-  );
-  await getList();
-  updateTableEmptyConfig();
+const handleClearFilterKey = () => {
+  filterData.value = {
+    name: '',
+    type: '',
+  };
 };
 
-const updateTableEmptyConfig = () => {
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
-  if (filterData.value.name && !tableData.value.length) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
-  }
-  tableEmptyConf.value.emptyType = 'empty';
+const handleBackendServiceAdded = () => {
+  tableRef.value!.fetchData(filterData.value);
 };
 
 const getStageListData = async () => {
@@ -418,12 +339,6 @@ onBeforeMount(() => {
 
   :deep(.new-created){
     background-color: #f1fcf5 !important;
-  }
-
-  .table-layout {
-
-    :deep(.bk-table-body) {
-    }
   }
 }
 </style>

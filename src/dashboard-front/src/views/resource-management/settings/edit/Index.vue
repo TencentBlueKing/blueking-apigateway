@@ -296,7 +296,10 @@ const handleSubmit = async () => {
       message: t(`${resourceId.value && !isClone.value ? '更新' : '新建'}成功`),
       theme: 'success',
     });
-    router.push({ name: 'ResourceSetting' });
+    router.push({
+      name: 'ResourceSetting',
+      query: { ...route.query },
+    });
   }
   finally {
     submitLoading.value = false;

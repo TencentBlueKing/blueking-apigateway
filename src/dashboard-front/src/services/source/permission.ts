@@ -221,7 +221,10 @@ export function getResourceListData(apigwId: number, params: {
  * @param params 导出参数
  */
 export async function exportPermissionList(apigwId: number, params: IExportParams) {
-  return http.post(`/gateways/${apigwId}/permissions/app-permissions/export/`, params);
+  return await http.post(`/gateways/${apigwId}/permissions/app-permissions/export/`, params, {
+    responseType: 'blob',
+    catchError: true,
+  });
 };
 
 /**

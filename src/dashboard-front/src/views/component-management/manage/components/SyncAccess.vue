@@ -18,16 +18,16 @@
 <template>
   <div class="apigw-access-manager-wrapper">
     <div class="p-24px">
-      <div class="m-b-16px flex items-center justify-between ag-table-header">
-        <p class="ag-table-change">
+      <div class="m-b-16px flex items-center justify-between text-14px">
+        <p class="color-#313238">
           {{ t('请确认以下组件对应网关资源的变更：') }}
           <i18n-t
             keypath="新建 {0} 条，更新 {1} 条，删除 {2} 条"
             tag="span"
           >
-            <strong style="color: #2DCB56;">{{ createNum }}</strong>
-            <strong style="color: #ffb400;">{{ updateNum }}</strong>
-            <strong style="color: #EA3536;">{{ deleteNum }}</strong>
+            <strong class="color-#2dcb56">{{ createNum }}</strong>
+            <strong class="color-#ffb400">{{ updateNum }}</strong>
+            <strong class="color-#EA3536">{{ deleteNum }}</strong>
           </i18n-t>
         </p>
         <BkInput
@@ -37,35 +37,25 @@
           :right-icon="'bk-icon icon-search'"
           style="width: 328px;"
           @enter="handleSearch"
+          @clear="handleClearFilter"
         />
       </div>
-
       <BkLoading :loading="isLoading">
-        <BkTable
-          border="outer"
-          :data="componentList"
-          size="small"
-          :pagination="pagination"
+        <AgTable
+          ref="tableRef"
+          v-model:table-data="componentList"
+          table-row-key="component_id"
+          show-settings
+          resizable
+          local-page
+          :max-limit-config="{ allocatedHeight: 300, mode: 'tdesign'}"
           :columns="tableColumns"
-          :max-height="clientHeight"
-          remote-pagination
-          show-overflow-tooltip
-          @page-value-change="handlePageChange"
-          @page-limit-change="handlePageLimitChange"
-        >
-          <template #empty>
-            <TableEmpty
-              :is-loading="isLoading"
-              :empty-type="tableEmptyConf.emptyType"
-              :abnormal="tableEmptyConf.isAbnormal"
-              @refresh="getComponents"
-              @clear-filter="handleClearFilterKey"
-            />
-          </template>
-        </BkTable>
+          :table-empty-type="tableEmptyType"
+          @clear-filter="handleClearFilter"
+        />
       </BkLoading>
 
-      <div class="p-t-20px">
+      <div class="pt-20px">
         <BkPopConfirm
           v-if="componentList.length"
           trigger="click"
@@ -74,9 +64,7 @@
           @confirm="handleConfirmSync"
         >
           <BkButton
-            class="m-r-10px"
             theme="primary"
-            type="button"
             :loading="confirmIsLoading"
           >
             {{ t('确认同步') }}
@@ -84,16 +72,13 @@
         </BkPopConfirm>
         <BkButton
           v-else
-          class="m-r-10px"
           theme="primary"
-          type="button"
           disabled
         >
           {{ t('确认同步') }}
         </BkButton>
         <BkButton
-          type="button"
-          :title="t('取消')"
+          class="ml-10px"
           :disabled="isLoading"
           @click="goBack"
         >
@@ -105,29 +90,26 @@
 </template>
 
 <script lang="tsx" setup>
-import {
-  delay,
-  sortBy,
-  sortedUniq,
-} from 'lodash-es';
+import { delay } from 'lodash-es';
+import type { ITableMethod } from '@/types/common';
 import {
   type ISyncApigwItem,
   checkSyncComponent,
   getEsbGateway,
   getSyncReleaseData,
 } from '@/services/source/componentManagement';
-import { useMaxTableLimit } from '@/hooks';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
 
 const { t } = useI18n();
-const { maxTableLimit, clientHeight } = useMaxTableLimit({ allocatedHeight: 242 });
 const router = useRouter();
 
+const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const tableColumns = ref([
   {
-    label: t('系统名称'),
-    field: 'system_name',
-    render: ({ row }: { row?: Partial<ISyncApigwItem> }) => {
+    title: t('系统名称'),
+    colKey: 'system_name',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           {row?.system_name || '--' }
@@ -136,9 +118,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('组件名称'),
-    field: 'component_name',
-    render: ({ row }: { row?: Partial<ISyncApigwItem> }) => {
+    title: t('组件名称'),
+    colKey: 'component_name',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           { row?.component_name || '--' }
@@ -147,9 +130,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('组件请求方法'),
-    field: 'component_method',
-    render: ({ row }: { row?: Partial<ISyncApigwItem> }) => {
+    title: t('组件请求方法'),
+    colKey: 'component_method',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           { row?.component_method || '--' }
@@ -158,9 +142,10 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('组件请求路径'),
-    field: 'component_path',
-    render: ({ row }: { row?: Partial<ISyncApigwItem> }) => {
+    title: t('组件请求路径'),
+    colKey: 'component_path',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           { row?.component_path || '--' }
@@ -169,31 +154,43 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('资源'),
-    field: 'resource_id',
-    showOverflowTooltip: false,
-    render: ({ row }: { row?: Partial<ISyncApigwItem> }) => {
+    title: t('资源'),
+    colKey: 'resource_id',
+    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
       if (row.resource_name) {
         return (
-          <span
+          <div
             v-bk-tooltips={{
               content: row?.resource_id ? row?.resource_name : t('资源不存在'),
               placement: 'top',
+              disabled: !row.isOverflow,
             }}
-            class={['resource-text', { 'resource-text-disabled': !row?.resource_id }]}
+            class={[
+              'truncate color-#3a84ff cursor-pointer',
+              { 'color-#dcdee5 cursor-not-allowed': !row?.resource_id },
+            ]}
+            onMouseenter={e => tableRef.value?.handleCellEnter({
+              e,
+              row,
+            })}
+            onMouseLeave={e => tableRef.value?.handleCellLeave({
+              e,
+              row,
+            })}
             onClick={() => handleEditResource(row, row?.resource_id)}
           >
             { row?.resource_name }
-          </span>
+          </div>
         );
       }
       return '--';
     },
   },
   {
-    label: t('组件ID'),
-    field: 'component_id ',
-    render: ({ row }: { row?: Partial<ISyncApigwItem> }) => {
+    title: t('组件ID'),
+    colKey: 'component_id ',
+    ellipsis: true,
+    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           { row?.component_id || '--' }
@@ -202,28 +199,35 @@ const tableColumns = ref([
     },
   },
   {
-    label: t('操作类型'),
-    field: 'status ',
-    width: 100,
-    render: ({ row }: { row?: Partial<ISyncApigwItem> }) => {
-      if (!row.resource_id) {
+    title: t('操作类型'),
+    colKey: 'status ',
+    width: 120,
+    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+      if (!row.resource_id || ['POST'].includes(row?.component_method)) {
         return (
-          <span style="color: #2DCB56;">
+          <span class="color-#2dcb56">
             { t('新建') }
           </span>
         );
       }
-      if (row.resource_id && row?.component_path) {
+      if (row.resource_id && row?.component_method) {
+        if (['DELETE'].includes(row?.component_method)) {
+          return (
+            <span class="color-#ea3536">
+              { t('删除') }
+            </span>
+          );
+        }
+        if (['PUT', 'PATCH'].includes(row?.component_method)) {
+          return (
+            <span class="color-#ffb400">
+              { t('更新') }
+            </span>
+          );
+        }
         return (
-          <span style="color: #ffb400;">
-            { t('更新') }
-          </span>
-        );
-      }
-      if (row.resource_id && row?.component_path) {
-        return (
-          <span style="color: #ea3536;">
-            { t('删除') }
+          <span class="color-#3a84ff">
+            { t('查询') }
           </span>
         );
       }
@@ -232,26 +236,18 @@ const tableColumns = ref([
   },
 ]);
 const componentList = ref([]);
+const tableEmptyType = ref<'empty' | 'search-empty'>('empty');
 const pagination = reactive({
   current: 1,
   count: 0,
-  limit: maxTableLimit,
-  limitList: sortedUniq(sortBy([10, 20, 50, 100, maxTableLimit])),
+  limit: 10,
 });
 const isLoading = ref(false);
 const pathUrl = ref('');
 const esb = ref({});
-const filterList = ref({});
 const allData = ref([]);
 const displayData = ref([]);
 const requestQueue = reactive(['component']);
-const tableEmptyConf = ref<{
-  emptyType: string
-  isAbnormal: boolean
-}>({
-  emptyType: '',
-  isAbnormal: false,
-});
 
 const createNum = computed(() => {
   const results = allData.value?.filter(item => !item?.resource_id);
@@ -268,6 +264,13 @@ const deleteNum = computed(() => {
 
 const confirmIsLoading = computed(() => isLoading.value);
 
+const setDelay = (duration: number) => {
+  isLoading.value = true;
+  delay(() => {
+    isLoading.value = false;
+  }, duration);
+};
+
 const getDataByPage = (page?: number) => {
   if (!page) {
     page = 1;
@@ -281,8 +284,7 @@ const getDataByPage = (page?: number) => {
   if (endIndex > displayData.value?.length) {
     endIndex = displayData.value?.length;
   }
-  updateTableEmptyConfig();
-  delay(() => isLoading.value = false, 100);
+  setDelay(500);
   return displayData.value?.slice(startIndex, endIndex);
 };
 
@@ -290,14 +292,9 @@ const getComponents = async () => {
   isLoading.value = true;
   try {
     const res = await checkSyncComponent();
-    allData.value = Object.freeze(res);
-    displayData.value = res;
-    pagination.count = displayData.value?.length;
-    componentList.value = getDataByPage();
-    tableEmptyConf.value.isAbnormal = false;
-  }
-  catch {
-    tableEmptyConf.value.isAbnormal = true;
+    const results = Object.freeze(res || []);
+    [allData.value, displayData.value, componentList.value] = [results, results, results];
+    pagination.count = displayData.value.length;
   }
   finally {
     if (requestQueue?.length > 0) {
@@ -312,30 +309,19 @@ const handleConfirmSync = async () => {
   router.push({ name: 'ComponentsManage' });
 };
 
-const handlePageLimitChange = (limit: number) => {
-  pagination.limit = limit;
-  pagination.current = 1;
-  handlePageChange(pagination.current);
-};
-
-const handlePageChange = (page: number) => {
-  isLoading.value = true;
-  pagination.current = page;
-  const data = getDataByPage(page);
-  componentList.value?.splice(0, componentList.value?.length, ...data);
-};
-
 const goBack = () => {
   router.back();
 };
 
 const handleSearch = () => {
   isLoading.value = true;
+  tableEmptyType.value = 'search-empty';
   displayData.value = allData.value?.filter((item: ISyncApigwItem) => {
     return (item?.component_path?.includes(pathUrl.value)) || (item?.component_name?.includes(pathUrl.value));
   });
-  componentList.value = getDataByPage();
   pagination.count = displayData.value?.length;
+  componentList.value = getDataByPage();
+  setDelay(500);
 };
 
 const getEsbGatewayData = async () => {
@@ -357,17 +343,9 @@ const handleEditResource = (data: ISyncApigwItem, resourceId: number) => {
   window.open(routeData.href, '_blank');
 };
 
-const updateTableEmptyConfig = () => {
-  const isFilter = Object.values(filterList.value).filter(item => item !== '');
-  if (pathUrl.value || isFilter) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
-  }
-  tableEmptyConf.value.emptyType = '';
-};
-
-const handleClearFilterKey = () => {
+const handleClearFilter = () => {
   pathUrl.value = '';
+  tableEmptyType.value = 'empty';
   getComponents();
 };
 
@@ -376,52 +354,4 @@ const init = () => {
   getEsbGatewayData();
 };
 init();
-
-watch(
-  () => pathUrl.value,
-  (value) => {
-    if (!value) {
-      displayData.value = allData.value;
-      pagination.count = displayData.value?.length;
-      componentList.value = getDataByPage();
-    }
-  },
-);
 </script>
-
-<style lang="scss" scoped>
-.apigw-access-manager-wrapper {
-
-  .ag-table-header {
-    font-size: 14px;
-
-    .ag-table-change {
-      color: #313238;
-    }
-  }
-
-  :deep(.resource-text) {
-    color: #3a84ff;
-    cursor: pointer;
-
-    &.resource-text-disabled {
-      color: #dcdee5;
-      cursor: not-allowed;
-      user-select: none;
-    }
-  }
-}
-
-</style>
-
-<style lang="scss">
-.import-resource-popconfirm-wrapper.bk-popover {
-
-  .bk-pop-confirm {
-
-    .bk-pop-confirm-footer {
-      margin-right: 48px;
-    }
-  }
-}
-</style>

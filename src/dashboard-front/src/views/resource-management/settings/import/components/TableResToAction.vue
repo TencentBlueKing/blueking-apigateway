@@ -207,10 +207,10 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 import { type IDocConfig } from '../Index.vue';
 
 interface IProps {
-  tableData: ILocalImportedResource[]
-  action: ActionType
-  keyword: string
-  docConfig: IDocConfig
+  tableData?: ILocalImportedResource[]
+  action?: ActionType
+  keyword?: string
+  docConfig?: IDocConfig
 }
 
 const tempAuthConfig = defineModel<IAuthConfig>('tempAuthConfig', { required: true });

@@ -16,11 +16,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from celery import shared_task
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
+from django.utils import timezone
 
 from apigateway.apps.api_debug.models import APIDebugHistory
 from apigateway.apps.support.models import ResourceDocVersion
@@ -34,7 +35,7 @@ def delete_old_publish_events():
     """
     Deletes publish events that are more than a year old.
     """
-    deleted_end_time = datetime.now() - timedelta(days=settings.CLEAN_TABLE_INTERVAL_DAYS)
+    deleted_end_time = timezone.now() - timedelta(days=settings.CLEAN_TABLE_INTERVAL_DAYS)
     logger.info("deleting publish events older than %s", deleted_end_time)
 
     deleted_count, _ = PublishEvent.objects.filter(created_time__lt=deleted_end_time).delete()
@@ -49,7 +50,7 @@ def delete_old_resource_doc_version_records():
     """
     logger.info("begin clean resource_doc_version old records")
 
-    delete_end_time = datetime.now() - timedelta(days=settings.CLEAN_TABLE_INTERVAL_DAYS)
+    delete_end_time = timezone.now() - timedelta(days=settings.CLEAN_TABLE_INTERVAL_DAYS)
 
     # 找到所有 CLEAN_TABLE_INTERVAL_DAYS 以前的 ResourceVersion
     old_resource_doc_versions = ResourceDocVersion.objects.filter(created_time__lt=delete_end_time)
@@ -81,7 +82,7 @@ def delete_old_debug_history():
     logger.info("begin clean debug old history")
 
     # 获取 6 个月的前一天日期
-    delete_end_time = datetime.now() - relativedelta(months=6) - relativedelta(days=1)
+    delete_end_time = timezone.now() - relativedelta(months=6) - relativedelta(days=1)
 
     # 每次删除 1000 条记录
     debug_history_to_delete = APIDebugHistory.objects.filter(created_time__lte=delete_end_time)[:1000]

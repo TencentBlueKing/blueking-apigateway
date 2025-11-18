@@ -37,7 +37,6 @@
       :border="['outer', 'row']"
       class="request-params-table"
       row-hover="auto"
-      :scrollbar="false"
       @vue:mounted="handleTableMounted"
     >
       <BkTableColumn
@@ -137,6 +136,7 @@
           <BkSwitcher
             v-else
             v-model="row.required"
+            :disabled="row.in === 'path'"
             class="ml-16px!"
             theme="primary"
           />
@@ -291,7 +291,7 @@ interface IProp {
 const disabled = defineModel<boolean>('is-no-params', { default: false });
 
 const {
-  detail,
+  detail = {},
   readonly = false,
 } = defineProps<IProp>();
 
@@ -484,6 +484,9 @@ const handleInChange = (row: ITableRow) => {
       }
     }
     else {
+      if (row.in === 'path') {
+        _row.required = true;
+      }
       if (row.type === 'object' || row.type === 'array') {
         _row.type = 'string';
       }

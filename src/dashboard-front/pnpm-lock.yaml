@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@blueking/bk-user-display-name':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: ^1.0.3-beta.6
+        version: 1.0.3-beta.6
       '@blueking/bk-user-selector':
         specifier: ^0.0.35
         version: 0.0.35(@blueking/bkui-library@0.0.0-beta.6)
@@ -30,8 +30,8 @@ importers:
         specifier: 0.0.1-beta.17
         version: 0.0.1-beta.17(bkui-vue@2.0.2-beta.63(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3)))(markdown-it@13.0.2)(vue@3.5.18(typescript@5.8.3))
       '@blueking/tdesign-ui':
-        specifier: 0.0.1-beta.92
-        version: 0.0.1-beta.92(vue@3.5.18(typescript@5.8.3))
+        specifier: 0.0.2-beta.13
+        version: 0.0.2-beta.13(vue@3.5.18(typescript@5.8.3))
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9
@@ -401,8 +401,8 @@ packages:
     resolution: {integrity: sha512-ruv7Ae4J5dUYULmeXw1gmb7rYRz57OWCPM57pHojnLq/3Z1CK2lNSLTCVjxVk1F/TZHwOZZrOWi0ur95BbLxNQ==}
     engines: {node: '>=6.9.0'}
 
-  '@blueking/bk-user-display-name@1.0.2':
-    resolution: {integrity: sha512-HutBumyW9cQEPD1rby7kJfCdKOZ5T1HHE4icQhuoHGP9rtQoB9NYmEbFdgQvNLVu1EbH4cCtdaaiu8imTzTJlw==}
+  '@blueking/bk-user-display-name@1.0.3-beta.6':
+    resolution: {integrity: sha512-OdoMCPL6oz2gVsV+gRmZ3nrRazDnIxtkVQr91TZ6CLZqCA6TUXcF1iB7CPzXuaGUvieXOxxqc9jGmrC17DwQ4g==}
 
   '@blueking/bk-user-selector@0.0.35':
     resolution: {integrity: sha512-j6cZ9GCsJa0oruqtUU3CC3gEVViBHxilBPImJ8Rzcb1sLdxPSmBb05X+gu3fdOeRP2wfv3WLa035MInAHES4Kw==}
@@ -440,8 +440,8 @@ packages:
       markdown-it: ^13.0.1
       vue: ^3.2.0
 
-  '@blueking/tdesign-ui@0.0.1-beta.92':
-    resolution: {integrity: sha512-evXwYHRRgwQpL6txiQk9CE5g6j2DcNeC93/zfCBSDMu9eLKkKFtCFSXLn6nO2eXVT1DYKqeCMH55N1e6q41P8A==}
+  '@blueking/tdesign-ui@0.0.2-beta.13':
+    resolution: {integrity: sha512-tpQu+OSejo5WIikYfbQ6/jLV2KhG1ovj14GYKa7KGSmfvI/6sqrs6TgF41gMN9P6endSDQnMskRnFZn2ItNK/w==}
     peerDependencies:
       vue: ^3
 
@@ -3893,7 +3893,7 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.27.1
 
-  '@blueking/bk-user-display-name@1.0.2': {}
+  '@blueking/bk-user-display-name@1.0.3-beta.6': {}
 
   '@blueking/bk-user-selector@0.0.35(@blueking/bkui-library@0.0.0-beta.6)':
     dependencies:
@@ -3930,7 +3930,7 @@ snapshots:
       markdown-it: 13.0.2
       vue: 3.5.18(typescript@5.8.3)
 
-  '@blueking/tdesign-ui@0.0.1-beta.92(vue@3.5.18(typescript@5.8.3))':
+  '@blueking/tdesign-ui@0.0.2-beta.13(vue@3.5.18(typescript@5.8.3))':
     dependencies:
       '@babel/runtime': 7.28.2
       '@popperjs/core': 2.11.8

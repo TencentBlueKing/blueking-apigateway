@@ -122,8 +122,12 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 }
 
 // AddMCPServerFromOpenApiSpec nolint:gofmt
-func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi3.T, operationIDMap map[string]struct{},
+func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi3.T, operationIDList []string,
 ) error {
+	operationIDMap := make(map[string]struct{})
+	for _, operationID := range operationIDList {
+		operationIDMap[operationID] = struct{}{}
+	}
 	mcpServerConfig := &MCPServerConfig{
 		Name:  name,
 		Tools: OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
@@ -133,8 +137,12 @@ func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi
 
 // UpdateMCPServerFromOpenApiSpec nolint:gofmt
 func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
-	mcpServer *MCPServer, name string, openApiSpec *openapi3.T, operationIDMap map[string]struct{},
+	mcpServer *MCPServer, name string, openApiSpec *openapi3.T, operationIDList []string,
 ) error {
+	operationIDMap := make(map[string]struct{})
+	for _, operationID := range operationIDList {
+		operationIDMap[operationID] = struct{}{}
+	}
 	mcpServerConfig := &MCPServerConfig{
 		Name:  name,
 		Tools: OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
