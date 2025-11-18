@@ -89,6 +89,7 @@
                   <BkButton
                     class="h-26px"
                     theme="primary"
+                    :disabled="selectedResources.length === 0"
                     @click="handleTranslateConfirmClick"
                   >
                     {{ t('确定') }}
@@ -148,7 +149,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     align: 'center',
     fixed: 'left',
     width: 60,
-    checkProps: ({ row }) => ({ disabled: !row.docs?.find(item => item.language === 'zh')?.id }),
+    checkProps: ({ row }) => ({ disabled: !hasDoc(row) }),
   },
   {
     colKey: 'name',
@@ -167,6 +168,8 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
 ]);
 
 const getTableData = async (params: Record<string, any> = {}) => getResourceList(toValue(gatewayId), params);
+
+const hasDoc = (resource: any) => resource.docs?.some(item => item.id);
 
 const getHasDocText = (resource: any, lang = 'zh') =>
   resource.docs?.find(item => item.language === lang)?.id ? t('有') : t('无');
