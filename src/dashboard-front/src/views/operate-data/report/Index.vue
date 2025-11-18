@@ -23,7 +23,7 @@
         class="search-form"
         form-type="vertical"
       >
-        <BkFormItem :label="t('日期选择器')">
+        <BkFormItem :label="t('选择时间')">
           <DatePicker
             v-model="dateTime"
             :valid-date-range="['now-6M', 'now/d']"
