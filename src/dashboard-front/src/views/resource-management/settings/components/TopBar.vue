@@ -175,7 +175,18 @@ const getHasDocText = (resource: any, lang = 'zh') =>
   resource.docs?.find(item => item.language === lang)?.id ? t('有') : t('无');
 
 const handleTranslateConfirmClick = async () => {
-  await batchResourceDocAITranslate(toValue(gatewayId), { doc_ids: selectedResources.value.filter(item => item.docs?.find(doc => doc.language === 'zh')).map(item => item.docs.find(doc => doc.language === 'zh').id) });
+  const docIds: number[] = [];
+  selectedResources.value.forEach((resource) => {
+    const cnDocId = resource.docs?.find(doc => doc.language === 'zh')?.id;
+    const enDocId = resource.docs?.find(doc => doc.language === 'en')?.id;
+    if (cnDocId) {
+      docIds.push(cnDocId);
+    }
+    if (enDocId) {
+      docIds.push(enDocId);
+    }
+  });
+  await batchResourceDocAITranslate(toValue(gatewayId), { doc_ids: docIds });
   popoverRef.value?.hide();
   Message({
     theme: 'success',
