@@ -103,7 +103,7 @@ class ReleasedResourceListByGatewayNameApi(generics.ListAPIView):
             resources,
             many=True,
             context={
-                "resource_url_tmpl": ResourceURLHandler.get_resource_url_tmpl(self.request.gateway.name, stage_name),
+                "resource_url_tmpl": ResourceURLHandler.get_resource_url_tmpl(),
                 "api_name": self.request.gateway.name,
                 "stage_name": stage_name,
             },

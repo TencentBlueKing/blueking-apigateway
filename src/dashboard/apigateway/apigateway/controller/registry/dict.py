@@ -19,7 +19,7 @@ import logging
 from copy import deepcopy
 from typing import ClassVar, Dict, Iterable, List, Type
 
-from apigateway.controller.crds.base import KubernetesResource
+from apigateway.controller.models import ApisixModel
 from apigateway.controller.registry.base import Registry
 
 logger = logging.getLogger(__name__)
@@ -32,13 +32,13 @@ class DictRegistry(Registry):
 
     def __init__(self, key_prefix: str = ""):
         super().__init__(key_prefix)
-        self._registry_dict: Dict[str, KubernetesResource] = {}
+        self._registry_dict: Dict[str, ApisixModel] = {}
 
-    def apply_resource(self, resource: KubernetesResource) -> bool:
-        self._registry_dict[self._get_key(resource.kind, resource.metadata.name)] = deepcopy(resource)
+    def apply_resource(self, resource: ApisixModel) -> bool:
+        self._registry_dict[self._get_key(resource.kind, resource.id)] = deepcopy(resource)
         return True
 
-    def sync_resources_by_key_prefix(self, resources: Iterable[KubernetesResource]) -> List[KubernetesResource]:
+    def sync_resources_by_key_prefix(self, resources: Iterable[ApisixModel]) -> List[ApisixModel]:
         self.delete_resources_by_key_prefix()
 
         for resource in resources:
@@ -49,7 +49,7 @@ class DictRegistry(Registry):
     def delete_resources_by_key_prefix(self):
         self._registry_dict.clear()
 
-    def iter_by_type(self, resource_type: Type[KubernetesResource]) -> Iterable[KubernetesResource]:
+    def iter_by_type(self, resource_type: Type[ApisixModel]) -> Iterable[ApisixModel]:
         kind_key_prefix = self._get_kind_key_prefix(resource_type.kind)
         for key, resource in self._registry_dict.items():
             if key.startswith(kind_key_prefix):

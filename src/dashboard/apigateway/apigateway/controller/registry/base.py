@@ -19,7 +19,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import ClassVar, Iterable, List, Type
 
-from apigateway.controller.crds.base import KubernetesResource
+from apigateway.controller.models import ApisixModel
 
 logger = logging.getLogger(__name__)
 
@@ -37,12 +37,12 @@ class Registry(ABC):
         self.key_prefix = key_prefix if key_prefix.endswith("/") else f"{key_prefix}/"
 
     @abstractmethod
-    def apply_resource(self, resource: KubernetesResource) -> bool:
+    def apply_resource(self, resource: ApisixModel) -> bool:
         """写入资源"""
         raise NotImplementedError()
 
     @abstractmethod
-    def sync_resources_by_key_prefix(self, resources: List[KubernetesResource]) -> List[KubernetesResource]:
+    def sync_resources_by_key_prefix(self, resources: List[ApisixModel]) -> List[ApisixModel]:
         """按 key_prefix 同步资源，若 key_prefix 下的资源不在待同步资源列表中，将被删除
 
         :return: 返回同步失败的资源列表
@@ -55,21 +55,21 @@ class Registry(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def iter_by_type(self, resource_type: Type[KubernetesResource]) -> Iterable[KubernetesResource]:
+    def iter_by_type(self, resource_type: Type[ApisixModel]) -> Iterable[ApisixModel]:
         """获取 key_prefix 下，指定类型的资源"""
         raise NotImplementedError()
 
     def _get_kind_key_prefix(self, kind: str) -> str:
         """获取到 kind 的 key 前缀
 
-        :param kind: KubernetesResource 的 kind
+        :param kind: ApisixModel 的 kind
         """
         return f"{self.key_prefix}{kind}/"
 
-    def _get_key(self, kind: str, name: str) -> str:
+    def _get_key(self, kind: str, id: str) -> str:
         """获取资源在配置中心中完整的 key
 
-        :param kind: KubernetesResource 的 kind
-        :param name: KubernetesResource 的 name
+        :param kind: ApisixModel 的 kind
+        :param id: ApisixModel 的 id
         """
-        return f"{self._get_kind_key_prefix(kind)}{name}"
+        return f"{self._get_kind_key_prefix(kind)}{id}"

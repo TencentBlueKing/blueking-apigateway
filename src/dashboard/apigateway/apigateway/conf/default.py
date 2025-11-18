@@ -771,12 +771,6 @@ OTEL_INSTRUMENT_REDIS = env.bool("DASHBOARD_OTEL_INSTRUMENT_REDIS", default=Fals
 # 网关部署集群所属业务 ID，影响从蓝鲸监控拉取 Prometheus 数据等功能；开源环境默认部署在蓝鲸业务 (业务 ID=2)
 BCS_CLUSTER_BK_BIZ_ID = env.str("BCS_CLUSTER_BK_BIZ_ID", "2")
 
-# 托管的微网关实例，实例部署所用 chart 由网关生成，
-# 此 chart 中，endpoints + base_path 应为微网关实例访问网关数据的网关接口地址前缀
-EDGE_CONTROLLER_API_BASE_PATH = env.str("EDGE_CONTROLLER_API_BASE_PATH", "/")
-
-# 默认微网关共享实例
-DEFAULT_MICRO_GATEWAY_ID = env.str("DEFAULT_MICRO_GATEWAY_ID", default="faf44a48-59e9-f790-2412-e56c90551fb3")
 
 # ==============================================================================
 # apisix
@@ -882,7 +876,7 @@ DEFAULT_FEATURE_FLAG = {
     "ENABLE_MONITOR": env.bool("FEATURE_FLAG_ENABLE_MONITOR", False),
     # 是否展示”运行数据“子菜单
     "ENABLE_RUN_DATA": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA", True),
-    # 是否展示 "运行数据" => 统计报表 子菜单
+    # 是否展示 "运行数据" => 仪表盘 子菜单
     "ENABLE_RUN_DATA_METRICS": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True),
     # 是否展示”组件管理“菜单项，企业版展示，上云版不展示
     "MENU_ITEM_ESB_API": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API", True),
@@ -913,16 +907,10 @@ DEFAULT_FEATURE_FLAG = {
 }
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并
-DEFAULT_USER_FEATURE_FLAG = {
-    # 2024-02-20 in 1.13 has no support for FEATURE_FLAG_MICRO_GATEWAY_ENABLED, comment it until it's supported
-    # "MICRO_GATEWAY_ENABLED": env.bool("FEATURE_FLAG_MICRO_GATEWAY_ENABLED", False),
-}
+DEFAULT_USER_FEATURE_FLAG = {}
 
 # 网关功能开关
-GLOBAL_GATEWAY_FEATURE_FLAG = {
-    # 2024-02-20 in 1.13 has no support for FEATURE_FLAG_MICRO_GATEWAY_ENABLED, comment it until it's supported
-    # "MICRO_GATEWAY_ENABLED": env.bool("FEATURE_FLAG_MICRO_GATEWAY_ENABLED", False),
-}
+GLOBAL_GATEWAY_FEATURE_FLAG = {}
 
 # ==============================================================================
 # 提供给前端的环境变量值
