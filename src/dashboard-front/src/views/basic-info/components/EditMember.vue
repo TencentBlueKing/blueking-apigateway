@@ -209,7 +209,6 @@ const handleEdit = () => {
   nextTick(() => {
     memberSelectorRef.value?.tagInputRef?.focusInputTrigger();
   });
-  console.log(displayValue.value);
 };
 
 const handleSubmit = () => {
