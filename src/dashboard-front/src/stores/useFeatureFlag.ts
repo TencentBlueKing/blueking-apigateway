@@ -54,7 +54,7 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
     isTenantMode: state => !!state.flags?.ENABLE_MULTI_TENANT_MODE,
     // 是否需要展示display_name
     isEnableDisplayName: state => !!state.flags?.ENABLE_DISPLAY_NAME_RENDER,
-    // 是否启用了 ai 问答功能
+    // 是否启用了 AI 问答和翻译功能
     isAIEnabled: state => state.flags?.ENABLE_AI_COMPLETION,
     // 是否开启了通知组件展示
     isEnabledNotice: state => state.showNoticeAlert,
