@@ -44,7 +44,7 @@
           {{ currentSource?.name }}
         </div>
       </div>
-      <div>
+      <div v-if="featureFlagStore.isAIEnabled">
         <BkPopover
           ref="popoverRef"
           width="650"
@@ -112,7 +112,10 @@
 
 <script setup lang="tsx">
 import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
-import { useStage } from '@/stores';
+import {
+  useFeatureFlag,
+  useStage,
+} from '@/stores';
 import AgTable from '@/components/ag-table/Index.vue';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import { getResourceList } from '@/services/source/resource.ts';
@@ -137,6 +140,7 @@ const {
 
 const { t } = useI18n();
 const stage = useStage();
+const featureFlagStore = useFeatureFlag();
 
 const selectedResources = ref<any[]>([]);
 const tableRef = useTemplateRef('tableRef');
