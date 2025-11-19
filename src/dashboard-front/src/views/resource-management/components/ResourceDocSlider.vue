@@ -59,29 +59,31 @@
                     </div>
                   </BkButton>
                 </BkButtonGroup>
-                <div
-                  v-if="hasDoc"
-                  v-bk-tooltips="{
-                    content: isTranslating ? t('翻译中') : t('请先创建文档'),
-                    disabled: !isTranslating && hasDocByLanguage(language),
-                  }"
-                  class="absolute right-0 top-7px flex items-center cursor-pointer"
-                  @click="handleTranslateClick"
-                >
-                  <AiBluekingButton
-                    :disabled="isTranslating || !hasDocByLanguage(language)"
-                    :tooltip-options="{ disabled: true }"
-                  />
+                <template v-if="featureFlagStore.isAIEnabled">
                   <div
-                    class="text-12px"
-                    :class="{
-                      'color-#dcdee5 cursor-not-allowed': isTranslating || !hasDocByLanguage(language),
-                      'gradient-text-color': !isTranslating && hasDocByLanguage(language),
+                    v-if="hasDoc"
+                    v-bk-tooltips="{
+                      content: isTranslating ? t('翻译中') : t('请先创建文档'),
+                      disabled: !isTranslating && hasDocByLanguage(language),
                     }"
+                    class="absolute right-0 top-7px flex items-center cursor-pointer"
+                    @click="handleTranslateClick"
                   >
-                    {{ language === 'zh' ? t('一键翻译英文') : t('一键翻译中文') }}
+                    <AiBluekingButton
+                      :disabled="isTranslating || !hasDocByLanguage(language)"
+                      :tooltip-options="{ disabled: true }"
+                    />
+                    <div
+                      class="text-12px"
+                      :class="{
+                        'color-#dcdee5 cursor-not-allowed': isTranslating || !hasDocByLanguage(language),
+                        'gradient-text-color': !isTranslating && hasDocByLanguage(language),
+                      }"
+                    >
+                      {{ language === 'zh' ? t('一键翻译英文') : t('一键翻译中文') }}
+                    </div>
                   </div>
-                </div>
+                </template>
               </div>
             </div>
             <div v-show="isEmpty">
@@ -208,6 +210,7 @@ import { useRouteParams } from '@vueuse/router';
 import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
 import { getAICompletion } from '@/services/source/ai.ts';
 import hljs from 'highlight.js';
+import { useFeatureFlag } from '@/stores';
 
 interface IProps {
   resource?: object
@@ -236,6 +239,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const featureFlagStore = useFeatureFlag();
 const gatewayId = useRouteParams('id', 0, { transform: Number });
 
 const languagesData = ref([{
