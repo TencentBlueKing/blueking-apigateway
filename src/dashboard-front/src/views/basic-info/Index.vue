@@ -87,7 +87,7 @@
                 theme="primary"
                 disabled
               >
-                {{ remainingTime }} {{ t('秒后再试') }}
+                {{ remainingTime }} {{ t('秒后再操作') }}
               </BkButton>
             </div>
             <div v-else>
