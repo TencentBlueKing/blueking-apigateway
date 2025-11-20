@@ -39,7 +39,7 @@ func Test_jwtManager_Get(t *testing.T) {
 			PublicKey: "public_key",
 		}
 
-		mockData := []interface{}{
+		mockData := []any{
 			record,
 		}
 		mockRows := database.NewMockRows(mock, mockData...)

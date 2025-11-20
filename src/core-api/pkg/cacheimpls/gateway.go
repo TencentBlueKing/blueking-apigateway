@@ -37,7 +37,7 @@ func (k GatewayNameKey) Key() string {
 	return k.Name
 }
 
-func retrieveGatewayByName(ctx context.Context, k cache.Key) (interface{}, error) {
+func retrieveGatewayByName(ctx context.Context, k cache.Key) (any, error) {
 	key := k.(GatewayNameKey)
 
 	manager := dao.NewGatewayManager()
@@ -49,17 +49,17 @@ func GetGatewayByName(ctx context.Context, name string) (gateway dao.Gateway, er
 	key := GatewayNameKey{
 		Name: name,
 	}
-	var value interface{}
+	var value any
 	value, err = cacheGet(ctx, gatewayCache, key)
 	if err != nil {
-		return
+		return gateway, err
 	}
 
 	var ok bool
 	gateway, ok = value.(dao.Gateway)
 	if !ok {
 		err = errors.New("not dao.Gateway in cache")
-		return
+		return gateway, err
 	}
-	return
+	return gateway, err
 }

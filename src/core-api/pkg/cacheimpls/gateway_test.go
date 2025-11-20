@@ -42,7 +42,7 @@ func TestGetGatewayByName(t *testing.T) {
 	expiration := 5 * time.Minute
 
 	// valid
-	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+	retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 		return dao.Gateway{}, nil
 	}
 	mockCache := memory.NewCache(
@@ -53,7 +53,7 @@ func TestGetGatewayByName(t *testing.T) {
 	assert.NoError(t, err)
 
 	// error
-	retrieveFunc = func(ctx context.Context, key cache.Key) (interface{}, error) {
+	retrieveFunc = func(ctx context.Context, key cache.Key) (any, error) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(

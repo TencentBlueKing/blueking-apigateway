@@ -8,11 +8,15 @@ server:
   writeTimeout: 60
   idleTimeout: 180
 
+auth:
+  # should configured same as the apisix:conf/config.yaml bk_gateway.instance.{id, secret}
+  id: "faf44a48-59e9-f790-2412-e56c90551fb3"
+  secret: "358627d8-d3e8-4522-8f16-b5530776bbb8"
+
 sentry:
   dsn: ""
   ## zapcore.Level
   reportLogLevel: 2
-
 
 databases:
   - id: "apigateway"

@@ -35,16 +35,31 @@ func (m *MockGatewayPublicKeyService) EXPECT() *MockGatewayPublicKeyServiceMockR
 }
 
 // Get mocks base method.
-func (m *MockGatewayPublicKeyService) Get(ctx context.Context, instanceID, gatewayName string) (string, error) {
+func (m *MockGatewayPublicKeyService) Get(ctx context.Context, gatewayName string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, instanceID, gatewayName)
+	ret := m.ctrl.Call(m, "Get", ctx, gatewayName)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockGatewayPublicKeyServiceMockRecorder) Get(ctx, instanceID, gatewayName interface{}) *gomock.Call {
+func (mr *MockGatewayPublicKeyServiceMockRecorder) Get(ctx, gatewayName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockGatewayPublicKeyService)(nil).Get), ctx, instanceID, gatewayName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockGatewayPublicKeyService)(nil).Get), ctx, gatewayName)
+}
+
+// GetByGatewayName mocks base method.
+func (m *MockGatewayPublicKeyService) GetByGatewayName(ctx context.Context, gatewayName string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByGatewayName", ctx, gatewayName)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByGatewayName indicates an expected call of GetByGatewayName.
+func (mr *MockGatewayPublicKeyServiceMockRecorder) GetByGatewayName(ctx, gatewayName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByGatewayName", reflect.TypeOf((*MockGatewayPublicKeyService)(nil).GetByGatewayName), ctx, gatewayName)
 }

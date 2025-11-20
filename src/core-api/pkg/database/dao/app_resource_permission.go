@@ -43,7 +43,7 @@ type AppResourcePermission struct {
 
 // AppResourcePermissionManager ...
 type AppResourcePermissionManager interface {
-	Get(ctx context.Context, bkAppCode string, gatewayID int64, resourceID int64) (AppResourcePermission, error)
+	Get(ctx context.Context, bkAppCode string, gatewayID, resourceID int64) (AppResourcePermission, error)
 }
 
 // NewAppResourcePermissionManager ...

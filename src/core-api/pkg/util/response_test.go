@@ -33,8 +33,8 @@ import (
 	"core/pkg/util"
 )
 
-func readResponse(w *httptest.ResponseRecorder) map[string]interface{} {
-	var got map[string]interface{}
+func readResponse(w *httptest.ResponseRecorder) map[string]any {
+	var got map[string]any
 	err := json.Unmarshal(w.Body.Bytes(), &got)
 	assert.NoError(GinkgoT(), err, fmt.Sprintf("the response is: %s", w.Body.String()))
 	return got
@@ -75,8 +75,8 @@ var _ = Describe("Response", func() {
 		assert.Equal(GinkgoT(), http.StatusBadRequest, c.Writer.Status())
 
 		got := readResponse(w)
-		assert.Equal(GinkgoT(), errorCode, got["error"].(map[string]interface{})["code"])
-		assert.Equal(GinkgoT(), "error", got["error"].(map[string]interface{})["message"])
+		assert.Equal(GinkgoT(), errorCode, got["error"].(map[string]any)["code"])
+		assert.Equal(GinkgoT(), "error", got["error"].(map[string]any)["message"])
 	})
 
 	It("BadRequestErrorJSONResponse", func() {
@@ -84,8 +84,8 @@ var _ = Describe("Response", func() {
 		assert.Equal(GinkgoT(), 400, c.Writer.Status())
 
 		got := readResponse(w)
-		assert.Equal(GinkgoT(), util.BadRequestError, got["error"].(map[string]interface{})["code"])
-		assert.Equal(GinkgoT(), "error", got["error"].(map[string]interface{})["message"])
+		assert.Equal(GinkgoT(), util.BadRequestError, got["error"].(map[string]any)["code"])
+		assert.Equal(GinkgoT(), "error", got["error"].(map[string]any)["message"])
 	})
 
 	It("SystemErrorJSONResponse", func() {
@@ -93,7 +93,7 @@ var _ = Describe("Response", func() {
 		assert.Equal(GinkgoT(), 500, c.Writer.Status())
 
 		got := readResponse(w)
-		assert.Equal(GinkgoT(), util.SystemError, got["error"].(map[string]interface{})["code"])
-		assert.Contains(GinkgoT(), got["error"].(map[string]interface{})["message"], "system error")
+		assert.Equal(GinkgoT(), util.SystemError, got["error"].(map[string]any)["code"])
+		assert.Contains(GinkgoT(), got["error"].(map[string]any)["message"], "system error")
 	})
 })

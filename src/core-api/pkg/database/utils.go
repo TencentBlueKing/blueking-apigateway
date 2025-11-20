@@ -48,7 +48,7 @@ func RollBackWithLog(tx *sqlx.Tx) {
 }
 
 // ============== slow sql logger ==============
-func logSlowSQL(start time.Time, query string, args interface{}) {
+func logSlowSQL(start time.Time, query string, args any) {
 	elapsed := time.Since(start)
 	// to ms
 	latency := float64(elapsed / time.Millisecond)
@@ -80,7 +80,7 @@ func logSlowSQL(start time.Time, query string, args interface{}) {
 	}
 }
 
-func truncateArgs(args interface{}, length int) string {
+func truncateArgs(args any, length int) string {
 	s, err := jsoniter.MarshalToString(args)
 	if err != nil {
 		s = fmt.Sprintf("%v", args)

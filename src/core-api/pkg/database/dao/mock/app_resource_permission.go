@@ -6,9 +6,8 @@ package mock
 
 import (
 	context "context"
-	reflect "reflect"
-
 	dao "core/pkg/database/dao"
+	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
 )

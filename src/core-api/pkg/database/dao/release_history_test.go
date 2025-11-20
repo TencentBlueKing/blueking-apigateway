@@ -48,7 +48,7 @@ func Test_releaseHistoryManager_Get(t *testing.T) {
 			ResourceVersionID: 23,
 			StageID:           23,
 		}
-		mockData := []interface{}{
+		mockData := []any{
 			record,
 		}
 		mockRows := database.NewMockRows(mock, mockData...)

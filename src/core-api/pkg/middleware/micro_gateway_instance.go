@@ -19,17 +19,14 @@
 package middleware
 
 import (
-	"fmt"
-
 	"github.com/gin-gonic/gin"
 
-	"core/pkg/cacheimpls"
 	"core/pkg/util"
 )
 
 // MicroGatewayInstanceMiddleware is the middleware to verify the micro gateway instance by instance id and instance
 // secret
-func MicroGatewayInstanceMiddleware() gin.HandlerFunc {
+func MicroGatewayInstanceMiddleware(id, secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		instanceID := c.GetHeader("X-Bk-Micro-Gateway-Instance-Id")
 		instanceSecret := c.GetHeader("X-Bk-Micro-Gateway-Instance-Secret")
@@ -48,14 +45,7 @@ func MicroGatewayInstanceMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		matched, err := cacheimpls.VerifyMicroGatewayCredentials(c.Request.Context(), instanceID, instanceSecret)
-		if err != nil {
-			err = fmt.Errorf("verify micro_gateway credentials fail, %w", err)
-			util.SystemErrorJSONResponse(c, err)
-			return
-		}
-
-		if !matched {
+		if instanceID != id || instanceSecret != secret {
 			util.UnauthorizedJSONResponse(c, "authorization credentials not valid")
 			c.Abort()
 			return
