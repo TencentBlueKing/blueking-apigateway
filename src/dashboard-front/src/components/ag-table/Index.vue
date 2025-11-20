@@ -216,6 +216,9 @@ const paramsData: Record<string, any> = ref({});
 
 const radioEl = ref<HTMLElement | null>(null);
 
+// 设置列实例
+const settingColumnEl = ref<HTMLElement | null>(null);
+
 const localTableData = ref<any[]>([]);
 
 const pagination = ref<PrimaryTableProps['pagination']>({
@@ -519,6 +522,15 @@ const handleRadioFilterClick = () => {
   }, 0);
 };
 
+// 处理点击设置列触发设置弹框
+const handleSettingColumnClick = (e: MouseEvent) => {
+  e?.stopPropagation();
+  const isIconClick = e.target?.closest('.t-icon-setting');
+  if (!isIconClick && settingColumnEl.value) {
+    settingColumnEl.value?.querySelector('.column-settings-icon')?.click();
+  };
+};
+
 const handleListenerRadio = () => {
   const table = unref(TDesignTableRef);
   if (!table) return;
@@ -529,6 +541,12 @@ const handleListenerRadio = () => {
     return;
   }
   document.addEventListener('click', handleRadioFilterClick);
+};
+
+// 设置列点击
+const handleListenerSetting = () => {
+  settingColumnEl.value = TDesignTableRef.value?.$el?.querySelector('th[data-colkey="__col_setting__"]');
+  settingColumnEl.value?.addEventListener('click', handleSettingColumnClick);
 };
 
 const getPagination = () => {
@@ -596,13 +614,16 @@ onMounted(() => {
     delete tableSetting.value.value;
   }
   handleListenerRadio();
+  handleListenerSetting();
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleRadioFilterClick);
   radioEl.value?.removeEventListener('click', radioClickHandler);
+  settingColumnEl.value?.removeEventListener('click', handleSettingColumnClick);
   radioEl.value = null;
   radioClickHandler = null;
+  settingColumnEl.value = null;
 });
 
 defineExpose({
