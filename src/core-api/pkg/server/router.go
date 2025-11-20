@@ -102,10 +102,13 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	microGatewayRouter := router.Group("/api/v1/micro-gateway")
 
 	microGatewayRouter.Use(middleware.APILogger())
-	microGatewayRouter.Use(middleware.MicroGatewayInstanceMiddleware())
+	microGatewayRouter.Use(middleware.MicroGatewayInstanceMiddleware(cfg.Auth.ID, cfg.Auth.Secret))
 	microGatewayRouter.GET("/:micro_gateway_instance_id/permissions/", microgateway.QueryPermission)
 	microGatewayRouter.GET("/:micro_gateway_instance_id/public_keys/", microgateway.QueryPublicKey)
-	microGatewayRouter.POST("/:micro_gateway_instance_id/release/:publish_id/events/", microgateway.ReportPublishEvent)
+	microGatewayRouter.POST(
+		"/:micro_gateway_instance_id/release/:publish_id/events/",
+		microgateway.ReportPublishEvent,
+	)
 
 	// open api
 	openRouterV1 := router.Group("/api/v1/open")

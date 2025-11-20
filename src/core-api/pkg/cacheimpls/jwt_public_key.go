@@ -38,7 +38,7 @@ func (k JWTPublicKeyCacheKey) Key() string {
 	return strconv.FormatInt(k.GatewayID, 10)
 }
 
-func retrieveJWTPublicKey(ctx context.Context, k cache.Key) (interface{}, error) {
+func retrieveJWTPublicKey(ctx context.Context, k cache.Key) (any, error) {
 	key := k.(JWTPublicKeyCacheKey)
 
 	manager := dao.NewJWTManager()
@@ -56,17 +56,17 @@ func GetJWTPublicKey(ctx context.Context, gatewayID int64) (publicKey string, er
 	key := JWTPublicKeyCacheKey{
 		GatewayID: gatewayID,
 	}
-	var value interface{}
+	var value any
 	value, err = cacheGet(ctx, jwtPublicKeyCache, key)
 	if err != nil {
-		return
+		return publicKey, err
 	}
 
 	var ok bool
 	publicKey, ok = value.(string)
 	if !ok {
 		err = errors.New("not string in cache")
-		return
+		return publicKey, err
 	}
-	return
+	return publicKey, err
 }

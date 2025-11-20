@@ -35,14 +35,13 @@ import (
 var _ = Describe("GatewayPublicKeyService", func() {
 	Describe("Get cases", func() {
 		var ctl *gomock.Controller
-		var instanceID, gatewayName string
+		var gatewayName string
 		var patches *gomonkey.Patches
 		var svc GatewayPublicKeyService
 
 		BeforeEach(func() {
 			patches = gomonkey.NewPatches()
 			ctl = gomock.NewController(GinkgoT())
-			instanceID = "hello"
 			gatewayName = "world"
 
 			mockManager := mock.NewMockJWTManager(ctl)
@@ -60,7 +59,7 @@ var _ = Describe("GatewayPublicKeyService", func() {
 		It("error", func() {
 			patches.ApplyFunc(
 				getGatewayID,
-				func(ctx context.Context, instanceID, gatewayName string) (int64, error) {
+				func(ctx context.Context, gatewayName string) (int64, error) {
 					return 1, nil
 				},
 			)
@@ -71,7 +70,7 @@ var _ = Describe("GatewayPublicKeyService", func() {
 				},
 			)
 
-			publicKey, err := svc.Get(context.Background(), instanceID, gatewayName)
+			publicKey, err := svc.Get(context.Background(), gatewayName)
 			assert.Empty(GinkgoT(), publicKey)
 			assert.Error(GinkgoT(), err)
 		})
@@ -79,7 +78,7 @@ var _ = Describe("GatewayPublicKeyService", func() {
 		It("ok", func() {
 			patches.ApplyFunc(
 				getGatewayID,
-				func(ctx context.Context, instanceID, gatewayName string) (int64, error) {
+				func(ctx context.Context, gatewayName string) (int64, error) {
 					return 1, nil
 				},
 			)
@@ -90,7 +89,7 @@ var _ = Describe("GatewayPublicKeyService", func() {
 				},
 			)
 
-			publicKey, err := svc.Get(context.Background(), instanceID, gatewayName)
+			publicKey, err := svc.Get(context.Background(), gatewayName)
 			assert.Equal(GinkgoT(), "publicKey", publicKey)
 			assert.NoError(GinkgoT(), err)
 		})

@@ -28,12 +28,12 @@ import (
 )
 
 type reportPublishEventSerializer struct {
-	BkGatewayName string                 `json:"bk_gateway_name" binding:"required" example:"benchmark"`
-	BkStageName   string                 `json:"bk_stage_name"  binding:"required" example:"dev"`
-	Name          string                 `json:"name"  binding:"required" example:"generate_release_task"`
-	Status        string                 `json:"status" binding:"required" example:"success" `
-	Detail        map[string]interface{} `json:"detail"`
-	Ts            int64                  `json:"ts"`
+	BkGatewayName string         `json:"bk_gateway_name" binding:"required" example:"benchmark"`
+	BkStageName   string         `json:"bk_stage_name"  binding:"required" example:"dev"`
+	Name          string         `json:"name"  binding:"required" example:"generate_release_task"`
+	Status        string         `json:"status" binding:"required" example:"success" `
+	Detail        map[string]any `json:"detail"`
+	Ts            int64          `json:"ts"`
 }
 
 // ReportPublishEvent report publish event

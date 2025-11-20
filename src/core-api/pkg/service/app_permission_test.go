@@ -55,10 +55,9 @@ var _ = Describe("AppPermissionService", func() {
 
 	Describe("getGatewayID", func() {
 		var patches *gomonkey.Patches
-		var instanceID, gatewayName string
+		var gatewayName string
 		BeforeEach(func() {
 			patches = gomonkey.NewPatches()
-			instanceID = "hello"
 			gatewayName = "world"
 		})
 
@@ -66,45 +65,7 @@ var _ = Describe("AppPermissionService", func() {
 			patches.Reset()
 		})
 
-		It("getGatewayID fail", func() {
-			patches.ApplyFunc(
-				cacheimpls.GetMicroGateway,
-				func(ctx context.Context, instanceID string) (dao.MicroGateway, error) {
-					return dao.MicroGateway{}, errors.New("get GetMicroGateway fail")
-				},
-			)
-
-			_, err := getGatewayID(context.Background(), instanceID, gatewayName)
-			assert.Error(GinkgoT(), err)
-			assert.Contains(GinkgoT(), err.Error(), "get GetMicroGateway fail")
-		})
-
-		It("getGatewayID ok, not shared", func() {
-			patches.ApplyFunc(
-				cacheimpls.GetMicroGateway,
-				func(ctx context.Context, instanceID string) (dao.MicroGateway, error) {
-					return dao.MicroGateway{
-						IsShared:  false,
-						GatewayID: 123,
-					}, nil
-				},
-			)
-			id, err := getGatewayID(context.Background(), instanceID, gatewayName)
-			assert.NoError(GinkgoT(), err)
-			assert.Equal(GinkgoT(), int64(123), id)
-		})
-
 		It("getGatewayID ok, shared, GetGatewayByName fail", func() {
-			patches.ApplyFunc(
-				cacheimpls.GetMicroGateway,
-				func(ctx context.Context, instanceID string) (dao.MicroGateway, error) {
-					return dao.MicroGateway{
-						IsShared:  true,
-						GatewayID: 123,
-					}, nil
-				},
-			)
-
 			patches.ApplyFunc(
 				cacheimpls.GetGatewayByName,
 				func(context.Context, string) (dao.Gateway, error) {
@@ -112,22 +73,12 @@ var _ = Describe("AppPermissionService", func() {
 				},
 			)
 
-			_, err := getGatewayID(context.Background(), instanceID, gatewayName)
+			_, err := getGatewayID(context.Background(), gatewayName)
 			assert.Error(GinkgoT(), err)
 			assert.Contains(GinkgoT(), err.Error(), "get GetGatewayByName fail")
 		})
 
 		It("getGatewayID ok, shared, GetGatewayByName ok", func() {
-			patches.ApplyFunc(
-				cacheimpls.GetMicroGateway,
-				func(ctx context.Context, instanceID string) (dao.MicroGateway, error) {
-					return dao.MicroGateway{
-						IsShared:  true,
-						GatewayID: 123,
-					}, nil
-				},
-			)
-
 			patches.ApplyFunc(
 				cacheimpls.GetGatewayByName,
 				func(context.Context, string) (dao.Gateway, error) {
@@ -136,7 +87,7 @@ var _ = Describe("AppPermissionService", func() {
 					}, nil
 				},
 			)
-			id, err := getGatewayID(context.Background(), instanceID, gatewayName)
+			id, err := getGatewayID(context.Background(), gatewayName)
 			assert.NoError(GinkgoT(), err)
 			assert.Equal(GinkgoT(), int64(456), id)
 		})
@@ -254,7 +205,12 @@ var _ = Describe("AppPermissionService", func() {
 				},
 			)
 
-			resourceID, ok, err := getResourceIDByName(context.Background(), gatewayID, stageID, resourceName)
+			resourceID, ok, err := getResourceIDByName(
+				context.Background(),
+				gatewayID,
+				stageID,
+				resourceName,
+			)
 			assert.NoError(GinkgoT(), err)
 			assert.True(GinkgoT(), ok)
 			assert.Equal(GinkgoT(), int64(456), resourceID)
@@ -263,11 +219,10 @@ var _ = Describe("AppPermissionService", func() {
 
 	Describe("appPermissionService Query", func() {
 		var patches *gomonkey.Patches
-		var instanceID, gatewayName, stageName, resourceName, appCode string
+		var gatewayName, stageName, resourceName, appCode string
 		var gatewayID, stageID, resourceID int64
 		BeforeEach(func() {
 			patches = gomonkey.NewPatches()
-			instanceID = "1"
 			gatewayName = "hello"
 			stageName = "world"
 			resourceName = "resource"
@@ -279,7 +234,7 @@ var _ = Describe("AppPermissionService", func() {
 
 			patches.ApplyFunc(
 				getGatewayID,
-				func(ctx context.Context, instanceID, gatewayName string) (int64, error) {
+				func(ctx context.Context, gatewayName string) (int64, error) {
 					return gatewayID, nil
 				},
 			)
@@ -310,7 +265,7 @@ var _ = Describe("AppPermissionService", func() {
 			)
 
 			svc := &appPermissionService{}
-			_, err := svc.Query(context.Background(), instanceID, gatewayName, stageName, resourceName, appCode)
+			_, err := svc.Query(context.Background(), gatewayName, stageName, resourceName, appCode)
 			assert.Error(GinkgoT(), err)
 			assert.Contains(GinkgoT(), err.Error(), "get GetAppGatewayPermissionExpiredAt fail")
 		})
@@ -330,7 +285,7 @@ var _ = Describe("AppPermissionService", func() {
 			)
 
 			svc := &appPermissionService{}
-			_, err := svc.Query(context.Background(), instanceID, gatewayName, stageName, resourceName, appCode)
+			_, err := svc.Query(context.Background(), gatewayName, stageName, resourceName, appCode)
 			assert.Error(GinkgoT(), err)
 			assert.Contains(GinkgoT(), err.Error(), "get GetAppResourcePermissionExpiredAt fail")
 		})
@@ -352,7 +307,6 @@ var _ = Describe("AppPermissionService", func() {
 			svc := &appPermissionService{}
 			permissions, err := svc.Query(
 				context.Background(),
-				instanceID,
 				gatewayName,
 				stageName,
 				resourceName,
@@ -382,7 +336,6 @@ var _ = Describe("AppPermissionService", func() {
 			svc := &appPermissionService{}
 			permissions, err := svc.Query(
 				context.Background(),
-				instanceID,
 				gatewayName,
 				stageName,
 				resourceName,

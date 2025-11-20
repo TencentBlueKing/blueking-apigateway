@@ -42,7 +42,7 @@ func (k AppGatewayPermissionKey) Key() string {
 	return k.AppCode + ":" + strconv.FormatInt(k.GatewayID, 10)
 }
 
-func retrieveAppGatewayPermission(ctx context.Context, k cache.Key) (interface{}, error) {
+func retrieveAppGatewayPermission(ctx context.Context, k cache.Key) (any, error) {
 	key := k.(AppGatewayPermissionKey)
 
 	manager := dao.NewAppGatewayPermissionManager()
