@@ -291,7 +291,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'name',
     title: t('网关名称'),
-    width: 300,
+    width: 200,
     cell: (h, { row }) => {
       if (!row?.name) {
         return '--';
@@ -351,7 +351,6 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'description',
     title: t('网关描述'),
-    width: 500,
     ellipsis: true,
     cell: (h, { row }) =>
       <span>{ row.description || '--' }</span>,
@@ -370,6 +369,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
                   content: row.maintainers.join(','),
                   placement: 'top',
                   disabled: !row.isOverflow,
+                  extCls: 'max-w-480px',
                 }}
                 class="truncate"
                 onMouseenter={e => tableRef.value?.handleCellEnter({
