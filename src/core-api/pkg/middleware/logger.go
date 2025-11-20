@@ -103,7 +103,7 @@ func logContextFields(c *gin.Context) []zap.Field {
 	if status >= http.StatusInternalServerError {
 		sentry.ReportToSentry(
 			fmt.Sprintf("%s %s ", c.Request.Method, c.Request.URL.Path),
-			map[string]interface{}{
+			map[string]any{
 				"fields": fields,
 			},
 		)

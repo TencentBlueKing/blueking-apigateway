@@ -43,7 +43,7 @@ func TestGetRelease(t *testing.T) {
 	expiration := 5 * time.Minute
 
 	// valid
-	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+	retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 		return dao.Release{}, nil
 	}
 	mockCache := memory.NewCache(
@@ -54,7 +54,7 @@ func TestGetRelease(t *testing.T) {
 	assert.NoError(t, err)
 
 	// error
-	retrieveFunc = func(ctx context.Context, key cache.Key) (interface{}, error) {
+	retrieveFunc = func(ctx context.Context, key cache.Key) (any, error) {
 		return false, errors.New("error here")
 	}
 	mockCache = memory.NewCache(

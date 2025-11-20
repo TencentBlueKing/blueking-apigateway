@@ -39,7 +39,7 @@ func (k StageKey) Key() string {
 	return strconv.FormatInt(k.GatewayID, 10) + ":" + k.Name
 }
 
-func retrieveStageByGatewayIDStageName(ctx context.Context, k cache.Key) (interface{}, error) {
+func retrieveStageByGatewayIDStageName(ctx context.Context, k cache.Key) (any, error) {
 	key := k.(StageKey)
 
 	manager := dao.NewStageManager()
@@ -53,17 +53,17 @@ func GetStage(ctx context.Context, gatewayID int64, name string) (stage dao.Stag
 		GatewayID: gatewayID,
 		Name:      name,
 	}
-	var value interface{}
+	var value any
 	value, err = cacheGet(ctx, stageCache, key)
 	if err != nil {
-		return
+		return stage, err
 	}
 
 	var ok bool
 	stage, ok = value.(dao.Stage)
 	if !ok {
 		err = errors.New("not dao.Stage in cache")
-		return
+		return stage, err
 	}
-	return
+	return stage, err
 }

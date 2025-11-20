@@ -62,7 +62,7 @@ func Enabled() bool {
 }
 
 // ReportToSentry report to sentry
-func ReportToSentry(message string, extra map[string]interface{}) {
+func ReportToSentry(message string, extra map[string]any) {
 	if s.enabled {
 		// report to sentry
 		ev := sentry.NewEvent()

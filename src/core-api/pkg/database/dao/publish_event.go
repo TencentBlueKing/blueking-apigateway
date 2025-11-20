@@ -48,10 +48,10 @@ type PublishEvent struct {
 	UpdatedTime time.Time `db:"updated_time"`
 }
 
-type Detail map[string]interface{}
+type Detail map[string]any
 
 // Scan Implement the sql.Scanner interface, Scan scans the value to Detail
-func (d *Detail) Scan(value interface{}) error {
+func (d *Detail) Scan(value any) error {
 	bytes, ok := value.([]byte)
 	if !ok {
 		return errors.New(fmt.Sprint("Failed to unmarshal Detail value:", value))

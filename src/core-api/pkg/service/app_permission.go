@@ -40,7 +40,7 @@ const (
 type AppPermissionService interface {
 	Query(
 		ctx context.Context,
-		instanceID, gatewayName, stageName, resourceName, appCode string,
+		gatewayName, stageName, resourceName, appCode string,
 	) (map[string]int64, error)
 }
 
@@ -94,10 +94,10 @@ func (k appResourcePermissionKey) Key() string {
 
 // Query will query the app permission, it will get app-permission and resource-permission from cache
 func (s *appPermissionService) Query(
-	ctx context.Context, instanceID, gatewayName, stageName, resourceName, appCode string,
+	ctx context.Context, gatewayName, stageName, resourceName, appCode string,
 ) (map[string]int64, error) {
 	permissions := make(map[string]int64, 2)
-	gatewayID, err := getGatewayID(ctx, instanceID, gatewayName)
+	gatewayID, err := getGatewayID(ctx, gatewayName)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (s *appPermissionService) Query(
 		return nil, fmt.Errorf("call GetAppGatewayPermissionExpiredAt fail: %w, gatewayID = %d", err, gatewayID)
 	}
 	logging.GetLogger().Debugw("call GetAppGatewayPermissionExpiredAt",
-		"instanceID", instanceID, "gatewayName", gatewayName, "stageName", stageName,
+		"gatewayName", gatewayName, "stageName", stageName,
 		"resourceName", resourceName, "appCode", appCode, "gatewayID", gatewayID,
 		"gatewayPermissionExpiredAt", gatewayPermissionExpiredAt,
 	)
@@ -124,10 +124,22 @@ func (s *appPermissionService) Query(
 		now := time.Now().Unix()
 		if gatewayPermissionExpiredAt > now+ClientLRUCacheTTL {
 			logging.GetLogger().
-				Debugw("app has gateway permission, and expires greater than now + ClientLRUCacheTTL, will return",
-					"ClientLRUCacheTTL", ClientLRUCacheTTL, "instanceID", instanceID, "gatewayName", gatewayName,
-					"stageName", stageName, "resourceName", resourceName, "appCode", appCode, "gatewayID", gatewayID,
-					"gatewayPermissionExpiredAt", gatewayPermissionExpiredAt,
+				Debugw(
+					"app has gateway permission, and expires greater than now + ClientLRUCacheTTL, will return",
+					"ClientLRUCacheTTL",
+					ClientLRUCacheTTL,
+					"gatewayName",
+					gatewayName,
+					"stageName",
+					stageName,
+					"resourceName",
+					resourceName,
+					"appCode",
+					appCode,
+					"gatewayID",
+					gatewayID,
+					"gatewayPermissionExpiredAt",
+					gatewayPermissionExpiredAt,
 				)
 			// no need to query app-resource permission
 			return permissions, nil
@@ -147,7 +159,7 @@ func (s *appPermissionService) Query(
 	// got no records, return directly
 	if !ok {
 		logging.GetLogger().Debugw("app has no resource permission records, will return",
-			"instanceID", instanceID, "gatewayName", gatewayName, "stageName", stageName, "resourceName", resourceName,
+			"gatewayName", gatewayName, "stageName", stageName, "resourceName", resourceName,
 			"appCode", appCode, "gatewayID", gatewayID, "stageID", stageID,
 		)
 		return permissions, nil
@@ -166,7 +178,7 @@ func (s *appPermissionService) Query(
 		)
 	}
 	logging.GetLogger().Debugw("call GetAppResourcePermissionExpiredAt",
-		"instanceID", instanceID, "gatewayName", gatewayName, "stageName", stageName, "resourceName", resourceName,
+		"gatewayName", gatewayName, "stageName", stageName, "resourceName", resourceName,
 		"appCode", appCode, "gatewayID", gatewayID, "resourceID", resourceID,
 		"resourcePermissionExpiredAt", resourcePermissionExpiredAt,
 	)
@@ -182,29 +194,23 @@ func (s *appPermissionService) Query(
 	return permissions, nil
 }
 
-func getGatewayID(ctx context.Context, instanceID, gatewayName string) (int64, error) {
-	microGateway, err := cacheimpls.GetMicroGateway(ctx, instanceID)
+func getGatewayID(ctx context.Context, gatewayName string) (int64, error) {
+	gateway, err := cacheimpls.GetGatewayByName(ctx, gatewayName)
 	if err != nil {
-		return 0, fmt.Errorf("call GetMicroGateway fail: %w, instanceID=%s", err, instanceID)
+		return 0, fmt.Errorf("call GetGatewayByName fail: %w, isShared=true, gatewayName=%s", err, gatewayName)
 	}
-
-	// var gateway dao.Gateway
-	if microGateway.IsShared {
-		gateway, err := cacheimpls.GetGatewayByName(ctx, gatewayName)
-		if err != nil {
-			return 0, fmt.Errorf("call GetGatewayByName fail: %w, isShared=true, gatewayName=%s", err, gatewayName)
-		}
-		return gateway.ID, nil
-	}
-
-	// The micro_gateway.gateway_id is referenced to the gateway, so just return
-	return microGateway.GatewayID, nil
+	return gateway.ID, nil
 }
 
 func getStageID(ctx context.Context, gatewayID int64, stageName string) (int64, error) {
 	stage, err := cacheimpls.GetStage(ctx, gatewayID, stageName)
 	if err != nil {
-		return 0, fmt.Errorf("call GetStage fail: %w, gatewayID = %d, stageName = %s", err, gatewayID, stageName)
+		return 0, fmt.Errorf(
+			"call GetStage fail: %w, gatewayID = %d, stageName = %s",
+			err,
+			gatewayID,
+			stageName,
+		)
 	}
 
 	return stage.ID, nil
@@ -218,7 +224,8 @@ func getResourceIDByName(
 ) (int64, bool, error) {
 	// NOTE: there got no resourceID in private Gateway(isShared=False), only have resourceName
 	//       so, we should get resourceID by resourceName
-	// 1. get `Release` by gatewayID and stageID, release has a reference field `resource_version_id ` to ResourceVersion
+	// 1. get `Release` by gatewayID and stageID, release has a reference field `resource_version_id ` to
+	// ResourceVersion
 	// 2. get `ResourceVersion` by `resource_version_id`, ResourceVersion has data field `[{}, {}]`
 	// 3. unmarshal the data into a map[string]int64, key is resourceName, value is resourceID
 	// 4. get resourceID by resourceName
