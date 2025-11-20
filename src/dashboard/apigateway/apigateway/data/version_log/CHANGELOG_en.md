@@ -1,3 +1,51 @@
+<!-- 2025-11-20 -->
+# V1.19.1 Release Log
+
+### Features
+
+- Support multiple load balancing algorithms
+- Support AI one-click translation of documents
+- Add plugin: proxy-cache
+- Add plugin: user access control bk-user-restriction
+- Add plugin: request body size limit bk-request-body-limit
+- Run data: support backend service dimension filtering
+- Run data: dashboard supports selecting precision
+- Run data: pipeline log shows request traceparent and backend_name
+- Toolbox: add URL parsing and Base64 parsing
+
+### Enhancements
+
+- Support multi-environment csrftoken isolation
+- API documentation: support filtering out plugin gateways
+- Run data: split 90th chart into 3 charts
+- Resource list: safety risk prompt for resources not authenticated
+- Basic information: strengthen use of X-Bkapi-JWT
+- List optimization: clearly show disabled gateways/programmable gateways
+- Developer no gateway homepage optimization
+
+### Bug Fixes
+
+- Fix a batch of frontend experience and interaction issues
+- Gateway list: pipeline log operation button click error
+- Run data - dashboard: display exception in scenarios with many data points
+- Run data - pipeline log: all duration is 0
+- Backend service: click to jump resource list filter fails
+- Login status: login_success load fails
+- API documentation: public parameter description incorrect
+- Permission management: active authorization selects all using search results
+- Resource comparison: deleted resources in diff missing delete line
+- Code block: use consistent light style style everywhere
+- Online debugging: non-public interface cannot view documentation
+
+### Other
+
+- Frontend migrated all tables to new version components
+- Base image switched to tencentos4-minimal
+- Monitoring interface call switched to bk-monitor
+- Multi-tenant: single tenant app application for full tenant gateway cannot correctly display approver
+
+---
+
 <!-- 2025-09-11 -->
 # V1.18.0 Release Log
 
