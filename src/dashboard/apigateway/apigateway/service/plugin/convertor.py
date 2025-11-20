@@ -230,6 +230,24 @@ class ProxyCacheConvertor(PluginConvertor):
         return config
 
 
+class AIProxyConvertor(PluginConvertor):
+    plugin_type_code: ClassVar[PluginTypeCodeEnum] = PluginTypeCodeEnum.AI_PROXY
+
+    def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        auth = config["auth"]
+        if auth.get("header"):
+            del auth["query"]
+            auth["header"] = {item["key"]: item["value"] for item in auth["header"]}
+            return config
+
+        if auth.get("query"):
+            del auth["header"]
+            auth["query"] = {item["key"]: item["value"] for item in auth["query"]}
+            return config
+
+        raise ValueError("At least one of header or query must be configured")
+
+
 class PluginConvertorFactory:
     plugin_convertors: ClassVar[Dict[PluginTypeCodeEnum, PluginConvertor]] = {
         c.plugin_type_code: c
@@ -245,6 +263,7 @@ class PluginConvertorFactory:
             BkAccessTokenSourceConvertor(),
             BKUserRestrictionConvertor(),
             ProxyCacheConvertor(),
+            AIProxyConvertor(),
         ]
     }
 
