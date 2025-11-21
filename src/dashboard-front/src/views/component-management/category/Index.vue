@@ -133,6 +133,7 @@ const tableColumns = ref([
               content: row.name,
               placement: 'top',
               disabled: !row.isOverflow,
+              extCls: 'max-w-480px',
             }}
             class="truncate mr-4px"
             onMouseenter={e => tableRef.value?.handleCellEnter({
