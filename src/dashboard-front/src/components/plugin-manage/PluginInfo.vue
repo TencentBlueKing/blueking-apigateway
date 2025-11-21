@@ -146,6 +146,21 @@
             />
           </div>
         </div>
+        <template
+          v-else-if="[
+            'proxy-cache',
+            'bk-user-restriction',
+            'bk-request-body-limit',
+            'bk-access-token-source',
+            'redirect'
+          ].includes(choosePlugin)"
+        >
+          <Component
+            :is="pluginFormCompMap[choosePlugin as keyof typeof pluginFormCompMap]"
+            ref="formRef"
+            :data="schemaFormData"
+          />
+        </template>
         <BkSchemaForm
           v-else
           ref="formRef"
@@ -238,15 +253,11 @@ import {
   PLUGIN_ICONS,
   PLUGIN_ICONS_MIN,
 } from '@/constants';
-
-interface IProps {
-  curPlugin: any
-  scopeInfo: any
-  editPlugin: any
-  type: string
-  pluginList?: any[]
-  bindingPlugins?: any[]
-}
+import ProxyCacheForm from '@/components/plugin-form/proxy-cache/Index.vue';
+import BkUserRestriction from '@/components/plugin-form/bk-user-restriction/Index.vue';
+import BkRequestBodyLimit from '@/components/plugin-form/bk-request-body-limit/Index.vue';
+import BkAccessTokenSource from '@/components/plugin-form/bk-access-token-source/Index.vue';
+import Redirect from '@/components/plugin-form/redirect/Index.vue';
 
 // 右侧插件使用示例是否可见
 const showExample = defineModel<boolean>('showExample', { default: false });
@@ -264,6 +275,15 @@ const emit = defineEmits<{
   'on-change': [type: string]
   'choose-plugin': [plugin: any]
 }>();
+
+interface IProps {
+  curPlugin: any
+  scopeInfo: any
+  editPlugin: any
+  type: string
+  pluginList?: any[]
+  bindingPlugins?: any[]
+}
 
 const stageStore = useStage();
 const BkSchemaForm = createForm();
@@ -297,6 +317,14 @@ const formStyle = ref<string>();
 const exampleContent = ref('');
 // 插件切换 select
 const pluginSelectRef = ref<HTMLElement>();
+
+const pluginFormCompMap = {
+  'proxy-cache': ProxyCacheForm,
+  'bk-user-restriction': BkUserRestriction,
+  'bk-request-body-limit': BkRequestBodyLimit,
+  'bk-access-token-source': BkAccessTokenSource,
+  'redirect': Redirect,
+};
 
 const isBound = computed(() => {
   return function (obj: any) {
@@ -359,6 +387,17 @@ const handleAdd = async () => {
   try {
     if (formStyle.value === 'raw') {
       Object.assign(data, { yaml: whitelist.value?.sendPolicyData().data });
+    }
+    else if ([
+      'proxy-cache',
+      'bk-user-restriction',
+      'bk-request-body-limit',
+      'bk-access-token-source',
+      'redirect',
+    ].includes(choosePlugin.value)) {
+      const formValue = await formRef.value!.getValue();
+      Object.assign(data, { yaml: json2Yaml(JSON.stringify(formValue)).data });
+      schemaFormData.value = formValue;
     }
     else {
       await formRef.value!.validate();

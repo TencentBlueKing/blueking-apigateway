@@ -20,7 +20,7 @@
   <i
     v-if="!svg"
     :class="`icon-ag-${name}`"
-    :style="{ fontSize: `${size}px` }"
+    :style="{ fontSize: `${size}px`, color }"
     class="icon apigateway-icon"
   />
   <svg
@@ -37,7 +37,8 @@ interface IProps {
   name: string
   size?: string
   svg?: boolean
+  color?: string
 }
 
-const { name, size = '14', svg = false } = defineProps<IProps>();
+const { name, size = '14', svg = false, color = '' } = defineProps<IProps>();
 </script>
