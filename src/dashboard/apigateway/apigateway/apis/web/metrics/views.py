@@ -247,6 +247,7 @@ class QuerySummaryCallerListApi(generics.ListAPIView):
 
         app_codes = sorted(
             StatisticsAppRequestByDay.objects.filter(
+                gateway_id=request.gateway.id,
                 stage_name=stage_name,
                 start_time__gte=timezone.datetime.fromtimestamp(data["time_start"]),
                 end_time__lte=timezone.datetime.fromtimestamp(data["time_end"]),
