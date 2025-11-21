@@ -103,19 +103,33 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     colKey: 'name',
     cell: (h, { row }) => {
       return (
-        <bk-button
-          text
-          theme="primary"
+        <div
+          v-bk-tooltips={{
+            content: row.name,
+            placement: 'top',
+            disabled: !row.isOverflow,
+            extCls: 'max-w-480px',
+          }}
+          class="truncate color-#3a84ff cursor-pointer"
+          onMouseenter={e => tableRef.value?.handleCellEnter({
+            e,
+            row,
+          })}
+          onMouseLeave={e => tableRef.value?.handleCellLeave({
+            e,
+            row,
+          })}
           onClick={() => handleEdit(row)}
         >
-          { row?.name }
-        </bk-button>
+          { row.name }
+        </div>
       );
     },
   },
   {
     title: t('描述'),
     colKey: 'description',
+    ellipsis: true,
     cell: (h, { row }) => {
       return (
         <span>
@@ -148,6 +162,8 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     title: t('更新时间'),
     colKey: 'updated_time',
+    width: 260,
+    ellipsis: true,
     cell: (h, { row }) => {
       return (
         <span>

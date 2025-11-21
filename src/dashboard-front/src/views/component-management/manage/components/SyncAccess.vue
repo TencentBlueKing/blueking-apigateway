@@ -164,6 +164,7 @@ const tableColumns = ref([
               content: row?.resource_id ? row?.resource_name : t('资源不存在'),
               placement: 'top',
               disabled: !row.isOverflow,
+              extCls: 'max-w-480px',
             }}
             class={[
               'truncate color-#3a84ff cursor-pointer',

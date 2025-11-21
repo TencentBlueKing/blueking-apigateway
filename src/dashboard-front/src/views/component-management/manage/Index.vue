@@ -233,6 +233,7 @@ const tableColumns = computed(() => {
                 placement: 'top',
                 content: row?.name,
                 disabled: !row.isOverflow,
+                extCls: 'max-w-480px',
               }}
               class="truncate"
               onMouseenter={e => tableRef.value?.handleCellEnter({

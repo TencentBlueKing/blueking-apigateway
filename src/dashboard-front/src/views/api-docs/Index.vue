@@ -303,6 +303,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
               content: row.name,
               placement: 'top',
               disabled: !row.isOverflow,
+              extCls: 'max-w-480px',
             }}
             class="truncate color-#3a84ff cursor-pointer mr-4px"
             onMouseenter={e => tableRef.value?.handleCellEnter({
