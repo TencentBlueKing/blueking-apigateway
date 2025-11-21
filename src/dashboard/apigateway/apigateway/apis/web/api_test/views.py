@@ -226,9 +226,10 @@ class APIDebugHistoryListApi(APIDebugHistoriesQuerySetMixin, generics.ListAPIVie
             queryset = queryset.filter(created_time__range=(time_start, time_end))
         # 应用额外的过滤器
         queryset = self.filter_queryset(queryset)
+        page = self.paginate_queryset(queryset)
 
         # 序列化查询集
-        serializer = self.serializer_class(queryset, many=True)
+        serializer = self.serializer_class(page, many=True)
 
         # 返回响应
         return OKJsonResponse(data=serializer.data)
