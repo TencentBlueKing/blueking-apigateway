@@ -60,8 +60,8 @@
                   ref="nameInputRef"
                   v-model="formData.name"
                   size="small"
-                  :placeholder="t('由小写字母、数字、连接符（-）组成，首字符必须是字母，长度大于3小于30个字符')"
-                  @blur="handleNameBlur"
+                  :placeholder="t('名称由字母、数字、下划线（_）组成，首字符必须是字母，长度小于256个字符')"
+                  @blur="() => handleNameBlur(formData.name)"
                   @enter="handleEditEnter"
                 />
               </div>
@@ -895,6 +895,7 @@ const {
 const emit = defineEmits<{
   'done': [value: boolean]
   'deleted-success': [void]
+  'updated': [void]
 }>();
 
 const { t } = useI18n();
@@ -955,6 +956,9 @@ const getResourceDetails = async () => {
     formData.value.match_subpath_copy = res?.match_subpath;
 
     formData.value.backend.config.path_copy = formData.value.backend.config.path;
+
+    formData.value.openapi_schema = cloneDeep(res.schema);
+    delete formData.value.schema;
   });
 
   getServiceData();
@@ -1214,6 +1218,8 @@ const handleEditSave = async () => {
   backMethodEdit.value = false;
   backServicesEdit.value = false;
   backPathEdit.value = false;
+  emit('updated');
+  getResourceDetails();
 };
 
 const handleNameBlur = (name: string) => {

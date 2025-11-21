@@ -626,6 +626,23 @@ $primary-color: #3a84ff;
 
       .category-list {
         width: 1000px;
+        height: calc(100vh - 128px);
+        overflow-y: scroll;
+
+        &::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background-color: #dcdee5;
+          border-radius: 3px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background-color: transparent;
+          border-radius: 3px;
+        }
 
         .category-wrap {
           margin-bottom: 4px;

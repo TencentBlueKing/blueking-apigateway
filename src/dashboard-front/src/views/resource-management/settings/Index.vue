@@ -284,6 +284,7 @@
                       :class="{'show-notice': isShowNoticeAlert}"
                       @done="isComponentLoading = false"
                       @deleted-success="handleDeleteSuccess"
+                      @updated="handleUpdated"
                       @on-jump="(id: number | any) => handleShowInfo(id)"
                       @on-update-plugin="handleUpdatePlugin"
                     />
@@ -1525,6 +1526,10 @@ const handleCloseSelect = (row: any, newLabelData: any = []) => {
 const handleUpdateLabelSuccess = () => {
   tableRef.value!.fetchData(tableQueries.value);
   init();
+};
+
+const handleUpdated = () => {
+  tableRef.value!.fetchData(tableQueries.value);
 };
 
 // 删除成功
