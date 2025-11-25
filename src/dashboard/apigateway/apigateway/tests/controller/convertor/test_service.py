@@ -114,6 +114,11 @@ class TestServiceConvertor:
         assert result[0].id == "test-gateway.prod.456-1"
         assert "backend-service" in result[0].name
 
+        # revoke_flag
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, revoke_flag=True)
+        result = convertor.convert()
+        assert result == []
+
     def test_convert_with_multiple_backends(self, mock_release_data, mocker):
         """Test convert with multiple backend configs"""
         mock_backend1 = mocker.Mock()
