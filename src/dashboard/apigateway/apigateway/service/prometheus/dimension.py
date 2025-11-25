@@ -33,6 +33,7 @@ from apigateway.apps.metrics.constants import (
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkmonitor import query_range
+from apigateway.core.models import Backend
 
 from .base import BasePrometheusMetrics
 
@@ -331,11 +332,13 @@ class IngressMetrics(BaseMetrics):
         resource_name: Optional[str],
     ) -> str:
         # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
+        # 查询 backend_id
+        backend = Backend.objects.get(gateway__name=gateway_name, name=backend_name)
         label_list = [
             *self.default_labels,
             ("type", "=", "ingress"),
-            # service 的参数规则：网关名称。环境名称.stage-环境 ID
-            ("service", "=", f"{gateway_name}.{stage_name}.stage-{stage_id}"),
+            # service 的参数规则：{gateway_name}.{stage_name[:10]}.{stage_id}-{backend_id}
+            ("service", "=", f"{gateway_name}.{stage_name[:10]}.{stage_id}-{backend.id}"),
         ]
         if resource_id:
             # route 的参数规则：网关名称。环境名称.资源 ID
@@ -361,11 +364,13 @@ class EgressMetrics(BaseMetrics):
         resource_name: Optional[str],
     ) -> str:
         # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
+        # 查询 backend_id
+        backend = Backend.objects.get(gateway__name=gateway_name, name=backend_name)
         label_list = [
             *self.default_labels,
             ("type", "=", "egress"),
-            # service 的参数规则：网关名称。环境名称.stage-环境 ID
-            ("service", "=", f"{gateway_name}.{stage_name}.stage-{stage_id}"),
+            # service 的参数规则：{gateway_name}.{stage_name[:10]}.{stage_id}-{backend_id}
+            ("service", "=", f"{gateway_name}.{stage_name[:10]}.{stage_id}-{backend.id}"),
         ]
         if resource_id:
             # route 的参数规则：网关名称。环境名称.资源 ID
