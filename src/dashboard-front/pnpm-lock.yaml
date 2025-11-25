@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@blueking/bk-user-display-name':
-        specifier: ^1.0.3-beta.6
-        version: 1.0.3-beta.6
+        specifier: 1.0.3-beta.7
+        version: 1.0.3-beta.7
       '@blueking/bk-user-selector':
         specifier: ^0.0.35
         version: 0.0.35(@blueking/bkui-library@0.0.0-beta.6)
@@ -401,8 +401,8 @@ packages:
     resolution: {integrity: sha512-ruv7Ae4J5dUYULmeXw1gmb7rYRz57OWCPM57pHojnLq/3Z1CK2lNSLTCVjxVk1F/TZHwOZZrOWi0ur95BbLxNQ==}
     engines: {node: '>=6.9.0'}
 
-  '@blueking/bk-user-display-name@1.0.3-beta.6':
-    resolution: {integrity: sha512-OdoMCPL6oz2gVsV+gRmZ3nrRazDnIxtkVQr91TZ6CLZqCA6TUXcF1iB7CPzXuaGUvieXOxxqc9jGmrC17DwQ4g==}
+  '@blueking/bk-user-display-name@1.0.3-beta.7':
+    resolution: {integrity: sha512-WdVIhyWW5N9tjR7kTKBwvqERjfMGcA1wfoX5n6n4XT7sBEtM2u1fVmeFHYed4LuQwCwZVZrtUFnQlUNEWlP+3w==}
 
   '@blueking/bk-user-selector@0.0.35':
     resolution: {integrity: sha512-j6cZ9GCsJa0oruqtUU3CC3gEVViBHxilBPImJ8Rzcb1sLdxPSmBb05X+gu3fdOeRP2wfv3WLa035MInAHES4Kw==}
@@ -3893,7 +3893,7 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.27.1
 
-  '@blueking/bk-user-display-name@1.0.3-beta.6': {}
+  '@blueking/bk-user-display-name@1.0.3-beta.7': {}
 
   '@blueking/bk-user-selector@0.0.35(@blueking/bkui-library@0.0.0-beta.6)':
     dependencies:
