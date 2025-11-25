@@ -57,7 +57,7 @@ def _call_bkmonitor_promql_query(bk_biz_id: str, promql: str, start: int, end: i
     timeout = 30
 
     # FIXME: {"code": 200} as ok response should be tested
-    return do_legacy_blueking_http_request("bkmonitorv3", http_post, url, data, headers, timeout)
+    return do_legacy_blueking_http_request("bk-monitor", http_post, url, data, headers, timeout)
 
 
 def query_range(bk_biz_id: str, promql: str, start: int, end: int, step: str) -> Any:
