@@ -367,39 +367,43 @@ class TestResponseTime99thMetrics:
 
 
 class TestIngressMetrics:
-    def test_get_query_promql(self, mocker):
+    def test_get_query_promql(self, mocker, fake_default_backend):
         mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+
+        gateway_name = fake_default_backend.gateway.name
+        backend_name = fake_default_backend.name
+        backend_id = fake_default_backend.id
 
         data = [
             {
                 "params": {
-                    "gateway_name": "foo",
+                    "gateway_name": gateway_name,
                     "stage_name": "prod",
-                    "backend_name": "default",
+                    "backend_name": backend_name,
                     "stage_id": 1,
                     "resource_id": 2,
                     "resource_name": "get_foo",
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(rate(bk_apigateway_bandwidth{type="ingress", service="foo.prod.stage-1", '
-                    'route="foo.prod.2"}[1m])) by (route))'
-                ),
+                    'topk(10, sum(rate(bk_apigateway_bandwidth{{type="ingress", service="{}.prod.1-{}", '
+                    'route="{}.prod.2"}}[1m])) by (route))'
+                ).format(gateway_name, backend_id, gateway_name),
             },
             {
                 "params": {
-                    "gateway_name": "foo",
-                    "stage_name": "prod",
-                    "backend_name": None,
+                    "gateway_name": gateway_name,
+                    "stage_name": "prod-123456789",
+                    "backend_name": backend_name,
                     "stage_id": 1,
                     "resource_id": 0,
                     "resource_name": None,
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(rate(bk_apigateway_bandwidth{type="ingress", service="foo.prod.stage-1"'
-                    "}[1m])) by (route))"
-                ),
+                    'topk(10, sum(rate(bk_apigateway_bandwidth{{type="ingress", service="{}.{}.1-{}"'
+                    "}}[1m])) by (route))"
+                ).format(gateway_name, "prod-12345", backend_id),
             },
         ]
         for test in data:
@@ -409,39 +413,43 @@ class TestIngressMetrics:
 
 
 class TestEgressMetrics:
-    def test_get_query_promql(self, mocker):
+    def test_get_query_promql(self, mocker, fake_default_backend):
         mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+
+        gateway_name = fake_default_backend.gateway.name
+        backend_name = fake_default_backend.name
+        backend_id = fake_default_backend.id
 
         data = [
             {
                 "params": {
-                    "gateway_name": "foo",
+                    "gateway_name": gateway_name,
                     "stage_name": "prod",
-                    "backend_name": "default",
+                    "backend_name": backend_name,
                     "stage_id": 1,
                     "resource_id": 2,
                     "resource_name": "get_foo",
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(rate(bk_apigateway_bandwidth{type="egress", service="foo.prod.stage-1", '
-                    'route="foo.prod.2"}[1m])) by (route))'
-                ),
+                    'topk(10, sum(rate(bk_apigateway_bandwidth{{type="egress", service="{}.prod.1-{}", '
+                    'route="{}.prod.2"}}[1m])) by (route))'
+                ).format(gateway_name, backend_id, gateway_name),
             },
             {
                 "params": {
-                    "gateway_name": "foo",
-                    "stage_name": "prod",
-                    "backend_name": None,
+                    "gateway_name": gateway_name,
+                    "stage_name": "prod-123456789",
+                    "backend_name": backend_name,
                     "stage_id": 1,
                     "resource_id": 0,
                     "resource_name": None,
                     "step": "1m",
                 },
                 "expected": (
-                    'topk(10, sum(rate(bk_apigateway_bandwidth{type="egress", service="foo.prod.stage-1"'
-                    "}[1m])) by (route))"
-                ),
+                    'topk(10, sum(rate(bk_apigateway_bandwidth{{type="egress", service="{}.{}.1-{}"'
+                    "}}[1m])) by (route))"
+                ).format(gateway_name, "prod-12345", backend_id),
             },
         ]
         for test in data:
