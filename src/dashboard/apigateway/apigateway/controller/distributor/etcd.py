@@ -171,16 +171,6 @@ class GatewayResourceDistributor(BaseDistributor):
         """撤销已发布到 micro-gateway 对应的 registry 中的配置"""
         registry = self._get_registry(self.gateway, self.stage)
 
-        # 删除所有相关数据
-        if publish_id == DELETE_PUBLISH_ID:
-            try:
-                registry.delete_resources_by_key_prefix()
-            except Exception as e:  # pylint: disable=broad-except
-                fail_msg = f"revoke gateway resources delete resources from etcd failed: {type(e).__name__}: {str(e)}"
-                logger.exception(fail_msg)
-                return False, fail_msg
-            return True, "ok"
-
         procedure_logger = ReleaseProcedureLogger(
             "gateway-revoking",
             logger=logger,
@@ -189,6 +179,19 @@ class GatewayResourceDistributor(BaseDistributor):
             release_task_id=release_task_id,
             publish_id=publish_id,
         )
+
+        # 删除所有相关数据
+        if publish_id == DELETE_PUBLISH_ID:
+            try:
+                with procedure_logger.step("delete gateway resources from etcd by key_prefix(delete_publish_id)"):
+                    registry.delete_resources_by_key_prefix()
+
+            except Exception as e:  # pylint: disable=broad-except
+                fail_msg = f"revoke gateway resources delete resources from etcd failed: {type(e).__name__}: {str(e)}"
+                logger.exception(fail_msg)
+                procedure_logger.exception(fail_msg)
+                return False, fail_msg
+            return True, "ok"
 
         transformer = GatewayApisixResourceTransformer(
             release=self.release,
