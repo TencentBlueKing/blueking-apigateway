@@ -92,7 +92,7 @@ class GatewayApisixResourceTransformer(BaseTransformer):
         # 2. should check the ssl_id of service.upstream are all exists
         # 3. distribute the ssl/proto
 
-        service_convertor = ServiceConvertor(self._release_data, self.publish_id)
+        service_convertor = ServiceConvertor(self._release_data, self.publish_id, self.revoke_flag)
         self._converted_services = service_convertor.convert()
 
         backend_service_mapping: Dict[int, str] = {}
