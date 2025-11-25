@@ -185,7 +185,7 @@ class TestGatewayApisixResourceConvertor:
         transformer.transform()
 
         # Verify all convertors were called with correct parameters
-        mock_service_convertor.assert_called_once_with(mock_release_data, 123)
+        mock_service_convertor.assert_called_once_with(mock_release_data, 123, True)
         expected_mapping = {123: "service-1", 456: "service-2"}
         mock_route_convertor.assert_called_once_with(mock_release_data, expected_mapping, 123, True)
         mock_bk_release_convertor.assert_called_once_with(mock_release_data, 123)

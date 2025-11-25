@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 import time
 from contextlib import contextmanager
 from logging import Logger, getLogger
@@ -28,6 +29,8 @@ class ProcedureLogger:
     def __init__(self, name: str, logger: Logger = logger):
         self.name = name
         self.logger = logger
+        # set logger level to INFO
+        self.logger.setLevel(logging.INFO)
 
     @contextmanager
     def step(self, step: str, raise_exception=True, **context):
