@@ -76,48 +76,58 @@ const selectedSchema = computed(() => {
   return schema?.oneOf?.[selectedOptionIndex.value];
 });
 
-const formRules = computed(() => ({
-  whitelist: [
+const curSelectType = computed(() => {
+  return Object.keys(selectedSchema.value?.properties ?? {})?.[0] ?? '';
+});
+
+const formRules = computed(() => {
+  const schemaTitle = selectedSchema.value?.title ?? '';
+  const requiredField = selectedSchema.value?.required;
+  const minLength = Array.isArray(requiredField) && requiredField?.includes(curSelectType.value)
+    ? selectedSchema.value?.properties?.[curSelectType.value]?.minLength
+    : undefined;
+  const commonRules = [
     {
       required: true,
-      message: t('请输入{inputValue}', { inputValue: selectedSchema.value?.title }),
+      message: t('请输入{inputValue}', { inputValue: schemaTitle }),
       trigger: 'change',
       validator: (value: string) => {
-        if (!value?.trim()) {
-          return false;
-        }
-        return true;
+        return !!value?.trim();
       },
     },
+    // 格式校验（IPv4/CIDR 或 IPv6/CIDR）
     {
-      message: t('{ipTitle}格式不符合IPv4/CIDR或IPv6/CIDR规范', { ipTitle: selectedSchema.value?.title }),
+      message: t('{ipTitle}格式不符合IPv4/CIDR或IPv6/CIDR规范', { ipTitle: schemaTitle }),
       trigger: 'change',
       validator: (value: string) => {
+        if (!value?.trim()) return true;
         return ipv4CidrRegex.test(value) || ipv6CidrRegex.test(value);
       },
     },
-  ],
-  blacklist: [
-    {
-      required: true,
-      message: t('请输入{inputValue}', { inputValue: selectedSchema.value?.title }),
+  ];
+
+  const extraRules: any[] = [];
+  if (minLength && typeof minLength === 'number' && minLength > 0) {
+    extraRules.push({
+      message: t('{inputValue}不应少于{count}个字符', {
+        inputValue: schemaTitle,
+        count: minLength,
+      }),
       trigger: 'change',
       validator: (value: string) => {
-        if (!value?.trim()) {
-          return false;
-        }
-        return true;
+        const trimmedValue = value?.trim() || '';
+        return trimmedValue.length >= minLength;
       },
-    },
-    {
-      message: t('{ipTitle}格式不符合IPv4/CIDR或IPv6/CIDR规范', { ipTitle: selectedSchema.value?.title }),
-      trigger: 'change',
-      validator: (value: string) => {
-        return ipv4CidrRegex.test(value) || ipv6CidrRegex.test(value);
-      },
-    },
-  ],
-}));
+    });
+  }
+
+  const mergedRules = [...commonRules, ...extraRules];
+
+  return {
+    whitelist: mergedRules,
+    blacklist: mergedRules,
+  };
+});
 
 const validate = async () => {
   try {

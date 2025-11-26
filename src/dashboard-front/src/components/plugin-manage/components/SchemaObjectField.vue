@@ -8,7 +8,7 @@
         v-if="renderShowForm(item)"
         :label="item?.title"
         :required="renderRequired"
-        :property="renderProperty"
+        :property="renderAllKeys?.[0]"
         :description="item.description ?? ''"
       >
         <template
@@ -69,10 +69,6 @@ const renderAllKeys = computed(() => {
 
 const renderRequired = computed(() => {
   return renderAllKeys.value.some(key => schemaOption.value?.required?.includes(key));
-});
-
-const renderProperty = computed(() => {
-  return renderAllKeys.value.find(key => schemaOption.value?.properties[key]?.title === key) ?? '';
 });
 
 const renderFormItem = computed(() => {
