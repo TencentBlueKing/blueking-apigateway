@@ -1,0 +1,78 @@
+import { type Component, defineAsyncComponent } from 'vue';
+
+import {
+  Checkbox,
+  Input,
+} from 'bkui-vue';
+
+export type ComponentItem = | Component | (() => {
+  component: Component
+  props: Record<string, any>
+});
+
+// Schema 字段类型
+export type SchemaType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'integer' | 'bk-header-rewrite';
+
+// 组件映射配置
+export type ComponentMap = Record<SchemaType, Component>;
+
+// 默认组件映射
+export const defaultComponentMap: ComponentMap = {
+  'string': () => ({
+    component: Input,
+    props: { type: 'text' },
+  }),
+  'number': () => ({
+    component: Input,
+    props: { type: 'number' },
+  }),
+  'integer': () => ({
+    component: Input,
+    props: { type: 'number' },
+  }),
+  'boolean': ({
+    component: Checkbox,
+    props: {},
+  }),
+  'object': defineAsyncComponent(() => import('@/components/plugin-manage/components/SchemaObjectField.vue')),
+  'array': defineAsyncComponent(() => import('@/components/plugin-manage/components/SchemaObjectField.vue')),
+  'bk-header-rewrite': defineAsyncComponent(() => import('@/components/plugin-manage/components/CustomAddDelForm.vue')),
+};
+
+export interface ISchema {
+  'type': 'string' | 'number' | 'object' | 'array' | 'integer' | 'boolean'
+  'format'?: 'date' | 'time' | 'datetime' | 'select' | 'radio' | 'email' | 'url' | 'ipv4' | 'ipv6'
+  'title'?: string
+  'description'?: string
+  'ui:oneOf'?: { title?: string }
+  'oneOf'?: Array<{
+    title?: string
+    required?: string[]
+    properties?: Record<string, any>
+    type?: SchemaType
+    format?: string
+  }>
+  'enum'?: any[]
+  'minimum'?: number
+  'maximum'?: number
+  'minLength'?: number
+  'maxLength'?: number
+  'pattern'?: string
+  'items'?: {
+    properties?: {
+      [key: string]: {
+        title?: string
+        pattern?: string
+        maxLength?: number
+      }
+    }
+  }
+}
+
+export interface IHeaderWriteFormData {
+  set?: Array<{
+    key: string
+    value: string
+  }>
+  remove?: Array<{ key: string }>
+}

@@ -2049,5 +2049,10 @@
   "要重定向到的 URI，可以包含 NGINX 变量。例如：/test/index.html，$uri/index.html，${uri}/index.html，https://example.com/foo/bar。如果你引入了一个不存在的变量，它不会报错，而是将其视为一个空变量。": "要重定向到的 URI，可以包含 NGINX 变量。例如：/test/index.html，$uri/index.html，${uri}/index.html，https://example.com/foo/bar。如果你引入了一个不存在的变量，它不会报错，而是将其视为一个空变量。",
   "HTTP 响应码":"HTTP 响应码",
   "需要符合规则 (\\\\\\$[0-9a-zA-Z_]+)|\\$\\{([0-9a-zA-Z_]+)\\}|\\$([0-9a-zA-Z_]+)|(\\$|[^$\\\\]+)":"需要符合规则 (\\\\\\$[0-9a-zA-Z_]+)|\\$\\{([0-9a-zA-Z_]+)\\}|\\$([0-9a-zA-Z_]+)|(\\$|[^$\\\\]+)",
-  "必须是介于 200 到 599 的正整数": "必须是介于 200 到 599 的正整数"
+  "必须是介于 200 到 599 的正整数": "必须是介于 200 到 599 的正整数",
+  "后端服务ID": "后端服务ID",
+  "请输入后端服务ID": "请输入后端服务ID",
+  "请输入{inputValue}": "请输入{inputValue}",
+  "{inputKey}存在重复项": "'{inputKey}' 存在重复项",
+  "{ipTitle}格式不符合IPv4/CIDR或IPv6/CIDR规范": "{ipTitle}格式不符合IPv4/CIDR或IPv6/CIDR规范"
 }

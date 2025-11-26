@@ -164,7 +164,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from 'lodash-es';
-import { Message } from 'bkui-vue';
+import { Form, Message } from 'bkui-vue';
 import { type ICategoryItem } from '@/services/source/category';
 import {
   type ISystemItem,
@@ -212,7 +212,7 @@ const emits = defineEmits<Emits>();
 const { t } = useI18n();
 
 const saveLoading = ref(false);
-const systemFormRef = ref<InstanceType<typeof BkForm> & FormMethod>();
+const systemFormRef = ref<InstanceType<typeof Form> & FormMethod>();
 const rules = ref({
   name: [
     {

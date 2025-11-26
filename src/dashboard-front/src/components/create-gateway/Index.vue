@@ -378,7 +378,7 @@ import {
   getGuideDocs,
   patchGateway,
 } from '@/services/source/gateway.ts';
-import { Message } from 'bkui-vue';
+import { Form, Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import MemberSelector from '@/components/member-selector';
 import BkUserSelector from '@blueking/bk-user-selector';
@@ -422,7 +422,7 @@ const userStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
 
-const formRef = ref<InstanceType<typeof BkForm> & FormMethod>();
+const formRef = ref<InstanceType<typeof Form> & FormMethod>();
 const formData = ref<ParamType>({
   name: '',
   description: '',
