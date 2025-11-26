@@ -161,6 +161,15 @@
             :data="schemaFormData"
           />
         </template>
+        <template v-else-if="isCustomPlugin">
+          <component
+            :is="pluginFormCompMap[choosePlugin as keyof typeof pluginFormCompMap]"
+            ref="formRef"
+            v-model="schemaFormData"
+            :schema="formConfig.schema"
+            :route-mode="choosePlugin"
+          />
+        </template>
         <BkSchemaForm
           v-else
           ref="formRef"
@@ -241,6 +250,7 @@
 </template>
 
 <script setup lang="ts">
+import { cloneDeep } from 'lodash-es';
 import { creatPlugin, getPluginForm, updatePluginConfig } from '@/services/source/plugin-manage';
 import { Message } from 'bkui-vue';
 // @ts-expect-error missing module type
@@ -257,7 +267,18 @@ import ProxyCacheForm from '@/components/plugin-form/proxy-cache/Index.vue';
 import BkUserRestriction from '@/components/plugin-form/bk-user-restriction/Index.vue';
 import BkRequestBodyLimit from '@/components/plugin-form/bk-request-body-limit/Index.vue';
 import BkAccessTokenSource from '@/components/plugin-form/bk-access-token-source/Index.vue';
+import BkIpRestriction from '@/components/plugin-form/bk-ip-restriction/Index.vue';
+import BkHeaderRewrite from '@/components/plugin-form/bk-header-rewrite/Index.vue';
 import Redirect from '@/components/plugin-form/redirect/Index.vue';
+
+interface IProps {
+  curPlugin: any
+  scopeInfo: any
+  editPlugin: any
+  type: string
+  pluginList?: any[]
+  bindingPlugins?: any[]
+}
 
 // 右侧插件使用示例是否可见
 const showExample = defineModel<boolean>('showExample', { default: false });
@@ -324,7 +345,13 @@ const pluginFormCompMap = {
   'bk-request-body-limit': BkRequestBodyLimit,
   'bk-access-token-source': BkAccessTokenSource,
   'redirect': Redirect,
+  'bk-ip-restriction': BkIpRestriction,
+  'bk-header-rewrite': BkHeaderRewrite,
 };
+
+const isCustomPlugin = computed(() => {
+  return ['bk-ip-restriction', 'bk-header-rewrite'].includes(choosePlugin.value);
+});
 
 const isBound = computed(() => {
   return function (obj: any) {
@@ -348,8 +375,13 @@ watch(
   },
 );
 
+const clearValidate = () => {
+  formRef.value?.clearValidate?.();
+};
+
 // 上一页
 const handlePre = () => {
+  clearValidate();
   emit('on-change', 'pre');
 };
 // 确认
@@ -400,7 +432,10 @@ const handleAdd = async () => {
       schemaFormData.value = formValue;
     }
     else {
-      await formRef.value!.validate();
+      const isValidate = await formRef.value?.validate();
+      if (!isValidate) {
+        return;
+      }
       Object.assign(data, { yaml: json2Yaml(JSON.stringify(schemaFormData.value)).data });
     }
   }
@@ -421,6 +456,7 @@ const handleAdd = async () => {
 
 // 取消
 const handleCancel = () => {
+  clearValidate();
   if (isAdd.value) {
     emit('on-change', 'addCancel');
   }
@@ -430,7 +466,6 @@ const handleCancel = () => {
 const getSchemaFormData = async (code: string) => {
   try {
     const { apigwId } = scopeInfo;
-
     isPluginFormLoading.value = true;
     const res = await getPluginForm(apigwId, code);
     // const res = {
@@ -661,7 +696,7 @@ const getSchemaFormData = async (code: string) => {
     exampleContent.value = res.example || '';
 
     if (!isAdd.value) {
-      const yamlData = yaml2Json(editPlugin.yaml).data;
+      const yamlData = yaml2Json(editPlugin?.yaml).data;
       schemaFormData.value = { ...(yamlData as object) };
     }
   }
@@ -697,6 +732,11 @@ const init = async () => {
 };
 init();
 
+// 设置编辑插件配置数据回显
+const setPluginInfo = (plugin) => {
+  schemaFormData.value = cloneDeep(plugin?.config);
+};
+
 // 点击了插件 select 区域外且未 focus 到该组件时，隐藏整个 select
 onClickOutside(pluginSelectRef, () => {
   if (pluginSelectRef.value?.isFocus === false) {
@@ -704,6 +744,10 @@ onClickOutside(pluginSelectRef, () => {
   }
 });
 
+defineExpose({
+  clearValidate,
+  setPluginInfo,
+});
 </script>
 
 <style lang="scss" scoped>
