@@ -88,6 +88,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Form } from 'bkui-vue';
 import { t } from '@/locales';
 import AgTable from '@/components/ag-table/Index.vue';
 
@@ -139,7 +140,7 @@ const {
 } = defineProps<IProps>();
 const emits = defineEmits<Emits>();
 
-const batchApprovalFormRef = ref<InstanceType<typeof BkForm> & FormMethod>();
+const batchApprovalFormRef = ref<InstanceType<typeof Form> & FormMethod>();
 const approvalColumns = shallowRef([
   {
     title: t('蓝鲸应用ID'),

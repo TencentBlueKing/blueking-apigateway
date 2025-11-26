@@ -262,7 +262,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from 'lodash-es';
-import { Message } from 'bkui-vue';
+import { Form, Message } from 'bkui-vue';
 import { useAccessLog } from '@/stores';
 import {
   type IComponentItem,
@@ -316,7 +316,7 @@ const emits = defineEmits<Emits>();
 const accessLogStore = useAccessLog();
 const { t } = useI18n();
 
-const componentFormRef = ref<InstanceType<typeof BkForm> & FormMethod>();
+const componentFormRef = ref<InstanceType<typeof Form> & FormMethod>();
 const configRef = ref<InstanceType<typeof RenderConfig> & { getData: () => void }>();
 const submitLoading = ref(false);
 const methodList = ref(accessLogStore.methodList);

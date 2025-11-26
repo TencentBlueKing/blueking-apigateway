@@ -123,7 +123,7 @@
       quick-close
       ext-cls="plugin-add-slider"
       :width="pluginSliderWidth"
-      @closed="isExampleVisible = false"
+      @closed="handleClosePluginSlider"
     >
       <template #default>
         <BkSteps
@@ -320,6 +320,7 @@
             class="px-40px py-20px"
           >
             <PluginInfo
+              ref="pluginInfoRef"
               v-model:show-example="isExampleVisible"
               :cur-plugin="curChoosePlugin"
               :scope-info="curScopeInfo"
@@ -360,11 +361,12 @@
       quick-close
       ext-cls="plugin-add-slider"
       :width="pluginSliderWidth"
-      @closed="isExampleVisible = false"
+      @closed="handleClosePluginSlider"
     >
       <template #default>
         <div class="px-40px py-20px">
           <PluginInfo
+            ref="pluginInfoRef"
             v-model:show-example="isExampleVisible"
             :cur-plugin="curChoosePlugin"
             :scope-info="curScopeInfo"
@@ -427,6 +429,7 @@ const stageStore = useStage();
 // 网关id
 const gatewayId = useRouteParams('id', 0, { transform: Number });
 
+const pluginInfoRef = ref<InstanceType<typeof PluginInfo>>(null);
 const scopeType = ref('');
 const scopeId = ref(-1);
 const isBindingListLoading = ref(false);
@@ -634,6 +637,7 @@ const handleEditPlugin = async (item: any) => {
   );
   curChoosePlugin.value = curEditItem;
   isEditVisible.value = true;
+  pluginInfoRef.value?.setPluginInfo(curEditItem);
 };
 
 // 删除插件
@@ -804,6 +808,11 @@ const handelNext = () => {
 // 取消添加
 const handleCancel = () => {
   resetData();
+};
+
+const handleClosePluginSlider = () => {
+  isExampleVisible.value = false;
+  pluginInfoRef.value?.clearValidate();
 };
 
 const updateTableEmptyConfig = () => {
