@@ -18,7 +18,6 @@
 import logging
 from typing import Tuple
 
-from apigateway.controller.constants import DELETE_PUBLISH_ID
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.registry.etcd import EtcdRegistry
 from apigateway.controller.release_logger import ReleaseProcedureLogger
@@ -180,18 +179,20 @@ class GatewayResourceDistributor(BaseDistributor):
             publish_id=publish_id,
         )
 
+        # 2025-11-26 注释掉，下架和删除一视同仁，都 删掉路径 + 一个 release + 一个 detect route
+        # 由 operator 根据 publish_id 决定是下架还是删除，是否彻底删除
         # 删除所有相关数据
-        if publish_id == DELETE_PUBLISH_ID:
-            try:
-                with procedure_logger.step("delete gateway resources from etcd by key_prefix(delete_publish_id)"):
-                    registry.delete_resources_by_key_prefix()
+        # if publish_id == DELETE_PUBLISH_ID:
+        #     try:
+        #         with procedure_logger.step("delete gateway resources from etcd by key_prefix(delete_publish_id)"):
+        #             registry.delete_resources_by_key_prefix()
 
-            except Exception as e:  # pylint: disable=broad-except
-                fail_msg = f"revoke gateway resources delete resources from etcd failed: {type(e).__name__}: {str(e)}"
-                logger.exception(fail_msg)
-                procedure_logger.exception(fail_msg)
-                return False, fail_msg
-            return True, "ok"
+        #     except Exception as e:  # pylint: disable=broad-except
+        #         fail_msg = f"revoke gateway resources delete resources from etcd failed: {type(e).__name__}: {str(e)}"
+        #         logger.exception(fail_msg)
+        #         procedure_logger.exception(fail_msg)
+        #         return False, fail_msg
+        #     return True, "ok"
 
         transformer = GatewayApisixResourceTransformer(
             release=self.release,
