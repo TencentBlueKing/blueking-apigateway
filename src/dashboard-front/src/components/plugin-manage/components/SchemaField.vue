@@ -79,7 +79,7 @@ const componentInfo = computed(() => {
 const componentProps = computed(() => {
   const compProps: Record<string, any> = {
     disabled,
-    placeholder: schema.title || `${t('请输入')}${schema.title ?? ''}`,
+    placeholder: t('请输入{inputValue}', { inputValue: schema.title ?? '' }),
     routeMode,
   };
 

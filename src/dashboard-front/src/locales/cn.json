@@ -2053,6 +2053,7 @@
   "后端服务ID": "后端服务ID",
   "请输入后端服务ID": "请输入后端服务ID",
   "请输入{inputValue}": "请输入{inputValue}",
+  "{inputValue}不应少于{count}个字符": "{inputValue}不应少于{count}个字符",
   "{inputKey}存在重复项": "'{inputKey}' 存在重复项",
   "{ipTitle}格式不符合IPv4/CIDR或IPv6/CIDR规范": "{ipTitle}格式不符合IPv4/CIDR或IPv6/CIDR规范"
 }
