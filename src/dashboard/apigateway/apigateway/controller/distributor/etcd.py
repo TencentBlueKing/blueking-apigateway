@@ -204,7 +204,7 @@ class GatewayResourceDistributor(BaseDistributor):
             with procedure_logger.step(f"delete gateway resources from etcd by key_prefix({registry.key_prefix})"):
                 registry.delete_resources_by_key_prefix()
 
-                # 删除资源后需要同步虚拟路由到 etcd
+                # 删除资源后需要同步 _release and detect route 到 etcd
                 transformer.transform()
                 resources = list(transformer.get_transformed_resources())
                 with procedure_logger.step(f"sync gateway version resources(count={len(resources)}) to etcd"):
