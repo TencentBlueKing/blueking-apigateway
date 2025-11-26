@@ -150,9 +150,16 @@ class TestGatewayResourceDistributor:
         mock_release.gateway.name = "test-gateway"
         mock_release.stage = mocker.Mock()
         mock_release.stage.name = "prod"
+        mock_release.resource_version = mocker.Mock()
+        mock_release.resource_version.version = "1.0.0"
 
+        # mock_registry = mocker.patch("apigateway.controller.distributor.etcd.EtcdRegistry")
+        # mock_registry_instance = mock_registry.return_value
         mock_registry = mocker.patch("apigateway.controller.distributor.etcd.EtcdRegistry")
         mock_registry_instance = mock_registry.return_value
+        mock_registry_instance.sync_resources_by_key_prefix.return_value = []
+
+        mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
 
         distributor = GatewayResourceDistributor(mock_release)
         success, message = distributor.revoke(release_task_id="test-task-id", publish_id=DELETE_PUBLISH_ID)
