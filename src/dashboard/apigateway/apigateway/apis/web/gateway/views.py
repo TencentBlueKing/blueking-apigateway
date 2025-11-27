@@ -29,6 +29,7 @@ from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.gateway import GatewayAppBindingHandler, GatewayHandler, GatewayRelatedAppHandler
 from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.biz.release import ReleaseHandler
 from apigateway.common.constants import UserAuthTypeEnum
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
@@ -49,8 +50,9 @@ from apigateway.core.constants import (
     GatewayStatusEnum,
     ProgrammableGatewayLanguageEnum,
     PublishSourceEnum,
+    ReleaseHistoryStatusEnum,
 )
-from apigateway.core.models import Gateway
+from apigateway.core.models import Gateway, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.git import check_git_credentials
@@ -62,6 +64,7 @@ from .serializers import (
     GatewayListInputSLZ,
     GatewayListOutputSLZ,
     GatewayRetrieveOutputSLZ,
+    GatewayStagePublishCheckOutputSLZ,
     GatewayTenantAppListOutputSLZ,
     GatewayUpdateInputSLZ,
     GatewayUpdateStatusInputSLZ,
@@ -473,3 +476,32 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
             }
         )
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="网关环境发布检查",
+        responses={status.HTTP_200_OK: GatewayStagePublishCheckOutputSLZ()},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+class GatewayStagePublishCheckApi(generics.RetrieveAPIView):
+    queryset = Gateway.objects.all()
+    serializer_class = GatewayStagePublishCheckOutputSLZ
+    lookup_url_kwarg = "gateway_id"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        stage_ids = Stage.objects.filter(gateway_id=instance.id).values_list("id", flat=True)
+        stage_publish_status = ReleaseHandler.batch_get_stage_release_status(stage_ids)
+
+        data = {"has_stage_publish": False}
+        for state in stage_publish_status.values():
+            # 是否有环境正在发布
+            if state["status"] == ReleaseHistoryStatusEnum.DOING.value:
+                data["has_stage_publish"] = True
+                break
+
+        return OKJsonResponse(data=data)

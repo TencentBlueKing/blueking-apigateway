@@ -30,6 +30,11 @@ urlpatterns = [
                 path("status/", views.GatewayUpdateStatusApi.as_view(), name="gateways.update_status"),
                 path("tenant-apps/", views.GatewayTenantAppListApi.as_view(), name="gateway.tenant.apps"),
                 path("dev-guideline/", views.GatewayDevGuidelineRetrieveApi.as_view(), name="gateways.dev_guideline"),
+                path(
+                    "stage-publish-check/",
+                    views.GatewayStagePublishCheckApi.as_view(),
+                    name="gateways.stage_publish_check",
+                ),
             ]
         ),
     ),
