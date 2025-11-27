@@ -1,3 +1,20 @@
+/*
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) 2025 Tencent. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://opensource.org/licenses/MIT
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
+ */
 <template>
   <BkForm
     ref="formRef"
@@ -59,13 +76,6 @@ const emit = defineEmits<IEmits>();
 
 const { t } = useI18n();
 
-// IPv4 CIDR 正则
-const ipv4CidrRegex = /^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}(\/([0-9]|[12]\d|3[0-2]))?$/;
-
-// IPv6 CIDR 正则
-const ipv6CidrRegex
-  = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))(\/([0-9]|[1-9]\d|1[01]\d|12[0-8]))?$/;
-
 const formRef = ref<InstanceType<typeof Form> | null>(null);
 
 const schemaFieldRef = ref<InstanceType<typeof SchemaField> | null>(null);
@@ -93,15 +103,6 @@ const formRules = computed(() => {
       trigger: 'change',
       validator: (value: string) => {
         return !!value?.trim();
-      },
-    },
-    // 格式校验（IPv4/CIDR 或 IPv6/CIDR）
-    {
-      message: t('{ipTitle}格式不符合IPv4/CIDR或IPv6/CIDR规范', { ipTitle: schemaTitle }),
-      trigger: 'change',
-      validator: (value: string) => {
-        if (!value?.trim()) return true;
-        return ipv4CidrRegex.test(value) || ipv6CidrRegex.test(value);
       },
     },
   ];
