@@ -2097,10 +2097,9 @@
   "HTTP 响应码":"HTTP response code",
   "需要符合规则 (\\\\\\$[0-9a-zA-Z_]+)|\\$\\{([0-9a-zA-Z_]+)\\}|\\$([0-9a-zA-Z_]+)|(\\$|[^$\\\\]+)":"Must matches regular expression (\\\\\\$[0-9a-zA-Z_]+)|\\$\\{([0-9a-zA-Z_]+)\\}|\\$([0-9a-zA-Z_]+)|(\\$|[^$\\\\]+)",
   "必须是介于 200 到 599 的正整数": "Must be integer between 200 and 599",
-  "后端服务ID": "Backend service id",
-  "请输入后端服务ID": "Please input backend service id",
   "请输入{inputValue}": "Please input {inputValue}",
   "{inputKey}存在重复项": "'{inputKey}' has duplicate entries",
   "{inputValue}不应少于{count}个字符": "{inputValue} should not be less than {count} characters",
-  "{ipTitle}格式不符合IPv4/CIDR或IPv6/CIDR规范": "{ipTitle} format does not comply with the IPv4/CIDR or IPv6/CIDR specifications"
+  "{ipTitle}格式不符合IPv4/CIDR或IPv6/CIDR规范": "{ipTitle} format does not comply with the IPv4/CIDR or IPv6/CIDR specifications",
+  "需要至少填写一个用户": "Input at least one user"
 }
