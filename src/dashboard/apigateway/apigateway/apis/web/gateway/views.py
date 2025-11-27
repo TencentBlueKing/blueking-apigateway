@@ -63,8 +63,8 @@ from .serializers import (
     GatewayDevGuidelineOutputSLZ,
     GatewayListInputSLZ,
     GatewayListOutputSLZ,
+    GatewayReleasingStatusOutputSLZ,
     GatewayRetrieveOutputSLZ,
-    GatewayStagePublishCheckOutputSLZ,
     GatewayTenantAppListOutputSLZ,
     GatewayUpdateInputSLZ,
     GatewayUpdateStatusInputSLZ,
@@ -481,14 +481,14 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="网关环境发布检查",
-        responses={status.HTTP_200_OK: GatewayStagePublishCheckOutputSLZ()},
+        operation_description="网关环境发布状态",
+        responses={status.HTTP_200_OK: GatewayReleasingStatusOutputSLZ()},
         tags=["WebAPI.Gateway"],
     ),
 )
-class GatewayStagePublishCheckApi(generics.RetrieveAPIView):
+class GatewayReleasingStatusApi(generics.RetrieveAPIView):
     queryset = Gateway.objects.all()
-    serializer_class = GatewayStagePublishCheckOutputSLZ
+    serializer_class = GatewayReleasingStatusOutputSLZ
     lookup_url_kwarg = "gateway_id"
 
     def retrieve(self, request, *args, **kwargs):
@@ -497,11 +497,11 @@ class GatewayStagePublishCheckApi(generics.RetrieveAPIView):
         stage_ids = Stage.objects.filter(gateway_id=instance.id).values_list("id", flat=True)
         stage_publish_status = ReleaseHandler.batch_get_stage_release_status(stage_ids)
 
-        data = {"has_stage_publish": False}
+        data = {"is_releasing": False}
         for state in stage_publish_status.values():
             # 是否有环境正在发布
             if state["status"] == ReleaseHistoryStatusEnum.DOING.value:
-                data["has_stage_publish"] = True
+                data["is_releasing"] = True
                 break
 
         return OKJsonResponse(data=data)
