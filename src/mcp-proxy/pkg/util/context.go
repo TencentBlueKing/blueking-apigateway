@@ -21,6 +21,7 @@ package util
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -132,6 +133,9 @@ func SetBkApiAllowedHeaders(c *gin.Context, allowedHeaders string) {
 		}
 		allowedHeadersMap[header] = c.Request.Header.Get(header)
 	}
+	// 默认添加 mcp-server 相关请求头
+	allowedHeadersMap[constant.BkApiMCPServerIDKey] = fmt.Sprintf("%d", GetMCPServerID(c))
+	allowedHeadersMap[constant.BkApiMCPServerNameKey] = fmt.Sprintf("%d", GetGatewayID(c))
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BkApiAllowedHeaders,
 		allowedHeadersMap))
 }
