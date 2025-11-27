@@ -50,7 +50,7 @@ from apigateway.core.constants import (
     ProgrammableGatewayLanguageEnum,
     PublishSourceEnum,
 )
-from apigateway.core.models import Gateway
+from apigateway.core.models import Gateway, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.git import check_git_credentials
@@ -329,6 +329,18 @@ class GatewayRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         # 网关为“停用”状态，才可以删除
         if instance.is_active:
             raise error_codes.FAILED_PRECONDITION.format(_("请先停用网关，然后再删除。"), replace=True)
+
+        # trigger gateway delete publish, delete all stages of the gateway, is sync=True because we need to delete the stages first, otherwise the data in database been deleted and the async task will failed
+        stage_ids = Stage.objects.filter(gateway_id=instance_id).values_list("id", flat=True)
+        for stage_id in stage_ids:
+            trigger_gateway_publish(
+                PublishSourceEnum.GATEWAY_DELETE,
+                request.user.username,
+                instance_id,
+                stage_id,
+                is_sync=True,
+                user_credentials=None,
+            )
 
         GatewayHandler.delete_gateway(instance_id)
 
