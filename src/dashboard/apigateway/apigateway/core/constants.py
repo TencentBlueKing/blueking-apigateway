@@ -113,6 +113,7 @@ class PublishSourceEnum(StructuredEnum):
     # gateway
     GATEWAY_ENABLE = EnumField("gateway_enable", "网关启用")
     GATEWAY_DISABLE = EnumField("gateway_disable", "网关停用")
+    GATEWAY_DELETE = EnumField("gateway_delete", "网关删除")
 
     # version
     VERSION_PUBLISH = EnumField("version_publish", "版本发布")
@@ -156,6 +157,8 @@ PublishSourceTriggerPublishTypeMapping = {
     PublishSourceEnum.STAGE_DISABLE: TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE,
     # 删除发布
     PublishSourceEnum.STAGE_DELETE: TriggerPublishTypeEnum.TRIGGER_REVOKE_DELETE_RELEASE,
+    # 删除网关
+    PublishSourceEnum.GATEWAY_DELETE: TriggerPublishTypeEnum.TRIGGER_REVOKE_DELETE_RELEASE,
 }
 
 
