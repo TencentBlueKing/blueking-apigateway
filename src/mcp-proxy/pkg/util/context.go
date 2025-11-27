@@ -72,6 +72,23 @@ func SetMCPServerID(c *gin.Context, mcpServerID int) {
 	}
 }
 
+// SetMCPServerName ...
+func SetMCPServerName(c *gin.Context, mcpServerName string) {
+	c.Set(string(constant.MCPServerName), mcpServerName)
+	if c.Request != nil {
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.MCPServerName, mcpServerName))
+	}
+}
+
+// GetMCPServerName ...
+func GetMCPServerName(c *gin.Context) string {
+	mcpServerName, ok := c.Get(string(constant.MCPServerName))
+	if !ok {
+		return ""
+	}
+	return mcpServerName.(string)
+}
+
 // GetMCPServerID ...
 func GetMCPServerID(c *gin.Context) int {
 	mcpServerID, ok := c.Get(string(constant.MCPServerID))
@@ -135,7 +152,7 @@ func SetBkApiAllowedHeaders(c *gin.Context, allowedHeaders string) {
 	}
 	// 默认添加 mcp-server 相关请求头
 	allowedHeadersMap[constant.BkApiMCPServerIDKey] = fmt.Sprintf("%d", GetMCPServerID(c))
-	allowedHeadersMap[constant.BkApiMCPServerNameKey] = fmt.Sprintf("%d", GetGatewayID(c))
+	allowedHeadersMap[constant.BkApiMCPServerNameKey] = GetMCPServerName(c)
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BkApiAllowedHeaders,
 		allowedHeadersMap))
 }

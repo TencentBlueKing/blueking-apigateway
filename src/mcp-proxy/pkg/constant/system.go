@@ -50,6 +50,7 @@ const (
 	BkUsername          CtxKey = "bk_username"
 	BkGatewayInnerJWT   CtxKey = "bk_api_inner_jwt"
 	MCPServerID         CtxKey = "mcp_server_id"
+	MCPServerName       CtxKey = "mcp_server_name"
 	GatewayID           CtxKey = "gateway_id"
 	BkApiTimeout        CtxKey = "bk_api_timeout"
 	BkApiAllowedHeaders CtxKey = "bk_api_allowed_headers"
