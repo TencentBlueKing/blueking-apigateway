@@ -123,7 +123,7 @@ class ServiceConvertor(GatewayResourceConvertor):
             # FIXME: 如何处理 http/https 协议
             backend = Backend.objects.get(id=backend_id)
             backend_name = backend.name
-            backend_desc = backend.description
+            # backend_desc = backend.description
 
             # currently, only add one plugin for service of per backend
             # other plugins are shared by stage, they will be merged on operator
