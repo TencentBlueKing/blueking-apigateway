@@ -166,7 +166,7 @@
             :data="schemaFormData"
           />
         </template>
-        <template v-else-if="isCustomPlugin">
+        <template v-else-if="isDynamicFormPlugin">
           <component
             :is="pluginFormCompMap[choosePlugin as keyof typeof pluginFormCompMap]"
             ref="formRef"
@@ -276,6 +276,7 @@ import BkAccessTokenSource from '@/components/plugin-form/bk-access-token-source
 import BkIpRestriction from '@/components/plugin-form/bk-ip-restriction/Index.vue';
 import BkHeaderRewrite from '@/components/plugin-form/bk-header-rewrite/Index.vue';
 import BkRateLimit from '@/components/plugin-form/bk-rate-limit/Index.vue';
+import BkCors from '@/components/plugin-form/bk-cors/Index.vue';
 import Redirect from '@/components/plugin-form/redirect/Index.vue';
 import BkMock from '@/components/plugin-form/bk-mock/Index.vue';
 import ResponseRewrite from '@/components/plugin-form/response-rewrite/Index.vue';
@@ -365,10 +366,11 @@ const pluginFormCompMap = {
   'request-validation': RequestValidate,
   'api-breaker': ApiBreaker,
   'bk-rate-limit': BkRateLimit,
+  'bk-cors': BkCors,
 };
 
-const isCustomPlugin = computed(() => {
-  return ['bk-ip-restriction', 'bk-header-rewrite', 'bk-rate-limit'].includes(choosePlugin.value);
+const isDynamicFormPlugin = computed(() => {
+  return ['bk-cors', 'bk-ip-restriction', 'bk-header-rewrite', 'bk-rate-limit'].includes(choosePlugin.value);
 });
 
 const isBound = computed(() => {
