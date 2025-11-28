@@ -11,7 +11,7 @@ export type ComponentItem = | Component | (() => {
 });
 
 // Schema 字段类型
-export type SchemaType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'integer' | 'bk-header-rewrite' | 'bk-rate-limit';
+export type SchemaType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'integer' | 'bk-cors' | 'bk-header-rewrite' | 'bk-rate-limit';
 
 // 组件映射配置
 export type ComponentMap = Record<SchemaType, Component>;
@@ -36,10 +36,12 @@ export const defaultComponentMap: ComponentMap = {
   }),
   'object': defineAsyncComponent(() => import('@/components/plugin-manage/components/SchemaObjectField.vue')),
   'array': defineAsyncComponent(() => import('@/components/plugin-manage/components/SchemaObjectField.vue')),
+  'bk-cors': defineAsyncComponent(() => import('@/components/plugin-manage/components/CustomAddDelForm.vue')),
   'bk-header-rewrite': defineAsyncComponent(() => import('@/components/plugin-manage/components/CustomAddDelForm.vue')),
   'bk-rate-limit': defineAsyncComponent(() => import('@/components/plugin-form/bk-rate-limit/components/RateLimitForm.vue')),
 };
 
+// 以下就是Schema各种插件配置声明
 export interface ISchema {
   'type': 'string' | 'number' | 'object' | 'array' | 'integer' | 'boolean'
   'format'?: 'date' | 'time' | 'datetime' | 'select' | 'radio' | 'email' | 'url' | 'ipv4' | 'ipv6'
@@ -69,6 +71,7 @@ export interface ISchema {
       }
     }
   }
+  'required'?: string[]
   'ui:group'?: {
     showTitle?: boolean
     type?: string
@@ -78,14 +81,14 @@ export interface ISchema {
     name: string
     datasource?: {
       label: string
-      value: any
+      value: string
     }[]
     min?: number
     clearable?: boolean
   }
   'ui:rules'?: string[]
   'ui:props'?: { labelWidth?: number }
-  'default'?: any
+  'default'?: Record<string, unknown>
 }
 
 export interface IHeaderWriteFormData {
@@ -108,4 +111,14 @@ export interface IRateLimitFormData {
       bk_app_code: string
     }>
   }
+}
+
+export interface ICorsFormData {
+  allow_origins_by_regex: string[]
+  allow_origins: string
+  allow_methods: string
+  allow_headers: string
+  expose_headers: string
+  max_age: number
+  allow_credential: boolean
 }
