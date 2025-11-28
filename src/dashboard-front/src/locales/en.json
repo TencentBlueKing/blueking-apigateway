@@ -2101,5 +2101,6 @@
   "{inputKey}存在重复项": "'{inputKey}' has duplicate entries",
   "{inputValue}不应少于{count}个字符": "{inputValue} should not be less than {count} characters",
   "{ipTitle}格式不符合IPv4/CIDR或IPv6/CIDR规范": "{ipTitle} format does not comply with the IPv4/CIDR or IPv6/CIDR specifications",
-  "需要至少填写一个用户": "Input at least one user"
+  "需要至少填写一个用户": "Input at least one user",
+  "格式错误, 需匹配正则 \"^[\\w-]+$\"": "Format error, need to match regular \"^[\\w-]+$\""
 }

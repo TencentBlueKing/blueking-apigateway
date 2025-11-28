@@ -152,7 +152,12 @@
             'bk-user-restriction',
             'bk-request-body-limit',
             'bk-access-token-source',
-            'redirect'
+            'redirect',
+            'bk-mock',
+            'response-rewrite',
+            'fault-injection',
+            'request-validation',
+            'api-breaker',
           ].includes(choosePlugin)"
         >
           <Component
@@ -270,6 +275,11 @@ import BkAccessTokenSource from '@/components/plugin-form/bk-access-token-source
 import BkIpRestriction from '@/components/plugin-form/bk-ip-restriction/Index.vue';
 import BkHeaderRewrite from '@/components/plugin-form/bk-header-rewrite/Index.vue';
 import Redirect from '@/components/plugin-form/redirect/Index.vue';
+import BkMock from '@/components/plugin-form/bk-mock/Index.vue';
+import ResponseRewrite from '@/components/plugin-form/response-rewrite/Index.vue';
+import FaultInjection from '@/components/plugin-form/fault-injection/Index.vue';
+import RequestValidate from '@/components/plugin-form/request-validation/Index.vue';
+import ApiBreaker from '@/components/plugin-form/api-breaker/Index.vue';
 
 interface IProps {
   curPlugin: any
@@ -347,6 +357,11 @@ const pluginFormCompMap = {
   'redirect': Redirect,
   'bk-ip-restriction': BkIpRestriction,
   'bk-header-rewrite': BkHeaderRewrite,
+  'bk-mock': BkMock,
+  'response-rewrite': ResponseRewrite,
+  'fault-injection': FaultInjection,
+  'request-validation': RequestValidate,
+  'api-breaker': ApiBreaker,
 };
 
 const isCustomPlugin = computed(() => {
@@ -426,6 +441,11 @@ const handleAdd = async () => {
       'bk-request-body-limit',
       'bk-access-token-source',
       'redirect',
+      'bk-mock',
+      'response-rewrite',
+      'fault-injection',
+      'request-validation',
+      'api-breaker',
     ].includes(choosePlugin.value)) {
       const formValue = await formRef.value!.getValue();
       Object.assign(data, { yaml: json2Yaml(JSON.stringify(formValue)).data });

@@ -2101,5 +2101,6 @@
   "{inputValue}不应少于{count}个字符": "{inputValue}不应少于{count}个字符",
   "{inputKey}存在重复项": "'{inputKey}' 存在重复项",
   "{ipTitle}格式不符合IPv4/CIDR或IPv6/CIDR规范": "{ipTitle}格式不符合IPv4/CIDR或IPv6/CIDR规范",
-  "需要至少填写一个用户": "需要至少填写一个用户"
+  "需要至少填写一个用户": "需要至少填写一个用户",
+  "格式错误, 需匹配正则 \"^[\\w-]+$\"": "格式错误, 需匹配正则 \"^[\\w-]+$\""
 }
