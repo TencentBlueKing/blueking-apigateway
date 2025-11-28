@@ -80,6 +80,8 @@ func logContextFields(c *gin.Context) []zap.Field {
 		}
 		// set mcp_id to ctx
 		util.SetMCPServerID(c, mcp.ID)
+		// set mcp_name to ctx
+		util.SetMCPServerName(c, mcpName)
 		// set gateway_id to ctx
 		util.SetGatewayID(c, mcp.GatewayID)
 	}

@@ -34,6 +34,11 @@ const (
 
 	// BkApiAllowedHeadersKey is a key to set the allowed headers in header
 	BkApiAllowedHeadersKey = "X-Bkapi-Allowed-Headers"
+
+	// BkApiMCPServerIDKey is a key to set the mcp server id in header
+	BkApiMCPServerIDKey = "X-Bkapi-Mcp-Server-Id"
+	// BkApiMCPServerNameKey is a key to set the mcp server name in header
+	BkApiMCPServerNameKey = "X-Bkapi-Mcp-Server-Name"
 )
 
 // CtxKey ...
@@ -45,6 +50,7 @@ const (
 	BkUsername          CtxKey = "bk_username"
 	BkGatewayInnerJWT   CtxKey = "bk_api_inner_jwt"
 	MCPServerID         CtxKey = "mcp_server_id"
+	MCPServerName       CtxKey = "mcp_server_name"
 	GatewayID           CtxKey = "gateway_id"
 	BkApiTimeout        CtxKey = "bk_api_timeout"
 	BkApiAllowedHeaders CtxKey = "bk_api_allowed_headers"
