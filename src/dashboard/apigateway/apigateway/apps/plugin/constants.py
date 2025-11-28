@@ -42,6 +42,7 @@ class PluginTypeCodeEnum(StructuredEnum):
     BK_USER_RESTRICTION = EnumField("bk-user-restriction", label=_("用户访问限制"))
     BK_LEGACY_INVALID_PARAMS = EnumField("bk-legacy-invalid-params", label=_("旧的无效参数兼容"))
     PROXY_CACHE = EnumField("proxy-cache", label=_("代理缓存"))
+    AI_PROXY = EnumField("ai-proxy", label=_("AI 代理"))
 
 
 class PluginTypeScopeEnum(StructuredEnum):
