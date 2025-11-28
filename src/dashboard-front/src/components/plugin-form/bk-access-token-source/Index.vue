@@ -37,7 +37,7 @@ const form = ref<IFormModel>({ source: 'bearer' });
 
 watch(() => data, () => {
   if (data) {
-    form.value = { ...data };
+    form.value.source = data.source || 'bearer';
   }
 }, {
   immediate: true,
