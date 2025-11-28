@@ -585,7 +585,7 @@ const handleOperate = (operate: string) => {
       emit('on-update-plugin');
       break;
     case 'editSuccess':
-      getBindingDetails();
+      getBindingDetails(true);
       isEditVisible.value = false;
       emit('on-update-plugin');
       break;
@@ -626,6 +626,7 @@ const handleEditPlugin = async (item: any) => {
     return;
   }
   curType.value = 'edit';
+  await getBindingDetails(false);
   const { code, config_id } = item;
   const curEditItem = curBindingPlugins.value.find((pluginItem: { code: string }) => pluginItem.code === code);
   curEditPlugin.value = await getPluginConfig(
@@ -718,7 +719,7 @@ function init() {
   };
 
   if (!scopeId.value) return;
-  getBindingDetails();
+  getBindingDetails(true);
   getPluginListDetails(params);
 }
 
@@ -731,9 +732,9 @@ const resetData = () => {
 };
 
 // 获取已绑定插件列表
-async function getBindingDetails() {
+async function getBindingDetails(isLoading = false) {
   try {
-    isBindingListLoading.value = true;
+    isBindingListLoading.value = isLoading;
     // 当前环境或资源绑定的插件
     curBindingPlugins.value = await getScopeBindingPluginList(gatewayId.value, scopeType.value, scopeId.value);
   }

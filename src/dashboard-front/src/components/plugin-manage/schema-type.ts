@@ -11,7 +11,7 @@ export type ComponentItem = | Component | (() => {
 });
 
 // Schema 字段类型
-export type SchemaType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'integer' | 'bk-header-rewrite';
+export type SchemaType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'integer' | 'bk-header-rewrite' | 'bk-rate-limit';
 
 // 组件映射配置
 export type ComponentMap = Record<SchemaType, Component>;
@@ -37,6 +37,7 @@ export const defaultComponentMap: ComponentMap = {
   'object': defineAsyncComponent(() => import('@/components/plugin-manage/components/SchemaObjectField.vue')),
   'array': defineAsyncComponent(() => import('@/components/plugin-manage/components/SchemaObjectField.vue')),
   'bk-header-rewrite': defineAsyncComponent(() => import('@/components/plugin-manage/components/CustomAddDelForm.vue')),
+  'bk-rate-limit': defineAsyncComponent(() => import('@/components/plugin-form/bk-rate-limit/components/RateLimitForm.vue')),
 };
 
 export interface ISchema {
@@ -58,6 +59,7 @@ export interface ISchema {
   'minLength'?: number
   'maxLength'?: number
   'pattern'?: string
+  'properties'?: Record<string, ISchema>
   'items'?: {
     properties?: {
       [key: string]: {
@@ -67,6 +69,23 @@ export interface ISchema {
       }
     }
   }
+  'ui:group'?: {
+    showTitle?: boolean
+    type?: string
+    style?: Record<string, string>
+  }
+  'ui:component'?: {
+    name: string
+    datasource?: {
+      label: string
+      value: any
+    }[]
+    min?: number
+    clearable?: boolean
+  }
+  'ui:rules'?: string[]
+  'ui:props'?: { labelWidth?: number }
+  'default'?: any
 }
 
 export interface IHeaderWriteFormData {
@@ -75,4 +94,18 @@ export interface IHeaderWriteFormData {
     value: string
   }>
   remove?: Array<{ key: string }>
+}
+
+export interface IRateLimitFormData {
+  rates: {
+    default: {
+      tokens: number
+      period: number
+    }
+    specials: Array<{
+      tokens: number
+      period: number
+      bk_app_code: string
+    }>
+  }
 }

@@ -64,10 +64,10 @@ const {
   disabled = false,
 } = defineProps<IProps>();
 
-const DEFAULT_FORM_DATA: IHeaderWriteFormData = {
+const DEFAULT_FORM_DATA: IHeaderWriteFormData = reactive({
   set: [],
   remove: [],
-};
+});
 
 const formRef = ref<InstanceType<typeof Form> | null>(null);
 
@@ -90,18 +90,6 @@ const formRules = computed(() => ({
     },
   ],
 }));
-
-watch(
-  () => formData.value,
-  (newVal) => {
-    if (isObject(newVal) && isEmpty(newVal)) {
-      nextTick(() => {
-        formData.value = { ...DEFAULT_FORM_DATA };
-      });
-    }
-  },
-  { immediate: true },
-);
 
 const handleAddItem = (row) => {
   const typeMap = {
@@ -139,6 +127,17 @@ const validate = async () => {
 const clearValidate = () => {
   return formRef.value?.clearValidate();
 };
+
+watch(
+  () => formData.value,
+  (newVal) => {
+    clearValidate();
+    if (isObject(newVal) && isEmpty(newVal)) {
+      formData.value = { ...DEFAULT_FORM_DATA };
+    }
+  },
+  { immediate: true },
+);
 
 defineExpose({
   validate,

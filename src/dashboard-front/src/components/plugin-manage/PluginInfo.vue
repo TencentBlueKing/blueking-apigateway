@@ -171,8 +171,9 @@
             :is="pluginFormCompMap[choosePlugin as keyof typeof pluginFormCompMap]"
             ref="formRef"
             v-model="schemaFormData"
-            :schema="formConfig.schema"
             :route-mode="choosePlugin"
+            :schema="formConfig.schema"
+            :layout="formConfig.layout"
           />
         </template>
         <BkSchemaForm
@@ -274,6 +275,7 @@ import BkRequestBodyLimit from '@/components/plugin-form/bk-request-body-limit/I
 import BkAccessTokenSource from '@/components/plugin-form/bk-access-token-source/Index.vue';
 import BkIpRestriction from '@/components/plugin-form/bk-ip-restriction/Index.vue';
 import BkHeaderRewrite from '@/components/plugin-form/bk-header-rewrite/Index.vue';
+import BkRateLimit from '@/components/plugin-form/bk-rate-limit/Index.vue';
 import Redirect from '@/components/plugin-form/redirect/Index.vue';
 import BkMock from '@/components/plugin-form/bk-mock/Index.vue';
 import ResponseRewrite from '@/components/plugin-form/response-rewrite/Index.vue';
@@ -362,10 +364,11 @@ const pluginFormCompMap = {
   'fault-injection': FaultInjection,
   'request-validation': RequestValidate,
   'api-breaker': ApiBreaker,
+  'bk-rate-limit': BkRateLimit,
 };
 
 const isCustomPlugin = computed(() => {
-  return ['bk-ip-restriction', 'bk-header-rewrite'].includes(choosePlugin.value);
+  return ['bk-ip-restriction', 'bk-header-rewrite', 'bk-rate-limit'].includes(choosePlugin.value);
 });
 
 const isBound = computed(() => {
