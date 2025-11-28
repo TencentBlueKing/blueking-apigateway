@@ -314,6 +314,9 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 			Client:      client,
 			Reader: runtime.ClientResponseReaderFunc(
 				func(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
+					if response.Body() != nil {
+						defer response.Body().Close()
+					}
 					responseResult := map[string]any{
 						"status_code": response.Code(),
 						"request_id":  response.GetHeader(constant.BkGatewayRequestIDKey),
