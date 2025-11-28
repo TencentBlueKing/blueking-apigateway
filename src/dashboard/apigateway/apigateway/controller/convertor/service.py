@@ -154,10 +154,11 @@ class ServiceConvertor(GatewayResourceConvertor):
                         f"{self.gateway_name}.{self.stage_name}.{backend_name}",
                         100,
                     ),
-                    desc=truncate_string(
-                        f"[{self.stage_name}/{self.stage_id}, {backend_name}/{backend_id}] {backend_desc}",
-                        100,
-                    ),
+                    # NOTE: no desc for service, save memory
+                    # desc=truncate_string(
+                    #     f"[{self.stage_name}/{self.stage_id}, {backend_name}/{backend_id}] {backend_desc}",
+                    #     100,
+                    # ),
                     labels=labels,
                     plugins=plugins,
                     upstream=upstream,
