@@ -2103,5 +2103,11 @@
   "{inputValue}不应少于{count}个字符": "{inputValue} should not be less than {count} characters",
   "{ipTitle}格式不符合IPv4/CIDR或IPv6/CIDR规范": "{ipTitle} format does not comply with the IPv4/CIDR or IPv6/CIDR specifications",
   "需要至少填写一个用户": "Input at least one user",
-  "格式错误, 需匹配正则 \"^[\\w-]+$\"": "Format error, need to match regular \"^[\\w-]+$\""
+  "format_bk_header_rewrite_by_regex": "Allow letters, numbers, underscores (_), and hyphens (-)",
+  "format_bk_cors_allow_origins": "Allow *, **, null、 http://example.com URL format, multiple URLs separated by commas",
+  "format_bk_cors_allow_origins_by_regex": "Allow letters, numbers, basic symbols (-,:), special symbols ([], {'{}'}, (),., *,+,?, |); the beginning can contain ^, and the end can contain $",
+  "format_bk_cors_allow_origins_or_allow_origins_by_regex": "Allow uppercase and lowercase letters, numbers, basic symbols -,:, special symbols: [], {}, () , *,+? , |, the beginning can contain ^, and the end can contain$",
+  "format_bk_cors_allow_headers": "Allow *, * *, strings composed of letters, numbers, and hyphens (-), multiple of which can be separated by commas",
+  "format_bk_cors_allow_methods": "Allow * (match any individual method), * * (match all methods), comma separated list of valid methods (support: GET、POST、PUT、DELETE、PATCH、HEAD、OPTIONS、CONNECT、TRACE， For example, GET, POST, PUT)",
+  "format_bk_cors_allow_credential": "When allow_credential is open, the fields allow_origins, allow_methods, allow_headers, and expose_header cannot be set to"
 }

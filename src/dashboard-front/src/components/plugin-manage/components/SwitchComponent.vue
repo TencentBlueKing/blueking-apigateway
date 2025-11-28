@@ -23,10 +23,11 @@
     :required="required"
     :property="property"
   >
-    <BkInput
+    <BkSwitcher
       v-model="currentValue"
+      theme="primary"
       :disabled="disabled"
-      @input="handleInput"
+      @change="handleChange"
     />
   </BkFormItem>
 </template>
@@ -35,11 +36,11 @@
 interface IProps {
   property: string
   label?: string
-  value?: string
+  value?: boolean
   labelWidth?: number
   disabled?: boolean
   required?: boolean
-  rules: Array<{
+  rules?: Array<{
     required?: boolean
     message?: string
     trigger?: string
@@ -48,29 +49,28 @@ interface IProps {
 }
 
 interface IEmits {
-  (e: 'input', value: string): void
-  (e: 'update:value', value: string): void
+  (e: 'input', value: number): void
+  (e: 'update:value', value: number): void
 }
 
 const {
   label = '',
   labelWidth = 0,
-  value = '',
+  value = true,
   disabled = false,
   required = false,
+  rules = [],
 } = defineProps<IProps>();
 
 const emit = defineEmits<IEmits>();
 
-const currentValue = ref('');
+const currentValue = ref(value);
 
 watch(() => value, (newVal) => {
-  if (newVal) {
-    currentValue.value = newVal;
-  }
+  currentValue.value = newVal;
 }, { immediate: true });
 
-const handleInput = (val: string) => {
+const handleChange = (val: number) => {
   emit('input', val);
   emit('update:value', val);
 };

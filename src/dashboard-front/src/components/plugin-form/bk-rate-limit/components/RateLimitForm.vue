@@ -51,6 +51,7 @@
           :value="item['default']?.[prop] ?? item[prop]"
           :datasource="propSchema['ui:component']?.datasource"
           :min="propSchema['ui:component']?.min"
+          :max="propSchema['ui:component']?.max"
           :label-width="propSchema['ui:props']?.labelWidth"
           :required="propSchema['ui:rules']?.includes('required')"
           :property="`${isArrayType ? 'specials' : 'default'}[${index}].${prop}`"
@@ -79,11 +80,11 @@
 </template>
 
 <script setup lang="ts">
-import type { IRateLimitFormData, ISchema } from '@/components/plugin-manage/schema-type';
 import { getDuplicateKeys } from '@/utils/duplicateKeys';
-import InputNumberComponent from './InputNumberComponent.vue';
-import SelectComponent from './SelectComponent.vue';
-import InputComponent from './InputComponent.vue';
+import type { IRateLimitFormData, ISchema } from '@/components/plugin-manage/schema-type';
+import InputComponent from '@/components/plugin-manage/components/InputComponent.vue';
+import InputNumberComponent from '@/components/plugin-manage/components/InputNumberComponent.vue';
+import SelectComponent from '@/components/plugin-manage/components/SelectComponent.vue';
 
 interface IProps {
   schema?: ISchema
@@ -92,7 +93,7 @@ interface IProps {
 }
 
 interface IEmits {
-  (e: 'update:modelValue', value: any): void
+  (e: 'update:modelValue', value: string | number): void
   (e: 'add'): void
   (e: 'remove', index: number): void
 }
@@ -177,7 +178,7 @@ const renderFormatFormItem = (
       },
     },
     {
-      message: t('格式错误, 需匹配正则 \"^[\\w-]+$\"'),
+      message: t('format_bk_plugins_add_regex'),
       trigger: 'change',
       validator: () => {
         if (!['bk_app_code'].includes(name)) return true;
@@ -206,7 +207,7 @@ const renderFormatFormItem = (
   return results;
 };
 
-const handleInput = (index: number | string, prop: string, value: any) => {
+const handleInput = (index: number | string, prop: string, value: string | number) => {
   if (isArrayType.value) {
     // 数组场景：更新 specials 对应项
     const numIndex = typeof index === 'string' ? parseInt(index, 10) : index;
