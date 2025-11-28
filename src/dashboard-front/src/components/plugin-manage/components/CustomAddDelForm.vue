@@ -67,47 +67,6 @@
           />
         </div>
       </BkFormItem>
-
-      <!-- <BkFormItem
-        v-if="['remove'].includes(field.name)"
-        :label="field.title"
-        :property="field.name"
-        :description="field.description ?? ''"
-        >
-        <div
-        class="flex items-center flex-wrap"
-        :class="[
-        {
-        'pt-8px': !formData?.[field.name]?.length
-        },
-        ]"
-        >
-        <div
-        v-for="(item, index) in formData[field.name]"
-        :key="`remove-${index}`"
-        class="flex items-center mb-8px custom-plugin-form-item remove"
-        >
-        <BkFormItem
-        :property="`remove[${index}].key`"
-        :rules="renderFormatFormItem(field, item, displayKey)"
-        >
-        <BkInput
-        v-model="item.key"
-        :placeholder="renderInputProperty(field, displayKey)?.title"
-        :maxlength="renderInputProperty(field, displayKey)?.maxLength"
-        />
-        </BkFormItem>
-        <i
-        class="default-operate-btn mb-12px mr-10px apigateway-icon icon-ag-minus-circle-shape"
-        @click="() => handleRemoveItem(field, index)"
-        />
-        </div>
-        <i
-        class="default-operate-btn mb-20px apigateway-icon icon-ag-plus-circle-shape"
-        @click="handleAddItem(field)"
-        />
-        </div>
-        </BkFormItem> -->
     </template>
   </div>
 </template>
@@ -115,6 +74,7 @@
 <script setup lang="ts">
 import { isObject } from 'lodash-es';
 import type { IHeaderWriteFormData, ISchema } from '@/components/plugin-manage/schema-type';
+import { getDuplicateKeys } from '@/utils/duplicateKeys';
 
 interface IProps {
   disabled?: boolean
@@ -164,32 +124,18 @@ const renderFormItem = computed(() => {
   return [];
 });
 
-// 校验是否有重复的key
-const getDuplicateKeys = (arr: Array<{
-  key?: string
-  value?: string
-}>) => {
-  const keyMap = new Map();
-  const duplicates = new Set();
-  for (const item of arr) {
-    const { key } = item;
-    const count = (keyMap.get(key) || 0) + 1;
-    keyMap.set(key, count);
-    if (count > 1) {
-      duplicates.add(key);
-    }
-  }
-  return Array.from(duplicates);
-};
-
 const renderInputProperty = (row: ISchema, name: string) => {
   return row?.items?.properties?.[name];
 };
 
-const renderFormatFormItem = (row: ISchema, child: {
-  key?: string
-  value?: string
-}, name: string) => {
+const renderFormatFormItem = (
+  row: ISchema,
+  child: {
+    key?: string
+    value?: string
+  },
+  name: string,
+) => {
   const results = [
     {
       required: true,
@@ -209,7 +155,7 @@ const renderFormatFormItem = (row: ISchema, child: {
       message: t('{inputKey}存在重复项', { inputKey: child[name] }),
       trigger: 'change',
       validator: () => {
-        const duplicateList = getDuplicateKeys(formData.value?.[row.name]);
+        const duplicateList = getDuplicateKeys(formData.value?.[row.name], 'key');
         if ([displayKey].includes(name) && duplicateList?.includes(child[name])) {
           return false;
         }
