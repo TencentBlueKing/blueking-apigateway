@@ -84,38 +84,32 @@
             <div>
               <BkButton
                 v-if="basicInfoData.status > 0"
+                v-bk-tooltips="{ content: t('正在发布环境，请稍后再试'), disabled: !releasingStatus }"
                 class="deactivate-btn operate-btn"
+                :disabled="releasingStatus"
                 @click="() => handleOperate('enable')"
               >
                 {{ t('停用') }}
               </BkButton>
               <BkButton
                 v-else
+                v-bk-tooltips="{ content: t('正在发布环境，请稍后再试'), disabled: !releasingStatus }"
                 theme="primary"
                 class="operate-btn"
+                :disabled="releasingStatus"
                 @click="() => handleOperate('deactivate')"
               >
                 {{ t('立即启用') }}
               </BkButton>
             </div>
-            <template v-if="basicInfoData.status > 0">
-              <BkPopover :content="t('请先停用才可删除')">
-                <BkButton
-                  class="operate-btn"
-                  :disabled="basicInfoData.status > 0"
-                >
-                  {{ t('删除') }}
-                </BkButton>
-              </BkPopover>
-            </template>
-            <template v-else>
-              <BkButton
-                class="operate-btn"
-                @click="() => handleOperate('delete')"
-              >
-                {{ t('删除') }}
-              </BkButton>
-            </template>
+            <BkButton
+              v-bk-tooltips="{ content: t('请先停用才可删除'), disabled: basicInfoData.status <= 0 }"
+              class="operate-btn"
+              :disabled="basicInfoData.status > 0"
+              @click="() => handleOperate('delete')"
+            >
+              {{ t('删除') }}
+            </BkButton>
             <template v-if="basicInfoData.kind === 1">
               <span class="btn-line" />
               <BkButton
@@ -550,7 +544,6 @@
       :is-show="delApigwDialog.isShow"
       :title="t(`确认删除网关【{basicInfoDataName}】？`, { basicInfoDataName: basicInfoData.name })"
       :theme="'primary'"
-      :loading="delApigwDialog.loading"
       @closed="delApigwDialog.isShow = false"
     >
       <div class="ps-form">
@@ -566,6 +559,7 @@
         <BkButton
           theme="primary"
           :disabled="!formRemoveApigw"
+          :loading="delApigwDialog.loading"
           class="mr-8px"
           @click="handleDeleteApigw"
         >
@@ -608,6 +602,7 @@ import {
   deleteGateway,
   getGatewayDetail,
   getGuideDocs,
+  getReleasingStatus,
   patchGateway,
   putGatewayBasics,
   toggleStatus,
@@ -646,6 +641,7 @@ const createGatewayShow = ref(false);
 const isShowMarkdown = ref(false);
 const markdownHtml = ref('');
 const isShowApiDoc = ref(false);
+const releasingStatus = ref<boolean>(false);
 
 // 当前网关基本信息
 const basicInfoData = ref<BasicInfoType>({
@@ -741,19 +737,49 @@ const showGuide = async () => {
 };
 
 const handleDeleteApigw = async () => {
-  await deleteGateway(apigwId.value);
-  Message({
-    theme: 'success',
-    message: t('删除成功'),
-    width: 'auto',
-  });
-  delApigwDialog.value.isShow = false;
-  setTimeout(() => {
-    router.push({ name: 'Home' });
-    gatewayStore.clearCurrentGateway();
-    gatewayStore.setApigwId(0);
-    gatewayStore.setApigwName('');
-  }, 200);
+  try {
+    delApigwDialog.value.loading = true;
+    await deleteGateway(apigwId.value);
+    Message({
+      theme: 'success',
+      message: t('删除成功'),
+      width: 'auto',
+    });
+    delApigwDialog.value.isShow = false;
+    setTimeout(() => {
+      router.push({ name: 'Home' });
+      gatewayStore.clearCurrentGateway();
+      gatewayStore.setApigwId(0);
+      gatewayStore.setApigwName('');
+    }, 200);
+  }
+  catch (e) {
+    console.error(e);
+    Message({
+      theme: 'error',
+      message: t('删除失败'),
+      width: 'auto',
+    });
+  }
+  finally {
+    delApigwDialog.value.loading = false;
+  }
+};
+
+const getCurrentReleasingStatus = async () => {
+  const res = await getReleasingStatus(apigwId.value);
+  releasingStatus.value = res?.is_releasing;
+};
+
+let interval: number | null = null;
+const setIntervalReleasingStatus = () => {
+  interval = setInterval(async () => {
+    await getCurrentReleasingStatus();
+    if (!releasingStatus.value) {
+      clearInterval(interval as number);
+      interval = null;
+    }
+  }, 5000);
 };
 
 const handleChangePublic = async (value: boolean) => {
@@ -792,6 +818,17 @@ const handleChangeApigwStatus = async () => {
 
 const handleOperate = async (type: string) => {
   if (['enable', 'deactivate'].includes(type)) {
+    await getCurrentReleasingStatus();
+    if (releasingStatus.value) {
+      setIntervalReleasingStatus();
+      Message({
+        theme: 'warning',
+        message: t('正在发布环境，请稍后再试'),
+        width: 'auto',
+      });
+      return;
+    }
+
     let title = t('确认要启用网关？');
     let subTitle = '';
     if (basicInfoData.value.status > 0) {
