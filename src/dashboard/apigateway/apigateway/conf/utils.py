@@ -108,4 +108,32 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
         "PLUGIN_BK_RATE_LIMIT": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/rate-limit.md",
         # header-rewrite
         "PLUGIN_BK_HEADER_REWRITE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/header-rewrite.md",
+        # status-rewrite
+        "PLUGIN_BK_STATUS_REWRITE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/status-rewrite.md",
+        # mock
+        "PLUGIN_BK_MOCK": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/mock.md",
+        # api-breaker
+        "PLUGIN_API_BREAKER": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/api-breaker.md",
+        # request-validation
+        "PLUGIN_REQUEST_VALIDATION": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/request-validation.md",
+        # fault-injection
+        "PLUGIN_FAULT_INJECTION": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/fault-injection.md",
+        # response-rewrite
+        "PLUGIN_RESPONSE_REWRITE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/response-rewrite.md",
+        # redirect
+        "PLUGIN_REDIRECT": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/redirect.md",
+        # access-token-source
+        "PLUGIN_BK_ACCESS_TOKEN_SOURCE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/access-token-source.md",
+        # request-body-limit
+        "PLUGIN_BK_REQUEST_BODY_LIMIT": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/request-body-limit.md",
+        # user-restriction
+        "PLUGIN_BK_USER_RESTRICTION": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/user-restriction.md",
+        # proxy-cache
+        "PLUGIN_PROXY_CACHE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/proxy-cache.md",
+        # ai-proxy
+        "PLUGIN_AI_PROXY": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/ai-proxy.md",
+        # ai-rate-limiting
+        "PLUGIN_AI_RATE_LIMITING": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/ai-rate-limiting.md",
+        # uri-blocker
+        "PLUGIN_URI_BLOCKER": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/uri-blocker.md",
     }
