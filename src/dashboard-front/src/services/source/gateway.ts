@@ -164,6 +164,8 @@ export const getGatewayLabels = (apigwId: number) => http.get<{
   name: string
 }[]>(`${path}/${apigwId}/labels/`);
 
+export const getReleasingStatus = (apigwId: number) => http.get(`${path}/${apigwId}/releasing-status/`);
+
 /**
  * 导出文档
  * @param apigwId 网关id
