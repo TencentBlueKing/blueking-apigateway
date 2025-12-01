@@ -100,4 +100,12 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
             "DOC_LINK_MCP_SERVER_PERMISSION_APPLY",
             default=f"{doc_link_prefix}/UserGuide/HowTo/apply-mcp-server-permission.md",
         ),
+        # cors
+        "PLUGIN_BK_CORS": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/cors.md",
+        # ip-restriction
+        "PLUGIN_BK_IP_RESTRICTION": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/ip-restriction.md",
+        # rate-limit
+        "PLUGIN_BK_RATE_LIMIT": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/rate-limit.md",
+        # header-rewrite
+        "PLUGIN_BK_HEADER_REWRITE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/header-rewrite.md",
     }
