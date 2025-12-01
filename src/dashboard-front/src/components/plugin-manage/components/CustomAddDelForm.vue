@@ -16,55 +16,81 @@
  * to the current version of the project delivered to anyone in the future.
  */
 <template>
-  <div class="header-rewrite-wrapper">
+  <div class="custom-plugin-form-wrapper">
     <template
       v-for="(field, fieldIndex) of renderFormItem"
       :key="fieldIndex"
     >
       <BkFormItem
-        :label="field.title"
-        :property="field.name"
+        :label="field?.title ?? field?.name"
+        :property="field?.name"
         :description="field.description ?? ''"
+        :label-width="field['ui:props']?.labelWidth ?? 150"
+        :required="field['ui:rules']?.includes('required')"
       >
         <div
           class="flex items-center flex-wrap"
-          :class="{ 'pt-8px': !formData?.[field.name]?.length }"
+          :class="{
+            'array-no-data': isArrayDataType(field) && !formData?.[field.name]?.length,
+            'single-form-item': !isArrayDataType(field),
+            'grid!': isBasicDataTypes(field.type),
+            [`form-${[field.name]}`]: !!field.name
+          }"
         >
-          <div
-            v-for="(item, index) in formData[field.name]"
-            :key="`${field.name}-${index}`"
-            :class="`flex items-center mb-8px custom-plugin-form-item ${field.name}`"
-          >
-            <BkFormItem
-              :property="`${field.name}[${index}].${displayKey}`"
-              :rules="renderFormatFormItem(field, item, displayKey)"
+          <!-- 如果是数据类型代表可以新增、删除 -->
+          <template v-if="isArrayDataType(field)">
+            <div
+              v-for="(item, index) in getPropSchema(formData?.[field.name])"
+              :key="`${field.name}-${index}`"
+              class="flex items-center mb-8px custom-plugin-form-item"
             >
-              <BkInput
-                v-model="item[displayKey]"
-                :placeholder="renderInputProperty(field, displayKey)?.title"
-                :maxlength="renderInputProperty(field, displayKey)?.maxLength"
+              <BkFormItem
+                :property="`${field.name}[${index}].${displayKey}`"
+                :rules="renderFormatArrayFormItem(field, item, displayKey)"
+              >
+                <BkInput
+                  v-model="item[displayKey]"
+                  :placeholder="renderPropertyName(field, displayKey)"
+                  :maxlength="renderPropertyMaxLen(field, displayKey)"
+                />
+              </BkFormItem>
+              <BkFormItem
+                v-if="isMultipleRow(item)"
+                :property="`${field.name}[${index}].${displayValue}`"
+                :rules="renderFormatArrayFormItem(field, item, displayValue)"
+              >
+                <BkInput
+                  v-model="item[displayValue]"
+                  :placeholder="renderPropertyName(field, displayValue)"
+                  :maxlength="renderPropertyMaxLen(field, displayValue)"
+                />
+              </BkFormItem>
+              <i
+                class="default-operate-btn mb-12px mr-10px apigateway-icon icon-ag-minus-circle-shape"
+                @click="() => handleRemoveItem(field, index)"
               />
-            </BkFormItem>
-            <BkFormItem
-              v-if="!['remove'].includes(field.name)"
-              :property="`${field.name}[${index}].${displayValue}`"
-              :rules="renderFormatFormItem(field, item, displayValue)"
-            >
-              <BkInput
-                v-model="item[displayValue]"
-                :placeholder="renderInputProperty(field, displayValue)?.title"
-                :maxlength="renderInputProperty(field,displayValue)?.maxLength"
-              />
-            </BkFormItem>
+            </div>
             <i
-              class="default-operate-btn mb-12px mr-10px apigateway-icon icon-ag-minus-circle-shape"
-              @click="() => handleRemoveItem(field, index)"
+              class="default-operate-btn mb-20px apigateway-icon icon-ag-plus-circle-shape"
+              @click="handleAddItem(field)"
             />
-          </div>
-          <i
-            class="default-operate-btn mb-20px apigateway-icon icon-ag-plus-circle-shape"
-            @click="handleAddItem(field)"
-          />
+          </template>
+          <!-- 基本数据类型自定义组件 -->
+          <template v-if="isBasicDataTypes(field.type)">
+            <component
+              :is="getComponent(field.type)"
+              v-model="formData[field.name]"
+              :disabled="disabled"
+              :value="formData[field.name]"
+              :property="field.name"
+              :max="field.maxLength"
+              :min="field.minLength ?? field['ui:component']?.min"
+              :suffix="field['ui:component']?.unit"
+              :required="field['ui:rules']?.includes('required')"
+              :rules="renderFormatFormItem(field)"
+              @input="(e) => handleInput(field, e)"
+            />
+          </template>
         </div>
       </BkFormItem>
     </template>
@@ -73,39 +99,41 @@
 
 <script setup lang="ts">
 import { isObject } from 'lodash-es';
-import type { IHeaderWriteFormData, ISchema } from '@/components/plugin-manage/schema-type';
+import type { ComponentMap, ICorsFormData, IHeaderWriteFormData, ISchema } from '@/components/plugin-manage/schema-type';
 import { getDuplicateKeys } from '@/utils/duplicateKeys';
+import InputComponent from '@/components/plugin-manage/components/InputComponent.vue';
+import InputNumberComponent from '@/components/plugin-manage/components/InputNumberComponent.vue';
+import SwitchComponent from '@/components/plugin-manage/components/SwitchComponent.vue';
+
+type ICustomFormData = IHeaderWriteFormData & ICorsFormData;
 
 interface IProps {
   disabled?: boolean
   displayKey?: string
   displayValue?: string
-  routeMode: string
+  routeMode?: string
   schema?: ISchema
 }
 
 interface IEmits {
-  (e: 'add'): [value: IHeaderWriteFormData]
+  (e: 'add'): [value: ICustomFormData]
   (e: 'remove'): {
-    field: IHeaderWriteFormData
+    field: ICustomFormData
     index: number
   }
 }
 
-const formData = defineModel<IHeaderWriteFormData>('modelValue', {
+const formData = defineModel<ICorsFormData>('modelValue', {
   type: Object,
-  default: () => {
-    return {
-      set: [],
-      remove: [],
-    };
-  },
+  required: true,
 });
 
 const {
   schema = {},
+  disabled = false,
   displayKey = 'key',
   displayValue = 'value',
+  routeMode = '',
 } = defineProps<IProps>();
 
 const emit = defineEmits<IEmits>();
@@ -115,7 +143,7 @@ const { t } = useI18n();
 const renderFormItem = computed(() => {
   const isObjectProperties = isObject(schema?.properties);
   if (isObjectProperties) {
-    // 为每个属性添加name字段，用于区分set和remove
+    // 为每个属性添加name字段，用于区分properties下的key
     return Object.entries(schema?.properties).map(([name, params]) => ({
       ...params as any,
       name,
@@ -124,11 +152,78 @@ const renderFormItem = computed(() => {
   return [];
 });
 
-const renderInputProperty = (row: ISchema, name: string) => {
-  return row?.items?.properties?.[name];
+const renderRouteCustomReg = computed(() => {
+  const routeMap = {
+    'bk-cors': () => {
+      return { message: t('format_bk_cors_allow_origins_by_regex') };
+    },
+    'bk-header-rewrite': () => {
+      return { message: t('format_bk_header_rewrite_by_regex') };
+    },
+  };
+  return routeMap[routeMode]?.() ?? routeMap['bk-header-rewrite']();
+});
+
+const getComponent = (name?: string) => {
+  const typeMap: ComponentMap = {
+    string: () => InputComponent,
+    number: () => InputNumberComponent,
+    integer: () => InputNumberComponent,
+    boolean: () => SwitchComponent,
+  };
+  return typeMap[name]?.() ?? typeMap['string']();
 };
 
-const renderFormatFormItem = (
+// 如果是基本数据类型的组件如string、boolean、number
+const isBasicDataTypes = (type: string) => {
+  return ['string', 'boolean', 'number', 'integer'].includes(type);
+};
+
+const isArrayDataType = (field: ISchema) => {
+  return Array.isArray(formData?.[field.name]) || ['array'].includes(field.type);
+};
+
+// 获取不同表单插件的属性
+const renderInputProperty = (row: ISchema, name: string) => {
+  return row?.items?.properties?.[name] ?? row;
+};
+
+// 设置不同表单插件的title
+const renderPropertyName = (field: ISchema, name: string) => {
+  const curProperty = renderInputProperty(field, name);
+  return curProperty?.title ?? curProperty?.name;
+};
+
+// 设置不同表单插件的最大长度
+const renderPropertyMaxLen = (field: ISchema, name: string) => {
+  const curProperty = renderInputProperty(field, name);
+  return curProperty?.maxLength ?? curProperty?.items?.maxLength;
+};
+
+// 设置不同表单插件的pattern校验
+const renderPropertyPattern = (field: ISchema) => {
+  const curProperty = renderInputProperty(field, displayKey);
+  return curProperty?.pattern ?? curProperty?.items?.pattern;
+};
+
+const renderFormatFormItem = (row: ISchema) => {
+  const isRequired = row['ui:rules']?.includes('required') ?? false;
+  const results = [
+    {
+      required: isRequired,
+      message: t('请输入{inputValue}', { inputValue: renderPropertyName(row, row.name) }),
+      validator: (value: string) => {
+        if (!isRequired || (typeof value === 'string' && !!value?.trim()) || (typeof value !== 'string')) {
+          return true;
+        }
+        return false;
+      },
+    },
+  ];
+  return results;
+};
+
+const renderFormatArrayFormItem = (
   row: ISchema,
   child: {
     key?: string
@@ -136,17 +231,21 @@ const renderFormatFormItem = (
   },
   name: string,
 ) => {
+  // 处理不同数组表单项的自定义校验提示语
+  const { message } = renderRouteCustomReg.value;
   const results = [
     {
       required: true,
-      message: `${t('请输入{inputValue}', { inputValue: `${renderInputProperty(row, name)?.title}` })}`,
+      message: `${t('请输入{inputValue}', { inputValue: renderPropertyName(row, name) })}`,
     },
     {
-      message: t('格式错误, 需匹配正则 \"^[\\w-]+$\"'),
+      message,
       trigger: 'change',
       validator: () => {
-        if (['key'].includes(name)) {
-          return /^[\w-]+$/.test(child[displayKey]);
+        if (![displayKey].includes(name)) return true;
+        if ([displayKey].includes(name)) {
+          const patternReg = new RegExp(renderPropertyPattern(row));
+          return patternReg.test(child[displayKey]);
         }
         return true;
       },
@@ -166,30 +265,60 @@ const renderFormatFormItem = (
   return results;
 };
 
+// 获取当前层级的字段配置
+const getPropSchema = (schemaData) => {
+  return Array.isArray(schemaData) ? schemaData : [];
+};
+
+const isMultipleRow = (field) => {
+  return Object.keys(field ?? {}).length > 1;
+};
+
+const handleInput = (field: ISchema, value: string | number) => {
+  if (isArrayDataType(field)) {
+
+  }
+  else {
+    if (typeof formData.value[field?.name] !== undefined) {
+      formData.value[field?.name] = value;
+    }
+  }
+};
 const handleAddItem = (field) => {
+  if (!['array'].includes(field.type)) {
+    return;
+  }
   emit('add', field);
 };
 
-const handleRemoveItem = (field: IHeaderWriteFormData, index: number) => {
+const handleRemoveItem = (field: ICustomFormData, index: number) => {
+  if (!['array'].includes(field.type)) {
+    return;
+  }
   emit('remove', {
     field,
     index,
   });
 };
+
+const getFormData = () => {
+  return formData.value;
+};
+
+defineExpose({ getFormData });
 </script>
 
 <style lang="scss" scoped>
 .custom-plugin-form-item {
+  gap: 16px;
+  width: calc(100% - 16px);
+  min-width: 300px;
 
-  .bk-input {
-    width: 332px;
-    margin-right: 12px;
-  }
-
-  &.remove {
+  .bk-form-item {
+    flex: 1;
 
     .bk-input {
-      width: 676px;
+      width: 100%;
     }
   }
 }
@@ -200,8 +329,49 @@ const handleRemoveItem = (field: IHeaderWriteFormData, index: number) => {
   cursor: pointer;
 }
 
-// 为两个区域添加间距
-:deep(.bk-form-item) {
-  margin-bottom: 12px;
+.custom-plugin-form-wrapper {
+
+  :deep(.bk-form-item) {
+    margin-bottom: 12px;
+
+    .single-form-item {
+
+      &:has(.bk-form-item.is-error) ~ .bk-form-error {
+        display: none !important;
+      }
+
+      &:has(+ .bk-form-error),
+      &:has(~ .bk-form-error) {
+        .bk-form-item {
+          margin-bottom: 0;
+        }
+      }
+    }
+
+  }
+
+  :deep(.array-no-data) {
+    padding-top: 8px;
+
+    &:has(+ .bk-form-error),
+    &:has(~ .bk-form-error) {
+      .bk-form-item {
+        margin-bottom: 12px;
+      }
+    }
+
+      ~ .bk-form-error,
+    .bk-form-error {
+      position: relative;
+    }
+  }
+
+  :deep(.single-form-item) {
+    ~ .bk-form-error,
+    .bk-form-error {
+      position: relative;
+    }
+  }
 }
+
 </style>

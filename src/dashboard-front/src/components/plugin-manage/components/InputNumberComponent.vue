@@ -27,9 +27,10 @@
       v-model.number="currentValue"
       type="number"
       :min="min"
-      :precision="0"
-      :step="1"
+      :precision="precision"
+      :step="step"
       :disabled="disabled"
+      :suffix="suffix"
       @input="handleInput"
     />
   </BkFormItem>
@@ -38,13 +39,17 @@
 <script setup lang="ts">
 interface IProps {
   property: string
+  suffix?: string
   label?: string
   value?: number
   min?: number
+  step?: number
+  precision?: number
   labelWidth?: number
   disabled?: boolean
   required?: boolean
-  rules: Array<{
+  showWordLimit?: boolean
+  rules?: Array<{
     required?: boolean
     message?: string
     trigger?: string
@@ -58,22 +63,24 @@ interface IEmits {
 }
 
 const {
+  suffix = '',
   label = '',
-  labelWidth = 0,
-  min = 1,
   value = 0,
+  labelWidth = 0,
+  precision = 0,
+  min = 1,
+  step = 1,
   disabled = false,
   required = false,
+  rules = [],
 } = defineProps<IProps>();
 
 const emit = defineEmits<IEmits>();
 
-const currentValue = ref(value ?? min ?? 1);
+const currentValue = ref(value ?? min);
 
 watch(() => value, (newVal) => {
-  if (newVal) {
-    currentValue.value = newVal;
-  }
+  currentValue.value = newVal;
 }, { immediate: true });
 
 const handleInput = (val: number) => {
