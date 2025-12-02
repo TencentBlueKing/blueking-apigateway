@@ -48,6 +48,7 @@
 </template>
 
 <script setup lang="ts">
+import { cloneDeep } from 'lodash-es';
 import { Form } from 'bkui-vue';
 import { type ISchema } from '@/components/plugin-manage/schema-type';
 import SchemaField from '@/components/plugin-manage/components/SchemaField.vue';
@@ -130,6 +131,10 @@ const formRules = computed(() => {
   };
 });
 
+const getValue = () => {
+  return cloneDeep(formData.value);
+};
+
 const validate = async () => {
   try {
     const isValid = await formRef.value?.validate(); ;
@@ -165,6 +170,7 @@ watch(
 );
 
 defineExpose({
+  getValue,
   validate,
   clearValidate,
 });

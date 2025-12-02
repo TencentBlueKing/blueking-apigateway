@@ -461,7 +461,9 @@ const handleAdd = async () => {
       if (!isValidate) {
         return;
       }
-      Object.assign(data, { yaml: json2Yaml(JSON.stringify(schemaFormData.value)).data });
+      const formValue = await formRef.value!.getValue();
+      Object.assign(data, { yaml: json2Yaml(JSON.stringify(formValue)).data });
+      schemaFormData.value = formValue;
     }
   }
   catch (err) {
