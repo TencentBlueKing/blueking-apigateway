@@ -1626,6 +1626,7 @@
   "确认{optType}插件（{name}）到 {stage} 环境？": "确认{optType}插件（{name}）到 {stage} 环境？",
   "插件配置变更后，将立即影响线上环境，请确认。": "插件配置变更后，将立即影响线上环境，请确认。",
   "allow_origins 与 allow_origins_by_regex 不能同时为空": "allow_origins 与 allow_origins_by_regex 不能同时为空",
+  "allow_origins 与 allow_origins_by_regex 只能一个有效": "allow_origins 与 allow_origins_by_regex 只能一个有效",
   "条": "条",
   "共": "共",
   "日志详情": "日志详情",
