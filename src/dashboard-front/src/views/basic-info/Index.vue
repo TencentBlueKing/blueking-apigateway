@@ -796,15 +796,16 @@ const handleChangeApigwStatus = async () => {
   const status = basicInfoData.value.status === 1 ? 0 : 1;
   try {
     statusChanging.value = true;
-    const res = await toggleStatus(apigwId.value, { status });
-    if (res) {
-      basicInfoData.value = Object.assign(basicInfoData.value, { status });
-      Message({
-        theme: 'success',
-        message: status === 1 ? t('启用网关成功') : t('停用网关成功'),
-        width: 'auto',
-      });
-    }
+    await toggleStatus(apigwId.value, { status });
+    basicInfoData.value = Object.assign(basicInfoData.value, { status });
+    Message({
+      theme: 'success',
+      message: status === 1 ? t('启用网关成功') : t('停用网关成功'),
+      width: 'auto',
+    });
+
+    releasingStatus.value = true;
+    setIntervalReleasingStatus();
     await getBasicInfo();
     gatewayStore.setCurrentGateway(basicInfoData.value);
   }
