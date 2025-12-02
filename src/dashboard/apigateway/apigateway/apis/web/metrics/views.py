@@ -249,8 +249,8 @@ class QuerySummaryCallerListApi(generics.ListAPIView):
             StatisticsAppRequestByDay.objects.filter(
                 gateway_id=request.gateway.id,
                 stage_name=stage_name,
-                start_time__gte=timezone.datetime.fromtimestamp(data["time_start"]),
-                end_time__lte=timezone.datetime.fromtimestamp(data["time_end"]),
+                start_time__gte=timezone.datetime.fromtimestamp(data["time_start"], timezone.get_current_timezone()),
+                end_time__lte=timezone.datetime.fromtimestamp(data["time_end"], timezone.get_current_timezone()),
             )
             .values_list("bk_app_code", flat=True)
             .distinct()
