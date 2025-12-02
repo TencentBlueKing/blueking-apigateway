@@ -24,14 +24,14 @@
     :property="property"
   >
     <BkInput
-      v-model.number="currentValue"
+      v-model="currentValue"
       type="number"
       :min="min"
       :precision="precision"
       :step="step"
       :disabled="disabled"
       :suffix="suffix"
-      @input="handleInput"
+      @change="handleChange"
     />
   </BkFormItem>
 </template>
@@ -83,7 +83,7 @@ watch(() => value, (newVal) => {
   currentValue.value = newVal;
 }, { immediate: true });
 
-const handleInput = (val: number) => {
+const handleChange = (val: number) => {
   emit('input', val);
   emit('update:value', val);
 };

@@ -21,6 +21,9 @@
     :model="formData"
     :rules="formRules"
     class="mt-20px bk-cors-plugin-form"
+    :class="[{
+      'is-exist-multi-allow-origin': isExistMultiAllowOrigin()
+    }]"
   >
     <SchemaField
       ref="schemaFieldRef"
@@ -38,6 +41,7 @@
 <script setup lang="ts">
 import { cloneDeep, isEmpty, isObject } from 'lodash-es';
 import { Form } from 'bkui-vue';
+import { getDuplicateKeys } from '@/utils/duplicateKeys';
 import type { ICorsFormData, ISchema } from '@/components/plugin-manage/schema-type';
 import SchemaField from '@/components/plugin-manage/components/SchemaField.vue';
 
@@ -79,17 +83,44 @@ const getSchemaForm = () => {
   return schemaFieldRef.value?.comRef?.getFormData() ?? {};
 };
 
+// 是否同时存在allow_origins和allow_origins_regex
+const isExistMultiAllowOrigin = () => {
+  const { allow_origins, allow_origins_by_regex } = getSchemaForm();
+  const allowOrigins = allow_origins?.trim();
+  let isExistRegex = false;
+  let duplicateList = [];
+  if (Array.isArray(allow_origins_by_regex) && allow_origins_by_regex.length > 0) {
+    isExistRegex = allow_origins_by_regex.every(item => item?.key !== '');
+    if (allow_origins_by_regex?.length > 1) {
+      duplicateList = getDuplicateKeys(allow_origins_by_regex, 'key');
+    }
+  }
+  // 如果allow_origins或者allow_origins_regex任意一项没值则不需要校验
+  if (!allowOrigins || !isExistRegex || duplicateList.length > 0) {
+    return false;
+  }
+  return !!allowOrigins && isExistRegex;
+};
+
 const formRules = computed(() => ({
   allow_origins: [
     {
       message: t('format_bk_cors_allow_origins'),
       trigger: 'change',
       validator: (value: string) => {
-        const allowOrigins = value || getSchemaForm().allow_origins || '';
+        const { allow_origins } = getSchemaForm();
+        const allowOrigins = value || allow_origins || '';
         if (!allowOrigins) return true;
         const originRegexStr = '^(?:\\*|\\*\\*|null|https?:\\/\\/[-a-zA-Z0-9:\\[\\]\\.\\/\\?&=]+)(?:,\\s*https?:\\/\\/[-a-zA-Z0-9:\\[\\]\\.\\/\\?&=]+)*$';
         const originRegex = new RegExp(originRegexStr);
         return originRegex.test(allowOrigins);
+      },
+    },
+    {
+      message: t('allow_origins 与 allow_origins_by_regex 只能一个有效'),
+      trigger: 'change',
+      validator: () => {
+        return !isExistMultiAllowOrigin();
       },
     },
   ],
@@ -99,10 +130,17 @@ const formRules = computed(() => ({
       trigger: 'change',
       validator: () => {
         const { allow_origins, allow_origins_by_regex } = getSchemaForm();
-        if (allow_origins.length < 1 && allow_origins_by_regex.length < 1) {
+        if (!allow_origins && allow_origins_by_regex?.length < 1) {
           return false;
         };
         return true;
+      },
+    },
+    {
+      message: t('allow_origins 与 allow_origins_by_regex 只能一个有效'),
+      trigger: 'change',
+      validator: () => {
+        return !isExistMultiAllowOrigin();
       },
     },
   ],
@@ -111,7 +149,8 @@ const formRules = computed(() => ({
       message: t('format_bk_cors_allow_methods'),
       trigger: 'change',
       validator: (value: string) => {
-        const allowMethods = value || getSchemaForm().allow_methods || '';
+        const { allow_methods } = getSchemaForm();
+        const allowMethods = value || allow_methods || '';
         if (!allowMethods) return true;
         const methodRegex = /^(?:\*|\*\*|(?:GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE)(?:,\s*(?:GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE))*)$/;
         return methodRegex.test(allowMethods);
@@ -123,7 +162,8 @@ const formRules = computed(() => ({
       message: t('format_bk_cors_allow_headers'),
       trigger: 'change',
       validator: (value: string) => {
-        const allowHeaders = value || getSchemaForm().allow_methods || '';
+        const { allow_headers } = getSchemaForm();
+        const allowHeaders = value || allow_headers || '';
         if (!allowHeaders) return true;
         const headersRegex = /^(\*|\*\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$/;
         return headersRegex.test(allowHeaders);
@@ -167,13 +207,14 @@ const formRules = computed(() => ({
 }));
 
 const handleAddItem = (row) => {
-  clearValidate();
   formData.value[row.name]?.push({ key: '' });
+  formRef.value?.validate(row.name);
 };
 
 const handleRemoveItem = (row) => {
   const { field, index } = row;
   formData.value[field.name]?.splice(index, 1);
+  formRef.value?.validate(row.name);
 };
 
 const validate = async () => {
@@ -207,8 +248,10 @@ watch(
     if (isObject(newVal) && isEmpty(newVal)) {
       formData.value = { ...DEFAULT_FORM_DATA };
     }
-    if (newVal?.allow_origins_by_regex?.length) {
-      formData.value.allow_origins_by_regex = newVal.allow_origins_by_regex.map(key => ({ key }));
+    if (Array.isArray(newVal?.allow_origins_by_regex)) {
+      formData.value.allow_origins_by_regex = newVal.allow_origins_by_regex.map(item =>
+        typeof item === 'string' ? { key: item } : (item || { key: '' }),
+      );
     }
   },
   { immediate: true },
@@ -219,3 +262,40 @@ defineExpose({
   clearValidate,
 });
 </script>
+
+<style lang="scss" scoped>
+.is-exist-multi-allow-origin {
+
+  :deep(.custom-plugin-form-wrapper) {
+
+     >.is-error {
+
+       .form-allow_origins_by_regex {
+
+         ~ .bk-form-error {
+           position: relative;
+         }
+
+         .custom-plugin-form-item {
+
+            &:last-of-type {
+              margin-bottom: 0;
+
+              .bk-form-item {
+                margin-bottom: 0;
+              }
+
+              .default-operate-btn {
+                margin-bottom: 0;
+              }
+            }
+
+            ~.default-operate-btn {
+              margin-bottom: 0;
+            }
+         }
+       }
+     }
+  }
+}
+</style>
