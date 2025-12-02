@@ -476,7 +476,7 @@ const handleNavDocDetail = () => {
     name: 'ApiDocDetail',
     params: {
       curTab: 'gateway',
-      targetName: gatewayStore.currentGateway?.name,
+      targetName: gatewayStore?.currentGateway?.name || server?.gateway?.name || '',
     },
     query: { apiName: selectedTool.value.name },
   });
