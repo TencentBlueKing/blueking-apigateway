@@ -593,8 +593,8 @@ const handleGoBack = () => {
 onBeforeMount(() => {
   const { params } = route;
   curTab.value = params.curTab as TabType || 'gateway';
-  curTargetName.value = params.targetName as string;
-  curComponentApiName.value = params.componentName as string || '';
+  curTargetName.value = params.targetName as string ?? '';
+  curComponentApiName.value = params.componentName as string ?? '';
   board.value = params.board as string || 'default';
   init();
 });
