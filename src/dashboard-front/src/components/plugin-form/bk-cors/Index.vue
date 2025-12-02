@@ -95,7 +95,10 @@ const isExistMultiAllowOrigin = () => {
       duplicateList = getDuplicateKeys(allow_origins_by_regex, 'key');
     }
   }
-  // 如果allow_origins或者allow_origins_regex任意一项没值则不需要校验
+  // 满足以下几种情况直接跳过校验
+  // 1. allow_origins或者allow_origins_regex任意一项没值
+  // 2. 子项表单校验失败则不需要校验
+  // 3. allow_origins_by_regex存在重复的key
   if (!allowOrigins || !isExistRegex || duplicateList.length > 0) {
     return false;
   }
@@ -120,7 +123,8 @@ const formRules = computed(() => ({
       message: t('allow_origins 与 allow_origins_by_regex 只能一个有效'),
       trigger: 'change',
       validator: () => {
-        return !isExistMultiAllowOrigin();
+        const results = isExistMultiAllowOrigin();
+        return !results;
       },
     },
   ],
@@ -140,7 +144,8 @@ const formRules = computed(() => ({
       message: t('allow_origins 与 allow_origins_by_regex 只能一个有效'),
       trigger: 'change',
       validator: () => {
-        return !isExistMultiAllowOrigin();
+        const results = isExistMultiAllowOrigin();
+        return !results;
       },
     },
   ],
@@ -206,6 +211,10 @@ const formRules = computed(() => ({
   ],
 }));
 
+const getValue = () => {
+  return cloneDeep(getSchemaForm());
+};
+
 const handleAddItem = (row) => {
   formData.value[row.name]?.push({ key: '' });
   formRef.value?.validate(row.name);
@@ -258,6 +267,7 @@ watch(
 );
 
 defineExpose({
+  getValue,
   validate,
   clearValidate,
 });
@@ -293,6 +303,14 @@ defineExpose({
             ~.default-operate-btn {
               margin-bottom: 0;
             }
+         }
+
+         &:has(.bk-form-item.is-error) {
+           margin-bottom: 8px;
+
+          ~ .bk-form-error {
+            display: none;
+          }
          }
        }
      }

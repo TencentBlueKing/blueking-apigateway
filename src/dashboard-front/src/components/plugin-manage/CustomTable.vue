@@ -42,8 +42,8 @@ const { columns, data } = defineProps<IProps>();
 
 const renderValue = (row: IBaseTableRow, col: IColumn) => {
   const rowField = row[col.field]?.valueRender?.({ row }) || row[col.field];
-  if (typeof rowField === 'number') {
-    return rowField;
+  if (['boolean', 'number'].includes(typeof rowField)) {
+    return String(rowField);
   }
   return rowField || '--';
 };
