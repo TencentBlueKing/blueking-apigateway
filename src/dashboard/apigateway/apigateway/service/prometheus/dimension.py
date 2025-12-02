@@ -550,8 +550,8 @@ class MetricsSummaryFactory:
         query_params = {
             "gateway_id": self.gateway_id,
             "stage_name": self.stage_name,
-            "start_time__gte": timezone.datetime.fromtimestamp(self.time_start),
-            "end_time__lte": timezone.datetime.fromtimestamp(self.time_end),
+            "start_time__gte": timezone.datetime.fromtimestamp(self.time_start, timezone.get_current_timezone()),
+            "end_time__lte": timezone.datetime.fromtimestamp(self.time_end, timezone.get_current_timezone()),
         }
 
         if self.bk_app_code:
