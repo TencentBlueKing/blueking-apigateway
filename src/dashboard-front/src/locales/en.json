@@ -1626,6 +1626,7 @@
   "确认{optType}插件（{name}）到 {stage} 环境？": "Confirm the {optType} plug-in ({name}) to the {stage} environment?",
   "插件配置变更后，将立即影响线上环境，请确认。": "The plug-in configuration change will affect the online environment immediately. Please confirm.",
   "allow_origins 与 allow_origins_by_regex 不能同时为空": "allow_origins and allow_origins_by_regex cannot be empty at the same time",
+  "allow_origins 与 allow_origins_by_regex 只能一个有效": "Allow_origins and allow_origins can only be one valid",
   "条": "line",
   "共": "total",
   "日志详情": "Log details",

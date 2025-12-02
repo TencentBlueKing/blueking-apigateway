@@ -88,7 +88,7 @@
               :suffix="field['ui:component']?.unit"
               :required="field['ui:rules']?.includes('required')"
               :rules="renderFormatFormItem(field)"
-              @input="(e) => handleInput(field, e)"
+              @input="(e: HTMLInputElement) => handleInput(field, e)"
             />
           </template>
         </div>
@@ -179,6 +179,7 @@ const isBasicDataTypes = (type: string) => {
   return ['string', 'boolean', 'number', 'integer'].includes(type);
 };
 
+// 判断当前属性字段是否是数组类型
 const isArrayDataType = (field: ISchema) => {
   return Array.isArray(formData?.[field.name]) || ['array'].includes(field.type);
 };
@@ -212,8 +213,10 @@ const renderFormatFormItem = (row: ISchema) => {
     {
       required: isRequired,
       message: t('请输入{inputValue}', { inputValue: renderPropertyName(row, row.name) }),
-      validator: (value: string) => {
-        if (!isRequired || (typeof value === 'string' && !!value?.trim()) || (typeof value !== 'string')) {
+      validator: (value: string | number | boolean) => {
+        // 非string类型的其他基本类型都会存在有默认值，所以无需校验
+        const isString = typeof value === 'string';
+        if (!isRequired || (isString && !!value?.trim()) || !isString) {
           return true;
         }
         return false;
@@ -276,12 +279,10 @@ const isMultipleRow = (field) => {
 
 const handleInput = (field: ISchema, value: string | number) => {
   if (isArrayDataType(field)) {
-
+    return;
   }
-  else {
-    if (typeof formData.value[field?.name] !== undefined) {
-      formData.value[field?.name] = value;
-    }
+  if (typeof formData.value[field?.name] !== undefined) {
+    formData.value[field?.name] = value;
   }
 };
 const handleAddItem = (field) => {
