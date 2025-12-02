@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { isEmpty, isObject } from 'lodash-es';
+import { cloneDeep, isEmpty, isObject } from 'lodash-es';
 import { Form } from 'bkui-vue';
 import type { IHeaderWriteFormData, ISchema } from '@/components/plugin-manage/schema-type';
 import SchemaField from '@/components/plugin-manage/components/SchemaField.vue';
@@ -91,6 +91,10 @@ const formRules = computed(() => ({
   ],
 }));
 
+const getValue = () => {
+  return cloneDeep(formData.value);
+};
+
 const handleAddItem = (row) => {
   const typeMap = {
     set: () => {
@@ -140,6 +144,7 @@ watch(
 );
 
 defineExpose({
+  getValue,
   validate,
   clearValidate,
 });

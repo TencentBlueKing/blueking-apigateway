@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { isEmpty, isObject } from 'lodash-es';
+import { cloneDeep, isEmpty, isObject } from 'lodash-es';
 import { Form } from 'bkui-vue';
 import type { IRateLimitFormData, ISchema } from '@/components/plugin-manage/schema-type';
 import SchemaField from '@/components/plugin-manage/components/SchemaField.vue';
@@ -101,10 +101,14 @@ const updateDefault = (value: {
 };
 
 // 更新特殊限制数据
-const updateSpecials = (index: number, value: any) => {
+const updateSpecials = (index: number, value: string | number) => {
   formData.value.rates.specials = formData.value.rates.specials.map((item, i) =>
     i === index ? value : item,
   );
+};
+
+const getValue = () => {
+  return cloneDeep(formData.value);
 };
 
 const validate = async () => {
@@ -132,6 +136,7 @@ watch(() => formData.value, (newVal) => {
 }, { immediate: true });
 
 defineExpose({
+  getValue,
   validate,
   clearValidate,
 });
