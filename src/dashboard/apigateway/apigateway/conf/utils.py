@@ -100,18 +100,16 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
             "DOC_LINK_MCP_SERVER_PERMISSION_APPLY",
             default=f"{doc_link_prefix}/UserGuide/HowTo/apply-mcp-server-permission.md",
         ),
-        # cors
-        "PLUGIN_BK_CORS": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/cors.md",
-        # ip-restriction
-        "PLUGIN_BK_IP_RESTRICTION": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/ip-restriction.md",
-        # rate-limit
-        "PLUGIN_BK_RATE_LIMIT": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/rate-limit.md",
-        # header-rewrite
-        "PLUGIN_BK_HEADER_REWRITE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/header-rewrite.md",
-        # status-rewrite
-        "PLUGIN_BK_STATUS_REWRITE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/status-rewrite.md",
-        # mock
-        "PLUGIN_BK_MOCK": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/mock.md",
+        # bk-cors
+        "PLUGIN_BK_CORS": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-cors.md",
+        # bk-ip-restriction
+        "PLUGIN_BK_IP_RESTRICTION": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-ip-restriction.md",
+        # bk-rate-limit
+        "PLUGIN_BK_RATE_LIMIT": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-rate-limit.md",
+        # bk-header-rewrite
+        "PLUGIN_BK_HEADER_REWRITE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-header-rewrite.md",
+        # bk-mock
+        "PLUGIN_BK_MOCK": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-mock.md",
         # api-breaker
         "PLUGIN_API_BREAKER": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/api-breaker.md",
         # request-validation
@@ -122,12 +120,14 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
         "PLUGIN_RESPONSE_REWRITE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/response-rewrite.md",
         # redirect
         "PLUGIN_REDIRECT": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/redirect.md",
-        # access-token-source
-        "PLUGIN_BK_ACCESS_TOKEN_SOURCE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/access-token-source.md",
-        # request-body-limit
-        "PLUGIN_BK_REQUEST_BODY_LIMIT": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/request-body-limit.md",
-        # user-restriction
-        "PLUGIN_BK_USER_RESTRICTION": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/user-restriction.md",
+        # bk-access-token-source
+        "PLUGIN_BK_ACCESS_TOKEN_SOURCE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-access-token-source.md",
+        # bk-username-required
+        "PLUGIN_BK_USERNAME_REQUIRED": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-username-required.md",
+        # bk-request-body-limit
+        "PLUGIN_BK_REQUEST_BODY_LIMIT": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-request-body-limit.md",
+        # bk-user-restriction
+        "PLUGIN_BK_USER_RESTRICTION": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-user-restriction.md",
         # proxy-cache
         "PLUGIN_PROXY_CACHE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/proxy-cache.md",
         # ai-proxy
