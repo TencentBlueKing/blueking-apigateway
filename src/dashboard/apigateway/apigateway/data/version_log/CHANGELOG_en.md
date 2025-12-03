@@ -1,3 +1,26 @@
+<!-- 2025-12-02 -->
+# V1.20.0 Release Log
+
+### Features
+
+- MCP Proxy calls pass two headers: X-Bkapi-Mcp-Server-Id and X-Bkapi-Mcp-Server-Name
+- MCP Server supports configuring Chinese name, prompt, and custom documentation
+
+### Enhancements
+
+- Delete gateway button interaction
+- Gateway enable/disable status detection
+
+### Bug Fixes
+
+- Fix dashboard ingress/egress empty issue
+
+### Other
+
+- Refactor release module, remove CRD to support more resource types
+
+---
+
 <!-- 2025-11-20 -->
 # V1.19.1 Release Log
 
