@@ -701,48 +701,23 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
       title: t('资源名称'),
       minWidth: 170,
       fixed: 'left',
-      // ellipsis: {
-      //   props: { placement: 'right' },
-      //   content: (h, { row }) => row.name,
-      // },
-      // ellipsis: true,
-      cell: (h, { row }) => (
-        <div class="resource-name">
-          <div
-            class={
-              [
-                'name color-#3A84FF cursor-pointer overflow-hidden whitespace-nowrap text-ellipsis',
-                { 'name-updated': row.has_updated },
-              ]
-            }
-            v-bk-tooltips={{
-              content: row.name,
-              placement: 'right',
-              delay: 300,
-            }}
-            onClick={() => handleShowInfo(row.id)}
-          >
+      ellipsis: {
+        props: { placement: 'right' },
+        content: (h, { row }) => (
+          <div>
             {row.has_updated
-              ? (
-                <div
-                  v-bk-tooltips={{
-                    content: t('资源已更新'),
-                    placement: 'right',
-                    delay: 300,
-                  }}
-                  class="inline-block w-8px h-8px mr-4px cursor-pointer border-1px border-solid border-#ff9c01 rounded-1/2 bg-#fff3e1"
-                >
-                </div>
-              )
+              ? <div class="inline-block w-8px h-8px mr-4px cursor-pointer border-1px border-solid border-#ff9c01 rounded-1/2 bg-#fff3e1" />
               : ''}
-            <span>
-              {row.name}
-            </span>
+            <span>{row.name}</span>
             {
               row.auth_config?.auth_verified_required === false && row.auth_config.app_verified_required === false
                 ? (
                   <ag-icon
-                    v-bk-tooltips={{ content: t('该资源未配置认证方式，存在安全风险。') + t('请点击"编辑"按钮为资源配置适当的认证方式。') + t('如当前配置符合预期，可忽略该提示。') }}
+                    v-bk-tooltips={{
+                      content: t('该资源未配置认证方式，存在安全风险。')
+                        + t('请点击"编辑"按钮为资源配置适当的认证方式。')
+                        + t('如当前配置符合预期，可忽略该提示。'),
+                    }}
                     name="exclamation-circle-fill"
                     class="ml-6px color-#F59500"
                   />
@@ -750,7 +725,49 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
                 : ''
             }
           </div>
-        </div>
+        ),
+      },
+      cell: (h, { row }) => (
+        <span
+          class={
+            [
+              'name color-#3A84FF cursor-pointer overflow-hidden whitespace-nowrap text-ellipsis',
+              { 'name-updated': row.has_updated },
+            ]
+          }
+          onClick={() => handleShowInfo(row.id)}
+        >
+          {row.has_updated
+            ? (
+              <div
+                v-bk-tooltips={{
+                  content: t('资源已更新'),
+                  delay: 300,
+                }}
+                class="inline-block w-8px h-8px mr-4px cursor-pointer border-1px border-solid border-#ff9c01 rounded-1/2 bg-#fff3e1"
+              >
+              </div>
+            )
+            : ''}
+          <span>
+            {row.name}
+          </span>
+          {
+            row.auth_config?.auth_verified_required === false && row.auth_config.app_verified_required === false
+              ? (
+                <ag-icon
+                  v-bk-tooltips={{
+                    content: t('该资源未配置认证方式，存在安全风险。')
+                      + t('请点击"编辑"按钮为资源配置适当的认证方式。')
+                      + t('如当前配置符合预期，可忽略该提示。'),
+                  }}
+                  name="exclamation-circle-fill"
+                  class="ml-6px color-#F59500"
+                />
+              )
+              : ''
+          }
+        </span>
       ),
     },
     {

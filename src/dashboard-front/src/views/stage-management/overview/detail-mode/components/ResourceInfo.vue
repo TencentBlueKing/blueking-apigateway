@@ -175,7 +175,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'name',
     title: t('资源名称'),
-    ellipsis: true,
+    ellipsis: (h, { row }) => row.name,
     minWidth: 150,
     cell: (h, { row }) => (
       <span

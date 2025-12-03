@@ -45,7 +45,7 @@
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value">
-                  {{ currentSource.description }}
+                  {{ currentSource.description || '--' }}
                 </div>
               </BkCol>
             </BkRow>

@@ -74,9 +74,17 @@
             <div class="content">
               <div
                 v-if="!descEdit"
-                class="value-container"
+                class="value-container flex items-center"
               >
-                <span class="value-cls">{{ formData.description }}</span>
+                <div
+                  v-bk-tooltips="{
+                    content: formData.description,
+                    disabled: !formData.description || formData.description.length <= 50,
+                  }"
+                  class="value-cls"
+                >
+                  {{ truncatedDesc }}
+                </div>
                 <span class="operate-btn">
                   <AgIcon
                     name="edit-line"
@@ -940,6 +948,16 @@ const formData = ref<any>({});
 // 服务table
 const servicesData = ref<any>({});
 
+const truncatedDesc = computed(() => {
+  if (!formData.value.description) {
+    return '--';
+  }
+  if (formData.value.description.length > 50) {
+    return `${formData.value.description.substring(0, 50)}...`;
+  }
+  return formData.value.description;
+});
+
 // 资源详情
 const getResourceDetails = async () => {
   const res = await getResourceDetail(gatewayId, resourceId);
@@ -1375,7 +1393,6 @@ onUnmounted(() => {
           height: 100%;
           padding-left: 16px;
           align-items: center;
-          flex-grow: 1;
 
           .value-container {
 
