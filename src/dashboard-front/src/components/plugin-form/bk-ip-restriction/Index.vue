@@ -50,7 +50,7 @@
 <script setup lang="ts">
 import { cloneDeep } from 'lodash-es';
 import { Form } from 'bkui-vue';
-import { type ISchema } from '@/components/plugin-manage/schema-type';
+import type { IIPRestriction, ISchema } from '@/components/plugin-manage/schema-type';
 import SchemaField from '@/components/plugin-manage/components/SchemaField.vue';
 
 interface IProps {
@@ -62,9 +62,9 @@ interface IProps {
 
 interface IEmits { (e: 'update:modelValue', value: any): void }
 
-const formData = defineModel('modelValue', {
+const formData = defineModel<IIPRestriction>('modelValue', {
   required: true,
-  type: [Object, String],
+  type: Object,
 });
 
 const {
@@ -88,23 +88,25 @@ const selectedSchema = computed(() => {
 });
 
 const curSelectType = computed(() => {
-  return Object.keys(selectedSchema.value?.properties ?? {})?.[0] ?? '';
+  const properties = selectedSchema.value?.properties ?? {};
+  const firstKey = Object.keys(properties)?.[0];
+  return firstKey ?? 'whitelist';
 });
 
 const formRules = computed(() => {
   const schemaTitle = selectedSchema.value?.title ?? '';
   const requiredField = selectedSchema.value?.required;
-  const minLength = Array.isArray(requiredField) && requiredField?.includes(curSelectType.value)
+  // 仅基于当前选中的字段计算规则（curSelectType 是 whitelist/blacklist）
+  const minLength = Array.isArray(requiredField) && requiredField.includes(curSelectType.value)
     ? selectedSchema.value?.properties?.[curSelectType.value]?.minLength
     : undefined;
+
   const commonRules = [
     {
       required: true,
       message: t('请输入{inputValue}', { inputValue: schemaTitle }),
       trigger: 'change',
-      validator: (value: string) => {
-        return !!value?.trim();
-      },
+      validator: (value: string) => !!value?.trim(),
     },
   ];
 
@@ -116,31 +118,28 @@ const formRules = computed(() => {
         count: minLength,
       }),
       trigger: 'change',
-      validator: (value: string) => {
-        const trimmedValue = value?.trim() || '';
-        return trimmedValue.length >= minLength;
-      },
+      validator: (value: string) => (value?.trim() || '').length >= minLength,
     });
   }
 
   const mergedRules = [...commonRules, ...extraRules];
 
-  return {
-    whitelist: mergedRules,
-    blacklist: mergedRules,
-  };
+  return { [curSelectType.value]: mergedRules };
 });
 
 const getValue = () => {
   return cloneDeep(formData.value);
 };
 
-const validate = async () => {
+const validate = async (): Promise<boolean> => {
   try {
-    const isValid = await formRef.value?.validate(); ;
+    const isValid = await formRef.value?.validate();
     if (!isValid) {
-      schemaFieldRef.value?.comRef?.schemaFieldRef?.[0]?.comRef?.focus();
-      return;
+      const schemaField = schemaFieldRef.value?.comRef?.schemaFieldRef?.[0];
+      if (schemaField?.comRef?.focus) {
+        schemaField.comRef.focus();
+      }
+      return false;
     }
     return isValid;
   }
@@ -156,6 +155,7 @@ const clearValidate = () => {
 // 切换类型时重置模型值
 const handleOptionChange = () => {
   clearValidate();
+  formData.value = {};
   emit('update:modelValue', {});
 };
 

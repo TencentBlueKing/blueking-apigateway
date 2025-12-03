@@ -111,7 +111,7 @@ const getValue = () => {
   return cloneDeep(formData.value);
 };
 
-const validate = async () => {
+const validate = async (): Promise<boolean> => {
   try {
     const isValid = await formRef.value?.validate();
     if (!isValid) {
