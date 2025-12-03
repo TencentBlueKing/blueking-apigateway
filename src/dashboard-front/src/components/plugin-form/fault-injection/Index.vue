@@ -161,9 +161,16 @@ watch(() => data, () => {
   deep: true,
 });
 
-const validate = () => formRef.value?.validate();
+const validate = async () => {
+  try {
+    await formRef.value?.validate();
+  }
+  catch (error) {
+    return Promise.reject(error);
+  }
+};
 
-const getValue = () => validate()?.then(() => formData.value);
+const getValue = () => validate()?.then(() => formData.value).catch(error => Promise.reject(error));
 
 defineExpose({
   validate,

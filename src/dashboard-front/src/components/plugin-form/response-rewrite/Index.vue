@@ -26,10 +26,12 @@
       :label="t('状态码')"
       property="status_code"
       :description="t('修改上游返回状态码，默认保留原始响应代码。')"
-      required
     >
       <BkInput
         v-model="formData.status_code"
+        type="number"
+        :min="200"
+        :max="598"
       />
     </BkFormItem>
     <BkFormItem
@@ -108,7 +110,7 @@ interface KeyValuePair {
 }
 
 interface IFormData {
-  status_code: string
+  status_code: number
   body: string
   body_base64: boolean
   headers: {
@@ -131,7 +133,7 @@ const setRef = useTemplateRef('setRef');
 const removeRef = useTemplateRef('removeRef');
 
 const getDefaultData = () => ({
-  status_code: '',
+  status_code: 200,
   body: '',
   body_base64: false,
   headers: {
@@ -158,9 +160,19 @@ watch(() => data, () => {
   deep: true,
 });
 
-const validate = () => formRef.value?.validate();
+const validate = async () => {
+  try {
+    await formRef.value?.validate();
+    await addRef.value?.validate();
+    await setRef.value?.validate();
+    await removeRef.value?.validate();
+  }
+  catch (error) {
+    return Promise.reject(error);
+  }
+};
 
-const getValue = () => validate()?.then(() => formData.value);
+const getValue = () => validate()?.then(() => formData.value).catch(error => Promise.reject(error));
 
 defineExpose({
   validate,
