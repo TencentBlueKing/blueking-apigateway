@@ -369,8 +369,10 @@ const pluginFormCompMap = {
   'bk-cors': BkCors,
 };
 
+const dynamicFormPlugin = shallowRef(['bk-cors', 'bk-ip-restriction', 'bk-header-rewrite', 'bk-rate-limit']);
+
 const isDynamicFormPlugin = computed(() => {
-  return ['bk-cors', 'bk-ip-restriction', 'bk-header-rewrite', 'bk-rate-limit'].includes(choosePlugin.value);
+  return dynamicFormPlugin.value.includes(choosePlugin.value);
 });
 
 const isBound = computed(() => {
@@ -440,7 +442,7 @@ const handleAdd = async () => {
     if (formStyle.value === 'raw') {
       Object.assign(data, { yaml: whitelist.value?.sendPolicyData().data });
     }
-    else if ([
+    if ([
       'proxy-cache',
       'bk-user-restriction',
       'bk-request-body-limit',
@@ -451,15 +453,14 @@ const handleAdd = async () => {
       'fault-injection',
       'request-validation',
       'api-breaker',
+      ...dynamicFormPlugin.value,
     ].includes(choosePlugin.value)) {
-      const formValue = await formRef.value!.getValue();
-      Object.assign(data, { yaml: json2Yaml(JSON.stringify(formValue)).data });
-      schemaFormData.value = formValue;
-    }
-    else {
-      const isValidate = await formRef.value?.validate();
-      if (!isValidate) {
-        return;
+      if (isDynamicFormPlugin.value) {
+        // 动态插件需要调用下子组件的验证
+        const isValidate = await formRef.value?.validate();
+        if (!isValidate) {
+          return;
+        }
       }
       const formValue = await formRef.value!.getValue();
       Object.assign(data, { yaml: json2Yaml(JSON.stringify(formValue)).data });

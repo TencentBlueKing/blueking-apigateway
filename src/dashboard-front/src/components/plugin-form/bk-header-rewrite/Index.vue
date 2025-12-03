@@ -115,7 +115,7 @@ const handleRemoveItem = (row) => {
   formData.value[field.name]?.splice(index, 1);
 };
 
-const validate = async () => {
+const validate = async (): Promise<boolean> => {
   try {
     const isValid = await formRef.value?.validate();
     if (!isValid) {
