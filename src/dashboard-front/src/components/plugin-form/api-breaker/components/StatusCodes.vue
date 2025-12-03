@@ -132,15 +132,14 @@ const handleRemoveItem = (index: number) => {
 };
 
 const validate = async () => {
-  if (!formRefs.value) return true;
+  if (!formRefs.value) return Promise.resolve(true);
 
   try {
     await Promise.all(formRefs.value!.map(formRef => formRef.validate()));
-    return true;
+    return Promise.resolve(true);
   }
   catch (error) {
-    console.error(error);
-    return false;
+    return Promise.reject(error);
   }
 };
 
