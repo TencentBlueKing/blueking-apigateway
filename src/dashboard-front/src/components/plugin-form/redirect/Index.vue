@@ -62,7 +62,8 @@ const rules = {
   ],
   ret_code: [
     {
-      validator: (value: string) => isInteger(Number(value)) && Number(value) >= 200 && Number(value) <= 599,
+      validator: (value: string) =>
+        !value || (isInteger(Number(value)) && Number(value) >= 200 && Number(value) <= 599),
       message: t('必须是介于 200 到 599 的正整数'),
       trigger: 'change',
     },

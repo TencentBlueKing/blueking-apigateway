@@ -2111,5 +2111,6 @@
   "format_bk_cors_allow_methods": "允许*（匹配任意单个方法)， **（匹配所有方法），逗号分隔的合法方法列表（支持：GET、POST、PUT、DELETE、PATCH、HEAD、OPTIONS、CONNECT、TRACE，例如 GET,POST,PUT）",
   "format_bk_cors_allow_credential": "allow_credential开启时, allow_origins、allow_methods, allow_headers、expose_header字段不能设置为*",
   "请选择环境再发布": "请选择环境再发布",
-  "（未发布）": "（未发布）"
+  "（未发布）": "（未发布）",
+  "message 必填": "message 必填"
 }

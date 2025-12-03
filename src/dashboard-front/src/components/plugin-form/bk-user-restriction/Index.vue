@@ -80,6 +80,11 @@ const form = ref<IFormModel>({
 const rules = {
   message: [
     {
+      required: true,
+      message: t('message 必填'),
+      trigger: 'blur',
+    },
+    {
       validator: (value: string) => value.length >= 1 && value.length <= 1024,
       message: t('长度必须介于 1 到 1024 之间'),
       trigger: 'change',
@@ -89,15 +94,15 @@ const rules = {
 
 watch(() => data, () => {
   if (data) {
-    if (data.whitelist?.length) {
-      type.value = 'whitelist';
+    if (data.blacklist?.length) {
+      type.value = 'blacklist';
     }
     else {
-      type.value = 'blacklist';
+      type.value = 'whitelist';
     }
     form.value.whitelist = data.whitelist || [];
     form.value.blacklist = data.blacklist || [];
-    form.value.message = data.message || '';
+    form.value.message = data.message || 'The bk-user is not allowed';
   }
 }, {
   immediate: true,

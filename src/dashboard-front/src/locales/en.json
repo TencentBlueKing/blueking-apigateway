@@ -2112,5 +2112,6 @@
   "format_bk_cors_allow_methods": "Allow * (match any individual method), * * (match all methods), comma separated list of valid methods (support: GET、POST、PUT、DELETE、PATCH、HEAD、OPTIONS、CONNECT、TRACE， For example, GET, POST, PUT)",
   "format_bk_cors_allow_credential": "When allow_credential is open, the fields allow_origins, allow_methods, allow_headers, and expose_header cannot be set to",
   "请选择环境再发布": "Choose stage before publish",
-  "（未发布）": "(Unpublished)"
+  "（未发布）": "(Unpublished)",
+  "message 必填": "message 必填"
 }

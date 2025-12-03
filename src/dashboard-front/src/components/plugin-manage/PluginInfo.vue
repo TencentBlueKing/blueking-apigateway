@@ -467,12 +467,7 @@ const handleAdd = async () => {
       schemaFormData.value = formValue;
     }
   }
-  catch (err) {
-    const error = err as Error;
-    Message({
-      theme: 'error',
-      message: error.message || t('表单校验失败'),
-    });
+  catch {
     return;
   }
 
