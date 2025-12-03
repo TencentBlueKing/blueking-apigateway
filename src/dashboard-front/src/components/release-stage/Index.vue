@@ -77,7 +77,10 @@
                         :id="item.id"
                         :key="item.id"
                         :name="item.name"
-                      />
+                        :disabled="item.status === 0"
+                      >
+                        <span>{{ item.name }}<span v-if="item.status === 0">{{ t('（未发布）') }}</span></span>
+                      </BkOption>
                     </BkSelect>
                   </BkFormItem>
                   <p class="publish-version-tips">
@@ -232,7 +235,10 @@
             <div :class="stepsConfig.curStep === 1 ? 'operate1' : 'operate2'">
               <BkButton
                 v-if="stepsConfig.curStep === 1"
-                v-bk-tooltips="{ content: t('请新建版本再发布'), disabled: !isNextBtnDisabled }"
+                v-bk-tooltips="{
+                  content: formData.stage_id ? t('请新建版本再发布') : t('请选择环境再发布'),
+                  disabled: !isNextBtnDisabled,
+                }"
                 :disabled="isNextBtnDisabled"
                 theme="primary"
                 class="w-100px"
@@ -399,6 +405,10 @@ const resourceVersion = computed(() => {
 
 // 当版本过旧时“下一步”按钮不能点击
 const isNextBtnDisabled = computed(() => {
+  if (!formData.stage_id) {
+    return true;
+  }
+
   const currentResource = versionList.value.find(version => version.id === formData.resource_version_id);
   if (currentResource) {
     return currentResource.schema_version === '1.0';
@@ -417,7 +427,7 @@ watch(
     if (val) {
       await getStageData();
       await getResourceVersions();
-      if (currentAssets?.id) {
+      if (currentAssets?.id && currentAssets?.status !== 0) {
         formData.stage_id = currentAssets.id;
         chooseAssets.value = currentAssets;
 
@@ -466,7 +476,7 @@ watch(
 watch(
   () => [formData.resource_version_id, formData.stage_id],
   () => {
-    const curVersion = versionList.value.filter(item => item.id === chooseAssets.value.resource_version?.id)[0];
+    const curVersion = versionList.value.filter(item => item.id === chooseAssets.value?.resource_version?.id)[0];
     const choVersion = versionList.value.filter(item => item.id === formData.resource_version_id)[0];
     if (curVersion && choVersion) {
       const curDate = dayjs(curVersion.created_time);
@@ -615,6 +625,7 @@ const getMcpServersDel = async () => {
 const handleVersionChange = async (payload: any) => {
   // 检查是否为 v1 版本，是的话不能发布，禁止选中
   if (payload.id === curVersionId.value || payload.schema_version === '1.0') return;
+  if (!formData.stage_id) return;
 
   if (!payload.id) {
     diffData.value = {
