@@ -2104,6 +2104,7 @@
   "{inputValue}不应少于{count}个字符": "{inputValue} should not be less than {count} characters",
   "{ipTitle}格式不符合IPv4/CIDR或IPv6/CIDR规范": "{ipTitle} format does not comply with the IPv4/CIDR or IPv6/CIDR specifications",
   "需要至少填写一个用户": "Input at least one user",
+  "format_bk_rate_limit_bk_app_code": "Allow content starting with lowercase letters, containing only lowercase letters, numbers, underscores (_), and hyphens (-), with a length of 1-32 characters",
   "format_bk_header_rewrite_by_regex": "Allow letters, numbers, underscores (_), and hyphens (-)",
   "format_bk_cors_allow_origins": "Allow *, **, null、 http://example.com URL format, multiple URLs separated by commas",
   "format_bk_cors_allow_origins_by_regex": "Allow letters, numbers, basic symbols (-,:), special symbols ([], {'{}'}, (),., *,+,?, |); the beginning can contain ^, and the end can contain $",

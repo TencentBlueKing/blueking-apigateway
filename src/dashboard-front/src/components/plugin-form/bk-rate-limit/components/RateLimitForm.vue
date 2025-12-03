@@ -178,7 +178,7 @@ const renderFormatFormItem = (
       },
     },
     {
-      message: t('format_bk_plugins_add_regex'),
+      message: t('format_bk_rate_limit_bk_app_code'),
       trigger: 'change',
       validator: () => {
         if (!['bk_app_code'].includes(name)) return true;
