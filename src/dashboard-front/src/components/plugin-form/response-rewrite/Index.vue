@@ -110,7 +110,7 @@ interface KeyValuePair {
 }
 
 interface IFormData {
-  status_code: number
+  status_code?: number
   body: string
   body_base64: boolean
   headers: {
@@ -133,7 +133,6 @@ const setRef = useTemplateRef('setRef');
 const removeRef = useTemplateRef('removeRef');
 
 const getDefaultData = () => ({
-  status_code: 200,
   body: '',
   body_base64: false,
   headers: {
