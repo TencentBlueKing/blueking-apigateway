@@ -2109,5 +2109,7 @@
   "format_bk_cors_allow_origins_by_regex": "允许字母、数字、基础符号（-、:）、特殊符号（[]、{'{}'}、()、.、*、+、?、'|'）；开头可包含^，结尾可包含$",
   "format_bk_cors_allow_headers": "允许*、**, 由字母、数字、连字符（-）组成的字符串，多个可用逗号分隔",
   "format_bk_cors_allow_methods": "允许*（匹配任意单个方法)， **（匹配所有方法），逗号分隔的合法方法列表（支持：GET、POST、PUT、DELETE、PATCH、HEAD、OPTIONS、CONNECT、TRACE，例如 GET,POST,PUT）",
-  "format_bk_cors_allow_credential": "allow_credential开启时, allow_origins、allow_methods, allow_headers、expose_header字段不能设置为*"
+  "format_bk_cors_allow_credential": "allow_credential开启时, allow_origins、allow_methods, allow_headers、expose_header字段不能设置为*",
+  "请选择环境再发布": "请选择环境再发布",
+  "（未发布）": "（未发布）"
 }
