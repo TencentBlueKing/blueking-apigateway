@@ -21,9 +21,6 @@
     :model="formData"
     :rules="formRules"
     class="mt-20px bk-cors-plugin-form"
-    :class="[{
-      'is-exist-multi-allow-origin': isExistMultiAllowOrigin()
-    }]"
   >
     <SchemaField
       ref="schemaFieldRef"
@@ -90,7 +87,7 @@ const isExistMultiAllowOrigin = () => {
   let isExistRegex = false;
   let duplicateList = [];
   if (Array.isArray(allow_origins_by_regex) && allow_origins_by_regex.length > 0) {
-    isExistRegex = allow_origins_by_regex.every(item => item?.key !== '');
+    isExistRegex = allow_origins_by_regex.some(item => item?.key !== '');
     if (allow_origins_by_regex?.length > 1) {
       duplicateList = getDuplicateKeys(allow_origins_by_regex, 'key');
     }
@@ -226,13 +223,13 @@ const handleRemoveItem = (row) => {
   formRef.value?.validate(row.name);
 };
 
-const validate = async () => {
+const validate = async (): Promise<boolean> => {
   try {
     const isValid = await formRef.value?.validate();
     if (!isValid) {
       return;
     }
-    const schemaForm = cloneDeep(getSchemaForm());
+    const schemaForm = getValue();
     const allowOriginsByRegex = schemaForm?.allow_origins_by_regex ?? [];
     // 单独处理下allowOriginsByRegex字段传给后端参数格式
     if (allowOriginsByRegex.length) {
@@ -274,46 +271,49 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
-.is-exist-multi-allow-origin {
+:deep(.custom-plugin-form-wrapper) {
 
-  :deep(.custom-plugin-form-wrapper) {
+    >.is-error {
 
-     >.is-error {
+      .form-allow_origins_by_regex {
 
-       .form-allow_origins_by_regex {
+        ~ .bk-form-error {
+          position: relative;
+        }
 
-         ~ .bk-form-error {
-           position: relative;
-         }
+        .custom-plugin-form-item {
 
-         .custom-plugin-form-item {
+          &:last-of-type {
+            margin-bottom: 0;
 
-            &:last-of-type {
-              margin-bottom: 0;
-
-              .bk-form-item {
-                margin-bottom: 0;
-              }
-
-              .default-operate-btn {
-                margin-bottom: 0;
-              }
-            }
-
-            ~.default-operate-btn {
+            .bk-form-item {
               margin-bottom: 0;
             }
-         }
 
-         &:has(.bk-form-item.is-error) {
-           margin-bottom: 8px;
-
-          ~ .bk-form-error {
-            display: none;
+            .default-operate-btn {
+              margin-bottom: 0;
+            }
           }
-         }
-       }
-     }
+
+          ~.default-operate-btn {
+            margin-bottom: 0;
+          }
+        }
+
+        &:has(.bk-form-item.is-error) {
+          margin-bottom: 8px;
+
+        ~ .bk-form-error {
+          display: none;
+        }
+        }
+      }
+    }
+}
+
+:deep(.form-allow_origins_by_regex) {
+  &:has(.bk-form-item.is-error) ~ .bk-form-error {
+    display: none;
   }
 }
 </style>

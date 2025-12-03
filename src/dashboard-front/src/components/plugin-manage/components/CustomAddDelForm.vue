@@ -124,8 +124,8 @@ interface IEmits {
 }
 
 const formData = defineModel<ICorsFormData>('modelValue', {
-  type: Object,
   required: true,
+  type: Object,
 });
 
 const {
@@ -246,9 +246,10 @@ const renderFormatArrayFormItem = (
       trigger: 'change',
       validator: () => {
         if (![displayKey].includes(name)) return true;
+        const value = child[displayKey] ?? '';
         if ([displayKey].includes(name)) {
           const patternReg = new RegExp(renderPropertyPattern(row));
-          return patternReg.test(child[displayKey]);
+          return patternReg.test(value);
         }
         return true;
       },
@@ -285,6 +286,7 @@ const handleInput = (field: ISchema, value: string | number) => {
     formData.value[field?.name] = value;
   }
 };
+
 const handleAddItem = (field) => {
   if (!['array'].includes(field.type)) {
     return;

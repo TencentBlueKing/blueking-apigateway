@@ -122,3 +122,8 @@ export interface ICorsFormData {
   max_age: number
   allow_credential: boolean
 }
+
+export interface IIPRestriction {
+  whitelist?: string
+  blacklist?: string
+}
