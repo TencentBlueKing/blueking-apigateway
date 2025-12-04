@@ -111,7 +111,7 @@
       <BkInput
         v-model="formData.healthy.successes"
         :placeholder="t('请输入')"
-        type="textarea"
+        type="number"
         :min="1"
       />
     </BkFormItem>
