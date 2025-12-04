@@ -240,13 +240,8 @@ class ResponseRewriteChecker(BaseChecker):
             raise ValueError("YAML cannot be empty")
 
         status_code = loaded_data.get("status_code")
-        if status_code:
-            try:
-                status_code = int(status_code)
-            except ValueError:
-                raise ValueError("status_code must be an integer.")
-            if not (200 <= status_code <= 598):
-                raise ValueError("status_code must be between 200 and 598.")
+        if status_code is not None and not (200 <= status_code <= 598):
+            raise ValueError("status_code must be between 200 and 598.")
 
         response_rewrite_vars = loaded_data.get("vars")
         if response_rewrite_vars:
