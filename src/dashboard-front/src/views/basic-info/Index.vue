@@ -692,12 +692,33 @@ const getBasicInfo = async () => {
   basicInfoData.value = await getGatewayDetail(apigwId.value);
 };
 
+const getCurrentReleasingStatus = async () => {
+  const res = await getReleasingStatus(apigwId.value);
+  releasingStatus.value = res?.is_releasing;
+};
+
+let interval: number | null = null;
+const setIntervalReleasingStatus = () => {
+  interval = setInterval(async () => {
+    await getCurrentReleasingStatus();
+    if (!releasingStatus.value) {
+      clearInterval(interval as number);
+      interval = null;
+    }
+  }, 5000);
+};
+
 watch(
   () => route.params,
-  () => {
+  async () => {
     if (route.params?.id) {
       apigwId.value = Number(route.params.id);
       getBasicInfo();
+
+      await getCurrentReleasingStatus();
+      if (releasingStatus.value) {
+        setIntervalReleasingStatus();
+      }
     }
   },
   {
@@ -764,22 +785,6 @@ const handleDeleteApigw = async () => {
   finally {
     delApigwDialog.value.loading = false;
   }
-};
-
-const getCurrentReleasingStatus = async () => {
-  const res = await getReleasingStatus(apigwId.value);
-  releasingStatus.value = res?.is_releasing;
-};
-
-let interval: number | null = null;
-const setIntervalReleasingStatus = () => {
-  interval = setInterval(async () => {
-    await getCurrentReleasingStatus();
-    if (!releasingStatus.value) {
-      clearInterval(interval as number);
-      interval = null;
-    }
-  }, 5000);
 };
 
 const handleChangePublic = async (value: boolean) => {
@@ -910,6 +915,13 @@ const handleMaintainerChange = async (payload: { maintainers?: string[] }) => {
     width: 'auto',
   });
 };
+
+onUnmounted(() => {
+  if (interval) {
+    clearInterval(interval as number);
+    interval = null;
+  }
+});
 
 </script>
 
@@ -1053,11 +1065,16 @@ const handleMaintainerChange = async (payload: { maintainers?: string[] }) => {
         }
 
         .deactivate-btn {
-
           &:hover {
             color: #fff;
             background-color: #ff5656;
             border-color: #ff5656;
+          }
+
+          &.is-disabled:hover {
+            color: #dcdee5;
+            background-color: #f9fafd;
+            border-color: #dcdee5;
           }
         }
       }
