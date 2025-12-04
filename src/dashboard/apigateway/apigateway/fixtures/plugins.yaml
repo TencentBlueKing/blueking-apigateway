@@ -254,6 +254,9 @@
               },
               "ui:component": {
                 "name": "bfArray"
+              },
+              "ui:props": {
+                "labelWidth": 200
               }
             },
             "allow_methods": {
@@ -2382,8 +2385,10 @@
         "type": "object",
         "properties": {
             "status_code": {
-                "type": "string",
-                "description": "new status code for response"
+                "type": "integer",
+                "description": "new status code for response",
+                "minimum": 200,
+                "maximum": 598
             },
             "body": {
                 "type": "string",
@@ -2469,7 +2474,9 @@
               "status_code": {
                   "title": "状态码",
                   "description": "修改上游返回状态码，默认保留原始响应代码。",
-                  "type": "string"
+                  "type": "integer",
+                  "minimum": 200,
+                  "maximum": 598
               },
               "body": {
                   "title": "响应体",
@@ -2601,7 +2608,9 @@
               "status_code": {
                   "title": "status code",
                   "description": "New HTTP status code in the response. If unset, falls back to the original status code.",
-                  "type": "string"
+                  "type": "integer",
+                  "minimum": 200,
+                  "maximum": 598
               },
               "body": {
                   "title": "body",

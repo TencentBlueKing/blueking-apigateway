@@ -554,12 +554,6 @@ class TestResponseRewriteChecker:
             ),
             (
                 {
-                    "status_code": "test",
-                },
-                pytest.raises(ValueError),
-            ),
-            (
-                {
                     "headers": {  # add key 重复
                         "add": [{"key": "name:value"}, {"key": "name:value"}]
                     },
