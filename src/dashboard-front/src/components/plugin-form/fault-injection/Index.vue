@@ -26,7 +26,6 @@
       :label="t('中断状态码')"
       property="abort.http_status"
       :description="t('返回给客户端的 HTTP 状态码')"
-      required
     >
       <BkInput
         v-model="formData.abort.http_status"
@@ -108,18 +107,19 @@
 
 <script lang="ts" setup>
 import { cloneDeep } from 'lodash-es';
+import { Message } from 'bkui-vue';
 
 interface IFormData {
   abort: {
     http_status: number
-    body: string
-    percentage: number
-    vars: string
+    body?: string
+    percentage?: number
+    vars?: string
   }
   delay: {
     duration: number
-    percentage: number
-    vars: string
+    percentage?: number
+    vars?: string
   }
 }
 
@@ -147,11 +147,32 @@ const getDefaultData = () => ({
 
 const formData = ref<IFormData>(getDefaultData());
 
-const rules = {};
+const rules = {
+  'abort.http_status': [
+    {
+      validator: (value: number) => {
+        if (value === 0) {
+          return true;
+        }
+        return value >= 200;
+      },
+      message: t('状态码需要大于等于 200'),
+      trigger: 'blur',
+    },
+  ],
+};
 
-watch(() => data, () => {
-  if (data?.abort?.http_status) {
-    formData.value = cloneDeep(data);
+watch(() => data, (newVal) => {
+  const data = cloneDeep(newVal);
+  if (data?.abort?.http_status || data?.delay?.duration) {
+    if (!data?.abort?.http_status) {
+      data.abort = getDefaultData()?.abort;
+      data.abort.http_status = 0;
+    }
+    if (!data?.delay?.duration) {
+      data.delay = getDefaultData()?.delay;
+    }
+    formData.value = data;
   }
   else {
     formData.value = getDefaultData();
@@ -161,16 +182,73 @@ watch(() => data, () => {
   deep: true,
 });
 
+const isDefaultData = (field: string) => {
+  return JSON.stringify(formData.value[field]) === JSON.stringify(getDefaultData()[field]);
+};
+
+const isEffective = () => {
+  let flag = false;
+  const { abort, delay } = formData.value;
+
+  if (Object.keys(abort).some(key => (abort[key] !== 0 && abort[key] !== ''))) {
+    flag = true;
+  }
+  if (Object.keys(delay).some(key => (delay[key] !== 0 && delay[key] !== ''))) {
+    flag = true;
+  }
+  return flag;
+};
+
 const validate = async () => {
   try {
     await formRef.value?.validate();
+
+    if (!isEffective()) {
+      Message({
+        theme: 'error',
+        message: t('中断信息和延迟信息不能同时为空'),
+      });
+      return Promise.reject(false);
+    }
+
+    if (!isDefaultData('abort') && isDefaultData('delay') && !formData.value?.abort?.http_status) {
+      Message({
+        theme: 'error',
+        message: t('中断状态码不能为空'),
+      });
+      return Promise.reject(false);
+    }
+
+    if (!isDefaultData('delay') && !formData.value?.delay?.duration) {
+      Message({
+        theme: 'error',
+        message: t('延迟时间不能为空'),
+      });
+      return Promise.reject(false);
+    }
   }
   catch (error) {
     return Promise.reject(error);
   }
 };
 
-const getValue = () => validate()?.then(() => formData.value).catch(error => Promise.reject(error));
+const getValue = () => {
+  return validate()?.then(() => {
+    if (!formData.value?.delay?.duration) {
+      return {
+        ...cloneDeep(formData.value),
+        delay: undefined,
+      };
+    }
+    if (!formData.value?.abort?.http_status) {
+      return {
+        ...cloneDeep(formData.value),
+        abort: undefined,
+      };
+    }
+    return formData.value;
+  }).catch(error => Promise.reject(error));
+};
 
 defineExpose({
   validate,
