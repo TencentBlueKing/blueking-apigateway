@@ -210,7 +210,7 @@ interface IProps {
 }
 
 interface IRowType {
-  id?: number
+  id?: number | string
   name: string
   value: string
   type: string
@@ -287,6 +287,10 @@ const headersNameList = computed(() => (headersNames.map((item: string) => ({
   value: item,
 }))));
 
+const generateUniqueId = () => {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2)}`;
+};
+
 const getCellClass = (payload: { index: number }) => {
   if (payload.index !== 5) {
     return 'custom-table-cell';
@@ -308,7 +312,7 @@ const handleNameChange = (index: number, name: string) => {
 const addRow = (index: number) => {
   const row = {
     ...getDefaultTbRow(),
-    id: +new Date(),
+    id: generateUniqueId(),
   };
   tableData.value?.splice(index + 1, 0, row);
   checkedList.value = [...checkedList.value, row];
@@ -382,7 +386,7 @@ watch(
     const list: IRowType[] = [];
     v?.forEach((item: any) => {
       list.push({
-        id: +new Date(),
+        id: generateUniqueId(),
         name: item.name,
         value: item.schema?.default || item.value || '',
         instructions: item.description || item.instructions,
@@ -396,7 +400,7 @@ watch(
     if (!list?.length) {
       tableData.value = [{
         ...getDefaultTbRow(),
-        id: +new Date(),
+        id: generateUniqueId(),
       }];
     }
     else {
@@ -405,7 +409,7 @@ watch(
 
     if (type === 'headers' && featureFlagStore.isTenantMode) {
       tableData.value.unshift({
-        id: +new Date(),
+        id: generateUniqueId(),
         name: 'x-bk-tenant-id',
         value: userStore.info?.tenant_id || '',
         instructions: t('租户id'),
