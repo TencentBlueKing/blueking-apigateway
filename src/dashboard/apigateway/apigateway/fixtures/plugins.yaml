@@ -3443,6 +3443,424 @@
         "rules": {}
       }
 
+- model: schema.schema
+  fields:
+    created_time: 2024-11-19 11:48:21.010753+00:00
+    updated_time: 2024-11-19 11:48:21.010788+00:00
+    name: ai-proxy
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "type": "object",
+        "properties": {
+            "provider": {
+                "type": "string"
+            },
+            "auth": {
+                "type": "object",
+                "patternProperties": {
+                  "header": {
+                      "type": "object",
+                      "patternProperties": {
+                          "^[a-zA-Z0-9._-]+$": {
+                              "type": "string"
+                          }
+                      }
+                  },
+                  "query": {
+                      "type": "object",
+                      "patternProperties": {
+                          "^[a-zA-Z0-9._-]+$": {
+                              "type": "string"
+                          }
+                      }
+                  }
+              }
+            },
+            "options": {
+                "type": "object",
+                "properties": {
+                    "model": {
+                        "type": "string"
+                    }
+                }
+            },
+            "override": {
+                "type": "object",
+                "properties": {
+                    "endpoint": {
+                        "type": "string"
+                    }
+                }
+            },
+            "logging": {
+                "type": "object",
+                "properties": {
+                    "summaries": {
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "payloads": {
+                        "type": "boolean",
+                        "default": false
+                    }
+                }
+            },
+            "timeout": {
+                "type": "integer",
+                "default": 30000,
+                "minimum": 1
+            },
+            "keepalive": {
+                "type": "boolean",
+                "default": true
+            },
+            "keepalive_timeout": {
+                "type": "integer",
+                "default": 60000,
+                "minimum": 1000
+            },
+            "keepalive_pool": {
+                "type": "integer",
+                "default": 30
+            },
+            "ssl_verify": {
+                "type": "boolean",
+                "default": true
+            }
+        },
+        "required": [
+            "provider",
+            "auth"
+        ]
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: ai-proxy
+    name: AI 代理
+    name_en: AI Proxy
+    is_public: true
+    scope: resource
+    priority: 1040
+    schema:
+    - ai-proxy
+    - plugin
+    - '0'
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+    - ai-proxy
+    notes: 通过将插件配置转换为指定的请求格式，简化了对大语言模型（LLM）和嵌入模型的访问。
+    example: '作用：配置 API 密钥、模型和其他参数，将用户提示代理到 OpenAI\n\n provider: "openai" \n auth: {"header": "Authorization": "Bearer key"} \n options: {"model": "gpt-4"}'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+            "type": "object",
+            "properties": {
+                "provider": {
+                    "type": "string",
+                    "description": "AI服务实例的类型",
+                    "enum": [
+                        "openai",
+                        "deepseek",
+                        "aimlapi",
+                        "openai-compatible",
+                        "azure-openai"
+                    ]
+                },
+                "logging": {
+                    "type": "object",
+                    "properties": {
+                        "summaries": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "记录用户请求 llm 模型、持续时间、请求/请求令牌"
+                        },
+                        "payloads": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "记录用户请求和响应有效负载"
+                        }
+                    }
+                },
+                "auth": {
+                    "type": "object",
+                    "properties": {
+                        "header": {
+                            "items": {
+                                "properties": {
+                                    "key": {
+                                        "type": "string",
+                                        "maxLength": 1024,
+                                        "pattern": "^[a-zA-Z0-9._-]+$",
+                                        "ui:rules": [
+                                            "required"
+                                        ]
+                                    },
+                                    "value": {
+                                        "type": "string",
+                                        "maxLength": 1024,
+                                        "ui:rules": [
+                                            "required"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "type": "array",
+                            "minItems": 0,
+                            "title": "auth header",
+                            "ui:component": {
+                                "name": "bfArray"
+                            }
+                        },
+                        "query": {
+                            "items": {
+                                "properties": {
+                                    "key": {
+                                        "type": "string",
+                                        "maxLength": 1024,
+                                        "pattern": "^[a-zA-Z0-9._-]+$",
+                                        "ui:rules": [
+                                            "required"
+                                        ]
+                                    },
+                                    "value": {
+                                        "type": "string",
+                                        "maxLength": 1024,
+                                        "ui:rules": [
+                                            "required"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "type": "array",
+                            "minItems": 0,
+                            "title": "auth query",
+                            "ui:component": {
+                                "name": "bfArray"
+                            }
+                        }
+                    }
+                },
+                "options": {
+                    "description": "Key/value settings for the model",
+                    "type": "object",
+                    "properties": {
+                        "model": {
+                            "type": "string",
+                            "description": "执行模型"
+                        }
+                    }
+                },
+                "timeout": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 30000,
+                    "description": "超时时间（以毫秒为单位）"
+                },
+                "keepalive": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "keepalive_timeout": {
+                    "type": "integer",
+                    "minimum": 1000,
+                    "default": 60000,
+                    "description": "保持连接的超时时间（以毫秒为单位）"
+                },
+                "keepalive_pool": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 30
+                },
+                "ssl_verify": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "override": {
+                    "type": "object",
+                    "properties": {
+                        "endpoint": {
+                            "type": "string",
+                            "description": "自定义LLM提供者端点，当需要时 provider 为 openai-compatible"
+                        }
+                    }
+                }
+            },
+            "required": [
+                "provider",
+                "auth"
+            ]
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+- model: plugin.pluginform
+  fields:
+    language: en
+    type:
+    - ai-proxy
+    notes: |-
+      The ai-proxy Plugin simplifies access to LLM and embedding models by transforming Plugin configurations into the designated request format.
+    example: 'Purpose：Configure API keys, models and other parameters, and proxy user prompts to OpenAI.\n\n provider: "openai" \n auth: {"header": "Authorization": "Bearer key"} \n options: {"model": "gpt-4"}'
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {
+            "type": "object",
+            "properties": {
+                "provider": {
+                    "type": "string",
+                    "description": "Type of the AI service instance.",
+                    "enum": [
+                        "openai",
+                        "deepseek",
+                        "aimlapi",
+                        "openai-compatible",
+                        "azure-openai"
+                    ]
+                },
+                "logging": {
+                    "type": "object",
+                    "properties": {
+                        "summaries": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Record user request llm model, duration, req/res token"
+                        },
+                        "payloads": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Record user request and response payload"
+                        }
+                    }
+                },
+                "auth": {
+                    "type": "object",
+                    "properties": {
+                        "header": {
+                            "items": {
+                                "properties": {
+                                    "key": {
+                                        "type": "string",
+                                        "maxLength": 1024,
+                                        "pattern": "^[a-zA-Z0-9._-]+$",
+                                        "ui:rules": [
+                                            "required"
+                                        ]
+                                    },
+                                    "value": {
+                                        "type": "string",
+                                        "maxLength": 1024,
+                                        "ui:rules": [
+                                            "required"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "type": "array",
+                            "minItems": 0,
+                            "title": "auth header",
+                            "ui:component": {
+                                "name": "bfArray"
+                            }
+                        },
+                        "query": {
+                            "items": {
+                                "properties": {
+                                    "key": {
+                                        "type": "string",
+                                        "maxLength": 1024,
+                                        "pattern": "^[a-zA-Z0-9._-]+$",
+                                        "ui:rules": [
+                                            "required"
+                                        ]
+                                    },
+                                    "value": {
+                                        "type": "string",
+                                        "maxLength": 1024,
+                                        "ui:rules": [
+                                            "required"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "type": "array",
+                            "minItems": 0,
+                            "title": "auth query",
+                            "ui:component": {
+                                "name": "bfArray"
+                            }
+                        }
+                    }
+                },
+                "options": {
+                    "description": "Key/value settings for the model",
+                    "type": "object",
+                    "properties": {
+                        "model": {
+                            "type": "string",
+                            "description": "Model to execute."
+                        }
+                    }
+                },
+                "timeout": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 30000,
+                    "description": "timeout in milliseconds"
+                },
+                "keepalive": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "keepalive_timeout": {
+                    "type": "integer",
+                    "minimum": 1000,
+                    "default": 60000,
+                    "description": "keepalive timeout in milliseconds"
+                },
+                "keepalive_pool": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 30
+                },
+                "ssl_verify": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "override": {
+                    "type": "object",
+                    "properties": {
+                        "endpoint": {
+                            "type": "string",
+                            "description": "To be specified to override the endpoint of the AI Instance"
+                        }
+                    }
+                }
+            },
+            "required": [
+                "provider",
+                "auth"
+            ]
+        },
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+
 
 - model: schema.schema
   fields:
