@@ -404,7 +404,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Message } from 'bkui-vue';
+import { Form, Input, Message } from 'bkui-vue';
 import { cloneDeep, isEqual } from 'lodash-es';
 import {
   useEnv,
@@ -458,8 +458,8 @@ const stageConfigRef = ref([]);
 const isPublish = ref(false);
 const isSaveLoading = ref(false);
 const finalConfigs = ref([]);
-const nameRef = ref<InstanceType<typeof BkInput>>(null);
-const baseInfoEl = useTemplateRef<InstanceType<typeof BkForm> & { validate: () => void }>(
+const nameRef = ref<InstanceType<typeof Input>>(null);
+const baseInfoEl = useTemplateRef<InstanceType<typeof Form> & { validate: () => void }>(
   'baseInfoRef',
 );
 let publishDialog = reactive({

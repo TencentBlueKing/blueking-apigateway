@@ -240,13 +240,8 @@ class ResponseRewriteChecker(BaseChecker):
             raise ValueError("YAML cannot be empty")
 
         status_code = loaded_data.get("status_code")
-        if status_code:
-            try:
-                status_code = int(status_code)
-            except ValueError:
-                raise ValueError("status_code must be an integer.")
-            if not (200 <= status_code <= 598):
-                raise ValueError("status_code must be between 200 and 598.")
+        if status_code is not None and not (200 <= status_code <= 598):
+            raise ValueError("status_code must be between 200 and 598.")
 
         response_rewrite_vars = loaded_data.get("vars")
         if response_rewrite_vars:
@@ -350,6 +345,21 @@ class ProxyCacheChecker(BaseChecker):
             raise ValueError("cache_ttl must be between 1 and 3600 seconds")
 
 
+class AIRateLimitingChecker(BaseChecker):
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
+        if not loaded_data:
+            raise ValueError("YAML cannot be empty")
+
+        limit_strategy = loaded_data["limit_strategy"]
+        if limit_strategy not in ["total_tokens", "prompt_tokens", "completion_tokens"]:
+            raise ValueError("limit_strategy only supports total_tokens, prompt_tokens, completion_tokens")
+
+        rejected_code = loaded_data["rejected_code"]
+        if not (200 <= int(rejected_code) <= 599):
+            raise ValueError("rejected_code must be between 200 and 599")
+
+
 def check_vars(vars, location):
     """check vars of lua-resty-expr
     vars = `[
@@ -404,6 +414,7 @@ class PluginConfigYamlChecker:
         PluginTypeCodeEnum.BK_REQUEST_BODY_LIMIT.value: BKRequestBodyLimitChecker(),
         PluginTypeCodeEnum.BK_USER_RESTRICTION.value: BKUserRestrictionChecker(),
         PluginTypeCodeEnum.PROXY_CACHE.value: ProxyCacheChecker(),
+        PluginTypeCodeEnum.AI_RATE_LIMITING.value: AIRateLimitingChecker(),
     }
 
     def __init__(self, type_code: str):

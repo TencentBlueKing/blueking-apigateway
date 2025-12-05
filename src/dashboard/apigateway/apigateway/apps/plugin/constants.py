@@ -43,6 +43,7 @@ class PluginTypeCodeEnum(StructuredEnum):
     BK_LEGACY_INVALID_PARAMS = EnumField("bk-legacy-invalid-params", label=_("旧的无效参数兼容"))
     PROXY_CACHE = EnumField("proxy-cache", label=_("代理缓存"))
     AI_PROXY = EnumField("ai-proxy", label=_("AI 代理"))
+    AI_RATE_LIMITING = EnumField("ai-rate-limiting", label=_("AI 速率限制"))
 
 
 class PluginTypeScopeEnum(StructuredEnum):

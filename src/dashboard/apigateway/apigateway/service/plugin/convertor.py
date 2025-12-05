@@ -168,6 +168,11 @@ class ResponseRewriteConvertor(PluginConvertor):
 
     def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
         config = format_response_rewrite_config(config)
+
+        status_code = config.get("status_code")
+        if status_code:
+            config["status_code"] = int(status_code)
+
         if config.get("vars"):
             config["vars"] = ast.literal_eval(config["vars"])
 

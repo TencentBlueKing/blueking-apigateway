@@ -123,7 +123,7 @@
       quick-close
       ext-cls="plugin-add-slider"
       :width="pluginSliderWidth"
-      @closed="isExampleVisible = false"
+      @closed="handleClosePluginSlider"
     >
       <template #default>
         <BkSteps
@@ -320,6 +320,7 @@
             class="px-40px py-20px"
           >
             <PluginInfo
+              ref="pluginInfoRef"
               v-model:show-example="isExampleVisible"
               :cur-plugin="curChoosePlugin"
               :scope-info="curScopeInfo"
@@ -360,11 +361,12 @@
       quick-close
       ext-cls="plugin-add-slider"
       :width="pluginSliderWidth"
-      @closed="isExampleVisible = false"
+      @closed="handleClosePluginSlider"
     >
       <template #default>
         <div class="px-40px py-20px">
           <PluginInfo
+            ref="pluginInfoRef"
             v-model:show-example="isExampleVisible"
             :cur-plugin="curChoosePlugin"
             :scope-info="curScopeInfo"
@@ -427,6 +429,7 @@ const stageStore = useStage();
 // 网关id
 const gatewayId = useRouteParams('id', 0, { transform: Number });
 
+const pluginInfoRef = ref<InstanceType<typeof PluginInfo>>(null);
 const scopeType = ref('');
 const scopeId = ref(-1);
 const isBindingListLoading = ref(false);
@@ -582,7 +585,7 @@ const handleOperate = (operate: string) => {
       emit('on-update-plugin');
       break;
     case 'editSuccess':
-      getBindingDetails();
+      getBindingDetails(true);
       isEditVisible.value = false;
       emit('on-update-plugin');
       break;
@@ -623,6 +626,7 @@ const handleEditPlugin = async (item: any) => {
     return;
   }
   curType.value = 'edit';
+  await getBindingDetails(false);
   const { code, config_id } = item;
   const curEditItem = curBindingPlugins.value.find((pluginItem: { code: string }) => pluginItem.code === code);
   curEditPlugin.value = await getPluginConfig(
@@ -634,6 +638,7 @@ const handleEditPlugin = async (item: any) => {
   );
   curChoosePlugin.value = curEditItem;
   isEditVisible.value = true;
+  pluginInfoRef.value?.setPluginInfo(curEditItem);
 };
 
 // 删除插件
@@ -714,7 +719,7 @@ function init() {
   };
 
   if (!scopeId.value) return;
-  getBindingDetails();
+  getBindingDetails(true);
   getPluginListDetails(params);
 }
 
@@ -727,9 +732,9 @@ const resetData = () => {
 };
 
 // 获取已绑定插件列表
-async function getBindingDetails() {
+async function getBindingDetails(isLoading = false) {
   try {
-    isBindingListLoading.value = true;
+    isBindingListLoading.value = isLoading;
     // 当前环境或资源绑定的插件
     curBindingPlugins.value = await getScopeBindingPluginList(gatewayId.value, scopeType.value, scopeId.value);
   }
@@ -804,6 +809,11 @@ const handelNext = () => {
 // 取消添加
 const handleCancel = () => {
   resetData();
+};
+
+const handleClosePluginSlider = () => {
+  isExampleVisible.value = false;
+  pluginInfoRef.value?.clearValidate();
 };
 
 const updateTableEmptyConfig = () => {

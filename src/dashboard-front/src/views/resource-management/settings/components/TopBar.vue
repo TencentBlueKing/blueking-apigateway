@@ -49,7 +49,7 @@
           ref="popoverRef"
           width="650"
           theme="light"
-          z-index="5000"
+          :z-index="5000"
           trigger="click"
         >
           <div class="flex items-center cursor-pointer">

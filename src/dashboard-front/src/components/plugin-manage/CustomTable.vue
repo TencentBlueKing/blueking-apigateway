@@ -23,7 +23,7 @@
           :style="{width: index === 0 ? `${col.width}px` : 'auto', backgroundColor: index === 0 ? '#fafbfd' : ''}"
           :rowspan="row.rowspan"
         >
-          {{ row[col.field]?.valueRender?.({ row }) || row[col.field] || '--' }}
+          {{ renderValue(row, col) }}
         </td>
       </tr>
     </tbody>
@@ -31,12 +31,22 @@
 </template>
 
 <script setup lang="ts">
+import type { IBaseTableRow, IColumn } from './types';
+
 interface IProps {
   columns: any[]
   data: any[]
 }
 
 const { columns, data } = defineProps<IProps>();
+
+const renderValue = (row: IBaseTableRow, col: IColumn) => {
+  const rowField = row[col.field]?.valueRender?.({ row }) || row[col.field];
+  if (['boolean', 'number'].includes(typeof rowField)) {
+    return String(rowField);
+  }
+  return rowField || '--';
+};
 
 </script>
 

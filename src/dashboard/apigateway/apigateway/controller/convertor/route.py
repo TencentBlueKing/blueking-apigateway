@@ -20,6 +20,7 @@ import json
 import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from apigateway.controller.constants import DELETE_PUBLISH_ID
 from apigateway.controller.models import GatewayApisixModel, Plugin, Route, Timeout
 from apigateway.controller.models.constants import HttpMethodEnum
 from apigateway.controller.release_data import ReleaseData
@@ -61,7 +62,8 @@ class RouteConvertor(GatewayResourceConvertor):
                 if route:
                     routes.append(route)
         # 如果是版本发布需要加上版本路由，版本发布需要新增一个版本路由，方便查询发布结果探测
-        if self._publish_id:
+        # NOTE: delete gateway don't need to add detect route
+        if self._publish_id and self._publish_id != DELETE_PUBLISH_ID:
             routes.append(self._get_release_version_detect_route())
 
         return routes

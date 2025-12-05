@@ -146,6 +146,36 @@
             />
           </div>
         </div>
+        <template
+          v-else-if="[
+            'proxy-cache',
+            'bk-user-restriction',
+            'bk-request-body-limit',
+            'bk-access-token-source',
+            'redirect',
+            'bk-mock',
+            'response-rewrite',
+            'fault-injection',
+            'request-validation',
+            'api-breaker',
+          ].includes(choosePlugin)"
+        >
+          <Component
+            :is="pluginFormCompMap[choosePlugin as keyof typeof pluginFormCompMap]"
+            ref="formRef"
+            :data="schemaFormData"
+          />
+        </template>
+        <template v-else-if="isDynamicFormPlugin">
+          <component
+            :is="pluginFormCompMap[choosePlugin as keyof typeof pluginFormCompMap]"
+            ref="formRef"
+            v-model="schemaFormData"
+            :route-mode="choosePlugin"
+            :schema="formConfig.schema"
+            :layout="formConfig.layout"
+          />
+        </template>
         <BkSchemaForm
           v-else
           ref="formRef"
@@ -226,6 +256,7 @@
 </template>
 
 <script setup lang="ts">
+import { cloneDeep } from 'lodash-es';
 import { creatPlugin, getPluginForm, updatePluginConfig } from '@/services/source/plugin-manage';
 import { Message } from 'bkui-vue';
 // @ts-expect-error missing module type
@@ -238,6 +269,20 @@ import {
   PLUGIN_ICONS,
   PLUGIN_ICONS_MIN,
 } from '@/constants';
+import ProxyCacheForm from '@/components/plugin-form/proxy-cache/Index.vue';
+import BkUserRestriction from '@/components/plugin-form/bk-user-restriction/Index.vue';
+import BkRequestBodyLimit from '@/components/plugin-form/bk-request-body-limit/Index.vue';
+import BkAccessTokenSource from '@/components/plugin-form/bk-access-token-source/Index.vue';
+import BkIpRestriction from '@/components/plugin-form/bk-ip-restriction/Index.vue';
+import BkHeaderRewrite from '@/components/plugin-form/bk-header-rewrite/Index.vue';
+import BkRateLimit from '@/components/plugin-form/bk-rate-limit/Index.vue';
+import BkCors from '@/components/plugin-form/bk-cors/Index.vue';
+import Redirect from '@/components/plugin-form/redirect/Index.vue';
+import BkMock from '@/components/plugin-form/bk-mock/Index.vue';
+import ResponseRewrite from '@/components/plugin-form/response-rewrite/Index.vue';
+import FaultInjection from '@/components/plugin-form/fault-injection/Index.vue';
+import RequestValidate from '@/components/plugin-form/request-validation/Index.vue';
+import ApiBreaker from '@/components/plugin-form/api-breaker/Index.vue';
 
 interface IProps {
   curPlugin: any
@@ -264,6 +309,15 @@ const emit = defineEmits<{
   'on-change': [type: string]
   'choose-plugin': [plugin: any]
 }>();
+
+interface IProps {
+  curPlugin: any
+  scopeInfo: any
+  editPlugin: any
+  type: string
+  pluginList?: any[]
+  bindingPlugins?: any[]
+}
 
 const stageStore = useStage();
 const BkSchemaForm = createForm();
@@ -298,6 +352,29 @@ const exampleContent = ref('');
 // 插件切换 select
 const pluginSelectRef = ref<HTMLElement>();
 
+const pluginFormCompMap = {
+  'proxy-cache': ProxyCacheForm,
+  'bk-user-restriction': BkUserRestriction,
+  'bk-request-body-limit': BkRequestBodyLimit,
+  'bk-access-token-source': BkAccessTokenSource,
+  'redirect': Redirect,
+  'bk-ip-restriction': BkIpRestriction,
+  'bk-header-rewrite': BkHeaderRewrite,
+  'bk-mock': BkMock,
+  'response-rewrite': ResponseRewrite,
+  'fault-injection': FaultInjection,
+  'request-validation': RequestValidate,
+  'api-breaker': ApiBreaker,
+  'bk-rate-limit': BkRateLimit,
+  'bk-cors': BkCors,
+};
+
+const dynamicFormPlugin = shallowRef(['bk-cors', 'bk-ip-restriction', 'bk-header-rewrite', 'bk-rate-limit']);
+
+const isDynamicFormPlugin = computed(() => {
+  return dynamicFormPlugin.value.includes(choosePlugin.value);
+});
+
 const isBound = computed(() => {
   return function (obj: any) {
     return bindingPlugins?.some((item: { code: string }) => item.code === obj.code);
@@ -320,8 +397,13 @@ watch(
   },
 );
 
+const clearValidate = () => {
+  formRef.value?.clearValidate?.();
+};
+
 // 上一页
 const handlePre = () => {
+  clearValidate();
   emit('on-change', 'pre');
 };
 // 确认
@@ -360,17 +442,32 @@ const handleAdd = async () => {
     if (formStyle.value === 'raw') {
       Object.assign(data, { yaml: whitelist.value?.sendPolicyData().data });
     }
-    else {
-      await formRef.value!.validate();
-      Object.assign(data, { yaml: json2Yaml(JSON.stringify(schemaFormData.value)).data });
+    if ([
+      'proxy-cache',
+      'bk-user-restriction',
+      'bk-request-body-limit',
+      'bk-access-token-source',
+      'redirect',
+      'bk-mock',
+      'response-rewrite',
+      'fault-injection',
+      'request-validation',
+      'api-breaker',
+      ...dynamicFormPlugin.value,
+    ].includes(choosePlugin.value)) {
+      if (isDynamicFormPlugin.value) {
+        // 动态插件需要调用下子组件的验证
+        const isValidate = await formRef.value?.validate();
+        if (!isValidate) {
+          return;
+        }
+      }
+      const formValue = await formRef.value!.getValue();
+      Object.assign(data, { yaml: json2Yaml(JSON.stringify(formValue)).data });
+      schemaFormData.value = formValue;
     }
   }
-  catch (err) {
-    const error = err as Error;
-    Message({
-      theme: 'error',
-      message: error.message || t('表单校验失败'),
-    });
+  catch {
     return;
   }
 
@@ -382,6 +479,7 @@ const handleAdd = async () => {
 
 // 取消
 const handleCancel = () => {
+  clearValidate();
   if (isAdd.value) {
     emit('on-change', 'addCancel');
   }
@@ -391,7 +489,6 @@ const handleCancel = () => {
 const getSchemaFormData = async (code: string) => {
   try {
     const { apigwId } = scopeInfo;
-
     isPluginFormLoading.value = true;
     const res = await getPluginForm(apigwId, code);
     // const res = {
@@ -622,7 +719,7 @@ const getSchemaFormData = async (code: string) => {
     exampleContent.value = res.example || '';
 
     if (!isAdd.value) {
-      const yamlData = yaml2Json(editPlugin.yaml).data;
+      const yamlData = yaml2Json(editPlugin?.yaml).data;
       schemaFormData.value = { ...(yamlData as object) };
     }
   }
@@ -658,6 +755,11 @@ const init = async () => {
 };
 init();
 
+// 设置编辑插件配置数据回显
+const setPluginInfo = (plugin) => {
+  schemaFormData.value = cloneDeep(plugin?.config);
+};
+
 // 点击了插件 select 区域外且未 focus 到该组件时，隐藏整个 select
 onClickOutside(pluginSelectRef, () => {
   if (pluginSelectRef.value?.isFocus === false) {
@@ -665,6 +767,10 @@ onClickOutside(pluginSelectRef, () => {
   }
 });
 
+defineExpose({
+  clearValidate,
+  setPluginInfo,
+});
 </script>
 
 <style lang="scss" scoped>

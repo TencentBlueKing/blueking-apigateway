@@ -446,3 +446,10 @@ class GatewayDevGuidelineOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.gateway.serializers.GatewayDevGuidelineOutputSLZ"
+
+
+class GatewayReleasingStatusOutputSLZ(serializers.Serializer):
+    is_releasing = serializers.BooleanField(read_only=True, help_text="是否有环境发布")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayReleasingStatusOutputSLZ"

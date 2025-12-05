@@ -18,7 +18,6 @@
 import logging
 from typing import Tuple
 
-from apigateway.controller.constants import DELETE_PUBLISH_ID
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.registry.etcd import EtcdRegistry
 from apigateway.controller.release_logger import ReleaseProcedureLogger
@@ -171,16 +170,6 @@ class GatewayResourceDistributor(BaseDistributor):
         """撤销已发布到 micro-gateway 对应的 registry 中的配置"""
         registry = self._get_registry(self.gateway, self.stage)
 
-        # 删除所有相关数据
-        if publish_id == DELETE_PUBLISH_ID:
-            try:
-                registry.delete_resources_by_key_prefix()
-            except Exception as e:  # pylint: disable=broad-except
-                fail_msg = f"revoke gateway resources delete resources from etcd failed: {type(e).__name__}: {str(e)}"
-                logger.exception(fail_msg)
-                return False, fail_msg
-            return True, "ok"
-
         procedure_logger = ReleaseProcedureLogger(
             "gateway-revoking",
             logger=logger,
@@ -189,6 +178,21 @@ class GatewayResourceDistributor(BaseDistributor):
             release_task_id=release_task_id,
             publish_id=publish_id,
         )
+
+        # 2025-11-26 注释掉，下架和删除一视同仁，都 删掉路径 + 一个 release + 一个 detect route
+        # 由 operator 根据 publish_id 决定是下架还是删除，是否彻底删除
+        # 删除所有相关数据
+        # if publish_id == DELETE_PUBLISH_ID:
+        #     try:
+        #         with procedure_logger.step("delete gateway resources from etcd by key_prefix(delete_publish_id)"):
+        #             registry.delete_resources_by_key_prefix()
+
+        #     except Exception as e:  # pylint: disable=broad-except
+        #         fail_msg = f"revoke gateway resources delete resources from etcd failed: {type(e).__name__}: {str(e)}"
+        #         logger.exception(fail_msg)
+        #         procedure_logger.exception(fail_msg)
+        #         return False, fail_msg
+        #     return True, "ok"
 
         transformer = GatewayApisixResourceTransformer(
             release=self.release,
@@ -200,7 +204,7 @@ class GatewayResourceDistributor(BaseDistributor):
             with procedure_logger.step(f"delete gateway resources from etcd by key_prefix({registry.key_prefix})"):
                 registry.delete_resources_by_key_prefix()
 
-                # 删除资源后需要同步虚拟路由到 etcd
+                # 删除资源后需要同步 _release and detect route 到 etcd
                 transformer.transform()
                 resources = list(transformer.get_transformed_resources())
                 with procedure_logger.step(f"sync gateway version resources(count={len(resources)}) to etcd"):

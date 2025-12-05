@@ -17,7 +17,7 @@
 #
 
 import base64
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
@@ -43,10 +43,15 @@ from .utils import UrlInfo, truncate_string
 
 
 class ServiceConvertor(GatewayResourceConvertor):
-    def __init__(self, release_data: ReleaseData, publish_id: int):
+    def __init__(self, release_data: ReleaseData, publish_id: int, revoke_flag: Optional[bool] = False):
         super().__init__(release_data=release_data, publish_id=publish_id)
+        self._revoke_flag = revoke_flag
 
     def convert(self) -> List[GatewayApisixModel]:
+        # if revoke, we should not generate service, will delete the service from etcd
+        if self._revoke_flag:
+            return []
+
         # FIXME: should not generate service if the backend is not related to any resource
         backend_configs = self._release_data.get_stage_backend_configs()
         if not backend_configs:
@@ -118,7 +123,7 @@ class ServiceConvertor(GatewayResourceConvertor):
             # FIXME: 如何处理 http/https 协议
             backend = Backend.objects.get(id=backend_id)
             backend_name = backend.name
-            backend_desc = backend.description
+            # backend_desc = backend.description
 
             # currently, only add one plugin for service of per backend
             # other plugins are shared by stage, they will be merged on operator
@@ -149,10 +154,11 @@ class ServiceConvertor(GatewayResourceConvertor):
                         f"{self.gateway_name}.{self.stage_name}.{backend_name}",
                         100,
                     ),
-                    desc=truncate_string(
-                        f"[{self.stage_name}/{self.stage_id}, {backend_name}/{backend_id}] {backend_desc}",
-                        100,
-                    ),
+                    # NOTE: no desc for service, save memory
+                    # desc=truncate_string(
+                    #     f"[{self.stage_name}/{self.stage_id}, {backend_name}/{backend_id}] {backend_desc}",
+                    #     100,
+                    # ),
                     labels=labels,
                     plugins=plugins,
                     upstream=upstream,

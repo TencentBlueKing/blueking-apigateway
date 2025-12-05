@@ -303,6 +303,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
               content: row.name,
               placement: 'top',
               disabled: !row.isOverflow,
+              extCls: 'max-w-480px',
             }}
             class="truncate color-#3a84ff cursor-pointer mr-4px"
             onMouseenter={e => tableRef.value?.handleCellEnter({
@@ -366,7 +367,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
             ? (
               <div
                 v-bk-tooltips={{
-                  content: row.maintainers.join(','),
+                  content: row.maintainers.join(', '),
                   placement: 'top',
                   disabled: !row.isOverflow,
                   extCls: 'max-w-480px',
@@ -626,6 +627,23 @@ $primary-color: #3a84ff;
 
       .category-list {
         width: 1000px;
+        height: calc(100vh - 128px);
+        overflow-y: scroll;
+
+        &::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background-color: #dcdee5;
+          border-radius: 3px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background-color: transparent;
+          border-radius: 3px;
+        }
 
         .category-wrap {
           margin-bottom: 4px;
