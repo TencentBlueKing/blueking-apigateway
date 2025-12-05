@@ -235,14 +235,21 @@ class AIProxyConvertor(PluginConvertor):
 
     def convert(self, config: Dict[str, Any]) -> Dict[str, Any]:
         auth = config["auth"]
-        if auth.get("header"):
-            del auth["query"]
-            auth["header"] = {item["key"]: item["value"] for item in auth["header"]}
+
+        header = auth.get("header")
+        query = auth.get("query")
+
+        if header and query:
+            raise ValueError("Only one of header or query can be configured")
+
+        if header:
+            auth.pop("query", None)
+            auth["header"] = {item["key"]: item["value"] for item in header}
             return config
 
-        if auth.get("query"):
-            del auth["header"]
-            auth["query"] = {item["key"]: item["value"] for item in auth["query"]}
+        if query:
+            auth.pop("header", None)
+            auth["query"] = {item["key"]: item["value"] for item in query}
             return config
 
         raise ValueError("At least one of header or query must be configured")

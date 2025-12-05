@@ -19,6 +19,7 @@ import pytest
 
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.service.plugin.convertor import (
+    AIProxyConvertor,
     BkAccessTokenSourceConvertor,
     BkCorsConvertor,
     BkMockConvertor,
@@ -387,6 +388,48 @@ class TestProxyCacheConvertor:
     )
     def test_convert(self, data, expected):
         convertor = ProxyCacheConvertor()
+        result = convertor.convert(data)
+        assert result == expected
+
+
+class TestAIProxyConvertor:
+    @pytest.mark.parametrize(
+        "data, expected",
+        [
+            (
+                {
+                    "provider": "openai",
+                    "auth": {
+                        "header": [{"key": "k1", "value": "v2"}],
+                        "query": [],
+                    },
+                },
+                {
+                    "provider": "openai",
+                    "auth": {
+                        "header": {"k1": "v2"},
+                    },
+                },
+            ),
+            (
+                {
+                    "provider": "openai",
+                    "auth": {
+                        "header": [],
+                        "query": [{"key": "k1", "value": "v2"}],
+                    },
+                },
+                {
+                    "provider": "openai",
+                    "auth": {
+                        "query": {"k1": "v2"},
+                    },
+                },
+            ),
+        ],
+    )
+    def test_convert(self, data, expected):
+        convertor = AIProxyConvertor()
         result = convertor.convert(data)
         assert result == expected
 
