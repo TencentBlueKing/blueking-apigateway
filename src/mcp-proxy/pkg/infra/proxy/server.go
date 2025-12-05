@@ -36,6 +36,7 @@ type MCPServer struct {
 	Handler   *transport.SSEHandler
 	name      string
 	tools     map[string]struct{}
+	prompts   map[string]struct{}
 	rwLock    *sync.RWMutex
 }
 
@@ -50,6 +51,7 @@ func NewMCPServer(transport transport.ServerTransport, handler *transport.SSEHan
 		Transport: transport,
 		Handler:   handler,
 		tools:     make(map[string]struct{}),
+		prompts:   make(map[string]struct{}),
 		rwLock:    &sync.RWMutex{},
 		name:      name,
 	}
@@ -63,6 +65,14 @@ func (s *MCPServer) IsRegisteredTool(toolName string) bool {
 	return ok
 }
 
+// IsRegisteredPrompt checks if the prompt is registered
+func (s *MCPServer) IsRegisteredPrompt(promptName string) bool {
+	s.rwLock.RLock()
+	defer s.rwLock.RUnlock()
+	_, ok := s.prompts[promptName]
+	return ok
+}
+
 // GetTools ...
 func (s *MCPServer) GetTools() []string {
 	s.rwLock.RLock()
@@ -72,6 +82,17 @@ func (s *MCPServer) GetTools() []string {
 		toolNames = append(toolNames, toolName)
 	}
 	return toolNames
+}
+
+// GetPrompts ...
+func (s *MCPServer) GetPrompts() []string {
+	s.rwLock.RLock()
+	defer s.rwLock.RUnlock()
+	promptNames := make([]string, 0, len(s.prompts))
+	for promptName := range s.prompts {
+		promptNames = append(promptNames, promptName)
+	}
+	return promptNames
 }
 
 // Run ...
@@ -106,6 +127,22 @@ func (s *MCPServer) UnregisterTool(toolName string) {
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
 	delete(s.tools, toolName)
+}
+
+// RegisterPrompt ...
+func (s *MCPServer) RegisterPrompt(prompt *protocol.Prompt, promptHandler server.PromptHandlerFunc) {
+	s.Server.RegisterPrompt(prompt, promptHandler)
+	s.rwLock.Lock()
+	defer s.rwLock.Unlock()
+	s.prompts[prompt.Name] = struct{}{}
+}
+
+// UnregisterPrompt unregisters a prompt from the server
+func (s *MCPServer) UnregisterPrompt(promptName string) {
+	s.Server.UnregisterPrompt(promptName)
+	s.rwLock.Lock()
+	defer s.rwLock.Unlock()
+	delete(s.prompts, promptName)
 }
 
 // RegisterResources ...

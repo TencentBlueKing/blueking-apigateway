@@ -28,8 +28,9 @@ import (
 
 // MCPServerConfig ...
 type MCPServerConfig struct {
-	Name  string        `json:"name"` // 唯一标识name，可以是：gateway_name+stage或者其他id
-	Tools []*ToolConfig `json:"tools"`
+	Name    string          `json:"name"` // 唯一标识name，可以是：gateway_name+stage或者其他id
+	Tools   []*ToolConfig   `json:"tools"`
+	Prompts []*PromptConfig `json:"prompts"`
 }
 
 // ToolConfig ...
@@ -45,6 +46,27 @@ type ToolConfig struct {
 	OutputSchema json.RawMessage   `json:"output_schema"`
 }
 
+// PromptConfig ...
+type PromptConfig struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Arguments   []*PromptArgument      `json:"arguments"`
+	Messages    []*PromptMessageConfig `json:"messages"`
+}
+
+// PromptMessageConfig ...
+type PromptMessageConfig struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+// PromptArgument ...
+type PromptArgument struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Required    bool   `json:"required"`
+}
+
 // String ...
 func (t *ToolConfig) String() string {
 	base := strings.TrimRight(t.Host, "/") + "/" +
@@ -52,4 +74,9 @@ func (t *ToolConfig) String() string {
 	fullUrl := strings.TrimRight(base, "/") + "/" +
 		strings.TrimLeft(t.Url, "/")
 	return fmt.Sprintf("tool:[name:%s,url:%s, method:%s]", t.Name, fullUrl, t.Method)
+}
+
+// String ...
+func (p *PromptConfig) String() string {
+	return fmt.Sprintf("prompt:[name:%s]", p.Name)
 }

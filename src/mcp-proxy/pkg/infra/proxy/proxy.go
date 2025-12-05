@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/ThinkInAIXYZ/go-mcp/protocol"
@@ -115,6 +116,24 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 			tool := protocol.NewToolWithRawSchema(toolConfig.Name, toolConfig.Description, bytes)
 			toolHandler := genToolHandler(toolConfig)
 			mcpServer.RegisterTool(tool, toolHandler)
+		}
+		// register prompt
+		for _, promptConfig := range config.Prompts {
+			args := make([]*protocol.PromptArgument, 0, len(promptConfig.Arguments))
+			for _, arg := range promptConfig.Arguments {
+				args = append(args, &protocol.PromptArgument{
+					Name:        arg.Name,
+					Description: arg.Description,
+					Required:    arg.Required,
+				})
+			}
+			prompt := &protocol.Prompt{
+				Name:        promptConfig.Name,
+				Description: promptConfig.Description,
+				Arguments:   args,
+			}
+			promptHandler := genPromptHandler(promptConfig)
+			mcpServer.RegisterPrompt(prompt, promptHandler)
 		}
 		m.AddMCPServer(config.Name, mcpServer)
 	}
@@ -360,6 +379,39 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 					Text: cast.ToString(submit),
 				},
 			},
+		}, nil
+	}
+	return handler
+}
+
+func genPromptHandler(promptConfig *PromptConfig) server.PromptHandlerFunc {
+	handler := func(ctx context.Context, request *protocol.GetPromptRequest) (*protocol.GetPromptResult, error) {
+		auditLog := logging.GetAuditLoggerWithContext(ctx)
+		auditLog = auditLog.With(zap.String("prompt", promptConfig.String()))
+		auditLog.Info("get prompt", zap.Any("request", request))
+
+		messages := make([]*protocol.PromptMessage, 0, len(promptConfig.Messages))
+		for _, msg := range promptConfig.Messages {
+			content := msg.Content
+			// 简单的参数替换: {{arg_name}} -> arg_value
+			if request.Arguments != nil {
+				for k, v := range request.Arguments {
+					placeholder := fmt.Sprintf("{{%s}}", k)
+					content = strings.ReplaceAll(content, placeholder, v)
+				}
+			}
+
+			messages = append(messages, &protocol.PromptMessage{
+				Role: protocol.Role(msg.Role),
+				Content: &protocol.TextContent{
+					Type: "text",
+					Text: content,
+				},
+			})
+		}
+
+		return &protocol.GetPromptResult{
+			Messages: messages,
 		}, nil
 	}
 	return handler
