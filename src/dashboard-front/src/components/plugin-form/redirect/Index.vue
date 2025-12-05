@@ -22,7 +22,6 @@
       <BkInput
         v-model="form.ret_code"
         :max="599"
-        :min="200"
         :precision="0"
         type="number"
         clearable
