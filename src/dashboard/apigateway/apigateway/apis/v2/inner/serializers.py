@@ -335,6 +335,7 @@ class MCPServerPermissionListInputSLZ(serializers.Serializer):
 class MCPServerBaseSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
+    title = serializers.CharField(read_only=True, help_text="MCPServer 中文名/显示名称")
     description = serializers.CharField(read_only=True, help_text="MCPServer 描述")
     tools_count = serializers.CharField(read_only=True, help_text="MCPServer 工具数量")
     doc_link = serializers.SerializerMethodField(help_text="MCPServer 文档访问地址")

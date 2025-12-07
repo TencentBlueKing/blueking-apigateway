@@ -36,6 +36,7 @@ class MCPServerListInputSLZ(serializers.Serializer):
 class MCPServerBaseOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
     name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
+    title = serializers.CharField(read_only=True, help_text="MCPServer 中文名/显示名称")
     description = serializers.CharField(read_only=True, help_text="MCPServer 描述")
 
     is_public = serializers.BooleanField(read_only=True, help_text="MCPServer 是否公开")

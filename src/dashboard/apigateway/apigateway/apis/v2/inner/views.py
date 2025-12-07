@@ -476,6 +476,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                     "mcp_server": {
                         "id": obj.id,
                         "name": obj.name,
+                        "title": obj.title,
                         "description": obj.description,
                         "tools_count": obj.tools_count,
                         "tool_names": obj.resource_names,
@@ -549,6 +550,7 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
                 "mcp_server": {
                     "id": obj.mcp_server_id,
                     "name": obj.mcp_server.name,
+                    "title": obj.mcp_server.title,
                     "description": obj.mcp_server.description,
                     "tools_count": obj.mcp_server.tools_count,
                     "tool_names": obj.mcp_server.resource_names,
@@ -600,6 +602,7 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
                 "mcp_server": {
                     "id": obj.mcp_server_id,
                     "name": obj.mcp_server.name,
+                    "title": obj.mcp_server.title,
                     "description": obj.mcp_server.description,
                     "tools_count": obj.mcp_server.tools_count,
                     "tool_names": obj.mcp_server.resource_names,
@@ -659,6 +662,7 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
             "mcp_server": {
                 "id": instance.mcp_server_id,
                 "name": instance.mcp_server.name,
+                "title": instance.mcp_server.title,
                 "description": instance.mcp_server.description,
                 "tools_count": instance.mcp_server.tools_count,
                 "tool_names": instance.mcp_server.resource_names,
