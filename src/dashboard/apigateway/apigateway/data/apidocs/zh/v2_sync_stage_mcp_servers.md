@@ -25,6 +25,7 @@ mcp_servers 参数说明
 | 参数名称       | 参数类型          | 必选 | 描述                                                                     |
 |------------|---------------|----|------------------------------------------------------------------------|
 | `name`     | string        | 是  | MCP Server 名字 例如： `"mcp1"`(系统会默认转换为 {gateway_name}-{stage-name}-{name}) |
+| `title`    | string        | 否  | MCP Server 中文名/显示名称                                                    |
 | `description` | string        | 否  | MCP Server 描述                                                           |
 | `labels`   | array[string] | 否  | MCP Server 标签                                                          |
 | `resource_names` | array[string] | 是  | MCP Server 关联的 resource 列表                                             |
@@ -44,6 +45,7 @@ mcp_servers 参数说明
         "tag2"
       ],
       "name": "server1",
+      "title": "服务1",
       "resource_names": [
         "resource1"
       ],
