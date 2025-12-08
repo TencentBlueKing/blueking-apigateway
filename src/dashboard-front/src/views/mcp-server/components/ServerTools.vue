@@ -101,11 +101,17 @@
         <div class="main-content-wrap">
           <template v-if="selectedTool">
             <header class="tool-name">
-              <div class="truncate name">
-                {{ selectedTool.name }}
+              <div
+                v-bk-tooltips="{content: selectedTool.name, disabled: selectedTool.name.length <= 30}"
+                class="name"
+              >
+                {{ truncate(selectedTool.name) }}
               </div>
-              <div class="desc">
-                （{{ selectedTool.description }}）
+              <div
+                v-bk-tooltips="{content: selectedTool.description, disabled: selectedTool.description.length <= 50}"
+                class="desc"
+              >
+                （{{ truncate(selectedTool.description, { 'length': 50 }) }}）
               </div>
               <BkButton
                 theme="primary"
@@ -225,6 +231,7 @@ import hljs from 'highlight.js';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import ResponseParams from '@/views/resource-management/components/response-params/Index.vue';
 import RequestParams from '@/views/resource-management/components/request-params/Index.vue';
+import { truncate } from 'lodash-es';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 
@@ -493,7 +500,6 @@ onMounted(() => {
 @use "sass:color";
 
 $primary-color: #3a84ff;
-// $code-bc: #1e1e1e;
 $code-bc: #f6f8fa;
 $code-color: #63656e;
 
