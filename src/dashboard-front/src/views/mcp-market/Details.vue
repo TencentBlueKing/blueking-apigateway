@@ -18,35 +18,59 @@
 
 <template>
   <div>
-    <div class="top-bar flex-row align-items-center">
+    <div class="top-bar flex-row items-center">
       <AgIcon
         name="return-small"
         size="32"
         class="icon"
         @click="goBack"
       />
-      <span class="top-bar-title">
-        {{ mcpDetails?.name }}
-      </span>
+      <div class="flex items-center w-full">
+        <BkOverflowTitle
+          type="tips"
+          class="truncate color-#313238 text-16px max-w-1/2"
+        >
+          {{ mcpDetails?.name }}
+        </BkOverflowTitle>
+        <BkOverflowTitle
+          type="tips"
+          class="truncate color-#979ba5 text-14px ml-8px"
+        >
+          ({{ mcpDetails?.name }})
+        </BkOverflowTitle>
+      </div>
     </div>
 
     <div class="main">
       <div class="base-info">
-        <div class="header">
-          <div class="flex-row align-items-center">
-            <div class="title">
-              {{ mcpDetails?.name }}
+        <div class="pt-18px pb-12px flex items-center justify-between w-full header">
+          <div class="flex items-center flex-wrap gap-8px">
+            <div class="flex items-center max-w-[960px] min-w-0 title">
+              <BkOverflowTitle
+                type="tips"
+                class="truncate max-w-1/2"
+              >
+                {{ mcpDetails?.title }}
+              </BkOverflowTitle>
+              <BkOverflowTitle
+                type="tips"
+                class="truncate ml-8px"
+              >
+                ({{ mcpDetails?.name }})
+              </BkOverflowTitle>
             </div>
-            <BkTag
-              v-if="mcpDetails?.gateway?.is_official"
-              theme="success"
-              class="mr8"
-            >
-              {{ t('官方') }}
-            </BkTag>
-            <BkTag theme="info">
-              {{ mcpDetails?.stage?.name }}
-            </BkTag>
+            <div class="flex items-center flex-shrink-0">
+              <BkTag
+                v-if="mcpDetails?.gateway?.is_official"
+                theme="success"
+                class="mr-8px"
+              >
+                {{ t('官方') }}
+              </BkTag>
+              <BkTag theme="info">
+                {{ mcpDetails?.stage?.name }}
+              </BkTag>
+            </div>
           </div>
 
           <div class="permission-guide">
@@ -67,7 +91,7 @@
         <div class="content">
           <div class="info-item">
             <div class="label">
-              {{ t('访问地址') }}：
+              {{ t('访问地址') }}:
             </div>
             <div class="value">
               {{ mcpDetails?.url }}
@@ -81,7 +105,7 @@
           </div>
           <div class="info-item">
             <div class="label">
-              {{ t('描述') }}：
+              {{ t('描述') }}:
             </div>
             <div class="value">
               {{ mcpDetails?.description }}
@@ -89,7 +113,7 @@
           </div>
           <div class="info-item">
             <div class="label">
-              {{ t('标签') }}：
+              {{ t('标签') }}:
             </div>
             <div class="value">
               <BkTag
@@ -103,7 +127,7 @@
           </div>
           <div class="info-item">
             <div class="label">
-              {{ t('负责人') }}：
+              {{ t('负责人') }}:
             </div>
             <div class="value">
               <TenantUserSelector
@@ -134,7 +158,7 @@
           name="tools"
         >
           <template #label>
-            <div class="flex-row align-items-center">
+            <div class="flex-row items-center">
               {{ t('工具') }}
               <div
                 v-if="toolsCount > 0"
@@ -156,7 +180,7 @@
           name="guide"
         >
           <template #label>
-            <div class="flex-row align-items-center">
+            <div class="flex-row items-center">
               {{ t('使用指引') }}
             </div>
           </template>
@@ -229,9 +253,12 @@ watch(
 
 <style lang="scss" scoped>
 .top-bar {
+  position: sticky;
+  top: 0;
   height: 64px;
   padding: 0 24px;
-  background: #FFF;
+  background: #ffffff;
+  z-index: 9;
   box-shadow: 0 3px 4px 0 #0000000a;
 
   .icon {
@@ -262,17 +289,12 @@ watch(
     box-shadow: 0 2px 4px 0 #1919290d;
 
     .header {
-      display: flex;
-      height: 54px;
       border-bottom: 1px solid #EAEBF0;
-      align-items: center;
-      justify-content: space-between;
 
       .title {
         margin-right: 16px;
         font-size: 20px;
         font-weight: bold;
-        line-height: 54px;
         color: #313238;
       }
 
@@ -300,6 +322,7 @@ watch(
         .value {
           font-size: 14px;
           color: #313238;
+          margin-left: 8px;
 
           .icon {
             color: #3A84FF;

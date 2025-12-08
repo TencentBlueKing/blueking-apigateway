@@ -670,6 +670,14 @@ defineExpose({
 
   .t-table__body {
     color: #63656e;
+
+    .t-table__cell--fixed-left {
+      line-height: 1;
+
+      .bk-checkbox {
+        vertical-align: middle;
+      }
+    }
   }
 
   .t-table__pagination {
