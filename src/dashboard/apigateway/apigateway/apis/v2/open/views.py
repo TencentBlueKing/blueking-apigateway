@@ -241,6 +241,7 @@ class MCPServerListApi(generics.ListAPIView):
         if slz.validated_data.get("keyword"):
             queryset = queryset.filter(
                 Q(name__icontains=slz.validated_data["keyword"])
+                | Q(title__icontains=slz.validated_data["keyword"])
                 | Q(description__icontains=slz.validated_data["keyword"])
             )
 
@@ -484,6 +485,7 @@ class UserMCPServerListApi(generics.ListAPIView):
         if slz.validated_data.get("keyword"):
             queryset = queryset.filter(
                 Q(name__icontains=slz.validated_data["keyword"])
+                | Q(title__icontains=slz.validated_data["keyword"])
                 | Q(description__icontains=slz.validated_data["keyword"])
             )
 

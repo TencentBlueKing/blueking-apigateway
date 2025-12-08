@@ -19,6 +19,7 @@ import datetime
 import logging
 from typing import List, Optional
 
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from apigateway.apps.mcp_server.constants import (
@@ -102,6 +103,6 @@ class MCPServerPermissionHandler:
             queryset = queryset.filter(status=apply_status)
 
         if query:
-            queryset = queryset.filter(mcp_server__name__icontains=query)
+            queryset = queryset.filter(Q(mcp_server__name__icontains=query) | Q(mcp_server__title__icontains=query))
 
         return queryset

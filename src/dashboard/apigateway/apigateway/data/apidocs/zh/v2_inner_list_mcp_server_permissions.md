@@ -23,6 +23,7 @@ mcp_server 申请权限列表
       "mcp_server": {
         "id": 1,
         "name": "bk-apigateway-prod-test1",
+        "title": "测试服务1",
         "description": "test",
         "tools_count": "1",
         "doc_link": ""
@@ -37,6 +38,7 @@ mcp_server 申请权限列表
       "mcp_server": {
         "id": 2,
         "name": "bk-esb-prod-test2",
+        "title": "测试服务2",
         "description": "test",
         "tools_count": "1",
         "doc_link": ""
@@ -71,6 +73,7 @@ mcp_server 申请权限列表
 |-----------------|--------|-------------------|
 | id              | int    | mcp_server ID     |
 | name            | string | mcp_server 名称     |
+| title           | string | mcp_server 中文名/显示名称 |
 | description     | string | mcp_server 描述     |
 | tools_count     | int    | mcp_server 工具数量   |
 | doc_link        | string | mcp_server 文档访问地址 |

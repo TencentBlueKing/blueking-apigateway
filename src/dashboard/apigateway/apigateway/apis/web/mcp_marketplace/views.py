@@ -70,7 +70,10 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
         keyword = slz.validated_data.get("keyword")
         if keyword:
             queryset = queryset.filter(
-                Q(name__icontains=keyword) | Q(description__icontains=keyword) | Q(_labels__icontains=keyword)
+                Q(name__icontains=keyword)
+                | Q(title__icontains=keyword)
+                | Q(description__icontains=keyword)
+                | Q(_labels__icontains=keyword)
             )
 
         # tenant_id filter here

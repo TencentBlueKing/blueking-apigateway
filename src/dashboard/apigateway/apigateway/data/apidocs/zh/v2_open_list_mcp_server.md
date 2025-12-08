@@ -23,6 +23,7 @@
       {
         "id": 2,
         "name": "test",
+        "title": "测试服务",
         "description": null,
         "is_public": true,
         "labels": [],
@@ -66,6 +67,7 @@
 |------------------|---------|----------------------------|
 | id               | int     | mcp_server ID              |
 | name             | string  | mcp_server 名称              |
+| title            | string  | mcp_server 中文名/显示名称        |
 | description      | string  | mcp_server 描述              |
 | is_public        | boolean | mcp_server 是否公开            |
 | labels           | array   | mcp_server 标签              |

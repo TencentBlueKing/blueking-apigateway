@@ -40,11 +40,14 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         child=serializers.CharField(), required=True, help_text="MCPServer 资源名称列表"
     )
     name = serializers.CharField(required=True, help_text="MCPServer 名称", max_length=64)
+    title = serializers.CharField(
+        required=False, allow_blank=True, help_text="MCPServer 中文名/显示名称", max_length=128
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCreateInputSLZ"
         model = MCPServer
-        fields = ("name", "description", "stage_id", "is_public", "labels", "resource_names")
+        fields = ("name", "title", "description", "stage_id", "is_public", "labels", "resource_names")
         lookup_field = "id"
         validators = [MCPServerValidator()]
 
@@ -58,7 +61,11 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
 class MCPServerBaseOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
     name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
+    title = serializers.SerializerMethodField(help_text="MCPServer 中文名/显示名称")
     description = serializers.CharField(read_only=True, help_text="MCPServer 描述")
+
+    def get_title(self, obj) -> str:
+        return obj.title if obj.title else obj.name
 
     is_public = serializers.BooleanField(read_only=True, help_text="MCPServer 是否公开")
 
@@ -99,6 +106,9 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
     resource_names = serializers.ListField(
         child=serializers.CharField(), required=False, help_text="MCPServer 资源名称列表"
     )
+    title = serializers.CharField(
+        required=False, allow_blank=True, help_text="MCPServer 中文名/显示名称", max_length=128
+    )
 
     def validate_resource_names(self, resource_names):
         if resource_names is not None:
@@ -117,7 +127,7 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateInputSLZ"
         model = MCPServer
-        fields = ("description", "is_public", "labels", "resource_names")
+        fields = ("title", "description", "is_public", "labels", "resource_names")
         lookup_field = "id"
 
 
@@ -196,6 +206,10 @@ class MCPServerStageReleaseCheckInputSLZ(serializers.Serializer):
 class MCPServerBaseSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
     name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
+    title = serializers.SerializerMethodField(help_text="MCPServer 中文名/显示名称")
+
+    def get_title(self, obj) -> str:
+        return obj.title if obj.title else obj.name
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerBaseSLZ"

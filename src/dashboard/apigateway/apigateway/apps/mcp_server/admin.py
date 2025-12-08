@@ -27,6 +27,7 @@ class MCPServerAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_display = [
         "id",
         "name",
+        "title",
         "gateway",
         "stage",
         "is_public",
@@ -35,7 +36,7 @@ class MCPServerAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
         "created_time",
         "updated_time",
     ]
-    search_fields = ["id", "name", "gateway__name", "_labels"]
+    search_fields = ["id", "name", "title", "gateway__name", "_labels"]
     list_filter = ["gateway", "is_public", "status"]
 
 

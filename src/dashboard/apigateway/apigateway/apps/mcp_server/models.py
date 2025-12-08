@@ -36,6 +36,7 @@ from .constants import (
 
 class MCPServer(TimestampedModelMixin, OperatorModelMixin):
     name = models.CharField(max_length=64, unique=True)
+    title = models.CharField(max_length=128, blank=True, default="", help_text="MCPServer 中文名/显示名称")
     description = models.CharField(max_length=512, blank=True, null=True)
 
     gateway = models.ForeignKey(Gateway, on_delete=models.CASCADE)
