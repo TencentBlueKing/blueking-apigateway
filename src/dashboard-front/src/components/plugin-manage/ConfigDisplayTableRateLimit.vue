@@ -102,7 +102,7 @@ const tableData = computed(() => {
     if (appId === '__default') {
       defaultData.push({
         tokens,
-        type: t('默认频率限制'),
+        type: t('默认应用频率限制'),
         period: periodTextMap[period],
         appId: '--',
       });
@@ -111,7 +111,7 @@ const tableData = computed(() => {
       specialData.push({
         appId,
         tokens,
-        type: t('特殊频率限制'),
+        type: t('特殊应用频率限制'),
         period: periodTextMap[period],
       });
     }

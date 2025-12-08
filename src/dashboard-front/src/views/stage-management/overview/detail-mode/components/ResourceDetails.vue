@@ -296,16 +296,21 @@
           >
             <BkRow>
               <BkCol :span="4">
-                <label class="ag-key">{{ t("文档更新时间") }}:</label>
+                <label class="ag-key">{{ t('中文文档更新时间') }}:</label>
               </BkCol>
               <BkCol :span="10">
                 <div class="ag-value">
-                  <template v-if="locale === 'en'">
-                    {{ currentSource?.doc_updated_time?.en || "--" }}
-                  </template>
-                  <template v-else>
-                    {{ currentSource?.doc_updated_time?.zh || "--" }}
-                  </template>
+                  {{ currentSource?.doc_updated_time?.zh || '--' }}
+                </div>
+              </BkCol>
+            </BkRow>
+            <BkRow>
+              <BkCol :span="4">
+                <label class="ag-key">{{ t('英文文档更新时间') }}:</label>
+              </BkCol>
+              <BkCol :span="10">
+                <div class="ag-value">
+                  {{ currentSource?.doc_updated_time?.en || '--' }}
                 </div>
               </BkCol>
             </BkRow>
@@ -339,7 +344,7 @@ const { info } = defineProps<IProps>();
 
 const emit = defineEmits<{ hidden: [void] }>();
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const route = useRoute();
 
 const isShow = ref(false);
