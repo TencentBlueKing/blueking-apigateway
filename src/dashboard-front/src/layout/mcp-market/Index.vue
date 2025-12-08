@@ -33,9 +33,9 @@
             :placeholder="t('请输入 MCP 名称或描述搜索')"
             clearable
             type="search"
-            @enter="getList"
+            @enter="handleSearch"
             @blur="getList"
-            @clear="getList"
+            @clear="handleSearch"
             @input="handleInput"
           />
           <!-- <BkCheckbox v-model="isPublic">{{ t('仅展示官方') }}</BkCheckbox> -->
@@ -46,88 +46,98 @@
           <span>{{ t('使用指引') }}</span>
           </div> -->
       </div>
-      <div
-        v-if="mcpList?.length"
-        class="card-list"
-      >
-        <div
-          v-for="item in mcpList"
-          :key="item.id"
-          class="card"
-          @click="() => goDetails(item.id)"
-        >
-          <div class="header">
-            <BkOverflowTitle
-              class="title"
-              style="max-width: calc(100% - 115px)"
-            >
-              {{ item.name }}
-            </BkOverflowTitle>
-            <BkTag
-              v-if="item.gateway.is_official"
-              theme="success"
-              class="mr8"
-            >
-              {{ t('官方') }}
-            </BkTag>
-            <BkTag theme="info">
-              {{ item.stage?.name }}
-            </BkTag>
-          </div>
-          <div class="content">
-            <div class="info-item">
-              <div class="label">
-                {{ t('访问地址') }}：
-              </div>
-              <div class="value flex-row align-items-center">
-                <BkOverflowTitle style="width: calc(100% - 28px)">
-                  {{ item.url }}
-                </BkOverflowTitle>
-                <div
-                  class="copy-wrapper"
-                  @click.stop="() => handleCopy(item.url)"
-                >
-                  <AgIcon
-                    name="copy"
-                    size="14"
-                    class="icon"
-                  />
+      <template v-if="mcpList?.length">
+        <div class="card-list">
+          <div
+            v-for="item in mcpList"
+            :key="item.id"
+            class="card"
+            @click="() => goDetails(item.id)"
+          >
+            <div class="header">
+              <BkOverflowTitle
+                class="title"
+                style="max-width: calc(100% - 115px)"
+              >
+                {{ item.name }}
+              </BkOverflowTitle>
+              <BkTag
+                v-if="item.gateway.is_official"
+                theme="success"
+                class="mr8"
+              >
+                {{ t('官方') }}
+              </BkTag>
+              <BkTag theme="info">
+                {{ item.stage?.name }}
+              </BkTag>
+            </div>
+            <div class="content">
+              <div class="info-item">
+                <div class="label">
+                  {{ t('访问地址') }}：
+                </div>
+                <div class="value flex-row align-items-center">
+                  <BkOverflowTitle style="width: calc(100% - 28px)">
+                    {{ item.url }}
+                  </BkOverflowTitle>
+                  <div
+                    class="copy-wrapper"
+                    @click.stop="() => handleCopy(item.url)"
+                  >
+                    <AgIcon
+                      name="copy"
+                      size="14"
+                      class="icon"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="info-item">
-              <div class="label">
-                {{ t('工具数量') }}：
+              <div class="info-item">
+                <div class="label">
+                  {{ t('工具数量') }}：
+                </div>
+                <div class="value">
+                  {{ item.tools_count }}
+                </div>
               </div>
-              <div class="value">
-                {{ item.tools_count }}
+              <div class="info-item">
+                <div class="label">
+                  {{ t('描述') }}：
+                </div>
+                <div class="value">
+                  {{ item.description }}
+                </div>
               </div>
-            </div>
-            <div class="info-item">
-              <div class="label">
-                {{ t('描述') }}：
-              </div>
-              <div class="value">
-                {{ item.description }}
-              </div>
-            </div>
-            <div class="info-item">
-              <div class="label">
-                {{ t('标签') }}：
-              </div>
-              <div class="value">
-                <BkTag
-                  v-for="label in item.labels"
-                  :key="label"
-                  class="mr8"
-                >
-                  {{ label }}
-                </BkTag>
+              <div class="info-item">
+                <div class="label">
+                  {{ t('标签') }}：
+                </div>
+                <div class="value">
+                  <BkTag
+                    v-for="label in item.labels"
+                    :key="label"
+                    class="mr8"
+                  >
+                    {{ label }}
+                  </BkTag>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+        <BkPagination
+          v-model="pagination.current"
+          class="mt-24px"
+          align="center"
+          :count="pagination.count"
+          :limit="pagination.limit"
+          :limit-list="[10, 12, 20, 50, 100]"
+          size="small"
+          @change="handlePaginationChange"
+          @limit-change="handlePaginationLimitChange"
+        />
+      </template>
       <div
         v-else
         class="empty-wrapper"
@@ -166,6 +176,12 @@ const tableEmptyConf = ref<{
   isAbnormal: false,
 });
 
+const pagination = ref({
+  current: 1,
+  limit: 12,
+  count: 0,
+});
+
 const bannerImg = computed(() => {
   if (locale.value === 'zh-cn') {
     return mcpBanner;
@@ -186,19 +202,19 @@ const mcpList = computed(() => {
 
 const getList = async () => {
   const res = await getMcpMarketplace({
-    limit: 999,
-    offset: 0,
+    limit: pagination.value.limit,
+    offset: pagination.value.limit * (pagination.value.current - 1),
     keyword: search.value,
   });
 
-  // res.count
+  pagination.value.count = res.count;
   mcpAllList.value = res.results;
 };
 getList();
 
 const handleInput = () => {
   if (!search.value) {
-    getList();
+    handleSearch();
   }
 };
 
@@ -221,8 +237,23 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.emptyType = 'empty';
 };
 
-const handleClearFilterKey = async () => {
+const handleClearFilterKey = () => {
   search.value = '';
+  pagination.value.current = 1;
+  getList();
+};
+
+const handleSearch = () => {
+  pagination.value.current = 1;
+  getList();
+};
+
+const handlePaginationChange = () => {
+  getList();
+};
+
+const handlePaginationLimitChange = (limit: number) => {
+  pagination.value.limit = limit;
   getList();
 };
 
@@ -230,6 +261,7 @@ const handleClearFilterKey = async () => {
 
 <style lang="scss" scoped>
 .banner {
+
   img {
     width: 100%;
     min-width: 1280px;
@@ -239,6 +271,7 @@ const handleClearFilterKey = async () => {
 .main {
   padding-bottom: 26px;
   margin: 0 auto;
+
   .top {
     display: flex;
     justify-content: space-between;
@@ -251,9 +284,9 @@ const handleClearFilterKey = async () => {
     }
 
     .guide {
+      font-size: 12px;
       color: #3A84FF;
       cursor: pointer;
-      font-size: 12px;
     }
   }
 
@@ -262,47 +295,56 @@ const handleClearFilterKey = async () => {
     flex-wrap: wrap;
     justify-content: flex-start;
     box-sizing: border-box;
+
     .card {
       padding: 0 24px;
+      cursor: pointer;
+      background: #FFF;
       border-radius: 2px;
-      background: #FFFFFF;
       box-shadow: 0 2px 4px 0 #1919290d;
       box-sizing: border-box;
-      cursor: pointer;
+
       .header {
         display: flex;
-        align-items: center;
-        border-bottom: 1px solid #EAEBF0;
         height: 54px;
+        border-bottom: 1px solid #EAEBF0;
+        align-items: center;
+
         .title {
-          color: #313238;
-          font-size: 18px;
-          font-weight: Bold;
-          line-height: 54px;
           margin-right: 16px;
+          font-size: 18px;
+          font-weight: bold;
+          line-height: 54px;
+          color: #313238;
         }
       }
+
       .content {
         padding: 12px 0 4px;
+
         .info-item {
           display: flex;
           align-items: center;
           margin-bottom: 12px;
+
           .label {
             font-size: 14px;
             color: #4D4F56;
           }
+
           .value {
-            flex: 1;
+            overflow: hidden;
             font-size: 14px;
             color: #313238;
-            overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            flex: 1;
+
             .copy-wrapper {
               width: 28px;
               text-align: right;
             }
+
             .icon {
               color: #3A84FF;
             }
@@ -318,11 +360,14 @@ const handleClearFilterKey = async () => {
 }
 
 @media (max-width: 1599.98px) {
+
   .main {
     width: 1280px;
   }
+
   .card-list {
     gap: 20px 25px;
+
     .card {
       width: 410px;
     }
@@ -330,11 +375,14 @@ const handleClearFilterKey = async () => {
 }
 
 @media (min-width: 1600px) {
+
   .main {
     width: 1600px;
   }
+
   .card-list {
     gap: 20px 26.67px;
+
     .card {
       width: 380px;
     }

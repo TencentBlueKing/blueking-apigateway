@@ -398,16 +398,21 @@
                         >
                           <BkRow>
                             <BkCol :span="4">
-                              <label class="ag-key">{{ t("文档更新时间") }}:</label>
+                              <label class="ag-key">{{ t('中文文档更新时间') }}:</label>
                             </BkCol>
                             <BkCol :span="10">
                               <div class="ag-value">
-                                <template v-if="localLanguage === 'en'">
-                                  {{ source?.doc_updated_time?.en || "--" }}
-                                </template>
-                                <template v-else>
-                                  {{ source?.doc_updated_time?.zh || "--" }}
-                                </template>
+                                {{ source?.doc_updated_time?.zh || '--' }}
+                              </div>
+                            </BkCol>
+                          </BkRow>
+                          <BkRow>
+                            <BkCol :span="4">
+                              <label class="ag-key">{{ t('英文文档更新时间') }}:</label>
+                            </BkCol>
+                            <BkCol :span="10">
+                              <div class="ag-value">
+                                {{ source?.doc_updated_time?.en || '--' }}
                               </div>
                             </BkCol>
                           </BkRow>
@@ -447,7 +452,6 @@ import { getMethodsTheme } from '@/utils';
 import ConfigDisplayTable from '@/components/plugin-manage/ConfigDisplayTable.vue';
 import RequestParams from '../../components/request-params/Index.vue';
 import ResponseParams from '../../components/response-params/Index.vue';
-import { locale } from '@/locales';
 
 interface IProps {
   id: number | undefined
@@ -473,8 +477,6 @@ const exceptionDesc = ref(t('暂无数据'));
 const keywords = ref('');
 const renderIsShow = ref(false);
 const isLoading = ref(false);
-
-const localLanguage = locale || 'zh-cn';
 
 // 网关id
 const apigwId = computed(() => +route.params.id);
