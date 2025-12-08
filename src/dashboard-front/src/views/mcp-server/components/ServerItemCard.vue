@@ -18,13 +18,22 @@
 
 <template>
   <div class="card-wrapper">
-    <header class="flex items-center justify-between card-header">
-      <div class="flex items-center header-title-wrapper">
-        <BkOverflowTitle
-          class="header-title"
-        >
-          {{ server.name }}
-        </BkOverflowTitle>
+    <header class="flex items-baseline justify-between card-header">
+      <div class="flex items-baseline header-title-wrapper">
+        <div class="header-title">
+          <BkOverflowTitle
+            type="tips"
+            class="text-16px"
+          >
+            {{ server.title }}
+          </BkOverflowTitle>
+          <BkOverflowTitle
+            type="tips"
+            class="text-14px mt-12px"
+          >
+            {{ server.name }}
+          </BkOverflowTitle>
+        </div>
         <BkTag
           v-if="server.status === 1"
           size="small"
@@ -219,11 +228,11 @@ const preventDefault = (e: Event) => {
   .card-header {
 
     .header-title-wrapper {
-      max-width: calc(100% - 218px);
+      max-width: calc(100% - 224px);
 
       .header-title {
         width: 100%;
-        margin-right: 4px;
+        margin-right: 8px;
         font-size: 16px;
         font-weight: 700;
         line-height: 22px;
