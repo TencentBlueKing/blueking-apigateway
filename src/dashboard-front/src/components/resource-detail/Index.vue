@@ -402,18 +402,23 @@
       :col="14"
       :margin="6"
     >
-      <BkRow :class="{ 'ag-diff': checkDiff('localData.doc_updated_time') }">
+      <BkRow :class="{ 'ag-diff': checkDiff('localData.doc_updated_time.zh') }">
         <BkCol :span="4">
-          <label class="ag-key">{{ t("文档更新时间") }}:</label>
+          <label class="ag-key">{{ t('中文文档更新时间') }}:</label>
         </BkCol>
         <BkCol :span="10">
           <div class="ag-value">
-            <template v-if="localLanguage === 'en'">
-              {{ localData.doc_updated_time.en || "--" }}
-            </template>
-            <template v-else>
-              {{ localData.doc_updated_time.zh || "--" }}
-            </template>
+            {{ localData.doc_updated_time.zh || '--' }}
+          </div>
+        </BkCol>
+      </BkRow>
+      <BkRow :class="{ 'ag-diff': checkDiff('localData.doc_updated_time.en') }">
+        <BkCol :span="4">
+          <label class="ag-key">{{ t('英文文档更新时间') }}:</label>
+        </BkCol>
+        <BkCol :span="10">
+          <div class="ag-value">
+            {{ localData.doc_updated_time.en || '--' }}
           </div>
         </BkCol>
       </BkRow>
@@ -447,7 +452,6 @@
 
 <script setup lang="ts">
 import ConfigDisplayTable from '@/components/plugin-manage/ConfigDisplayTable.vue';
-import Cookie from 'js-cookie';
 import { useGateway } from '@/stores';
 
 interface IProps {
@@ -484,8 +488,6 @@ const localData = ref<any>({
   useDefaultHost: true,
   contexts: { resource_auth: { config: {} } },
 });
-
-const localLanguage = Cookie.get('blueking_language') || 'zh-cn';
 
 const isEmptyObject = (data: any) => {
   if (data) {
