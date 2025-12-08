@@ -14,6 +14,7 @@ import basicSsl from '@vitejs/plugin-basic-ssl';
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: './',
   server: {
     host: 'dev-t.paas3-dev.bktencent.com',
     port: 8888,
