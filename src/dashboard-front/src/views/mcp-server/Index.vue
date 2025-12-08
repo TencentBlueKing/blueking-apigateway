@@ -49,17 +49,15 @@
 </template>
 
 <script lang="ts" setup>
-import ServerItemCard from './components/ServerItemCard.vue';
-import CreateSlider from './components/CreateSlider.vue';
+import { Message } from 'bkui-vue';
 import {
   deleteServer,
   getServers,
   patchServerStatus,
 } from '@/services/source/mcp-server';
-import {
-  InfoBox,
-  Message,
-} from 'bkui-vue';
+import { usePopInfoBox } from '@/hooks';
+import CreateSlider from './components/CreateSlider.vue';
+import ServerItemCard from './components/ServerItemCard.vue';
 
 type MCPServerType = Awaited<ReturnType<typeof getServers>>['results'][number];
 
@@ -91,10 +89,13 @@ const handleEdit = (id: number) => {
 
 const handleSuspend = async (id: number) => {
   const server = serverList.value.find(server => server.id === id);
-  InfoBox({
-    title: t('确定停用 {n}？', { n: server.name }),
-    infoType: 'warning',
+  usePopInfoBox({
+    isShow: true,
+    type: 'warning',
+    title: t('确认停用 {n}？', { n: server.name }),
     subTitle: t('停用后，{n} 下所有工具不可访问，请确认！', { n: server.name }),
+    confirmText: t('确认停用'),
+    cancelText: t('取消'),
     onConfirm: async () => {
       await patchServerStatus(gatewayId, id, { status: 0 });
       Message({
@@ -118,10 +119,14 @@ const handleEnable = async (id: number) => {
 const handleDelete = async (id: number) => {
   const server = serverList.value.find(server => server.id === id);
   if (server) {
-    InfoBox({
+    usePopInfoBox({
+      isShow: true,
+      type: 'warning',
       title: t('确定删除 {n}？', { n: server.name }),
-      infoType: 'danger',
       subTitle: t('删除后，{n} 不可恢复，请谨慎操作！', { n: server.name }),
+      confirmText: t('删除'),
+      cancelText: t('取消'),
+      confirmButtonTheme: 'danger',
       onConfirm: async () => {
         await deleteServer(gatewayId, id);
         Message({

@@ -56,13 +56,21 @@
           class="card"
           @click="() => goDetails(item.id)"
         >
-          <div class="header">
-            <BkOverflowTitle
-              class="title"
-              style="max-width: calc(100% - 115px)"
-            >
-              {{ item.name }}
-            </BkOverflowTitle>
+          <div class="pt-18px pb-16px flex items-baseline header">
+            <div class="max-w-[calc(100%-115px)] color-#313238 font-bold mr-16px title">
+              <BkOverflowTitle
+                type="tips"
+                class="lh-22px mb-12px text-18px"
+              >
+                {{ item.title }}
+              </BkOverflowTitle>
+              <BkOverflowTitle
+                type="tips"
+                class="text-14px"
+              >
+                {{ item.name }}
+              </BkOverflowTitle>
+            </div>
             <BkTag
               v-if="item.gateway.is_official"
               theme="success"
@@ -105,7 +113,7 @@
             </div>
             <div class="info-item">
               <div class="label">
-                {{ t('描述') }}：
+                {{ t('MCP描述') }}：
               </div>
               <div class="value">
                 {{ item.description }}
@@ -113,7 +121,7 @@
             </div>
             <div class="info-item">
               <div class="label">
-                {{ t('标签') }}：
+                {{ t('MCP标签') }}：
               </div>
               <div class="value">
                 <BkTag
@@ -269,25 +277,21 @@ const handleClearFilterKey = async () => {
       box-shadow: 0 2px 4px 0 #1919290d;
       box-sizing: border-box;
       cursor: pointer;
+
       .header {
-        display: flex;
-        align-items: center;
         border-bottom: 1px solid #EAEBF0;
-        height: 54px;
-        .title {
-          color: #313238;
-          font-size: 18px;
-          font-weight: Bold;
-          line-height: 54px;
-          margin-right: 16px;
-        }
       }
+
       .content {
-        padding: 12px 0 4px;
+        padding: 16px 0 4px;
+
         .info-item {
           display: flex;
           align-items: center;
           margin-bottom: 12px;
+          font-size: 12px;
+          line-height: 20px;
+
           .label {
             font-size: 14px;
             color: #4D4F56;
