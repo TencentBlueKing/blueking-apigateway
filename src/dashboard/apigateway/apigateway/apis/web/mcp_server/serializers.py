@@ -61,8 +61,11 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
 class MCPServerBaseOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
     name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
-    title = serializers.CharField(read_only=True, help_text="MCPServer 中文名/显示名称")
+    title = serializers.SerializerMethodField(help_text="MCPServer 中文名/显示名称")
     description = serializers.CharField(read_only=True, help_text="MCPServer 描述")
+
+    def get_title(self, obj) -> str:
+        return obj.title if obj.title else obj.name
 
     is_public = serializers.BooleanField(read_only=True, help_text="MCPServer 是否公开")
 
@@ -203,7 +206,10 @@ class MCPServerStageReleaseCheckInputSLZ(serializers.Serializer):
 class MCPServerBaseSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
     name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
-    title = serializers.CharField(read_only=True, help_text="MCPServer 中文名/显示名称")
+    title = serializers.SerializerMethodField(help_text="MCPServer 中文名/显示名称")
+
+    def get_title(self, obj) -> str:
+        return obj.title if obj.title else obj.name
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerBaseSLZ"
