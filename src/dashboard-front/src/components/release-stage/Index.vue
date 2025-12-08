@@ -79,7 +79,9 @@
                         :name="item.name"
                         :disabled="item.status === 0"
                       >
-                        <span>{{ item.name }}<span v-if="item.status === 0">{{ t('（未发布）') }}</span></span>
+                        <span>{{ item.name }}
+                          <span v-if="item.status === 0">{{ `(${item.publish_validate_msg})` || t('（未发布）') }}</span>
+                        </span>
                       </BkOption>
                     </BkSelect>
                   </BkFormItem>
