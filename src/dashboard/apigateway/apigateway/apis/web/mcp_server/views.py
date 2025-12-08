@@ -348,7 +348,7 @@ class MCPServerToolsListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="获取 MCPServer 使用指南",
+        operation_description="获取 MCPServer 官方使用指南",
         responses={status.HTTP_200_OK: MCPServerGuidelineOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
@@ -376,15 +376,7 @@ class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
             },
         )
 
-        # 获取用户自定义文档
-        user_custom_doc = ""
-        extend = MCPServerExtend.objects.filter(
-            mcp_server=instance, type=MCPServerExtendTypeEnum.USER_CUSTOM_DOC.value
-        ).first()
-        if extend:
-            user_custom_doc = extend.content
-
-        slz = self.get_serializer({"content": content, "user_custom_doc": user_custom_doc})
+        slz = self.get_serializer({"content": content})
 
         return OKJsonResponse(data=slz.data)
 

@@ -43,7 +43,7 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
     title = serializers.CharField(
         required=False, allow_blank=True, help_text="MCPServer 中文名/显示名称", max_length=128
     )
-    description = serializers.CharField(required=True, allow_blank=False, help_text="MCPServer 描述", max_length=128)
+    description = serializers.CharField(required=True, allow_blank=False, help_text="MCPServer 描述", max_length=512)
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCreateInputSLZ"
@@ -110,7 +110,7 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
     title = serializers.CharField(
         required=False, allow_blank=True, help_text="MCPServer 中文名/显示名称", max_length=128
     )
-    description = serializers.CharField(required=True, allow_blank=False, help_text="MCPServer 描述", max_length=128)
+    description = serializers.CharField(required=True, allow_blank=False, help_text="MCPServer 描述", max_length=512)
 
     def validate_resource_names(self, resource_names):
         if resource_names is not None:
@@ -182,7 +182,6 @@ class MCPServerToolOutputSLZ(serializers.Serializer):
 
 class MCPServerGuidelineOutputSLZ(serializers.Serializer):
     content = serializers.CharField(read_only=True, help_text="MCPServer 使用指南")
-    user_custom_doc = serializers.CharField(read_only=True, allow_blank=True, help_text="用户自定义文档")
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerGuidelineOutputSLZ"
