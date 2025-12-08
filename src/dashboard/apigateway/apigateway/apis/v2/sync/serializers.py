@@ -682,6 +682,9 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         child=serializers.CharField(), required=True, help_text="MCPServer 资源名称列表"
     )
     name = serializers.CharField(required=True, help_text="MCPServer 名称", max_length=64)
+    title = serializers.CharField(
+        required=False, allow_blank=True, help_text="MCPServer 中文名/显示名称", max_length=128
+    )
     status = serializers.ChoiceField(help_text="MCPServer 状态", choices=MCPServerStatusEnum.get_choices())
     target_app_codes = serializers.ListSerializer(
         help_text="主动授权的app_code", child=serializers.CharField(), allow_empty=True, default=list, required=False
@@ -691,6 +694,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         model = MCPServer
         fields = (
             "name",
+            "title",
             "description",
             "is_public",
             "stage_id",
