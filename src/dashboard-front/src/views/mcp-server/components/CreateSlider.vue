@@ -24,6 +24,7 @@
     class="create-slider"
     quick-close
     :before-close="handleBeforeClose"
+    @hidden="handleCancel"
   >
     <template #default>
       <div class="slider-content">
@@ -68,6 +69,7 @@
             >
               <BkInput
                 v-model="formData.name"
+                :placeholder="t('请输入小写字母、数字、连字符(-)')"
                 :disabled="isEditMode || noValidStage"
                 :prefix="(isEditMode || noValidStage) ? undefined : serverNamePrefix"
               />
@@ -77,9 +79,9 @@
                 </div>
                 <div class="url">
                   <div class="label">
-                    {{ t('访问地址') }}：
+                    {{ t('访问地址') }}:
                   </div>
-                  <div class="content">
+                  <div class="ml-4px content">
                     {{ url || previewUrl }}
                   </div>
                   <div class="suffix">
@@ -92,12 +94,25 @@
               </div>
             </BkFormItem>
             <BkFormItem
+              :label="t('服务展示名')"
+              property="title"
+              required
+            >
+              <BkInput
+                v-model="formData.title"
+                :placeholder="t('请输入1-32个字符的服务展示名称')"
+                :maxlength="32"
+                clearable
+              />
+            </BkFormItem>
+            <BkFormItem
               :label="t('描述')"
               property="description"
             >
               <BkInput
                 v-model="formData.description"
                 :disabled="noValidStage"
+                :placeholder="$t('请输入描述')"
                 clearable
               />
             </BkFormItem>
@@ -276,6 +291,7 @@ interface IProps { serverId?: number }
 
 interface FormData {
   name: string
+  title: string
   description: string
   stage_id: number | undefined
   is_public: boolean
@@ -443,6 +459,10 @@ watch(isShow, async () => {
   }
 });
 
+const clearValidate = () => {
+  formRef.value?.clearValidate();
+};
+
 const handleSubmit = async () => {
   await formRef.value!.validate();
   if (selections.value.length === 0) {
@@ -457,11 +477,13 @@ const handleSubmit = async () => {
       description,
       is_public,
       labels,
+      title,
     } = formData.value;
     const params = {
       description,
       is_public,
       labels,
+      title,
       resource_names: [...selections.value],
     };
     await patchServer(
@@ -488,6 +510,7 @@ const handleSubmit = async () => {
       message: t('创建成功'),
     });
   }
+  clearValidate();
   emit('updated');
   isShow.value = false;
 };
@@ -515,13 +538,27 @@ const fetchStageList = async () => {
 
 const fetchServer = async () => {
   const response = await getServer(gatewayStore.currentGateway!.id!, serverId!);
-  formData.value.name = response.name || '';
-  formData.value.description = response.description || '';
-  formData.value.labels = response.labels || [];
-  formData.value.is_public = response.is_public ?? true;
-  formData.value.stage_id = response.stage.id || 0;
-  selections.value = response.resource_names;
-  url.value = response.url;
+  const {
+    name = '',
+    title = '',
+    description = '',
+    labels = [],
+    is_public = true,
+    stage = { id: 0 },
+    resource_names = [],
+  } = response ?? {};
+
+  formData.value = {
+    ...formData.value,
+    name,
+    title,
+    description,
+    labels,
+    is_public,
+    stage_id: stage.id || 0,
+  };
+  selections.value = resource_names;
+  url.value = response?.url ?? '';
 };
 
 const fetchStageResources = async () => {
@@ -612,6 +649,7 @@ const handleToolNameClick = (row: { id: number }) => {
 
 const handleCancel = () => {
   isShow.value = false;
+  clearValidate();
 };
 
 const handleCopyClick = () => {
@@ -648,6 +686,7 @@ defineExpose({
   show: () => {
     isShow.value = true;
   },
+  clearValidate,
 });
 
 </script>

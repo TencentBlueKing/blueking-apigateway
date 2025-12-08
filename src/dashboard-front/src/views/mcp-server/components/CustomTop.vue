@@ -22,14 +22,27 @@
     :style="stage.getNotUpdatedStages?.length ? 'top: 42px' : 'top: -1px'"
   >
     <div class="top-title-wrapper">
-      <div class="title">
+      <div class="title w-90%">
         <AgIcon
           size="32"
           class="icon"
           name="return-small"
           @click="handleBack"
         />
-        {{ server?.name }}
+        <div class="flex items-center w-full">
+          <BkOverflowTitle
+            type="tips"
+            class="truncate color-#313238 text-16px max-w-1/2"
+          >
+            {{ server?.title }}
+          </BkOverflowTitle>
+          <BkOverflowTitle
+            type="tips"
+            class="truncate color-#979ba5 text-14px ml-8px"
+          >
+            ({{ server?.name }})
+          </BkOverflowTitle>
+        </div>
       </div>
       <div
         class="history"

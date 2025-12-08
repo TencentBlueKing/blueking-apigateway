@@ -40,9 +40,20 @@
             {{ t('未启用') }}
           </BkTag>
         </div>
-        <span class="name">
-          {{ server.name }}
-        </span>
+        <div class="mt-8px flex items-center flex-col">
+          <BkOverflowTitle
+            type="tips"
+            class="text-16px truncate name"
+          >
+            {{ server?.title }}
+          </BkOverflowTitle>
+          <BkOverflowTitle
+            type="tips"
+            class="text-14px truncate name"
+          >
+            ({{ server?.name }})
+          </BkOverflowTitle>
+        </div>
       </div>
       <div class="info">
         <div class="column">
@@ -94,11 +105,11 @@
           class="mr-10px"
           @click="handleSuspendToggle"
         >
-          {{ server.status === 1 ? t('停用') : t('启用') }}
+          {{ t(server.status === 1 ? '停用' : '启用') }}
         </BkButton>
         <BkDropdown
           v-model:is-show="showDropdown"
-          trigger="click"
+          trigger="hover"
         >
           <BkButton
             class="more-cls"
@@ -185,10 +196,8 @@ import {
   patchServerStatus,
 } from '@/services/source/mcp-server';
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
-import {
-  InfoBox,
-  Message,
-} from 'bkui-vue';
+import { Message } from 'bkui-vue';
+import { usePopInfoBox } from '@/hooks';
 import router from '@/router';
 import CreateSlider from '@/views/mcp-server/components/CreateSlider.vue';
 import AuthApplications from '@/views/mcp-server/components/AuthApplications.vue';
@@ -295,10 +304,13 @@ const handleSuspendToggle = async () => {
     await fetchServer();
     return;
   }
-  InfoBox({
-    title: t('确定停用 {n}？', { n: server.value.name }),
-    infoType: 'warning',
-    subTitle: t('停用后，{n} 下所有工具不可访问，请确认！', { n: server.value.name }),
+  usePopInfoBox({
+    isShow: true,
+    type: 'warning',
+    title: t('确认停用 {n}？', { n: server.value.name }),
+    subTitle: t('停用后，{n} 下所有工具不可访问，请确认！', { n: server.name }),
+    confirmText: t('确认停用'),
+    cancelText: t('取消'),
     onConfirm: async () => {
       await patchServerStatus(gatewayId, server.value.id, { status: 0 });
       Message({
@@ -318,10 +330,14 @@ const handleUpdated = async () => {
 };
 
 const handleDelete = async () => {
-  InfoBox({
+  usePopInfoBox({
+    isShow: true,
+    type: 'warning',
     title: t('确定删除 {n}？', { n: server.value.name }),
-    infoType: 'danger',
     subTitle: t('删除后，{n} 不可恢复，请谨慎操作！', { n: server.value.name }),
+    confirmText: t('删除'),
+    cancelText: t('取消'),
+    confirmButtonTheme: 'danger',
     onConfirm: async () => {
       await deleteServer(gatewayId, server.value.id);
       Message({
@@ -356,7 +372,7 @@ const updateCount = (count: number, panelName: string) => {
 
 .server-info {
   display: flex;
-  min-height: 128px;
+  min-height: 100px;
   padding: 24px;
   margin-bottom: 16px;
   background: #fff;
@@ -365,8 +381,8 @@ const updateCount = (count: number, panelName: string) => {
   .server-name {
     position: relative;
     display: flex;
-    height: 80px;
-    margin-right: 35px;
+    min-height: 100px;
+    margin-right: 16px;
     background-color: #f0f5ff;
     border-radius: 8px;
     padding-inline: 24px;
@@ -423,23 +439,14 @@ const updateCount = (count: number, panelName: string) => {
   }
 
   .name {
-    display: inline-block;
     padding: 0 3px;
-    overflow: hidden;
-    font-size: 16px;
     font-weight: 700;
     color: #3a84ff;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .info {
     display: flex;
     width: 300px;
-
-    .column {
-      transform: translateY(-8px);
-    }
 
     .apigw-form-item {
       display: flex;

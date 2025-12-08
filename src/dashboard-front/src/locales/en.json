@@ -1458,6 +1458,8 @@
   "下架": "Unpublish",
   "MCP 市场": "MCP Market",
   "MCP 详情": "MCP Details",
+  "MCP描述": "MCP description",
+  "MCP标签": "MCP label",
   "工具": "Tools",
   "请输入 MCP 名称或描述搜索": "Please enter MCP name or description to search",
   "仅展示官方": "Only show official",
@@ -1534,6 +1536,7 @@
   "可能会导致正在使用该接口的服务异常，请确认": "This may cause services using this interface to malfunction, please confirm",
   "请输入 Cookies 中字段 bk_token 的值": "Please enter the value of the bk_token field in Cookies",
   "网关的唯一标识，创建后不可更改": "The gateway's unique identifier, cannot be changed after creation",
+  "请输入小写字母、数字、连字符(-)": "Please enter lowercase letters, numbers, hyphens (-)",
   "请输入小写字母、数字、连字符(-)，以小写字母开头": "Please enter lowercase letters, numbers, hyphens (-), starting with a lowercase letter",
   "确认发布": "Release",
   "不校验": "Do not validate",
@@ -1952,7 +1955,8 @@
   "请先停用再删除": "Suspend it before deletion",
   "确定删除 {n}？": "Delete {n}?",
   "删除后，{n} 不可恢复，请谨慎操作！": "{n} can not be restored, be cautious!",
-  "确定停用 {n}？": "Suspend {n}?",
+  "确认停用": "Confirm suspend",
+  "确认停用 {n}？": "Suspend {n}?",
   "停用后，{n} 下所有工具不可访问，请确认！": "Tools under {n} can not be used after suspension, be cautious!",
   "请输入工具名称，描述搜索": "Search tools name and description",
   "可用工具": "Available Tools",
@@ -2119,5 +2123,7 @@
   "format_bk_cors_allow_credential": "When allow_credential is open, the fields allow_origins, allow_methods, allow_headers, and expose_header cannot be set to",
   "请选择环境再发布": "Choose stage before publish",
   "（未发布）": "(Unpublished)",
-  "message 必填": "message 必填"
+  "message 必填": "message 必填",
+  "服务展示名": "Service display name",
+  "请输入1-32个字符的服务展示名称": "Please enter a service display name of 1-32 characters"
 }
