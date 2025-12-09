@@ -30,9 +30,15 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyProcessedStateEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
+    MCPServerExtendTypeEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
+from apigateway.apps.mcp_server.models import (
+    MCPServer,
+    MCPServerAppPermission,
+    MCPServerAppPermissionApply,
+    MCPServerExtend,
+)
 from apigateway.biz.audit import Auditor
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
@@ -64,6 +70,8 @@ from .serializers import (
     MCPServerUpdateInputSLZ,
     MCPServerUpdateLabelsInputSLZ,
     MCPServerUpdateStatusInputSLZ,
+    MCPServerUserCustomDocInputSLZ,
+    MCPServerUserCustomDocOutputSLZ,
 )
 
 
@@ -340,7 +348,7 @@ class MCPServerToolsListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="获取 MCPServer 使用指南",
+        operation_description="获取 MCPServer 官方使用指南",
         responses={status.HTTP_200_OK: MCPServerGuidelineOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
@@ -367,6 +375,7 @@ class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
                 "user_tenant_id": user_tenant_id,
             },
         )
+
         slz = self.get_serializer({"content": content})
 
         return OKJsonResponse(data=slz.data)
@@ -397,6 +406,79 @@ class MCPServerToolDocRetrieveApi(generics.RetrieveAPIView):
 
         slz = MCPServerToolDocOutputSLZ(doc)
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCPServer 用户自定义文档",
+        responses={status.HTTP_200_OK: MCPServerUserCustomDocOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        operation_description="更新 MCPServer 用户自定义文档",
+        request_body=MCPServerUserCustomDocInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        operation_description="删除 MCPServer 用户自定义文档",
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerUserCustomDocApi(generics.RetrieveUpdateDestroyAPIView):
+    queryset = MCPServer.objects.all()
+    lookup_url_kwarg = "mcp_server_id"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        extend = MCPServerExtend.objects.filter(
+            mcp_server=instance, type=MCPServerExtendTypeEnum.USER_CUSTOM_DOC.value
+        ).first()
+
+        content = extend.content if extend else ""
+        slz = MCPServerUserCustomDocOutputSLZ({"content": content})
+
+        return OKJsonResponse(data=slz.data)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        slz = MCPServerUserCustomDocInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        MCPServerExtend.objects.update_or_create(
+            mcp_server=instance,
+            type=MCPServerExtendTypeEnum.USER_CUSTOM_DOC.value,
+            defaults={
+                "content": slz.validated_data["content"],
+                "updated_by": request.user.username,
+            },
+            create_defaults={
+                "content": slz.validated_data["content"],
+                "created_by": request.user.username,
+                "updated_by": request.user.username,
+            },
+        )
+
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        MCPServerExtend.objects.filter(
+            mcp_server=instance, type=MCPServerExtendTypeEnum.USER_CUSTOM_DOC.value
+        ).delete()
+
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 @method_decorator(

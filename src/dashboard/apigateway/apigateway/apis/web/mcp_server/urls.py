@@ -32,6 +32,7 @@ from .views import (
     MCPServerToolsListApi,
     MCPServerUpdateLabelsApi,
     MCPServerUpdateStatusApi,
+    MCPServerUserCustomDocApi,
 )
 
 urlpatterns = [
@@ -58,6 +59,11 @@ urlpatterns = [
                     ),
                 ),
                 path("guideline/", MCPServerGuidelineRetrieveApi.as_view(), name="mcp_server.guideline_retrieve"),
+                path(
+                    "user-custom-doc/",
+                    MCPServerUserCustomDocApi.as_view(),
+                    name="mcp_server.user_custom_doc",
+                ),
                 path(
                     "permissions/",
                     include(
