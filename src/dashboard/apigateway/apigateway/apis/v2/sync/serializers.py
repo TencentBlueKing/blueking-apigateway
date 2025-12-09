@@ -682,6 +682,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         child=serializers.CharField(), required=True, help_text="MCPServer 资源名称列表"
     )
     name = serializers.CharField(required=True, help_text="MCPServer 名称", max_length=64)
+    description = serializers.CharField(required=True, allow_blank=False, help_text="MCPServer 描述", max_length=512)
     title = serializers.CharField(
         required=False, allow_blank=True, help_text="MCPServer 中文名/显示名称", max_length=128
     )
