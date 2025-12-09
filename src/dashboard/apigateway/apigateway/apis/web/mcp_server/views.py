@@ -462,6 +462,11 @@ class MCPServerUserCustomDocApi(generics.RetrieveUpdateDestroyAPIView):
                 "content": slz.validated_data["content"],
                 "updated_by": request.user.username,
             },
+            create_defaults={
+                "content": slz.validated_data["content"],
+                "created_by": request.user.username,
+                "updated_by": request.user.username,
+            },
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
