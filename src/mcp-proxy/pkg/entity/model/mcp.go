@@ -43,6 +43,7 @@ type MCPServer struct {
 	Status        int         `gorm:"column:status"`
 	GatewayID     int         `gorm:"column:gateway_id"`
 	StageID       int         `gorm:"column:stage_id"`
+	ProtocolType  string      `gorm:"column:protocol_type"`
 }
 
 // IsActive ...

@@ -31,29 +31,33 @@ import (
 
 // MCPServer ...
 type MCPServer struct {
-	Server    *server.Server
-	Transport transport.ServerTransport
-	Handler   *transport.SSEHandler
-	name      string
-	tools     map[string]struct{}
-	prompts   map[string]struct{}
-	rwLock    *sync.RWMutex
+	Server                *server.Server
+	Transport             transport.ServerTransport
+	SSEHandler            *transport.SSEHandler
+	StreamableHTTPHandler *transport.StreamableHTTPHandler
+	name                  string
+	tools                 map[string]struct{}
+	prompts               map[string]struct{}
+	rwLock                *sync.RWMutex
 }
 
 // NewMCPServer ...
-func NewMCPServer(transport transport.ServerTransport, handler *transport.SSEHandler, name string) *MCPServer {
+func NewMCPServer(transport transport.ServerTransport, handler *transport.SSEHandler,
+	streamableHTTPHandler *transport.StreamableHTTPHandler, name string,
+) *MCPServer {
 	mcpServer, err := server.NewServer(transport)
 	if err != nil {
 		panic(err)
 	}
 	return &MCPServer{
-		Server:    mcpServer,
-		Transport: transport,
-		Handler:   handler,
-		tools:     make(map[string]struct{}),
-		prompts:   make(map[string]struct{}),
-		rwLock:    &sync.RWMutex{},
-		name:      name,
+		Server:                mcpServer,
+		Transport:             transport,
+		SSEHandler:            handler,
+		StreamableHTTPHandler: streamableHTTPHandler,
+		tools:                 make(map[string]struct{}),
+		prompts:               make(map[string]struct{}),
+		rwLock:                &sync.RWMutex{},
+		name:                  name,
 	}
 }
 

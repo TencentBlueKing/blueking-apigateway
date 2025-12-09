@@ -103,13 +103,21 @@ func (m *MCPProxy) GetMCPServer(name string) *MCPServer {
 // AddMCPServerFromConfigs ...
 func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 	for _, config := range configs {
-		// 这里注册的 messageEndpointURL 决定了通过sse接口拿到的message的url
-		trans, sseHandler, err := transport.NewSSEServerTransportAndHandler(
-			fmt.Sprintf(m.messageUrlFormat, config.Name))
-		if err != nil {
-			return err
+		var trans transport.ServerTransport
+		var sseHandler *transport.SSEHandler
+		var streamableHTTPHandler *transport.StreamableHTTPHandler
+		var err error
+		if config.ProtocolType == constant.ProtocolTypeStreamableHTTP {
+			trans, streamableHTTPHandler, err = transport.NewStreamableHTTPServerTransportAndHandler()
+		} else {
+			// 这里注册的 messageEndpointURL 决定了通过sse接口拿到的message的url
+			trans, sseHandler, err = transport.NewSSEServerTransportAndHandler(
+				fmt.Sprintf(m.messageUrlFormat, config.Name))
 		}
-		mcpServer := NewMCPServer(trans, sseHandler, config.Name)
+		if err != nil {
+			return fmt.Errorf("NewServerTransportAndHandler err: %v", err)
+		}
+		mcpServer := NewMCPServer(trans, sseHandler, streamableHTTPHandler, config.Name)
 		// register tool
 		for _, toolConfig := range config.Tools {
 			bytes, _ := toolConfig.ParamSchema.JSONSchemaBytes()
@@ -142,14 +150,16 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 
 // AddMCPServerFromOpenApiSpec nolint:gofmt
 func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi3.T, operationIDList []string,
+	protocolType constant.ProtocolType,
 ) error {
 	operationIDMap := make(map[string]struct{})
 	for _, operationID := range operationIDList {
 		operationIDMap[operationID] = struct{}{}
 	}
 	mcpServerConfig := &MCPServerConfig{
-		Name:  name,
-		Tools: OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
+		Name:         name,
+		Tools:        OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
+		ProtocolType: constant.ProtocolTypeStreamableHTTP,
 	}
 	return m.AddMCPServerFromConfigs([]*MCPServerConfig{mcpServerConfig})
 }
@@ -157,14 +167,16 @@ func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi
 // UpdateMCPServerFromOpenApiSpec nolint:gofmt
 func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 	mcpServer *MCPServer, name string, openApiSpec *openapi3.T, operationIDList []string,
+	protocolType constant.ProtocolType,
 ) error {
 	operationIDMap := make(map[string]struct{})
 	for _, operationID := range operationIDList {
 		operationIDMap[operationID] = struct{}{}
 	}
 	mcpServerConfig := &MCPServerConfig{
-		Name:  name,
-		Tools: OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
+		Name:         name,
+		Tools:        OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
+		ProtocolType: protocolType,
 	}
 	// update tool
 	for _, toolConfig := range mcpServerConfig.Tools {
@@ -176,16 +188,41 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 	return nil
 }
 
-// SseHandler ...
-func (m *MCPProxy) SseHandler() gin.HandlerFunc {
+// SSEHandler ...
+func (m *MCPProxy) SSEHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		name := c.Param("name")
-		if _, ok := m.mcpServers[name]; !ok {
+		if mcpServer, ok := m.mcpServers[name]; !ok {
 			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server name %s does not exist", name))
 			log.Printf("name %s does not exist\n", name)
 			return
+		} else {
+			if mcpServer.SSEHandler == nil {
+				util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server name %s protocol type is not sse", name))
+				log.Printf("name %s protocol type is not sse\n", name)
+				return
+			}
+			mcpServer.SSEHandler.HandleSSE().ServeHTTP(c.Writer, c.Request)
 		}
-		m.mcpServers[name].Handler.HandleSSE().ServeHTTP(c.Writer, c.Request)
+	}
+}
+
+// StreamableHTTPHandler ...
+func (m *MCPProxy) StreamableHTTPHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		name := c.Param("name")
+		if mcpServer, ok := m.mcpServers[name]; !ok {
+			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server name %s does not exist", name))
+			log.Printf("name %s does not exist\n", name)
+			return
+		} else {
+			if mcpServer.StreamableHTTPHandler == nil {
+				util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server name %s protocol type is not streamable_http", name))
+				log.Printf("name %s protocol type is not streamable_http\n", name)
+				return
+			}
+			mcpServer.StreamableHTTPHandler.HandleMCP().ServeHTTP(c.Writer, c.Request)
+		}
 	}
 }
 
@@ -193,12 +230,18 @@ func (m *MCPProxy) SseHandler() gin.HandlerFunc {
 func (m *MCPProxy) SseMessageHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		name := c.Param("name")
-		if _, ok := m.mcpServers[name]; !ok {
+		if mcpServer, ok := m.mcpServers[name]; !ok {
 			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server name %s does not exist", name))
 			log.Printf("name %s does not exist\n", name)
 			return
+		} else {
+			if mcpServer.SSEHandler == nil {
+				util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server name %s protocol type is not sse", name))
+				log.Printf("name %s protocol type is not sse\n", name)
+				return
+			}
+			mcpServer.SSEHandler.HandleMessage().ServeHTTP(c.Writer, c.Request)
 		}
-		m.mcpServers[name].Handler.HandleMessage().ServeHTTP(c.Writer, c.Request)
 	}
 }
 

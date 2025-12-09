@@ -24,13 +24,16 @@ import (
 	"strings"
 
 	jsonschema "github.com/swaggest/jsonschema-go"
+
+	"mcp_proxy/pkg/constant"
 )
 
 // MCPServerConfig ...
 type MCPServerConfig struct {
-	Name    string          `json:"name"` // 唯一标识name，可以是：gateway_name+stage或者其他id
-	Tools   []*ToolConfig   `json:"tools"`
-	Prompts []*PromptConfig `json:"prompts"`
+	Name         string                `json:"name"` // 唯一标识name，可以是：gateway_name+stage或者其他id
+	Tools        []*ToolConfig         `json:"tools"`
+	Prompts      []*PromptConfig       `json:"prompts"`
+	ProtocolType constant.ProtocolType `json:"protocol_type"`
 }
 
 // ToolConfig ...

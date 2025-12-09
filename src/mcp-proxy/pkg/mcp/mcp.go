@@ -31,6 +31,7 @@ import (
 	"mcp_proxy/pkg/biz"
 	"mcp_proxy/pkg/cacheimpls"
 	"mcp_proxy/pkg/config"
+	"mcp_proxy/pkg/constant"
 	"mcp_proxy/pkg/entity/model"
 	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/infra/proxy"
@@ -100,7 +101,8 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 			continue
 		}
 		if !mcpProxy.IsMCPServerExist(server.Name) {
-			err = mcpProxy.AddMCPServerFromOpenApiSpec(server.Name, conf.openapiFileData, server.ResourceNames)
+			err = mcpProxy.AddMCPServerFromOpenApiSpec(server.Name, conf.openapiFileData, server.ResourceNames,
+				constant.ProtocolType(server.ProtocolType))
 			if err != nil {
 				logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", server.Name, err)
 				continue
@@ -118,7 +120,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 		}
 		// 更新mcp server
 		err = mcpProxy.UpdateMCPServerFromOpenApiSpec(mcpServer, server.Name, conf.openapiFileData,
-			server.ResourceNames)
+			server.ResourceNames, constant.ProtocolType(server.ProtocolType))
 		if err != nil {
 			return err
 		}

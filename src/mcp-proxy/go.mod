@@ -4,7 +4,7 @@ go 1.24.4
 
 require (
 	github.com/TencentBlueKing/gopkg v1.3.0
-	github.com/ThinkInAIXYZ/go-mcp v0.2.18
+	github.com/ThinkInAIXYZ/go-mcp v0.2.24
 	github.com/getkin/kin-openapi v0.132.0
 	github.com/getsentry/raven-go v0.2.0
 	github.com/getsentry/sentry-go v0.34.1

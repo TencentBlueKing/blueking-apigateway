@@ -98,9 +98,9 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	seeRouter.Use(middleware.BkGatewayJWTAuthMiddleware())
 	seeRouter.Use(middleware.MCPServerPermissionMiddleware())
 	seeRouter.Use(middleware.MCPServerHeaderMiddleware())
-	seeRouter.GET("/sse", mcpProxy.SseHandler())
+	seeRouter.GET("/sse", mcpProxy.SSEHandler())
 	seeRouter.POST("/sse/message", mcpProxy.SseMessageHandler())
-
+	seeRouter.POST("/mcp", mcpProxy.StreamableHTTPHandler())
 	// mcp application 应用态mcp proxy
 	mcpApplicationProxy := proxy.NewMCPProxy(cfg.McpServer.MessageApplicationUrlFormat)
 	mcpApplicationSvc, err := mcp.Init(ctx, mcpApplicationProxy)
@@ -117,8 +117,9 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	seeAppRouter.Use(middleware.BkGatewayJWTAuthMiddleware())
 	seeAppRouter.Use(middleware.MCPServerPermissionMiddleware())
 	seeAppRouter.Use(middleware.MCPServerHeaderMiddleware())
-	seeAppRouter.GET("/sse", mcpApplicationProxy.SseHandler())
+	seeAppRouter.GET("/sse", mcpApplicationProxy.SSEHandler())
 	seeAppRouter.POST("/sse/message", mcpApplicationProxy.SseMessageHandler())
+	seeAppRouter.POST("/mcp", mcpApplicationProxy.StreamableHTTPHandler())
 
 	// trace
 	if cfg.Tracing.GinAPIEnabled() {
