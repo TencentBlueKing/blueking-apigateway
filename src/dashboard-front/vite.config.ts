@@ -1,21 +1,19 @@
-import {
-  URL,
-  fileURLToPath,
-} from 'node:url';
+import { URL, fileURLToPath } from "node:url";
+import path from "path";
 
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
-import vueJsx from '@vitejs/plugin-vue-jsx';
-import vueDevTools from 'vite-plugin-vue-devtools';
-import AutoImport from 'unplugin-auto-import/vite';
-import UnoCSS from 'unocss/vite';
-import TurboConsole from 'unplugin-turbo-console/vite';
-import basicSsl from '@vitejs/plugin-basic-ssl';
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
+import vueJsx from "@vitejs/plugin-vue-jsx";
+import vueDevTools from "vite-plugin-vue-devtools";
+import AutoImport from "unplugin-auto-import/vite";
+import UnoCSS from "unocss/vite";
+import TurboConsole from "unplugin-turbo-console/vite";
+import basicSsl from "@vitejs/plugin-basic-ssl";
 
 // https://vite.dev/config/
 export default defineConfig({
   server: {
-    host: 'dev-t.paas3-dev.bktencent.com',
+    host: "dev-t.paas3-dev.bktencent.com",
     port: 8888,
     strictPort: true,
     // https: true,
@@ -26,7 +24,7 @@ export default defineConfig({
       template: {
         compilerOptions: {
           // 多租户名称展示标签不要解析为组件
-          isCustomElement: tag => tag === 'bk-user-display-name',
+          isCustomElement: (tag) => tag === "bk-user-display-name",
         },
       },
     }),
@@ -34,15 +32,13 @@ export default defineConfig({
     vueDevTools(),
     AutoImport({
       imports: [
-        'vue',
-        'vue-router',
+        "vue",
+        "vue-router",
         {
-          'vue-i18n': [
-            'useI18n',
-          ],
+          "vue-i18n": ["useI18n"],
         },
       ],
-      dts: './src/types/auto-imports.d.ts',
+      dts: "./src/types/auto-imports.d.ts",
       viteOptimizeDeps: true,
     }),
     UnoCSS(),
@@ -51,9 +47,27 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
       // 'bkui-vue': 'bkui-vue/dist/index.esm.js',
-      'bkui-lib': 'bkui-vue/lib',
+      "bkui-lib": "bkui-vue/lib",
+    },
+  },
+  build: {
+    manifest: true,
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        default: path.resolve(__dirname, "default.html"),
+      },
+    },
+  },
+  experimental: {
+    renderBuiltUrl(filename, { hostType }) {
+      if (hostType === "js") {
+        return { runtime: `window.__loadAssetsUrl__(${JSON.stringify(filename)})` };
+      } else {
+        return { relative: true };
+      }
     },
   },
 });

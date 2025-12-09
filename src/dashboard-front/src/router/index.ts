@@ -16,40 +16,35 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import {
-  type RouteLocationNormalized,
-  type RouteRecordRaw,
-  createRouter,
-  createWebHistory,
-} from 'vue-router';
+import { type RouteLocationNormalized, type RouteRecordRaw, createRouter, createWebHistory } from "vue-router";
 // 环境概览
-import getStageManagementRoutes from '@/views/stage-management/route';
+import getStageManagementRoutes from "@/views/stage-management/route";
 // 资源管理
-import getResourceManagementRoutes from '@/views/resource-management/route';
+import getResourceManagementRoutes from "@/views/resource-management/route";
 // 基本信息
-import getBasicInfoRoutes from '@/views/basic-info/routes';
+import getBasicInfoRoutes from "@/views/basic-info/routes";
 // 组件管理
-import getComponentManagementRoutes from '@/views/component-management/route';
+import getComponentManagementRoutes from "@/views/component-management/route";
 // 后端服务
-import getBackendServicesRoutes from '@/views/backend-services/routes';
+import getBackendServicesRoutes from "@/views/backend-services/routes";
 // 权限管理
-import getPermissionManagementRoutes from '@/views/permission/routes';
+import getPermissionManagementRoutes from "@/views/permission/routes";
 // 平台工具
-import getPlatformToolsRoutes from '@/views/platform-tools/routes.ts';
+import getPlatformToolsRoutes from "@/views/platform-tools/routes.ts";
 // MCP 市场
-import getMcpMarketRoutes from '@/views/mcp-market/routes';
+import getMcpMarketRoutes from "@/views/mcp-market/routes";
 // 运行数据
-import getOperateDataRoutes from '@/views/operate-data/route';
+import getOperateDataRoutes from "@/views/operate-data/route";
 // 在线调试
-import getOnlineDebuggingRoutes from '@/views/online-debugging/routes';
+import getOnlineDebuggingRoutes from "@/views/online-debugging/routes";
 // 操作记录
-import getAuditLogRoutes from '@/views/audit-log/routes';
+import getAuditLogRoutes from "@/views/audit-log/routes";
 // 告警策略
-import getMonitorAlarmRoutes from '@/views/monitor-alarm/routes';
+import getMonitorAlarmRoutes from "@/views/monitor-alarm/routes";
 // MCP Server
-import getMCPServerRoutes from '@/views/mcp-server/route';
+import getMCPServerRoutes from "@/views/mcp-server/route";
 // API 文档
-import getAPIDocsRoutes from '@/views/api-docs/route';
+import getAPIDocsRoutes from "@/views/api-docs/route";
 
 function props(route: RouteLocationNormalized) {
   const { id } = route.params;
@@ -58,14 +53,14 @@ function props(route: RouteLocationNormalized) {
 
 const routes: RouteRecordRaw[] = [
   {
-    path: '/',
-    name: 'Home',
-    component: () => import('@/views/home/Index.vue'),
+    path: "/",
+    name: "Home",
+    component: () => import("@/views/home/Index.vue"),
   },
   {
-    path: '/:id',
-    name: 'Resources',
-    component: () => import('@/layout/my-gateway/Index.vue'),
+    path: "/:id",
+    name: "Resources",
+    component: () => import("@/layout/my-gateway/Index.vue"),
     props,
     children: [
       ...getStageManagementRoutes(),
@@ -81,40 +76,34 @@ const routes: RouteRecordRaw[] = [
     ],
   },
   {
-    path: '/platform-tools',
-    name: 'PlatformTools',
-    component: () => import('@/layout/platform-tools/Index.vue'),
+    path: "/platform-tools",
+    name: "PlatformTools",
+    component: () => import("@/layout/platform-tools/Index.vue"),
     props,
-    redirect: '/platform-tools/toolbox',
-    children: [
-      ...getPlatformToolsRoutes(),
-    ],
+    redirect: "/platform-tools/toolbox",
+    children: [...getPlatformToolsRoutes()],
   },
   ...getMcpMarketRoutes(),
   {
-    path: '/components',
-    name: 'ComponentsMain',
-    component: () => import('@/layout/component-management/Index.vue'),
+    path: "/components",
+    name: "ComponentsMain",
+    component: () => import("@/layout/component-management/Index.vue"),
     props,
-    redirect: '/components/access',
-    children: [
-      ...getComponentManagementRoutes(),
-    ],
+    redirect: "/components/access",
+    children: [...getComponentManagementRoutes()],
   },
   {
-    path: '/docs',
-    name: 'Docs',
-    component: () => import('@/layout/docs/Index.vue'),
-    redirect: { name: 'ApiDocs' },
+    path: "/docs",
+    name: "Docs",
+    component: () => import("@/layout/docs/Index.vue"),
+    redirect: { name: "ApiDocs" },
     props,
-    children: [
-      ...getAPIDocsRoutes(),
-    ],
+    children: [...getAPIDocsRoutes()],
   },
 ];
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(window.BK_SITE_PATH),
   routes,
 });
 
