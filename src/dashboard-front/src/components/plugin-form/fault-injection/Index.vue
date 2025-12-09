@@ -23,85 +23,108 @@
     :rules="rules"
   >
     <BkFormItem
-      :label="t('中断状态码')"
-      property="abort.http_status"
-      :description="t('返回给客户端的 HTTP 状态码')"
+      :label="t('中断')"
     >
-      <BkInput
-        v-model="formData.abort.http_status"
-        type="number"
+      <bk-switcher
+        v-model="formData.abort.enabled"
+        theme="primary"
       />
     </BkFormItem>
+    <template v-if="formData.abort.enabled">
+      <BkFormItem
+        :label="t('中断状态码')"
+        property="abort.http_status"
+        :description="t('返回给客户端的 HTTP 状态码')"
+        required
+      >
+        <BkInput
+          v-model="formData.abort.http_status"
+          type="number"
+        />
+      </BkFormItem>
+      <BkFormItem
+        :label="t('中断响应体')"
+        property="abort.body"
+        :description="t('返回给客户端的响应数据。支持使用 NGINX 变量，如 client addr: $remote_addr')"
+      >
+        <BkInput
+          v-model="formData.abort.body"
+          :placeholder="t('请输入')"
+          type="textarea"
+          :rows="10"
+        />
+      </BkFormItem>
+      <BkFormItem
+        :label="t('中断请求占比')"
+        property="abort.percentage"
+        :description="t('将被中断的请求占比，0-100')"
+      >
+        <BkInput
+          v-model="formData.abort.percentage"
+          type="number"
+          :min="0"
+          :max="100"
+        />
+      </BkFormItem>
+      <BkFormItem
+        :label="t('中断规则')"
+        property="abort.vars"
+        :description="t('执行故障注入的规则，当规则匹配通过后才会执行故障注。vars 是一个表达式的列表，来自 lua-resty-expr。')"
+      >
+        <BkInput
+          v-model="formData.abort.vars"
+          :placeholder="t('请输入')"
+          type="textarea"
+          :rows="10"
+        />
+      </BkFormItem>
+    </template>
+
     <BkFormItem
-      :label="t('中断响应体')"
-      property="abort.body"
-      :description="t('返回给客户端的响应数据。支持使用 NGINX 变量，如 client addr: $remote_addr')"
+      :label="t('延迟')"
     >
-      <BkInput
-        v-model="formData.abort.body"
-        :placeholder="t('请输入')"
-        type="textarea"
-        :rows="10"
+      <bk-switcher
+        v-model="formData.delay.enabled"
+        theme="primary"
       />
     </BkFormItem>
-    <BkFormItem
-      :label="t('中断请求占比')"
-      property="abort.percentage"
-      :description="t('将被中断的请求占比，0-100')"
-    >
-      <BkInput
-        v-model="formData.abort.percentage"
-        type="number"
-        :min="0"
-        :max="100"
-      />
-    </BkFormItem>
-    <BkFormItem
-      :label="t('中断规则')"
-      property="abort.vars"
-      :description="t('执行故障注入的规则，当规则匹配通过后才会执行故障注。vars 是一个表达式的列表，来自 lua-resty-expr。')"
-    >
-      <BkInput
-        v-model="formData.abort.vars"
-        :placeholder="t('请输入')"
-        type="textarea"
-        :rows="10"
-      />
-    </BkFormItem>
-    <BkFormItem
-      :label="t('延迟时间')"
-      property="delay.duration"
-      :description="t('延迟时间，单位秒，只能填入整数')"
-    >
-      <BkInput
-        v-model="formData.delay.duration"
-        type="number"
-      />
-    </BkFormItem>
-    <BkFormItem
-      :label="t('延迟请求占比')"
-      property="delay.percentage"
-      :description="t('将被延迟的请求占比，0-100')"
-    >
-      <BkInput
-        v-model="formData.delay.percentage"
-        type="number"
-        :min="0"
-        :max="100"
-      />
-    </BkFormItem>
-    <BkFormItem
-      :label="t('延迟规则')"
-      property="delay.vars"
-      :description="t('执行请求延迟的规则，当规则匹配通过后才会延迟请求。vars 是一个表达式列表，来自 lua-resty-expr。')"
-    >
-      <BkInput
-        v-model="formData.delay.vars"
-        :placeholder="t('请输入')"
-        type="textarea"
-        :rows="10"
-      />
-    </BkFormItem>
+    <template v-if="formData.delay.enabled">
+      <BkFormItem
+        :label="t('延迟时间')"
+        property="delay.duration"
+        :description="t('延迟时间，单位秒，只能填入整数')"
+        required
+      >
+        <BkInput
+          v-model="formData.delay.duration"
+          type="number"
+        />
+      </BkFormItem>
+      <BkFormItem
+        :label="t('延迟请求占比')"
+        property="delay.percentage"
+        :description="t('将被延迟的请求占比，0-100')"
+      >
+        <BkInput
+          v-model="formData.delay.percentage"
+          type="number"
+          :min="0"
+          :max="100"
+        />
+      </BkFormItem>
+      <BkFormItem
+        :label="t('延迟规则')"
+        property="delay.vars"
+        :description="t('执行请求延迟的规则，当规则匹配通过后才会延迟请求。vars 是一个表达式列表，来自 lua-resty-expr。')"
+      >
+        <BkInput
+          v-model="formData.delay.vars"
+          :placeholder="t('请输入')"
+          type="textarea"
+          :rows="10"
+        />
+      </BkFormItem>
+    </template>
   </BkForm>
 </template>
 
@@ -115,11 +138,13 @@ interface IFormData {
     body?: string
     percentage?: number
     vars?: string
+    enabled?: boolean
   }
   delay: {
     duration: number
     percentage?: number
     vars?: string
+    enabled?: boolean
   }
 }
 
@@ -135,13 +160,15 @@ const getDefaultData = () => ({
   abort: {
     http_status: 400,
     body: '',
-    percentage: 0,
+    percentage: 100,
     vars: '',
+    enabled: true,
   },
   delay: {
     duration: 0,
-    percentage: 0,
+    percentage: 100,
     vars: '',
+    enabled: false,
   },
 });
 
@@ -162,15 +189,34 @@ const rules = {
   ],
 };
 
+watch(
+  () => [formData.value.abort.enabled, formData.value.delay.enabled],
+  ([v1, v2]) => {
+    if (!v1 && !v2) {
+      Message({
+        theme: 'error',
+        message: t('中断信息和延迟信息不能同时为空'),
+      });
+    }
+  },
+);
+
 watch(() => data, (newVal) => {
   const data = cloneDeep(newVal);
   if (data?.abort?.http_status || data?.delay?.duration) {
     if (!data?.abort?.http_status) {
       data.abort = getDefaultData()?.abort;
       data.abort.http_status = 0;
+      data.abort.enabled = false;
+      data.delay.enabled = true;
     }
     if (!data?.delay?.duration) {
       data.delay = getDefaultData()?.delay;
+      data.abort.enabled = true;
+    }
+    if (data?.abort?.http_status && data?.delay?.duration) {
+      data.abort.enabled = true;
+      data.delay.enabled = true;
     }
     formData.value = data;
   }
@@ -182,28 +228,28 @@ watch(() => data, (newVal) => {
   deep: true,
 });
 
-const isDefaultData = (field: string) => {
-  return JSON.stringify(formData.value[field]) === JSON.stringify(getDefaultData()[field]);
-};
+// const isDefaultData = (field: string) => {
+//   return JSON.stringify(formData.value[field]) === JSON.stringify(getDefaultData()[field]);
+// };
 
-const isEffective = () => {
-  let flag = false;
-  const { abort, delay } = formData.value;
+// const isEffective = () => {
+//   let flag = false;
+//   const { abort, delay } = formData.value;
 
-  if (Object.keys(abort).some(key => (abort[key] !== 0 && abort[key] !== ''))) {
-    flag = true;
-  }
-  if (Object.keys(delay).some(key => (delay[key] !== 0 && delay[key] !== ''))) {
-    flag = true;
-  }
-  return flag;
-};
+//   if (Object.keys(abort).some(key => (abort[key] !== 0 && abort[key] !== ''))) {
+//     flag = true;
+//   }
+//   if (Object.keys(delay).some(key => (delay[key] !== 0 && delay[key] !== ''))) {
+//     flag = true;
+//   }
+//   return flag;
+// };
 
 const validate = async () => {
   try {
     await formRef.value?.validate();
 
-    if (!isEffective()) {
+    if (!formData.value.abort.enabled && !formData.value.delay.enabled) {
       Message({
         theme: 'error',
         message: t('中断信息和延迟信息不能同时为空'),
@@ -211,18 +257,18 @@ const validate = async () => {
       return Promise.reject(false);
     }
 
-    if (!isDefaultData('abort') && isDefaultData('delay') && !formData.value?.abort?.http_status) {
+    if (formData.value.abort.enabled && !formData.value?.abort?.http_status) {
       Message({
         theme: 'error',
-        message: t('中断状态码不能为空'),
+        message: t('请设置有效的中断状态码'),
       });
       return Promise.reject(false);
     }
 
-    if (!isDefaultData('delay') && !formData.value?.delay?.duration) {
+    if (formData.value.delay.enabled && !formData.value?.delay?.duration) {
       Message({
         theme: 'error',
-        message: t('延迟时间不能为空'),
+        message: t('请设置有效的延迟时间'),
       });
       return Promise.reject(false);
     }
@@ -234,19 +280,49 @@ const validate = async () => {
 
 const getValue = () => {
   return validate()?.then(() => {
-    if (!formData.value?.delay?.duration) {
+    const data = cloneDeep(formData.value);
+
+    if (!data?.delay?.vars) {
+      data.delay = {
+        ...data.delay,
+        vars: undefined,
+      };
+    }
+    if (!data?.abort?.vars) {
+      data.abort = {
+        ...data.abort,
+        vars: undefined,
+      };
+    }
+
+    if (!data?.delay?.enabled) {
       return {
-        ...cloneDeep(formData.value),
+        abort: {
+          ...data.abort,
+          enabled: undefined,
+        },
         delay: undefined,
       };
     }
-    if (!formData.value?.abort?.http_status) {
+    if (!data?.abort?.enabled) {
       return {
-        ...cloneDeep(formData.value),
+        delay: {
+          ...data.delay,
+          enabled: undefined,
+        },
         abort: undefined,
       };
     }
-    return formData.value;
+    return {
+      abort: {
+        ...data.abort,
+        enabled: undefined,
+      },
+      delay: {
+        ...data.delay,
+        enabled: undefined,
+      },
+    };
   }).catch(error => Promise.reject(error));
 };
 

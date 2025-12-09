@@ -41,6 +41,8 @@
     >
       <BkInput
         v-model="formData.body"
+        type="textarea"
+        :rows="5"
       />
     </BkFormItem>
     <BkFormItem
@@ -100,6 +102,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import KeyValuePairs from '@/components/plugin-form/api-breaker/components/KeyValuePairs.vue';
 import removeHeaders from '@/components/plugin-form/api-breaker/components/removeHeaders.vue';
@@ -171,7 +174,18 @@ const validate = async () => {
   }
 };
 
-const getValue = () => validate()?.then(() => formData.value).catch(error => Promise.reject(error));
+const getValue = () => {
+  return validate()?.then(() => {
+    if (JSON.stringify(formData.value) === JSON.stringify(getDefaultData())) {
+      Message({
+        theme: 'error',
+        message: t('请填写信息'),
+      });
+      return Promise.reject(false);
+    }
+    return formData.value;
+  }).catch(error => Promise.reject(error));
+};
 
 defineExpose({
   validate,
