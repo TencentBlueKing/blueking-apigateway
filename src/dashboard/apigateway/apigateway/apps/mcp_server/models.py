@@ -30,6 +30,7 @@ from .constants import (
     MCPServerAppPermissionApplyExpireDaysEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
+    MCPServerExtendTypeEnum,
     MCPServerStatusEnum,
 )
 
@@ -131,3 +132,22 @@ class MCPServerAppPermissionApply(TimestampedModelMixin, OperatorModelMixin):
         indexes = [
             models.Index(fields=["mcp_server", "status"]),
         ]
+
+
+class MCPServerExtend(TimestampedModelMixin, OperatorModelMixin):
+    """MCPServer 扩展配置表"""
+
+    mcp_server = models.ForeignKey(MCPServer, on_delete=models.CASCADE, related_name="extends")
+    type = models.CharField(
+        max_length=32, choices=MCPServerExtendTypeEnum.get_choices(), db_index=True, help_text=_("配置类型")
+    )
+    content = models.TextField(blank=True, default="", help_text=_("配置内容"))
+
+    def __str__(self):
+        return f"<MCPServerExtend: {self.pk}/{self.mcp_server_id}/{self.type}>"
+
+    class Meta:
+        verbose_name = _("MCPServer 扩展配置")
+        verbose_name_plural = _("MCPServer 扩展配置")
+        db_table = "mcp_server_extend"
+        unique_together = ("mcp_server", "type")
