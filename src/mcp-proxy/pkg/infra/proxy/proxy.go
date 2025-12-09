@@ -159,7 +159,7 @@ func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi
 	mcpServerConfig := &MCPServerConfig{
 		Name:         name,
 		Tools:        OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
-		ProtocolType: constant.ProtocolTypeStreamableHTTP,
+		ProtocolType: protocolType,
 	}
 	return m.AddMCPServerFromConfigs([]*MCPServerConfig{mcpServerConfig})
 }
