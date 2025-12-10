@@ -16,12 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import {
-  type RouteLocationNormalized,
-  type RouteRecordRaw,
-  createRouter,
-  createWebHistory,
-} from 'vue-router';
+import { type RouteLocationNormalized, type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router';
 // 环境概览
 import getStageManagementRoutes from '@/views/stage-management/route';
 // 资源管理
@@ -86,9 +81,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/layout/platform-tools/Index.vue'),
     props,
     redirect: '/platform-tools/toolbox',
-    children: [
-      ...getPlatformToolsRoutes(),
-    ],
+    children: [...getPlatformToolsRoutes()],
   },
   ...getMcpMarketRoutes(),
   {
@@ -97,9 +90,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/layout/component-management/Index.vue'),
     props,
     redirect: '/components/access',
-    children: [
-      ...getComponentManagementRoutes(),
-    ],
+    children: [...getComponentManagementRoutes()],
   },
   {
     path: '/docs',
@@ -107,14 +98,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/layout/docs/Index.vue'),
     redirect: { name: 'ApiDocs' },
     props,
-    children: [
-      ...getAPIDocsRoutes(),
-    ],
+    children: [...getAPIDocsRoutes()],
   },
 ];
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(window.BK_SITE_PATH),
   routes,
 });
 
