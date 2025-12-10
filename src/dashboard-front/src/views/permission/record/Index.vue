@@ -370,8 +370,8 @@ const getTableColumns = computed(() => {
       ellipsis: true,
     },
     {
-      colKey: 'grant_dimension',
       title: t('授权维度'),
+      colKey: 'grant_dimension',
       ellipsis: true,
       filter: {
         type: 'single',
