@@ -1,7 +1,5 @@
-import {
-  URL,
-  fileURLToPath,
-} from 'node:url';
+import { URL, fileURLToPath } from 'node:url';
+import path from 'path';
 
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
@@ -36,11 +34,7 @@ export default defineConfig({
       imports: [
         'vue',
         'vue-router',
-        {
-          'vue-i18n': [
-            'useI18n',
-          ],
-        },
+        { 'vue-i18n': ['useI18n'] },
       ],
       dts: './src/types/auto-imports.d.ts',
       viteOptimizeDeps: true,
@@ -54,6 +48,25 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       // 'bkui-vue': 'bkui-vue/dist/index.esm.js',
       'bkui-lib': 'bkui-vue/lib',
+    },
+  },
+  build: {
+    manifest: true,
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        default: path.resolve(__dirname, 'default.html'),
+      },
+    },
+  },
+  experimental: {
+    renderBuiltUrl(filename, { hostType }) {
+      if (hostType === 'js') {
+        return { runtime: `window.__loadAssetsUrl__(${JSON.stringify(filename)})` };
+      }
+      else {
+        return { relative: true };
+      }
     },
   },
 });
