@@ -237,7 +237,10 @@
                         </div>
                       </div>
                     </template>
-                    <TableEmpty v-else />
+                    <TableEmpty
+                      v-else
+                      class="h-[calc(100%-50px)]"
+                    />
                   </div>
                 </div>
               </div>

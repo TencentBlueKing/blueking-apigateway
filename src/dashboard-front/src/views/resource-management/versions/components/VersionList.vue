@@ -210,6 +210,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'released_stages',
     title: t('生效环境'),
+    ellipsis: true,
     cell: (h, { row }) =>
       <span>{ row.released_stages?.map((item: any) => item.name).join(', ') || '--' }</span>,
   },
