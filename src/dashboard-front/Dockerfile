@@ -2,7 +2,7 @@
 FROM node:20.19.4-bookworm AS builder
 
 WORKDIR /app
-COPY package.json package-lock.json yarn.lock /app/
+COPY package.json package-lock.json /app/
 
 ENV NODE_OPTIONS=--max_old_space_size=8192
 
