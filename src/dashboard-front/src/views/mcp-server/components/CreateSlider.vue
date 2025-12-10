@@ -108,19 +108,23 @@
             <BkFormItem
               :label="t('描述')"
               property="description"
+              required
             >
               <BkInput
                 v-model="formData.description"
+                :maxlength="512"
                 :disabled="noValidStage"
-                :placeholder="$t('请输入描述')"
+                :placeholder="t('请输入描述')"
                 clearable
+                show-word-limit
+                resize
               />
             </BkFormItem>
             <BkFormItem
               :label="t('标签')"
               property="labels"
             >
-              <BkTag-input
+              <BkTagInput
                 v-model="formData.labels"
                 :disabled="noValidStage"
                 allow-create
