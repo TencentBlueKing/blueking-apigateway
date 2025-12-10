@@ -75,14 +75,11 @@
             if (!item.isEntry) {
               return;
             }
-            console.log(item);
             loadScript(item.file);
             item.css.forEach((asset) => {
               loadStyle(asset);
             });
           });
-
-          console.log(data);
         });
     </script>
   </body>
