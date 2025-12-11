@@ -136,6 +136,10 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 
 		// 如果mcp server已经存在，判断mcp server的工具是否变化
 		mcpServer := mcpProxy.GetMCPServer(server.Name)
+		if mcpServer == nil {
+			logging.GetLogger().Warnf("mcp server[%s] does not exist, skip tool cleanup", server.Name)
+			continue
+		}
 		for _, tool := range mcpServer.GetTools() {
 			// 如果当前mcp server的工具不在当前生效的资源列表中，删除该工具
 			if !arrutil.Contains(server.ResourceNames, tool) {
