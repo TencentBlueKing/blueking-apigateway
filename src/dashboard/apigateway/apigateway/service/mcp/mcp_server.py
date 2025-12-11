@@ -67,6 +67,11 @@ def build_mcp_server_url(mcp_server_name: str) -> str:
     return f"{bk_apigateway_url}/prod/api/v2/mcp-servers/{mcp_server_name}/sse/"
 
 
+def build_mcp_server_streamable_http_url(mcp_server_name: str) -> str:
+    bk_apigateway_url = settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")
+    return f"{bk_apigateway_url}/prod/api/v2/mcp-servers/{mcp_server_name}/mcp/"
+
+
 def build_mcp_server_application_url(mcp_server_name: str) -> str:
     bk_apigateway_url = settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")
     return f"{bk_apigateway_url}/prod/api/v2/mcp-servers/{mcp_server_name}/application/sse/"

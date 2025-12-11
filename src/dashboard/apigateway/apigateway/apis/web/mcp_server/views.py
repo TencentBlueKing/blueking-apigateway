@@ -31,6 +31,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerExtendTypeEnum,
+    MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import (
@@ -47,7 +48,7 @@ from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.core.models import Stage
-from apigateway.service.mcp.mcp_server import build_mcp_server_url
+from apigateway.service.mcp.mcp_server import build_mcp_server_streamable_http_url, build_mcp_server_url
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.time import now_datetime
@@ -59,6 +60,7 @@ from .serializers import (
     MCPServerAppPermissionCreateInputSLZ,
     MCPServerAppPermissionListInputSLZ,
     MCPServerAppPermissionListOutputSLZ,
+    MCPServerConfigOutputSLZ,
     MCPServerCreateInputSLZ,
     MCPServerGuidelineOutputSLZ,
     MCPServerListOutputSLZ,
@@ -377,6 +379,44 @@ class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
         )
 
         slz = self.get_serializer({"content": content})
+
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCPServer 连接配置",
+        responses={status.HTTP_200_OK: MCPServerConfigOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerConfigRetrieveApi(generics.RetrieveAPIView):
+    queryset = MCPServer.objects.all()
+    serializer_class = MCPServerConfigOutputSLZ
+    lookup_url_kwarg = "mcp_server_id"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # 根据协议类型构建 URL
+        if instance.protocol_type == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value:
+            url = build_mcp_server_streamable_http_url(instance.name)
+        else:
+            # 默认使用 SSE
+            url = build_mcp_server_url(instance.name)
+
+        data = {
+            "mcp_servers": {
+                instance.name: {
+                    "type": instance.protocol_type,
+                    "url": url,
+                    "description": instance.description or "",
+                }
+            }
+        }
+
+        slz = self.get_serializer(data)
 
         return OKJsonResponse(data=slz.data)
 

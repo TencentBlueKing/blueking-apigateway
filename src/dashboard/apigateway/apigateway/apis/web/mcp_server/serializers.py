@@ -25,6 +25,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyProcessedStateEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
+    MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
@@ -185,6 +186,29 @@ class MCPServerGuidelineOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerGuidelineOutputSLZ"
+
+
+class MCPServerConfigItemSLZ(serializers.Serializer):
+    type = serializers.ChoiceField(
+        read_only=True,
+        choices=MCPServerProtocolTypeEnum.get_choices(),
+        help_text="MCP 协议类型",
+    )
+    url = serializers.CharField(read_only=True, help_text="MCP Server URL")
+    description = serializers.CharField(read_only=True, help_text="MCP Server 描述")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerConfigItemSLZ"
+
+
+class MCPServerConfigOutputSLZ(serializers.Serializer):
+    mcp_servers = serializers.DictField(read_only=True, help_text="MCP Server 配置")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerConfigOutputSLZ"
+
+    def to_representation(self, instance):
+        return {"mcpServers": instance.get("mcp_servers", {})}
 
 
 class MCPServerUserCustomDocInputSLZ(serializers.Serializer):

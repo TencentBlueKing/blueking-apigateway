@@ -67,3 +67,10 @@ class MCPServerExtendTypeEnum(StructuredEnum):
     """MCPServer 扩展配置类型"""
 
     USER_CUSTOM_DOC = EnumField("user_custom_doc", label=_("用户自定义文档"))
+
+
+class MCPServerProtocolTypeEnum(StructuredEnum):
+    """MCP 协议类型"""
+
+    SSE = EnumField("sse", label=_("SSE"))
+    STREAMABLE_HTTP = EnumField("streamable_http", label=_("Streamable HTTP"))
