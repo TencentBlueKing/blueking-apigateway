@@ -2813,8 +2813,6 @@
           }
         }
       }
-      
-
 - model: schema.schema
   fields:
     created_time: 2025-08-04 10:00:21.010753+00:00
@@ -2831,6 +2829,11 @@
               "enum": ["bearer", "api_key"],
               "default": "bearer",
               "description": "The source of the authentication token, default is bearer"
+            },
+            "allow_fallback": {
+              "type": "boolean",
+              "default": true,
+              "description": "Allow degradation of the authentication token, would fallback to the default bk-auth header"
             }
         }
       }
@@ -2868,6 +2871,15 @@
                 "enum": ["bearer", "api_key"],
                 "default": "bearer",
                 "description": "认证令牌的来源，默认是 bearer"
+              },
+              "allow_fallback": {
+                "title": "允许降级",
+                "type": "boolean",
+                "default": true,
+                "ui:props": {
+                  "labelWidth": 200
+                },
+                "description": "是否允许调用方没有使用新的认证头的情况下，不报错降级使用 X-Bkapi-Authorization 认证头"
               }
           }
         }
@@ -2892,6 +2904,15 @@
                 "enum": ["bearer", "api_key"],
                 "default": "bearer",
                 "description": "The source of the authentication token, default is bearer"
+              },
+              "allow_fallback": {
+                "title": "allow fallback",
+                "type": "boolean",
+                "default": true,
+                "ui:props": {
+                  "labelWidth": 200
+                },
+                "description": "Allow degradation of the authentication token, would fallback to the default bk-auth header"
               }
           }
         }
