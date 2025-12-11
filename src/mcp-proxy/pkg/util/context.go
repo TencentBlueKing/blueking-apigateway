@@ -134,8 +134,8 @@ func GetBkApiTimeout(ctx context.Context) time.Duration {
 	// Get the timeout value from the context
 	timeout, ok := ctx.Value(constant.BkApiTimeout).(int)
 	if !ok || timeout == 0 {
-		// default timeout is 1 minute
-		return time.Minute
+		// default timeout is 5 minute
+		return 5 * time.Minute
 	}
 	return time.Duration(timeout) * time.Second
 }
