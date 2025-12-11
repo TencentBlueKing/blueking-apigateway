@@ -75,8 +75,8 @@ func (m *MCPProxy) AddMCPServer(name string, mcpServer *MCPServer) {
 
 // GetActiveMCPServerNames ...
 func (m *MCPProxy) GetActiveMCPServerNames() []string {
-	m.rwLock.Lock()
-	defer m.rwLock.Unlock()
+	m.rwLock.RLock()
+	defer m.rwLock.RUnlock()
 	var names []string
 	for name := range m.activeMCPServers {
 		names = append(names, name)
@@ -108,7 +108,7 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 		if err != nil {
 			return err
 		}
-		mcpServer := NewMCPServer(trans, sseHandler, config.Name)
+		mcpServer := NewMCPServer(trans, sseHandler, config.Name, config.ResourceVersionID)
 		// register tool
 		for _, toolConfig := range config.Tools {
 			bytes, _ := toolConfig.ParamSchema.JSONSchemaBytes()
@@ -122,22 +122,24 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 }
 
 // AddMCPServerFromOpenApiSpec nolint:gofmt
-func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string, openApiSpec *openapi3.T, operationIDList []string,
+func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string,
+	resourceVersionID int, openApiSpec *openapi3.T, operationIDList []string,
 ) error {
 	operationIDMap := make(map[string]struct{})
 	for _, operationID := range operationIDList {
 		operationIDMap[operationID] = struct{}{}
 	}
 	mcpServerConfig := &MCPServerConfig{
-		Name:  name,
-		Tools: OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
+		Name:              name,
+		Tools:             OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
+		ResourceVersionID: resourceVersionID,
 	}
 	return m.AddMCPServerFromConfigs([]*MCPServerConfig{mcpServerConfig})
 }
 
 // UpdateMCPServerFromOpenApiSpec nolint:gofmt
 func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
-	mcpServer *MCPServer, name string, openApiSpec *openapi3.T, operationIDList []string,
+	mcpServer *MCPServer, name string, resourceVersionID int, openApiSpec *openapi3.T, operationIDList []string,
 ) error {
 	operationIDMap := make(map[string]struct{})
 	for _, operationID := range operationIDList {
@@ -154,6 +156,8 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 		toolHandler := genToolHandler(toolConfig)
 		mcpServer.RegisterTool(tool, toolHandler)
 	}
+	// 更新资源版本号
+	mcpServer.SetResourceVersionID(resourceVersionID)
 	return nil
 }
 
@@ -161,12 +165,13 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 func (m *MCPProxy) SseHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		name := c.Param("name")
-		if _, ok := m.mcpServers[name]; !ok {
+		mcpServer := m.GetMCPServer(name)
+		if mcpServer == nil {
 			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server name %s does not exist", name))
 			log.Printf("name %s does not exist\n", name)
 			return
 		}
-		m.mcpServers[name].Handler.HandleSSE().ServeHTTP(c.Writer, c.Request)
+		mcpServer.Handler.HandleSSE().ServeHTTP(c.Writer, c.Request)
 	}
 }
 
@@ -174,19 +179,20 @@ func (m *MCPProxy) SseHandler() gin.HandlerFunc {
 func (m *MCPProxy) SseMessageHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		name := c.Param("name")
-		if _, ok := m.mcpServers[name]; !ok {
+		mcpServer := m.GetMCPServer(name)
+		if mcpServer == nil {
 			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server name %s does not exist", name))
 			log.Printf("name %s does not exist\n", name)
 			return
 		}
-		m.mcpServers[name].Handler.HandleMessage().ServeHTTP(c.Writer, c.Request)
+		mcpServer.Handler.HandleMessage().ServeHTTP(c.Writer, c.Request)
 	}
 }
 
 // Run ...
 func (m *MCPProxy) Run(ctx context.Context) {
-	m.rwLock.RLock()
-	defer m.rwLock.RUnlock()
+	m.rwLock.Lock()
+	defer m.rwLock.Unlock()
 	for _, mcpServer := range m.mcpServers {
 		if _, ok := m.activeMCPServers[mcpServer.name]; ok {
 			continue
@@ -227,6 +233,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
+		defer tr.CloseIdleConnections()
 		client := http.DefaultClient
 		timeout := util.GetBkApiTimeout(ctx)
 		client.Transport = tr

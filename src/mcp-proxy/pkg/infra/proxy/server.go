@@ -35,23 +35,31 @@ type MCPServer struct {
 	Transport transport.ServerTransport
 	Handler   *transport.SSEHandler
 	name      string
-	tools     map[string]struct{}
-	rwLock    *sync.RWMutex
+	// 生效的资源版本号
+	resourceVersion int
+	tools           map[string]struct{}
+	rwLock          *sync.RWMutex
 }
 
 // NewMCPServer ...
-func NewMCPServer(transport transport.ServerTransport, handler *transport.SSEHandler, name string) *MCPServer {
+func NewMCPServer(
+	transport transport.ServerTransport,
+	handler *transport.SSEHandler,
+	name string,
+	resourceVersion int,
+) *MCPServer {
 	mcpServer, err := server.NewServer(transport)
 	if err != nil {
 		panic(err)
 	}
 	return &MCPServer{
-		Server:    mcpServer,
-		Transport: transport,
-		Handler:   handler,
-		tools:     make(map[string]struct{}),
-		rwLock:    &sync.RWMutex{},
-		name:      name,
+		Server:          mcpServer,
+		Transport:       transport,
+		Handler:         handler,
+		tools:           make(map[string]struct{}),
+		rwLock:          &sync.RWMutex{},
+		name:            name,
+		resourceVersion: resourceVersion,
 	}
 }
 
@@ -61,6 +69,20 @@ func (s *MCPServer) IsRegisteredTool(toolName string) bool {
 	defer s.rwLock.RUnlock()
 	_, ok := s.tools[toolName]
 	return ok
+}
+
+// GetResourceVersionID returns the resource version id ...
+func (s *MCPServer) GetResourceVersionID() int {
+	s.rwLock.RLock()
+	defer s.rwLock.RUnlock()
+	return s.resourceVersion
+}
+
+// SetResourceVersionID sets the resource version id ...
+func (s *MCPServer) SetResourceVersionID(version int) {
+	s.rwLock.Lock()
+	defer s.rwLock.Unlock()
+	s.resourceVersion = version
 }
 
 // GetTools ...

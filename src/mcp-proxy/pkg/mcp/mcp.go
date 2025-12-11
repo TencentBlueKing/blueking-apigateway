@@ -90,17 +90,42 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 	if err != nil {
 		return err
 	}
-
 	activeMcpServer := make(map[string]struct{})
 	for _, server := range servers {
 		activeMcpServer[server.Name] = struct{}{}
-		conf, err := GetMCPServerConfig(ctx, server)
+		// 判断mcp server是否已经存在
+		// 查看每个mcp server当前生效的资源版本
+		release, err := biz.GetRelease(ctx, server.GatewayID, server.StageID)
 		if err != nil {
-			logging.GetLogger().Errorf("get mcp server[name:%s] openapi file error: %v", server.Name, err)
+			logging.GetLogger().Errorf("get mcp server[%s] release error: %v", server.Name, err)
 			continue
 		}
-		if !mcpProxy.IsMCPServerExist(server.Name) {
-			err = mcpProxy.AddMCPServerFromOpenApiSpec(server.Name, conf.openapiFileData, server.ResourceNames)
+
+		loadOpenapiSpec := true
+		if mcpProxy.IsMCPServerExist(server.Name) {
+			mcpServer := mcpProxy.GetMCPServer(server.Name)
+			// 判断资源版本是否变化
+			if mcpServer.GetResourceVersionID() == release.ResourceVersionID {
+				logging.GetLogger().Debugf("mcp server[%s] version unchanged, skip reload yaml", server.Name)
+				loadOpenapiSpec = false
+			}
+		}
+
+		var conf *Config
+
+		if loadOpenapiSpec {
+			// 传入 release 避免重复查询
+			conf, err = GetMCPServerConfigWithRelease(ctx, server, release)
+			if err != nil {
+				logging.GetLogger().Errorf("get mcp server[name:%s] openapi file error: %v", server.Name, err)
+				continue
+			}
+		}
+
+		// 如果mcp server不存在，添加mcp server
+		if !mcpProxy.IsMCPServerExist(server.Name) && conf != nil {
+			err = mcpProxy.AddMCPServerFromOpenApiSpec(server.Name,
+				conf.resourceVersion, conf.openapiFileData, server.ResourceNames)
 			if err != nil {
 				logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", server.Name, err)
 				continue
@@ -108,6 +133,8 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 			logging.GetLogger().Infof("add  mcp server[%s] success", server.Name)
 			continue
 		}
+
+		// 如果mcp server已经存在，判断mcp server的工具是否变化
 		mcpServer := mcpProxy.GetMCPServer(server.Name)
 		for _, tool := range mcpServer.GetTools() {
 			// 如果当前mcp server的工具不在当前生效的资源列表中，删除该工具
@@ -116,13 +143,17 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 				continue
 			}
 		}
-		// 更新mcp server
-		err = mcpProxy.UpdateMCPServerFromOpenApiSpec(mcpServer, server.Name, conf.openapiFileData,
-			server.ResourceNames)
-		if err != nil {
-			return err
+
+		// 如果资源版本发生变化，更新mcp server
+		if loadOpenapiSpec && conf != nil {
+			// 更新mcp server
+			err = mcpProxy.UpdateMCPServerFromOpenApiSpec(mcpServer, server.Name, conf.resourceVersion,
+				conf.openapiFileData, server.ResourceNames)
+			if err != nil {
+				return err
+			}
+			logging.GetLogger().Infof("update mcp server[%s] success", server.Name)
 		}
-		logging.GetLogger().Infof("update mcp server[%s] success", server.Name)
 	}
 	// 删除已经不存在的mcp server
 	for _, server := range mcpProxy.GetActiveMCPServerNames() {
@@ -134,13 +165,12 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 	return nil
 }
 
-// GetMCPServerConfig ...
-func GetMCPServerConfig(ctx context.Context, server *model.MCPServer) (*Config, error) {
-	// 查看每个mcp server当前生效的资源版本
-	release, err := biz.GetRelease(ctx, server.GatewayID, server.StageID)
-	if err != nil {
-		return nil, err
-	}
+// GetMCPServerConfigWithRelease 使用已有的 release 信息获取配置，避免重复查询
+func GetMCPServerConfigWithRelease(
+	ctx context.Context,
+	server *model.MCPServer,
+	release *model.Release,
+) (*Config, error) {
 	// 根据release查找当前生效的资源版本的openapi文件
 	openapiFile, err := biz.GetOpenapiGatewayResourceVersionSpec(ctx, server.GatewayID, release.ResourceVersionID)
 	if err != nil {
