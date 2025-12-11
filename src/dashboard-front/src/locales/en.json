@@ -2101,6 +2101,8 @@
   "翻译中": "Translating",
   "来源": "Source",
   "认证令牌的来源，默认是 bearer": "Token source, default to be bearer",
+  "允许降级": "Allow fallback",
+  "是否允许调用方没有使用新的认证头的情况下，不报错降级使用 X-Bkapi-Authorization 认证头": "Allow fallback to X-Bkapi-Authorization header if new header is not provided",
   "最大请求体大小（以字节为单位）": "Max body limit in bytes",
   "必须是介于 1 到 33554432 的正整数": "Must be integer between 1 and 33554432",
   "用户已存在": "User exists",
