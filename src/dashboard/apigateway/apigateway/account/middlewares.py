@@ -20,10 +20,13 @@ import json
 import logging
 from collections import namedtuple
 from typing import Optional, Tuple
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from apigw_manager.apigw.authentication import ApiGatewayJWTAppMiddleware as BaseApiGatewayJWTAppMiddleware
 from apigw_manager.apigw.authentication import ApiGatewayJWTUserMiddleware as BaseApiGatewayJWTUserMiddleware
 from django.conf import settings
+from django.utils import timezone as dj_timezone
+from django.utils.deprecation import MiddlewareMixin
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +51,7 @@ class ApiGatewayJWTUserMiddleware(BaseApiGatewayJWTUserMiddleware):
 
 class SelfAppCodeAppSecretLoginMiddleware:
     """
-    此中间件用于支持 APIGW-Dashbord 不通过网关API而访问自身 openapi 接口的场景
+    此中间件用于支持 APIGW-Dashbord 不通过网关 API 而访问自身 openapi 接口的场景
 
     使用请求头 X-Bk-App-Code、X-Bk-App-Secret 实现请求来源应用、用户的认证
     - X-Bk-App-Code、X-Bk-App-Secret 应与 settings 中的 BK_APP_CODE、BK_APP_SECRET 一致，以判断请求来源于 APIGW-Dashboard
@@ -83,3 +86,51 @@ class SelfAppCodeAppSecretLoginMiddleware:
             return None, None
 
         return authorization.get("bk_app_code"), authorization.get("bk_app_secret")
+
+
+class UserTimezoneMiddleware(MiddlewareMixin):
+    """按用户的时区属性激活 Django 时区。
+
+    该中间件从用户管理系统获取用户时区信息并激活，使所有时间相关的序列化输出
+    都使用用户所在时区的偏移量。
+
+    执行逻辑：
+    1. 未登录用户跳过处理
+    2. 从 request.user 读取 time_zone 属性
+    3. 若时区字段缺失或非法，回退到默认时区 settings.TIME_ZONE
+    4. 在响应返回时重置时区，避免线程复用导致的时区污染
+
+    Note: 必须放在所有用户认证中间件之后
+    """
+
+    def process_request(self, request):
+        # Ignore anonymous user
+        if not request.user.is_authenticated:
+            return
+
+        user = request.user
+        tz_name = getattr(user, "time_zone", None)
+
+        # Try to activate user's timezone if it's a non-empty string
+        if tz_name and isinstance(tz_name, str):
+            try:
+                user_tz = ZoneInfo(tz_name)
+                dj_timezone.activate(user_tz)
+            except ZoneInfoNotFoundError as e:
+                logger.warning(
+                    "Invalid time_zone '%s' for user '%s', fallback to default. Error: %s",
+                    tz_name,
+                    user.username,
+                    str(e),
+                )
+            else:
+                logger.debug("Activated timezone '%s' for user '%s'", tz_name, user.username)
+                return
+
+        # Fallback to default timezone when time_zone is empty or invalid
+        dj_timezone.activate(dj_timezone.get_default_timezone())
+
+    def process_response(self, request, response):
+        """重置时区"""
+        dj_timezone.deactivate()
+        return response
