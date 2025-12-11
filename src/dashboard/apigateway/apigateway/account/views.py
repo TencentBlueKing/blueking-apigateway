@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.conf import settings
 from rest_framework.views import APIView
 
 from apigateway.utils.responses import OKJsonResponse
@@ -35,5 +36,6 @@ class UserAPIView(APIView):
             "username": user.username,
             "display_name": getattr(user, "display_name", "") or user.username,
             "tenant_id": getattr(user, "tenant_id", ""),
+            "time_zone": getattr(user, "time_zone", settings.TIME_ZONE),
         }
         return OKJsonResponse(data=data)

@@ -151,6 +151,8 @@ MIDDLEWARE = [
     "apigateway.account.middlewares.ApiGatewayJWTAppMiddleware",
     "apigateway.account.middlewares.ApiGatewayJWTUserMiddleware",
     "apigateway.account.middlewares.SelfAppCodeAppSecretLoginMiddleware",
+    # 激活用户时区（需要在所有认证中间件之后）
+    "apigateway.account.middlewares.UserTimezoneMiddleware",
     # 这个必须在最后
     "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
