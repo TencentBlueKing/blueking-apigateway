@@ -234,9 +234,9 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 		client := http.DefaultClient
-		defer client.CloseIdleConnections()
+		client := &http.Client{Transport: tr}
 		timeout := util.GetBkApiTimeout(ctx)
-		client.Transport = tr
+		// client.Transport = tr // No longer needed; client already has custom transport
 		headerInfo := map[string]string{constant.BkApiTimeoutHeaderKey: fmt.Sprintf("%v", timeout)}
 		requestParam := runtime.ClientRequestWriterFunc(func(req runtime.ClientRequest, _ strfmt.Registry) error {
 			// 设置timeout
