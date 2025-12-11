@@ -130,7 +130,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 				logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", server.Name, err)
 				continue
 			}
-			logging.GetLogger().Infof("add  mcp server[%s] success", server.Name)
+			logging.GetLogger().Infof("add mcp server[%s] success", server.Name)
 			continue
 		}
 
