@@ -99,20 +99,20 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 			logging.GetLogger().Errorf("get mcp server[%s] release error: %v", server.Name, err)
 			continue
 		}
-		loadOpenapiSpec := true
+		wouldReloadOpenapiSpec := true
 		// 判断mcp server是否已经存在
 		if mcpProxy.IsMCPServerExist(server.Name) {
 			mcpServer := mcpProxy.GetMCPServer(server.Name)
 			// 判断资源版本是否变化
 			if mcpServer.GetResourceVersionID() == release.ResourceVersionID {
 				logging.GetLogger().Debugf("mcp server[%s] version unchanged, skip reload yaml", server.Name)
-				loadOpenapiSpec = false
+				wouldReloadOpenapiSpec = false
 			}
 		}
 
 		var conf *Config
 
-		if loadOpenapiSpec {
+		if wouldReloadOpenapiSpec {
 			// 传入 release 避免重复查询
 			conf, err = GetMCPServerConfigWithRelease(ctx, server, release)
 			if err != nil {
@@ -129,7 +129,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 				logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", server.Name, err)
 				continue
 			}
-			logging.GetLogger().Infof("add mcp server[%s] success", server.Name)
+			logging.GetLogger().Infof("add  mcp server[%s] success", server.Name)
 			continue
 		}
 
@@ -148,7 +148,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 		}
 
 		// 如果资源版本发生变化，更新mcp server
-		if loadOpenapiSpec && conf != nil {
+		if wouldReloadOpenapiSpec && conf != nil {
 			// 更新mcp server
 			err = mcpProxy.UpdateMCPServerFromOpenApiSpec(mcpServer, server.Name, conf.resourceVersion,
 				conf.openapiFileData, server.ResourceNames)
