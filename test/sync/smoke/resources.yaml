@@ -525,6 +525,7 @@ paths:
         - type: bk-access-token-source
           yaml: |-
             source: bearer
+            allow_fallback: false
         authConfig:
           userVerifiedRequired: false
           appVerifiedRequired: false
