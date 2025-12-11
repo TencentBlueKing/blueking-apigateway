@@ -121,9 +121,9 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 	return nil
 }
 
-// AddMCPServerFromOpenApiSpec nolint:gofmt
-func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string,
-	resourceVersionID int, openApiSpec *openapi3.T, operationIDList []string,
+// AddMCPServerFromOpenAPISpec nolint:gofmt
+func (m *MCPProxy) AddMCPServerFromOpenAPISpec(name string,
+	resourceVersionID int, openAPISpec *openapi3.T, operationIDList []string,
 ) error {
 	operationIDMap := make(map[string]struct{})
 	for _, operationID := range operationIDList {
@@ -131,7 +131,7 @@ func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string,
 	}
 	mcpServerConfig := &MCPServerConfig{
 		Name:              name,
-		Tools:             OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
+		Tools:             OpenapiToMcpToolConfig(openAPISpec, operationIDMap),
 		ResourceVersionID: resourceVersionID,
 	}
 	return m.AddMCPServerFromConfigs([]*MCPServerConfig{mcpServerConfig})
@@ -139,7 +139,7 @@ func (m *MCPProxy) AddMCPServerFromOpenApiSpec(name string,
 
 // UpdateMCPServerFromOpenApiSpec nolint:gofmt
 func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
-	mcpServer *MCPServer, name string, resourceVersionID int, openApiSpec *openapi3.T, operationIDList []string,
+	mcpServer *MCPServer, name string, resourceVersionID int, openAPISpec *openapi3.T, operationIDList []string,
 ) error {
 	operationIDMap := make(map[string]struct{})
 	for _, operationID := range operationIDList {
@@ -147,7 +147,7 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 	}
 	mcpServerConfig := &MCPServerConfig{
 		Name:  name,
-		Tools: OpenapiToMcpToolConfig(openApiSpec, operationIDMap),
+		Tools: OpenapiToMcpToolConfig(openAPISpec, operationIDMap),
 	}
 	// update tool
 	for _, toolConfig := range mcpServerConfig.Tools {
@@ -233,10 +233,9 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
-		client := http.DefaultClient
 		client := &http.Client{Transport: tr}
+		defer client.CloseIdleConnections()
 		timeout := util.GetBkApiTimeout(ctx)
-		// client.Transport = tr // No longer needed; client already has custom transport
 		headerInfo := map[string]string{constant.BkApiTimeoutHeaderKey: fmt.Sprintf("%v", timeout)}
 		requestParam := runtime.ClientRequestWriterFunc(func(req runtime.ClientRequest, _ strfmt.Registry) error {
 			// 设置timeout

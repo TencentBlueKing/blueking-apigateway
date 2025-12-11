@@ -36,9 +36,9 @@ type MCPServer struct {
 	Handler   *transport.SSEHandler
 	name      string
 	// 生效的资源版本号
-	resourceVersion int
-	tools           map[string]struct{}
-	rwLock          *sync.RWMutex
+	resourceVersionID int
+	tools             map[string]struct{}
+	rwLock            *sync.RWMutex
 }
 
 // NewMCPServer ...
@@ -53,13 +53,13 @@ func NewMCPServer(
 		panic(err)
 	}
 	return &MCPServer{
-		Server:          mcpServer,
-		Transport:       transport,
-		Handler:         handler,
-		tools:           make(map[string]struct{}),
-		rwLock:          &sync.RWMutex{},
-		name:            name,
-		resourceVersion: resourceVersion,
+		Server:            mcpServer,
+		Transport:         transport,
+		Handler:           handler,
+		tools:             make(map[string]struct{}),
+		rwLock:            &sync.RWMutex{},
+		name:              name,
+		resourceVersionID: resourceVersion,
 	}
 }
 
@@ -75,14 +75,14 @@ func (s *MCPServer) IsRegisteredTool(toolName string) bool {
 func (s *MCPServer) GetResourceVersionID() int {
 	s.rwLock.RLock()
 	defer s.rwLock.RUnlock()
-	return s.resourceVersion
+	return s.resourceVersionID
 }
 
 // SetResourceVersionID sets the resource version id ...
 func (s *MCPServer) SetResourceVersionID(version int) {
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
-	s.resourceVersion = version
+	s.resourceVersionID = version
 }
 
 // GetTools ...
@@ -122,7 +122,7 @@ func (s *MCPServer) RegisterTool(tool *protocol.Tool, toolHandler server.ToolHan
 	s.tools[tool.Name] = struct{}{}
 }
 
-// UnregisterTool unregisterTool unregisters a tool from the server
+// UnregisterTool  unregisters a tool from the server
 func (s *MCPServer) UnregisterTool(toolName string) {
 	s.Server.UnregisterTool(toolName)
 	s.rwLock.Lock()

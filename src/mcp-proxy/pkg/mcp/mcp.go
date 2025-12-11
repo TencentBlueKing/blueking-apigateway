@@ -93,15 +93,14 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 	activeMcpServer := make(map[string]struct{})
 	for _, server := range servers {
 		activeMcpServer[server.Name] = struct{}{}
-		// 判断mcp server是否已经存在
 		// 查看每个mcp server当前生效的资源版本
 		release, err := biz.GetRelease(ctx, server.GatewayID, server.StageID)
 		if err != nil {
 			logging.GetLogger().Errorf("get mcp server[%s] release error: %v", server.Name, err)
 			continue
 		}
-
 		loadOpenapiSpec := true
+		// 判断mcp server是否已经存在
 		if mcpProxy.IsMCPServerExist(server.Name) {
 			mcpServer := mcpProxy.GetMCPServer(server.Name)
 			// 判断资源版本是否变化
@@ -124,7 +123,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 
 		// 如果mcp server不存在，添加mcp server
 		if !mcpProxy.IsMCPServerExist(server.Name) && conf != nil {
-			err = mcpProxy.AddMCPServerFromOpenApiSpec(server.Name,
+			err = mcpProxy.AddMCPServerFromOpenAPISpec(server.Name,
 				conf.resourceVersion, conf.openapiFileData, server.ResourceNames)
 			if err != nil {
 				logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", server.Name, err)
