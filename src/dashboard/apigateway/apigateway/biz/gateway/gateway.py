@@ -19,11 +19,14 @@
 
 import logging
 from collections import defaultdict
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.db.models import Count
+from django.utils import timezone
 
+from apigateway.apps.metrics.models import StatisticsGatewayRequestByDay
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.release import ReleaseHandler
@@ -33,7 +36,12 @@ from apigateway.biz.stage import StageHandler
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.tenant.query import gateway_filter_by_user_tenant_id
 from apigateway.core.api_auth import APIAuthConfig
-from apigateway.core.constants import ContextScopeTypeEnum, GatewayTypeEnum
+from apigateway.core.constants import (
+    ContextScopeTypeEnum,
+    GatewayOperationSourceEnum,
+    GatewayOperationStatusEnum,
+    GatewayTypeEnum,
+)
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
 from apigateway.service.alarm_strategy import create_default_alarm_strategy
 from apigateway.service.contexts import GatewayAuthContext
@@ -44,6 +52,11 @@ from .app_binding import GatewayAppBindingHandler
 from .related_app import GatewayRelatedAppHandler
 
 logger = logging.getLogger(__name__)
+
+
+# 运营状态查询时间范围，默认 180 天
+# 用于查询网关的运营状态，如果网关在最近 180 天内有请求数据，则认为网关处于活跃状态
+OPERATION_STATUS_DELTA_DAYS = 180
 
 
 class GatewayHandler:
@@ -289,3 +302,70 @@ class GatewayHandler:
         return settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"].get(
             gateway_name, settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"]
         )
+
+    @staticmethod
+    def get_operation_statuses(
+        gateways: List[Gateway],
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+    ) -> Dict[int, dict]:
+        """获取网关运营状态
+        return:
+        {
+            1: {
+                "status": "active",
+                "link": "https://dashboard.example.com/1/basic-info",
+                "source": "apigateway",
+            }
+        }
+        """
+
+        operation_statuses: Dict[int, dict] = {}
+
+        to_stats_gateway_ids = []
+        for gateway in gateways:
+            source = GatewayOperationSourceEnum.APIGATEWAY.value
+            link = f"{settings.DASHBOARD_FE_URL}/{gateway.id}/basic-info"
+            if gateway.name.startswith("bp-"):
+                source = GatewayOperationSourceEnum.PAAS3.value
+                link = f"{settings.BK_PAAS3_URL}/developer-center/apps/{gateway.name}/deployments/stag"
+
+            if not gateway.is_active:
+                operation_statuses[gateway.id] = {
+                    "status": GatewayOperationStatusEnum.INACTIVE.value,
+                    "link": link,
+                    "source": source,
+                }
+                continue
+
+            operation_statuses[gateway.id] = {
+                "status": "",  # assign later
+                "link": link,
+                "source": source,
+            }
+
+            # collect the gateway_ids
+            to_stats_gateway_ids.append(gateway.id)
+
+        if not to_stats_gateway_ids:
+            return operation_statuses
+
+        # start_time and end_time is timezone aware, now - delta_days from settings
+        end_time = timezone.now()
+        start_time = end_time - timedelta(days=OPERATION_STATUS_DELTA_DAYS)
+
+        # query data and set the result to operation_statuses
+        # just check existence, no need to calculate
+        queryset = StatisticsGatewayRequestByDay.objects.filter(gateway_id__in=to_stats_gateway_ids).filter(
+            start_time__gte=start_time, end_time__lte=end_time
+        )
+
+        has_data_gateway_ids = set(queryset.values_list("gateway_id", flat=True).distinct())
+
+        for gateway_id in to_stats_gateway_ids:
+            if gateway_id in has_data_gateway_ids:
+                operation_statuses[gateway_id]["status"] = GatewayOperationStatusEnum.ACTIVE.value
+            else:
+                operation_statuses[gateway_id]["status"] = GatewayOperationStatusEnum.INACTIVE.value
+
+        return operation_statuses
