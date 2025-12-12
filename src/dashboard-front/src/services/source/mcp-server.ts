@@ -101,3 +101,37 @@ export const getServerToolDoc = (apigwId: number, mcp_server_id: number, tool_na
 // 指引文档
 export const getServerGuideDoc = (apigwId: number, mcp_server_id: number): Promise<{ content: string }> =>
   http.get(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/guideline/`);
+
+/**
+ * 获取 MCPServer 用户自定义文档
+ * @param apigwId 网关id
+ * @param mcp_server_id mcpServer id
+ */
+export const getCustomServerGuideDoc = (apigwId: number, mcp_server_id: number): Promise<{ content: string }> =>
+  http.get(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/user-custom-doc/`);
+
+/**
+ * 新建 MCPServer 用户自定义文档
+ * @param apigwId 网关id
+ * @param mcp_server_id mcpServer id
+ * @param data 自定义指引内容
+ */
+export const addCustomServerGuideDoc = (apigwId: number, mcp_server_id: number, data: { content: string }) =>
+  http.post(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/user-custom-doc/`, data);
+
+/**
+ * 更新 MCPServer 用户自定义文档
+ * @param apigwId 网关id
+ * @param mcp_server_id mcpServer id
+ * @param data 自定义指引内容
+ */
+export const updateCustomServerGuideDoc = (apigwId: number, mcp_server_id: number, data: { content: string }) =>
+  http.put(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/user-custom-doc/`, data);
+
+/**
+ * 删除 MCPServer 用户自定义文档
+ * @param apigwId 网关id
+ * @param mcp_server_id mcpServer id
+ */
+export const deleteCustomServerGuideDoc = (apigwId: number, mcp_server_id: number) =>
+  http.delete(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/user-custom-doc/`);
