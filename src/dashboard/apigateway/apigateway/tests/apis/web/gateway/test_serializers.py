@@ -109,6 +109,18 @@ class TestGatewayListOutputSLZ:
                     gateway_1.id: GatewayAuthConfig(GatewayTypeEnum.OFFICIAL_API.value),
                     gateway_2.id: GatewayAuthConfig(GatewayTypeEnum.CLOUDS_API.value),
                 },
+                "operation_statuses": {
+                    gateway_1.id: {
+                        "status": "active",
+                        "link": "https://dashboard.example.com/1/basic-info",
+                        "source": "apigateway",
+                    },
+                    gateway_2.id: {
+                        "status": "inactive",
+                        "link": "https://dashboard.example.com/2/basic-info",
+                        "source": "apigateway",
+                    },
+                },
             },
         )
         assert slz.data == expected

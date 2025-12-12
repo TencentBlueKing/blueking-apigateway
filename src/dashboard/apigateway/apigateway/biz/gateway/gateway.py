@@ -19,7 +19,7 @@
 
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
@@ -304,11 +304,7 @@ class GatewayHandler:
         )
 
     @staticmethod
-    def get_operation_statuses(
-        gateways: List[Gateway],
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> Dict[int, dict]:
+    def get_operation_statuses(gateways: List[Gateway]) -> Dict[int, dict]:
         """获取网关运营状态
         return:
         {
@@ -350,7 +346,7 @@ class GatewayHandler:
         if not to_stats_gateway_ids:
             return operation_statuses
 
-        # start_time and end_time is timezone aware, now - delta_days from settings
+        # start_time and end_time are timezone aware, now - delta_days from module-level constant
         end_time = timezone.now()
         start_time = end_time - timedelta(days=OPERATION_STATUS_DELTA_DAYS)
 
