@@ -29,13 +29,6 @@ class TestGatewayOutputSLZ:
             context={
                 "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([fake_gateway.id]),
                 "gateway_sdks": {},
-                "operation_statuses": {
-                    fake_gateway.id: {
-                        "status": "active",
-                        "link": "https://dashboard.example.com/1/basic-info",
-                        "source": "apigateway",
-                    },
-                },
             },
         )
 
