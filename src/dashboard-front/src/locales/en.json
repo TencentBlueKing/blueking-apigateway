@@ -864,7 +864,8 @@
   "Headers 参数": "Headers parameter",
   "资源列表": "Resource list",
   "调用历史": "Call history",
-  "查看文档详情": "View document Details",
+  "查看文档详情": "View document details",
+  "查看默认使用指引": "View default usage guidelines",
   "租户id": "Tenant id",
   "请输入 Cookies 中，字段 bk_token 的值": "Please enter the value of the field bk_token in the cookie",
   "不能多于50个字符": "No more than 50 characters",
@@ -2118,5 +2119,12 @@
   "请选择环境再发布": "Choose stage before publish",
   "（未发布）": "(Unpublished)",
   "服务展示名": "Service display name",
-  "请输入1-32个字符的服务展示名称": "Please enter a service display name of 1-32 characters"
+  "请输入1-32个字符的服务展示名称": "Please enter a service display name of 1-32 characters",
+  "默认使用指引": "Default usage guidelines",
+  "自定义使用指引": "Custom usage guidelines",
+   "请填写自定义使用指引": "Please fill in the custom usage guide",
+  "添加自定义使用指引": "Add custom usage guide",
+  "平台提供默认使用指引，您可添加自定义内容来补充说明。": "The platform provides default usage guidelines, and you can add custom content to supplement the instructions.",
+  "确认删除自定义使用指引？": "Are you sure to delete the custom usage guide?",
+  "删除后，MCP 文档中将显示默认指引": "After deletion, default guidelines will be displayed in the MCP document"
 }
