@@ -581,3 +581,39 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-miaozhun:before {
 	content: "\e1df";
 }
+.icon-ag-gaojingjilu:before {
+	content: "\e1e0";
+}
+.icon-ag-houduanfuwu:before {
+	content: "\e1e1";
+}
+.icon-ag-quanxianshenpi:before {
+	content: "\e1e4";
+}
+.icon-ag-yibiaopan:before {
+	content: "\e1e5";
+}
+.icon-ag-tongjibaobiao:before {
+	content: "\e1e3";
+}
+.icon-ag-mcp-server:before {
+	content: "\e1e2";
+}
+.icon-ag-fabujilu:before {
+	content: "\e1e6";
+}
+.icon-ag-liushuirizhi:before {
+	content: "\e1e8";
+}
+.icon-ag-ziyuanbanben:before {
+	content: "\e1e7";
+}
+.icon-ag-caozuojilu:before {
+	content: "\e1e9";
+}
+.icon-ag-gaojingcelve:before {
+	content: "\e1ea";
+}
+.icon-ag-wenjian:before {
+	content: "\e1eb";
+}
