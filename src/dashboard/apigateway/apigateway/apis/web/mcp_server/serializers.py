@@ -225,6 +225,8 @@ class MCPServerBaseSLZ(serializers.Serializer):
     title = serializers.SerializerMethodField(help_text="MCPServer 中文名/显示名称")
 
     def get_title(self, obj) -> str:
+        if isinstance(obj, dict):
+            return obj.get("title") or obj.get("name", "")
         return obj.title if obj.title else obj.name
 
     class Meta:

@@ -417,6 +417,15 @@ class MCPServerToolDocRetrieveApi(generics.RetrieveAPIView):
     ),
 )
 @method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="创建 MCPServer 用户自定义文档",
+        request_body=MCPServerUserCustomDocInputSLZ,
+        responses={status.HTTP_201_CREATED: ""},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+@method_decorator(
     name="put",
     decorator=swagger_auto_schema(
         operation_description="更新 MCPServer 用户自定义文档",
@@ -433,7 +442,7 @@ class MCPServerToolDocRetrieveApi(generics.RetrieveAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerUserCustomDocApi(generics.RetrieveUpdateDestroyAPIView):
+class MCPServerUserCustomDocApi(generics.RetrieveUpdateDestroyAPIView, generics.CreateAPIView):
     queryset = MCPServer.objects.all()
     lookup_url_kwarg = "mcp_server_id"
 
@@ -449,25 +458,44 @@ class MCPServerUserCustomDocApi(generics.RetrieveUpdateDestroyAPIView):
 
         return OKJsonResponse(data=slz.data)
 
-    def update(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         instance = self.get_object()
+
+        # 检查是否已存在
+        if MCPServerExtend.objects.filter(
+            mcp_server=instance, type=MCPServerExtendTypeEnum.USER_CUSTOM_DOC.value
+        ).exists():
+            raise error_codes.FAILED_PRECONDITION.format(_("用户自定义文档已存在，请使用更新接口。"), replace=True)
 
         slz = MCPServerUserCustomDocInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        MCPServerExtend.objects.update_or_create(
+        MCPServerExtend.objects.create(
             mcp_server=instance,
             type=MCPServerExtendTypeEnum.USER_CUSTOM_DOC.value,
-            defaults={
-                "content": slz.validated_data["content"],
-                "updated_by": request.user.username,
-            },
-            create_defaults={
-                "content": slz.validated_data["content"],
-                "created_by": request.user.username,
-                "updated_by": request.user.username,
-            },
+            content=slz.validated_data["content"],
+            created_by=request.user.username,
+            updated_by=request.user.username,
         )
+
+        return OKJsonResponse(status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        extend = MCPServerExtend.objects.filter(
+            mcp_server=instance, type=MCPServerExtendTypeEnum.USER_CUSTOM_DOC.value
+        ).first()
+
+        if not extend:
+            raise error_codes.NOT_FOUND.format(_("用户自定义文档不存在，请先创建。"), replace=True)
+
+        slz = MCPServerUserCustomDocInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        extend.content = slz.validated_data["content"]
+        extend.updated_by = request.user.username
+        extend.save(update_fields=["content", "updated_by", "updated_time"])
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
