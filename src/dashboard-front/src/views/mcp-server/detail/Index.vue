@@ -173,7 +173,11 @@
             />
             <Guideline
               v-if="active === 'guide'"
+              v-model:is-exist-custom-guide="isExistCustomGuide"
+              show-usage-guide
               :markdown-str="markdownStr"
+              :gateway-id="gatewayId"
+              @guide-change="handleGuideChange"
             />
           </div>
         </BkTabPanel>
@@ -191,6 +195,7 @@
 import { copy } from '@/utils';
 import {
   deleteServer,
+  getCustomServerGuideDoc,
   getServer,
   getServerGuideDoc,
   patchServerStatus,
@@ -233,6 +238,7 @@ const server = ref<MCPServerType>({
   },
 });
 const showDropdown = ref(false);
+const isExistCustomGuide = ref(false);
 const markdownStr = ref('');
 
 const active = ref('tools');
@@ -264,14 +270,37 @@ const fetchGuide = async () => {
   markdownStr.value = content;
 };
 
+const fetchCustomGuide = async () => {
+  const res = await getCustomServerGuideDoc(gatewayId, serverId.value);
+  markdownStr.value = res?.content ?? '';
+  isExistCustomGuide.value = markdownStr.value.length > 0;
+};
+
+const handleUpdated = async () => {
+  await Promise.all([
+    fetchServer(),
+    fetchGuide(),
+    fetchCustomGuide(),
+  ]);
+};
+
+const handleGuideChange = (tabName: string) => {
+  const tabMap = {
+    default: () => {
+      return fetchGuide();
+    },
+    custom: () => {
+      return fetchCustomGuide();
+    },
+  };
+  return tabMap[tabName]?.();
+};
+
 watch(() => route.params, async () => {
   const { serverId: id } = route.params;
   if (id) {
     serverId.value = Number(id);
-    await Promise.all([
-      fetchServer(),
-      fetchGuide(),
-    ]);
+    handleUpdated();
   }
 }, {
   immediate: true,
@@ -287,6 +316,12 @@ watch(() => gatewayStore.currentGateway, (newGateway, oldGateway) => {
     name: 'MCPServer',
     params: { id: newGateway!.id },
   });
+});
+
+watch(() => active.value, (tab: string) => {
+  if (['guide'].includes(tab)) {
+    handleGuideChange('default');
+  }
 });
 
 const handleEdit = () => {
@@ -320,13 +355,6 @@ const handleSuspendToggle = async () => {
       await fetchServer();
     },
   });
-};
-
-const handleUpdated = async () => {
-  await Promise.all([
-    fetchServer(),
-    fetchGuide(),
-  ]);
 };
 
 const handleDelete = async () => {
@@ -363,9 +391,17 @@ const updateCount = (count: number, panelName: string) => {
   padding: 20px;
 
   .tab-wrapper {
+    :deep(.bk-tab-header) {
+      .bk-tab-header-item:last-child {
+        &::after {
+          display: none;
+        }
+      }
+    }
 
     :deep(.bk-tab-content) {
       padding: 0;
+      background-color: #ffffff;
     }
   }
 }
