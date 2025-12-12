@@ -204,6 +204,7 @@ import {
 import { CopyShape } from 'bkui-vue/lib/icon';
 import { copy } from '@/utils';
 
+const emit = defineEmits<{ retry: [data: any] }>();
 const { t } = useI18n();
 const gatewayStore = useGateway();
 
@@ -308,15 +309,25 @@ const columns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: t('操作'),
     colKey: 'act',
-    width: 120,
+    width: 140,
     cell: (h, { row }: { row: Record<string, any> }) => (
-      <bk-button
-        theme="primary"
-        text
-        onClick={(e: any) => handleShowDetails(e, row)}
-      >
-        { t('请求详情') }
-      </bk-button>
+      <div class="flex items-center">
+        <bk-button
+          theme="primary"
+          class="mr-10px"
+          text
+          onClick={(e: any) => handleShowDetails(e, row)}
+        >
+          { t('请求详情') }
+        </bk-button>
+        <bk-button
+          theme="primary"
+          text
+          onClick={(e: any) => handleRetry(e, row)}
+        >
+          { t('去重试') }
+        </bk-button>
+      </div>
     ),
   },
 ]);
@@ -495,6 +506,12 @@ const handleExpandChange = async (expandedKeys: Array<string | number>,
   if (expandedRowKeys.value.includes(currentRowData.id)) {
     await getDetails(currentRowData.id, currentRowData);
   }
+};
+
+const handleRetry = (event: Event, row: Record<string, any>) => {
+  event.stopPropagation();
+  emit('retry', row);
+  isShow.value = false;
 };
 
 defineExpose({ show });

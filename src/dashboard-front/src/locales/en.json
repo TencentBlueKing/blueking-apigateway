@@ -1449,6 +1449,7 @@
   "响应状态码": "Response status code",
   "返回响应": "Return response",
   "调用时间": "Call time",
+  "去重试": "Retry",
   "请求记录": "Request record",
   "检索项：": "Search terms:",
   "清除": "Clear away",
