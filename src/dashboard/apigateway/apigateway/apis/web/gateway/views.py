@@ -114,6 +114,11 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
         page = self.paginate_queryset(queryset)
         gateway_ids = [gateway.id for gateway in page]
 
+        # if ENABLE_GATEWAY_OPERATION_STATUS is True, add operation_status to the response
+        operation_statuses = {}
+        if settings.DEFAULT_FEATURE_FLAG.get("ENABLE_GATEWAY_OPERATION_STATUS", False):
+            operation_statuses = GatewayHandler.get_operation_statuses(gateways=page)
+
         output_slz = GatewayListOutputSLZ(
             page,
             many=True,
@@ -121,6 +126,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
                 "resource_count": GatewayHandler.get_resource_count(gateway_ids),
                 "stages": GatewayHandler.get_stages_with_release_status(gateway_ids),
                 "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids),
+                "operation_statuses": operation_statuses,
             },
         )
 
