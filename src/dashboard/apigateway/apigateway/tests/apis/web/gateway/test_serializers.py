@@ -78,6 +78,11 @@ class TestGatewayListOutputSLZ:
                 "created_time": DateTimeField().to_representation(gateway_1.created_time),
                 "updated_time": DateTimeField().to_representation(gateway_1.updated_time),
                 "extra_info": {},
+                "operation_status": {
+                    "status": "active",
+                    "link": "https://dashboard.example.com/1/basic-info",
+                    "source": "apigateway",
+                },
             },
             {
                 "id": gateway_2.id,
@@ -95,6 +100,11 @@ class TestGatewayListOutputSLZ:
                 "created_time": DateTimeField().to_representation(gateway_2.created_time),
                 "updated_time": DateTimeField().to_representation(gateway_2.updated_time),
                 "extra_info": {},
+                "operation_status": {
+                    "status": "active",
+                    "link": "https://dashboard.example.com/2/basic-info",
+                    "source": "apigateway",
+                },
             },
         ]
         gateways = Gateway.objects.filter(id__in=[gateway_1.id, gateway_2.id])
@@ -116,7 +126,7 @@ class TestGatewayListOutputSLZ:
                         "source": "apigateway",
                     },
                     gateway_2.id: {
-                        "status": "inactive",
+                        "status": "active",
                         "link": "https://dashboard.example.com/2/basic-info",
                         "source": "apigateway",
                     },
