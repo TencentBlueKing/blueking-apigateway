@@ -237,3 +237,29 @@ class TestGatewayUpdateStatusApi:
 
         assert resp.status_code == 204
         assert gateway.status == data["status"]
+
+
+class TestGatewayCheckNameAvailableApi:
+    def test_check_name_available__true(self, request_view, unique_gateway_name):
+        """Test when gateway name is available (doesn't exist)"""
+        resp = request_view(
+            method="GET",
+            view_name="gateways.check_name_available",
+            data={"name": unique_gateway_name},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["is_available"] is True
+
+    def test_check_name_available__false(self, request_view, fake_gateway):
+        """Test when gateway name is not available (already exists)"""
+        resp = request_view(
+            method="GET",
+            view_name="gateways.check_name_available",
+            data={"name": fake_gateway.name},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["is_available"] is False
