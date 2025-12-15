@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from apigateway.controller.tasks.clean_task import (
+    delete_old_alarm_records,
     delete_old_debug_history,
     delete_old_publish_events,
     delete_old_resource_doc_version_records,
@@ -37,4 +38,5 @@ __all__ = [
     "delete_old_resource_doc_version_records",
     "delete_old_publish_events",
     "delete_old_debug_history",
+    "delete_old_alarm_records",
 ]
