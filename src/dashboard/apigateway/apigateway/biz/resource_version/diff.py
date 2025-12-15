@@ -170,6 +170,34 @@ class ResourceDifferHandler(BaseModel, DiffMixin):
 
         return source_plugins_config, target_plugins_config
 
+    def diff_doc_updated_time(self, target: BaseModel) -> Tuple[Optional[dict], Optional[dict]]:
+        """Only include keys that actually differ in doc_updated_time."""
+        source_doc_updated_time = self.doc_updated_time or {}
+        target_doc_updated_time = target.doc_updated_time or {}
+
+        # Get all unique keys from both dictionaries
+        all_keys = set(source_doc_updated_time.keys()) | set(target_doc_updated_time.keys())
+
+        source_diff = {}
+        target_diff = {}
+
+        for key in all_keys:
+            source_value = source_doc_updated_time.get(key)
+            target_value = target_doc_updated_time.get(key)
+
+            # Only include keys that differ
+            if source_value != target_value:
+                if source_value is not None:
+                    source_diff[key] = source_value
+                if target_value is not None:
+                    target_diff[key] = target_value
+
+        # Return None, None if no differences found, otherwise return the diff dicts
+        if not source_diff and not target_diff:
+            return None, None
+
+        return source_diff, target_diff
+
     @staticmethod
     def diff_resource_version_data(
         source_data: list,
