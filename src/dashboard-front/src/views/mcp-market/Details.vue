@@ -185,13 +185,36 @@
             </div>
           </template>
           <div class="panel-content">
+            <div
+              v-if="isExistCustomGuide"
+              class="p-t-24px! p-r-24px! w-full text-align-right"
+            >
+              <BkButton
+                theme="primary"
+                text
+                @click="handleShowGuide"
+              >
+                <AgIcon
+                  name="wenjian"
+                  size="16"
+                  class="mr-8px"
+                />
+                {{ t('查看默认使用指引') }}
+              </BkButton>
+            </div>
             <Guideline
               :markdown-str="markdownStr"
+              :show-usage-guide="false"
             />
           </div>
         </BkTabPanel>
       </BkTab>
     </div>
+
+    <DefaultMdGuideSlider
+      v-model:is-show="isShowGuideSlider"
+      :markdown-text="defaultMarkdownStr"
+    />
   </div>
 </template>
 
@@ -204,10 +227,12 @@ import {
 import AgIcon from '@/components/ag-icon/Index.vue';
 // import { useGetGlobalProperties } from '@/hooks';
 import { type IMarketplaceDetails, getMcpServerDetails } from '@/services/source/mcp-market';
+import { getCustomServerGuideDoc } from '@/services/source/mcp-server';
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import Guideline from './components/GuideLine.vue';
 import EditMember from '@/views/basic-info/components/EditMember.vue';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
+import DefaultMdGuideSlider from '@/views/mcp-market/components/DefaultMdGuideSlider.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -220,7 +245,10 @@ const envStore = useEnv();
 const active = ref('tools');
 const toolsCount = ref<number>(0);
 const mcpDetails = ref<IMarketplaceDetails>();
-const markdownStr = ref<string>('');
+const defaultMarkdownStr = ref('');
+const markdownStr = ref('');
+const isExistCustomGuide = ref(false);
+const isShowGuideSlider = ref(false);
 
 const mcpId = computed(() => {
   return route.params.id;
@@ -236,9 +264,25 @@ const goBack = () => {
 
 const getDetails = async () => {
   const res = await getMcpServerDetails(mcpId.value as string);
-  mcpDetails.value = res;
-  toolsCount.value = res.tools_count;
-  markdownStr.value = res.guideline;
+  mcpDetails.value = res ?? {};
+  const { tools_count = 0, guideline = '' } = mcpDetails.value;
+  toolsCount.value = tools_count;
+  [markdownStr.value, defaultMarkdownStr.value] = [guideline, guideline];
+  if (res?.gateway?.id) {
+    await fetchCustomGuide(res?.gateway?.id);
+  }
+};
+
+const fetchCustomGuide = async (gatewayId) => {
+  const res = await getCustomServerGuideDoc(gatewayId, mcpId.value);
+  if (res?.content) {
+    markdownStr.value = res.content;
+  }
+  isExistCustomGuide.value = res?.content?.length > 0;
+};
+
+const handleShowGuide = () => {
+  isShowGuideSlider.value = true;
 };
 
 watch(
@@ -357,6 +401,7 @@ watch(
 
   :deep(.bk-tab-content) {
     padding: 0;
+    background-color: #ffffff;
   }
 
   .panel-content {
