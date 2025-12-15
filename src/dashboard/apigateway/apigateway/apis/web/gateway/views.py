@@ -59,6 +59,7 @@ from apigateway.utils.git import check_git_credentials
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
+    GatewayCheckNameAvailableOutputSLZ,
     GatewayCreateInputSLZ,
     GatewayDevGuidelineOutputSLZ,
     GatewayListInputSLZ,
@@ -517,3 +518,27 @@ class GatewayReleasingStatusApi(generics.RetrieveAPIView):
                 break
 
         return OKJsonResponse(data=data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="检查网关名称是否可用",
+        responses={status.HTTP_200_OK: GatewayCheckNameAvailableOutputSLZ()},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+class GatewayCheckNameAvailableApi(generics.RetrieveAPIView):
+    serializer_class = GatewayCheckNameAvailableOutputSLZ
+
+    def retrieve(self, request, *args, **kwargs):
+        name = request.query_params.get("name")
+        if not name:
+            raise error_codes.INVALID_ARGUMENT.format(_("网关名称不能为空。"), replace=True)
+
+        is_available = True
+        if Gateway.objects.filter(name=name).exists():
+            is_available = False
+
+        slz = self.get_serializer({"is_available": is_available})
+        return OKJsonResponse(data=slz.data)

@@ -453,3 +453,10 @@ class GatewayReleasingStatusOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.gateway.serializers.GatewayReleasingStatusOutputSLZ"
+
+
+class GatewayCheckNameAvailableOutputSLZ(serializers.Serializer):
+    is_available = serializers.BooleanField(read_only=True, help_text="网关名称是否可用")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayCheckNameAvailableOutputSLZ"
