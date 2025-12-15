@@ -93,7 +93,7 @@ def delete_old_debug_history():
 
     count, _ = APIDebugHistory.objects.filter(id__in=ids_to_delete).delete()
 
-    logger.info("deleted %s debug older than %s", count, delete_end_time)
+    logger.info("deleted %s debug history older than %s", count, delete_end_time)
 
 
 @shared_task(ignore_result=True)
@@ -107,4 +107,4 @@ def delete_old_alarm_records():
 
     count, _ = AlarmRecord.objects.filter(id__in=ids_to_delete).delete()
 
-    logger.info("deleted %s alarm older than %s", count, delete_end_time)
+    logger.info("deleted %s alarm records older than %s", count, delete_end_time)
