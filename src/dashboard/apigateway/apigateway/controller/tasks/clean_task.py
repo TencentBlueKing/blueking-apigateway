@@ -24,6 +24,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from apigateway.apps.api_debug.models import APIDebugHistory
+from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.support.models import ResourceDocVersion
 from apigateway.core.models import PublishEvent, Release
 
@@ -92,4 +93,18 @@ def delete_old_debug_history():
 
     count, _ = APIDebugHistory.objects.filter(id__in=ids_to_delete).delete()
 
-    logger.info("deleted %s debug older than %s", count, delete_end_time)
+    logger.info("deleted %s debug history older than %s", count, delete_end_time)
+
+
+@shared_task(ignore_result=True)
+def delete_old_alarm_records():
+    """清理 6 个月前的告警记录"""
+    logger.info("begin clean alarm old records")
+    delete_end_time = timezone.now() - relativedelta(months=6) - relativedelta(days=1)
+
+    alarm_records_to_delete = AlarmRecord.objects.filter(created_time__lte=delete_end_time)[:1000]
+    ids_to_delete = list(alarm_records_to_delete.values_list("id", flat=True))
+
+    count, _ = AlarmRecord.objects.filter(id__in=ids_to_delete).delete()
+
+    logger.info("deleted %s alarm records older than %s", count, delete_end_time)
