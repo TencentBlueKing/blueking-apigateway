@@ -614,3 +614,6 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-gaojingcelve:before {
 	content: "\e1ea";
 }
+.icon-ag-wenjian:before {
+	content: "\e1eb";
+}
