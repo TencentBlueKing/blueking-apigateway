@@ -31,32 +31,35 @@ import (
 	"mcp_proxy/pkg/entity/model"
 )
 
-func TestJWTInfoCacheKey_Key(t *testing.T) {
+func TestMCPPermissionCacheKey_Key(t *testing.T) {
 	tests := []struct {
 		name        string
-		key         JWTInfoCacheKey
+		key         MCPPermissionCacheKey
 		expectedKey string
 	}{
 		{
-			name: "normal gateway id",
-			key: JWTInfoCacheKey{
-				GatewayID: 123,
+			name: "normal key",
+			key: MCPPermissionCacheKey{
+				MCPServerID: 123,
+				AppCode:     "test-app",
 			},
-			expectedKey: "123",
+			expectedKey: "123:test-app",
 		},
 		{
-			name: "zero gateway id",
-			key: JWTInfoCacheKey{
-				GatewayID: 0,
+			name: "zero server id",
+			key: MCPPermissionCacheKey{
+				MCPServerID: 0,
+				AppCode:     "test-app",
 			},
-			expectedKey: "0",
+			expectedKey: "0:test-app",
 		},
 		{
-			name: "large gateway id",
-			key: JWTInfoCacheKey{
-				GatewayID: 999999,
+			name: "empty app code",
+			key: MCPPermissionCacheKey{
+				MCPServerID: 123,
+				AppCode:     "",
 			},
-			expectedKey: "999999",
+			expectedKey: "123:",
 		},
 	}
 
@@ -68,51 +71,54 @@ func TestJWTInfoCacheKey_Key(t *testing.T) {
 	}
 }
 
-func TestGetJWTInfo_Success(t *testing.T) {
+func TestGetMCPServerPermission_Success(t *testing.T) {
 	expiration := 5 * time.Minute
 
-	expectedJWT := &model.JWT{
-		GatewayID:  123,
-		PublicKey:  "test-public-key",
-		PrivateKey: "test-private-key",
+	expectedPermission := &model.MCPServerAppPermission{
+		Id:          1,
+		BkAppCode:   "test-app",
+		McpServerId: 123,
+		GrantType:   "apply",
+		Expires:     time.Now().Add(24 * time.Hour),
 	}
 
 	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return expectedJWT, nil
+		return expectedPermission, nil
 	}
-	mockCache := memory.NewCache("mockJWTCache", retrieveFunc, expiration, nil)
-	jwtInfoCache = mockCache
+	mockCache := memory.NewCache("mockPermissionCache", retrieveFunc, expiration, nil)
+	appMCPServerPermission = mockCache
 
-	result, err := GetJWTInfo(context.Background(), 123)
+	result, err := GetMCPServerPermission(context.Background(), "test-app", 123)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.Equal(t, 123, result.GatewayID)
-	assert.Equal(t, "test-public-key", result.PublicKey)
+	assert.Equal(t, "test-app", result.BkAppCode)
+	assert.Equal(t, 123, result.McpServerId)
+	assert.Equal(t, "apply", result.GrantType)
 }
 
-func TestGetJWTInfo_Error(t *testing.T) {
+func TestGetMCPServerPermission_Error(t *testing.T) {
 	expiration := 5 * time.Minute
 
 	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
 		return nil, errors.New("record not found")
 	}
-	mockCache := memory.NewCache("mockJWTCache", retrieveFunc, expiration, nil)
-	jwtInfoCache = mockCache
+	mockCache := memory.NewCache("mockPermissionCache", retrieveFunc, expiration, nil)
+	appMCPServerPermission = mockCache
 
-	_, err := GetJWTInfo(context.Background(), 123)
+	_, err := GetMCPServerPermission(context.Background(), "test-app", 123)
 	assert.Error(t, err)
 }
 
-func TestGetJWTInfo_InvalidType(t *testing.T) {
+func TestGetMCPServerPermission_InvalidType(t *testing.T) {
 	expiration := 5 * time.Minute
 
 	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return "invalid type", nil
+		return "invalid type", nil // Return wrong type
 	}
-	mockCache := memory.NewCache("mockJWTCache", retrieveFunc, expiration, nil)
-	jwtInfoCache = mockCache
+	mockCache := memory.NewCache("mockPermissionCache", retrieveFunc, expiration, nil)
+	appMCPServerPermission = mockCache
 
-	_, err := GetJWTInfo(context.Background(), 123)
+	_, err := GetMCPServerPermission(context.Background(), "test-app", 123)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not model.CoreJWT in cache")
+	assert.Contains(t, err.Error(), "not model.McpServerAppPermission in cache")
 }

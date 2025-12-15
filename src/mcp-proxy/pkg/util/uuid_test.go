@@ -19,31 +19,36 @@
 package util
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"runtime"
+	"testing"
 
-	sentry "github.com/getsentry/sentry-go"
+	"github.com/stretchr/testify/assert"
 )
 
-// GoroutineWithRecovery is a wrapper of goroutine that can recover panic
-func GoroutineWithRecovery(ctx context.Context, fn func()) {
-	go func() {
-		defer func() {
-			if panicErr := recover(); panicErr != nil {
-				buf := make([]byte, 64<<10)
-				n := runtime.Stack(buf, false)
-				buf = buf[:n]
-				msg := fmt.Sprintf("painic err:%s", buf)
-				log.Println(msg)
-				if hub := sentry.CurrentHub(); hub != nil {
-					if client := hub.Client(); client != nil {
-						client.CaptureMessage(msg, nil, sentry.NewScope())
-					}
-				}
-			}
-		}()
-		fn()
-	}()
+func TestGenUUID4(t *testing.T) {
+	uuid := GenUUID4()
+
+	// UUID4 hex encoded is 32 characters (16 bytes * 2)
+	assert.Len(t, uuid, 32)
+
+	// Should be valid hex
+	for _, c := range uuid {
+		assert.True(t, (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'),
+			"UUID should only contain hex characters")
+	}
+}
+
+func TestGenUUID4_Uniqueness(t *testing.T) {
+	uuids := make(map[string]bool)
+
+	// Generate 100 UUIDs and check uniqueness
+	for i := 0; i < 100; i++ {
+		uuid := GenUUID4()
+		assert.False(t, uuids[uuid], "UUID should be unique")
+		uuids[uuid] = true
+	}
+}
+
+func TestGenUUID4_NotEmpty(t *testing.T) {
+	uuid := GenUUID4()
+	assert.NotEmpty(t, uuid)
 }

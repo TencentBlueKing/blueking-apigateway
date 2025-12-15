@@ -19,6 +19,7 @@
 package middleware
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -44,4 +45,104 @@ func TestAPILogger(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, 200, w.Code)
+}
+
+func TestAPILogger_WithRequestBody(t *testing.T) {
+	logging.InitLogger(&config.Config{})
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(APILogger())
+	r.POST("/test", func(c *gin.Context) {
+		c.String(http.StatusOK, "ok")
+	})
+
+	body := bytes.NewBufferString(`{"key": "value"}`)
+	req, _ := http.NewRequest("POST", "/test", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+}
+
+func TestAPILogger_WithQueryParams(t *testing.T) {
+	logging.InitLogger(&config.Config{})
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(APILogger())
+	r.GET("/test", func(c *gin.Context) {
+		c.String(http.StatusOK, "ok")
+	})
+
+	req, _ := http.NewRequest("GET", "/test?param1=value1&param2=value2", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+}
+
+func TestAPILogger_WithContextValues(t *testing.T) {
+	logging.InitLogger(&config.Config{})
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		util.SetGatewayID(c, 123)
+		util.SetMCPServerID(c, 456)
+		util.SetMCPServerName(c, "test-server")
+		c.Next()
+	})
+	r.Use(APILogger())
+	r.GET("/test", func(c *gin.Context) {
+		c.String(http.StatusOK, "ok")
+	})
+
+	req, _ := http.NewRequest("GET", "/test", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+}
+
+func TestAPILogger_ErrorResponse(t *testing.T) {
+	logging.InitLogger(&config.Config{})
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(APILogger())
+	r.GET("/error", func(c *gin.Context) {
+		c.String(http.StatusInternalServerError, "error")
+	})
+
+	req, _ := http.NewRequest("GET", "/error", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, 500, w.Code)
+}
+
+func TestBodyLogWriter_Write(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	// Create a simple test to verify bodyLogWriter behavior
+	var buf bytes.Buffer
+	blw := &bodyLogWriter{
+		body: &buf,
+	}
+
+	// Test that body buffer captures content
+	blw.body.WriteString("test response")
+	assert.Equal(t, "test response", blw.body.String())
+}
+
+func TestAPILogger_FunctionCreation(t *testing.T) {
+	logging.InitLogger(&config.Config{})
+	middleware := APILogger()
+	assert.NotNil(t, middleware)
 }

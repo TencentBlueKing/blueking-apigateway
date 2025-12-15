@@ -22,6 +22,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -546,4 +547,314 @@ func createTempFile(t *testing.T, filename string) {
 	if err != nil {
 		t.Fatalf("Failed to write to temp file %s: %v", filename, err)
 	}
+}
+
+func TestTracing_GinAPIEnabled(t *testing.T) {
+	tests := []struct {
+		name     string
+		tracing  Tracing
+		expected bool
+	}{
+		{
+			name: "both enabled",
+			tracing: Tracing{
+				Enable: true,
+				Instrument: Instrument{
+					GinAPI: true,
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "tracing disabled",
+			tracing: Tracing{
+				Enable: false,
+				Instrument: Instrument{
+					GinAPI: true,
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "gin api disabled",
+			tracing: Tracing{
+				Enable: true,
+				Instrument: Instrument{
+					GinAPI: false,
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "both disabled",
+			tracing: Tracing{
+				Enable: false,
+				Instrument: Instrument{
+					GinAPI: false,
+				},
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.tracing.GinAPIEnabled()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestTracing_DBAPIEnabled(t *testing.T) {
+	tests := []struct {
+		name     string
+		tracing  Tracing
+		expected bool
+	}{
+		{
+			name: "both enabled",
+			tracing: Tracing{
+				Enable: true,
+				Instrument: Instrument{
+					DbAPI: true,
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "tracing disabled",
+			tracing: Tracing{
+				Enable: false,
+				Instrument: Instrument{
+					DbAPI: true,
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "db api disabled",
+			tracing: Tracing{
+				Enable: true,
+				Instrument: Instrument{
+					DbAPI: false,
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "both disabled",
+			tracing: Tracing{
+				Enable: false,
+				Instrument: Instrument{
+					DbAPI: false,
+				},
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.tracing.DBAPIEnabled()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestLoad_EmptyDatabase(t *testing.T) {
+	v := viper.New()
+	v.Set("databases", []Database{})
+
+	_, err := Load(v)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "database cannot be empty")
+}
+
+func TestLoad_ValidConfig(t *testing.T) {
+	v := viper.New()
+	v.Set("databases", []map[string]interface{}{
+		{
+			"id":       "default",
+			"host":     "localhost",
+			"port":     3306,
+			"user":     "root",
+			"password": "password",
+			"name":     "testdb",
+		},
+	})
+
+	cfg, err := Load(v)
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+	assert.Equal(t, 1, len(cfg.Databases))
+	assert.Equal(t, "default", cfg.Databases[0].ID)
+
+	// Check default values
+	assert.NotZero(t, cfg.McpServer.Interval)
+	assert.NotEmpty(t, cfg.McpServer.MessageUrlFormat)
+	assert.NotEmpty(t, cfg.McpServer.MessageApplicationUrlFormat)
+	assert.NotZero(t, cfg.McpServer.InnerJwtExpireTime)
+	assert.NotEmpty(t, cfg.PProf.Username)
+	assert.NotEmpty(t, cfg.PProf.Password)
+}
+
+func TestLoad_WithMcpServerConfig(t *testing.T) {
+	v := viper.New()
+	v.Set("databases", []map[string]interface{}{
+		{
+			"id":       "default",
+			"host":     "localhost",
+			"port":     3306,
+			"user":     "root",
+			"password": "password",
+			"name":     "testdb",
+		},
+	})
+	v.Set("mcpserver.interval", "30s")
+	v.Set("mcpserver.bkapiurltmpl", "https://api.example.com")
+	v.Set("mcpserver.messageurlformat", "/custom/%s/message")
+
+	cfg, err := Load(v)
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+}
+
+func TestLoad_InvalidTLSConfig(t *testing.T) {
+	v := viper.New()
+	v.Set("databases", []map[string]interface{}{
+		{
+			"id":       "default",
+			"host":     "localhost",
+			"port":     3306,
+			"user":     "root",
+			"password": "password",
+			"name":     "testdb",
+			"tls": map[string]interface{}{
+				"enabled":    true,
+				"certcafile": "/non/existent/ca.pem",
+			},
+		},
+	})
+
+	_, err := Load(v)
+	assert.Error(t, err)
+}
+
+func TestLoad_GlobalConfigSet(t *testing.T) {
+	v := viper.New()
+	v.Set("databases", []map[string]interface{}{
+		{
+			"id":       "default",
+			"host":     "localhost",
+			"port":     3306,
+			"user":     "root",
+			"password": "password",
+			"name":     "testdb",
+		},
+	})
+
+	cfg, err := Load(v)
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+	assert.Equal(t, cfg, G)
+}
+
+func TestLoad_DatabaseMapCreation(t *testing.T) {
+	v := viper.New()
+	v.Set("databases", []map[string]interface{}{
+		{
+			"id":       "primary",
+			"host":     "localhost",
+			"port":     3306,
+			"user":     "root",
+			"password": "password",
+			"name":     "testdb1",
+		},
+		{
+			"id":       "secondary",
+			"host":     "localhost",
+			"port":     3307,
+			"user":     "root",
+			"password": "password",
+			"name":     "testdb2",
+		},
+	})
+
+	cfg, err := Load(v)
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+	assert.Equal(t, 2, len(cfg.DatabaseMap))
+	assert.Contains(t, cfg.DatabaseMap, "primary")
+	assert.Contains(t, cfg.DatabaseMap, "secondary")
+}
+
+func TestServer_Fields(t *testing.T) {
+	server := Server{
+		Host:         "0.0.0.0",
+		Port:         8080,
+		GraceTimeout: 30,
+		ReadTimeout:  10,
+		WriteTimeout: 10,
+		IdleTimeout:  60,
+	}
+
+	assert.Equal(t, "0.0.0.0", server.Host)
+	assert.Equal(t, 8080, server.Port)
+	assert.Equal(t, int64(30), server.GraceTimeout)
+}
+
+func TestLogConfig_Fields(t *testing.T) {
+	logConfig := LogConfig{
+		Level:    "info",
+		Writer:   "os",
+		Settings: map[string]string{"name": "stdout"},
+		Buffered: true,
+		Desensitization: DesensitizationConfig{
+			Enabled: true,
+			Fields: []DesensitizationFiled{
+				{Key: "password", JsonPath: []string{"$.password"}},
+			},
+		},
+	}
+
+	assert.Equal(t, "info", logConfig.Level)
+	assert.Equal(t, "os", logConfig.Writer)
+	assert.True(t, logConfig.Buffered)
+	assert.True(t, logConfig.Desensitization.Enabled)
+	assert.Equal(t, 1, len(logConfig.Desensitization.Fields))
+}
+
+func TestSentry_Fields(t *testing.T) {
+	sentry := Sentry{
+		DSN:            "https://example@sentry.io/123",
+		ReportLogLevel: 2,
+	}
+
+	assert.Equal(t, "https://example@sentry.io/123", sentry.DSN)
+	assert.Equal(t, 2, sentry.ReportLogLevel)
+}
+
+func TestMcpServer_Fields(t *testing.T) {
+	mcpServer := McpServer{
+		Interval:                    60,
+		BkApiUrlTmpl:                "https://api.example.com",
+		MessageUrlFormat:            "/mcp/%s/message",
+		MessageApplicationUrlFormat: "/mcp/%s/app/message",
+		InnerJwtExpireTime:          300,
+		EncryptKey:                  "test-key",
+		CryptoNonce:                 "test-nonce",
+	}
+
+	assert.Equal(t, "https://api.example.com", mcpServer.BkApiUrlTmpl)
+	assert.Equal(t, "/mcp/%s/message", mcpServer.MessageUrlFormat)
+}
+
+func TestPprof_Fields(t *testing.T) {
+	pprof := Pprof{
+		Username: "admin",
+		Password: "secret",
+	}
+
+	assert.Equal(t, "admin", pprof.Username)
+	assert.Equal(t, "secret", pprof.Password)
 }
