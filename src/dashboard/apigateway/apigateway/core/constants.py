@@ -262,18 +262,5 @@ PROGRAMMABLE_GATEWAY_NAME_PATTERN = re.compile(r"^[a-z0-9-]{3,16}$")
 EVENT_FAIL_INTERVAL_TIME = 600
 
 
-# FIXME: deprecated, will be removed after 1.20, drop it at 1.22
-class MicroGatewayStatusEnum(StructuredEnum):
-    """微网关实例状态"""
-
-    PENDING = EnumField("pending", _("待安装"))
-    INSTALLING = EnumField("installing", _("安装中"))
-    INSTALLED = EnumField("installed", _("已安装"))
-    UPDATED = EnumField("updated", _("已更新"))
-    # 可能会因为 helm install 超时导致失败，此时资源可能更新了，但 release 状态未更新
-    # 所以不能简单标识安装或者未安装
-    ABNORMAL = EnumField("abnormal", _("安装异常"))
-
-
 # 插件网关前缀
 PLUGIN_GATEWAY_PREFIX = "bp-"
