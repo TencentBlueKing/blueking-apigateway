@@ -828,7 +828,7 @@
         </div>
         <div>
           <ResponseParams
-            v-if="Object.keys(formData.schema?.responses || {}).length"
+            v-if="Object.keys(formData.openapi_schema?.responses || {}).length"
             :detail="formData"
             readonly
           />
