@@ -714,6 +714,7 @@
   "上传文件": "Upload",
   "导入 Swagger 文件": "Import Swagger",
   "Swagger 说明文档": "Swagger Doc",
+  "说明文档": "Doc",
   "使用指引": "Usage Doc",
   "模板示例": "Template Example",
   "请确认以下文档变更：": "Confirm the following document changes:",
@@ -1822,7 +1823,7 @@
   "没有数据": "No Data",
   "请输入 API 名称": "Please input API name",
   "插件配置示例": "Plugin config example",
-  "查看填写示例": "Show config example",
+  "填写示例": "Show example",
   "资源有更新，可生成新版本": "New version can be generated",
   "白名单": "Whitelist",
   "黑名单": "Blacklist",
@@ -2142,5 +2143,6 @@
   "添加自定义使用指引": "Add custom usage guide",
   "平台提供默认使用指引，您可添加自定义内容来补充说明。": "The platform provides default usage guidelines, and you can add custom content to supplement the instructions.",
   "确认删除自定义使用指引？": "Are you sure to delete the custom usage guide?",
-  "删除后，MCP 文档中将显示默认指引": "After deletion, default guidelines will be displayed in the MCP document"
+  "删除后，MCP 文档中将显示默认指引": "After deletion, default guidelines will be displayed in the MCP document",
+  "该插件无需任何参数": "No params needed"
 }
