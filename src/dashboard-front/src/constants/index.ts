@@ -15,7 +15,7 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
-import { locale, t } from '@/locales';
+import { t } from '@/locales';
 // 方法名称
 export const HTTP_METHODS = [
   {
@@ -147,29 +147,6 @@ paths:
           resourcePermissionRequired: true
         descriptionEn: None
       `,
-};
-
-// 自定义使用指引实例
-export const CUSTOM_USAGE_GUIDE_EXAMPLE = {
-  content: locale.value.indexOf('zh') > -1
-    ? `# 代码自动检测
-
-### 根据以下特征推断数据库类型（如 MySQL、PostgreSQL、Server）
-连接字符串（JDBC URL、DSN 格式）
-特殊语法（如 LIMIT vs TOP、字符串拼接符 || vs +）
-特有函数（如 TO_CHAR() vs CONVERT()）
-系统表/视图（如 information_schema vs pg_catalog）
-给出多个可能的候选类型（按置信度排序）及判断依据。
-版本范围推断`
-    : `# Code automatic detection
-
-### Infer database types based on the following characteristics (such as MySQL, PostgreSQL, Server)
-Connection string (JDBC URL, DSN format)
-Special syntax (such as Limit vs TOP, string concatenation | | vs+)
-Unique functions (such as TO_CAR() vs CONVERT())
-System tables/views (such as information_stemplate vs pg_catalog)
-Provide multiple possible candidate types (ranked by confidence) and their criteria for judgment.
-Version range inference`,
 };
 
 // 使用指引
