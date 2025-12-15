@@ -239,6 +239,9 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
 
     links = serializers.SerializerMethodField(help_text="相关链接")
 
+    is_deprecated = serializers.BooleanField(help_text="是否已废弃")
+    deprecated_note = serializers.CharField(help_text="废弃原因")
+
     class Meta:
         ref_name = "apigateway.apis.web.gateway.serializers.GatewayRetrieveOutputSLZ"
         model = Gateway
@@ -267,6 +270,8 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             "tenant_id",
             "extra_info",
             "links",
+            "is_deprecated",
+            "deprecated_note",
         )
         read_only_fields = fields
         lookup_field = "id"
@@ -380,6 +385,8 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
             "is_public",
             "bk_app_codes",
             "related_app_codes",
+            "is_deprecated",
+            "deprecated_note",
         )
         lookup_field = "id"
 

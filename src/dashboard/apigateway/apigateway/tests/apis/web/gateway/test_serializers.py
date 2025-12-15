@@ -308,6 +308,8 @@ class TestGatewayRetrieveOutputSLZ:
             "tenant_mode": "single",
             "extra_info": {},
             "links": {},
+            "is_deprecated": False,
+            "deprecated_note": None,
         }
 
         assert slz.data == expected
