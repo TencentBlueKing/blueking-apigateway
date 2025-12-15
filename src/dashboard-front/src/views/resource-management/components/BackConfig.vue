@@ -326,7 +326,7 @@ const rules = {
       trigger: 'blur',
     },
     {
-      validator: (value: string) => /^\/[\w{}/.-]*$/.test(value),
+      validator: (value: string) => /^\/[\w{}/.!-]*$/.test(value),
       message: t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名'),
       trigger: 'blur',
     },

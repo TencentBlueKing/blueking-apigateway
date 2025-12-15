@@ -24,9 +24,10 @@ RUN mvn dependency:get -Dartifact=com.squareup.okhttp3:okhttp:4.12.0 && \
 COPY --from=ghcr.io/astral-sh/uv:0.8.22 /uv /uvx /bin/
 
 WORKDIR /app
-ADD build /app
-# for etcd3 lib installed from git
+COPY build/pyproject.toml build/uv.lock /app/
 RUN export UV_PROJECT_ENVIRONMENT=/usr/local/ && uv sync --locked && uv clean
+
+ADD build /app
 
 RUN dnf clean all
 

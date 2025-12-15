@@ -101,6 +101,10 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
 
     is_public = models.BooleanField(default=False)
 
+    # for lifecycle management, mark the gateway is deprecated before doing delete operation
+    is_deprecated = models.BooleanField(default=False)
+    deprecated_note = models.CharField(max_length=512, blank=True, null=True)
+
     def __str__(self):
         return f"<Gateway: {self.pk}/{self.name}>"
 

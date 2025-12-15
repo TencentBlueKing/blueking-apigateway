@@ -25,7 +25,7 @@
       :name="icon"
       :size="size"
       :svg="svg"
-      class="mr-8px"
+      class="mr-4px"
     />
     <span>
       <slot />

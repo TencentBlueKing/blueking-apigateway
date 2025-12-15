@@ -88,6 +88,8 @@ class GatewayListOutputSLZ(serializers.Serializer):
     created_time = serializers.DateTimeField(allow_null=True, read_only=True, help_text="创建时间")
     updated_time = serializers.DateTimeField(allow_null=True, read_only=True, help_text="更新时间")
 
+    operation_status = serializers.SerializerMethodField(help_text="网关运营状态")
+
     class Meta:
         ref_name = "apigateway.apis.web.gateway.serializers.GatewayListOutputSLZ"
 
@@ -105,6 +107,9 @@ class GatewayListOutputSLZ(serializers.Serializer):
 
     def get_extra_info(self, obj):
         return obj.extra_info
+
+    def get_operation_status(self, obj):
+        return self.context["operation_statuses"].get(obj.id, {})
 
 
 class GatewayExtraInfoSLZ(serializers.Serializer):
@@ -239,6 +244,9 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
 
     links = serializers.SerializerMethodField(help_text="相关链接")
 
+    is_deprecated = serializers.BooleanField(help_text="是否已废弃")
+    deprecated_note = serializers.CharField(help_text="废弃原因")
+
     class Meta:
         ref_name = "apigateway.apis.web.gateway.serializers.GatewayRetrieveOutputSLZ"
         model = Gateway
@@ -267,6 +275,8 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
             "tenant_id",
             "extra_info",
             "links",
+            "is_deprecated",
+            "deprecated_note",
         )
         read_only_fields = fields
         lookup_field = "id"
@@ -380,6 +390,8 @@ class GatewayUpdateInputSLZ(serializers.ModelSerializer):
             "is_public",
             "bk_app_codes",
             "related_app_codes",
+            "is_deprecated",
+            "deprecated_note",
         )
         lookup_field = "id"
 
@@ -453,3 +465,17 @@ class GatewayReleasingStatusOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.gateway.serializers.GatewayReleasingStatusOutputSLZ"
+
+
+class GatewayCheckNameAvailableInputSLZ(serializers.Serializer):
+    name = serializers.CharField(required=True, help_text="网关名称")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayCheckNameAvailableInputSLZ"
+
+
+class GatewayCheckNameAvailableOutputSLZ(serializers.Serializer):
+    is_available = serializers.BooleanField(read_only=True, help_text="网关名称是否可用")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayCheckNameAvailableOutputSLZ"
