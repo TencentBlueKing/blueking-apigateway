@@ -88,6 +88,8 @@ class GatewayListOutputSLZ(serializers.Serializer):
     created_time = serializers.DateTimeField(allow_null=True, read_only=True, help_text="创建时间")
     updated_time = serializers.DateTimeField(allow_null=True, read_only=True, help_text="更新时间")
 
+    operation_status = serializers.SerializerMethodField(help_text="网关运营状态")
+
     class Meta:
         ref_name = "apigateway.apis.web.gateway.serializers.GatewayListOutputSLZ"
 
@@ -105,6 +107,9 @@ class GatewayListOutputSLZ(serializers.Serializer):
 
     def get_extra_info(self, obj):
         return obj.extra_info
+
+    def get_operation_status(self, obj):
+        return self.context["operation_statuses"].get(obj.id, {})
 
 
 class GatewayExtraInfoSLZ(serializers.Serializer):
