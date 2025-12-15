@@ -105,6 +105,24 @@ export function getEnv() {
       USER_API: string
       UPGRADE_TO_113_TIP: string
       MCP_SERVER_PERMISSION_APPLY: string
+      PLUGIN_AI_PROXY: string
+      PLUGIN_AI_RATE_LIMITING: string
+      PLUGIN_API_BREAKER: string
+      PLUGIN_BK_ACCESS_TOKEN_SOURCE: string
+      PLUGIN_BK_CORS: string
+      PLUGIN_BK_HEADER_REWRITE: string
+      PLUGIN_BK_IP_RESTRICTION: string
+      PLUGIN_BK_MOCK: string
+      PLUGIN_BK_RATE_LIMIT: string
+      PLUGIN_BK_REQUEST_BODY_LIMIT: string
+      PLUGIN_BK_USERNAME_REQUIRED: string
+      PLUGIN_BK_USER_RESTRICTION: string
+      PLUGIN_FAULT_INJECTION: string
+      PLUGIN_PROXY_CACHE: string
+      PLUGIN_REDIRECT: string
+      PLUGIN_REQUEST_VALIDATION: string
+      PLUGIN_RESPONSE_REWRITE: string
+      PLUGIN_URI_BLOCKER: string
     }
   }>(`${path}/settings/env-vars/`);
 }
