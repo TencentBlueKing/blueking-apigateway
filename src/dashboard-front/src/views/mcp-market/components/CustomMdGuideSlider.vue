@@ -62,7 +62,6 @@
 import { cloneDeep } from 'lodash-es';
 import { Message } from 'bkui-vue';
 import { type MavonEditorProps, mavonEditor } from 'mavon-editor';
-import { CUSTOM_USAGE_GUIDE_EXAMPLE } from '@/constants';
 import { addCustomServerGuideDoc, updateCustomServerGuideDoc } from '@/services/source/mcp-server';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';
 
@@ -78,7 +77,7 @@ const isShow = defineModel('isShow', {
 
 const formData = defineModel('formData', {
   type: Object,
-  default: CUSTOM_USAGE_GUIDE_EXAMPLE,
+  default: { content: '' },
 });
 
 const {
@@ -109,7 +108,7 @@ const submitLoading = ref(false);
 const isSubfield = ref(true);
 const isFullscreen = ref(false);
 const language = ref<'zh' | 'en'>('zh');
-const defaultFormData = ref(CUSTOM_USAGE_GUIDE_EXAMPLE);
+const defaultFormData = ref({ content: '' });
 const rules = reactive({
   content: [
     {
@@ -149,12 +148,7 @@ const setFormData = ({ content }: { content: string }) => {
 };
 
 watch(() => markdownText, (newVal: string) => {
-  if (newVal.length) {
-    setFormData({ content: newVal });
-  }
-  else {
-    setFormData(CUSTOM_USAGE_GUIDE_EXAMPLE);
-  }
+  setFormData({ content: newVal });
 }, { immediate: true });
 
 const handleCompare = (callback) => {
@@ -192,7 +186,7 @@ const handleCancel = () => {
     if (isFullscreen.value) {
       markdownRef.value?.$el.querySelector('.fa-mavon-compress')?.click();
     }
-    setFormData(CUSTOM_USAGE_GUIDE_EXAMPLE);
+    setFormData(defaultFormData.value);
     formRef.value?.clearValidate();
     isFullscreen.value = false;
     isShow.value = false;
