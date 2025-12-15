@@ -47,6 +47,8 @@ class GatewayOutputSLZ(serializers.Serializer):
     doc_maintainers = serializers.JSONField(help_text="网关文档维护人员")
     is_official = serializers.SerializerMethodField(help_text="是否为官方网关, true: 是, false: 否")
     is_plugin_gateway = serializers.SerializerMethodField(help_text="是否为插件网关, true: 是, false: 否")
+    is_deprecated = serializers.BooleanField(help_text="是否已废弃")
+    deprecated_note = serializers.CharField(help_text="废弃原因")
     api_url = serializers.SerializerMethodField(help_text="网关访问地址")
     sdks = serializers.SerializerMethodField(help_text="SDK")
 
