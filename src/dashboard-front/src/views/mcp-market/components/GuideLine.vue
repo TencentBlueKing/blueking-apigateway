@@ -154,7 +154,7 @@ const serverId = computed(() => route.params.serverId);
 watch(
   () => markdownStr,
   (newVal: string) => {
-    markdownText.value = isExistCustomGuide.value ? newVal : '';
+    markdownText.value = newVal;
     if (newVal) {
       markdownHtml.value = md.render(newVal);
     }
@@ -180,7 +180,7 @@ const handleShowGuide = (mode: string) => {
   guideType.value = mode;
   const modeMap = {
     add: () => {
-      markdownText.value = '';
+      return markdownText.value;
     },
     edit: () => {
       fetchCustomGuide();
