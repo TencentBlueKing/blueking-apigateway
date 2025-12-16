@@ -16,7 +16,6 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import { t } from '@/locales';
-
 // 方法名称
 export const HTTP_METHODS = [
   {
@@ -149,3 +148,15 @@ paths:
         descriptionEn: None
       `,
 };
+
+// 使用指引
+export const USAGE_GUIDE_LIST = [
+  {
+    label: t('默认使用指引'),
+    value: 'default',
+  },
+  {
+    label: t('自定义使用指引'),
+    value: 'custom',
+  },
+];

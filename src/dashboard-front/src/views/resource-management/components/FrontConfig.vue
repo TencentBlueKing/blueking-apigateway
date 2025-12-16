@@ -127,7 +127,6 @@ const rules = ref<any>({
   path: [
     {
       validator: (value: string) => {
-        console.log('value', value);
         if (!value) return true;
         return value !== cloneData.value.path || frontConfigData.value.method !== cloneData.value.method;
       },
@@ -140,7 +139,7 @@ const rules = ref<any>({
       trigger: 'blur',
     },
     {
-      validator: (value: string) => /^\/[\w{}/.-]*$/.test(value),
+      validator: (value: string) => /^\/[\w{}/.!-]*$/.test(value),
       message: t('斜线(/)开头的合法URL路径，不包含http(s)开头的域名'),
       trigger: 'blur',
     },

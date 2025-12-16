@@ -78,6 +78,11 @@ class TestGatewayListOutputSLZ:
                 "created_time": DateTimeField().to_representation(gateway_1.created_time),
                 "updated_time": DateTimeField().to_representation(gateway_1.updated_time),
                 "extra_info": {},
+                "operation_status": {
+                    "status": "active",
+                    "link": "https://dashboard.example.com/1/basic-info",
+                    "source": "apigateway",
+                },
             },
             {
                 "id": gateway_2.id,
@@ -95,6 +100,11 @@ class TestGatewayListOutputSLZ:
                 "created_time": DateTimeField().to_representation(gateway_2.created_time),
                 "updated_time": DateTimeField().to_representation(gateway_2.updated_time),
                 "extra_info": {},
+                "operation_status": {
+                    "status": "active",
+                    "link": "https://dashboard.example.com/2/basic-info",
+                    "source": "apigateway",
+                },
             },
         ]
         gateways = Gateway.objects.filter(id__in=[gateway_1.id, gateway_2.id])
@@ -108,6 +118,18 @@ class TestGatewayListOutputSLZ:
                 "gateway_auth_configs": {
                     gateway_1.id: GatewayAuthConfig(GatewayTypeEnum.OFFICIAL_API.value),
                     gateway_2.id: GatewayAuthConfig(GatewayTypeEnum.CLOUDS_API.value),
+                },
+                "operation_statuses": {
+                    gateway_1.id: {
+                        "status": "active",
+                        "link": "https://dashboard.example.com/1/basic-info",
+                        "source": "apigateway",
+                    },
+                    gateway_2.id: {
+                        "status": "active",
+                        "link": "https://dashboard.example.com/2/basic-info",
+                        "source": "apigateway",
+                    },
                 },
             },
         )
@@ -308,6 +330,8 @@ class TestGatewayRetrieveOutputSLZ:
             "tenant_mode": "single",
             "extra_info": {},
             "links": {},
+            "is_deprecated": False,
+            "deprecated_note": None,
         }
 
         assert slz.data == expected

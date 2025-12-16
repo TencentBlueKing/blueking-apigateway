@@ -20,20 +20,20 @@
   <div class="body-payload">
     <div class="table-header">
       <div class="body-type">
-        <div
+        <!-- <div
           class="body-type-item"
           :class="[type === 'fromData' ? 'active' : '']"
           @click="() => handleTabChange('fromData')"
-        >
+          >
           form-data
-        </div>
-        <div
+          </div>
+          <div
           class="body-type-item"
           :class="[type === 'urlencoded' ? 'active' : '']"
           @click="() => handleTabChange('urlencoded')"
-        >
+          >
           x-www-form-urlencoded
-        </div>
+          </div> -->
         <div
           class="body-type-item"
           :class="[type === 'raw' ? 'active' : '']"

@@ -111,11 +111,25 @@
             {{ curPluginInfo?.notes || infoNotes }}
           </div>
         </main>
-        <aside
-          class="plugin-example-btn"
-          @click="toggleShowExample"
-        >
-          {{ t('查看填写示例') }}
+        <aside class="plugin-example-btn">
+          <div class="flex flex-col items-start gap-12px">
+            <IconButton
+              text
+              theme="primary"
+              icon="bulk-edit"
+              @click="toggleShowExample"
+            >
+              {{ t('填写示例') }}
+            </IconButton>
+            <IconButton
+              text
+              theme="primary"
+              icon="jump"
+              @click="handleDocClick"
+            >
+              {{ t('说明文档') }}
+            </IconButton>
+          </div>
         </aside>
       </div>
       <div class="info-form-container mt-20px">
@@ -177,7 +191,7 @@
           />
         </template>
         <BkSchemaForm
-          v-else
+          v-else-if="Object.keys(schemaFormData || {}).length"
           ref="formRef"
           v-model="schemaFormData"
           class="mt-20px plugin-form"
@@ -185,6 +199,12 @@
           :layout="formConfig.layout"
           :rules="formConfig.rules"
         />
+        <div
+          v-else
+          class="color-#63656e text-14px"
+        >
+          {{ t('该插件无需任何参数') }}
+        </div>
       </div>
       <div class="info-btn mt-20px">
         <div class="last-step">
@@ -256,14 +276,20 @@
 </template>
 
 <script setup lang="ts">
-import { cloneDeep } from 'lodash-es';
+import {
+  cloneDeep,
+  snakeCase,
+} from 'lodash-es';
 import { creatPlugin, getPluginForm, updatePluginConfig } from '@/services/source/plugin-manage';
 import { Message } from 'bkui-vue';
 // @ts-expect-error missing module type
 import createForm from '@blueking/bkui-form';
 import { json2Yaml, yaml2Json } from '@/utils';
 import WhitelistTable from './WhitelistTable.vue';
-import { useStage } from '@/stores';
+import {
+  useEnv,
+  useStage,
+} from '@/stores';
 import { onClickOutside } from '@vueuse/core';
 import {
   PLUGIN_ICONS,
@@ -320,6 +346,7 @@ interface IProps {
 }
 
 const stageStore = useStage();
+const envStore = useEnv();
 const BkSchemaForm = createForm();
 
 const { t } = useI18n();
@@ -533,6 +560,14 @@ const toggleShowExample = async () => {
   showExample.value = !showExample.value;
 };
 
+const handleDocClick = () => {
+  const pluginNameInSnakeCase = snakeCase(choosePlugin.value).toUpperCase();
+  const link = envStore.env.DOC_LINKS[`PLUGIN_${pluginNameInSnakeCase}` as keyof typeof envStore.env.DOC_LINKS];
+  if (link) {
+    window.open(link, '_blank');
+  }
+};
+
 const init = async () => {
   isStage.value = scopeInfo.scopeType === 'stage';
   isAdd.value = type === 'add';
@@ -708,8 +743,6 @@ defineExpose({
   .plugin-example-btn {
     margin-top: 16px;
     font-size: 14px;
-    color: #3A84FF;
-    cursor: pointer;
     flex-shrink: 0;
   }
 }

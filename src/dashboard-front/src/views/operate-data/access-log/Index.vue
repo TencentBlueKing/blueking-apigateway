@@ -203,12 +203,17 @@
               <span
                 v-bk-tooltips="{ content: t('检索出的日志条数为 0，不需要下载'), disabled: pageCount !== 0 }"
                 class="download-logs"
-                :class="[{ 'disabled-logs': pageCount === 0 }]"
+                :class="[{ 'disabled-logs': pageCount === 0 || isDownloadLoading }]"
                 @click="handleDownload"
               >
                 <AgIcon
+                  v-show="!isDownloadLoading"
                   name="download"
                   size="16"
+                />
+                <Spinner
+                  v-show="isDownloadLoading"
+                  class="font-size-16px"
                 />
                 {{ t('下载日志') }}
               </span>
@@ -359,6 +364,7 @@ import {
   Funnel,
   InfoLine,
   NarrowLine,
+  Spinner,
 } from 'bkui-vue/lib/icon';
 import { Message } from 'bkui-vue';
 import { useStorage } from '@vueuse/core';
@@ -388,6 +394,7 @@ const datePickerRef = ref(null);
 const isPageLoading = ref(false);
 const isDataLoading = ref(false);
 const isShareLoading = ref(false);
+const isDownloadLoading = ref(false);
 const dateKey = ref('dateKey');
 const resourceList = ref<any>([]);
 const backend_id = ref('');
@@ -1006,11 +1013,13 @@ const handleClearSearch = () => {
 };
 
 const handleDownload = async (event: Event) => {
-  if (pageCount.value === 0) {
+  event.stopPropagation();
+  if (pageCount.value === 0 || isDownloadLoading.value) {
     return;
   }
-  event.stopPropagation();
+
   try {
+    isDownloadLoading.value = true;
     const { params, path } = getPayload();
     params.offset = tableRef.value?.getPagination()?.current || 1;
     params.limit = 10000;
@@ -1028,6 +1037,9 @@ const handleDownload = async (event: Event) => {
       message: error.message || t('导出失败'),
       theme: 'error',
     });
+  }
+  finally {
+    isDownloadLoading.value = false;
   }
 };
 

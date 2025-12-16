@@ -44,6 +44,16 @@ class GatewayTypeEnum(StructuredEnum):
     CLOUDS_API = EnumField(10, "云API")
 
 
+class GatewayOperationStatusEnum(StructuredEnum):
+    INACTIVE = EnumField("inactive", "不活跃")
+    ACTIVE = EnumField("active", "活跃")
+
+
+class GatewayOperationSourceEnum(StructuredEnum):
+    APIGATEWAY = EnumField("apigateway", "API 网关")
+    PAAS3 = EnumField("paas3", "开发者中心")
+
+
 class GatewaySourceEnum(StructuredEnum):
     API_DEBUG = EnumField("api_debug")
 

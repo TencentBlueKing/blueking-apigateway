@@ -363,6 +363,79 @@ class TestResourceProxyDiffer:
             assert json.dumps(result) == json.dumps(expected)
 
 
+class TestResourceDocUpdatedTimeDiffer:
+    @pytest.mark.parametrize(
+        "source_doc_updated_time, target_doc_updated_time, expected",
+        [
+            # Both empty and equal
+            ({}, {}, (None, None)),
+            # Both equal with same keys
+            (
+                {"en": "2025-12-15 16:46:31+0800", "zh": "2025-09-22 15:01:31+0800"},
+                {"en": "2025-12-15 16:46:31+0800", "zh": "2025-09-22 15:01:31+0800"},
+                (None, None),
+            ),
+            # One key differs (en), zh is same
+            (
+                {"en": "2025-12-15 16:46:31+0800", "zh": "2025-09-22 15:01:31+0800"},
+                {"en": "2025-12-15 16:47:03+0800", "zh": "2025-09-22 15:01:31+0800"},
+                ({"en": "2025-12-15 16:46:31+0800"}, {"en": "2025-12-15 16:47:03+0800"}),
+            ),
+            # Both keys differ
+            (
+                {"en": "2025-12-15 16:46:31+0800", "zh": "2025-09-22 15:01:31+0800"},
+                {"en": "2025-12-15 16:47:03+0800", "zh": "2025-09-22 15:02:00+0800"},
+                (
+                    {"en": "2025-12-15 16:46:31+0800", "zh": "2025-09-22 15:01:31+0800"},
+                    {"en": "2025-12-15 16:47:03+0800", "zh": "2025-09-22 15:02:00+0800"},
+                ),
+            ),
+        ],
+    )
+    def test_diff_doc_updated_time(self, source_doc_updated_time, target_doc_updated_time, expected):
+        # Create minimal ResourceDifferHandler instances
+        # Only doc_updated_time is needed for this test
+        minimal_data = {
+            "id": 0,
+            "name": "",
+            "method": "GET",
+            "path": "/",
+            "proxy": {
+                "type": "http",
+                "config": json.dumps(
+                    {
+                        "method": "GET",
+                        "path": "/",
+                        "match_subpath": False,
+                        "timeout": 30,
+                        "upstreams": {},
+                        "transform_headers": {},
+                    }
+                ),
+            },
+            "contexts": {
+                "resource_auth": {
+                    "config": json.dumps(
+                        {
+                            "auth_verified_required": False,
+                            "app_verified_required": True,
+                            "resource_perm_required": True,
+                        }
+                    )
+                }
+            },
+            "doc_updated_time": source_doc_updated_time,
+        }
+
+        source_differ = ResourceDifferHandler.model_validate(minimal_data)
+        target_differ = ResourceDifferHandler.model_validate(
+            {**minimal_data, "doc_updated_time": target_doc_updated_time}
+        )
+
+        result = source_differ.diff_doc_updated_time(target_differ)
+        assert result == expected
+
+
 class ResourceProxyHTTPConfig:
     @pytest.mark.parametrize(
         "source, target, expected",

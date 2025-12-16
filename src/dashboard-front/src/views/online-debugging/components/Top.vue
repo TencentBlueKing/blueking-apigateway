@@ -36,13 +36,17 @@
   </div>
 
   <!-- 调用历史 -->
-  <RequestRecord ref="requestRecordRef" />
+  <RequestRecord
+    ref="requestRecordRef"
+    @retry="(row) => emit('retry', row)"
+  />
 </template>
 
 <script setup lang="ts">
 import { useStage } from '@/stores';
 import RequestRecord from '@/views/online-debugging/components/RequestRecord.vue';
 
+const emit = defineEmits<{ retry: [data: any] }>();
 const { t } = useI18n();
 const stage = useStage();
 const requestRecordRef = ref(null);
