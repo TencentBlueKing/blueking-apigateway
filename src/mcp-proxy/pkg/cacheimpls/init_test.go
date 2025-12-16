@@ -71,4 +71,49 @@ var _ = Describe("Init", func() {
 			Expect(cacheimpls.GetAppMCPServerPermission()).NotTo(BeNil())
 		})
 	})
+
+	Describe("Cache Setter Functions", func() {
+		It("should set and get gateway ID cache", func() {
+			original := cacheimpls.GetGatewayIDCache()
+			Expect(original).NotTo(BeNil())
+			// Set back to original
+			cacheimpls.SetGatewayIDCache(original)
+			Expect(cacheimpls.GetGatewayIDCache()).To(Equal(original))
+		})
+
+		It("should set and get gateway name cache", func() {
+			original := cacheimpls.GetGatewayNameCache()
+			Expect(original).NotTo(BeNil())
+			cacheimpls.SetGatewayNameCache(original)
+			Expect(cacheimpls.GetGatewayNameCache()).To(Equal(original))
+		})
+
+		It("should set and get stage cache", func() {
+			original := cacheimpls.GetStageCache()
+			Expect(original).NotTo(BeNil())
+			cacheimpls.SetStageCache(original)
+			Expect(cacheimpls.GetStageCache()).To(Equal(original))
+		})
+
+		It("should set and get MCP server cache", func() {
+			original := cacheimpls.GetMCPServerCache()
+			Expect(original).NotTo(BeNil())
+			cacheimpls.SetMCPServerCache(original)
+			Expect(cacheimpls.GetMCPServerCache()).To(Equal(original))
+		})
+
+		It("should set and get JWT info cache", func() {
+			original := cacheimpls.GetJWTInfoCache()
+			Expect(original).NotTo(BeNil())
+			cacheimpls.SetJWTInfoCache(original)
+			Expect(cacheimpls.GetJWTInfoCache()).To(Equal(original))
+		})
+
+		It("should set and get app MCP server permission cache", func() {
+			original := cacheimpls.GetAppMCPServerPermission()
+			Expect(original).NotTo(BeNil())
+			cacheimpls.SetAppMCPServerPermission(original)
+			Expect(cacheimpls.GetAppMCPServerPermission()).To(Equal(original))
+		})
+	})
 })

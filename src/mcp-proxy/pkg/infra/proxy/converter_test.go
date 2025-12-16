@@ -24,70 +24,109 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("OpenapiToMcpToolConfig", func() {
-	Describe("Empty Spec", func() {
-		It("should return empty result for empty spec", func() {
+var _ = Describe("Converter", func() {
+	Describe("OpenapiToMcpToolConfig", func() {
+		It("should return empty slice for empty paths", func() {
 			spec := &openapi3.T{
-				Paths: &openapi3.Paths{},
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
 			}
 
 			result := OpenapiToMcpToolConfig(spec, nil)
 			Expect(result).To(BeEmpty())
 		})
-	})
 
-	Describe("With Operations", func() {
-		It("should convert operations to tool config", func() {
+		It("should skip operations without operation ID", func() {
 			spec := &openapi3.T{
-				Servers: openapi3.Servers{
-					&openapi3.Server{
-						URL: "https://api.example.com/v1",
-					},
-				},
-				Paths: &openapi3.Paths{},
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
 			}
 
 			pathItem := &openapi3.PathItem{
 				Get: &openapi3.Operation{
-					OperationID: "getUsers",
-					Summary:     "Get all users",
-					Description: "Returns a list of users",
+					Summary:   "Get users without operation ID",
+					Responses: &openapi3.Responses{},
 				},
 			}
 			spec.Paths.Set("/users", pathItem)
 
 			result := OpenapiToMcpToolConfig(spec, nil)
-
-			Expect(result).To(HaveLen(1))
-			Expect(result[0].Name).To(Equal("getUsers"))
-			Expect(result[0].Description).To(Equal("Returns a list of users"))
-			Expect(result[0].Method).To(Equal("GET"))
-			Expect(result[0].Url).To(Equal("/users"))
-			Expect(result[0].Host).To(Equal("api.example.com"))
-			Expect(result[0].BasePath).To(Equal("/v1"))
-			Expect(result[0].Schema).To(Equal("https"))
+			Expect(result).To(BeEmpty())
 		})
-	})
 
-	Describe("With OperationID Filter", func() {
-		It("should filter operations by operationID", func() {
+		It("should convert simple GET operation", func() {
 			spec := &openapi3.T{
-				Servers: openapi3.Servers{
-					&openapi3.Server{
-						URL: "https://api.example.com/v1",
-					},
-				},
-				Paths: &openapi3.Paths{},
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
 			}
 
 			pathItem := &openapi3.PathItem{
 				Get: &openapi3.Operation{
 					OperationID: "getUsers",
 					Summary:     "Get all users",
+					Description: "Retrieve a list of all users",
+					Responses:   &openapi3.Responses{},
+				},
+			}
+			spec.Paths.Set("/users", pathItem)
+
+			result := OpenapiToMcpToolConfig(spec, nil)
+			Expect(result).To(HaveLen(1))
+			Expect(result[0].Name).To(Equal("getUsers"))
+			Expect(result[0].Method).To(Equal("GET"))
+			Expect(result[0].Url).To(Equal("/users"))
+			Expect(result[0].Host).To(Equal("api.example.com"))
+			Expect(result[0].BasePath).To(Equal("/v1"))
+			Expect(result[0].Schema).To(Equal("https"))
+			Expect(result[0].Description).To(Equal("Retrieve a list of all users"))
+		})
+
+		It("should use summary when description is empty", func() {
+			spec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
+			}
+
+			pathItem := &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "getUsers",
+					Summary:     "Get all users",
+					Responses:   &openapi3.Responses{},
+				},
+			}
+			spec.Paths.Set("/users", pathItem)
+
+			result := OpenapiToMcpToolConfig(spec, nil)
+			Expect(result).To(HaveLen(1))
+			Expect(result[0].Description).To(Equal("Get all users"))
+		})
+
+		It("should filter by operation ID map", func() {
+			spec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
+			}
+
+			pathItem := &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "getUsers",
+					Summary:     "Get users",
+					Responses:   &openapi3.Responses{},
 				},
 				Post: &openapi3.Operation{
 					OperationID: "createUser",
-					Summary:     "Create a user",
+					Summary:     "Create user",
+					Responses:   &openapi3.Responses{},
 				},
 			}
 			spec.Paths.Set("/users", pathItem)
@@ -97,56 +136,28 @@ var _ = Describe("OpenapiToMcpToolConfig", func() {
 			}
 
 			result := OpenapiToMcpToolConfig(spec, operationIDMap)
-
 			Expect(result).To(HaveLen(1))
 			Expect(result[0].Name).To(Equal("getUsers"))
 		})
-	})
 
-	Describe("Skips Empty OperationID", func() {
-		It("should skip operations without operationID", func() {
+		It("should handle query parameters", func() {
 			spec := &openapi3.T{
-				Servers: openapi3.Servers{
-					&openapi3.Server{
-						URL: "https://api.example.com/v1",
-					},
-				},
-				Paths: &openapi3.Paths{},
-			}
-
-			pathItem := &openapi3.PathItem{
-				Get: &openapi3.Operation{
-					Summary: "Get all users",
-				},
-			}
-			spec.Paths.Set("/users", pathItem)
-
-			result := OpenapiToMcpToolConfig(spec, nil)
-			Expect(result).To(BeEmpty())
-		})
-	})
-
-	Describe("With Query Parameters", func() {
-		It("should include query parameters in param schema", func() {
-			spec := &openapi3.T{
-				Servers: openapi3.Servers{
-					&openapi3.Server{
-						URL: "https://api.example.com/v1",
-					},
-				},
-				Paths: &openapi3.Paths{},
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
 			}
 
 			pathItem := &openapi3.PathItem{
 				Get: &openapi3.Operation{
 					OperationID: "getUsers",
-					Summary:     "Get all users",
+					Summary:     "Get users",
 					Parameters: openapi3.Parameters{
 						&openapi3.ParameterRef{
 							Value: &openapi3.Parameter{
 								Name:        "limit",
 								In:          "query",
-								Description: "Maximum number of results",
+								Description: "Number of results to return",
 								Required:    true,
 								Schema: &openapi3.SchemaRef{
 									Value: &openapi3.Schema{
@@ -169,33 +180,29 @@ var _ = Describe("OpenapiToMcpToolConfig", func() {
 							},
 						},
 					},
+					Responses: &openapi3.Responses{},
 				},
 			}
 			spec.Paths.Set("/users", pathItem)
 
 			result := OpenapiToMcpToolConfig(spec, nil)
-
 			Expect(result).To(HaveLen(1))
-			Expect(result[0].Name).To(Equal("getUsers"))
-			Expect(result[0].ParamSchema.Properties).NotTo(BeNil())
+			Expect(result[0].ParamSchema.Properties).To(HaveKey("query_param"))
+			Expect(result[0].ParamSchema.Required).To(ContainElement("query_param"))
 		})
-	})
 
-	Describe("With Path Parameters", func() {
-		It("should include path parameters", func() {
+		It("should handle path parameters", func() {
 			spec := &openapi3.T{
-				Servers: openapi3.Servers{
-					&openapi3.Server{
-						URL: "https://api.example.com/v1",
-					},
-				},
-				Paths: &openapi3.Paths{},
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
 			}
 
 			pathItem := &openapi3.PathItem{
 				Get: &openapi3.Operation{
-					OperationID: "getUser",
-					Summary:     "Get a user by ID",
+					OperationID: "getUserById",
+					Summary:     "Get user by ID",
 					Parameters: openapi3.Parameters{
 						&openapi3.ParameterRef{
 							Value: &openapi3.Parameter{
@@ -211,39 +218,35 @@ var _ = Describe("OpenapiToMcpToolConfig", func() {
 							},
 						},
 					},
+					Responses: &openapi3.Responses{},
 				},
 			}
 			spec.Paths.Set("/users/{id}", pathItem)
 
 			result := OpenapiToMcpToolConfig(spec, nil)
-
 			Expect(result).To(HaveLen(1))
-			Expect(result[0].Name).To(Equal("getUser"))
-			Expect(result[0].Url).To(Equal("/users/{id}"))
+			Expect(result[0].ParamSchema.Properties).To(HaveKey("path_param"))
+			Expect(result[0].ParamSchema.Required).To(ContainElement("path_param"))
 		})
-	})
 
-	Describe("With Header Parameters", func() {
-		It("should include header parameters in param schema", func() {
+		It("should handle header parameters", func() {
 			spec := &openapi3.T{
-				Servers: openapi3.Servers{
-					&openapi3.Server{
-						URL: "https://api.example.com/v1",
-					},
-				},
-				Paths: &openapi3.Paths{},
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
 			}
 
 			pathItem := &openapi3.PathItem{
 				Get: &openapi3.Operation{
 					OperationID: "getUsers",
-					Summary:     "Get all users",
+					Summary:     "Get users",
 					Parameters: openapi3.Parameters{
 						&openapi3.ParameterRef{
 							Value: &openapi3.Parameter{
-								Name:        "X-Custom-Header",
+								Name:        "X-Request-ID",
 								In:          "header",
-								Description: "Custom header",
+								Description: "Request tracking ID",
 								Required:    true,
 								Schema: &openapi3.SchemaRef{
 									Value: &openapi3.Schema{
@@ -253,32 +256,29 @@ var _ = Describe("OpenapiToMcpToolConfig", func() {
 							},
 						},
 					},
+					Responses: &openapi3.Responses{},
 				},
 			}
 			spec.Paths.Set("/users", pathItem)
 
 			result := OpenapiToMcpToolConfig(spec, nil)
-
 			Expect(result).To(HaveLen(1))
-			Expect(result[0].ParamSchema.Properties).NotTo(BeNil())
+			Expect(result[0].ParamSchema.Properties).To(HaveKey("header_param"))
+			Expect(result[0].ParamSchema.Required).To(ContainElement("header_param"))
 		})
-	})
 
-	Describe("With Request Body", func() {
-		It("should handle request body", func() {
+		It("should handle request body with JSON content", func() {
 			spec := &openapi3.T{
-				Servers: openapi3.Servers{
-					&openapi3.Server{
-						URL: "https://api.example.com/v1",
-					},
-				},
-				Paths: &openapi3.Paths{},
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
 			}
 
 			pathItem := &openapi3.PathItem{
 				Post: &openapi3.Operation{
 					OperationID: "createUser",
-					Summary:     "Create a user",
+					Summary:     "Create a new user",
 					RequestBody: &openapi3.RequestBodyRef{
 						Value: &openapi3.RequestBody{
 							Content: openapi3.Content{
@@ -292,72 +292,236 @@ var _ = Describe("OpenapiToMcpToolConfig", func() {
 														Type: &openapi3.Types{"string"},
 													},
 												},
+												"email": &openapi3.SchemaRef{
+													Value: &openapi3.Schema{
+														Type: &openapi3.Types{"string"},
+													},
+												},
 											},
+											Required: []string{"name", "email"},
 										},
 									},
 								},
 							},
 						},
 					},
+					Responses: &openapi3.Responses{},
 				},
 			}
 			spec.Paths.Set("/users", pathItem)
 
 			result := OpenapiToMcpToolConfig(spec, nil)
-
 			Expect(result).To(HaveLen(1))
 			Expect(result[0].Name).To(Equal("createUser"))
 			Expect(result[0].Method).To(Equal("POST"))
+			Expect(result[0].ParamSchema.Properties).To(HaveKey("body_param"))
 		})
-	})
 
-	Describe("Use Summary When No Description", func() {
-		It("should use summary as description when description is empty", func() {
+		It("should handle responses", func() {
 			spec := &openapi3.T{
-				Servers: openapi3.Servers{
-					&openapi3.Server{
-						URL: "https://api.example.com/v1",
-					},
-				},
-				Paths: &openapi3.Paths{},
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
 			}
+
+			responses := &openapi3.Responses{}
+			responses.Set("200", &openapi3.ResponseRef{
+				Value: &openapi3.Response{
+					Description: ptrString("Successful response"),
+				},
+			})
 
 			pathItem := &openapi3.PathItem{
 				Get: &openapi3.Operation{
 					OperationID: "getUsers",
-					Summary:     "Get all users summary",
+					Summary:     "Get users",
+					Responses:   responses,
 				},
 			}
 			spec.Paths.Set("/users", pathItem)
 
 			result := OpenapiToMcpToolConfig(spec, nil)
-
 			Expect(result).To(HaveLen(1))
-			Expect(result[0].Description).To(Equal("Get all users summary"))
+			Expect(result[0].OutputSchema).NotTo(BeNil())
 		})
-	})
 
-	Describe("Invalid Server URL", func() {
-		It("should skip operations with invalid server URLs", func() {
+		It("should handle multiple operations in one path", func() {
 			spec := &openapi3.T{
-				Servers: openapi3.Servers{
-					&openapi3.Server{
-						URL: "://invalid-url",
-					},
-				},
-				Paths: &openapi3.Paths{},
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
 			}
 
 			pathItem := &openapi3.PathItem{
 				Get: &openapi3.Operation{
 					OperationID: "getUsers",
-					Summary:     "Get all users",
+					Summary:     "Get users",
+					Responses:   &openapi3.Responses{},
+				},
+				Post: &openapi3.Operation{
+					OperationID: "createUser",
+					Summary:     "Create user",
+					Responses:   &openapi3.Responses{},
+				},
+				Put: &openapi3.Operation{
+					OperationID: "updateUser",
+					Summary:     "Update user",
+					Responses:   &openapi3.Responses{},
+				},
+				Delete: &openapi3.Operation{
+					OperationID: "deleteUser",
+					Summary:     "Delete user",
+					Responses:   &openapi3.Responses{},
 				},
 			}
 			spec.Paths.Set("/users", pathItem)
 
 			result := OpenapiToMcpToolConfig(spec, nil)
-			Expect(result).To(BeEmpty())
+			Expect(result).To(HaveLen(4))
+
+			names := make([]string, len(result))
+			for i, tc := range result {
+				names[i] = tc.Name
+			}
+			Expect(names).To(ContainElements("getUsers", "createUser", "updateUser", "deleteUser"))
+		})
+
+		It("should handle multiple paths", func() {
+			spec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
+			}
+
+			usersPath := &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "getUsers",
+					Summary:     "Get users",
+					Responses:   &openapi3.Responses{},
+				},
+			}
+			ordersPath := &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "getOrders",
+					Summary:     "Get orders",
+					Responses:   &openapi3.Responses{},
+				},
+			}
+			spec.Paths.Set("/users", usersPath)
+			spec.Paths.Set("/orders", ordersPath)
+
+			result := OpenapiToMcpToolConfig(spec, nil)
+			Expect(result).To(HaveLen(2))
+		})
+
+		It("should handle mixed parameters", func() {
+			spec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
+			}
+
+			pathItem := &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "getUserOrders",
+					Summary:     "Get user orders",
+					Parameters: openapi3.Parameters{
+						&openapi3.ParameterRef{
+							Value: &openapi3.Parameter{
+								Name:     "userId",
+								In:       "path",
+								Required: true,
+								Schema: &openapi3.SchemaRef{
+									Value: &openapi3.Schema{Type: &openapi3.Types{"string"}},
+								},
+							},
+						},
+						&openapi3.ParameterRef{
+							Value: &openapi3.Parameter{
+								Name:     "limit",
+								In:       "query",
+								Required: false,
+								Schema: &openapi3.SchemaRef{
+									Value: &openapi3.Schema{Type: &openapi3.Types{"integer"}},
+								},
+							},
+						},
+						&openapi3.ParameterRef{
+							Value: &openapi3.Parameter{
+								Name:     "X-Trace-ID",
+								In:       "header",
+								Required: false,
+								Schema: &openapi3.SchemaRef{
+									Value: &openapi3.Schema{Type: &openapi3.Types{"string"}},
+								},
+							},
+						},
+					},
+					Responses: &openapi3.Responses{},
+				},
+			}
+			spec.Paths.Set("/users/{userId}/orders", pathItem)
+
+			result := OpenapiToMcpToolConfig(spec, nil)
+			Expect(result).To(HaveLen(1))
+			Expect(result[0].ParamSchema.Properties).To(HaveKey("path_param"))
+			Expect(result[0].ParamSchema.Properties).To(HaveKey("query_param"))
+			Expect(result[0].ParamSchema.Properties).To(HaveKey("header_param"))
+			Expect(result[0].ParamSchema.Required).To(ContainElement("path_param"))
+		})
+	})
+
+	Describe("ToolConfig", func() {
+		Describe("String", func() {
+			It("should format tool config as string", func() {
+				tc := &ToolConfig{
+					Name:     "getUsers",
+					Host:     "api.example.com",
+					BasePath: "/v1",
+					Url:      "/users",
+					Method:   "GET",
+				}
+
+				result := tc.String()
+				Expect(result).To(ContainSubstring("getUsers"))
+				Expect(result).To(ContainSubstring("GET"))
+				Expect(result).To(ContainSubstring("api.example.com"))
+			})
+
+			It("should handle trailing slashes in host", func() {
+				tc := &ToolConfig{
+					Name:     "getUsers",
+					Host:     "api.example.com/",
+					BasePath: "/v1/",
+					Url:      "/users",
+					Method:   "GET",
+				}
+
+				result := tc.String()
+				Expect(result).To(ContainSubstring("api.example.com"))
+				Expect(result).NotTo(ContainSubstring("//"))
+			})
+
+			It("should handle leading slashes in url", func() {
+				tc := &ToolConfig{
+					Name:     "getUsers",
+					Host:     "api.example.com",
+					BasePath: "v1",
+					Url:      "users",
+					Method:   "GET",
+				}
+
+				result := tc.String()
+				Expect(result).To(ContainSubstring("api.example.com"))
+			})
 		})
 	})
 })
+
+func ptrString(s string) *string {
+	return &s
+}

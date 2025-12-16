@@ -26,103 +26,100 @@ import (
 )
 
 var _ = Describe("MCPServer", func() {
-	Describe("IsRegisteredTool", func() {
+	Describe("MCPServer struct operations", func() {
 		var server *MCPServer
 
 		BeforeEach(func() {
 			server = &MCPServer{
-				tools:  make(map[string]struct{}),
-				rwLock: &sync.RWMutex{},
-			}
-		})
-
-		It("should return false for non-registered tool", func() {
-			Expect(server.IsRegisteredTool("test-tool")).To(BeFalse())
-		})
-
-		It("should return true for registered tool", func() {
-			server.rwLock.Lock()
-			server.tools["test-tool"] = struct{}{}
-			server.rwLock.Unlock()
-
-			Expect(server.IsRegisteredTool("test-tool")).To(BeTrue())
-		})
-	})
-
-	Describe("GetResourceVersionID", func() {
-		It("should return the resource version ID", func() {
-			server := &MCPServer{
-				resourceVersionID: 123,
-				rwLock:            &sync.RWMutex{},
-			}
-
-			Expect(server.GetResourceVersionID()).To(Equal(123))
-		})
-	})
-
-	Describe("SetResourceVersionID", func() {
-		It("should set the resource version ID", func() {
-			server := &MCPServer{
-				resourceVersionID: 123,
-				rwLock:            &sync.RWMutex{},
-			}
-
-			server.SetResourceVersionID(456)
-			Expect(server.GetResourceVersionID()).To(Equal(456))
-		})
-	})
-
-	Describe("GetTools", func() {
-		var server *MCPServer
-
-		BeforeEach(func() {
-			server = &MCPServer{
-				tools:  make(map[string]struct{}),
-				rwLock: &sync.RWMutex{},
-			}
-		})
-
-		It("should return empty list initially", func() {
-			tools := server.GetTools()
-			Expect(tools).To(BeEmpty())
-		})
-
-		It("should return all registered tools", func() {
-			server.rwLock.Lock()
-			server.tools["tool1"] = struct{}{}
-			server.tools["tool2"] = struct{}{}
-			server.tools["tool3"] = struct{}{}
-			server.rwLock.Unlock()
-
-			tools := server.GetTools()
-			Expect(tools).To(HaveLen(3))
-			Expect(tools).To(ContainElements("tool1", "tool2", "tool3"))
-		})
-	})
-
-	Describe("ConcurrentAccess", func() {
-		It("should handle concurrent reads and writes", func() {
-			server := &MCPServer{
+				name:              "test-server",
+				resourceVersionID: 1,
 				tools:             make(map[string]struct{}),
 				rwLock:            &sync.RWMutex{},
-				resourceVersionID: 0,
+			}
+		})
+
+		Describe("IsRegisteredTool", func() {
+			It("should return false for unregistered tool", func() {
+				Expect(server.IsRegisteredTool("unknown-tool")).To(BeFalse())
+			})
+
+			It("should return true for registered tool", func() {
+				server.tools["my-tool"] = struct{}{}
+				Expect(server.IsRegisteredTool("my-tool")).To(BeTrue())
+			})
+		})
+
+		Describe("GetResourceVersionID", func() {
+			It("should return the resource version ID", func() {
+				Expect(server.GetResourceVersionID()).To(Equal(1))
+			})
+		})
+
+		Describe("SetResourceVersionID", func() {
+			It("should set the resource version ID", func() {
+				server.SetResourceVersionID(42)
+				Expect(server.GetResourceVersionID()).To(Equal(42))
+			})
+		})
+
+		Describe("GetTools", func() {
+			It("should return empty slice when no tools", func() {
+				Expect(server.GetTools()).To(BeEmpty())
+			})
+
+			It("should return all registered tool names", func() {
+				server.tools["tool1"] = struct{}{}
+				server.tools["tool2"] = struct{}{}
+				server.tools["tool3"] = struct{}{}
+
+				tools := server.GetTools()
+				Expect(tools).To(HaveLen(3))
+				Expect(tools).To(ContainElements("tool1", "tool2", "tool3"))
+			})
+		})
+
+		Describe("Concurrent access", func() {
+			It("should handle concurrent reads and writes", func() {
+				var wg sync.WaitGroup
+
+				// Concurrent reads
+				for i := 0; i < 50; i++ {
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						_ = server.GetResourceVersionID()
+						_ = server.GetTools()
+						_ = server.IsRegisteredTool("some-tool")
+					}()
+				}
+
+				// Concurrent writes
+				for i := 0; i < 50; i++ {
+					wg.Add(1)
+					go func(idx int) {
+						defer wg.Done()
+						server.SetResourceVersionID(idx)
+					}(i)
+				}
+
+				wg.Wait()
+			})
+		})
+	})
+
+	Describe("ToolConfig String method", func() {
+		It("should format tool config correctly", func() {
+			tc := &ToolConfig{
+				Name:     "testTool",
+				Host:     "api.example.com",
+				BasePath: "/v1",
+				Url:      "/users",
+				Method:   "GET",
 			}
 
-			var wg sync.WaitGroup
-			for i := 0; i < 100; i++ {
-				wg.Add(2)
-				go func() {
-					defer wg.Done()
-					server.GetResourceVersionID()
-					server.GetTools()
-					server.IsRegisteredTool("test")
-				}()
-				go func(version int) {
-					defer wg.Done()
-					server.SetResourceVersionID(version)
-				}(i)
-			}
-			wg.Wait()
+			result := tc.String()
+			Expect(result).To(ContainSubstring("testTool"))
+			Expect(result).To(ContainSubstring("GET"))
 		})
 	})
 })

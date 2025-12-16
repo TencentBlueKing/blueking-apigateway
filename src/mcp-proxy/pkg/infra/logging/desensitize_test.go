@@ -25,6 +25,7 @@ import (
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -32,26 +33,42 @@ import (
 )
 
 var _ = Describe("Desensitize", func() {
+	var (
+		file    *os.File
+		encoder zapcore.Encoder
+		core    zapcore.Core
+		logger  *zap.Logger
+	)
+
+	BeforeEach(func() {
+		var err error
+		file, err = os.CreateTemp(".", "logging_test_*.log")
+		Expect(err).NotTo(HaveOccurred())
+
+		encoder = zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
+	})
+
+	AfterEach(func() {
+		if logger != nil {
+			logger.Sync()
+		}
+		if file != nil {
+			os.Remove(file.Name())
+		}
+	})
+
 	Describe("JsonArray", func() {
 		It("should desensitize array fields", func() {
-			file, err := os.CreateTemp(".", "logging_test_*.log")
-			if err != nil {
-				Fail("Failed to create log file")
-			}
-			defer os.Remove(file.Name())
-
-			encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
 			w := &zapcore.BufferedWriteSyncer{
 				WS:            zapcore.AddSync(file),
 				Size:          256 * 1024,
 				FlushInterval: 30 * time.Second,
 			}
-			core := zapcore.NewCore(encoder, w, zapcore.InfoLevel)
+			core = zapcore.NewCore(encoder, w, zapcore.InfoLevel)
 
-			logger := zap.New(core, logging.WithDesensitize(map[string][]string{
+			logger = zap.New(core, logging.WithDesensitize(map[string][]string{
 				"body": {"data.#.bk_app_secret"},
 			}))
-			defer logger.Sync()
 
 			body := map[string]interface{}{
 				"data": []struct {
@@ -65,11 +82,155 @@ var _ = Describe("Desensitize", func() {
 			}
 
 			buf := new(bytes.Buffer)
-			err = json.NewEncoder(buf).Encode(body)
-			if err != nil {
-				Fail("Failed to encode JSON")
-			}
+			err := json.NewEncoder(buf).Encode(body)
+			Expect(err).NotTo(HaveOccurred())
 			logger.Info("Sensitive data", zap.String("body", buf.String()))
+		})
+	})
+
+	Describe("Single field desensitization", func() {
+		It("should desensitize single string field", func() {
+			w := &zapcore.BufferedWriteSyncer{
+				WS:            zapcore.AddSync(file),
+				Size:          256 * 1024,
+				FlushInterval: 30 * time.Second,
+			}
+			core = zapcore.NewCore(encoder, w, zapcore.InfoLevel)
+
+			logger = zap.New(core, logging.WithDesensitize(map[string][]string{
+				"body": {"password"},
+			}))
+
+			body := `{"password": "my-secret-password-123", "username": "testuser"}`
+			logger.Info("Login attempt", zap.String("body", body))
+		})
+
+		It("should desensitize nested field", func() {
+			w := &zapcore.BufferedWriteSyncer{
+				WS:            zapcore.AddSync(file),
+				Size:          256 * 1024,
+				FlushInterval: 30 * time.Second,
+			}
+			core = zapcore.NewCore(encoder, w, zapcore.InfoLevel)
+
+			logger = zap.New(core, logging.WithDesensitize(map[string][]string{
+				"body": {"user.credentials.token"},
+			}))
+
+			body := `{"user": {"name": "test", "credentials": {"token": "secret-token-12345678"}}}`
+			logger.Info("User data", zap.String("body", body))
+		})
+	})
+
+	Describe("Short value handling", func() {
+		It("should handle short values (less than 7 chars)", func() {
+			w := &zapcore.BufferedWriteSyncer{
+				WS:            zapcore.AddSync(file),
+				Size:          256 * 1024,
+				FlushInterval: 30 * time.Second,
+			}
+			core = zapcore.NewCore(encoder, w, zapcore.InfoLevel)
+
+			logger = zap.New(core, logging.WithDesensitize(map[string][]string{
+				"body": {"pin"},
+			}))
+
+			body := `{"pin": "1234"}`
+			logger.Info("Short value", zap.String("body", body))
+		})
+	})
+
+	Describe("Non-existent field", func() {
+		It("should handle non-existent field gracefully", func() {
+			w := &zapcore.BufferedWriteSyncer{
+				WS:            zapcore.AddSync(file),
+				Size:          256 * 1024,
+				FlushInterval: 30 * time.Second,
+			}
+			core = zapcore.NewCore(encoder, w, zapcore.InfoLevel)
+
+			logger = zap.New(core, logging.WithDesensitize(map[string][]string{
+				"body": {"non_existent_field"},
+			}))
+
+			body := `{"username": "testuser"}`
+			logger.Info("No sensitive data", zap.String("body", body))
+		})
+	})
+
+	Describe("Multiple sensitive fields", func() {
+		It("should desensitize multiple fields in same log", func() {
+			w := &zapcore.BufferedWriteSyncer{
+				WS:            zapcore.AddSync(file),
+				Size:          256 * 1024,
+				FlushInterval: 30 * time.Second,
+			}
+			core = zapcore.NewCore(encoder, w, zapcore.InfoLevel)
+
+			logger = zap.New(core, logging.WithDesensitize(map[string][]string{
+				"body": {"password", "api_key", "secret"},
+			}))
+
+			body := `{"password": "pass123456789", "api_key": "key-abcdefghij", "secret": "sec-1234567890", "public": "visible"}`
+			logger.Info("Multiple secrets", zap.String("body", body))
+		})
+	})
+
+	Describe("With method", func() {
+		It("should create new core with fields", func() {
+			w := &zapcore.BufferedWriteSyncer{
+				WS:            zapcore.AddSync(file),
+				Size:          256 * 1024,
+				FlushInterval: 30 * time.Second,
+			}
+			core = zapcore.NewCore(encoder, w, zapcore.InfoLevel)
+
+			logger = zap.New(core, logging.WithDesensitize(map[string][]string{
+				"body": {"token"},
+			}))
+
+			childLogger := logger.With(zap.String("request_id", "12345"))
+			body := `{"token": "bearer-token-secret-value"}`
+			childLogger.Info("With fields", zap.String("body", body))
+		})
+	})
+
+	Describe("Check method", func() {
+		It("should check if level is enabled", func() {
+			w := &zapcore.BufferedWriteSyncer{
+				WS:            zapcore.AddSync(file),
+				Size:          256 * 1024,
+				FlushInterval: 30 * time.Second,
+			}
+			core = zapcore.NewCore(encoder, w, zapcore.WarnLevel)
+
+			logger = zap.New(core, logging.WithDesensitize(map[string][]string{
+				"body": {"secret"},
+			}))
+
+			// Info level should not be logged when core is WarnLevel
+			logger.Info("This should not be logged", zap.String("body", `{"secret": "value"}`))
+			// Warn level should be logged
+			logger.Warn("This should be logged", zap.String("body", `{"secret": "value"}`))
+		})
+	})
+
+	Describe("Sync method", func() {
+		It("should sync without error", func() {
+			w := &zapcore.BufferedWriteSyncer{
+				WS:            zapcore.AddSync(file),
+				Size:          256 * 1024,
+				FlushInterval: 30 * time.Second,
+			}
+			core = zapcore.NewCore(encoder, w, zapcore.InfoLevel)
+
+			logger = zap.New(core, logging.WithDesensitize(map[string][]string{
+				"body": {"secret"},
+			}))
+
+			logger.Info("Test sync", zap.String("body", `{"secret": "value"}`))
+			err := logger.Sync()
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 })
