@@ -16,34 +16,16 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package util
+package model_test
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"runtime"
+	"testing"
 
-	sentry "github.com/getsentry/sentry-go"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-// GoroutineWithRecovery is a wrapper of goroutine that can recover panic
-func GoroutineWithRecovery(ctx context.Context, fn func()) {
-	go func() {
-		defer func() {
-			if panicErr := recover(); panicErr != nil {
-				buf := make([]byte, 64<<10)
-				n := runtime.Stack(buf, false)
-				buf = buf[:n]
-				msg := fmt.Sprintf("painic err:%s", buf)
-				log.Println(msg)
-				if hub := sentry.CurrentHub(); hub != nil {
-					if client := hub.Client(); client != nil {
-						client.CaptureMessage(msg, nil, sentry.NewScope())
-					}
-				}
-			}
-		}()
-		fn()
-	}()
+func TestModel(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Model Suite")
 }

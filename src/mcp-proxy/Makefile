@@ -51,7 +51,7 @@ fmt:
 
 .PHONY: test
 test:
-	go test -mod=vendor -gcflags=all=-l $(shell go list ./... | grep -v mock | grep -v docs) -covermode=count -coverprofile .coverage.cov
+	$(GINKGO) -r -mod=vendor --cover --coverprofile=.coverage.cov ./...
 
 .PHONY: cov
 cov:
@@ -81,3 +81,4 @@ GOFUMPT ?= $(LOCALBIN)/gofumpt
 SWAG ?= $(LOCALBIN)/swag
 GOLINTER ?=$(LOCALBIN)/golangci-lint
 GOIMPORTS ?=$(LOCALBIN)/goimports-reviser
+GINKGO ?=$(LOCALBIN)/ginkgo

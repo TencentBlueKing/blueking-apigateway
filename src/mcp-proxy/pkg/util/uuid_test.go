@@ -16,34 +16,43 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package util
+package util_test
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"runtime"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
-	sentry "github.com/getsentry/sentry-go"
+	"mcp_proxy/pkg/util"
 )
 
-// GoroutineWithRecovery is a wrapper of goroutine that can recover panic
-func GoroutineWithRecovery(ctx context.Context, fn func()) {
-	go func() {
-		defer func() {
-			if panicErr := recover(); panicErr != nil {
-				buf := make([]byte, 64<<10)
-				n := runtime.Stack(buf, false)
-				buf = buf[:n]
-				msg := fmt.Sprintf("painic err:%s", buf)
-				log.Println(msg)
-				if hub := sentry.CurrentHub(); hub != nil {
-					if client := hub.Client(); client != nil {
-						client.CaptureMessage(msg, nil, sentry.NewScope())
-					}
-				}
+var _ = Describe("UUID", func() {
+	Describe("GenUUID4", func() {
+		It("should generate 32-character hex string", func() {
+			uuid := util.GenUUID4()
+			Expect(uuid).To(HaveLen(32))
+		})
+
+		It("should contain only hex characters", func() {
+			uuid := util.GenUUID4()
+			for _, c := range uuid {
+				Expect((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')).To(BeTrue(),
+					"UUID should only contain hex characters")
 			}
-		}()
-		fn()
-	}()
-}
+		})
+
+		It("should generate unique UUIDs", func() {
+			uuids := make(map[string]bool)
+
+			for i := 0; i < 100; i++ {
+				uuid := util.GenUUID4()
+				Expect(uuids).NotTo(HaveKey(uuid), "UUID should be unique")
+				uuids[uuid] = true
+			}
+		})
+
+		It("should not be empty", func() {
+			uuid := util.GenUUID4()
+			Expect(uuid).NotTo(BeEmpty())
+		})
+	})
+})

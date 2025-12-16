@@ -16,10 +16,18 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package metric
+package metric_test
 
-import "testing"
+import (
+	. "github.com/onsi/ginkgo/v2"
 
-func TestInitMetrics(t *testing.T) {
-	InitMetrics()
-}
+	"mcp_proxy/pkg/metric"
+)
+
+var _ = Describe("Metric", func() {
+	Describe("InitMetrics", func() {
+		It("should initialize metrics without panic", func() {
+			metric.InitMetrics()
+		})
+	})
+})

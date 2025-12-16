@@ -32,50 +32,52 @@ import (
 	"mcp_proxy/pkg/entity/model"
 )
 
-var _ = Describe("JWTPublicKey", func() {
-	Describe("JWTInfoCacheKey", func() {
+var _ = Describe("MCPServer", func() {
+	Describe("MCPServerKey", func() {
 		DescribeTable("should return correct key",
-			func(gatewayID int, expectedKey string) {
-				key := cacheimpls.JWTInfoCacheKey{GatewayID: gatewayID}
+			func(name string, expectedKey string) {
+				key := cacheimpls.MCPServerKey{Name: name}
 				Expect(key.Key()).To(Equal(expectedKey))
 			},
-			Entry("normal gateway id", 123, "123"),
-			Entry("zero gateway id", 0, "0"),
-			Entry("large gateway id", 999999, "999999"),
+			Entry("normal name", "test-server", "test-server"),
+			Entry("empty name", "", ""),
+			Entry("name with special characters", "test-server-123_abc", "test-server-123_abc"),
 		)
 	})
 
-	Describe("GetJWTInfo", func() {
+	Describe("GetMCPServerByName", func() {
 		expiration := 5 * time.Minute
 
-		It("should return JWT info successfully", func() {
-			expectedJWT := &model.JWT{
-				GatewayID:  123,
-				PublicKey:  "test-public-key",
-				PrivateKey: "test-private-key",
+		It("should return MCP server successfully", func() {
+			expectedServer := &model.MCPServer{
+				ID:        1,
+				Name:      "test-server",
+				GatewayID: 123,
+				StageID:   456,
+				Status:    model.McpServerStatusActive,
 			}
 
 			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-				return expectedJWT, nil
+				return expectedServer, nil
 			}
-			mockCache := memory.NewCache("mockJWTCache", retrieveFunc, expiration, nil)
-			cacheimpls.SetJWTInfoCache(mockCache)
+			mockCache := memory.NewCache("mockMCPServerCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetMCPServerCache(mockCache)
 
-			result, err := cacheimpls.GetJWTInfo(context.Background(), 123)
+			result, err := cacheimpls.GetMCPServerByName(context.Background(), "test-server")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).NotTo(BeNil())
+			Expect(result.Name).To(Equal("test-server"))
 			Expect(result.GatewayID).To(Equal(123))
-			Expect(result.PublicKey).To(Equal("test-public-key"))
 		})
 
 		It("should return error when record not found", func() {
 			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
 				return nil, errors.New("record not found")
 			}
-			mockCache := memory.NewCache("mockJWTCache", retrieveFunc, expiration, nil)
-			cacheimpls.SetJWTInfoCache(mockCache)
+			mockCache := memory.NewCache("mockMCPServerCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetMCPServerCache(mockCache)
 
-			_, err := cacheimpls.GetJWTInfo(context.Background(), 123)
+			_, err := cacheimpls.GetMCPServerByName(context.Background(), "non-existent")
 			Expect(err).To(HaveOccurred())
 		})
 
@@ -83,12 +85,12 @@ var _ = Describe("JWTPublicKey", func() {
 			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
 				return "invalid type", nil
 			}
-			mockCache := memory.NewCache("mockJWTCache", retrieveFunc, expiration, nil)
-			cacheimpls.SetJWTInfoCache(mockCache)
+			mockCache := memory.NewCache("mockMCPServerCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetMCPServerCache(mockCache)
 
-			_, err := cacheimpls.GetJWTInfo(context.Background(), 123)
+			_, err := cacheimpls.GetMCPServerByName(context.Background(), "test-server")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("not model.CoreJWT in cache"))
+			Expect(err.Error()).To(ContainSubstring("not model.mcp in cache"))
 		})
 	})
 })

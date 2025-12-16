@@ -16,34 +16,12 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package util
+package logging
 
-import (
-	"context"
-	"fmt"
-	"log"
-	"runtime"
-
-	sentry "github.com/getsentry/sentry-go"
+var (
+	ParseZapLogLevel = parseZapLogLevel
+	NewZapJSONLogger = newZapJSONLogger
+	GetWriter        = getWriter
+	GetOSWriter      = getOSWriter
+	GetFileWriter    = getFileWriter
 )
-
-// GoroutineWithRecovery is a wrapper of goroutine that can recover panic
-func GoroutineWithRecovery(ctx context.Context, fn func()) {
-	go func() {
-		defer func() {
-			if panicErr := recover(); panicErr != nil {
-				buf := make([]byte, 64<<10)
-				n := runtime.Stack(buf, false)
-				buf = buf[:n]
-				msg := fmt.Sprintf("painic err:%s", buf)
-				log.Println(msg)
-				if hub := sentry.CurrentHub(); hub != nil {
-					if client := hub.Client(); client != nil {
-						client.CaptureMessage(msg, nil, sentry.NewScope())
-					}
-				}
-			}
-		}()
-		fn()
-	}()
-}

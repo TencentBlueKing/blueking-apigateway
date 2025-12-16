@@ -16,50 +16,53 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package cacheimpls
+package cacheimpls_test
 
 import (
 	"context"
 	"errors"
-	"testing"
 	"time"
 
 	"github.com/TencentBlueKing/gopkg/cache"
 	"github.com/TencentBlueKing/gopkg/cache/memory"
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
+	"mcp_proxy/pkg/cacheimpls"
 	"mcp_proxy/pkg/entity/model"
 )
 
-func TestStageKey_Key(t *testing.T) {
-	k := StageKey{
-		ID: 1,
-	}
-	assert.Equal(t, "1", k.Key())
-}
+var _ = Describe("Stage", func() {
+	Describe("StageKey", func() {
+		It("should return correct key", func() {
+			k := cacheimpls.StageKey{ID: 1}
+			Expect(k.Key()).To(Equal("1"))
+		})
+	})
 
-func TestGetStage(t *testing.T) {
-	expiration := 5 * time.Minute
+	Describe("GetStageByID", func() {
+		expiration := 5 * time.Minute
 
-	// valid
-	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return &model.Stage{}, nil
-	}
-	mockCache := memory.NewCache(
-		"mockCache", retrieveFunc, expiration, nil)
-	stageCache = mockCache
+		It("should return stage successfully", func() {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+				return &model.Stage{}, nil
+			}
+			mockCache := memory.NewCache("mockCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetStageCache(mockCache)
 
-	_, err := GetStageByID(context.Background(), 1)
-	assert.NoError(t, err)
+			_, err := cacheimpls.GetStageByID(context.Background(), 1)
+			Expect(err).NotTo(HaveOccurred())
+		})
 
-	// error
-	retrieveFunc = func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return false, errors.New("error here")
-	}
-	mockCache = memory.NewCache(
-		"mockCache", retrieveFunc, expiration, nil)
-	stageCache = mockCache
+		It("should return error when retrieval fails", func() {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+				return false, errors.New("error here")
+			}
+			mockCache := memory.NewCache("mockCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetStageCache(mockCache)
 
-	_, err = GetStageByID(context.Background(), 1)
-	assert.Error(t, err)
-}
+			_, err := cacheimpls.GetStageByID(context.Background(), 1)
+			Expect(err).To(HaveOccurred())
+		})
+	})
+})
