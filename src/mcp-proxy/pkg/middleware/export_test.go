@@ -16,34 +16,19 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package util
+package middleware
 
-import (
-	"context"
-	"fmt"
-	"log"
-	"runtime"
+import "bytes"
 
-	sentry "github.com/getsentry/sentry-go"
+var (
+	VerifyJWTToken  = verifyJWTToken
+	ParseBKJWTToken = parseBKJWTToken
 )
 
-// GoroutineWithRecovery is a wrapper of goroutine that can recover panic
-func GoroutineWithRecovery(ctx context.Context, fn func()) {
-	go func() {
-		defer func() {
-			if panicErr := recover(); panicErr != nil {
-				buf := make([]byte, 64<<10)
-				n := runtime.Stack(buf, false)
-				buf = buf[:n]
-				msg := fmt.Sprintf("painic err:%s", buf)
-				log.Println(msg)
-				if hub := sentry.CurrentHub(); hub != nil {
-					if client := hub.Client(); client != nil {
-						client.CaptureMessage(msg, nil, sentry.NewScope())
-					}
-				}
-			}
-		}()
-		fn()
-	}()
+type BodyLogWriterWrapper struct{ body *bytes.Buffer }
+
+func (w *BodyLogWriterWrapper) Body() *bytes.Buffer { return w.body }
+
+func NewBodyLogWriter(buf *bytes.Buffer) *BodyLogWriterWrapper {
+	return &BodyLogWriterWrapper{body: buf}
 }
