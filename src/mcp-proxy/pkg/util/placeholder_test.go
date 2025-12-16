@@ -1,0 +1,93 @@
+/*
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) 2025 Tencent. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://opensource.org/licenses/MIT
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
+ */
+
+package util_test
+
+import (
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"mcp_proxy/pkg/util"
+)
+
+var _ = Describe("Placeholder", func() {
+	Describe("ReplacePlaceHolder", func() {
+		DescribeTable("replaces placeholders correctly",
+			func(input string, params map[string]string, expected string) {
+				result := util.ReplacePlaceHolder(input, params)
+				Expect(result).To(Equal(expected))
+			},
+			Entry("simple replacement",
+				"Hello, {name}!",
+				map[string]string{"name": "World"},
+				"Hello, World!",
+			),
+			Entry("multiple replacements",
+				"{greeting}, {name}! Welcome to {place}.",
+				map[string]string{"greeting": "Hello", "name": "Alice", "place": "Wonderland"},
+				"Hello, Alice! Welcome to Wonderland.",
+			),
+			Entry("placeholder with spaces",
+				"Hello, { name }!",
+				map[string]string{"name": "World"},
+				"Hello, World!",
+			),
+			Entry("missing param keeps placeholder",
+				"Hello, {name}!",
+				map[string]string{"other": "value"},
+				"Hello, {name}!",
+			),
+			Entry("empty params",
+				"Hello, {name}!",
+				map[string]string{},
+				"Hello, {name}!",
+			),
+			Entry("no placeholders",
+				"Hello, World!",
+				map[string]string{"name": "Alice"},
+				"Hello, World!",
+			),
+			Entry("url template",
+				"https://api.example.com/{api_name}/{stage}/resource",
+				map[string]string{"api_name": "my-gateway", "stage": "prod"},
+				"https://api.example.com/my-gateway/prod/resource",
+			),
+			Entry("empty replacement value",
+				"Hello, {name}!",
+				map[string]string{"name": ""},
+				"Hello, !",
+			),
+			Entry("special characters in replacement",
+				"Path: {path}",
+				map[string]string{"path": "/api/v1/users?id=123"},
+				"Path: /api/v1/users?id=123",
+			),
+			Entry("partial match",
+				"{api_name} and {api_name_v2}",
+				map[string]string{"api_name": "gateway1", "api_name_v2": "gateway2"},
+				"gateway1 and gateway2",
+			),
+		)
+
+		It("should handle nil params", func() {
+			input := "Hello, {name}!"
+			result := util.ReplacePlaceHolder(input, nil)
+			Expect(result).To(Equal("Hello, {name}!"))
+		})
+	})
+})
