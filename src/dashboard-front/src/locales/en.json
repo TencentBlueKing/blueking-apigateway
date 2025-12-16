@@ -173,6 +173,8 @@
   "操作": "Operation",
   "续期": "Renew",
   "编辑": "Edit",
+  "展开": "Expand",
+  "收起": "Retract",
   "有效时间": "Expire Time",
   "确定导入": "Confirm Import",
   "批量删除成功！": "Batch deleted!",
